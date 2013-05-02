@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758873Ab3EBAkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 20:40:45 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:35871 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756226Ab3EBAkg (ORCPT
+	id S1760393Ab3EBArV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 20:47:21 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:64064 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756226Ab3EBAkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 20:40:36 -0400
+	Wed, 1 May 2013 20:40:47 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         vgoyal@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/31] blkcg: invoke blkcg_policy->pd_init() after parent is linked
-Date: Wed,  1 May 2013 17:39:22 -0700
-Message-Id: <1367455189-6957-5-git-send-email-tj@kernel.org>
+Subject: [PATCH 10/31] blk-throttle: remove pointless throtl_nr_queued() optimizations
+Date: Wed,  1 May 2013 17:39:28 -0700
+Message-Id: <1367455189-6957-11-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367455189-6957-1-git-send-email-tj@kernel.org>
 References: <1367455189-6957-1-git-send-email-tj@kernel.org>
@@ -22,103 +22,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, when creating a new blkcg_gq, each policy's pd_init_fn() is
-invoked in blkg_alloc() before the parent is linked.  This makes it
-difficult for policies to perform initializations which are dependent
-on the parent.
+throtl_nr_queued() is used in several places to avoid performing
+certain operations when the throtl_data is empty.  This usually is
+useless as those paths usually aren't traveled if there's no bio
+queued.
 
-This patch moves pd_init_fn() invocations to blkg_create() after the
-parent blkg is linked where the new blkg is fully initialized.  As
-this means that blkg_free() can't assume that pd's are initialized,
-pd_exit_fn() invocations are moved to __blkg_release().  This
-guarantees that pd_exit_fn() is also invoked with fully initialized
-blkgs with valid parent pointers.
+* throtl_schedule_delayed_work() skips scheduling dispatch work item
+  if @td doesn't have any bios queued; however, the only case it can
+  be called when @td is empty is from tg_set_conf() which isn't
+  something we should be optimizing for.
 
-This will help implementing hierarchy support in blk-throttle.
+* throtl_schedule_next_dispatch() takes a quick exit if @td is empty;
+  however, right after that it triggers BUG if the service tree is
+  empty.  The two conditions are equivalent and it can just test
+  @st->count for the quick exit.
+
+* blk_throtl_dispatch_work_fn() skips dispatch if @td is empty.  This
+  work function isn't usually invoked when @td is empty.  The only
+  possibility is from tg_set_conf() and when it happens the normal
+  dispatching path can handle empty @td fine.  No need to add special
+  skip path.
+
+This patch removes the above three unnecessary optimizations, which
+leave throtl_log() call in blk_throtl_dispatch_work_fn() the only user
+of throtl_nr_queued().  Remove throtl_nr_queued() and open code it in
+throtl_log().  I don't think we need td->nr_queued[] at all.  Maybe we
+can remove it later.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/blk-cgroup.c | 39 ++++++++++++++++++++++-----------------
- 1 file changed, 22 insertions(+), 17 deletions(-)
+ block/blk-throttle.c | 29 +++++++----------------------
+ 1 file changed, 7 insertions(+), 22 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 6b10d5c..f13cf95 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -51,18 +51,8 @@ static void blkg_free(struct blkcg_gq *blkg)
- 	if (!blkg)
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index 00e72f4..6fd08a4 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -166,11 +166,6 @@ THROTL_TG_FNS(on_rr);
+ #define throtl_log(td, fmt, args...)	\
+ 	blk_add_trace_msg((td)->queue, "throtl " fmt, ##args)
+ 
+-static inline unsigned int total_nr_queued(struct throtl_data *td)
+-{
+-	return td->nr_queued[0] + td->nr_queued[1];
+-}
+-
+ /*
+  * Worker for allocating per cpu stat for tgs. This is scheduled on the
+  * system_wq once there are some groups on the alloc_list waiting for
+@@ -402,25 +397,18 @@ static void throtl_schedule_delayed_work(struct throtl_data *td,
+ {
+ 	struct delayed_work *dwork = &td->dispatch_work;
+ 
+-	if (total_nr_queued(td)) {
+-		mod_delayed_work(kthrotld_workqueue, dwork, delay);
+-		throtl_log(td, "schedule work. delay=%lu jiffies=%lu",
+-			   delay, jiffies);
+-	}
++	mod_delayed_work(kthrotld_workqueue, dwork, delay);
++	throtl_log(td, "schedule work. delay=%lu jiffies=%lu", delay, jiffies);
+ }
+ 
+ static void throtl_schedule_next_dispatch(struct throtl_data *td)
+ {
+ 	struct throtl_rb_root *st = &td->tg_service_tree;
+ 
+-	/*
+-	 * If there are more bios pending, schedule more work.
+-	 */
+-	if (!total_nr_queued(td))
++	/* any pending children left? */
++	if (!st->count)
  		return;
  
--	for (i = 0; i < BLKCG_MAX_POLS; i++) {
--		struct blkcg_policy *pol = blkcg_policy[i];
--		struct blkg_policy_data *pd = blkg->pd[i];
+-	BUG_ON(!st->count);
 -
--		if (!pd)
--			continue;
+ 	update_min_dispatch_time(st);
+ 
+ 	if (time_before_eq(st->min_disptime, jiffies))
+@@ -844,14 +832,11 @@ void blk_throtl_dispatch_work_fn(struct work_struct *work)
+ 
+ 	spin_lock_irq(q->queue_lock);
+ 
+-	if (!total_nr_queued(td))
+-		goto out;
 -
--		if (pol && pol->pd_exit_fn)
--			pol->pd_exit_fn(blkg);
--
--		kfree(pd);
--	}
-+	for (i = 0; i < BLKCG_MAX_POLS; i++)
-+		kfree(blkg->pd[i]);
+ 	bio_list_init(&bio_list_on_stack);
  
- 	blk_exit_rl(&blkg->rl);
- 	kfree(blkg);
-@@ -114,10 +104,6 @@ static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q,
- 		blkg->pd[i] = pd;
- 		pd->blkg = blkg;
- 		pd->plid = i;
--
--		/* invoke per-policy init */
--		if (pol->pd_init_fn)
--			pol->pd_init_fn(blkg);
- 	}
+ 	throtl_log(td, "dispatch nr_queued=%u read=%u write=%u",
+-			total_nr_queued(td), td->nr_queued[READ],
+-			td->nr_queued[WRITE]);
++		   td->nr_queued[READ] + td->nr_queued[WRITE],
++		   td->nr_queued[READ], td->nr_queued[WRITE]);
  
- 	return blkg;
-@@ -214,7 +200,7 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
- 	}
- 	blkg = new_blkg;
+ 	nr_disp = throtl_select_dispatch(td, &bio_list_on_stack);
  
--	/* link parent and insert */
-+	/* link parent */
- 	if (blkcg_parent(blkcg)) {
- 		blkg->parent = __blkg_lookup(blkcg_parent(blkcg), q, false);
- 		if (WARN_ON_ONCE(!blkg->parent)) {
-@@ -224,6 +210,15 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
- 		blkg_get(blkg->parent);
- 	}
+@@ -859,7 +844,7 @@ void blk_throtl_dispatch_work_fn(struct work_struct *work)
+ 		throtl_log(td, "bios disp=%u", nr_disp);
  
-+	/* invoke per-policy init */
-+	for (i = 0; i < BLKCG_MAX_POLS; i++) {
-+		struct blkcg_policy *pol = blkcg_policy[i];
+ 	throtl_schedule_next_dispatch(td);
+-out:
 +
-+		if (blkg->pd[i] && pol->pd_init_fn)
-+			pol->pd_init_fn(blkg);
-+	}
-+
-+	/* insert */
- 	spin_lock(&blkcg->lock);
- 	ret = radix_tree_insert(&blkcg->blkg_tree, q->id, blkg);
- 	if (likely(!ret)) {
-@@ -381,6 +376,16 @@ static void blkg_rcu_free(struct rcu_head *rcu_head)
+ 	spin_unlock_irq(q->queue_lock);
  
- void __blkg_release(struct blkcg_gq *blkg)
- {
-+	int i;
-+
-+	/* tell policies that this one is being freed */
-+	for (i = 0; i < BLKCG_MAX_POLS; i++) {
-+		struct blkcg_policy *pol = blkcg_policy[i];
-+
-+		if (blkg->pd[i] && pol->pd_exit_fn)
-+			pol->pd_exit_fn(blkg);
-+	}
-+
- 	/* release the blkcg and parent blkg refs this blkg has been holding */
- 	css_put(&blkg->blkcg->css);
- 	if (blkg->parent)
+ 	/*
 -- 
 1.8.1.4
 
