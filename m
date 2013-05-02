@@ -1,128 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552Ab3EBLZy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 07:25:54 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.245]:52473 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752463Ab3EBLZx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 07:25:53 -0400
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <broonie@kernel.org>, <grant.likely@linaro.org>, <nicolas.ferre@atmel.com>,
-        <richard.genoud@gmail.com>, <wenyou.yang@atmel.com>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] spi/spi-atmel: BUG: fix doesn' support 16 bits transfers using PIO
-Date: Thu, 2 May 2013 19:25:11 +0800
-Message-ID: <1367493911-3182-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1367493801-3037-1-git-send-email-wenyou.yang@atmel.com>
-References: <1367493801-3037-1-git-send-email-wenyou.yang@atmel.com>
+	id S1757344Ab3EBL1p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 07:27:45 -0400
+Received: from sauhun.de ([89.238.76.85]:59841 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751443Ab3EBL1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 07:27:43 -0400
+Date: Thu, 2 May 2013 13:27:21 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Cc: linux-i2c@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        devicetree-discuss@lists.ozlabs.org, sjg@chromium.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Subject: Re: Fwd: [PATCH v7] i2c: exynos5: add High Speed I2C controller
+ driver
+Message-ID: <20130502112721.GA7309@the-dreams.de>
+References: <1354021236-28596-2-git-send-email-ch.naveen@samsung.com>
+ <1365137521-31187-1-git-send-email-naveenkrishna.ch@gmail.com>
+ <20130416102902.GE16978@the-dreams.de>
+ <CAHfPSqCe_VJMeH3oCDc0CfcmpawMj0hN7_b3ngHDFtDUsPJLsA@mail.gmail.com>
+ <CAHfPSqC0E42+-oRfLoFCEe6CbV08fJQdkagvVYHaer4pJAU6pg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHfPSqC0E42+-oRfLoFCEe6CbV08fJQdkagvVYHaer4pJAU6pg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Genoud <richard.genoud@gmail.com>
+Hi,
 
-Fix using PIO transfer mode only support 8 bits transfer, doesn't support 16 bits.
+> >> +  - Samsung GPIO variant (deprecated):
+> >> +    - gpios: The order of the gpios should be the following: <SDA, SCL>.
+> >> +      The gpio specifier depends on the gpio controller.
+> >
+> > Huh? Why should we support a deprecated method with a new driver?
+> >
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-Cc: spi-devel-general@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
-[wenyou.yang@atmel.com: submit the patch]
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
- drivers/spi/spi-atmel.c |   47 ++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 38 insertions(+), 9 deletions(-)
+This was left unanswered. I am curious.
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 787bd2c..d8cb7da 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -526,13 +526,17 @@ static void atmel_spi_next_xfer_pio(struct spi_master *master,
- 	}
- 
- 	if (xfer->tx_buf)
--		spi_writel(as, TDR, *(u8 *)(xfer->tx_buf));
-+		if (xfer->bits_per_word > 8)
-+			spi_writel(as, TDR, *(u16 *)(xfer->tx_buf));
-+		else
-+			spi_writel(as, TDR, *(u8 *)(xfer->tx_buf));
- 	else
- 		spi_writel(as, TDR, 0);
- 
- 	dev_dbg(master->dev.parent,
--		"  start pio xfer %p: len %u tx %p rx %p\n",
--		xfer, xfer->len, xfer->tx_buf, xfer->rx_buf);
-+		"  start pio xfer %p: len %u tx %p rx %p bitpw %d\n",
-+		xfer, xfer->len, xfer->tx_buf, xfer->rx_buf,
-+		xfer->bits_per_word);
- 
- 	/* Enable relevant interrupts */
- 	spi_writel(as, IER, SPI_BIT(RDRF) | SPI_BIT(OVRES));
-@@ -950,21 +954,39 @@ atmel_spi_pump_pio_data(struct atmel_spi *as, struct spi_transfer *xfer)
- {
- 	u8		*txp;
- 	u8		*rxp;
-+	u16		*txp16;
-+	u16		*rxp16;
- 	unsigned long	xfer_pos = xfer->len - as->current_remaining_bytes;
- 
- 	if (xfer->rx_buf) {
--		rxp = ((u8 *)xfer->rx_buf) + xfer_pos;
--		*rxp = spi_readl(as, RDR);
-+		if (xfer->bits_per_word > 8) {
-+			rxp16 = (u16 *)(((u8 *)xfer->rx_buf) + xfer_pos);
-+			*rxp16 = spi_readl(as, RDR);
-+		} else {
-+			rxp = ((u8 *)xfer->rx_buf) + xfer_pos;
-+			*rxp = spi_readl(as, RDR);
-+		}
- 	} else {
- 		spi_readl(as, RDR);
- 	}
--
--	as->current_remaining_bytes--;
-+	if (xfer->bits_per_word > 8) {
-+		as->current_remaining_bytes -= 2;
-+		if (as->current_remaining_bytes < 0)
-+			as->current_remaining_bytes = 0;
-+	} else {
-+		as->current_remaining_bytes--;
-+	}
- 
- 	if (as->current_remaining_bytes) {
- 		if (xfer->tx_buf) {
--			txp = ((u8 *)xfer->tx_buf) + xfer_pos + 1;
--			spi_writel(as, TDR, *txp);
-+			if (xfer->bits_per_word > 8) {
-+				txp16 = (u16 *)(((u8 *)xfer->tx_buf)
-+							+ xfer_pos + 2);
-+				spi_writel(as, TDR, *txp16);
-+			} else {
-+				txp = ((u8 *)xfer->tx_buf) + xfer_pos + 1;
-+				spi_writel(as, TDR, *txp);
-+			}
- 		} else {
- 			spi_writel(as, TDR, 0);
- 		}
-@@ -1378,6 +1400,13 @@ static int atmel_spi_transfer(struct spi_device *spi, struct spi_message *msg)
- 			}
- 		}
- 
-+		if (xfer->bits_per_word > 8) {
-+			if (xfer->len % 2) {
-+				dev_dbg(&spi->dev, "buffer len should be 16 bits aligned\n");
-+				return -EINVAL;
-+			}
-+		}
-+
- 		/* FIXME implement these protocol options!! */
- 		if (xfer->speed_hz) {
- 			dev_dbg(&spi->dev, "no protocol options yet\n");
--- 
-1.7.9.5
+> >> +Optional properties:
+> >> +  - samsung,hs-mode: Mode of operation, High speed or Fast speed mode. If not
+> >> +    specified, default value is 0.
+> >> +  - samsung,hs-clock-freq: Desired operating frequency in Hz of the bus.
+> >> +    If not specified, the default value in Hz is 100000.
+> >> +  - samsung,fs-clock-freq: Desired operarting frequency in Hz of the bus.
+> >> +    If not specified, the default value in Hz is 100000.
+> >
+> > NACK! We have a generic binding for defining the bus speed. And
+> > shouldn't hs-mode be set depending on the bus speed?
+
+Please use "clock-frequency" here, like other drivers do.
+
+> >> +     /* In auto mode the length of xfer cannot be 0 */
+> >> +     if (i2c->msg->len == 0)
+> >> +             i2c_auto_conf |= 0x1;
+> >
+> > So you send some byte then? Why not reject the message?
+> This is to support the probing the devices (i2cdetect cases)
+
+No! This is not a proper SMBUS_QUICK if you send a byte! If it doesn't
+work without sending data, then your device does not support it. This is
+not uncommon. Please check the smbus specs if you are unsure.
+
+> >> +     i2c->regs = of_iomap(np, 0);
+> >
+> > devm_ioremap_resource()
+> This was a comment from Thomas on v1.
+> https://lkml.org/lkml/2012/11/27/264
+> 
+> Kindly, suggest me which one is more optimal in this case.
+
+"Optimal" is difficult here, but devm_* has momentum and I prefer
+consistency.
+
+> Thanks for your valuable time and comments
+
+You're welcome! Thanks for the submission.
+
+   Wolfram
 
