@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762105Ab3EBUSP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 16:18:15 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:7079 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762086Ab3EBUSM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 16:18:12 -0400
-Message-ID: <1367525887.5106.140.camel@deadeye.wl.decadent.org.uk>
+	id S1762131Ab3EBUVU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 16:21:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36848 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762083Ab3EBUVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 16:21:18 -0400
+Message-ID: <1367526148.7757.30.camel@dcbw.foobar.com>
 Subject: Re: [GIT] Networking
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: John Stoffel <john@stoffel.org>
-CC: David Miller <davem@davemloft.net>, <bjorn@mork.no>, <kaber@trash.net>,
-        <torvalds@linux-foundation.org>, <hayeswang@realtek.com>,
-        <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Thu, 2 May 2013 21:18:07 +0100
-In-Reply-To: <20866.46636.642215.768865@quad.stoffel.home>
-References: <20130502.041625.412316202038784117.davem@davemloft.net>
-	 <20130502083619.GA22010@macbook.localnet> <87d2t9bvj1.fsf@nemi.mork.no>
-	 <20130502.140125.697030413654996310.davem@davemloft.net>
-	 <20866.46636.642215.768865@quad.stoffel.home>
-Organization: Solarflare Communications
+From: Dan Williams <dcbw@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, hayeswang <hayeswang@realtek.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 02 May 2013 15:22:28 -0500
+In-Reply-To: <1367522254.7757.23.camel@dcbw.foobar.com>
+References: <20130501.164755.1859264969403837546.davem@davemloft.net>
+	 <CA+55aFzsvyQLLKbuETBqfhpgkSaXH9cvT0O-cQ-mTTXXxcMqwg@mail.gmail.com>
+	 <1367512467.4000.7.camel@dcbw.foobar.com>
+	 <1367519066.7757.19.camel@dcbw.foobar.com>
+	 <CA+55aFy04mY5g-Aics9dcGpv6zgn2bu4iQ-_ifE5hun_t4E54Q@mail.gmail.com>
+	 <CA+55aFy1P6TKZjWSvrJN6o=gAr7OTYQsoZORXGF6g8OnonBT=Q@mail.gmail.com>
+	 <1367522254.7757.23.camel@dcbw.foobar.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [86.14.226.88]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19834.005
-X-TM-AS-Result: No--14.646900-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-02 at 14:53 -0400, John Stoffel wrote:
-> >>>>> "David" == David Miller <davem@davemloft.net> writes:
+On Thu, 2013-05-02 at 14:17 -0500, Dan Williams wrote:
+> On Thu, 2013-05-02 at 11:53 -0700, Linus Torvalds wrote:
+> > On Thu, May 2, 2013 at 11:52 AM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> > >
+> > > but for some reason in the bad case NM just doesn't react past the
+> > > "carrier now ON" part.
+> > 
+> > Grr. That was much more readable while editing, then gmail ended up
+> > doing its "smart line wrap" thing and my nice long lines became a
+> > mess. I think you can still figure it out,
 > 
-> David> From: Bjørn Mork <bjorn@mork.no>
-> David> Date: Thu, 02 May 2013 11:06:42 +0200
-> 
-> >> From d957cf339bf625869c39d852ac6733ef597ecef9 Mon Sep 17 00:00:00 2001
-> >> From: Bjørn Mork <bjorn@mork.no>
-> >> Date: Thu, 2 May 2013 10:37:05 +0200
-> >> Subject: [PATCH] net: vlan,ethtool: netdev_features_t is more than 32 bit
-> >> MIME-Version: 1.0
-> >> Content-Type: text/plain; charset=UTF-8
-> >> Content-Transfer-Encoding: 8bit
-> >> 
-> >> Signed-off-by: Bjørn Mork <bjorn@mork.no>
-> 
-> David> Also applied and queued up for -stable.
-> 
-> David> These changes show me that this special type isn't providing type
-> David> safety in the way that we actually need it.
-> 
-> David> Something like how we do the MM page table types would work better:
-> 
-> David> typedef struct { u64 val; } netdev_features_t;
-> 
-> David> #define __netdev_feature(X)	((netdev_features_t) { X } )
-> 
-> David> and also with the appropriate set of accessors.
-> 
-> David> Then you can't get it wrong without a compile error.
-> 
-> Isn't part of the problem that you're exporting it into /sys in a
-> binary format?
-[...]
+> Yeah, the dump is good, and it seems to point to a problem in NM for
+> now.  I'm investigating.
 
-Features are exported through SIOCETHTOOL, not sysfs (though they *used*
-to be there).
+If you don't mind helping me confirm/reject a theory, would you mind:
 
-The 'flags' attribue in sysfs is something different.
+1) drop "level=debug" into the [logging] section
+of /etc/NetworkManager/NetworkManager.conf (create the section if it
+doesn't exist)
 
-Ben.
+2) reboot (or just rmmod/modprobe r8169 if that's enough to trigger it)
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+3) grab syslog and send it to me (privately if you wish)
+
+Thanks!
+Dan
 
