@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761170Ab3EBS51 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:57:27 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42938 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760863Ab3EBS50 (ORCPT
+	id S932820Ab3EBS61 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:58:27 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:37111 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932358Ab3EBS6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:57:26 -0400
-Date: Thu, 2 May 2013 19:56:23 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
-Message-ID: <20130502185623.GG14496@n2100.arm.linux.org.uk>
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <5182B18C.4080404@gmail.com> <20130502184514.GE14496@n2100.arm.linux.org.uk> <5182B65C.8030000@gmail.com>
+	Thu, 2 May 2013 14:58:25 -0400
+Message-ID: <5182B74E.8060909@linaro.org>
+Date: Thu, 02 May 2013 11:58:22 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5182B65C.8030000@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Colin Cross <ccross@android.com>
+CC: Pavel Machek <pavel@ucw.cz>, Zoran Markovic <zoran.markovic@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
+        Benoit Goby <benoit@android.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [RFC PATCH] power: Add option to log time spent in suspend
+References: <1367360914-23389-1-git-send-email-zoran.markovic@linaro.org> <1367360914-23389-2-git-send-email-zoran.markovic@linaro.org> <20130501002929.GA20042@amd.pavel.ucw.cz> <CAMbhsRRisa15fH9AodepfRJUv6t6dipqb6CMbOOrtzVsMUCoxQ@mail.gmail.com> <20130502122747.GA22618@amd.pavel.ucw.cz> <CAMbhsRQ4tCQtSxA-5tqydKp-xQf1bnrsq7GNw5q0gk3NdPZyaA@mail.gmail.com>
+In-Reply-To: <CAMbhsRQ4tCQtSxA-5tqydKp-xQf1bnrsq7GNw5q0gk3NdPZyaA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 08:54:20PM +0200, Sebastian Hesselbarth wrote:
-> On 05/02/13 20:45, Russell King - ARM Linux wrote:
->> On Thu, May 02, 2013 at 08:33:48PM +0200, Sebastian Hesselbarth wrote:
->>> On 05/02/2013 08:25 PM, Sebastian Hesselbarth wrote:
->>>> This patch adds an irqchip driver for the main interrupt controller found
->>>> on Marvell Orion SoCs (Kirkwood, Dove, Orion5x, Discovery Innovation).
->>>> Corresponding device tree documentation is also added.
->>>>
->>>> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->>>> ---
->>>> Note: This patch triggers a checkpatch warning for
->>>>     WARNING: Avoid CamelCase:<handle_IRQ>
->>>>
->>> [...]
->>>> diff --git a/include/linux/irqchip/orion.h b/include/linux/irqchip/orion.h
->>>> new file mode 100644
->>>> index 0000000..04f7bab
->>>> --- /dev/null
->>>> +++ b/include/linux/irqchip/orion.h
->>>> @@ -0,0 +1,18 @@
->>>> +/*
->>>> + * Marvell Orion SoCs IRQ chip driver header.
->>>> + *
->>>> + * Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->>>> + *
->>>> + * This file is licensed under the terms of the GNU General Public
->>>> + * License version 2.  This program is licensed "as is" without any
->>>> + * warranty of any kind, whether express or implied.
->>>> + */
->>>> +
->>>> +#ifndef __LINUX_IRQCHIP_ORION_H
->>>> +#define __LINUX_IRQCHIP_ORION_H
->>>> +
->>>> +#include<asm/exception.h>
->>>
->>> First review by myself. The above include is a left-over and
->>> will be removed in a v2.
+On 05/02/2013 11:29 AM, Colin Cross wrote:
+> On Thu, May 2, 2013 at 5:27 AM, Pavel Machek <pavel@ucw.cz> wrote:
 >>
->> You still need your first level IRQ handlers marked with __exception_irq_entry
->> which is defined in the above file.
->>
->
-> Russell,
->
-> I know and it is marked with __exception_irq_entry. The above is in
-> include/linux/irqchip/orion.h and only used for .init_irq in machine
-> descriptor later.
->
-> The irq handler is never exposed to the board file itself, but set
-> within orion_init_irq. This approach has been taked by
-> irqchip/irq-gic.c and irqchip/irq-vic.c rather than adding
-> .handle_irq to the machine descriptor.
+>>> dmesg is not the solution, it's not a stable api, it would require
+>>> constant parsing to make sure you didn't miss data before it fell out
+>>> of the ringbuffer, and sched_clock often does not (and should not)
+>>> tick during suspend, so printk times don't show the time spent
+>>> suspended.
+>> If timing info printed is invalid, that should be fixed.
+> It's not invalid, its just not measuring the time that is useful here.
+>   printk is measuring something similar to (but not exactly the same
+> as) CLOCK_MONOTONIC, but this is measuring something similar to
+> CLOCK_BOOTTIME.
 
-But I don't find an asm/exception.h include in drivers/irqchip/whateveryour.cfileiscalled
+One thing I'm curious about with this patch, since we measure and keep 
+track of suspend time in the timekeeping core, there may be enough 
+justification to adding this sort of debugging info the timekeeping core 
+itself.
+
+Although what is being tracked with this driver isn't just total time in 
+suspend, but looks like more of a logarithmic histogram of suspend 
+times. Is there any context you can provide as to why that particular 
+format was chosen (which would could be added to help improve the commit 
+message)?
+
+thanks
+-john
+
