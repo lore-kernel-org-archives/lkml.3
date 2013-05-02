@@ -1,68 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932927Ab3EBTfT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 15:35:19 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:42995 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932213Ab3EBTfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 15:35:18 -0400
-Date: Thu, 2 May 2013 13:35:10 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>, Rob Landley <rob@landley.net>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
-Message-ID: <20130502193510.GA29522@obsidianresearch.com>
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130502185322.GA29333@obsidianresearch.com>
- <5182B902.7040908@gmail.com>
+	id S932952Ab3EBTg1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 15:36:27 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:39889 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932712Ab3EBTg0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 15:36:26 -0400
+Date: Thu, 2 May 2013 12:34:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+Message-ID: <20130502193409.GA3780@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130430072944.GA13959@verge.net.au>
+ <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
+ <20130501091012.GB28253@dyad.programming.kicks-ass.net>
+ <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg>
+ <20130501155501.GB7521@dyad.programming.kicks-ass.net>
+ <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
+ <20130502072623.GE7521@dyad.programming.kicks-ass.net>
+ <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg>
+ <20130502173257.GX3780@linux.vnet.ibm.com>
+ <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5182B902.7040908@gmail.com>
+In-Reply-To: <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050219-2398-0000-0000-000013F7ADB1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 09:05:38PM +0200, Sebastian Hesselbarth wrote:
-
-> >>+static struct of_device_id orion_irq_dt_ids[] __initconst = {
-> >>+	{ .compatible = "marvell,orion-mpic", .data = orion_of_init },
-> >>+	{ }
-> >
-> >Is there a strong reason to change the compatible string? Looks to me
-> >like either the new driver or the old driver will bind depending on
-> >what is in the machine description. No need for a new string?
+On Thu, May 02, 2013 at 09:55:54PM +0300, Julian Anastasov wrote:
 > 
-> The reason for a new compatible string is, that we will also need an
-> secondary irq controller for bridge irqs. That could be called
-> marvell,orion-spic. Dove is again a little bit different than the
-> others and this will require timer and especially rtc not to share
-> bridge irqs here. RTC irq is located in PMU regs on Dove instead of
-> bridge regs.
-
-As Arnd mentioned, I would keep the old name then..
-
-The bridge controller can be called marvell,orion-intc-bridge, and if
-Dove needs a pmu controller, marvell,dove-intc-pmu ?
-
-> >.. which lets this go away, use the generic irqchip_init instead of
-> >orion_init_irq.
+> 	Hello,
 > 
-> Same as above.
+> On Thu, 2 May 2013, Paul E. McKenney wrote:
+> 
+> > On Thu, May 02, 2013 at 06:54:05PM +0300, Julian Anastasov wrote:
+> > > 
+> > > 	I tested the following patch in 2 variants,
+> > > TINY_RCU and CONFIG_TREE_PREEMPT_RCU. I see the
+> > 
+> > Could you please also try CONFIG_TREE_RCU?
+> 
+> 	Note that I'm testing on some 9-year old
+> UP system, i.e. 1 CPU. Now I enabled SMP to test CONFIG_TREE_RCU
+> and the results are same. I think, it should be just like
+> the TINY_RCU in terms of these debuggings (non-preempt). Extra 
+> rcu_read_lock gives me "Illegal context switch in RCU read-side
+> critical section" in addition to the "BUG: sleeping function
+> called from invalid context" message.
 
-I have kirkwood HW but I haven't had time to make newer kernels run on
-it, otherwise I'd test it too :(
+OK...
 
-Jason
+> > > error if extra rcu_read_lock is added for testing.
+> > > 
+> > > 	I'm using the PREEMPT_ACTIVE flag to indicate
+> > > that we are already under lock. It should work because
+> > > __might_sleep is not called with such bit. I also tried to
+> > > add new flag in include/linux/hardirq.h but PREEMPT_ACTIVE
+> > > depends on the arch, so this alternative looked difficult to
+> > > implement.
+> 
+> > > +extern int __cond_resched_rcu(void);
+> > > +
+> > > +#define cond_resched_rcu() ({					\
+> > > +	__might_sleep(__FILE__, __LINE__, PREEMPT_ACTIVE |	\
+> > > +					  PREEMPT_RCU_OFFSET);	\
+> > > +	__cond_resched_rcu();					\
+> > > +})
+> > > +
+> 
+> > > @@ -7062,7 +7076,9 @@ void __might_sleep(const char *file, int line, int preempt_offset)
+> > >  {
+> > >  	static unsigned long prev_jiffy;	/* ratelimiting */
+> > > 
+> > > -	rcu_sleep_check(); /* WARN_ON_ONCE() by default, no rate limit reqd. */
+> > > +	/* WARN_ON_ONCE() by default, no rate limit reqd. */
+> > > +	rcu_sleep_check(preempt_offset & PREEMPT_ACTIVE);
+> > 
+> > Color me confused.
+> > 
+> > >From what I can see, the two values passed in through preempt_offset
+> > are PREEMPT_LOCK_OFFSET and SOFTIRQ_DISABLE_OFFSET.  PREEMPT_ACTIVE
+> > is normally a high-order bit, above PREEMPT_MASK, SOFTIRQ_MASK, and
+> > HARDIRQ_MASK.
+> > 
+> > PREEMPT_LOCK_OFFSET and SOFTIRQ_DISABLE_OFFSET have only low-order bits,
+> > so I don't see how rcu_sleep_check() is passed anything other than zero.
+> > Am I going blind, or what?
+> 
+> 	Only the new cond_resched_rcu() macro provides
+> PREEMPT_ACTIVE flag to skip the rcu_preempt_sleep_check()
+> call. The old macros provide locked=0 as you noticed. Does it
+> answer your question or I'm missing something?
+
+PREEMPT_ACTIVE's value is usually 0x10000000.  Did it change
+since 3.9?  If not, rcu_sleep_check(preempt_offset & PREEMPT_ACTIVE)
+is the same as rcu_sleep_check(0).
+
+							Thanx, Paul
+
