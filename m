@@ -1,52 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758889Ab3EBCVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 22:21:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49160 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756807Ab3EBCVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 22:21:47 -0400
-Date: Thu, 2 May 2013 05:21:34 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH RFC] x86: uaccess s/might_sleep/might_fault/
-Message-ID: <20130502022134.GA7700@redhat.com>
+	id S1759379Ab3EBCgW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 22:36:22 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:36656 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757115Ab3EBCgT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 22:36:19 -0400
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Joachim Eastwood <manabian@gmail.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
+        "Lin, JM" <JM.Lin@atmel.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after
+ xfer->speed_hz set
+Thread-Topic: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after
+ xfer->speed_hz set
+Thread-Index: AQHOGuP8IM96tyzK7E6aJ9clb/yCNJiZo0mAgFfg7JA=
+Date: Thu, 2 May 2013 02:35:16 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A24364154236AB5@penmbx02>
+References: <1362626715-6549-1-git-send-email-wenyou.yang@atmel.com>
+	<1362626815-6628-1-git-send-email-wenyou.yang@atmel.com>
+ <CAGhQ9VwW18LXY5Jn0FUFCaAzKxP1W3QADG=JBp9JbgaAwo=F2Q@mail.gmail.com>
+In-Reply-To: <CAGhQ9VwW18LXY5Jn0FUFCaAzKxP1W3QADG=JBp9JbgaAwo=F2Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r422aXGS001128
 
-The only reason uaccess routines might sleep
-is if they fault. Make this explicit for
-__copy_from_user_nocache, and consistent with
-copy_from_user and friends.
+Hi, Joachim,
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+> -----Original Message-----
+> From: Joachim Eastwood [mailto:manabian@gmail.com]
+> Sent: 2013Äê3ÔÂ7ÈÕ 20:31
+> To: Yang, Wenyou
+> Cc: linux-arm-kernel@lists.infradead.org; grant.likely@secretlab.ca; Ferre,
+> Nicolas; plagnioj@jcrosoft.com; richard.genoud@gmail.com; Lin, JM;
+> spi-devel-general@lists.sourceforge.net; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after
+> xfer->speed_hz set
+> 
+> On 7 March 2013 04:26, Wenyou Yang <wenyou.yang@atmel.com> wrote:
+> > commit: 059b8ffeee5b427949872bb6ed5db5ae0788054e
+> > cause the atmel spi probing failure.
+> >
+> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> > Cc: spi-devel-general@lists.sourceforge.net
+> > Cc: linux-kernel@vger.kernel.org
+> > ---
+> >  drivers/spi/spi-atmel.c |    6 +++---
+> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+> > index 656d137..1eca815 100644
+> > --- a/drivers/spi/spi-atmel.c
+> > +++ b/drivers/spi/spi-atmel.c
+> > @@ -846,9 +846,9 @@ static int atmel_spi_transfer(struct spi_device *spi,
+> struct spi_message *msg)
+> >                         }
+> >                 }
+> >
+> > -               /* FIXME implement these protocol options!! */
+> > -               if (xfer->speed_hz) {
+> > -                       dev_dbg(&spi->dev, "no protocol options
+> yet\n");
+> > +               if (xfer->speed_hz < spi->max_speed_hz) {
+> > +                       dev_dbg(&spi->dev,
+> > +                               "speed in transfer less than bus
+> speed\n");
+> >                         return -ENOPROTOOPT;
+> >                 }
+> 
+> I sent a similar patch to spi-devl a while ago, which Grant said he applied.
+> https://patchwork.kernel.org/patch/2165301/
+> 
+> Can't find the patch in any upstream git tree so I guess Grant hasn't
+> pushed it yet.
+This patch hasn't still applied in any upstream git tree, so Atmel spi master doesn't work.
+Could you help do some ping it? 
 
-I've updated all other arches as well - still
-build-testing. Any objections to the x86 patch?
+Thanks.
 
- arch/x86/include/asm/uaccess_64.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> regards
+> Joachim Eastwood
 
-diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
-index 142810c..4f7923d 100644
---- a/arch/x86/include/asm/uaccess_64.h
-+++ b/arch/x86/include/asm/uaccess_64.h
-@@ -235,7 +235,7 @@ extern long __copy_user_nocache(void *dst, const void __user *src,
- static inline int
- __copy_from_user_nocache(void *dst, const void __user *src, unsigned size)
- {
--	might_sleep();
-+	might_fault();
- 	return __copy_user_nocache(dst, src, size, 1);
- }
- 
--- 
-MST
+Best Regards,
+Wenyou Yang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
