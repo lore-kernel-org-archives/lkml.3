@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760439Ab3EBA6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 20:58:21 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49641 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756053Ab3EBA6Q (ORCPT
+	id S1758322Ab3EBB03 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 21:26:29 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:48409 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294Ab3EBB01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 20:58:16 -0400
-X-AuditID: 9c93016f-b7b72ae00000104b-79-5181ba21456e
-In-Reply-To: <20130430144605.1a99a7397702b332ee818fc8@linux-foundation.org>
-References: <1367214005-14302-1-git-send-email-chanho.min@lge.com>
-	<CAMuHMdWk4oi_KCmZv7hLZ7JSwy=meziKPBMQ1HJiJR9W8AdrDg@mail.gmail.com>
-	<20130430144605.1a99a7397702b332ee818fc8@linux-foundation.org>
-X-Google-Sender-Auth: ozq37tUdmpXx9cxvqBipXMkEa9s
-Subject: Re: [PATCH] lib: add weak __clzsi2()/__clzdi2() functions
-X-Brightmail-Tracker: AAAAAA==
-Reply-To: "=?EUC-KR?B?uc7C+cij?=" <chanho.min@lge.com>
-X-Priority: 3 (Normal)
-From: "=?EUC-KR?B?uc7C+cij?=" <chanho.min@lge.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        =?EUC-KR?B?wMyw5r3E?= <kyungsik.lee@lge.com>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
-        sparclinux <sparclinux@vger.kernel.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>
-Message-ID: <OF7904F8C7.4731B9DC-ON49257B5F.00055048-49257B5F.0005504A@lge.com>
-Date: Thu, 2 May 2013 09:58:02 +0900
-X-MIMETrack: Serialize by Router on LGEKRHQMS17/LGE/LG Group(Release 6.5.5FP3HF116 | July
- 11, 2008) at 2013/05/02 09:58:09
+	Wed, 1 May 2013 21:26:27 -0400
+X-Spam-Score: -100.8
+Message-ID: <5181C093.3010301@asianux.com>
+Date: Thu, 02 May 2013 09:25:39 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Ott <alan@signal11.us>
+Subject: Re: linux-next: manual merge of the net-next tree with the net tree
+References: <20130430122423.ab57c82604f13f6773ef4aeb@canb.auug.org.au>
+In-Reply-To: <20130430122423.ab57c82604f13f6773ef4aeb@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
->No, the link errors are for __ctzdi2, not __clzdi2.
->__ctzdi2 can be implemented using __ffs().
->> How's about we stop using __builtin_ctz[ll]() altogether?  Use N-fls()?
->
->That was my first suggestion ;-)
->
-Do we remove existing __builtin_ct[l]z?
-Some architecture's __builtin_clz will be more optimized than N-fls
-IMHO, This is not only about __builtin- but also supporting another
-libgcc functions in kernel.
-Some future user may need __clz[t]s[d]i2 symbol also.
-
->> btw, this:
->>
->> int __weak __clzsi2(int val)
->> {
->>        return BITS_PER_LONG - fls(val);
->> }
->>
->> looks wrong.  It will give a different result for 32- and 64-bit.
->
->Indeed. It should be hardcoded 32.
->
-I will re-work this for 64-bit, and ctz also.
+On 2013年04月30日 10:24, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the net-next tree got a conflict in
+> net/mac802154/mac802154.h between commit 2c1bbbffa0b6 ("net: mac802154:
+> comparision issue of type cast, finding by EXTRA_CFLAGS=-W") from the net
+> tree and commit 7dd43d356e73 ("mac802154: Do not try to resend failed
+> packets") from the net-next tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
 Thanks
-Chanho Min
 
+-- 
+Chen Gang
+
+Asianux Corporation
