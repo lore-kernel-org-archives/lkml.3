@@ -1,99 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761613Ab3EBTEi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 15:04:38 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39533 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761207Ab3EBTEg (ORCPT
+	id S1761646Ab3EBTFp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 15:05:45 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:44553 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761236Ab3EBTFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 15:04:36 -0400
-Message-ID: <5182B8BF.804@gmail.com>
-Date: Thu, 02 May 2013 21:04:31 +0200
+	Thu, 2 May 2013 15:05:44 -0400
+Message-ID: <5182B902.7040908@gmail.com>
+Date: Thu, 02 May 2013 21:05:38 +0200
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
         Jean-Francois Moine <moinejf@free.fr>,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
 Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <5182B18C.4080404@gmail.com> <20130502184514.GE14496@n2100.arm.linux.org.uk> <5182B65C.8030000@gmail.com> <20130502185623.GG14496@n2100.arm.linux.org.uk>
-In-Reply-To: <20130502185623.GG14496@n2100.arm.linux.org.uk>
+References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130502185322.GA29333@obsidianresearch.com>
+In-Reply-To: <20130502185322.GA29333@obsidianresearch.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/13 20:56, Russell King - ARM Linux wrote:
-> On Thu, May 02, 2013 at 08:54:20PM +0200, Sebastian Hesselbarth wrote:
->> On 05/02/13 20:45, Russell King - ARM Linux wrote:
->>> On Thu, May 02, 2013 at 08:33:48PM +0200, Sebastian Hesselbarth wrote:
->>>> On 05/02/2013 08:25 PM, Sebastian Hesselbarth wrote:
->>>>> This patch adds an irqchip driver for the main interrupt controller found
->>>>> on Marvell Orion SoCs (Kirkwood, Dove, Orion5x, Discovery Innovation).
->>>>> Corresponding device tree documentation is also added.
->>>>>
->>>>> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->>>>> ---
->>>>> Note: This patch triggers a checkpatch warning for
->>>>>      WARNING: Avoid CamelCase:<handle_IRQ>
->>>>>
->>>> [...]
->>>>> diff --git a/include/linux/irqchip/orion.h b/include/linux/irqchip/orion.h
->>>>> new file mode 100644
->>>>> index 0000000..04f7bab
->>>>> --- /dev/null
->>>>> +++ b/include/linux/irqchip/orion.h
->>>>> @@ -0,0 +1,18 @@
->>>>> +/*
->>>>> + * Marvell Orion SoCs IRQ chip driver header.
->>>>> + *
->>>>> + * Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->>>>> + *
->>>>> + * This file is licensed under the terms of the GNU General Public
->>>>> + * License version 2.  This program is licensed "as is" without any
->>>>> + * warranty of any kind, whether express or implied.
->>>>> + */
->>>>> +
->>>>> +#ifndef __LINUX_IRQCHIP_ORION_H
->>>>> +#define __LINUX_IRQCHIP_ORION_H
->>>>> +
->>>>> +#include<asm/exception.h>
->>>>
->>>> First review by myself. The above include is a left-over and
->>>> will be removed in a v2.
->>>
->>> You still need your first level IRQ handlers marked with __exception_irq_entry
->>> which is defined in the above file.
->>>
->>
->> Russell,
->>
->> I know and it is marked with __exception_irq_entry. The above is in
->> include/linux/irqchip/orion.h and only used for .init_irq in machine
->> descriptor later.
->>
->> The irq handler is never exposed to the board file itself, but set
->> within orion_init_irq. This approach has been taked by
->> irqchip/irq-gic.c and irqchip/irq-vic.c rather than adding
->> .handle_irq to the machine descriptor.
+On 05/02/13 20:53, Jason Gunthorpe wrote:
+> On Thu, May 02, 2013 at 08:25:04PM +0200, Sebastian Hesselbarth wrote:
+>> +
+>> +static void __iomem *orion_irq_base[ORION_MAX_IRQREG];
+>> +static unsigned int orion_irq_regs;
+>> +static struct irq_domain *orion_irq_domain;
+>> +
+>> +asmlinkage void __exception_irq_entry orion_handle_irq(struct
+>> pt_regs *regs)
 >
-> But I don't find an asm/exception.h include in drivers/irqchip/whateveryour.cfileiscalled
+> This can be static?
+
+True, corresponds with the left-over #include in linux/irqchip/orion.h.
+
+>> +static int __init orion_of_init(struct device_node *np,
+>> +				struct device_node *parent)
+>> +{
+>> +	int n;
+>> +
+>> +	for (n = 0; n < ORION_MAX_IRQREG; n++) {
+>> +		orion_irq_base[n] = of_iomap(np, n);
 >
+> Is it possible to also reserve the resources for these registers at
+> this point in the boot sequence?
 
-Well, that might be because you can magically _see_ compiler warnings
-while I have to actually run the compiler ;)
+I see what I can do.
 
-With the review from Jason Gunthorpe things will move anyway and I
-expect include/irqchip/orion.h to vanish in v2.
+>> +static struct of_device_id orion_irq_dt_ids[] __initconst = {
+>> +	{ .compatible = "marvell,orion-mpic", .data = orion_of_init },
+>> +	{ }
+>
+> Is there a strong reason to change the compatible string? Looks to me
+> like either the new driver or the old driver will bind depending on
+> what is in the machine description. No need for a new string?
 
-Sebastian
+The reason for a new compatible string is, that we will also need an
+secondary irq controller for bridge irqs. That could be called
+marvell,orion-spic. Dove is again a little bit different than the
+others and this will require timer and especially rtc not to share
+bridge irqs here. RTC irq is located in PMU regs on Dove instead of
+bridge regs.
+
+But I don't have a strong opinion here and we can also reuse
+marvell,orion-intc for the irqchip driver.
+
+>> +};
+>> +
+>> +void __init orion_init_irq(void)
+>> +{
+>> +	of_irq_init(orion_irq_dt_ids);
+>> +}
+>
+> Shouldn't this use the new IRQCHIP_DECLARE mechanism?
+
+I didn't follow irqchip discussion lately, but will catch up.
+
+>
+>> diff --git a/include/linux/irqchip/orion.h b/include/linux/irqchip/orion.h
+>
+>> +extern void orion_init_irq(void);
+>
+> .. which lets this go away, use the generic irqchip_init instead of
+> orion_init_irq.
+
+Same as above.
+
+Thanks for the review,
+   Sebastian
 
