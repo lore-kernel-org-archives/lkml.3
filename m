@@ -1,179 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758017Ab3EBLvo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 07:51:44 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:61513 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab3EBLvm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 07:51:42 -0400
-X-Nat-Received: from [202.181.97.72]:60798 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1367495487.22364
-To: cl@linux.com
-Cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [linux-next-20130422] Bug in SLAB?
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201304300645.FCE37285.tVHJLSOMQFOFFO@I-love.SAKURA.ne.jp>
-	<0000013e5b56d067-7982dfa6-08a2-4c48-ad77-6888b5114c5f-000000@email.amazonses.com>
-	<201305010101.CGB86424.JFQOtSFOVOLFHM@I-love.SAKURA.ne.jp>
-	<0000013e5bfc7c4d-54fa9464-dccd-4157-b4a5-22594261eaf3-000000@email.amazonses.com>
-	<201305012114.AED78178.tFSHFQOOJLMOFV@I-love.SAKURA.ne.jp>
-In-Reply-To: <201305012114.AED78178.tFSHFQOOJLMOFV@I-love.SAKURA.ne.jp>
-Message-Id: <201305022051.FGC60601.FtOVJSOHFFLQMO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Thu, 2 May 2013 20:51:22 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 02052013 #9865657, status: clean
+	id S1758258Ab3EBLvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 07:51:52 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:54987 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757925Ab3EBLvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 07:51:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, pavel@ucw.cz,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Subject: Re: [PATCH] x86, x86-64, gdt, hibernate: Store/load GDT for hibernate path.
+Date: Thu, 02 May 2013 14:00:05 +0200
+Message-ID: <2812325.mxKSbzdTGg@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1367459610-9656-2-git-send-email-konrad.wilk@oracle.com>
+References: <1367459610-9656-1-git-send-email-konrad.wilk@oracle.com> <1367459610-9656-2-git-send-email-konrad.wilk@oracle.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tetsuo Handa wrote:
-> > Hmm... Where does this fail? In slab?
-> > 
-> It hangs (with CPU#0 spinning) immediately after printing
+On Wednesday, May 01, 2013 09:53:30 PM Konrad Rzeszutek Wilk wrote:
+> The git commite7a5cd063c7b4c58417f674821d63f5eb6747e37
+> ("x86-64, gdt: Store/load GDT for ACPI S3 or hibernate/resume path
+> is not needed.") assumes that for the hibernate path the booting
+> kernel and the resuming kernel MUST be the same. That is certainly
+> the case for a 32-bit kernel (see check_image_kernel and
+> CONFIG_ARCH_HIBERNATION_HEADER config option).
 > 
->   Decompressing Linux... Parsing ELF... done.
->   Booting the kernel.
+> However for 64-bit kernels it is OK to have a different kernel
+> version (and size of the image) of the booting and resuming kernels.
+> Hence the above mentioned git commit introduces an regression.
 > 
-> lines. Today I heard that gdb can be used if I use qemu, but I doubt that I can
-> manage time to understand and find the exact location within a few days.
+> This patch fixes it by introducing a 'struct desc_ptr gdt_desc'
+> back in the 'struct saved_context'. However instead of having in the
+> 'save_processor_state' and 'restore_processor_state' the
+> store/load_gdt calls, we are only saving the GDT in the
+> save_processor_state.
 > 
-> The culprit location is possibly in SLAB because the kernel boots if built with
-> CONFIG_DEBUG_SLAB=n || CONFIG_DEBUG_SPINLOCK=n || CONFIG_DEBUG_PAGEALLOC=n.
+> For the restore path the lgdt operation is done in
+> hibernate_asm_[32|64].S in the 'restore_registers' path.
 > 
-It turned out that cachep->slabp_cache == NULL is the cause of boot failure.
-cachep->slabp_cache == NULL is caused by kmalloc_caches[5] == NULL. Any clue?
+> The apt reader of this description will recognize that only 64-bit
+> kernels need this treatment, not 32-bit. This patch adds the logic
+> in the 32-bit path to be more similar to 64-bit so that in the future
+> the unification process can take advantage of this.
+> 
+> Suggested-by: "H. Peter Anvin" <hpa@zytor.com>
+> CC: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-int __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
-{
-        (...snipped...)
-        if (flags & CFLGS_OFF_SLAB) {
-                cachep->slabp_cache = kmalloc_slab(slab_size, 0u);
-                /*
-                 * This is a possibility for one of the malloc_sizes caches.
-                 * But since we go off slab only for object size greater than
-                 * PAGE_SIZE/8, and malloc_sizes gets created in ascending order,
-                 * this should not happen at all.
-                 * But leave a BUG_ON for some lucky dude.
-                 */
-                BUG_ON(ZERO_OR_NULL_PTR(cachep->slabp_cache));
-        }
-        (...snipped...)
-}
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-(gdb) b __find_general_cachep
-Breakpoint 1 at 0xc10b6030: file mm/slab.c, line 679.
-(gdb) c
-Continuing.
-
-Breakpoint 1, __find_general_cachep (size=32, gfpflags=0) at mm/slab.c:679
-679             BUG_ON(kmalloc_caches[INDEX_AC] == NULL);
-(gdb) s
-671     {
-(gdb)
-679             BUG_ON(kmalloc_caches[INDEX_AC] == NULL);
-(gdb)
-681             if (!size)
-(gdb)
-684             i = kmalloc_index(size);
-(gdb)
-kmalloc_index (size=32, gfpflags=0) at include/linux/slab.h:208
-208             if (size <= KMALLOC_MIN_SIZE)
-(gdb)
-__find_general_cachep (size=32, gfpflags=0) at mm/slab.c:692
-692             if (unlikely(gfpflags & GFP_DMA))
-(gdb)
-695             return kmalloc_caches[i];
-(gdb) print i
-$1 = 5
-(gdb) print kmalloc_caches[i]
-$2 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[0]
-$3 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[1]
-$4 = (struct kmem_cache *) 0xf6800120
-(gdb) print kmalloc_caches[2]
-$5 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[3]
-$6 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[4]
-$7 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[5]
-$8 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[6]
-$9 = (struct kmem_cache *) 0xf6800080
-(gdb) print kmalloc_caches[7]
-$10 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[8]
-$11 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[9]
-$12 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[10]
-$13 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[11]
-$14 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[12]
-$15 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[13]
-$16 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[14]
-$17 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[15]
-$18 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[16]
-$19 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[17]
-$20 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[18]
-$21 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[19]
-$22 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[20]
-$23 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[21]
-$24 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[22]
-$25 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[23]
-$26 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[24]
-$27 = (struct kmem_cache *) 0x0
-(gdb) print kmalloc_caches[25]
-$28 = (struct kmem_cache *) 0xf68001c0
-(gdb) print kmalloc_caches[26]
-$29 = (struct kmem_cache *) 0x0
-(gdb) s
-696     }
-(gdb)
-__kmem_cache_create (cachep=0xf6800260, flags=2147493888) at mm/slab.c:2493
-2493                    BUG_ON(ZERO_OR_NULL_PTR(cachep->slabp_cache));
-(gdb)
-2485                    cachep->slabp_cache = kmem_find_general_cachep(slab_size, 0u);
-(gdb)
-2493                    BUG_ON(ZERO_OR_NULL_PTR(cachep->slabp_cache));
-(gdb)
-^C
-Program received signal SIGINT, Interrupt.
-0xc1409afc in panic (fmt=0xc1511274 "Attempted to kill the idle task!") at kernel/panic.c:182
-182                     mdelay(PANIC_TIMER_STEP);
-(gdb) bt
-#0  0xc1409afc in panic (fmt=0xc1511274 "Attempted to kill the idle task!") at kernel/panic.c:182
-#1  0xc1034a5f in do_exit (code=11) at kernel/exit.c:718
-#2  0xc1005887 in oops_end (flags=70, regs=0xc158def0, signr=11) at arch/x86/kernel/dumpstack.c:249
-#3  0xc10059af in die (str=0xc1502c45 "invalid opcode", regs=0xc158def0, err=0) at arch/x86/kernel/dumpstack.c:310
-#4  0xc1002e25 in do_trap_no_signal (trapnr=6, signr=4, str=0xc1502c45 "invalid opcode", regs=0xc158def0, error_code=0, info=0xc158de60)
-    at arch/x86/kernel/traps.c:130
-#5  do_trap (trapnr=6, signr=4, str=0xc1502c45 "invalid opcode", regs=0xc158def0, error_code=0, info=0xc158de60) at arch/x86/kernel/traps.c:145
-#6  0xc10032a6 in do_invalid_op (regs=0xc158def0, error_code=0) at arch/x86/kernel/traps.c:213
-#7  0xc140c742 in ?? () at arch/x86/kernel/entry_32.S:1318
-#8  0xc10b91d5 in __kmem_cache_create (cachep=0xf6800260, flags=2147493888) at mm/slab.c:2493
-#9  0xc15dfcde in create_boot_cache (s=0xf6800260, name=0xc15148be "kmalloc", size=192, flags=8192) at mm/slab_common.c:299
-#10 0xc15dfd4b in create_kmalloc_cache (name=0xc15148be "kmalloc", size=192, flags=8192) at mm/slab_common.c:316
-#11 0xc15e0aa2 in kmem_cache_init () at mm/slab.c:1652
-#12 0xc15c972a in mm_init () at init/main.c:462
-#13 start_kernel () at init/main.c:527
-#14 0xc15c929f in i386_start_kernel () at arch/x86/kernel/head32.c:66
-#15 0x00000000 in ?? ()
+> ---
+>  arch/x86/include/asm/suspend_32.h |  1 +
+>  arch/x86/include/asm/suspend_64.h |  2 ++
+>  arch/x86/kernel/asm-offsets_32.c  |  3 +++
+>  arch/x86/kernel/asm-offsets_64.c  |  1 +
+>  arch/x86/power/cpu.c              | 15 ++++++++++-----
+>  arch/x86/power/hibernate_asm_32.S |  4 ++++
+>  arch/x86/power/hibernate_asm_64.S |  3 +++
+>  7 files changed, 24 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/suspend_32.h b/arch/x86/include/asm/suspend_32.h
+> index f6064b7..552d6c9 100644
+> --- a/arch/x86/include/asm/suspend_32.h
+> +++ b/arch/x86/include/asm/suspend_32.h
+> @@ -15,6 +15,7 @@ struct saved_context {
+>  	unsigned long cr0, cr2, cr3, cr4;
+>  	u64 misc_enable;
+>  	bool misc_enable_saved;
+> +	struct desc_ptr gdt_desc;
+>  	struct desc_ptr idt;
+>  	u16 ldt;
+>  	u16 tss;
+> diff --git a/arch/x86/include/asm/suspend_64.h b/arch/x86/include/asm/suspend_64.h
+> index 97b84e0..bc62328 100644
+> --- a/arch/x86/include/asm/suspend_64.h
+> +++ b/arch/x86/include/asm/suspend_64.h
+> @@ -25,6 +25,8 @@ struct saved_context {
+>  	u64 misc_enable;
+>  	bool misc_enable_saved;
+>  	unsigned long efer;
+> +	u16 gdt_pad; /* Unused */
+> +	struct desc_ptr gdt_desc;
+>  	u16 idt_pad;
+>  	u16 idt_limit;
+>  	unsigned long idt_base;
+> diff --git a/arch/x86/kernel/asm-offsets_32.c b/arch/x86/kernel/asm-offsets_32.c
+> index 85d98ab..0ef4bba 100644
+> --- a/arch/x86/kernel/asm-offsets_32.c
+> +++ b/arch/x86/kernel/asm-offsets_32.c
+> @@ -60,6 +60,9 @@ void foo(void)
+>  	OFFSET(IA32_RT_SIGFRAME_sigcontext, rt_sigframe, uc.uc_mcontext);
+>  	BLANK();
+>  
+> +	OFFSET(saved_context_gdt_desc, saved_context, gdt_desc);
+> +	BLANK();
+> +
+>  	/* Offset from the sysenter stack to tss.sp0 */
+>  	DEFINE(TSS_sysenter_sp0, offsetof(struct tss_struct, x86_tss.sp0) -
+>  		 sizeof(struct tss_struct));
+> diff --git a/arch/x86/kernel/asm-offsets_64.c b/arch/x86/kernel/asm-offsets_64.c
+> index 1b4754f..e7c798b 100644
+> --- a/arch/x86/kernel/asm-offsets_64.c
+> +++ b/arch/x86/kernel/asm-offsets_64.c
+> @@ -73,6 +73,7 @@ int main(void)
+>  	ENTRY(cr3);
+>  	ENTRY(cr4);
+>  	ENTRY(cr8);
+> +	ENTRY(gdt_desc);
+>  	BLANK();
+>  #undef ENTRY
+>  
+> diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+> index 6d6e907..1cf5b30 100644
+> --- a/arch/x86/power/cpu.c
+> +++ b/arch/x86/power/cpu.c
+> @@ -25,16 +25,12 @@
+>  #include <asm/cpu.h>
+>  
+>  #ifdef CONFIG_X86_32
+> -static struct saved_context saved_context;
+> -
+>  unsigned long saved_context_ebx;
+>  unsigned long saved_context_esp, saved_context_ebp;
+>  unsigned long saved_context_esi, saved_context_edi;
+>  unsigned long saved_context_eflags;
+> -#else
+> -/* CONFIG_X86_64 */
+> -struct saved_context saved_context;
+>  #endif
+> +struct saved_context saved_context;
+>  
+>  /**
+>   *	__save_processor_state - save CPU registers before creating a
+> @@ -67,6 +63,15 @@ static void __save_processor_state(struct saved_context *ctxt)
+>  /* CONFIG_X86_64 */
+>  	store_idt((struct desc_ptr *)&ctxt->idt_limit);
+>  #endif
+> +	/*
+> +	 * We save it here, but restore it only in the hibernate case.
+> +	 * For ACPI S3 resume, this is loaded via 'early_gdt_desc' in 64-bit
+> +	 * mode in "secondary_startup_64". In 32-bit mode it is done via
+> +	 * 'pmode_gdt' in wakeup_start.
+> +	 */
+> +	ctxt->gdt_desc.size = GDT_SIZE - 1;
+> +	ctxt->gdt_desc.address = (unsigned long)get_cpu_gdt_table(smp_processor_id());
+> +
+>  	store_tr(ctxt->tr);
+>  
+>  	/* XMM0..XMM15 should be handled by kernel_fpu_begin(). */
+> diff --git a/arch/x86/power/hibernate_asm_32.S b/arch/x86/power/hibernate_asm_32.S
+> index ad47dae..1d0fa0e 100644
+> --- a/arch/x86/power/hibernate_asm_32.S
+> +++ b/arch/x86/power/hibernate_asm_32.S
+> @@ -75,6 +75,10 @@ done:
+>  	pushl saved_context_eflags
+>  	popfl
+>  
+> +	/* Saved in save_processor_state. */
+> +	movl $saved_context, %eax
+> +	lgdt saved_context_gdt_desc(%eax)
+> +
+>  	xorl	%eax, %eax
+>  
+>  	ret
+> diff --git a/arch/x86/power/hibernate_asm_64.S b/arch/x86/power/hibernate_asm_64.S
+> index 9356547..3c4469a 100644
+> --- a/arch/x86/power/hibernate_asm_64.S
+> +++ b/arch/x86/power/hibernate_asm_64.S
+> @@ -139,6 +139,9 @@ ENTRY(restore_registers)
+>  	pushq	pt_regs_flags(%rax)
+>  	popfq
+>  
+> +	/* Saved in save_processor_state. */
+> +	lgdt	saved_context_gdt_desc(%rax)
+> +
+>  	xorq	%rax, %rax
+>  
+>  	/* tell the hibernation core that we've just restored the memory */
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
