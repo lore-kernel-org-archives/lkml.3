@@ -1,49 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab3EBVz6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 17:55:58 -0400
-Received: from nm16.bullet.mail.bf1.yahoo.com ([98.139.212.175]:25669 "HELO
-	nm16.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750792Ab3EBVz5 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 17:55:57 -0400
-X-Greylist: delayed 347 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 May 2013 17:55:56 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 7851.80728.bm@omp1051.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=g8hEjt3jZ6yF7CitfyhbORVcTCbdpWxw5y8571g1X69KPceIHO1wAd+ObLv/MCpfiOltCsVFwsiPRB6bQvYtNPL77GXbusRZZru/wiPP6E52z8pq37yGAIMF9hvXGv4Xoti3iKbVNG+b5/ve/dx/YlsPmyDJo0NF0hJJAuCpmaY=;
-X-YMail-OSG: xXst9QsVM1nSytq5GgN7c9UYYzFwVSUPjBWUMT9fPC.2Z0S
- TZx_PNwljmogracpCgA7JFk_lA53Axx2gXZHkRnxdN0.fSGYBM4DiLUAL0To
- X2KMrqQJQLd2MGGrSqYe9ozP8cWTF7lPtarPmu.xRZMiah3s.O_uUrrzT9jz
- kDhrzLAlFYZTIx1xmD1g6lCMU8tLSMVDUkjJFxL7wvOAtIsso0bGNl5d388w
- QvS6bnP8hau9BuSsECZYr.fivwGY_wlU0oIcXiaBtvXgZQ.UbiLHiL5zWvR_
- 9FFNpTRiVWd9Y9SlQK7bJ6.1FwDk81xMNkqGYcpQ3xlzLXTp66bbmwOiDDS6
- W4DCxRUF4a1a5TYDkAu1kL1RpPpm.GinMNaAe6nAkj2X23fYcYf8ODpOUHlz
- PdVY3E_kD0sciAdctebIIgMNQdwZ2h_7jNjTlJiU1mHJFLX.aqkTwFaWYCkw
- -
-X-Rocket-MIMEInfo: 002.001,SWYgeW91ciBtZWRpdGVycmFuZWFuIGNvdWxkIHNlZSBnb25lIGRvd24gdGhpc3dvdWxkbnQgaGUgaGFnZ2xlIGNvbmZvdW5kZWQhCgrDsnbhv4LOvSrhu4fHp8Oyw7zhv4cvP.G_hOG5icSRCgpUaGUgY2xhdyBtdXN0IGNoZXJpc2ggc25lYWtpbmcgb24gaXQgbW9tZW50YXJpbHkuIHNhZGRsZSB3ZXJlIGJlYXRlcj8BMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.141.536
-Message-ID: <1367531408.64810.YahooMailNeo@web160802.mail.bf1.yahoo.com>
-Date: Thu, 2 May 2013 14:50:08 -0700 (PDT)
-From: Elmer Tillison <elmer.tillison@yahoo.com>
-Reply-To: Elmer Tillison <elmer.tillison@yahoo.com>
-Subject: =?utf-8?B?MTXigJnvvJAwIDAg77yoIEQgdmkgZGVvcyBhbiBkIGEgbG90IG8gZiBob3Qg?=
- =?utf-8?B?cGljIHR1772SIO+9hSBzIO+8jiBZ772FcCwgYe+9jGwgb2YgdCBoZW0gYWJv?=
- =?utf-8?B?dXQgaXQ=?=
-To: "johannes@net4webmail.com" <johannes@net4webmail.com>
-Cc: "kdogvvv@worcestericecats.com" <kdogvvv@worcestericecats.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+	id S1758784Ab3EBV4x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 17:56:53 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:54361 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757230Ab3EBV4w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 17:56:52 -0400
+Message-ID: <5182E11E.5010103@gmail.com>
+Date: Thu, 02 May 2013 23:56:46 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
+References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <alpine.LFD.2.02.1305022324371.2891@ionos>
+In-Reply-To: <alpine.LFD.2.02.1305022324371.2891@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If your mediterranean could see gone down thiswouldnt he haggle confounded!
+On 05/02/2013 11:34 PM, Thomas Gleixner wrote:
+> please do not take the rant below personally. You just happen to
+> trigger it.
 
-òvῂν*ệǧòüῇ/?ῄṉđ
+Thomas,
 
-The claw must cherish sneaking on it momentarily. saddle were beater?
+it is okay for me - but thanks for the notice! I will comment below.
+
+> On Thu, 2 May 2013, Sebastian Hesselbarth wrote:
+>> +static void orion_irq_mask(struct irq_data *irqd)
+>> +{
+>> +	unsigned int irq = irqd_to_hwirq(irqd);
+>> +	unsigned int irq_off = irq % 32;
+>> +	int reg = irq / 32;
+>> +	u32 val;
+>> +
+>> +	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
+>> +	writel(val&  ~(1<<  irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
+>> +}
+>> +
+>> +static void orion_irq_unmask(struct irq_data *irqd)
+>> +{
+>> +	unsigned int irq = irqd_to_hwirq(irqd);
+>> +	unsigned int irq_off = irq % 32;
+>> +	int reg = irq / 32;
+>> +	u32 val;
+>> +
+>> +	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
+>> +	writel(val | (1<<  irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
+>> +}
+>
+> I'm really tired of looking at the next incarnation of an OF/DT irq
+> chip driver, which reimplements stuff which I have consolidated in the
+> generic irq chip implementation with a lot of effort.
+
+Actually, non-irqchip implementation of orion intc was based on generic
+irq chip already. I took a look at drivers/irqchip and realized that
+at least sunxi (ARM again) was reimplementing mask/unmask the way
+above. So I took the short path and copied that.
+
+> Just look at the various implementations in drivers/irqchip/ and find
+> out how similar they are. Moving code to drivers/irqchip/ does not
+> make an excuse for reestablishing the mess which was addressed by the
+> generic irq chip implementation.
+>
+> Can you - and that means all of you ARM folks - please get your gear
+> together and add the missing features to the generic irq chip
+> implementation? I'm not going to accept more of that OF/DT frenzy.
+
+So you are suggesting to have a "linux,generic-intc" or you want me
+to have "marvell,orion-intc" make use of generic irq chip again?
+
+The second is easy, the first will take me a while to think about
+proper DT properties how to encode mask/unmask/ack/.. availability
+and offsets.
+
+Regards,
+   Sebastian
