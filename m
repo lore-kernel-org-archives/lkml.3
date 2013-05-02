@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab3EBHGo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 03:06:44 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:60910 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409Ab3EBHGi (ORCPT
+	id S1752507Ab3EBHIc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 03:08:32 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36451 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab3EBHI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 03:06:38 -0400
-Date: Thu, 2 May 2013 09:06:33 +0200
+	Thu, 2 May 2013 03:08:28 -0400
+Date: Thu, 2 May 2013 09:08:24 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
+To: David Rientjes <rientjes@google.com>
+Cc: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
         linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
         levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
         Borislav Petkov <bp@suse.de>, fengguang.wu@intel.com,
         linux-tip-commits@vger.kernel.org
 Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for
  building working KVM guest kernels
-Message-ID: <20130502070633.GA26361@gmail.com>
-References: <20130501203500.GC4466@pd.tnic>
+Message-ID: <20130502070824.GB26361@gmail.com>
+References: <20130426095140.GA15361@pd.tnic>
+ <tip-83aee67833071c7b73a83f7803388f7a9e481908@git.kernel.org>
+ <alpine.DEB.2.02.1305011248220.8448@chino.kir.corp.google.com>
+ <20130501203500.GC4466@pd.tnic>
  <alpine.DEB.2.02.1305011358500.19189@chino.kir.corp.google.com>
  <20130501211011.GD4466@pd.tnic>
  <alpine.DEB.2.02.1305011419020.20298@chino.kir.corp.google.com>
- <20130501215604.GA15623@pd.tnic>
- <alpine.DEB.2.02.1305011503200.3267@chino.kir.corp.google.com>
- <20130501222850.GB15623@pd.tnic>
- <alpine.DEB.2.02.1305011531320.8804@chino.kir.corp.google.com>
- <20130501230254.GC15623@pd.tnic>
- <51819F6C.1030201@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51819F6C.1030201@zytor.com>
+In-Reply-To: <alpine.DEB.2.02.1305011419020.20298@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+* David Rientjes <rientjes@google.com> wrote:
 
-> On 05/01/2013 04:02 PM, Borislav Petkov wrote:
-> > On Wed, May 01, 2013 at 03:37:28PM -0700, David Rientjes wrote:
-> >> It means your patch is incomplete.
-> > 
-> > I'll gladly test and ack a patch which makes it complete.
-> > 
-> > Simple exercises in rhetoric about what does and what doesn't make 
-> > sense means a rat's ass to me. You need to show me a *real* use case 
-> > which you *actually* hit and this patch breaks it.
+> On Wed, 1 May 2013, Borislav Petkov wrote:
 > 
-> The fundamental problem is that "select" is broken and doesn't track 
-> dependencies of things selected.
+> > > warning: (KVM_GUEST_COMMON_OPTIONS) selects VIRTIO_NET which has unmet direct dependencies (NETDEVICES && NET_CORE && VIRTIO)
+> > > 
+> > > and
+> > > 
+> > > warning: (KVM_GUEST_COMMON_OPTIONS && AMD_IOMMU) selects PCI_MSI which has unmet direct dependencies (PCI && ARCH_SUPPORTS_MSI)
+> > 
+> > How do you trigger those? I don't see them here with this applied.
+> > 
+> 
+> It's an allnoconfig with HYPERVISOR_GUEST, PARAVIRT, KVM_GUEST, and 
+> KVM_GUEST_COMMON_OPTIONS enabled.
 
-The way I've been solving it in a similar usecase was to select the 
-required options - plus its dependencies, manually.
-
-That should be possible here as well, driven by any weird randconfig build 
-failures that get found. Such a set of selects quickly converges.
+Please send a specific .config instead, with which you see warnings or 
+build failures.
 
 Thanks,
 
