@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab3EBHGx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 03:06:53 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:39612 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977Ab3EBHGr (ORCPT
+	id S1754098Ab3EBHGo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 03:06:44 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:60910 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753409Ab3EBHGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 03:06:47 -0400
+	Thu, 2 May 2013 03:06:38 -0400
+Date: Thu, 2 May 2013 09:06:33 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
+        Borislav Petkov <bp@suse.de>, fengguang.wu@intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for
+ building working KVM guest kernels
+Message-ID: <20130502070633.GA26361@gmail.com>
+References: <20130501203500.GC4466@pd.tnic>
+ <alpine.DEB.2.02.1305011358500.19189@chino.kir.corp.google.com>
+ <20130501211011.GD4466@pd.tnic>
+ <alpine.DEB.2.02.1305011419020.20298@chino.kir.corp.google.com>
+ <20130501215604.GA15623@pd.tnic>
+ <alpine.DEB.2.02.1305011503200.3267@chino.kir.corp.google.com>
+ <20130501222850.GB15623@pd.tnic>
+ <alpine.DEB.2.02.1305011531320.8804@chino.kir.corp.google.com>
+ <20130501230254.GC15623@pd.tnic>
+ <51819F6C.1030201@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <6D83E89737156549AEA25EF9ED712C5DE3D0@DEFTHW99EK1MSX.ww902.siemens.net>
-References: <6D83E89737156549AEA25EF9ED712C5DDEF7@DEFTHW99EK1MSX.ww902.siemens.net>
-	<m2a9ohusmp.fsf@firstfloor.org>
-	<6D83E89737156549AEA25EF9ED712C5DE0A9@DEFTHW99EK1MSX.ww902.siemens.net>
-	<20863.43739.999287.287981@pilspetsen.it.uu.se>
-	<6D83E89737156549AEA25EF9ED712C5DE208@DEFTHW99EK1MSX.ww902.siemens.net>
-	<20863.55352.431848.272078@pilspetsen.it.uu.se>
-	<6D83E89737156549AEA25EF9ED712C5DE3D0@DEFTHW99EK1MSX.ww902.siemens.net>
-Date: Thu, 2 May 2013 09:06:46 +0200
-Message-ID: <CAFLxGvyERB-00J9ZYUzphVd=C5wzBLnYWcP7U58sEmHLH5_-Jg@mail.gmail.com>
-Subject: Re: X86 fpu registers in a signal handler's ucontext
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: "Warlich, Christof" <christof.warlich@siemens.com>
-Cc: Mikael Pettersson <mikpe@it.uu.se>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51819F6C.1030201@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 2, 2013 at 7:42 AM, Warlich, Christof
-<christof.warlich@siemens.com> wrote:
-> Mikael Pettersson <mikpe@it.uu.se> writes:
->> You're looking at the wrong header: glibc-2.17/sysdeps/i386/sys/ucontext.h is legacy SVR4.
->> Instead look at glibc-2.17/sysdeps/unix/sysv/linux/x86/sys/ucontext.h.
->>
->> (If the old one got installed on your system then something there is seriously wrong.)
->
-> Oh-oh: It looks like my system was simply too old: Initially, I was looking at Ubuntu 11.10
-> with an eglibc-2.13, and a double-check with a newly downloaded glibc-2.17 lead me to the
-> wrong file.
 
-Are you telling us that Ubuntu shipped the wrong header file?
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
---
+> On 05/01/2013 04:02 PM, Borislav Petkov wrote:
+> > On Wed, May 01, 2013 at 03:37:28PM -0700, David Rientjes wrote:
+> >> It means your patch is incomplete.
+> > 
+> > I'll gladly test and ack a patch which makes it complete.
+> > 
+> > Simple exercises in rhetoric about what does and what doesn't make 
+> > sense means a rat's ass to me. You need to show me a *real* use case 
+> > which you *actually* hit and this patch breaks it.
+> 
+> The fundamental problem is that "select" is broken and doesn't track 
+> dependencies of things selected.
+
+The way I've been solving it in a similar usecase was to select the 
+required options - plus its dependencies, manually.
+
+That should be possible here as well, driven by any weird randconfig build 
+failures that get found. Such a set of selects quickly converges.
+
 Thanks,
-//richard
+
+	Ingo
