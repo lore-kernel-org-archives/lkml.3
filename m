@@ -1,115 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761381Ab3EBXmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 19:42:25 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:46945 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab3EBXmY (ORCPT
+	id S1761496Ab3EBXs7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 19:48:59 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:48306 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab3EBXs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 19:42:24 -0400
-Message-ID: <1367537373.16154.185.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/3 RFC] Driver core: Add offline/online device
- operations
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Date: Thu, 02 May 2013 17:29:33 -0600
-In-Reply-To: <1431630.dgj2h0U6M6@vostro.rjw.lan>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
-	 <1989524.p5J87p9Tnl@vostro.rjw.lan>
-	 <1367365118.16154.137.camel@misato.fc.hp.com>
-	 <1431630.dgj2h0U6M6@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 2 May 2013 19:48:57 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/5] ARM: orion: add orion irqchip driver
+Date: Fri,  3 May 2013 01:48:34 +0200
+Message-Id: <1367538519-23940-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-02 at 02:58 +0200, Rafael J. Wysocki wrote:
-> On Tuesday, April 30, 2013 05:38:38 PM Toshi Kani wrote:
-> > On Mon, 2013-04-29 at 14:26 +0200, Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
- :
-> > > + */
-> > > +int device_offline(struct device *dev)
-> > > +{
-> > > +	int ret;
-> > > +
-> > > +	if (dev->offline_disabled)
-> > > +		return -EPERM;
-> > > +
-> > > +	ret = device_for_each_child(dev, NULL, device_check_offline);
-> > > +	if (ret)
-> > > +		return ret;
-> > > +
-> > > +	device_lock(dev);
-> > > +	if (device_supports_offline(dev)) {
-> > > +		if (dev->offline) {
-> > > +			ret = 1;
-> > > +		} else {
-> > > +			ret = dev->bus->offline(dev);
-> > > +			if (!ret) {
-> > > +				kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
-> > > +				dev->offline = true;
-> > 
-> > Shouldn't this offline flag be set before sending KOBJ_OFFLINE?
-> > 
-> > > +			}
-> > > +		}
-> > > +	}
-> > > +	device_unlock(dev);
-> > > +
-> > > +	return ret;
-> > > +}
-> > > +
-> > > +/**
-> > > + * device_online - Put the device back online after successful device_offline().
-> > > + * @dev: Device to be put back online.
-> > > + *
-> > > + * If device_offline() has been successfully executed for @dev, but the device
-> > > + * has not been removed subsequently, execute its bus type's .online() callback
-> > > + * to indicate that the device can be used again.
-> > 
-> > There is another use-case for online().  When a device like CPU is
-> > hot-added, it is added in offline.  I am not sure why, but it has been
-> > this way.  So, we need to call online() to make a new device available
-> > for use after a hot-add.
-> 
-> Actually, in the CPU case that is left to user space as far as I can say.
-> That is, the device appears initially offline and user space is supposed to
-> bring it online via sysfs.
-> 
-> > > + *
-> > > + * Call under device_offline_lock.
-> > > + */
-> > > +int device_online(struct device *dev)
-> > > +{
-> > > +	int ret = 0;
-> > > +
-> > > +	device_lock(dev);
-> > > +	if (device_supports_offline(dev)) {
-> > > +		if (dev->offline) {
-> > > +			ret = dev->bus->online(dev);
-> > > +			if (!ret) {
-> > > +				kobject_uevent(&dev->kobj, KOBJ_ONLINE);
-> > > +				dev->offline = false;
-> > 
-> > Same comment as KOBJ_OFFLINE.
-> 
-> I wonder why the ordering may be important?
+This patch set adds an irqchip driver for the main interrupt controller
+found on Marvell Orion SoCs (Kirkwood, Dove, Orion5x, Discovery Innovation)
+and the corresponding device tree documentation.
 
-I do not think it causes any race condition (so this isn't a big deal),
-but it seems to make more sense to emit an ONLINE/OFFLINE event after
-its object is marked online/offline.
+It also moves Dove as the first Orion SoC to this irqchip driver. 
+As legacy non-DT drivers don't know about virtual irqs provided by irqchip
+drivers, init code for timer and mv643xx_eth is added until true DT enabled
+drivers are available. Finally, DT enabled boards for Dove are moved to the
+orion irqchip driver.
 
-Thanks,
--Toshi
+*Note:*
+This patch set is _not_ feature complete. There has been a request for
+irqdomain support for generic irq and perhaps even a DT enabled generic
+irq chip driver.
 
+The patch set still can be used to port other Orion SoCs as I did with Dove.
+It also merges irqchip driver patches with Dove patches to use this driver.
 
+Sebastian Hesselbarth (5):
+  irqchip: add support for Marvell Orion SoCs
+  ARM: dove: add DT parsing for legacy mv643xx_eth
+  ARM: dove: add DT parsing for legacy timer
+  ARM: dove: move DT boards to orion irqchip driver
+  ARM: dove: add DT nodes for irqchip conversion
 
+ .../interrupt-controller/marvell,orion-intc.txt    |   22 ++++
+ arch/arm/boot/dts/dove.dtsi                        |   16 ++-
+ arch/arm/mach-dove/Kconfig                         |    1 +
+ arch/arm/mach-dove/Makefile                        |    4 +-
+ arch/arm/mach-dove/board-dt.c                      |   77 ++++++++++--
+ drivers/irqchip/Kconfig                            |    5 +
+ drivers/irqchip/Makefile                           |    1 +
+ drivers/irqchip/irq-orion.c                        |  133 ++++++++++++++++++++
+ 8 files changed, 247 insertions(+), 12 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/marvell,orion-intc.txt
+ create mode 100644 drivers/irqchip/irq-orion.c
+---
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Jean-Francois Moine <moinejf@free.fr>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+-- 
+1.7.10.4
 
