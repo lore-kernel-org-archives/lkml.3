@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759245Ab3EBPQQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 11:16:16 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:55251 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754040Ab3EBPQO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 11:16:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Arto Merilainen <amerilainen@nvidia.com>,
-        Terje Bergstrom <tbergstrom@nvidia.com>
-Subject: [PATCH, RFC 06/22] gpu/drm: host1x: add dependency on Tegra
-Date: Thu,  2 May 2013 17:16:10 +0200
-Message-Id: <1367507786-505303-7-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1367507786-505303-1-git-send-email-arnd@arndb.de>
-References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:hIzQirefdEKlmH0BhMXkfr9lhr+KLjVliI+TwUs/wLH
- eqBYWi+M4kBCNsZVay2hnabyG2yEjhr4ec2kuqyYJnYtu4uhUu
- cq6I3LT9zfhYEQh5pPqjqJ9iOqqaRVHgjYsepewT/eH6VRnAi0
- gkIe/OiguapDLjRBBD364r0Me/zeCqLChjjLCaIikbrMm1+Mgh
- Cbd17udqwdz5m66mrS8viQXKs6zOkfOYWudGr/RK8i1VBs4mtu
- ijcTn3MhV3m4H/1vl+SNJPSvhlX8+bs2HFBMORw+TGKKU7B+4L
- Su4qzemJxs4OwZO/UkKokgnk53BYTL5PF4dYLP5t0z5zyNmrNI
- WSD8wwCZK+qdTEzI5BlkfB5qUlNNvIujKEs0wjbPL
+	id S1759322Ab3EBPXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 11:23:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34382 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757340Ab3EBPXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 11:23:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,597,1363158000"; 
+   d="scan'208";a="330358976"
+Message-ID: <518284E6.7040503@intel.com>
+Date: Thu, 02 May 2013 08:23:18 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "SamuelOrtiz@kroah.com" <SamuelOrtiz@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mei file2alias compile error
+References: <51814943.7000604@intel.com> <20130501182138.GA17550@kroah.com> <5B8DA87D05A7694D9FA63FD143655C1B01F18E66@HASMSX106.ger.corp.intel.com>
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B01F18E66@HASMSX106.ger.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While we try to make drivers platform independent, this driver currently
-calls into an exported interface that is only provided on its own
-platform, so we have to add the dependency.
+On 05/01/2013 11:50 PM, Winkler, Tomas wrote:
+>> On Wed, May 01, 2013 at 09:56:35AM -0700, Dave Hansen wrote:
+>>> Linus's current git isn't compiling for me:
+>>>>   HOSTCC  scripts/mod/file2alias.o
+>>>> /home/davehans/linux.git/scripts/mod/file2alias.c: In function
+>> ‘do_mei_entry’:
+>>>> /home/davehans/linux.git/scripts/mod/file2alias.c:1140:1: error:
+>> ‘OFF_mei_cl_device_id_name’ undeclared (first use in this function)
+>>>> /home/davehans/linux.git/scripts/mod/file2alias.c:1140:1: note: each
+>> undeclared identifier is reported only once for each function it appears in
+>>>> /home/davehans/linux.git/scripts/mod/file2alias.c: At top level:
+>>>> /home/davehans/linux.git/scripts/mod/file2alias.c:1146:1: error:
+>> ‘SIZE_mei_cl_device_id’ undeclared here (not in a function)
+>>>
+>>> I confirmed that this commit: e5354107e is the one causing it for me.
+>>> My .config is here:
+>>>
+>>> 	http://sr71.net/~dave/linux/config-3.9-meibad
+>>>
+>>> Note that I don't even have CONFIG_INTEL_MEI enabled with this config.
+>>
+>> I don't have CONFIG_INTEL_MEI set either, and I can't duplicate this.
+>> Samuel and Tomas, can you please track this down?
+> 
+> I cannot reproduce it as well. I've tried with v3.9 and also with the latest tip.
 
-drivers/built-in.o: In function `tegra_crtc_prepare':
- drivers/gpu/host1x/drm/dc.c:650: undefined reference to `tegra_periph_reset_deassert'
-drivers/built-in.o: In function `tegra_output_hdmi_disable':
- drivers/gpu/host1x/drm/hdmi.c:840: undefined reference to `tegra_periph_reset_assert'
-drivers/built-in.o: In function `tegra_output_hdmi_enable':
- drivers/gpu/host1x/drm/hdmi.c:651: undefined reference to `tegra_periph_reset_assert'
- drivers/gpu/host1x/drm/hdmi.c:653: undefined reference to `tegra_periph_reset_deassert'
+I did some more poking around.  I was building with O= to put the
+binaries in another dir.  When I saw the error, one of the first things
+I did was do a "make mrproper" on the binary directory.  But, I never
+did one one the source directory.  Doing that seems to have made this go
+away.  There must have been some build gunk in the source directory
+causing this.
 
-Cc: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Arto Merilainen <amerilainen@nvidia.com>
-Cc: Terje Bergstrom <tbergstrom@nvidia.com>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/gpu/host1x/drm/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+Tomas, thanks for taking a look.
 
-diff --git a/drivers/gpu/host1x/drm/Kconfig b/drivers/gpu/host1x/drm/Kconfig
-index 69853a4..5a6a5cd 100644
---- a/drivers/gpu/host1x/drm/Kconfig
-+++ b/drivers/gpu/host1x/drm/Kconfig
-@@ -1,6 +1,7 @@
- config DRM_TEGRA
- 	bool "NVIDIA Tegra DRM"
- 	depends on DRM
-+	depends on ARCH_TEGRA
- 	select DRM_KMS_HELPER
- 	select FB_SYS_FILLRECT
- 	select FB_SYS_COPYAREA
--- 
-1.8.1.2
+For posterity:
 
+gcc version 4.6.3 20120306 (Red Hat 4.6.3-2) (GCC)
+Fedora release 16 (Verne)
+v3.9-5295-ga49fe6d
