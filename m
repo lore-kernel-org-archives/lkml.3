@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757892Ab3EBVaw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 17:30:52 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:33863 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab3EBVav (ORCPT
+	id S1760220Ab3EBVbO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 17:31:14 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:34824 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758857Ab3EBVbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 17:30:51 -0400
+	Thu, 2 May 2013 17:31:11 -0400
+Message-ID: <5182DB15.2060006@linaro.org>
+Date: Thu, 02 May 2013 23:31:01 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1367529031-4915-1-git-send-email-laurent.navet@gmail.com>
-References: <1367529031-4915-1-git-send-email-laurent.navet@gmail.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Thu, 2 May 2013 14:30:30 -0700
-Message-ID: <CAHfPSqAn1tki7-NSKmJfqgEcvj1gQg0q99Q1Sed7cTvDuYNkWg@mail.gmail.com>
-Subject: Re: [PATCH] iio: adc: exynos_adc: use devm_ioremap_resource()
-To: Laurent Navet <laurent.navet@gmail.com>
-Cc: jic23@cam.ac.uk, My self <ch.naveen@samsung.com>, lars@metafoo.de,
-        sachin.kamat@linaro.org, dianders@chromium.org,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH, RFC 03/22] cpuidle: calxeda: select ARM_CPU_SUSPEND
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-4-git-send-email-arnd@arndb.de>
+In-Reply-To: <1367507786-505303-4-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 May 2013 14:10, Laurent Navet <laurent.navet@gmail.com> wrote:
-> Replace calls to deprecated devm_request_and_ioremap by devm_ioremap_resource.
->
-> Found with coccicheck and this semantic patch:
->  scripts/coccinelle/api/devm_request_and_ioremap.cocci.
->
-> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
-Hello Laurent,
+On 05/02/2013 05:16 PM, Arnd Bergmann wrote:
+> Like other ARM specific drivers, this one requires ARM_CPU_SUSPEND,
+> as shown by this linker error:
+> 
+> drivers/built-in.o: In function `calxeda_pwrdown_idle':
+> drivers/cpuidle/cpuidle-calxeda.c:84: undefined reference to `cpu_suspend'
+> drivers/cpuidle/cpuidle-calxeda.c:86: undefined reference to `cpu_resume'
+> 
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: linux-pm@vger.kernel.org
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-But, we already have patch from Sachin
-http://patches.linaro.org/15833/
-lined up for merge.
-
-Thanks for the post.
-Naveen
 > ---
->  drivers/iio/adc/exynos_adc.c |   12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-> index 9f3a8ef..22d034a 100644
-> --- a/drivers/iio/adc/exynos_adc.c
-> +++ b/drivers/iio/adc/exynos_adc.c
-> @@ -270,16 +270,16 @@ static int exynos_adc_probe(struct platform_device *pdev)
->         info = iio_priv(indio_dev);
->
->         mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -       info->regs = devm_request_and_ioremap(&pdev->dev, mem);
-> -       if (!info->regs) {
-> -               ret = -ENOMEM;
-> +       info->regs = devm_ioremap_resource(&pdev->dev, mem);
-> +       if (IS_ERR(info->regs)) {
-> +               ret = PTR_ERR(info->regs);
->                 goto err_iio;
->         }
->
->         mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> -       info->enable_reg = devm_request_and_ioremap(&pdev->dev, mem);
-> -       if (!info->enable_reg) {
-> -               ret = -ENOMEM;
-> +       info->enable_reg = devm_ioremap_resource(&pdev->dev, mem);
-> +       if (IS_ERR(info->enable_reg)) {
-> +               ret = PTR_ERR(info->enable_reg);
->                 goto err_iio;
->         }
->
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>  drivers/cpuidle/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/cpuidle/Kconfig b/drivers/cpuidle/Kconfig
+> index c4cc27e..e21cdfa 100644
+> --- a/drivers/cpuidle/Kconfig
+> +++ b/drivers/cpuidle/Kconfig
+> @@ -36,6 +36,7 @@ if CPU_IDLE
+>  config CPU_IDLE_CALXEDA
+>  	bool "CPU Idle Driver for Calxeda processors"
+>  	depends on ARCH_HIGHBANK
+> +	select ARM_CPU_SUSPEND
+>  	help
+>  	  Select this to enable cpuidle on Calxeda processors.
+>  
+> 
 
 
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
---
-Shine bright,
-(: Nav :)
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
