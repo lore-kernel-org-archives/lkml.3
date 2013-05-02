@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759434Ab3EBPnJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 11:43:09 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36795 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757189Ab3EBPnI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 11:43:08 -0400
-Message-ID: <5182896F.90807@ti.com>
-Date: Thu, 2 May 2013 18:42:39 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1759679Ab3EBPqb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 11:46:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44712 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755626Ab3EBPqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 11:46:30 -0400
+Date: Thu, 2 May 2013 11:46:21 -0400
+From: Dave Jones <davej@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: clockevents_program_event WARN_ON preventing boot.
+Message-ID: <20130502154621.GA23990@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20130430212007.GB18598@redhat.com>
+ <20130430213719.GA14988@redhat.com>
+ <alpine.LFD.2.02.1305021234510.3972@ionos>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH, RFC 08/22] OMAPDSS: DPI needs DSI
-References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-9-git-send-email-arnd@arndb.de>
-In-Reply-To: <1367507786-505303-9-git-send-email-arnd@arndb.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="----enig2HESBXFWEBCESDHHOUHXO"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1305021234510.3972@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2HESBXFWEBCESDHHOUHXO
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 02, 2013 at 12:37:26PM +0200, Thomas Gleixner wrote:
 
-Hi Arnd,
+ > > On a second machine, I'm seeing an oops even earlier. As soon as I
+ > > exit grub, I get a blinking cursor.  If I boot with earlyprintk=vga
+ > > I can see..
+ > > 
+ > > Call Trace:
+ > >  <IRQ>
+ > >   tick_check_oneshot_broadcast
+ > >   tick_check_idle
+ > >   irq_enter
+ > >   do_IRQ
+ > >   common_interrupt
+ > >  <EOI>
+ > >   x86_64_start_reservations
+ > >   x86_64_start_kernel
+ > > RIP: clockevents_set_mode+0x18
+ > > 
+ > > Matching up the Code: line of the trace with the disassembly I see..
+ > > 
+ > >         if (dev->mode != mode) {
+ > >  4c8:   39 77 38                cmp    %esi,0x38(%rdi)
+ > > 
+ > > 
+ > 
+ > diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+ > index 61d00a8..db9da73 100644
+ > --- a/kernel/time/tick-broadcast.c
+ > +++ b/kernel/time/tick-broadcast.c
+ > @@ -475,7 +475,8 @@ void tick_check_oneshot_broadcast(int cpu)
+ >  	if (cpumask_test_cpu(cpu, tick_broadcast_oneshot_mask)) {
+ >  		struct tick_device *td = &per_cpu(tick_cpu_device, cpu);
+ >  
+ > -		clockevents_set_mode(td->evtdev, CLOCK_EVT_MODE_ONESHOT);
+ > +		if (td)
+ > +			clockevents_set_mode(td->evtdev, CLOCK_EVT_MODE_ONESHOT);
+ >  	}
+ >  }
+ >  
 
-On 05/02/2013 06:16 PM, Arnd Bergmann wrote:
-> The dpi.c file cannot be build correctly when the dsi.c file is
-> disabled in Kconfig. This clarifies the dependency in Kconfig
-> to avoid build errors:
->=20
-> drivers/video/omap2/dss/dpi.c: In function 'dpi_calc_pll_cb':
-> drivers/video/omap2/dss/dpi.c:181:2: error: implicit declaration of fun=
-ction 'dsi_hsdiv_calc' [-Werror=3Dimplicit-function-declaration]
-> drivers/video/omap2/dss/dpi.c: In function 'dpi_dsi_clk_calc':
-> drivers/video/omap2/dss/dpi.c:201:2: error: implicit declaration of fun=
-ction 'dsi_get_pll_clkin' [-Werror=3Dimplicit-function-declaration]
+td must be non-null, because this doesn't change anything.
 
-I've sent a patch for this to DRM maintainer, hopefully merged soon.
+a clue: If I disable CONFIG_SLUB_DEBUG, or even boot with slub_debug=- then it boots fine.
 
- Tomi
+I'll bisect.
 
+	Dave
 
-
-------enig2HESBXFWEBCESDHHOUHXO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRgolvAAoJEPo9qoy8lh71CwMP/3qFvzGq6i+O+9Ye6uUgIteN
-eQYxChsRkTIVQcrgnVS+GCEhWvPDsTtNUqTgfLtHA/Jwftm0ucd1lpOs7HPq1o8o
-D0RSjri8mymWWwIFfeJcMKJL2rTTNfONf9CPeHdYoQlEYoOXT1Ld9vd6fTW02MHs
-JogFm9Ese6Ho5bTbehne70OPhz9pfLhc7mWSKAdYT5Fi+I8VfxCYteHwe1dxAVZw
-n5il/U/xzvnq8dgDT4i4rRLDsBkDbAgRi6Ayhp0EsISUS90Axhvrm1fhnO2hwGmT
-wCXhdlOVg9SHlmrtZTKZMX1Xcz5nRVckHeq6IRh+uMGMuRo3GkwHftzWrJIg3rPs
-Y4haiLsPEvGSXL8b2M4AbLAiCu4ADZJjVtYtcstyN3mWGZC5FSWhXRozNCGWImsp
-Ml/etVW4Hwg5JbnBN+Wcob/Esh/LbaeOX4MFJz683Q5ISeah4nwNLmvOMXOGeRAQ
-xbcUOCO/LXt8TNW7ibNyFatqyVX03QpBfqOxW/SOWzzSsxhfwAz/NscR467guFfI
-b+wu8zhmVai/jz5ayil8fx2v/9+t38VOeRFoOMZxVkV3igFFQHSYrZPY9dWbBLL7
-SZC0PgqfCBAX+6la5/LitzzirAY5JlasED2cRt2zRwsDCES8NCfvhj/i3g2LZ2PI
-TZczB+3nlG4Q6KAQkyZF
-=m6wk
------END PGP SIGNATURE-----
-
-------enig2HESBXFWEBCESDHHOUHXO--
