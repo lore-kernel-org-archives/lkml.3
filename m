@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761669Ab3EBV6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 17:58:37 -0400
-Received: from mail-da0-f41.google.com ([209.85.210.41]:64930 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024Ab3EBV6f (ORCPT
+	id S1753477Ab3EBWAr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 18:00:47 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40945 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab3EBWAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 17:58:35 -0400
-Date: Thu, 2 May 2013 14:58:32 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Randy Dunlap <rdunlap@infradead.org>
-cc: Simon Wood <simon@mungewell.org>, linux-input@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: hid-steelseries fix led class build issue
-In-Reply-To: <5182DFA3.3040707@infradead.org>
-Message-ID: <alpine.DEB.2.02.1305021455260.941@chino.kir.corp.google.com>
-References: <51816271.3040400@infradead.org> <1367476041-25760-1-git-send-email-simon@mungewell.org> <5182DFA3.3040707@infradead.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 2 May 2013 18:00:44 -0400
+Date: Thu, 2 May 2013 15:00:31 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH v3 06/18] ocfs2: use ->invalidatepage() length argument
+Message-ID: <20130502220030.GC26770@localhost>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Lukas Czerner <lczerner@redhat.com>, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
+	ocfs2-devel@oss.oracle.com
+References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
+ <1365498867-27782-7-git-send-email-lczerner@redhat.com>
+ <20130423141604.GE31170@thunk.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130423141604.GE31170@thunk.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 May 2013, Randy Dunlap wrote:
+Acked-by: Joel Becker <jlbec@evilplan.org>
 
-> > ---
-> >  drivers/hid/hid-steelseries.c | 9 ++++++---
-> >  1 file changed, 6 insertions(+), 3 deletions(-)
+On Tue, Apr 23, 2013 at 10:16:04AM -0400, Theodore Ts'o wrote:
+> On Tue, Apr 09, 2013 at 11:14:15AM +0200, Lukas Czerner wrote:
+> > ->invalidatepage() aop now accepts range to invalidate so we can make
+> > use of it in ocfs2_invalidatepage().
 > > 
-> > diff --git a/drivers/hid/hid-steelseries.c b/drivers/hid/hid-steelseries.c
-> > index 2ed995c..dbd5e2e 100644
-> > --- a/drivers/hid/hid-steelseries.c
-> > +++ b/drivers/hid/hid-steelseries.c
-> > @@ -19,7 +19,8 @@
-> >  #include "usbhid/usbhid.h"
-> >  #include "hid-ids.h"
-> >  
-> > -#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
-> > +#if defined(CONFIG_LEDS_CLASS) || \
-> > +    (defined(CONFIG_LEDS_CLASS_MODULE) && defined(CONFIG_HID_STEELSERIES_MODULE))
-> >  #define SRWS1_NUMBER_LEDS 15
-> >  struct steelseries_srws1_data {
-> >  	__u16 led_state;
+> > Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+> > Cc: Joel Becker <jlbec@evilplan.org>
+> 
+> +Mark Fasheh, ocfs2-devel
+> 
+> To the ocfs2 development team,
+> 
+> Since half of this patch series modifies ext4 extensively, and changes
+> to the other file systems are relatively small, I plan to carry the
+> invalidatepage patch set in the ext4 tree for the next development
+> cycle (i.e., not the upcoming merge window, but the next one).  To
+> that end, it would be great if you take a look at this patch set and
+> send us an Acked-by signoff.
+> 
+> Thanks!!
+> 
+> 						- Ted
 
-While we're working on getting a signed-off-by line, the clean way of 
-handling this is
+-- 
 
-#if IS_BUILTIN(CONFIG_LEDS_CLASS) || \
-    (IS_MODULE(CONFIG_LEDS_CLASS) && IS_MODULE(CONFIG_HID_STEELSERIES))
+"Ninety feet between bases is perhaps as close as man has ever come
+ to perfection."
+	- Red Smith
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
