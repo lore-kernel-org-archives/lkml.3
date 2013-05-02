@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761332Ab3EBSNQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:13:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40269 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760863Ab3EBSNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:13:15 -0400
-Message-ID: <1367518532.7757.14.camel@dcbw.foobar.com>
-Subject: Re: [GIT] Networking
-From: Dan Williams <dcbw@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: mirqus@gmail.com, torvalds@linux-foundation.org, hayeswang@realtek.com,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 02 May 2013 13:15:32 -0500
-In-Reply-To: <20130502.140648.1138582574178897490.davem@davemloft.net>
-References: <20130502.133947.387694205526879673.davem@davemloft.net>
-	 <CAHXqBF+Xb0ZVo2tO-0m59JJDrwy5vYX6=jLbts_ZAv5Pk+7SCw@mail.gmail.com>
-	 <20130502.135542.1332946768988319212.davem@davemloft.net>
-	 <20130502.140648.1138582574178897490.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1761367Ab3EBSOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:14:08 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22665 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760857Ab3EBSOH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 14:14:07 -0400
+Date: Thu, 2 May 2013 14:13:09 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH, RFC 18/22] Xen: SWIOTLB is only used on x86
+Message-ID: <20130502181309.GA23642@phenom.dumpdata.com>
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
+ <1367507786-505303-19-git-send-email-arnd@arndb.de>
+ <alpine.DEB.2.02.1305021638100.5398@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1305021638100.5398@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-02 at 14:06 -0400, David Miller wrote:
-> From: David Miller <davem@davemloft.net>
-> Date: Thu, 02 May 2013 13:55:42 -0400 (EDT)
+On Thu, May 02, 2013 at 04:38:50PM +0100, Stefano Stabellini wrote:
+> On Thu, 2 May 2013, Arnd Bergmann wrote:
+> > Enabling SWIOTLB_XEN on ARM results in build errors because the
+> > underlying SWIOTLB is only available on X86:
+> > 
+> > drivers/xen/swiotlb-xen.c: In function 'is_xen_swiotlb_buffer':
+> > drivers/xen/swiotlb-xen.c:105:2: error: implicit declaration of function 'mfn_to_local_pfn
+> > 
+> > Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 > 
-> > From: Michał Mirosław <mirqus@gmail.com>
-> > Date: Thu, 2 May 2013 19:47:25 +0200
-> > 
-> >> Are you sure it's "flags"? /sys/class/net/*/features were removed some
-> >> time ago, and flags don't depend on NETIF_F_*.
-> > 
-> > Oh, it's flags, which is printed in raw hex by net/core/net-sysfs.c:
-> > 
-> > NETDEVICE_SHOW(flags, fmt_hex);
+> Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+Acked as well. Should I pull this in or Arnd are you OK with taking
+with my our Acks?
+
+Thanks.
 > 
-> Oh you're right, I'm confusing netdev->flags with netdev->features, my bad.
-
-Was just going to ask about that.  NM only cares about 'flags', not
-features, at this point in time.  Relevant code for carrier notification
-in NM, using libnl helpers:
-
-	link_obj = (struct rtnl_link *) obj;
-	flags = rtnl_link_get_flags (link_obj);
-	ifidx = rtnl_link_get_ifindex (link_obj);
-
-	nm_log_dbg (LOGD_HW, "netlink link message: iface idx %d flags 0x%X",
-ifidx, flags);
-
-	if (flags & IFF_LOWER_UP)
-		g_signal_emit (self, signals[CARRIER_ON], 0, ifidx);
-	else
-		g_signal_emit (self, signals[CARRIER_OFF], 0, ifidx);
-
-So it's got to be something else other than the netdev features ordering
-that's screwing up for Linus.  I'm sure we'd have heard about it a long,
-long time ago if something had messed up dev->flags bits...
-
-Dan
-
-
+> 
+> >  drivers/xen/Kconfig | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+> > index dd4d9cb..f03bf50 100644
+> > --- a/drivers/xen/Kconfig
+> > +++ b/drivers/xen/Kconfig
+> > @@ -141,7 +141,7 @@ config XEN_GRANT_DEV_ALLOC
+> >  
+> >  config SWIOTLB_XEN
+> >  	def_bool y
+> > -	depends on PCI
+> > +	depends on PCI && X86
+> >  	select SWIOTLB
+> >  
+> >  config XEN_TMEM
+> > -- 
+> > 1.8.1.2
+> > 
