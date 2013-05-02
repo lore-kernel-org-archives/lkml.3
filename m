@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760719Ab3EBQaa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 12:30:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:65121 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760193Ab3EBQa3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 12:30:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH v2] thermal: cpu_cooling: fix stub function
-Date: Thu, 2 May 2013 18:29:37 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Zhang Rui <rui.zhang@intel.com>,
-        Amit Daniel kachhap <amit.daniel@samsung.com>
-References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-13-git-send-email-arnd@arndb.de> <51828A45.60909@ti.com>
-In-Reply-To: <51828A45.60909@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	id S1760754Ab3EBQcJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 12:32:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8077 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760193Ab3EBQcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 12:32:07 -0400
+Message-ID: <1367512467.4000.7.camel@dcbw.foobar.com>
+Subject: Re: [GIT] Networking
+From: Dan Williams <dcbw@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, hayeswang <hayeswang@realtek.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 02 May 2013 11:34:27 -0500
+In-Reply-To: <CA+55aFzsvyQLLKbuETBqfhpgkSaXH9cvT0O-cQ-mTTXXxcMqwg@mail.gmail.com>
+References: <20130501.164755.1859264969403837546.davem@davemloft.net>
+	 <CA+55aFzsvyQLLKbuETBqfhpgkSaXH9cvT0O-cQ-mTTXXxcMqwg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201305021829.37343.arnd@arndb.de>
-X-Provags-ID: V02:K0:Rpd4T8JJJiBekT3Pf4jXCE7ecy2TDs9NYT/iO9NL93Q
- 1TfdqSqmi/Mu6t/i1ZWmpyV1XyHwpc9UQ4ZLLNjO84SpEEMUpB
- rjIXpcBZsMqgBGIYbJ3cwr3kqjfn1e1hBwjbnABSumYbF8Dime
- pPEXucT+Mbtk6irowQ7x5r2pH54A92nK6OEqsCbii7IhsP5oOj
- gkV2zD6Who/TCvEPNfId+h7KPBo2LrV++Z2aGsQVbbYYHMCbp/
- vjcEKOiiK/pwNca1wYXJHkAzm4ozcvPJYQ8j6RMk82yYa1qYQi
- g++rxKXI5NOKocEf+DzVRoyRwpDwilD6EcnbyligGDVtxCVs9Y
- qW96IjWm6ZKjuRhvNP2I=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function stub for cpufreq_cooling_get_level introduced
-in 57df81069 "Thermal: exynos: fix cooling state translation"
-is not syntactically correct C and needs to be fixed to avoid
-this error:
+On Wed, 2013-05-01 at 18:28 -0700, Linus Torvalds wrote:
+> On Wed, May 1, 2013 at 1:47 PM, David Miller <davem@davemloft.net> wrote:
+> >
+> > Highlights (1721 non-merge commits, this has to be a record of some
+> > sort):
+> 
+> Lowlight: it completely breaks my machine with r8169 ethernet.  In the
+> networkmanager applet, it claims no cable connection, which is a bit
+> odd, because (a) it works with an older kernel and (b) the kernel
+> messages actually say
+> 
+>   r8169 0000:01:00.0 eth0: link up
 
-In file included from drivers/thermal/db8500_thermal.c:20:0:
- include/linux/cpu_cooling.h: In function 'cpufreq_cooling_get_level':
-include/linux/cpu_cooling.h:57:1:
- error: parameter name omitted  unsigned long cpufreq_cooling_get_level(unsigned int, unsigned int)  ^
- include/linux/cpu_cooling.h:57:1: error: parameter name omitted
+NM calls ETHTOOL_GLINK and if that returns success, NM expects the
+driver to support carrier detection.  NM then listens to netlink for
+device flags changes, and uses IFF_LOWER_UP to determine carrier on/off
+state.  NM does not use NETIF_F_VLAN_CHALLENGED or any of the other
+ETHTOOL_GFEATURES flags yet, but will in the future.
 
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Amit Daniel kachhap <amit.daniel@samsung.com>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Is the link status accurately reflected by /sys/class/net/eth0/carrier ?
 
-diff --git a/include/linux/cpu_cooling.h b/include/linux/cpu_cooling.h
-index 282e270..a5d52ee 100644
---- a/include/linux/cpu_cooling.h
-+++ b/include/linux/cpu_cooling.h
-@@ -41,7 +41,7 @@ cpufreq_cooling_register(const struct cpumask *clip_cpus);
-  */
- void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev);
- 
--unsigned long cpufreq_cooling_get_level(unsigned int, unsigned int);
-+unsigned long cpufreq_cooling_get_level(unsigned int cpu, unsigned int freq);
- #else /* !CONFIG_CPU_THERMAL */
- static inline struct thermal_cooling_device *
- cpufreq_cooling_register(const struct cpumask *clip_cpus)
-@@ -54,7 +54,7 @@ void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
- 	return;
- }
- static inline
--unsigned long cpufreq_cooling_get_level(unsigned int, unsigned int)
-+unsigned long cpufreq_cooling_get_level(unsigned int cpu, unsigned int freq)
- {
- 	return THERMAL_CSTATE_INVALID;
- }
+Dan
+
+
+> but nothing actually works.
+> 
+>  r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
+>  r8169 0000:01:00.0 eth0: RTL8168d/8111d at 0xffffc90010ece000,
+> e0:cb:4e:95:1a:d7, XID 083000c0 IRQ 53
+>  r8169 0000:01:00.0 eth0: jumbo features [frames: 9200 bytes, tx
+> checksumming: ko]
+> 
+> Any ideas?
+> 
+>                   Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
