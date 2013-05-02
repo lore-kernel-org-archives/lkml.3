@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761631Ab3EBS15 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:27:57 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51395 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1760931Ab3EBS14 (ORCPT
+	id S1761641Ab3EBS22 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:28:28 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42816 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759291Ab3EBS21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:27:56 -0400
-Date: Thu, 2 May 2013 14:27:55 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-kernel@vger.kernel.org, <linux-arm-kernel@lists.infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH, RFC 16/22] USB: UHCI: clarify Kconfig dependencies
-In-Reply-To: <201305021952.35040.arnd@arndb.de>
-Message-ID: <Pine.LNX.4.44L0.1305021423450.1436-100000@iolanthe.rowland.org>
+	Thu, 2 May 2013 14:28:27 -0400
+Date: Thu, 2 May 2013 19:28:12 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v10 0/2] (arm-soc for v3.10) arm: introduce psci_smp_ops
+Message-ID: <20130502182812.GD14496@n2100.arm.linux.org.uk>
+References: <alpine.DEB.2.02.1304301707290.5398@kaball.uk.xensource.com> <alpine.DEB.2.02.1305021811560.5398@kaball.uk.xensource.com> <20130502171516.GA3040@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1305021816490.5398@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1305021816490.5398@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 May 2013, Arnd Bergmann wrote:
-
-> > What do you think of my patch as compared to yours? 
+On Thu, May 02, 2013 at 06:20:32PM +0100, Stefano Stabellini wrote:
+> On Thu, 2 May 2013, Will Deacon wrote:
+> > Hi Stefano,
+> > 
+> > On Thu, May 02, 2013 at 06:12:12PM +0100, Stefano Stabellini wrote:
+> > > ping
+> > 
+> > Is this a ping to have this pulled into Russell's tree?
 > 
-> I think in the end it comes down to the question where you want to
-> head with your driver. The way I did my version was going towards
-> making it similar to EHCI, with stand-alone bus glue drivers
-> and a core that is just a library module but does not register
-> a device_driver by itself.
-> 
-> Given that there are just three bus glues from UHCI, and at most
-> two of them enabled at the same time, I don't see a direct need
-> for UHCI to go down the same route as EHCI. If you want to just
-> leave this driver alone, your patch is simpler and has the same
-> effect in the end. Otherwise I think my patch avoids changing it
-> all again once the driver gets reworked.
+> I thought that we agreed that the patches should go via the arm-soc
+> tree, after Russell acks them.
 
-Okay then, I'll submit my patch to Greg after the merge window closes.
-
-> Things might also get a little messy if we are seeing a lot
-> of other platforms beside VIA VT8500 use UHCI, but I think that
-> is rather unlikely.
-
-Indeed.  UHCI is the oldest of the host controller standards; people
-aren't about to start creating a whole bunch of new implementations of 
-it.  Even Intel no longer uses UHCI on their more recent motherboards.
-
-Alan Stern
-
+Okay, well, is there a reason for them to go through arm-soc?  They
+look more like core code to me than SoC specific - they only minimally
+touch mach-virt.
