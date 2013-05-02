@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932505Ab3EBReg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 13:34:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64112 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758632Ab3EBRee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 13:34:34 -0400
-Date: Thu, 2 May 2013 13:34:28 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCHSET] blk-throttle: implement proper hierarchy support
-Message-ID: <20130502173428.GA4771@redhat.com>
-References: <1367455189-6957-1-git-send-email-tj@kernel.org>
+	id S1760827Ab3EBRe4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 13:34:56 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51375 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757049Ab3EBRez (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 13:34:55 -0400
+Date: Thu, 2 May 2013 13:34:54 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-kernel@vger.kernel.org, <linux-arm-kernel@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH, RFC 15/22] USB: EHCI: remove bogus #error
+In-Reply-To: <1367507786-505303-16-git-send-email-arnd@arndb.de>
+Message-ID: <Pine.LNX.4.44L0.1305021333020.1436-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367455189-6957-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 05:39:18PM -0700, Tejun Heo wrote:
+On Thu, 2 May 2013, Arnd Bergmann wrote:
 
-[..]
-> While this patchset contains many patches, the implementation is
-> pretty straight-forward.  throtl_grp's form a tree anchored at
-> throtl_data and bios climb the tree as they get dispatched at each
-> level.  The bios which reach the top of the tree - throl_data - are
-> issued. 
+> The EHCI host controller driver can be built standalone now,
+> without enabling any of the available bus glue drivers, so
+> there is not really a reason to error out here:
 
-Have a question here. Looks like when bio climbs from child group
-to parent group, then parent group slice starts fresh if parent
-was empty. So if we have a parent with 1MB/s limit and a child with
-1MB/s limit and a bio gets queued in child, then looks like effective
-IO rate would be .5MB/s and not 1MB/s?
+On the other hand, there's no reason to build the driver without any 
+bus glue.  It wouldn't do anything.
 
-IOW, when child gets queued, we should start time accounting for
-all parents in the hiearchy too.
+> drivers/usb/host/ehci-hcd.c:1303:2: error:
+>  #error "missing bus glue for ehci-hcd"  #error "missing bus glue for ehci-hcd"
+> 
+> The alternative would be to change the Kconfig code to build
+> the ehci-hcd module only if any of the symbols below are
+> in fact enabled.
+> 
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Thanks
-Vivek
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
