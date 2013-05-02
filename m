@@ -1,51 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758461Ab3EBNEW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 09:04:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45389 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756867Ab3EBNEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 09:04:20 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Colin Cross <ccross@android.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        arve@android.com, Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 03/10] freezer: add new freezable helpers using freezer_do_not_count()
-Date: Thu, 02 May 2013 15:05:13 +0200
-Message-ID: <4717747.DX2SLP8TIR@linux-5eaq.site>
-Organization: SUSE
-User-Agent: KMail/4.10 (Linux/3.7.10-1.1-desktop; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <20130502124826.GE22618@amd.pavel.ucw.cz>
-References: <1367271946-7239-1-git-send-email-ccross@android.com> <1367271946-7239-4-git-send-email-ccross@android.com> <20130502124826.GE22618@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1758730Ab3EBNHE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 09:07:04 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:33425 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758112Ab3EBNHB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 09:07:01 -0400
+From: laura.vasilescu@rosedu.org
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net, greg@kroah.com,
+        carolyn.wyborny@intel.com, anjali.singhai@intel.com,
+        jeffrey.t.kirsher@intel.com,
+        Laura Mihaela Vasilescu <laura.vasilescu@rosedu.org>
+Subject: [PATCH][trivial] drivers/net: Fix checkpatch errors in intel/e1000_82575.c
+Date: Thu,  2 May 2013 16:06:38 +0300
+Message-Id: <1367499998-7494-1-git-send-email-laura.vasilescu@rosedu.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 May 2013 14:48:26 Pavel Machek wrote:
-> On Mon 2013-04-29 14:45:39, Colin Cross wrote:
-> > Freezing tasks will wake up almost every userspace task from
-> > where it is blocking and force it to run until it hits a
-> > call to try_to_sleep(), generally on the exit path from the syscall
-> > it is blocking in.  On resume each task will run again, usually
-> > restarting the syscall and running until it hits the same
-> > blocking call as it was originally blocked in.
-> 
-> Ok, so you are optimizing suspend at the cost of runtime operations,
-> right?
-> 
-> Would it make sense to do suspends entirely without freezer in your
-> configurations? With the right drivers, it should work ok.
+From: Laura Mihaela Vasilescu <laura.vasilescu@rosedu.org>
 
-Right now drivers now that they will not be busy when runtime
-suspend happens. The freezer has the same effect for system PM.
-If you remove that certainty it becomes impossible for simple drivers
-to declare their devices busy upon open and do no synchronization
-between IO and PM.
+Signed-off-by: Laura Mihaela Vasilescu <laura.vasilescu@rosedu.org>
+---
+ drivers/net/ethernet/intel/igb/e1000_82575.c |   33 ++++++++++++--------------
+ 1 file changed, 15 insertions(+), 18 deletions(-)
 
-	Regards
-		Oliver
+diff --git a/drivers/net/ethernet/intel/igb/e1000_82575.c b/drivers/net/ethernet/intel/igb/e1000_82575.c
+index ff6a17c..3afbab6 100644
+--- a/drivers/net/ethernet/intel/igb/e1000_82575.c
++++ b/drivers/net/ethernet/intel/igb/e1000_82575.c
+@@ -74,8 +74,8 @@ static s32  igb_validate_nvm_checksum_82580(struct e1000_hw *hw);
+ static s32  igb_update_nvm_checksum_82580(struct e1000_hw *hw);
+ static s32 igb_validate_nvm_checksum_i350(struct e1000_hw *hw);
+ static s32 igb_update_nvm_checksum_i350(struct e1000_hw *hw);
+-static const u16 e1000_82580_rxpbs_table[] =
+-	{ 36, 72, 144, 1, 2, 4, 8, 16,
++static const u16 e1000_82580_rxpbs_table[] = {
++	  36, 72, 144, 1, 2, 4, 8, 16,
+ 	  35, 70, 140 };
+ #define E1000_82580_RXPBS_TABLE_SIZE \
+ 	(sizeof(e1000_82580_rxpbs_table)/sizeof(u16))
+@@ -404,7 +404,7 @@ static s32 igb_init_mac_params_82575(struct e1000_hw *hw)
+ static s32 igb_get_invariants_82575(struct e1000_hw *hw)
+ {
+ 	struct e1000_mac_info *mac = &hw->mac;
+-	struct e1000_dev_spec_82575 * dev_spec = &hw->dev_spec._82575;
++	struct e1000_dev_spec_82575 *dev_spec = &hw->dev_spec._82575;
+ 	s32 ret_val;
+ 	u32 ctrl_ext = 0;
+ 
+@@ -1002,8 +1002,8 @@ static void igb_release_swfw_sync_82575(struct e1000_hw *hw, u16 mask)
+ {
+ 	u32 swfw_sync;
+ 
+-	while (igb_get_hw_semaphore(hw) != 0);
+-	/* Empty */
++	while (igb_get_hw_semaphore(hw) != 0)
++		; /* Empty */
+ 
+ 	swfw_sync = rd32(E1000_SW_FW_SYNC);
+ 	swfw_sync &= ~mask;
+@@ -1066,7 +1066,7 @@ static s32 igb_check_for_link_82575(struct e1000_hw *hw)
+ 
+ 	if (hw->phy.media_type != e1000_media_type_copper) {
+ 		ret_val = igb_get_pcs_speed_and_duplex_82575(hw, &speed,
+-		                                             &duplex);
++							     &duplex);
+ 		/* Use this flag to determine if link needs to be checked or
+ 		 * not.  If  we have link clear the flag so that we do not
+ 		 * continue to check for link.
+@@ -1150,20 +1150,18 @@ static s32 igb_get_pcs_speed_and_duplex_82575(struct e1000_hw *hw, u16 *speed,
+ 		mac->serdes_has_link = true;
+ 
+ 		/* Detect and store PCS speed */
+-		if (pcs & E1000_PCS_LSTS_SPEED_1000) {
++		if (pcs & E1000_PCS_LSTS_SPEED_1000)
+ 			*speed = SPEED_1000;
+-		} else if (pcs & E1000_PCS_LSTS_SPEED_100) {
++		else if (pcs & E1000_PCS_LSTS_SPEED_100)
+ 			*speed = SPEED_100;
+-		} else {
++		else
+ 			*speed = SPEED_10;
+-		}
+ 
+ 		/* Detect and store PCS duplex */
+-		if (pcs & E1000_PCS_LSTS_DUPLEX_FULL) {
++		if (pcs & E1000_PCS_LSTS_DUPLEX_FULL)
+ 			*duplex = FULL_DUPLEX;
+-		} else {
++		else
+ 			*duplex = HALF_DUPLEX;
+-		}
+ 	}
+ 
+ 	return 0;
+@@ -1222,9 +1220,8 @@ static s32 igb_reset_hw_82575(struct e1000_hw *hw)
+ 
+ 	/* set the completion timeout for interface */
+ 	ret_val = igb_set_pcie_completion_timeout(hw);
+-	if (ret_val) {
++	if (ret_val)
+ 		hw_dbg("PCI-E Set completion timeout has failed.\n");
+-	}
+ 
+ 	hw_dbg("Masking off all interrupts\n");
+ 	wr32(E1000_IMC, 0xffffffff);
+@@ -1468,7 +1465,7 @@ static s32 igb_setup_serdes_link_82575(struct e1000_hw *hw)
+ 		 * link either autoneg or be forced to 1000/Full
+ 		 */
+ 		ctrl_reg |= E1000_CTRL_SPD_1000 | E1000_CTRL_FRCSPD |
+-		            E1000_CTRL_FD | E1000_CTRL_FRCDPX;
++			    E1000_CTRL_FD | E1000_CTRL_FRCDPX;
+ 
+ 		/* set speed of 1000/Full if speed/duplex is forced */
+ 		reg |= E1000_PCS_LCTL_FSV_1000 | E1000_PCS_LCTL_FDV_FULL;
+@@ -1784,14 +1781,14 @@ static s32 igb_set_pcie_completion_timeout(struct e1000_hw *hw)
+ 	 * 16ms to 55ms
+ 	 */
+ 	ret_val = igb_read_pcie_cap_reg(hw, PCIE_DEVICE_CONTROL2,
+-	                                &pcie_devctl2);
++					&pcie_devctl2);
+ 	if (ret_val)
+ 		goto out;
+ 
+ 	pcie_devctl2 |= PCIE_DEVICE_CONTROL2_16ms;
+ 
+ 	ret_val = igb_write_pcie_cap_reg(hw, PCIE_DEVICE_CONTROL2,
+-	                                 &pcie_devctl2);
++					&pcie_devctl2);
+ out:
+ 	/* disable completion timeout resend */
+ 	gcr &= ~E1000_GCR_CMPL_TMOUT_RESEND;
+-- 
+1.7.10.4
 
