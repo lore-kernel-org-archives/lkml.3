@@ -1,92 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657Ab3EBJUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 05:20:03 -0400
-Received: from mx7.zte.com.cn ([202.103.147.169]:57435 "EHLO zte.com.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751529Ab3EBJUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 05:20:00 -0400
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: artem.bityutskiy@linux.intel.com, cui.yunfeng@zte.com.cn,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        liu.dong3@zte.com.cn
-Subject: RE: Re: [PATCH] UBI: fix memory leak when use fastmap
-MIME-Version: 1.0
-X-KeepSent: 2D2AAAE7:DA66471C-48257B5F:002C2C42;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 6.5.6 March 06, 2007
-Message-ID: <OF2D2AAAE7.DA66471C-ON48257B5F.002C2C42-48257B5F.002EB4C8@zte.com.cn>
-From: wang.bo116@zte.com.cn
-Date: Thu, 2 May 2013 16:30:01 +0800
-X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
- 2013-05-02 17:19:11,
-	Serialize complete at 2013-05-02 17:19:11
-Content-Type: text/plain; charset="US-ASCII"
-X-MAIL: mse02.zte.com.cn r429JS3R004432
+	id S1757170Ab3EBJ1f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 05:27:35 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:35038 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757049Ab3EBJ1S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 05:27:18 -0400
+X-AuditID: cbfee68e-b7efa6d000004d12-6b-5182317449e8
+Date: Thu, 02 May 2013 09:27:15 +0000 (GMT)
+From: EUNBONG SONG <eunb.song@samsung.com>
+Subject: Re: Re: [PATCH] MIPS: remove USB_EHCI_BIG_ENDIAN_{DESC,MMIO} depends
+ on architecture symbol
+To: Jonas Gorski <jogo@openwrt.org>
+Cc: "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "florian@openwrt.org" <florian@openwrt.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20130502092239095@eunb.song
+Msgkey: 20130502092239095@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20130502092239095@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <6623143.198271367486832742.JavaMail.weblogic@epml20>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t8zTd0Sw6ZAgyuLVCwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGlsVNTAX3OCo2d5xlbmDcw9HFyMkhJKAi0fL/OyOILSFgInH+
+	3xYmCFtM4sK99WxdjFxANcsYJeY/+c8EU7T5+CUWiMR8RonJ77YwgyRYgCY9OvkVzGYT0JZ4
+	++UBK4gtLJAiserzarBmEQFViU87VjGBNDML3GKUeLHhADPEGfISk09fZgexeQUEJU7OfMIC
+	sU1J4vr172wQcWWJzZ/a2CDiEhKzpl9ghbB5JWa0P4Wql5OY9nUNM4QtLXF+1gZGmHcWf38M
+	FeeXOHZ7B9ARHGC9T+4Hw4zZvfkL1HgBialnDkK1qkv0LjoLNZ5PYs3CtywwY3adWs4M03t/
+	y1ywH5kFFCWmdD9kh7C1JL782MeG7i1eAUeJ9v2rWCYwKs9CkpqFpH0WknZkNQsYWVYxiqYW
+	JBcUJ6UXGekVJ+YWl+al6yXn525ihKSGvh2MNw9YH2JMBsbJRGYp0eR8YGrJK4k3NDYzsjA1
+	MTU2Mrc0I01YSZxXrcU6UEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOj9oH52Z572v0mCbOu
+	9XgkcyWG4yEn69uzhibTOo7t/SebmbPRm+NA3aSk1+nhj4/NKjERVxCYkjktjTnl92KvCucu
+	Kde+bucHyvOeX91T6H17DpvzzLxrO3d82nDV9vBF3rUCBcUznKwL3IW+FU3OdWc0veHkHaip
+	VJ7qeuXbBZ3OE0tfFIYrsRRnJBpqMRcVJwIAen+Q2SMDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmk+LIzCtJLcpLzFFi42I5/e/2dN0Sw6ZAg1sPFSwu75rD5sDo8XmT
+	XABjVIZNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
+	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrSRgbGekamJnpGxgZ6JQayVoYGBkSlQVUJG
+	xpbFTUwF9zgqNnecZW5g3MPRxcjJISSgItHy/zsjiC0hYCKx+fglFghbTOLCvfVsXYxcQDXz
+	GSUmv9vCDJJgAWp4dPIrmM0moC3x9ssDVhBbWCBFYtXn1UwgtoiAqsSnHauYQJqZBW4xSrzY
+	cIAZYpu8xOTTl9lBbF4BQYmTM59AbVOSuH79OxtEXFli86c2Noi4hMSs6RdYIWxeiRntT6Hq
+	5SSmfV3DDGFLS5yftYER5urF3x9Dxfkljt3eAXQEB1jvk/vBMGN2b/4CNV5AYuqZg1Ct6hK9
+	i85CjeeTWLPwLQvMmF2nljPD9N7fMhfsR2YBRYkp3Q/ZIWwtiS8/9rGhe4tXwFGiff8qlgmM
+	crOQpGYhaZ+FpB1ZzQJGllWMoqkFyQXFSekVJnrFibnFpXnpesn5uZsYwUnq2ZIdjA0XrA8x
+	CnAwKvHwftBtDBRiTSwrrsw9xCjBwawkwpsk3xQoxJuSWFmVWpQfX1Sak1p8iDEZGIMTmaVE
+	k/OBCTSvJN7Q2MDY0NDS3MDU0MiCNGElcd5nrdaBQgLpiSWp2ampBalFMFuYODilGhgLHtub
+	xC+L3uEkF3Un0UGox3DC8cfVIR/qvi3bGtCw92Fx7oMjLqpzjbUqNF/4rAvud6xvrS6SncVx
+	Mue8zIo1zwWbVGbOeq1Xl3RnjWlME+OsMwfUVnyoupGl13VR4dk+/qTopLiA7SYOayP/HvpX
+	k652/0HSshdnGF14ri6cIpsSvDr38WYlluKMREMt5qLiRABpBBPglgMAAA==
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-> Hi!
-> 
-> On Tue, Apr 16, 2013 at 10:53 AM,  <wang.bo116@zte.com.cn> wrote:
-> > Hello,
-> >         Sorry, there is still something wrong with the previous 
-patch's
-> > format, try to submit it again. When use ubi fastmap, there is a 
-memory
-> > leak which will make destroy_ai() fail to free the slab alloced in
-> > scan_fast(). The following patch fix this problem by use a temporary
-> > "ubi_attach_info" variable in scan_fast().
-> 
-> Thanks a lot for your patch!
-> 
-> Did you test it well?
-> We need to make sure that it does the right thing for the following 
-cases:
-> 1. fastmap disabled, attaching a non-fastmap volume
-> 1. fastmap disabled, attaching a fastmap volume
-> 3. fastmap enabled, attaching a non-fastmap volume
-> 4. fastmap enablled, attaching a fastmap volume
-> 
-> --
-> Thanks,
-> //richard
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r429RfDo003057
 
 
-Thanks for your advice. I consider this problem like this:
-1: if fastmap not config, ubi_attach() just call scan_all(ubi, ai, 0), 
-there is nothing changed, so there is all right.
+>These are selects and don't prevent anyone else from also selecting
+> them. If you look at your referenced commit, you see it removed the
+>/depends/, not the selects. It actually added selects to several
+> platforms. Platforms are supposed to select them if they need them.
 
-2: if fastmap config, and force_scan is 0, ubi_attach() will call 
-scan_fast(), when scan_fast() return, temp ai used in scan_fast() has been 
-free, and there will be two conditions:
-A: scan_fast() return UBI_NO_FASTMAP(may be flash is empty or attaching a 
-non-fastmap volume), all ubi_attach() need is to call scan_all(ubi, ai, 0) 
-to scan all blocks. 
-B: scan_fast() return UBI_BAD_FASTMAP, ubi_attach() first free ai used in 
-ubi_scan_fastmap(), then alloc a clean ai, at last call scan_all(ubi, ai, 
-0) to scan all blocks.
+Hello. 
+Every time i config with arch/mips/configs/cavium_octeon_defconfig, the following warning messages 
+are showed.
+warning: (MIPS_SEAD3 && PMC_MSP && CPU_CAVIUM_OCTEON) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB && USB_EHCI_HCD)
+warning: (MIPS_SEAD3 && PMC_MSP && CPU_CAVIUM_OCTEON) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB && USB_EHCI_HCD)
 
-3: if fastmap config, and force_scan is 1, just call scan_all(ubi, ai, 0).
+And after applying this patch, the warning messages were disappeared. 
 
-This patch pass the following cases(include attach and detach):
-1. fastmap config, flash is empty,fm_autoconvert is 1.
-2. fastmap config, flash is empty,fm_autoconvert is 0.
-3. fastmap config, attaching a fastmap volume
-4. fastmap config, attaching a bad fastmap volume
-5. fastmap config, attaching a non-fastmap volume
-6. fastmap not config, attaching a fastmap volume
-7. fastmap not config, attaching a non-fastmap volume
-8. fastmap not config, flash is empty.
 
-By the way, the problem may cause ubi_attach() fail after ubi detach when 
-CONFIG_DEBUG_VM config. 
-The reason is that ubi_attach() will alloc a slab cache, but the 
-kmem_cache_sanity_check() will find the slab cache is already exist(not 
-been free after last detach), so slab cache alloc fail, and ubi_attach() 
-fail, too.
-
-Thanks 
---wangbo
+> JonasˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
