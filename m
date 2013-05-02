@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab3EBWZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 18:25:47 -0400
-Received: from mga14.intel.com ([143.182.124.37]:2648 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850Ab3EBWZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 18:25:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,599,1363158000"; 
-   d="asc'?scan'208";a="327957565"
-Message-ID: <1367533544.5663.7.camel@jtkirshe-mobl>
-Subject: Re: [PATCH][trivial] drivers/net: Fix checkpatch errors in
- intel/e1000_82575.c
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: laura.vasilescu@rosedu.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, greg@kroah.com,
-        carolyn.wyborny@intel.com, anjali.singhai@intel.com
-Date: Thu, 02 May 2013 15:25:44 -0700
-In-Reply-To: <1367499998-7494-1-git-send-email-laura.vasilescu@rosedu.org>
-References: <1367499998-7494-1-git-send-email-laura.vasilescu@rosedu.org>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-0z414rB/dgTK3zptn+ZY"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1758175Ab3EBWal (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 18:30:41 -0400
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:57434 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756345Ab3EBWak (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 18:30:40 -0400
+From: Xi Wang <xi.wang@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Will Drewry <wad@chromium.org>, Eric Dumazet <edumazet@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Laight <david.laight@aculab.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nicolas Schichan <nschichan@freebox.fr>, Xi Wang <xi.wang@gmail.com>
+Subject: [PATCH v3 -next 0/2] seccomp filter JIT for x86
+Date: Thu,  2 May 2013 18:28:55 -0400
+Message-Id: <1367533737-17196-1-git-send-email-xi.wang@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patchset is rebased against linux-next, on top of the seccomp JIT
+interface from Nicolas Schichan:
 
---=-0z414rB/dgTK3zptn+ZY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+  00afda30 "bpf: add comments explaining the schedule_work() operation"
+  c2cf3192 "ARM: net: bpf_jit: add support for jitted seccomp filters."
+  8ef6cd9d "ARM: net: bpf_jit: make code generation less dependent on
+            struct sk_filter."
+  747416f4 "seccomp: add generic code for jitted seccomp filters."
 
-On Thu, 2013-05-02 at 16:06 +0300, laura.vasilescu@rosedu.org wrote:
-> From: Laura Mihaela Vasilescu <laura.vasilescu@rosedu.org>
->=20
-> Signed-off-by: Laura Mihaela Vasilescu <laura.vasilescu@rosedu.org>
-> ---
->  drivers/net/ethernet/intel/igb/e1000_82575.c |   33
-> ++++++++++++--------------
->  1 file changed, 15 insertions(+), 18 deletions(-)=20
+Patch 1/2 implements JIT by calling seccomp_bpf_load().  It introduces
+SEEN_SKBREF, as suggested by Eric Dumazet, to make ensure that seccomp
+filters don't use skb (%rdi).
 
-I believe I already have a patch in my queue which corrects the
-checkpatch errors, but if I do not, I will add your patch to my queue.
-Thanks.
+Patch 2/2 eliminates the call to seccomp_bpf_load() and instead emits
+instructions directly.  It doesn't have to emit prologue/epilogue either.
 
---=-0z414rB/dgTK3zptn+ZY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Both patches have been tested using vsftpd, openssh, and the seccomp
+filter examples.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
+My main worry about 2/2 is that it's way harder to maintain compared
+to 1/2.  I'm posting it here for completeness, but I'd suggest to consider
+patch 1/2 only for now.
 
-iQIcBAABCgAGBQJRgufoAAoJEOVv75VaS+3OuN4P/31L+/JsuZBvXgMuW+nNFF3Q
-4q6yVySkh0sS0hebD/a2ED6E4Gl/Xv7UQQ0VW4YUDiWQkWY7Zj7eH5fEQX4+pB73
-2iiC9QJzj0i5pqChQkkeAGU8kz5zqnoz3PmjagkU3iFjpXC9TEBx4Uo5Be+FTIlh
-BwQHQ7Fg1TVeuQzUlsnOpHfN7rwHdHk/oj9+caiC2ihUwbYupoE4sLa2aetKTRVZ
-jyrP8IWkI81dxqlUWf+0gomg0xJUpYcj/JKpzocidEU6Nq5Ax2gj61nfZLdmiiAs
-9W6ZsOE7zkLkhi3IufCcGE4d/nnvmrKyIGzEO23OgUl3dXdxpL9KNXXooC+tmqZq
-UX5SSKMlH3Ln+xh4qlergr90K/xCAVJcCXYhsNZad7qORY8gjRPoYpKb1OJzU1xo
-1BNffnhmYTUR6ZHgktdLy+g64ImpsJkXqisARVroazowSlyMllWFgCoZq8UxZjPs
-rEPDvMjq8riq1tdvKRbISQI7rvVufg6lbtP1sDFX9BVNCQ5BnbcTfsHOdMOBjVSo
-ju7SOKXNM0F43KPsWMWc1KiHPuIl/rVS6QuLu3hCKush+K5TKcRoh+0L66DXcBAA
-Tb3nKZzE8PYIKzu/DcOTDWjZEC5LgtvEUJ0d9myy9shBXeasDC7qnRxdk8igtWJO
-kycAkAzBy4RQuXXlVvU5
-=15k7
------END PGP SIGNATURE-----
+Xi Wang (2):
+  x86: bpf_jit_comp: support BPF_S_ANC_SECCOMP_LD_W
+  x86: bpf_jit_comp: optimize BPF_S_ANC_SECCOMP_LD_W
 
---=-0z414rB/dgTK3zptn+ZY--
+ arch/x86/Kconfig            |   1 +
+ arch/x86/net/bpf_jit_comp.c | 220 +++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 198 insertions(+), 23 deletions(-)
+
+-- 
+1.8.1.2
 
