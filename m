@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758638Ab3EBAkU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 20:40:20 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:64261 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758527Ab3EBAkA (ORCPT
+	id S1758808Ab3EBAkg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 20:40:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56022 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756226Ab3EBAkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 20:40:00 -0400
+	Wed, 1 May 2013 20:40:33 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         vgoyal@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/31] blkcg: fix error return path in blkg_create()
-Date: Wed,  1 May 2013 17:39:19 -0700
-Message-Id: <1367455189-6957-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 02/31] blkcg: move blkg_for_each_descendant_pre() to block/blk-cgroup.h
+Date: Wed,  1 May 2013 17:39:20 -0700
+Message-Id: <1367455189-6957-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367455189-6957-1-git-send-email-tj@kernel.org>
 References: <1367455189-6957-1-git-send-email-tj@kernel.org>
@@ -22,33 +22,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In blkg_create(), after lookup of parent fails, the control jumps to
-error path with the error code encoded into @blkg.  The error path
-doesn't use @blkg for the return value.  It returns ERR_PTR(ret).
-Make lookup fail path set @ret instead of @blkg.
+blk-throttle hierarchy support will make use of it.  Move
+blkg_for_each_descendant_pre() from block/blk-cgroup.c to
+block/blk-cgroup.h.
 
-Note that the parent lookup is guaranteed to succeed at that point and
-the condition check is purely for sanity and triggers WARN when fails.
-As such, I don't think it's necessary to mark it for -stable.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
+signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/blk-cgroup.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ block/blk-cgroup.c | 24 ++----------------------
+ block/blk-cgroup.h | 20 ++++++++++++++++++++
+ 2 files changed, 22 insertions(+), 22 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index b2b9837..0ab211a 100644
+index 0ab211a..6b10d5c 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -238,7 +238,7 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
- 	if (blkcg_parent(blkcg)) {
- 		blkg->parent = __blkg_lookup(blkcg_parent(blkcg), q, false);
- 		if (WARN_ON_ONCE(!blkg->parent)) {
--			blkg = ERR_PTR(-EINVAL);
-+			ret = -EINVAL;
- 			goto err_put_css;
- 		}
- 		blkg_get(blkg->parent);
+@@ -32,26 +32,6 @@ EXPORT_SYMBOL_GPL(blkcg_root);
+ 
+ static struct blkcg_policy *blkcg_policy[BLKCG_MAX_POLS];
+ 
+-static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
+-				      struct request_queue *q, bool update_hint);
+-
+-/**
+- * blkg_for_each_descendant_pre - pre-order walk of a blkg's descendants
+- * @d_blkg: loop cursor pointing to the current descendant
+- * @pos_cgrp: used for iteration
+- * @p_blkg: target blkg to walk descendants of
+- *
+- * Walk @c_blkg through the descendants of @p_blkg.  Must be used with RCU
+- * read locked.  If called under either blkcg or queue lock, the iteration
+- * is guaranteed to include all and only online blkgs.  The caller may
+- * update @pos_cgrp by calling cgroup_rightmost_descendant() to skip
+- * subtree.
+- */
+-#define blkg_for_each_descendant_pre(d_blkg, pos_cgrp, p_blkg)		\
+-	cgroup_for_each_descendant_pre((pos_cgrp), (p_blkg)->blkcg->css.cgroup) \
+-		if (((d_blkg) = __blkg_lookup(cgroup_to_blkcg(pos_cgrp), \
+-					      (p_blkg)->q, false)))
+-
+ static bool blkcg_policy_enabled(struct request_queue *q,
+ 				 const struct blkcg_policy *pol)
+ {
+@@ -158,8 +138,8 @@ err_free:
+  * @q's bypass state.  If @update_hint is %true, the caller should be
+  * holding @q->queue_lock and lookup hint is updated on success.
+  */
+-static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
+-				      struct request_queue *q, bool update_hint)
++struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg, struct request_queue *q,
++			       bool update_hint)
+ {
+ 	struct blkcg_gq *blkg;
+ 
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 4e595ee..11f5b92 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -282,6 +282,26 @@ static inline void blkg_put(struct blkcg_gq *blkg)
+ 		__blkg_release(blkg);
+ }
+ 
++struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg, struct request_queue *q,
++			       bool update_hint);
++
++/**
++ * blkg_for_each_descendant_pre - pre-order walk of a blkg's descendants
++ * @d_blkg: loop cursor pointing to the current descendant
++ * @pos_cgrp: used for iteration
++ * @p_blkg: target blkg to walk descendants of
++ *
++ * Walk @c_blkg through the descendants of @p_blkg.  Must be used with RCU
++ * read locked.  If called under either blkcg or queue lock, the iteration
++ * is guaranteed to include all and only online blkgs.  The caller may
++ * update @pos_cgrp by calling cgroup_rightmost_descendant() to skip
++ * subtree.
++ */
++#define blkg_for_each_descendant_pre(d_blkg, pos_cgrp, p_blkg)		\
++	cgroup_for_each_descendant_pre((pos_cgrp), (p_blkg)->blkcg->css.cgroup) \
++		if (((d_blkg) = __blkg_lookup(cgroup_to_blkcg(pos_cgrp), \
++					      (p_blkg)->q, false)))
++
+ /**
+  * blk_get_rl - get request_list to use
+  * @q: request_queue of interest
 -- 
 1.8.1.4
 
