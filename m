@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761499Ab3EBSXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:23:19 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:55782 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760261Ab3EBSXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:23:17 -0400
-X-IronPort-AV: E=Sophos;i="4.87,597,1363132800"; 
-   d="scan'208";a="22986080"
-Date: Thu, 2 May 2013 19:23:11 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v10 0/2] (arm-soc for v3.10) arm: introduce
- psci_smp_ops
-In-Reply-To: <20130502181851.GB14496@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.02.1305021920070.5398@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304301707290.5398@kaball.uk.xensource.com> <alpine.DEB.2.02.1305021811560.5398@kaball.uk.xensource.com> <20130502171516.GA3040@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1305021816490.5398@kaball.uk.xensource.com>
- <20130502181851.GB14496@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1761549Ab3EBSZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:25:16 -0400
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:50965 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761277Ab3EBSZM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 14:25:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <20130502123033.GC22618@amd.pavel.ucw.cz>
+References: <1367360914-23389-1-git-send-email-zoran.markovic@linaro.org>
+	<20130501003058.GB20042@amd.pavel.ucw.cz>
+	<CAMbhsRQkYFvOzDDn4zmbZAEsVs6iSy4mPVq5w=MzQ7p9STBDew@mail.gmail.com>
+	<20130501105630.GA22552@amd.pavel.ucw.cz>
+	<CAMbhsRTtYSLpAmB0hsanBH3ez4bm8BgbcH1xEBQsZSj4dc069g@mail.gmail.com>
+	<20130502123033.GC22618@amd.pavel.ucw.cz>
+Date: Thu, 2 May 2013 11:25:12 -0700
+X-Google-Sender-Auth: LnrRe8XK7MHE0s5SSNsxqX5xAiM
+Message-ID: <CAMbhsRSdk-z-67BEEd=zbWLR6=WXjpCk1uJky2ZEONS7FLcmGw@mail.gmail.com>
+Subject: Re: [RFC PATCH] drivers: power: Add watchdog timer to catch drivers
+ which lockup during suspend.
+From: Colin Cross <ccross@android.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Zoran Markovic <zoran.markovic@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Benoit Goby <benoit@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 May 2013, Russell King - ARM Linux wrote:
-> On Thu, May 02, 2013 at 06:20:32PM +0100, Stefano Stabellini wrote:
-> > On Thu, 2 May 2013, Will Deacon wrote:
-> > > Hi Stefano,
-> > > 
-> > > On Thu, May 02, 2013 at 06:12:12PM +0100, Stefano Stabellini wrote:
-> > > > ping
-> > > 
-> > > Is this a ping to have this pulled into Russell's tree?
-> > 
-> > I thought that we agreed that the patches should go via the arm-soc
-> > tree, after Russell acks them.
-> > 
-> > The ping is for Russell to ack them and Arnd to merge them.
-> 
-> Sorry but I tend not to be around on Tuesdays and Wednesdays, which leads
-> to a hell of an email problem on Thursdays.  I haven't looked at them in
-> any great detail (I just paged through them so far and on to the next
-> email.)
+On Thu, May 2, 2013 at 5:30 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>> >> > do BUG which
+>> >> >    dumps stack of current task
+>> >> >    kills current task
+>> >> >
+>> >> > Current task may very well be idle task; in such case you kill the
+>> >> > machine. Sounds like you should be doing something else, like kill -9
+>> >> > instead of BUG()?
+>> >>
+>> >> Not much else you can do, you are stuck part way into suspend with a
+>> >> driver's suspend callback half executed.  All userspace tasks are
+>> >> frozen, and the suspend task is blocked indefinitely.
+>> >
+>> > Yes, there's better option. Attempt killing the [a]suspend task,
+>> > instead of killing the current task.
+>>
+>> That will leave you in a completely undefined state.  If you just kill
+>> the task, you are likely to kill the synchronous suspend task, which
+>> is the task that would resume your drivers and unfreeze tasks.  That
+>> will leave you with no userspace tasks running, and much of your
+>> hardware suspended.  How is that a useful result?  If you somehow
+>
+> So instead you kill random task? (BUG() from timer kills pretty much
+> random task, right?)
+>
+> If you want to do panic(), do panic().
 
-No problems, if there is one person that can understand being flooded by
-emails, that's me.
-
-
-> I don't really have sufficient time to properly deal with all the email
-> traffic that is now on this list - even from just flicking through the
-> messages.  It's far too much.
-
-This patches have been discussed in great details, would you be content
-with Will Deacon and Nicolas Pitre's Acks?
-Nobody objected again them so far.
+At least on ARM a BUG() in an interrupt or softirq always results in a
+panic, but this can be switched to directly call panic.
