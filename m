@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760805Ab3EBRiC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 13:38:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50513 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754931Ab3EBRiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 13:38:00 -0400
-Message-ID: <5182A44E.7080701@redhat.com>
-Date: Thu, 02 May 2013 14:37:18 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Hans Verkuil <hverkuil@xs4all.nl>, linux-media@vger.kernel.org
-Subject: Re: [PATCH, RFC 22/22] radio-si4713: depend on SND_SOC
-References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-23-git-send-email-arnd@arndb.de>
-In-Reply-To: <1367507786-505303-23-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1760958Ab3EBRjv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 13:39:51 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58528 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757049Ab3EBRju (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 13:39:50 -0400
+Date: Thu, 02 May 2013 13:39:47 -0400 (EDT)
+Message-Id: <20130502.133947.387694205526879673.davem@davemloft.net>
+To: dcbw@redhat.com
+Cc: torvalds@linux-foundation.org, hayeswang@realtek.com,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1367512467.4000.7.camel@dcbw.foobar.com>
+References: <20130501.164755.1859264969403837546.davem@davemloft.net>
+	<CA+55aFzsvyQLLKbuETBqfhpgkSaXH9cvT0O-cQ-mTTXXxcMqwg@mail.gmail.com>
+	<1367512467.4000.7.camel@dcbw.foobar.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Thu, 02 May 2013 10:39:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 02-05-2013 12:16, Arnd Bergmann escreveu:
-> It is not possible to select SND_SOC_SI476X if we have not also
-> enabled SND_SOC.
->
-> warning: (RADIO_SI476X) selects SND_SOC_SI476X which has unmet
-> 	 direct dependencies (SOUND && !M68K && !UML && SND && SND_SOC)
->
-> Cc: Hans Verkuil <hverkuil@xs4all.nl>
-> Cc: linux-media@vger.kernel.org
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->   drivers/media/radio/Kconfig | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
-> index c0beee2..d529ba7 100644
-> --- a/drivers/media/radio/Kconfig
-> +++ b/drivers/media/radio/Kconfig
-> @@ -22,6 +22,7 @@ config RADIO_SI476X
->   	tristate "Silicon Laboratories Si476x I2C FM Radio"
->   	depends on I2C && VIDEO_V4L2
->   	depends on MFD_SI476X_CORE
-> +	depends on SND_SOC
->   	select SND_SOC_SI476X
->   	---help---
->   	  Choose Y here if you have this FM radio chip.
->
+From: Dan Williams <dcbw@redhat.com>
+Date: Thu, 02 May 2013 11:34:27 -0500
 
-Do you prefer to send it via your tree or via mine? Either way works for me.
+> On Wed, 2013-05-01 at 18:28 -0700, Linus Torvalds wrote:
+>> On Wed, May 1, 2013 at 1:47 PM, David Miller <davem@davemloft.net> wrote:
+>> >
+>> > Highlights (1721 non-merge commits, this has to be a record of some
+>> > sort):
+>> 
+>> Lowlight: it completely breaks my machine with r8169 ethernet.  In the
+>> networkmanager applet, it claims no cable connection, which is a bit
+>> odd, because (a) it works with an older kernel and (b) the kernel
+>> messages actually say
+>> 
+>>   r8169 0000:01:00.0 eth0: link up
+> 
+> NM calls ETHTOOL_GLINK and if that returns success, NM expects the
+> driver to support carrier detection.  NM then listens to netlink for
+> device flags changes, and uses IFF_LOWER_UP to determine carrier on/off
+> state.  NM does not use NETIF_F_VLAN_CHALLENGED or any of the other
+> ETHTOOL_GFEATURES flags yet, but will in the future.
+> 
+> Is the link status accurately reflected by /sys/class/net/eth0/carrier ?
 
-If you're willing to send it via your tree:
-
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Something cares about the .../eth0/flags value because with the bit
+ordering different for bits 10 and above things break.
