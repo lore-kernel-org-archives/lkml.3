@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761892Ab3EBTLx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 15:11:53 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:33145 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761870Ab3EBTLv (ORCPT
+	id S1761928Ab3EBTMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 15:12:24 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:61627 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760667Ab3EBTMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 15:11:51 -0400
+	Thu, 2 May 2013 15:12:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
+Date: Thu, 2 May 2013 21:11:40 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "Jean-Francois Moine" <moinejf@free.fr>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130502185322.GA29333@obsidianresearch.com>
+In-Reply-To: <20130502185322.GA29333@obsidianresearch.com>
 MIME-Version: 1.0
-In-Reply-To: <5182B74E.8060909@linaro.org>
-References: <1367360914-23389-1-git-send-email-zoran.markovic@linaro.org>
-	<1367360914-23389-2-git-send-email-zoran.markovic@linaro.org>
-	<20130501002929.GA20042@amd.pavel.ucw.cz>
-	<CAMbhsRRisa15fH9AodepfRJUv6t6dipqb6CMbOOrtzVsMUCoxQ@mail.gmail.com>
-	<20130502122747.GA22618@amd.pavel.ucw.cz>
-	<CAMbhsRQ4tCQtSxA-5tqydKp-xQf1bnrsq7GNw5q0gk3NdPZyaA@mail.gmail.com>
-	<5182B74E.8060909@linaro.org>
-Date: Thu, 2 May 2013 12:11:50 -0700
-X-Google-Sender-Auth: skfnG7JmattwhwmxvVe52djMOR0
-Message-ID: <CAMbhsRS+23ghorOS-dDdpTJDV_3PxDOoZ=k5ZCfH6i7H7QB-Bw@mail.gmail.com>
-Subject: Re: [RFC PATCH] power: Add option to log time spent in suspend
-From: Colin Cross <ccross@android.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Pavel Machek <pavel@ucw.cz>, Zoran Markovic <zoran.markovic@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
-        Benoit Goby <benoit@android.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305022111.41043.arnd@arndb.de>
+X-Provags-ID: V02:K0:ZFKhDFAx7OSUgMbUOdvWUiLLc2kDkCfy5G57qXiSzYk
+ R/y8+pUJPBm52kBFDgMgqsgxIoEZl9xX+d2BDquE0b7LRnyyne
+ kNRGs00v7zjuCEc1qdkdCELZH0IXL/X5LUPycFXPB1Pqvtpid7
+ E3pH5db19qbHi6FTYJI/H9+27nvrm8ByJw+bgVSS/df9OjS5X4
+ F9R7q30zreHQ7+8WnAoVM6lqLPVaUJ3Ghw9SYFvzHh7Wi7enaf
+ sxJOmJ3ruwtX1M8hAZQwradeHD/lG1AX+7cxq53TIR6CUtuCVp
+ tyOHKJp768gPtgl6WvPOGu8pIghuqVGYiRgCG9KVzT3DnNTdfr
+ G1rNbf+rUiok23jWDuIs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 2, 2013 at 11:58 AM, John Stultz <john.stultz@linaro.org> wrote:
-> On 05/02/2013 11:29 AM, Colin Cross wrote:
->>
->> On Thu, May 2, 2013 at 5:27 AM, Pavel Machek <pavel@ucw.cz> wrote:
->>>
->>>
->>>> dmesg is not the solution, it's not a stable api, it would require
->>>> constant parsing to make sure you didn't miss data before it fell out
->>>> of the ringbuffer, and sched_clock often does not (and should not)
->>>> tick during suspend, so printk times don't show the time spent
->>>> suspended.
->>>
->>> If timing info printed is invalid, that should be fixed.
->>
->> It's not invalid, its just not measuring the time that is useful here.
->>   printk is measuring something similar to (but not exactly the same
->> as) CLOCK_MONOTONIC, but this is measuring something similar to
->> CLOCK_BOOTTIME.
->
->
-> One thing I'm curious about with this patch, since we measure and keep track
-> of suspend time in the timekeeping core, there may be enough justification
-> to adding this sort of debugging info the timekeeping core itself.
->
-> Although what is being tracked with this driver isn't just total time in
-> suspend, but looks like more of a logarithmic histogram of suspend times. Is
-> there any context you can provide as to why that particular format was
-> chosen (which would could be added to help improve the commit message)?
+On Thursday 02 May 2013, Jason Gunthorpe wrote:
+> > +static struct of_device_id orion_irq_dt_ids[] __initconst = {
+> > +     { .compatible = "marvell,orion-mpic", .data = orion_of_init },
+> > +     { }
+> 
+> Is there a strong reason to change the compatible string? Looks to me
+> like either the new driver or the old driver will bind depending on
+> what is in the machine description. No need for a new string?
+> 
 
-The idea was to keep a minimal amount of data while still being able
-to see how often the device is waking up.
+The compatible string should change if the binding changes in an
+incomptible way, and we should try not to change it unless it's
+fundamentally flawed.
+
+	Arnd
