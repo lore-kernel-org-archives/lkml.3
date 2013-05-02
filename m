@@ -1,274 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760882Ab3EBXt2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 19:49:28 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:53204 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761527Ab3EBXtA (ORCPT
+	id S932433Ab3EBXwP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 19:52:15 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56848 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855Ab3EBXwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 19:49:00 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/5] irqchip: add support for Marvell Orion SoCs
-Date: Fri,  3 May 2013 01:48:35 +0200
-Message-Id: <1367538519-23940-2-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1367538519-23940-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1367538519-23940-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Thu, 2 May 2013 19:52:14 -0400
+X-AuditID: 9c930179-b7c28ae0000018a0-71-5182fc2b3f67
+Subject: Re : [PATCH, RFC 09/22] crypto: lz4: don't build on ARM
+In-Reply-To: <1367507786-505303-1-git-send-email-arnd@arndb.de>
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:5M2TImUS4ktGM2EKbnWxsD422uJz6Tv3MkR0dN0Fbmb
+ Bfe0GAX1aqnOcsJbhjHzoPdJhfywQ4yBXR5/ieSYqD6mpDtHxm
+ X0yb8H2pZS10hEwKQEYbLvcWA1K9MrYN6vNuixAsdQoxHM1noB
+ LWoLTraUL/yoEnECPiBExqOYVde6z6bdLN5QGZdWX1M2lOUN3L
+ +HPOmKKcdB6CcQcE45ouF7jYRpM+/KsZK9S8dSpF4o/yub2jl3
+ WYdRKqSy/zTyiTggGi6uiIbh9NblX28CeBOlCouSt2k8M9YsQV
+ Xd+zlf9ilWJezB5UNhPY+4yzrs1IIeg60Mm9SC1zwtIWb/oxCG
+ mvC7cwaz06zvrcI1WOzPOnttXxtF/f8fMeVdSGqAU
+X-Brightmail-Tracker: AAAAAA==
+Reply-To: "Chanho Min" <chanho.min@lge.com>
+X-Priority: 3 (Normal)
+From: "Chanho Min" <chanho.min@lge.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Message-ID: <OF54831661.2286D403-ON49257B5F.00831E7A-49257B5F.00831E7D@lge.com>
+Date: Fri, 3 May 2013 08:52:10 +0900
+X-MIMETrack: Serialize by Router on LGEKRHQMS17/LGE/LG Group(Release 6.5.5FP3HF116 | July
+ 11, 2008) at 2013/05/03 08:52:11
+MIME-Version: 1.0
+Content-type: multipart/mixed; 
+	Boundary="0__=C6BBF1CCDF1098EA8f9e8a93df938690918cC6BBF1CCDF1098EA"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an irqchip driver for the main interrupt controller found
-on Marvell Orion SoCs (Kirkwood, Dove, Orion5x, Discovery Innovation).
-Corresponding device tree documentation is also added.
+--0__=C6BBF1CCDF1098EA8f9e8a93df938690918cC6BBF1CCDF1098EA
+Content-type: text/plain; charset=US-ASCII
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Note: This patch triggers a checkpatch warning for
-  WARNING: Avoid CamelCase: <handle_IRQ>
 
-Changelog:
-v1->v2:
-- rename compatible string to "marvell,orion-intc" (Suggested by Jason Gunthorpe)
-- request mem regions for irq base registers (Suggested by Jason Gunthorpe)
-- make orion_handle_irq static (Suggested by Jason Gunthorpe)
-- make use of IRQCHIP_DECLARE (Suggested by Jason Gunthorpe)
+>It is not currently possible to build the LZ4 code on ARM, so let's
+>remove that option in Kconfig for now.
+>
+>lib/built-in.o: In function `lz4_compress64kctx':
+> lib/lz4/lz4_compress.c:339: undefined reference to `__ctzsi2'
+>lib/built-in.o: In function `lz4_compressctx':
+> lib/lz4/lz4_compress.c:157: undefined reference to `__ctzsi2'
+>lib/built-in.o: In function `lz4hc_commonlength':
+> lib/lz4/lz4hc_compress.c:102: undefined reference to `__ctzsi2'
+> lib/lz4/lz4hc_compress.c:102: undefined reference to `__ctzsi2'
+>lib/built-in.o: In function `lz4hc_insertandgetwidermatch':
+> lib/lz4/lz4hc_compress.c:230: undefined reference to `__ctzsi2'
 
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Jean-Francois Moine <moinejf@free.fr>
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- .../interrupt-controller/marvell,orion-intc.txt    |   22 ++++
- drivers/irqchip/Kconfig                            |    5 +
- drivers/irqchip/Makefile                           |    1 +
- drivers/irqchip/irq-orion.c                        |  133 ++++++++++++++++++++
- 4 files changed, 161 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/marvell,orion-intc.txt
- create mode 100644 drivers/irqchip/irq-orion.c
+Please, let me know the gcc version and tested defconfig.
+I didn't have any problem to build with gcc 4.6.4 on armv7.
+Some architecture need libgcc functions for __builtin_clz/ctz.
+Porting them to lib is in progress:
+http://marc.info/?l=linux-kernel&m=136748861811956&w=2
+But, It doesn't happen on ARM, PowerPC and x86.
 
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/marvell,orion-intc.txt b/Documentation/devicetree/bindings/interrupt-controller/marvell,orion-intc.txt
-new file mode 100644
-index 0000000..9b7aee9
---- /dev/null
-+++ b/Documentation/devicetree/bindings/interrupt-controller/marvell,orion-intc.txt
-@@ -0,0 +1,22 @@
-+Marvell Orion SoC main interrupt controller
-+
-+Required properties:
-+- compatible: shall be "marvell,orion-intc"
-+- reg: base address(es) of interrupt registers starting with CAUSE register
-+- interrupt-controller: identifies the node as an interrupt controller
-+- #interrupt-cells: number of cells to encode an interrupt source, shall be 1.
-+
-+The interrupt sources map to the corresponding bits in the interrupt
-+registers, i.e.
-+- 0 maps to bit 0 of first base address,
-+- 1 maps to bit 1 of first base address,
-+- 32 maps to bit 0 of second base address, and so on.
-+
-+Example:
-+	intc: interrupt-controller {
-+		compatible = "marvell,orion-intc";
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+                /* Dove has 64 first level interrupts */
-+		reg = <0x20200 0x10>, <0x20210 0x10>;
-+	};
-diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-index a350969..8da3559 100644
---- a/drivers/irqchip/Kconfig
-+++ b/drivers/irqchip/Kconfig
-@@ -2,6 +2,11 @@ config IRQCHIP
- 	def_bool y
- 	depends on OF_IRQ
- 
-+config IRQCHIP_ORION
-+	bool
-+	select IRQ_DOMAIN
-+	select MULTI_IRQ_HANDLER
-+
- config ARM_GIC
- 	bool
- 	select IRQ_DOMAIN
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index 10ef57f..2cad23d 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -5,6 +5,7 @@ obj-$(CONFIG_ARCH_EXYNOS)		+= exynos-combiner.o
- obj-$(CONFIG_ARCH_MXS)			+= irq-mxs.o
- obj-$(CONFIG_METAG)			+= irq-metag-ext.o
- obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)	+= irq-metag.o
-+obj-$(CONFIG_IRQCHIP_ORION)		+= irq-orion.o
- obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
- obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
- obj-$(CONFIG_ARM_GIC)			+= irq-gic.o
-diff --git a/drivers/irqchip/irq-orion.c b/drivers/irqchip/irq-orion.c
-new file mode 100644
-index 0000000..21ebe6c
---- /dev/null
-+++ b/drivers/irqchip/irq-orion.c
-@@ -0,0 +1,133 @@
-+/*
-+ * Marvell Orion SoCs IRQ chip driver.
-+ *
-+ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <asm/exception.h>
-+#include <asm/mach/irq.h>
-+
-+#include "irqchip.h"
-+
-+/* max number of handled irq register blocks */
-+#define ORION_MAX_IRQREG		2
-+
-+#define ORION_IRQ_CAUSE			0x00
-+#define ORION_IRQ_MASK			0x04
-+#define ORION_IRQ_FIQ_MASK		0x08
-+#define ORION_IRQ_ENDP_MASK		0x0c
-+
-+static void __iomem *orion_irq_base[ORION_MAX_IRQREG];
-+static unsigned int orion_irq_regs;
-+static struct irq_domain *orion_irq_domain;
-+
-+static asmlinkage void __exception_irq_entry orion_handle_irq(
-+	struct pt_regs *regs)
-+{
-+	int n;
-+	for (n = 0; n < orion_irq_regs; n++) {
-+		u32 hwirq_base = n * 32;
-+		u32 stat = readl_relaxed(orion_irq_base[n] + ORION_IRQ_CAUSE) &
-+			readl_relaxed(orion_irq_base[n] + ORION_IRQ_MASK);
-+		while (stat) {
-+			u32 hwirq = ffs(stat) - 1;
-+			u32 irq = irq_find_mapping(orion_irq_domain,
-+						   hwirq_base + hwirq);
-+			handle_IRQ(irq, regs);
-+			stat &= ~(1 << hwirq);
-+		}
-+	}
-+}
-+
-+static void orion_irq_mask(struct irq_data *irqd)
-+{
-+	unsigned int irq = irqd_to_hwirq(irqd);
-+	unsigned int irq_off = irq % 32;
-+	int reg = irq / 32;
-+	u32 val;
-+
-+	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
-+	writel(val & ~(1 << irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
-+}
-+
-+static void orion_irq_unmask(struct irq_data *irqd)
-+{
-+	unsigned int irq = irqd_to_hwirq(irqd);
-+	unsigned int irq_off = irq % 32;
-+	int reg = irq / 32;
-+	u32 val;
-+
-+	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
-+	writel(val | (1 << irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
-+}
-+
-+static struct irq_chip orion_irq_chip = {
-+	.name		= "orion_irq",
-+	.irq_mask	= orion_irq_mask,
-+	.irq_unmask	= orion_irq_unmask,
-+};
-+
-+static int orion_irq_map(struct irq_domain *d, unsigned int virq,
-+			 irq_hw_number_t hw)
-+{
-+	irq_set_chip_and_handler(virq, &orion_irq_chip,
-+				 handle_level_irq);
-+	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
-+
-+	return 0;
-+}
-+
-+static struct irq_domain_ops orion_irq_ops = {
-+	.map = orion_irq_map,
-+	.xlate = irq_domain_xlate_onecell,
-+};
-+
-+static int __init orion_of_init(struct device_node *np,
-+				struct device_node *parent)
-+{
-+	int n;
-+
-+	for (n = 0; n < ORION_MAX_IRQREG; n++) {
-+		struct resource r;
-+
-+		/* parsing reg property may fail silently here */
-+		if (of_address_to_resource(np, n, &r))
-+			continue;
-+
-+		if (!request_mem_region(r.start, resource_size(&r), np->name))
-+			panic("%s: unable to request mem region %d",
-+			      np->full_name, n);
-+
-+		orion_irq_base[n] = ioremap(r.start, resource_size(&r));
-+		if (!orion_irq_base[n])
-+			panic("%s: unable to map resource %d",
-+			      np->full_name, n);
-+
-+		/* mask all interrupts */
-+		writel(0, orion_irq_base[n] + ORION_IRQ_MASK);
-+		orion_irq_regs++;
-+	}
-+
-+	/* at least one irq reg must be set */
-+	if (!orion_irq_regs)
-+		panic("%s: unable to map IRQC registers\n", np->full_name);
-+
-+	orion_irq_domain = irq_domain_add_linear(np, orion_irq_regs * 32,
-+						 &orion_irq_ops, NULL);
-+	if (!orion_irq_domain)
-+		panic("%s: unable to create IRQ domain\n", np->full_name);
-+
-+	set_handle_irq(orion_handle_irq);
-+
-+	return 0;
-+}
-+IRQCHIP_DECLARE(orion_intc, "marvell,orion-intc", orion_of_init);
--- 
-1.7.10.4
+Thanks
+Chanho Min
+--0__=C6BBF1CCDF1098EA8f9e8a93df938690918cC6BBF1CCDF1098EA
+Content-type: application/octet-stream; 
+	name="mime.txt"
+Content-Disposition: attachment; filename="mime.txt"
+Content-transfer-encoding: base64
+
+SXQgaXMgbm90IGN1cnJlbnRseSBwb3NzaWJsZSB0byBidWlsZCB0aGUgTFo0IGNvZGUgb24gQVJN
+LCBzbyBsZXQncw0KcmVtb3ZlIHRoYXQgb3B0aW9uIGluIEtjb25maWcgZm9yIG5vdy4NCg0KbGli
+L2J1aWx0LWluLm86IEluIGZ1bmN0aW9uIGBsejRfY29tcHJlc3M2NGtjdHgnOg0KIGxpYi9sejQv
+bHo0X2NvbXByZXNzLmM6MzM5OiB1bmRlZmluZWQgcmVmZXJlbmNlIHRvIGBfX2N0enNpMicNCmxp
+Yi9idWlsdC1pbi5vOiBJbiBmdW5jdGlvbiBgbHo0X2NvbXByZXNzY3R4JzoNCiBsaWIvbHo0L2x6
+NF9jb21wcmVzcy5jOjE1NzogdW5kZWZpbmVkIHJlZmVyZW5jZSB0byBgX19jdHpzaTInDQpsaWIv
+YnVpbHQtaW4ubzogSW4gZnVuY3Rpb24gYGx6NGhjX2NvbW1vbmxlbmd0aCc6DQogbGliL2x6NC9s
+ejRoY19jb21wcmVzcy5jOjEwMjogdW5kZWZpbmVkIHJlZmVyZW5jZSB0byBgX19jdHpzaTInDQog
+bGliL2x6NC9sejRoY19jb21wcmVzcy5jOjEwMjogdW5kZWZpbmVkIHJlZmVyZW5jZSB0byBgX19j
+dHpzaTInDQpsaWIvYnVpbHQtaW4ubzogSW4gZnVuY3Rpb24gYGx6NGhjX2luc2VydGFuZGdldHdp
+ZGVybWF0Y2gnOg0KIGxpYi9sejQvbHo0aGNfY29tcHJlc3MuYzoyMzA6IHVuZGVmaW5lZCByZWZl
+cmVuY2UgdG8gYF9fY3R6c2kyJw0KDQpDYzogQ2hhbmhvIE1pbiA8Y2hhbmhvLm1pbkBsZ2UuY29t
+Pg0KQ2M6IEhlcmJlcnQgWHUgPGhlcmJlcnRAZ29uZG9yLmhlbmdsaS5jb20uYXU+DQpTaWduZWQt
+b2ZmLWJ5OiBBcm5kIEJlcmdtYW5uIDxhcm5kQGFybmRiLmRlPg0KLS0tDQogY3J5cHRvL0tjb25m
+aWcgfCAyICsrDQogMSBmaWxlIGNoYW5nZWQsIDIgaW5zZXJ0aW9ucygrKQ0KDQpkaWZmIC0tZ2l0
+IGEvY3J5cHRvL0tjb25maWcgYi9jcnlwdG8vS2NvbmZpZw0KaW5kZXggYWEzYTM0OS4uMWNkMTM0
+YiAxMDA2NDQNCi0tLSBhL2NyeXB0by9LY29uZmlnDQorKysgYi9jcnlwdG8vS2NvbmZpZw0KQEAg
+LTEzNjEsNiArMTM2MSw3IEBAIGNvbmZpZyBDUllQVE9fODQyDQogDQogY29uZmlnIENSWVBUT19M
+WjQNCiAJdHJpc3RhdGUgIkxaNCBjb21wcmVzc2lvbiBhbGdvcml0aG0iDQorCWRlcGVuZHMgb24g
+IUFSTQ0KIAlzZWxlY3QgQ1JZUFRPX0FMR0FQSQ0KIAlzZWxlY3QgTFo0X0NPTVBSRVNTDQogCXNl
+bGVjdCBMWjRfREVDT01QUkVTUw0KQEAgLTEzNjksNiArMTM3MCw3IEBAIGNvbmZpZyBDUllQVE9f
+TFo0DQogDQogY29uZmlnIENSWVBUT19MWjRIQw0KIAl0cmlzdGF0ZSAiTFo0SEMgY29tcHJlc3Np
+b24gYWxnb3JpdGhtIg0KKwlkZXBlbmRzIG9uICFBUk0NCiAJc2VsZWN0IENSWVBUT19BTEdBUEkN
+CiAJc2VsZWN0IExaNEhDX0NPTVBSRVNTDQogCXNlbGVjdCBMWjRfREVDT01QUkVTUw0KLS0gDQox
+LjguMS4yDQoNCg==
+
+--0__=C6BBF1CCDF1098EA8f9e8a93df938690918cC6BBF1CCDF1098EA--
 
