@@ -1,113 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761545Ab3EBWbT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 18:31:19 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:35762 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab3EBWbP (ORCPT
+	id S1759032Ab3EBWh1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 18:37:27 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:34144 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab3EBWh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 18:31:15 -0400
-Date: Thu, 2 May 2013 15:31:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-Message-ID: <20130502223107.GB3780@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130501091012.GB28253@dyad.programming.kicks-ass.net>
- <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg>
- <20130501155501.GB7521@dyad.programming.kicks-ass.net>
- <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
- <20130502072623.GE7521@dyad.programming.kicks-ass.net>
- <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg>
- <20130502173257.GX3780@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg>
- <20130502193409.GA3780@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1305022249010.25417@ja.ssi.bg>
+	Thu, 2 May 2013 18:37:26 -0400
+Message-ID: <5182EAA0.9070208@gmail.com>
+Date: Fri, 03 May 2013 00:37:20 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1305022249010.25417@ja.ssi.bg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050222-3620-0000-0000-0000024F23BD
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
+References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <alpine.LFD.2.02.1305022324371.2891@ionos> <5182E11E.5010103@gmail.com> <201305030009.57041.arnd@arndb.de>
+In-Reply-To: <201305030009.57041.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 11:19:12PM +0300, Julian Anastasov wrote:
-> 
-> 	Hello,
-> 
-> On Thu, 2 May 2013, Paul E. McKenney wrote:
-> 
-> > > 	Only the new cond_resched_rcu() macro provides
-> > > PREEMPT_ACTIVE flag to skip the rcu_preempt_sleep_check()
-> > > call. The old macros provide locked=0 as you noticed. Does it
-> > > answer your question or I'm missing something?
-> > 
-> > PREEMPT_ACTIVE's value is usually 0x10000000.  Did it change
-> > since 3.9?  If not, rcu_sleep_check(preempt_offset & PREEMPT_ACTIVE)
-> > is the same as rcu_sleep_check(0).
-> 
-> 	Yes, the different platforms use different bit,
-> that is why I mentioned about my failed attempt at
-> changing hardirq.h. PREEMPT_ACTIVE is always != 0.
-> 
-> 	But I don't understand what do you mean by
-> 'preempt_offset & PREEMPT_ACTIVE' being always 0.
-> It is always 0 for cond_resched(), cond_resched_lock()
-> and cond_resched_softirq(), not for cond_resched_rcu():
-> 
-> (PREEMPT_ACTIVE | PREEMPT_RCU_OFFSET) & PREEMPT_ACTIVE
-> should give PREEMPT_ACTIVE, not 0. We have 2 cases in
-> rcu_sleep_check() for the if:
-> 
-> 1. !(PREEMPT_ACTIVE) => FALSE for cond_resched_rcu
-> 2. !(0) => TRUE for other cond_resched_* macros
-> 
-> 	On x86 the code is:
-> 
-> __might_sleep:
->         pushl   %ebp    #
->         testl   $268435456, %ecx        #, preempt_offset
-> ...
->         jne     .L240   #,
-> 	// rcu_lock_map checked when PREEMPT_ACTIVE is missing
-> .L240:
-> 	// rcu_bh_lock_map checked
+On 05/03/2013 12:09 AM, Arnd Bergmann wrote:
+> On Thursday 02 May 2013, Sebastian Hesselbarth wrote:
+>>> Just look at the various implementations in drivers/irqchip/ and find
+>>> out how similar they are. Moving code to drivers/irqchip/ does not
+>>> make an excuse for reestablishing the mess which was addressed by the
+>>> generic irq chip implementation.
+>>>
+>>> Can you - and that means all of you ARM folks - please get your gear
+>>> together and add the missing features to the generic irq chip
+>>> implementation? I'm not going to accept more of that OF/DT frenzy.
+>>
+>> So you are suggesting to have a "linux,generic-intc" or you want me
+>> to have "marvell,orion-intc" make use of generic irq chip again?
+>>
+>> The second is easy, the first will take me a while to think about
+>> proper DT properties how to encode mask/unmask/ack/.. availability
+>> and offsets.
+>
+> I think it should not be "linux,..." since the description can
+> well be OS independent. I don't have a good idea for a generic
+> name, but it's not very important.
+>
+> The main missing piece in the generic irqchip code at the moment
+> is support for the linear irqdomain. Once we have that, a lot of
+> code can be simplified significantly.
 
-OK, apologies -- I was looking at the calls to __might_sleep() in
-mainline, and missed the one that you added.  Revisiting that, a
-question:
+Arnd, Thomas,
 
-> +#ifdef CONFIG_PREEMPT_RCU
-> +#define PREEMPT_RCU_OFFSET     1
+I still don't get it completely. Are you requesting a full blown
+DT-enabled generic irq chip driver that can be setup by DT properties?
 
-Does this really want to be "1" instead of PREEMPT_OFFSET?
+Or is it just to have current generic irq chip play with linear
+irqdomain?
 
-> +#else
-> +#define PREEMPT_RCU_OFFSET     PREEMPT_CHECK_OFFSET
-> +#endif
-> +
-> +extern int __cond_resched_rcu(void);
-> +
-> +#define cond_resched_rcu() ({                                  \
-> +       __might_sleep(__FILE__, __LINE__, PREEMPT_ACTIVE |      \
-> +                                         PREEMPT_RCU_OFFSET);  \
-> +       __cond_resched_rcu();                                   \
-> +})
-> +
+If it is just linear irqdomain, then I can have a look at it
+now. I would first send v2 to allow the others to integrate
+Kirkwood, Orion5x, and Discovery Innovation. Then v3 will
+touch generic irq and merge that with orion irqchip.
 
-For the rest, I clearly need to revisit when more alert, because right
-now I am not seeing the connection to preemptible RCU's rcu_read_lock()
-implementation.
+(@Jason C: Are you sure that I should merge dove and orion
+irqchip patches? I doubt that anything touching generic irq
+will not go through irq tree.)
 
-							Thanx, Paul
-
+Sebastian
