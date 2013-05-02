@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932723Ab3EBSy2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:54:28 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:56354 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932084Ab3EBSy0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:54:26 -0400
-Message-ID: <5182B65C.8030000@gmail.com>
-Date: Thu, 02 May 2013 20:54:20 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932798Ab3EBSyx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:54:53 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:46086 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760889Ab3EBSyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 14:54:51 -0400
+Date: Thu, 2 May 2013 21:55:54 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+In-Reply-To: <20130502173257.GX3780@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg>
+References: <1367290378-29224-2-git-send-email-horms@verge.net.au> <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg> <20130430072944.GA13959@verge.net.au> <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg> <20130501091012.GB28253@dyad.programming.kicks-ass.net>
+ <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg> <20130501155501.GB7521@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg> <20130502072623.GE7521@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg>
+ <20130502173257.GX3780@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <5182B18C.4080404@gmail.com> <20130502184514.GE14496@n2100.arm.linux.org.uk>
-In-Reply-To: <20130502184514.GE14496@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/13 20:45, Russell King - ARM Linux wrote:
-> On Thu, May 02, 2013 at 08:33:48PM +0200, Sebastian Hesselbarth wrote:
->> On 05/02/2013 08:25 PM, Sebastian Hesselbarth wrote:
->>> This patch adds an irqchip driver for the main interrupt controller found
->>> on Marvell Orion SoCs (Kirkwood, Dove, Orion5x, Discovery Innovation).
->>> Corresponding device tree documentation is also added.
->>>
->>> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->>> ---
->>> Note: This patch triggers a checkpatch warning for
->>>     WARNING: Avoid CamelCase:<handle_IRQ>
->>>
->> [...]
->>> diff --git a/include/linux/irqchip/orion.h b/include/linux/irqchip/orion.h
->>> new file mode 100644
->>> index 0000000..04f7bab
->>> --- /dev/null
->>> +++ b/include/linux/irqchip/orion.h
->>> @@ -0,0 +1,18 @@
->>> +/*
->>> + * Marvell Orion SoCs IRQ chip driver header.
->>> + *
->>> + * Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->>> + *
->>> + * This file is licensed under the terms of the GNU General Public
->>> + * License version 2.  This program is licensed "as is" without any
->>> + * warranty of any kind, whether express or implied.
->>> + */
->>> +
->>> +#ifndef __LINUX_IRQCHIP_ORION_H
->>> +#define __LINUX_IRQCHIP_ORION_H
->>> +
->>> +#include<asm/exception.h>
->>
->> First review by myself. The above include is a left-over and
->> will be removed in a v2.
->
-> You still need your first level IRQ handlers marked with __exception_irq_entry
-> which is defined in the above file.
->
 
-Russell,
+	Hello,
 
-I know and it is marked with __exception_irq_entry. The above is in
-include/linux/irqchip/orion.h and only used for .init_irq in machine
-descriptor later.
+On Thu, 2 May 2013, Paul E. McKenney wrote:
 
-The irq handler is never exposed to the board file itself, but set
-within orion_init_irq. This approach has been taked by
-irqchip/irq-gic.c and irqchip/irq-vic.c rather than adding
-.handle_irq to the machine descriptor.
+> On Thu, May 02, 2013 at 06:54:05PM +0300, Julian Anastasov wrote:
+> > 
+> > 	I tested the following patch in 2 variants,
+> > TINY_RCU and CONFIG_TREE_PREEMPT_RCU. I see the
+> 
+> Could you please also try CONFIG_TREE_RCU?
 
-Sebastian
+	Note that I'm testing on some 9-year old
+UP system, i.e. 1 CPU. Now I enabled SMP to test CONFIG_TREE_RCU
+and the results are same. I think, it should be just like
+the TINY_RCU in terms of these debuggings (non-preempt). Extra 
+rcu_read_lock gives me "Illegal context switch in RCU read-side
+critical section" in addition to the "BUG: sleeping function
+called from invalid context" message.
+
+> > error if extra rcu_read_lock is added for testing.
+> > 
+> > 	I'm using the PREEMPT_ACTIVE flag to indicate
+> > that we are already under lock. It should work because
+> > __might_sleep is not called with such bit. I also tried to
+> > add new flag in include/linux/hardirq.h but PREEMPT_ACTIVE
+> > depends on the arch, so this alternative looked difficult to
+> > implement.
+
+> > +extern int __cond_resched_rcu(void);
+> > +
+> > +#define cond_resched_rcu() ({					\
+> > +	__might_sleep(__FILE__, __LINE__, PREEMPT_ACTIVE |	\
+> > +					  PREEMPT_RCU_OFFSET);	\
+> > +	__cond_resched_rcu();					\
+> > +})
+> > +
+
+> > @@ -7062,7 +7076,9 @@ void __might_sleep(const char *file, int line, int preempt_offset)
+> >  {
+> >  	static unsigned long prev_jiffy;	/* ratelimiting */
+> > 
+> > -	rcu_sleep_check(); /* WARN_ON_ONCE() by default, no rate limit reqd. */
+> > +	/* WARN_ON_ONCE() by default, no rate limit reqd. */
+> > +	rcu_sleep_check(preempt_offset & PREEMPT_ACTIVE);
+> 
+> Color me confused.
+> 
+> >From what I can see, the two values passed in through preempt_offset
+> are PREEMPT_LOCK_OFFSET and SOFTIRQ_DISABLE_OFFSET.  PREEMPT_ACTIVE
+> is normally a high-order bit, above PREEMPT_MASK, SOFTIRQ_MASK, and
+> HARDIRQ_MASK.
+> 
+> PREEMPT_LOCK_OFFSET and SOFTIRQ_DISABLE_OFFSET have only low-order bits,
+> so I don't see how rcu_sleep_check() is passed anything other than zero.
+> Am I going blind, or what?
+
+	Only the new cond_resched_rcu() macro provides
+PREEMPT_ACTIVE flag to skip the rcu_preempt_sleep_check()
+call. The old macros provide locked=0 as you noticed. Does it
+answer your question or I'm missing something?
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
