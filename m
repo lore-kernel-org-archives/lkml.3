@@ -1,90 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760509Ab3EBQLu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 12:11:50 -0400
-Received: from peace.netnation.com ([204.174.223.2]:48641 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757990Ab3EBQLs (ORCPT
+	id S1760652Ab3EBQRT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 12:17:19 -0400
+Received: from nm16-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.166]:21954
+	"EHLO nm16-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758223Ab3EBQRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 12:11:48 -0400
-Date: Thu, 2 May 2013 09:11:46 -0700
-From: Simon Kirby <sim@hostway.ca>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [ 02/42] TTY: do not update atime/mtime on read/write
-Message-ID: <20130502161146.GA7454@hostway.ca>
-References: <20130429184752.435249613@linuxfoundation.org>
- <20130429184752.700428715@linuxfoundation.org>
- <20130430001445.GA17260@hostway.ca>
- <20130430002117.GA4202@kroah.com>
- <20130430003639.GB17260@hostway.ca>
- <20130430013724.GA5358@kroah.com>
- <CA+55aFxNGBpoVCx3Vm_fmCPF4XrUfHCM8GqQMa-qh3RLYOOS7w@mail.gmail.com>
- <CA+55aFzfxMvWVRjqV4pzz7XtpDGbxwGumGVeRT7OsF95noG4xw@mail.gmail.com>
+	Thu, 2 May 2013 12:17:18 -0400
+X-Yahoo-Newman-Id: 453915.17765.bm@smtp120.sbc.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: i1kqaEAVM1nR3DW68xUDOnLzyduVqUTccAJnj596eb8goBw
+ 5_5ZUzDn6qSvzxnVrq4t50IhdadXqPEAoNF2D6HFGYEXUB4dFxB74e2R24hk
+ MhJmSjSoDFzJOgA41xrrrOSTT6BcMM0T.lOvF8BAA9YNSEIrUxhz9aZIi_FV
+ 6BS2lSnfYpg05LBHRz6UcQlwGU_5xE4h_1EYC_X0oHjS2Ny6lPGXZ0V4twdm
+ 5r707Uq4EFdyxLXh2FMG4L8Z82.tN8Wshm6yIHAQm8zGZtqCn_2vJV5CLXwL
+ HodvoBWRt5yhrUhC1OSU4KF31.04xS8cB4v8i1A79qZQI3IMtZ0WBsPW4Mln
+ O.YvmF.1QN3rZ_0hMstRy5QziO3HGkcUj0UHaaRxVUkgFIXrsSoz29OcJt_z
+ ItklqnL1rQ5M3qDRP7XtoitNAIluJmI7l6hWWHH64Tsds5NGp.jW84pWabqq
+ nwsOGDsvq677mwAA_bYO9hfnknS3qhH_n
+X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
+X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
+        by smtp120.sbc.mail.gq1.yahoo.com with SMTP; 02 May 2013 16:17:17 +0000 UTC
+Date: Thu, 2 May 2013 09:17:20 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: dirk.eibach@gdsys.cc
+Cc: linux-kernel@vger.kernel.org, Kumar Gala <galak@kernel.crashing.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH] powerpc: Make Book E watchdog reset type configurable
+Message-ID: <20130502161720.GA7797@roeck-us.net>
+References: <1367505913-18970-1-git-send-email-dirk.eibach@gdsys.cc>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzfxMvWVRjqV4pzz7XtpDGbxwGumGVeRT7OsF95noG4xw@mail.gmail.com>
+In-Reply-To: <1367505913-18970-1-git-send-email-dirk.eibach@gdsys.cc>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 06:41:44PM -0700, Linus Torvalds wrote:
-
-> On Tue, Apr 30, 2013 at 5:57 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > Patch is whitespace-damaged and totally untested! Caveat applicator.
+On Thu, May 02, 2013 at 04:45:13PM +0200, dirk.eibach@gdsys.cc wrote:
+> From: Dirk Eibach <dirk.eibach@gdsys.cc>
 > 
-> Ok, so it's still whitespace-damaged, but it seems to work. The
-> appended has the "8 second rule" too..
+> Signed-off-by: Dirk Eibach <dirk.eibach@gdsys.cc>
+> Cc: Kumar Gala <galak@kernel.crashing.org>
+> Cc: Wim Van Sebroeck <wim@iguana.be>
+> Cc: linux-watchdog@vger.kernel.org
+> ---
+>  drivers/watchdog/Kconfig     |   32 ++++++++++++++++++++++++++++++++
+>  drivers/watchdog/booke_wdt.c |   10 +++++++++-
+>  2 files changed, 41 insertions(+), 1 deletions(-)
 > 
-> Comments? Simon?
-
-Tested -- both hunks seem to work as intended. Thanks!
-
-Simon-
-
-Below became b0b885657b6c8ef63a46bc9299b2a7715d19acde
-
->            Linus
-> 
-> --- snip snip ---
->  drivers/tty/pty.c    | 3 +++
->  drivers/tty/tty_io.c | 4 ++--
->  2 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-> index a62798fcc014..59bfaecc4e14 100644
-> --- a/drivers/tty/pty.c
-> +++ b/drivers/tty/pty.c
-> @@ -681,6 +681,9 @@ static int ptmx_open(struct inode *inode, struct file *filp)
-> 
->         nonseekable_open(inode, filp);
-> 
-> +       /* We refuse fsnotify events on ptmx, since it's a shared resource */
-> +       filp->f_mode |= FMODE_NONOTIFY;
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index e89fc31..6048593 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -1172,6 +1172,38 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
+>  
+>  	  The value can be overridden by the wdt_period command-line parameter.
+>  
+> +choice
+> +	prompt "PowerPC Book-E Watchdog reset type"
+> +	depends on BOOKE_WDT
+> +	default BOOKE_WDT_RESET_CHIP
+> +	help
+> +	  Specify what kind of reset will be executed on watchdog timeout.
 > +
->         retval = tty_alloc_file(filp);
->         if (retval)
->                 return retval;
-> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-> index 97ebc8c5864e..6464029e4860 100644
-> --- a/drivers/tty/tty_io.c
-> +++ b/drivers/tty/tty_io.c
-> @@ -988,10 +988,10 @@ void start_tty(struct tty_struct *tty)
-> 
->  EXPORT_SYMBOL(start_tty);
-> 
-> +/* We limit tty time update visibility to every 8 seconds or so. */
->  static void tty_update_time(struct timespec *time)
->  {
-> -       unsigned long sec = get_seconds();
-> -       sec -= sec % 60;
-> +       unsigned long sec = get_seconds() & ~7;
->         if ((long)(sec - time->tv_sec) > 0)
->                 time->tv_sec = sec;
->  }
+Seems to me it would be much better to make this configurable via platform data 
+and/or device tree.
+
+Guenter
