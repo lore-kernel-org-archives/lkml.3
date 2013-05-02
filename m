@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab3EBKJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:09:26 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:42344 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab3EBKJY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:09:24 -0400
-X-IronPort-AV: E=Sophos;i="4.87,595,1363158000"; 
-   d="scan'208";a="43403590"
-Message-ID: <f023185a0414961d3c30b3cfaf8b9a51.squirrel@www.codeaurora.org>
-In-Reply-To: <1367475929-32166-3-git-send-email-ambresh@ti.com>
-References: <1367475929-32166-1-git-send-email-ambresh@ti.com>
-    <1367475929-32166-3-git-send-email-ambresh@ti.com>
-Date: Thu, 2 May 2013 03:09:24 -0700
-Subject: Re: [Patch 2/3] clk: skip re-parenting orphan clk
-From: skannan@codeaurora.org
-To: "Ambresh K" <ambresh@ti.com>
-Cc: "Mike Turquette" <mturquette@linaro.org>, "Nishanth Menon" <nm@ti.com>,
-        "Rajendra" <rnayak@ti.com>, linux-kernel@vger.kernel.org,
-        "Tero Kristo" <t-kristo@ti.com>, "Ambresh K" <ambresh@ti.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-User-Agent: SquirrelMail/1.4.22
+	id S1755545Ab3EBKNA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:13:00 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36969 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751986Ab3EBKM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 06:12:58 -0400
+Date: Thu, 2 May 2013 12:13:08 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] drm: don't check modeset locks in panic handler
+Message-ID: <20130502101308.GA16684@pd.tnic>
+References: <CAPM=9tw-Ssu7ZYBZX7ipGt9w7zYG91tKbWZguM5DLPaqTakJPA@mail.gmail.com>
+ <1367480585-22814-1-git-send-email-daniel.vetter@ffwll.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1367480585-22814-1-git-send-email-daniel.vetter@ffwll.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 02, 2013 at 09:43:05AM +0200, Daniel Vetter wrote:
+> Since we know that locking is broken in that case and it's more
+> important to not flood the dmesg with random gunk.
+> 
+> Cc: Dave Airlie <airlied@gmail.com>
+> Cc: Borislav Petkov <bp@alien8.de>
+> References: https://groups.google.com/forum/?fromgroups=#!topic/linux.kernel/QFzFxSUeV4I
 
-Ambresh K wrote:
-> From: Ambresh K <ambresh@ti.com>
->
-> If clk is same as orphan clk than skip the iteration, there
+Yeah, we have this nice redirector service on k.org which uses the
+Message-ID only and doesn't rely on some external URLs remaining stable.
+You could use that instead:
 
-Typo: than => then
+Link: http://lkml.kernel.org/r/20130502000206.GH15623@pd.tnic
 
-> by avoiding unnecessary look-up.
->
-> Signed-off-by: Ambresh K <ambresh@ti.com>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 > ---
->  drivers/clk/clk.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index c187321..f4d2c73 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -1635,6 +1635,10 @@ int __clk_init(struct device *dev, struct clk *clk)
->  	 * this clock
->  	 */
->  	hlist_for_each_entry_safe(orphan, tmp2, &clk_orphan_list, child_node) {
-> +		/* Skip if clk is same as orphan clk */
-> +		if (!strcmp(clk->name, orphan->name))
-> +			continue;
+>  drivers/gpu/drm/drm_crtc.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+> index 792c3e3..3be0802 100644
+> --- a/drivers/gpu/drm/drm_crtc.c
+> +++ b/drivers/gpu/drm/drm_crtc.c
+> @@ -78,6 +78,10 @@ void drm_warn_on_modeset_not_all_locked(struct drm_device *dev)
+>  {
+>  	struct drm_crtc *crtc;
+>  
+> +	/* Locking is currently fubar in the panic handler. */
+> +	if (oops_in_progress)
+> +		return;
 > +
->  		if (orphan->ops->get_parent) {
->  			i = orphan->ops->get_parent(orphan->hw);
->  			if (i < 0) {
-> --
-> 1.7.4.1
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+>  	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
+>  		WARN_ON(!mutex_is_locked(&crtc->mutex));
 
+Yep, thanks.
+
+Reported-and-tested-by: Borislav Petkov <bp@suse.de>
 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
