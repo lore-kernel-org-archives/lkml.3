@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab3EBLCy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 07:02:54 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40697
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750878Ab3EBLCw (ORCPT
+	id S1757385Ab3EBLFV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 07:05:21 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:21431 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187Ab3EBLFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 07:02:52 -0400
-Date: Thu, 2 May 2013 13:01:08 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
-        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
-        riel@redhat.com
-Subject: Re: [PATCH v4 2/6] sched: set initial value of runnable avg for
- new forked task
-Message-ID: <20130502110108.GA13494@dyad.programming.kicks-ass.net>
-References: <1367040344-14485-1-git-send-email-alex.shi@intel.com>
- <1367040344-14485-3-git-send-email-alex.shi@intel.com>
+	Thu, 2 May 2013 07:05:19 -0400
+X-IronPort-AV: E=Sophos;i="4.87,595,1363132800"; 
+   d="scan'208";a="21771601"
+Date: Thu, 2 May 2013 12:04:46 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 3/3] xen/arm: account for stolen ticks
+In-Reply-To: <1367492533.21869.81.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1305021204050.5398@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com>  <1367436460-10183-3-git-send-email-stefano.stabellini@eu.citrix.com>  <1367482862.21869.28.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1305021134160.5398@kaball.uk.xensource.com>
+  <1367491708.21869.77.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1305021153220.5398@kaball.uk.xensource.com> <1367492533.21869.81.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367040344-14485-3-git-send-email-alex.shi@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 27, 2013 at 01:25:40PM +0800, Alex Shi wrote:
-> We need initialize the se.avg.{decay_count, load_avg_contrib} for a
-> new forked task.
-> Otherwise random values of above variables cause mess when do new task
-> enqueue:
->     enqueue_task_fair
->         enqueue_entity
->             enqueue_entity_load_avg
+On Thu, 2 May 2013, Ian Campbell wrote:
+> > > > It's based on my 3.9-rc3-smp-6 branch currently in linux-next (that is
+> > > > based on 3.9-rc3).
+> > > > However lost_ticks_1 is not in linux-next yet.
+> > > 
+> > > Which branch is in Linux next? It doesn't seem to be your linux-next
+> > > (last commit 2011).
+> > 
+> > that would be linux-next from
+> > git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git
 > 
-> and make forking balancing imbalance since incorrect load_avg_contrib.
-> 
-> set avg.decay_count = 0, and avg.load_avg_contrib = se->load.weight to
-> resolve such issues.
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> Ah, I was looking in your xenbits tree -- is that deprecated?
 
-This patch seems sensible enough.. 
-
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-
-> ---
->  kernel/sched/core.c | 6 ++++++
->  kernel/sched/fair.c | 4 ++++
->  2 files changed, 10 insertions(+)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 86e87f1..e0c003a 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-
-> +	/* New forked task assumed with full utilization */
-> +#if defined(CONFIG_SMP)
-> +	p->se.avg.load_avg_contrib = p->se.load.weight;
-> +#endif
-
-We'd typically write: #ifdef CONFIG_SMP
-we only use the #if defined() form for multiple CONFIG tests.
+I guess it is, now that I have a kernel.org account.
+I might as well get rid of it.
