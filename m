@@ -1,32 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758247Ab3EBKuG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:50:06 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:40055 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756657Ab3EBKuE (ORCPT
+	id S1758506Ab3EBKuO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:50:14 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:62278 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758386Ab3EBKuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:50:04 -0400
+	Thu, 2 May 2013 06:50:11 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com
-Subject: [PATCH 0/8] crypto: Fix clocks and DMA configuration
-Date: Thu,  2 May 2013 11:49:42 +0100
-Message-Id: <1367491790-9727-1-git-send-email-lee.jones@linaro.org>
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andreas Westin <andreas.westin@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-crypto@vger.kernel.org
+Subject: [PATCH 4/8] crypto: ux500/cryp - Prepare clock before enabling it
+Date: Thu,  2 May 2013 11:49:46 +0100
+Message-Id: <1367491790-9727-5-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1367491790-9727-1-git-send-email-lee.jones@linaro.org>
+References: <1367491790-9727-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set ensures any clocks that are obtained by the ux500
-crypto drivers are prepared for use. We also request DMA channels and
-configure them in the correct way using the new dmaengine API.
+If we fail to prepare the ux500-cryp clock before enabling it the
+platform will fail to boot. Here we insure this happens.
 
- arch/arm/mach-ux500/board-mop500.c    |   14 ++------------
- drivers/crypto/ux500/cryp/cryp.h      |    7 ++++++-
- drivers/crypto/ux500/cryp/cryp_core.c |   31 ++++++++++++++++++++++++++++++-
- drivers/crypto/ux500/hash/hash_alg.h  |    5 ++++-
- drivers/crypto/ux500/hash/hash_core.c |   24 ++++++++++++++++++++++--
- 5 files changed, 64 insertions(+), 17 deletions(-)
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Andreas Westin <andreas.westin@stericsson.com>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-crypto@vger.kernel.org
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/crypto/ux500/cryp/cryp_core.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/crypto/ux500/cryp/cryp_core.c b/drivers/crypto/ux500/cryp/cryp_core.c
+index 22c9063..bf78d60 100644
+--- a/drivers/crypto/ux500/cryp/cryp_core.c
++++ b/drivers/crypto/ux500/cryp/cryp_core.c
+@@ -1459,11 +1459,17 @@ static int ux500_cryp_probe(struct platform_device *pdev)
+ 		goto out_regulator;
+ 	}
+ 
++	ret = clk_prepare(device_data->clk);
++	if (ret) {
++		dev_err(dev, "[%s]: clk_prepare() failed!", __func__);
++		goto out_clk;
++	}
++
+ 	/* Enable device power (and clock) */
+ 	ret = cryp_enable_power(device_data->dev, device_data, false);
+ 	if (ret) {
+ 		dev_err(dev, "[%s]: cryp_enable_power() failed!", __func__);
+-		goto out_clk;
++		goto out_clk_unprepare;
+ 	}
+ 
+ 	cryp_error = cryp_check(device_data);
+@@ -1524,6 +1530,9 @@ static int ux500_cryp_probe(struct platform_device *pdev)
+ out_power:
+ 	cryp_disable_power(device_data->dev, device_data, false);
+ 
++out_clk_unprepare:
++	clk_unprepare(device_data->clk);
++
+ out_clk:
+ 	clk_put(device_data->clk);
+ 
+@@ -1594,6 +1603,7 @@ static int ux500_cryp_remove(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "[%s]: cryp_disable_power() failed",
+ 			__func__);
+ 
++	clk_unprepare(device_data->clk);
+ 	clk_put(device_data->clk);
+ 	regulator_put(device_data->pwr_regulator);
+ 
+-- 
+1.7.10.4
 
