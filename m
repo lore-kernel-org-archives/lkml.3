@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761758Ab3EBUC3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 16:02:29 -0400
-Received: from londo.lunn.ch ([80.238.139.98]:58932 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761283Ab3EBUC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 16:02:27 -0400
-Date: Thu, 2 May 2013 22:02:04 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
-Message-ID: <20130502200204.GA24965@lunn.ch>
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130502185322.GA29333@obsidianresearch.com>
- <5182B902.7040908@gmail.com>
- <20130502193510.GA29522@obsidianresearch.com>
- <5182C322.3030304@gmail.com>
+	id S1761872Ab3EBUDQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 16:03:16 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:50958 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755392Ab3EBUDP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 16:03:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5182C322.3030304@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130501224604.21ebc42a@annuminas.surriel.com>
+References: <517B1153.8000401@valvesoftware.com>
+	<517B2FB4.30605@redhat.com>
+	<20130427024248.GA1229@cmpxchg.org>
+	<517EEBD1.503@valvesoftware.com>
+	<CA+55aFxcq44JsrrR5KKuT=DZQHCfOE3KHQrcD215T+deYesW2g@mail.gmail.com>
+	<517F14D1.3070307@redhat.com>
+	<20130502013426.GC9583@home.goodmis.org>
+	<20130501224604.21ebc42a@annuminas.surriel.com>
+Date: Thu, 2 May 2013 13:03:14 -0700
+X-Google-Sender-Auth: lUzQ-FInTiRUKPq512fBUzIKmjQ
+Message-ID: <CA+55aFwApXJzJYPg40Bn_+qmv470OnfwMwNMQnfV8eXKtqVzWQ@mail.gmail.com>
+Subject: Re: [PATCH] mm,x86: limit 32 bit kernel to 12GB memory
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        sonnyrao@chromium.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 09:48:50PM +0200, Sebastian Hesselbarth wrote:
-> On 05/02/2013 09:35 PM, Jason Gunthorpe wrote:
-> >I have kirkwood HW but I haven't had time to make newer kernels run on
-> >it, otherwise I'd test it too :(
-> 
-> I also have kirkwood HW but that will cut me from email as I use it as
-> relay server ;) Maybe I can turn it into a test bed for a while.
-> 
-> There is also Orion5x and Discovery Innovation (mv78xx0) to be tested.
+On Wed, May 1, 2013 at 7:46 PM, Rik van Riel <riel@redhat.com> wrote:
+>
+> Here's a somewhat friendlier one. Printing out the total amount of
+> memory in the system may give them some extra motivation to upgrade
+> to a 64 bit kernel :)
 
-I can test kirkwood and Orion5x.
+This needs more work:
 
-  Andrew
+ - suggesting a 64-bit kernel on a truly 32-bit CPU is insane, so it
+had better actually check the CPUID for 64-bit support ("lm" for "long
+mode").
+
+ - we don't remove features, so there should be a kernel command line
+option to say "I'm insane, I know this is going to have problems, I
+want you to try to use more memory anyway" and disable the new 12GB
+limit
+
+ - I don't think it's necessarily "system stability". The problem with
+large amounts of highmem ends up being that we end up using up almost
+all of the lowmem just to *track* the huge amount of highmem, and then
+we have so little lowmem that we suck at performance and have various
+random problems. So it's not just "system stability", it's more fluid
+than that.
+
+The "it's more fluid than that" is also why I'd want to have a way to
+override it. Using up all lowmem to track highmem is actually ok under
+some very specific loads. If you have a setup where you have tons of
+highmem, but all it is ever used for is anonymous user pages, you
+don't need a lot of lowmem. Some of the craziest PAE users were that
+class of use, and for all we know there are still crazy people with
+real 32-bit CPU's that want to do it.
+
+We don't really want to support it, we don't really care, but I don't
+think we want to then say "you cannot do that" either. We want to say
+"you're a f*cking crazy moron, and we don't think what you do is a
+good idea, but if if you absolutely want to shoot yourself in the
+foot, here's how to do it. Don't expect things to work well in
+general, but you might have a load where it's acceptable".
+
+                  Linus
