@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761576Ab3EBVe7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 17:34:59 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42069 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755384Ab3EBVe6 (ORCPT
+	id S1762044Ab3EBVgQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 17:36:16 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:49243 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761662Ab3EBVgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 17:34:58 -0400
-Date: Thu, 2 May 2013 23:34:49 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
-In-Reply-To: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Message-ID: <alpine.LFD.2.02.1305022324371.2891@ionos>
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 2 May 2013 17:36:15 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <alpine.LFD.2.02.1305022304370.2891@ionos>
+References: <20130430212007.GB18598@redhat.com>
+	<20130430213719.GA14988@redhat.com>
+	<alpine.LFD.2.02.1305021234510.3972@ionos>
+	<20130502154621.GA23990@redhat.com>
+	<alpine.LFD.2.02.1305022152280.2891@ionos>
+	<CAE9FiQXpV451xTzAJyNdC-+-oqF9v8Cy5evcNOHKFffERw2SwA@mail.gmail.com>
+	<alpine.LFD.2.02.1305022304370.2891@ionos>
+Date: Thu, 2 May 2013 14:36:14 -0700
+X-Google-Sender-Auth: gc62IphO5nIVeCq7kmlOK1LqLo0
+Message-ID: <CAE9FiQWFK_ropzW_qQLcNxLYyek8-PHGW-8SxfZJSijvdrss1A@mail.gmail.com>
+Subject: Re: clockevents_program_event WARN_ON preventing boot.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
+On Thu, May 2, 2013 at 2:19 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Can you please apply the following debug patch and provide the output?
+>
+> diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+> index c6d6400..b4d9622 100644
+> --- a/kernel/time/clockevents.c
+> +++ b/kernel/time/clockevents.c
+> @@ -207,6 +207,8 @@ int clockevents_program_event(struct clock_event_device *dev, ktime_t expires,
+>
+>         if (unlikely(expires.tv64 < 0)) {
+>                 WARN_ON_ONCE(1);
+> +               printk_once(KERN_INFO "expires %llx, dev->next %llx\n",
+> +                           expires.tv64, dev->next_event.tv64);
+>                 return -ETIME;
+>         }
+>
 
-please do not take the rant below personally. You just happen to
-trigger it.
-
-On Thu, 2 May 2013, Sebastian Hesselbarth wrote:
-
-> +static void orion_irq_mask(struct irq_data *irqd)
-> +{
-> +	unsigned int irq = irqd_to_hwirq(irqd);
-> +	unsigned int irq_off = irq % 32;
-> +	int reg = irq / 32;
-> +	u32 val;
-> +
-> +	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
-> +	writel(val & ~(1 << irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
-> +}
-> +
-> +static void orion_irq_unmask(struct irq_data *irqd)
-> +{
-> +	unsigned int irq = irqd_to_hwirq(irqd);
-> +	unsigned int irq_off = irq % 32;
-> +	int reg = irq / 32;
-> +	u32 val;
-> +
-> +	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
-> +	writel(val | (1 << irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
-> +}
-
-I'm really tired of looking at the next incarnation of an OF/DT irq
-chip driver, which reimplements stuff which I have consolidated in the
-generic irq chip implementation with a lot of effort.
-
-Just look at the various implementations in drivers/irqchip/ and find
-out how similar they are. Moving code to drivers/irqchip/ does not
-make an excuse for reestablishing the mess which was addressed by the
-generic irq chip implementation.
-
-Can you - and that means all of you ARM folks - please get your gear
-together and add the missing features to the generic irq chip
-implementation? I'm not going to accept more of that OF/DT frenzy.
-
-Thanks,
-
-	tglx
+[    3.450968] SMP alternatives: lockdep: fixing up alternatives
+[    3.454454] ------------[ cut here ]------------
+[    3.454470] WARNING: at kernel/time/clockevents.c:209
+clockevents_program_event+0x3e/0x120()
+[    3.454473] Modules linked in:
+[    3.454479] CPU: 10 PID: 0 Comm: swapper/10 Not tainted
+3.9.0-yh-08066-g1252014-dirty #1538
+[    3.454481] Hardware name: Oracle Corporation  unknown       /
+, BIOS 11016600    05/17/2011
+[    3.454500]  0000000000000009 ffff88203e203ed8 ffffffff82091042
+ffff88203e203f18
+[    3.454518]  ffffffff81088990 ffff88203e203f08 ffff88203e20d000
+80000000003d08ff
+[    3.454526]  000000000000000a ffff881027557fd8 0000000000000000
+ffff88203e203f28
+[    3.454527] Call Trace:
+[    3.454540]  <IRQ>  [<ffffffff82091042>] dump_stack+0x19/0x1b
+[    3.454548]  [<ffffffff81088990>] warn_slowpath_common+0x70/0xa0
+[    3.454552]  [<ffffffff810889da>] warn_slowpath_null+0x1a/0x20
+[    3.454556]  [<ffffffff810e312e>] clockevents_program_event+0x3e/0x120
+[    3.454560]  [<ffffffff810e360c>] tick_handle_periodic+0x4c/0x80
+[    3.454566]  [<ffffffff820ae8cd>] smp_apic_timer_interrupt+0x8d/0xa3
+[    3.454575]  [<ffffffff820adbef>] apic_timer_interrupt+0x6f/0x80
+[    3.454583]  <EOI>  [<ffffffff810527f7>] ? default_idle+0x57/0xd0
+[    3.454587]  [<ffffffff810527f5>] ? default_idle+0x55/0xd0
+[    3.454591]  [<ffffffff81053078>] arch_cpu_idle+0x18/0x20
+[    3.454595]  [<ffffffff810dbec5>] cpu_startup_entry+0x165/0x210
+[    3.454603]  [<ffffffff8207f3cd>] start_secondary+0x1df/0x1e6
+[    3.454626] ---[ end trace 2f2f1a2adee9c881 ]---
+[    3.454628] expires 80000000003d08ff, dev->next 7fffffffffffffff
