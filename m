@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625Ab3EBRcT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 13:32:19 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58405 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757775Ab3EBRcS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 13:32:18 -0400
-Date: Thu, 02 May 2013 13:32:15 -0400 (EDT)
-Message-Id: <20130502.133215.2146231670932106380.davem@davemloft.net>
-To: gregkh@linuxfoundation.org
-Cc: hayeswang@realtek.com, oliver@neukum.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        nic_swsd@realtek.com
-Subject: Re: [PATCH v2 net-next] net/usb: new driver for RTL8152
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130502141239.GC24348@kroah.com>
-References: <1366965948-1805-1-git-send-email-hayeswang@realtek.com>
-	<1367524087-29512-1-git-send-email-hayeswang@realtek.com>
-	<20130502141239.GC24348@kroah.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S932530Ab3EBRcR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 13:32:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34190 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757775Ab3EBRcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 13:32:16 -0400
+Message-ID: <5182A300.9050603@zytor.com>
+Date: Thu, 02 May 2013 10:31:44 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
+        Borislav Petkov <bp@suse.de>, fengguang.wu@intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for building
+ working KVM guest kernels
+References: <20130501203500.GC4466@pd.tnic> <alpine.DEB.2.02.1305011358500.19189@chino.kir.corp.google.com> <20130501211011.GD4466@pd.tnic> <alpine.DEB.2.02.1305011419020.20298@chino.kir.corp.google.com> <20130501215604.GA15623@pd.tnic> <alpine.DEB.2.02.1305011503200.3267@chino.kir.corp.google.com> <20130501222850.GB15623@pd.tnic> <alpine.DEB.2.02.1305011531320.8804@chino.kir.corp.google.com> <20130501230254.GC15623@pd.tnic> <51819F6C.1030201@zytor.com> <20130502070633.GA26361@gmail.com>
+In-Reply-To: <20130502070633.GA26361@gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Thu, 02 May 2013 10:32:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
-Date: Thu, 2 May 2013 07:12:39 -0700
-
-> On Fri, May 03, 2013 at 03:48:07AM +0800, Hayes Wang wrote:
->> +#define PATENTS		"This product is covered by one or more of the " \
->> +			"following patents:\n" \
->> +			"\t\tUS6,570,884, US6,115,776, and US6,327,625.\n"
+On 05/02/2013 12:06 AM, Ingo Molnar wrote:
 > 
-> Interesting, you are aware of the issues involved with patents and GPLv2
-> code, right?  Do you have a pointer to the GPLv2 patent release that is
-> now required, or does your company now release all of the needed rights
-> for these patents to be able to be used by everyone?
+> * H. Peter Anvin <hpa@zytor.com> wrote:
+> 
+>> On 05/01/2013 04:02 PM, Borislav Petkov wrote:
+>>> On Wed, May 01, 2013 at 03:37:28PM -0700, David Rientjes wrote:
+>>>> It means your patch is incomplete.
+>>>
+>>> I'll gladly test and ack a patch which makes it complete.
+>>>
+>>> Simple exercises in rhetoric about what does and what doesn't make 
+>>> sense means a rat's ass to me. You need to show me a *real* use case 
+>>> which you *actually* hit and this patch breaks it.
+>>
+>> The fundamental problem is that "select" is broken and doesn't track 
+>> dependencies of things selected.
+> 
+> The way I've been solving it in a similar usecase was to select the 
+> required options - plus its dependencies, manually.
+> 
+> That should be possible here as well, driven by any weird randconfig build 
+> failures that get found. Such a set of selects quickly converges.
+> 
 
-There is no way I'm applying a patch that adds notices like this to the
-kernel log.
+The problem is that it is a moving target.  We really need a
+dependency-resolving version of select.
+
+	-hpa
+
+
