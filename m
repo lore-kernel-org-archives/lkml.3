@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab3EBLhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 07:37:21 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39361 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751746Ab3EBLhU (ORCPT
+	id S1758190Ab3EBLlv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 07:41:51 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:30898 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746Ab3EBLlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 07:37:20 -0400
-From: Laurent Navet <laurent.navet@gmail.com>
-To: gregkh@linuxfoundation.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com
-Cc: p.zabel@pengutronix.de, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Laurent Navet <laurent.navet@gmail.com>
-Subject: [PATCH] staging: imx-drm: use devm_ioremap_resource()
-Date: Thu,  2 May 2013 13:41:41 +0200
-Message-Id: <1367494901-2036-1-git-send-email-laurent.navet@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 2 May 2013 07:41:50 -0400
+Message-ID: <51825086.3010205@huawei.com>
+Date: Thu, 2 May 2013 19:39:50 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: <key@linux.vnet.ibm.com>, <mail@srajiv.net>, <tpmdd@selhorst.net>,
+        <tpmdd@sirrix.com>
+CC: <tpmdd-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH] tpm_tis: fix missing platform_driver_unregister
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace a call to deprecated devm_request_and_ioremap by devm_ioremap_resource.
 
-Found with coccicheck and this semantic patch:
- scripts/coccinelle/api/devm_request_and_ioremap.cocci.
+Add missing unregister tis_drv after register pdev fail
 
-Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+Signed-off-by: Libo Chen <libo.chen@huawei.com>
 ---
- drivers/staging/imx-drm/imx-tve.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/char/tpm/tpm_tis.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/imx-drm/imx-tve.c b/drivers/staging/imx-drm/imx-tve.c
-index ac16344..a6efa8f6 100644
---- a/drivers/staging/imx-drm/imx-tve.c
-+++ b/drivers/staging/imx-drm/imx-tve.c
-@@ -638,11 +638,9 @@ static int imx_tve_probe(struct platform_device *pdev)
- 		return -ENOENT;
- 	}
- 
--	base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!base) {
--		dev_err(&pdev->dev, "failed to remap memory region\n");
--		return -ENOENT;
--	}
-+	base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
- 
- 	tve_regmap_config.lock_arg = tve;
- 	tve->regmap = devm_regmap_init_mmio_clk(&pdev->dev, "tve", base,
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index 8a41b6b..d5b0af4 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -884,8 +884,11 @@ static int __init init_tis(void)
+ 	rc = platform_driver_register(&tis_drv);
+ 	if (rc < 0)
+ 		return rc;
+-	if (IS_ERR(pdev=platform_device_register_simple("tpm_tis", -1, NULL, 0)))
+-		return PTR_ERR(pdev);
++	pdev = platform_device_register_simple("tpm_tis", -1, NULL, 0);
++	if (IS_ERR(pdev) {
++	    platform_driver_unregister(&tis_drv);
++	    return PTR_ERR(pdev);
++	}
+ 	if((rc=tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0)) != 0) {
+ 		platform_device_unregister(pdev);
+ 		platform_driver_unregister(&tis_drv);
 -- 
-1.7.10.4
+1.7.1
 
