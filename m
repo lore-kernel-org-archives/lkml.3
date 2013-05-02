@@ -1,138 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757951Ab3EBAcV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 20:32:21 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:42731 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757385Ab3EBAcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 20:32:20 -0400
-Date: Wed, 1 May 2013 19:32:13 -0500
+	id S1757775Ab3EBAec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 20:34:32 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:34940 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab3EBAea (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 20:34:30 -0400
+Date: Wed, 1 May 2013 19:23:17 -0500
 From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, klebers@linux.vnet.ibm.com,
         brking@linux.vnet.ibm.com
-Subject: [PATCH 8/8] rsxx: Fixes CPU usage issues on RHEL 6 Kernels.
-Message-ID: <20130502003213.GB6657@oc6784271780.ibm.com>
+Subject: [PATCH 1/8] rsxx: Adding in debugfs entries.
+Message-ID: <20130502002317.GA29619@oc6784271780.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.20 (2009-12-10)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050200-7182-0000-0000-0000067F6D66
+x-cbid: 13050200-5406-0000-0000-0000081EC237
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 
-The RHEL 6.x version of the driver is using the legacy
-worqueue create function, 'create_singlethread_workqueue'.
-This would cause heavy usage of one CPU if data was being
-thrashed pretty hard. So, in order to fix it, workqueues
-are now being created with 'create_workqueue' and
-synchronization with mutexes.
+Adding in some debugfs entries to help with debugging and
+testing code.
 
 Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 -------------------------------------------------------------------------------
 
 
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/dma.c linux-block/drivers/block/rsxx/dma.c
---- linux-block-vanilla/drivers/block/rsxx/dma.c	2013-05-01 18:58:43.428185108 -0500
-+++ linux-block/drivers/block/rsxx/dma.c	2013-05-01 19:03:48.504367557 -0500
-@@ -383,15 +383,13 @@ static void dma_engine_stalled(unsigned 
- 	}
- }
+diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/core.c linux-block/drivers/block/rsxx/core.c
+--- linux-block-vanilla/drivers/block/rsxx/core.c	2013-05-01 11:35:38.626248876 -0500
++++ linux-block/drivers/block/rsxx/core.c	2013-05-01 18:21:46.559245461 -0500
+@@ -31,6 +31,8 @@
+ #include <linux/slab.h>
+ #include <linux/bitops.h>
+ #include <linux/delay.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
  
--static void rsxx_issue_dmas(struct work_struct *work)
-+static void rsxx_issue_dmas(struct rsxx_dma_ctrl *ctrl)
- {
--	struct rsxx_dma_ctrl *ctrl;
- 	struct rsxx_dma *dma;
- 	int tag;
- 	int cmds_pending = 0;
- 	struct hw_cmd *hw_cmd_buf;
+ #include <linux/genhd.h>
+ #include <linux/idr.h>
+@@ -39,6 +41,7 @@
+ #include "rsxx_cfg.h"
  
--	ctrl = container_of(work, struct rsxx_dma_ctrl, issue_dma_work);
- 	hw_cmd_buf = ctrl->cmd.buf;
+ #define NO_LEGACY 0
++#define DEBUGFS_NULL NULL
  
- 	if (unlikely(ctrl->card->halt) ||
-@@ -471,9 +469,8 @@ static void rsxx_issue_dmas(struct work_
- 	}
- }
+ MODULE_DESCRIPTION("IBM FlashSystem 70/80 PCIe SSD Device Driver");
+ MODULE_AUTHOR("Joshua Morris/Philip Kelleher, IBM");
+@@ -52,6 +55,191 @@ MODULE_PARM_DESC(force_legacy, "Force th
+ static DEFINE_IDA(rsxx_disk_ida);
+ static DEFINE_SPINLOCK(rsxx_ida_lock);
  
--static void rsxx_dma_done(struct work_struct *work)
-+static void rsxx_dma_done(struct rsxx_dma_ctrl *ctrl)
- {
--	struct rsxx_dma_ctrl *ctrl;
- 	struct rsxx_dma *dma;
- 	unsigned long flags;
- 	u16 count;
-@@ -481,7 +478,6 @@ static void rsxx_dma_done(struct work_st
- 	u8 tag;
- 	struct hw_status *hw_st_buf;
- 
--	ctrl = container_of(work, struct rsxx_dma_ctrl, dma_done_work);
- 	hw_st_buf = ctrl->status.buf;
- 
- 	if (unlikely(ctrl->card->halt) ||
-@@ -557,6 +553,28 @@ static void rsxx_dma_done(struct work_st
- 	spin_unlock_bh(&ctrl->queue_lock);
- }
- 
-+static void rsxx_schedule_issue(struct work_struct *work)
++/* --------------------Debugfs Setup ------------------- */
++
++static struct dentry *rsxx_debugfs_root = DEBUGFS_NULL;
++
++static int rsxx_attr_pci_regs_show(struct seq_file *m, void *p)
 +{
-+	struct rsxx_dma_ctrl *ctrl;
++	struct rsxx_cardinfo *card = m->private;
 +
-+	ctrl = container_of(work, struct rsxx_dma_ctrl, issue_dma_work);
++	seq_printf(m, "HWID		0x%08x\n",
++					ioread32(card->regmap + HWID));
++	seq_printf(m, "SCRATCH		0x%08x\n",
++					ioread32(card->regmap + SCRATCH));
++	seq_printf(m, "ISR		0x%08x\n",
++					ioread32(card->regmap + ISR));
++	seq_printf(m, "IER		0x%08x\n",
++					ioread32(card->regmap + IER));
++	seq_printf(m, "IPR		0x%08x\n",
++					ioread32(card->regmap + IPR));
++	seq_printf(m, "CREG_CMD		0x%08x\n",
++					ioread32(card->regmap + CREG_CMD));
++	seq_printf(m, "CREG_ADD		0x%08x\n",
++					ioread32(card->regmap + CREG_ADD));
++	seq_printf(m, "CREG_CNT		0x%08x\n",
++					ioread32(card->regmap + CREG_CNT));
++	seq_printf(m, "CREG_STAT	0x%08x\n",
++					ioread32(card->regmap + CREG_STAT));
++	seq_printf(m, "CREG_DATA0	0x%08x\n",
++					ioread32(card->regmap + CREG_DATA0));
++	seq_printf(m, "CREG_DATA1	0x%08x\n",
++					ioread32(card->regmap + CREG_DATA1));
++	seq_printf(m, "CREG_DATA2	0x%08x\n",
++					ioread32(card->regmap + CREG_DATA2));
++	seq_printf(m, "CREG_DATA3	0x%08x\n",
++					ioread32(card->regmap + CREG_DATA3));
++	seq_printf(m, "CREG_DATA4	0x%08x\n",
++					ioread32(card->regmap + CREG_DATA4));
++	seq_printf(m, "CREG_DATA5	0x%08x\n",
++					ioread32(card->regmap + CREG_DATA5));
++	seq_printf(m, "CREG_DATA6	0x%08x\n",
++					ioread32(card->regmap + CREG_DATA6));
++	seq_printf(m, "CREG_DATA7	0x%08x\n",
++					ioread32(card->regmap + CREG_DATA7));
++	seq_printf(m, "INTR_COAL	0x%08x\n",
++					ioread32(card->regmap + INTR_COAL));
++	seq_printf(m, "HW_ERROR		0x%08x\n",
++					ioread32(card->regmap + HW_ERROR));
++	seq_printf(m, "DEBUG0		0x%08x\n",
++					ioread32(card->regmap + PCI_DEBUG0));
++	seq_printf(m, "DEBUG1		0x%08x\n",
++					ioread32(card->regmap + PCI_DEBUG1));
++	seq_printf(m, "DEBUG2		0x%08x\n",
++					ioread32(card->regmap + PCI_DEBUG2));
++	seq_printf(m, "DEBUG3		0x%08x\n",
++					ioread32(card->regmap + PCI_DEBUG3));
++	seq_printf(m, "DEBUG4		0x%08x\n",
++					ioread32(card->regmap + PCI_DEBUG4));
++	seq_printf(m, "DEBUG5		0x%08x\n",
++					ioread32(card->regmap + PCI_DEBUG5));
++	seq_printf(m, "DEBUG6		0x%08x\n",
++					ioread32(card->regmap + PCI_DEBUG6));
++	seq_printf(m, "DEBUG7		0x%08x\n",
++					ioread32(card->regmap + PCI_DEBUG7));
++	seq_printf(m, "RECONFIG		0x%08x\n",
++					ioread32(card->regmap + PCI_RECONFIG));
 +
-+	mutex_lock(&ctrl->work_lock);
-+	rsxx_issue_dmas(ctrl);
-+	mutex_unlock(&ctrl->work_lock);
++	return 0;
 +}
 +
-+static void rsxx_schedule_done(struct work_struct *work)
++static int rsxx_attr_stats_show(struct seq_file *m, void *p)
 +{
-+	struct rsxx_dma_ctrl *ctrl;
++	struct rsxx_cardinfo *card = m->private;
++	int i;
 +
-+	ctrl = container_of(work, struct rsxx_dma_ctrl, dma_done_work);
++	for (i = 0; i < card->n_targets; i++) {
++		seq_printf(m, "Ctrl %d CRC Errors	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d Hard Errors	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d Soft Errors	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d Writes Issued	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d Writes Failed	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d Reads Issued	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d Reads Failed	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d Reads Retried	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d Discards Issued	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d Discards Failed	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d DMA SW Errors	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d DMA HW Faults	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d DMAs Cancelled	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d SW Queue Depth	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++		seq_printf(m, "Ctrl %d HW Queue Depth	= %d\n",
++				i, card->ctrl[i].stats.crc_errors);
++	}
 +
-+	mutex_lock(&ctrl->work_lock);
-+	rsxx_dma_done(ctrl);
-+	mutex_unlock(&ctrl->work_lock);
++	return 0;
 +}
 +
- static int rsxx_queue_discard(struct rsxx_cardinfo *card,
- 				  struct list_head *q,
- 				  unsigned int laddr,
-@@ -801,6 +819,7 @@ static int rsxx_dma_ctrl_init(struct pci
- 	spin_lock_init(&ctrl->trackers->lock);
++static int rsxx_attr_stats_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, rsxx_attr_stats_show, inode->i_private);
++}
++
++static int rsxx_attr_pci_regs_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, rsxx_attr_pci_regs_show, inode->i_private);
++}
++
++static const struct file_operations debugfs_stats_fops = {
++	.owner		= THIS_MODULE,
++	.open		= rsxx_attr_stats_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++static const struct file_operations debugfs_pci_regs_fops = {
++	.owner		= THIS_MODULE,
++	.open		= rsxx_attr_pci_regs_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++static void rsxx_debugfs_dev_new(struct rsxx_cardinfo *card)
++{
++	if (!rsxx_debugfs_root)
++		return;
++
++	card->debugfs_dir = debugfs_create_dir(card->gendisk->disk_name,
++					       rsxx_debugfs_root);
++	if (!card->debugfs_dir)
++		return;
++
++	card->debugfs_stats = debugfs_create_file("stats", S_IRUGO,
++						card->debugfs_dir, card,
++						&debugfs_stats_fops);
++	if (!card->debugfs_stats)
++		return;
++
++	card->debugfs_pci_regs = debugfs_create_file("pci_regs", S_IRUGO,
++						card->debugfs_dir, card,
++						&debugfs_pci_regs_fops);
++	if (!card->debugfs_pci_regs)
++		return;
++}
++
++static void rsxx_debugfs_dev_remove(struct rsxx_cardinfo *card)
++{
++	debugfs_remove(card->debugfs_stats);
++	card->debugfs_stats = NULL;
++
++	debugfs_remove(card->debugfs_pci_regs);
++	card->debugfs_pci_regs = NULL;
++
++	debugfs_remove(card->debugfs_dir);
++	card->debugfs_dir = NULL;
++}
++
++static void rsxx_debugfs_init(void)
++{
++	rsxx_debugfs_root = debugfs_create_dir(DRIVER_NAME, NULL);
++	if (!rsxx_debugfs_root)
++		return;
++}
++
++static void rsxx_debugfs_destroy(void)
++{
++	if (!rsxx_debugfs_root)
++		return;
++	debugfs_remove(rsxx_debugfs_root);
++	rsxx_debugfs_root = NULL;
++}
++
+ /*----------------- Interrupt Control & Handling -------------------*/
  
- 	spin_lock_init(&ctrl->queue_lock);
-+	mutex_init(&ctrl->work_lock);
- 	INIT_LIST_HEAD(&ctrl->queue);
+ static void rsxx_mask_interrupts(struct rsxx_cardinfo *card)
+@@ -685,6 +873,10 @@ static int rsxx_pci_probe(struct pci_dev
  
- 	setup_timer(&ctrl->activity_timer, dma_engine_stalled,
-@@ -814,8 +833,8 @@ static int rsxx_dma_ctrl_init(struct pci
- 	if (!ctrl->done_wq)
- 		return -ENOMEM;
+ 	rsxx_attach_dev(card);
  
--	INIT_WORK(&ctrl->issue_dma_work, rsxx_issue_dmas);
--	INIT_WORK(&ctrl->dma_done_work, rsxx_dma_done);
-+	INIT_WORK(&ctrl->issue_dma_work, rsxx_schedule_issue);
-+	INIT_WORK(&ctrl->dma_done_work, rsxx_schedule_done);
++	/************* Setup Debugfs *************/
++	rsxx_debugfs_init();
++	rsxx_debugfs_dev_new(card);
++
+ 	return 0;
  
- 	st = rsxx_hw_buffers_init(dev, ctrl);
- 	if (st)
+ failed_create_dev:
+@@ -756,6 +948,9 @@ static void rsxx_pci_remove(struct pci_d
+ 	/* Prevent work_structs from re-queuing themselves. */
+ 	card->halt = 1;
+ 
++	rsxx_debugfs_dev_remove(card);
++	rsxx_debugfs_destroy();
++
+ 	free_irq(dev->irq, card);
+ 
+ 	if (!force_legacy)
 diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h linux-block/drivers/block/rsxx/rsxx_priv.h
---- linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h	2013-05-01 18:58:43.434186795 -0500
-+++ linux-block/drivers/block/rsxx/rsxx_priv.h	2013-05-01 19:04:14.938188138 -0500
-@@ -115,6 +115,7 @@ struct rsxx_dma_ctrl {
- 	struct timer_list		activity_timer;
- 	struct dma_tracker_list		*trackers;
- 	struct rsxx_dma_stats		stats;
-+	struct mutex			work_lock;
+--- linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h	2013-05-01 11:35:38.655248529 -0500
++++ linux-block/drivers/block/rsxx/rsxx_priv.h	2013-05-01 18:22:51.392187447 -0500
+@@ -181,6 +181,11 @@ struct rsxx_cardinfo {
+ 
+ 	int			n_targets;
+ 	struct rsxx_dma_ctrl	*ctrl;
++
++	/* Debugfs Variables */
++	struct dentry		*debugfs_dir;
++	struct dentry		*debugfs_stats;
++	struct dentry		*debugfs_pci_regs;
  };
  
- struct rsxx_cardinfo {
+ enum rsxx_pci_regmap {
 
