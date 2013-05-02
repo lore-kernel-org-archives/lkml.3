@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759204Ab3EBAlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 20:41:05 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:55669 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758906Ab3EBAkt (ORCPT
+	id S932159Ab3EBAl0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 20:41:26 -0400
+Received: from mail-da0-f53.google.com ([209.85.210.53]:45036 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932072Ab3EBAlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 20:40:49 -0400
+	Wed, 1 May 2013 20:41:19 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         vgoyal@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 11/31] blk-throttle: rename throtl_rb_root to throtl_service_queue
-Date: Wed,  1 May 2013 17:39:29 -0700
-Message-Id: <1367455189-6957-12-git-send-email-tj@kernel.org>
+Subject: [PATCH 29/31] blk-throttle: make throtl_pending_timer_fn() ready for hierarchy
+Date: Wed,  1 May 2013 17:39:47 -0700
+Message-Id: <1367455189-6957-30-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367455189-6957-1-git-send-email-tj@kernel.org>
 References: <1367455189-6957-1-git-send-email-tj@kernel.org>
@@ -22,230 +22,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-throtl_rb_root will be expanded to cover more roles for hierarchy
-support.  Rename it to throtl_service_queue and make its fields more
-descriptive.
+throtl_pending_timer_fn() currently assumes that the parent_sq is the
+top level one and the bio's dispatched are ready to be issued;
+however, this assumption will be wrong with proper hierarchy support.
+This patch makes the following changes to make
+throtl_pending_timer_fn() ready for hiearchy.
 
-* rb		-> pending_tree
-* left		-> first_pending
-* count		-> nr_pending
-* min_disptime	-> first_pending_disptime
+* If the parent_sq isn't the top-level one, update the parent
+  throtl_grp's dispatch time and schedule the next dispatch as
+  necessary.  If the parent's dispatch time is now, repeat the
+  function for the parent throtl_grp.
 
-This patch is purely cosmetic.
+* If the parent_sq is the top-level one, kick issue work_item as
+  before.
 
-Signed-off-by: Tejun Heo <tj@kernel.org
+* The debug message printed by throtl_log() now prints out the
+  service_queue's nr_queued[] instead of the total nr_queued as the
+  latter becomes uninteresting and misleading with hierarchical
+  dispatch.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/blk-throttle.c | 84 ++++++++++++++++++++++++++--------------------------
- 1 file changed, 42 insertions(+), 42 deletions(-)
+ block/blk-throttle.c | 40 +++++++++++++++++++++++++++++++++-------
+ 1 file changed, 33 insertions(+), 7 deletions(-)
 
 diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 6fd08a4..6723ca2 100644
+index 367c269..f3bd278 100644
 --- a/block/blk-throttle.c
 +++ b/block/blk-throttle.c
-@@ -26,15 +26,15 @@ static struct blkcg_policy blkcg_policy_throtl;
- /* A workqueue to queue throttle related work */
- static struct workqueue_struct *kthrotld_workqueue;
- 
--struct throtl_rb_root {
--	struct rb_root rb;
--	struct rb_node *left;
--	unsigned int count;
--	unsigned long min_disptime;
-+struct throtl_service_queue {
-+	struct rb_root		pending_tree;	/* RB tree of active tgs */
-+	struct rb_node		*first_pending;	/* first node in the tree */
-+	unsigned int		nr_pending;	/* # queued in the tree */
-+	unsigned long		first_pending_disptime;	/* disptime of the first tg */
- };
- 
--#define THROTL_RB_ROOT	(struct throtl_rb_root) { .rb = RB_ROOT, .left = NULL, \
--			.count = 0, .min_disptime = 0}
-+#define THROTL_SERVICE_QUEUE_INITIALIZER				\
-+	(struct throtl_service_queue){ .pending_tree = RB_ROOT }
- 
- #define rb_entry_tg(node)	rb_entry((node), struct throtl_grp, rb_node)
- 
-@@ -50,7 +50,7 @@ struct throtl_grp {
- 	/* must be the first member */
- 	struct blkg_policy_data pd;
- 
--	/* active throtl group service_tree member */
-+	/* active throtl group service_queue member */
- 	struct rb_node rb_node;
- 
- 	/*
-@@ -93,7 +93,7 @@ struct throtl_grp {
- struct throtl_data
+@@ -949,23 +949,33 @@ static int throtl_select_dispatch(struct throtl_service_queue *parent_sq)
+  * This timer is armed when a child throtl_grp with active bio's become
+  * pending and queued on the service_queue's pending_tree and expires when
+  * the first child throtl_grp should be dispatched.  This function
+- * dispatches bio's from the children throtl_grps and kicks
+- * throtl_data->dispatch_work if there are bio's ready to be issued.
++ * dispatches bio's from the children throtl_grps to the parent
++ * service_queue.
++ *
++ * If the parent's parent is another throtl_grp, dispatching is propagated
++ * by either arming its pending_timer or repeating dispatch directly.  If
++ * the top-level service_tree is reached, throtl_data->dispatch_work is
++ * kicked so that the ready bio's are issued.
+  */
+ static void throtl_pending_timer_fn(unsigned long arg)
  {
- 	/* service tree for active throtl groups */
--	struct throtl_rb_root tg_service_tree;
-+	struct throtl_service_queue service_queue;
+ 	struct throtl_service_queue *sq = (void *)arg;
++	struct throtl_grp *tg = sq_to_tg(sq);
+ 	struct throtl_data *td = sq_to_td(sq);
+ 	struct request_queue *q = td->queue;
+-	bool dispatched = false;
++	struct throtl_service_queue *parent_sq;
++	bool dispatched;
+ 	int ret;
  
- 	struct request_queue *queue;
+ 	spin_lock_irq(q->queue_lock);
++again:
++	parent_sq = sq->parent_sq;
++	dispatched = false;
  
-@@ -296,17 +296,17 @@ static struct throtl_grp *throtl_lookup_create_tg(struct throtl_data *td,
- 	return tg;
- }
+ 	while (true) {
+ 		throtl_log(sq, "dispatch nr_queued=%u read=%u write=%u",
+-			   td->nr_queued[READ] + td->nr_queued[WRITE],
+-			   td->nr_queued[READ], td->nr_queued[WRITE]);
++			   sq->nr_queued[READ] + sq->nr_queued[WRITE],
++			   sq->nr_queued[READ], sq->nr_queued[WRITE]);
  
--static struct throtl_grp *throtl_rb_first(struct throtl_rb_root *root)
-+static struct throtl_grp *throtl_rb_first(struct throtl_service_queue *sq)
- {
- 	/* Service tree is empty */
--	if (!root->count)
-+	if (!sq->nr_pending)
- 		return NULL;
- 
--	if (!root->left)
--		root->left = rb_first(&root->rb);
-+	if (!sq->first_pending)
-+		sq->first_pending = rb_first(&sq->pending_tree);
- 
--	if (root->left)
--		return rb_entry_tg(root->left);
-+	if (sq->first_pending)
-+		return rb_entry_tg(sq->first_pending);
- 
- 	return NULL;
- }
-@@ -317,29 +317,29 @@ static void rb_erase_init(struct rb_node *n, struct rb_root *root)
- 	RB_CLEAR_NODE(n);
- }
- 
--static void throtl_rb_erase(struct rb_node *n, struct throtl_rb_root *root)
-+static void throtl_rb_erase(struct rb_node *n, struct throtl_service_queue *sq)
- {
--	if (root->left == n)
--		root->left = NULL;
--	rb_erase_init(n, &root->rb);
--	--root->count;
-+	if (sq->first_pending == n)
-+		sq->first_pending = NULL;
-+	rb_erase_init(n, &sq->pending_tree);
-+	--sq->nr_pending;
- }
- 
--static void update_min_dispatch_time(struct throtl_rb_root *st)
-+static void update_min_dispatch_time(struct throtl_service_queue *sq)
- {
- 	struct throtl_grp *tg;
- 
--	tg = throtl_rb_first(st);
-+	tg = throtl_rb_first(sq);
- 	if (!tg)
- 		return;
- 
--	st->min_disptime = tg->disptime;
-+	sq->first_pending_disptime = tg->disptime;
- }
- 
--static void
--tg_service_tree_add(struct throtl_rb_root *st, struct throtl_grp *tg)
-+static void tg_service_queue_add(struct throtl_service_queue *sq,
-+				 struct throtl_grp *tg)
- {
--	struct rb_node **node = &st->rb.rb_node;
-+	struct rb_node **node = &sq->pending_tree.rb_node;
- 	struct rb_node *parent = NULL;
- 	struct throtl_grp *__tg;
- 	unsigned long key = tg->disptime;
-@@ -358,19 +358,19 @@ tg_service_tree_add(struct throtl_rb_root *st, struct throtl_grp *tg)
+ 		ret = throtl_select_dispatch(sq);
+ 		if (ret) {
+@@ -982,9 +992,25 @@ static void throtl_pending_timer_fn(unsigned long arg)
+ 		spin_lock_irq(q->queue_lock);
  	}
  
- 	if (left)
--		st->left = &tg->rb_node;
-+		sq->first_pending = &tg->rb_node;
+-	if (dispatched)
+-		queue_work(kthrotld_workqueue, &td->dispatch_work);
++	if (!dispatched)
++		goto out_unlock;
  
- 	rb_link_node(&tg->rb_node, parent, node);
--	rb_insert_color(&tg->rb_node, &st->rb);
-+	rb_insert_color(&tg->rb_node, &sq->pending_tree);
++	if (parent_sq) {
++		/* @parent_sq is another throl_grp, propagate dispatch */
++		if (tg->flags & THROTL_TG_WAS_EMPTY) {
++			tg_update_disptime(tg);
++			if (!throtl_schedule_next_dispatch(parent_sq, false)) {
++				/* window is already open, repeat dispatching */
++				sq = parent_sq;
++				tg = sq_to_tg(sq);
++				goto again;
++			}
++		}
++	} else {
++		/* reached the top-level, queue issueing */
++		queue_work(kthrotld_workqueue, &td->dispatch_work);
++	}
++out_unlock:
+ 	spin_unlock_irq(q->queue_lock);
  }
  
- static void __throtl_enqueue_tg(struct throtl_data *td, struct throtl_grp *tg)
- {
--	struct throtl_rb_root *st = &td->tg_service_tree;
-+	struct throtl_service_queue *sq = &td->service_queue;
- 
--	tg_service_tree_add(st, tg);
-+	tg_service_queue_add(sq, tg);
- 	throtl_mark_tg_on_rr(tg);
--	st->count++;
-+	sq->nr_pending++;
- }
- 
- static void throtl_enqueue_tg(struct throtl_data *td, struct throtl_grp *tg)
-@@ -381,7 +381,7 @@ static void throtl_enqueue_tg(struct throtl_data *td, struct throtl_grp *tg)
- 
- static void __throtl_dequeue_tg(struct throtl_data *td, struct throtl_grp *tg)
- {
--	throtl_rb_erase(&tg->rb_node, &td->tg_service_tree);
-+	throtl_rb_erase(&tg->rb_node, &td->service_queue);
- 	throtl_clear_tg_on_rr(tg);
- }
- 
-@@ -403,18 +403,18 @@ static void throtl_schedule_delayed_work(struct throtl_data *td,
- 
- static void throtl_schedule_next_dispatch(struct throtl_data *td)
- {
--	struct throtl_rb_root *st = &td->tg_service_tree;
-+	struct throtl_service_queue *sq = &td->service_queue;
- 
- 	/* any pending children left? */
--	if (!st->count)
-+	if (!sq->nr_pending)
- 		return;
- 
--	update_min_dispatch_time(st);
-+	update_min_dispatch_time(sq);
- 
--	if (time_before_eq(st->min_disptime, jiffies))
-+	if (time_before_eq(sq->first_pending_disptime, jiffies))
- 		throtl_schedule_delayed_work(td, 0);
- 	else
--		throtl_schedule_delayed_work(td, (st->min_disptime - jiffies));
-+		throtl_schedule_delayed_work(td, sq->first_pending_disptime - jiffies);
- }
- 
- static inline void
-@@ -794,10 +794,10 @@ static int throtl_select_dispatch(struct throtl_data *td, struct bio_list *bl)
- {
- 	unsigned int nr_disp = 0;
- 	struct throtl_grp *tg;
--	struct throtl_rb_root *st = &td->tg_service_tree;
-+	struct throtl_service_queue *sq = &td->service_queue;
- 
- 	while (1) {
--		tg = throtl_rb_first(st);
-+		tg = throtl_rb_first(sq);
- 
- 		if (!tg)
- 			break;
-@@ -1148,7 +1148,7 @@ void blk_throtl_drain(struct request_queue *q)
- 	__releases(q->queue_lock) __acquires(q->queue_lock)
- {
- 	struct throtl_data *td = q->td;
--	struct throtl_rb_root *st = &td->tg_service_tree;
-+	struct throtl_service_queue *sq = &td->service_queue;
- 	struct throtl_grp *tg;
- 	struct bio_list bl;
- 	struct bio *bio;
-@@ -1157,7 +1157,7 @@ void blk_throtl_drain(struct request_queue *q)
- 
- 	bio_list_init(&bl);
- 
--	while ((tg = throtl_rb_first(st))) {
-+	while ((tg = throtl_rb_first(sq))) {
- 		throtl_dequeue_tg(td, tg);
- 
- 		while ((bio = bio_list_peek(&tg->bio_lists[READ])))
-@@ -1182,7 +1182,7 @@ int blk_throtl_init(struct request_queue *q)
- 	if (!td)
- 		return -ENOMEM;
- 
--	td->tg_service_tree = THROTL_RB_ROOT;
-+	td->service_queue = THROTL_SERVICE_QUEUE_INITIALIZER;
- 	INIT_DELAYED_WORK(&td->dispatch_work, blk_throtl_dispatch_work_fn);
- 
- 	q->td = td;
 -- 
 1.8.1.4
 
