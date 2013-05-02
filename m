@@ -1,44 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab3EBWAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 18:00:55 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39121 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220Ab3EBWAq (ORCPT
+	id S1757230Ab3EBWKg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 18:10:36 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:55347 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab3EBWKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 18:00:46 -0400
-Date: Fri, 3 May 2013 01:00:34 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] configfs: use capped length for ->store_attribute()
-Message-ID: <20130502220034.GP5123@mwanda>
-References: <20130430072813.GC7237@elgon.mountain>
- <20130502215152.GB26770@localhost>
+	Thu, 2 May 2013 18:10:34 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
+Date: Fri, 3 May 2013 00:09:56 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        "Jean-Francois Moine" <moinejf@free.fr>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <alpine.LFD.2.02.1305022324371.2891@ionos> <5182E11E.5010103@gmail.com>
+In-Reply-To: <5182E11E.5010103@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130502215152.GB26770@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305030009.57041.arnd@arndb.de>
+X-Provags-ID: V02:K0:Ua0kttgMIfWb1W9PtTgz0zK7U463wt7NhQeHgPqPf4D
+ GzoU/pviHyBRM4khmPUIZfyehQPFYW7BledLhowtYFSye9T5sD
+ 3fCd+fFtCWa5ck774JXakxCM9CwP2/L+mHpGxTlVbF/ePQK4Az
+ 1UHj0wjezEuTRS18wi5Dxm/GTE2wVKUSnCdFmsMkrwZ4SQS2uB
+ yGvTf2JvmDtR6ahxZ33YqP2X4B29tP3ekL2FCZAr7wqZmvRZTu
+ irgRZcgOFSVBJy3EJWcur9a7yL6DvGJ2FbA36zm4louTchjX0I
+ C8ZBW5QkJ7aZ7834Caf1x1k9qOwmhmW8qYrt8yiCu6RdIDf25p
+ btcxTjz3KlInDSsNeCXE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 02:51:53PM -0700, Joel Becker wrote:
-> On Tue, Apr 30, 2013 at 10:28:14AM +0300, Dan Carpenter wrote:
-> > The difference between "count" and "len" is that "len" is capped at
-> > 4095.  Changing it like this makes it match how sysfs_write_file() is
-> > implemented.
-> > 
-> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+On Thursday 02 May 2013, Sebastian Hesselbarth wrote:
+> > Just look at the various implementations in drivers/irqchip/ and find
+> > out how similar they are. Moving code to drivers/irqchip/ does not
+> > make an excuse for reestablishing the mess which was addressed by the
+> > generic irq chip implementation.
+> >
+> > Can you - and that means all of you ARM folks - please get your gear
+> > together and add the missing features to the generic irq chip
+> > implementation? I'm not going to accept more of that OF/DT frenzy.
 > 
-> Acked-by: Joel Becker <jlbec@evilplan.org>
+> So you are suggesting to have a "linux,generic-intc" or you want me
+> to have "marvell,orion-intc" make use of generic irq chip again?
 > 
-> Do you want me to push this up, or will you be sending it?
+> The second is easy, the first will take me a while to think about
+> proper DT properties how to encode mask/unmask/ack/.. availability
+> and offsets.
 
-Could you push it?
+I think it should not be "linux,..." since the description can
+well be OS independent. I don't have a good idea for a generic
+name, but it's not very important.
 
-regards,
-dan carpenter
+The main missing piece in the generic irqchip code at the moment
+is support for the linear irqdomain. Once we have that, a lot of
+code can be simplified significantly.
 
-
+	Arnd
