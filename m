@@ -1,150 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757408Ab3EBJHk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 05:07:40 -0400
-Received: from canardo.mork.no ([148.122.252.1]:33165 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757110Ab3EBJHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 05:07:38 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Patrick McHardy <kaber@trash.net>
-Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        hayeswang@realtek.com, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: [GIT] Networking
-Organization: m
-References: <CA+55aFxoP1vybnqdDwGmd-m0j=x=KDm7GHV6J1i8wGOaU0=5qw@mail.gmail.com>
-	<20130502.024552.1513488878160820332.davem@davemloft.net>
-	<20130502070256.GA29502@macbook.localnet>
-	<20130502.041625.412316202038784117.davem@davemloft.net>
-	<20130502083619.GA22010@macbook.localnet>
-Date: Thu, 02 May 2013 11:06:42 +0200
-In-Reply-To: <20130502083619.GA22010@macbook.localnet> (Patrick McHardy's
-	message of "Thu, 2 May 2013 10:36:49 +0200")
-Message-ID: <87d2t9bvj1.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	id S1755077Ab3EBJMg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 05:12:36 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58212 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab3EBJMe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 05:12:34 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+In-Reply-To: <517AA14D.7060202@linux.intel.com>
+References: <1366910611-20048-1-git-send-email-vincent.guittot@linaro.org>
+	<517A969B.5040606@linux.intel.com>
+	<CAKfTPtCwdw1mYpWRFbPo9zT=9vFANpJyubh1eX-0vJLqrqizgA@mail.gmail.com>
+	<517AA14D.7060202@linux.intel.com>
+Date: Thu, 2 May 2013 11:12:32 +0200
+Message-ID: <CAKfTPtA052Lv6oyOqc-t1meVt9wfG1RtVaxMT5PeYPYG_XmdVA@mail.gmail.com>
+Subject: Re: [RFC PATCH v4 00/14] sched: packing small tasks
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Turner <pjt@google.com>, Santosh <santosh.shilimkar@ti.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <len.brown@intel.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Lukasz Majewski <l.majewski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-
-Patrick McHardy <kaber@trash.net> writes:
-> On Thu, May 02, 2013 at 04:16:25AM -0400, David Miller wrote:
->> From: Patrick McHardy <kaber@trash.net>
->> Date: Thu, 2 May 2013 09:03:37 +0200
->>=20
->> > I'll also have a look at this.
->>=20
->> By the mere existence of /sys/devices/${DEV_PATH}/net/${netdev_name}/fla=
-gs
->> we have to preserve the bit layout.
->>=20
->> So Linus was right.
->>=20
->> So network manager is probably reading that flags sysfs file and
->> interpreting it.
+On 26 April 2013 17:46, Arjan van de Ven <arjan@linux.intel.com> wrote:
+>>>
+>>>
+>>> so I got to ask the hard question; what percentage of system level (not
+>>> just
+>>> cpu level)
+>>> power consumption gain can you measure (pick your favorite workload)...
+>>>
+>>
+>> I haven't system level figures for my patches but only for the cpu
+>> subsystem. If we use the MP3 results in the back of my mail, they show
+>> an improvement of 37 % (113/178) for the CPU subsystem of the
+>> platform. If we assume that the CPU subsystem contributes 25% of an
+>> embedded system power consumption (this can vary across platform
+>> depending of the use of HW accelerator but it should be a almost fair
+>> percentage), the patch can impact the power consumption on up to 9%.
+>>
 >
-> Right, that seems plausible.=20
+> sadly the math tends to not work quite that easy;
+> memory takes significantly more power when the system is not idle than when
+> it is idle for example. [*]
+> so while reducing cpu power by making it run a bit longer (at lower
+> frequency or
+> slower core or whatever) is a pure win if you only look at the cpu, but it
+> may
+> (or may not) be a loss when looking at a whole system level.
 >
->> I'll fix the layout to how it was before.
+> I've learned the hard way that you cannot just look at the cpu numbers; you
+> must look
+> at the whole-system power when playing with such tradeoffs.
 >
-> I also found one spot in net/core/dev.c which was using an int for the
-> features. Patch attached.
+> That does not mean that your patch is not useful; it very well can be, but
+> without having looked at whole-system power that's a very dangerous
+> conclusion to make.
+> So.. if you get a chance, I'd love to see data on a whole-system level...
+> even for just one workload
+> and one system
+> (playing mp3 sounds like a quite reasonable workload for such things indeed)
 
-And a couple more attached.
+Hi Arjan,
 
-I am also wondering about the consequences of the
-ETHTOOL_DEV_FEATURE_WORDS calculation in ethtool.c.  Adding the new
-netdev features will make it go from 1 to 2:
+I don't have full system power consumption but i have gathered some
+additional figures for mp3 use case
 
-#define ETHTOOL_DEV_FEATURE_WORDS	((NETDEV_FEATURE_COUNT + 31) / 32)
+The power consumption percentage stay similar
+             | CA15  | CA7   | total  |
+-------------------------------------
+default       |  81%  |   95% | 178%   |
+pack          |  10%  |  100% | 110%   |
+agressive     |  3%   |  100% | 103%   |
+-------------------------------------
 
+I have also gathered the time when all CPUs are in low power state so
+the entire system can be put in low power mode (DDR in self refresh)
+                 |  Time | nb / sec | average |
+--------------------------------------------
+default       | 85.5% | 296      | 2.9ms   |
+pack          | 82.5% | 253      | 3.2ms   |
+agressive     | 81.8% | 236      | 3.4ms   |
+--------------------------------------------
 
-But this constant seems to be part of the userspace API AFAICS, so it
-cannot just change like that:
+We can see a decrease of the time spent in low power mode but on the
+other side, the number of switch to low power mode also decreases
+which results in the increase the average duration of low power state.
 
-static int ethtool_set_features(struct net_device *dev, void __user *userad=
-dr)
-{
-	struct ethtool_sfeatures cmd;
-	struct ethtool_set_features_block features[ETHTOOL_DEV_FEATURE_WORDS];
-	netdev_features_t wanted =3D 0, valid =3D 0;
-	int i, ret =3D 0;
+Regards,
+Vincent
 
-	if (copy_from_user(&cmd, useraddr, sizeof(cmd)))
-		return -EFAULT;
-	useraddr +=3D sizeof(cmd);
-
-	if (cmd.size !=3D ETHTOOL_DEV_FEATURE_WORDS)
-		return -EINVAL;
-
-..
-
-
-Is this correctly analyzed?  If so, then I have no clue how to fix
-that...
-
-
-
-Bj=C3=B8rn
-
-
-
---=-=-=
-Content-Type: text/x-diff; charset=utf-8
-Content-Disposition: inline;
- filename=0001-net-vlan-ethtool-netdev_features_t-is-more-than-32-b.patch
-Content-Transfer-Encoding: quoted-printable
-
->From d957cf339bf625869c39d852ac6733ef597ecef9 Mon Sep 17 00:00:00 2001
-From: =3D?UTF-8?q?Bj=3DC3=3DB8rn=3D20Mork?=3D <bjorn@mork.no>
-Date: Thu, 2 May 2013 10:37:05 +0200
-Subject: [PATCH] net: vlan,ethtool: netdev_features_t is more than 32 bit
-MIME-Version: 1.0
-Content-Type: text/plain; charset=3DUTF-8
-Content-Transfer-Encoding: 8bit
-
-Signed-off-by: Bj=C3=B8rn Mork <bjorn@mork.no>
----
- net/8021q/vlan_dev.c |    2 +-
- net/core/ethtool.c   |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
-index 8af5085..3a8c8fd 100644
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -628,7 +628,7 @@ static netdev_features_t vlan_dev_fix_features(struct n=
-et_device *dev,
- 	netdev_features_t features)
- {
- 	struct net_device *real_dev =3D vlan_dev_priv(dev)->real_dev;
--	u32 old_features =3D features;
-+	netdev_features_t old_features =3D features;
-=20
- 	features &=3D real_dev->vlan_features;
- 	features |=3D NETIF_F_RXCSUM;
-diff --git a/net/core/ethtool.c b/net/core/ethtool.c
-index 5a934ef..22efdaa 100644
---- a/net/core/ethtool.c
-+++ b/net/core/ethtool.c
-@@ -1421,7 +1421,7 @@ int dev_ethtool(struct net *net, struct ifreq *ifr)
- 	void __user *useraddr =3D ifr->ifr_data;
- 	u32 ethcmd;
- 	int rc;
--	u32 old_features;
-+	netdev_features_t old_features;
-=20
- 	if (!dev || !netif_device_present(dev))
- 		return -ENODEV;
---=20
-1.7.10.4
-
-
---=-=-=--
+>
+>
+> [*] I assume that on your ARM systems, memory goes into self refresh during
+> system idle just as it does on x86
+>
