@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761723Ab3EBTHo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 15:07:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41104 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761688Ab3EBTHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 15:07:43 -0400
-Date: Thu, 2 May 2013 15:07:32 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCHSET] blk-throttle: implement proper hierarchy support
-Message-ID: <20130502190732.GK30020@redhat.com>
-References: <1367455189-6957-1-git-send-email-tj@kernel.org>
- <20130502173428.GA4771@redhat.com>
- <20130502175701.GL19814@mtj.dyndns.org>
- <20130502181747.GH30020@redhat.com>
- <20130502182933.GN19814@mtj.dyndns.org>
- <20130502184514.GI30020@redhat.com>
- <20130502184953.GP19814@mtj.dyndns.org>
+	id S1761804Ab3EBTL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 15:11:27 -0400
+Received: from smtprelay03.ispgateway.de ([80.67.31.30]:55967 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761227Ab3EBTL0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 15:11:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130502184953.GP19814@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Thu, 02 May 2013 21:11:19 +0200
+From: Dirk Eibach <dirk.eibach@gdsys.cc>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: <linux-kernel@vger.kernel.org>, Kumar Gala <galak@kernel.crashing.org>,
+        Wim Van Sebroeck <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH] powerpc: Make Book E watchdog reset type configurable
+In-Reply-To: <20130502161720.GA7797@roeck-us.net>
+References: <1367505913-18970-1-git-send-email-dirk.eibach@gdsys.cc>
+ <20130502161720.GA7797@roeck-us.net>
+Message-ID: <429ec64cf7c30a139db40eb20fd3e682@gdsys.cc>
+User-Agent: Roundcube Webmail/0.8.1
+X-Df-Sender: ZGlyay5laWJhY2hAZ2RzeXMuY2M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 11:49:53AM -0700, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, May 02, 2013 at 02:45:14PM -0400, Vivek Goyal wrote:
-> > I did not understand this point. In flat model, application issuing
-> > at configured page will not get penalized.
-> > 
-> > This penalty is coming from the fact that we are moving bios after the
-> > wait and make them wait in another queue.
-> > 
-> > In flat model there is no such problem. So to me, it is the problem
-> > of how hierarchical scheduling is implemented. In flat model, I did
-> > not have to deal with it.
-> 
-> But seen from the parent, the child isn't different from any other
-> issuer in flat hierarchy.  It's just being repeated, so if you assume
-> a process which behaves in the exact same manner, that process would
-> get penalized too.  e.g. imagine an application which throttles itself
-> and issues exactly 1MB/s amount of data in direct IO.  It'd get
-> penalized the same way, right?
+Hi Guenter,
 
-It should not. Why do you think in flat model an application which
-throttles itself will be penalized.
 
-So application issue an bio of size 1MB in a group of rate 1MB/s. bio
-gets queued and gets dispatched after 1 second. Almost immediately next
-bio will come from application (as application also is throttling 
-itself at 1MB/s rate). And then this bio waits for a second. So we
-almost get steady rate of 1MB/s as configured.
+>> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+>> index e89fc31..6048593 100644
+>> --- a/drivers/watchdog/Kconfig
+>> +++ b/drivers/watchdog/Kconfig
+>> @@ -1172,6 +1172,38 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
+>> 
+>>  	  The value can be overridden by the wdt_period command-line 
+>> parameter.
+>> 
+>> +choice
+>> +	prompt "PowerPC Book-E Watchdog reset type"
+>> +	depends on BOOKE_WDT
+>> +	default BOOKE_WDT_RESET_CHIP
+>> +	help
+>> +	  Specify what kind of reset will be executed on watchdog timeout.
+>> +
+> Seems to me it would be much better to make this configurable via 
+> platform data
+> and/or device tree.
 
-Sorry, I am not able uderstand the problem here.
+good catch. What do the device-tree gurus think to be a nice property 
+name?
 
-> 
-> > Ok. Not having a perfect algorithm now is fine. We can always redo it
-> > later.
-> 
-> I think we can do source-based RR on bio_lists[] fetching which is
-> simple enough and should be able to avoid most of the problems, right?
-
-Yes, maintaining per child/source bio_lists[] in parent and doing round
-robin there should mitigate the fairness problem to a great extent.
-
-Thanks
-Vivek
+Cheers
+Dirk
