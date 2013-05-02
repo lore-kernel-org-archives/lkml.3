@@ -1,122 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab3EBJ4r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 05:56:47 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55504 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab3EBJ4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 05:56:45 -0400
-X-AuditID: 9c930179-b7c28ae0000018a0-1d-51823859845a
-From: Chanho Min <chanho.min@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kyungsik Lee <kyungsik.lee@lge.com>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        Richard Weinberger <richard@nod.at>,
-        Geert Uytterhoeven <geert.uytterhoeven@gmail.com>,
-        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
-        linux-m68k@vger.kernel.org, linux-next@vger.kernel.org,
-        Chanho Min <chanho.min@lge.com>
-Subject: [PATCH] lib: add weak clz/ctz functions
-Date: Thu,  2 May 2013 18:56:19 +0900
-Message-Id: <1367488579-15456-1-git-send-email-chanho.min@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	id S1755714Ab3EBJ6G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 05:58:06 -0400
+Received: from mail.nanl.de ([217.115.11.12]:40112 "EHLO mail.nanl.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751986Ab3EBJ6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 05:58:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <6623143.198271367486832742.JavaMail.weblogic@epml20>
+References: <6623143.198271367486832742.JavaMail.weblogic@epml20>
+From: Jonas Gorski <jogo@openwrt.org>
+Date: Thu, 2 May 2013 11:57:35 +0200
+Message-ID: <CAOiHx==2EGhRU9AwvkK_+9FpWpCDSHLsfwBnoK8_9UgWkLAXZA@mail.gmail.com>
+Subject: Re: Re: [PATCH] MIPS: remove USB_EHCI_BIG_ENDIAN_{DESC,MMIO} depends
+ on architecture symbol
+To: eunb.song@samsung.com
+Cc: "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "florian@openwrt.org" <florian@openwrt.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some architectures need __c[lt]z[sd]i2() for __builtin_c[lt]z[ll] and
-It causes build failure. They can be implemented using the fls()/__ffs() and
-overridden by linking arch-specific versions may not be implemented yet.
+On Thu, May 2, 2013 at 11:27 AM, EUNBONG SONG <eunb.song@samsung.com> wrote:
+>
+>>These are selects and don't prevent anyone else from also selecting
+>> them. If you look at your referenced commit, you see it removed the
+>>/depends/, not the selects. It actually added selects to several
+>> platforms. Platforms are supposed to select them if they need them.
+>
+> Hello.
+> Every time i config with arch/mips/configs/cavium_octeon_defconfig, the following warning messages
+> are showed.
+> warning: (MIPS_SEAD3 && PMC_MSP && CPU_CAVIUM_OCTEON) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB && USB_EHCI_HCD)
+> warning: (MIPS_SEAD3 && PMC_MSP && CPU_CAVIUM_OCTEON) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB && USB_EHCI_HCD)
+>
+> And after applying this patch, the warning messages were disappeared.
 
-Reference: https://lkml.org/lkml/2013/4/18/603
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Chanho Min <chanho.min@lge.com>
----
- lib/Makefile  |    2 +-
- lib/clz_ctz.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 59 insertions(+), 1 deletion(-)
- create mode 100644 lib/clz_ctz.c
+But after this patch likely EHCI is also broken on these platforms.
+The solution is to either guard the USB_EHCI_BIG_ENDIAN_MMIO/DESC
+selects with if USB_EHCI_HCD etc, or make
+USB_EHCI_BIG_ENDIAN_MMIO/DESC not depend on USB_EHCI_HCD etc.
 
-diff --git a/lib/Makefile b/lib/Makefile
-index af79e8c..3eacb2c 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -23,7 +23,7 @@ lib-y	+= kobject.o klist.o
- 
- obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
- 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
--	 gcd.o lcm.o list_sort.o uuid.o flex_array.o \
-+	 gcd.o lcm.o list_sort.o uuid.o flex_array.o clz_ctz.o\
- 	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o
- obj-y += string_helpers.o
- obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
-diff --git a/lib/clz_ctz.c b/lib/clz_ctz.c
-new file mode 100644
-index 0000000..a8f8379
---- /dev/null
-+++ b/lib/clz_ctz.c
-@@ -0,0 +1,58 @@
-+/*
-+ * lib/clz_ctz.c
-+ *
-+ * Copyright (C) 2013 Chanho Min <chanho.min@lge.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * __c[lt]z[sd]i2 can be overridden by linking arch-specific versions.
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/kernel.h>
-+
-+int __weak __ctzsi2(int val)
-+{
-+	return __ffs(val);
-+}
-+EXPORT_SYMBOL(__ctzsi2);
-+
-+int __weak __clzsi2(int val)
-+{
-+	return 32 - fls(val);
-+}
-+EXPORT_SYMBOL(__clzsi2);
-+
-+#if BITS_PER_LONG == 32
-+
-+int __weak __clzdi2(long val)
-+{
-+	return 32 - fls((int)val);
-+}
-+EXPORT_SYMBOL(__clzdi2);
-+
-+int __weak __ctzdi2(long val)
-+{
-+	return __ffs((u32)val);
-+}
-+EXPORT_SYMBOL(__ctzdi2);
-+
-+#elif BITS_PER_LONG == 64
-+
-+int __weak __clzdi2(long val)
-+{
-+	return 64 - fls64((u64)val);
-+}
-+EXPORT_SYMBOL(__clzdi2);
-+
-+int __weak __ctzdi2(long val)
-+{
-+	return __ffs64((u64)val);
-+}
-+EXPORT_SYMBOL(__ctzdi2);
-+
-+#else
-+#error BITS_PER_LONG not 32 or 64
-+#endif
--- 
-1.7.9.5
+As far as I can tell, USB_EHCI_BIG_ENDIAN_MMIO/DESC only have any
+effect on the ehci_hcd code anyway, so removing the dependencies of
+these symbols should be fine and without any side effects, thus allow
+platforms/drivers to select them unconditionally.
 
+Greg, what do you think?
+
+
+Jonas
