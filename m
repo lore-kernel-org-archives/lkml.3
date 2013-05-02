@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761566Ab3EBTqE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 15:46:04 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:60682 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab3EBTqB (ORCPT
+	id S933068Ab3EBTqR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 15:46:17 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41581 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933047Ab3EBTqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 15:46:01 -0400
-Date: Thu, 2 May 2013 21:45:56 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: David Rientjes <rientjes@google.com>, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, penberg@kernel.org, bp@alien8.de,
-        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
-        bp@suse.de, fengguang.wu@intel.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for
- building working KVM guest kernels
-Message-ID: <20130502194556.GB3553@gmail.com>
-References: <20130426095140.GA15361@pd.tnic>
- <tip-7e0320e733eec67e40d2b53e438d9971f079862d@git.kernel.org>
- <alpine.DEB.2.02.1305021104440.2493@chino.kir.corp.google.com>
- <5182AB66.6020307@linux.intel.com>
+	Thu, 2 May 2013 15:46:14 -0400
+Date: Thu, 2 May 2013 21:46:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Colin Cross <ccross@android.com>
+cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH v2 08/10] nanosleep: use freezable blocking call
+In-Reply-To: <1367458508-9133-9-git-send-email-ccross@android.com>
+Message-ID: <alpine.LFD.2.02.1305022145590.2891@ionos>
+References: <1367458508-9133-1-git-send-email-ccross@android.com> <1367458508-9133-9-git-send-email-ccross@android.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5182AB66.6020307@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* H. Peter Anvin <hpa@linux.intel.com> wrote:
 
-> On 05/02/2013 11:06 AM, David Rientjes wrote:
-> > 
-> > Hi Peter,
-> > 
-> > You'll also need http://marc.info/?l=linux-kernel&m=136744052328802 when 
-> > Borislav signs it off as it fixes one of the dependencies.  Still waiting 
-> > on how X86_IO_APIC, X86_LOCAL_APIC, and NET_CORE will be resolved.
-> > 
+On Wed, 1 May 2013, Colin Cross wrote:
+
+> Avoid waking up every thread sleeping in a nanosleep call during
+> suspend and resume by calling a freezable blocking call.  Previous
+> patches modified the freezer to avoid sending wakeups to threads
+> that are blocked in freezable blocking calls.
 > 
-> Hm.
+> This call was selected to be converted to a freezable call because
+> it doesn't hold any locks or release any resources when interrupted
+> that might be needed by another freezing task or a kernel driver
+> during suspend, and is a common site where idle userspace tasks are
+> blocked.
+> 
+> Signed-off-by: Colin Cross <ccross@android.com>
 
-Boris, mind posting a working version?
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
 
-Thanks,
-
-	Ingo
+> ---
+>  kernel/hrtimer.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+> index 14be27f..e036276 100644
+> --- a/kernel/hrtimer.c
+> +++ b/kernel/hrtimer.c
+> @@ -47,6 +47,7 @@
+>  #include <linux/sched/sysctl.h>
+>  #include <linux/sched/rt.h>
+>  #include <linux/timer.h>
+> +#include <linux/freezer.h>
+>  
+>  #include <asm/uaccess.h>
+>  
+> @@ -1525,7 +1526,7 @@ static int __sched do_nanosleep(struct hrtimer_sleeper *t, enum hrtimer_mode mod
+>  			t->task = NULL;
+>  
+>  		if (likely(t->task))
+> -			schedule();
+> +			freezable_schedule();
+>  
+>  		hrtimer_cancel(&t->timer);
+>  		mode = HRTIMER_MODE_ABS;
+> -- 
+> 1.8.2.1
+> 
+> 
