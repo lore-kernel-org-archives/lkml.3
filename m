@@ -1,41 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761306Ab3EBUPP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 16:15:15 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:21733 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759620Ab3EBUPN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 16:15:13 -0400
-Date: Thu, 2 May 2013 22:15:11 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: modpost command line still is a problem
-Message-ID: <20130502201511.GA17608@merkur.ravnborg.org>
-References: <5182A850.5010905@zytor.com>
+	id S1762080Ab3EBUR7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 16:17:59 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:47477 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760354Ab3EBUR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 16:17:57 -0400
+Date: Thu, 2 May 2013 23:19:12 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+In-Reply-To: <20130502193409.GA3780@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.00.1305022249010.25417@ja.ssi.bg>
+References: <20130430072944.GA13959@verge.net.au> <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg> <20130501091012.GB28253@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg> <20130501155501.GB7521@dyad.programming.kicks-ass.net>
+ <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg> <20130502072623.GE7521@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg> <20130502173257.GX3780@linux.vnet.ibm.com> <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg>
+ <20130502193409.GA3780@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5182A850.5010905@zytor.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 10:54:24AM -0700, H. Peter Anvin wrote:
-> At least as far as current linus, "make allmodconfig" still fails with
-> O= in a sufficiently deep directory due to the modpost command line
-> being too long.
+
+	Hello,
+
+On Thu, 2 May 2013, Paul E. McKenney wrote:
+
+> > 	Only the new cond_resched_rcu() macro provides
+> > PREEMPT_ACTIVE flag to skip the rcu_preempt_sleep_check()
+> > call. The old macros provide locked=0 as you noticed. Does it
+> > answer your question or I'm missing something?
 > 
-> There was a bunch of talk about how to address that, but did anything
-> ever come of it?
+> PREEMPT_ACTIVE's value is usually 0x10000000.  Did it change
+> since 3.9?  If not, rcu_sleep_check(preempt_offset & PREEMPT_ACTIVE)
+> is the same as rcu_sleep_check(0).
 
-Following patch:
-http://marc.info/?l=linux-kbuild&m=136723776203823&w=2
+	Yes, the different platforms use different bit,
+that is why I mentioned about my failed attempt at
+changing hardirq.h. PREEMPT_ACTIVE is always != 0.
 
-is waiting for Michal to pick it up.
-It is on top of the kbuild branck of the kbuild tree (yet to be merged).
+	But I don't understand what do you mean by
+'preempt_offset & PREEMPT_ACTIVE' being always 0.
+It is always 0 for cond_resched(), cond_resched_lock()
+and cond_resched_softirq(), not for cond_resched_rcu():
 
-	Sam
+(PREEMPT_ACTIVE | PREEMPT_RCU_OFFSET) & PREEMPT_ACTIVE
+should give PREEMPT_ACTIVE, not 0. We have 2 cases in
+rcu_sleep_check() for the if:
+
+1. !(PREEMPT_ACTIVE) => FALSE for cond_resched_rcu
+2. !(0) => TRUE for other cond_resched_* macros
+
+	On x86 the code is:
+
+__might_sleep:
+        pushl   %ebp    #
+        testl   $268435456, %ecx        #, preempt_offset
+...
+        jne     .L240   #,
+	// rcu_lock_map checked when PREEMPT_ACTIVE is missing
+.L240:
+	// rcu_bh_lock_map checked
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
