@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758776Ab3EBKvt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:51:49 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:55488 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758031Ab3EBKuJ (ORCPT
+	id S932105Ab3EBKwM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:52:12 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:48632 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757467Ab3EBKuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:50:09 -0400
+	Thu, 2 May 2013 06:50:05 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3/8] ARM: ux500: Stop passing Hash DMA channel config information though pdata
-Date: Thu,  2 May 2013 11:49:45 +0100
-Message-Id: <1367491790-9727-4-git-send-email-lee.jones@linaro.org>
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andreas Westin <andreas.westin@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-crypto@vger.kernel.org
+Subject: [PATCH 1/8] crypto: ux500/hash - Prepare clock before enabling it
+Date: Thu,  2 May 2013 11:49:43 +0100
+Message-Id: <1367491790-9727-2-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1367491790-9727-1-git-send-email-lee.jones@linaro.org>
 References: <1367491790-9727-1-git-send-email-lee.jones@linaro.org>
@@ -21,32 +25,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMA channel configuration information should be setup in the driver.
-The Ux500 Hash driver now does this, so there's no need to send it
-though here too.
+If we fail to prepare the ux500-hash clock before enabling it the
+platform will fail to boot. Here we insure this happens.
 
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Andreas Westin <andreas.westin@stericsson.com>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-crypto@vger.kernel.org
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500.c |    4 ----
- 1 file changed, 4 deletions(-)
+ drivers/crypto/ux500/hash/hash_core.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 883dc66..cb7ae23 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -473,11 +473,7 @@ static struct cryp_platform_data u8500_cryp1_platform_data = {
- static struct stedma40_chan_cfg u8500_hash_dma_cfg_tx = {
- 		.dir = STEDMA40_MEM_TO_PERIPH,
- 		.dev_type = DB8500_DMA_DEV50_HAC1_TX,
--		.src_info.data_width = STEDMA40_WORD_WIDTH,
--		.dst_info.data_width = STEDMA40_WORD_WIDTH,
- 		.mode = STEDMA40_MODE_LOGICAL,
--		.src_info.psize = STEDMA40_PSIZE_LOG_16,
--		.dst_info.psize = STEDMA40_PSIZE_LOG_16,
- };
+diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
+index 632c333..1e8b2f3 100644
+--- a/drivers/crypto/ux500/hash/hash_core.c
++++ b/drivers/crypto/ux500/hash/hash_core.c
+@@ -1727,11 +1727,17 @@ static int ux500_hash_probe(struct platform_device *pdev)
+ 		goto out_regulator;
+ 	}
  
- static struct hash_platform_data u8500_hash1_platform_data = {
++	ret = clk_prepare(device_data->clk);
++	if (ret) {
++		dev_err(dev, "[%s] clk_prepare() failed!", __func__);
++		goto out_clk;
++	}
++
+ 	/* Enable device power (and clock) */
+ 	ret = hash_enable_power(device_data, false);
+ 	if (ret) {
+ 		dev_err(dev, "[%s]: hash_enable_power() failed!", __func__);
+-		goto out_clk;
++		goto out_clk_unprepare;
+ 	}
+ 
+ 	ret = hash_check_hw(device_data);
+@@ -1763,6 +1769,9 @@ static int ux500_hash_probe(struct platform_device *pdev)
+ out_power:
+ 	hash_disable_power(device_data, false);
+ 
++out_clk_unprepare:
++	clk_unprepare(device_data->clk);
++
+ out_clk:
+ 	clk_put(device_data->clk);
+ 
+@@ -1827,6 +1836,7 @@ static int ux500_hash_remove(struct platform_device *pdev)
+ 		dev_err(dev, "[%s]: hash_disable_power() failed",
+ 			__func__);
+ 
++	clk_unprepare(device_data->clk);
+ 	clk_put(device_data->clk);
+ 	regulator_put(device_data->regulator);
+ 
 -- 
 1.7.10.4
 
