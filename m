@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945Ab3EBPN5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 11:13:57 -0400
-Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:38745 "EHLO
-	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757955Ab3EBPN4 (ORCPT
+	id S1760128Ab3EBPQY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 11:16:24 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:53177 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759745Ab3EBPQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 11:13:56 -0400
-Date: Thu, 2 May 2013 15:13:54 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Pekka Enberg <penberg@kernel.org>
-cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, glommer@parallels.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [linux-next-20130422] Bug in SLAB?
-In-Reply-To: <5180CC5B.3010608@kernel.org>
-Message-ID: <0000013e65ce8a9b-230978fb-2865-4b36-9575-3e1dddba6858-000000@email.amazonses.com>
-References: <CAOJsxLFYDC+EDdJrXVnc1qfEyd56bhFLeGE+6Mbhwiq73KQQLQ@mail.gmail.com> <517E8758.9040803@parallels.com> <0000013e564e0e5a-121c52f9-e489-470f-99d5-67a5ad42eb75-000000@email.amazonses.com> <201304300028.IAD13051.OHOVMJSLFFFQOt@I-love.SAKURA.ne.jp>
- <0000013e56e9304a-1042a95a-d4dd-43c5-8b8a-c670f50ac54e-000000@email.amazonses.com> <201304300645.FCE37285.tVHJLSOMQFOFFO@I-love.SAKURA.ne.jp> <0000013e5b5de8c2-75b84016-0faf-4b7f-b5e5-e40eb67552ab-000000@email.amazonses.com> <5180CC5B.3010608@kernel.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.05.02-54.240.9.42
+	Thu, 2 May 2013 11:16:19 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH, RFC 18/22] Xen: SWIOTLB is only used on x86
+Date: Thu,  2 May 2013 17:16:22 +0200
+Message-Id: <1367507786-505303-19-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1367507786-505303-1-git-send-email-arnd@arndb.de>
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:5NgCMOIYRrlGYigNuA8q//lkYFw1a4EC6fBxg8g7f8N
+ uxdKsVXem+oAIRBvpTITQu7cVCdRCeUYabQRKWvPHxeuR9GzlH
+ dcULnZFwFn3xUizrFaSUVHW8mkKGorusYRiCyqK1AVh/5auY1a
+ 7/f4tIa/OzV07Nes1W513TC40gklpQCxd3G3QNAXURI/lyF+0a
+ FbxcsXK0zmvdXqMKaGzKDSO/AJS7IRuwptrWa9yVZTN3yY+erW
+ PU2eD35G8YO9ShItEk+7xy+rnBLITQuVYaujdqFYBdOiiBwEYS
+ o++P2rSy0fkL8XTjpukyb3gar2xuRa2Py4f56bYRcwcQLDYWKt
+ TRk9EwPnc5wPV6xbDLbdzUfVlZ/41kjdSUlevpBfO
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 May 2013, Pekka Enberg wrote:
+Enabling SWIOTLB_XEN on ARM results in build errors because the
+underlying SWIOTLB is only available on X86:
 
-	> Why is that? Historically it has returned NULL, hasn't it? We have had cases
-> where kernel code (naively) uses size directly from userspace and we
-> definitely don't want to BUG_ON on it.
+drivers/xen/swiotlb-xen.c: In function 'is_xen_swiotlb_buffer':
+drivers/xen/swiotlb-xen.c:105:2: error: implicit declaration of function 'mfn_to_local_pfn
 
-In that case the size is dynamic and then we return an error. In this case
-the size is static and known at compile time. The allocation can never
-succeed.
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/xen/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+index dd4d9cb..f03bf50 100644
+--- a/drivers/xen/Kconfig
++++ b/drivers/xen/Kconfig
+@@ -141,7 +141,7 @@ config XEN_GRANT_DEV_ALLOC
+ 
+ config SWIOTLB_XEN
+ 	def_bool y
+-	depends on PCI
++	depends on PCI && X86
+ 	select SWIOTLB
+ 
+ config XEN_TMEM
+-- 
+1.8.1.2
+
