@@ -1,266 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab3EBJG1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 05:06:27 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:41591 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab3EBJGZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 05:06:25 -0400
-Date: Thu, 2 May 2013 11:06:20 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: [GIT PULL] scheduler fixes
-Message-ID: <20130502090620.GA28742@gmail.com>
+	id S1757408Ab3EBJHk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 05:07:40 -0400
+Received: from canardo.mork.no ([148.122.252.1]:33165 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757110Ab3EBJHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 05:07:38 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Patrick McHardy <kaber@trash.net>
+Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        hayeswang@realtek.com, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: [GIT] Networking
+Organization: m
+References: <CA+55aFxoP1vybnqdDwGmd-m0j=x=KDm7GHV6J1i8wGOaU0=5qw@mail.gmail.com>
+	<20130502.024552.1513488878160820332.davem@davemloft.net>
+	<20130502070256.GA29502@macbook.localnet>
+	<20130502.041625.412316202038784117.davem@davemloft.net>
+	<20130502083619.GA22010@macbook.localnet>
+Date: Thu, 02 May 2013 11:06:42 +0200
+In-Reply-To: <20130502083619.GA22010@macbook.localnet> (Patrick McHardy's
+	message of "Thu, 2 May 2013 10:36:49 +0200")
+Message-ID: <87d2t9bvj1.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Please pull the latest sched-urgent-for-linus git tree from:
+Patrick McHardy <kaber@trash.net> writes:
+> On Thu, May 02, 2013 at 04:16:25AM -0400, David Miller wrote:
+>> From: Patrick McHardy <kaber@trash.net>
+>> Date: Thu, 2 May 2013 09:03:37 +0200
+>>=20
+>> > I'll also have a look at this.
+>>=20
+>> By the mere existence of /sys/devices/${DEV_PATH}/net/${netdev_name}/fla=
+gs
+>> we have to preserve the bit layout.
+>>=20
+>> So Linus was right.
+>>=20
+>> So network manager is probably reading that flags sysfs file and
+>> interpreting it.
+>
+> Right, that seems plausible.=20
+>
+>> I'll fix the layout to how it was before.
+>
+> I also found one spot in net/core/dev.c which was using an int for the
+> features. Patch attached.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
+And a couple more attached.
 
-   HEAD: f3002134158092178be81339ec5a22ff80e6c308 Revert "math64: New div64_u64_rem helper"
+I am also wondering about the consequences of the
+ETHTOOL_DEV_FEATURE_WORDS calculation in ethtool.c.  Adding the new
+netdev features will make it go from 1 to 2:
 
-This fixes the cputime scaling overflow problems for good without having 
-bad 32-bit overhead, and gets rid of the div64_u64_rem() helper as well.
-
-	Ingo
-
------------------->
-Stanislaw Gruszka (4):
-      sched: Avoid cputime scaling overflow
-      sched: Do not account bogus utime
-      sched: Avoid prev->stime underflow
-      Revert "math64: New div64_u64_rem helper"
+#define ETHTOOL_DEV_FEATURE_WORDS	((NETDEV_FEATURE_COUNT + 31) / 32)
 
 
- include/linux/math64.h | 19 +-----------
- kernel/sched/cputime.c | 80 ++++++++++++++++++++++++++++++++------------------
- lib/div64.c            | 19 ++++--------
- 3 files changed, 58 insertions(+), 60 deletions(-)
+But this constant seems to be part of the userspace API AFAICS, so it
+cannot just change like that:
 
-diff --git a/include/linux/math64.h b/include/linux/math64.h
-index 931a619..b8ba855 100644
---- a/include/linux/math64.h
-+++ b/include/linux/math64.h
-@@ -30,15 +30,6 @@ static inline s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder)
- }
- 
- /**
-- * div64_u64_rem - unsigned 64bit divide with 64bit divisor
-- */
--static inline u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
--{
--	*remainder = dividend % divisor;
--	return dividend / divisor;
--}
--
--/**
-  * div64_u64 - unsigned 64bit divide with 64bit divisor
-  */
- static inline u64 div64_u64(u64 dividend, u64 divisor)
-@@ -70,16 +61,8 @@ static inline u64 div_u64_rem(u64 dividend, u32 divisor, u32 *remainder)
- extern s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder);
- #endif
- 
--#ifndef div64_u64_rem
--extern u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder);
--#endif
--
- #ifndef div64_u64
--static inline u64 div64_u64(u64 dividend, u64 divisor)
--{
--	u64 remainder;
--	return div64_u64_rem(dividend, divisor, &remainder);
--}
-+extern u64 div64_u64(u64 dividend, u64 divisor);
- #endif
- 
- #ifndef div64_s64
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 33508dc..337a367 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -506,34 +506,47 @@ void account_idle_ticks(unsigned long ticks)
- }
- 
- /*
-- * Perform (stime * rtime) / total with reduced chances
-- * of multiplication overflows by using smaller factors
-- * like quotient and remainders of divisions between
-- * rtime and total.
-+ * Perform (stime * rtime) / total, but avoid multiplication overflow by
-+ * loosing precision when the numbers are big.
-  */
- static cputime_t scale_stime(u64 stime, u64 rtime, u64 total)
+static int ethtool_set_features(struct net_device *dev, void __user *userad=
+dr)
+{
+	struct ethtool_sfeatures cmd;
+	struct ethtool_set_features_block features[ETHTOOL_DEV_FEATURE_WORDS];
+	netdev_features_t wanted =3D 0, valid =3D 0;
+	int i, ret =3D 0;
+
+	if (copy_from_user(&cmd, useraddr, sizeof(cmd)))
+		return -EFAULT;
+	useraddr +=3D sizeof(cmd);
+
+	if (cmd.size !=3D ETHTOOL_DEV_FEATURE_WORDS)
+		return -EINVAL;
+
+..
+
+
+Is this correctly analyzed?  If so, then I have no clue how to fix
+that...
+
+
+
+Bj=C3=B8rn
+
+
+
+--=-=-=
+Content-Type: text/x-diff; charset=utf-8
+Content-Disposition: inline;
+ filename=0001-net-vlan-ethtool-netdev_features_t-is-more-than-32-b.patch
+Content-Transfer-Encoding: quoted-printable
+
+>From d957cf339bf625869c39d852ac6733ef597ecef9 Mon Sep 17 00:00:00 2001
+From: =3D?UTF-8?q?Bj=3DC3=3DB8rn=3D20Mork?=3D <bjorn@mork.no>
+Date: Thu, 2 May 2013 10:37:05 +0200
+Subject: [PATCH] net: vlan,ethtool: netdev_features_t is more than 32 bit
+MIME-Version: 1.0
+Content-Type: text/plain; charset=3DUTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: Bj=C3=B8rn Mork <bjorn@mork.no>
+---
+ net/8021q/vlan_dev.c |    2 +-
+ net/core/ethtool.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+index 8af5085..3a8c8fd 100644
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -628,7 +628,7 @@ static netdev_features_t vlan_dev_fix_features(struct n=
+et_device *dev,
+ 	netdev_features_t features)
  {
--	u64 rem, res, scaled;
-+	u64 scaled;
- 
--	if (rtime >= total) {
--		/*
--		 * Scale up to rtime / total then add
--		 * the remainder scaled to stime / total.
--		 */
--		res = div64_u64_rem(rtime, total, &rem);
--		scaled = stime * res;
--		scaled += div64_u64(stime * rem, total);
--	} else {
--		/*
--		 * Same in reverse: scale down to total / rtime
--		 * then substract that result scaled to
--		 * to the remaining part.
--		 */
--		res = div64_u64_rem(total, rtime, &rem);
--		scaled = div64_u64(stime, res);
--		scaled -= div64_u64(scaled * rem, total);
-+	for (;;) {
-+		/* Make sure "rtime" is the bigger of stime/rtime */
-+		if (stime > rtime) {
-+			u64 tmp = rtime; rtime = stime; stime = tmp;
-+		}
-+
-+		/* Make sure 'total' fits in 32 bits */
-+		if (total >> 32)
-+			goto drop_precision;
-+
-+		/* Does rtime (and thus stime) fit in 32 bits? */
-+		if (!(rtime >> 32))
-+			break;
-+
-+		/* Can we just balance rtime/stime rather than dropping bits? */
-+		if (stime >> 31)
-+			goto drop_precision;
-+
-+		/* We can grow stime and shrink rtime and try to make them both fit */
-+		stime <<= 1;
-+		rtime >>= 1;
-+		continue;
-+
-+drop_precision:
-+		/* We drop from rtime, it has more bits than stime */
-+		rtime >>= 1;
-+		total >>= 1;
- 	}
- 
-+	/*
-+	 * Make sure gcc understands that this is a 32x32->64 multiply,
-+	 * followed by a 64/32->64 divide.
-+	 */
-+	scaled = div_u64((u64) (u32) stime * (u64) (u32) rtime, (u32)total);
- 	return (__force cputime_t) scaled;
- }
- 
-@@ -545,7 +558,7 @@ static void cputime_adjust(struct task_cputime *curr,
- 			   struct cputime *prev,
- 			   cputime_t *ut, cputime_t *st)
- {
--	cputime_t rtime, stime, total;
-+	cputime_t rtime, stime, utime, total;
- 
- 	if (vtime_accounting_enabled()) {
- 		*ut = curr->utime;
-@@ -568,13 +581,21 @@ static void cputime_adjust(struct task_cputime *curr,
- 	 */
- 	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
- 
--	if (!rtime) {
--		stime = 0;
--	} else if (!total) {
--		stime = rtime;
--	} else {
-+	/*
-+	 * Update userspace visible utime/stime values only if actual execution
-+	 * time is bigger than already exported. Note that can happen, that we
-+	 * provided bigger values due to scaling inaccuracy on big numbers.
-+	 */
-+	if (prev->stime + prev->utime >= rtime)
-+		goto out;
-+
-+	if (total) {
- 		stime = scale_stime((__force u64)stime,
- 				    (__force u64)rtime, (__force u64)total);
-+		utime = rtime - stime;
-+	} else {
-+		stime = rtime;
-+		utime = 0;
- 	}
- 
- 	/*
-@@ -583,8 +604,9 @@ static void cputime_adjust(struct task_cputime *curr,
- 	 * Let's enforce monotonicity.
- 	 */
- 	prev->stime = max(prev->stime, stime);
--	prev->utime = max(prev->utime, rtime - prev->stime);
-+	prev->utime = max(prev->utime, utime);
- 
-+out:
- 	*ut = prev->utime;
- 	*st = prev->stime;
- }
-diff --git a/lib/div64.c b/lib/div64.c
-index 3af5728..a163b6c 100644
---- a/lib/div64.c
-+++ b/lib/div64.c
-@@ -79,10 +79,9 @@ EXPORT_SYMBOL(div_s64_rem);
- #endif
- 
- /**
-- * div64_u64_rem - unsigned 64bit divide with 64bit divisor and 64bit remainder
-+ * div64_u64 - unsigned 64bit divide with 64bit divisor
-  * @dividend:	64bit dividend
-  * @divisor:	64bit divisor
-- * @remainder:  64bit remainder
-  *
-  * This implementation is a modified version of the algorithm proposed
-  * by the book 'Hacker's Delight'.  The original source and full proof
-@@ -90,33 +89,27 @@ EXPORT_SYMBOL(div_s64_rem);
-  *
-  * 'http://www.hackersdelight.org/HDcode/newCode/divDouble.c.txt'
-  */
--#ifndef div64_u64_rem
--u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
-+#ifndef div64_u64
-+u64 div64_u64(u64 dividend, u64 divisor)
- {
- 	u32 high = divisor >> 32;
- 	u64 quot;
- 
- 	if (high == 0) {
--		u32 rem32;
--		quot = div_u64_rem(dividend, divisor, &rem32);
--		*remainder = rem32;
-+		quot = div_u64(dividend, divisor);
- 	} else {
- 		int n = 1 + fls(high);
- 		quot = div_u64(dividend >> n, divisor >> n);
- 
- 		if (quot != 0)
- 			quot--;
--
--		*remainder = dividend - quot * divisor;
--		if (*remainder >= divisor) {
-+		if ((dividend - quot * divisor) >= divisor)
- 			quot++;
--			*remainder -= divisor;
--		}
- 	}
- 
- 	return quot;
- }
--EXPORT_SYMBOL(div64_u64_rem);
-+EXPORT_SYMBOL(div64_u64);
- #endif
- 
- /**
+ 	struct net_device *real_dev =3D vlan_dev_priv(dev)->real_dev;
+-	u32 old_features =3D features;
++	netdev_features_t old_features =3D features;
+=20
+ 	features &=3D real_dev->vlan_features;
+ 	features |=3D NETIF_F_RXCSUM;
+diff --git a/net/core/ethtool.c b/net/core/ethtool.c
+index 5a934ef..22efdaa 100644
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -1421,7 +1421,7 @@ int dev_ethtool(struct net *net, struct ifreq *ifr)
+ 	void __user *useraddr =3D ifr->ifr_data;
+ 	u32 ethcmd;
+ 	int rc;
+-	u32 old_features;
++	netdev_features_t old_features;
+=20
+ 	if (!dev || !netif_device_present(dev))
+ 		return -ENODEV;
+--=20
+1.7.10.4
+
+
+--=-=-=--
