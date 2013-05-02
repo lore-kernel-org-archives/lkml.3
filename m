@@ -1,156 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491Ab3EBJpM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 05:45:12 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37406 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751703Ab3EBJpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 05:45:08 -0400
-From: "Gupta, Pekon" <pekon@ti.com>
-To: <linux-mtd@lists.infradead.org>, <b-cousson@ti.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>
-CC: Philip Avinash <avinashphilip@ti.com>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <hvaibhav@ti.com>,
-        <zonque@gmail.com>, <jacmet@sunsite.dk>, "Gupta, Pekon" <pekon@ti.com>
-Subject: [PATCH v3, 3/3] ARM: dts: AM33XX: Add NAND flash device tree data to am335x-evm
-Date: Thu, 2 May 2013 15:14:28 +0530
-Message-ID: <1367487868-14767-1-git-send-email-pekon@ti.com>
-X-Mailer: git-send-email 1.8.1
+	id S1757067Ab3EBJss (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 05:48:48 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:39168 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873Ab3EBJsr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 05:48:47 -0400
+Date: Thu, 2 May 2013 11:48:33 +0200
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Subject: Re: [PATCH 2/3] ASoC: ux500: move clock controls to ab8500-codec
+Message-ID: <20130502094833.GA1590@balto.lan>
+References: <1367330994-7259-1-git-send-email-fabio.baltieri@linaro.org>
+ <1367330994-7259-3-git-send-email-fabio.baltieri@linaro.org>
+ <20130430183035.GC26160@sirena.org.uk>
+ <20130502075421.GA23346@balto.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130502075421.GA23346@balto.lan>
+X-Operating-System: Linux balto 3.9.0-rc8-00030-g4cbbd1d x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philip Avinash <avinashphilip@ti.com>
+On Thu, May 02, 2013 at 09:54:21AM +0200, Fabio Baltieri wrote:
+> On Tue, Apr 30, 2013 at 07:30:35PM +0100, Mark Brown wrote:
+> > On Tue, Apr 30, 2013 at 04:09:53PM +0200, Fabio Baltieri wrote:
+> > > Move ab8500 clock control definitions to the ab8500 codec driver,
+> > > leaving only card specific setting in mop500_ab8500_ctrls.
+> > 
+> > So, if this is some generic thing and not some weird stuff for the card
+> > this really reopens the question about why this is done with user
+> > visible controls...
+> > 
+> > >  static struct snd_kcontrol_new ab8500_ctrls[] = {
+> > > +	/* Digital interface - Clocks */
+> > > +	SOC_SINGLE("Digital Interface Master Generator Switch",
+> > > +		AB8500_DIGIFCONF1, AB8500_DIGIFCONF1_ENMASTGEN,
+> > > +		1, 0),
+> > > +	SOC_SINGLE("Digital Interface 0 Bit-clock Switch",
+> > > +		AB8500_DIGIFCONF1, AB8500_DIGIFCONF1_ENFSBITCLK0,
+> > > +		1, 0),
+> > > +	SOC_SINGLE("Digital Interface 1 Bit-clock Switch",
+> > > +		AB8500_DIGIFCONF1, AB8500_DIGIFCONF1_ENFSBITCLK1,
+> > > +		1, 0),
+> > 
+> > ...this is all stuff that is normally figured out automatically by the
+> > drivers, we know when the audio interface is in use and hence when it
+> > needs to be clocked.
+> 
+> It makes sense, I'll poke the documentation I have and try to figure out
+> how to control those bits from a more appropriate place.
 
-NAND flash connected in am335x-evm on GPMC controller. This patch adds
-device tree node in am3355-evm with GPMC contoller timing for NAND flash
-interface, NAND partition table, ECC scheme, elm handle id.
+Well, it looks like this is *already* handled automatically by the
+ab8500 codec driver in ab8500_codec_set_dai_clock_gate(), and these
+controls just allow some messy degree of overriding after the audio
+stream is started.  At this point the only thing that comes to my mind
+is that this is some debug leftover and I'm replying with a v2 to just
+drop these three widgets altogether.
 
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-Signed-off-by: Gupta, Pekon <pekon@ti.com>
+In the meantime, I'm also observing some funny behavior of other
+alsamixer controls, but I'll fix those on a separate series.  This is
+enough to bring the driver back on a working state.
 
----
-Changes in v3:
-	- moved GPMC pin-mux config to nand node
+Thanks,
+Fabio
 
- arch/arm/boot/dts/am335x-evm.dts | 95 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 95 insertions(+)
-
-diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
-index d649644..0b8f161 100644
---- a/arch/arm/boot/dts/am335x-evm.dts
-+++ b/arch/arm/boot/dts/am335x-evm.dts
-@@ -44,6 +44,26 @@
- 				0x154 0x27	/* spi0_d0.gpio0_3, INPUT | MODE7 */
- 			>;
- 		};
-+
-+		nandflash_pins_s0: nandflash_pins_s0 {
-+			pinctrl-single,pins = <
-+				0x0 0x30	/* gpmc_ad0.gpmc_ad0, INPUT | PULLUP | MODE0 */
-+				0x4 0x30	/* gpmc_ad1.gpmc_ad1, INPUT | PULLUP | MODE0 */
-+				0x8 0x30	/* gpmc_ad2.gpmc_ad2, INPUT | PULLUP | MODE0 */
-+				0xc 0x30	/* gpmc_ad3.gpmc_ad3, INPUT | PULLUP | MODE0 */
-+				0x10 0x30	/* gpmc_ad4.gpmc_ad4, INPUT | PULLUP | MODE0 */
-+				0x14 0x30	/* gpmc_ad5.gpmc_ad5, INPUT | PULLUP | MODE0 */
-+				0x18 0x30	/* gpmc_ad6.gpmc_ad6, INPUT | PULLUP | MODE0 */
-+				0x1c 0x30	/* gpmc_ad7.gpmc_ad7, INPUT | PULLUP | MODE0 */
-+				0x70 0x30	/* gpmc_wait0.gpmc_wait0, INPUT | PULLUP | MODE0 */
-+				0x74 0x37	/* gpmc_wpn.gpio0_30, INPUT | PULLUP | MODE7 */
-+				0x7c 0x8	/* gpmc_csn0.gpmc_csn0,  PULL DISA */
-+				0x90 0x8	/* gpmc_advn_ale.gpmc_advn_ale, PULL DISA */
-+				0x94 0x8	/* gpmc_oen_ren.gpmc_oen_ren, PULL DISA */
-+				0x98 0x8	/* gpmc_wen.gpmc_wen, PULL DISA */
-+				0x9c 0x8	/* gpmc_be0n_cle.gpmc_be0n_cle, PULL DISA */
-+			>;
-+		};
- 	};
- 
- 	ocp {
-@@ -102,6 +122,82 @@
- 				reg = <0x48>;
- 			};
- 		};
-+
-+		elm: elm@48080000 {
-+			status = "okay";
-+		};
-+
-+		gpmc: gpmc@50000000 {
-+			status = "okay";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&nandflash_pins_s0>;
-+			ranges = <0 0 0x08000000 0x10000000>;	/* CS0: NAND */
-+			nand@0,0 {
-+				reg = <0 0 0>; /* CS0, offset 0 */
-+				nand-bus-width = <8>;
-+				ti,nand-ecc-opt = "bch8";
-+
-+				gpmc,sync-clk = <0>;
-+				gpmc,cs-on = <0>;
-+				gpmc,cs-rd-off = <44>;
-+				gpmc,cs-wr-off = <44>;
-+				gpmc,adv-on = <6>;
-+				gpmc,adv-rd-off = <34>;
-+				gpmc,adv-wr-off = <44>;
-+				gpmc,we-off = <40>;
-+				gpmc,oe-off = <54>;
-+				gpmc,access = <64>;
-+				gpmc,rd-cycle = <82>;
-+				gpmc,wr-cycle = <82>;
-+				gpmc,wr-access = <40>;
-+				gpmc,wr-data-mux-bus = <0>;
-+
-+				#address-cells = <1>;
-+				#size-cells = <1>;
-+				elm_id = <&elm>;
-+
-+				/* MTD partition table */
-+				partition@0 {
-+					label = "SPL1";
-+					reg = <0x00000000 0x000020000>;
-+				};
-+
-+				partition@1 {
-+					label = "SPL2";
-+					reg = <0x00020000 0x00020000>;
-+				};
-+
-+				partition@2 {
-+					label = "SPL3";
-+					reg = <0x00040000 0x00020000>;
-+				};
-+
-+				partition@3 {
-+					label = "SPL4";
-+					reg = <0x00060000 0x00020000>;
-+				};
-+
-+				partition@4 {
-+					label = "U-boot";
-+					reg = <0x00080000 0x001e0000>;
-+				};
-+
-+				partition@5 {
-+					label = "environment";
-+					reg = <0x00260000 0x00020000>;
-+				};
-+
-+				partition@6 {
-+					label = "Kernel";
-+					reg = <0x00280000 0x00500000>;
-+				};
-+
-+				partition@7 {
-+					label = "File-System";
-+					reg = <0x00780000 0x0F880000>;
-+				};
-+			};
-+		};
- 	};
- 
- 	vbat: fixedregulator@0 {
+-- 
+Fabio Baltieri
