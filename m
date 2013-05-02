@@ -1,69 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760103Ab3EBOtX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 10:49:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5244 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751611Ab3EBOtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 10:49:22 -0400
-Date: Thu, 2 May 2013 10:49:12 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH 07/31] blk-throttle: removed deferred config application
- mechanism
-Message-ID: <20130502144912.GE30020@redhat.com>
-References: <1367455189-6957-1-git-send-email-tj@kernel.org>
- <1367455189-6957-8-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367455189-6957-8-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759548Ab3EBOvA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 10:51:00 -0400
+Received: from smtprelay01.ispgateway.de ([80.67.31.35]:56426 "EHLO
+	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab3EBOu7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 10:50:59 -0400
+X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 May 2013 10:50:58 EDT
+From: dirk.eibach@gdsys.cc
+To: linux-kernel@vger.kernel.org
+Cc: Dirk Eibach <dirk.eibach@gdsys.cc>, Kumar Gala <galak@kernel.crashing.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: [PATCH] powerpc: Make Book E watchdog reset type configurable
+Date: Thu,  2 May 2013 16:45:13 +0200
+Message-Id: <1367505913-18970-1-git-send-email-dirk.eibach@gdsys.cc>
+X-Mailer: git-send-email 1.7.2.5
+X-Df-Sender: ZGlyay5laWJhY2hAZ2RzeXMuY2M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 05:39:25PM -0700, Tejun Heo wrote:
+From: Dirk Eibach <dirk.eibach@gdsys.cc>
 
-[..]
-> @@ -1023,9 +975,27 @@ static int tg_set_conf(struct cgroup *cgrp, struct cftype *cft, const char *buf,
->  	else
->  		*(unsigned int *)((void *)tg + cft->private) = ctx.v;
->  
-> -	/* XXX: we don't need the following deferred processing */
-> -	xchg(&tg->limits_changed, true);
-> -	xchg(&td->limits_changed, true);
-> +	throtl_log_tg(td, tg, "limit change rbps=%llu wbps=%llu riops=%u wiops=%u",
-> +		      tg->bps[READ], tg->bps[WRITE],
-> +		      tg->iops[READ], tg->iops[WRITE]);
-> +
-> +	/*
-> +	 * We're already holding queue_lock and know @tg is valid.  Let's
-> +	 * apply the new config directly.
-> +	 *
-> +	 * Restart the slices for both READ and WRITES. It might happen
-> +	 * that a group's limit are dropped suddenly and we don't want to
-> +	 * account recently dispatched IO with new low rate.
-> +	 */
-> +	throtl_start_new_slice(td, tg, 0);
-> +	throtl_start_new_slice(td, tg, 1);
-> +
-> +	if (throtl_tg_on_rr(tg)) {
-> +		tg_update_disptime(td, tg);
-> +		throtl_schedule_next_dispatch(td);
-> +	}
-> +
-> +	/* kick dispatch in case disptime got shortened */
->  	throtl_schedule_delayed_work(td, 0);
+Signed-off-by: Dirk Eibach <dirk.eibach@gdsys.cc>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-watchdog@vger.kernel.org
+---
+ drivers/watchdog/Kconfig     |   32 ++++++++++++++++++++++++++++++++
+ drivers/watchdog/booke_wdt.c |   10 +++++++++-
+ 2 files changed, 41 insertions(+), 1 deletions(-)
 
-Hi Tejun,
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index e89fc31..6048593 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -1172,6 +1172,38 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
+ 
+ 	  The value can be overridden by the wdt_period command-line parameter.
+ 
++choice
++	prompt "PowerPC Book-E Watchdog reset type"
++	depends on BOOKE_WDT
++	default BOOKE_WDT_RESET_CHIP
++	help
++	  Specify what kind of reset will be executed on watchdog timeout.
++
++	config BOOKE_WDT_RESET_CORE
++		bool "Core reset"
++	help
++	  Watchdog timeout will trigger a core reset.
++	  The exact function of any of these settings is implementation-de-
++	  pendent.
++	  See the User's Manual for the implementation for further details.
++
++	config BOOKE_WDT_RESET_CHIP
++		bool "Chip reset"
++	help
++	  Watchdog timeout will trigger a chip reset.
++	  The exact function of any of these settings is implementation-de-
++	  pendent.
++	  See the User's Manual for the implementation for further details.
++
++	config BOOKE_WDT_RESET_SYSTEM
++		bool "System reset"
++	help
++	  Watchdog timeout will trigger a system reset.
++	  The exact function of any of these settings is implementation-de-
++	  pendent.
++	  See the User's Manual for the implementation for further details.
++endchoice
++
+ # PPC64 Architecture
+ 
+ config WATCHDOG_RTAS
+diff --git a/drivers/watchdog/booke_wdt.c b/drivers/watchdog/booke_wdt.c
+index a8dbceb3..7791d19 100644
+--- a/drivers/watchdog/booke_wdt.c
++++ b/drivers/watchdog/booke_wdt.c
+@@ -22,6 +22,14 @@
+ #include <asm/time.h>
+ #include <asm/div64.h>
+ 
++#if defined(CONFIG_BOOKE_WDT_RESET_CORE)
++#define WRC		WRC_CORE
++#elif defined(CONFIG_BOOKE_WDT_RESET_CHIP)
++#define WRC		WRC_CHIP
++#elif defined(CONFIG_BOOKE_WDT_RESET_SYSTEM)
++#define WRC		WRC_SYSTEM
++#endif
++
+ /* If the kernel parameter wdt=1, the watchdog will be enabled at boot.
+  * Also, the wdt_period sets the watchdog timer period timeout.
+  * For E500 cpus the wdt_period sets which bit changing from 0->1 will
+@@ -136,7 +144,7 @@ static void __booke_wdt_enable(void *data)
+ 	__booke_wdt_ping(NULL);
+ 	val = mfspr(SPRN_TCR);
+ 	val &= ~WDTP_MASK;
+-	val |= (TCR_WIE|TCR_WRC(WRC_CHIP)|WDTP(booke_wdt_period));
++	val |= (TCR_WIE|TCR_WRC(WRC)|WDTP(booke_wdt_period));
+ 
+ 	mtspr(SPRN_TCR, val);
+ }
+-- 
+1.7.2.5
 
-Do we need above throtl_schedule_delayed_work() now?
-throtl_schedule_next_dispatch() should take care of it. And if group
-is not on service tree at the time of limit change, then anyway, we don't
-have to schedule any work.
-
-Thanks
-Vivek
