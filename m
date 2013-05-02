@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab3EBJeO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 05:34:14 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:46742 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094Ab3EBJeN (ORCPT
+	id S1756727Ab3EBJg6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 05:36:58 -0400
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:36172 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753927Ab3EBJg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 05:34:13 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH RESEND v5] fat: editions to support fat_fallocate
-References: <1367107703-2665-1-git-send-email-linkinjeon@gmail.com>
-	<87ppxd4ddm.fsf@devron.myhome.or.jp>
-	<CAKYAXd8v-eF0E2FzLfm1KaZaRu-adQcDVQQeWAiH6-8Pr+BxmA@mail.gmail.com>
-	<87bo8v42wx.fsf@devron.myhome.or.jp>
-	<CAKYAXd_-Z8Avm-FmLF=MVqHSkzfE1_jczBroyFXv5xgQmr5=XA@mail.gmail.com>
-	<87vc722cdu.fsf@devron.myhome.or.jp>
-	<CAKYAXd8nTUrW04ADyDkhnJWyjUKiniU+r65J5SMhXT-jHTG+UA@mail.gmail.com>
-	<87r4hp3kax.fsf@devron.myhome.or.jp>
-	<87k3nh3jzi.fsf@devron.myhome.or.jp>
-	<CAKYAXd_DRLG3KzjXEQ_8vD5mFWE95gR+jj3-MYhC3QKgQOLTEA@mail.gmail.com>
-Date: Thu, 02 May 2013 18:34:08 +0900
-In-Reply-To: <CAKYAXd_DRLG3KzjXEQ_8vD5mFWE95gR+jj3-MYhC3QKgQOLTEA@mail.gmail.com>
-	(Namjae Jeon's message of "Thu, 2 May 2013 18:15:21 +0900")
-Message-ID: <87fvy53eun.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Thu, 2 May 2013 05:36:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <1367485129-4423-1-git-send-email-imre.deak@intel.com>
+References: <1367485129-4423-1-git-send-email-imre.deak@intel.com>
+Date: Thu, 2 May 2013 11:36:56 +0200
+Message-ID: <CAKMK7uEL0kbS1j=gEu_GzUevseeKQ6JuZWPptr96JumCYurfnQ@mail.gmail.com>
+Subject: Re: [PATCH] wait: fix false timeouts when using wait_event_timeout()
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Imre Deak <imre.deak@intel.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Lukas Czerner <lczerner@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On Thu, May 2, 2013 at 10:58 AM, Imre Deak <imre.deak@intel.com> wrote:
+> Many callers of the wait_event_timeout() and
+> wait_event_interruptible_timeout() expect that the return value will be
+> positive if the specified condition becomes true before the timeout
+> elapses. However, at the moment this isn't guaranteed. If the wake-up
+> handler is delayed enough, the time remaining until timeout will be
+> calculated as 0 - and passed back as a return value - even if the
+> condition became true before the timeout has passed.
+>
+> Fix this by returning at least 1 if the condition becomes true. This
+> semantic is in line with what wait_for_condition_timeout() does; see
+> commit bb10ed09 - "sched: fix wait_for_completion_timeout() spurious
+> failure under heavy load".
+>
+> Signed-off-by: Imre Deak <imre.deak@intel.com>
 
->>> AFAIK, preallocation != fallocate. ext*'s preallocation was there at
->>> before fallocation to optimize block allocation for user data blocks.
-> yes, this is correct , preallocation!= fallocate, we just adopted only
-> the "release part" from that approach
-> Sorry, Would you mind to adopt this approach :) ?
+We have 3 instances of this bug in drm/i915. One case even where we
+switch between the interruptible and not interruptible
+wait_event_timeout variants, foolishly presuming they have the same
+semantics. I very much like this.
 
-I'm ok as start if it works.
-
-But from this discussion, discard at last close(2) doesn't look like
-working for your requirement. Since you want to discard at last close of
-inode, so, rather, I guess you actually want to discard at last
-dereference of inode.
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Acked-by:  Daniel Vetter <daniel.vetter@ffwll.ch>
+--
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
