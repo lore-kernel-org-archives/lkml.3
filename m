@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935Ab3EBUmK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 16:42:10 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:38987 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756085Ab3EBUmI (ORCPT
+	id S933028Ab3EBUp1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 16:45:27 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:52571 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758893Ab3EBUpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 16:42:08 -0400
-Date: Thu, 2 May 2013 22:45:11 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] drm: don't check modeset locks in panic handler
-Message-ID: <20130502204511.GH5763@phenom.ffwll.local>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Dave Airlie <airlied@gmail.com>, stable@vger.kernel.org
-References: <CAPM=9tw-Ssu7ZYBZX7ipGt9w7zYG91tKbWZguM5DLPaqTakJPA@mail.gmail.com>
- <1367480585-22814-1-git-send-email-daniel.vetter@ffwll.ch>
- <20130502101308.GA16684@pd.tnic>
+	Thu, 2 May 2013 16:45:25 -0400
+Message-ID: <5182D128.6090408@gmail.com>
+Date: Thu, 02 May 2013 15:48:40 -0500
+From: Chris Fries <ccfries@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Thunderbird/3.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130502101308.GA16684@pd.tnic>
-X-Operating-System: Linux phenom 3.9.0-rc6+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: c.fries@motorola.com, jason.hrycay@motorola.com,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        jaegeuk.kim@samsung.com
+Subject: [PATCH 1/2] f2fs: Continue to mount after failing recovery
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 12:13:08PM +0200, Borislav Petkov wrote:
-> On Thu, May 02, 2013 at 09:43:05AM +0200, Daniel Vetter wrote:
-> > Since we know that locking is broken in that case and it's more
-> > important to not flood the dmesg with random gunk.
-> > 
-> > Cc: Dave Airlie <airlied@gmail.com>
-> > Cc: Borislav Petkov <bp@alien8.de>
-> > References: https://groups.google.com/forum/?fromgroups=#!topic/linux.kernel/QFzFxSUeV4I
-> 
-> Yeah, we have this nice redirector service on k.org which uses the
-> Message-ID only and doesn't rely on some external URLs remaining stable.
-> You could use that instead:
-> 
-> Link: http://lkml.kernel.org/r/20130502000206.GH15623@pd.tnic
-> 
-> > Cc: stable@vger.kernel.org
-> > Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > ---
-> >  drivers/gpu/drm/drm_crtc.c |    4 ++++
-> >  1 file changed, 4 insertions(+)
-> > 
-> > diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-> > index 792c3e3..3be0802 100644
-> > --- a/drivers/gpu/drm/drm_crtc.c
-> > +++ b/drivers/gpu/drm/drm_crtc.c
-> > @@ -78,6 +78,10 @@ void drm_warn_on_modeset_not_all_locked(struct drm_device *dev)
-> >  {
-> >  	struct drm_crtc *crtc;
-> >  
-> > +	/* Locking is currently fubar in the panic handler. */
-> > +	if (oops_in_progress)
-> > +		return;
-> > +
-> >  	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
-> >  		WARN_ON(!mutex_is_locked(&crtc->mutex));
-> 
-> Yep, thanks.
-> 
-> Reported-and-tested-by: Borislav Petkov <bp@suse.de>
+From: Chris Fries <C.Fries@motorola.com>
 
-Thanks for testing, patch applied to drm-intel-fixes.
--Daniel
+When unable to roll forward the journal, we shouldn't bail out and
+not mount, we should continue to attempt the mount.  Bad recovery data
+is likely unrecoverable at this point, and requiring the user to try
+to mount again doesn't solve any issues.
+
+Signed-off-by: Chris Fries <C.Fries@motorola.com>
+Reviewed-by: Russell Knize <rknize2@motorola.com>
+Reviewed-by: Jason Hrycay <jason.hrycay@motorola.com>
+---
+  fs/f2fs/super.c | 7 +++----
+  1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 2643c49..d8f7ed3 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -649,10 +649,9 @@ static int f2fs_fill_super(struct super_block *sb, 
+void *data, int silent)
+      /* recover fsynced data */
+      if (!test_opt(sbi, DISABLE_ROLL_FORWARD)) {
+          err = recover_fsync_data(sbi);
+-        if (err) {
+-            f2fs_msg(sb, KERN_ERR, "Failed to recover fsync data");
+-            goto free_root_inode;
+-        }
++        if (err)
++            f2fs_msg(sb, KERN_ERR,
++                "Cannot recover all fsync data, continue\n");
+      }
+
+      /* After POR, we can run background GC thread */
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.8.0
+
