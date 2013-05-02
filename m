@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761859Ab3EBUrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 16:47:00 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:59444 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755048Ab3EBUq5 (ORCPT
+	id S1761991Ab3EBUs3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 16:48:29 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:34459 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761785Ab3EBUs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 16:46:57 -0400
-Message-ID: <5182D186.7060306@gmail.com>
-Date: Thu, 02 May 2013 15:50:14 -0500
-From: Chris Fries <ccfries@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Thunderbird/3.1.18
-MIME-Version: 1.0
-To: jason.hrycay@motorola.com, c.fries@motorola.com, jaegeuk.kim@samsung.com,
-        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] f2fs: Recover when journal contains deleted files
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 2 May 2013 16:48:27 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Jonas Gorski <jogo@openwrt.org>
+Subject: [PATCH] MIPS: Enable interrupts before WAIT instruction.
+Date: Thu,  2 May 2013 13:48:12 -0700
+Message-Id: <1367527692-25809-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <CA+55aFwDGyHOzu=Qh7SJOBK6QvAwAh7pMDL6LfMUE=AW_kapAw@mail.gmail.com>
+References: <CA+55aFwDGyHOzu=Qh7SJOBK6QvAwAh7pMDL6LfMUE=AW_kapAw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Fries <C.Fries@motorola.com>
+From: David Daney <david.daney@cavium.com>
 
-When recovering a journal file with fsync data for files that have
-been deleted, don't bail out on recovery.
+As noted by Thomas Gleixner:
 
-Signed-off-by: Chris Fries <C.Fries@motorola.com>
-Reviewed-by: Russell Knize <rknize2@motorola.com>
-Reviewed-by: Jason Hrycay <jason.hrycay@motorola.com>
+   commit cdbedc61c8 (mips: Use generic idle loop) broke MIPS as I did
+   not realize that MIPS wants to invoke the wait instructions with
+   interrupts enabled.
+
+Instead of enabling interrupts in arch_cpu_idle() as Thomas' initial
+patch does, we follow Linus' suggestion of doing it in the assembly
+code to prevent the compiler from rearranging things.
+
+Signed-off-by: David Daney <david.daney@cavium.com>
+Reported-by: EunBong Song <eunb.song@samsung.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jonas Gorski <jogo@openwrt.org>
 ---
-  fs/f2fs/recovery.c | 9 +++++++--
-  1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index f16d12d..c3a7ab0 100644
---- a/fs/f2fs/recovery.c
-+++ b/fs/f2fs/recovery.c
-@@ -53,7 +53,7 @@ static int recover_dentry(struct page *ipage, struct 
-inode *inode)
+This is only very lightly tested, we need more testing before
+declaring it the definitive fix.
 
-      dir = f2fs_iget(inode->i_sb, le32_to_cpu(raw_inode->i_pino));
-      if (IS_ERR(dir)) {
--        err = -EINVAL;
-+        err = PTR_ERR(dir);
-          goto out;
-      }
+ arch/mips/kernel/genex.S | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-@@ -157,7 +157,12 @@ static int find_fsync_dnodes(struct f2fs_sb_info 
-*sbi, struct list_head *head)
-          if (IS_INODE(page)) {
-              err = recover_inode(entry->inode, page);
-              if (err)
--                goto unlock_out;
-+                if (err == -ENOENT)
-+                    goto next;
-+                else {
-+                    err = -EINVAL;
-+                    goto unlock_out;
-+                }
-          }
-  next:
-          /* check next segment */
+diff --git a/arch/mips/kernel/genex.S b/arch/mips/kernel/genex.S
+index ecb347c..57cda9a 100644
+--- a/arch/mips/kernel/genex.S
++++ b/arch/mips/kernel/genex.S
+@@ -132,12 +132,13 @@ LEAF(r4k_wait)
+ 	.set	noreorder
+ 	/* start of rollback region */
+ 	LONG_L	t0, TI_FLAGS($28)
+-	nop
+ 	andi	t0, _TIF_NEED_RESCHED
+ 	bnez	t0, 1f
+ 	 nop
+-	nop
+-	nop
++	/* Enable interrupts so WAIT will complete */
++	mfc0	t0, CP0_STATUS
++	ori	t0, ST0_IE
++	mtc0	t0, CP0_STATUS
+ 	.set	mips3
+ 	wait
+ 	/* end of rollback region (the region size must be power of two) */
 -- 
-1.8.0
+1.7.11.7
 
