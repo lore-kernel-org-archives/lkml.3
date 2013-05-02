@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab3EBJ6G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 05:58:06 -0400
-Received: from mail.nanl.de ([217.115.11.12]:40112 "EHLO mail.nanl.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986Ab3EBJ6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 05:58:04 -0400
+	id S1756493Ab3EBKFZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:05:25 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:44242 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751041Ab3EBKFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 06:05:23 -0400
+Date: Thu, 2 May 2013 13:06:30 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+In-Reply-To: <20130502072623.GE7521@dyad.programming.kicks-ass.net>
+Message-ID: <alpine.LFD.2.00.1305021108430.1676@ja.ssi.bg>
+References: <1367290378-29224-1-git-send-email-horms@verge.net.au> <1367290378-29224-2-git-send-email-horms@verge.net.au> <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg> <20130430072944.GA13959@verge.net.au> <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
+ <20130501091012.GB28253@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg> <20130501155501.GB7521@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
+ <20130502072623.GE7521@dyad.programming.kicks-ass.net>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <6623143.198271367486832742.JavaMail.weblogic@epml20>
-References: <6623143.198271367486832742.JavaMail.weblogic@epml20>
-From: Jonas Gorski <jogo@openwrt.org>
-Date: Thu, 2 May 2013 11:57:35 +0200
-Message-ID: <CAOiHx==2EGhRU9AwvkK_+9FpWpCDSHLsfwBnoK8_9UgWkLAXZA@mail.gmail.com>
-Subject: Re: Re: [PATCH] MIPS: remove USB_EHCI_BIG_ENDIAN_{DESC,MMIO} depends
- on architecture symbol
-To: eunb.song@samsung.com
-Cc: "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "florian@openwrt.org" <florian@openwrt.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 2, 2013 at 11:27 AM, EUNBONG SONG <eunb.song@samsung.com> wrote:
->
->>These are selects and don't prevent anyone else from also selecting
->> them. If you look at your referenced commit, you see it removed the
->>/depends/, not the selects. It actually added selects to several
->> platforms. Platforms are supposed to select them if they need them.
->
-> Hello.
-> Every time i config with arch/mips/configs/cavium_octeon_defconfig, the following warning messages
-> are showed.
-> warning: (MIPS_SEAD3 && PMC_MSP && CPU_CAVIUM_OCTEON) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB && USB_EHCI_HCD)
-> warning: (MIPS_SEAD3 && PMC_MSP && CPU_CAVIUM_OCTEON) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB && USB_EHCI_HCD)
->
-> And after applying this patch, the warning messages were disappeared.
 
-But after this patch likely EHCI is also broken on these platforms.
-The solution is to either guard the USB_EHCI_BIG_ENDIAN_MMIO/DESC
-selects with if USB_EHCI_HCD etc, or make
-USB_EHCI_BIG_ENDIAN_MMIO/DESC not depend on USB_EHCI_HCD etc.
+	Hello,
 
-As far as I can tell, USB_EHCI_BIG_ENDIAN_MMIO/DESC only have any
-effect on the ehci_hcd code anyway, so removing the dependencies of
-these symbols should be fine and without any side effects, thus allow
-platforms/drivers to select them unconditionally.
+On Thu, 2 May 2013, Peter Zijlstra wrote:
 
-Greg, what do you think?
+> On Wed, May 01, 2013 at 09:22:08PM +0300, Julian Anastasov wrote:
+> > > +extern int __cond_resched_rcu(void);
+> > > +
+> > > +#define cond_resched_rcu() ({			\
+> > > +	__might_sleep(__FILE__, __LINE__, 0);	\
+> > 
+> > 	I see your goal. But digging into __might_sleep()
+> > I see that rcu_sleep_check() will scream for the non-preempt
+> > case because we are under rcu_read_lock.
+> 
+> 
+> #ifdef CONFIG_PREEMPT_RCU
+> #define PREEMPT_RCU_OFFSET 0
+> #else
+> #define PREEMPT_RCU_OFFSET 1
+> #endif
+> 
+> #define cond_resched_rcu() ({	\
+> 	__might_sleep(__FILE__, __LINE__, PREEMPT_RCU_OFFSET);	\
+> 	__cond_resched_rcu();	\
+> })
+> 
+> Should work I think..
 
+	Looks like CONFIG_DEBUG_ATOMIC_SLEEP selects
+CONFIG_PREEMPT_COUNT, so PREEMPT_RCU_OFFSET should be
+1 in all cases because preempt_disable() adds 1, while
+for CONFIG_PREEMPT_RCU case rcu_preempt_depth() should
+return 1:
 
-Jonas
+#ifdef CONFIG_PREEMPT_RCU
+#define PREEMPT_RCU_OFFSET 1
+#else
+#define PREEMPT_RCU_OFFSET PREEMPT_CHECK_OFFSET
+#endif
+
+	Now the remaining part is to fix rcu_sleep_check() for
+the non-preempt case. As there are no nesting depths in this
+case, I don't see a solution so far. We can provide
+some argument to rcu_preempt_sleep_check to compare
+depth with preempt_count() but currently I don't know
+how to differentiate cond_resched_lock() from cond_resched_rcu()
+when calling __might_sleep, in both cases we provide
+PREEMPT_OFFSET. May be some trick is needed here without
+adding new arg to __might_sleep, so that we can properly
+check for rcu_lock_map.
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
