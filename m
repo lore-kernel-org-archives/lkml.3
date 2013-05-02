@@ -1,120 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758555Ab3EBMYf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 08:24:35 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:55045 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932081Ab3EBMXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 08:23:53 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>
-Subject: [PATCH 0/4] Driver core / ACPI: Add offline/online for graceful hot-removal of devices
-Date: Thu, 02 May 2013 14:26:39 +0200
-Message-ID: <3166726.elbgrUIZ0L@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
+	id S1758426Ab3EBM1v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 08:27:51 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35186 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754674Ab3EBM1t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 08:27:49 -0400
+Date: Thu, 2 May 2013 14:27:47 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Colin Cross <ccross@android.com>
+Cc: Zoran Markovic <zoran.markovic@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
+        Benoit Goby <benoit@android.com>, John Stultz <john.stultz@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
+Subject: Re: [RFC PATCH] power: Add option to log time spent in suspend
+Message-ID: <20130502122747.GA22618@amd.pavel.ucw.cz>
+References: <1367360914-23389-1-git-send-email-zoran.markovic@linaro.org>
+ <1367360914-23389-2-git-send-email-zoran.markovic@linaro.org>
+ <20130501002929.GA20042@amd.pavel.ucw.cz>
+ <CAMbhsRRisa15fH9AodepfRJUv6t6dipqb6CMbOOrtzVsMUCoxQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMbhsRRisa15fH9AodepfRJUv6t6dipqb6CMbOOrtzVsMUCoxQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi!
 
-The following introduction is still valid for patches [1-3/4] and patch [4/4]
-reworks the ACPI processor driver to use the new code.  Some details below.
-
-On Monday, April 29, 2013 02:23:59 PM Rafael J. Wysocki wrote:
+> >> +#include <linux/debugfs.h>
+> >> +#include <linux/err.h>
+> >> +#include <linux/init.h>
+> >> +#include <linux/kernel.h>
+> >> +#include <linux/seq_file.h>
+> >> +#include <linux/syscore_ops.h>
+> >> +#include <linux/time.h>
+> >> +
+> >> +static struct timespec suspend_time_before;
+> >> +static unsigned int time_in_suspend_bins[32];
+> >> +
+> >> +#ifdef CONFIG_DEBUG_FS
+> >> +static int suspend_time_debug_show(struct seq_file *s, void *data)
+> >> +{
+> >> +     unsigned int bin;
+> >> +     seq_printf(s, "      time (secs)        count\n");
+> >> +     seq_printf(s, "------------------------------\n");
+> >> +     for (bin = 0; bin < 32; bin++) {
+> >> +             if (time_in_suspend_bins[bin] == 0)
+> >> +                     continue;
+> >> +             seq_printf(s, "%10u - %-10u %4u\n",
+> >> +                     bin ? 1 << (bin - 1) : 0, 1 << bin,
+> >> +                             time_in_suspend_bins[bin]);
+> >> +     }
+> >> +     return 0;
+> >> +}
+> >> +
+> >> +static int suspend_time_debug_open(struct inode *inode, struct file *file)
+> >> +{
+> >> +     return single_open(file, suspend_time_debug_show, NULL);
+> >> +}
+> >
+> > Ok, whole new driver to get timing info... As we already have times in
+> > printk, can't existing printks() get the same info? Maybe
+> > Documentation/ file describing how to get that info from dmesg would
+> > be enough?
 > 
-> It has been argued for a number of times that in some cases, if a device cannot
-> be gracefully removed from the system, it shouldn't be removed from it at all,
-> because that may lead to a kernel crash.  In particular, that will happen if a
-> memory module holding kernel memory is removed, but also removing the last CPU
-> in the system may not be a good idea.  [And I can imagine a few other cases
-> like that.]
+> If this were to be merged I assume it would be rewritten directly into
+> kernel/power/suspend.c instead of using syscore ops.  That was just
+> done to ease future merges while it was out of tree.
 > 
-> The kernel currently only supports "forced" hot-remove which cannot be stopped
-> once started, so users have no choice but to try to hot-remove stuff and see
-> whether or not that crashes the kernel which is kind of unpleasant.  That seems
-> to be based on the "the user knows better" argument according to which users
-> triggering device hot-removal should really know what they are doing, so the
-> kernel doesn't have to worry about that.  However, for instance, this pretty
-> much isn't the case for memory modules, because the users have no way to see
-> whether or not any kernel memory has been allocated from a given module.
-> 
-> There have been a few attempts to address this issue, but none of them has
-> gained broader acceptance.  The following 3 patches are the heart of a new
-> proposal which is based on the idea to introduce device_offline() and
-> device_online() operations along the lines of the existing CPU offline/online
-> mechanism (or, rather, to extend the CPU offline/online so that analogous
-> operations are available for other devices).  The way it is supposed to work is
-> that device_offline() will fail if the given device cannot be gracefully
-> removed from the system (in the kernel's view).  Once it succeeds, though, the
-> device won't be used any more until either it is removed, or device_online() is
-> run for it.  That will allow the ACPI device hot-remove code, for one example,
-> to avoid triggering a non-reversible removal procedure for devices that cannot
-> be removed gracefully.
-> 
-> Patch [1/3] introduces device_offline() and device_online() as outlined above.
-> The .offline() and .online() callbacks are only added at the bus type level for
-> now, because that should be sufficient to cover the memory and CPU use cases.
+> dmesg is not the solution, it's not a stable api, it would require
+> constant parsing to make sure you didn't miss data before it fell out
+> of the ringbuffer, and sched_clock often does not (and should not)
+> tick during suspend, so printk times don't show the time spent
+> suspended.
 
-That's [1/4] now and the changes from the previous version are:
-- strtobool() is used in store_online().
-- device_offline_lock has been renamed to device_hotplug_lock (and the
-  functions operating it accordingly) following the Toshi's advice.
+If timing info printed is invalid, that should be fixed.
 
-> Patch [2/3] modifies the CPU hotplug support code to use device_offline() and
-> device_online() to support the sysfs 'online' attribute for CPUs.
-
-That is [2/4] now and it takes cpu_hotplug_driver_lock() around cpu_up() and
-cpu_down().
-
-> Patch [3/3] changes the ACPI device hot-remove code to use device_offline()
-> for checking if graceful removal of devices is possible.  The way it does that
-> is to walk the list of "physical" companion devices for each struct acpi_device
-> involved in the operation and call device_offline() for each of them.  If any
-> of the device_offline() calls fails (and the hot-removal is not "forced", which
-> is an option), the removal procedure (which is not reversible) is simply not
-> carried out.
-
-That's current [3/4].  It's a bit simpler, because I decided that it would be
-better to have a global 'force_remove' attribute (the semantics of the
-per-profile 'force_remove' wasn't clear and it didn't really add any value over
-a global one).  I also added lock/unlock_device_hotplug() around acpi_bus_scan()
-in acpi_scan_bus_device_check() to allow scan handlers to update dev->offline
-for "physical" companion devices safely (the processor's one added by the next
-patch actually does that).
-
-> Of some concern is that device_offline() (and possibly device_online()) is
-> called under physical_node_lock of the corresponding struct acpi_device, which
-> introduces ordering dependency between that lock and device locks for the
-> "physical" devices, but I didn't see any cleaner way to do that (I guess it
-> is avoidable at the expense of added complexity, but for now it's just better
-> to make the code as clean as possible IMO).
-
-Patch [4/4] reworks the ACPI processor driver to use the common hotplug code.
-It basically splits the driver into two parts as described in the changelog,
-where the first part is essentially a scan handler and the second part is
-a driver, but it doesn't bind to struct acpi_device any more.  Instead, it
-binds to processor devices under /sys/devices/system/cpu/ (the driver itself
-has a sysfs directory under /sys/bus/cpu/drivers/ which IMHO makes more sense
-than having it under /sys/bus/acpi/drivers/).
-
-The patch at https://patchwork.kernel.org/patch/2506371/ is a prerequisite
-for this series, but I'm going to push it for v3.10-rc2 if no one screams
-bloody murder.
-
-Thanks,
-Rafael
-
-
+									Pavel
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
