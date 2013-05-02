@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab3EBPRl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 11:17:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:55969 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757344Ab3EBPRV (ORCPT
+	id S932694Ab3EBPR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 11:17:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5610 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932575Ab3EBPRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 11:17:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH, RFC 11/22] iwlegacy: il_pm_ops is only provided for PM_SLEEP
-Date: Thu,  2 May 2013 17:16:15 +0200
-Message-Id: <1367507786-505303-12-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1367507786-505303-1-git-send-email-arnd@arndb.de>
-References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:w/C9krOopA1fxEq+3Rgmob2t3PJYgVF//iumj3BjiyS
- KH3q5fxUCXsyqrqnJL4ejB3G+pXtRkmb962QY/DhlaOEElFgyR
- Uz8wrXBJMBuUbKy0ASkOp6Tkkk6F1hWU1uoF6gOoiJ27d3Srp7
- 1BHXxKySbDowB9i7EdGCFiX4+Dh2OHItLb5YFaPQ2JwGYoHGMk
- PUxcgYxoIQx+nG7gY6TWABgaEk3SAobISMPn0QgPreehqCZcRc
- dATt+DRK0QShHCF9BWowp1OK4iAGFwGWwKgY/19cNrOjjwFOxi
- YQuOQwFbDL/MiGxp38gT4YRDr0Q+j3iZ4mA6n/XByHqcBKwRWh
- KLPNDhx7dTjwcz24+8nZY5OcdLP90MCfknHAqdUts
+	Thu, 2 May 2013 11:17:55 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=qVwF2erAZtkA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=Zh7nNSpF_ucA:10 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=Z4Rwk6OoAAAA:8 a=yPCof4ZbAAAA:8 a=l1vHjWl1OCTzCJgS4TgA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=jbrJJM5MRmoA:10 a=7DSvI1NPTFQA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1367507873.30667.136.camel@gandalf.local.home>
+Subject: Re: [PATCH v2] init: Do not warn on non-zero initcall return
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Thu, 02 May 2013 11:17:53 -0400
+In-Reply-To: <CAMuHMdXguZknoR=A6Cpqoz4VYX6wuPtUWfV4yGhkBiGMQOdaYg@mail.gmail.com>
+References: <1367429751.30667.99.camel@gandalf.local.home>
+	 <CAMuHMdXguZknoR=A6Cpqoz4VYX6wuPtUWfV4yGhkBiGMQOdaYg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes sure the conditionals for the declaration match the
-definition, so we provide the alternative
+On Thu, 2013-05-02 at 09:43 +0200, Geert Uytterhoeven wrote:
+> On Wed, May 1, 2013 at 7:35 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > Commit f91eb62f71 "init: scream bloody murder if interrupts are enabled
+> > too early" added three new warnings. The first two seemed reasonable,
+> > but the third included a warning when an initcall returned non-zero.
+> > Although, the third WARN() does include an imbalanced preempt disabled,
+> > or irqs disable, it shouldn't warn if it only had an initcall that just
+> > returns non-zero.
+> >
+> > In fact, according to Linus, it shouldn't print at all. As it only
+> > prints with initcall_debug set, and that already shows enough
+> > information to fix things.
+> >
+> > Link: http://lkml.kernel.org/r/CA+55aFzaBC5SFi7=F2mfm+KWY5qTsBmOqgbbs8E+LUS8JK-sBg@mail.gmail.com
+> >
+> > Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> >
+> > diff --git a/init/main.c b/init/main.c
+> > index bea1287..ceed17a 100644
+> > --- a/init/main.c
+> > +++ b/init/main.c
+> > @@ -686,11 +686,8 @@ int __init_or_module do_one_initcall(initcall_t fn)
+> >
+> >         msgbuf[0] = 0;
+> >
+> > -       if (ret && ret != -ENODEV && initcall_debug)
+> > -               sprintf(msgbuf, "error code %d ", ret);
+> > -
+> >         if (preempt_count() != count) {
+> > -               strlcat(msgbuf, "preemption imbalance ", sizeof(msgbuf));
+> > +               sprintf(msgbuf, "preemption imbalance ");
+> 
+> snprintf(), please?
 
- #else
- #define IL_LEGACY_PM_OPS NULL
- #endif
+Why? The msgbuf is 64 bytes, this is the first occurrence and
+"preemption imbalance " is much less than 64 bytes.
 
-in the correct cases.
+> 
+> JFYI, the v3.9 version already used up all of msgbuf[] in the
+> worst-case scenario,
+> and it did have the strlcat() as a parachute:
 
-drivers/built-in.o:(.data+0x57974): undefined reference to `il_pm_ops'
+Right, the other users had strlcat as they were not the first user and
+add onto the string.
 
-Cc: Johannes Berg <johannes.berg@intel.com>
-Cc: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/net/wireless/iwlegacy/common.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+-- Steve
 
-diff --git a/drivers/net/wireless/iwlegacy/common.h b/drivers/net/wireless/iwlegacy/common.h
-index f8246f2..734f1b4 100644
---- a/drivers/net/wireless/iwlegacy/common.h
-+++ b/drivers/net/wireless/iwlegacy/common.h
-@@ -1832,7 +1832,7 @@ u32 il_usecs_to_beacons(struct il_priv *il, u32 usec, u32 beacon_interval);
- __le32 il_add_beacon_time(struct il_priv *il, u32 base, u32 addon,
- 			  u32 beacon_interval);
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- extern const struct dev_pm_ops il_pm_ops;
- 
- #define IL_LEGACY_PM_OPS	(&il_pm_ops)
--- 
-1.8.1.2
+> 
+> $ echo -n "error code 1234567890 preemption imbalance disabled
+> interrupts " | wc -c
+> 63
+> $
+
 
