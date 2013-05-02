@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760531Ab3EBQHA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 12:07:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62845 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760402Ab3EBQG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 12:06:59 -0400
-Message-ID: <1367510747.22436.16.camel@ul30vt.home>
-Subject: [GIT PULL] VFIO for v3.10
-From: Alex Williamson <alex.williamson@redhat.com>
+	id S1760509Ab3EBQLu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 12:11:50 -0400
+Received: from peace.netnation.com ([204.174.223.2]:48641 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757990Ab3EBQLs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 12:11:48 -0400
+Date: Thu, 2 May 2013 09:11:46 -0700
+From: Simon Kirby <sim@hostway.ca>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>,
-        yongjun_wei@trendmicro.com.cn, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        wangyijing@huawei.com
-Date: Thu, 02 May 2013 10:05:47 -0600
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [ 02/42] TTY: do not update atime/mtime on read/write
+Message-ID: <20130502161146.GA7454@hostway.ca>
+References: <20130429184752.435249613@linuxfoundation.org>
+ <20130429184752.700428715@linuxfoundation.org>
+ <20130430001445.GA17260@hostway.ca>
+ <20130430002117.GA4202@kroah.com>
+ <20130430003639.GB17260@hostway.ca>
+ <20130430013724.GA5358@kroah.com>
+ <CA+55aFxNGBpoVCx3Vm_fmCPF4XrUfHCM8GqQMa-qh3RLYOOS7w@mail.gmail.com>
+ <CA+55aFzfxMvWVRjqV4pzz7XtpDGbxwGumGVeRT7OsF95noG4xw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzfxMvWVRjqV4pzz7XtpDGbxwGumGVeRT7OsF95noG4xw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Apr 30, 2013 at 06:41:44PM -0700, Linus Torvalds wrote:
 
-Please pull the following tag for v3.10.  This should auto merge cleanly
-to your current tree.  Thanks,
+> On Tue, Apr 30, 2013 at 5:57 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > Patch is whitespace-damaged and totally untested! Caveat applicator.
+> 
+> Ok, so it's still whitespace-damaged, but it seems to work. The
+> appended has the "8 second rule" too..
+> 
+> Comments? Simon?
 
-Alex
+Tested -- both hunks seem to work as intended. Thanks!
 
-The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
+Simon-
 
-  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
+Below became b0b885657b6c8ef63a46bc9299b2a7715d19acde
 
-are available in the git repository at:
-
-  git://github.com/awilliam/linux-vfio.git tags/vfio-for-v3.10
-
-for you to fetch changes up to 664e9386bd05dbdfecfb28d6cf2fde983aabc65c:
-
-  vfio: Set container device mode (2013-04-30 15:42:28 -0600)
-
-----------------------------------------------------------------
-vfio updates for v3.10
-
-Changes include extension to support PCI AER notification to userspace,
-byte granularity of PCI config space and access to unarchitected PCI
-config space, better protection around IOMMU driver accesses, default
-file mode fix, and a few misc cleanups.
-
-----------------------------------------------------------------
-Alex Williamson (5):
-      vfio-pci: Use byte granularity in config map
-      vfio-pci: Enable raw access to unassigned config space
-      vfio: Convert container->group_lock to rwsem
-      vfio: Use down_reads to protect iommu disconnects
-      vfio: Set container device mode
-
-Vijay Mohan Pandarathil (2):
-      VFIO: Wrapper for getting reference to vfio_device
-      VFIO-AER: Vfio-pci driver changes for supporting AER
-
-Wei Yongjun (1):
-      vfio: make local function vfio_pci_intx_unmask_handler() static
-
-Yijing Wang (1):
-      PCI/VFIO: use pcie_flags_reg instead of access PCI-E Capabilities Register
-
- drivers/vfio/pci/vfio_pci.c         |  44 ++++++++-
- drivers/vfio/pci/vfio_pci_config.c  | 172 ++++++++++++++++++++----------------
- drivers/vfio/pci/vfio_pci_intrs.c   |  67 +++++++++++++-
- drivers/vfio/pci/vfio_pci_private.h |   1 +
- drivers/vfio/vfio.c                 | 117 ++++++++++++++++++------
- include/linux/vfio.h                |   3 +
- include/uapi/linux/vfio.h           |   1 +
- 7 files changed, 298 insertions(+), 107 deletions(-)
-
-
+>            Linus
+> 
+> --- snip snip ---
+>  drivers/tty/pty.c    | 3 +++
+>  drivers/tty/tty_io.c | 4 ++--
+>  2 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+> index a62798fcc014..59bfaecc4e14 100644
+> --- a/drivers/tty/pty.c
+> +++ b/drivers/tty/pty.c
+> @@ -681,6 +681,9 @@ static int ptmx_open(struct inode *inode, struct file *filp)
+> 
+>         nonseekable_open(inode, filp);
+> 
+> +       /* We refuse fsnotify events on ptmx, since it's a shared resource */
+> +       filp->f_mode |= FMODE_NONOTIFY;
+> +
+>         retval = tty_alloc_file(filp);
+>         if (retval)
+>                 return retval;
+> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+> index 97ebc8c5864e..6464029e4860 100644
+> --- a/drivers/tty/tty_io.c
+> +++ b/drivers/tty/tty_io.c
+> @@ -988,10 +988,10 @@ void start_tty(struct tty_struct *tty)
+> 
+>  EXPORT_SYMBOL(start_tty);
+> 
+> +/* We limit tty time update visibility to every 8 seconds or so. */
+>  static void tty_update_time(struct timespec *time)
+>  {
+> -       unsigned long sec = get_seconds();
+> -       sec -= sec % 60;
+> +       unsigned long sec = get_seconds() & ~7;
+>         if ((long)(sec - time->tv_sec) > 0)
+>                 time->tv_sec = sec;
+>  }
