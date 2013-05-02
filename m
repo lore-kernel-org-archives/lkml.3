@@ -1,60 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873Ab3EBHTE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 03:19:04 -0400
-Received: from stinky.trash.net ([213.144.137.162]:61658 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab3EBHTA (ORCPT
+	id S1752286Ab3EBHUN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 03:20:13 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:40677 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab3EBHUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 03:19:00 -0400
-X-Greylist: delayed 632 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 May 2013 03:19:00 EDT
-Date: Thu, 2 May 2013 09:03:37 +0200
-From: Patrick McHardy <kaber@trash.net>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, hayeswang@realtek.com,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-Message-ID: <20130502070256.GA29502@macbook.localnet>
-References: <CA+55aFzsvyQLLKbuETBqfhpgkSaXH9cvT0O-cQ-mTTXXxcMqwg@mail.gmail.com>
- <CA+55aFzinZSQAS6GW6vYOyQ06+GSMqkCGb8Fu829s_MxY0L0QA@mail.gmail.com>
- <CA+55aFxoP1vybnqdDwGmd-m0j=x=KDm7GHV6J1i8wGOaU0=5qw@mail.gmail.com>
- <20130502.024552.1513488878160820332.davem@davemloft.net>
+	Thu, 2 May 2013 03:20:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130502.024552.1513488878160820332.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: mtk.manpages@gmail.com
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Thu, 2 May 2013 09:19:48 +0200
+Message-ID: <CAKgNAkg+31vfz4y7H=c4TPJ+g-rbOD+zHXe5OJV7p-+TTtR2Sg@mail.gmail.com>
+Subject: man-pages-3.51 is released
+To: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 02:45:52AM -0400, David Miller wrote:
-> From: Linus Torvalds <torvalds@linux-foundation.org>
-> Date: Wed, 1 May 2013 21:55:38 -0700
-> 
-> > I think the positions of those bits matter, and adding
-> > NETIF_F_HW_VLAN_STAG_*_BIT randomly in the middle broke things. That's
-> > backed up by the fact that we have things like
-> > 
-> >       __UNUSED_NETIF_F_1
-> > 
-> > and
-> > 
-> >           /**/NETIF_F_GSO_SHIFT,          /* keep the order of SKB_GSO_* bits */
-> >         NETIF_F_TSO_BIT                 /* ... TCPv4 segmentation */
-> >                 = NETIF_F_GSO_SHIFT,
-> > 
-> > in that array. There is some ordering, and there is some meaning to
-> > the bit numbers, and adding the *_STAG_* bits in the middle broke some
-> > subtle dependency.
-> 
-> The other thing this does is it pushes some bits past bit 31.
-> 
-> netdev_features_t, which holds these masks, is 64-bit but we've
-> already seen one place in a driver where a 32-bit value was being
-> used.
-> 
-> I'll look more deeply into this, thanks.
+Gidday,
 
-I'll also have a look at this.
+I've released man-pages-3.51 - man pages for Linux.
+
+Tarball download:
+    http://www.kernel.org/doc/man-pages/download.html
+Git repository:
+    https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
+Online changelog:
+    http://man7.org/linux/man-pages/changelog.html#release_3.51
+
+A short summary of the release is blogged at:
+http://linux-man-pages.blogspot.de/2013/04/man-pages-351-is-released.html
+
+The current version of the pages is browsable at:
+http://man7.org/linux/man-pages/
+
+A few changes in this release that may be of interest to readers of
+this list are given below.
+
+Cheers,
+
+Michael
+
+==================== Changes in man-pages-3.51 ====================
+
+Newly documented interfaces in existing pages
+---------------------------------------------
+
+sched_rr_get_interval.2
+    Michael Kerrisk
+        Document /proc/sys/kernel/sched_rr_timeslice_ms
+
+proc.5
+    Pavel Emelyanov
+        Document /proc/[pid]/map_files directory
+            This directory was added in Linux v3.3 and provides info about
+            files being mmap-ed in a way very similar to how /proc/[pid]/fd
+            works.
+
+            v2: Added examples of how links look like and noted dependency
+            on kernel config option CONFIG_CHECKPOINT_RESTORE.
+    Michael Kerrisk
+        Document /proc/sys/kernel/shm_rmid_forced
+
+capabilities.7
+    Michael Kerrisk
+        Document /proc/sys/kernel/cap_last_cap
+
+
+Changes to individual pages
+---------------------------
+
+clone.2
+    Michael Kerrisk  [Peter Schiffer]
+        Add prototype for syscall to SYNOPSIS
+            And further clarify the distinction between the system call
+            and the wrapper function in the introductory text.
+    Michael Kerrisk  [Mike Frysinger]
+        Clarify differences between clone2() syscall and wrapper function
+    Michael Kerrisk  [Mike Frysinger]
+        Note those architectures where the sys_clone argument order differs
+        Add short subsection noting that blackfin, m68k, and sparc are different
+
+getcpu.2
+    Michael Kerrisk
+        Recommend that 'tcache' should be specified as NULL nowadays
+
+syscall.2
+    Changhee Han
+        Add notes that caution users when passing arguments to syscall()
+            For example, passing 'long long' on ARM-32 requires special
+            treatment.
+    Mike Frysinger [Michael Kerrisk]
+        Document the exact calling convention for architecture system calls
+    Mike Frysinger  [Kyle McMartin]
+        Add PA-RISC details under calling conventions
+    Michael Kerrisk  [Mike Frysinger]
+        Refine discussion of ARM and other ABIs
+
+readir.3
+seekdir.3
+telldir.3
+    Michael Kerrisk
+        Eliminate the implication that these functions deal with "offsets"
+            The directory position dealt with by the readdir() and
+            friends is not a simple file offset in modern file systems.
+            Typically, it is some kind of cookie value. Add text and
+            make other changes to these pages to eliminate the
+            implication that this is an offset, and warn the reader
+            that directory positions should be treated strictly as
+            opaque values.
+
+            In the process, rename the 'offset' argument of seekdir(3)
+            to 'loc', and add some text to readdir(3) to note that
+            the 'd_off' field is the same value returned by telldir(3)
+            at the current directory position.
+
+            See also https://lwn.net/Articles/544298/
+
+ip.7
+    Radek Pazdera
+        Document IP_MULTICAST_ALL
