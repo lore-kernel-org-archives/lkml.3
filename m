@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214Ab3EBB2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 21:28:42 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:60484 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726Ab3EBB2j (ORCPT
+	id S1758067Ab3EBBdz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 21:33:55 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:25713 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294Ab3EBBdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 21:28:39 -0400
+	Wed, 1 May 2013 21:33:52 -0400
+X-Spam-Score: -100.8
+Message-ID: <5181C251.9020301@asianux.com>
+Date: Thu, 02 May 2013 09:33:05 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130501.164755.1859264969403837546.davem@davemloft.net>
-References: <20130501.164755.1859264969403837546.davem@davemloft.net>
-Date: Wed, 1 May 2013 18:28:38 -0700
-X-Google-Sender-Auth: m3bSeDczGqs8VT9kdI9HQq3kTyU
-Message-ID: <CA+55aFzsvyQLLKbuETBqfhpgkSaXH9cvT0O-cQ-mTTXXxcMqwg@mail.gmail.com>
-Subject: Re: [GIT] Networking
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Miller <davem@davemloft.net>, hayeswang <hayeswang@realtek.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Jonghwan Choi <jhbird.choi@samsung.com>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "'Al Viro'" <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 3.8-stable]  kernel/audit_tree.c: tree will leak memory
+ when failure occurs in audit_trim_trees()
+References: <007001ce457e$dcfff1c0$96ffd540$%choi@samsung.com>
+In-Reply-To: <007001ce457e$dcfff1c0$96ffd540$%choi@samsung.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 1, 2013 at 1:47 PM, David Miller <davem@davemloft.net> wrote:
->
-> Highlights (1721 non-merge commits, this has to be a record of some
-> sort):
+On 2013年04月30日 16:44, Jonghwan Choi wrote:
+> This patch looks like it should be in the 3.8-stable tree, should we apply
+> it?
 
-Lowlight: it completely breaks my machine with r8169 ethernet.  In the
-networkmanager applet, it claims no cable connection, which is a bit
-odd, because (a) it works with an older kernel and (b) the kernel
-messages actually say
+For me, I recommend it.  :-)
 
-  r8169 0000:01:00.0 eth0: link up
+Thanks.
 
-but nothing actually works.
+-- 
+Chen Gang
 
- r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
- r8169 0000:01:00.0 eth0: RTL8168d/8111d at 0xffffc90010ece000,
-e0:cb:4e:95:1a:d7, XID 083000c0 IRQ 53
- r8169 0000:01:00.0 eth0: jumbo features [frames: 9200 bytes, tx
-checksumming: ko]
-
-Any ideas?
-
-                  Linus
+Asianux Corporation
