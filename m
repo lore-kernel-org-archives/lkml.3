@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab3EBL1p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 07:27:45 -0400
-Received: from sauhun.de ([89.238.76.85]:59841 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751443Ab3EBL1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 07:27:43 -0400
-Date: Thu, 2 May 2013 13:27:21 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Cc: linux-i2c@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        devicetree-discuss@lists.ozlabs.org, sjg@chromium.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Subject: Re: Fwd: [PATCH v7] i2c: exynos5: add High Speed I2C controller
- driver
-Message-ID: <20130502112721.GA7309@the-dreams.de>
-References: <1354021236-28596-2-git-send-email-ch.naveen@samsung.com>
- <1365137521-31187-1-git-send-email-naveenkrishna.ch@gmail.com>
- <20130416102902.GE16978@the-dreams.de>
- <CAHfPSqCe_VJMeH3oCDc0CfcmpawMj0hN7_b3ngHDFtDUsPJLsA@mail.gmail.com>
- <CAHfPSqC0E42+-oRfLoFCEe6CbV08fJQdkagvVYHaer4pJAU6pg@mail.gmail.com>
+	id S1757568Ab3EBLaU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 07:30:20 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:51288 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754699Ab3EBLaS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 07:30:18 -0400
+Date: Thu, 2 May 2013 13:30:11 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: WARNING: at kernel/cpu/idle.c:96
+Message-ID: <20130502113011.GA508@x4>
+References: <20130430155203.GA512@x4>
+ <alpine.LFD.2.02.1305021242180.3972@ionos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHfPSqC0E42+-oRfLoFCEe6CbV08fJQdkagvVYHaer4pJAU6pg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.02.1305021242180.3972@ionos>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> >> +  - Samsung GPIO variant (deprecated):
-> >> +    - gpios: The order of the gpios should be the following: <SDA, SCL>.
-> >> +      The gpio specifier depends on the gpio controller.
-> >
-> > Huh? Why should we support a deprecated method with a new driver?
-> >
-
-This was left unanswered. I am curious.
-
-> >> +Optional properties:
-> >> +  - samsung,hs-mode: Mode of operation, High speed or Fast speed mode. If not
-> >> +    specified, default value is 0.
-> >> +  - samsung,hs-clock-freq: Desired operating frequency in Hz of the bus.
-> >> +    If not specified, the default value in Hz is 100000.
-> >> +  - samsung,fs-clock-freq: Desired operarting frequency in Hz of the bus.
-> >> +    If not specified, the default value in Hz is 100000.
-> >
-> > NACK! We have a generic binding for defining the bus speed. And
-> > shouldn't hs-mode be set depending on the bus speed?
-
-Please use "clock-frequency" here, like other drivers do.
-
-> >> +     /* In auto mode the length of xfer cannot be 0 */
-> >> +     if (i2c->msg->len == 0)
-> >> +             i2c_auto_conf |= 0x1;
-> >
-> > So you send some byte then? Why not reject the message?
-> This is to support the probing the devices (i2cdetect cases)
-
-No! This is not a proper SMBUS_QUICK if you send a byte! If it doesn't
-work without sending data, then your device does not support it. This is
-not uncommon. Please check the smbus specs if you are unsure.
-
-> >> +     i2c->regs = of_iomap(np, 0);
-> >
-> > devm_ioremap_resource()
-> This was a comment from Thomas on v1.
-> https://lkml.org/lkml/2012/11/27/264
+On 2013.05.02 at 12:43 +0200, Thomas Gleixner wrote:
+> On Tue, 30 Apr 2013, Markus Trippelsdorf wrote:
 > 
-> Kindly, suggest me which one is more optimal in this case.
+> > Just booted todays git tree and got the following warning:
+> > 
+> > ------------[ cut here ]------------
+> > WARNING: at kernel/cpu/idle.c:96 cpu_startup_entry+0x14d/0x160()
+> > Hardware name: System Product Name
+> > Pid: 0, comm: swapper/2 Not tainted 3.9.0-03462-gab86e97-dirty #424
+> > Call Trace:
+> > smpboot: Booting Node   0, Processors  #1 #2
+> >  [<ffffffff8105b7c0>] ? warn_slowpath_common+0x60/0xa0
+> >  [<ffffffff8108c26d>] ? cpu_startup_entry+0x14d/0x160
+> > ---[ end trace 40a24a5550891913 ]---
+> 
+> Fix below.
 
-"Optimal" is difficult here, but devm_* has momentum and I prefer
-consistency.
+Unfortunately the fix doesn't work:
 
-> Thanks for your valuable time and comments
+------------[ cut here ]------------
+WARNING: at kernel/cpu/idle.c:96 cpu_startup_entry+0x14d/0x160()
+CPU: 2 PID: 0 Comm: swapper/2 Not tainted 3.9.0-07391-g20b4fb4-dirty #432
+Hardware name: System manufacturer System Product Name/M4A78T-E, BIOS 3503    04/13/2011
+ ffffffff81528e8b ffffffff8105b791 ffff8802168b1fd8 ffff8802168b1fd8
+ ffff8802168b1fd8 ffff8802168b1fd8 ffff8802168b1fd8 ffffffff8108cc8d
+ 0000000010001b76 0000000000000000 0000000000000000 0000000000000000
+Call Trace:
+ [<ffffffff81528e8b>] ? dump_stack+0xc/0x15
+ [<ffffffff8105b791>] ? warn_slowpath_common+0x51/0x80
+ [<ffffffff8108cc8d>] ? cpu_startup_entry+0x14d/0x160
+---[ end trace 35da8e4b222a0736 ]---
 
-You're welcome! Thanks for the submission.
+BTW another issue is that "perf top" shows the following on an otherwise idle
+machine:
 
-   Wolfram
+ 67.76%  [kernel]                    [k] cpu_startup_entry
+ 12.90%  [kernel]                    [k] amd_e400_idle
 
+-- 
+Markus
