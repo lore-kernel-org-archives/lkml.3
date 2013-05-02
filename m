@@ -1,51 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761983Ab3EBUJD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 16:09:03 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:37228 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761277Ab3EBUJB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 16:09:01 -0400
-Message-ID: <5182C7D3.3040308@free-electrons.com>
-Date: Thu, 02 May 2013 22:08:51 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1762071Ab3EBULX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 16:11:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52263 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761277Ab3EBULW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 16:11:22 -0400
+Date: Thu, 2 May 2013 23:11:06 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, asias@redhat.com, mst@redhat.com,
+        nab@linux-iscsi.org
+Subject: [PULLv2] vhost: cleanups and fixes
+Message-ID: <20130502201106.GA17385@redhat.com>
 MIME-Version: 1.0
-To: Andrew Lunn <andrew@lunn.ch>
-CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130502185322.GA29333@obsidianresearch.com> <5182B902.7040908@gmail.com> <20130502193510.GA29522@obsidianresearch.com> <5182C322.3030304@gmail.com> <20130502200204.GA24965@lunn.ch>
-In-Reply-To: <20130502200204.GA24965@lunn.ch>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2013 10:02 PM, Andrew Lunn wrote:
-> On Thu, May 02, 2013 at 09:48:50PM +0200, Sebastian Hesselbarth wrote:
->> On 05/02/2013 09:35 PM, Jason Gunthorpe wrote:
->>> I have kirkwood HW but I haven't had time to make newer kernels run on
->>> it, otherwise I'd test it too :(
->>
->> I also have kirkwood HW but that will cut me from email as I use it as
->> relay server ;) Maybe I can turn it into a test bed for a while.
->>
->> There is also Orion5x and Discovery Innovation (mv78xx0) to be tested.
-> 
-> I can test kirkwood and Orion5x.
+Hi Linus,
+This is exactly same code as my previous pull sent earlier, the diffstat
+was wrong however, I did a merge with master which fixed that.  And I
+forgot to copy you so you likely
+did not see it at all :(
+Here comes.
 
-And I can test mv78xx0
+The following changes since commit 5a148af66932c31814e263366094b5812210b501:
 
-Gregory
+  Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc (2013-05-02 10:16:16 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/for_linus2
+
+for you to fetch changes up to ef1f2e2ae31069a3484f77f00ea6ef92031d611a:
+
+  Merge branch 'vhost' into 'master' (2013-05-02 22:40:01 +0300)
+
+----------------------------------------------------------------
+
+vhost: cleanups and fixes for 3.10
+
+Here are vhost cleanups and fixes by Asias He and myself.
+They affect both vhost-net and vhost-scsi devices.
+They also *depend* on both net-next and target-pending,
+where the net and target commits these changes depend on
+are already merged.
+So merging through the common vhost tree.
+Note2: I had to make a merge from vhost into master otherwise
+request-pull generates a wrong diffstat.
+It's harmless since git merge will figure it all out
+easily.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+----------------------------------------------------------------
+Asias He (3):
+      vhost: Allow device specific fields per vq
+      tcm_vhost: Wait for pending requests in vhost_scsi_flush()
+      vhost: move vhost-net zerocopy fields to net.c
+
+Michael S. Tsirkin (9):
+      Merge branch 'for-next-merge' of git://git.kernel.org/.../nab/target-pending into vhost-net-next
+      tcm_vhost: document inflight ref-counting use
+      vhost: move per-vq net specific fields out to net
+      tcm_vhost: remove virtio-net.h dependency
+      vhost: fix error handling in RESET_OWNER ioctl
+      vhost: src file renames
+      tcm_vhost: header split up
+      vhost_scsi: module rename
+      Merge branch 'vhost' into 'master'
+
+ drivers/vhost/Kconfig                 |  10 +-
+ drivers/vhost/Kconfig.tcm             |   6 -
+ drivers/vhost/Makefile                |   3 +-
+ drivers/vhost/net.c                   | 255 +++++++++++++++++++++++++++-------
+ drivers/vhost/{tcm_vhost.c => scsi.c} | 255 +++++++++++++++++++++++++++++++---
+ drivers/vhost/tcm_vhost.h             | 128 -----------------
+ drivers/vhost/test.c                  |   9 +-
+ drivers/vhost/vhost.c                 | 153 +++++++-------------
+ drivers/vhost/vhost.h                 |  32 +----
+ include/uapi/linux/vhost.h            |  28 ++++
+ 10 files changed, 533 insertions(+), 346 deletions(-)
+ delete mode 100644 drivers/vhost/Kconfig.tcm
+ rename drivers/vhost/{tcm_vhost.c => scsi.c} (86%)
+ delete mode 100644 drivers/vhost/tcm_vhost.h
