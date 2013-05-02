@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab3EBGSC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 02:18:02 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36348 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab3EBGR7 (ORCPT
+	id S1752863Ab3EBGUd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 02:20:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60921 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873Ab3EBGUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 02:17:59 -0400
-From: "Gupta, Pekon" <pekon@ti.com>
-To: Huang Shijie <b32955@freescale.com>
-CC: "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dedekind1@gmail.com" <dedekind1@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>
-Subject: RE: [PATCH V4 5/9] mtd: replace the hardcode with the onfi_feature()
-Thread-Topic: [PATCH V4 5/9] mtd: replace the hardcode with the
- onfi_feature()
-Thread-Index: AQHOQmAouYQ3/CJ+jUWG0+OGq/54/JjujdmggAIc74CAALvK8P//g3WAgACHJoA=
-Date: Thu, 2 May 2013 06:17:27 +0000
-Message-ID: <20980858CB6D3A4BAE95CA194937D5E73E9C0A2F@DBDE04.ent.ti.com>
-References: <1366967337-5534-1-git-send-email-b32955@freescale.com>
- <1366967337-5534-6-git-send-email-b32955@freescale.com>
- <20980858CB6D3A4BAE95CA194937D5E73E9BF544@DBDE04.ent.ti.com>
- <5181CC19.8000904@freescale.com>
- <20980858CB6D3A4BAE95CA194937D5E73E9C09FC@DBDE04.ent.ti.com>
- <51820127.5060003@freescale.com>
-In-Reply-To: <51820127.5060003@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 2 May 2013 02:20:31 -0400
+Message-ID: <518205A9.1050409@canonical.com>
+Date: Thu, 02 May 2013 08:20:25 +0200
+From: David Henningsson <david.henningsson@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Mike Travis <travis@sgi.com>, Stephen Warren <swarren@nvidia.com>
+CC: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Russ Anderson <rja@sgi.com>
+Subject: Re: [PATCH]: x86_64, audio: Fix system panic when DMA > 40 bits
+References: <1367435048-66137-1-git-send-email-travis@sgi.com>
+In-Reply-To: <1367435048-66137-1-git-send-email-travis@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r426I7Fk001881
 
-> äº 2013å¹´05æœˆ02æ—¥ 13:42, Gupta, Pekon å†™é“:
-> >>>> -	*busw = 0;
-> >>>> -	if (le16_to_cpu(p->features)&   1)
-> >>>> -		*busw = NAND_BUSWIDTH_16;
-> >>>> +
-> >>>> +	*busw = (onfi_feature(chip)&   ONFI_FEATURE_16_BIT_BUS) ?
-> >>>> +			NAND_BUSWIDTH_16 : 0;
-> >>> Is this really needed ? you have already checked the 'onfi_version'
-> >> above in
-> >>> nand_flash_detect_onfi() ..
-> >>> 	if (!chip->onfi_version) {
-> >>> 		pr_info("%s: unsupported ONFI version: %d\n",
-> >> __func__, val);
-> >>> 		return 0;
-> >>> 	}
-> >>>
-> >>>
-> >> I think checking the onfi_version has no relationship with this patch. :)
-> >> This patch is just replace the hardcode for 16-bit onfi nand check.
-> >>
-> > [Pekon]: [Patch 3/9]: add a helper to get the supported features
-> > I mean, do you really need this helper function ?
-> > +static inline int onfi_feature(struct nand_chip *chip)
-> > +{
-> > +       return chip->onfi_version ? le16_to_cpu(chip-
-> >onfi_params.features) : 0;
-> > + }
-> >
-> > Following change should have been enough..
-> > *busw = (le16_to_cpu(p->features)&   ONFI_FEATURE_16_BIT_BUS) ?
-> > 			NAND_BUSWIDTH_16 : 0;
-> yes. for this function, it's enough.
-> 
-> But we may use the onfi_feature() in other places, such as some drivers.
-> That's reason why i added this helper.
-> 
-[Pekon]: onfi_feature() is actually not useful unless someone re-scans the
-param page again. And once the device is probed following should
-be used to check if itâ€™s a x16 device.
-If (chip->options & NAND_BUSWIDTH_16) 
-My view-point was that the code should have less redundancy :-)
+On 05/01/2013 09:04 PM, Mike Travis wrote:
+> The audio driver mistakenly allows 64 bit addresses to be created for
+> the audio driver on Nvidia GPUs.  Unfortunately, the hardware normally
+> only supports up to 40 bits of DMA.  This can cause system panics as
+> well as misdirected data when the address is > 40 bits as the upper
+> part the address is truncated.
 
-Anyways, Thanks for your other patch for reading extended_param_page.
-I too wanted that ecc.codeword and ecc.strength should come from 
-device's parameters. I'll ack them once, I test using my driver.
+Thanks for this patch. Stephen Warren, is this something you can 
+confirm/deny, and do you know what range of hardware this actually 
+applies to?
+
+>
+> Signed-off-by: Mike Travis <travis@sgi.com>
+> Reviewed-by: Mike Habeck <habeck@sgi.com>
+> ---
+>   sound/pci/hda/hda_intel.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+> index bcd40ee..45eb165 100644
+> --- a/sound/pci/hda/hda_intel.c
+> +++ b/sound/pci/hda/hda_intel.c
+> @@ -615,7 +615,7 @@ enum {
+>   /* quirks for Nvidia */
+>   #define AZX_DCAPS_PRESET_NVIDIA \
+>   	(AZX_DCAPS_NVIDIA_SNOOP | AZX_DCAPS_RIRB_DELAY | AZX_DCAPS_NO_MSI |\
+> -	 AZX_DCAPS_ALIGN_BUFSIZE)
+> +	 AZX_DCAPS_ALIGN_BUFSIZE | AZX_DCAPS_NO_64BIT)
+>
+>   #define AZX_DCAPS_PRESET_CTHDA \
+>   	(AZX_DCAPS_NO_MSI | AZX_DCAPS_POSFIX_LPIB | AZX_DCAPS_4K_BDLE_BOUNDARY)
+>
 
 
-with regards, pekon
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+-- 
+David Henningsson, Canonical Ltd.
+https://launchpad.net/~diwic
