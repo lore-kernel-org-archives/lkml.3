@@ -1,95 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762016Ab3EBTUP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 15:20:15 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:31125 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761972Ab3EBTUM (ORCPT
+	id S932554Ab3EBTVh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 15:21:37 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:45168 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932210Ab3EBTVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 15:20:12 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX187OQddR/WpMjnArYskalcGrKE3MNlGBXU=
-Date: Thu, 2 May 2013 15:19:34 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] ARM: dove: prepare and move to orion irqchip driver
-Message-ID: <20130502191934.GH31290@titan.lakedaemon.net>
-References: <1367519140-19716-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Thu, 2 May 2013 15:21:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367519140-19716-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <OF2D2AAAE7.DA66471C-ON48257B5F.002C2C42-48257B5F.002EB4C8@zte.com.cn>
+References: <OF2D2AAAE7.DA66471C-ON48257B5F.002C2C42-48257B5F.002EB4C8@zte.com.cn>
+Date: Thu, 2 May 2013 21:21:33 +0200
+Message-ID: <CAFLxGvxfzHudUMRc7VkgWMO9RJAkyh1iuouRAV-0s-5eaLqfEQ@mail.gmail.com>
+Subject: Re: Re: [PATCH] UBI: fix memory leak when use fastmap
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: wang.bo116@zte.com.cn
+Cc: artem.bityutskiy@linux.intel.com, cui.yunfeng@zte.com.cn,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        liu.dong3@zte.com.cn
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 08:25:37PM +0200, Sebastian Hesselbarth wrote:
-> This patch set moves Dove to the recently introduced irqchip driver
-> for Marvell Orion SoCs. First, init code for timer and mv643xx_eth
-> is added to prepare legacy non-DT drivers for virtual irqs provided by
-> irqchip drivers. Then DT enabled boards for Dove are moved to the
-> orion irqchip driver.
-> 
-> Note: This patch set depends on irqchip driver for Orion SoCs patch.
-> 
-> Sebastian Hesselbarth (3):
->   ARM: dove: add DT parsing for legacy mv643xx_eth
->   ARM: dove: add DT parsing for legacy timer
->   ARM: dove: move DT boards to orion irqchip driver
-> 
->  arch/arm/boot/dts/dove.dtsi   |   18 ++++++++-
+On Thu, May 2, 2013 at 10:30 AM,  <wang.bo116@zte.com.cn> wrote:
+>> Hi!
+>>
+>> On Tue, Apr 16, 2013 at 10:53 AM,  <wang.bo116@zte.com.cn> wrote:
+>> > Hello,
+>> >         Sorry, there is still something wrong with the previous
+> patch's
+>> > format, try to submit it again. When use ubi fastmap, there is a
+> memory
+>> > leak which will make destroy_ai() fail to free the slab alloced in
+>> > scan_fast(). The following patch fix this problem by use a temporary
+>> > "ubi_attach_info" variable in scan_fast().
+>>
+>> Thanks a lot for your patch!
+>>
+>> Did you test it well?
+>> We need to make sure that it does the right thing for the following
+> cases:
+>> 1. fastmap disabled, attaching a non-fastmap volume
+>> 1. fastmap disabled, attaching a fastmap volume
+>> 3. fastmap enabled, attaching a non-fastmap volume
+>> 4. fastmap enablled, attaching a fastmap volume
+>>
+>> --
+>> Thanks,
+>> //richard
+>
+>
+> Thanks for your advice. I consider this problem like this:
+> 1: if fastmap not config, ubi_attach() just call scan_all(ubi, ai, 0),
+> there is nothing changed, so there is all right.
+>
+> 2: if fastmap config, and force_scan is 0, ubi_attach() will call
+> scan_fast(), when scan_fast() return, temp ai used in scan_fast() has been
+> free, and there will be two conditions:
+> A: scan_fast() return UBI_NO_FASTMAP(may be flash is empty or attaching a
+> non-fastmap volume), all ubi_attach() need is to call scan_all(ubi, ai, 0)
+> to scan all blocks.
+> B: scan_fast() return UBI_BAD_FASTMAP, ubi_attach() first free ai used in
+> ubi_scan_fastmap(), then alloc a clean ai, at last call scan_all(ubi, ai,
+> 0) to scan all blocks.
+>
+> 3: if fastmap config, and force_scan is 1, just call scan_all(ubi, ai, 0).
+>
+> This patch pass the following cases(include attach and detach):
+> 1. fastmap config, flash is empty,fm_autoconvert is 1.
+> 2. fastmap config, flash is empty,fm_autoconvert is 0.
+> 3. fastmap config, attaching a fastmap volume
+> 4. fastmap config, attaching a bad fastmap volume
+> 5. fastmap config, attaching a non-fastmap volume
+> 6. fastmap not config, attaching a fastmap volume
+> 7. fastmap not config, attaching a non-fastmap volume
+> 8. fastmap not config, flash is empty.
 
-In the next version, please send the dtsi changes as separate patches.
-This will reduce merge conflicts on our end.
+Good. :)
 
-Also, and I'll note this on the other thread as well, please put the
-drivers/irqchip patch in the same series as this so the dependency is
-clear.
+> By the way, the problem may cause ubi_attach() fail after ubi detach when
+> CONFIG_DEBUG_VM config.
+> The reason is that ubi_attach() will alloc a slab cache, but the
+> kmem_cache_sanity_check() will find the slab cache is already exist(not
+> been free after last detach), so slab cache alloc fail, and ubi_attach()
+> fail, too.
 
-In it's current state, your driver patch can only conflict with other
-work in drivers/irqchip/{Makefile,Kconfig}.  This easy for us.  So we
-should try to get an Ack from the irqchip folks to keep that patch with
-this series and prevent a cross-tree dependency.
+Doesn't your patch address this issue too?
+If not, we should fix this.
 
-thx,
-
-Jason.
-
->  arch/arm/mach-dove/Kconfig    |    1 +
->  arch/arm/mach-dove/Makefile   |    4 +-
->  arch/arm/mach-dove/board-dt.c |   77 ++++++++++++++++++++++++++++++++++++-----
->  4 files changed, 87 insertions(+), 13 deletions(-)
-> ---
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Cc: Gregory Clement <gregory.clement@free-electrons.com>
-> Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> Cc: Jean-Francois Moine <moinejf@free.fr>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> -- 
-> 1.7.2.5
-> 
+--
+Thanks,
+//richard
