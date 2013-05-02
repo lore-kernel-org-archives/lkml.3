@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758694Ab3EBMtL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 08:49:11 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:47777 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757060Ab3EBMtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 08:49:10 -0400
-Date: Thu, 2 May 2013 07:49:06 -0500
-From: Robin Holt <holt@sgi.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Miguel Boton <mboton.lkml@gmail.com>, Russ Anderson <rja@sgi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH -v7 10/11] arm, change reboot_mode to use enum
- reboot_mode
-Message-ID: <20130502124906.GW3658@sgi.com>
-References: <1367428011-17123-1-git-send-email-holt@sgi.com>
- <1367428011-17123-11-git-send-email-holt@sgi.com>
- <20130502073020.GC26361@gmail.com>
+	id S1758285Ab3EBMua (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 08:50:30 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:23133 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755077Ab3EBMu2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 08:50:28 -0400
+Date: Thu, 2 May 2013 08:50:00 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, rjw@sisk.pl,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Subject: Re: [PATCH] x86, x86-64, gdt, hibernate: Store/load GDT for
+ hibernate path.
+Message-ID: <20130502125000.GA5824@konrad-lan.dumpdata.com>
+References: <1367459610-9656-1-git-send-email-konrad.wilk@oracle.com>
+ <1367459610-9656-2-git-send-email-konrad.wilk@oracle.com>
+ <20130502123438.GD22618@amd.pavel.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130502073020.GC26361@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130502123438.GD22618@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 09:30:20AM +0200, Ingo Molnar wrote:
+On Thu, May 02, 2013 at 02:34:38PM +0200, Pavel Machek wrote:
+> Hi!
 > 
-> * Robin Holt <holt@sgi.com> wrote:
+> > The git commite7a5cd063c7b4c58417f674821d63f5eb6747e37
+> > ("x86-64, gdt: Store/load GDT for ACPI S3 or hibernate/resume path
+> > is not needed.") assumes that for the hibernate path the booting
+> > kernel and the resuming kernel MUST be the same. That is certainly
+> > the case for a 32-bit kernel (see check_image_kernel and
+> > CONFIG_ARCH_HIBERNATION_HEADER config option).
+> > 
+> > However for 64-bit kernels it is OK to have a different kernel
+> > version (and size of the image) of the booting and resuming kernels.
+> > Hence the above mentioned git commit introduces an regression.
 > 
-> >  #ifndef __ASSEMBLY__
-> >  
-> >  #include <linux/types.h>
-> > +#include <linux/reboot.h>
-> >  
-> >  void iop3xx_map_io(void);
-> >  void iop_init_cp6_handler(void);
-> >  void iop_init_time(unsigned long tickrate);
-> > -void iop3xx_restart(char, const char *);
-> > +void iop3xx_restart(enum reboot_mode, const char *);
+> Ok.
 > 
-> IMO the introduction of the enum is making things cleaner here all around.
+> > This patch fixes it by introducing a 'struct desc_ptr gdt_desc'
+> > back in the 'struct saved_context'. However instead of having in the
+> > 'save_processor_state' and 'restore_processor_state' the
+> > store/load_gdt calls, we are only saving the GDT in the
+> > save_processor_state.
+> > 
+> > For the restore path the lgdt operation is done in
+> > hibernate_asm_[32|64].S in the 'restore_registers' path.
 > 
-> As long as it's an equivalent transformation for ARM with no reduction in 
-> functionality (i.e. please fix any bugs Russell found), this all looks 
-> like a nice series.
-> 
-> Is there no parameter namespace clash between reboot modifier strings on 
-> various architectures? I.e. 's' meaning something on x86 and meaning a 
-> different thing on ARM or some other architecture.
+> So the on-disk format changed and we need to bump the version number
+> somewhere?
 
-There is.  I used an #ifdef in kernel/reboot.c.  Also w[arm] | c[old]
-on x86 becomes s[oft] | h[ard] | g[pio] on arm/unicore32. (Well, I just
-added gpio that to the patch set after noticing I missed it earlier).
+Fortunatly not. The patch (7a5cd063c7b4c58417f674821d63f5eb6747e37) that
+just just landed in Linus a couple of days ago did change it a bit
+(as the 'saved_context' struct shrunk), but this patch brings it back
+to what it was before. But I don't know if the 'saved_context' structure
+is actually somewhere specifically mentioned as 'on-disk' or in the
+kernel.
 
-Robin
+Looking at the code, I think the on-disk structure you are referring to
+is the 'struct restore_data_record' (please correct me if I am
+incorrect) which has not been affected by any of these patches.
+
+> 
+> I guess we should add big fat warning to the affected structures.
+
+We certainly can. I can prep a patch to that affect on Friday or Monday.
+> 
+> 								Pavel
+> 
+> -- 
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
