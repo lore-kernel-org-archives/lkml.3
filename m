@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758734Ab3EBMX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 08:23:57 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:55020 "EHLO hydra.sisk.pl"
+	id S932116Ab3EBMYD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 08:24:03 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:55028 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932065Ab3EBMXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 08:23:51 -0400
+	id S932068Ab3EBMXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 08:23:52 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Toshi Kani <toshi.kani@hp.com>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
         vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>
-Subject: [PATCH 4/4] ACPI / processor: Use common hotplug infrastructure
-Date: Thu, 02 May 2013 14:31:51 +0200
-Message-ID: <4370898.CqFcWEhTiu@vostro.rjw.lan>
+Subject: [PATCH 3/4] ACPI / hotplug: Use device offline/online for graceful hot-removal
+Date: Thu, 02 May 2013 14:29:56 +0200
+Message-ID: <4172338.SM4yyc8Lmg@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <3166726.elbgrUIZ0L@vostro.rjw.lan>
 References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <3166726.elbgrUIZ0L@vostro.rjw.lan>
@@ -27,1643 +27,250 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Split the ACPI processor driver into two parts, one that is
-non-modular, resides in the ACPI core and handles the enumeration
-and hotplug of processors and one that implements the rest of the
-existing processor driver functionality.
+Modify the generic ACPI hotplug code to be able to check if devices
+scheduled for hot-removal may be gracefully removed from the system
+using the device offline/online mechanism introduced previously.
 
-The non-modular part uses an ACPI scan handler object to enumerate
-processors on the basis of information provided by the ACPI namespace
-and to hook up with the common ACPI hotplug infrastructure.  It also
-populates the ACPI handle of each processor device having a
-corresponding object in the ACPI namespace, which allows the driver
-proper to bind to those devices, and makes the driver bind to them
-if it is readily available (i.e. loaded) when the scan handler's
-.attach() routine is running.
+Namely, make acpi_scan_hot_remove() handling device hot-removal call
+device_offline() for all physical companions of the ACPI device nodes
+involved in the operation and check the results.  If any of the
+device_offline() calls fails, the function will not progress to the
+removal phase (which cannot be aborted), unless its (new) force
+argument is set (in case of a failing offline it will put the devices
+offlined by it back online).
 
-There are a few reasons to make this change.
-
-First, switching the ACPI processor driver to using the common ACPI
-hotplug infrastructure reduces code duplication and size considerably,
-even though a new file is created along with a header comment etc.
-
-Second, since the common hotplug code attempts to offline devices
-before starting the (non-reversible) removal procedure, it will abort
-(and possibly roll back) hot-remove operations involving processors
-if cpu_down() returns an error code for one of them instead of
-continuing them blindly (if /sys/firmware/acpi/hotplug/force_remove
-is unset).  That is a more desirable behavior than what the current
-code does.
-
-Finally, the separation of the scan/hotplug part from the driver
-proper makes it possible to simplify the driver's .remove() routine,
-because it doesn't need to worry about the possible cleanup related
-to processor removal any more (the scan/hotplug part is responsible
-for that now) and can handle device removal and driver removal
-symmetricaly (i.e. as appropriate).
-
-Some user-visible changes in sysfs are made (for example, the
-'sysdev' link from the ACPI device node to the processor device's
-directory is gone and a 'physical_node' link is present instead,
-a 'firmware_node' link is present in the processor device's
-directory, the processor driver is now visible under
-/sys/bus/cpu/drivers/ and bound to the processor device), but
-that shouldn't affect the functionality that users care about
-(frequency scaling, C-states and thermal management).
-
-Tested on my venerable Toshiba Portege R500.
+In support of 'forced' device hot-removal, add a new sysfs attribute
+'force_remove' that will reside under /sys/firmware/acpi/hotplug/.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/Makefile           |    1 
- drivers/acpi/acpi_processor.c   |  473 +++++++++++++++++++++++
- drivers/acpi/glue.c             |    6 
- drivers/acpi/internal.h         |    3 
- drivers/acpi/processor_driver.c |  803 +++-------------------------------------
- drivers/acpi/scan.c             |    1 
- drivers/base/cpu.c              |   11 
- include/acpi/processor.h        |    5 
- 8 files changed, 574 insertions(+), 729 deletions(-)
+ Documentation/ABI/testing/sysfs-firmware-acpi |   10 +++
+ drivers/acpi/internal.h                       |    2 
+ drivers/acpi/scan.c                           |   84 ++++++++++++++++++++++++++
+ drivers/acpi/sysfs.c                          |   31 +++++++++
+ include/acpi/acpi_bus.h                       |    1 
+ 5 files changed, 128 insertions(+)
 
-Index: linux-pm/drivers/acpi/processor_driver.c
+Index: linux-pm/include/acpi/acpi_bus.h
 ===================================================================
---- linux-pm.orig/drivers/acpi/processor_driver.c
-+++ linux-pm/drivers/acpi/processor_driver.c
-@@ -1,11 +1,13 @@
- /*
-- * acpi_processor.c - ACPI Processor Driver ($Revision: 71 $)
-+ * processor_driver.c - ACPI Processor Driver
-  *
-  *  Copyright (C) 2001, 2002 Andy Grover <andrew.grover@intel.com>
-  *  Copyright (C) 2001, 2002 Paul Diefenbaugh <paul.s.diefenbaugh@intel.com>
-  *  Copyright (C) 2004       Dominik Brodowski <linux@brodo.de>
-  *  Copyright (C) 2004  Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
-  *  			- Added processor hotplug support
-+ *  Copyright (C) 2013, Intel Corporation
-+ *                      Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-  *
-  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  *
-@@ -24,52 +26,29 @@
-  *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-  *
-  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- *  TBD:
-- *	1. Make # power states dynamic.
-- *	2. Support duty_cycle values that span bit 4.
-- *	3. Optimize by having scheduler determine business instead of
-- *	   having us try to calculate it here.
-- *	4. Need C1 timing -- must modify kernel (IRQ handler) to get this.
-  */
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/init.h>
--#include <linux/types.h>
--#include <linux/pci.h>
--#include <linux/pm.h>
- #include <linux/cpufreq.h>
- #include <linux/cpu.h>
--#include <linux/dmi.h>
--#include <linux/moduleparam.h>
- #include <linux/cpuidle.h>
- #include <linux/slab.h>
- #include <linux/acpi.h>
--#include <linux/memory_hotplug.h>
- 
--#include <asm/io.h>
--#include <asm/cpu.h>
--#include <asm/delay.h>
--#include <asm/uaccess.h>
--#include <asm/processor.h>
--#include <asm/smp.h>
--#include <asm/acpi.h>
--
--#include <acpi/acpi_bus.h>
--#include <acpi/acpi_drivers.h>
- #include <acpi/processor.h>
- 
-+#include "internal.h"
-+
- #define PREFIX "ACPI: "
- 
--#define ACPI_PROCESSOR_CLASS		"processor"
--#define ACPI_PROCESSOR_DEVICE_NAME	"Processor"
- #define ACPI_PROCESSOR_FILE_INFO	"info"
- #define ACPI_PROCESSOR_FILE_THROTTLING	"throttling"
- #define ACPI_PROCESSOR_FILE_LIMIT	"limit"
- #define ACPI_PROCESSOR_NOTIFY_PERFORMANCE 0x80
- #define ACPI_PROCESSOR_NOTIFY_POWER	0x81
- #define ACPI_PROCESSOR_NOTIFY_THROTTLING	0x82
--#define ACPI_PROCESSOR_DEVICE_HID	"ACPI0007"
- 
- #define ACPI_PROCESSOR_LIMIT_USER	0
- #define ACPI_PROCESSOR_LIMIT_THERMAL	1
-@@ -81,12 +60,8 @@ MODULE_AUTHOR("Paul Diefenbaugh");
- MODULE_DESCRIPTION("ACPI Processor Driver");
- MODULE_LICENSE("GPL");
- 
--static int acpi_processor_add(struct acpi_device *device);
--static int acpi_processor_remove(struct acpi_device *device);
--static void acpi_processor_notify(struct acpi_device *device, u32 event);
--static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr);
--static int acpi_processor_handle_eject(struct acpi_processor *pr);
--static int acpi_processor_start(struct acpi_processor *pr);
-+static int acpi_processor_start(struct device *dev);
-+static int acpi_processor_stop(struct device *dev);
- 
- static const struct acpi_device_id processor_device_ids[] = {
- 	{ACPI_PROCESSOR_OBJECT_HID, 0},
-@@ -95,295 +70,27 @@ static const struct acpi_device_id proce
- };
- MODULE_DEVICE_TABLE(acpi, processor_device_ids);
- 
--static struct acpi_driver acpi_processor_driver = {
-+static struct device_driver acpi_processor_driver = {
- 	.name = "processor",
--	.class = ACPI_PROCESSOR_CLASS,
--	.ids = processor_device_ids,
--	.ops = {
--		.add = acpi_processor_add,
--		.remove = acpi_processor_remove,
--		.notify = acpi_processor_notify,
--		},
-+	.bus = &cpu_subsys,
-+	.acpi_match_table = processor_device_ids,
-+	.probe = acpi_processor_start,
-+	.remove = acpi_processor_stop,
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -286,6 +286,7 @@ struct acpi_device_physical_node {
+ 	u8 node_id;
+ 	struct list_head node;
+ 	struct device *dev;
++	bool put_online:1;
  };
  
--#define INSTALL_NOTIFY_HANDLER		1
--#define UNINSTALL_NOTIFY_HANDLER	2
--
- DEFINE_PER_CPU(struct acpi_processor *, processors);
- EXPORT_PER_CPU_SYMBOL(processors);
- 
--struct acpi_processor_errata errata __read_mostly;
--
--/* --------------------------------------------------------------------------
--                                Errata Handling
--   -------------------------------------------------------------------------- */
--
--static int acpi_processor_errata_piix4(struct pci_dev *dev)
-+static void acpi_processor_notify(acpi_handle handle, u32 event, void *data)
- {
--	u8 value1 = 0;
--	u8 value2 = 0;
--
--
--	if (!dev)
--		return -EINVAL;
--
--	/*
--	 * Note that 'dev' references the PIIX4 ACPI Controller.
--	 */
--
--	switch (dev->revision) {
--	case 0:
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Found PIIX4 A-step\n"));
--		break;
--	case 1:
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Found PIIX4 B-step\n"));
--		break;
--	case 2:
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Found PIIX4E\n"));
--		break;
--	case 3:
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Found PIIX4M\n"));
--		break;
--	default:
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Found unknown PIIX4\n"));
--		break;
--	}
--
--	switch (dev->revision) {
--
--	case 0:		/* PIIX4 A-step */
--	case 1:		/* PIIX4 B-step */
--		/*
--		 * See specification changes #13 ("Manual Throttle Duty Cycle")
--		 * and #14 ("Enabling and Disabling Manual Throttle"), plus
--		 * erratum #5 ("STPCLK# Deassertion Time") from the January
--		 * 2002 PIIX4 specification update.  Applies to only older
--		 * PIIX4 models.
--		 */
--		errata.piix4.throttle = 1;
--
--	case 2:		/* PIIX4E */
--	case 3:		/* PIIX4M */
--		/*
--		 * See erratum #18 ("C3 Power State/BMIDE and Type-F DMA
--		 * Livelock") from the January 2002 PIIX4 specification update.
--		 * Applies to all PIIX4 models.
--		 */
--
--		/*
--		 * BM-IDE
--		 * ------
--		 * Find the PIIX4 IDE Controller and get the Bus Master IDE
--		 * Status register address.  We'll use this later to read
--		 * each IDE controller's DMA status to make sure we catch all
--		 * DMA activity.
--		 */
--		dev = pci_get_subsys(PCI_VENDOR_ID_INTEL,
--				     PCI_DEVICE_ID_INTEL_82371AB,
--				     PCI_ANY_ID, PCI_ANY_ID, NULL);
--		if (dev) {
--			errata.piix4.bmisx = pci_resource_start(dev, 4);
--			pci_dev_put(dev);
--		}
--
--		/*
--		 * Type-F DMA
--		 * ----------
--		 * Find the PIIX4 ISA Controller and read the Motherboard
--		 * DMA controller's status to see if Type-F (Fast) DMA mode
--		 * is enabled (bit 7) on either channel.  Note that we'll
--		 * disable C3 support if this is enabled, as some legacy
--		 * devices won't operate well if fast DMA is disabled.
--		 */
--		dev = pci_get_subsys(PCI_VENDOR_ID_INTEL,
--				     PCI_DEVICE_ID_INTEL_82371AB_0,
--				     PCI_ANY_ID, PCI_ANY_ID, NULL);
--		if (dev) {
--			pci_read_config_byte(dev, 0x76, &value1);
--			pci_read_config_byte(dev, 0x77, &value2);
--			if ((value1 & 0x80) || (value2 & 0x80))
--				errata.piix4.fdma = 1;
--			pci_dev_put(dev);
--		}
--
--		break;
--	}
--
--	if (errata.piix4.bmisx)
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--				  "Bus master activity detection (BM-IDE) erratum enabled\n"));
--	if (errata.piix4.fdma)
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--				  "Type-F DMA livelock erratum (C3 disabled)\n"));
--
--	return 0;
--}
--
--static int acpi_processor_errata(struct acpi_processor *pr)
--{
--	int result = 0;
--	struct pci_dev *dev = NULL;
--
--
--	if (!pr)
--		return -EINVAL;
--
--	/*
--	 * PIIX4
--	 */
--	dev = pci_get_subsys(PCI_VENDOR_ID_INTEL,
--			     PCI_DEVICE_ID_INTEL_82371AB_3, PCI_ANY_ID,
--			     PCI_ANY_ID, NULL);
--	if (dev) {
--		result = acpi_processor_errata_piix4(dev);
--		pci_dev_put(dev);
--	}
--
--	return result;
--}
--
--/* --------------------------------------------------------------------------
--                                 Driver Interface
--   -------------------------------------------------------------------------- */
--
--static int acpi_processor_get_info(struct acpi_device *device)
--{
--	acpi_status status = 0;
--	union acpi_object object = { 0 };
--	struct acpi_buffer buffer = { sizeof(union acpi_object), &object };
-+	struct acpi_device *device = data;
- 	struct acpi_processor *pr;
--	int cpu_index, device_declaration = 0;
--	static int cpu0_initialized;
--
--	pr = acpi_driver_data(device);
--	if (!pr)
--		return -EINVAL;
--
--	if (num_online_cpus() > 1)
--		errata.smp = TRUE;
--
--	acpi_processor_errata(pr);
--
--	/*
--	 * Check to see if we have bus mastering arbitration control.  This
--	 * is required for proper C3 usage (to maintain cache coherency).
--	 */
--	if (acpi_gbl_FADT.pm2_control_block && acpi_gbl_FADT.pm2_control_length) {
--		pr->flags.bm_control = 1;
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--				  "Bus mastering arbitration control present\n"));
--	} else
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--				  "No bus mastering arbitration control\n"));
--
--	if (!strcmp(acpi_device_hid(device), ACPI_PROCESSOR_OBJECT_HID)) {
--		/* Declared with "Processor" statement; match ProcessorID */
--		status = acpi_evaluate_object(pr->handle, NULL, NULL, &buffer);
--		if (ACPI_FAILURE(status)) {
--			dev_err(&device->dev,
--				"Failed to evaluate processor object (0x%x)\n",
--				status);
--			return -ENODEV;
--		}
--
--		/*
--		 * TBD: Synch processor ID (via LAPIC/LSAPIC structures) on SMP.
--		 *      >>> 'acpi_get_processor_id(acpi_id, &id)' in
--		 *      arch/xxx/acpi.c
--		 */
--		pr->acpi_id = object.processor.proc_id;
--	} else {
--		/*
--		 * Declared with "Device" statement; match _UID.
--		 * Note that we don't handle string _UIDs yet.
--		 */
--		unsigned long long value;
--		status = acpi_evaluate_integer(pr->handle, METHOD_NAME__UID,
--						NULL, &value);
--		if (ACPI_FAILURE(status)) {
--			dev_err(&device->dev,
--				"Failed to evaluate processor _UID (0x%x)\n",
--				status);
--			return -ENODEV;
--		}
--		device_declaration = 1;
--		pr->acpi_id = value;
--	}
--	cpu_index = acpi_get_cpuid(pr->handle, device_declaration, pr->acpi_id);
--
--	/* Handle UP system running SMP kernel, with no LAPIC in MADT */
--	if (!cpu0_initialized && (cpu_index == -1) &&
--	    (num_online_cpus() == 1)) {
--		cpu_index = 0;
--	}
--
--	cpu0_initialized = 1;
--
--	pr->id = cpu_index;
--
--	/*
--	 *  Extra Processor objects may be enumerated on MP systems with
--	 *  less than the max # of CPUs. They should be ignored _iff
--	 *  they are physically not present.
--	 */
--	if (pr->id == -1) {
--		if (ACPI_FAILURE(acpi_processor_hotadd_init(pr)))
--			return -ENODEV;
--	}
--	/*
--	 * On some boxes several processors use the same processor bus id.
--	 * But they are located in different scope. For example:
--	 * \_SB.SCK0.CPU0
--	 * \_SB.SCK1.CPU0
--	 * Rename the processor device bus id. And the new bus id will be
--	 * generated as the following format:
--	 * CPU+CPU ID.
--	 */
--	sprintf(acpi_device_bid(device), "CPU%X", pr->id);
--	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Processor [%d:%d]\n", pr->id,
--			  pr->acpi_id));
--
--	if (!object.processor.pblk_address)
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "No PBLK (NULL address)\n"));
--	else if (object.processor.pblk_length != 6)
--		dev_err(&device->dev, "Invalid PBLK length [%d]\n",
--			    object.processor.pblk_length);
--	else {
--		pr->throttling.address = object.processor.pblk_address;
--		pr->throttling.duty_offset = acpi_gbl_FADT.duty_offset;
--		pr->throttling.duty_width = acpi_gbl_FADT.duty_width;
--
--		pr->pblk = object.processor.pblk_address;
--
--		/*
--		 * We don't care about error returns - we just try to mark
--		 * these reserved so that nobody else is confused into thinking
--		 * that this region might be unused..
--		 *
--		 * (In particular, allocating the IO range for Cardbus)
--		 */
--		request_region(pr->throttling.address, 6, "ACPI CPU throttle");
--	}
--
--	/*
--	 * If ACPI describes a slot number for this CPU, we can use it
--	 * ensure we get the right value in the "physical id" field
--	 * of /proc/cpuinfo
--	 */
--	status = acpi_evaluate_object(pr->handle, "_SUN", NULL, &buffer);
--	if (ACPI_SUCCESS(status))
--		arch_fix_phys_package_id(pr->id, object.integer.value);
--
--	return 0;
--}
--
--static DEFINE_PER_CPU(void *, processor_device_array);
--
--static void acpi_processor_notify(struct acpi_device *device, u32 event)
--{
--	struct acpi_processor *pr = acpi_driver_data(device);
- 	int saved;
- 
-+	if (device->handle != handle)
-+		return;
-+
-+	pr = acpi_driver_data(device);
- 	if (!pr)
- 		return;
- 
-@@ -420,32 +127,40 @@ static void acpi_processor_notify(struct
- 	return;
- }
- 
--static int acpi_cpu_soft_notify(struct notifier_block *nfb,
--		unsigned long action, void *hcpu)
-+static __cpuinit int __acpi_processor_start(struct acpi_device *device);
-+
-+static int __cpuinit acpi_cpu_soft_notify(struct notifier_block *nfb,
-+					  unsigned long action, void *hcpu)
- {
- 	unsigned int cpu = (unsigned long)hcpu;
- 	struct acpi_processor *pr = per_cpu(processors, cpu);
-+	struct acpi_device *device;
-+
-+	if (!pr || acpi_bus_get_device(pr->handle, &device))
-+		return NOTIFY_DONE;
- 
--	if (action == CPU_ONLINE && pr) {
--		/* CPU got physically hotplugged and onlined the first time:
--		 * Initialize missing things
-+	if (action == CPU_ONLINE) {
-+		/*
-+		 * CPU got physically hotplugged and onlined for the first time:
-+		 * Initialize missing things.
- 		 */
- 		if (pr->flags.need_hotplug_init) {
-+			int ret;
-+
- 			pr_info("Will online and init hotplugged CPU: %d\n",
- 				pr->id);
--			WARN(acpi_processor_start(pr), "Failed to start CPU:"
--				" %d\n", pr->id);
- 			pr->flags.need_hotplug_init = 0;
--		/* Normal CPU soft online event */
-+			ret = __acpi_processor_start(device);
-+			WARN(ret, "Failed to start CPU: %d\n", pr->id);
- 		} else {
-+			/* Normal CPU soft online event. */
- 			acpi_processor_ppc_has_changed(pr, 0);
- 			acpi_processor_hotplug(pr);
- 			acpi_processor_reevaluate_tstate(pr, action);
- 			acpi_processor_tstate_has_changed(pr);
- 		}
--	}
--	if (action == CPU_DEAD && pr) {
--		/* invalidate the flag.throttling after one CPU is offline */
-+	} else if (action == CPU_DEAD) {
-+		/* Invalidate flag.throttling after the CPU is offline. */
- 		acpi_processor_reevaluate_tstate(pr, action);
- 	}
- 	return NOTIFY_OK;
-@@ -456,19 +171,18 @@ static struct notifier_block acpi_cpu_no
- 	    .notifier_call = acpi_cpu_soft_notify,
- };
- 
--/*
-- * acpi_processor_start() is called by the cpu_hotplug_notifier func:
-- * acpi_cpu_soft_notify(). Getting it __cpuinit{data} is difficult, the
-- * root cause seem to be that acpi_processor_uninstall_hotplug_notify()
-- * is in the module_exit (__exit) func. Allowing acpi_processor_start()
-- * to not be in __cpuinit section, but being called from __cpuinit funcs
-- * via __ref looks like the right thing to do here.
-- */
--static __ref int acpi_processor_start(struct acpi_processor *pr)
-+static __cpuinit int __acpi_processor_start(struct acpi_device *device)
- {
--	struct acpi_device *device = per_cpu(processor_device_array, pr->id);
-+	struct acpi_processor *pr = acpi_driver_data(device);
-+	acpi_status status;
- 	int result = 0;
- 
-+	if (!pr)
-+		return -ENODEV;
-+
-+	if (pr->flags.need_hotplug_init)
-+		return 0;
-+
- #ifdef CONFIG_CPU_FREQ
- 	acpi_processor_ppc_has_changed(pr, 0);
- 	acpi_processor_load_module(pr);
-@@ -506,129 +220,48 @@ static __ref int acpi_processor_start(st
- 		goto err_remove_sysfs_thermal;
- 	}
- 
--	return 0;
-+	status = acpi_install_notify_handler(device->handle, ACPI_DEVICE_NOTIFY,
-+					     acpi_processor_notify, device);
-+	if (ACPI_SUCCESS(status))
-+		return 0;
- 
--err_remove_sysfs_thermal:
-+	sysfs_remove_link(&pr->cdev->device.kobj, "device");
-+ err_remove_sysfs_thermal:
- 	sysfs_remove_link(&device->dev.kobj, "thermal_cooling");
--err_thermal_unregister:
-+ err_thermal_unregister:
- 	thermal_cooling_device_unregister(pr->cdev);
--err_power_exit:
-+ err_power_exit:
- 	acpi_processor_power_exit(pr);
--
- 	return result;
- }
- 
--/*
-- * Do not put anything in here which needs the core to be online.
-- * For example MSR access or setting up things which check for cpuinfo_x86
-- * (cpu_data(cpu)) values, like CPU feature flags, family, model, etc.
-- * Such things have to be put in and set up above in acpi_processor_start()
-- */
--static int __cpuinit acpi_processor_add(struct acpi_device *device)
-+static int __cpuinit acpi_processor_start(struct device *dev)
- {
--	struct acpi_processor *pr = NULL;
--	int result = 0;
--	struct device *dev;
-+	struct acpi_device *device;
- 
--	pr = kzalloc(sizeof(struct acpi_processor), GFP_KERNEL);
--	if (!pr)
--		return -ENOMEM;
-+	if (acpi_bus_get_device(ACPI_HANDLE(dev), &device))
-+		return -ENODEV;
- 
--	if (!zalloc_cpumask_var(&pr->throttling.shared_cpu_map, GFP_KERNEL)) {
--		result = -ENOMEM;
--		goto err_free_pr;
--	}
--
--	pr->handle = device->handle;
--	strcpy(acpi_device_name(device), ACPI_PROCESSOR_DEVICE_NAME);
--	strcpy(acpi_device_class(device), ACPI_PROCESSOR_CLASS);
--	device->driver_data = pr;
--
--	result = acpi_processor_get_info(device);
--	if (result) {
--		/* Processor is physically not present */
--		return 0;
--	}
--
--#ifdef CONFIG_SMP
--	if (pr->id >= setup_max_cpus && pr->id != 0)
--		return 0;
--#endif
--
--	BUG_ON(pr->id >= nr_cpu_ids);
--
--	/*
--	 * Buggy BIOS check
--	 * ACPI id of processors can be reported wrongly by the BIOS.
--	 * Don't trust it blindly
--	 */
--	if (per_cpu(processor_device_array, pr->id) != NULL &&
--	    per_cpu(processor_device_array, pr->id) != device) {
--		dev_warn(&device->dev,
--			"BIOS reported wrong ACPI id %d for the processor\n",
--			pr->id);
--		result = -ENODEV;
--		goto err_free_cpumask;
--	}
--	per_cpu(processor_device_array, pr->id) = device;
--
--	per_cpu(processors, pr->id) = pr;
--
--	dev = get_cpu_device(pr->id);
--	if (sysfs_create_link(&device->dev.kobj, &dev->kobj, "sysdev")) {
--		result = -EFAULT;
--		goto err_clear_processor;
--	}
--
--	/*
--	 * Do not start hotplugged CPUs now, but when they
--	 * are onlined the first time
--	 */
--	if (pr->flags.need_hotplug_init)
--		return 0;
--
--	result = acpi_processor_start(pr);
--	if (result)
--		goto err_remove_sysfs;
--
--	return 0;
--
--err_remove_sysfs:
--	sysfs_remove_link(&device->dev.kobj, "sysdev");
--err_clear_processor:
--	/*
--	 * processor_device_array is not cleared to allow checks for buggy BIOS
--	 */ 
--	per_cpu(processors, pr->id) = NULL;
--err_free_cpumask:
--	free_cpumask_var(pr->throttling.shared_cpu_map);
--err_free_pr:
--	kfree(pr);
--	return result;
-+	return __acpi_processor_start(device);
- }
- 
--static int acpi_processor_remove(struct acpi_device *device)
-+static int acpi_processor_stop(struct device *dev)
- {
--	struct acpi_processor *pr = NULL;
-+	struct acpi_device *device;
-+	struct acpi_processor *pr;
- 
-+	if (acpi_bus_get_device(ACPI_HANDLE(dev), &device))
-+		return 0;
- 
--	if (!device || !acpi_driver_data(device))
--		return -EINVAL;
-+	acpi_remove_notify_handler(device->handle, ACPI_DEVICE_NOTIFY,
-+				   acpi_processor_notify);
- 
- 	pr = acpi_driver_data(device);
--
--	if (pr->id >= nr_cpu_ids)
--		goto free;
--
--	if (device->removal_type == ACPI_BUS_REMOVAL_EJECT) {
--		if (acpi_processor_handle_eject(pr))
--			return -EINVAL;
--	}
-+	if (!pr)
-+		return 0;
- 
- 	acpi_processor_power_exit(pr);
- 
--	sysfs_remove_link(&device->dev.kobj, "sysdev");
--
- 	if (pr->cdev) {
- 		sysfs_remove_link(&device->dev.kobj, "thermal_cooling");
- 		sysfs_remove_link(&pr->cdev->device.kobj, "device");
-@@ -637,331 +270,47 @@ static int acpi_processor_remove(struct
- 	}
- 
- 	per_cpu(processors, pr->id) = NULL;
--	per_cpu(processor_device_array, pr->id) = NULL;
--	try_offline_node(cpu_to_node(pr->id));
--
--free:
--	free_cpumask_var(pr->throttling.shared_cpu_map);
--	kfree(pr);
--
- 	return 0;
- }
- 
--#ifdef CONFIG_ACPI_HOTPLUG_CPU
--/****************************************************************************
-- * 	Acpi processor hotplug support 				       	    *
-- ****************************************************************************/
--
--static int is_processor_present(acpi_handle handle)
--{
--	acpi_status status;
--	unsigned long long sta = 0;
--
--
--	status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
--
--	if (ACPI_SUCCESS(status) && (sta & ACPI_STA_DEVICE_PRESENT))
--		return 1;
--
--	/*
--	 * _STA is mandatory for a processor that supports hot plug
--	 */
--	if (status == AE_NOT_FOUND)
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--				"Processor does not support hot plug\n"));
--	else
--		ACPI_EXCEPTION((AE_INFO, status,
--				"Processor Device is not present"));
--	return 0;
--}
--
--static void acpi_processor_hotplug_notify(acpi_handle handle,
--					  u32 event, void *data)
--{
--	struct acpi_device *device = NULL;
--	struct acpi_eject_event *ej_event = NULL;
--	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
--	acpi_status status;
--	int result;
--
--	acpi_scan_lock_acquire();
--
--	switch (event) {
--	case ACPI_NOTIFY_BUS_CHECK:
--	case ACPI_NOTIFY_DEVICE_CHECK:
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--		"Processor driver received %s event\n",
--		       (event == ACPI_NOTIFY_BUS_CHECK) ?
--		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK"));
--
--		if (!is_processor_present(handle))
--			break;
--
--		if (!acpi_bus_get_device(handle, &device))
--			break;
--
--		result = acpi_bus_scan(handle);
--		if (result) {
--			acpi_handle_err(handle, "Unable to add the device\n");
--			break;
--		}
--		result = acpi_bus_get_device(handle, &device);
--		if (result) {
--			acpi_handle_err(handle, "Missing device object\n");
--			break;
--		}
--		ost_code = ACPI_OST_SC_SUCCESS;
--		break;
--
--	case ACPI_NOTIFY_EJECT_REQUEST:
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
--
--		if (acpi_bus_get_device(handle, &device)) {
--			acpi_handle_err(handle,
--				"Device don't exist, dropping EJECT\n");
--			break;
--		}
--		if (!acpi_driver_data(device)) {
--			acpi_handle_err(handle,
--				"Driver data is NULL, dropping EJECT\n");
--			break;
--		}
--
--		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
--		if (!ej_event) {
--			acpi_handle_err(handle, "No memory, dropping EJECT\n");
--			break;
--		}
--
--		get_device(&device->dev);
--		ej_event->device = device;
--		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
--		/* The eject is carried out asynchronously. */
--		status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
--						 ej_event);
--		if (ACPI_FAILURE(status)) {
--			put_device(&device->dev);
--			kfree(ej_event);
--			break;
--		}
--		goto out;
--
--	default:
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--				  "Unsupported event [0x%x]\n", event));
--
--		/* non-hotplug event; possibly handled by other handler */
--		goto out;
--	}
--
--	/* Inform firmware that the hotplug operation has completed */
--	(void) acpi_evaluate_hotplug_ost(handle, event, ost_code, NULL);
--
-- out:
--	acpi_scan_lock_release();
--}
--
--static acpi_status is_processor_device(acpi_handle handle)
--{
--	struct acpi_device_info *info;
--	char *hid;
--	acpi_status status;
--
--	status = acpi_get_object_info(handle, &info);
--	if (ACPI_FAILURE(status))
--		return status;
--
--	if (info->type == ACPI_TYPE_PROCESSOR) {
--		kfree(info);
--		return AE_OK;	/* found a processor object */
--	}
--
--	if (!(info->valid & ACPI_VALID_HID)) {
--		kfree(info);
--		return AE_ERROR;
--	}
--
--	hid = info->hardware_id.string;
--	if ((hid == NULL) || strcmp(hid, ACPI_PROCESSOR_DEVICE_HID)) {
--		kfree(info);
--		return AE_ERROR;
--	}
--
--	kfree(info);
--	return AE_OK;	/* found a processor device object */
--}
--
--static acpi_status
--processor_walk_namespace_cb(acpi_handle handle,
--			    u32 lvl, void *context, void **rv)
--{
--	acpi_status status;
--	int *action = context;
--
--	status = is_processor_device(handle);
--	if (ACPI_FAILURE(status))
--		return AE_OK;	/* not a processor; continue to walk */
--
--	switch (*action) {
--	case INSTALL_NOTIFY_HANDLER:
--		acpi_install_notify_handler(handle,
--					    ACPI_SYSTEM_NOTIFY,
--					    acpi_processor_hotplug_notify,
--					    NULL);
--		break;
--	case UNINSTALL_NOTIFY_HANDLER:
--		acpi_remove_notify_handler(handle,
--					   ACPI_SYSTEM_NOTIFY,
--					   acpi_processor_hotplug_notify);
--		break;
--	default:
--		break;
--	}
--
--	/* found a processor; skip walking underneath */
--	return AE_CTRL_DEPTH;
--}
--
--static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
--{
--	acpi_handle handle = pr->handle;
--
--	if (!is_processor_present(handle)) {
--		return AE_ERROR;
--	}
--
--	if (acpi_map_lsapic(handle, &pr->id))
--		return AE_ERROR;
--
--	if (arch_register_cpu(pr->id)) {
--		acpi_unmap_lsapic(pr->id);
--		return AE_ERROR;
--	}
--
--	/* CPU got hot-plugged, but cpu_data is not initialized yet
--	 * Set flag to delay cpu_idle/throttling initialization
--	 * in:
--	 * acpi_processor_add()
--	 *   acpi_processor_get_info()
--	 * and do it when the CPU gets online the first time
--	 * TBD: Cleanup above functions and try to do this more elegant.
--	 */
--	pr_info("CPU %d got hotplugged\n", pr->id);
--	pr->flags.need_hotplug_init = 1;
--
--	return AE_OK;
--}
--
--static int acpi_processor_handle_eject(struct acpi_processor *pr)
--{
--	if (cpu_online(pr->id))
--		cpu_down(pr->id);
--
--	get_online_cpus();
--	/*
--	 * The cpu might become online again at this point. So we check whether
--	 * the cpu has been onlined or not. If the cpu became online, it means
--	 * that someone wants to use the cpu. So acpi_processor_handle_eject()
--	 * returns -EAGAIN.
--	 */
--	if (unlikely(cpu_online(pr->id))) {
--		put_online_cpus();
--		pr_warn("Failed to remove CPU %d, because other task "
--			"brought the CPU back online\n", pr->id);
--		return -EAGAIN;
--	}
--	arch_unregister_cpu(pr->id);
--	acpi_unmap_lsapic(pr->id);
--	put_online_cpus();
--	return (0);
--}
--#else
--static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
--{
--	return AE_ERROR;
--}
--static int acpi_processor_handle_eject(struct acpi_processor *pr)
--{
--	return (-EINVAL);
--}
--#endif
--
--static
--void acpi_processor_install_hotplug_notify(void)
--{
--#ifdef CONFIG_ACPI_HOTPLUG_CPU
--	int action = INSTALL_NOTIFY_HANDLER;
--	acpi_walk_namespace(ACPI_TYPE_ANY,
--			    ACPI_ROOT_OBJECT,
--			    ACPI_UINT32_MAX,
--			    processor_walk_namespace_cb, NULL, &action, NULL);
--#endif
--	register_hotcpu_notifier(&acpi_cpu_notifier);
--}
--
--static
--void acpi_processor_uninstall_hotplug_notify(void)
--{
--#ifdef CONFIG_ACPI_HOTPLUG_CPU
--	int action = UNINSTALL_NOTIFY_HANDLER;
--	acpi_walk_namespace(ACPI_TYPE_ANY,
--			    ACPI_ROOT_OBJECT,
--			    ACPI_UINT32_MAX,
--			    processor_walk_namespace_cb, NULL, &action, NULL);
--#endif
--	unregister_hotcpu_notifier(&acpi_cpu_notifier);
--}
--
- /*
-  * We keep the driver loaded even when ACPI is not running.
-  * This is needed for the powernow-k8 driver, that works even without
-  * ACPI, but needs symbols from this driver
-  */
- 
--static int __init acpi_processor_init(void)
-+static int __init acpi_processor_driver_init(void)
- {
- 	int result = 0;
- 
- 	if (acpi_disabled)
- 		return 0;
- 
--	result = acpi_bus_register_driver(&acpi_processor_driver);
-+	result = driver_register(&acpi_processor_driver);
- 	if (result < 0)
- 		return result;
- 
- 	acpi_processor_syscore_init();
--
--	acpi_processor_install_hotplug_notify();
--
-+	register_hotcpu_notifier(&acpi_cpu_notifier);
- 	acpi_thermal_cpufreq_init();
--
- 	acpi_processor_ppc_init();
--
- 	acpi_processor_throttling_init();
--
- 	return 0;
- }
- 
--static void __exit acpi_processor_exit(void)
-+static void __exit acpi_processor_driver_exit(void)
- {
- 	if (acpi_disabled)
- 		return;
- 
- 	acpi_processor_ppc_exit();
--
- 	acpi_thermal_cpufreq_exit();
--
--	acpi_processor_uninstall_hotplug_notify();
--
-+	unregister_hotcpu_notifier(&acpi_cpu_notifier);
- 	acpi_processor_syscore_exit();
--
--	acpi_bus_unregister_driver(&acpi_processor_driver);
--
--	return;
-+	driver_unregister(&acpi_processor_driver);
- }
- 
--module_init(acpi_processor_init);
--module_exit(acpi_processor_exit);
-+module_init(acpi_processor_driver_init);
-+module_exit(acpi_processor_driver_exit);
- 
- MODULE_ALIAS("processor");
-Index: linux-pm/drivers/acpi/glue.c
-===================================================================
---- linux-pm.orig/drivers/acpi/glue.c
-+++ linux-pm/drivers/acpi/glue.c
-@@ -105,7 +105,7 @@ acpi_handle acpi_get_child(acpi_handle p
- }
- EXPORT_SYMBOL(acpi_get_child);
- 
--static int acpi_bind_one(struct device *dev, acpi_handle handle)
-+int acpi_bind_one(struct device *dev, acpi_handle handle)
- {
- 	struct acpi_device *acpi_dev;
- 	acpi_status status;
-@@ -188,8 +188,9 @@ static int acpi_bind_one(struct device *
- 	kfree(physical_node);
- 	goto err;
- }
-+EXPORT_SYMBOL_GPL(acpi_bind_one);
- 
--static int acpi_unbind_one(struct device *dev)
-+int acpi_unbind_one(struct device *dev)
- {
- 	struct acpi_device_physical_node *entry;
- 	struct acpi_device *acpi_dev;
-@@ -238,6 +239,7 @@ err:
- 	dev_err(dev, "Oops, 'acpi_handle' corrupt\n");
- 	return -EINVAL;
- }
-+EXPORT_SYMBOL_GPL(acpi_unbind_one);
- 
- static int acpi_platform_notify(struct device *dev)
- {
-Index: linux-pm/drivers/acpi/internal.h
-===================================================================
---- linux-pm.orig/drivers/acpi/internal.h
-+++ linux-pm/drivers/acpi/internal.h
-@@ -33,6 +33,7 @@ static inline void acpi_pci_slot_init(vo
- void acpi_pci_root_init(void);
- void acpi_pci_link_init(void);
- void acpi_pci_root_hp_init(void);
-+void acpi_processor_init(void);
- void acpi_platform_init(void);
- int acpi_sysfs_init(void);
- void acpi_csrt_init(void);
-@@ -79,6 +80,8 @@ void acpi_init_device_object(struct acpi
- 			     int type, unsigned long long sta);
- void acpi_device_add_finalize(struct acpi_device *device);
- void acpi_free_pnp_ids(struct acpi_device_pnp *pnp);
-+int acpi_bind_one(struct device *dev, acpi_handle handle);
-+int acpi_unbind_one(struct device *dev);
- 
- /* --------------------------------------------------------------------------
-                                   Power Resource
-Index: linux-pm/drivers/acpi/acpi_processor.c
-===================================================================
---- /dev/null
-+++ linux-pm/drivers/acpi/acpi_processor.c
-@@ -0,0 +1,473 @@
-+/*
-+ * acpi_processor.c - ACPI processor enumeration support
-+ *
-+ * Copyright (C) 2001, 2002 Andy Grover <andrew.grover@intel.com>
-+ * Copyright (C) 2001, 2002 Paul Diefenbaugh <paul.s.diefenbaugh@intel.com>
-+ * Copyright (C) 2004       Dominik Brodowski <linux@brodo.de>
-+ * Copyright (C) 2004  Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
-+ * Copyright (C) 2013, Intel Corporation
-+ *                     Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published
-+ * by the Free Software Foundation.
-+ */
-+
-+#include <linux/acpi.h>
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+
-+#include <acpi/processor.h>
-+
-+#include <asm/cpu.h>
-+
-+#include "internal.h"
-+
-+#define _COMPONENT	ACPI_PROCESSOR_COMPONENT
-+
-+ACPI_MODULE_NAME("processor");
-+
-+/* --------------------------------------------------------------------------
-+                                Errata Handling
-+   -------------------------------------------------------------------------- */
-+
-+struct acpi_processor_errata errata __read_mostly;
-+EXPORT_SYMBOL_GPL(errata);
-+
-+static int acpi_processor_errata_piix4(struct pci_dev *dev)
-+{
-+	u8 value1 = 0;
-+	u8 value2 = 0;
-+
-+
-+	if (!dev)
-+		return -EINVAL;
-+
-+	/*
-+	 * Note that 'dev' references the PIIX4 ACPI Controller.
-+	 */
-+
-+	switch (dev->revision) {
-+	case 0:
-+		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Found PIIX4 A-step\n"));
-+		break;
-+	case 1:
-+		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Found PIIX4 B-step\n"));
-+		break;
-+	case 2:
-+		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Found PIIX4E\n"));
-+		break;
-+	case 3:
-+		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Found PIIX4M\n"));
-+		break;
-+	default:
-+		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Found unknown PIIX4\n"));
-+		break;
-+	}
-+
-+	switch (dev->revision) {
-+
-+	case 0:		/* PIIX4 A-step */
-+	case 1:		/* PIIX4 B-step */
-+		/*
-+		 * See specification changes #13 ("Manual Throttle Duty Cycle")
-+		 * and #14 ("Enabling and Disabling Manual Throttle"), plus
-+		 * erratum #5 ("STPCLK# Deassertion Time") from the January
-+		 * 2002 PIIX4 specification update.  Applies to only older
-+		 * PIIX4 models.
-+		 */
-+		errata.piix4.throttle = 1;
-+
-+	case 2:		/* PIIX4E */
-+	case 3:		/* PIIX4M */
-+		/*
-+		 * See erratum #18 ("C3 Power State/BMIDE and Type-F DMA
-+		 * Livelock") from the January 2002 PIIX4 specification update.
-+		 * Applies to all PIIX4 models.
-+		 */
-+
-+		/*
-+		 * BM-IDE
-+		 * ------
-+		 * Find the PIIX4 IDE Controller and get the Bus Master IDE
-+		 * Status register address.  We'll use this later to read
-+		 * each IDE controller's DMA status to make sure we catch all
-+		 * DMA activity.
-+		 */
-+		dev = pci_get_subsys(PCI_VENDOR_ID_INTEL,
-+				     PCI_DEVICE_ID_INTEL_82371AB,
-+				     PCI_ANY_ID, PCI_ANY_ID, NULL);
-+		if (dev) {
-+			errata.piix4.bmisx = pci_resource_start(dev, 4);
-+			pci_dev_put(dev);
-+		}
-+
-+		/*
-+		 * Type-F DMA
-+		 * ----------
-+		 * Find the PIIX4 ISA Controller and read the Motherboard
-+		 * DMA controller's status to see if Type-F (Fast) DMA mode
-+		 * is enabled (bit 7) on either channel.  Note that we'll
-+		 * disable C3 support if this is enabled, as some legacy
-+		 * devices won't operate well if fast DMA is disabled.
-+		 */
-+		dev = pci_get_subsys(PCI_VENDOR_ID_INTEL,
-+				     PCI_DEVICE_ID_INTEL_82371AB_0,
-+				     PCI_ANY_ID, PCI_ANY_ID, NULL);
-+		if (dev) {
-+			pci_read_config_byte(dev, 0x76, &value1);
-+			pci_read_config_byte(dev, 0x77, &value2);
-+			if ((value1 & 0x80) || (value2 & 0x80))
-+				errata.piix4.fdma = 1;
-+			pci_dev_put(dev);
-+		}
-+
-+		break;
-+	}
-+
-+	if (errata.piix4.bmisx)
-+		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-+				  "Bus master activity detection (BM-IDE) erratum enabled\n"));
-+	if (errata.piix4.fdma)
-+		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-+				  "Type-F DMA livelock erratum (C3 disabled)\n"));
-+
-+	return 0;
-+}
-+
-+static int acpi_processor_errata(struct acpi_processor *pr)
-+{
-+	int result = 0;
-+	struct pci_dev *dev = NULL;
-+
-+
-+	if (!pr)
-+		return -EINVAL;
-+
-+	/*
-+	 * PIIX4
-+	 */
-+	dev = pci_get_subsys(PCI_VENDOR_ID_INTEL,
-+			     PCI_DEVICE_ID_INTEL_82371AB_3, PCI_ANY_ID,
-+			     PCI_ANY_ID, NULL);
-+	if (dev) {
-+		result = acpi_processor_errata_piix4(dev);
-+		pci_dev_put(dev);
-+	}
-+
-+	return result;
-+}
-+
-+/* --------------------------------------------------------------------------
-+                                Initialization
-+   -------------------------------------------------------------------------- */
-+
-+static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
-+{
-+	unsigned long long sta;
-+	acpi_status status;
-+	int ret;
-+
-+	status = acpi_evaluate_integer(pr->handle, "_STA", NULL, &sta);
-+	if (ACPI_FAILURE(status) || !(sta & ACPI_STA_DEVICE_PRESENT))
-+		return -ENODEV;
-+
-+	ret = acpi_map_lsapic(pr->handle, &pr->id);
-+	if (ret)
-+		return ret;
-+
-+	ret = arch_register_cpu(pr->id);
-+	if (ret) {
-+		acpi_unmap_lsapic(pr->id);
-+		return ret;
-+	}
-+
-+	/*
-+	 * CPU got hot-added, but cpu_data is not initialized yet.  Set a flag
-+	 * to delay cpu_idle/throttling initialization and do it when the CPU
-+	 * gets online for the first time.
-+	 */
-+	pr_info("CPU%d has been hot-added\n", pr->id);
-+	pr->flags.need_hotplug_init = 1;
-+	return 0;
-+}
-+
-+static int acpi_processor_get_info(struct acpi_device *device)
-+{
-+	union acpi_object object = { 0 };
-+	struct acpi_buffer buffer = { sizeof(union acpi_object), &object };
-+	struct acpi_processor *pr = acpi_driver_data(device);
-+	int cpu_index, device_declaration = 0;
-+	acpi_status status = AE_OK;
-+	static int cpu0_initialized;
-+
-+	if (num_online_cpus() > 1)
-+		errata.smp = TRUE;
-+
-+	acpi_processor_errata(pr);
-+
-+	/*
-+	 * Check to see if we have bus mastering arbitration control.  This
-+	 * is required for proper C3 usage (to maintain cache coherency).
-+	 */
-+	if (acpi_gbl_FADT.pm2_control_block && acpi_gbl_FADT.pm2_control_length) {
-+		pr->flags.bm_control = 1;
-+		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-+				  "Bus mastering arbitration control present\n"));
-+	} else
-+		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-+				  "No bus mastering arbitration control\n"));
-+
-+	if (!strcmp(acpi_device_hid(device), ACPI_PROCESSOR_OBJECT_HID)) {
-+		/* Declared with "Processor" statement; match ProcessorID */
-+		status = acpi_evaluate_object(pr->handle, NULL, NULL, &buffer);
-+		if (ACPI_FAILURE(status)) {
-+			dev_err(&device->dev,
-+				"Failed to evaluate processor object (0x%x)\n",
-+				status);
-+			return -ENODEV;
-+		}
-+
-+		/*
-+		 * TBD: Synch processor ID (via LAPIC/LSAPIC structures) on SMP.
-+		 *      >>> 'acpi_get_processor_id(acpi_id, &id)' in
-+		 *      arch/xxx/acpi.c
-+		 */
-+		pr->acpi_id = object.processor.proc_id;
-+	} else {
-+		/*
-+		 * Declared with "Device" statement; match _UID.
-+		 * Note that we don't handle string _UIDs yet.
-+		 */
-+		unsigned long long value;
-+		status = acpi_evaluate_integer(pr->handle, METHOD_NAME__UID,
-+						NULL, &value);
-+		if (ACPI_FAILURE(status)) {
-+			dev_err(&device->dev,
-+				"Failed to evaluate processor _UID (0x%x)\n",
-+				status);
-+			return -ENODEV;
-+		}
-+		device_declaration = 1;
-+		pr->acpi_id = value;
-+	}
-+	cpu_index = acpi_get_cpuid(pr->handle, device_declaration, pr->acpi_id);
-+
-+	/* Handle UP system running SMP kernel, with no LAPIC in MADT */
-+	if (!cpu0_initialized && (cpu_index == -1) &&
-+	    (num_online_cpus() == 1)) {
-+		cpu_index = 0;
-+	}
-+
-+	cpu0_initialized = 1;
-+
-+	pr->id = cpu_index;
-+
-+	/*
-+	 *  Extra Processor objects may be enumerated on MP systems with
-+	 *  less than the max # of CPUs. They should be ignored _iff
-+	 *  they are physically not present.
-+	 */
-+	if (pr->id == -1) {
-+		int ret = acpi_processor_hotadd_init(pr);
-+		if (ret)
-+			return ret;
-+	}
-+	/*
-+	 * On some boxes several processors use the same processor bus id.
-+	 * But they are located in different scope. For example:
-+	 * \_SB.SCK0.CPU0
-+	 * \_SB.SCK1.CPU0
-+	 * Rename the processor device bus id. And the new bus id will be
-+	 * generated as the following format:
-+	 * CPU+CPU ID.
-+	 */
-+	sprintf(acpi_device_bid(device), "CPU%X", pr->id);
-+	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Processor [%d:%d]\n", pr->id,
-+			  pr->acpi_id));
-+
-+	if (!object.processor.pblk_address)
-+		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "No PBLK (NULL address)\n"));
-+	else if (object.processor.pblk_length != 6)
-+		dev_err(&device->dev, "Invalid PBLK length [%d]\n",
-+			    object.processor.pblk_length);
-+	else {
-+		pr->throttling.address = object.processor.pblk_address;
-+		pr->throttling.duty_offset = acpi_gbl_FADT.duty_offset;
-+		pr->throttling.duty_width = acpi_gbl_FADT.duty_width;
-+
-+		pr->pblk = object.processor.pblk_address;
-+
-+		/*
-+		 * We don't care about error returns - we just try to mark
-+		 * these reserved so that nobody else is confused into thinking
-+		 * that this region might be unused..
-+		 *
-+		 * (In particular, allocating the IO range for Cardbus)
-+		 */
-+		request_region(pr->throttling.address, 6, "ACPI CPU throttle");
-+	}
-+
-+	/*
-+	 * If ACPI describes a slot number for this CPU, we can use it to
-+	 * ensure we get the right value in the "physical id" field
-+	 * of /proc/cpuinfo
-+	 */
-+	status = acpi_evaluate_object(pr->handle, "_SUN", NULL, &buffer);
-+	if (ACPI_SUCCESS(status))
-+		arch_fix_phys_package_id(pr->id, object.integer.value);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Do not put anything in here which needs the core to be online.
-+ * For example MSR access or setting up things which check for cpuinfo_x86
-+ * (cpu_data(cpu)) values, like CPU feature flags, family, model, etc.
-+ * Such things have to be put in and set up by the processor driver's .probe().
-+ */
-+static DEFINE_PER_CPU(void *, processor_device_array);
-+
-+static int __cpuinit acpi_processor_add(struct acpi_device *device,
-+					const struct acpi_device_id *id)
-+{
-+	struct acpi_processor *pr;
-+	struct device *dev;
-+	int result = 0;
-+
-+	pr = kzalloc(sizeof(struct acpi_processor), GFP_KERNEL);
-+	if (!pr)
-+		return -ENOMEM;
-+
-+	if (!zalloc_cpumask_var(&pr->throttling.shared_cpu_map, GFP_KERNEL)) {
-+		result = -ENOMEM;
-+		goto err_free_pr;
-+	}
-+
-+	pr->handle = device->handle;
-+	strcpy(acpi_device_name(device), ACPI_PROCESSOR_DEVICE_NAME);
-+	strcpy(acpi_device_class(device), ACPI_PROCESSOR_CLASS);
-+	device->driver_data = pr;
-+
-+	result = acpi_processor_get_info(device);
-+	if (result) /* Processor is not physically present or unavailable */
-+		return 0;
-+
-+#ifdef CONFIG_SMP
-+	if (pr->id >= setup_max_cpus && pr->id != 0)
-+		return 0;
-+#endif
-+
-+	BUG_ON(pr->id >= nr_cpu_ids);
-+
-+	/*
-+	 * Buggy BIOS check.
-+	 * ACPI id of processors can be reported wrongly by the BIOS.
-+	 * Don't trust it blindly
-+	 */
-+	if (per_cpu(processor_device_array, pr->id) != NULL &&
-+	    per_cpu(processor_device_array, pr->id) != device) {
-+		dev_warn(&device->dev,
-+			"BIOS reported wrong ACPI id %d for the processor\n",
-+			pr->id);
-+		/* Give up, but do not abort the namespace scan. */
-+		goto err;
-+	}
-+	/*
-+	 * processor_device_array is not cleared on errors to allow buggy BIOS
-+	 * checks.
-+	 */
-+	per_cpu(processor_device_array, pr->id) = device;
-+
-+	dev = get_cpu_device(pr->id);
-+	ACPI_HANDLE_SET(dev, pr->handle);
-+	result = acpi_bind_one(dev, NULL);
-+	if (result)
-+		goto err;
-+
-+	pr->dev = dev;
-+	dev->offline = pr->flags.need_hotplug_init;
-+
-+	/* Trigger the processor driver's .probe() if present. */
-+	if (device_attach(dev) >= 0)
-+		return 1;
-+
-+	dev_err(dev, "Processor driver could not be attached\n");
-+	acpi_unbind_one(dev);
-+
-+ err:
-+	free_cpumask_var(pr->throttling.shared_cpu_map);
-+	device->driver_data = NULL;
-+ err_free_pr:
-+	kfree(pr);
-+	return result;
-+}
-+
-+/* --------------------------------------------------------------------------
-+                                    Removal
-+   -------------------------------------------------------------------------- */
-+
-+static void acpi_processor_remove(struct acpi_device *device)
-+{
-+	struct acpi_processor *pr;
-+
-+	if (!device || !acpi_driver_data(device))
-+		return;
-+
-+	pr = acpi_driver_data(device);
-+	if (pr->id >= nr_cpu_ids)
-+		goto out;
-+
-+	/*
-+	 * The only reason why we ever get here is CPU hot-removal.  The CPU is
-+	 * already offline and the ACPI device removal locking prevents it from
-+	 * being put back online at this point.
-+	 *
-+	 * Unbind the driver from the processor device and detach it from the
-+	 * ACPI companion object.
-+	 */
-+	device_release_driver(pr->dev);
-+	acpi_unbind_one(pr->dev);
-+
-+	/* Clean up. */
-+	per_cpu(processor_device_array, pr->id) = NULL;
-+	try_offline_node(cpu_to_node(pr->id));
-+
-+	/* Remove the CPU. */
-+	get_online_cpus();
-+	arch_unregister_cpu(pr->id);
-+	acpi_unmap_lsapic(pr->id);
-+	put_online_cpus();
-+
-+ out:
-+	free_cpumask_var(pr->throttling.shared_cpu_map);
-+	kfree(pr);
-+}
-+
-+/*
-+ * The following ACPI IDs are known to be suitable for representing as
-+ * processor devices.
-+ */
-+static const struct acpi_device_id processor_device_ids[] = {
-+
-+	{ ACPI_PROCESSOR_OBJECT_HID, },
-+	{ ACPI_PROCESSOR_DEVICE_HID, },
-+
-+	{ }
-+};
-+
-+static struct acpi_scan_handler processor_handler = {
-+	.ids = processor_device_ids,
-+	.attach = acpi_processor_add,
-+	.detach = acpi_processor_remove,
-+	.hotplug = {
-+		.enabled = true,
-+	},
-+};
-+
-+void __init acpi_processor_init(void)
-+{
-+	acpi_scan_add_handler_with_hotplug(&processor_handler, "processor");
-+}
+ /* set maximum of physical nodes to 32 for expansibility */
 Index: linux-pm/drivers/acpi/scan.c
 ===================================================================
 --- linux-pm.orig/drivers/acpi/scan.c
 +++ linux-pm/drivers/acpi/scan.c
-@@ -2124,6 +2124,7 @@ int __init acpi_scan_init(void)
+@@ -27,6 +27,12 @@ extern struct acpi_device *acpi_root;
  
- 	acpi_pci_root_init();
- 	acpi_pci_link_init();
-+	acpi_processor_init();
- 	acpi_platform_init();
- 	acpi_lpss_init();
- 	acpi_csrt_init();
-Index: linux-pm/drivers/acpi/Makefile
-===================================================================
---- linux-pm.orig/drivers/acpi/Makefile
-+++ linux-pm/drivers/acpi/Makefile
-@@ -34,6 +34,7 @@ acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
- acpi-y				+= bus.o glue.o
- acpi-y				+= scan.o
- acpi-y				+= resource.o
-+acpi-y				+= acpi_processor.o
- acpi-y				+= processor_core.o
- acpi-y				+= ec.o
- acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
-Index: linux-pm/include/acpi/processor.h
-===================================================================
---- linux-pm.orig/include/acpi/processor.h
-+++ linux-pm/include/acpi/processor.h
-@@ -6,6 +6,10 @@
- #include <linux/thermal.h>
- #include <asm/acpi.h>
+ #define ACPI_IS_ROOT_DEVICE(device)    (!(device)->parent)
  
-+#define ACPI_PROCESSOR_CLASS		"processor"
-+#define ACPI_PROCESSOR_DEVICE_NAME	"Processor"
-+#define ACPI_PROCESSOR_DEVICE_HID	"ACPI0007"
++/*
++ * If set, devices will be hot-removed even if they cannot be put offline
++ * gracefully (from the kernel's standpoint).
++ */
++bool acpi_force_hot_remove;
 +
- #define ACPI_PROCESSOR_BUSY_METRIC	10
+ static const char *dummy_hid = "device";
  
- #define ACPI_PROCESSOR_MAX_POWER	8
-@@ -207,6 +211,7 @@ struct acpi_processor {
- 	struct acpi_processor_throttling throttling;
- 	struct acpi_processor_limit limit;
- 	struct thermal_cooling_device *cdev;
-+	struct device *dev; /* Processor device. */
- };
+ static LIST_HEAD(acpi_device_list);
+@@ -120,6 +126,59 @@ acpi_device_modalias_show(struct device
+ }
+ static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
  
- struct acpi_processor_errata {
-Index: linux-pm/drivers/base/cpu.c
-===================================================================
---- linux-pm.orig/drivers/base/cpu.c
-+++ linux-pm/drivers/base/cpu.c
-@@ -13,11 +13,21 @@
- #include <linux/gfp.h>
- #include <linux/slab.h>
- #include <linux/percpu.h>
-+#include <linux/acpi.h>
- 
- #include "base.h"
- 
- static DEFINE_PER_CPU(struct device *, cpu_sys_devices);
- 
-+static int cpu_subsys_match(struct device *dev, struct device_driver *drv)
++static acpi_status acpi_bus_offline_companions(acpi_handle handle, u32 lvl,
++					       void *data, void **ret_p)
 +{
-+	/* ACPI style match is the only one that may succeed. */
-+	if (acpi_driver_match_device(dev, drv))
-+		return 1;
++	struct acpi_device *device = NULL;
++	struct acpi_device_physical_node *pn;
++	acpi_status status = AE_OK;
 +
-+	return 0;
++	if (acpi_bus_get_device(handle, &device))
++		return AE_OK;
++
++	mutex_lock(&device->physical_node_lock);
++
++	list_for_each_entry(pn, &device->physical_node_list, node) {
++		int ret;
++
++		ret = device_offline(pn->dev);
++		if (acpi_force_hot_remove)
++			continue;
++
++		if (ret < 0) {
++			status = AE_ERROR;
++			break;
++		}
++		pn->put_online = !ret;
++	}
++
++	mutex_unlock(&device->physical_node_lock);
++
++	return status;
 +}
 +
- #ifdef CONFIG_HOTPLUG_CPU
- static int cpu_subsys_online(struct device *dev)
++static acpi_status acpi_bus_online_companions(acpi_handle handle, u32 lvl,
++					      void *data, void **ret_p)
++{
++	struct acpi_device *device = NULL;
++	struct acpi_device_physical_node *pn;
++
++	if (acpi_bus_get_device(handle, &device))
++		return AE_OK;
++
++	mutex_lock(&device->physical_node_lock);
++
++	list_for_each_entry(pn, &device->physical_node_list, node)
++		if (pn->put_online) {
++			device_online(pn->dev);
++			pn->put_online = false;
++		}
++
++	mutex_unlock(&device->physical_node_lock);
++
++	return AE_OK;
++}
++
+ static int acpi_scan_hot_remove(struct acpi_device *device)
  {
-@@ -76,6 +86,7 @@ static DEVICE_ATTR(release, S_IWUSR, NUL
- struct bus_type cpu_subsys = {
- 	.name = "cpu",
- 	.dev_name = "cpu",
-+	.match = cpu_subsys_match,
- #ifdef CONFIG_HOTPLUG_CPU
- 	.online = cpu_subsys_online,
- 	.offline = cpu_subsys_offline,
+ 	acpi_handle handle = device->handle;
+@@ -136,10 +195,33 @@ static int acpi_scan_hot_remove(struct a
+ 		return -EINVAL;
+ 	}
+ 
++	lock_device_hotplug();
++
++	status = acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
++				     NULL, acpi_bus_offline_companions, NULL,
++				     NULL);
++	if (ACPI_SUCCESS(status) || acpi_force_hot_remove)
++		status = acpi_bus_offline_companions(handle, 0, NULL, NULL);
++
++	if (ACPI_FAILURE(status) && !acpi_force_hot_remove) {
++		acpi_bus_online_companions(handle, 0, NULL, NULL);
++		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
++				    acpi_bus_online_companions, NULL, NULL,
++				    NULL);
++
++		unlock_device_hotplug();
++
++		put_device(&device->dev);
++		return -EBUSY;
++	}
++
+ 	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+ 		"Hot-removing device %s...\n", dev_name(&device->dev)));
+ 
+ 	acpi_bus_trim(device);
++
++	unlock_device_hotplug();
++
+ 	/* Device node has been unregistered. */
+ 	put_device(&device->dev);
+ 	device = NULL;
+@@ -236,6 +318,7 @@ static void acpi_scan_bus_device_check(a
+ 	int error;
+ 
+ 	mutex_lock(&acpi_scan_lock);
++	lock_device_hotplug();
+ 
+ 	acpi_bus_get_device(handle, &device);
+ 	if (device) {
+@@ -259,6 +342,7 @@ static void acpi_scan_bus_device_check(a
+ 		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
+ 
+  out:
++	unlock_device_hotplug();
+ 	acpi_evaluate_hotplug_ost(handle, ost_source, ost_code, NULL);
+ 	mutex_unlock(&acpi_scan_lock);
+ }
+Index: linux-pm/drivers/acpi/sysfs.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/sysfs.c
++++ linux-pm/drivers/acpi/sysfs.c
+@@ -780,6 +780,33 @@ void acpi_sysfs_add_hotplug_profile(stru
+ 	pr_err(PREFIX "Unable to add hotplug profile '%s'\n", name);
+ }
+ 
++static ssize_t force_remove_show(struct kobject *kobj,
++				 struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d\n", !!acpi_force_hot_remove);
++}
++
++static ssize_t force_remove_store(struct kobject *kobj,
++				  struct kobj_attribute *attr,
++				  const char *buf, size_t size)
++{
++	bool val;
++	int ret;
++
++	ret = strtobool(buf, &val);
++	if (ret < 0)
++		return ret;
++
++	lock_device_hotplug();
++	acpi_force_hot_remove = val;
++	unlock_device_hotplug();
++	return size;
++}
++
++static const struct kobj_attribute force_remove_attr =
++	__ATTR(force_remove, S_IRUGO | S_IWUSR, force_remove_show,
++	       force_remove_store);
++
+ int __init acpi_sysfs_init(void)
+ {
+ 	int result;
+@@ -789,6 +816,10 @@ int __init acpi_sysfs_init(void)
+ 		return result;
+ 
+ 	hotplug_kobj = kobject_create_and_add("hotplug", acpi_kobj);
++	result = sysfs_create_file(hotplug_kobj, &force_remove_attr.attr);
++	if (result)
++		return result;
++
+ 	result = sysfs_create_file(acpi_kobj, &pm_profile_attr.attr);
+ 	return result;
+ }
+Index: linux-pm/drivers/acpi/internal.h
+===================================================================
+--- linux-pm.orig/drivers/acpi/internal.h
++++ linux-pm/drivers/acpi/internal.h
+@@ -47,6 +47,8 @@ void acpi_memory_hotplug_init(void);
+ static inline void acpi_memory_hotplug_init(void) {}
+ #endif
+ 
++extern bool acpi_force_hot_remove;
++
+ void acpi_sysfs_add_hotplug_profile(struct acpi_hotplug_profile *hotplug,
+ 				    const char *name);
+ int acpi_scan_add_handler_with_hotplug(struct acpi_scan_handler *handler,
+Index: linux-pm/Documentation/ABI/testing/sysfs-firmware-acpi
+===================================================================
+--- linux-pm.orig/Documentation/ABI/testing/sysfs-firmware-acpi
++++ linux-pm/Documentation/ABI/testing/sysfs-firmware-acpi
+@@ -44,6 +44,16 @@ Description:
+ 		or 0 (unset).  Attempts to write any other values to it will
+ 		cause -EINVAL to be returned.
+ 
++What:		/sys/firmware/acpi/hotplug/force_remove
++Date:		May 2013
++Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++Description:
++		The number in this file (0 or 1) determines whether (1) or not
++		(0) the ACPI subsystem will allow devices to be hot-removed even
++		if they cannot be put offline gracefully (from the kernel's
++		viewpoint).  That number can be changed by writing a boolean
++		value to this file.
++
+ What:		/sys/firmware/acpi/interrupts/
+ Date:		February 2008
+ Contact:	Len Brown <lenb@kernel.org>
 
