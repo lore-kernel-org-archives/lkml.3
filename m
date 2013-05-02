@@ -1,51 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110Ab3EBLPZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 07:15:25 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:65129 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751746Ab3EBLPX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 07:15:23 -0400
-From: Laurent Navet <laurent.navet@gmail.com>
-To: paulz@synopsys.com, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Laurent Navet <laurent.navet@gmail.com>
-Subject: [PATCH] staging: dwc2: use devm_ioremap_resource()
-Date: Thu,  2 May 2013 13:23:17 +0200
-Message-Id: <1367493798-32354-1-git-send-email-laurent.navet@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1757211Ab3EBLVX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 07:21:23 -0400
+Received: from mail.nanl.de ([217.115.11.12]:40120 "EHLO mail.nanl.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752824Ab3EBLVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 07:21:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1305021241040.3972@ionos>
+References: <20522420.158691367384219315.JavaMail.weblogic@epml17>
+ <CAOiHx=mBPHmDse4EwL-+Fgmpz0=XhcgF_0nWdyvErFO4NU7E0Q@mail.gmail.com> <alpine.LFD.2.02.1305021241040.3972@ionos>
+From: Jonas Gorski <jogo@openwrt.org>
+Date: Thu, 2 May 2013 13:20:56 +0200
+Message-ID: <CAOiHx=mA-htk_2daeE9WpbEVV9YLvfLc1NYZZR=JeDdibchCnw@mail.gmail.com>
+Subject: Re: mips; boot fail after merge 3.9+
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: eunb.song@samsung.com, "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace a call to deprecated devm_request_and_ioremap by devm_ioremap_resource.
+On Thu, May 2, 2013 at 12:42 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Does the patch below fix your issue ?
 
-Found with coccicheck and this semantic patch:
- scripts/coccinelle/api/devm_request_and_ioremap.cocci.
+Does not work for me either. I don't even have SMP enabled, so this
+codepath isn't taken for me at all.
 
-Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
----
- drivers/staging/dwc2/pci.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/dwc2/pci.c b/drivers/staging/dwc2/pci.c
-index 69c65eb..407e021 100644
---- a/drivers/staging/dwc2/pci.c
-+++ b/drivers/staging/dwc2/pci.c
-@@ -134,9 +134,9 @@ static int dwc2_driver_probe(struct pci_dev *dev,
- 	pci_set_power_state(dev, PCI_D0);
- 
- 	hsotg->dev = &dev->dev;
--	hsotg->regs = devm_request_and_ioremap(&dev->dev, &dev->resource[0]);
--	if (!hsotg->regs)
--		return -ENOMEM;
-+	hsotg->regs = devm_ioremap_resource(&dev->dev, &dev->resource[0]);
-+	if (IS_ERR(hsotg->regs))
-+		return PTR_ERR(hsotg->regs);
- 
- 	dev_dbg(&dev->dev, "mapped PA %08lx to VA %p\n",
- 		(unsigned long)pci_resource_start(dev, 0), hsotg->regs);
--- 
-1.7.10.4
-
+Jonas
