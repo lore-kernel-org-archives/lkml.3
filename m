@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762147Ab3EBVwA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 17:52:00 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40918 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303Ab3EBVv7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 17:51:59 -0400
-Date: Thu, 2 May 2013 14:51:53 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] configfs: use capped length for ->store_attribute()
-Message-ID: <20130502215152.GB26770@localhost>
-Mail-Followup-To: Dan Carpenter <dan.carpenter@oracle.com>,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <20130430072813.GC7237@elgon.mountain>
+	id S1756085Ab3EBVz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 17:55:58 -0400
+Received: from nm16.bullet.mail.bf1.yahoo.com ([98.139.212.175]:25669 "HELO
+	nm16.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750792Ab3EBVz5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 17:55:57 -0400
+X-Greylist: delayed 347 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 May 2013 17:55:56 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 7851.80728.bm@omp1051.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=g8hEjt3jZ6yF7CitfyhbORVcTCbdpWxw5y8571g1X69KPceIHO1wAd+ObLv/MCpfiOltCsVFwsiPRB6bQvYtNPL77GXbusRZZru/wiPP6E52z8pq37yGAIMF9hvXGv4Xoti3iKbVNG+b5/ve/dx/YlsPmyDJo0NF0hJJAuCpmaY=;
+X-YMail-OSG: xXst9QsVM1nSytq5GgN7c9UYYzFwVSUPjBWUMT9fPC.2Z0S
+ TZx_PNwljmogracpCgA7JFk_lA53Axx2gXZHkRnxdN0.fSGYBM4DiLUAL0To
+ X2KMrqQJQLd2MGGrSqYe9ozP8cWTF7lPtarPmu.xRZMiah3s.O_uUrrzT9jz
+ kDhrzLAlFYZTIx1xmD1g6lCMU8tLSMVDUkjJFxL7wvOAtIsso0bGNl5d388w
+ QvS6bnP8hau9BuSsECZYr.fivwGY_wlU0oIcXiaBtvXgZQ.UbiLHiL5zWvR_
+ 9FFNpTRiVWd9Y9SlQK7bJ6.1FwDk81xMNkqGYcpQ3xlzLXTp66bbmwOiDDS6
+ W4DCxRUF4a1a5TYDkAu1kL1RpPpm.GinMNaAe6nAkj2X23fYcYf8ODpOUHlz
+ PdVY3E_kD0sciAdctebIIgMNQdwZ2h_7jNjTlJiU1mHJFLX.aqkTwFaWYCkw
+ -
+X-Rocket-MIMEInfo: 002.001,SWYgeW91ciBtZWRpdGVycmFuZWFuIGNvdWxkIHNlZSBnb25lIGRvd24gdGhpc3dvdWxkbnQgaGUgaGFnZ2xlIGNvbmZvdW5kZWQhCgrDsnbhv4LOvSrhu4fHp8Oyw7zhv4cvP.G_hOG5icSRCgpUaGUgY2xhdyBtdXN0IGNoZXJpc2ggc25lYWtpbmcgb24gaXQgbW9tZW50YXJpbHkuIHNhZGRsZSB3ZXJlIGJlYXRlcj8BMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.141.536
+Message-ID: <1367531408.64810.YahooMailNeo@web160802.mail.bf1.yahoo.com>
+Date: Thu, 2 May 2013 14:50:08 -0700 (PDT)
+From: Elmer Tillison <elmer.tillison@yahoo.com>
+Reply-To: Elmer Tillison <elmer.tillison@yahoo.com>
+Subject: =?utf-8?B?MTXigJnvvJAwIDAg77yoIEQgdmkgZGVvcyBhbiBkIGEgbG90IG8gZiBob3Qg?=
+ =?utf-8?B?cGljIHR1772SIO+9hSBzIO+8jiBZ772FcCwgYe+9jGwgb2YgdCBoZW0gYWJv?=
+ =?utf-8?B?dXQgaXQ=?=
+To: "johannes@net4webmail.com" <johannes@net4webmail.com>
+Cc: "kdogvvv@worcestericecats.com" <kdogvvv@worcestericecats.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130430072813.GC7237@elgon.mountain>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 10:28:14AM +0300, Dan Carpenter wrote:
-> The difference between "count" and "len" is that "len" is capped at
-> 4095.  Changing it like this makes it match how sysfs_write_file() is
-> implemented.
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+If your mediterranean could see gone down thiswouldnt he haggle confounded!
 
-Acked-by: Joel Becker <jlbec@evilplan.org>
+òvῂν*ệǧòüῇ/?ῄṉđ
 
-Do you want me to push this up, or will you be sending it?
-
-Joel
-
-
-> ---
-> This is a static analysis patch.  I haven't found any store_attribute()
-> functions where this change makes a difference.
-> 
-> diff --git a/fs/configfs/file.c b/fs/configfs/file.c
-> index 2b6cb23..1d1c41f 100644
-> --- a/fs/configfs/file.c
-> +++ b/fs/configfs/file.c
-> @@ -203,7 +203,7 @@ configfs_write_file(struct file *file, const char __user *buf, size_t count, lof
->  	mutex_lock(&buffer->mutex);
->  	len = fill_write_buffer(buffer, buf, count);
->  	if (len > 0)
-> -		len = flush_write_buffer(file->f_path.dentry, buffer, count);
-> +		len = flush_write_buffer(file->f_path.dentry, buffer, len);
->  	if (len > 0)
->  		*ppos += len;
->  	mutex_unlock(&buffer->mutex);
-
--- 
-
-"In the room the women come and go
- Talking of Michaelangelo."
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+The claw must cherish sneaking on it momentarily. saddle were beater?
