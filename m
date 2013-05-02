@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763824Ab3ECW6P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 18:58:15 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:37031 "EHLO e7.ny.us.ibm.com"
+	id S1763875Ab3ECW63 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 18:58:29 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:54673 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756855Ab3ECW6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 18:58:14 -0400
-Date: Thu, 2 May 2013 12:52:33 -0700
+	id S1763861Ab3ECW61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 18:58:27 -0400
+Date: Thu, 2 May 2013 10:08:57 -0700
 From: Matt Helsley <matthltc@linux.vnet.ibm.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Colin Cross <ccross@android.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        arve@android.com, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Matthew Helsley <matthltc@us.ibm.com>
-Subject: Re: [PATCH 07/10] futex: use freezable blocking call
-Message-ID: <20130502195233.GC24627@us.ibm.com>
-References: <1367271946-7239-1-git-send-email-ccross@android.com>
- <1367271946-7239-8-git-send-email-ccross@android.com>
- <517EF9AB.8080508@linux.intel.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] pagemap: Introduce the /proc/PID/pagemap2 file
+Message-ID: <20130502170857.GB24627@us.ibm.com>
+References: <51669E5F.4000801@parallels.com>
+ <51669EA5.20209@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <517EF9AB.8080508@linux.intel.com>
+In-Reply-To: <51669EA5.20209@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050322-5806-0000-0000-000020FF0CA7
+x-cbid: 13050322-9360-0000-0000-00001205EAC7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 03:52:27PM -0700, Darren Hart wrote:
-> Colin,
-> 
-> I don't know anything about when or when not to use freezable*, and I
-> suspect that may be true for others as well. A more complete
-> description of why it's acceptable here in the commit log might help
-> expedite acceptance.
-> 
-> 
-> Matt,
-> 
-> I have a vague memory of discussing something similar to this with you.
-> Do you see any potential problems here?
+On Thu, Apr 11, 2013 at 03:29:41PM +0400, Pavel Emelyanov wrote:
+> This file is the same as the pagemap one, but shows entries with bits
+> 55-60 being zero (reserved for future use). Next patch will occupy one
+> of them.
 
-Re: vague memories: We discussed futexes in the context of the old
-checkpoint/restart patch series (<= 2.6.32).
+This approach doesn't scale as well as it could. As best I can see
+CRIU would do:
 
-This change looks correct to me.
+for each vma in /proc/<pid>/smaps
+	for each page in /proc/<pid>/pagemap2
+		if soft dirty bit
+			copy page
 
-> --
-> Darren
-> 
-> On 04/29/2013 02:45 PM, Colin Cross wrote:
-> > Avoid waking up every thread sleeping in a futex_wait call during
-> > suspend and resume by calling a freezable blocking call.
+(possibly with pfn checks to avoid copying the same page mapped in
+multiple locations..)
 
-(in addition to suspend/resume: freeze/thaw via the cgroup freezer.
-I'm going to call it freeze/thaw since that should cover both cases..)
+However, if soft dirty bit changes could be queued up (from say the
+fault handler and page table ops that map/unmap pages) and accumulated
+in something like an interval tree it could be something like:
 
-Here's my shot at explaining what I *think* the commit is supposed fix:
+for each range of changed pages
+	for each page in range
+		copy page
 
-I imagine that before this patch on a highly-contended futex there
-could be a thundering herd during freeze/thaw -- the wakeups are
-*likely* to be painful because lots of tasks could be woken from the
-schedule() call by the freezer only to find that the futex state hasn't
-changed.
+IOW something that scales with the number of changed pages rather
+than the number of mapped pages.
 
-With this change the freezer won't wake these tasks up because the
-FREEZER_SKIP flag is set while in the schedule() call and thus the
-thundering herd won't be triggered by the freezer.
+So I wonder if CRIU would abandon pagemap2 in the future for something
+like this.
 
 Cheers,
 	-Matt Helsley
