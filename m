@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758426Ab3EBPKT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 11:10:19 -0400
-Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:37648 "EHLO
-	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753159Ab3EBPKR (ORCPT
+	id S1758743Ab3EBPK6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 11:10:58 -0400
+Received: from a9-66.smtp-out.amazonses.com ([54.240.9.66]:45651 "EHLO
+	a9-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753159Ab3EBPK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 11:10:17 -0400
-Date: Thu, 2 May 2013 15:10:15 +0000
+	Thu, 2 May 2013 11:10:57 -0400
+Date: Thu, 2 May 2013 15:10:55 +0000
 From: Christoph Lameter <cl@linux.com>
 X-X-Sender: cl@gentwo.org
-To: Han Pingtian <hanpt@linux.vnet.ibm.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        penberg@kernel.org, rientjes@google.com, linux-mm@kvack.org
+To: Will Huck <will.huckk@gmail.com>
+cc: Han Pingtian <hanpt@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, mhocko@suse.cz,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org
 Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
-In-Reply-To: <20130502105637.GD4441@localhost.localdomain>
-Message-ID: <0000013e65cb32b3-047cd2d6-dfc8-41d2-a792-9b398f9a1baf-000000@email.amazonses.com>
-References: <20130424044848.GI2672@localhost.localdomain> <20130424094732.GB31960@dhcp22.suse.cz> <0000013e3cb0340d-00f360e3-076b-478e-b94c-ddd4476196ce-000000@email.amazonses.com> <20130425060705.GK2672@localhost.localdomain>
- <0000013e427023d7-9456c313-8654-420c-b85a-cb79cc3c4ffc-000000@email.amazonses.com> <20130426062436.GB4441@localhost.localdomain> <0000013e46cba821-d5c54c99-3b5c-4669-9a54-9fb8f4ee516f-000000@email.amazonses.com> <20130427112418.GC4441@localhost.localdomain>
- <0000013e5645b356-09aa6796-0a95-40f1-8ec5-6e2e3d0c434f-000000@email.amazonses.com> <20130429145711.GC1172@dhcp22.suse.cz> <20130502105637.GD4441@localhost.localdomain>
+In-Reply-To: <5180883F.3040003@gmail.com>
+Message-ID: <0000013e65cbcdc9-9a394918-ea30-4d91-97f9-77af82fcda3b-000000@email.amazonses.com>
+References: <alpine.DEB.2.02.1304161315290.30779@chino.kir.corp.google.com> <20130417094750.GB2672@localhost.localdomain> <20130417141909.GA24912@dhcp22.suse.cz> <20130418101541.GC2672@localhost.localdomain> <20130418175513.GA12581@dhcp22.suse.cz>
+ <20130423131558.GH8001@dhcp22.suse.cz> <20130424044848.GI2672@localhost.localdomain> <20130424094732.GB31960@dhcp22.suse.cz> <0000013e3cb0340d-00f360e3-076b-478e-b94c-ddd4476196ce-000000@email.amazonses.com> <20130425060705.GK2672@localhost.localdomain>
+ <0000013e42332267-0b7fb3c0-9150-4058-8850-ae094b455b15-000000@email.amazonses.com> <517B8A5D.1030308@gmail.com> <0000013e56450fd2-c7a854d1-ff7f-47a7-a235-30721fead5e0-000000@email.amazonses.com> <5180883F.3040003@gmail.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.05.02-54.240.9.42
+X-SES-Outgoing: 2013.05.02-54.240.9.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 May 2013, Han Pingtian wrote:
+On Wed, 1 May 2013, Will Huck wrote:
 
-> Looks like "ibmvscsi" + "slub" can trigger this problem.
+> > Age refers to the mininum / avg / maximum age of the object in ticks.
+>
+> Why need monitor the age of the object?
 
-And the next merge of the slab-next tree will also cause SLAB to trigger
-this issue. I would like to have this fixes. The slab allocator purpose is
-to servr objects that are a fraction of a page and not objects that are
-larger than the maximum allowed sizes of the page allocator.
+
+Will give you some idea as to when these objects were created.
+
 
