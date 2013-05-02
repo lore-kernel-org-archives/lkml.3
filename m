@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757675Ab3EBDmc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 23:42:32 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36971 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845Ab3EBDma (ORCPT
+	id S1750906Ab3EBEbn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 00:31:43 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:42169 "EHLO
+	homiemail-a57.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750766Ab3EBEbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 23:42:30 -0400
-Date: Thu, 2 May 2013 04:42:26 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH] linkage.h: fix build breakage due to symbol prefix
- handling
-Message-ID: <20130502034226.GA27379@ZenIV.linux.org.uk>
-References: <1367442257-7897-1-git-send-email-james.hogan@imgtec.com>
- <20130501214335.GB11630@ZenIV.linux.org.uk>
+	Thu, 2 May 2013 00:31:41 -0400
+Message-ID: <5181EC2B.2030405@shealevy.com>
+Date: Thu, 02 May 2013 00:31:39 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130501214335.GB11630@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Linux 3.8.9 Build Failure in user_namespace.c
+References: <af928063831e8eabf1236448484a8a9f@shealevy.com> <20130429205628.GA20607@austin.hallyn.com>
+In-Reply-To: <20130429205628.GA20607@austin.hallyn.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 10:43:35PM +0100, Al Viro wrote:
+On 4/29/13 4:56 PM, Serge E. Hallyn wrote:
+> Quoting shea@shealevy.com (shea@shealevy.com):
+>> Hi All,
+>>
+>> I just hit the following error trying to build 3.8.9:
+>>
+>> /nix/store/vkvwpn6f7iff6zqrq2d9z2a1945pcsza-linux-3.8.9-source/kernel/user_namespace.c:
+>> In function 'map_write':
+>> /nix/store/vkvwpn6f7iff6zqrq2d9z2a1945pcsza-linux-3.8.9-source/kernel/user_namespace.c:582:2:
+>> error: implicit declaration of function 'file_ns_capable'
+>> [-Werror=implicit-function-declaration]
+>> cc1: some warnings being treated as errors
+>>
+>> Below is my .config, below that the build log.
+> I'm looking at 3.9.  file_ns_capable() is declared in capability.h, which gets
+> included into user_namespace.c through cred.h.  I did also try building with
+> CONFIG_SECURITY=n and CONFIG_USER_NS=y as you have it, but build succeeded,
+> as I would expect given how it is included.
 
-> Oh, hell...  Guys, my deep apologies - what happened is that this thing
-> has been caught in -next, rebase done here (on top of Rusty's commit)
-> and *not* pushed to linux-next.
+It turned out to be a commit Greg missed in 3.8.9, it was fixed in 3.8.10.
 
-Curiouser and curiouser...  FWIW, what I have is
-$ cat .git/refs/heads/linkage-fixed
-898429c05290b8c05d035199f65a3bb034b34bb7
-$ cat .git/refs/heads/remotes/next
-898429c05290b8c05d035199f65a3bb034b34bb7
-both being the aforementioned rebase;  I really wonder WTF had I been doing
-that could've produced that...  How does git deal with that sort of
-ambiguities?
-$ git log remotes/next | head -3
-commit 898429c05290b8c05d035199f65a3bb034b34bb7
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Tue Mar 19 14:25:51 2013 -0400
-$ git log remotes/next/master | head -3
-commit d7c35d45ce991ae01b6008abef120173fc9c3814
-Author: Stephen Rothwell <sfr@canb.auug.org.au>
-Date:   Tue Apr 30 16:26:41 2013 +1000
-(the latter, of course, coming from remote for linux-next mirror)
+> Do you have any custom patches applied by chance?
+>
+> -serge
+
