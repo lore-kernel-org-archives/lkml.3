@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759822Ab3EBOdX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 10:33:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17420 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758893Ab3EBOdV (ORCPT
+	id S1760081Ab3EBOd5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 10:33:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39897 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759740Ab3EBOd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 10:33:21 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=P6hlpVgoKeYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=ayLHJbDuenQA:10 a=Vyq7-WjqqOR9Jb61Tt0A:9 a=QEXdDO2ut3YA:10 a=3qSQYlg-AHRLqm-h:21 a=P0vd1kVwOOQwZ-Dh:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1367505199.30667.132.camel@gandalf.local.home>
-Subject: Re: [PATCH RT v2] x86/mce: Defer mce wakeups to threads for
- PREEMPT_RT
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Thu, 02 May 2013 10:33:19 -0400
-In-Reply-To: <20130426084137.GC20927@linutronix.de>
-References: <1365705214.9609.58.camel@gandalf.local.home>
-	 <20130426084137.GC20927@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 2 May 2013 10:33:56 -0400
+Date: Thu, 2 May 2013 16:33:52 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Jonas Gorski <jogo@openwrt.org>, eunb.song@samsung.com,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] MIPS: Enable interrupts in arch_cpu_idle()
+In-Reply-To: <CAOiHx=mA-htk_2daeE9WpbEVV9YLvfLc1NYZZR=JeDdibchCnw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1305021527010.3972@ionos>
+References: <20522420.158691367384219315.JavaMail.weblogic@epml17> <CAOiHx=mBPHmDse4EwL-+Fgmpz0=XhcgF_0nWdyvErFO4NU7E0Q@mail.gmail.com> <alpine.LFD.2.02.1305021241040.3972@ionos> <CAOiHx=mA-htk_2daeE9WpbEVV9YLvfLc1NYZZR=JeDdibchCnw@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-26 at 10:41 +0200, Sebastian Andrzej Siewior wrote:
-> * Steven Rostedt | 2013-04-11 14:33:34 [-0400]:
-> 
-> >As wait queue locks are notorious for long hold times, we can not
-> >convert them to raw_spin_locks without causing issues with -rt. But
-> >Thomas has created a "simple-wait" structure that uses raw spin locks
-> >which may have been a good fit.
-> >
-> >Unfortunately, wait queues are not the only issue, as the mce_notify_irq
-> >also does a schedule_work(), which grabs the workqueue spin locks that
-> >have the exact same issue.
-> 
-> mce_notify_irq() can use simple_waitqueue, no?
+commit cdbedc61c8 (mips: Use generic idle loop) broke MIPS as I did
+not realize that MIPS wants to invoke the wait instructions with
+interrupts enabled. Don't ask why that works correctly; Ralf suggested
+to get thoroughly drunk before even thinking about it. Looking sober
+at commit c65a5480 ([MIPS] Fix potential latency problem due to
+non-atomic cpu_wait) is not recommended.
 
-Yeah, and I went down that path.
+Enable interrupts in arch_cpu_idle() on mips to repair the issue.
 
-But it also schedules work, which has the issue.
+Reported-and-tested-by: Jonas Gorski <jogo@openwrt.org>
+Reported-by: EunBong Song <eunb.song@samsung.com>
+Booze-recommended-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-> The other issue is that mce_report_event() is scheduling a per-cpu
-> workqueue (mce_schedule_work) in case of a memory fault. This has the
-> same issue.
-
-Yeah, that looks like it can be an issue too. I wonder if we can use the
-same thread and use flags check what to do. Atomically set the flag for
-the function to perform, and then have the thread clear it before doing
-the function and only go to sleep when all flags are cleared.
-
--- Steve
-
-
+Index: linux-2.6/arch/mips/kernel/process.c
+===================================================================
+--- linux-2.6.orig/arch/mips/kernel/process.c
++++ linux-2.6/arch/mips/kernel/process.c
+@@ -50,13 +50,18 @@ void arch_cpu_idle_dead(void)
+ }
+ #endif
+ 
+-void arch_cpu_idle(void)
++static void smtc_idle_hook(void)
+ {
+ #ifdef CONFIG_MIPS_MT_SMTC
+ 	extern void smtc_idle_loop_hook(void);
+-
+ 	smtc_idle_loop_hook();
+ #endif
++}
++
++void arch_cpu_idle(void)
++{
++	local_irq_enable();
++	smtc_idle_hook();
+ 	if (cpu_wait)
+ 		(*cpu_wait)();
+ 	else
