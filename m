@@ -1,137 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab3EBKTP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:19:15 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:38569 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370Ab3EBKTO (ORCPT
+	id S1756556Ab3EBKUS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:20:18 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1911 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311Ab3EBKUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:19:14 -0400
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-pm@vger.kernel.org
-Cc: Zhang Rui <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, amit.kachhap@gmail.com,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH V2] thermal: exynos: Support for TMU regulator defined at device tree
-Date: Thu,  2 May 2013 15:48:57 +0530
-Message-Id: <1367489937-30725-1-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 2 May 2013 06:20:15 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 02 May 2013 03:17:25 -0700
+Message-ID: <51823DDA.7010103@nvidia.com>
+Date: Thu, 2 May 2013 19:20:10 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130403 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: [GIT PULL] Removal of GENERIC_GPIO
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TMU probe function now checks for a device tree defined regulator.
-For compatibility reasons it is allowed to probe driver even without
-this regulator defined.
+Hi Grant,
 
-Signed-off-by: Luk asz Majewski <l.majewski@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
----
+Here is the pull request for the GENERIC_GPIO removal. It is almost 
+certain that a few fixups will be necessary - while I don't have precise 
+patches, the following steps should ensure the state of the code is clean:
 
-Changes in V2:
-* Added log message in regulator_get failure as suggested by Sylwester.
-* Used IS_ERR for checking regulator pointer as suggested by Sylwester.
+* "git grep CONFIG_GENERIC_GPIO" should return 0 hits. Matches should be 
+replaced with CONFIG_GPIOLIB
+* "git grep '\bGENERIC_GPIO\b'" should return 1 hit in the Chinese 
+documentation. Selectors of GENERIC_GPIO should be turned into selectors 
+of GPIOLIB, while definitions of the option in architecture code should 
+be deleted.
 
-This patch is repost of the patch posted by Lukasz Majewski
-(https://patchwork.kernel.org/patch/2488211/). I have rebased this
-patch on top of my TMU re-structured patch series
-(http://lwn.net/Articles/548634/). Although I thought of handling
-regulator as one type of feature (newly added) but could not do
-so as regulator is a board/platform property and not SOC property so
-leaving the device tree to define and handle it.
+Please let me know if there is something more I can do to ease your task.
 
- .../devicetree/bindings/thermal/exynos-thermal.txt |    4 ++++
- drivers/thermal/samsung/exynos_tmu.c               |   19 +++++++++++++++++++
- 2 files changed, 23 insertions(+), 0 deletions(-)
+Thanks,
+Alex.
 
-diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-index 970eeba..ff62f7a 100644
---- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-+++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-@@ -14,6 +14,9 @@
- - interrupts : Should contain interrupt for thermal system
- - clocks : The main clock for TMU device
- - clock-names : Thermal system clock name
-+- vtmu-supply: This entry is optional and provides the regulator node supplying
-+		voltage to TMU. If needed this entry can be placed inside
-+		board/platform specific dts file.
- 
- Example 1):
- 
-@@ -25,6 +28,7 @@ Example 1):
- 		clocks = <&clock 383>;
- 		clock-names = "tmu_apbif";
- 		status = "disabled";
-+		vtmu-supply = <&tmu_regulator_node>;
- 	};
- 
- Example 2):
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 72446c9..b7c609a 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -32,6 +32,7 @@
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
- #include <linux/platform_device.h>
-+#include <linux/regulator/consumer.h>
- #include <linux/slab.h>
- #include <linux/workqueue.h>
- #include "exynos_thermal_common.h"
-@@ -52,6 +53,7 @@
-  * @clk: pointer to the clock structure.
-  * @temp_error1: fused value of the first point trim.
-  * @temp_error2: fused value of the second point trim.
-+ * @regulator: pointer to the TMU regulator structure.
-  * @reg_conf: pointer to structure to register with core thermal.
-  */
- struct exynos_tmu_data {
-@@ -65,6 +67,7 @@ struct exynos_tmu_data {
- 	struct mutex lock;
- 	struct clk *clk;
- 	u8 temp_error1, temp_error2;
-+	struct regulator *regulator;
- 	struct thermal_sensor_conf *reg_conf;
- };
- 
-@@ -501,10 +504,23 @@ static int exynos_map_dt_data(struct platform_device *pdev)
- 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
- 	struct exynos_tmu_platform_data *pdata = data->pdata;
- 	struct resource res;
-+	int ret;
- 
- 	if (!data)
- 		return -ENODEV;
- 
-+	/* Try enabling the regulator if found */
-+	data->regulator = devm_regulator_get(&pdev->dev, "vtmu");
-+	if (!IS_ERR(data->regulator)) {
-+		ret = regulator_enable(data->regulator);
-+		if (ret) {
-+			dev_err(&pdev->dev, "failed to enable vtmu\n");
-+			return ret;
-+		}
-+	} else {
-+		dev_info(&pdev->dev, "Regulator node (vtmu) not found\n");
-+	}
-+
- 	data->id = of_alias_get_id(pdev->dev.of_node, "tmuctrl");
- 	if (data->id < 0)
- 		data->id = 0;
-@@ -669,6 +685,9 @@ static int exynos_tmu_remove(struct platform_device *pdev)
- 
- 	clk_unprepare(data->clk);
- 
-+	if (!IS_ERR(data->regulator))
-+		regulator_disable(data->regulator);
-+
- 	platform_set_drvdata(pdev, NULL);
- 
- 	return 0;
--- 
-1.7.1
+The following changes since commit 10b38669d64c757cfd927e3820292c580ed70aae:
 
+   Merge tag 'for-linus-v3.9-rc4' of git://oss.sgi.com/xfs/xfs 
+(2013-03-19 15:17:40 -0700)
+
+are available in the git repository at:
+
+   git://github.com/Gnurou/linux.git for_grant
+
+for you to fetch changes up to f4c54050640e7afa4749875cf9b900d42db361c0:
+
+   gpio: update gpio Chinese documentation (2013-04-16 18:47:22 +0900)
+
+----------------------------------------------------------------
+Alexandre Courbot (18):
+       mips: remove redundant GENERIC_GPIO select
+       mips: loongson: use GPIO driver on CONFIG_GPIOLIB
+       mips: txx9: change GENERIC_GPIO to GPIOLIB
+       mips: alchemy: require gpiolib
+       arm: remove redundant GENERIC_GPIO selection
+       arm: plat-orion: use GPIO driver on CONFIG_GPIOLIB
+       unicore32: remove unneeded select GENERIC_GPIO
+       unicore32: default GENERIC_GPIO to false
+       powerpc: remove redundant GENERIC_GPIO selection
+       sh: replace CONFIG_GENERIC_GPIO by CONFIG_GPIOLIB
+       xtensa: remove explicit selection of GENERIC_GPIO
+       avr32: default GENERIC_GPIO to false
+       openrisc: default GENERIC_GPIO to false
+       mips: pnx833x: remove requirement for GENERIC_GPIO
+       m68k: coldfire: use gpiolib
+       blackfin: force use of gpiolib
+       Convert selectors of GENERIC_GPIO to GPIOLIB
+       Remove GENERIC_GPIO config option
+
+Chen Baozi (1):
+       gpio: update gpio Chinese documentation
+
+  Documentation/gpio.txt               | 10 +++++-----
+  Documentation/zh_CN/gpio.txt         |  8 ++++----
+  arch/alpha/Kconfig                   |  3 ---
+  arch/arm/Kconfig                     |  3 ---
+  arch/arm/plat-orion/Makefile         |  2 +-
+  arch/arm/plat-orion/gpio.c           |  2 +-
+  arch/arm64/Kconfig                   |  3 ---
+  arch/avr32/Kconfig                   |  3 ---
+  arch/blackfin/Kconfig                |  5 +----
+  arch/hexagon/Kconfig                 |  3 ---
+  arch/ia64/Kconfig                    |  3 ---
+  arch/m68k/Kconfig                    |  3 ---
+  arch/m68k/Kconfig.cpu                |  3 +--
+  arch/metag/Kconfig                   |  3 ---
+  arch/microblaze/Kconfig              |  3 ---
+  arch/mips/Kconfig                    | 10 +---------
+  arch/mips/loongson/common/Makefile   |  2 +-
+  arch/mips/txx9/generic/setup.c       |  2 +-
+  arch/openrisc/Kconfig                |  3 ---
+  arch/powerpc/Kconfig                 |  5 -----
+  arch/powerpc/platforms/40x/Kconfig   |  1 -
+  arch/powerpc/platforms/44x/Kconfig   |  1 -
+  arch/powerpc/platforms/85xx/Kconfig  |  1 -
+  arch/powerpc/platforms/86xx/Kconfig  |  3 ---
+  arch/powerpc/platforms/8xx/Kconfig   |  1 -
+  arch/powerpc/platforms/Kconfig       |  4 ----
+  arch/sh/Kconfig                      |  3 ---
+  arch/sh/boards/mach-sdk7786/Makefile |  2 +-
+  arch/sh/boards/mach-x3proto/Makefile |  2 +-
+  arch/sh/kernel/cpu/sh2a/Makefile     |  2 +-
+  arch/sh/kernel/cpu/sh3/Makefile      |  2 +-
+  arch/sh/kernel/cpu/sh4a/Makefile     |  2 +-
+  arch/sparc/Kconfig                   |  5 -----
+  arch/unicore32/Kconfig               |  6 +-----
+  arch/x86/Kconfig                     |  3 ---
+  arch/xtensa/Kconfig                  |  3 ---
+  arch/xtensa/configs/iss_defconfig    |  1 -
+  arch/xtensa/configs/s6105_defconfig  |  1 -
+  drivers/extcon/Kconfig               |  2 +-
+  drivers/gpio/Kconfig                 |  1 -
+  drivers/gpio/gpio-lpc32xx.c          |  2 +-
+  drivers/i2c/busses/Kconfig           |  4 ++--
+  drivers/i2c/muxes/Kconfig            |  2 +-
+  drivers/input/keyboard/Kconfig       |  6 +++---
+  drivers/input/misc/Kconfig           |  8 ++++----
+  drivers/input/mouse/Kconfig          |  2 +-
+  drivers/leds/Kconfig                 |  6 +++---
+  drivers/mtd/maps/Kconfig             |  2 +-
+  drivers/mtd/nand/Kconfig             |  2 +-
+  drivers/net/phy/Kconfig              |  2 +-
+  drivers/pinctrl/sh-pfc/Kconfig       | 26 +++++++++++++-------------
+  drivers/regulator/Kconfig            |  2 +-
+  drivers/spi/Kconfig                  |  8 ++++----
+  drivers/staging/android/Kconfig      |  2 +-
+  drivers/staging/iio/accel/Kconfig    |  2 +-
+  drivers/staging/iio/adc/Kconfig      |  2 +-
+  drivers/staging/iio/addac/Kconfig    |  2 +-
+  drivers/staging/iio/resolver/Kconfig |  4 ++--
+  drivers/staging/iio/trigger/Kconfig  |  2 +-
+  drivers/usb/otg/Kconfig              |  2 +-
+  drivers/video/Kconfig                |  2 +-
+  drivers/video/backlight/Kconfig      |  4 ++--
+  drivers/w1/masters/Kconfig           |  2 +-
+  include/linux/gpio.h                 |  6 +++---
+  64 files changed, 74 insertions(+), 153 deletions(-)
