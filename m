@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab3EBIWV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 04:22:21 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:52605 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754195Ab3EBIWP (ORCPT
+	id S1756104Ab3EBIYy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 04:24:54 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:65373 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab3EBIYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 04:22:15 -0400
-X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
-   d="scan'208";a="4146175"
-Message-ID: <51822235.80002@citrix.com>
-Date: Thu, 2 May 2013 10:22:13 +0200
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Thu, 2 May 2013 04:24:51 -0400
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen-blkback: allocate list of pending reqs in small chunks
-References: <1366983947-54578-1-git-send-email-roger.pau@citrix.com> <517A938C.6060703@citrix.com> <20130429183741.GE9431@phenom.dumpdata.com>
-In-Reply-To: <20130429183741.GE9431@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1367422015-23651-1-git-send-email-draviv@codeaurora.org>
+References: <1367422015-23651-1-git-send-email-draviv@codeaurora.org>
+From: Santosh Y <santoshsy@gmail.com>
+Date: Thu, 2 May 2013 13:54:30 +0530
+Message-ID: <CALMYJDv2wWuLHucARDMMoAE_zqDce6BDUMt6U4hAPT3=DiLMYA@mail.gmail.com>
+Subject: Re: [PATCH V4] scsi: ufs: add support for query requests
+To: Dolev Raviv <draviv@codeaurora.org>
+Cc: linux-scsi@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/04/13 20:37, Konrad Rzeszutek Wilk wrote:
-> On Fri, Apr 26, 2013 at 03:47:40PM +0100, David Vrabel wrote:
->> On 26/04/13 14:45, Roger Pau Monne wrote:
->>> Allocate pending requests in smaller chunks instead of allocating them
->>> all at the same time.
->>>
->>> This change also removes the global array of pending_reqs, it is no
->>> longer necessay.
->>>
->>> Variables related to the grant mapping have been grouped into a struct
->>> called "grant_page", this allows to allocate them in smaller chunks,
->>> and also improves memory locality.
->>>
->> [...]
->>> diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
->>> index afab208..2841c0f 100644
->>> --- a/drivers/block/xen-blkback/xenbus.c
->>> +++ b/drivers/block/xen-blkback/xenbus.c
->>> @@ -127,22 +128,53 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
->>>         blkif->free_pages_num = 0;
->>>         atomic_set(&blkif->persistent_gnt_in_use, 0);
->>>
->>> -       blkif->pending_reqs = kcalloc(XEN_BLKIF_REQS,
->>> -                                     sizeof(blkif->pending_reqs[0]),
->>> -                                     GFP_KERNEL);
->>> -       if (!blkif->pending_reqs) {
->>> -               kmem_cache_free(xen_blkif_cachep, blkif);
->>> -               return ERR_PTR(-ENOMEM);
->>> -       }
->>>         INIT_LIST_HEAD(&blkif->pending_free);
->>> +
->>> +       pr_alert("sizeof req: %lu\n", sizeof(*req));
->>
->> Stray pr_alert() here.
->>
->> Looks good otherwise.
->>
->> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-> 
-> Roger, could you repost it please and also include Tested-by: Sander.. on it
-> please?
+> +
+> +/**
+> + * ufshcd_compose_upiu - form UFS Protocol Information Unit(UPIU)
+> + * @hba - UFS hba
+> + * @lrb - pointer to local reference block
+> + */
+> +static int ufshcd_compose_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
+> +{
+> +       u32 upiu_flags;
+> +       int ret = 0;
+> +
+> +       switch (lrbp->command_type) {
+> +       case UTP_CMD_TYPE_SCSI:
+>         case UTP_CMD_TYPE_DEV_MANAGE:
+> -               /* For query function implementation */
+> +               ufshcd_prepare_req_desc(lrbp, &upiu_flags);
+> +               if (lrbp->cmd && lrbp->command_type == UTP_CMD_TYPE_SCSI)
 
-Done, see v3.
+Sorry, probably missed it in the initial review. Here no need to check
+for 'lrbp->cmd'.
 
+> +                       ufshcd_prepare_utp_scsi_cmd_upiu(lrbp, upiu_flags);
+> +               else if (lrbp->cmd)
+
+no need to check here also
+
+> +                       ufshcd_prepare_utp_query_req_upiu(hba, lrbp,
+> +                                                               upiu_flags);
+> +               else {
+> +                       dev_err(hba->dev, "%s: Invalid UPIU request\n",
+> +                               __func__);
+> +                       ret = -EINVAL;
+> +               }
+
+remove this else part, this condition will never be true.
+
+>                 break;
+>         case UTP_CMD_TYPE_UFS:
+>                 /* For UFS native command implementation */
+> +               dev_err(hba->dev, "%s: UFS native command are not supported\n",
+> +                       __func__);
+> +               ret = -ENOTSUPP;
+> +               break;
+> +       default:
+> +               ret = -ENOTSUPP;
+> +               dev_err(hba->dev, "%s: unknown command type: 0x%x\n",
+> +                               __func__, lrbp->command_type);
+>                 break;
+>         } /* end of switch */
+> +
+> +       return ret;
+>  }
+>
+
+
+-- 
+~Santosh
