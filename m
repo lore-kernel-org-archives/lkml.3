@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932820Ab3EBS61 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:58:27 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:37111 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932358Ab3EBS6Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:58:25 -0400
-Message-ID: <5182B74E.8060909@linaro.org>
-Date: Thu, 02 May 2013 11:58:22 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1761200Ab3EBS7c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:59:32 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:49808 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760854Ab3EBS7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 14:59:31 -0400
+Message-ID: <5182B790.6090907@sgi.com>
+Date: Thu, 02 May 2013 11:59:28 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: Pavel Machek <pavel@ucw.cz>, Zoran Markovic <zoran.markovic@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
-        Benoit Goby <benoit@android.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [RFC PATCH] power: Add option to log time spent in suspend
-References: <1367360914-23389-1-git-send-email-zoran.markovic@linaro.org> <1367360914-23389-2-git-send-email-zoran.markovic@linaro.org> <20130501002929.GA20042@amd.pavel.ucw.cz> <CAMbhsRRisa15fH9AodepfRJUv6t6dipqb6CMbOOrtzVsMUCoxQ@mail.gmail.com> <20130502122747.GA22618@amd.pavel.ucw.cz> <CAMbhsRQ4tCQtSxA-5tqydKp-xQf1bnrsq7GNw5q0gk3NdPZyaA@mail.gmail.com>
-In-Reply-To: <CAMbhsRQ4tCQtSxA-5tqydKp-xQf1bnrsq7GNw5q0gk3NdPZyaA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: David Henningsson <david.henningsson@canonical.com>,
+        Stephen Warren <swarren@nvidia.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Russ Anderson <rja@sgi.com>
+Subject: Re: [PATCH]: x86_64, audio: Fix system panic when DMA > 40 bits
+References: <1367435048-66137-1-git-send-email-travis@sgi.com> <518205A9.1050409@canonical.com> <5182AE68.9010905@wwwdotorg.org>
+In-Reply-To: <5182AE68.9010905@wwwdotorg.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2013 11:29 AM, Colin Cross wrote:
-> On Thu, May 2, 2013 at 5:27 AM, Pavel Machek <pavel@ucw.cz> wrote:
+
+
+On 5/2/2013 11:20 AM, Stephen Warren wrote:
+> On 05/02/2013 12:20 AM, David Henningsson wrote:
+>> On 05/01/2013 09:04 PM, Mike Travis wrote:
+>>> The audio driver mistakenly allows 64 bit addresses to be created for
+>>> the audio driver on Nvidia GPUs.  Unfortunately, the hardware normally
+>>> only supports up to 40 bits of DMA.  This can cause system panics as
+>>> well as misdirected data when the address is > 40 bits as the upper
+>>> part the address is truncated.
 >>
->>> dmesg is not the solution, it's not a stable api, it would require
->>> constant parsing to make sure you didn't miss data before it fell out
->>> of the ringbuffer, and sched_clock often does not (and should not)
->>> tick during suspend, so printk times don't show the time spent
->>> suspended.
->> If timing info printed is invalid, that should be fixed.
-> It's not invalid, its just not measuring the time that is useful here.
->   printk is measuring something similar to (but not exactly the same
-> as) CLOCK_MONOTONIC, but this is measuring something similar to
-> CLOCK_BOOTTIME.
+>> Thanks for this patch. Stephen Warren, is this something you can
+>> confirm/deny, and do you know what range of hardware this actually
+>> applies to?
+> 
+> It's certainly plausible that the GPU's internal physical addresses are
+> less than a full 64-bits, and this probably affects PCI accesses too.
+> 
 
-One thing I'm curious about with this patch, since we measure and keep 
-track of suspend time in the timekeeping core, there may be enough 
-justification to adding this sort of debugging info the timekeeping core 
-itself.
+I haven't noticed any other problems with MMIOH accesses.  The
+problem of DMA32 addresses certainly affects us though audio is
+not a high priority on UV(*) except in specific applications (like
+Media Servers, etc.]  Accesses to the GPU and GPGPU are much more
+common.
 
-Although what is being tracked with this driver isn't just total time in 
-suspend, but looks like more of a logarithmic histogram of suspend 
-times. Is there any context you can provide as to why that particular 
-format was chosen (which would could be added to help improve the commit 
-message)?
-
-thanks
--john
-
+(* http://www.sgi.com/products/servers/uv/)
