@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933023Ab3EBTjb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 15:39:31 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:61266 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932368Ab3EBTj3 (ORCPT
+	id S933040Ab3EBTnc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 15:43:32 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:45826 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974Ab3EBTnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 15:39:29 -0400
-Message-ID: <5182C0EC.7040008@gmail.com>
-Date: Thu, 02 May 2013 21:39:24 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Thu, 2 May 2013 15:43:31 -0400
+Date: Thu, 2 May 2013 21:43:26 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
+        Borislav Petkov <bp@suse.de>, fengguang.wu@intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for
+ building working KVM guest kernels
+Message-ID: <20130502194326.GA3553@gmail.com>
+References: <20130501211011.GD4466@pd.tnic>
+ <alpine.DEB.2.02.1305011419020.20298@chino.kir.corp.google.com>
+ <20130501215604.GA15623@pd.tnic>
+ <alpine.DEB.2.02.1305011503200.3267@chino.kir.corp.google.com>
+ <20130501222850.GB15623@pd.tnic>
+ <alpine.DEB.2.02.1305011531320.8804@chino.kir.corp.google.com>
+ <20130501230254.GC15623@pd.tnic>
+ <51819F6C.1030201@zytor.com>
+ <20130502070633.GA26361@gmail.com>
+ <5182A300.9050603@zytor.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130502185322.GA29333@obsidianresearch.com> <201305022111.41043.arnd@arndb.de> <5182BFC6.3070709@gmail.com>
-In-Reply-To: <5182BFC6.3070709@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5182A300.9050603@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2013 09:34 PM, Sebastian Hesselbarth wrote:
-> On 05/02/2013 09:11 PM, Arnd Bergmann wrote:
->> On Thursday 02 May 2013, Jason Gunthorpe wrote:
->>>> +static struct of_device_id orion_irq_dt_ids[] __initconst = {
->>>> + { .compatible = "marvell,orion-mpic", .data = orion_of_init },
->>>> + { }
->>>
->>> Is there a strong reason to change the compatible string? Looks to me
->>> like either the new driver or the old driver will bind depending on
->>> what is in the machine description. No need for a new string?
->>>
->>
->> The compatible string should change if the binding changes in an
->> incomptible way, and we should try not to change it unless it's
->> fundamentally flawed.
->
-> Well, there is no _fundamental_ change in the binding syntax as it
-> is only reg, interrupts, and clocks. But there is a semantic change
-> in reg properties, as current orion irq controller wants the mask
-> registers (0x04,0x08) only while this also needs cause register
-> (0x00).
->
-> Nothing that couldn't be handled while moving Orion arch to irqchip
-> but if there are no further objections, I'd like to stick with the new
-> compatible string - also having orion-spic in mind.
 
-Taking Jason Gunthorpe's last reply, I will stick to the _old_
-compatible string and name the bridge irq handler as Jason suggested.
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-I will send a v2 soon.
+> > That should be possible here as well, driven by any weird randconfig 
+> > build failures that get found. Such a set of selects quickly 
+> > converges.
+> 
+> The problem is that it is a moving target.  We really need a 
+> dependency-resolving version of select.
 
-Sebastian
+Dependencies are always a moving target - sometimes config names change, 
+new dependencies come in.
+
+I've maintained a similar solution for years, and once the initial list of 
+selects has settled it's a low maintenance overhead thing.
+
+Thanks,
+
+	Ingo
