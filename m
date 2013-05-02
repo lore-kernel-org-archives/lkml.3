@@ -1,38 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379Ab3EBJR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 05:17:58 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:51572 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab3EBJR5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 05:17:57 -0400
-Date: Thu, 02 May 2013 05:17:27 -0400 (EDT)
-Message-Id: <20130502.051727.949429506738234701.davem@davemloft.net>
-To: bjorn@mork.no
-Cc: kaber@trash.net, torvalds@linux-foundation.org, hayeswang@realtek.com,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bhutchings@solarflare.com
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <87d2t9bvj1.fsf@nemi.mork.no>
-References: <20130502.041625.412316202038784117.davem@davemloft.net>
-	<20130502083619.GA22010@macbook.localnet>
-	<87d2t9bvj1.fsf@nemi.mork.no>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Thu, 02 May 2013 02:17:56 -0700 (PDT)
+	id S1756657Ab3EBJUD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 05:20:03 -0400
+Received: from mx7.zte.com.cn ([202.103.147.169]:57435 "EHLO zte.com.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751529Ab3EBJUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 05:20:00 -0400
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: artem.bityutskiy@linux.intel.com, cui.yunfeng@zte.com.cn,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        liu.dong3@zte.com.cn
+Subject: RE: Re: [PATCH] UBI: fix memory leak when use fastmap
+MIME-Version: 1.0
+X-KeepSent: 2D2AAAE7:DA66471C-48257B5F:002C2C42;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 6.5.6 March 06, 2007
+Message-ID: <OF2D2AAAE7.DA66471C-ON48257B5F.002C2C42-48257B5F.002EB4C8@zte.com.cn>
+From: wang.bo116@zte.com.cn
+Date: Thu, 2 May 2013 16:30:01 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-05-02 17:19:11,
+	Serialize complete at 2013-05-02 17:19:11
+Content-Type: text/plain; charset="US-ASCII"
+X-MAIL: mse02.zte.com.cn r429JS3R004432
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bjørn Mork <bjorn@mork.no>
-Date: Thu, 02 May 2013 11:06:42 +0200
+> Hi!
+> 
+> On Tue, Apr 16, 2013 at 10:53 AM,  <wang.bo116@zte.com.cn> wrote:
+> > Hello,
+> >         Sorry, there is still something wrong with the previous 
+patch's
+> > format, try to submit it again. When use ubi fastmap, there is a 
+memory
+> > leak which will make destroy_ai() fail to free the slab alloced in
+> > scan_fast(). The following patch fix this problem by use a temporary
+> > "ubi_attach_info" variable in scan_fast().
+> 
+> Thanks a lot for your patch!
+> 
+> Did you test it well?
+> We need to make sure that it does the right thing for the following 
+cases:
+> 1. fastmap disabled, attaching a non-fastmap volume
+> 1. fastmap disabled, attaching a fastmap volume
+> 3. fastmap enabled, attaching a non-fastmap volume
+> 4. fastmap enablled, attaching a fastmap volume
+> 
+> --
+> Thanks,
+> //richard
 
-> Adding the new netdev features will make it go from 1 to 2:
 
-We already had more than 31 feature bits before Patrick's
-changes, and I'm pretty sure this was the case when we added
-that ethtool API.
+Thanks for your advice. I consider this problem like this:
+1: if fastmap not config, ubi_attach() just call scan_all(ubi, ai, 0), 
+there is nothing changed, so there is all right.
+
+2: if fastmap config, and force_scan is 0, ubi_attach() will call 
+scan_fast(), when scan_fast() return, temp ai used in scan_fast() has been 
+free, and there will be two conditions:
+A: scan_fast() return UBI_NO_FASTMAP(may be flash is empty or attaching a 
+non-fastmap volume), all ubi_attach() need is to call scan_all(ubi, ai, 0) 
+to scan all blocks. 
+B: scan_fast() return UBI_BAD_FASTMAP, ubi_attach() first free ai used in 
+ubi_scan_fastmap(), then alloc a clean ai, at last call scan_all(ubi, ai, 
+0) to scan all blocks.
+
+3: if fastmap config, and force_scan is 1, just call scan_all(ubi, ai, 0).
+
+This patch pass the following cases(include attach and detach):
+1. fastmap config, flash is empty,fm_autoconvert is 1.
+2. fastmap config, flash is empty,fm_autoconvert is 0.
+3. fastmap config, attaching a fastmap volume
+4. fastmap config, attaching a bad fastmap volume
+5. fastmap config, attaching a non-fastmap volume
+6. fastmap not config, attaching a fastmap volume
+7. fastmap not config, attaching a non-fastmap volume
+8. fastmap not config, flash is empty.
+
+By the way, the problem may cause ubi_attach() fail after ubi detach when 
+CONFIG_DEBUG_VM config. 
+The reason is that ubi_attach() will alloc a slab cache, but the 
+kmem_cache_sanity_check() will find the slab cache is already exist(not 
+been free after last detach), so slab cache alloc fail, and ubi_attach() 
+fail, too.
+
+Thanks 
+--wangbo
