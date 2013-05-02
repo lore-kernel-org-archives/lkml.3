@@ -1,87 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab3EBKFZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 06:05:25 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:44242 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751041Ab3EBKFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 06:05:23 -0400
-Date: Thu, 2 May 2013 13:06:30 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Simon Horman <horms@verge.net.au>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-In-Reply-To: <20130502072623.GE7521@dyad.programming.kicks-ass.net>
-Message-ID: <alpine.LFD.2.00.1305021108430.1676@ja.ssi.bg>
-References: <1367290378-29224-1-git-send-email-horms@verge.net.au> <1367290378-29224-2-git-send-email-horms@verge.net.au> <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg> <20130430072944.GA13959@verge.net.au> <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
- <20130501091012.GB28253@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg> <20130501155501.GB7521@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
- <20130502072623.GE7521@dyad.programming.kicks-ass.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754931Ab3EBKGc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 06:06:32 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:58778 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab3EBKGb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 06:06:31 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <87sj27xxjr.fsf@rustcorp.com.au>
+References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org>
+ <BA2076A6-0688-4E5C-85F9-A9CA8FD75782@suse.de> <87obcyc9sh.fsf@rustcorp.com.au>
+ <336C59AA-D5D7-472E-A8DA-EEB413DD6C68@suse.de> <CAAHg+Hj0tySbzUGnoFE9ybVYP291B-i8-Ck1EkwD57t8yG5wwg@mail.gmail.com>
+ <C52CCDD4-D8FB-4AD6-B83D-3B5251A7A0F5@suse.de> <87sj27xxjr.fsf@rustcorp.com.au>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Thu, 2 May 2013 11:06:09 +0100
+Message-ID: <CAFEAcA9h8iSYfTBtf6n+Vk5sDtBR2yB2oafRxikHoWbKt0VRUw@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Alexander Graf <agraf@suse.de>,
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 1 May 2013 03:07, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> An emergency output is a reasonable idea, and this is a reasonable
+> implementation.  The question is practical: will it be used?  Because we
+> don't implement reasonable ideas which aren't going to be used.
 
-	Hello,
+If you think it fits reasonably into the virtio spec (ie doesn't
+implement things at the wrong level of the transport/backend
+abstraction) then we can implement it in QEMU, and I think it
+makes more sense to do this than to throw in a random extra
+serial port.
 
-On Thu, 2 May 2013, Peter Zijlstra wrote:
+To be actually useful we need to also specify something in
+the device tree to say "here is where you will find your
+emergency output and what it is".
 
-> On Wed, May 01, 2013 at 09:22:08PM +0300, Julian Anastasov wrote:
-> > > +extern int __cond_resched_rcu(void);
-> > > +
-> > > +#define cond_resched_rcu() ({			\
-> > > +	__might_sleep(__FILE__, __LINE__, 0);	\
-> > 
-> > 	I see your goal. But digging into __might_sleep()
-> > I see that rcu_sleep_check() will scream for the non-preempt
-> > case because we are under rcu_read_lock.
-> 
-> 
-> #ifdef CONFIG_PREEMPT_RCU
-> #define PREEMPT_RCU_OFFSET 0
-> #else
-> #define PREEMPT_RCU_OFFSET 1
-> #endif
-> 
-> #define cond_resched_rcu() ({	\
-> 	__might_sleep(__FILE__, __LINE__, PREEMPT_RCU_OFFSET);	\
-> 	__cond_resched_rcu();	\
-> })
-> 
-> Should work I think..
-
-	Looks like CONFIG_DEBUG_ATOMIC_SLEEP selects
-CONFIG_PREEMPT_COUNT, so PREEMPT_RCU_OFFSET should be
-1 in all cases because preempt_disable() adds 1, while
-for CONFIG_PREEMPT_RCU case rcu_preempt_depth() should
-return 1:
-
-#ifdef CONFIG_PREEMPT_RCU
-#define PREEMPT_RCU_OFFSET 1
-#else
-#define PREEMPT_RCU_OFFSET PREEMPT_CHECK_OFFSET
-#endif
-
-	Now the remaining part is to fix rcu_sleep_check() for
-the non-preempt case. As there are no nesting depths in this
-case, I don't see a solution so far. We can provide
-some argument to rcu_preempt_sleep_check to compare
-depth with preempt_count() but currently I don't know
-how to differentiate cond_resched_lock() from cond_resched_rcu()
-when calling __might_sleep, in both cases we provide
-PREEMPT_OFFSET. May be some trick is needed here without
-adding new arg to __might_sleep, so that we can properly
-check for rcu_lock_map.
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
+thanks
+-- PMM
