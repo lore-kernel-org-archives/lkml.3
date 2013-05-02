@@ -1,95 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761919Ab3EBUFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 16:05:12 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35664 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759923Ab3EBUFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 16:05:09 -0400
-Date: Thu, 2 May 2013 22:07:03 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        David Rientjes <rientjes@google.com>, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, penberg@kernel.org,
-        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
-        bp@suse.de, fengguang.wu@intel.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for
- building working KVM guest kernels
-Message-ID: <20130502200703.GE16684@pd.tnic>
-References: <20130426095140.GA15361@pd.tnic>
- <tip-7e0320e733eec67e40d2b53e438d9971f079862d@git.kernel.org>
- <alpine.DEB.2.02.1305021104440.2493@chino.kir.corp.google.com>
- <5182AB66.6020307@linux.intel.com>
- <20130502194556.GB3553@gmail.com>
+	id S1761983Ab3EBUJD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 16:09:03 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:37228 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761277Ab3EBUJB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 16:09:01 -0400
+Message-ID: <5182C7D3.3040308@free-electrons.com>
+Date: Thu, 02 May 2013 22:08:51 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130502194556.GB3553@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Lunn <andrew@lunn.ch>
+CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
+References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130502185322.GA29333@obsidianresearch.com> <5182B902.7040908@gmail.com> <20130502193510.GA29522@obsidianresearch.com> <5182C322.3030304@gmail.com> <20130502200204.GA24965@lunn.ch>
+In-Reply-To: <20130502200204.GA24965@lunn.ch>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 09:45:56PM +0200, Ingo Molnar wrote:
-> Boris, mind posting a working version?
+On 05/02/2013 10:02 PM, Andrew Lunn wrote:
+> On Thu, May 02, 2013 at 09:48:50PM +0200, Sebastian Hesselbarth wrote:
+>> On 05/02/2013 09:35 PM, Jason Gunthorpe wrote:
+>>> I have kirkwood HW but I haven't had time to make newer kernels run on
+>>> it, otherwise I'd test it too :(
+>>
+>> I also have kirkwood HW but that will cut me from email as I use it as
+>> relay server ;) Maybe I can turn it into a test bed for a while.
+>>
+>> There is also Orion5x and Discovery Innovation (mv78xx0) to be tested.
+> 
+> I can test kirkwood and Orion5x.
 
-Yeah, let's delay it for the next merge window - it looks like it needs
-more experimenting and since it is not urgent enough...
+And I can test mv78xx0
 
-FWIW, I did play a bit with it today and I ended up with the diff below
-just to satisfy the CONFIG_PCI/MSI deps. However, if I want to shut them
-all up, I need to pull in SMP, MODULE_UNLOAD, MODULE... and so on.
-
-Which is kind of an overkill and I really don't want to do it.
-
-I wonder if one can exclude options from randconfig until 'select' has
-been taught to resolve dependencies...
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 9dae342fa6f6..4c826ea8dd29 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -390,9 +390,10 @@ config X86_VSMP
-        bool "ScaleMP vSMP"
-        select HYPERVISOR_GUEST
-        select PARAVIRT
--       depends on X86_64 && PCI
-+       select PCI
-+       select SMP
-+       depends on X86_64
-        depends on X86_EXTENDED_PLATFORM
--       depends on SMP
-        ---help---
-          Support for ScaleMP vSMP systems.  Say 'Y' here if this kernel is
-          supposed to run on these EM64T-based machines.  Only choose this option
-@@ -685,6 +686,7 @@ config KVM_GUEST_COMMON_OPTIONS
-        bool "Enable commodity options for a standalone KVM guest"
-        depends on KVM_GUEST
-        select NET
-+       select NET_CORE
-        select NETDEVICES
-        select BLOCK
-        select BLK_DEV
-@@ -697,6 +699,12 @@ config KVM_GUEST_COMMON_OPTIONS
-        select IP_PNP
-        select IP_PNP_DHCP
-        select BINFMT_ELF
-+#      select SMP
-+#      select MODULE_UNLOAD
-+       select X86_LOCAL_APIC
-+       select X86_IO_APIC
-+       select ARCH_SUPPORTS_MSI
-+       select PCI
-        select PCI_MSI
-        select HAVE_ARCH_KGDB
-        select DEBUG_KERNEL
-
-
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Gregory
