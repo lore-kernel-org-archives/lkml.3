@@ -1,129 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760317Ab3EBQVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 12:21:20 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:50899 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759006Ab3EBQVS (ORCPT
+	id S1760402Ab3EBQXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 12:23:10 -0400
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:45658 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758743Ab3EBQXI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 12:21:18 -0400
-Date: Thu, 2 May 2013 11:21:10 -0500
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: deadlock on vmap_area_lock
-Message-ID: <20130502162110.GA2970@BohrerMBP.rgmadvisors.com>
-References: <20130501144341.GA2404@BohrerMBP.rgmadvisors.com>
- <alpine.DEB.2.02.1305010855440.4547@chino.kir.corp.google.com>
- <20130501220303.GO10481@dastard>
+	Thu, 2 May 2013 12:23:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130501220303.GO10481@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+In-Reply-To: <87zjwda9bl.fsf@nemi.mork.no>
+References: <20130502.041625.412316202038784117.davem@davemloft.net>
+ <20130502083619.GA22010@macbook.localnet> <87d2t9bvj1.fsf@nemi.mork.no>
+ <20130502.051727.949429506738234701.davem@davemloft.net> <1367490491.5106.137.camel@deadeye.wl.decadent.org.uk>
+ <87zjwda9bl.fsf@nemi.mork.no>
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+Date: Thu, 2 May 2013 18:22:47 +0200
+Message-ID: <CAHXqBF+S3mSbktoDzuHkzvEQkfxa6-2R-sYpqVsZBzMDTjUifQ@mail.gmail.com>
+Subject: Re: [GIT] Networking
+To: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
+        =?UTF-8?Q?Pavel_=C5=A0imerda?= <psimerda@redhat.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>, kaber@trash.net,
+        torvalds@linux-foundation.org, hayeswang@realtek.com,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 08:03:04AM +1000, Dave Chinner wrote:
-> On Wed, May 01, 2013 at 08:57:38AM -0700, David Rientjes wrote:
-> > On Wed, 1 May 2013, Shawn Bohrer wrote:
-> > 
-> > > I've got two compute clusters with around 350 machines each which are
-> > > running kernels based off of 3.1.9 (Yes I realize this is ancient by
-> > > todays standards).
-> 
-> xfs_info output of one of those filesystems? What platform are you
-> running (32 or 64 bit)?
+2013/5/2 Bjørn Mork <bjorn@mork.no>:
+> Ben Hutchings <bhutchings@solarflare.com> writes:
+>> On Thu, 2013-05-02 at 05:17 -0400, David Miller wrote:
+>>> From: Bjørn Mork <bjorn@mork.no>
+>>> Date: Thu, 02 May 2013 11:06:42 +0200
+>>>
+>>> > Adding the new netdev features will make it go from 1 to 2:
+>>>
+>>> We already had more than 31 feature bits before Patrick's
+>>> changes, and I'm pretty sure this was the case when we added
+>>> that ethtool API.
+>>
+>> It wasn't, but this should be OK.  Userland is supposed to query the
+>> number of features using ETHTOOL_GSSET_INFO and then work out the number
+>> of words/blocks using FEATURE_BITS_TO_BLOCKS().
+>
+>
+> Looking at
+> http://cgit.freedesktop.org/NetworkManager/NetworkManager/tree/src/platform/nm-linux-platform.c#n1025
+> there seems to be a couple of bugs in this area. This is certainly
+> abusing the exported API, but it does mean that NM breaks if you ever
+> move NETIF_F_VLAN_CHALLENGED (like the 802.1ad patch did):
+>
+> ----
+> #define NETIF_F_VLAN_CHALLENGED (1 << 10)
+>
+> static gboolean
+> link_supports_vlans (NMPlatform *platform, int ifindex)
+> {
+>         auto_nl_object struct rtnl_link *rtnllink = link_get (platform, ifindex);
+>         const char *name = nm_platform_link_get_name (ifindex);
+>         struct {
+>                 struct ethtool_gfeatures features;
+>                 struct ethtool_get_features_block features_block;
+>         } edata = { .features = { .cmd = ETHTOOL_GFEATURES, .size = 1 } };
+>
+>         /* Only ARPHRD_ETHER links can possibly support VLANs. */
+>         if (!rtnllink || rtnl_link_get_arptype (rtnllink) != ARPHRD_ETHER)
+>                 return FALSE;
+>
+>         if (!name || !ethtool_get (name, &edata))
+>                 return FALSE;
+>
+>         return !(edata.features.features[0].active & NETIF_F_VLAN_CHALLENGED);
+> }
+> ----
+>
+>
+> Not that I see how this particular bug matters unless you need VLAN
+> support in NM.  But there could be similar issues around.  I guess
+> avoiding unnecessary renumbering of the NETIF_F bits can save us some
+> trouble.  Although you can certainly argue that those bits never were
+> intended to be part of the API, and that using them like this is a user
+> application bug.
 
-# cat /proc/mounts | grep data-cache
-/dev/sdb1 /data-cache xfs rw,nodiratime,relatime,attr2,delaylog,noquota 0 0
-# xfs_info /data-cache 
-meta-data=/dev/sdb1              isize=256    agcount=4, agsize=66705344 blks
-         =                       sectsz=512   attr=2
-data     =                       bsize=4096   blocks=266821376, imaxpct=25
-         =                       sunit=0      swidth=0 blks
-naming   =version 2              bsize=4096   ascii-ci=0
-log      =internal               bsize=4096   blocks=130283, version=2
-         =                       sectsz=512   sunit=0 blks, lazy-count=1
-realtime =none                   extsz=4096   blocks=0, rtextents=0
+This is certainly a bug in NM, and a fresh one: commit
+b636ea86b1c0a28b77eda311c84d3b2417cad22e from 2013-04-10 14:40:58
+(GMT). Userspace is expected to use ETHTOOL_GSTRINGS for
+ETH_SS_FEATURES and find a corresponding bit position by feature name
+("vlan-challenged" in this case).
 
-These are 64-bit systems.  The ones that hit the issue more frequently
-have 96 GB of RAM.
+Cc: commit's author.
 
-> > > All of the machines run a 'find' command once an
-> > > hour on one of the mounted XFS filesystems.  Occasionally these find
-> > > commands get stuck requiring a reboot of the system.  I took a peek
-> > > today and see this with perf:
-> > > 
-> > >     72.22%          find  [kernel.kallsyms]          [k] _raw_spin_lock
-> > >                     |
-> > >                     --- _raw_spin_lock
-> > >                        |          
-> > >                        |--98.84%-- vm_map_ram
-> > >                        |          _xfs_buf_map_pages
-> > >                        |          xfs_buf_get
-> > >                        |          xfs_buf_read
-> > >                        |          xfs_trans_read_buf
-> > >                        |          xfs_da_do_buf
-> > >                        |          xfs_da_read_buf
-> > >                        |          xfs_dir2_block_getdents
-> > >                        |          xfs_readdir
-> > >                        |          xfs_file_readdir
-> > >                        |          vfs_readdir
-> > >                        |          sys_getdents
-> > >                        |          system_call_fastpath
-> > >                        |          __getdents64
-> > >                        |          
-> > >                        |--1.12%-- _xfs_buf_map_pages
-> > >                        |          xfs_buf_get
-> > >                        |          xfs_buf_read
-> > >                        |          xfs_trans_read_buf
-> > >                        |          xfs_da_do_buf
-> > >                        |          xfs_da_read_buf
-> > >                        |          xfs_dir2_block_getdents
-> > >                        |          xfs_readdir
-> > >                        |          xfs_file_readdir
-> > >                        |          vfs_readdir
-> > >                        |          sys_getdents
-> > >                        |          system_call_fastpath
-> > >                        |          __getdents64
-> > >                         --0.04%-- [...]
-> > > 
-> > > Looking at the code my best guess is that we are spinning on
-> > > vmap_area_lock, but I could be wrong.  This is the only process
-> > > spinning on the machine so I'm assuming either another process has
-> > > blocked while holding the lock, or perhaps this find process has tried
-> > > to acquire the vmap_area_lock twice?
-> > > 
-> > 
-> > Significant spinlock contention doesn't necessarily mean that there's a 
-> > deadlock, but it also doesn't mean the opposite.  Depending on your 
-> > definition of "occassionally", would it be possible to run with 
-> > CONFIG_PROVE_LOCKING and CONFIG_LOCKDEP to see if it uncovers any real 
-> > deadlock potential?
-> 
-> It sure will. We've been reporting that vm_map_ram is doing
-> GFP_KERNEL allocations from GFP_NOFS context for years, and have
-> reported plenty of lockdep dumps as a result of it.
-> 
-> But that's not the problem that is occurring above - lockstat is
-> probably a good thing to look at here to determine exactly what
-> locks are being contended on....
-
-I've built a kernel with lock_stat, CONFIG_PROVE_LOCKING,
-CONFIG_LOCKDEP and have one machine running with that kernel.  We'll
-probably put machines on this debug kernel when we reboot them and
-hopefully one will trigger the issue.
-
-Thanks,
-Shawn
-
--- 
-
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
+Best Regards,
+Michał Mirosław
