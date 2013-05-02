@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751065Ab3EBHeK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 03:34:10 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:57954 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab3EBHeF (ORCPT
+	id S1754002Ab3EBHe0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 03:34:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43750 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753730Ab3EBHeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 03:34:05 -0400
-Date: Thu, 2 May 2013 09:34:00 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Miguel Boton <mboton.lkml@gmail.com>, Russ Anderson <rja@sgi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH -v7 11/11] Move arch/x86 reboot= handling to generic
- kernel.
-Message-ID: <20130502073400.GD26361@gmail.com>
-References: <1367428011-17123-1-git-send-email-holt@sgi.com>
- <1367428011-17123-12-git-send-email-holt@sgi.com>
+	Thu, 2 May 2013 03:34:25 -0400
+Date: Thu, 2 May 2013 09:32:53 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf, x86: Add workaround for MEM_*_RETIRED errata BV98
+Message-ID: <20130502073252.GG7521@dyad.programming.kicks-ass.net>
+References: <1367261108-9567-1-git-send-email-andi@firstfloor.org>
+ <20130501090718.GA28253@dyad.programming.kicks-ass.net>
+ <m261z3uipb.fsf@firstfloor.org>
+ <20130501111219.GF28253@dyad.programming.kicks-ass.net>
+ <CABPqkBT-VdWQ0c5AASDfQLssBRSfbtoH0-L1eHMXONqe5d_YRw@mail.gmail.com>
+ <20130501191342.GH17814@two.firstfloor.org>
+ <CABPqkBS7FxoT1fioe_VdBMcLAdZtfwRiMmSMocSY5TB3QAyPQQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1367428011-17123-12-git-send-email-holt@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBS7FxoT1fioe_VdBMcLAdZtfwRiMmSMocSY5TB3QAyPQQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 01, 2013 at 09:21:55PM +0200, Stephane Eranian wrote:
+> On Wed, May 1, 2013 at 9:13 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> >> Unfortunately, Andi's patch fails to correct the problem though
+> >> it is the right approach. As he said, the problem is unfortunately
+> >
+> > perf stat -a / record -a / top will work.
+> >
+> But it does not for perf stat -a. Look at my example, run it on your machine.
 
-* Robin Holt <holt@sgi.com> wrote:
 
-> Merge together the unicore32, arm, and x86 reboot= command line
-> parameter handling.
+Since nobody seems interested in explaining the exact nature of the hardware
+failure I think the best thing we can do is simply blacklist these events.
 
-Nice!
-
-> +		switch (*str) {
-> +#if defined(CONFIG_X86) || defined(CONFIG_X86_64)
-> +		case 'w':
-> +			reboot_mode = REBOOT_WARM;
-> +			break;
-> +
-> +		case 'c':
-> +			reboot_mode = REBOOT_COLD;
-> +			break;
-> +
-> +#ifdef CONFIG_SMP
-> +		case 's':
-> +			if (isdigit(*(str+1))) {
-> +				reboot_cpu = (int) (*(str+1) - '0');
-> +				if (isdigit(*(str+2)))
-> +					reboot_cpu = reboot_cpu*10 + (int)(*(str+2) - '0');
-> +			}
-> +			/*
-> +			 * We will leave sorting out the final value
-> +			 * when we are ready to reboot, since we might not
-> +			 * have detected BSP APIC ID or smp_num_cpu
-> +			 */
-> +			break;
-> +#endif /* CONFIG_SMP */
-> +
-> +#else
-> +		case 's':
-> +			reboot_mode = REBOOT_WARM;
-> +		case 'h':
-> +			reboot_mode = REBOOT_COLD;
-> +#endif
-
-This architecture dependent bit is not so nice.
-
-I doubt the 's' parameter is used widely at all on x86 [it's more like a 
-debug/hack parameter], so might as well just pick up a new character (for 
-example capital 'S'?) and have the same parameters on every architecture.
-
-Thanks,
-
-	Ingo
+Broken hardware is broken after all -- we should jump through too many hoops
+pretending its not.
