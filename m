@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab3EBH3W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 03:29:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43683 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3EBH3U (ORCPT
+	id S1753608Ab3EBHa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 03:30:27 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:51585 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362Ab3EBHaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 03:29:20 -0400
-Date: Thu, 2 May 2013 09:27:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-Message-ID: <20130502072742.GF7521@dyad.programming.kicks-ass.net>
-References: <1367290378-29224-1-git-send-email-horms@verge.net.au>
- <1367290378-29224-2-git-send-email-horms@verge.net.au>
- <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg>
- <20130430072944.GA13959@verge.net.au>
- <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg>
- <20130501091012.GB28253@dyad.programming.kicks-ass.net>
- <20130501124637.GO3780@linux.vnet.ibm.com>
- <20130501143258.GA31577@linux.vnet.ibm.com>
+	Thu, 2 May 2013 03:30:24 -0400
+Date: Thu, 2 May 2013 09:30:20 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Robin Holt <holt@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Miguel Boton <mboton.lkml@gmail.com>, Russ Anderson <rja@sgi.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH -v7 10/11] arm, change reboot_mode to use enum reboot_mode
+Message-ID: <20130502073020.GC26361@gmail.com>
+References: <1367428011-17123-1-git-send-email-holt@sgi.com>
+ <1367428011-17123-11-git-send-email-holt@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130501143258.GA31577@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1367428011-17123-11-git-send-email-holt@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 07:32:58AM -0700, Paul E. McKenney wrote:
-> Here is how to detect this:
-> 
-> 	static void inline cond_resched_rcu_lock(void)
-> 	{
-> 		rcu_read_unlock();
-> 		WARN_ON_ONCE(rcu_read_lock_held());
-> 	#ifndef CONFIG_PREEMPT_RCU
-> 		cond_resched();
-> 	#endif
-> 		rcu_read_lock();
-> 	}
 
-The __might_sleep(__FILE__, __LINE__, PREEMPT_RCU_OFFSET) I posted in the other
-email just now should deal with this.
+* Robin Holt <holt@sgi.com> wrote:
+
+>  #ifndef __ASSEMBLY__
+>  
+>  #include <linux/types.h>
+> +#include <linux/reboot.h>
+>  
+>  void iop3xx_map_io(void);
+>  void iop_init_cp6_handler(void);
+>  void iop_init_time(unsigned long tickrate);
+> -void iop3xx_restart(char, const char *);
+> +void iop3xx_restart(enum reboot_mode, const char *);
+
+IMO the introduction of the enum is making things cleaner here all around.
+
+As long as it's an equivalent transformation for ARM with no reduction in 
+functionality (i.e. please fix any bugs Russell found), this all looks 
+like a nice series.
+
+Is there no parameter namespace clash between reboot modifier strings on 
+various architectures? I.e. 's' meaning something on x86 and meaning a 
+different thing on ARM or some other architecture.
+
+Thanks,
+
+	Ingo
