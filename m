@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab3EBUlJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 16:41:09 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:47219 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932843Ab3EBUlF (ORCPT
+	id S932935Ab3EBUmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 16:42:10 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:38987 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756085Ab3EBUmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 16:41:05 -0400
-Date: Thu, 2 May 2013 13:39:35 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Robert Love <rlove@google.com>, devel <devel@driverdev.osuosl.org>,
-        Shankar Brahadeeswaran <shankoo77@gmail.com>,
-        Bjorn Bringert <bringert@google.com>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Anjana V Kumar <anjanavk12@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH -next] ashmem: Fix ashmem_shrink deadlock.
-Message-ID: <20130502203935.GA25567@kroah.com>
-References: <1367416573-5430-1-git-send-email-rlove@google.com>
- <alpine.DEB.2.02.1305010853450.4547@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1305021121160.2493@chino.kir.corp.google.com>
+	Thu, 2 May 2013 16:42:08 -0400
+Date: Thu, 2 May 2013 22:45:11 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] drm: don't check modeset locks in panic handler
+Message-ID: <20130502204511.GH5763@phenom.ffwll.local>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Dave Airlie <airlied@gmail.com>, stable@vger.kernel.org
+References: <CAPM=9tw-Ssu7ZYBZX7ipGt9w7zYG91tKbWZguM5DLPaqTakJPA@mail.gmail.com>
+ <1367480585-22814-1-git-send-email-daniel.vetter@ffwll.ch>
+ <20130502101308.GA16684@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305021121160.2493@chino.kir.corp.google.com>
+In-Reply-To: <20130502101308.GA16684@pd.tnic>
+X-Operating-System: Linux phenom 3.9.0-rc6+
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 11:22:18AM -0700, David Rientjes wrote:
-> On Wed, 1 May 2013, David Rientjes wrote:
-> 
-> > > Don't acquire ashmem_mutex in ashmem_shrink if we've somehow recursed into the
-> > > shrinker code from within ashmem. Just bail out, avoiding a deadlock. This is
-> > > fine, as ashmem cache pruning is advisory anyhow.
-> > > 
-> > > Signed-off-by: Robert Love <rlove@google.com>
+On Thu, May 02, 2013 at 12:13:08PM +0200, Borislav Petkov wrote:
+> On Thu, May 02, 2013 at 09:43:05AM +0200, Daniel Vetter wrote:
+> > Since we know that locking is broken in that case and it's more
+> > important to not flood the dmesg with random gunk.
 > > 
-> > Any reason not to send this to stable@vger.kernel.org if it fixes an 
-> > observable deadlock?  (It's annotated to be applied to linux-next, but I 
-> > don't see any differences between it and Linus's tree.)
-> > 
+> > Cc: Dave Airlie <airlied@gmail.com>
+> > Cc: Borislav Petkov <bp@alien8.de>
+> > References: https://groups.google.com/forum/?fromgroups=#!topic/linux.kernel/QFzFxSUeV4I
 > 
-> This was sent separately to stable@vger.kernel.org before being merged 
-> into Linus's tree .  Greg, could this be queued up for 3.10 with a cc to 
-> stable@vger.kernel.org?
+> Yeah, we have this nice redirector service on k.org which uses the
+> Message-ID only and doesn't rely on some external URLs remaining stable.
+> You could use that instead:
+> 
+> Link: http://lkml.kernel.org/r/20130502000206.GH15623@pd.tnic
+> 
+> > Cc: stable@vger.kernel.org
+> > Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> > ---
+> >  drivers/gpu/drm/drm_crtc.c |    4 ++++
+> >  1 file changed, 4 insertions(+)
+> > 
+> > diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+> > index 792c3e3..3be0802 100644
+> > --- a/drivers/gpu/drm/drm_crtc.c
+> > +++ b/drivers/gpu/drm/drm_crtc.c
+> > @@ -78,6 +78,10 @@ void drm_warn_on_modeset_not_all_locked(struct drm_device *dev)
+> >  {
+> >  	struct drm_crtc *crtc;
+> >  
+> > +	/* Locking is currently fubar in the panic handler. */
+> > +	if (oops_in_progress)
+> > +		return;
+> > +
+> >  	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
+> >  		WARN_ON(!mutex_is_locked(&crtc->mutex));
+> 
+> Yep, thanks.
+> 
+> Reported-and-tested-by: Borislav Petkov <bp@suse.de>
 
-Yes, I'll handle all of this properly, thanks.
-
-greg k-h
+Thanks for testing, patch applied to drm-intel-fixes.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
