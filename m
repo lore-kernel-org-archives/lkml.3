@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932812Ab3EBTYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 15:24:05 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:46171 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753608Ab3EBTYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 15:24:03 -0400
-Date: Thu, 2 May 2013 22:24:55 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-In-Reply-To: <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg>
-Message-ID: <alpine.LFD.2.00.1305022211420.25417@ja.ssi.bg>
-References: <1367290378-29224-2-git-send-email-horms@verge.net.au> <alpine.LFD.2.00.1304301011310.1700@ja.ssi.bg> <20130430072944.GA13959@verge.net.au> <alpine.LFD.2.00.1304301051260.1700@ja.ssi.bg> <20130501091012.GB28253@dyad.programming.kicks-ass.net>
- <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg> <20130501155501.GB7521@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg> <20130502072623.GE7521@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg>
- <20130502173257.GX3780@linux.vnet.ibm.com> <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932853Ab3EBTbq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 15:31:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13722 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932835Ab3EBTbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 15:31:45 -0400
+Date: Thu, 2 May 2013 15:31:39 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCHSET] blk-throttle: implement proper hierarchy support
+Message-ID: <20130502193139.GL30020@redhat.com>
+References: <1367455189-6957-1-git-send-email-tj@kernel.org>
+ <20130502173428.GA4771@redhat.com>
+ <20130502175701.GL19814@mtj.dyndns.org>
+ <20130502181747.GH30020@redhat.com>
+ <20130502182933.GN19814@mtj.dyndns.org>
+ <20130502184514.GI30020@redhat.com>
+ <20130502184953.GP19814@mtj.dyndns.org>
+ <20130502190732.GK30020@redhat.com>
+ <CAOS58YOk7G=dBG1v5Ed2z3biMMyKkkutp30vH5XC72z0_Z85cw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOS58YOk7G=dBG1v5Ed2z3biMMyKkkutp30vH5XC72z0_Z85cw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 02, 2013 at 12:11:30PM -0700, Tejun Heo wrote:
+> Hey,
+> 
+> 
+> On Thu, May 2, 2013 at 12:07 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > It should not. Why do you think in flat model an application which
+> > throttles itself will be penalized.
+> >
+> > So application issue an bio of size 1MB in a group of rate 1MB/s. bio
+> > gets queued and gets dispatched after 1 second. Almost immediately next
+> > bio will come from application (as application also is throttling
+> > itself at 1MB/s rate). And then this bio waits for a second. So we
+> > almost get steady rate of 1MB/s as configured.
+> 
+> I'm confused now, so why does the hierarchy make any difference? When
+> seen from the parent, what's the difference between a process issuing
+> IO directly and an IO which already went through another throttle
+> layer if the IOs arrive at the same intervals?
 
-	Hello,
+I think my example was little flawed previously. I think you are right.
+Penalty is not probably as bad as I have been thinking.
 
-On Thu, 2 May 2013, Julian Anastasov wrote:
+So if both parent and child have limit of 1MB/s and application is doing
+IO (say at 2MB/sec), in long term it should still see 1MB/s rate.
 
-> 	Note that I'm testing on some 9-year old
-> UP system, i.e. 1 CPU. Now I enabled SMP to test CONFIG_TREE_RCU
-> and the results are same. I think, it should be just like
-> the TINY_RCU in terms of these debuggings (non-preempt). Extra 
-> rcu_read_lock gives me "Illegal context switch in RCU read-side
-> critical section" in addition to the "BUG: sleeping function
-> called from invalid context" message.
+		T1	T2	T3	T4	T5	T6
+Parent group:		B1	B2	B3	B4	B5
+Child group:	B1	B2	B3	B4	B5	B6 
 
-	Just to clarify about the test with extra
-rcu_read_lock because above paragraph is very confusing:
+Above B1 to B6 are bios of 1MB size. T1 to T6 are 1 second time interval.
+B1 waits for T1 interval in child group and then for T2 interval in
+parent group and then gets dispatched. But a pipe line has formed in
+child group and B2 is waiting in child group in T2 slice. So penalty
+is not double.
 
-- The __might_sleep call with PREEMPT_ACTIVE | PREEMPT_RCU_OFFSET
-just warns with "BUG: sleeping function called from invalid context"
-because its rcu_sleep_check is silenced. We match the
-nesting depth only.
+So each group migration will add one extra wait period. In above case
+5 bios dispatched in 6 seconds. Longer the sampling interval, delay
+remains the constant to one time interval and % penalty goes down.
 
-- but __cond_resched -> __schedule -> schedule_debug warns about
-the extra rcu_read_lock() with "BUG: scheduling while atomic" and
-then with "Illegal context switch in RCU read-side critical section"
-from rcu_sleep_check(0).
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
+Thanks
+Vivek
