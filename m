@@ -1,137 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761717Ab3EBW40 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 18:56:26 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42297 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab3EBW4Z (ORCPT
+	id S1757832Ab3EBXNP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 19:13:15 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:42995 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753131Ab3EBXNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 18:56:25 -0400
-Date: Fri, 3 May 2013 00:56:23 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Prarit Bhargava <prarit@redhat.com>
-cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Yinghai Lu <yhlu.kernel@gmail.com>,
-        Dave Jones <davej@codemonkey.org.uk>
-Subject: Re: [PATCH] NOHZ, check to see if tick device is initialized in IRQ
- handling path
-In-Reply-To: <1367325415-32283-1-git-send-email-prarit@redhat.com>
-Message-ID: <alpine.LFD.2.02.1305030054530.2891@ionos>
-References: <1367325415-32283-1-git-send-email-prarit@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 2 May 2013 19:13:13 -0400
+Date: Thu, 2 May 2013 16:13:07 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCHSET] blk-throttle: implement proper hierarchy support
+Message-ID: <20130502231307.GT19814@mtj.dyndns.org>
+References: <1367455189-6957-1-git-send-email-tj@kernel.org>
+ <20130502173428.GA4771@redhat.com>
+ <20130502175701.GL19814@mtj.dyndns.org>
+ <20130502181747.GH30020@redhat.com>
+ <20130502182933.GN19814@mtj.dyndns.org>
+ <20130502184514.GI30020@redhat.com>
+ <20130502184953.GP19814@mtj.dyndns.org>
+ <20130502190732.GK30020@redhat.com>
+ <CAOS58YOk7G=dBG1v5Ed2z3biMMyKkkutp30vH5XC72z0_Z85cw@mail.gmail.com>
+ <20130502193139.GL30020@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130502193139.GL30020@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Apr 2013, Prarit Bhargava wrote:
+Hello, Vivek.
 
-> 2nd try at this ... going with a more global cc.
+On Thu, May 02, 2013 at 03:31:39PM -0400, Vivek Goyal wrote:
+> I think my example was little flawed previously. I think you are right.
+> Penalty is not probably as bad as I have been thinking.
 > 
-> I think the linux.git "system hang" isn't really a hang.  For some reason the
-> panic text wasn't displayed on the console.  I've seen this behaviour a few
-> times now ... maybe there's a bug in the panic output path?
+> So if both parent and child have limit of 1MB/s and application is doing
+> IO (say at 2MB/sec), in long term it should still see 1MB/s rate.
 > 
-> It seems that the power interrupt is an error with the CPU exceeded the
-> OSes current requested frequency on the package.  If I disable on demand
-> cpu frequency, the problem goes away.
+> 		T1	T2	T3	T4	T5	T6
+> Parent group:		B1	B2	B3	B4	B5
+> Child group:	B1	B2	B3	B4	B5	B6 
+> 
+> Above B1 to B6 are bios of 1MB size. T1 to T6 are 1 second time interval.
+> B1 waits for T1 interval in child group and then for T2 interval in
+> parent group and then gets dispatched. But a pipe line has formed in
+> child group and B2 is waiting in child group in T2 slice. So penalty
+> is not double.
+> 
+> So each group migration will add one extra wait period. In above case
+> 5 bios dispatched in 6 seconds. Longer the sampling interval, delay
+> remains the constant to one time interval and % penalty goes down.
 
-Huch?
- 
-> Anyhoo, here's a patch...
-> 
-> ----8<----
-> 
-> When adding a CPU there is a small window in which interrupts are enabled and
-> the clock tick device has not been initialized.  If an interrupt occurs in
+Yeah, I think that's what *should* be happening but not what I'm
+seeing.  I'm seeing ~15% penalty.  It works fine if there are more
+than one active children but with a single child configured at the
+same limit, it doesn't work as expected.  I'm a bit lost where the
+difference is coming from.  Hmmm... also in the above example, we
+really should be doing the following.
 
-What's that small window and why does it exist?
+ 		T1	T2	T3	T4	T5	T6
+ Parent group:	B1	B2	B3	B4	B5	B6
+ Child group:	B1	B2	B3	B4	B5	B6 
 
-> this window, irq_exit() will be called which calls tick_nohz_irq_exit() which
-> in turn calls __tick_nohz_idle_enter().
-> 
-> __tick_nohz_idle() enter assumes that the tick has been initialized.  In the
-> above case, however, it has not and this leads to what appears to be a system
-> hang on latest linux.git or a the following panic on RHEL6:
-> 
-> Pid: 0, comm: swapper Not tainted 2.6.32-358.el6.x86_64 #1
-> RIP: 0010:[<ffffffff810a89e5>]  [<ffffffff810a89e5>] tick_nohz_stop_sched_tick+0x2a5/0x3e0
-> RSP: 0018:ffff88089c503f38  EFLAGS: 00010046
-> RAX: ffffffff81c07520 RBX: ffff88089c5116a0 RCX: 000002f04bb18cd8
-> RDX: 0000000000000000 RSI: 000000000000a1b5 RDI: 000002f04bb0eb23
-> RBP: ffff88089c503f88 R08: ffff88089c50e060 R09: 0000000000000000
-> R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000017
-> R13: 000002f04bb17dd5 R14: 0000000000000000 R15: 0000000000000092
-> FS:  0000000000000000(0000) GS:ffff88089c500000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
-> CR2: 0000000000000078 CR3: 0000000001a85000 CR4: 00000000001406e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process swapper (pid: 0, threadinfo ffff8810745c0000, task ffff8808740f2080)
-> Stack:
->  00000000000116a0 0000000000000087 ffff88089c503f78 0000000000000046
-> <d> ffff88089c503f98 0000000000000000 0000000000000000 0000000000000000
-> <d> 0000000000000000 0000000000000000 ffff88089c503f98 ffffffff81076d86
-> Call Trace:
->  <IRQ>
->  [<ffffffff81076d86>] irq_exit+0x76/0x90
->  [<ffffffff81028dd6>] smp_thermal_interrupt+0x26/0x40
->  [<ffffffff8100bcf3>] thermal_interrupt+0x13/0x20
->  <EOI>
->  [<ffffffff81506997>] ? start_secondary+0x127/0x2ef
->  [<ffffffff81506990>] ? start_secondary+0x120/0x2ef
-> 
-> The code currently assumes that the tick device is initialized when
-> irq_enter() and irq_exit() are called.  This is not correct and a check must
-> be performed prior to entering the tick code through these code paths to
-> ensure that the tick device is initialized and running.
-> 
-> I've only seen this occur on a few systems.  I've tested with and without the
-> patch and as far as I can tell this patch resolves the problem on
-> linux.git top of tree.
-> 
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: John Stultz <john.stultz@linaro.org>
-> ---
->  kernel/time/tick-sched.c |   12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index a19a399..5027187 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -567,6 +567,12 @@ EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
->  void tick_nohz_irq_exit(void)
->  {
->  	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-> +	struct clock_event_device *dev =
-> +				     __get_cpu_var(tick_cpu_device).evtdev;
-> +
-> +	/* Has the tick been initialized yet? */
-> +	if (unlikely(!dev || dev->mode == CLOCK_EVT_MODE_UNUSED))
-> +		return;
->  
->  	if (!ts->inidle)
->  		return;
-> @@ -809,6 +815,12 @@ static inline void tick_check_nohz(int cpu) { }
->   */
->  void tick_check_idle(int cpu)
->  {
-> +	struct clock_event_device *dev = per_cpu(tick_cpu_device, cpu).evtdev;
-> +
-> +	/* Has the tick been initialized yet? */
-> +	if (unlikely(!dev || dev->mode == CLOCK_EVT_MODE_UNUSED))
-> +		return;
-> +
->  	tick_check_oneshot_broadcast(cpu);
->  	tick_check_nohz(cpu);
->  }
-> -- 
-> 1.7.9.3
-> 
-> 
+I mean, if there's no other IO going on, there's no point in delaying
+the first IO.  ie. the slice should be considered as started before so
+that B1 can be issued immediately, right?
+
+Thanks.
+
+-- 
+tejun
