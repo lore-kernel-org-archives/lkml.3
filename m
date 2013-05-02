@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760813Ab3EBV62 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 17:58:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36033 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752643Ab3EBV61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 17:58:27 -0400
-Subject: Re: [PATCH] KVM: allow host header to be included even for !CONFIG_KVM
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20130402115612.GB3889@redhat.com>
-Date: Thu, 2 May 2013 23:58:19 +0200
-Cc: Kevin Hilman <khilman@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Scott Wood <scottwood@freescale.com>, linaro-kernel@lists.linaro.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "open list:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <A7C27212-7BF2-4976-AB41-B74D8311EA3B@suse.de>
-References: <1363823921.25034.35@snotra> <20130321072955.GO3889@redhat.com> <87ppyshlq5.fsf@linaro.org> <1363891354.31522.17@snotra> <20130321191600.GG9382@redhat.com> <1363894393.31522.20@snotra> <20130321211736.GI9382@redhat.com> <CAFTL4hz2=VJBLG1w31JSPDtRdobcmL5oY6XkR46vi3zS904VGA@mail.gmail.com> <20130324140114.GV3889@redhat.com> <87txnz9o7n.fsf@linaro.org> <20130402115612.GB3889@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-X-Mailer: Apple Mail (2.1278)
+	id S1761669Ab3EBV6h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 17:58:37 -0400
+Received: from mail-da0-f41.google.com ([209.85.210.41]:64930 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753024Ab3EBV6f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 17:58:35 -0400
+Date: Thu, 2 May 2013 14:58:32 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Randy Dunlap <rdunlap@infradead.org>
+cc: Simon Wood <simon@mungewell.org>, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: hid-steelseries fix led class build issue
+In-Reply-To: <5182DFA3.3040707@infradead.org>
+Message-ID: <alpine.DEB.2.02.1305021455260.941@chino.kir.corp.google.com>
+References: <51816271.3040400@infradead.org> <1367476041-25760-1-git-send-email-simon@mungewell.org> <5182DFA3.3040707@infradead.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2 May 2013, Randy Dunlap wrote:
 
-On 02.04.2013, at 13:56, Gleb Natapov wrote:
+> > ---
+> >  drivers/hid/hid-steelseries.c | 9 ++++++---
+> >  1 file changed, 6 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/hid/hid-steelseries.c b/drivers/hid/hid-steelseries.c
+> > index 2ed995c..dbd5e2e 100644
+> > --- a/drivers/hid/hid-steelseries.c
+> > +++ b/drivers/hid/hid-steelseries.c
+> > @@ -19,7 +19,8 @@
+> >  #include "usbhid/usbhid.h"
+> >  #include "hid-ids.h"
+> >  
+> > -#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
+> > +#if defined(CONFIG_LEDS_CLASS) || \
+> > +    (defined(CONFIG_LEDS_CLASS_MODULE) && defined(CONFIG_HID_STEELSERIES_MODULE))
+> >  #define SRWS1_NUMBER_LEDS 15
+> >  struct steelseries_srws1_data {
+> >  	__u16 led_state;
 
-> On Mon, Mar 25, 2013 at 02:14:20PM -0700, Kevin Hilman wrote:
->> Gleb Natapov <gleb@redhat.com> writes:
->> 
->>> On Sun, Mar 24, 2013 at 02:44:26PM +0100, Frederic Weisbecker wrote:
->>>> 2013/3/21 Gleb Natapov <gleb@redhat.com>:
->>>>> Isn't is simpler for kernel/context_tracking.c to define empty
->>>>> __guest_enter()/__guest_exit() if !CONFIG_KVM.
->>>> 
->>>> That doesn't look right. Off-cases are usually handled from the
->>>> headers, right? So that we avoid iffdeffery ugliness in core code.
->>> Lets put it in linux/context_tracking.h header then.
->> 
->> Here's a version to do that.
->> 
-> Frederic, are you OK with this version?
+While we're working on getting a signed-off-by line, the clean way of 
+handling this is
 
-Did anything happen on this? The tree is still broken...
-
-
-Alex
-
+#if IS_BUILTIN(CONFIG_LEDS_CLASS) || \
+    (IS_MODULE(CONFIG_LEDS_CLASS) && IS_MODULE(CONFIG_HID_STEELSERIES))
