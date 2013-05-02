@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759278Ab3EBBtG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 May 2013 21:49:06 -0400
-Received: from ozlabs.org ([203.10.76.45]:42983 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752891Ab3EBBtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 May 2013 21:49:04 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: James Hogan <james.hogan@imgtec.com>, torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, James Hogan <james.hogan@imgtec.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH] linkage.h: fix build breakage due to symbol prefix handling
-In-Reply-To: <1367442257-7897-1-git-send-email-james.hogan@imgtec.com>
-References: <1367442257-7897-1-git-send-email-james.hogan@imgtec.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Thu, 02 May 2013 09:58:08 +0930
-Message-ID: <878v3yql7r.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932282Ab3EBByB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 May 2013 21:54:01 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38642 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757219Ab3EBBx4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 May 2013 21:53:56 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, rjw@sisk.pl,
+        pavel@ucw.cz, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org
+Subject: [RFC] Fix restore from hibernate with different kernel versions.
+Date: Wed,  1 May 2013 21:53:29 -0400
+Message-Id: <1367459610-9656-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Hogan <james.hogan@imgtec.com> writes:
-> Al's commit e1b5bb6d1236d4ad2084c53aa83dde7cdf6f8eea ("consolidate
-> cond_syscall and SYSCALL_ALIAS declarations") broke the build on
-> blackfin and metag due to the following code:
->
->   #ifndef SYMBOL_NAME
->   #ifdef CONFIG_SYMBOL_PREFIX
->   #define SYMBOL_NAME(x) CONFIG_SYMBOL_PREFIX ## x
->   #else
->   #define SYMBOL_NAME(x) x
->   #endif
->   #endif
->   #define __SYMBOL_NAME(x) __stringify(SYMBOL_NAME(x))
->
-> __stringify literally stringifies CONFIG_SYMBOL_PREFIX ##x, so you get
-> lines like this in kernel/sys_ni.s:
->
->   .weak CONFIG_SYMBOL_PREFIXsys_quotactl
->   .set CONFIG_SYMBOL_PREFIXsys_quotactl,CONFIG_SYMBOL_PREFIXsys_ni_syscall
->
-> The patches in Rusty's modules-next tree such as "CONFIG_SYMBOL_PREFIX:
-> cleanup." clean up the whole mess around symbol prefixes, so this patch
-> just attempts to fix the build in the mean time. The intermediate
-> definition of SYMBOL_NAME above isn't used and is incorrect when
-> CONFIG_SYMBOL_PREFIX is defined as CONFIG_SYMBOL_PREFIX is a quoted
-> string literal, so define __SYMBOL_NAME directly depending on
-> CONFIG_SYMBOL_PREFIX.
+This patch is intended for v3.10 and it should be considered RFC as I had
+only tested it under QEMU and not real hardware (that to be done on Friday).
 
-I just pushed my modules-next tree to Linus, so hopefully the nightmare
-is over soon!
+The patch addresses a shortcomming of the git commite
+7a5cd063c7b4c58417f674821d63f5eb6747e37 ("x86-64, gdt: Store/load GDT for
+ACPI S3 or hibernate/resume path is not needed.") where its assumption
+about restoring a kernel was incorrect. Specifically it assumed that a resumed
+kernel MUST be the same as the one booted. That is only true for 32-bit
+kernels but not for 64-bit.
 
-Cheers,
-Rusty.
+And as such it introduces a regression which the attached patch is
+fixing.
+
+The patch goes further and also lays the groundwork to make this work under
+a 32-bit kernel - even though it is not neccessary. This is done to unify
+the 32 and 64-bit code and make it easier in the future to unify the
+respective code closer.
+
+
+ arch/x86/include/asm/suspend_32.h |  1 +
+ arch/x86/include/asm/suspend_64.h |  2 ++
+ arch/x86/kernel/asm-offsets_32.c  |  3 +++
+ arch/x86/kernel/asm-offsets_64.c  |  1 +
+ arch/x86/power/cpu.c              | 15 ++++++++++-----
+ arch/x86/power/hibernate_asm_32.S |  4 ++++
+ arch/x86/power/hibernate_asm_64.S |  3 +++
+ 7 files changed, 24 insertions(+), 5 deletions(-)
+
+Konrad Rzeszutek Wilk (1):
+      x86, x86-64, gdt, hibernate: Store/load GDT for hibernate path.
+
