@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932554Ab3EBSTO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 14:19:14 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42785 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932442Ab3EBSTL (ORCPT
+	id S932625Ab3EBSUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 14:20:30 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56581 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932293Ab3EBSU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 14:19:11 -0400
-Date: Thu, 2 May 2013 19:18:51 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v10 0/2] (arm-soc for v3.10) arm: introduce psci_smp_ops
-Message-ID: <20130502181851.GB14496@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.02.1304301707290.5398@kaball.uk.xensource.com> <alpine.DEB.2.02.1305021811560.5398@kaball.uk.xensource.com> <20130502171516.GA3040@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1305021816490.5398@kaball.uk.xensource.com>
+	Thu, 2 May 2013 14:20:29 -0400
+Message-ID: <5182AE68.9010905@wwwdotorg.org>
+Date: Thu, 02 May 2013 12:20:24 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305021816490.5398@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: David Henningsson <david.henningsson@canonical.com>
+CC: Mike Travis <travis@sgi.com>, Stephen Warren <swarren@nvidia.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Russ Anderson <rja@sgi.com>
+Subject: Re: [PATCH]: x86_64, audio: Fix system panic when DMA > 40 bits
+References: <1367435048-66137-1-git-send-email-travis@sgi.com> <518205A9.1050409@canonical.com>
+In-Reply-To: <518205A9.1050409@canonical.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 06:20:32PM +0100, Stefano Stabellini wrote:
-> On Thu, 2 May 2013, Will Deacon wrote:
-> > Hi Stefano,
-> > 
-> > On Thu, May 02, 2013 at 06:12:12PM +0100, Stefano Stabellini wrote:
-> > > ping
-> > 
-> > Is this a ping to have this pulled into Russell's tree?
+On 05/02/2013 12:20 AM, David Henningsson wrote:
+> On 05/01/2013 09:04 PM, Mike Travis wrote:
+>> The audio driver mistakenly allows 64 bit addresses to be created for
+>> the audio driver on Nvidia GPUs.  Unfortunately, the hardware normally
+>> only supports up to 40 bits of DMA.  This can cause system panics as
+>> well as misdirected data when the address is > 40 bits as the upper
+>> part the address is truncated.
 > 
-> I thought that we agreed that the patches should go via the arm-soc
-> tree, after Russell acks them.
-> 
-> The ping is for Russell to ack them and Arnd to merge them.
+> Thanks for this patch. Stephen Warren, is this something you can
+> confirm/deny, and do you know what range of hardware this actually
+> applies to?
 
-Sorry but I tend not to be around on Tuesdays and Wednesdays, which leads
-to a hell of an email problem on Thursdays.  I haven't looked at them in
-any great detail (I just paged through them so far and on to the next
-email.)
-
-I don't really have sufficient time to properly deal with all the email
-traffic that is now on this list - even from just flicking through the
-messages.  It's far too much.
+It's certainly plausible that the GPU's internal physical addresses are
+less than a full 64-bits, and this probably affects PCI accesses too.
