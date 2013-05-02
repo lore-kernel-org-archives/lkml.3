@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab3EBI4b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 04:56:31 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:61026 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535Ab3EBI4a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 04:56:30 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] dmaengine: ste_dma40: Correct copy/paste error
-Date: Thu,  2 May 2013 09:56:18 +0100
-Message-Id: <1367484978-3599-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756042Ab3EBI53 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 04:57:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34072 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750822Ab3EBI52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 04:57:28 -0400
+Message-ID: <51822A75.7030101@suse.cz>
+Date: Thu, 02 May 2013 10:57:25 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Steve Russo <svrusso1@fieldeffect.info>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 001/001] kconfig: fix pointer conversion error when running
+ make xconfig
+References: <CABKNEQcR_AWnMptL=o0XtCyX78Cn5xiV78wxP_65O2kmeK1MNg@mail.gmail.com>
+In-Reply-To: <CABKNEQcR_AWnMptL=o0XtCyX78Cn5xiV78wxP_65O2kmeK1MNg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'struct stedma40_half_channel_info's header comment says that it's
-called 'struct stedma40_chan_cfg'. Let's straighten that out.
+On 30.4.2013 19:38, Steve Russo wrote:
+> From: Steve Russo <svrusso1@gmail.com <mailto:svrusso1@gmail.com>>
+> 
+> I could not compile "make xconfig" on the linux-next git, as of
+> 20130430, due to a pointer type conversion in line 128/129 of list.h
+> (couldn't convert from void* to struct list_head).
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- include/linux/platform_data/dma-ste-dma40.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks for the patch, but it has already been posted here:
+http://lkml.org/lkml/2013/4/29/322
 
-diff --git a/include/linux/platform_data/dma-ste-dma40.h b/include/linux/platform_data/dma-ste-dma40.h
-index af0064e..288dc24 100644
---- a/include/linux/platform_data/dma-ste-dma40.h
-+++ b/include/linux/platform_data/dma-ste-dma40.h
-@@ -86,7 +86,7 @@ enum stedma40_xfer_dir {
- 
- 
- /**
-- * struct stedma40_chan_cfg - dst/src channel configuration
-+ * struct stedma40_half_channel_info - dst/src channel configuration
-  *
-  * @big_endian: true if the src/dst should be read as big endian
-  * @data_width: Data width of the src/dst hardware
--- 
-1.7.10.4
+ This is my first
+> patch; please forgive me if I haven't done something correctly.
 
+First and foremost: No html email.
+
+
+> Signed-off-by: Steve Russo <svrusso1@gmail.com <mailto:svrusso1@gmail.com>>
+> ---
+> ---
+> /home/russosv/Dev/Kernel/generic/linux-next/20130429/scripts/kconfig/list.h.orig2013-04-30
+> 13:09:34.708075512 -0400
+> +++
+> /home/russosv/Dev/Kernel/generic/linux-next/20130429/scripts/kconfig/list.h2013-04-30
+> 13:07:30.113329353 -0400
+
+Second: Please send patches so that they apply with -p1. The best is to
+first send the patch to yourself and pipe the email to 'git am.' If that
+works, then the odds are that it will work for the receiver as well.
+
+Otherwise the content was OK.
+
+Michal
