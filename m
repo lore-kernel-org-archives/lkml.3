@@ -1,102 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760677Ab3EBQZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 12:25:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758873Ab3EBQZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760634Ab3EBQZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 12:25:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:60960 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758743Ab3EBQZh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 May 2013 12:25:37 -0400
-Message-ID: <1367512056.4000.3.camel@dcbw.foobar.com>
-Subject: Re: [GIT] Networking
-From: Dan Williams <dcbw@redhat.com>
-To: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>, kaber@trash.net,
-        torvalds@linux-foundation.org, hayeswang@realtek.com,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 02 May 2013 11:27:36 -0500
-In-Reply-To: <87zjwda9bl.fsf@nemi.mork.no>
-References: <20130502.041625.412316202038784117.davem@davemloft.net>
-	 <20130502083619.GA22010@macbook.localnet> <87d2t9bvj1.fsf@nemi.mork.no>
-	 <20130502.051727.949429506738234701.davem@davemloft.net>
-	 <1367490491.5106.137.camel@deadeye.wl.decadent.org.uk>
-	 <87zjwda9bl.fsf@nemi.mork.no>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+From: Arnd Bergmann <arnd@arndb.de>
+To: "edubezval@gmail.com" <edubezval@gmail.com>
+Subject: Re: [PATCH, RFC 22/22] radio-si4713: depend on SND_SOC
+Date: Thu, 2 May 2013 18:25:11 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Hans Verkuil <hverkuil@xs4all.nl>, linux-media@vger.kernel.org
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-23-git-send-email-arnd@arndb.de> <CAC-25o9Xp+pu_AUwxyh+YsiOCOebzMRF37v1VWZJD6nrbx5e6Q@mail.gmail.com>
+In-Reply-To: <CAC-25o9Xp+pu_AUwxyh+YsiOCOebzMRF37v1VWZJD6nrbx5e6Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305021825.12094.arnd@arndb.de>
+X-Provags-ID: V02:K0:XyOgGZjvwzMP/uhsub+vKHnU7TuXmIGRpvCl4cC6tkZ
+ pzxoFcbb2XNDsyRT242S0rLacyDdhs217ZfRpGKKVW7yQJfOOp
+ WeDfaTe9G8p5PAtnatEVxxcn82KcAXCwEVlEdp+8TfvDSxNzxv
+ AFT28IUu/Xe4FUrHGa2Weq2s6SQ6seBjBpKfOVTzMp9O/LXLVd
+ a7t9y1hCNhE7FHZeB4oXBREHqagii/oH0CTvSM3y7MZkc9T0Cx
+ /O8HK14IgtRubLGW1V1DCfgbez+Cvr09Cpw+7z/OGURt2mm/SH
+ 4ZRQncSCz1wvrdtxOtVZQmQz1wKo1rVGrG1DuhP1HfzLVt2LQp
+ 2E6Yu55hPU0uQW/WYKbo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-02 at 13:51 +0200, Bjørn Mork wrote:
-> Ben Hutchings <bhutchings@solarflare.com> writes:
-> > On Thu, 2013-05-02 at 05:17 -0400, David Miller wrote:
-> >> From: Bjørn Mork <bjorn@mork.no>
-> >> Date: Thu, 02 May 2013 11:06:42 +0200
-> >> 
-> >> > Adding the new netdev features will make it go from 1 to 2:
-> >> 
-> >> We already had more than 31 feature bits before Patrick's
-> >> changes, and I'm pretty sure this was the case when we added
-> >> that ethtool API.
+On Thursday 02 May 2013, edubezval@gmail.com wrote:
+> On Thu, May 2, 2013 at 11:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > It is not possible to select SND_SOC_SI476X if we have not also
+> > enabled SND_SOC.
 > >
-> > It wasn't, but this should be OK.  Userland is supposed to query the
-> > number of features using ETHTOOL_GSSET_INFO and then work out the number
-> > of words/blocks using FEATURE_BITS_TO_BLOCKS().  
+> > warning: (RADIO_SI476X) selects SND_SOC_SI476X which has unmet
+> >          direct dependencies (SOUND && !M68K && !UML && SND && SND_SOC)
+> >
+> > Cc: Hans Verkuil <hverkuil@xs4all.nl>
+> > Cc: linux-media@vger.kernel.org
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > ---
 > 
+> Note on your patch title, this change is against si476X, not on *si4713*.
 > 
-> Looking at
-> http://cgit.freedesktop.org/NetworkManager/NetworkManager/tree/src/platform/nm-linux-platform.c#n1025
-> there seems to be a couple of bugs in this area. This is certainly
-> abusing the exported API, but it does mean that NM breaks if you ever
-> move NETIF_F_VLAN_CHALLENGED (like the 802.1ad patch did):
 
-NM doesn't actually use any of the code in src/platform/ yet, so it
-wouldn't be affecting anything NM does at this time.  However, comments
-like this are quite useful so we can fix it before NM does start to
-depend on the code :)
+Sorry about that, I must have copied the wrong prefix from an older patch
+then. I'll fix it up locally in case I need to resend.
 
-Dan
-
-> ----
-> #define NETIF_F_VLAN_CHALLENGED (1 << 10)
-> 
-> static gboolean
-> link_supports_vlans (NMPlatform *platform, int ifindex)
-> {
-> 	auto_nl_object struct rtnl_link *rtnllink = link_get (platform, ifindex);
-> 	const char *name = nm_platform_link_get_name (ifindex);
-> 	struct {
-> 		struct ethtool_gfeatures features;
-> 		struct ethtool_get_features_block features_block;
-> 	} edata = { .features = { .cmd = ETHTOOL_GFEATURES, .size = 1 } };
-> 
-> 	/* Only ARPHRD_ETHER links can possibly support VLANs. */
-> 	if (!rtnllink || rtnl_link_get_arptype (rtnllink) != ARPHRD_ETHER)
-> 		return FALSE;
-> 
-> 	if (!name || !ethtool_get (name, &edata))
-> 		return FALSE;
-> 
-> 	return !(edata.features.features[0].active & NETIF_F_VLAN_CHALLENGED);
-> }
-> ----
-> 
-> 
-> Not that I see how this particular bug matters unless you need VLAN
-> support in NM.  But there could be similar issues around.  I guess
-> avoiding unnecessary renumbering of the NETIF_F bits can save us some
-> trouble.  Although you can certainly argue that those bits never were
-> intended to be part of the API, and that using them like this is a user
-> application bug.
-> 
-> 
-> 
-> Bjørn
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+	Arnd
