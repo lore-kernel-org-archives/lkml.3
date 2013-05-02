@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760652Ab3EBQRT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 12:17:19 -0400
-Received: from nm16-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.166]:21954
-	"EHLO nm16-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758223Ab3EBQRS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 12:17:18 -0400
-X-Yahoo-Newman-Id: 453915.17765.bm@smtp120.sbc.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: i1kqaEAVM1nR3DW68xUDOnLzyduVqUTccAJnj596eb8goBw
- 5_5ZUzDn6qSvzxnVrq4t50IhdadXqPEAoNF2D6HFGYEXUB4dFxB74e2R24hk
- MhJmSjSoDFzJOgA41xrrrOSTT6BcMM0T.lOvF8BAA9YNSEIrUxhz9aZIi_FV
- 6BS2lSnfYpg05LBHRz6UcQlwGU_5xE4h_1EYC_X0oHjS2Ny6lPGXZ0V4twdm
- 5r707Uq4EFdyxLXh2FMG4L8Z82.tN8Wshm6yIHAQm8zGZtqCn_2vJV5CLXwL
- HodvoBWRt5yhrUhC1OSU4KF31.04xS8cB4v8i1A79qZQI3IMtZ0WBsPW4Mln
- O.YvmF.1QN3rZ_0hMstRy5QziO3HGkcUj0UHaaRxVUkgFIXrsSoz29OcJt_z
- ItklqnL1rQ5M3qDRP7XtoitNAIluJmI7l6hWWHH64Tsds5NGp.jW84pWabqq
- nwsOGDsvq677mwAA_bYO9hfnknS3qhH_n
-X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
-X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
-        by smtp120.sbc.mail.gq1.yahoo.com with SMTP; 02 May 2013 16:17:17 +0000 UTC
-Date: Thu, 2 May 2013 09:17:20 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: dirk.eibach@gdsys.cc
-Cc: linux-kernel@vger.kernel.org, Kumar Gala <galak@kernel.crashing.org>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH] powerpc: Make Book E watchdog reset type configurable
-Message-ID: <20130502161720.GA7797@roeck-us.net>
-References: <1367505913-18970-1-git-send-email-dirk.eibach@gdsys.cc>
+	id S1759734Ab3EBQUE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 12:20:04 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:54578 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758155Ab3EBQUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 12:20:01 -0400
+Message-ID: <5182922E.4060305@sgi.com>
+Date: Thu, 02 May 2013 09:19:58 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367505913-18970-1-git-send-email-dirk.eibach@gdsys.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Henningsson <david.henningsson@canonical.com>
+CC: Stephen Warren <swarren@nvidia.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Russ Anderson <rja@sgi.com>
+Subject: Re: [PATCH]: x86_64, audio: Fix system panic when DMA > 40 bits
+References: <1367435048-66137-1-git-send-email-travis@sgi.com> <518205A9.1050409@canonical.com> <51820968.7080303@sgi.com> <518223ED.3000509@canonical.com>
+In-Reply-To: <518223ED.3000509@canonical.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 04:45:13PM +0200, dirk.eibach@gdsys.cc wrote:
-> From: Dirk Eibach <dirk.eibach@gdsys.cc>
-> 
-> Signed-off-by: Dirk Eibach <dirk.eibach@gdsys.cc>
-> Cc: Kumar Gala <galak@kernel.crashing.org>
-> Cc: Wim Van Sebroeck <wim@iguana.be>
-> Cc: linux-watchdog@vger.kernel.org
-> ---
->  drivers/watchdog/Kconfig     |   32 ++++++++++++++++++++++++++++++++
->  drivers/watchdog/booke_wdt.c |   10 +++++++++-
->  2 files changed, 41 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index e89fc31..6048593 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -1172,6 +1172,38 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
->  
->  	  The value can be overridden by the wdt_period command-line parameter.
->  
-> +choice
-> +	prompt "PowerPC Book-E Watchdog reset type"
-> +	depends on BOOKE_WDT
-> +	default BOOKE_WDT_RESET_CHIP
-> +	help
-> +	  Specify what kind of reset will be executed on watchdog timeout.
-> +
-Seems to me it would be much better to make this configurable via platform data 
-and/or device tree.
 
-Guenter
+
+On 5/2/2013 1:29 AM, David Henningsson wrote:
+> On 05/02/2013 08:36 AM, Mike Travis wrote:
+>>
+>>
+>> On 5/1/2013 11:20 PM, David Henningsson wrote:
+>>> On 05/01/2013 09:04 PM, Mike Travis wrote:
+>>>> The audio driver mistakenly allows 64 bit addresses to be created for
+>>>> the audio driver on Nvidia GPUs.  Unfortunately, the hardware normally
+>>>> only supports up to 40 bits of DMA.  This can cause system panics as
+>>>> well as misdirected data when the address is > 40 bits as the upper
+>>>> part the address is truncated.
+>>>
+>>> Thanks for this patch. Stephen Warren, is this something you can
+>>> confirm/deny, and do you know what range of hardware this actually
+>>> applies to?
+>>
+>> The dma_mask can be read from the gpu device's pci entry.  I know it's
+>> a stretch to try to link to that but past history has shown that it
+>> ranges from 36 to 40 bits.
+> 
+> Ok, so the below patch is some kind of workaround, as we don't currently
+> take the dma_mask into account correctly? Or put in another way, would
+> it be possible/better to actually read the dma_mask and use that instead
+> of just clamping at 32 bit?\
+
+Yes, it would.  There is a strange scenario where if you request
+a DMA32 address it must be on the lowest node (where the DMA32 area
+is).  But if you are running on a cpuset that excludes Node 0's
+memory, you'll get an error.  But I couldn't think of a workable
+way to link the two (except that the PCI id is the same except
+for the function #.)
+>>>
+>>>>
+>>>> Signed-off-by: Mike Travis <travis@sgi.com>
+>>>> Reviewed-by: Mike Habeck <habeck@sgi.com>
+>>>> ---
+>>>>    sound/pci/hda/hda_intel.c | 2 +-
+>>>>    1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+>>>> index bcd40ee..45eb165 100644
+>>>> --- a/sound/pci/hda/hda_intel.c
+>>>> +++ b/sound/pci/hda/hda_intel.c
+>>>> @@ -615,7 +615,7 @@ enum {
+>>>>    /* quirks for Nvidia */
+>>>>    #define AZX_DCAPS_PRESET_NVIDIA \
+>>>>        (AZX_DCAPS_NVIDIA_SNOOP | AZX_DCAPS_RIRB_DELAY |
+>>>> AZX_DCAPS_NO_MSI |\
+>>>> -     AZX_DCAPS_ALIGN_BUFSIZE)
+>>>> +     AZX_DCAPS_ALIGN_BUFSIZE | AZX_DCAPS_NO_64BIT)
+>>>>
+>>>>    #define AZX_DCAPS_PRESET_CTHDA \
+>>>>        (AZX_DCAPS_NO_MSI | AZX_DCAPS_POSFIX_LPIB |
+>>>> AZX_DCAPS_4K_BDLE_BOUNDARY)
+>>>>
+>>>
+>>>
+>>>
+>>
+> 
+> 
+> 
