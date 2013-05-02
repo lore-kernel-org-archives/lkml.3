@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758325Ab3EBLwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 07:52:07 -0400
-Received: from canardo.mork.no ([148.122.252.1]:34952 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754086Ab3EBLwF convert rfc822-to-8bit (ORCPT
+	id S1758518Ab3EBLwn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 07:52:43 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:45006 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758426Ab3EBLwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 07:52:05 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: David Miller <davem@davemloft.net>, <kaber@trash.net>,
-        <torvalds@linux-foundation.org>, <hayeswang@realtek.com>,
-        <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT] Networking
-Organization: m
-References: <20130502.041625.412316202038784117.davem@davemloft.net>
-	<20130502083619.GA22010@macbook.localnet>
-	<87d2t9bvj1.fsf@nemi.mork.no>
-	<20130502.051727.949429506738234701.davem@davemloft.net>
-	<1367490491.5106.137.camel@deadeye.wl.decadent.org.uk>
-Date: Thu, 02 May 2013 13:51:42 +0200
-In-Reply-To: <1367490491.5106.137.camel@deadeye.wl.decadent.org.uk> (Ben
-	Hutchings's message of "Thu, 2 May 2013 11:28:11 +0100")
-Message-ID: <87zjwda9bl.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 May 2013 07:52:41 -0400
+From: Laurent Navet <laurent.navet@gmail.com>
+To: herbert@gondor.hengli.com.au, davem@davemloft.net
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Laurent Navet <laurent.navet@gmail.com>
+Subject: [PATCH] drivers: crypto: use devm_ioremap_resource()
+Date: Thu,  2 May 2013 14:00:38 +0200
+Message-Id: <1367496038-4038-1-git-send-email-laurent.navet@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Hutchings <bhutchings@solarflare.com> writes:
-> On Thu, 2013-05-02 at 05:17 -0400, David Miller wrote:
->> From: Bjørn Mork <bjorn@mork.no>
->> Date: Thu, 02 May 2013 11:06:42 +0200
->> 
->> > Adding the new netdev features will make it go from 1 to 2:
->> 
->> We already had more than 31 feature bits before Patrick's
->> changes, and I'm pretty sure this was the case when we added
->> that ethtool API.
->
-> It wasn't, but this should be OK.  Userland is supposed to query the
-> number of features using ETHTOOL_GSSET_INFO and then work out the number
-> of words/blocks using FEATURE_BITS_TO_BLOCKS().  
+Replace calls to deprecated devm_request_and_ioremap by devm_ioremap_resource.
 
+Found with coccicheck and this semantic patch:
+ scripts/coccinelle/api/devm_request_and_ioremap.cocci.
 
-Looking at
-http://cgit.freedesktop.org/NetworkManager/NetworkManager/tree/src/platform/nm-linux-platform.c#n1025
-there seems to be a couple of bugs in this area. This is certainly
-abusing the exported API, but it does mean that NM breaks if you ever
-move NETIF_F_VLAN_CHALLENGED (like the 802.1ad patch did):
+Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+---
+ drivers/crypto/omap-aes.c  |    7 +++----
+ drivers/crypto/omap-sham.c |    7 +++----
+ 2 files changed, 6 insertions(+), 8 deletions(-)
 
-----
-#define NETIF_F_VLAN_CHALLENGED (1 << 10)
+diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
+index 6aa425f..158215c 100644
+--- a/drivers/crypto/omap-aes.c
++++ b/drivers/crypto/omap-aes.c
+@@ -1125,10 +1125,9 @@ static int omap_aes_probe(struct platform_device *pdev)
+ 	if (err)
+ 		goto err_res;
+ 
+-	dd->io_base = devm_request_and_ioremap(dev, &res);
+-	if (!dd->io_base) {
+-		dev_err(dev, "can't ioremap\n");
+-		err = -ENOMEM;
++	dd->io_base = devm_ioremap_resource(dev, &res);
++	if (IS_ERR(dd->io_base)) {
++		err = PTR_ERR(dd->io_base);
+ 		goto err_res;
+ 	}
+ 	dd->phys_base = res.start;
+diff --git a/drivers/crypto/omap-sham.c b/drivers/crypto/omap-sham.c
+index 3d1611f..4d9cca6 100644
+--- a/drivers/crypto/omap-sham.c
++++ b/drivers/crypto/omap-sham.c
+@@ -1686,10 +1686,9 @@ static int omap_sham_probe(struct platform_device *pdev)
+ 	if (err)
+ 		goto res_err;
+ 
+-	dd->io_base = devm_request_and_ioremap(dev, &res);
+-	if (!dd->io_base) {
+-		dev_err(dev, "can't ioremap\n");
+-		err = -ENOMEM;
++	dd->io_base = devm_ioremap_resource(dev, &res);
++	if (IS_ERR(dd->io_base)) {
++		err = PTR_ERR(dd->io_base);
+ 		goto res_err;
+ 	}
+ 	dd->phys_base = res.start;
+-- 
+1.7.10.4
 
-static gboolean
-link_supports_vlans (NMPlatform *platform, int ifindex)
-{
-	auto_nl_object struct rtnl_link *rtnllink = link_get (platform, ifindex);
-	const char *name = nm_platform_link_get_name (ifindex);
-	struct {
-		struct ethtool_gfeatures features;
-		struct ethtool_get_features_block features_block;
-	} edata = { .features = { .cmd = ETHTOOL_GFEATURES, .size = 1 } };
-
-	/* Only ARPHRD_ETHER links can possibly support VLANs. */
-	if (!rtnllink || rtnl_link_get_arptype (rtnllink) != ARPHRD_ETHER)
-		return FALSE;
-
-	if (!name || !ethtool_get (name, &edata))
-		return FALSE;
-
-	return !(edata.features.features[0].active & NETIF_F_VLAN_CHALLENGED);
-}
-----
-
-
-Not that I see how this particular bug matters unless you need VLAN
-support in NM.  But there could be similar issues around.  I guess
-avoiding unnecessary renumbering of the NETIF_F bits can save us some
-trouble.  Although you can certainly argue that those bits never were
-intended to be part of the API, and that using them like this is a user
-application bug.
-
-
-
-Bjørn
