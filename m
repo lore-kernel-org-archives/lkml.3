@@ -1,104 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830Ab3EBJBS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 05:01:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34248 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755708Ab3EBJBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 05:01:15 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: hayeswang <hayeswang@realtek.com>
-Cc: gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        "'nic_swsd'" <nic_swsd@realtek.com>
-Subject: Re: [PATCH net-next] net/usb: new driver for RTL8152
-Date: Thu, 02 May 2013 11:02:10 +0200
-Message-ID: <2267010.M7uxa7hLi4@linux-5eaq.site>
-Organization: SUSE
-User-Agent: KMail/4.10 (Linux/3.7.10-1.1-desktop; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <95FC8A7CCB904AB6B26751C6DBEE49F2@realtek.com.tw>
-References: <1366965948-1805-1-git-send-email-hayeswang@realtek.com> <201305020622.r426MYGv032465@rtits1.realtek.com> <95FC8A7CCB904AB6B26751C6DBEE49F2@realtek.com.tw>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1755572Ab3EBJCh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 05:02:37 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:62034 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab3EBJCf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 05:02:35 -0400
+From: Daniel Tang <dt.tangr@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: [RFC PATCH] Fix sortextable building on non-Linux systems
+Date: Thu, 2 May 2013 19:02:27 +1000
+Message-Id: <864CECE1-E0C2-4AA5-ACAE-D09D3C2FAFAE@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: matt.fleming@intel.com
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 May 2013 15:46:50 hayeswang wrote:
->  Oliver Neukum [mailto:oneukum@suse.de] 
-> > Sent: Friday, April 26, 2013 7:57 PM
-> > To: Hayeswang
-> > Cc: gregkh@linuxfoundation.org; netdev@vger.kernel.org; 
-> > linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org; nic_swsd
-> > Subject: Re: [PATCH net-next] net/usb: new driver for RTL8152
-> > 
-> [...]
-> > > +static inline void set_ethernet_addr(struct r8152 *tp)
-> > > +{
-> > > +	struct net_device *dev = tp->netdev;
-> > > +	u8 node_id[8] = {0};
-> > > +
-> > > +	if (pla_ocp_read(tp, PLA_IDR, sizeof(node_id), node_id) < 0)
-> > 
-> > DMA coherency rules. No buffers on the stack.
-> 
-> Excuse me. I don't understand what you mean. I reference the rtl8150.c and it
+The file scripts/sortextable.c fails to compile on non-Linux systems due to the missing 'linux/types.h' header. 
 
-On some CPUs special operations need to be performed on buffers
-intended for DMA. After these operations until the DMA is over any cacheline
-shared with the buffer must not be touched. In addition it is not guaranteed
-that the stack is DMAable at all.
-This is documented in DMA-API.txt
+Unless I'm missing something obvious, including the standard 'inttypes.h' header instead and using uintX_t types instead of __uX types does the exact same job and doesn't break compilation on non-Linux systems.
 
-I know this a very common bug because it works on x86, but on some architectures it
-fails.
+Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
+---
+tools/include/tools/be_byteshift.h | 34 +++++++++++++++++-----------------
+tools/include/tools/le_byteshift.h | 34 +++++++++++++++++-----------------
+2 files changed, 34 insertions(+), 34 deletions(-)
 
-> uses the same way. Besides, when I check the other drivers, I find the data
-> pointer of the parameter of the usb_control_msg() may be a pointer of a local
-> variable from the other functions.
-> 
-> [...]
-> > > +static void rtl_work_func_t(struct work_struct *work)
-> > > +{
-> > > +	struct r8152 *tp = container_of(work, struct r8152, 
-> > schedule.work);
-> > > +
-> > > +	if (!netif_running(tp->netdev))
-> > > +		goto out1;
-> > > +
-> > > +	if (test_bit(RTL8152_UNPLUG, &tp->flags))
-> > > +		goto out1;
-> > > +
-> > > +	set_carrier(tp);
-> > > +
-> > > +	if (test_bit(RTL8152_SET_RX_MODE, &tp->flags))
-> > > +		_rtl8152_set_rx_mode(tp->netdev);
-> > > +
-> > > +	schedule_delayed_work(&tp->schedule, HZ);
-> > 
-> > Why does this need to run permanently?
-> 
-> It is used to periodically check the speed, link status, and any other tasks
-> which need to be finished.
+diff --git a/tools/include/tools/be_byteshift.h b/tools/include/tools/be_byteshift.h
+index f4912e2..d51fe26 100644
+--- a/tools/include/tools/be_byteshift.h
++++ b/tools/include/tools/be_byteshift.h
+@@ -1,68 +1,68 @@
+#ifndef _TOOLS_BE_BYTESHIFT_H
+#define _TOOLS_BE_BYTESHIFT_H
 
-Unfortunate. It will hurt power consumption.
+-#include <linux/types.h>
++#include <inttypes.h>
 
-> 
-> [...]
-> > > +static int rtl8152_close(struct net_device *netdev)
-> > > +{
-> > > +	struct r8152 *tp = netdev_priv(netdev);
-> > > +	int res = 0;
-> > > +
-> > > +	cancel_delayed_work_sync(&tp->schedule);
-> > 
-> > Looks like a race. What makes sure the work isn't rescheduled?
-> 
-> netif_running would be checked.
+-static inline __u16 __get_unaligned_be16(const __u8 *p)
++static inline uint16_t __get_unaligned_be16(const uint8_t *p)
+{
+	return p[0] << 8 | p[1];
+}
 
-I see.
+-static inline __u32 __get_unaligned_be32(const __u8 *p)
++static inline uint32_t __get_unaligned_be32(const uint8_t *p)
+{
+	return p[0] << 24 | p[1] << 16 | p[2] << 8 | p[3];
+}
 
-	HTH
-		Oliver
+-static inline __u64 __get_unaligned_be64(const __u8 *p)
++static inline uint64_t __get_unaligned_be64(const uint8_t *p)
+{
+-	return (__u64)__get_unaligned_be32(p) << 32 |
++	return (uint64_t)__get_unaligned_be32(p) << 32 |
+	       __get_unaligned_be32(p + 4);
+}
+
+-static inline void __put_unaligned_be16(__u16 val, __u8 *p)
++static inline void __put_unaligned_be16(uint16_t val, uint8_t *p)
+{
+	*p++ = val >> 8;
+	*p++ = val;
+}
+
+-static inline void __put_unaligned_be32(__u32 val, __u8 *p)
++static inline void __put_unaligned_be32(uint32_t val, uint8_t *p)
+{
+	__put_unaligned_be16(val >> 16, p);
+	__put_unaligned_be16(val, p + 2);
+}
+
+-static inline void __put_unaligned_be64(__u64 val, __u8 *p)
++static inline void __put_unaligned_be64(uint64_t val, uint8_t *p)
+{
+	__put_unaligned_be32(val >> 32, p);
+	__put_unaligned_be32(val, p + 4);
+}
+
+-static inline __u16 get_unaligned_be16(const void *p)
++static inline uint16_t get_unaligned_be16(const void *p)
+{
+-	return __get_unaligned_be16((const __u8 *)p);
++	return __get_unaligned_be16((const uint8_t *)p);
+}
+
+-static inline __u32 get_unaligned_be32(const void *p)
++static inline uint32_t get_unaligned_be32(const void *p)
+{
+-	return __get_unaligned_be32((const __u8 *)p);
++	return __get_unaligned_be32((const uint8_t *)p);
+}
+
+-static inline __u64 get_unaligned_be64(const void *p)
++static inline uint64_t get_unaligned_be64(const void *p)
+{
+-	return __get_unaligned_be64((const __u8 *)p);
++	return __get_unaligned_be64((const uint8_t *)p);
+}
+
+-static inline void put_unaligned_be16(__u16 val, void *p)
++static inline void put_unaligned_be16(uint16_t val, void *p)
+{
+	__put_unaligned_be16(val, p);
+}
+
+-static inline void put_unaligned_be32(__u32 val, void *p)
++static inline void put_unaligned_be32(uint32_t val, void *p)
+{
+	__put_unaligned_be32(val, p);
+}
+
+-static inline void put_unaligned_be64(__u64 val, void *p)
++static inline void put_unaligned_be64(uint64_t val, void *p)
+{
+	__put_unaligned_be64(val, p);
+}
+diff --git a/tools/include/tools/le_byteshift.h b/tools/include/tools/le_byteshift.h
+index c99d45a..259a132 100644
+--- a/tools/include/tools/le_byteshift.h
++++ b/tools/include/tools/le_byteshift.h
+@@ -1,68 +1,68 @@
+#ifndef _TOOLS_LE_BYTESHIFT_H
+#define _TOOLS_LE_BYTESHIFT_H
+
+-#include <linux/types.h>
++#include <inttypes.h>
+
+-static inline __u16 __get_unaligned_le16(const __u8 *p)
++static inline uint16_t __get_unaligned_le16(const uint8_t *p)
+{
+	return p[0] | p[1] << 8;
+}
+
+-static inline __u32 __get_unaligned_le32(const __u8 *p)
++static inline uint32_t __get_unaligned_le32(const uint8_t *p)
+{
+	return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
+}
+
+-static inline __u64 __get_unaligned_le64(const __u8 *p)
++static inline uint64_t __get_unaligned_le64(const uint8_t *p)
+{
+-	return (__u64)__get_unaligned_le32(p + 4) << 32 |
++	return (uint64_t)__get_unaligned_le32(p + 4) << 32 |
+	       __get_unaligned_le32(p);
+}
+
+-static inline void __put_unaligned_le16(__u16 val, __u8 *p)
++static inline void __put_unaligned_le16(uint16_t val, uint8_t *p)
+{
+	*p++ = val;
+	*p++ = val >> 8;
+}
+
+-static inline void __put_unaligned_le32(__u32 val, __u8 *p)
++static inline void __put_unaligned_le32(uint32_t val, uint8_t *p)
+{
+	__put_unaligned_le16(val >> 16, p + 2);
+	__put_unaligned_le16(val, p);
+}
+
+-static inline void __put_unaligned_le64(__u64 val, __u8 *p)
++static inline void __put_unaligned_le64(uint64_t val, uint8_t *p)
+{
+	__put_unaligned_le32(val >> 32, p + 4);
+	__put_unaligned_le32(val, p);
+}
+
+-static inline __u16 get_unaligned_le16(const void *p)
++static inline uint16_t get_unaligned_le16(const void *p)
+{
+-	return __get_unaligned_le16((const __u8 *)p);
++	return __get_unaligned_le16((const uint8_t *)p);
+}
+
+-static inline __u32 get_unaligned_le32(const void *p)
++static inline uint32_t get_unaligned_le32(const void *p)
+{
+-	return __get_unaligned_le32((const __u8 *)p);
++	return __get_unaligned_le32((const uint8_t *)p);
+}
+
+-static inline __u64 get_unaligned_le64(const void *p)
++static inline uint64_t get_unaligned_le64(const void *p)
+{
+-	return __get_unaligned_le64((const __u8 *)p);
++	return __get_unaligned_le64((const uint8_t *)p);
+}
+
+-static inline void put_unaligned_le16(__u16 val, void *p)
++static inline void put_unaligned_le16(uint16_t val, void *p)
+{
+	__put_unaligned_le16(val, p);
+}
+
+-static inline void put_unaligned_le32(__u32 val, void *p)
++static inline void put_unaligned_le32(uint32_t val, void *p)
+{
+	__put_unaligned_le32(val, p);
+}
+
+-static inline void put_unaligned_le64(__u64 val, void *p)
++static inline void put_unaligned_le64(uint64_t val, void *p)
+{
+	__put_unaligned_le64(val, p);
+}
+-- 
+1.8.1.3
+
 
