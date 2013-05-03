@@ -1,76 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761865Ab3ECADG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 20:03:06 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:40218 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759494Ab3ECADD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 20:03:03 -0400
+	id S1762228Ab3ECACK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 20:02:10 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:55059 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762115Ab3ECABg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 20:01:36 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Linux MM <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>,
         Simon Jeons <simon.jeons@gmail.com>
-Subject: [RFC PATCH v3 20/31] page_alloc: use dnuma to transplant newly freed pages in __free_pages_ok()
-Date: Thu,  2 May 2013 17:00:52 -0700
-Message-Id: <1367539263-19999-21-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [RFC PATCH v3 19/31] mm: memory,memlayout: add refresh_memory_blocks() for Dynamic NUMA.
+Date: Thu,  2 May 2013 17:00:51 -0700
+Message-Id: <1367539263-19999-20-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.2
 In-Reply-To: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050300-7606-0000-0000-00000B0CBE70
+x-cbid: 13050300-7182-0000-0000-00000684B96E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__free_pages_ok() handles higher order (order != 0) pages. Transplant
-hook is added here as this is where the struct zone to free to is
-decided.
-
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Properly update the sysfs info when memory blocks move between nodes
+due to a Dynamic NUMA reconfiguration.
 ---
- mm/page_alloc.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ drivers/base/memory.c  | 39 +++++++++++++++++++++++++++++++++++++++
+ include/linux/memory.h |  5 +++++
+ mm/memlayout.c         |  3 +++
+ 3 files changed, 47 insertions(+)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ea4fda8..f33f1bf 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -60,6 +60,7 @@
- #include <linux/page-debug-flags.h>
- #include <linux/hugetlb.h>
- #include <linux/sched/rt.h>
-+#include <linux/dnuma.h>
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 90e387c..db1b034 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -15,6 +15,7 @@
+ #include <linux/device.h>
+ #include <linux/init.h>
+ #include <linux/kobject.h>
++#include <linux/memlayout.h>
+ #include <linux/memory.h>
+ #include <linux/memory_hotplug.h>
+ #include <linux/mm.h>
+@@ -700,6 +701,44 @@ bool is_memblock_offlined(struct memory_block *mem)
+ 	return mem->state == MEM_OFFLINE;
+ }
  
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -733,6 +734,13 @@ static void __free_pages_ok(struct page *page, unsigned int order)
- {
- 	unsigned long flags;
- 	int migratetype;
-+	int dest_nid = dnuma_page_needs_move(page);
-+	struct zone *zone;
++#if defined(CONFIG_DYNAMIC_NUMA)
++int refresh_memory_blocks(struct memlayout *ml)
++{
++	struct subsys_dev_iter iter;
++	struct device *dev;
++	/* XXX: 4th arg is (struct device_type *), can we spec one? */
++	mutex_lock(&mem_sysfs_mutex);
++	subsys_dev_iter_init(&iter, &memory_subsys, NULL, NULL);
 +
-+	if (dest_nid != NUMA_NO_NODE)
-+		zone = nid_zone(dest_nid, page_zonenum(page));
-+	else
-+		zone = page_zone(page);
++	while ((dev = subsys_dev_iter_next(&iter))) {
++		struct memory_block *mem_blk = container_of(dev, struct memory_block, dev);
++		unsigned long start_pfn = section_nr_to_pfn(mem_blk->start_section_nr);
++		unsigned long end_pfn   = section_nr_to_pfn(mem_blk->end_section_nr + 1);
++		struct rangemap_entry *rme = memlayout_pfn_to_rme_higher(ml, start_pfn);
++		unsigned long pfn = start_pfn;
++
++		if (!rme || !rme_bounds_pfn(rme, pfn)) {
++			pr_warn("memory block %s {sec %lx-%lx}, {pfn %05lx-%05lx} is not bounded by the memlayout %pK\n",
++					dev_name(dev),
++					mem_blk->start_section_nr, mem_blk->end_section_nr,
++					start_pfn, end_pfn, ml);
++			continue;
++		}
++
++		unregister_mem_block_under_nodes(mem_blk);
++
++		for (; pfn < end_pfn && rme; rme = rme_next(rme)) {
++			register_mem_block_under_node(mem_blk, rme->nid);
++			pfn = rme->pfn_end + 1;
++		}
++	}
++
++	subsys_dev_iter_exit(&iter);
++	mutex_unlock(&mem_sysfs_mutex);
++	return 0;
++}
++#endif
++
+ /*
+  * Initialize the sysfs support for memory devices...
+  */
+diff --git a/include/linux/memory.h b/include/linux/memory.h
+index 85c31a8..8f1dc43 100644
+--- a/include/linux/memory.h
++++ b/include/linux/memory.h
+@@ -143,6 +143,11 @@ enum mem_add_context { BOOT, HOTPLUG };
+ #define unregister_hotmemory_notifier(nb)  ({ (void)(nb); })
+ #endif
  
- 	if (!free_pages_prepare(page, order))
- 		return;
-@@ -741,7 +749,11 @@ static void __free_pages_ok(struct page *page, unsigned int order)
- 	__count_vm_events(PGFREE, 1 << order);
- 	migratetype = get_pageblock_migratetype(page);
- 	set_freepage_migratetype(page, migratetype);
--	free_one_page(page_zone(page), page, order, migratetype);
-+	if (dest_nid != NUMA_NO_NODE)
-+		dnuma_prior_free_to_new_zone(page, order, zone, dest_nid);
-+	free_one_page(zone, page, order, migratetype);
-+	if (dest_nid != NUMA_NO_NODE)
-+		dnuma_post_free_to_new_zone(order);
- 	local_irq_restore(flags);
++#ifdef CONFIG_DYNAMIC_NUMA
++struct memlayout;
++extern int refresh_memory_blocks(struct memlayout *ml);
++#endif
++
+ /*
+  * 'struct memory_accessor' is a generic interface to provide
+  * in-kernel access to persistent memory such as i2c or SPI EEPROMs
+diff --git a/mm/memlayout.c b/mm/memlayout.c
+index 0a1a602..8b9ba9a 100644
+--- a/mm/memlayout.c
++++ b/mm/memlayout.c
+@@ -9,6 +9,7 @@
+ #include <linux/dnuma.h>
+ #include <linux/export.h>
+ #include <linux/memblock.h>
++#include <linux/memory.h>
+ #include <linux/printk.h>
+ #include <linux/rbtree.h>
+ #include <linux/rcupdate.h>
+@@ -300,6 +301,8 @@ void memlayout_commit(struct memlayout *ml)
+ 	drain_all_pages();
+ 	/* All new page allocations now match the memlayout */
+ 
++	refresh_memory_blocks(ml);
++
+ 	mutex_unlock(&memlayout_lock);
  }
  
 -- 
