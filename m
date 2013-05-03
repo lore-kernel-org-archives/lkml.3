@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762873Ab3ECJJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 05:09:29 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:38522 "EHLO multi.imgtec.com"
+	id S1762907Ab3ECJL4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 05:11:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51870 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755368Ab3ECJJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 05:09:28 -0400
-Message-ID: <51837EC3.30705@imgtec.com>
-Date: Fri, 3 May 2013 10:09:23 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755368Ab3ECJLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 05:11:53 -0400
+Date: Fri, 3 May 2013 11:11:49 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+        kamezawa.hiroyu@jp.fujitsu.com, gthelen@google.com,
+        fengguang.wu@intel.com, glommer@parallels.com, dchinner@redhat.com,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH V3 4/8] memcg: add per cgroup dirty pages accounting
+Message-ID: <20130503091149.GA17496@dhcp22.suse.cz>
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
+ <1356456367-14660-1-git-send-email-handai.szj@taobao.com>
+ <20130102104421.GC22160@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "arm@kernel.org" <arm@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 6/8] gpio-tz1090: add TZ1090 gpio driver
-References: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com> <1366727607-27444-7-git-send-email-james.hogan@imgtec.com> <CACRpkdbzYpQqe4yabAwFSAG2rPstT8jM_--LssHi=ttUYtu1ug@mail.gmail.com> <517A475D.8060606@imgtec.com> <CACRpkdZzfegengBJ4n1Yc1WQU9TT7+-n3VoHiBA+AG68CJEyiw@mail.gmail.com>
-In-Reply-To: <CACRpkdZzfegengBJ4n1Yc1WQU9TT7+-n3VoHiBA+AG68CJEyiw@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_05_03_10_09_25
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130102104421.GC22160@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-On 03/05/13 09:49, Linus Walleij wrote:
-> On Fri, Apr 26, 2013 at 11:22 AM, James Hogan <james.hogan@imgtec.com> wrote:
->> So basically a bunch of global registers (e.g. pinctrl and gpio) are
->> shared between all 3 cores (up to 4 OSes). The __global_lock2 should do
->> all that is required to ensure exclusive access to the register (as long
->> as the other OSes do something similar when they access the same
->> registers). This is one of the reasons why there are 3 gpio banks with
->> separate interrupts, and each bank's interrupt is optional in this driver.
+On Wed 02-01-13 11:44:21, Michal Hocko wrote:
+> On Wed 26-12-12 01:26:07, Sha Zhengju wrote:
+> > From: Sha Zhengju <handai.szj@taobao.com>
+> > 
+> > This patch adds memcg routines to count dirty pages, which allows memory controller
+> > to maintain an accurate view of the amount of its dirty memory and can provide some
+> > info for users while cgroup's direct reclaim is working.
 > 
-> OK I get it ...
+> I guess you meant targeted resp. (hard/soft) limit reclaim here,
+> right? It is true that this is direct reclaim but it is not clear to me
+> why the usefulnes should be limitted to the reclaim for users. I would
+> understand this if the users was in fact in-kernel users.
 > 
-> I think this platform will never ever work with single zImage
-> though, that seems very unlikely given these constraints.
+> [...]
+> > To prevent AB/BA deadlock mentioned by Greg Thelen in previous version
+> > (https://lkml.org/lkml/2012/7/30/227), we adjust the lock order:
+> > ->private_lock --> mapping->tree_lock --> memcg->move_lock.
+> > So we need to make mapping->tree_lock ahead of TestSetPageDirty in __set_page_dirty()
+> > and __set_page_dirty_nobuffers(). But in order to avoiding useless spinlock contention,
+> > a prepare PageDirty() checking is added.
 > 
-> Well you will have to fight this out with the ARM SoC maintainers
-> anyway. If they are OK with it I will live with it.
-> 
-> (CC ARM SoC for this.)
+> But there is another AA deadlock here I believe.
+> page_remove_rmap
+>   mem_cgroup_begin_update_page_stat		<<< 1
+>   set_page_dirty
+>     __set_page_dirty_buffers
+>       __set_page_dirty
+>         mem_cgroup_begin_update_page_stat	<<< 2
+> 	  move_lock_mem_cgroup
+> 	    spin_lock_irqsave(&memcg->move_lock, *flags);
 
-Sorry, I wasn't very clear. This driver runs on a Meta core (i.e.
-arch/metag) not an ARM core, and <asm/global_lock.h> is an architecture
-thing (LOCK{0,1,2} are instructions).
+JFYI since abf09bed (s390/mm: implement software dirty bits) this is no
+longer possible. I haven't checked wheter there are other cases like
+this one and it should be better if mem_cgroup_begin_update_page_stat
+was recursive safe if that can be done without too many hacks.
+I will have a look at this (hopefully) sometimes next week.
 
-Cheers
-James
-
+[...]
+-- 
+Michal Hocko
+SUSE Labs
