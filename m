@@ -1,30 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762487Ab3ECDNB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 23:13:01 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51930 "EHLO mga02.intel.com"
+	id S1762555Ab3ECDSM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 23:18:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39135 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758906Ab3ECDNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 23:13:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,600,1363158000"; 
-   d="scan'208";a="330724640"
-Message-ID: <51832B3A.4070703@linux.intel.com>
-Date: Thu, 02 May 2013 20:12:58 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751043Ab3ECDSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 23:18:11 -0400
+Message-ID: <51832C6C.1030805@zytor.com>
+Date: Thu, 02 May 2013 20:18:04 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Colin Cross <ccross@android.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        arve@android.com, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v2 07/10] futex: use freezable blocking call
-References: <1367458508-9133-1-git-send-email-ccross@android.com> <1367458508-9133-8-git-send-email-ccross@android.com> <alpine.LFD.2.02.1305022145300.2891@ionos>
-In-Reply-To: <alpine.LFD.2.02.1305022145300.2891@ionos>
+To: "Warlich, Christof" <christof.warlich@siemens.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: X86 fpu registers in a signal handler's ucontext
+References: <6D83E89737156549AEA25EF9ED712C5DDEF7@DEFTHW99EK1MSX.ww902.siemens.net>
+In-Reply-To: <6D83E89737156549AEA25EF9ED712C5DDEF7@DEFTHW99EK1MSX.ww902.siemens.net>
 X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -32,62 +23,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/29/2013 07:34 AM, Warlich, Christof wrote:
+> Second, only FP state seems to be available through ucontext_t, and I would
+> need to clear exceptions for SSE as well.
 
+Not true.
 
-On 05/02/2013 12:45 PM, Thomas Gleixner wrote:
-> On Wed, 1 May 2013, Colin Cross wrote:
-> 
->> Avoid waking up every thread sleeping in a futex_wait call during
->> suspend and resume by calling a freezable blocking call.  Previous
->> patches modified the freezer to avoid sending wakeups to threads
->> that are blocked in freezable blocking calls.
->>
->> This call was selected to be converted to a freezable call because
->> it doesn't hold any locks or release any resources when interrupted
->> that might be needed by another freezing task or a kernel driver
->> during suspend, and is a common site where idle userspace tasks are
->> blocked.
->>
->> Signed-off-by: Colin Cross <ccross@android.com>
-> 
-> Acked-by: Thomas Gleixner <tglx@linutronix.de>
+> Can anyone give me some advice on how to I could proceed?
 
-Beat me to it :-) Also agreed.
+To optimize the common case, if the signal handler doesn't touch the FPU
+the state is not reloaded from the signal stack.  Therefore you need to
+execute an FPU instruction -- pretty much any FPU instruction -- in your
+signal handler in order to force the reload.
 
-Acked-by: Darren Hart <dvhart@linux.intel.com>
+	-hpa
 
-> 
->> ---
->>  kernel/futex.c | 3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/futex.c b/kernel/futex.c
->> index b26dcfc..d710fae 100644
->> --- a/kernel/futex.c
->> +++ b/kernel/futex.c
->> @@ -61,6 +61,7 @@
->>  #include <linux/nsproxy.h>
->>  #include <linux/ptrace.h>
->>  #include <linux/sched/rt.h>
->> +#include <linux/freezer.h>
->>  
->>  #include <asm/futex.h>
->>  
->> @@ -1807,7 +1808,7 @@ static void futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q *q,
->>  		 * is no timeout, or if it has yet to expire.
->>  		 */
->>  		if (!timeout || timeout->task)
->> -			schedule();
->> +			freezable_schedule();
->>  	}
->>  	__set_current_state(TASK_RUNNING);
->>  }
->> -- 
->> 1.8.2.1
->>
->>
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
