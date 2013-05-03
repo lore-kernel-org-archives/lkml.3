@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab3ECPSL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 11:18:11 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:58196 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932459Ab3ECPSK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 11:18:10 -0400
-Message-ID: <5183D52D.7060303@gmail.com>
-Date: Fri, 03 May 2013 09:18:05 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S933122Ab3ECPTj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 11:19:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38782 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752354Ab3ECPTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 11:19:38 -0400
+Message-ID: <5183D585.5040508@suse.cz>
+Date: Fri, 03 May 2013 17:19:33 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <andi@firstfloor.org>, Ulrich Drepper <drepper@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 6/8] perf tests: Add automated tests for formula object
-References: <1367421346-18257-1-git-send-email-jolsa@redhat.com> <1367421346-18257-7-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1367421346-18257-7-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Anisse Astier <anisse@astier.eu>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        maximilian attems <max@stro.at>
+Subject: Re: [PATCH 1/2] deb-pkg: split debug symbols in their own package
+References: <1363946761-7449-1-git-send-email-anisse@astier.eu> <51629BFF.1080204@suse.cz> <20130408190645.29570fe5@serenity> <20130409120547.64ad0d50@serenity> <20130419100519.485cb557@serenity> <20130503170823.3991bb0f@serenity>
+In-Reply-To: <20130503170823.3991bb0f@serenity>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/1/13 9:15 AM, Jiri Olsa wrote:
-> +static int __test_basics(char *file)
-> +{
-> +	struct perf_formula fml;
-> +	struct perf_formula_set *set;
-> +	struct perf_formula_counter *counter;
-> +	struct perf_evlist *evlist;
-> +	struct perf_evsel *evsel;
-> +	struct perf_counts *counts;
-> +	struct perf_formula_expr expr;
-> +	int ret;
-> +
-> +	pr_debug("file %s\n", file);
-> +
-> +	perf_formula__init(&fml);
-> +
-> +	ret = perf_formula__load(&fml, file);
-> +	TEST_ASSERT_VAL("failed to load formula", !ret);
+On 3.5.2013 17:08, Anisse Astier wrote:
+> On Fri, 19 Apr 2013 10:05:19 +0200, Anisse Astier <anisse@astier.eu> wrote :
+> 
+>> On Tue, 9 Apr 2013 12:05:47 +0200, Anisse Astier <anisse@astier.eu> wrote :
+>>
+>>>
+>>>
+>>> From: Anisse Astier <anisse@astier.eu>
+>>> Subject: [PATCH v3] deb-pkg: split debug symbols in their own package
+>>>
+>>> This can reduce almost 3 times the size of the linux-image package,
+>>> while keeping the debug symbols available for this particular build, in
+>>> their own package.
+>>>
+>>> This mimics the way kernels are built in debian, ubuntu, or with
+>>> make-kpkg, and comes at the price of a small slowdown in the building of
+>>> packages.
+>>>
+>>> v2:
+>>>  - only build when CONFIG_DEBUG_INFO=y
+>>>  - build debug package last.
+>>>  - more verbose package description
+>>>  - put package in section debug
+>>> v3:
+>>>  - remove duplicate code from v2
+>>>
+>>
+>> What do you think ?
+> 
+> Any update ?
 
-With all the asserts when something goes wrong you should delete the 
-file right after perf_formula__load. so maybe
+I don't know much about debian (kernel) packaging, so I'd like to hear
+Max's opinion before merging this.
 
-file = file_get(data, sizeof(data));
-ret = perf_formula__load(&fml, file);
-file_put(file);
-
-David
+Michal
