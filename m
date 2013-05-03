@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982Ab3ECI1M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 04:27:12 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:39962 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab3ECI1K convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 04:27:10 -0400
+	id S933109Ab3ECI1f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 04:27:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50040 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750960Ab3ECI1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 04:27:31 -0400
+Date: Fri, 3 May 2013 10:27:27 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Simon Wood <simon@mungewell.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@infradead.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH-V2] HID: hid-steelseries fix led class build issue
+In-Reply-To: <1367545394-3741-1-git-send-email-simon@mungewell.org>
+Message-ID: <alpine.LNX.2.00.1305031027190.11002@pobox.suse.cz>
+References: <alpine.DEB.2.02.1305021455260.941@chino.kir.corp.google.com> <1367545394-3741-1-git-send-email-simon@mungewell.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1367509690-24022-2-git-send-email-lee.jones@linaro.org>
-References: <1367509690-24022-1-git-send-email-lee.jones@linaro.org>
-	<1367509690-24022-2-git-send-email-lee.jones@linaro.org>
-Date: Fri, 3 May 2013 10:27:09 +0200
-Message-ID: <CACRpkdacXK-uBsQF=VGfOvh_zZ3ad-A_Zk1Bd-oz+OAUTeXqHA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] ARM: ux500: Rid ignored return value of
- regulator_enable() compiler warning
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 2, 2013 at 5:48 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Thu, 2 May 2013, Simon Wood wrote:
 
-> arch/arm/mach-ux500/board-mop500.c: In function ‘mop500_prox_activate’:
-> arch/arm/mach-ux500/board-mop500.c:406:18: warning: ignoring return value of
->         ‘regulator_enable’, declared with attribute warn_unused_result
->         [-Wunused-result]
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Fixes 'undefined reference' issue when hid-steelseries is built in,
+> but led-class is a module.
+> --
+> drivers/built-in.o: In function `steelseries_srws1_remove':
+> hid-steelseries.c:(.text+0x3b97a1): undefined reference to `led_classdev_unregister'
+> drivers/built-in.o: In function `steelseries_srws1_probe':
+> hid-steelseries.c:(.text+0x3b9c51): undefined reference to `led_classdev_register'
+> hid-steelseries.c:(.text+0x3b9ce5): undefined reference to `led_classdev_register'
+> hid-steelseries.c:(.text+0x3b9d4b): undefined reference to `led_classdev_unregister'
+> --
+> 
+> Patch allows LED control when led-class is built in, or both hid-steelseries
+> _and_ led-class are both modules.
+> 
+> Reported-by: Randy Dunlap <rdunlap@infradead.org>
+> Signed-off-by: Simon Wood <simon@mungewell.org>
 
-Applied!
+Applied, thanks.
 
-Thanks,
-Linus Walleij
+-- 
+Jiri Kosina
+SUSE Labs
