@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933928Ab3ECOjS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:39:18 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:46470 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933832Ab3ECOfN (ORCPT
+	id S933926Ab3ECOjc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:39:32 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:35476 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933742Ab3ECOja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:35:13 -0400
+	Fri, 3 May 2013 10:39:30 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
-        Felipe Balbi <balbi@ti.com>, Rob Herring <rob.herring@calxeda.com>,
-        linux-usb@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 49/63] usb: musb: ux500: add device tree probing support
-Date: Fri,  3 May 2013 15:32:35 +0100
-Message-Id: <1367591569-32197-50-git-send-email-lee.jones@linaro.org>
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 08/63] dmaengine: ste_dma40: Move default memcpy configs into the driver
+Date: Fri,  3 May 2013 15:31:54 +0100
+Message-Id: <1367591569-32197-9-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
 References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
@@ -23,175 +21,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch will allow ux500-musb to be probed and configured solely from
-configuration found in Device Tree.
+There are only two default memcpy configurations used for the DMA40
+driver; one for physical memcpy and one for logical memcpy. Instead
+of invariably passing the same configurations though platform data,
+we're moving them into the driver instead.
 
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: linux-usb@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
+Acked-by: Vinod Koul <vnod.koul@intel.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Acked-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- .../devicetree/bindings/usb/ux500-usb.txt          |   50 +++++++++++++++++++
- drivers/usb/musb/ux500.c                           |   51 ++++++++++++++++++++
- 2 files changed, 101 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/usb/ux500-usb.txt
+ arch/arm/mach-ux500/devices-db8500.c        |   28 -----------------------
+ drivers/dma/ste_dma40.c                     |   32 +++++++++++++++++++++++++--
+ include/linux/platform_data/dma-ste-dma40.h |    4 ----
+ 3 files changed, 30 insertions(+), 34 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/usb/ux500-usb.txt b/Documentation/devicetree/bindings/usb/ux500-usb.txt
-new file mode 100644
-index 0000000..330d6ec
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/ux500-usb.txt
-@@ -0,0 +1,50 @@
-+Ux500 MUSB
-+
-+Required properties:
-+ - compatible : Should be "stericsson,db8500-musb"
-+ - reg        : Offset and length of registers
-+ - interrupts : Interrupt; mode, number and trigger
-+ - dr_mode    : Dual-role; either host mode "host", peripheral mode "peripheral"
-+                or both "otg"
-+
-+Optional properties:
-+ - dmas       : A list of dma channels;
-+                dma-controller, event-line, fixed-channel, flags
-+ - dma-names  : An ordered list of channel names affiliated to the above
-+
-+Example:
-+
-+usb_per5@a03e0000 {
-+	compatible = "stericsson,db8500-musb", "mentor,musb";
-+	reg = <0xa03e0000 0x10000>;
-+	interrupts = <0 23 0x4>;
-+	interrupt-names = "mc";
-+
-+	dr_mode = "otg";
-+
-+	dmas = <&dma 38 0 0x2>, /* Logical - DevToMem */
-+	       <&dma 38 0 0x0>, /* Logical - MemToDev */
-+	       <&dma 37 0 0x2>, /* Logical - DevToMem */
-+	       <&dma 37 0 0x0>, /* Logical - MemToDev */
-+	       <&dma 36 0 0x2>, /* Logical - DevToMem */
-+	       <&dma 36 0 0x0>, /* Logical - MemToDev */
-+	       <&dma 19 0 0x2>, /* Logical - DevToMem */
-+	       <&dma 19 0 0x0>, /* Logical - MemToDev */
-+	       <&dma 18 0 0x2>, /* Logical - DevToMem */
-+	       <&dma 18 0 0x0>, /* Logical - MemToDev */
-+	       <&dma 17 0 0x2>, /* Logical - DevToMem */
-+	       <&dma 17 0 0x0>, /* Logical - MemToDev */
-+	       <&dma 16 0 0x2>, /* Logical - DevToMem */
-+	       <&dma 16 0 0x0>, /* Logical - MemToDev */
-+	       <&dma 39 0 0x2>, /* Logical - DevToMem */
-+	       <&dma 39 0 0x0>; /* Logical - MemToDev */
-+
-+	dma-names = "iep_1_9",  "oep_1_9",
-+		    "iep_2_10", "oep_2_10",
-+		    "iep_3_11", "oep_3_11",
-+		    "iep_4_12", "oep_4_12",
-+		    "iep_5_13", "oep_5_13",
-+		    "iep_6_14", "oep_6_14",
-+		    "iep_7_15", "oep_7_15",
-+		    "iep_8",    "oep_8";
-+};
-diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
-index 7ddb132..5ff304c 100644
---- a/drivers/usb/musb/ux500.c
-+++ b/drivers/usb/musb/ux500.c
-@@ -25,6 +25,7 @@
- #include <linux/clk.h>
- #include <linux/err.h>
- #include <linux/io.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- 
- #include "musb_core.h"
-@@ -88,14 +89,57 @@ static const struct musb_platform_ops ux500_ops = {
- 	.exit		= ux500_musb_exit,
+diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
+index 01cfb68..8b20c91 100644
+--- a/arch/arm/mach-ux500/devices-db8500.c
++++ b/arch/arm/mach-ux500/devices-db8500.c
+@@ -42,32 +42,6 @@ static struct resource dma40_resources[] = {
+ 	}
  };
  
-+static struct musb_hdrc_platform_data *
-+ux500_of_probe(struct platform_device *pdev, struct device_node *np)
-+{
-+	struct musb_hdrc_platform_data *pdata;
-+	const char *mode;
-+	int strlen;
-+
-+	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return NULL;
-+
-+	mode = of_get_property(np, "dr_mode", &strlen);
-+	if (!mode) {
-+		dev_err(&pdev->dev, "No 'dr_mode' property found\n");
-+		return NULL;
-+	}
-+
-+	if (strlen > 0) {
-+		if (!strcmp(mode, "host"))
-+			pdata->mode = MUSB_HOST;
-+		if (!strcmp(mode, "otg"))
-+			pdata->mode = MUSB_OTG;
-+		if (!strcmp(mode, "peripheral"))
-+			pdata->mode = MUSB_PERIPHERAL;
-+	}
-+
-+	return pdata;
-+}
-+
- static int ux500_probe(struct platform_device *pdev)
- {
- 	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
-+	struct device_node		*np = pdev->dev.of_node;
- 	struct platform_device		*musb;
- 	struct ux500_glue		*glue;
- 	struct clk			*clk;
- 	int				ret = -ENOMEM;
- 
-+	if (!pdata) {
-+		if (np) {
-+			pdata = ux500_of_probe(pdev, np);
-+			if (!pdata)
-+				goto err0;
-+
-+			pdev->dev.platform_data = pdata;
-+		} else {
-+			dev_err(&pdev->dev, "no pdata or device tree found\n");
-+			goto err0;
-+		}
-+	}
-+
- 	glue = kzalloc(sizeof(*glue), GFP_KERNEL);
- 	if (!glue) {
- 		dev_err(&pdev->dev, "failed to allocate glue context\n");
-@@ -124,6 +168,7 @@ static int ux500_probe(struct platform_device *pdev)
- 	musb->dev.parent		= &pdev->dev;
- 	musb->dev.dma_mask		= &pdev->dev.coherent_dma_mask;
- 	musb->dev.coherent_dma_mask	= pdev->dev.coherent_dma_mask;
-+	musb->dev.of_node		= pdev->dev.of_node;
- 
- 	glue->dev			= &pdev->dev;
- 	glue->musb			= musb;
-@@ -222,12 +267,18 @@ static const struct dev_pm_ops ux500_pm_ops = {
- #define DEV_PM_OPS	NULL
- #endif
- 
-+static const struct of_device_id ux500_match[] = {
-+        { .compatible = "stericsson,db8500-musb", },
-+        {}
-+};
-+
- static struct platform_driver ux500_driver = {
- 	.probe		= ux500_probe,
- 	.remove		= ux500_remove,
- 	.driver		= {
- 		.name	= "musb-ux500",
- 		.pm	= DEV_PM_OPS,
-+		.of_match_table = ux500_match,
- 	},
+-/* Default configuration for physcial memcpy */
+-struct stedma40_chan_cfg dma40_memcpy_conf_phy = {
+-	.mode = STEDMA40_MODE_PHYSICAL,
+-	.dir = STEDMA40_MEM_TO_MEM,
+-
+-	.src_info.data_width = STEDMA40_BYTE_WIDTH,
+-	.src_info.psize = STEDMA40_PSIZE_PHY_1,
+-	.src_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
+-
+-	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
+-	.dst_info.psize = STEDMA40_PSIZE_PHY_1,
+-	.dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
+-};
+-/* Default configuration for logical memcpy */
+-struct stedma40_chan_cfg dma40_memcpy_conf_log = {
+-	.dir = STEDMA40_MEM_TO_MEM,
+-
+-	.src_info.data_width = STEDMA40_BYTE_WIDTH,
+-	.src_info.psize = STEDMA40_PSIZE_LOG_1,
+-	.src_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
+-
+-	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
+-	.dst_info.psize = STEDMA40_PSIZE_LOG_1,
+-	.dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
+-};
+-
+ /*
+  * Mapping between destination event lines and physical device address.
+  * The event line is tied to a device and therefore the address is constant.
+@@ -150,8 +124,6 @@ static struct stedma40_platform_data dma40_plat_data = {
+ 	.dev_len = DB8500_DMA_NR_DEV,
+ 	.dev_rx = dma40_rx_map,
+ 	.dev_tx = dma40_tx_map,
+-	.memcpy_conf_phy = &dma40_memcpy_conf_phy,
+-	.memcpy_conf_log = &dma40_memcpy_conf_log,
+ 	.disabled_channels = {-1},
  };
  
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 12de79e..3b83dee 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -58,6 +58,34 @@
+ /* Reserved event lines for memcpy only. */
+ static int dma40_memcpy_channels[] = { 56, 57, 58, 59, 60 };
+ 
++/* Default configuration for physcial memcpy */
++struct stedma40_chan_cfg dma40_memcpy_conf_phy = {
++	.mode = STEDMA40_MODE_PHYSICAL,
++	.dir = STEDMA40_MEM_TO_MEM,
++
++	.src_info.data_width = STEDMA40_BYTE_WIDTH,
++	.src_info.psize = STEDMA40_PSIZE_PHY_1,
++	.src_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
++
++	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
++	.dst_info.psize = STEDMA40_PSIZE_PHY_1,
++	.dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
++};
++
++/* Default configuration for logical memcpy */
++struct stedma40_chan_cfg dma40_memcpy_conf_log = {
++	.mode = STEDMA40_MODE_LOGICAL,
++	.dir = STEDMA40_MEM_TO_MEM,
++
++	.src_info.data_width = STEDMA40_BYTE_WIDTH,
++	.src_info.psize = STEDMA40_PSIZE_LOG_1,
++	.src_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
++
++	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
++	.dst_info.psize = STEDMA40_PSIZE_LOG_1,
++	.dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
++};
++
+ /**
+  * enum 40_command - The different commands and/or statuses.
+  *
+@@ -2015,13 +2043,13 @@ static int d40_config_memcpy(struct d40_chan *d40c)
+ 	dma_cap_mask_t cap = d40c->chan.device->cap_mask;
+ 
+ 	if (dma_has_cap(DMA_MEMCPY, cap) && !dma_has_cap(DMA_SLAVE, cap)) {
+-		d40c->dma_cfg = *d40c->base->plat_data->memcpy_conf_log;
++		d40c->dma_cfg = dma40_memcpy_conf_log;
+ 		d40c->dma_cfg.src_dev_type = STEDMA40_DEV_SRC_MEMORY;
+ 		d40c->dma_cfg.dst_dev_type = dma40_memcpy_channels[d40c->chan.chan_id];
+ 
+ 	} else if (dma_has_cap(DMA_MEMCPY, cap) &&
+ 		   dma_has_cap(DMA_SLAVE, cap)) {
+-		d40c->dma_cfg = *d40c->base->plat_data->memcpy_conf_phy;
++		d40c->dma_cfg = dma40_memcpy_conf_phy;
+ 	} else {
+ 		chan_err(d40c, "No memcpy\n");
+ 		return -EINVAL;
+diff --git a/include/linux/platform_data/dma-ste-dma40.h b/include/linux/platform_data/dma-ste-dma40.h
+index a808784..869c571 100644
+--- a/include/linux/platform_data/dma-ste-dma40.h
++++ b/include/linux/platform_data/dma-ste-dma40.h
+@@ -141,8 +141,6 @@ struct stedma40_chan_cfg {
+  * @dev_len: length of dev_tx and dev_rx
+  * @dev_tx: mapping between destination event line and io address
+  * @dev_rx: mapping between source event line and io address
+- * @memcpy_conf_phy: default configuration of physical channel memcpy
+- * @memcpy_conf_log: default configuration of logical channel memcpy
+  * @disabled_channels: A vector, ending with -1, that marks physical channels
+  * that are for different reasons not available for the driver.
+  * @soft_lli_chans: A vector, that marks physical channels will use LLI by SW
+@@ -160,8 +158,6 @@ struct stedma40_platform_data {
+ 	u32				 dev_len;
+ 	const dma_addr_t		*dev_tx;
+ 	const dma_addr_t		*dev_rx;
+-	struct stedma40_chan_cfg	*memcpy_conf_phy;
+-	struct stedma40_chan_cfg	*memcpy_conf_log;
+ 	int				 disabled_channels[STEDMA40_MAX_PHYS];
+ 	int				*soft_lli_chans;
+ 	int				 num_of_soft_lli_chans;
 -- 
 1.7.10.4
 
