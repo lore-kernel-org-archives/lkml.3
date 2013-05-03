@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933635Ab3ECQxZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 12:53:25 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:37349 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab3ECQxY (ORCPT
+	id S933667Ab3ECQy5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 12:54:57 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:43417 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759592Ab3ECQyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 12:53:24 -0400
-Date: Fri, 3 May 2013 09:53:21 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Borislav Petkov <bp@alien8.de>
-cc: Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, penberg@kernel.org,
-        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
-        bp@suse.de, fengguang.wu@intel.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for building
- working KVM guest kernels
-In-Reply-To: <20130503153134.GD3433@pd.tnic>
-Message-ID: <alpine.DEB.2.02.1305030952140.30317@chino.kir.corp.google.com>
-References: <20130426095140.GA15361@pd.tnic> <tip-7e0320e733eec67e40d2b53e438d9971f079862d@git.kernel.org> <alpine.DEB.2.02.1305021104440.2493@chino.kir.corp.google.com> <5182AB66.6020307@linux.intel.com> <20130502194556.GB3553@gmail.com> <20130502200703.GE16684@pd.tnic>
- <20130503142900.GA3433@pd.tnic> <5183CFAC.8020005@infradead.org> <20130503150818.GC3433@pd.tnic> <5183D357.8000204@suse.cz> <20130503153134.GD3433@pd.tnic>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 3 May 2013 12:54:55 -0400
+Date: Fri, 3 May 2013 09:54:48 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Colin Cross <ccross@android.com>, Linux PM list <linux-pm@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Oleg Nesterov <oleg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Jeff Layton <jlayton@redhat.com>,
+        Mandeep Baines <msb@chromium.org>
+Subject: Re: [PATCH v2 03/10] freezer: add new freezable helpers using
+ freezer_do_not_count()
+Message-ID: <20130503165448.GA22709@mtj.dyndns.org>
+References: <20130503040934.GA16968@mtj.dyndns.org>
+ <Pine.LNX.4.44L0.1305031017030.1513-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1305031017030.1513-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 May 2013, Borislav Petkov wrote:
+On Fri, May 03, 2013 at 10:18:17AM -0400, Alan Stern wrote:
+> Don't forget about freezable kernel threads.  They never cross the 
+> kernel/user boundary.
 
-> * yes "" | make oldconfig - because we want to use the current config
-> as a base.
-> 
+Doesn't really matter for this purpose.  They first of all can't be
+moved into !root cgroups and thus can't be cgroup-frozen and even if
+they could they can't be killed or ptraced, so they just don't play
+the same game.
 
-This will select options that you don't necessarily need but default to 
-enabled when they are selected from kvm_guest.config, so it will actually 
-include much more than what's needed for a kvm guest.
+Thanks.
+
+-- 
+tejun
