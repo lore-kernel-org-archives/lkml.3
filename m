@@ -1,180 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762063Ab3ECKh1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 06:37:27 -0400
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:42843 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754943Ab3ECKh0 (ORCPT
+	id S1762544Ab3ECKi0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 06:38:26 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:33617 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755491Ab3ECKiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 06:37:26 -0400
+	Fri, 3 May 2013 06:38:24 -0400
+Date: Fri, 3 May 2013 11:38:19 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, Russell King <linux@arm.linux.org.uk>,
+        Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH 3/4] mmc: mmci: Ensure return value of regulator_enable()
+ is checked
+Message-ID: <20130503103819.GE24153@gmail.com>
+References: <1367509690-24022-1-git-send-email-lee.jones@linaro.org>
+ <1367509690-24022-4-git-send-email-lee.jones@linaro.org>
+ <CAPDyKFr60-nuh-BFsWtFhNeqUmswKC4hL4mw-gDhiqLmarvEDA@mail.gmail.com>
+ <20130503081633.GD24153@gmail.com>
+ <CAPDyKFqKP0sSBwZtcnH4tfPxSik5+GOVE-6tTBYaK5Qhvr3=4A@mail.gmail.com>
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 3 May 2013 11:37:05 +0100
-X-Google-Sender-Auth: 53A-T7KFhVEvIABzMILS-HK1IJY
-Message-ID: <CACxGe6vr1kh2yqnG6kpASBGDUQrC7taBu00VWu6VG+qCO2u9QA@mail.gmail.com>
-Subject: [git pull] GPIO for v3.10
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPDyKFqKP0sSBwZtcnH4tfPxSik5+GOVE-6tTBYaK5Qhvr3=4A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 03 May 2013, Ulf Hansson wrote:
 
-Here are the GPIO changes staged for v3.10. Please pull. I will send
-another separate pull request for a large change removing
-CONFIG_GENERIC_GPIO.
+> On 3 May 2013 10:16, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Fri, 03 May 2013, Ulf Hansson wrote:
+> >
+> >> On 2 May 2013 17:48, Lee Jones <lee.jones@linaro.org> wrote:
+> >> > This patch suppresses the warning below:
+> >> >
+> >> > drivers/mmc/host/mmci.c: In function ‘mmci_set_ios’:
+> >> > drivers/mmc/host/mmci.c:1165:20: warning: ignoring return value of
+> >> >         ‘regulator_enable’, declared with attribute warn_unused_result
+> >> >         [-Wunused-result]
+> >> >
+> >> > Cc: Russell King <linux@arm.linux.org.uk>
+> >> > Cc: Chris Ball <cjb@laptop.org>
+> >> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >> > ---
+> >> >  drivers/mmc/host/mmci.c |    9 +++++++--
+> >> >  1 file changed, 7 insertions(+), 2 deletions(-)
+> >> >
+> >> > diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+> >> > index 375c109..f4f3038 100644
+> >> > --- a/drivers/mmc/host/mmci.c
+> >> > +++ b/drivers/mmc/host/mmci.c
+> >> > @@ -1130,6 +1130,7 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+> >> >         struct variant_data *variant = host->variant;
+> >> >         u32 pwr = 0;
+> >> >         unsigned long flags;
+> >> > +       int ret;
+> >> >
+> >> >         pm_runtime_get_sync(mmc_dev(mmc));
+> >> >
+> >> > @@ -1161,8 +1162,12 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+> >> >                 break;
+> >> >         case MMC_POWER_ON:
+> >> >                 if (!IS_ERR(mmc->supply.vqmmc) &&
+> >> > -                   !regulator_is_enabled(mmc->supply.vqmmc))
+> >>
+> >> I realize that we actually have a bug here (and in the MMC_POWER_OFF
+> >> mode as well).
+> >>
+> >> We shall not use regulator_is_enabled API as a trigger to enable/fetch
+> >> a reference to the regulator, since it will only tell us if the
+> >> regulator is enabled - hw wise.
+> >> Instead we need a local variable in the mmci host struct keeping track
+> >> if we have enabled the regulator. Do you mind fix this up in this
+> >> patch as well since it is tightly coupled to the regulator handling!?
+> >
+> > IMHO I think that should be taken care of in a separate patch. This
+> > patch only touches the line containing regulator_is_enabled() to
+> > encompass a multi-line comparison result.
+> >
+> > Care to write that patch? I have so much on my TODO already. :|
+> 
+> Sure, I can fix it.
+> 
+> I guess this patch will be going through Russell's patch tracker?
 
-g.
+Yeah, I'll queue this and another one I have in a bit.
 
-The following changes since commit e97f9b5277afeabb54892ebc6f68500098467ba1:
+> >> Otherwise it looks good to me.
+> >>
+> >> Kind regards
+> >> Ulf Hansson
+> >>
+> >> > -                       regulator_enable(mmc->supply.vqmmc);
+> >> > +                   !regulator_is_enabled(mmc->supply.vqmmc)) {
+> >> > +                       ret = regulator_enable(mmc->supply.vqmmc);
+> >> > +                       if (ret < 0)
+> >> > +                               dev_err(mmc_dev(mmc),
+> >> > +                                       "failed to enable vqmmc regulator\n");
+> >> > +               }
+> >> >
+> >> >                 pwr |= MCI_PWR_ON;
+> >> >                 break;
+> >> >
+> >
 
-  gpio/gpio-ich: fix ichx_gpio_check_available() return what callers
-expect (2013-03-02 13:20:21 +0000)
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux tags/gpio-for-linus
-
-for you to fetch changes up to ab6ec0fb8901ce4359269ac56c691ffcb5071ccb:
-
-  gpio/omap: ensure gpio context is initialised (2013-04-26 09:52:57 +0200)
-
-----------------------------------------------------------------
-GPIO changes for Linux 3.10
-
-The usual selection of bug fixes and driver updates for GPIO. Nothing
-really stands out except the addition of the GRGPIO driver and some
-enhacements to ACPI support
-
-----------------------------------------------------------------
-Alexander Shiyan (1):
-      GPIO: gpio-generic: remove kfree() from bgpio_remove call
-
-Andreas Larsson (3):
-      gpio: gpio-generic: Add 16 and 32 bit big endian byte order support
-      gpio: grgpio: Add device driver for GRGPIO cores
-      gpio: grgpio: Add irq support
-
-Axel Lin (3):
-      gpio: viperboard: Remove duplicate code to set gpio->gpiob_val
-      gpio: samsung: Add terminating entry for exynos_pinctrl_ids
-      gpio: lpc32xx: Fix off-by-one valid range checking for bank
-
-Christophe Leroy (1):
-      MAX7301 GPIO: Do not force SPI speed when using OF Platform
-
-Darren Hart (1):
-      gpio-sch: Allow for more than 8 lines in the resume well
-
-Jean Delvare (2):
-      gpio-ich: Check for pin availability at request time
-      gpio: ucb1400: Can be built as a module
-
-Jingoo Han (9):
-      gpio: adp5520: use devm_kzalloc()
-      gpio: max7300: use devm_kzalloc()
-      gpio: max7301: use devm_kzalloc()
-      gpio: max732x: use devm_kzalloc()
-      gpio: mc33880: use devm_kzalloc()
-      gpio: pcf857x: use devm_kzalloc()
-      gpio: mc33880: use dev_err() instead of printk()
-      gpio: 74x164: use spi_get_drvdata() and spi_set_drvdata()
-      gpio: mc33880: use spi_get_drvdata() and spi_set_drvdata()
-
-Jon Hunter (6):
-      gpio/omap: convert gpio irq domain to linear mapping
-      gpio/omap: warn if bank is not enabled on setting irq type
-      gpio/omap: free irq domain in probe() failure paths
-      gpio/omap: optimise interrupt service routine
-      gpio/omap: force restore if context loss is not detectable
-      gpio/omap: ensure gpio context is initialised
-
-Lars Poeschel (1):
-      gpio: mcp23s08: convert driver to DT
-
-Laurent Navet (10):
-      gpio: gpiolib-of.c: fix checkpatch error
-      gpio: gpio-mvebu.c: fix checkpatch errors
-      gpio: gpio-omap.c: fix checkpatch error
-      gpio: gpio-pca953x.c: fix checkpatch error
-      gpio: gpio-pxa.c: fix checkpatch errors
-      gpio: gpio-sch.c: fix checkpatch error
-      gpio: gpio-stp-xway.c: fix checkpatch error
-      gpio: gpio-tc3589x.c: fix checkpatch errors
-      gpio: gpio-timberdale.c: fix checkpatch error
-      gpio: gpio-tps65910.c: fix checkpatch error
-
-Magnus Damm (2):
-      gpio/em: Add Device Tree support
-      gpio: em: Make use of devm functions
-
-Mathias Nyman (1):
-      gpio-lynxpoint: Add X86 dependency and io-port handling header.
-
-Mika Westerberg (2):
-      gpio/gpio-ich: make ichx_gpio_check_available() return a pure
-boolean value
-      gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
-
-Nikolay Balandin (1):
-      Add TI TCA9554 to supported devices table
-
-Rafael J. Wysocki (1):
-      gpio / ACPI: Handle ACPI events in accordance with the spec
-
-Sachin Kamat (1):
-      gpio/vt8500: Convert to devm_ioremap_resource()
-
-Simon Guinot (1):
-      gpio: mvebu: add dbg_show function
-
-Stephen Warren (1):
-      gpio/tegra: assume CONFIG_OF
-
-Tarun Kanti DebBarma (1):
-      gpio/omap: remove extra context restores in *_runtime_resume()
-
- Documentation/acpi/enumeration.txt                 |  32 +-
- .../devicetree/bindings/gpio/gpio-grgpio.txt       |  26 ++
- .../devicetree/bindings/gpio/gpio-mcp23s08.txt     |  47 ++
- .../devicetree/bindings/gpio/gpio-omap.txt         |   7 +-
- drivers/gpio/Kconfig                               |  13 +-
- drivers/gpio/Makefile                              |   1 +
- drivers/gpio/gpio-74x164.c                         |   8 +-
- drivers/gpio/gpio-adp5520.c                        |   4 +-
- drivers/gpio/gpio-em.c                             |  94 ++--
- drivers/gpio/gpio-generic.c                        |  62 ++-
- drivers/gpio/gpio-grgpio.c                         | 505 +++++++++++++++++++++
- drivers/gpio/gpio-ich.c                            |  17 +-
- drivers/gpio/gpio-lpc32xx.c                        |   2 +-
- drivers/gpio/gpio-lynxpoint.c                      |   1 +
- drivers/gpio/gpio-max7300.c                        |   4 +-
- drivers/gpio/gpio-max7301.c                        |   7 +-
- drivers/gpio/gpio-max732x.c                        |   5 +-
- drivers/gpio/gpio-mc33880.c                        |  19 +-
- drivers/gpio/gpio-mcp23s08.c                       | 137 ++++--
- drivers/gpio/gpio-mvebu.c                          |  85 +++-
- drivers/gpio/gpio-omap.c                           | 162 ++++---
- drivers/gpio/gpio-pca953x.c                        |   3 +-
- drivers/gpio/gpio-pcf857x.c                        |   8 +-
- drivers/gpio/gpio-pxa.c                            |   4 +-
- drivers/gpio/gpio-samsung.c                        |   1 +
- drivers/gpio/gpio-sch.c                            | 111 +++--
- drivers/gpio/gpio-stp-xway.c                       |   2 +-
- drivers/gpio/gpio-tc3589x.c                        |   8 +-
- drivers/gpio/gpio-tegra.c                          |  11 +-
- drivers/gpio/gpio-timberdale.c                     |   3 +-
- drivers/gpio/gpio-tps65910.c                       |   2 +-
- drivers/gpio/gpio-viperboard.c                     |   4 -
- drivers/gpio/gpio-vt8500.c                         |   8 +-
- drivers/gpio/gpiolib-acpi.c                        | 217 ++++++++-
- drivers/gpio/gpiolib-of.c                          |   2 +-
- include/linux/acpi_gpio.h                          |  19 +
- include/linux/basic_mmio_gpio.h                    |   1 +
- 37 files changed, 1341 insertions(+), 301 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-grgpio.txt
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
- create mode 100644 drivers/gpio/gpio-grgpio.c
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
