@@ -1,143 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762257Ab3ECNN0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 09:13:26 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:43193 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760356Ab3ECNNY (ORCPT
+	id S1762337Ab3ECNTa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 09:19:30 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51761 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761940Ab3ECNT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 09:13:24 -0400
-Message-ID: <5183B7ED.7030800@gmail.com>
-Date: Fri, 03 May 2013 15:13:17 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 3 May 2013 09:19:29 -0400
+Date: Fri, 3 May 2013 14:19:08 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Haojian Zhuang <haojian.zhuang@linaro.org>, Milo Kim <milo.kim@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130503131908.GA3820@sirena.org.uk>
+References: <1367585170.7397.1.camel@phoenix>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] irqchip: add support for Marvell Orion SoCs
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <1367538519-23940-1-git-send-email-sebastian.hesselbarth@gmail.com> <1367538519-23940-2-git-send-email-sebastian.hesselbarth@gmail.com> <20130503125527.GE18614@n2100.arm.linux.org.uk>
-In-Reply-To: <20130503125527.GE18614@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
+Content-Disposition: inline
+In-Reply-To: <1367585170.7397.1.camel@phoenix>
+X-Cookie: Don't get to bragging.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 212.183.132.20
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: Remove all platform_set_drvdata(pdev, NULL)
+ in drivers
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/13 14:55, Russell King - ARM Linux wrote:
-> On Fri, May 03, 2013 at 01:48:35AM +0200, Sebastian Hesselbarth wrote:
->> This patch adds an irqchip driver for the main interrupt controller found
->> on Marvell Orion SoCs (Kirkwood, Dove, Orion5x, Discovery Innovation).
->> Corresponding device tree documentation is also added.
->>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> ---
->> Note: This patch triggers a checkpatch warning for
->>    WARNING: Avoid CamelCase: <handle_IRQ>
->>
->> Changelog:
->> v1->v2:
->> - rename compatible string to "marvell,orion-intc" (Suggested by Jason Gunthorpe)
->> - request mem regions for irq base registers (Suggested by Jason Gunthorpe)
->> - make orion_handle_irq static (Suggested by Jason Gunthorpe)
->> - make use of IRQCHIP_DECLARE (Suggested by Jason Gunthorpe)
->
-> It would still be a good idea to convert this to use the generic chip
-> stuff which Thomas created, though exactly how is hard to see at the
-> moment.
 
-Russel,
+--J/dobhs11T7y2rNN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-that is the plan and that's why the whole patch set is preliminary.
-Maybe it would have been more precise to call it RFC instead.
+On Fri, May 03, 2013 at 08:46:10PM +0800, Axel Lin wrote:
+> Since 0998d06310 "device-core: Ensure drvdata = NULL when no driver is bound",
+> this is done by driver core after device_release or on probe failure.
+> Thus we can remove all platform_set_drvdata(pdev, NULL) in drivers.
 
->> +static void orion_irq_mask(struct irq_data *irqd)
->> +{
->> +	unsigned int irq = irqd_to_hwirq(irqd);
->> +	unsigned int irq_off = irq % 32;
->> +	int reg = irq / 32;
->> +	u32 val;
->> +
->> +	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
->> +	writel(val & ~(1 << irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
->> +}
->
-> This could be replaced with irq_gc_mask_clr_bit().
->
->> +
->> +static void orion_irq_unmask(struct irq_data *irqd)
->> +{
->> +	unsigned int irq = irqd_to_hwirq(irqd);
->> +	unsigned int irq_off = irq % 32;
->> +	int reg = irq / 32;
->> +	u32 val;
->> +
->> +	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
->> +	writel(val | (1 << irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
->> +}
->
-> This with irq_gc_mask_set_bit().
->
->> +
->> +static struct irq_chip orion_irq_chip = {
->> +	.name		= "orion_irq",
->> +	.irq_mask	= orion_irq_mask,
->> +	.irq_unmask	= orion_irq_unmask,
->> +};
->> +
->> +static int orion_irq_map(struct irq_domain *d, unsigned int virq,
->> +			 irq_hw_number_t hw)
->> +{
->> +	irq_set_chip_and_handler(virq, &orion_irq_chip,
->> +				 handle_level_irq);
->> +	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
->
-> This is where it starts to get tricky, because I can't see how you'd
-> merge the irq_alloc_generic_chip() and irq_setup_generic_chip() with
-> this.  Maybe you don't need to do anything here and just do all that
-> in orion_of_init() instead?  But then you seem to need to know the
-> virq range before hand, and I can't see how that's known.  Maybe Thomas
-> can provide some enlightenment about how the gc irqchip stuff works
-> with the irq domain stuff...
+Applied, but note that this is nothing to do with the above commit - it
+has always been a bug for drivers to rely on drvdata except while bound
+so any driver that relied on clearing it was buggy.
 
-Exactly, and that is what I am looking into right now. But hell, I am
-not an expert in linux irq yet. Moreover, I am not even sure if it is
-okay to rely on irqdomain or at least irq_data->hw_irq at all.
+--J/dobhs11T7y2rNN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-My current impression is, that generic chip knowns nothing about irq
-domains. But my first modification of it was to use irqd_to_hwirq(d)
-where ever it uses d->irq instead. This should allow to abstract from
-virtual irqs and retain compatibility (_if_ hw_irq is also set on
-!CONFIG_IRQ_DOMAIN).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-To add more juice: IRQF_VALID and IRQF_PROBE are ARM only flags. I
-tried to find out what they are good for, but stopped googl'ing after
-a while. (I know you explained that before somewhere)
+iQIcBAEBAgAGBQJRg7lEAAoJELSic+t+oim9KZkP/2gsf1TqyKVJg2n1G+4Ppqf2
+T/F1sMJbO40HNMqPeFiYHZ+nFo1Es7OyOqApjCUTlbqKt0BcBx3I15Tt7gb6pojG
+uvND2Zpxw9AJG/ahTvCCZ9F41DWIGSkr/4JrcnpINC8eGJnlZzUNBs510ljUUw3m
+nv1XFBIrZNSiSVpiePPO655mH+Lc0k3npSip/+svjWJxRgVKHpIsKHFVBU1ke5bM
+BmSH1MSqlcVvIYtuB7nQmq2FL1ap9WrMokt/R55lYKTkKTpBkYDZKMQlPKG2cq2Y
+i4FRV3ggpTIVjus63a8xH4KMinMw4Y+zvBV2NfkXLXIt5pinQZqgesdMNxKOpqBO
+RvEl1s+6aSdXK6bczpVoCHORbP5QKmxwT/AR49+6/w3Z9oE2Sj/pG583tUKxH2dR
+yS4h6W5Qjjwf9fKcw7zuJCmiOW0jZbHIO0RCcoowfUjSvGkTrB4xOAgGTBHaaa1F
+pTqTkcKPQdSDENA6lzpo55l9GqRh+iX8ytoX5ObS9eVU7mBVGVVwyD6X54vfmBEw
+CIlPdPy3YA+IUDuQE84Lo5yCJeSJKGBdqNjCl8cephds2rWs22UaEPgvRDC4YCwX
+qZKdXs58knpQ9zjmLEM4ICLh7P6wQg4WcIvM4u/OFcb/ZiQhdd0vxJTdJ7EZx2yL
+jNhLHU7Wyrh5TLyzdAIv
+=RZgQ
+-----END PGP SIGNATURE-----
 
-> However, you wouldn't need the statically defined orion_irq_chip nor
-> orion_irq_base[] either, because those would be held within the gc
-> irqchip stuff and stored in the upper layer.
-
-Yeah, that would be very nice. But the current limitation to one
-register set with max 32 irqs of generic chip would still require to
-keep a list of primary generic irq chips to flip through in the
-irq_handler.
-
-This also raises the question, how to check if an generic irq chip
-flow handler has to be called. Current irq_chip_regs don't know nothing
-about a cause/status register. And actually you don't even know if it
-is high/low active and how to mask it with the high/low active mask
-register or mask_cache.
-
-Sebastian
-
+--J/dobhs11T7y2rNN--
