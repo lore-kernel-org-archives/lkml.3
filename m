@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933747Ab3ECOe4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:34:56 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:38695 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933661Ab3ECOet (ORCPT
+	id S933846Ab3ECOfO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:35:14 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:44044 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933804Ab3ECOfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:34:49 -0400
+	Fri, 3 May 2013 10:35:09 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andreas Westin <andreas.westin@stericsson.com>,
-        linux-crypto@vger.kernel.org
-Subject: [PATCH 40/63] crypto: ux500/cryp - Set DMA configuration though dma_slave_config()
-Date: Fri,  3 May 2013 15:32:26 +0100
-Message-Id: <1367591569-32197-41-git-send-email-lee.jones@linaro.org>
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org
+Subject: [PATCH 47/63] usb: musb: ux500: harden checks for platform data
+Date: Fri,  3 May 2013 15:32:33 +0100
+Message-Id: <1367591569-32197-48-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
 References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
@@ -25,97 +22,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DMA controller currently takes configuration information from
-information passed though dma_channel_request(), but it shouldn't.
-Using the API, the DMA channel should only be configured during
-a dma_slave_config() call.
+In its current state, the ux500-musb driver uses platform data pointers
+blindly with no prior checking. If no platform data pointer is passed
+this will Oops the kernel. In this patch we ensure platform data and
+board data are present prior to using them.
 
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Andreas Westin <andreas.westin@stericsson.com>
-Cc: linux-crypto@vger.kernel.org
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: linux-usb@vger.kernel.org
+Acked-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/crypto/ux500/cryp/cryp.h      |    7 ++++++-
- drivers/crypto/ux500/cryp/cryp_core.c |   17 +++++++++++++++++
- 2 files changed, 23 insertions(+), 1 deletion(-)
+ drivers/usb/musb/ux500_dma.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/crypto/ux500/cryp/cryp.h b/drivers/crypto/ux500/cryp/cryp.h
-index 14cfd05..d1d6606 100644
---- a/drivers/crypto/ux500/cryp/cryp.h
-+++ b/drivers/crypto/ux500/cryp/cryp.h
-@@ -114,6 +114,9 @@ enum cryp_status_id {
- };
+diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
+index c75e07a..8d5128d 100644
+--- a/drivers/usb/musb/ux500_dma.c
++++ b/drivers/usb/musb/ux500_dma.c
+@@ -287,7 +287,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
+ 	struct musb *musb = controller->private_data;
+ 	struct device *dev = musb->controller;
+ 	struct musb_hdrc_platform_data *plat = dev->platform_data;
+-	struct ux500_musb_board_data *data = plat->board_data;
++	struct ux500_musb_board_data *data;
+ 	struct dma_channel *dma_channel = NULL;
+ 	u32 ch_num;
+ 	u8 dir;
+@@ -297,14 +297,19 @@ static int ux500_dma_controller_start(struct dma_controller *c)
+ 	struct ux500_dma_channel *channel_array;
+ 	dma_cap_mask_t mask;
  
- /* Cryp DMA interface */
-+#define CRYP_DMA_TX_FIFO	0x08
-+#define CRYP_DMA_RX_FIFO	0x10
-+
- enum cryp_dma_req_type {
- 	CRYP_DMA_DISABLE_BOTH,
- 	CRYP_DMA_ENABLE_IN_DATA,
-@@ -217,7 +220,8 @@ struct cryp_dma {
++	if (!plat) {
++		dev_err(musb->controller, "No platform data\n");
++		return -EINVAL;
++	}
  
- /**
-  * struct cryp_device_data - structure for a cryp device.
-- * @base: Pointer to the hardware base address.
-+ * @base: Pointer to virtual base address of the cryp device.
-+ * @phybase: Pointer to physical memory location of the cryp device.
-  * @dev: Pointer to the devices dev structure.
-  * @clk: Pointer to the device's clock control.
-  * @pwr_regulator: Pointer to the device's power control.
-@@ -232,6 +236,7 @@ struct cryp_dma {
-  */
- struct cryp_device_data {
- 	struct cryp_register __iomem *base;
-+	phys_addr_t phybase;
- 	struct device *dev;
- 	struct clk *clk;
- 	struct regulator *pwr_regulator;
-diff --git a/drivers/crypto/ux500/cryp/cryp_core.c b/drivers/crypto/ux500/cryp/cryp_core.c
-index bf78d60..4b90493 100644
---- a/drivers/crypto/ux500/cryp/cryp_core.c
-+++ b/drivers/crypto/ux500/cryp/cryp_core.c
-@@ -476,6 +476,19 @@ static int cryp_get_device_data(struct cryp_ctx *ctx,
- static void cryp_dma_setup_channel(struct cryp_device_data *device_data,
- 				   struct device *dev)
- {
-+	struct dma_slave_config mem2cryp = {
-+		.direction = DMA_MEM_TO_DEV,
-+		.dst_addr = device_data->phybase + CRYP_DMA_TX_FIFO,
-+		.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES,
-+		.dst_maxburst = 4,
-+        };
-+	struct dma_slave_config cryp2mem = {
-+		.direction = DMA_DEV_TO_MEM,
-+		.src_addr = device_data->phybase + CRYP_DMA_RX_FIFO,
-+		.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES,
-+		.src_maxburst = 4,
-+        };
-+
- 	dma_cap_zero(device_data->dma.mask);
- 	dma_cap_set(DMA_SLAVE, device_data->dma.mask);
++	data = plat->board_data;
  
-@@ -491,6 +504,9 @@ static void cryp_dma_setup_channel(struct cryp_device_data *device_data,
- 				    stedma40_filter,
- 				    device_data->dma.cfg_cryp2mem);
+ 	dma_cap_zero(mask);
+ 	dma_cap_set(DMA_SLAVE, mask);
  
-+	dmaengine_slave_config(device_data->dma.chan_mem2cryp, &mem2cryp);
-+	dmaengine_slave_config(device_data->dma.chan_cryp2mem, &cryp2mem);
-+
- 	init_completion(&device_data->dma.cryp_dma_complete);
- }
+ 	/* Prepare the loop for RX channels */
+ 	channel_array = controller->rx_channel;
+-	param_array = data->dma_rx_param_array;
++	param_array = data ? data->dma_rx_param_array : NULL;
  
-@@ -1432,6 +1448,7 @@ static int ux500_cryp_probe(struct platform_device *pdev)
- 		goto out_kfree;
+ 	for (dir = 0; dir < 2; dir++) {
+ 		for (ch_num = 0;
+@@ -337,7 +342,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
+ 
+ 		/* Prepare the loop for TX channels */
+ 		channel_array = controller->tx_channel;
+-		param_array = data->dma_tx_param_array;
++		param_array = data ? data->dma_tx_param_array : NULL;
+ 		is_tx = 1;
  	}
  
-+	device_data->phybase = res->start;
- 	device_data->base = ioremap(res->start, resource_size(res));
- 	if (!device_data->base) {
- 		dev_err(dev, "[%s]: ioremap failed!", __func__);
 -- 
 1.7.10.4
 
