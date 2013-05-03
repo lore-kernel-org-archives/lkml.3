@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab3ECFhv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 01:37:51 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:41038 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761442Ab3ECFhu (ORCPT
+	id S932501Ab3ECFwV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 01:52:21 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:36562 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762113Ab3ECFwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 01:37:50 -0400
-From: Marek Belisko <marek.belisko@gmail.com>
-To: lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de
-Cc: zonque@gmail.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@streamunlimited.com>
-Subject: [PATCH] ASoC: McASP: Fix receive clock polarity in DAIFMT_NB_NF mode.
-Date: Fri,  3 May 2013 07:37:36 +0200
-Message-Id: <1367559456-20208-1-git-send-email-marek.belisko@streamunlimited.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 3 May 2013 01:52:19 -0400
+Message-ID: <51835087.8090605@linux.vnet.ibm.com>
+Date: Fri, 03 May 2013 13:52:07 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, takuya.yoshikawa@gmail.com
+Subject: Re: [PATCH v4 4/6] KVM: MMU: fast invalid all shadow pages
+References: <1367032402-13729-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1367032402-13729-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130503010534.GA5467@amt.cnet>
+In-Reply-To: <20130503010534.GA5467@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050305-1618-0000-0000-000003D0BCDC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According documentation bit ACLKRPOL is set to 0 (receiver samples data
-on falling edge) and when set to 1 (receiver samples data on rising edge).
+On 05/03/2013 09:05 AM, Marcelo Tosatti wrote:
 
-I2S data are always sampled on falling edge and valid during rising edge
-of bit clock. So in case of capture data transmitter sample data on falling
-edge and macsp must read then on rising edge.
+>> +
+>> +/*
+>> + * Fast invalid all shadow pages belong to @slot.
+>> + *
+>> + * @slot != NULL means the invalidation is caused the memslot specified
+>> + * by @slot is being deleted, in this case, we should ensure that rmap
+>> + * and lpage-info of the @slot can not be used after calling the function.
+>> + *
+>> + * @slot == NULL means the invalidation due to other reasons, we need
+>> + * not care rmap and lpage-info since they are still valid after calling
+>> + * the function.
+>> + */
+>> +void kvm_mmu_invalid_memslot_pages(struct kvm *kvm,
+>> +				   struct kvm_memory_slot *slot)
+>> +{
+>> +	spin_lock(&kvm->mmu_lock);
+>> +	kvm->arch.mmu_valid_gen++;
+>> +
+>> +	/*
+>> +	 * All shadow paes are invalid, reset the large page info,
+>> +	 * then we can safely desotry the memslot, it is also good
+>> +	 * for large page used.
+>> +	 */
+>> +	kvm_clear_all_lpage_info(kvm);
+> 
+> Xiao,
+> 
+> I understood it was agreed that simple mmu_lock lockbreak while
+> avoiding zapping of newly instantiated pages upon a
+> 
+> 	if(spin_needbreak)
+> 		cond_resched_lock()
+> 
+> cycle was enough as a first step? And then later introduce root zapping
+> along with measurements.
+> 
+> https://lkml.org/lkml/2013/4/22/544
 
-Signed-off-by: Marek Belisko <marek.belisko@streamunlimited.com>
----
- sound/soc/davinci/davinci-mcasp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Yes, it is.
 
-diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
-index 849a187..c46112e 100644
---- a/sound/soc/davinci/davinci-mcasp.c
-+++ b/sound/soc/davinci/davinci-mcasp.c
-@@ -568,7 +568,7 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
- 		mcasp_set_bits(base + DAVINCI_MCASP_ACLKXCTL_REG, ACLKXPOL);
- 		mcasp_clr_bits(base + DAVINCI_MCASP_TXFMCTL_REG, FSXPOL);
- 
--		mcasp_clr_bits(base + DAVINCI_MCASP_ACLKRCTL_REG, ACLKRPOL);
-+		mcasp_set_bits(base + DAVINCI_MCASP_ACLKRCTL_REG, ACLKRPOL);
- 		mcasp_clr_bits(base + DAVINCI_MCASP_RXFMCTL_REG, FSRPOL);
- 		break;
- 
--- 
-1.7.9.5
+See the changelog in 0/0:
+
+" we use lock-break technique to zap all sptes linked on the
+invalid rmap, it is not very effective but good for the first step."
+
+Thanks!
+
 
