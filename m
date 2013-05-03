@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759988Ab3ECMDC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 08:03:02 -0400
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:62459 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663Ab3ECMDA (ORCPT
+	id S1756874Ab3ECMDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 08:03:25 -0400
+Received: from mga14.intel.com ([143.182.124.37]:41732 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755104Ab3ECMDX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 08:03:00 -0400
+	Fri, 3 May 2013 08:03:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,604,1363158000"; 
+   d="scan'208";a="236358527"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Daniel Vetter <daniel@ffwll.ch>, dl9pf@gmx.de
+Cc: airlied@linux.ie, daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        pageexec@freemail.hu
+Subject: Re: [Intel-gfx] [PATCH] [TRIVIAL] Fix declaration of intel_gmbus_{is_forced_bit/is_port_falid} in i915 driver.
+In-Reply-To: <20130503092348.GL5763@phenom.ffwll.local>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <1367572662-18400-1-git-send-email-dl9pf@gmx.de> <20130503092348.GL5763@phenom.ffwll.local>
+User-Agent: Notmuch/0.15.2+89~g202cdc4 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 03 May 2013 15:03:37 +0300
+Message-ID: <87k3ngtgme.fsf@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20130503115739.GJ24153@gmail.com>
-References: <1367336497-10650-1-git-send-email-lee.jones@linaro.org>
-	<20130501095243.GD25256@gmail.com>
-	<CACRpkdZtOtnUYvLm7BPA98oMOLAMPHpJ9GLoyMXOKW1nsTDYiQ@mail.gmail.com>
-	<20130503115739.GJ24153@gmail.com>
-Date: Fri, 3 May 2013 14:02:59 +0200
-Message-ID: <CACRpkdb-_pf=9cm_Hy25nzFWKSTKc6OmmG9rhN2T1wR1=2tddg@mail.gmail.com>
-Subject: Re: [PATCH 1/5 v2] dmaengine: ste_dma40: Allow memcpy channels to be
- configured from DT
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 3, 2013 at 1:57 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Fri, 03 May 2013, Linus Walleij wrote:
->
->> On Wed, May 1, 2013 at 11:52 AM, Lee Jones <lee.jones@linaro.org> wrote:
->>
->> > At this moment in time the memcpy channels which can be used by the D40
->> > are fixed, as each supported platform in Mainline uses the same ones.
->> > However, platforms do exist which don't follow this convention, so
->> > these will need to be tailored. Fortunately, these platforms will be DT
->> > only, so this change has very little impact on platform data.
->> >
->> > Cc: Vinod Koul <vinod.koul@intel.com>
->> > Cc: Dan Williams <djbw@fb.com>
->> > Cc: Per Forlin <per.forlin@stericsson.com>
->> > Cc: Rabin Vincent <rabin@rab.in>
->> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
->>
->> Real nice!
->>
->> But can you split this in two patches: one that changes
->> drivers/dma/ste_dma40* and one sequel patch that changes
->> Documentation/* and arch/arm/boot/dts/* so I can merge them
->> out-of-order?
->>
->> I am trying this development cycle to split changes to the
->> device trees and bindings off from the rest of the patches
->> becaused it caused me a mess last cycle.
->
-> I was under the impression that the documentation went with the
-> bindings, rather than the Device Tree. Am I wrong?
+On Fri, 03 May 2013, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Fri, May 03, 2013 at 11:17:42AM +0200, dl9pf@gmx.de wrote:
+>> From: Jan-Simon Möller <dl9pf@gmx.de>
+>> 
+>> Description:
+>> intel_gmbus_is_forced_bit is no extern as its body is right below.
+>> Likewise for intel_gmbus_is_port_valid.
+>> 
+>> This fixes a compilation issue with clang. An initial version of this patch
+>> was developed by PaX Team <pageexec at freemail.hu>.
+>> This is respin of this patch.
+>> 
+>> Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+>> CC: pageexec@freemail.hu
+>> CC: daniel.vetter@ffwll.ch
+>> CC: airlied@linux.ie
+>> CC: intel-gfx@lists.freedesktop.org
+>> CC: dri-devel@lists.freedesktop.org
+>> CC: linux-kernel@vger.kernel.org
+> Picked up for -fixes, thanks for the patch.
 
-No you're right. The documentation with the bindings and the
-patch to the driver...
+Please drop it.
 
-Then just arch/arm/boot/dts/* separately.
+The patch removes the inline keyword, creating dozens of copies of the
+functions, and consequently loads of warnings:
 
-The latter is where I have all my trouble and screwup...
+drivers/gpu/drm/i915/i915_drv.h:1803:13: warning: ‘intel_gmbus_is_port_valid’ defined but not used [-Wunused-function]
+drivers/gpu/drm/i915/i915_drv.h:1812:13: warning: ‘intel_gmbus_is_forced_bit’ defined but not used [-Wunused-function]
 
-(However when we break the devicetree data out of the kernel
-and into its own git we will have to follow the pattern above with
-a patch of bindings+DT changes and another one in parallell
-changing the kernel, but that is for a more advanced age.)
 
-Yours,
-Linus Walleij
+BR,
+Jani.
