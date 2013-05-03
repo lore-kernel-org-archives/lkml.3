@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934236Ab3ECTzA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 15:55:00 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:9969 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934217Ab3ECTy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 15:54:59 -0400
-Message-ID: <51841576.80502@parallels.com>
-Date: Fri, 03 May 2013 23:52:22 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S934254Ab3ECT6S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 15:58:18 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:34560 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933038Ab3ECT6R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 15:58:17 -0400
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] soft-dirty: Call mmu notifiers when write-protecting ptes
+In-Reply-To: <1367591569-32197-10-git-send-email-lee.jones@linaro.org>
+References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
+	<1367591569-32197-10-git-send-email-lee.jones@linaro.org>
+Date: Fri, 3 May 2013 21:58:16 +0200
+Message-ID: <CACRpkdYY7Z2invp-Eq2+n+hqdqxKx05QuKCqAe+PudU9JWGXrg@mail.gmail.com>
+Subject: Re: [PATCH 09/63] dmaengine: ste_dma40: Rectify incorrect
+ configuration validation checking
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>, Vinod Koul <vinod.koul@intel.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As noticed by Xiao, since soft-dirty clear command modifies page
-tables we have to flush tlbs and call mmu notifiers. While the
-former is done by the clear_refs engine itself, the latter is to
-be done.
+On Fri, May 3, 2013 at 4:31 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-One thing to note about this -- in order not to call per-page
-invalidate notifier (_all_ address space is about to be changed),
-the _invalidate_range_start and _end are used. But for those start
-and end are not known exactly. To address this, the same trick as
-in exit_mmap() is used -- start is 0 and end is (unsigned long)-1.
+> If we compare an event's group (dev_type / 16) with STEDMA40_DEV_DST_MEMORY
+> (-1), the only way we'd obtain a positive result is if we passed -16 as a
+> device type, which is unfeasible. Instead, it would be much more sane to
+> compare STEDMA40_DEV_DST_MEMORY against the raw dev_type in order to expect
+> the expected result.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+I'd like Vinod's ACK on this before I send it to ARM SoC but tentatively
+applied (and just what I wanted!)
 
----
+Vinod can I have your ACK on this?
 
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 27453c0..dbf61f6 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -11,6 +11,7 @@
- #include <linux/rmap.h>
- #include <linux/swap.h>
- #include <linux/swapops.h>
-+#include <linux/mmu_notifier.h>
- 
- #include <asm/elf.h>
- #include <asm/uaccess.h>
-@@ -815,6 +816,8 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
- 			.private = &cp,
- 		};
- 		down_read(&mm->mmap_sem);
-+		if (type == CLEAR_REFS_SOFT_DIRTY)
-+			mmu_notifier_invalidate_range_start(mm, 0, -1);
- 		for (vma = mm->mmap; vma; vma = vma->vm_next) {
- 			cp.vma = vma;
- 			if (is_vm_hugetlb_page(vma))
-@@ -835,6 +838,8 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
- 			walk_page_range(vma->vm_start, vma->vm_end,
- 					&clear_refs_walk);
- 		}
-+		if (type == CLEAR_REFS_SOFT_DIRTY)
-+			mmu_notifier_invalidate_range_end(mm, 0, -1);
- 		flush_tlb_mm(mm);
- 		up_read(&mm->mmap_sem);
- 		mmput(mm);
+Yours,
+Linus Walleij
