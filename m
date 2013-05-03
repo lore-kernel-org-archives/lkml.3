@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763494Ab3ECUUu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 16:20:50 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:35241 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762084Ab3ECUUs (ORCPT
+	id S1763526Ab3ECUX7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 16:23:59 -0400
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:56477 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763500Ab3ECUX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 16:20:48 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        David Huggins-Daines <dhd@debian.org>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] nubus: Kill nubus_proc_detach_device()
-Date: Fri,  3 May 2013 22:20:38 +0200
-Message-Id: <1367612438-26490-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 3 May 2013 16:23:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1367591569-32197-20-git-send-email-lee.jones@linaro.org>
+References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
+	<1367591569-32197-20-git-send-email-lee.jones@linaro.org>
+Date: Fri, 3 May 2013 22:23:57 +0200
+Message-ID: <CACRpkdZexk6a7yaWEzzOkihcHNGY_UQN3hYiz45LK1cuy0ob=g@mail.gmail.com>
+Subject: Re: [PATCH 19/63] dmaengine: ste_dma40: Separate Logical Global
+ Interrupt Mask (GIM) unmasking
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 59d8053f1e16904d54ed7469d4b36801ea6b8f2c ("proc: Move non-public
-stuff from linux/proc_fs.h to fs/proc/internal.h") broke Apple NuBus
-support:
+On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-drivers/nubus/proc.c: In function ‘nubus_proc_detach_device’:
-drivers/nubus/proc.c:156: error: dereferencing pointer to incomplete type
-drivers/nubus/proc.c:158: error: dereferencing pointer to incomplete type
+> During the initial setup of a logical channel, it is necessary to unmask
+> the GIM in order to receive generated terminal count and error interrupts.
+> We're separating out this required code so it will be possible to move
+> the remaining code in d40_phy_cfg(), which is mostly runtime configuration
+> into the runtime_config() routine.
+>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Per Forlin <per.forlin@stericsson.com>
+> Cc: Rabin Vincent <rabin@rab.in>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Fortunately nubus_proc_detach_device() is unused, and appears to have never
-been used, so just remove it.
+These review comments are only partially accounted for:
+http://marc.info/?l=linux-kernel&m=136688761708399&w=2
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/nubus/proc.c  |   15 ---------------
- include/linux/nubus.h |    1 -
- 2 files changed, 0 insertions(+), 16 deletions(-)
+Please supply a short changelog in the next submission
+so I know what was changed and why some things were not
+changed and if you split out other changes to other patches
+etc etc.
 
-diff --git a/drivers/nubus/proc.c b/drivers/nubus/proc.c
-index b8286ed..5371b37 100644
---- a/drivers/nubus/proc.c
-+++ b/drivers/nubus/proc.c
-@@ -147,21 +147,6 @@ int nubus_proc_attach_device(struct nubus_dev *dev)
- }
- EXPORT_SYMBOL(nubus_proc_attach_device);
- 
--/* FIXME: this is certainly broken! */
--int nubus_proc_detach_device(struct nubus_dev *dev)
--{
--	struct proc_dir_entry *e;
--
--	if ((e = dev->procdir)) {
--		if (atomic_read(&e->count))
--			return -EBUSY;
--		remove_proc_entry(e->name, proc_bus_nubus_dir);
--		dev->procdir = NULL;
--	}
--	return 0;
--}
--EXPORT_SYMBOL(nubus_proc_detach_device);
--
- /*
-  * /proc/nubus stuff
-  */
-diff --git a/include/linux/nubus.h b/include/linux/nubus.h
-index b374052..6165b2c 100644
---- a/include/linux/nubus.h
-+++ b/include/linux/nubus.h
-@@ -87,7 +87,6 @@ static inline void nubus_proc_init(void) {}
- #endif
- int get_nubus_list(char *buf);
- int nubus_proc_attach_device(struct nubus_dev *dev);
--int nubus_proc_detach_device(struct nubus_dev *dev);
- /* If we need more precision we can add some more of these */
- struct nubus_dev* nubus_find_device(unsigned short category,
- 				    unsigned short type,
--- 
-1.7.0.4
-
+Yours,
+Linus Walleij
