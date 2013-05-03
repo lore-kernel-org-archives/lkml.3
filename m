@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762483Ab3ECNzQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 09:55:16 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:46045 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762035Ab3ECNzP (ORCPT
+	id S1762634Ab3ECN53 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 09:57:29 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:45899 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762307Ab3ECN52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 09:55:15 -0400
-Date: Fri, 3 May 2013 14:55:09 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
+	Fri, 3 May 2013 09:57:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130502083849.GH25256@gmail.com>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+	<1366279934-30761-13-git-send-email-lee.jones@linaro.org>
+	<20130501144213.GG25256@gmail.com>
+	<20130502083849.GH25256@gmail.com>
+Date: Fri, 3 May 2013 15:57:27 +0200
+Message-ID: <CACRpkdYbqU=bHrzf6Vpv-KFYN_+z6+y1ocNHtkLEO7ihHEd=dA@mail.gmail.com>
+Subject: Re: [PATCH 12/32] ARM: ux500: Remove superfluous 'psize' attribute
+ from Audio platform data
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
 Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 2/4 v2] mfd: ab8500-gpadc: Suppress 'ignoring
- regulator_enable() return value' warning
-Message-ID: <20130503135509.GL24153@gmail.com>
-References: <1367509690-24022-1-git-send-email-lee.jones@linaro.org>
- <1367509690-24022-3-git-send-email-lee.jones@linaro.org>
- <20130503111537.GH24153@gmail.com>
- <CACRpkdZUDFakgYbUsbm6y9G0TqNr2z8U-f3Y1T6vNR1+CvLpKg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdZUDFakgYbUsbm6y9G0TqNr2z8U-f3Y1T6vNR1+CvLpKg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Linus WALLEIJ <linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 03 May 2013, Linus Walleij wrote:
+On Thu, May 2, 2013 at 10:38 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> On Fri, May 3, 2013 at 1:15 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > drivers/mfd/ab8500-gpadc.c: In function ‘ab8500_gpadc_resume’:
-> > drivers/mfd/ab8500-gpadc.c:911:18: warning: ignoring return value of
-> >         ‘regulator_enable’, declared with attribute warn_unused_result
-> >         [-Wunused-result]
-> >
-> > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> Yours,
-> Linus Walleij
+>> > 'psize' is used to calculate the maximum DMA burst size. However it
+>> > is only taken into consideration when editing the DMA channel's
+>> > configuration. The Audio DMA platform data is only used to allocate
+>> > a channel, not configure it. That will be done at a later date within
+>> > the MSP driver.
+>> >
+>> > We're also removing comments which are no longer required, as
+>> > 'data_width' is no longer set in any device's platform data period.
+>> >
+>> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Nice, thanks. I'm applying this now.
+>> Linus Walleij wrote:
+>> So if I understand correctly this is now handled by dmaengine_pcm.c,
+>> os that right?
+>
+> Unfortunately not. At the moment ux500 sound is very broken in
+> Mainline. I looked at it recently and the driver is almost completely
+> different to the one maintained internally.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I was more thinking that the dmaengine_pcm.c which appears
+to have its functions called from the ux500 ASoC driver should
+do the calls to slave config to set up proper DMA characteristics
+for the channel.
+
+Maybe that part is in the MSP driver as you say, is that so?
+
+> There were DMA changes relating to this driver pending for v3.10,
+> which I believe have just been taking into -next. I will straighten
+> out the DMA issues shortly, but there are other ones remaining still -
+> mostly surrounding widgets. Ideally this is something Ola should fix,
+> as he has the expertise to do so, but he doesn't appear to have been
+> very active upstream of late.
+
+IIRC there are also patches from Fabio to this stuff so I'm
+a bit confused, but if the intention is to merge this through
+ASoC with some other stuff, by all means:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
