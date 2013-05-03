@@ -1,47 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934456Ab3ECRMN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 13:12:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46477 "EHLO mail.zytor.com"
+	id S1763044Ab3ECRO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 13:14:27 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4768 "EHLO mms3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934360Ab3ECRMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 13:12:09 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <alpine.DEB.2.02.1305030952140.30317@chino.kir.corp.google.com>
-References: <20130426095140.GA15361@pd.tnic> <tip-7e0320e733eec67e40d2b53e438d9971f079862d@git.kernel.org> <alpine.DEB.2.02.1305021104440.2493@chino.kir.corp.google.com> <5182AB66.6020307@linux.intel.com> <20130502194556.GB3553@gmail.com> <20130502200703.GE16684@pd.tnic> <20130503142900.GA3433@pd.tnic> <5183CFAC.8020005@infradead.org> <20130503150818.GC3433@pd.tnic> <5183D357.8000204@suse.cz> <20130503153134.GD3433@pd.tnic> <alpine.DEB.2.02.1305030952140.30317@chino.kir.corp.google.com>
+	id S1753486Ab3ECROZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 13:14:25 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <5183F046.9020802@broadcom.com>
+Date: Fri, 3 May 2013 10:13:42 -0700
+From: "Christian Daudt" <csd@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329
+ Thunderbird/17.0.5
 MIME-Version: 1.0
+To: "Will Deacon" <will.deacon@arm.com>
+cc: "Russell King" <linux@arm.linux.org.uk>,
+        "John Stultz" <john.stultz@linaro.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Olof Johansson" <olof@lixom.net>, "Arnd Bergmann" <arnd@arndb.de>,
+        "Stephen Warren" <swarren@wwwdotorg.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "csd_b@daudt.org" <csd_b@daudt.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "Rob Landley" <rob@landley.net>,
+        "Josh Cartwright" <josh.cartwright@ni.com>,
+        "Yehuda Yitschak" <yehuday@marvell.com>,
+        "Gregory CLEMENT" <gregory.clement@free-electrons.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] ARM: bcm281xx: Add L2 support for Rev A2 chips
+References: <1367542653-955-1-git-send-email-csd@broadcom.com>
+ <20130503085100.GA6188@mudshark.cambridge.arm.com>
+In-Reply-To: <20130503085100.GA6188@mudshark.cambridge.arm.com>
+X-WSS-ID: 7D9D31FA2L811118900-01-01
 Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for building working KVM guest kernels
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 03 May 2013 10:10:56 -0700
-To: David Rientjes <rientjes@google.com>, Borislav Petkov <bp@alien8.de>
-CC: Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-kernel@vger.kernel.org, penberg@kernel.org,
-        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
-        bp@suse.de, fengguang.wu@intel.com, linux-tip-commits@vger.kernel.org
-Message-ID: <aea679e3-048a-4f28-b164-73191095a995@email.android.com>
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For minimal you'd probably use yes n | ...
-
-David Rientjes <rientjes@google.com> wrote:
-
->On Fri, 3 May 2013, Borislav Petkov wrote:
+On 13-05-03 01:51 AM, Will Deacon wrote:
+> Hi Christian,
 >
->> * yes "" | make oldconfig - because we want to use the current config
->> as a base.
->> 
+> On Fri, May 03, 2013 at 01:57:33AM +0100, Christian Daudt wrote:
+>> Rev A2 SoCs have an unorthodox memory re-mapping and this needs
+>> to be reflected in the cache operations.
+>> This patch adds new outer cache functions for the l2x0 driver
+>> to support this SoC revision. It also adds a new compatible
+>> value for the cache to enable this functionality.
+>>
+>> Updates from V1:
+>> - remove section 1 altogether and note that in comments
+>> - simplify section selection caused by section 1 removal
+>> - BUG_ON just in case section 1 shows up
+> Looking much better now :)
 >
->This will select options that you don't necessarily need but default to
->
->enabled when they are selected from kvm_guest.config, so it will
->actually 
->include much more than what's needed for a kvm guest.
+>> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+>> index c465fac..d70e0ab 100644
+>> --- a/arch/arm/mm/cache-l2x0.c
+>> +++ b/arch/arm/mm/cache-l2x0.c
+>> @@ -523,6 +523,147 @@ static void aurora_flush_range(unsigned long start, unsigned long end)
+>>   	}
+>>   }
+>>   
+>> +/*
+>> + * For certain Broadcom SoCs, depending on the address range, different offsets
+>> + * need to be added to the address before passing it to L2 for
+>> + * invalidation/clean/flush
+>> + *
+>> + * Section Address Range              Offset        EMI
+>> + *   1     0x00000000 - 0x3FFFFFFF    0x80000000    VC
+>> + *   2     0x40000000 - 0xBFFFFFFF    0x40000000    SYS
+>> + *   3     0xC0000000 - 0xFFFFFFFF    0x80000000    VC
+> I don't think you answered last time (or I missed it) but where is the RAM
+> in the physical memory map for boards with this L2 controller? Do you
+> actually have 3GB@0x40000000?
+There can be up to 1G for VC and 1G for SYS. Usually that translates to 
+0x80000000-0xFFFFFFFF
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+  thanks,
+    csd
+
+
