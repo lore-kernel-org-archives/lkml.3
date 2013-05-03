@@ -1,131 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762228Ab3ECACK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 20:02:10 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55059 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762115Ab3ECABg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 20:01:36 -0400
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Linux MM <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Simon Jeons <simon.jeons@gmail.com>
-Subject: [RFC PATCH v3 19/31] mm: memory,memlayout: add refresh_memory_blocks() for Dynamic NUMA.
-Date: Thu,  2 May 2013 17:00:51 -0700
-Message-Id: <1367539263-19999-20-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050300-7182-0000-0000-00000684B96E
+	id S1762279Ab3ECAEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 20:04:08 -0400
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:37783 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760661Ab3ECAEE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 20:04:04 -0400
+Date: Thu, 2 May 2013 17:03:58 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Colin Cross <ccross@android.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
+        Oleg Nesterov <oleg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Jeff Layton <jlayton@redhat.com>
+Subject: Re: [PATCH v2 03/10] freezer: add new freezable helpers using
+ freezer_do_not_count()
+Message-ID: <20130503000358.GX19814@mtj.dyndns.org>
+References: <1367458508-9133-1-git-send-email-ccross@android.com>
+ <1367458508-9133-4-git-send-email-ccross@android.com>
+ <20130502235505.GW19814@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130502235505.GW19814@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Properly update the sysfs info when memory blocks move between nodes
-due to a Dynamic NUMA reconfiguration.
----
- drivers/base/memory.c  | 39 +++++++++++++++++++++++++++++++++++++++
- include/linux/memory.h |  5 +++++
- mm/memlayout.c         |  3 +++
- 3 files changed, 47 insertions(+)
+On Thu, May 02, 2013 at 04:55:05PM -0700, Tejun Heo wrote:
+> So, the freezable interface can't be something that people can use
+> casually.  It is something which should be carefully and strategically
+> deployed where we *know* that lock dependency risks don't exist or at
+> least are acceptable.  I'm a bit weary that this patch is expanding
+> the interface a lot that they now look like the equivalents of normal
+> schedule calls.  Not exactly sure what to do here but can we please at
+> least have RED BOLD BLINKING comments which scream to people not to
+> use these unless they know what they're doing?
 
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 90e387c..db1b034 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -15,6 +15,7 @@
- #include <linux/device.h>
- #include <linux/init.h>
- #include <linux/kobject.h>
-+#include <linux/memlayout.h>
- #include <linux/memory.h>
- #include <linux/memory_hotplug.h>
- #include <linux/mm.h>
-@@ -700,6 +701,44 @@ bool is_memblock_offlined(struct memory_block *mem)
- 	return mem->state == MEM_OFFLINE;
- }
- 
-+#if defined(CONFIG_DYNAMIC_NUMA)
-+int refresh_memory_blocks(struct memlayout *ml)
-+{
-+	struct subsys_dev_iter iter;
-+	struct device *dev;
-+	/* XXX: 4th arg is (struct device_type *), can we spec one? */
-+	mutex_lock(&mem_sysfs_mutex);
-+	subsys_dev_iter_init(&iter, &memory_subsys, NULL, NULL);
-+
-+	while ((dev = subsys_dev_iter_next(&iter))) {
-+		struct memory_block *mem_blk = container_of(dev, struct memory_block, dev);
-+		unsigned long start_pfn = section_nr_to_pfn(mem_blk->start_section_nr);
-+		unsigned long end_pfn   = section_nr_to_pfn(mem_blk->end_section_nr + 1);
-+		struct rangemap_entry *rme = memlayout_pfn_to_rme_higher(ml, start_pfn);
-+		unsigned long pfn = start_pfn;
-+
-+		if (!rme || !rme_bounds_pfn(rme, pfn)) {
-+			pr_warn("memory block %s {sec %lx-%lx}, {pfn %05lx-%05lx} is not bounded by the memlayout %pK\n",
-+					dev_name(dev),
-+					mem_blk->start_section_nr, mem_blk->end_section_nr,
-+					start_pfn, end_pfn, ml);
-+			continue;
-+		}
-+
-+		unregister_mem_block_under_nodes(mem_blk);
-+
-+		for (; pfn < end_pfn && rme; rme = rme_next(rme)) {
-+			register_mem_block_under_node(mem_blk, rme->nid);
-+			pfn = rme->pfn_end + 1;
-+		}
-+	}
-+
-+	subsys_dev_iter_exit(&iter);
-+	mutex_unlock(&mem_sysfs_mutex);
-+	return 0;
-+}
-+#endif
-+
- /*
-  * Initialize the sysfs support for memory devices...
-  */
-diff --git a/include/linux/memory.h b/include/linux/memory.h
-index 85c31a8..8f1dc43 100644
---- a/include/linux/memory.h
-+++ b/include/linux/memory.h
-@@ -143,6 +143,11 @@ enum mem_add_context { BOOT, HOTPLUG };
- #define unregister_hotmemory_notifier(nb)  ({ (void)(nb); })
- #endif
- 
-+#ifdef CONFIG_DYNAMIC_NUMA
-+struct memlayout;
-+extern int refresh_memory_blocks(struct memlayout *ml);
-+#endif
-+
- /*
-  * 'struct memory_accessor' is a generic interface to provide
-  * in-kernel access to persistent memory such as i2c or SPI EEPROMs
-diff --git a/mm/memlayout.c b/mm/memlayout.c
-index 0a1a602..8b9ba9a 100644
---- a/mm/memlayout.c
-+++ b/mm/memlayout.c
-@@ -9,6 +9,7 @@
- #include <linux/dnuma.h>
- #include <linux/export.h>
- #include <linux/memblock.h>
-+#include <linux/memory.h>
- #include <linux/printk.h>
- #include <linux/rbtree.h>
- #include <linux/rcupdate.h>
-@@ -300,6 +301,8 @@ void memlayout_commit(struct memlayout *ml)
- 	drain_all_pages();
- 	/* All new page allocations now match the memlayout */
- 
-+	refresh_memory_blocks(ml);
-+
- 	mutex_unlock(&memlayout_lock);
- }
- 
+Maybe we should trigger WARN_ON_ONCE() if lockdep_depth() > 0 by
+default and have ugly variants which can be used if the caller is sure
+that it's okay possibly with list of locks which are held?
+
 -- 
-1.8.2.2
-
+tejun
