@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763420Ab3ECT2Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 15:28:16 -0400
-Received: from a9-74.smtp-out.amazonses.com ([54.240.9.74]:35956 "EHLO
-	a9-74.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1763334Ab3ECT2P (ORCPT
+	id S1763433Ab3ECT2i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 15:28:38 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:57078 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763076Ab3ECT2g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 15:28:15 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 May 2013 15:28:15 EDT
-Date: Fri, 3 May 2013 19:21:35 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [linux-next-20130422] Bug in SLAB?
-In-Reply-To: <201305040348.CIF81716.OStQOHFJMFLOVF@I-love.SAKURA.ne.jp>
-Message-ID: <0000013e6bd7a766-8473586c-7937-4129-bad1-a4198acdddcf-000000@email.amazonses.com>
-References: <0000013e5bfc7c4d-54fa9464-dccd-4157-b4a5-22594261eaf3-000000@email.amazonses.com> <201305012114.AED78178.tFSHFQOOJLMOFV@I-love.SAKURA.ne.jp> <0000013e6705da99-094923c6-e239-43d2-8f0c-5e661656a27c-000000@email.amazonses.com>
- <201305031726.BJG78631.tQSOVOLHJFMFFO@I-love.SAKURA.ne.jp> <0000013e6b90e65e-e0e184d9-7da5-4873-9572-3b40958552e2-000000@email.amazonses.com> <201305040348.CIF81716.OStQOHFJMFLOVF@I-love.SAKURA.ne.jp>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 3 May 2013 15:28:36 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: linux-acpi@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: 3.9.0 + CONFIG_X86_INTEL_PSTATE=y  -> ThinkPad T420 with i5 lost ACPI functionality
+Date: Fri, 03 May 2013 21:36:54 +0200
+Message-ID: <3715884.H8PIhhjRXL@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <5183EC09.9080208@gmx.de>
+References: <5183EC09.9080208@gmx.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.05.03-54.240.9.74
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 4 May 2013, Tetsuo Handa wrote:
+On Friday, May 03, 2013 06:55:37 PM Toralf Förster wrote:
+> The following file doesn't exists at my Gentoo Linux
+> /sys/devices/system/cpu/cpufreq/ondemand/ignore_nice_load
+> in 3.9.0 if I activate CONFIG_X86_INTEL_PSTATE=y 
+> 
+> That means, that a command like
+> 
+> $> echo 1 > /sys/devices/system/cpu/cpufreq/ondemand/ignore_nice_load
+> 
+> in /etc/rc.local is now no longer working.
+> A high fan +  high temperature are the result, even if just the BOINC client
+> is run with low prio (nice 19) in the back ground.
+> 
+> Manually loading the missing module won't work too :
+> 
+> $> modprobe acpi_cpufreq
+> modprobe: ERROR: could not insert 'acpi_cpufreq': Device or resource busy
+> 
+> Is the behaviour a bug or a feature ?
 
->   Subject: slab: Return NULL for oversized allocations
->   (Date: Fri, 3 May 2013 15:43:18 +0000)
->
-> and
->
->   Subject: Fix bootstrap creation of kmalloc caches
->   (Date: Fri, 3 May 2013 18:04:18 +0000)
->
-> on linux-next-20130426 made my kernel boots fine and passes the allocation
-> testcases. Thank you.
+The thermal management problem is not an intentional outcome, definitely.
 
-Ok could I see the kernel logs with the warnings?
+> In the later case: How can I achieve the previous behaviour back ?
+> 
+> This issue might affect the RH EL kernel too [1] where I observed a similar behaviour.
+> 
+> 
+> [1] http://elrepo.org/bugs/view.php?id=379
 
+Dirk, is this the problem we were talking about recently or something else?
+
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
