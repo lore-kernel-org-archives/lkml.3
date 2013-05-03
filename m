@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933553Ab3ECOeb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:34:31 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:53243 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933486Ab3ECOeS (ORCPT
+	id S933590Ab3ECOoh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:44:37 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:36122 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933475Ab3ECOe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:34:18 -0400
+	Fri, 3 May 2013 10:34:28 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 26/63] dmaengine: ste_dma40: Supply full Device Tree parsing support
-Date: Fri,  3 May 2013 15:32:12 +0100
-Message-Id: <1367591569-32197-27-git-send-email-lee.jones@linaro.org>
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 31/63] dmaengine: ste_dma40: Only use addresses passed as configuration information
+Date: Fri,  3 May 2013 15:32:17 +0100
+Message-Id: <1367591569-32197-32-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
 References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
@@ -25,170 +21,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the new DMA DT bindings and API, we can register the DMA40 driver
-as Device Tree capable. Now, when a client attempts to allocate a
-channel using the DMA DT bindings via its own node, we are able to parse
-the request and allocate a channel in the correct manner.
+Addresses are passed in from the client's driver via the invocation of
+dmaengine_slave_config(), so there's no need to fetch them from platform
+data too, hardwired or otherwise. This is a great step forward, as it
+elevates a large burden from platform data in the way of a look-up
+table.
 
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <djbw@fb.com>
-Cc: Per Forlin <per.forlin@stericsson.com>
-Cc: Rabin Vincent <rabin@rab.in>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: devicetree-discuss@lists.ozlabs.org
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- .../devicetree/bindings/dma/ste-dma40.txt          |   62 ++++++++++++++++++++
- drivers/dma/ste_dma40.c                            |   52 ++++++++++++++++
- 2 files changed, 114 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/ste-dma40.txt
+ drivers/dma/ste_dma40.c |   51 ++++++++++-------------------------------------
+ 1 file changed, 11 insertions(+), 40 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/dma/ste-dma40.txt b/Documentation/devicetree/bindings/dma/ste-dma40.txt
-new file mode 100644
-index 0000000..2679a87
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/ste-dma40.txt
-@@ -0,0 +1,62 @@
-+* DMA40 DMA Controller
-+
-+Required properties:
-+- compatible: "stericsson,dma40"
-+- reg: Address range of the DMAC registers
-+- reg-names: Names of the above areas to use during resource look-up
-+- interrupt: Should contain the DMAC interrupt number
-+- #dma-cells: must be <3>
-+
-+Optional properties:
-+- dma-channels: Number of channels supported by hardware - if not present
-+		the driver will attempt to obtain the information from H/W
-+
-+Example:
-+
-+	dma: dma-controller@801C0000 {
-+		compatible = "stericsson,db8500-dma40", "stericsson,dma40";
-+		reg = <0x801C0000 0x1000  0x40010000 0x800>;
-+		reg-names = "base", "lcpa";
-+		interrupt-parent = <&intc>;
-+		interrupts = <0 25 0x4>;
-+
-+		#dma-cells = <2>;
-+		dma-channels = <8>;
-+	};
-+
-+Clients
-+Required properties:
-+- dmas: Comma separated list of dma channel requests
-+- dma-names: Names of the aforementioned requested channels
-+
-+Each dmas request consists of 4 cells:
-+  1. A phandle pointing to the DMA controller
-+  2. Device Type
-+  3. The DMA request line number (only when 'use fixed channel' is set)
-+  4. A 32bit mask specifying; mode, direction and endianess [NB: This list will grow]
-+        0x00000001: Mode:
-+                Logical channel when unset
-+                Physical channel when set
-+        0x00000002: Direction:
-+                Memory to Device when unset
-+                Device to Memory when set
-+        0x00000004: Endianess:
-+                Little endian when unset
-+                Big endian when set
-+        0x00000008: Use fixed channel:
-+                Use automatic channel selection when unset
-+                Use DMA request line number when set
-+
-+Example:
-+
-+	uart@80120000 {
-+		compatible = "arm,pl011", "arm,primecell";
-+		reg = <0x80120000 0x1000>;
-+		interrupts = <0 11 0x4>;
-+
-+		dmas = <&dma 13 0 0x2>, /* Logical - DevToMem */
-+		       <&dma 13 0 0x0>; /* Logical - MemToDev */
-+		dma-names = "rx", "rx";
-+
-+		status = "disabled";
-+	};
 diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index d7c2397..b77d508 100644
+index b77d508..3ff6ea4 100644
 --- a/drivers/dma/ste_dma40.c
 +++ b/drivers/dma/ste_dma40.c
-@@ -18,6 +18,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/err.h>
- #include <linux/of.h>
-+#include <linux/of_dma.h>
- #include <linux/amba/bus.h>
- #include <linux/regulator/consumer.h>
- #include <linux/platform_data/dma-ste-dma40.h>
-@@ -2419,6 +2420,50 @@ static void d40_set_prio_realtime(struct d40_chan *d40c)
- 		__d40_set_prio_rt(d40c, d40c->dma_cfg.dev_type, false);
- }
+@@ -1760,22 +1760,6 @@ static int d40_validate_conf(struct d40_chan *d40c,
+ 		res = -EINVAL;
+ 	}
  
-+#define D40_DT_FLAGS_MODE(flags)       ((flags >> 0) & 0x1)
-+#define D40_DT_FLAGS_DIR(flags)        ((flags >> 1) & 0x1)
-+#define D40_DT_FLAGS_BIG_ENDIAN(flags) ((flags >> 2) & 0x1)
-+#define D40_DT_FLAGS_FIXED_CHAN(flags) ((flags >> 3) & 0x1)
+-	if (conf->dir == STEDMA40_MEM_TO_PERIPH &&
+-	    d40c->base->plat_data->dev_tx[conf->dev_type] == 0 &&
+-	    d40c->runtime_addr == 0) {
+-		chan_err(d40c, "Invalid TX channel address (%d)\n",
+-			 conf->dev_type);
+-		res = -EINVAL;
+-	}
+-
+-	if (conf->dir == STEDMA40_PERIPH_TO_MEM &&
+-	    d40c->base->plat_data->dev_rx[conf->dev_type] == 0 &&
+-	    d40c->runtime_addr == 0) {
+-		chan_err(d40c, "Invalid RX channel address (%d)\n",
+-			 conf->dev_type);
+-		res = -EINVAL;
+-	}
+-
+ 	if (conf->dir == STEDMA40_PERIPH_TO_PERIPH) {
+ 		/*
+ 		 * DMAC HW supports it. Will be added to this driver,
+@@ -2313,14 +2297,10 @@ d40_prep_sg(struct dma_chan *dchan, struct scatterlist *sg_src,
+ 	if (sg_next(&sg_src[sg_len - 1]) == sg_src)
+ 		desc->cyclic = true;
+ 
+-	if (direction != DMA_TRANS_NONE) {
+-		dma_addr_t dev_addr = d40_get_dev_addr(chan, direction);
+-
+-		if (direction == DMA_DEV_TO_MEM)
+-			src_dev_addr = dev_addr;
+-		else if (direction == DMA_MEM_TO_DEV)
+-			dst_dev_addr = dev_addr;
+-	}
++	if (direction == DMA_DEV_TO_MEM)
++		src_dev_addr = chan->runtime_addr;
++	else if (direction == DMA_MEM_TO_DEV)
++		dst_dev_addr = chan->runtime_addr;
+ 
+ 	if (chan_is_logical(chan))
+ 		ret = d40_prep_sg_log(chan, desc, sg_src, sg_dst,
+@@ -2768,15 +2748,8 @@ static int d40_set_runtime_config(struct dma_chan *chan,
+ 	dst_maxburst = config->dst_maxburst;
+ 
+ 	if (config->direction == DMA_DEV_TO_MEM) {
+-		dma_addr_t dev_addr_rx =
+-			d40c->base->plat_data->dev_rx[cfg->dev_type];
+-
+ 		config_addr = config->src_addr;
+-		if (dev_addr_rx)
+-			dev_dbg(d40c->base->dev,
+-				"channel has a pre-wired RX address %08x "
+-				"overriding with %08x\n",
+-				dev_addr_rx, config_addr);
 +
-+static struct dma_chan *d40_xlate(struct of_phandle_args *dma_spec,
-+				  struct of_dma *ofdma)
-+{
-+	struct stedma40_chan_cfg cfg;
-+	dma_cap_mask_t cap;
-+	u32 flags;
+ 		if (cfg->dir != STEDMA40_PERIPH_TO_MEM)
+ 			dev_dbg(d40c->base->dev,
+ 				"channel was not configured for peripheral "
+@@ -2791,15 +2764,8 @@ static int d40_set_runtime_config(struct dma_chan *chan,
+ 			dst_maxburst = src_maxburst;
+ 
+ 	} else if (config->direction == DMA_MEM_TO_DEV) {
+-		dma_addr_t dev_addr_tx =
+-			d40c->base->plat_data->dev_tx[cfg->dev_type];
+-
+ 		config_addr = config->dst_addr;
+-		if (dev_addr_tx)
+-			dev_dbg(d40c->base->dev,
+-				"channel has a pre-wired TX address %08x "
+-				"overriding with %08x\n",
+-				dev_addr_tx, config_addr);
 +
-+	memset(&cfg, 0, sizeof(struct stedma40_chan_cfg));
-+
-+	dma_cap_zero(cap);
-+	dma_cap_set(DMA_SLAVE, cap);
-+
-+	cfg.dev_type = dma_spec->args[0];
-+	flags = dma_spec->args[2];
-+
-+	switch (D40_DT_FLAGS_MODE(flags)) {
-+	case 0: cfg.mode = STEDMA40_MODE_LOGICAL; break;
-+	case 1: cfg.mode = STEDMA40_MODE_PHYSICAL; break;
+ 		if (cfg->dir != STEDMA40_MEM_TO_PERIPH)
+ 			dev_dbg(d40c->base->dev,
+ 				"channel was not configured for memory "
+@@ -2819,6 +2785,11 @@ static int d40_set_runtime_config(struct dma_chan *chan,
+ 		return -EINVAL;
+ 	}
+ 
++	if (config_addr <= 0) {
++		dev_err(d40c->base->dev, "no address supplied\n");
++		return -EINVAL;
 +	}
 +
-+	switch (D40_DT_FLAGS_DIR(flags)) {
-+	case 0:
-+		cfg.dir = STEDMA40_MEM_TO_PERIPH;
-+		cfg.dst_info.big_endian = D40_DT_FLAGS_BIG_ENDIAN(flags);
-+		break;
-+	case 1:
-+		cfg.dir = STEDMA40_PERIPH_TO_MEM;
-+		cfg.src_info.big_endian = D40_DT_FLAGS_BIG_ENDIAN(flags);
-+		break;
-+	}
-+
-+	if (D40_DT_FLAGS_FIXED_CHAN(flags)) {
-+		cfg.phy_channel = dma_spec->args[1];
-+		cfg.use_fixed_channel = true;
-+	}
-+
-+	return dma_request_channel(cap, stedma40_filter, &cfg);
-+}
-+
- /* DMA ENGINE functions */
- static int d40_alloc_chan_resources(struct dma_chan *chan)
- {
-@@ -3632,6 +3677,13 @@ static int __init d40_probe(struct platform_device *pdev)
- 
- 	d40_hw_init(base);
- 
-+	if (np) {
-+		err = of_dma_controller_register(np, d40_xlate, NULL);
-+		if (err && err != -ENODEV)
-+			dev_err(&pdev->dev,
-+				"could not register of_dma_controller\n");
-+	}
-+
- 	dev_info(base->dev, "initialized\n");
- 	return 0;
- 
+ 	if (src_maxburst * src_addr_width != dst_maxburst * dst_addr_width) {
+ 		dev_err(d40c->base->dev,
+ 			"src/dst width/maxburst mismatch: %d*%d != %d*%d\n",
 -- 
 1.7.10.4
 
