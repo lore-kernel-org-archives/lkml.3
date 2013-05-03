@@ -1,173 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761066Ab3ECMLw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 08:11:52 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:4867 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759754Ab3ECMLt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 08:11:49 -0400
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        LKML <linux-kernel@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        Dajun Chen <Dajun.Chen2@diasemi.com>
-Subject: RE: [NEW DRIVER V6 5/7] drivers/gpio: DA9058 GPIO driver
-Thread-Topic: [NEW DRIVER V6 5/7] drivers/gpio: DA9058 GPIO driver
-Thread-Index: AQHOPSDq/4x7gVvGBkyIGe0svdDUiJjlUIAAgAmiYXCABG1eAIAAEqpg
-Date: Fri, 3 May 2013 12:11:46 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB5141923850@NB-EX-MBX02.diasemi.com>
-References: <201304191709.r3JH9w0R017814@latitude>
-	<CACRpkdaSLGmmvWYG6ez1h90e=OZXq4yqtUFXKnTpUWG916LmjA@mail.gmail.com>
-	<24DF37198A1E704D9811D8F72B87EB5141922EEF@NB-EX-MBX02.diasemi.com>
- <CACRpkdaOnOKDXrf1J9NV8AWHAob0a1ARhS_aY--wZpafnuWZgw@mail.gmail.com>
-In-Reply-To: <CACRpkdaOnOKDXrf1J9NV8AWHAob0a1ARhS_aY--wZpafnuWZgw@mail.gmail.com>
-Accept-Language: en-GB, de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.27.109]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1760119Ab3ECMMx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 08:12:53 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:56425 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752426Ab3ECMMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 08:12:52 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH 4/4] ACPI / processor: Use common hotplug infrastructure
+Date: Fri, 03 May 2013 14:21:09 +0200
+Message-ID: <3338257.RT4RYiAzz9@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <8416995.PXoT3vbUMm@vostro.rjw.lan>
+References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <1367536812.16154.178.camel@misato.fc.hp.com> <8416995.PXoT3vbUMm@vostro.rjw.lan>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Linus Walleij [mailto:linus.walleij@linaro.org]
-> Sent: 03 May 2013 12:59
-> To: Opensource [Anthony Olech]
-> Cc: Grant Likely; Linus Walleij; Mark Brown; LKML; Lee Jones
-> Subject: Re: [NEW DRIVER V6 5/7] drivers/gpio: DA9058 GPIO driver
+On Friday, May 03, 2013 02:05:37 PM Rafael J. Wysocki wrote:
+> On Thursday, May 02, 2013 05:20:12 PM Toshi Kani wrote:
+> > On Thu, 2013-05-02 at 14:31 +0200, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > Split the ACPI processor driver into two parts, one that is
+> > > non-modular, resides in the ACPI core and handles the enumeration
+> > > and hotplug of processors and one that implements the rest of the
+> > > existing processor driver functionality.
+> > > 
+> > > The non-modular part uses an ACPI scan handler object to enumerate
+> > > processors on the basis of information provided by the ACPI namespace
+> > > and to hook up with the common ACPI hotplug infrastructure.  It also
+> > > populates the ACPI handle of each processor device having a
+> > > corresponding object in the ACPI namespace, which allows the driver
+> > > proper to bind to those devices, and makes the driver bind to them
+> > > if it is readily available (i.e. loaded) when the scan handler's
+> > > .attach() routine is running.
+> > > 
+> > > There are a few reasons to make this change.
+> > > 
+> > > First, switching the ACPI processor driver to using the common ACPI
+> > > hotplug infrastructure reduces code duplication and size considerably,
+> > > even though a new file is created along with a header comment etc.
+> > > 
+> > > Second, since the common hotplug code attempts to offline devices
+> > > before starting the (non-reversible) removal procedure, it will abort
+> > > (and possibly roll back) hot-remove operations involving processors
+> > > if cpu_down() returns an error code for one of them instead of
+> > > continuing them blindly (if /sys/firmware/acpi/hotplug/force_remove
+> > > is unset).  That is a more desirable behavior than what the current
+> > > code does.
+> > > 
+> > > Finally, the separation of the scan/hotplug part from the driver
+> > > proper makes it possible to simplify the driver's .remove() routine,
+> > > because it doesn't need to worry about the possible cleanup related
+> > > to processor removal any more (the scan/hotplug part is responsible
+> > > for that now) and can handle device removal and driver removal
+> > > symmetricaly (i.e. as appropriate).
+> > > 
+> > > Some user-visible changes in sysfs are made (for example, the
+> > > 'sysdev' link from the ACPI device node to the processor device's
+> > > directory is gone and a 'physical_node' link is present instead,
+> > > a 'firmware_node' link is present in the processor device's
+> > > directory, the processor driver is now visible under
+> > > /sys/bus/cpu/drivers/ and bound to the processor device), but
+> > > that shouldn't affect the functionality that users care about
+> > > (frequency scaling, C-states and thermal management).
+> > 
+> > This looks very nice.  I have one question below.
+> > 
+> > > Tested on my venerable Toshiba Portege R500.
+> > > 
+> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > ---
+> > >  drivers/acpi/Makefile           |    1 
+> > >  drivers/acpi/acpi_processor.c   |  473 +++++++++++++++++++++++
+> > >  drivers/acpi/glue.c             |    6 
+> > >  drivers/acpi/internal.h         |    3 
+> > >  drivers/acpi/processor_driver.c |  803 +++-------------------------------------
+> > >  drivers/acpi/scan.c             |    1 
+> > >  drivers/base/cpu.c              |   11 
+> > >  include/acpi/processor.h        |    5 
+> > >  8 files changed, 574 insertions(+), 729 deletions(-)
+> > 
+> >  :
+> > 
+> > > Index: linux-pm/drivers/base/cpu.c
+> > > ===================================================================
+> > > --- linux-pm.orig/drivers/base/cpu.c
+> > > +++ linux-pm/drivers/base/cpu.c
+> > > @@ -13,11 +13,21 @@
+> > >  #include <linux/gfp.h>
+> > >  #include <linux/slab.h>
+> > >  #include <linux/percpu.h>
+> > > +#include <linux/acpi.h>
+> > >  
+> > >  #include "base.h"
+> > >  
+> > >  static DEFINE_PER_CPU(struct device *, cpu_sys_devices);
+> > >  
+> > > +static int cpu_subsys_match(struct device *dev, struct device_driver *drv)
+> > > +{
+> > > +	/* ACPI style match is the only one that may succeed. */
+> > > +	if (acpi_driver_match_device(dev, drv))
+> > 
+> > Can you explain why this change is needed?
 > 
-> On Tue, Apr 30, 2013 at 6:17 PM, Opensource [Anthony Olech]
-> <anthony.olech.opensource@diasemi.com> wrote:
-[...]
-> >> Maybe it's more logical to have if (!offset) and handle pin
-> >> 0 first, then pin 1 in the else clause?
-> >
-> > why is it logical for one state to be preferred over the other?
+> This is the mechanism by which the driver core determines which driver to use
+> with a processor device passed to device_attach().
 > 
-> Because 0 comes before 1 in the system of numbers?
+> Basically, it walks the list of drivers whose bus type is cpu_subsys and
+> calls cpu_subsys->match(), which points to cpu_subsys_match(), for the device
+> and each of the drivers.  The result of that tell is whether or not to use
+> the given driver with the device.
+> 
+> Now, acpi_driver_match_device() returns 'true' if (a) the device has an ACPI
+> handle and (b) at least one of the IDs of the struct acpi_device associated
+> with that handle is in the driver's .acpi_match_table table.  Since the ACPI
+> processor's .acpi_match_table contains the same set of IDs as the table
+> of device IDs of processor_handler, this guarantees that the ACPI processor
+> driver will be used for the devices prepared by acpi_processor_add().
+> 
+> What it boils down to is that acpi_processor_start() is going to be called
+> for every device whose ACPI handle is populated by acpi_processor_add().
 
-OK, good enough reason - I will change for next submission.
- 
-> >> Please use #define to define these magic bits.
-> >> Something like this:
-> >>
-> >> #include <linux/bitops.h>
-> >>
-> >> #define DA9058_GPIO0_VAL  BIT(3)
-> >> #define DA9058_GPIO0_INOUT  BIT(1)
-> >> #define DA9058_GPIO1_VAL  BIT(7)
-> >> #define DA9058_GPIO1_INOUT  BIT(5)
-> >>
-> >> (etc, so we see what all bits are for)
-> >>
-> >> then use these defines in the code...
-> >
-> > the meaning of the bits other than the INP/OUT bits are not
-> > independent, but depend on the direction. Thus each nibble contains 3
-> dependent bits.
-> 
-> (...)
-> >> > +       if (offset) {
-> >> > +               u8 debounce_bits = debounce ? 0x80 : 0x00;
-> >>
-> >> Is this really correct??
-> >>
-> >> In earlier code you use bit 7 to set the value!
-> >
-> > You are confusing input and output operations, the meanings of each
-> > nibble's other 3 bits is depends on the direction. That is why the INP
-> > and OUT configuration needs to be saved in a control structure.
-> >
-> >> This is partly why I ask you to use #defines for the bits:
-> >> less risk to do things wrong by e.g. copy/paste bugs.
-> >
-> > The hardware definition is in terms of bit patterns in each nibble, so
-> > introducing a dual name for 3 of the 4 bits means double the number of
-> > points an error can be made.
-> 
-> (...)
-> >> > +       gpio->inp_config = 0x99;
-> >> > +       gpio->out_config = 0x77;
-> >>
-> >> Again here you should #define the bits and | or them together instead
-> >> of using comments to clarify it.
-> >
-> > I think that in this particular case it will be more confusing trying
-> > to name the bits due to the fact that 3 out of 4 bit in each nibble depend on
-> the 4th bit.
-> 
-> (...)
-> > I failed previously to imagine any naming scheme that would make the
-> > meaning of the magic bits in each nibble clearer. The best I could
-> > come up with was the comment you referred to.
-> 
-> So add #defines for all combinations, IN and OUT directions.
-> 
-> Also write a comment explaining that the meaning of some bits change
-> depending on how other bits are set.
-> 
-> #include <linux/bitops.h>
-> 
-> 
-> /* This bit in each nybble detemines if the pin is input or output */ #define
-> DA9058_GPIO0_IN  0 #define DA9058_GPIO1_IN  0 #define
-> DA9058_GPIO0_OUT  BIT(1) #define DA9058_GPIO1_OUT  BIT(5)
-> /* This is the meaning of bits 0, 2, 3 in the input mode */ #define
-> DA9058_GPIO0_IN_PU  BIT(0) #define DA9058_GPIO0_IN_PU  BIT(4) #define
-> DA9058_GPIO0_IN_DEB  BIT(3) #define DA9058_GPIO1_IN_DEB  BIT(7) (what
-> is bit 2 in input mode?)
-> (...)
-> /* This is the meaning of bits 0, 2, 3 in the output mode */ #define
-> DA9058_GPIO0_OUT_VAL  BIT(3) #define DA9058_GPIO0_OUT_PP_EXT  BIT(2)
-> | BIT(0) #define DA9058_GPIO0_OUT_PP_INT  BIT(0) #define
-> DA9058_GPIO0_OUT_OD  0 #define DA9058_GPIO1_OUT_VAL  BIT(7) #define
-> DA9058_GPIO1_OUT_PP_EXT  BIT(6) | BIT(4) #define
-> DA9058_GPIO1_OUT_PP_INT  BIT(4) #define DA9058_GPIO1_OUT_OD  0
-> (...)
-> 
-> Then the init in probe() becomes readable:
-> 
-> gpio->inp_config = DA9058_GPIO0_IN |
->      DA9058_GPIO0_IN_PU |
->      DA9058_GPIO0_IN_DEB |
->      DA9058_GPIO1_IN |
->      DA9058_GPIO0_IN_PU |
->      DA9058_GPIO0_IN_DEB;
-> gpio->out_config = DA9058_GPIO0_OUT |
->      DA9058_GPIO0_OUT_PP_EXT |
->      DA9058_GPIO1_OUT |
->      DA9058_GPIO1_OUT_PP_EXT;
-> 
-> This is way more readable than:
-> 
-> gpio->inp_config = 0x99;
-> gpio->out_config = 0x77;
-> 
-> After this though, I start to wonder if it's not smarter to just
-> have:
-> 
-> struct da9058_gpio {
->     (...)
->     u8 gpio0_in_config:4;
->     u8 gpio0_out_config:4;
->     u8 gpio1_in_config:4;
->     u8 gpio1_out_config:4;
-> };
-> 
-> Then only define one set of bits for a single nybble and use some <<4 to |
-> together the apropriate config at runtime.
+The reason why it really is needed is because the ACPI processor driver is
+modular and it may or may not be present when acpi_processor_add() is running,
+but acpi_processor_start() should be called for the device once the driver has
+been loaded.
 
-Thanks for this comment - bit fields look like the best way of managing the bits. I will change the source for the next submission attempt.
+Thanks,
+Rafael
 
-Many thanks for taking the time to review this driver.
 
-Tony Olech
-Dialog Semiconductor
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
