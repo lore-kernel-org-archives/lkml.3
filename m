@@ -1,164 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762729Ab3ECHwH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 03:52:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48674 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758995Ab3ECHwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 03:52:05 -0400
-Date: Fri, 3 May 2013 09:51:58 +0200
-From: Jan Kara <jack@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
-        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
-        Theodore Tso <tytso@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Bernd Schubert <bernd.schubert@fastmail.fm>,
-        David Howells <dhowells@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux-ext4 <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/3] mm: pagevec: Defer deciding what LRU to add a page
- to until pagevec drain time
-Message-ID: <20130503075158.GB10633@quack.suse.cz>
-References: <1367253119-6461-1-git-send-email-mgorman@suse.de>
- <1367253119-6461-2-git-send-email-mgorman@suse.de>
+	id S933036Ab3ECHxK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 03:53:10 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:32901 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758639Ab3ECHxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 03:53:08 -0400
+Date: Fri, 3 May 2013 10:52:36 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+In-Reply-To: <20130502223107.GB3780@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.00.1305031024080.1657@ja.ssi.bg>
+References: <20130501091012.GB28253@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg> <20130501155501.GB7521@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg> <20130502072623.GE7521@dyad.programming.kicks-ass.net>
+ <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg> <20130502173257.GX3780@linux.vnet.ibm.com> <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg> <20130502193409.GA3780@linux.vnet.ibm.com> <alpine.LFD.2.00.1305022249010.25417@ja.ssi.bg>
+ <20130502223107.GB3780@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367253119-6461-2-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29-04-13 17:31:57, Mel Gorman wrote:
-> mark_page_accessed cannot activate an inactive page that is located on
-> an inactive LRU pagevec. Hints from filesystems may be ignored as a
-> result. In preparation for fixing that problem, this patch removes the
-> per-LRU pagevecs and leaves just one pagevec. The final LRU the page is
-> added to is deferred until the pagevec is drained.
-> 
-> This means that fewer pagevecs are available and potentially there is
-> greater contention on the LRU lock. However, this only applies in the case
-> where there is an almost perfect mix of file, anon, active and inactive
-> pages being added to the LRU. In practice I expect that we are adding
-> stream of pages of a particular time and that the changes in contention
-> will barely be measurable.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  mm/swap.c | 37 +++++++++++++++++--------------------
->  1 file changed, 17 insertions(+), 20 deletions(-)
-> 
-> diff --git a/mm/swap.c b/mm/swap.c
-> index 8a529a0..80fbc37 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -36,7 +36,7 @@
->  /* How many pages do we try to swap or page in/out together? */
->  int page_cluster;
->  
-> -static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
-> +static DEFINE_PER_CPU(struct pagevec, lru_add_pvec);
->  static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
->  static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
->  
-> @@ -456,13 +456,18 @@ EXPORT_SYMBOL(mark_page_accessed);
->   */
->  void __lru_cache_add(struct page *page, enum lru_list lru)
->  {
-> -	struct pagevec *pvec = &get_cpu_var(lru_add_pvecs)[lru];
-> +	struct pagevec *pvec = &get_cpu_var(lru_add_pvec);
-> +
-> +	if (is_active_lru(lru))
-> +		SetPageActive(page);
-> +	else
-> +		ClearPageActive(page);
->  
->  	page_cache_get(page);
->  	if (!pagevec_space(pvec))
->  		__pagevec_lru_add(pvec, lru);
->  	pagevec_add(pvec, page);
-> -	put_cpu_var(lru_add_pvecs);
-> +	put_cpu_var(lru_add_pvec);
->  }
->  EXPORT_SYMBOL(__lru_cache_add);
->  
-> @@ -475,13 +480,11 @@ void lru_cache_add_lru(struct page *page, enum lru_list lru)
->  {
->  	if (PageActive(page)) {
->  		VM_BUG_ON(PageUnevictable(page));
-> -		ClearPageActive(page);
->  	} else if (PageUnevictable(page)) {
->  		VM_BUG_ON(PageActive(page));
-> -		ClearPageUnevictable(page);
->  	}
->  
-> -	VM_BUG_ON(PageLRU(page) || PageActive(page) || PageUnevictable(page));
-> +	VM_BUG_ON(PageLRU(page));
->  	__lru_cache_add(page, lru);
->  }
->  
-> @@ -582,15 +585,10 @@ static void lru_deactivate_fn(struct page *page, struct lruvec *lruvec,
->   */
->  void lru_add_drain_cpu(int cpu)
->  {
-> -	struct pagevec *pvecs = per_cpu(lru_add_pvecs, cpu);
-> -	struct pagevec *pvec;
-> -	int lru;
-> +	struct pagevec *pvec = &per_cpu(lru_add_pvec, cpu);
->  
-> -	for_each_lru(lru) {
-> -		pvec = &pvecs[lru - LRU_BASE];
-> -		if (pagevec_count(pvec))
-> -			__pagevec_lru_add(pvec, lru);
-> -	}
-> +	if (pagevec_count(pvec))
-> +		__pagevec_lru_add(pvec, NR_LRU_LISTS);
->  
->  	pvec = &per_cpu(lru_rotate_pvecs, cpu);
->  	if (pagevec_count(pvec)) {
-> @@ -789,17 +787,16 @@ void lru_add_page_tail(struct page *page, struct page *page_tail,
->  static void __pagevec_lru_add_fn(struct page *page, struct lruvec *lruvec,
->  				 void *arg)
->  {
-> -	enum lru_list lru = (enum lru_list)arg;
-> -	int file = is_file_lru(lru);
-> -	int active = is_active_lru(lru);
-> +	enum lru_list requested_lru = (enum lru_list)arg;
-> +	int file = page_is_file_cache(page);
-> +	int active = PageActive(page);
-> +	enum lru_list lru = page_lru(page);
->  
-> -	VM_BUG_ON(PageActive(page));
-> +	WARN_ON_ONCE(requested_lru < NR_LRU_LISTS && requested_lru != lru);
-  Hum, so __lru_cache_add() calls this with 'requested_lru' set to whatever
-LRU we currently want to add a page. How should this always be equal to the
-LRU of all the pages we have cached in the pagevec?
 
-And if I'm right, there doesn't seem to be a reason to pass requested_lru
-to this function at all, does it?
+	Hello,
 
->  	VM_BUG_ON(PageUnevictable(page));
->  	VM_BUG_ON(PageLRU(page));
->  
->  	SetPageLRU(page);
-> -	if (active)
-> -		SetPageActive(page);
->  	add_page_to_lru_list(page, lruvec, lru);
->  	update_page_reclaim_stat(lruvec, file, active);
->  }
-> -- 
-> 1.8.1.4
+On Thu, 2 May 2013, Paul E. McKenney wrote:
+
+> mainline, and missed the one that you added.  Revisiting that, a
+> question:
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> > +#ifdef CONFIG_PREEMPT_RCU
+> > +#define PREEMPT_RCU_OFFSET     1
+> 
+> Does this really want to be "1" instead of PREEMPT_OFFSET?
+
+	In this case when CONFIG_PREEMPT_RCU is enabled
+we (RCU) do not touch the preempt counters. Instead, the units
+are accounted in current->rcu_read_lock_nesting:
+
+#define rcu_preempt_depth() (current->rcu_read_lock_nesting)
+
+__rcu_read_lock:
+	current->rcu_read_lock_nesting++;
+
+	and the path is __might_sleep -> preempt_count_equals ->
+rcu_preempt_depth
+
+	For now both places do not use PREEMPT_OFFSET:
+
+- #define inc_preempt_count() add_preempt_count(1)
+- __rcu_read_lock: current->rcu_read_lock_nesting++;
+
+	so, ... it does not matter much for me. In short,
+the trick is in preempt_count_equals() where preempt_offset
+is a combination of preempt count and RCU preempt depth:
+
+#ifdef CONFIG_PREEMPT_RCU
+#define PREEMPT_RCU_OFFSET      (0 /* preempt */ + 1 /* RCU */)
+#else
+#define PREEMPT_RCU_OFFSET      (PREEMPT_CHECK_OFFSET + 0 /* RCU */)
+#endif
+
+	Let me know for your preference about this definition...
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
