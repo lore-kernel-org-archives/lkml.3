@@ -1,151 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763273Ab3ECSRw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 14:17:52 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:24753 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762781Ab3ECSRu (ORCPT
+	id S1763250Ab3ECS2A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 14:28:00 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:19043 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab3ECS16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 14:17:50 -0400
-X-Greylist: delayed 484 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 May 2013 14:17:50 EDT
-Subject: Re: [PATCH 1/1] cciss: bug fix to prevent cciss from loading in
- kdump crash kernel
-From: "Mike Miller (OS Dev)" <mike.miller@hp.com>
-Reply-To: mike.miller@hp.com, mikem@beardog.cce.hp.com
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>
-In-Reply-To: <1367604167.5981.40.camel@dabdike>
-References: <20130423172539.GA11255@beardog.cce.hp.com>
-	 <1367604167.5981.40.camel@dabdike>
+	Fri, 3 May 2013 14:27:58 -0400
+Message-ID: <1367605674.16154.198.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 4/4] ACPI / processor: Use common hotplug infrastructure
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>
+Date: Fri, 03 May 2013 12:27:54 -0600
+In-Reply-To: <8416995.PXoT3vbUMm@vostro.rjw.lan>
+References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
+	 <4370898.CqFcWEhTiu@vostro.rjw.lan>
+	 <1367536812.16154.178.camel@misato.fc.hp.com>
+	 <8416995.PXoT3vbUMm@vostro.rjw.lan>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 May 2013 13:09:42 -0500
-Message-ID: <1367604582.11907.4798.camel@thumper.usa.hp.com>
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-03 at 11:02 -0700, James Bottomley wrote:
-> On Tue, 2013-04-23 at 12:25 -0500, Mike Miller wrote:
-> > PATCH 1/1
+On Fri, 2013-05-03 at 14:05 +0200, Rafael J. Wysocki wrote:
+> On Thursday, May 02, 2013 05:20:12 PM Toshi Kani wrote:
+> > On Thu, 2013-05-02 at 14:31 +0200, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+ : 
+> > > Index: linux-pm/drivers/base/cpu.c
+> > > ===================================================================
+> > > --- linux-pm.orig/drivers/base/cpu.c
+> > > +++ linux-pm/drivers/base/cpu.c
+> > > @@ -13,11 +13,21 @@
+> > >  #include <linux/gfp.h>
+> > >  #include <linux/slab.h>
+> > >  #include <linux/percpu.h>
+> > > +#include <linux/acpi.h>
+> > >  
+> > >  #include "base.h"
+> > >  
+> > >  static DEFINE_PER_CPU(struct device *, cpu_sys_devices);
+> > >  
+> > > +static int cpu_subsys_match(struct device *dev, struct device_driver *drv)
+> > > +{
+> > > +	/* ACPI style match is the only one that may succeed. */
+> > > +	if (acpi_driver_match_device(dev, drv))
 > > 
-> > By default the cciss driver supports all "older" HP Smart Array controllers
-> > and hpsa supports all controllers starting with the G6 family. There are
-> > module parameters that allow a user to override those defaults and use hpsa
-> > for any HP Smart Array controller.
-> > If the user does override the default behavior and uses hpsa for older
-> > controllers it is possible that cciss may try to load in a kdump crash
-> > kernel. This may happen if cciss is loaded first from the kdump initrd
-> > image. If cciss does load rather than hpsa and reset_devices is true we
-> > immediately call cciss_hard_reset_controller. This will result in a kernel
-> > panic and the core file cannot be created.
-> > This patch prevents cciss from trying to load in this scenario.
-> > 
-> > Tested with 3.9.0-rc7.
-> > 
-> > From: Mike <mike.miller@hp.com>
-> > Signed-off-by: Mike Miller <mike.miller@hp.com>
-> > 
-> > ---
-> >  drivers/block/cciss.c |   10 ++++++++++
-> >  1 files changed, 10 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-> > index 1c1b8e5..06c8dba 100644
-> > --- a/drivers/block/cciss.c
-> > +++ b/drivers/block/cciss.c
-> > @@ -4960,6 +4960,16 @@ static int cciss_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
-> >  	ctlr_info_t *h;
-> >  	unsigned long flags;
-> >  
-> > +	/*
-> > +	 * By default the cciss driver is used for all older HP Smart Array
-> > +	 * controllers. There are module paramaters that allow a user to
-> > +	 * override this behavior and instead use the hpsa SCSI driver. If
-> > +	 * this is the case cciss may be loaded first from the kdump initrd
-> > +	 * image and cause a kernel panic. So if reset_devices is true and
-> > +	 * cciss_allow_hpsa is set just bail.
-> > +	 */
-> > +	if ((reset_devices) && (cciss_allow_hpsa == 1))
-> > +		return -ENODEV;
-> >  	rc = cciss_init_reset_devices(pdev);
-> >  	if (rc) {
-> >  		if (rc != -ENOTSUPP)
+> > Can you explain why this change is needed?
 > 
-> Sigh, right change log, incomplete bug fix.
+> This is the mechanism by which the driver core determines which driver to use
+> with a processor device passed to device_attach().
 > 
-> Can we all agree that this is the right one?
+> Basically, it walks the list of drivers whose bus type is cpu_subsys and
+> calls cpu_subsys->match(), which points to cpu_subsys_match(), for the device
+> and each of the drivers.  The result of that tell is whether or not to use
+> the given driver with the device.
 > 
-> James
+> Now, acpi_driver_match_device() returns 'true' if (a) the device has an ACPI
+> handle and (b) at least one of the IDs of the struct acpi_device associated
+> with that handle is in the driver's .acpi_match_table table.  Since the ACPI
+> processor's .acpi_match_table contains the same set of IDs as the table
+> of device IDs of processor_handler, this guarantees that the ACPI processor
+> driver will be used for the devices prepared by acpi_processor_add().
+> 
+> What it boils down to is that acpi_processor_start() is going to be called
+> for every device whose ACPI handle is populated by acpi_processor_add().
+> 
+> > Do CPU devices still behave the same on non-ACPI systems?
+> 
+> Yes, they do.  The whole driver matching/binding is irrelevant to them, because
+> the ACPI processor driver is the only one registering itself under cpu_subsys.
 
-I submitted 2 patches. Below the 2 are combined and make the fix
-complete.
+Thanks for the detailed explanation!  I missed that the new processor
+driver is registered to cpu_subsys.  I now see what you did.  This is
+clever.
 
--- mikem
+One minor comment.
 
-> 
-> ---
-> >From 746ba9f715b9037264ae0b8175c6286f5f8f62d4 Mon Sep 17 00:00:00 2001
-> From: Mike Miller <mike.miller@hp.com>
-> Date: Thu, 18 Apr 2013 13:49:37 -0500
-> Subject: [PATCH] [SCSI] cciss: bug fix to prevent cciss from loading in kdump
->  crash kernel
-> 
-> By default the cciss driver supports all "older" HP Smart Array controllers
-> and hpsa supports all controllers starting with the G6 family. There are
-> module parameters that allow a user to override those defaults and use hpsa
-> for any HP Smart Array controller.
-> If the user does override the default behavior and uses hpsa for older
-> controllers it is possible that cciss may try to load in a kdump crash
-> kernel. This may happen if cciss is loaded first from the kdump initrd
-> image. If cciss does load rather than hpsa and reset_devices is true we
-> immediately call cciss_hard_reset_controller. This will result in a kernel
-> panic and the core file cannot be created.
-> This patch prevents cciss from trying to load in this scenario.
-> 
-> Signed-off-by: Mike Miller <mike.miller@hp.com>
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-> 
-> diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-> index 1c1b8e5..daaab88 100644
-> --- a/drivers/block/cciss.c
-> +++ b/drivers/block/cciss.c
-> @@ -75,6 +75,12 @@ module_param(cciss_simple_mode, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(cciss_simple_mode,
->  	"Use 'simple mode' rather than 'performant mode'");
++static __cpuinit int __acpi_processor_start(struct acpi_device *device)
+>  {
+> -	struct acpi_device *device = per_cpu(processor_device_array,
+pr->id);
+> +	struct acpi_processor *pr = acpi_driver_data(device);
+> +	acpi_status status;
+>  	int result = 0;
 >  
-> +static int cciss_allow_hpsa;
-> +module_param(cciss_allow_hpsa, int, S_IRUGO|S_IWUSR);
-> +MODULE_PARM_DESC(cciss_allow_hpsa,
-> +	"Prevent cciss driver from accessing hardware known to be "
-> +	" supported by the hpsa driver");
-> +
->  static DEFINE_MUTEX(cciss_mutex);
->  static struct proc_dir_entry *proc_cciss;
->  
-> @@ -4960,6 +4966,16 @@ static int cciss_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
->  	ctlr_info_t *h;
->  	unsigned long flags;
->  
-> +	/*
-> +	 * By default the cciss driver is used for all older HP Smart Array
-> +	 * controllers. There are module paramaters that allow a user to
-> +	 * override this behavior and instead use the hpsa SCSI driver. If
-> +	 * this is the case cciss may be loaded first from the kdump initrd
-> +	 * image and cause a kernel panic. So if reset_devices is true and
-> +	 * cciss_allow_hpsa is set just bail.
-> +	 */
-> +	if ((reset_devices) && (cciss_allow_hpsa == 1))
+> +	if (!pr)
 > +		return -ENODEV;
->  	rc = cciss_init_reset_devices(pdev);
->  	if (rc) {
->  		if (rc != -ENOTSUPP)
-> 
-> 
+> +
+> +	if (pr->flags.need_hotplug_init)
+> +		return 0;
+> +
+
+I felt the name of "need_hotplug_init" is a bit misleading since the
+func actually skips when the need-flag is set.  It may be nice to rename
+it to defer_online_init, offline or something like that.
+
+Otherwise the changes look very good. 
+
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+
+Thanks,
+-Toshi
+
+
 
 
