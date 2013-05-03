@@ -1,82 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762752Ab3ECIHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 04:07:21 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41034 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab3ECIHN (ORCPT
+	id S933088Ab3ECIKi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 04:10:38 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43532 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932973Ab3ECIK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 04:07:13 -0400
-Date: Fri, 3 May 2013 09:06:32 +0100
-From: Mark Brown <broonie@kernel.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nicolas Pitre <nico@fluxnic.net>, Richard Kuo <rkuo@codeaurora.org>,
-        linux-hexagon@vger.kernel.org
-Message-ID: <20130503080632.GC4945@sirena.org.uk>
-References: <20130429162115.GA6893@kroah.com>
- <CA+55aFzefpRz2Y8oW9q0ArrR=XW0POBhy8NSNJ3DrCh9EowLqg@mail.gmail.com>
- <8yafvy92gfs.fsf@huya.qualcomm.com>
- <201304292316.28464.arnd@arndb.de>
- <20130501161350.GS26160@sirena.org.uk>
- <8yay5bxums0.fsf@huya.qualcomm.com>
+	Fri, 3 May 2013 04:10:27 -0400
+Date: Fri, 3 May 2013 10:10:23 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Prarit Bhargava <prarit@redhat.com>
+cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Yinghai Lu <yhlu.kernel@gmail.com>,
+        Dave Jones <davej@codemonkey.org.uk>
+Subject: Re: [PATCH] NOHZ, check to see if tick device is initialized in IRQ
+ handling path
+In-Reply-To: <alpine.LFD.2.02.1305030054530.2891@ionos>
+Message-ID: <alpine.LFD.2.02.1305030923300.2886@ionos>
+References: <1367325415-32283-1-git-send-email-prarit@redhat.com> <alpine.LFD.2.02.1305030054530.2891@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TiqCXmo5T1hvSQQg"
-Content-Disposition: inline
-In-Reply-To: <8yay5bxums0.fsf@huya.qualcomm.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 212.183.132.20
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [GIT PATCH] char/misc patches for 3.10-rc1
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 3 May 2013, Thomas Gleixner wrote:
 
---TiqCXmo5T1hvSQQg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Tue, 30 Apr 2013, Prarit Bhargava wrote:
+> 
+> > 2nd try at this ... going with a more global cc.
+> > 
+> > I think the linux.git "system hang" isn't really a hang.  For some reason the
+> > panic text wasn't displayed on the console.  I've seen this behaviour a few
+> > times now ... maybe there's a bug in the panic output path?
+> > 
+> > It seems that the power interrupt is an error with the CPU exceeded the
+> > OSes current requested frequency on the package.  If I disable on demand
+> > cpu frequency, the problem goes away.
+> 
+> Huch?
+>  
+> > Anyhoo, here's a patch...
+> > 
+> > ----8<----
+> > 
+> > When adding a CPU there is a small window in which interrupts are enabled and
+> > the clock tick device has not been initialized.  If an interrupt occurs in
+> 
+> What's that small window and why does it exist?
+> 
+> > this window, irq_exit() will be called which calls tick_nohz_irq_exit() which
+> > in turn calls __tick_nohz_idle_enter().
+> > 
+> > __tick_nohz_idle() enter assumes that the tick has been initialized.  In the
+> > above case, however, it has not and this leads to what appears to be a system
+> > hang on latest linux.git or a the following panic on RHEL6:
+> > 
+> > Pid: 0, comm: swapper Not tainted 2.6.32-358.el6.x86_64 #1
+> > RIP: 0010:[<ffffffff810a89e5>]  [<ffffffff810a89e5>] tick_nohz_stop_sched_tick+0x2a5/0x3e0
+> > RSP: 0018:ffff88089c503f38  EFLAGS: 00010046
+> > RAX: ffffffff81c07520 RBX: ffff88089c5116a0 RCX: 000002f04bb18cd8
+> > RDX: 0000000000000000 RSI: 000000000000a1b5 RDI: 000002f04bb0eb23
+> > RBP: ffff88089c503f88 R08: ffff88089c50e060 R09: 0000000000000000
+> > R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000017
+> > R13: 000002f04bb17dd5 R14: 0000000000000000 R15: 0000000000000092
+> > FS:  0000000000000000(0000) GS:ffff88089c500000(0000) knlGS:0000000000000000
+> > CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
+> > CR2: 0000000000000078 CR3: 0000000001a85000 CR4: 00000000001406e0
+> > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > Process swapper (pid: 0, threadinfo ffff8810745c0000, task ffff8808740f2080)
+> > Stack:
+> >  00000000000116a0 0000000000000087 ffff88089c503f78 0000000000000046
+> > <d> ffff88089c503f98 0000000000000000 0000000000000000 0000000000000000
+> > <d> 0000000000000000 0000000000000000 ffff88089c503f98 ffffffff81076d86
+> > Call Trace:
+> >  <IRQ>
+> >  [<ffffffff81076d86>] irq_exit+0x76/0x90
+> >  [<ffffffff81028dd6>] smp_thermal_interrupt+0x26/0x40
+> >  [<ffffffff8100bcf3>] thermal_interrupt+0x13/0x20
+> >  <EOI>
+> >  [<ffffffff81506997>] ? start_secondary+0x127/0x2ef
+> >  [<ffffffff81506990>] ? start_secondary+0x120/0x2ef
+> > 
+> > The code currently assumes that the tick device is initialized when
+> > irq_enter() and irq_exit() are called.  This is not correct and a check must
+> > be performed prior to entering the tick code through these code paths to
+> > ensure that the tick device is initialized and running.
+> > 
+> > I've only seen this occur on a few systems.  I've tested with and without the
+> > patch and as far as I can tell this patch resolves the problem on
+> > linux.git top of tree.
+> > 
+> > Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: John Stultz <john.stultz@linaro.org>
+> > ---
+> >  kernel/time/tick-sched.c |   12 ++++++++++++
+> >  1 file changed, 12 insertions(+)
+> > 
+> > diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> > index a19a399..5027187 100644
+> > --- a/kernel/time/tick-sched.c
+> > +++ b/kernel/time/tick-sched.c
+> > @@ -567,6 +567,12 @@ EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
+> >  void tick_nohz_irq_exit(void)
+> >  {
+> >  	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
+> > +	struct clock_event_device *dev =
+> > +				     __get_cpu_var(tick_cpu_device).evtdev;
+> > +
+> > +	/* Has the tick been initialized yet? */
+> > +	if (unlikely(!dev || dev->mode == CLOCK_EVT_MODE_UNUSED))
+> > +		return;
+> >  
+> >  	if (!ts->inidle)
+> >  		return;
 
-On Thu, May 02, 2013 at 01:53:03PM -0700, David Brown wrote:
-> Mark Brown <broonie@kernel.org> writes:
+This does not make any sense at all.
 
-> > Well, this device should have a bunch of function drivers hanging off it
-> > shouldn't it?  That's pretty much the definition of a MFD.
+If ts->inidle is set, then the cpu has entered the idle loop. The
+local apic timer is registered _BEFORE_ the idle loop is reached. So
+how would dev end up being NULL?
 
-> Perhaps it's better to think of it as the library that other mfd devices
-> use to talk to their device.  ssbi is not itself an MFD device, it is
-> part of the other drivers.
+So even if an interrupt hits right before we register the local APIC
+timer, ts->inidle cannot be set.
 
-Yes, quite.
+The same is true for tick_check_idle(). The cpu cannot be in the
+broadcast mask _BEFORE_ it went deep idle (from the idle loop) and
+neither ts->idle_active nor ts->tick_stopped can be set.
 
---TiqCXmo5T1hvSQQg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So there is something else wrong and you're just papering over the the
+underlying issue.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Can you please instrument the order of events (apic registration etc),
+so we can see what goes wrong.
 
-iQIcBAEBAgAGBQJRg2//AAoJELSic+t+oim9nVsP/2DH7VplN6NdnANVzwu+fGXz
-R2Fk/5gD2R/uvp1btnw9NTCzVKBVQADPEnfifmcDQY/1CABjFd4k81tCMg1gRpzN
-RjlQs+wnwUJQaVG+R8XsnWTsUDLY8Wly/MM6Um2+w7F6iOJmRgDUNCA57hyxgzL+
-XEY/uFFLV8cd43ykPiBrBjOHOVDLk8MtU3Vcbt7/v4Fz9xi4XUkh8zYq2SSUBwYX
-PFebfHJm2LcjgQy72NmvcGjmgqv9KHTfdhJxlv+r3qBq4OAzDkqA8yt72GwNR4f+
-zu1a1IC5baaRhoVAcDBuw6jiyuldtzx7HXPtPlY9GbX550RkI77J5fOSgTf7Cy/z
-/ktuDrnlhwtKLZsDVIGf0lXX5pISsTD/dtazhXYLFhlPejNd2MRmneVkGS6VbF1B
-IGeJYO/kXpn9iuLYgpqXlhga+OlIiHuJ2eaaDWg5j21pI5+bU3idot/UPEjIWO0l
-eXgepzPhmtqaNiVCjVOpDz0fKm/Jrb4mTJr3ZEUiUGCOriILmsJVPRNL8aPIwB4e
-a47zgjSDVFQYXoajbVukcmgoj6/g7h8jGWB+HhkZd9GlkLcXWoN8Wuy9xDR8k8M8
-+Cy8nHJNnXWHzbZ6cOzxfq4OZY9rQuKz2gv/c63f69pmqotD26BUkPl+H+LGCgXv
-ditvCcOiZ8fJBJepxpj6
-=GBny
------END PGP SIGNATURE-----
+Thanks,
 
---TiqCXmo5T1hvSQQg--
+	tglx
+
+
