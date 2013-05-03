@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933410Ab3ECGx4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:53:56 -0400
-Received: from mail-ia0-f180.google.com ([209.85.210.180]:37007 "EHLO
-	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933388Ab3ECGxz (ORCPT
+	id S933437Ab3ECG6g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:58:36 -0400
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:37526 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933419Ab3ECG6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:53:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130503110318.0d30b773852640ee94ba07b5@canb.auug.org.au>
-References: <51823DDA.7010103@nvidia.com> <20130503105234.6e9c8aa5ed2784bbe084caa8@canb.auug.org.au>
- <20130503110318.0d30b773852640ee94ba07b5@canb.auug.org.au>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 3 May 2013 07:53:34 +0100
-X-Google-Sender-Auth: NN1FMg89TsuD8op9Zu3-V2uQS0k
-Message-ID: <CACxGe6tdJr22bJ0GZL_18FqYWLdNROMKuH3UQbKciEwRy9v1Wg@mail.gmail.com>
-Subject: Re: [GIT PULL] Removal of GENERIC_GPIO
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Alex Courbot <acourbot@nvidia.com>,
+	Fri, 3 May 2013 02:58:35 -0400
+Date: Fri, 3 May 2013 12:27:45 +0530
+From: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 04/42] rtc: rtc-ab8500: remove unnecessary
+ platform_set_drvdata()
+Message-ID: <20130503065743.GA24864@bnru09>
+References: <001201ce47c6$daecece0$90c6c6a0$@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <001201ce47c6$daecece0$90c6c6a0$@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 3, 2013 at 2:03 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Guys,
->
-> On Fri, 3 May 2013 10:52:34 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>
->> I currently have 3 merge fix patches for the gen-cpio tree:
->>
->> gen-gpio: GPIOLIB merge fix up
->> merge fix for Convert selectors of GENERIC_GPIO to GPIOLIB
->> merge fix 2 for Convert selectors of GENERIC_GPIO to GPIOLIB
->>
->> I have attached them.  All three are now applicable to Linus' tree.
->
-> Just to absolutely clear, I *do not* expect either of you to rebase your
-> trees or backmerge Linus' tree to fix these, I *do* expect whoever send
-> this stuff to Linus to mention the necessary fixes to him.
+On Fri, May 03, 2013 at 08:24:24 +0200, Jingoo Han wrote:
+> The driver core clears the driver data to NULL after device_release
+> or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
+> (device-core: Ensure drvdata = NULL when no driver is bound).
+> Thus, it is not needed to manually clear the device driver data to NULL.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/rtc/rtc-ab8500.c |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-ab8500.c b/drivers/rtc/rtc-ab8500.c
+> index 63cfa31..c5b62d4 100644
+> --- a/drivers/rtc/rtc-ab8500.c
+> +++ b/drivers/rtc/rtc-ab8500.c
+> @@ -451,8 +451,6 @@ static int ab8500_rtc_remove(struct platform_device *pdev)
+>  {
+>  	ab8500_sysfs_rtc_unregister(&pdev->dev);
+>  
+> -	platform_set_drvdata(pdev, NULL);
+> -
+>  	return 0;
+>  }
+Ok, thanks. Hope you have taken care for the ab3100 too...
 
-Yes, that is exactly what I'm going to do
+Acked-by:srinidhi kasagar <srinidhi.kasagar@stericsson.com>
 
-g.
+regards/srinidhi 
