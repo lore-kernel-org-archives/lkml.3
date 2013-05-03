@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762337Ab3ECAJK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 20:09:10 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55235 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760376Ab3ECABm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 20:01:42 -0400
+	id S1762352Ab3ECAJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 20:09:29 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:58112 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762118Ab3ECABk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 20:01:40 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Linux MM <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>,
         Simon Jeons <simon.jeons@gmail.com>
-Subject: [RFC PATCH v3 23/31] x86: memlayout: add a arch specific inital memlayout setter.
-Date: Thu,  2 May 2013 17:00:55 -0700
-Message-Id: <1367539263-19999-24-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [RFC PATCH v3 04/31] memory_hotplug: export ensure_zone_is_initialized() in mm/internal.h
+Date: Thu,  2 May 2013 17:00:36 -0700
+Message-Id: <1367539263-19999-5-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.2
 In-Reply-To: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050300-7182-0000-0000-00000684B9B0
+x-cbid: 13050300-2398-0000-0000-000013FA6417
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86, we have numa_info specifically to track the numa layout, which
-is precisely the data memlayout needs, so use it to create an initial
-memlayout.
+Export ensure_zone_is_initialized() so that it can be used to initialize
+new zones within the dynamic numa code.
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- arch/x86/mm/numa.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ mm/internal.h       | 8 ++++++++
+ mm/memory_hotplug.c | 2 +-
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index a71c4e2..75819ef 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -11,6 +11,7 @@
- #include <linux/nodemask.h>
- #include <linux/sched.h>
- #include <linux/topology.h>
-+#include <linux/dnuma.h>
- 
- #include <asm/e820.h>
- #include <asm/proto.h>
-@@ -32,6 +33,33 @@ __initdata
+diff --git a/mm/internal.h b/mm/internal.h
+index 8562de0..b11e574 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -105,6 +105,14 @@ extern void prep_compound_page(struct page *page, unsigned long order);
+ extern bool is_free_buddy_page(struct page *page);
  #endif
- ;
  
-+#ifdef CONFIG_DYNAMIC_NUMA
-+void __init memlayout_global_init(void)
-+{
-+	struct numa_meminfo *mi = &numa_meminfo;
-+	int i;
-+	struct numa_memblk *blk;
-+	struct memlayout *ml = memlayout_create(ML_INITIAL);
-+	if (WARN_ON(!ml))
-+		return;
-+
-+	pr_devel("x86/memlayout: adding ranges from numa_meminfo\n");
-+	for (i = 0; i < mi->nr_blks; i++) {
-+		blk = mi->blk + i;
-+		pr_devel("  adding range {%LX[%LX]-%LX[%LX]}:%d\n",
-+			 PFN_DOWN(blk->start), blk->start,
-+			 PFN_DOWN(blk->end - PAGE_SIZE / 2 - 1),
-+			 blk->end - 1, blk->nid);
-+		memlayout_new_range(ml, PFN_DOWN(blk->start),
-+				PFN_DOWN(blk->end - PAGE_SIZE / 2 - 1),
-+				blk->nid);
-+	}
-+	pr_devel("  done adding ranges from numa_meminfo\n");
-+
-+	memlayout_commit(ml);
-+}
++#ifdef CONFIG_MEMORY_HOTPLUG
++/*
++ * in mm/memory_hotplug.c
++ */
++extern int ensure_zone_is_initialized(struct zone *zone,
++			unsigned long start_pfn, unsigned long num_pages);
 +#endif
 +
- static int numa_distance_cnt;
- static u8 *numa_distance;
+ #if defined CONFIG_COMPACTION || defined CONFIG_CMA
  
+ /*
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index fafeaae..f4cb01a 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -284,7 +284,7 @@ static void fix_zone_id(struct zone *zone, unsigned long start_pfn,
+ 
+ /* Can fail with -ENOMEM from allocating a wait table with vmalloc() or
+  * alloc_bootmem_node_nopanic() */
+-static int __ref ensure_zone_is_initialized(struct zone *zone,
++int __ref ensure_zone_is_initialized(struct zone *zone,
+ 			unsigned long start_pfn, unsigned long num_pages)
+ {
+ 	if (!zone_is_initialized(zone))
 -- 
 1.8.2.2
 
