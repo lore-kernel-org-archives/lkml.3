@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762605Ab3ECGT3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:19:29 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:61199 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762195Ab3ECGT2 (ORCPT
+	id S1762527Ab3ECGUv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:20:51 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:58144 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762119Ab3ECGUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:19:28 -0400
-X-AuditID: cbfee68f-b7f066d000003683-fd-518356ef0dd6
+	Fri, 3 May 2013 02:20:50 -0400
+X-AuditID: cbfee691-b7fe56d000004b96-3d-518357404715
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 4/4] backlight: pcf50633: remove unnecessary
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 01/42] rtc: rtc-88pm80x: remove unnecessary
  platform_set_drvdata()
-Date: Fri, 03 May 2013 15:19:27 +0900
-Message-id: <000e01ce47c6$29eb8280$7dc28780$@samsung.com>
+Date: Fri, 03 May 2013 15:20:48 +0900
+Message-id: <000f01ce47c6$5a452260$0ecf6720$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5Hxid3hTRkKmoQSRKVJBv4Llyi4A==
+Thread-index: Ac5Hxlbc84vAr6v8QkqFhtckplBvlQ==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t8zfd33Yc2BBj9uyVjMWb+GzeLywkus
-	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBl3vnSy
-	FDSxVzRtXM3SwPiLtYuRk0NCwERi78dZTBC2mMSFe+vZuhi5OIQEljFKfN61jxGmaMGrN0wQ
-	iemMEk9//WWBcH4xSry/s4INpIpNQE3iy5fD7F2MHBwiAvoSbS0aIGFmgWKJ2WefgA0SFgiV
-	OHtgLQuIzSKgKnH6zkmwVl4BS4mrn+ZC2YISPybfY4Ho1ZJYv/M4E4QtL7F5zVtmiIMUJHac
-	fc0IsUpPYtY8V4gSEYl9L94xgpwmIbCJXeLomQlQuwQkvk0+xAJSLyEgK7HpANQYSYmDK26w
-	TGAUm4Vk8ywkm2ch2TwLyYoFjCyrGEVTC5ILipPSi4z1ihNzi0vz0vWS83M3MUKirH8H490D
-	1ocYk4HWT2SWEk3OB0ZpXkm8obGZkYWpiamxkbmlGWnCSuK8ai3WgUIC6YklqdmpqQWpRfFF
-	pTmpxYcYmTg4pRoY2W9qzXkZe/yKsfHeXvPr8lsYrvWLfmxXcvEydShZOdlk3qVNXs8PFoVO
-	fJR7pTVGstFUT+nR8SsV5R5FJ09FaKxYI/I71Y7r0/4/erwZ4V6Xvi19fMvTW2ZztTzjz08G
-	Mx7n/1jGfNn5/lw9lsNaH1yyPzK57yvr1X4tlbpwk+nxikv6DgHflViKMxINtZiLihMBkIdM
-	G8gCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jQd33Yc2BBjdXS1rMWb+GzeLywkus
-	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
-	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
-	WsA0Ruj6hgTB9RgZoIGEdYwZd750shQ0sVc0bVzN0sD4i7WLkZNDQsBEYsGrN0wQtpjEhXvr
-	2boYuTiEBKYzSjz99ZcFwvnFKPH+zgo2kCo2ATWJL18Os3cxcnCICOhLtLVogISZBYolZp99
-	wghiCwuESpw9sJYFxGYRUJU4feckWCuvgKXE1U9zoWxBiR+T77FA9GpJrN95nAnClpfYvOYt
-	M8RBChI7zr5mhFilJzFrnitEiYjEvhfvGCcwCsxCMmkWkkmzkEyahaRlASPLKkbR1ILkguKk
-	9FxDveLE3OLSvHS95PzcTYzgGH4mtYNxZYPFIUYBDkYlHl6FlqZAIdbEsuLK3EOMEhzMSiK8
-	bj+AQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTC95JfGGxiZmRpZGZhZGJubmpAkrifMe
-	aLUOFBJITyxJzU5NLUgtgtnCxMEp1cBY0pjLE9Wh8n1jqv7P0/t0Vx7aGnO+8AXHT7fDAVP2
-	/ixXcv5bkdLsJr62UebmrtId88wSvu26vtlfTKD7onHfB2m1FyYPbr2OmM1p0ZhT8eq+qElW
-	iHri9e5knoWi1w4u2u20aqJDYn1Tu2Rsn2XAxv+ukT/CfpdZz7coE951ZK5NV9BRfXYlluKM
-	REMt5qLiRABgIK7YJQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zA12H8OZAg2uL5C2WXLzKbjFn/Ro2
+	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
+	LdK3S+DKePeoha3gAVvF4RlzGRsYL7N2MXJySAiYSPw/cJwFwhaTuHBvPVsXIxeHkMAyRolf
+	W/bCFV3afJsVIjGdUeL1xSksEM4vRomNl26BtbMJqEl8+XKYvYuRg0NEQF+irUUDpIZZoJdR
+	4kzvbnaQGmGBEInPU3exgdgsAqoS53a+BYvzClhKNL3ayQRhC0r8mHwPbCazgJbE+p3HmSBs
+	eYnNa94yQ1ykILHj7GtGEFtEQE/iSOcsqHoRiX0v3jGCLJYQOMYusef7bhaIZQIS3yYfYgE5
+	TkJAVmLTAag5khIHV9xgmcAoNgvJ6llIVs9CsnoWkhULGFlWMYqmFiQXFCelF5nqFSfmFpfm
+	pesl5+duYoRE38QdjPcPWB9iTAZaP5FZSjQ5Hxi9eSXxhsZmRhamJqbGRuaWZqQJK4nzqrdY
+	BwoJpCeWpGanphakFsUXleakFh9iZOLglGpgLF82c8HFDCmNhMIkQc8GNp6DYaLnvJKbZmU+
+	bdM0U/n430eCuWmT4uuGIzFs9ufLM2+oexj3Lsx2+Dg7OLK7JDm9zGRZxIwLr87O2NOm+I5N
+	9YOS9JME/VMMqh9Z+aP3Hj/4YlJYwMKWP8F/2zmFwp4wRen/fSby6kZU8+Kf6+WO9xTf+NOp
+	xFKckWioxVxUnAgAYUcnzdQCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jQV2H8OZAgwuPpC2WXLzKbjFn/Ro2
+	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
+	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzHj3qIWt4AFbxeEZcxkbGC+zdjFyckgImEhc
+	2nwbyhaTuHBvPVsXIxeHkMB0RonXF6ewQDi/GCU2XrrFAlLFJqAm8eXLYfYuRg4OEQF9ibYW
+	DZAaZoFeRokzvbvZQWqEBUIkPk/dxQZiswioSpzb+RYszitgKdH0aicThC0o8WPyPbCZzAJa
+	Eut3HmeCsOUlNq95ywxxkYLEjrOvGUFsEQE9iSOds6DqRST2vXjHOIFRYBaSUbOQjJqFZNQs
+	JC0LGFlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgTH9jOpHYwrGywOMQpwMCrx8Cq0NAUK
+	sSaWFVfmHmKU4GBWEuF1+wEU4k1JrKxKLcqPLyrNSS0+xJgM9OlEZinR5Hxg2skriTc0NjEz
+	sjQyszAyMTcnTVhJnPdAq3WgkEB6YklqdmpqQWoRzBYmDk6pBsbeG1l/175/eF1ESEioy27p
+	pKORU9iYNTpWWk5pP6qnUL3AQnWCVfj0npC/GWsu35taXtzEqNv669S2mGD19dFT3r3VZBWf
+	IeXecCX9vNMjlp1n1p/Wk5npcUlYPPeu8U+j2vMFygeZPn43UbH3W/5ap7Hpxp+C5179YsWr
+	TDf1GyXvuXP++mclluKMREMt5qLiRAAwnbBdMQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -62,22 +61,21 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/pcf50633-backlight.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-88pm80x.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/backlight/pcf50633-backlight.c b/drivers/video/backlight/pcf50633-backlight.c
-index e87c7a3..6ed76be 100644
---- a/drivers/video/backlight/pcf50633-backlight.c
-+++ b/drivers/video/backlight/pcf50633-backlight.c
-@@ -153,8 +153,6 @@ static int pcf50633_bl_remove(struct platform_device *pdev)
- 
- 	backlight_device_unregister(pcf_bl->bl);
- 
+diff --git a/drivers/rtc/rtc-88pm80x.c b/drivers/rtc/rtc-88pm80x.c
+index f3742f3..354c937 100644
+--- a/drivers/rtc/rtc-88pm80x.c
++++ b/drivers/rtc/rtc-88pm80x.c
+@@ -345,7 +345,6 @@ out:
+ static int pm80x_rtc_remove(struct platform_device *pdev)
+ {
+ 	struct pm80x_rtc_info *info = platform_get_drvdata(pdev);
 -	platform_set_drvdata(pdev, NULL);
--
+ 	pm80x_free_irq(info->chip, info->irq, info);
  	return 0;
  }
- 
 -- 
 1.7.2.5
 
