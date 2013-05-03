@@ -1,127 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762372Ab3ECNV3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 09:21:29 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:31224 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762150Ab3ECNV1 (ORCPT
+	id S1762450Ab3ECNaW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 09:30:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17612 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762295Ab3ECNaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 09:21:27 -0400
-X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
-   d="scan'208";a="4207803"
-Message-ID: <1367587284.28742.89.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH v2 2/2] xen/balloon: Enforce various limits
- on target
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Keir (Xen.org)" <keir@xen.org>,
-        "Dave Scott" <Dave.Scott@eu.citrix.com>,
-        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
-        Ian Jackson <Ian.Jackson@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jonathan Ludlam" <Jonathan.Ludlam@eu.citrix.com>,
-        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "carsten@schiers.de" <carsten@schiers.de>
-Date: Fri, 3 May 2013 14:21:24 +0100
-In-Reply-To: <20130503130036.GA12463@debian70-amd64.local.net-space.pl>
-References: <1367235468-8360-1-git-send-email-daniel.kiper@oracle.com>
-	 <1367235468-8360-3-git-send-email-daniel.kiper@oracle.com>
-	 <1367246649.3142.316.camel@zakaz.uk.xensource.com>
-	 <20130430125952.GD9904@debian70-amd64.local.net-space.pl>
-	 <1367329458.3142.524.camel@zakaz.uk.xensource.com>
-	 <20130430185852.GF9904@debian70-amd64.local.net-space.pl>
-	 <alpine.DEB.2.02.1305021214510.5398@kaball.uk.xensource.com>
-	 <20130502180404.GA16489@phenom.dumpdata.com>
-	 <1367568932.28742.19.camel@zakaz.uk.xensource.com>
-	 <20130503130036.GA12463@debian70-amd64.local.net-space.pl>
-Organization: Citrix Systems, Inc.
+	Fri, 3 May 2013 09:30:21 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=O4Sx1LqlDMUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=IGil-QtXnCsA:10 a=NHpyNkQ_rdBYyQvT5GUA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1367587818.7373.12.camel@gandalf.local.home>
+Subject: Re: [PATCH, RFC 14/22] oprofile: always enable IRQ_WORK
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Robert Richter <rric@kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, oprofile-list@lists.sf.net
+Date: Fri, 03 May 2013 09:30:18 -0400
+In-Reply-To: <20130503115332.GT8356@rric.localhost>
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
+	 <1367507786-505303-15-git-send-email-arnd@arndb.de>
+	 <20130503115332.GT8356@rric.localhost>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-MIME-Version: 1.0
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-03 at 14:00 +0100, Daniel Kiper wrote:
-> On Fri, May 03, 2013 at 09:15:32AM +0100, Ian Campbell wrote:
-> > On Thu, 2013-05-02 at 19:04 +0100, Konrad Rzeszutek Wilk wrote:
-> > > On Thu, May 02, 2013 at 12:34:32PM +0100, Stefano Stabellini wrote:
+On Fri, 2013-05-03 at 13:53 +0200, Robert Richter wrote:
+> On 02.05.13 17:16:18, Arnd Bergmann wrote:
+> > oprofile fails to build if CONFIG_IRQ_WORK is not already enabled,
+> > because of the dependency on the RING_BUFFER code that now uses
+> > the irq work library.
+> > 
+> > kernel/built-in.o: In function `ring_buffer_unlock_commit':
+> > :(.text+0x5b8f0): undefined reference to `irq_work_queue'
+> > kernel/built-in.o: In function `ring_buffer_write':
+> > :(.text+0x5bd10): undefined reference to `irq_work_queue'
 > 
-> [...]
+> Shouldn't this be fixed in the ring_buffer implementation?
+
+Hmm, I thought I had ring buffer select irq work. I must have not have
+done that.
+
 > 
-> > > > The xapi guys, CC'ed, might have more insights on what exactly is.
-> >
-> > I think that unless someone can remember what this issue was we should
-> > just chalk it up to a historical artefact of something xapi (or maybe
-> > some historical guest) was doing which we have no reason to believe
-> > needs to be carried over to libxl.
-> >
-> > IOW I'm suggesting we set LIBXL_MAXMEM_CONSTANT to 0 early in the 4.4
-> > cycle and see how it goes. If someone can show either empirical evidence
-> > or (better) logically argue that a fudge is required then we can always
-> > put it back (or it may turn out to be the caller's issue, in which case
-> > they can deal with it, hopefully xapi-on-libxl won't apply this fudge
-> > twice...).
-> >
-> > Alternatively I'm also strongly considering having debug builds of the
-> > toolstack randomise the amount of slack, that ought to shake out any
-> > lingering issues...
+> I also do not see, where this comes from. I was successfully compiling
+> a kernel with OPROFILE and RING_BUFFER enabled but IRQ_WORK disabled.
+> Do you have that config still available?
 > 
-> Do you suggest to postopone this work until 4.4 merge window?
 
-4.4 is a Xen version, this is a Linux patch so I'm not sure what you
-mean.
+The ring buffer code can now wake up waiters, and to do so it requires
+irq_work. I'll send a patch.
 
-> If yes, then I think that at least "xen/balloon: Enforce various limits on target"
-> patch (without this crazy libxl hack) should be applied.
+Thanks,
 
-You mean this patch with only the MAX_DOMAIN_PAGES clamping? That seems
-plausible.
+-- Steve
 
-> > > > I dislike having to pull this "hack" into Linux, but if it is actually
-> > > > important to leave LIBXL_MAXMEM_CONSTANT unused, then it is worth doing.
-> > > > I would add a big comment on top saying:
-> > > >
-> > > > "libxl seems to think that we need to leave LIBXL_MAXMEM_CONSTANT
-> > > > kilobytes unused, let's be gentle and do that."
-> >
-> > It seems to me that this change in Linux is really just papering over
-> > the underlying issue. Or at the very least no one has adequately
-> > explained what that real issue is and why this change is relevant to it
-> > and/or an appropriate fix for it.
-> >
-> > The guest knows what target the toolstack has set for it is (its in the
-> > target xenstore node), I don't see any reason for the guest to be
-> > further second guessing that value by examining maxmem (adjusted by a
-> > fudge factor or otherwise). If the guest is seeing failures to increase
-> > its reservation when trying to meet that target then either the
-> > toolstack was buggy in asking it to hit a target greater than its maxmem
-> > or it is hitting one of the other reason for increase reservation
-> > failures. Since it needs to deal with the latter anyway I don't see any
-> > reason to special case maxmem as a cause for a failure.
-> 
-> Do not forget that guest may change target itself.
-
-Yes it can, and that can fail either due to maxmem or due to ENOMEM, and
-the kernel needs prepared to deal with that when it happens.
-
-> Additionally, we would like to introduce xm compatibility
-> mode which is a bit different then xl normal behavior.
-
-When then you really don't want to be baking specifics of the current
-model into the kernel, do you.
-
-> I do not mention that it is always worth check the limits.
-> It will save us a lot of trouble later.
-
-On the contrary, it seems to me that baking magic numbers into the
-kernel based on current toolstack behaviour is asking for trouble later.
-
-Ian.
 
 
