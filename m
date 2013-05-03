@@ -1,115 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757832Ab3ECLkg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 07:40:36 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:56374 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700Ab3ECLke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 07:40:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH 1/3 RFC] Driver core: Add offline/online device operations
-Date: Fri, 03 May 2013 13:48:51 +0200
-Message-ID: <113992061.ktikQHQeGn@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1367537373.16154.185.camel@misato.fc.hp.com>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <1431630.dgj2h0U6M6@vostro.rjw.lan> <1367537373.16154.185.camel@misato.fc.hp.com>
+	id S1753925Ab3ECLxi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 07:53:38 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:34943 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab3ECLxh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 07:53:37 -0400
+Date: Fri, 3 May 2013 13:53:32 +0200
+From: Robert Richter <rric@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        oprofile-list@lists.sf.net, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH, RFC 14/22] oprofile: always enable IRQ_WORK
+Message-ID: <20130503115332.GT8356@rric.localhost>
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
+ <1367507786-505303-15-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367507786-505303-15-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 02, 2013 05:29:33 PM Toshi Kani wrote:
-> On Thu, 2013-05-02 at 02:58 +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, April 30, 2013 05:38:38 PM Toshi Kani wrote:
-> > > On Mon, 2013-04-29 at 14:26 +0200, Rafael J. Wysocki wrote:
-> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->  :
-> > > > + */
-> > > > +int device_offline(struct device *dev)
-> > > > +{
-> > > > +	int ret;
-> > > > +
-> > > > +	if (dev->offline_disabled)
-> > > > +		return -EPERM;
-> > > > +
-> > > > +	ret = device_for_each_child(dev, NULL, device_check_offline);
-> > > > +	if (ret)
-> > > > +		return ret;
-> > > > +
-> > > > +	device_lock(dev);
-> > > > +	if (device_supports_offline(dev)) {
-> > > > +		if (dev->offline) {
-> > > > +			ret = 1;
-> > > > +		} else {
-> > > > +			ret = dev->bus->offline(dev);
-> > > > +			if (!ret) {
-> > > > +				kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
-> > > > +				dev->offline = true;
-> > > 
-> > > Shouldn't this offline flag be set before sending KOBJ_OFFLINE?
-> > > 
-> > > > +			}
-> > > > +		}
-> > > > +	}
-> > > > +	device_unlock(dev);
-> > > > +
-> > > > +	return ret;
-> > > > +}
-> > > > +
-> > > > +/**
-> > > > + * device_online - Put the device back online after successful device_offline().
-> > > > + * @dev: Device to be put back online.
-> > > > + *
-> > > > + * If device_offline() has been successfully executed for @dev, but the device
-> > > > + * has not been removed subsequently, execute its bus type's .online() callback
-> > > > + * to indicate that the device can be used again.
-> > > 
-> > > There is another use-case for online().  When a device like CPU is
-> > > hot-added, it is added in offline.  I am not sure why, but it has been
-> > > this way.  So, we need to call online() to make a new device available
-> > > for use after a hot-add.
-> > 
-> > Actually, in the CPU case that is left to user space as far as I can say.
-> > That is, the device appears initially offline and user space is supposed to
-> > bring it online via sysfs.
-> > 
-> > > > + *
-> > > > + * Call under device_offline_lock.
-> > > > + */
-> > > > +int device_online(struct device *dev)
-> > > > +{
-> > > > +	int ret = 0;
-> > > > +
-> > > > +	device_lock(dev);
-> > > > +	if (device_supports_offline(dev)) {
-> > > > +		if (dev->offline) {
-> > > > +			ret = dev->bus->online(dev);
-> > > > +			if (!ret) {
-> > > > +				kobject_uevent(&dev->kobj, KOBJ_ONLINE);
-> > > > +				dev->offline = false;
-> > > 
-> > > Same comment as KOBJ_OFFLINE.
-> > 
-> > I wonder why the ordering may be important?
+On 02.05.13 17:16:18, Arnd Bergmann wrote:
+> oprofile fails to build if CONFIG_IRQ_WORK is not already enabled,
+> because of the dependency on the RING_BUFFER code that now uses
+> the irq work library.
 > 
-> I do not think it causes any race condition (so this isn't a big deal),
-> but it seems to make more sense to emit an ONLINE/OFFLINE event after
-> its object is marked online/offline.
+> kernel/built-in.o: In function `ring_buffer_unlock_commit':
+> :(.text+0x5b8f0): undefined reference to `irq_work_queue'
+> kernel/built-in.o: In function `ring_buffer_write':
+> :(.text+0x5bd10): undefined reference to `irq_work_queue'
 
-Well, dev->offline only matters for device_offline() and device_online()
-themselves at this time.
+Shouldn't this be fixed in the ring_buffer implementation?
+
+I also do not see, where this comes from. I was successfully compiling
+a kernel with OPROFILE and RING_BUFFER enabled but IRQ_WORK disabled.
+Do you have that config still available?
 
 Thanks,
-Rafael
 
+-Robert
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> 
+> Cc: Robert Richter <rric@kernel.org>
+> Cc: oprofile-list@lists.sf.net
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  arch/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/Kconfig b/arch/Kconfig
+> index a6b1056..434a8dc 100644
+> --- a/arch/Kconfig
+> +++ b/arch/Kconfig
+> @@ -8,6 +8,7 @@ config OPROFILE
+>  	depends on HAVE_OPROFILE
+>  	select RING_BUFFER
+>  	select RING_BUFFER_ALLOW_SWAP
+> +	select IRQ_WORK
+>  	help
+>  	  OProfile is a profiling system capable of profiling the
+>  	  whole system, include the kernel, kernel modules, libraries,
+> -- 
+> 1.8.1.2
+> 
