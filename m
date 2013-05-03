@@ -1,118 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763124Ab3ECKup (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 06:50:45 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:38987 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762184Ab3ECKun (ORCPT
+	id S1763128Ab3ECKyl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 06:54:41 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:58881 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756528Ab3ECKyj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 06:50:43 -0400
-Date: Fri, 3 May 2013 12:50:37 +0200
-From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org, laijs@cn.fujitsu.com,
-        davem@davemloft.net, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v2 10/13] x86, acpi, numa, mem-hotplug: Introduce
- MEMBLK_HOTPLUGGABLE to mark and reserve hotpluggable memory.
-Message-ID: <20130503105037.GA4533@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1367313683-10267-1-git-send-email-tangchen@cn.fujitsu.com>
- <1367313683-10267-11-git-send-email-tangchen@cn.fujitsu.com>
+	Fri, 3 May 2013 06:54:39 -0400
+Message-ID: <5183976A.6000703@arm.com>
+Date: Fri, 03 May 2013 11:54:34 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367313683-10267-11-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Christopher Covington <cov@codeaurora.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 1/3] arm_arch_timer: introduce arch_timer_stolen_ticks
+References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com> <1367436460-10183-1-git-send-email-stefano.stabellini@eu.citrix.com> <51817CBE.4050003@codeaurora.org> <1367482772.21869.26.camel@zakaz.uk.xensource.com> <5182DBA9.9080609@codeaurora.org> <alpine.DEB.2.02.1305031130210.5398@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1305031130210.5398@kaball.uk.xensource.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 03 May 2013 10:54:34.0962 (UTC) FILETIME=[99451B20:01CE47EC]
+X-MC-Unique: 113050311543501601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Apr 30, 2013 at 05:21:20PM +0800, Tang Chen wrote:
-> We mark out movable memory ranges and reserve them with MEMBLK_HOTPLUGGABLE flag in
-> memblock.reserved. This should be done after the memory mapping is initialized
-> because the kernel now supports allocate pagetable pages on local node, which
-> are kernel pages.
+On 03/05/13 11:43, Stefano Stabellini wrote:
+> On Thu, 2 May 2013, Christopher Covington wrote:
+>>> So the virtual timer should appear to have been running even while time
+>>> is being stolen and therefore stolen time needs to be accounted via some
+>>> other means.
+>>
+>> Something that's not currently obvious to me is that given that the stolen
+>> cycle accounting should be done, what makes the architected timer interrupt
+>> handler the ideal place to do it?
 > 
-> The reserved hotpluggable will be freed to buddy when memory initialization
-> is done.
+> That is a good question and I would appreciate suggestions to improve
+> the patch.
 > 
-> This idea is from Wen Congyang <wency@cn.fujitsu.com> and Jiang Liu <jiang.liu@huawei.com>.
+> Given that Xen x86 and ia64 does stolen time accounting from the timer
+> interrupt handler:
 > 
-> Suggested-by: Jiang Liu <jiang.liu@huawei.com>
-> Suggested-by: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> ---
->  arch/x86/mm/numa.c       |   28 ++++++++++++++++++++++++++++
->  include/linux/memblock.h |    3 +++
->  mm/memblock.c            |   19 +++++++++++++++++++
->  3 files changed, 50 insertions(+), 0 deletions(-)
+> arch/x86/xen/time.c:xen_timer_interrupt
+> arch/ia64/kernel/time.c:timer_interrupt
 > 
-> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-> index 1367fe4..a1f1f90 100644
-> --- a/arch/x86/mm/numa.c
-> +++ b/arch/x86/mm/numa.c
-> @@ -731,6 +731,32 @@ static void __init early_x86_numa_init_mapping(void)
->  }
->  #endif
->  
-> +#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-> +static void __init early_mem_hotplug_init()
-> +{
-> +	int i, nid;
-> +	phys_addr_t start, end;
-> +
-> +	if (!movablecore_enable_srat)
-> +		return;
-> +
-> +	for (i = 0; i < numa_meminfo.nr_blks; i++) {
-> +		if (!numa_meminfo.blk[i].hotpluggable)
-> +			continue;
-> +
-> +		nid = numa_meminfo.blk[i].nid;
+> and given that the arch_timer is the only timer used by Xen on ARM and
+> that it includes a virt_timer that is made on purpose to be used by
+> virtual machines, I thought that it might be a good place for it.
+> 
+> I also thought that doing it this way, KVM should be able to reuse the
+> same hook.
 
-Should we skip ranges on nodes that the kernel uses? e.g. with
+Indeed. I just need to understand how time stealing works there ;-).
 
-        if (memblock_is_kernel_node(nid))
-            continue;
+Now, KVM is not necessarily limited to arch_timers, and we've run KVM
+using a QEMU-provided timer in the past. Can you think of a more generic
+location for this hook? Possibly something that would satisfy the
+requirements of other architectures while we're at it?
 
-> +		start = numa_meminfo.blk[i].start;
-> +		end = numa_meminfo.blk[i].end;
-> +
-> +		memblock_reserve_hotpluggable(start, end - start, nid);
-> +	}
-> +}
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
-- I am getting a "PANIC: early exception" when rebooting with movablecore=acpi
-after hotplugging memory on node0 or node1 of a 2-node VM. The guest kernel is
-based on
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-x86-mm (e9058baf) + these v2 patches.
-
-This happens with or without the above memblock_is_kernel_node(nid) check.
-Perhaps I am missing something or I need a newer "ACPI, numa: Parse numa info
-early" patch-set?
-
-A general question: Disabling hot-pluggability/zone-movable eligibility for a
-whole node sounds a bit inflexible, if the machine only has one node to begin
-with.  Would it be possible to keep movable information per SRAT entry? I.e
-if the BIOS presents multiple SRAT entries for one node/PXM (say node 0), and
-there is no memblock/kernel allocation on one of these SRAT entries, could
-we still mark this SRAT entry's range as hot-pluggable/movable?  Not sure if
-many real machine BIOSes would do this, but seabios could.  This implies that
-SRAT entries are processed for movable-zone eligilibity before they are merged
-on node/PXM basis entry-granularity (I think numa_cleanup_meminfo currently does
-this merge).
-
-Of course the kernel should still have enough memory(i.e. non movable zone) to
-boot. Can we ensure that at least certain amount of memory is non-movable, and
-then, given more separate SRAT entries for node0 not used by kernel, treat
-these rest entries as movable?
-
-thanks,
-
-- Vasilis
