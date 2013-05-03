@@ -1,120 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762531Ab3ECDcI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 23:32:08 -0400
-Received: from out1.zte.com.cn ([202.103.147.172]:56107 "EHLO zte.com.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757005Ab3ECDcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 23:32:06 -0400
-In-Reply-To: <CAFLxGvxfzHudUMRc7VkgWMO9RJAkyh1iuouRAV-0s-5eaLqfEQ@mail.gmail.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: artem.bityutskiy@linux.intel.com, cui.yunfeng@zte.com.cn,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        liu.dong3@zte.com.cn
-Subject: Re: Re: Re: [PATCH] UBI: fix memory leak when use fastmap
+	id S1762220Ab3ECDqV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 23:46:21 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:53199 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043Ab3ECDqU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 23:46:20 -0400
+Message-ID: <51833302.6090208@linux.vnet.ibm.com>
+Date: Fri, 03 May 2013 11:46:10 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-X-KeepSent: E7F9663A:1F3DE1BE-48257B60:00045684;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 6.5.6 March 06, 2007
-Message-ID: <OFE7F9663A.1F3DE1BE-ON48257B60.00045684-48257B60.001360DF@zte.com.cn>
-From: wang.bo116@zte.com.cn
-Date: Fri, 3 May 2013 11:31:28 +0800
-X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
- 2013-05-03 11:31:19,
-	Serialize complete at 2013-05-03 11:31:19
-Content-Type: text/plain; charset="US-ASCII"
-X-MAIL: mse01.zte.com.cn r433VRa8036729
+To: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: wake-affine throttle
+References: <5164DCE7.8080906@linux.vnet.ibm.com>
+In-Reply-To: <5164DCE7.8080906@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050303-2674-0000-0000-000008D1D00A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-richard -rw- weinberger <richard.weinberger@gmail.com> write 2013-05-03 
-03:21:33:
+On 04/10/2013 11:30 AM, Michael Wang wrote:
 
-> On Thu, May 2, 2013 at 10:30 AM,  <wang.bo116@zte.com.cn> wrote:
-> >> Hi!
-> >>
-> >> On Tue, Apr 16, 2013 at 10:53 AM,  <wang.bo116@zte.com.cn> wrote:
-> >> > Hello,
-> >> >         Sorry, there is still something wrong with the previous
-> > patch's
-> >> > format, try to submit it again. When use ubi fastmap, there is a
-> > memory
-> >> > leak which will make destroy_ai() fail to free the slab alloced in
-> >> > scan_fast(). The following patch fix this problem by use a 
-temporary
-> >> > "ubi_attach_info" variable in scan_fast().
-> >>
-> >> Thanks a lot for your patch!
-> >>
-> >> Did you test it well?
-> >> We need to make sure that it does the right thing for the following
-> > cases:
-> >> 1. fastmap disabled, attaching a non-fastmap volume
-> >> 1. fastmap disabled, attaching a fastmap volume
-> >> 3. fastmap enabled, attaching a non-fastmap volume
-> >> 4. fastmap enablled, attaching a fastmap volume
-> >>
-> >> --
-> >> Thanks,
-> >> //richard
-> >
-> >
-> > Thanks for your advice. I consider this problem like this:
-> > 1: if fastmap not config, ubi_attach() just call scan_all(ubi, ai, 0),
-> > there is nothing changed, so there is all right.
-> >
-> > 2: if fastmap config, and force_scan is 0, ubi_attach() will call
-> > scan_fast(), when scan_fast() return, temp ai used in scan_fast() has 
-been
-> > free, and there will be two conditions:
-> > A: scan_fast() return UBI_NO_FASTMAP(may be flash is empty or 
-attaching a
-> > non-fastmap volume), all ubi_attach() need is to call scan_all(ubi, 
-ai, 0)
-> > to scan all blocks.
-> > B: scan_fast() return UBI_BAD_FASTMAP, ubi_attach() first free ai used 
-in
-> > ubi_scan_fastmap(), then alloc a clean ai, at last call scan_all(ubi, 
-ai,
-> > 0) to scan all blocks.
-> >
-> > 3: if fastmap config, and force_scan is 1, just call scan_all(ubi, ai, 
-0).
-> >
-> > This patch pass the following cases(include attach and detach):
-> > 1. fastmap config, flash is empty,fm_autoconvert is 1.
-> > 2. fastmap config, flash is empty,fm_autoconvert is 0.
-> > 3. fastmap config, attaching a fastmap volume
-> > 4. fastmap config, attaching a bad fastmap volume
-> > 5. fastmap config, attaching a non-fastmap volume
-> > 6. fastmap not config, attaching a fastmap volume
-> > 7. fastmap not config, attaching a non-fastmap volume
-> > 8. fastmap not config, flash is empty.
-> 
-> Good. :)
-> 
-> > By the way, the problem may cause ubi_attach() fail after ubi detach 
-when
-> > CONFIG_DEBUG_VM config.
-> > The reason is that ubi_attach() will alloc a slab cache, but the
-> > kmem_cache_sanity_check() will find the slab cache is already 
-exist(not
-> > been free after last detach), so slab cache alloc fail, and 
-ubi_attach()
-> > fail, too.
-> 
-> Doesn't your patch address this issue too?
-> If not, we should fix this.Th
+Now long time has been passed since the first version, I'd like to 
+do some summary about current states:
 
-The patch had already fix the above problem mentioned. 
-Now, all the slabs belong to the slab-cache named "ubi_aeb_slab_cache" can 
-be rightly freed, so the slab-cache can be rightly freed when ubi_attach() 
-return.
-When ubi attach again after detach, ubi can alloc a slab-cache named "
-ubi_aeb_slab_cache" again.
- 
+On a 12 cpu box with tip 3.9.0-rc7, test show that:
 
-Thanks
----wangbo
+1. remove wake-affine stuff cause regression on hackbench (could be 15%).
+2. reserve wake-affine stuff cause regression on pgbench (could be 45%).
+
+And since neither remove or reserve is acceptable, this patch introduced a
+knob to throttle wake-affine stuff.
+
+By turning the knob, we could benefit both hackbench and pgbench, or sacrifice
+one to significantly benefit another.
+
+All similar workload which prefer or hate wake-affine behaviour could
+been cared.
+
+If this approach caused any concerns, please let me know ;-)
+
+Regards,
+Michael Wang
+
+> 
+> Recently testing show that wake-affine stuff cause regression on pgbench, the
+> hiding rat was finally catched out.
+> 
+> wake-affine stuff is always trying to pull wakee close to waker, by theory,
+> this will benefit us if waker's cpu cached hot data for wakee, or the extreme
+> ping-pong case.
+> 
+> However, the whole stuff is somewhat blindly, load balance is the only factor
+> to be guaranteed, and since the stuff itself is time-consuming, some workload
+> suffered, pgbench is just the one who has been found.
+> 
+> Thus, throttle the wake-affine stuff for such workload is necessary.
+> 
+> This patch introduced a new knob 'sysctl_sched_wake_affine_interval' with the
+> default value 1ms (default minimum balance interval), which means wake-affine
+> will keep silent for 1ms after it returned false.
+> 
+> By turning the new knob, those workload who suffered will have the chance to
+> stop the regression.
+> 
+> Test:
+> 	Test with 12 cpu X86 server and tip 3.9.0-rc2.
+> 
+> 				default
+> 		    base	1ms interval	 10ms interval	 100ms interval
+> | db_size | clients |  tps  |	|  tps  | 	 |  tps  |	   |  tps  |
+> +---------+---------+-------+-  +-------+        +-------+         +-------+
+> | 21 MB   |       1 | 10572 |   | 10804 |        | 10802 |         | 10801 |
+> | 21 MB   |       2 | 21275 |   | 21533 |        | 21400 |         | 21498 |
+> | 21 MB   |       4 | 41866 |   | 42158 |        | 42410 |         | 42306 |
+> | 21 MB   |       8 | 53931 |   | 55796 |        | 58608 | +8.67%  | 59916 | +11.10%
+> | 21 MB   |      12 | 50956 |   | 52266 |        | 54586 | +7.12%  | 55982 | +9.86%
+> | 21 MB   |      16 | 49911 |   | 52862 | +5.91% | 55668 | +11.53% | 57255 | +14.71%
+> | 21 MB   |      24 | 46046 |   | 48820 | +6.02% | 54269 | +17.86% | 58113 | +26.21%
+> | 21 MB   |      32 | 43405 |   | 46635 | +7.44% | 53690 | +23.70% | 57729 | +33.00%
+> | 7483 MB |       1 |  7734 |   |  8013 |        |  8046 |         |  7879 |
+> | 7483 MB |       2 | 19375 |   | 19459 |        | 19448 |         | 19421 |
+> | 7483 MB |       4 | 37408 |   | 37780 |        | 37937 |         | 37819 |
+> | 7483 MB |       8 | 49033 |   | 50389 |        | 51636 | +5.31%  | 52294 | +6.65%
+> | 7483 MB |      12 | 45525 |   | 47794 | +4.98% | 49828 | +9.45%  | 50571 | +11.08%
+> | 7483 MB |      16 | 45731 |   | 47921 | +4.79% | 50203 | +9.78%  | 52033 | +13.78%
+> | 7483 MB |      24 | 41533 |   | 44301 | +6.67% | 49697 | +19.66% | 53833 | +29.62%
+> | 7483 MB |      32 | 36370 |   | 38301 | +5.31% | 48146 | +32.38% | 52795 | +45.16%
+> | 15 GB   |       1 |  7576 |   |  7926 |        |  7722 |         |  7969 |
+> | 15 GB   |       2 | 19157 |   | 19284 |        | 19294 |         | 19304 |
+> | 15 GB   |       4 | 37285 |   | 37539 |        | 37281 |         | 37508 |
+> | 15 GB   |       8 | 48718 |   | 49176 |        | 50836 | +4.35%  | 51239 | +5.17%
+> | 15 GB   |      12 | 45167 |   | 47180 | +4.45% | 49206 | +8.94%  | 50126 | +10.98%
+> | 15 GB   |      16 | 45270 |   | 47293 | +4.47% | 49638 | +9.65%  | 51748 | +14.31%
+> | 15 GB   |      24 | 40984 |   | 43366 | +5.81% | 49356 | +20.43% | 53157 | +29.70%
+> | 15 GB   |      32 | 35918 |   | 37632 | +4.77% | 47923 | +33.42% | 52241 | +45.45%
+> 
+> Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> ---
+>  include/linux/sched.h |    5 +++++
+>  kernel/sched/fair.c   |   31 +++++++++++++++++++++++++++++++
+>  kernel/sysctl.c       |   10 ++++++++++
+>  3 files changed, 46 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index d35d2b6..e9efd3a 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1197,6 +1197,10 @@ enum perf_event_task_context {
+>  	perf_nr_task_contexts,
+>  };
+> 
+> +#ifdef CONFIG_SMP
+> +extern unsigned int sysctl_sched_wake_affine_interval;
+> +#endif
+> +
+>  struct task_struct {
+>  	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
+>  	void *stack;
+> @@ -1207,6 +1211,7 @@ struct task_struct {
+>  #ifdef CONFIG_SMP
+>  	struct llist_node wake_entry;
+>  	int on_cpu;
+> +	unsigned long next_wake_affine;
+>  #endif
+>  	int on_rq;
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 7a33e59..68eedd7 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3087,6 +3087,22 @@ static inline unsigned long effective_load(struct task_group *tg, int cpu,
+> 
+>  #endif
+> 
+> +/*
+> + * Default is 1ms, to prevent the wake_affine() stuff working too frequently.
+> + */
+> +unsigned int sysctl_sched_wake_affine_interval = 1U;
+> +
+> +static inline int wake_affine_throttled(struct task_struct *p)
+> +{
+> +	return time_before(jiffies, p->next_wake_affine);
+> +}
+> +
+> +static inline void wake_affine_throttle(struct task_struct *p)
+> +{
+> +	p->next_wake_affine = jiffies +
+> +			msecs_to_jiffies(sysctl_sched_wake_affine_interval);
+> +}
+> +
+>  static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>  {
+>  	s64 this_load, load;
+> @@ -3096,6 +3112,9 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>  	unsigned long weight;
+>  	int balanced;
+> 
+> +	if (wake_affine_throttled(p))
+> +		return 0;
+> +
+>  	idx	  = sd->wake_idx;
+>  	this_cpu  = smp_processor_id();
+>  	prev_cpu  = task_cpu(p);
+> @@ -3167,6 +3186,18 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+> 
+>  		return 1;
+>  	}
+> +
+> +	/*
+> +	 * wake_affine() stuff try to pull wakee to the cpu
+> +	 * around waker, this will benefit us if the data
+> +	 * cached on waker cpu is hot for wakee, or the extreme
+> +	 * ping-pong case.
+> +	 *
+> +	 * However, do such blindly work too frequently will
+> +	 * cause regression to some workload, thus, each time
+> +	 * when wake_affine() failed, throttle it for a while.
+> +	 */
+> +	wake_affine_throttle(p);
+>  	return 0;
+>  }
+> 
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index afc1dc6..6ebfc18 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -437,6 +437,16 @@ static struct ctl_table kern_table[] = {
+>  		.extra1		= &one,
+>  	},
+>  #endif
+> +#ifdef CONFIG_SMP
+> +	{
+> +		.procname	= "sched_wake_affine_interval",
+> +		.data		= &sysctl_sched_wake_affine_interval,
+> +		.maxlen		= sizeof(unsigned int),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_dointvec_minmax,
+> +		.extra1		= &zero,
+> +	},
+> +#endif
+>  #ifdef CONFIG_PROVE_LOCKING
+>  	{
+>  		.procname	= "prove_locking",
+> 
+
