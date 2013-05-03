@@ -1,108 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933382Ab3ECQAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 12:00:21 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:7690 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933207Ab3ECQAU (ORCPT
+	id S933397Ab3ECQEX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 12:04:23 -0400
+Received: from mailout61.mail01.mtsvc.net ([216.70.64.9]:52229 "EHLO
+	mailout61.mail01.mtsvc.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750911Ab3ECQEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 12:00:20 -0400
-X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
-   d="scan'208";a="4215374"
-Message-ID: <1367596817.28742.123.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH v2 2/2] xen/balloon: Enforce various limits
- on target
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Keir (Xen.org)" <keir@xen.org>,
-        "Dave Scott" <Dave.Scott@eu.citrix.com>,
-        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
-        Ian Jackson <Ian.Jackson@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jonathan Ludlam" <Jonathan.Ludlam@eu.citrix.com>,
-        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "carsten@schiers.de" <carsten@schiers.de>
-Date: Fri, 3 May 2013 17:00:17 +0100
-In-Reply-To: <20130503154724.GC12463@debian70-amd64.local.net-space.pl>
-References: <20130430125952.GD9904@debian70-amd64.local.net-space.pl>
-	 <1367329458.3142.524.camel@zakaz.uk.xensource.com>
-	 <20130430185852.GF9904@debian70-amd64.local.net-space.pl>
-	 <alpine.DEB.2.02.1305021214510.5398@kaball.uk.xensource.com>
-	 <20130502180404.GA16489@phenom.dumpdata.com>
-	 <1367568932.28742.19.camel@zakaz.uk.xensource.com>
-	 <20130503130036.GA12463@debian70-amd64.local.net-space.pl>
-	 <1367587284.28742.89.camel@zakaz.uk.xensource.com>
-	 <20130503134704.GB12463@debian70-amd64.local.net-space.pl>
-	 <1367590278.28742.108.camel@zakaz.uk.xensource.com>
-	 <20130503154724.GC12463@debian70-amd64.local.net-space.pl>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Fri, 3 May 2013 12:04:21 -0400
+X-Greylist: delayed 3636 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 May 2013 12:04:21 EDT
+Message-ID: <5183D1CB.4070005@hurleysoftware.com>
+Date: Fri, 03 May 2013 11:03:39 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Dave Jones <davej@redhat.com>, Rik van Riel <riel@surriel.com>,
+        torvalds@linux-foundation.org, davidlohr.bueso@hp.com,
+        linux-kernel@vger.kernel.org, hhuang@redhat.com, jason.low2@hp.com,
+        walken@google.com, lwoodman@redhat.com, chegu_vinod@hp.com
+Subject: Re: ipc,sem: sysv semaphore scalability
+References: <1363809337-29718-1-git-send-email-riel@surriel.com> <20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org> <20130326192852.GA25899@redhat.com> <20130326124309.077e21a9f59aaa3f3355e09b@linux-foundation.org> <20130329190135.GB23893@redhat.com>
+In-Reply-To: <20130329190135.GB23893@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-03 at 16:47 +0100, Daniel Kiper wrote:
-> > > > > Do not forget that guest may change target itself.
-> > > >
-> > > > Yes it can, and that can fail either due to maxmem or due to ENOMEM, and
-> > > > the kernel needs prepared to deal with that when it happens.
-> > >
-> > > Sure but why we would like to fail in endless loop if maxmem case
-> > > could be easliy detected by checking XENMEM_maximum_reservation?
-> >
-> > That endless loop is deliberate. When a target is set the balloon driver
-> > is supposed to try to reach it and if it fails at any given moment it is
-> > supposed to try again. This all relates to the changes made in
-> > bc2c0303226e.
-> >
-> > Now you could argue that this case is subtly different from the ENOMEM
-> > case which was the primary focus of that commit but have you thought
-> > about the behaviour you want in the case where maximum_reservation is
-> > subsequently raised? IMHO there's no reason why the balloon driver
-> > shouldn't then automatically make further progress towards the target.
-> 
-> OK, now it makes sens. Do we assume the same behavior for dom0?
-> Could we change maximum_reservation for dom0 using xl?
+On 03/29/2013 03:01 PM, Dave Jones wrote:
+> On Tue, Mar 26, 2013 at 12:43:09PM -0700, Andrew Morton wrote:
+>   > On Tue, 26 Mar 2013 15:28:52 -0400 Dave Jones <davej@redhat.com> wrote:
+>   >
+>   > > On Thu, Mar 21, 2013 at 02:10:58PM -0700, Andrew Morton wrote:
+>   > >
+>   > >  > Whichever way we go, we should get a wiggle on - this has been hanging
+>   > >  > around for too long.  Dave, do you have time to determine whether
+>   > >  > reverting 88b9e456b1649722673ff ("ipc: don't allocate a copy larger
+>   > >  > than max") fixes things up?
+>   > >
+>   > > Ok, with that reverted it's been grinding away for a few hours without incident.
+>   > > Normally I see the oops within a minute or so.
+>   > >
+>   >
+>   > OK, thanks, I queued a revert:
+>   >
+>   > From: Andrew Morton <akpm@linux-foundation.org>
+>   > Subject: revert "ipc: don't allocate a copy larger than max"
+>   >
+>   > Revert 88b9e456b164.  Dave has confirmed that this was causing oopses
+>   > during trinity testing.
+>
+> I owe Peter an apology. I just hit it again with that backed out.
+> Andrew, might as well drop that revert.
+>
+> BUG: unable to handle kernel NULL pointer dereference at 000000000000000f
+> IP: [<ffffffff812c24ca>] testmsg.isra.5+0x1a/0x60
+> [...snip...]
+>
+> I think I wasn't seeing that this last week because I had inadvertantly disabled DEBUG_PAGEALLOC
+>
+> and.. we're back to square one.
+>
+> 	Dave
 
-I don't think there's any reason to special case dom0 here.
+Andrew,
 
-> > If the infinite loop bothers you then perhaps an exponential backoff in
-> > the frequency of attempts would be a suitable middle ground?
-> 
-> Relevant patches made by me are merged some time ago.
+I just realized you're still carrying
 
-Great!
+	commit 4bea54c91bcc5451f237e6b721b0b35eccd01d17
+	Author: Andrew Morton <akpm@linux-foundation.org>
+	Date:   Fri Apr 26 10:55:12 2013 +1000
 
-> > > > > Additionally, we would like to introduce xm compatibility
-> > > > > mode which is a bit different then xl normal behavior.
-> > > >
-> > > > When then you really don't want to be baking specifics of the current
-> > > > model into the kernel, do you.
-> > >
-> > > Hmmm... Little misunderstanding. As I stated a few times I do not
-> > > want bake any libxl or Xen stuff into Linux Kernel (including
-> > > LIBXL_MAXMEM_CONSTANT). I just want to check limits which I think
-> > > make sense in this case.
-> >
-> > Sorry, I never noticed you saying that. Where was it?
-> 
-> Here http://lists.xen.org/archives/html/xen-devel/2013-04/msg03259.html
-> I stated that I do not like this constant. I explained why this was done
-> in that way.
+	    revert "ipc: don't allocate a copy larger than max"
 
-Sorry, I read that mail as arguing that it must be done this way ("this
-is a must").
+	    Revert 88b9e456b164.  Dave has confirmed that this was causing oopses
+	    during trinity testing.
 
->  Later I found relevant commit which introduced it and asked
-> authors about it. I think that shows that I am not happy with
-> LIBXL_MAXMEM_CONSTANT and I am looking for good solution for this problem.
+	    Cc: Peter Hurley <peter@hurleysoftware.com>
+	    Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
+	    Reported-by: Dave Jones <davej@redhat.com>
+	    Cc: <stable@vger.kernel.org>
+	    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-Ian.
+Please drop.
 
+As quoted above, the testing on mainline that attributed
+the observed oops to the reverted patch was due to a config
+error.
+
+As Linus pointed out below, this patch fixes real bugs.
+
+On 04/02/2013 03:53 PM, Sasha Levin wrote:
+ > On 04/02/2013 01:52 PM, Linus Torvalds wrote:
+ >> On Tue, Apr 2, 2013 at 9:08 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+ >>>
+ >>> By just playing with the 'msgsz' parameter with MSG_COPY set.
+ >>
+ >> Hmm. Looking closer, I suspect you're testing without commit
+ >> 88b9e456b164 ("ipc: don't allocate a copy larger than max"). That
+ >> should limit the size passed in to prepare_copy -> load_copy to
+ >> msg_ctlmax.
+ >
+ > That commit has a revert in the -next trees, do we need a revert
+ > of the revert?
+ >
+ > 	commit ff6577a3e714ccae02d4400e989762c19c37b0b3
+ > 	Author: Andrew Morton <akpm@linux-foundation.org>
+ > 	Date:   Wed Mar 27 10:24:02 2013 +1100
+ > 	
+ > 	    revert "ipc: don't allocate a copy larger than max"
+ > 	
+ > 	    Revert 88b9e456b164.  Dave has confirmed that this was causing oopses
+ > 	    during trinity testing.
+ > 	
+ > 	    Cc: Peter Hurley <peter@hurleysoftware.com>
+ > 	    Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
+ > 	    Reported-by: Dave Jones <davej@redhat.com>
+ > 	    Cc: <stable@vger.kernel.org>
+ > 	    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
