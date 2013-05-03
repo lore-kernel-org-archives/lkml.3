@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933780Ab3ECRGZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 13:06:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47180 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932481Ab3ECRGX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 13:06:23 -0400
-Date: Fri, 3 May 2013 19:04:47 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-Message-ID: <20130503170447.GB30733@dyad.programming.kicks-ass.net>
-References: <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
- <20130502072623.GE7521@dyad.programming.kicks-ass.net>
- <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg>
- <20130502173257.GX3780@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg>
- <20130502193409.GA3780@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1305022249010.25417@ja.ssi.bg>
- <20130502223107.GB3780@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1305031024080.1657@ja.ssi.bg>
- <20130503163045.GE3780@linux.vnet.ibm.com>
+	id S933797Ab3ECRHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 13:07:48 -0400
+Received: from smtp29.i.mail.ru ([94.100.177.89]:43288 "EHLO smtp29.i.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932481Ab3ECRHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 13:07:47 -0400
+X-Greylist: delayed 10987 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 May 2013 13:07:47 EDT
+Message-ID: <5183FC83.8090602@list.ru>
+Date: Fri, 03 May 2013 22:05:55 +0400
+From: Stas Sergeev <stsp@list.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130503163045.GE3780@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Jarkko Huijts <jarkko.huijts@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        linux-usb@vger.kernel.org, linux-serial@vger.kernel.org,
+        Linux kernel <linux-kernel@vger.kernel.org>,
+        Caylan Van Larson <i@caylan.net>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Regression: ftdi_sio is slow (since Wed Oct 10 15:05:06 2012)
+References: <5183D196.2080305@list.ru> <20130503163008.GA30699@kroah.com> <5183F62A.1020801@list.ru> <20130503165231.GA1966@kroah.com>
+In-Reply-To: <20130503165231.GA1966@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The key point is that I don't understand why we cannot get the effect
-> we are looking for with the following in sched.h (or wherever):
-> 
-> static inline int cond_resched_rcu(void)
-> {
-> #if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_PREEMPT_RCU)
-> 	rcu_read_unlock();
-> 	cond_resched();
-> 	rcu_read_lock();
-> #endif
-> }
-> 
-> This adds absolutely no overhead in non-debug builds of CONFIG_PREEMPT_RCU,
-> does the checking in debug builds, and allows voluntary preemption in
-> !CONFIG_PREEMPT_RCU builds.  CONFIG_PROVE_RCU builds will check for an
-> (illegal) outer rcu_read_lock() in CONFIG_PREEMPT_RCU builds, and you
-> will get "scheduling while atomic" in response to an outer rcu_read_lock()
-> in !CONFIG_PREEMPT_RCU builds.
-> 
-> It also seems to me a lot simpler.
-> 
-> Does this work, or am I still missing something?
+03.05.2013 20:52, Greg KH пишет:
+> On Fri, May 03, 2013 at 09:38:50PM +0400, Stas Sergeev wrote:
+>> 03.05.2013 20:30, Greg KH пишет:
+>>> We need some way to check the chars in the buffer, is the device you are
+>>> using just very slow to respond to this request?  How slow?  Do you have
+>>> a test case that we can see how it is affected?
+>> Greg, unfortunately, I do have nothing.
+>> The customer is in CC list, so maybe he will
+>> provide the test-case, but I doubt.
+>>
+>> Please, what are your concerns here?
+>> The patch in question does this:
+>> ---
+>> + ret = usb_control_msg(port->serial->dev,
+>> + usb_rcvctrlpipe(port->serial->dev, 0),
+>> + FTDI_SIO_GET_MODEM_STATUS_REQUEST,
+>> + FTDI_SIO_GET_MODEM_STATUS_REQUEST_TYPE,
+>> + 0, priv->interface,
+>> + buf, 2, WDR_TIMEOUT);
+>> ---
+>> Obviously, this is too expensive to call too frequently,
+>> or am I missing something?
+> Why do you think that is too expensive to call?  Does it somehow stop
+> the data being sent to the device through the serial endpoints?  Is
+> userspace calling this function too much slowing something else down?
+No, it doesn't slow down the data transfer.
+But it makes a select() call to take much longer to complete,
+and the same goes to TIOCOUTQ ioctl. Yes, the app calls select()
+quite too much, and it is single-threaded, too. :)
 
-It can do quite a number of superfluous rcu_read_unlock()/lock() pairs for
-voluntary preemption kernels?
+>> I asked the customer to comment out
+>> tty_chars_in_buffer(tty) < WAKEUP_CHARS
+>> line in n_tty.c, and he said that cured his problems,
+>> so I think my guess was right.
+> What exactly is the "problem" being seen?
+No idea.
+Well, I can make a test-case that does 1000000 select() calls
+in a loop and time it. This is probably the best I can do.
+
+>> The patch claims it only affects tcdrain() and close().
+>> Its trivial to see it also affects poll(), select() and TIOCOUTQ
+>> ioctl, so even from that it is already broken.
+>> Why do you need a test-case for this?
+> Because I don't know what the problem really is :)
+Slow select() call (and other calls).
+Can we just use usb_serial_generic_chars_in_buffer()
+in ftdi_sio? What was the reason behind the patch at all,
+why it is so importand to query TEMT? I can write some
+test-case, but it would be better if I at least understand
+why the patch was needed at all. I don't understand why
+quering TEMT is that important.
+
+I can code up the patch that will just stop quering TEMT,
+test it with the customer and send it to you (basically, a revert
+of the patch in question).
