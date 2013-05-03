@@ -1,147 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933088Ab3ECIKi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 04:10:38 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43532 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932973Ab3ECIK1 (ORCPT
+	id S1758448Ab3ECIPj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 04:15:39 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:52355 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967Ab3ECIPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 04:10:27 -0400
-Date: Fri, 3 May 2013 10:10:23 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Prarit Bhargava <prarit@redhat.com>
-cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Yinghai Lu <yhlu.kernel@gmail.com>,
-        Dave Jones <davej@codemonkey.org.uk>
-Subject: Re: [PATCH] NOHZ, check to see if tick device is initialized in IRQ
- handling path
-In-Reply-To: <alpine.LFD.2.02.1305030054530.2891@ionos>
-Message-ID: <alpine.LFD.2.02.1305030923300.2886@ionos>
-References: <1367325415-32283-1-git-send-email-prarit@redhat.com> <alpine.LFD.2.02.1305030054530.2891@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 3 May 2013 04:15:35 -0400
+X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
+   d="scan'208";a="4193762"
+Message-ID: <1367568932.28742.19.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH v2 2/2] xen/balloon: Enforce various limits
+ on target
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Keir (Xen.org)" <keir@xen.org>, Dave Scott <Dave.Scott@eu.citrix.com>,
+        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
+        Daniel Kiper <daniel.kiper@oracle.com>,
+        Ian Jackson <Ian.Jackson@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jonathan Ludlam" <Jonathan.Ludlam@eu.citrix.com>,
+        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "carsten@schiers.de" <carsten@schiers.de>
+Date: Fri, 3 May 2013 09:15:32 +0100
+In-Reply-To: <20130502180404.GA16489@phenom.dumpdata.com>
+References: <1367235468-8360-1-git-send-email-daniel.kiper@oracle.com>
+	 <1367235468-8360-3-git-send-email-daniel.kiper@oracle.com>
+	 <1367246649.3142.316.camel@zakaz.uk.xensource.com>
+	 <20130430125952.GD9904@debian70-amd64.local.net-space.pl>
+	 <1367329458.3142.524.camel@zakaz.uk.xensource.com>
+	 <20130430185852.GF9904@debian70-amd64.local.net-space.pl>
+	 <alpine.DEB.2.02.1305021214510.5398@kaball.uk.xensource.com>
+	 <20130502180404.GA16489@phenom.dumpdata.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 May 2013, Thomas Gleixner wrote:
-
-> On Tue, 30 Apr 2013, Prarit Bhargava wrote:
+On Thu, 2013-05-02 at 19:04 +0100, Konrad Rzeszutek Wilk wrote:
+> On Thu, May 02, 2013 at 12:34:32PM +0100, Stefano Stabellini wrote:
+> > On Tue, 30 Apr 2013, Daniel Kiper wrote:
+> > > > > > > +/*
+> > > > > > > + * Extra internal memory reserved by libxl.
+> > > > > > > + * Check tools/libxl/libxl_memory.txt file in Xen source for more details.
+> > > > > > > + */
+> > > > > > > +#define LIBXL_MAXMEM_CONSTANT_PAGES	(1024 * 1024 / PAGE_SIZE)
+> > > > > >
+> > > > > > I think we need to find a way to achieve your aims which doesn't require
+> > > > > > leaking internal implementation details of libxl into the guest kernels.
+> > > > > > What happens if libxl decides to double this?
+> > > > >
+> > > > > I agree that this is not elegant solution. However, if we would like to
+> > > > > be in line with docs/misc/libxl_memory.txt (this is correct path) this
+> > > > > is a must.
+> > > >
+> > > > I'm not sure about this, that file describes the toolstacks view of the
+> > > > memory in a system. That need not necessarily correspond with the
+> > > > guest's ideas (although you would hope it would be a superset).
+> > > >
+> > > > Surely it is logically wrong to bake toolstack specific knowledge in the
+> > > > guest? If someone can describe a meaningful semantic for this number in
+> > > > a toolstack independent way then perhaps it would be appropriate to do
+> > > > something with it. I've no idea, having looked at both the document and
+> > > > the code, what this value actually is.
+> > > 
+> > > This was added by commit 9905ac2b90a3e7cecd9e7dfe21c252362e7080b2
+> > > (libxenlight: implement libxl_set_memory_target). It was written
+> > > by Keir and signed off by Stefano (both are CCed here). Guys,
+> > > why did you added LIBXL_MAXMEM_CONSTANT? What does it mean?
+> > 
+> > libxl inherits the memory model from xapi.
+> > LIBXL_MAXMEM_CONSTANT corresponds to "extra internal" in xapi, an amount
+> > of memory that is not allocated to the domain but it is left as a slack
+> > on top of the actual memory target to determine the Xen maxmem.
+> > I believe it comes from empirical measurements and stress testing on the
+> > platform.
 > 
-> > 2nd try at this ... going with a more global cc.
-> > 
-> > I think the linux.git "system hang" isn't really a hang.  For some reason the
-> > panic text wasn't displayed on the console.  I've seen this behaviour a few
-> > times now ... maybe there's a bug in the panic output path?
-> > 
-> > It seems that the power interrupt is an error with the CPU exceeded the
-> > OSes current requested frequency on the package.  If I disable on demand
-> > cpu frequency, the problem goes away.
-> 
-> Huch?
->  
-> > Anyhoo, here's a patch...
-> > 
-> > ----8<----
-> > 
-> > When adding a CPU there is a small window in which interrupts are enabled and
-> > the clock tick device has not been initialized.  If an interrupt occurs in
-> 
-> What's that small window and why does it exist?
-> 
-> > this window, irq_exit() will be called which calls tick_nohz_irq_exit() which
-> > in turn calls __tick_nohz_idle_enter().
-> > 
-> > __tick_nohz_idle() enter assumes that the tick has been initialized.  In the
-> > above case, however, it has not and this leads to what appears to be a system
-> > hang on latest linux.git or a the following panic on RHEL6:
-> > 
-> > Pid: 0, comm: swapper Not tainted 2.6.32-358.el6.x86_64 #1
-> > RIP: 0010:[<ffffffff810a89e5>]  [<ffffffff810a89e5>] tick_nohz_stop_sched_tick+0x2a5/0x3e0
-> > RSP: 0018:ffff88089c503f38  EFLAGS: 00010046
-> > RAX: ffffffff81c07520 RBX: ffff88089c5116a0 RCX: 000002f04bb18cd8
-> > RDX: 0000000000000000 RSI: 000000000000a1b5 RDI: 000002f04bb0eb23
-> > RBP: ffff88089c503f88 R08: ffff88089c50e060 R09: 0000000000000000
-> > R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000017
-> > R13: 000002f04bb17dd5 R14: 0000000000000000 R15: 0000000000000092
-> > FS:  0000000000000000(0000) GS:ffff88089c500000(0000) knlGS:0000000000000000
-> > CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
-> > CR2: 0000000000000078 CR3: 0000000001a85000 CR4: 00000000001406e0
-> > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > Process swapper (pid: 0, threadinfo ffff8810745c0000, task ffff8808740f2080)
-> > Stack:
-> >  00000000000116a0 0000000000000087 ffff88089c503f78 0000000000000046
-> > <d> ffff88089c503f98 0000000000000000 0000000000000000 0000000000000000
-> > <d> 0000000000000000 0000000000000000 ffff88089c503f98 ffffffff81076d86
-> > Call Trace:
-> >  <IRQ>
-> >  [<ffffffff81076d86>] irq_exit+0x76/0x90
-> >  [<ffffffff81028dd6>] smp_thermal_interrupt+0x26/0x40
-> >  [<ffffffff8100bcf3>] thermal_interrupt+0x13/0x20
-> >  <EOI>
-> >  [<ffffffff81506997>] ? start_secondary+0x127/0x2ef
-> >  [<ffffffff81506990>] ? start_secondary+0x120/0x2ef
-> > 
-> > The code currently assumes that the tick device is initialized when
-> > irq_enter() and irq_exit() are called.  This is not correct and a check must
-> > be performed prior to entering the tick code through these code paths to
-> > ensure that the tick device is initialized and running.
-> > 
-> > I've only seen this occur on a few systems.  I've tested with and without the
-> > patch and as far as I can tell this patch resolves the problem on
-> > linux.git top of tree.
-> > 
-> > Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: John Stultz <john.stultz@linaro.org>
-> > ---
-> >  kernel/time/tick-sched.c |   12 ++++++++++++
-> >  1 file changed, 12 insertions(+)
-> > 
-> > diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> > index a19a399..5027187 100644
-> > --- a/kernel/time/tick-sched.c
-> > +++ b/kernel/time/tick-sched.c
-> > @@ -567,6 +567,12 @@ EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
-> >  void tick_nohz_irq_exit(void)
-> >  {
-> >  	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-> > +	struct clock_event_device *dev =
-> > +				     __get_cpu_var(tick_cpu_device).evtdev;
-> > +
-> > +	/* Has the tick been initialized yet? */
-> > +	if (unlikely(!dev || dev->mode == CLOCK_EVT_MODE_UNUSED))
-> > +		return;
-> >  
-> >  	if (!ts->inidle)
-> >  		return;
+> What is this 'slack' used for?
 
-This does not make any sense at all.
+Did you read Stefano's next sentence?
 
-If ts->inidle is set, then the cpu has entered the idle loop. The
-local apic timer is registered _BEFORE_ the idle loop is reached. So
-how would dev end up being NULL?
+> > The xapi guys, CC'ed, might have more insights on what exactly is.
 
-So even if an interrupt hits right before we register the local APIC
-timer, ts->inidle cannot be set.
+I think that unless someone can remember what this issue was we should
+just chalk it up to a historical artefact of something xapi (or maybe
+some historical guest) was doing which we have no reason to believe
+needs to be carried over to libxl.
 
-The same is true for tick_check_idle(). The cpu cannot be in the
-broadcast mask _BEFORE_ it went deep idle (from the idle loop) and
-neither ts->idle_active nor ts->tick_stopped can be set.
+IOW I'm suggesting we set LIBXL_MAXMEM_CONSTANT to 0 early in the 4.4
+cycle and see how it goes. If someone can show either empirical evidence
+or (better) logically argue that a fudge is required then we can always
+put it back (or it may turn out to be the caller's issue, in which case
+they can deal with it, hopefully xapi-on-libxl won't apply this fudge
+twice...).
 
-So there is something else wrong and you're just papering over the the
-underlying issue.
+Alternatively I'm also strongly considering having debug builds of the
+toolstack randomise the amount of slack, that ought to shake out any
+lingering issues...
 
-Can you please instrument the order of events (apic registration etc),
-so we can see what goes wrong.
+> > I dislike having to pull this "hack" into Linux, but if it is actually
+> > important to leave LIBXL_MAXMEM_CONSTANT unused, then it is worth doing.
+> > I would add a big comment on top saying:
+> > 
+> > "libxl seems to think that we need to leave LIBXL_MAXMEM_CONSTANT
+> > kilobytes unused, let's be gentle and do that."
 
-Thanks,
+It seems to me that this change in Linux is really just papering over
+the underlying issue. Or at the very least no one has adequately
+explained what that real issue is and why this change is relevant to it
+and/or an appropriate fix for it.
 
-	tglx
+The guest knows what target the toolstack has set for it is (its in the
+target xenstore node), I don't see any reason for the guest to be
+further second guessing that value by examining maxmem (adjusted by a
+fudge factor or otherwise). If the guest is seeing failures to increase
+its reservation when trying to meet that target then either the
+toolstack was buggy in asking it to hit a target greater than its maxmem
+or it is hitting one of the other reason for increase reservation
+failures. Since it needs to deal with the latter anyway I don't see any
+reason to special case maxmem as a cause for a failure.
 
+Ian.
 
