@@ -1,179 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207Ab3ECPrv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 11:47:51 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18982 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932459Ab3ECPru (ORCPT
+	id S933280Ab3ECPuV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 11:50:21 -0400
+Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:60209 "EHLO
+	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932459Ab3ECPuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 11:47:50 -0400
-Date: Fri, 3 May 2013 17:47:24 +0200
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Keir (Xen.org)" <keir@xen.org>, Dave Scott <Dave.Scott@eu.citrix.com>,
-        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
-        Ian Jackson <Ian.Jackson@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jonathan Ludlam <Jonathan.Ludlam@eu.citrix.com>,
-        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "carsten@schiers.de" <carsten@schiers.de>
-Subject: Re: [Xen-devel] [PATCH v2 2/2] xen/balloon: Enforce various limits
- on target
-Message-ID: <20130503154724.GC12463@debian70-amd64.local.net-space.pl>
-References: <20130430125952.GD9904@debian70-amd64.local.net-space.pl>
- <1367329458.3142.524.camel@zakaz.uk.xensource.com>
- <20130430185852.GF9904@debian70-amd64.local.net-space.pl>
- <alpine.DEB.2.02.1305021214510.5398@kaball.uk.xensource.com>
- <20130502180404.GA16489@phenom.dumpdata.com>
- <1367568932.28742.19.camel@zakaz.uk.xensource.com>
- <20130503130036.GA12463@debian70-amd64.local.net-space.pl>
- <1367587284.28742.89.camel@zakaz.uk.xensource.com>
- <20130503134704.GB12463@debian70-amd64.local.net-space.pl>
- <1367590278.28742.108.camel@zakaz.uk.xensource.com>
+	Fri, 3 May 2013 11:50:20 -0400
+X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 May 2013 11:50:20 EDT
+Date: Fri, 3 May 2013 15:43:18 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+In-Reply-To: <201305031726.BJG78631.tQSOVOLHJFMFFO@I-love.SAKURA.ne.jp>
+Message-ID: <0000013e6b0fcf7b-9fabe4c8-2667-4bea-a9d1-f1c77e18fe78-000000@email.amazonses.com>
+References: <0000013e5b56d067-7982dfa6-08a2-4c48-ad77-6888b5114c5f-000000@email.amazonses.com> <201305010101.CGB86424.JFQOtSFOVOLFHM@I-love.SAKURA.ne.jp> <0000013e5bfc7c4d-54fa9464-dccd-4157-b4a5-22594261eaf3-000000@email.amazonses.com>
+ <201305012114.AED78178.tFSHFQOOJLMOFV@I-love.SAKURA.ne.jp> <0000013e6705da99-094923c6-e239-43d2-8f0c-5e661656a27c-000000@email.amazonses.com> <201305031726.BJG78631.tQSOVOLHJFMFFO@I-love.SAKURA.ne.jp>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367590278.28742.108.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.05.03-54.240.9.70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 03:11:18PM +0100, Ian Campbell wrote:
-> On Fri, 2013-05-03 at 14:47 +0100, Daniel Kiper wrote:
-> > On Fri, May 03, 2013 at 02:21:24PM +0100, Ian Campbell wrote:
-> > > On Fri, 2013-05-03 at 14:00 +0100, Daniel Kiper wrote:
-> > > > On Fri, May 03, 2013 at 09:15:32AM +0100, Ian Campbell wrote:
-> > > > > On Thu, 2013-05-02 at 19:04 +0100, Konrad Rzeszutek Wilk wrote:
-> > > > > > On Thu, May 02, 2013 at 12:34:32PM +0100, Stefano Stabellini wrote:
-> > > >
-> > > > [...]
-> > > >
-> > > > > > > The xapi guys, CC'ed, might have more insights on what exactly is.
-> > > > >
-> > > > > I think that unless someone can remember what this issue was we should
-> > > > > just chalk it up to a historical artefact of something xapi (or maybe
-> > > > > some historical guest) was doing which we have no reason to believe
-> > > > > needs to be carried over to libxl.
-> > > > >
-> > > > > IOW I'm suggesting we set LIBXL_MAXMEM_CONSTANT to 0 early in the 4.4
-> > > > > cycle and see how it goes. If someone can show either empirical evidence
-> > > > > or (better) logically argue that a fudge is required then we can always
-> > > > > put it back (or it may turn out to be the caller's issue, in which case
-> > > > > they can deal with it, hopefully xapi-on-libxl won't apply this fudge
-> > > > > twice...).
-> > > > >
-> > > > > Alternatively I'm also strongly considering having debug builds of the
-> > > > > toolstack randomise the amount of slack, that ought to shake out any
-> > > > > lingering issues...
-> > > >
-> > > > Do you suggest to postopone this work until 4.4 merge window?
-> > >
-> > > 4.4 is a Xen version, this is a Linux patch so I'm not sure what you
-> > > mean.
+On Fri, 3 May 2013, Tetsuo Handa wrote:
+
+> I don't think this patch is sufficient. There are functions (e.g. kstrdup())
+> which call variant functions (e.g. kmalloc_track_caller()). I think we need to
+> check size at functions which determine index from size (e.g. kmalloc_slab()).
+
+Right.
+
+> > Index: linux/include/linux/slab_def.h
+> > ===================================================================
+> > --- linux.orig/include/linux/slab_def.h	2013-05-02 15:02:45.864728115 -0500
+> > +++ linux/include/linux/slab_def.h	2013-05-02 15:06:14.940474110 -0500
+> > @@ -126,6 +126,9 @@ static __always_inline void *kmalloc(siz
+> >  		if (!size)
+> >  			return ZERO_SIZE_PTR;
 > >
-> > I thought about my libxl patches. Should I post new version without
-> > LIBXL_MAXMEM_CONSTANT when 4.4 merge window open?
+> > +		if (size >= KMALLOC_MAX_SIZE)
+> > +			return NULL;
+> > +
 >
-> Xen doesn't have a concept of a merge window. However we are currently
-> in feature freeze for 4.3. You'd need to speak to the release manager
+> Why not (size > KMALLOC_MAX_SIZE) ?
 
-Yes, I know.
+Correct.
 
-> (George Dunlap) to see if your xen side patches are acceptable at this
-> stage of the release.
->
-> AIUI we were intending to do an RC1 release on Monday or Tuesday. It's
-> probably too late to be making any major changes to libxl's behaviour
-> without an extremely good rationale.
+We also would want some diagnostics as to who is doing these large allocs
+so that these issues can be fixed. Updated patch:
 
-I do not insist on that because I am aware that removal
-of LIBXL_MAXMEM_CONSTANT is too big change. Earlier I thought
-that it will be possible because changes were not so drastic.
-I will post new version of libxl patches after releasing Xen 4.3.
+Subject: slab: Return NULL for oversized allocations
 
-> > > > If yes, then I think that at least "xen/balloon: Enforce various limits on target"
-> > > > patch (without this crazy libxl hack) should be applied.
-> > >
-> > > You mean this patch with only the MAX_DOMAIN_PAGES clamping? That seems
-> > > plausible.
-> >
-> > ... and with XENMEM_maximum_reservation check but wihtout LIBXL_MAXMEM_CONSTANT_PAGES.
->
-> I am less convinced by this bit, but not as dead against it as I am
-> against anything with LIBXL_MAXMEM_CONSTANT_PAGES in it.
->
-> > > > > > > I dislike having to pull this "hack" into Linux, but if it is actually
-> > > > > > > important to leave LIBXL_MAXMEM_CONSTANT unused, then it is worth doing.
-> > > > > > > I would add a big comment on top saying:
-> > > > > > >
-> > > > > > > "libxl seems to think that we need to leave LIBXL_MAXMEM_CONSTANT
-> > > > > > > kilobytes unused, let's be gentle and do that."
-> > > > >
-> > > > > It seems to me that this change in Linux is really just papering over
-> > > > > the underlying issue. Or at the very least no one has adequately
-> > > > > explained what that real issue is and why this change is relevant to it
-> > > > > and/or an appropriate fix for it.
-> > > > >
-> > > > > The guest knows what target the toolstack has set for it is (its in the
-> > > > > target xenstore node), I don't see any reason for the guest to be
-> > > > > further second guessing that value by examining maxmem (adjusted by a
-> > > > > fudge factor or otherwise). If the guest is seeing failures to increase
-> > > > > its reservation when trying to meet that target then either the
-> > > > > toolstack was buggy in asking it to hit a target greater than its maxmem
-> > > > > or it is hitting one of the other reason for increase reservation
-> > > > > failures. Since it needs to deal with the latter anyway I don't see any
-> > > > > reason to special case maxmem as a cause for a failure.
-> > > >
-> > > > Do not forget that guest may change target itself.
-> > >
-> > > Yes it can, and that can fail either due to maxmem or due to ENOMEM, and
-> > > the kernel needs prepared to deal with that when it happens.
-> >
-> > Sure but why we would like to fail in endless loop if maxmem case
-> > could be easliy detected by checking XENMEM_maximum_reservation?
->
-> That endless loop is deliberate. When a target is set the balloon driver
-> is supposed to try to reach it and if it fails at any given moment it is
-> supposed to try again. This all relates to the changes made in
-> bc2c0303226e.
->
-> Now you could argue that this case is subtly different from the ENOMEM
-> case which was the primary focus of that commit but have you thought
-> about the behaviour you want in the case where maximum_reservation is
-> subsequently raised? IMHO there's no reason why the balloon driver
-> shouldn't then automatically make further progress towards the target.
+The inline path seems to have changed the SLAB behavior for very large
+kmalloc allocations. This patch restores the old behavior but also
+adds diagnostics so that we can figure where in the code these
+large allocations occur.
 
-OK, now it makes sens. Do we assume the same behavior for dom0?
-Could we change maximum_reservation for dom0 using xl?
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-> If the infinite loop bothers you then perhaps an exponential backoff in
-> the frequency of attempts would be a suitable middle ground?
 
-Relevant patches made by me are merged some time ago.
+Index: linux/include/linux/slab_def.h
+===================================================================
+--- linux.orig/include/linux/slab_def.h	2013-05-03 10:36:46.019564801 -0500
++++ linux/include/linux/slab_def.h	2013-05-03 10:37:28.860302188 -0500
+@@ -126,6 +126,11 @@ static __always_inline void *kmalloc(siz
+ 		if (!size)
+ 			return ZERO_SIZE_PTR;
 
-> > > > Additionally, we would like to introduce xm compatibility
-> > > > mode which is a bit different then xl normal behavior.
-> > >
-> > > When then you really don't want to be baking specifics of the current
-> > > model into the kernel, do you.
-> >
-> > Hmmm... Little misunderstanding. As I stated a few times I do not
-> > want bake any libxl or Xen stuff into Linux Kernel (including
-> > LIBXL_MAXMEM_CONSTANT). I just want to check limits which I think
-> > make sense in this case.
->
-> Sorry, I never noticed you saying that. Where was it?
++		if (size > KMALLOC_MAX_SIZE) {
++			WARN_ON(1);
++			return NULL;
++		}
++
+ 		i = kmalloc_index(size);
 
-Here http://lists.xen.org/archives/html/xen-devel/2013-04/msg03259.html
-I stated that I do not like this constant. I explained why this was done
-in that way. Later I found relevant commit which introduced it and asked
-authors about it. I think that shows that I am not happy with
-LIBXL_MAXMEM_CONSTANT and I am looking for good solution for this problem.
+ #ifdef CONFIG_ZONE_DMA
+@@ -172,6 +177,11 @@ static __always_inline void *kmalloc_nod
+ 		if (!size)
+ 			return ZERO_SIZE_PTR;
 
-Daniel
++		if (size > KMALLOC_MAX_SIZE) {
++			WARN_ON(1);
++			return NULL;
++		}
++
+ 		i = kmalloc_index(size);
+
+ #ifdef CONFIG_ZONE_DMA
+Index: linux/mm/slab_common.c
+===================================================================
+--- linux.orig/mm/slab_common.c	2013-05-03 10:36:46.019564801 -0500
++++ linux/mm/slab_common.c	2013-05-03 10:38:29.045351837 -0500
+@@ -373,6 +373,11 @@ struct kmem_cache *kmalloc_slab(size_t s
+ {
+ 	int index;
+
++	if (size > KMALLOC_MAX_SIZE) {
++		WARN_ON(1);
++		return NULL;
++	}
++
+ 	if (size <= 192) {
+ 		if (!size)
+ 			return ZERO_SIZE_PTR;
+
+
