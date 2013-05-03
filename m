@@ -1,139 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762886Ab3ECSCv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 14:02:51 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55596 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758925Ab3ECSCt (ORCPT
+	id S1762975Ab3ECSD3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 14:03:29 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:42294 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757851Ab3ECSD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 14:02:49 -0400
-Message-ID: <1367604167.5981.40.camel@dabdike>
-Subject: Re: [PATCH 1/1] cciss: bug fix to prevent cciss from loading in
- kdump crash kernel
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Mike Miller <mike.miller@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>
-Date: Fri, 03 May 2013 11:02:47 -0700
-In-Reply-To: <20130423172539.GA11255@beardog.cce.hp.com>
-References: <20130423172539.GA11255@beardog.cce.hp.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 3 May 2013 14:03:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <5182B557.4040804@wwwdotorg.org>
+References: <1365608728-30494-1-git-send-email-christian.ruppert@abilis.com>
+	<516EEAA0.10906@wwwdotorg.org>
+	<20130418090310.GA17636@ab42.lan>
+	<CACRpkdZd0_W432od5565phhUcJMRWiV9vXX4QVF4osKkxstC0Q@mail.gmail.com>
+	<20130429161725.GB30136@ab42.lan>
+	<5182B557.4040804@wwwdotorg.org>
+Date: Fri, 3 May 2013 20:03:27 +0200
+Message-ID: <CACRpkdaxO0q_P2wJFy3zv4F-QM9dZk54qW8ft350XqcBt1Gr1w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christian Ruppert <christian.ruppert@abilis.com>
+Cc: Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-23 at 12:25 -0500, Mike Miller wrote:
-> PATCH 1/1
-> 
-> By default the cciss driver supports all "older" HP Smart Array controllers
-> and hpsa supports all controllers starting with the G6 family. There are
-> module parameters that allow a user to override those defaults and use hpsa
-> for any HP Smart Array controller.
-> If the user does override the default behavior and uses hpsa for older
-> controllers it is possible that cciss may try to load in a kdump crash
-> kernel. This may happen if cciss is loaded first from the kdump initrd
-> image. If cciss does load rather than hpsa and reset_devices is true we
-> immediately call cciss_hard_reset_controller. This will result in a kernel
-> panic and the core file cannot be created.
-> This patch prevents cciss from trying to load in this scenario.
-> 
-> Tested with 3.9.0-rc7.
-> 
-> From: Mike <mike.miller@hp.com>
-> Signed-off-by: Mike Miller <mike.miller@hp.com>
-> 
-> ---
->  drivers/block/cciss.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-> index 1c1b8e5..06c8dba 100644
-> --- a/drivers/block/cciss.c
-> +++ b/drivers/block/cciss.c
-> @@ -4960,6 +4960,16 @@ static int cciss_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
->  	ctlr_info_t *h;
->  	unsigned long flags;
->  
-> +	/*
-> +	 * By default the cciss driver is used for all older HP Smart Array
-> +	 * controllers. There are module paramaters that allow a user to
-> +	 * override this behavior and instead use the hpsa SCSI driver. If
-> +	 * this is the case cciss may be loaded first from the kdump initrd
-> +	 * image and cause a kernel panic. So if reset_devices is true and
-> +	 * cciss_allow_hpsa is set just bail.
-> +	 */
-> +	if ((reset_devices) && (cciss_allow_hpsa == 1))
-> +		return -ENODEV;
->  	rc = cciss_init_reset_devices(pdev);
->  	if (rc) {
->  		if (rc != -ENOTSUPP)
+On Thu, May 2, 2013 at 8:49 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 04/29/2013 10:17 AM, Christian Ruppert wrote:
+>>>
+>>> So if this is what you want to achieve, just use the same number
+>>> as in your datasheet in the pin number -> problem solved.
+>>
+>> The problem is that we must support several products which are basically
+>> different packaging options of the same chip (or simplified versions
+>> thereof). Not all of those products will have the same number of pins
+>> and as a consequence, data sheet pin numbering will also be different.
+>> The port names are going to remain the same for all products, however.
+>> Some of the ports are just not going to be physically available in some
+>> or the products. Sorry if that wasn't clear from my previous mail.
+>
+> It sounds like you can use the exact same numbering scheme for all the
+> different packaging options; it's just that some of the pin numbers
+> simply won't exist on some of the packaging options, so while defined by
+> the DT binding, it simply won't make sense to use them?
+>
+> Certainly, Tegra20 has two packaging options, and the pinctrl driver for
+> it has zero knowledge of this. Perhaps we're just lucky though. I guess
+> the Tegra TRM doesn't define any "Pin number" (just "pin name") for the
+> pins, so there's no possibility of the same "number" meaning different
+> things in the two packages, so perhaps we're just getting lucky here.
 
-Sigh, right change log, incomplete bug fix.
+I am certain it must be possible to come up with something reasonable
+here, especially since this is using the device tree.
 
-Can we all agree that this is the right one?
+In U300 we had something like 4 different packaging types, all with
+different names on the pins, however I could avoid the entire
+issue by using pad numbers instead, i.e. the numbers of the pads/fingers
+on the silicon die inside the chip.
+(Documentation/pinctrl.txt contains hints on this.)
 
-James
+It seems like your situation is similar.
 
----
->From 746ba9f715b9037264ae0b8175c6286f5f8f62d4 Mon Sep 17 00:00:00 2001
-From: Mike Miller <mike.miller@hp.com>
-Date: Thu, 18 Apr 2013 13:49:37 -0500
-Subject: [PATCH] [SCSI] cciss: bug fix to prevent cciss from loading in kdump
- crash kernel
+And since you work for Abilis I assume you can access such low-level
+documentation and come up with a numbering scheme based on
+something that does not vary with packaging.
 
-By default the cciss driver supports all "older" HP Smart Array controllers
-and hpsa supports all controllers starting with the G6 family. There are
-module parameters that allow a user to override those defaults and use hpsa
-for any HP Smart Array controller.
-If the user does override the default behavior and uses hpsa for older
-controllers it is possible that cciss may try to load in a kdump crash
-kernel. This may happen if cciss is loaded first from the kdump initrd
-image. If cciss does load rather than hpsa and reset_devices is true we
-immediately call cciss_hard_reset_controller. This will result in a kernel
-panic and the core file cannot be created.
-This patch prevents cciss from trying to load in this scenario.
+And if you can't, and since you're using device tree, come up with
+a per-packainging pin numbering, put it into a special .dtsi file that
+you layer over the core SoC .dtsi file just to get these numbers,
+and then use the apropriate packaging .dtsi in yout eventual
+machine .dts file.
 
-Signed-off-by: Mike Miller <mike.miller@hp.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 1c1b8e5..daaab88 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -75,6 +75,12 @@ module_param(cciss_simple_mode, int, S_IRUGO|S_IWUSR);
- MODULE_PARM_DESC(cciss_simple_mode,
- 	"Use 'simple mode' rather than 'performant mode'");
- 
-+static int cciss_allow_hpsa;
-+module_param(cciss_allow_hpsa, int, S_IRUGO|S_IWUSR);
-+MODULE_PARM_DESC(cciss_allow_hpsa,
-+	"Prevent cciss driver from accessing hardware known to be "
-+	" supported by the hpsa driver");
-+
- static DEFINE_MUTEX(cciss_mutex);
- static struct proc_dir_entry *proc_cciss;
- 
-@@ -4960,6 +4966,16 @@ static int cciss_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	ctlr_info_t *h;
- 	unsigned long flags;
- 
-+	/*
-+	 * By default the cciss driver is used for all older HP Smart Array
-+	 * controllers. There are module paramaters that allow a user to
-+	 * override this behavior and instead use the hpsa SCSI driver. If
-+	 * this is the case cciss may be loaded first from the kdump initrd
-+	 * image and cause a kernel panic. So if reset_devices is true and
-+	 * cciss_allow_hpsa is set just bail.
-+	 */
-+	if ((reset_devices) && (cciss_allow_hpsa == 1))
-+		return -ENODEV;
- 	rc = cciss_init_reset_devices(pdev);
- 	if (rc) {
- 		if (rc != -ENOTSUPP)
-
-
+Yours,
+Linus Walleij
