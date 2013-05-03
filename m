@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933077Ab3ECOVw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:21:52 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:62205 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762307Ab3ECOVv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:21:51 -0400
-Date: Fri, 3 May 2013 15:21:46 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH 4/4 v2] staging: =?utf-8?Q?ste=5Frm?=
- =?utf-8?Q?i4=3A_Suppress_'ignoring_return_value_of_=E2=80=98regulator=5Fe?=
- =?utf-8?Q?nable=28=29'?= warning
-Message-ID: <20130503142146.GO24153@gmail.com>
-References: <1367509690-24022-1-git-send-email-lee.jones@linaro.org>
- <1367509690-24022-5-git-send-email-lee.jones@linaro.org>
+	id S933117Ab3ECOZP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:25:15 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50203 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932870Ab3ECOZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 10:25:13 -0400
+Date: Fri, 3 May 2013 16:29:00 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        David Rientjes <rientjes@google.com>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, penberg@kernel.org,
+        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
+        bp@suse.de, fengguang.wu@intel.com, linux-tip-commits@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for
+ building working KVM guest kernels
+Message-ID: <20130503142900.GA3433@pd.tnic>
+References: <20130426095140.GA15361@pd.tnic>
+ <tip-7e0320e733eec67e40d2b53e438d9971f079862d@git.kernel.org>
+ <alpine.DEB.2.02.1305021104440.2493@chino.kir.corp.google.com>
+ <5182AB66.6020307@linux.intel.com>
+ <20130502194556.GB3553@gmail.com>
+ <20130502200703.GE16684@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1367509690-24022-5-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <20130502200703.GE16684@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c:
-        In function ‘synaptics_rmi4_resume’:
-drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c:1090:18:
-        warning: ignoring return value of ‘regulator_enable’, declared
-        with attribute warn_unused_result [-Wunused-result
+On Thu, May 02, 2013 at 10:07:03PM +0200, Borislav Petkov wrote:a
+> I wonder if one can exclude options from randconfig until 'select' has
+> been taught to resolve dependencies...
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org
-Acked-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+So I talked to Michal on IRC about the whole deal and the fact of the
+matter is, unless someone steps up and rewrites the Kconfig solver so
+that selects work as expected, this option would break whenever one
+of those selected option's dependencies change or said option is made
+configurable.
 
-diff --git a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-index fe667dd..386362c 100644
---- a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-+++ b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-@@ -1087,7 +1087,11 @@ static int synaptics_rmi4_resume(struct device *dev)
- 	unsigned char intr_status;
- 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
- 
--	regulator_enable(rmi4_data->regulator);
-+	retval = regulator_enable(rmi4_data->regulator);
-+	if (retval) {
-+		dev_err(dev, "Regulator enable failed (%d)\n", retval);
-+		return retval;
-+	}
- 
- 	enable_irq(rmi4_data->i2c_client->irq);
- 	rmi4_data->touch_stopped = false;
+Which means, the next best thing would be to have a small file
+somewhere, maybe in scripts/kconfig/ or so, called 'allrand.config' and
+which has default settings for randconfig builds. It would have
+
+# CONFIG_KVM_GUEST_COMMON_OPTIONS is not set
+
+so that this option is always disabled in randconfigs.
+
+Frankly, I much rather prefer this than going nuts and including every
+possible dependency just so some obscure randconfigs don't break (that's
+not the point of this option anyway); and then having to run around and
+fix it once some of the selected option's dependencies change.
+
+Opinions?
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
