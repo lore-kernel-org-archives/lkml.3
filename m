@@ -1,135 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762257Ab3ECACP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 20:02:15 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:42146 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762117Ab3ECABi (ORCPT
+	id S932879Ab3ECAC1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 20:02:27 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:35737 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761867Ab3ECACW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 20:01:38 -0400
+	Thu, 2 May 2013 20:02:22 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Linux MM <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>,
         Simon Jeons <simon.jeons@gmail.com>
-Subject: [RFC PATCH v3 18/31] drivers/base/node: add unregister_mem_block_under_nodes()
-Date: Thu,  2 May 2013 17:00:50 -0700
-Message-Id: <1367539263-19999-19-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [RFC PATCH v3 11/31] page-flags dnuma: reserve a pageflag for determining if a page needs a node lookup.
+Date: Thu,  2 May 2013 17:00:43 -0700
+Message-Id: <1367539263-19999-12-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.2
 In-Reply-To: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050300-3620-0000-0000-0000024F5427
+x-cbid: 13050300-5518-0000-0000-00000E3E2D63
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provides similar functionality to
-unregister_mem_block_section_under_nodes() (which was previously named
-identically to the newly added funtion), but operates on all memory
-sections included in the memory block, not just the specified one.
----
- drivers/base/node.c  | 53 +++++++++++++++++++++++++++++++++++++++-------------
- include/linux/node.h |  6 ++++++
- 2 files changed, 46 insertions(+), 13 deletions(-)
+Add a pageflag called "lookup_node"/ PG_lookup_node / Page*LookupNode().
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index d3f981e..2861ef6 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -424,6 +424,24 @@ int register_mem_block_under_node(struct memory_block *mem_blk, int nid)
- 	return 0;
- }
+Used by dynamic numa to indicate when a page has a new node assignment
+waiting for it.
+
+FIXME: This also exempts PG_lookup_node from PAGE_FLAGS_CHECK_AT_PREP
+due to the asynchronous usage of PG_lookup_node, which needs to be
+avoided.
+
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ include/linux/page-flags.h | 19 +++++++++++++++++++
+ mm/page_alloc.c            |  3 +++
+ 2 files changed, 22 insertions(+)
+
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index 6d53675..09dd94e 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -109,6 +109,9 @@ enum pageflags {
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	PG_compound_lock,
+ #endif
++#ifdef CONFIG_DYNAMIC_NUMA
++	PG_lookup_node,		/* extra lookup required to find real node */
++#endif
+ 	__NR_PAGEFLAGS,
  
-+static void unregister_mem_block_pfn_under_nodes(struct memory_block *mem_blk,
-+		unsigned long pfn, nodemask_t *unlinked_nodes)
-+{
-+	int nid;
-+
-+	nid = get_nid_for_pfn(pfn);
-+	if (nid < 0)
-+		return;
-+	if (!node_online(nid))
-+		return;
-+	if (node_test_and_set(nid, *unlinked_nodes))
-+		return;
-+	sysfs_remove_link(&node_devices[nid]->dev.kobj,
-+			kobject_name(&mem_blk->dev.kobj));
-+	sysfs_remove_link(&mem_blk->dev.kobj,
-+			kobject_name(&node_devices[nid]->dev.kobj));
-+}
-+
- /*
-  * unregister memory block under all nodes that a particular section it
-  * contains spans spans
-@@ -444,20 +462,29 @@ int unregister_mem_block_section_under_nodes(struct memory_block *mem_blk,
+ 	/* Filesystems */
+@@ -275,6 +278,17 @@ PAGEFLAG_FALSE(HWPoison)
+ #define __PG_HWPOISON 0
+ #endif
  
- 	sect_start_pfn = section_nr_to_pfn(sec_num);
- 	sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
--	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++) {
--		int nid;
-+	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++)
-+		unregister_mem_block_pfn_under_nodes(mem_blk, pfn,
-+				unlinked_nodes);
-+	NODEMASK_FREE(unlinked_nodes);
-+	return 0;
-+}
- 
--		nid = get_nid_for_pfn(pfn);
--		if (nid < 0)
--			continue;
--		if (!node_online(nid))
--			continue;
--		if (node_test_and_set(nid, *unlinked_nodes))
--			continue;
--		sysfs_remove_link(&node_devices[nid]->dev.kobj,
--			 kobject_name(&mem_blk->dev.kobj));
--		sysfs_remove_link(&mem_blk->dev.kobj,
--			 kobject_name(&node_devices[nid]->dev.kobj));
-+int unregister_mem_block_under_nodes(struct memory_block *mem_blk)
-+{
-+	NODEMASK_ALLOC(nodemask_t, unlinked_nodes, GFP_KERNEL);
-+	unsigned long pfn, sect_start_pfn, sect_end_pfn, sec_num;
++/* Setting is unconditional, simply leads to an extra lookup.
++ * Clearing must be conditional so we don't miss any memlayout changes.
++ */
++#ifdef CONFIG_DYNAMIC_NUMA
++PAGEFLAG(LookupNode, lookup_node)
++TESTCLEARFLAG(LookupNode, lookup_node)
++#else
++PAGEFLAG_FALSE(LookupNode)
++TESTCLEARFLAG_FALSE(LookupNode)
++#endif
 +
-+	if (!unlinked_nodes)
-+		return -ENOMEM;
-+	nodes_clear(*unlinked_nodes);
-+
-+	for (sec_num = mem_blk->start_section_nr;
-+			sec_num < mem_blk->end_section_nr; sec_num++) {
-+		sect_start_pfn = section_nr_to_pfn(sec_num);
-+		sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
-+		for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++)
-+			unregister_mem_block_pfn_under_nodes(mem_blk, pfn,
-+					unlinked_nodes);
- 	}
- 	NODEMASK_FREE(unlinked_nodes);
- 	return 0;
-diff --git a/include/linux/node.h b/include/linux/node.h
-index f438c45..04b464e 100644
---- a/include/linux/node.h
-+++ b/include/linux/node.h
-@@ -41,6 +41,7 @@ extern int register_mem_block_under_node(struct memory_block *mem_blk,
- extern int unregister_mem_block_section_under_nodes(
- 					struct memory_block *mem_blk,
- 					unsigned long sec_nr);
-+extern int unregister_mem_block_under_nodes(struct memory_block *mem_blk);
+ u64 stable_page_flags(struct page *page);
  
- #ifdef CONFIG_HUGETLBFS
- extern void register_hugetlbfs_with_node(node_registration_func_t doregister,
-@@ -75,6 +76,11 @@ static inline int unregister_mem_block_section_under_nodes(
- 	return 0;
- }
+ static inline int PageUptodate(struct page *page)
+@@ -509,7 +523,12 @@ static inline void ClearPageSlabPfmemalloc(struct page *page)
+  * Pages being prepped should not have any flags set.  It they are set,
+  * there has been a kernel bug or struct page corruption.
+  */
++#ifndef CONFIG_DYNAMIC_NUMA
+ #define PAGE_FLAGS_CHECK_AT_PREP	((1 << NR_PAGEFLAGS) - 1)
++#else
++#define PAGE_FLAGS_CHECK_AT_PREP	(((1 << NR_PAGEFLAGS) - 1) \
++						& ~(1 << PG_lookup_node))
++#endif
  
-+static inline int unregister_mem_block_under_nodes(struct memory_block *mem_blk)
-+{
-+	return 0;
-+}
-+
- static inline void register_hugetlbfs_with_node(node_registration_func_t reg,
- 						node_registration_func_t unreg)
- {
+ #define PAGE_FLAGS_PRIVATE				\
+ 	(1 << PG_private | 1 << PG_private_2)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9de55a2..ea4fda8 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6238,6 +6238,9 @@ static const struct trace_print_flags pageflag_names[] = {
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	{1UL << PG_compound_lock,	"compound_lock"	},
+ #endif
++#ifdef CONFIG_DYNAMIC_NUMA
++	{1UL << PG_lookup_node,		"lookup_node"   },
++#endif
+ };
+ 
+ static void dump_page_flags(unsigned long flags)
 -- 
 1.8.2.2
 
