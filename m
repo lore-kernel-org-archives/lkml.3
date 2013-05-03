@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934441Ab3ECXBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 19:01:18 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:63483 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934423Ab3ECXBN (ORCPT
+	id S934468Ab3ECXBi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 19:01:38 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:61711 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934396Ab3ECXBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 19:01:13 -0400
+	Fri, 3 May 2013 19:01:09 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         linux-fbdev@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Michal Januszewski <spock@gentoo.org>
-Subject: [PATCH 7/7] uvesafb: Clean up MTRR code
-Date: Fri,  3 May 2013 16:00:35 -0700
-Message-Id: <1692ae3da2fd85aaa267d7d38954bc701f9f7bfd.1367621039.git.luto@amacapital.net>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 6/7] radeon: Switch to drm_mtrr_add_wc and add a missing drm_mtrr_del_wc
+Date: Fri,  3 May 2013 16:00:34 -0700
+Message-Id: <134d5e30d48f0355d1558597333aab2a680dfbdd.1367621039.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <cover.1367621038.git.luto@amacapital.net>
 References: <cover.1367621038.git.luto@amacapital.net>
@@ -24,181 +23,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old code allowed very strange memory types.  Now it works like
-all the other video drivers: ioremap_wc is used unconditionally,
-and MTRRs are set if PAT is unavailable (unless MTRR is disabled
-by a module parameter).
-
-UC, WB, and WT support is gone.  If there are MTRR conflicts that prevent
-addition of a WC MTRR, adding a non-conflicting MTRR is pointless; it's
-better to just turn off MTRR support entirely.
-
-As an added bonus, any MTRR added is freed on unload.
-
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
+ drivers/gpu/drm/radeon/radeon_object.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-I can't test this -- the link to v86d in Documentation/fb/uvesafb.txt
-seems to be broken, and Fedora doesn't seem to package it.
-
- Documentation/fb/uvesafb.txt | 16 ++++------
- drivers/video/uvesafb.c      | 70 ++++++++++++--------------------------------
- include/video/uvesafb.h      |  1 +
- 3 files changed, 24 insertions(+), 63 deletions(-)
-
-diff --git a/Documentation/fb/uvesafb.txt b/Documentation/fb/uvesafb.txt
-index eefdd91..f6362d8 100644
---- a/Documentation/fb/uvesafb.txt
-+++ b/Documentation/fb/uvesafb.txt
-@@ -81,17 +81,11 @@ pmipal  Use the protected mode interface for palette changes.
- 
- mtrr:n  Setup memory type range registers for the framebuffer
-         where n:
--              0 - disabled (equivalent to nomtrr) (default)
--              1 - uncachable
--              2 - write-back
--              3 - write-combining
--              4 - write-through
--
--        If you see the following in dmesg, choose the type that matches
--        the old one.  In this example, use "mtrr:2".
--...
--mtrr: type mismatch for e0000000,8000000 old: write-back new: write-combining
--...
-+              0 - disabled (equivalent to nomtrr)
-+              3 - write-combining (default)
-+
-+	Values other than 0 and 3 will result in a warning and will be
-+	treated just like 3.
- 
- nomtrr  Do not use memory type range registers.
- 
-diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
-index d428445..4f447ad 100644
---- a/drivers/video/uvesafb.c
-+++ b/drivers/video/uvesafb.c
-@@ -24,9 +24,7 @@
- #ifdef CONFIG_X86
- #include <video/vga.h>
- #endif
--#ifdef CONFIG_MTRR
- #include <asm/mtrr.h>
--#endif
- #include "edid.h"
- 
- static struct cb_id uvesafb_cn_id = {
-@@ -1540,67 +1538,31 @@ static void uvesafb_init_info(struct fb_info *info, struct vbe_mode_ib *mode)
- 
- static void uvesafb_init_mtrr(struct fb_info *info)
+diff --git a/drivers/gpu/drm/radeon/radeon_object.c b/drivers/gpu/drm/radeon/radeon_object.c
+index d3aface..01d4906 100644
+--- a/drivers/gpu/drm/radeon/radeon_object.c
++++ b/drivers/gpu/drm/radeon/radeon_object.c
+@@ -321,8 +321,8 @@ void radeon_bo_force_delete(struct radeon_device *rdev)
+ int radeon_bo_init(struct radeon_device *rdev)
  {
--#ifdef CONFIG_MTRR
-+	struct uvesafb_par *par = info->par;
-+
- 	if (mtrr && !(info->fix.smem_start & (PAGE_SIZE - 1))) {
- 		int temp_size = info->fix.smem_len;
--		unsigned int type = 0;
- 
--		switch (mtrr) {
--		case 1:
--			type = MTRR_TYPE_UNCACHABLE;
--			break;
--		case 2:
--			type = MTRR_TYPE_WRBACK;
--			break;
--		case 3:
--			type = MTRR_TYPE_WRCOMB;
--			break;
--		case 4:
--			type = MTRR_TYPE_WRTHROUGH;
--			break;
--		default:
--			type = 0;
--			break;
--		}
-+		int rc;
- 
--		if (type) {
--			int rc;
-+		/* Find the largest power-of-two */
-+		temp_size = roundup_pow_of_two(temp_size);
- 
--			/* Find the largest power-of-two */
--			temp_size = roundup_pow_of_two(temp_size);
-+		/* Try and find a power of two to add */
-+		do {
-+			rc = mtrr_add_wc_if_needed(info->fix.smem_start,
-+						   temp_size);
-+			temp_size >>= 1;
-+		} while (temp_size >= PAGE_SIZE && rc == -EINVAL);
- 
--			/* Try and find a power of two to add */
--			do {
--				rc = mtrr_add(info->fix.smem_start,
--					      temp_size, type, 1);
--				temp_size >>= 1;
--			} while (temp_size >= PAGE_SIZE && rc == -EINVAL);
--		}
-+		if (rc >= 0)
-+			par->mtrr_handle = rc;
- 	}
--#endif /* CONFIG_MTRR */
- }
- 
- static void uvesafb_ioremap(struct fb_info *info)
+ 	/* Add an MTRR for the VRAM */
+-	rdev->mc.vram_mtrr = mtrr_add(rdev->mc.aper_base, rdev->mc.aper_size,
+-			MTRR_TYPE_WRCOMB, 1);
++	rdev->mc.vram_mtrr = drm_mtrr_add_wc(rdev->mc.aper_base,
++					     rdev->mc.aper_size);
+ 	DRM_INFO("Detected VRAM RAM=%lluM, BAR=%lluM\n",
+ 		rdev->mc.mc_vram_size >> 20,
+ 		(unsigned long long)rdev->mc.aper_size >> 20);
+@@ -334,6 +334,7 @@ int radeon_bo_init(struct radeon_device *rdev)
+ void radeon_bo_fini(struct radeon_device *rdev)
  {
--#ifdef CONFIG_X86
--	switch (mtrr) {
--	case 1: /* uncachable */
--		info->screen_base = ioremap_nocache(info->fix.smem_start, info->fix.smem_len);
--		break;
--	case 2: /* write-back */
--		info->screen_base = ioremap_cache(info->fix.smem_start, info->fix.smem_len);
--		break;
--	case 3: /* write-combining */
--		info->screen_base = ioremap_wc(info->fix.smem_start, info->fix.smem_len);
--		break;
--	case 4: /* write-through */
--	default:
--		info->screen_base = ioremap(info->fix.smem_start, info->fix.smem_len);
--		break;
--	}
--#else
--	info->screen_base = ioremap(info->fix.smem_start, info->fix.smem_len);
--#endif /* CONFIG_X86 */
-+	info->screen_base = ioremap_wc(info->fix.smem_start, info->fix.smem_len);
+ 	radeon_ttm_fini(rdev);
++	drm_mtrr_del_wc(rdev->mc.vram_mtrr);
  }
  
- static ssize_t uvesafb_show_vbe_ver(struct device *dev,
-@@ -1851,6 +1813,7 @@ static int uvesafb_remove(struct platform_device *dev)
- 		unregister_framebuffer(info);
- 		release_region(0x3c0, 32);
- 		iounmap(info->screen_base);
-+		mtrr_del_wc_if_needed(par->mtrr_handle);
- 		release_mem_region(info->fix.smem_start, info->fix.smem_len);
- 		fb_destroy_modedb(info->monspecs.modedb);
- 		fb_dealloc_cmap(&info->cmap);
-@@ -1930,6 +1893,9 @@ static int uvesafb_setup(char *options)
- 		}
- 	}
- 
-+	if (mtrr != 3 && mtrr != 1)
-+		pr_warn("uvesafb: mtrr should be set to 0 or 3; %d is unsupported", mtrr);
-+
- 	return 0;
- }
- #endif /* !MODULE */
-diff --git a/include/video/uvesafb.h b/include/video/uvesafb.h
-index 1a91850..30f5362 100644
---- a/include/video/uvesafb.h
-+++ b/include/video/uvesafb.h
-@@ -134,6 +134,7 @@ struct uvesafb_par {
- 
- 	int mode_idx;
- 	struct vbe_crtc_ib crtc;
-+	int mtrr_handle;
- };
- 
- #endif /* _UVESAFB_H */
+ void radeon_bo_list_add_object(struct radeon_bo_list *lobj,
 -- 
 1.8.1.4
 
