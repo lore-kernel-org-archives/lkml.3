@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab3ECEsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 00:48:51 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:58822 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab3ECEst (ORCPT
+	id S1755605Ab3ECEta (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 00:49:30 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:40244 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715Ab3ECEt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 00:48:49 -0400
+	Fri, 3 May 2013 00:49:28 -0400
 From: kosaki.motohiro@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: Olivier Langlois <olivier@trillion01.com>,
@@ -14,9 +14,9 @@ Cc: Olivier Langlois <olivier@trillion01.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 1/7] posix-cpu-timers: don't account cpu timer after stopped thread runtime accounting
-Date: Fri,  3 May 2013 00:47:42 -0400
-Message-Id: <1367556468-4021-3-git-send-email-kosaki.motohiro@gmail.com>
+Subject: [PATCH 2/7] posix-cpu-timers: fix acounting delta_exec twice
+Date: Fri,  3 May 2013 00:47:43 -0400
+Message-Id: <1367556468-4021-4-git-send-email-kosaki.motohiro@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1367556468-4021-1-git-send-email-kosaki.motohiro@gmail.com>
 References: <1367556468-4021-1-git-send-email-kosaki.motohiro@gmail.com>
@@ -26,44 +26,189 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-When tsk->signal->cputimer->running is 1, signal->cputimer and
-tsk->sum_sched_runtime increase at the same pace because update_curr()
-increases both accounting.
+Currently glibc rt/tst-cpuclock2 test(*) sporadically fails because
+scheduler delta can be accounted twice from thread_group_cputimer()
+and account_group_exec_runtime().
 
-However, there is one exception. When thread exiting, __exit_signal() turns
-over task's sum_shced_runtime to sig->sum_sched_runtime, but it doesn't stop
-signal->cputimer accounting.
+Finally, clock_nanosleep() wakes up before an argument. This is posix
+violation. This issue was introduced by commit d670ec1317 (posix-cpu-timers:
+Cure SMP wobbles).
 
-This inconsistency makes POSIX timer wake up too early. This patch fixes it.
+(*) http://sourceware.org/git/?p=glibc.git;a=blob;f=rt/tst-cpuclock2.c;h=6752721717f959e89c0d692b3f1ee082d507eec2;hb=HEAD
 
+Cc: Olivier Langlois <olivier@trillion01.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
- kernel/sched/stats.h |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ fs/binfmt_elf.c           |    2 +-
+ fs/binfmt_elf_fdpic.c     |    2 +-
+ include/linux/sched.h     |    4 ++--
+ kernel/posix-cpu-timers.c |   15 ++++++++++-----
+ kernel/sched/core.c       |    6 ++++--
+ kernel/sched/cputime.c    |    8 ++++----
+ 6 files changed, 22 insertions(+), 15 deletions(-)
 
-diff --git a/kernel/sched/stats.h b/kernel/sched/stats.h
-index 2ef90a5..5a0cfc4 100644
---- a/kernel/sched/stats.h
-+++ b/kernel/sched/stats.h
-@@ -225,6 +225,13 @@ static inline void account_group_exec_runtime(struct task_struct *tsk,
- 	if (!cputimer->running)
- 		return;
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 86af964..fea51e7 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -1322,7 +1322,7 @@ static void fill_prstatus(struct elf_prstatus *prstatus,
+ 		 * This is the record for the group leader.  It shows the
+ 		 * group-wide total, not its individual thread total.
+ 		 */
+-		thread_group_cputime(p, &cputime);
++		thread_group_cputime(p, true, &cputime);
+ 		cputime_to_timeval(cputime.utime, &prstatus->pr_utime);
+ 		cputime_to_timeval(cputime.stime, &prstatus->pr_stime);
+ 	} else {
+diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
+index 9c13e02..ab5b508 100644
+--- a/fs/binfmt_elf_fdpic.c
++++ b/fs/binfmt_elf_fdpic.c
+@@ -1371,7 +1371,7 @@ static void fill_prstatus(struct elf_prstatus *prstatus,
+ 		 * This is the record for the group leader.  It shows the
+ 		 * group-wide total, not its individual thread total.
+ 		 */
+-		thread_group_cputime(p, &cputime);
++		thread_group_cputime(p, true, &cputime);
+ 		cputime_to_timeval(cputime.utime, &prstatus->pr_utime);
+ 		cputime_to_timeval(cputime.stime, &prstatus->pr_stime);
+ 	} else {
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e692a02..7863d4b 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2002,7 +2002,7 @@ static inline void disable_sched_clock_irqtime(void) {}
+ #endif
  
-+	/*
-+	 * After turning over se.sum_exec_runtime to sig->sum_sched_runtime
-+	 * in __exit_signal(), we must not account exec_runtime for consistency.
-+	 */
-+	if (unlikely(!tsk->sighand))
-+		return;
-+
- 	raw_spin_lock(&cputimer->lock);
- 	cputimer->cputime.sum_exec_runtime += ns;
- 	raw_spin_unlock(&cputimer->lock);
+ extern unsigned long long
+-task_sched_runtime(struct task_struct *task);
++task_sched_runtime(struct task_struct *task, bool add_delta);
+ 
+ /* sched_exec is called by processes performing an exec */
+ #ifdef CONFIG_SMP
+@@ -2625,7 +2625,7 @@ static inline int spin_needbreak(spinlock_t *lock)
+ /*
+  * Thread group CPU time accounting.
+  */
+-void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times);
++void thread_group_cputime(struct task_struct *tsk, bool add_delta, struct task_cputime *times);
+ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times);
+ 
+ static inline void thread_group_cputime_init(struct signal_struct *sig)
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 8fd709c..e56be4c 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -220,7 +220,7 @@ static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
+ 		cpu->cpu = virt_ticks(p);
+ 		break;
+ 	case CPUCLOCK_SCHED:
+-		cpu->sched = task_sched_runtime(p);
++		cpu->sched = task_sched_runtime(p, true);
+ 		break;
+ 	}
+ 	return 0;
+@@ -250,8 +250,13 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
+ 		 * values through the TIMER_ABSTIME flag, therefore we have
+ 		 * to synchronize the timer to the clock every time we start
+ 		 * it.
++		 *
++		 * Do not add the current delta, because
++		 * account_group_exec_runtime() will also this delta and we
++		 * wouldn't want to double account time and get ahead of
++		 * ourselves.
+ 		 */
+-		thread_group_cputime(tsk, &sum);
++		thread_group_cputime(tsk, false, &sum);
+ 		raw_spin_lock_irqsave(&cputimer->lock, flags);
+ 		cputimer->running = 1;
+ 		update_gt_cputime(&cputimer->cputime, &sum);
+@@ -275,15 +280,15 @@ static int cpu_clock_sample_group(const clockid_t which_clock,
+ 	default:
+ 		return -EINVAL;
+ 	case CPUCLOCK_PROF:
+-		thread_group_cputime(p, &cputime);
++		thread_group_cputime(p, true, &cputime);
+ 		cpu->cpu = cputime.utime + cputime.stime;
+ 		break;
+ 	case CPUCLOCK_VIRT:
+-		thread_group_cputime(p, &cputime);
++		thread_group_cputime(p, true, &cputime);
+ 		cpu->cpu = cputime.utime;
+ 		break;
+ 	case CPUCLOCK_SCHED:
+-		thread_group_cputime(p, &cputime);
++		thread_group_cputime(p, true, &cputime);
+ 		cpu->sched = cputime.sum_exec_runtime;
+ 		break;
+ 	}
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 67d0465..ad3339f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2664,14 +2664,16 @@ unsigned long long task_delta_exec(struct task_struct *p)
+  * In case the task is currently running, return the runtime plus current's
+  * pending runtime that have not been accounted yet.
+  */
+-unsigned long long task_sched_runtime(struct task_struct *p)
++unsigned long long task_sched_runtime(struct task_struct *p, bool add_delta)
+ {
+ 	unsigned long flags;
+ 	struct rq *rq;
+ 	u64 ns = 0;
+ 
+ 	rq = task_rq_lock(p, &flags);
+-	ns = p->se.sum_exec_runtime + do_task_delta_exec(p, rq);
++	ns = p->se.sum_exec_runtime;
++	if (add_delta)
++		ns += do_task_delta_exec(p, rq);
+ 	task_rq_unlock(rq, p, &flags);
+ 
+ 	return ns;
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index e93cca9..69d3f6c 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -293,7 +293,7 @@ static __always_inline bool steal_account_process_tick(void)
+  * Accumulate raw cputime values of dead tasks (sig->[us]time) and live
+  * tasks (sum on group iteration) belonging to @tsk's group.
+  */
+-void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
++void thread_group_cputime(struct task_struct *tsk, bool add_delta, struct task_cputime *times)
+ {
+ 	struct signal_struct *sig = tsk->signal;
+ 	cputime_t utime, stime;
+@@ -313,7 +313,7 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+ 		task_cputime(t, &utime, &stime);
+ 		times->utime += utime;
+ 		times->stime += stime;
+-		times->sum_exec_runtime += task_sched_runtime(t);
++		times->sum_exec_runtime += task_sched_runtime(t, add_delta);
+ 	} while_each_thread(tsk, t);
+ out:
+ 	rcu_read_unlock();
+@@ -459,7 +459,7 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
+ {
+ 	struct task_cputime cputime;
+ 
+-	thread_group_cputime(p, &cputime);
++	thread_group_cputime(p, true, &cputime);
+ 
+ 	*ut = cputime.utime;
+ 	*st = cputime.stime;
+@@ -594,7 +594,7 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
+ {
+ 	struct task_cputime cputime;
+ 
+-	thread_group_cputime(p, &cputime);
++	thread_group_cputime(p, true, &cputime);
+ 	cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
+ }
+ #endif /* !CONFIG_VIRT_CPU_ACCOUNTING */
 -- 
 1.7.1
 
