@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933723Ab3ECRFi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 13:05:38 -0400
-Received: from mail-gh0-f179.google.com ([209.85.160.179]:57393 "EHLO
-	mail-gh0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932481Ab3ECRFh (ORCPT
+	id S933780Ab3ECRGZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 13:06:25 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47180 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932481Ab3ECRGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 13:05:37 -0400
-Date: Fri, 3 May 2013 12:57:20 -0400
-From: Josh Boyer <jwboyer@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Dave Airlie <airlied@linux.ie>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: [git pull] drm for 3.10-rc1
-Message-ID: <20130503165720.GC8320@zod.gha.chartermi.net>
-References: <alpine.DEB.2.00.1305030224580.12778@skynet.skynet.ie>
- <20130503143951.GB8320@zod.gha.chartermi.net>
- <CAKMK7uF46a87KDg=n-rLhq2kjuPCpexHGwfR9UcPc_smZjqQzg@mail.gmail.com>
+	Fri, 3 May 2013 13:06:23 -0400
+Date: Fri, 3 May 2013 19:04:47 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+Message-ID: <20130503170447.GB30733@dyad.programming.kicks-ass.net>
+References: <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
+ <20130502072623.GE7521@dyad.programming.kicks-ass.net>
+ <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg>
+ <20130502173257.GX3780@linux.vnet.ibm.com>
+ <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg>
+ <20130502193409.GA3780@linux.vnet.ibm.com>
+ <alpine.LFD.2.00.1305022249010.25417@ja.ssi.bg>
+ <20130502223107.GB3780@linux.vnet.ibm.com>
+ <alpine.LFD.2.00.1305031024080.1657@ja.ssi.bg>
+ <20130503163045.GE3780@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKMK7uF46a87KDg=n-rLhq2kjuPCpexHGwfR9UcPc_smZjqQzg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130503163045.GE3780@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 06:08:52PM +0200, Daniel Vetter wrote:
->On Fri, May 3, 2013 at 4:39 PM, Josh Boyer <jwboyer@gmail.com> wrote:
->> On Fri, May 03, 2013 at 02:25:57AM +0100, Dave Airlie wrote:
->>>The following changes since commit b6a9b7f6b1f21735a7456d534dc0e68e61359d2c:
->>>
->>>  mm: prevent mmap_cache race in find_vma() (2013-04-04 11:46:28 -0700)
->>>
->>>are available in the git repository at:
->>>
->>>  git://people.freedesktop.org/~airlied/linux.git drm-next
->>>
->>>for you to fetch changes up to 307b9c022720f9de90d58e51743e01e9a42aec59:
->>>
->>>  qxl: update to new idr interfaces. (2013-05-03 10:37:20 +1000)
->>>
->>>----------------------------------------------------------------
->>
->> So something in this batch of commits breaks a Macbook Pro Retina I have
->> sitting here.  If I boot a Fedora kernel based on  Linux
->> v3.9-8153-g5a148af, things boot up as they did previously with 3.9.0 and
->> are generally working fine.  If I boot with a kernel based on Linux
->> v3.9-8933-gce85722, it will boot but as soon as plymouth starts, I get
->> nothing but static on the screen (like 1950s TV static).
->>
->> This machine is using i915 graphics, so I booted with nomodeset and did
->> the 'modprobe drm debug=15; modprobe i915 modeset=1' trick and it
->> repeated the failure with that.  I've gathered a bunch of data like
->> dmesg, an intel_reg_snapshot, etc.  It's all attached below.
->>
->> I'll start bisecting to see if I can narrow down the commit that broke
->> things, but I thought I would give a heads up now in case anyone has any
->> ideas.
->
->Looked through the log files and didn't see a clue. And usually DP
->tends to fail pretty noisily. So I think the bisect result would be
->interestin. Meanwhile:
+> The key point is that I don't understand why we cannot get the effect
+> we are looking for with the following in sched.h (or wherever):
+> 
+> static inline int cond_resched_rcu(void)
+> {
+> #if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_PREEMPT_RCU)
+> 	rcu_read_unlock();
+> 	cond_resched();
+> 	rcu_read_lock();
+> #endif
+> }
+> 
+> This adds absolutely no overhead in non-debug builds of CONFIG_PREEMPT_RCU,
+> does the checking in debug builds, and allows voluntary preemption in
+> !CONFIG_PREEMPT_RCU builds.  CONFIG_PROVE_RCU builds will check for an
+> (illegal) outer rcu_read_lock() in CONFIG_PREEMPT_RCU builds, and you
+> will get "scheduling while atomic" in response to an outer rcu_read_lock()
+> in !CONFIG_PREEMPT_RCU builds.
+> 
+> It also seems to me a lot simpler.
+> 
+> Does this work, or am I still missing something?
 
-Yeah, working on that.
-
->- do you have drm.debug=0xe dmesg for a working kernel, too?
-
-No, but I can try and get one.
-
->- is the panel completely dead or is just the backlight on (or panel
->on but backlight off)?
-
-Backlight is on.  Literally static flickering on the screen.
-Occasionally it will flicker from static to black back and forth.  But
-the backlight is clearly on and what is trying to render (the GDM screen
-normally) is just coming up as static.
-
-josh
+It can do quite a number of superfluous rcu_read_unlock()/lock() pairs for
+voluntary preemption kernels?
