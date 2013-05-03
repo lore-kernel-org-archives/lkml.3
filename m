@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933263Ab3ECOeB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:34:01 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:61910 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933397Ab3ECOd5 (ORCPT
+	id S933510Ab3ECOeW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:34:22 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:43657 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762442Ab3ECOeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:33:57 -0400
+	Fri, 3 May 2013 10:34:13 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 16/63] ARM: ux500: Remove superfluous 'psize' attribute from Audio platform data
-Date: Fri,  3 May 2013 15:32:02 +0100
-Message-Id: <1367591569-32197-17-git-send-email-lee.jones@linaro.org>
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
+Subject: [PATCH 23/63] dmaengine: ste_dma40: Also report the number of logical channels
+Date: Fri,  3 May 2013 15:32:09 +0100
+Message-Id: <1367591569-32197-24-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
 References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
@@ -21,106 +23,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'psize' is used to calculate the maximum DMA burst size. However it
-is only taken into consideration when editing the DMA channel's
-configuration. The Audio DMA platform data is only used to allocate
-a channel, not configure it. That will be done at a later date within
-the MSP driver.
+Now we know the total of physical and logical channels, we may as
+well report them within the information log.
 
-We're also removing comments which are no longer required, as
-'data_width' is no longer set in any device's platform data period.
+Before:
+dma40 dma40.0: hardware revision: 3 @ 0x801c0000 with 8 physical channels
 
+After:
+<as above ...> and 256 logical channels
+
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <djbw@fb.com>
+Cc: Per Forlin <per.forlin@stericsson.com>
+Cc: Rabin Vincent <rabin@rab.in>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-audio.c |   38 ------------------------------
- 1 file changed, 38 deletions(-)
+ drivers/dma/ste_dma40.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-audio.c b/arch/arm/mach-ux500/board-mop500-audio.c
-index f012cfa..972bec0 100644
---- a/arch/arm/mach-ux500/board-mop500-audio.c
-+++ b/arch/arm/mach-ux500/board-mop500-audio.c
-@@ -23,25 +23,13 @@
- static struct stedma40_chan_cfg msp0_dma_rx = {
- 	.high_priority = true,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
--
- 	.dev_type = DB8500_DMA_DEV31_MSP0_SLIM0_CH0,
--
--	.src_info.psize = STEDMA40_PSIZE_LOG_4,
--	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
--
--	/* data_width is set during configuration */
- };
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index e5f0e3c..6d81f44 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -3213,8 +3213,9 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
  
- static struct stedma40_chan_cfg msp0_dma_tx = {
- 	.high_priority = true,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
--
- 	.dev_type = DB8500_DMA_DEV31_MSP0_SLIM0_CH0,
--
--	.src_info.psize = STEDMA40_PSIZE_LOG_4,
--	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
--
--	/* data_width is set during configuration */
- };
+ 	num_log_chans = num_phy_chans * D40_MAX_LOG_CHAN_PER_PHY;
  
- struct msp_i2s_platform_data msp0_platform_data = {
-@@ -53,25 +41,13 @@ struct msp_i2s_platform_data msp0_platform_data = {
- static struct stedma40_chan_cfg msp1_dma_rx = {
- 	.high_priority = true,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
--
- 	.dev_type = DB8500_DMA_DEV30_MSP3,
--
--	.src_info.psize = STEDMA40_PSIZE_LOG_4,
--	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
--
--	/* data_width is set during configuration */
- };
+-	dev_info(&pdev->dev, "hardware revision: %d @ 0x%x with %d physical channels\n",
+-		 rev, res->start, num_phy_chans);
++	dev_info(&pdev->dev,
++		 "hardware rev: %d @ 0x%x with %d physical and %d logical channels\n",
++		 rev, res->start, num_phy_chans, num_log_chans);
  
- static struct stedma40_chan_cfg msp1_dma_tx = {
- 	.high_priority = true,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
--
- 	.dev_type = DB8500_DMA_DEV30_MSP1,
--
--	.src_info.psize = STEDMA40_PSIZE_LOG_4,
--	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
--
--	/* data_width is set during configuration */
- };
- 
- struct msp_i2s_platform_data msp1_platform_data = {
-@@ -83,29 +59,15 @@ struct msp_i2s_platform_data msp1_platform_data = {
- static struct stedma40_chan_cfg msp2_dma_rx = {
- 	.high_priority = true,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
--
- 	.dev_type = DB8500_DMA_DEV14_MSP2,
--
--	/* MSP2 DMA doesn't work with PSIZE == 4 on DB8500v2 */
--	.src_info.psize = STEDMA40_PSIZE_LOG_1,
--	.dst_info.psize = STEDMA40_PSIZE_LOG_1,
--
--	/* data_width is set during configuration */
- };
- 
- static struct stedma40_chan_cfg msp2_dma_tx = {
- 	.high_priority = true,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
--
- 	.dev_type = DB8500_DMA_DEV14_MSP2,
--
--	.src_info.psize = STEDMA40_PSIZE_LOG_4,
--	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
--
- 	.use_fixed_channel = true,
- 	.phy_channel = 1,
--
--	/* data_width is set during configuration */
- };
- 
- static struct platform_device *db8500_add_msp_i2s(struct device *parent,
+ 	base = kzalloc(ALIGN(sizeof(struct d40_base), 4) +
+ 		       (num_phy_chans + num_log_chans + ARRAY_SIZE(dma40_memcpy_channels)) *
 -- 
 1.7.10.4
 
