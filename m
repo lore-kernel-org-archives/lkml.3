@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080Ab3ECKH0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 06:07:26 -0400
-Received: from smtp-out-053.synserver.de ([212.40.185.53]:1059 "EHLO
-	smtp-out-053.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761851Ab3ECKHZ (ORCPT
+	id S1763080Ab3ECKJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 06:09:28 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:19172 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760877Ab3ECKJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 06:07:25 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 8535
-Message-ID: <51838C3E.5090303@metafoo.de>
-Date: Fri, 03 May 2013 12:06:54 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Fri, 3 May 2013 06:09:27 -0400
+Message-ID: <51838C98.2090205@huawei.com>
+Date: Fri, 3 May 2013 18:08:24 +0800
+From: Zhao Hongjiang <zhaohongjiang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Xiong Zhou <jencce.kernel@gmail.com>
-CC: anton@enomsg.org, dwmw2@infradead.org, linux-next@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] power: fix bq27x00_battery kconfig
-References: <alpine.DEB.2.02.1305031743190.6400@M2420>
-In-Reply-To: <alpine.DEB.2.02.1305031743190.6400@M2420>
-Content-Type: text/plain; charset=ISO-8859-1
+To: <bfields@redhat.com>
+CC: <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] nfsd: get rid of the unused functions in vfs
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.200]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2013 11:56 AM, Xiong Zhou wrote:
-> From: Xiong Zhou <jencce.kernel@gmail.com>
-> 
-> This patch fixes build failure(randconfig) of next-20130501.
-> When config I2C as m, BATTERY_BQ27x00 as y, here comes the failure.
-> BATTERY_BQ27x00 depends on I2C according to the code.
-> 
+The fh_lock_parent(), nfsd_truncate(), nfsd_notify_change() and nfsd_sync_dir()
+fuctions were never implement and used, just remove them.
 
-> Failure message:
-> drivers/built-in.o: In function `bq27x00_read_i2c':
-> bq27x00_battery.c:(.text+0x1082a7): undefined reference to `i2c_transfer'
-> drivers/built-in.o: In function `bq27x00_battery_init':
-> bq27x00_battery.c:(.init.text+0x6085): undefined reference to `i2c_register_driver'
-> bq27x00_battery.c:(.init.text+0x60c7): undefined reference to `i2c_del_driver'
-> drivers/built-in.o: In function `bq27x00_battery_exit':
-> bq27x00_battery.c:(.exit.text+0xbf0): undefined reference to `i2c_del_driver'
-> make: *** [vmlinux] Error 1
-> 
-> Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
+Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+---
+ fs/nfsd/vfs.h |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-It's actually a bit more tricky. The driver can be built without I2C
-support, so it does not depend on I2C, but if I2C is built as a module the
-driver should also only be built as a module.
-
-I think the best solution is to put the platform code and the i2c code of
-the bq27x00 driver each in their on module, but if you want a quick solution
-
-depends on I2C || I2C=n
-
-should work.
-
-> ---
-> drivers/power/Kconfig |    1 +
-> 1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-> index 0d0b5d7..89e5ebd 100644
-> --- a/drivers/power/Kconfig
-> +++ b/drivers/power/Kconfig
-> @@ -152,6 +152,7 @@ config BATTERY_SBS
->  
->  config BATTERY_BQ27x00
->  	tristate "BQ27x00 battery driver"
-> +	depends on I2C
->  	help
->  	  Say Y here to enable support for batteries with BQ27x00 (I2C/HDQ) chips.
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/fs/nfsd/vfs.h b/fs/nfsd/vfs.h
+index 5b58941..8d2b40d 100644
+--- a/fs/nfsd/vfs.h
++++ b/fs/nfsd/vfs.h
+@@ -39,7 +39,6 @@
+ typedef int (*nfsd_dirop_t)(struct inode *, struct dentry *, int, int);
+ 
+ /* nfsd/vfs.c */
+-int		fh_lock_parent(struct svc_fh *, struct dentry *);
+ int		nfsd_racache_init(int);
+ void		nfsd_racache_shutdown(void);
+ int		nfsd_cross_mnt(struct svc_rqst *rqstp, struct dentry **dpp,
+@@ -92,17 +91,13 @@ __be32		nfsd_remove(struct svc_rqst *,
+ 				struct svc_fh *, char *, int);
+ __be32		nfsd_unlink(struct svc_rqst *, struct svc_fh *, int type,
+ 				char *name, int len);
+-int		nfsd_truncate(struct svc_rqst *, struct svc_fh *,
+-				unsigned long size);
+ __be32		nfsd_readdir(struct svc_rqst *, struct svc_fh *,
+ 			     loff_t *, struct readdir_cd *, filldir_t);
+ __be32		nfsd_statfs(struct svc_rqst *, struct svc_fh *,
+ 				struct kstatfs *, int access);
+ 
+-int		nfsd_notify_change(struct inode *, struct iattr *);
+ __be32		nfsd_permission(struct svc_rqst *, struct svc_export *,
+ 				struct dentry *, int);
+-int		nfsd_sync_dir(struct dentry *dp);
+ 
+ #if defined(CONFIG_NFSD_V2_ACL) || defined(CONFIG_NFSD_V3_ACL)
+ struct posix_acl *nfsd_get_posix_acl(struct svc_fh *, int);
+-- 
+1.7.1
 
