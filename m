@@ -1,103 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645Ab3EBXzN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 19:55:13 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:33578 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505Ab3EBXzL (ORCPT
+	id S1762033Ab3ECABP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 20:01:15 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:41711 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760376Ab3ECABN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 19:55:11 -0400
-Date: Thu, 2 May 2013 16:55:05 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Colin Cross <ccross@android.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
-        Oleg Nesterov <oleg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Jeff Layton <jlayton@redhat.com>
-Subject: Re: [PATCH v2 03/10] freezer: add new freezable helpers using
- freezer_do_not_count()
-Message-ID: <20130502235505.GW19814@mtj.dyndns.org>
-References: <1367458508-9133-1-git-send-email-ccross@android.com>
- <1367458508-9133-4-git-send-email-ccross@android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367458508-9133-4-git-send-email-ccross@android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 2 May 2013 20:01:13 -0400
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Linux MM <linux-mm@kvack.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Simon Jeons <simon.jeons@gmail.com>
+Subject: [RFC PATCH v3 00/31] Dynamic NUMA: Runtime NUMA memory layout reconfiguration
+Date: Thu,  2 May 2013 17:00:32 -0700
+Message-Id: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.2.2
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050300-3620-0000-0000-0000024F5345
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+There is still some cleanup to do, so I'm just posting these early and often. I
+would appreciate some review to make sure that the basic approaches are sound,
+and especially suggestions regarding TODO #1 below. If everything goes well,
+I'd like to seem them merged circa 3.12.
 
-On Wed, May 01, 2013 at 06:35:01PM -0700, Colin Cross wrote:
-> To allow tasks to avoid running on every suspend/resume cycle,
-> this patch adds additional freezable wrappers around blocking calls
-> that call freezer_do_not_count().  Combined with the previous patch,
-> these tasks will not run during suspend or resume unless they wake
-> up for another reason, in which case they will run until they hit
-> the try_to_freeze() in freezer_count(), and then continue processing
-> the wakeup after tasks are thawed.  This patch also converts the
-> existing wait_event_freezable* wrappers to use freezer_do_not_count().
+--
 
-I'd much prefer the latter part being a separate patch because the
-change isn't really trivial and it isn't exactly equivalent - before
-we prioritized meeting the condition over freezing, now it's the other
-way around.  It's fine but does deserve description in the log so that
-if something gets tracked down to the commit, it's easy to tell how
-the behavior flipped and why.
+These patches allow the NUMA memory layout (meaning which node each physical
+page belongs to, the mapping from physical pages to NUMA nodes) to be changed
+at runtime in place (without hotplugging).
 
-> +/* Like schedule_timeout(), but should not block the freezer. */
-> +#define freezable_schedule_timeout(timeout)				\
-> +({									\
-> +	long __retval;							\
-> +	freezer_do_not_count();						\
-> +	__retval = schedule_timeout(timeout);				\
-> +	freezer_count();						\
-> +	__retval;							\
-> +})
-> +
-> +/* Like schedule_timeout_interruptible(), but should not block the freezer. */
-> +#define freezable_schedule_timeout_interruptible(timeout)		\
-> +({									\
-> +	long __retval;							\
-> +	freezer_do_not_count();						\
-> +	__retval = schedule_timeout_interruptible(timeout);		\
-> +	freezer_count();						\
-> +	__retval;							\
-> +})
-...
-> +/* Like schedule_hrtimeout_range(), but should not block the freezer. */
-> +#define freezable_schedule_hrtimeout_range(expires, delta, mode)	\
-> +({									\
-> +	int __retval;							\
-> +	freezer_do_not_count();						\
-> +	__retval = schedule_hrtimeout_range(expires, delta, mode);	\
-> +	freezer_count();						\
-> +	__retval;							\
-> +})
+TODO:
 
-(cc'ing Jeff Layton)
+ 1) Currently, I use pageflag setters without "owning" pages which could cause
+   loss of pageflag updates when combined with non-atomic pageflag users in
+   mm/*. Some options for solving this: (a) make all pageflags access atomic,
+   (b) use pageblock flags, (c) use bits in a new bitmap, or (d) attempt to work
+   around races in a similar way to memory-failure.
 
-So, one worry that I have about this is that freezer essentially
-behaves like a huge lock that everyone grabs and while scattering
-try_to_freeze() calls around might seem innocuous, it effectively
-adding a dependency to that single giant lock to that place, so
-whenever you're adding try_to_freeze() call while holding any kind of
-locks, it substiantially increases the chance of possible deadlock
-scenarios.  NFS recently got bitten by it and now is trying to get rid
-of them as it's fundamentally broken.
+ 2) Fix inaccurate accounting in some cases. Example:
+	## "5 MB" should be ~"42 MB"
+	# dnuma-test s 0 2 128
+	# numactl --hardware
+	available: 4 nodes (0-3)
+	node 0 cpus: 0
+	node 0 size: 43 MB
+	node 0 free: 11 MB
+	node 1 cpus:
+	node 1 size: 5 MB
+	node 1 free: 34 MB
+	node 2 cpus:
+	node 2 size: 42 MB
+	node 2 free: 28 MB
+	node 3 cpus:
+	node 3 size: 0 MB
+	node 3 free: 0 MB
 
-So, the freezable interface can't be something that people can use
-casually.  It is something which should be carefully and strategically
-deployed where we *know* that lock dependency risks don't exist or at
-least are acceptable.  I'm a bit weary that this patch is expanding
-the interface a lot that they now look like the equivalents of normal
-schedule calls.  Not exactly sure what to do here but can we please at
-least have RED BOLD BLINKING comments which scream to people not to
-use these unless they know what they're doing?
+= Why/when is this useful? =
 
-Thanks.
+In virtual machines (VMs) running on NUMA systems both [a] if/when the
+hypervisor decides to move their backing memory around (compacting,
+prioritizing another VMs desired layout, etc) and [b] in general for
+migration of VMs.
+
+The hardware is _already_ changing the NUMA layout underneath us. We have
+powerpc64 systems with firmware that currently move the backing memory around,
+and have the ability to notify Linux of new NUMA info.
+
+= How are you managing to do this? =
+
+Reconfiguration of page->node mappings is done at the page allocator
+level by both pulling free pages out of the free lists (when a new memory
+layout is committed) & redirecting pages on free to their new node.
+
+Because we can't change page_node(A) while A is allocated [1], a rbtree
+holding the mapping from pfn ranges to node ids ('struct memlayout')
+is introduced to track the pfn->node mapping for
+yet-to-be-transplanted pages. A lookup in this rbtree occurs on any
+page allocator path that decides which zone to free a page to.
+
+To avoid horrible performance due to rbtree lookups all the time, the
+rbtree is only consulted when the page is marked with a new pageflag
+(LookupNode).
+
+[1]: quite a few users of page_node() depend on it not changing, some
+accumulate per-node stats by using this. We'd also have to change it via atomic
+operations to avoid disturbing the pageflags which share the same unsigned
+long.
+
+= Code & testing =
+
+A debugfs interface allows the NUMA memory layout to be changed.  Basically,
+you don't need to have weird systems to test this, in fact, I've done all my
+testing so far in plain old qemu-i386 & qemu-x86_64.
+
+A script which stripes the memory between nodes or pushes all memory to a
+(potentially new) node is avaliable here:
+
+	https://raw.github.com/jmesmon/trifles/master/bin/dnuma-test
+
+The patches are also available via:
+
+	https://github.com/jmesmon/linux.git dnuma/v36
+
+	2325de5^..e0f8f35
+
+= Current Limitations =
+
+For the reconfiguration to be effective (and not make the allocator make
+poorer choices), updating the cpu->node mappings is also needed. This patchset
+does _not_ handle this. Also missing is a way to update topology (node
+distances), which is slightly less fatal.
+
+These patches only work on SPARSEMEM and the node id _must_ fit in the pageflags
+(can't be pushed out to the section). This generally means that 32-bit
+platforms are out (unless you hack MAX_PHYS{ADDR,MEM}_BITS).
+
+This code does the reconfiguration without hotplugging memory at all (1
+errant page doesn't keep us from fixing the rest of them). But it still
+depends on MEMORY_HOTPLUG for functions that online nodes & adjust
+zone/pgdat size.
+
+Things that need doing or would be nice to have but aren't bugs:
+
+ - While the interface is meant to be driven via a hypervisor/firmware, that
+   portion is not yet included.
+ - notifier for kernel users of memory that need/want their allocations on a
+   particular node (NODE_DATA(), for instance).
+ - notifier for userspace.
+ - a way to allocate things from the appropriate node prior to the page
+   allocator being fully updated (could just be "allocate it wrong now &
+   reallocate later").
+ - Make memlayout faster (potentially via per-node allocation, different data
+   structure, and/or more/smarter caching).
+ - Propagation of updated layout knowledge into kmem_caches (SL*B).
+
+--
+
+Since v2: http://comments.gmane.org/gmane.linux.kernel.mm/98371
+
+ - update sysfs node->memory region mappings when a reconfiguration occurs
+ - fixup locking when updating node_spanned_pages.
+ - rework memlayout api for use by sysfs refresh code
+ - remove holes for memlayouts to make iteration over them less of a chore.
+
+Since v1: http://comments.gmane.org/gmane.linux.kernel.mm/95541
+
+ - Update watermarks.
+ - Update zone percpu pageset ->batch & ->high only when needed.
+ - Don't lazily adjust {pgdat,zone}->{present_pages,managed_pages}, set them all at once.
+ - Don't attempt to use more than nr_node_ids nodes.
+
+--
+
+
+Cody P Schafer (31):
+  rbtree: add postorder iteration functions.
+  rbtree: add rbtree_postorder_for_each_entry_safe() helper.
+  mm/memory_hotplug: factor out zone+pgdat growth.
+  memory_hotplug: export ensure_zone_is_initialized() in mm/internal.h
+  mm/memory_hotplug: use {pgdat,zone}_is_empty() when resizing zones &
+    pgdats
+  mm: add nid_zone() helper
+  mm: Add Dynamic NUMA Kconfig.
+  page_alloc: add return_pages_to_zone() when DYNAMIC_NUMA is enabled.
+  page_alloc: in move_freepages(), skip pages instead of VM_BUG on node
+    differences.
+  page_alloc: when dynamic numa is enabled, don't check that all pages
+    in a block belong to the same zone
+  page-flags dnuma: reserve a pageflag for determining if a page needs a
+    node lookup.
+  memory_hotplug: factor out locks in mem_online_cpu()
+  mm: add memlayout & dnuma to track pfn->nid & transplant pages between
+    nodes
+  mm: memlayout+dnuma: add debugfs interface
+  drivers/base/memory.c: alphabetize headers.
+  drivers/base/node,memory: rename function to match interface
+  drivers/base/node: rename unregister_mem_blk_under_nodes() to be more
+    acurate
+  drivers/base/node: add unregister_mem_block_under_nodes()
+  mm: memory,memlayout: add refresh_memory_blocks() for Dynamic NUMA.
+  page_alloc: use dnuma to transplant newly freed pages in
+    __free_pages_ok()
+  page_alloc: use dnuma to transplant newly freed pages in
+    free_hot_cold_page()
+  page_alloc: transplant pages that are being flushed from the per-cpu
+    lists
+  x86: memlayout: add a arch specific inital memlayout setter.
+  init/main: call memlayout_global_init() in start_kernel().
+  dnuma: memlayout: add memory_add_physaddr_to_nid() for memory_hotplug
+  x86/mm/numa: when dnuma is enabled, use memlayout to handle memory
+    hotplug's physaddr_to_nid.
+  mm/memory_hotplug: VM_BUG if nid is too large.
+  mm/page_alloc: in page_outside_zone_boundaries(), avoid premature
+    decisions.
+  mm/page_alloc: make pr_err() in page_outside_zone_boundaries() more
+    useful
+  mm/page_alloc: use manage_pages instead of present pages when
+    calculating default_zonelist_order()
+  mm: add a early_param "extra_nr_node_ids" to increase nr_node_ids
+    above the minimum by a percentage.
+
+ Documentation/kernel-parameters.txt |   6 +
+ arch/x86/mm/numa.c                  |  32 ++-
+ drivers/base/memory.c               |  55 ++++-
+ drivers/base/node.c                 |  70 ++++--
+ include/linux/dnuma.h               |  97 ++++++++
+ include/linux/memlayout.h           | 134 +++++++++++
+ include/linux/memory.h              |   5 +
+ include/linux/memory_hotplug.h      |   4 +
+ include/linux/mm.h                  |   7 +-
+ include/linux/node.h                |  20 +-
+ include/linux/page-flags.h          |  19 ++
+ include/linux/rbtree.h              |  12 +
+ init/main.c                         |   2 +
+ lib/rbtree.c                        |  40 ++++
+ mm/Kconfig                          |  54 +++++
+ mm/Makefile                         |   2 +
+ mm/dnuma.c                          | 432 ++++++++++++++++++++++++++++++++++++
+ mm/internal.h                       |  13 +-
+ mm/memlayout-debugfs.c              | 339 ++++++++++++++++++++++++++++
+ mm/memlayout-debugfs.h              |  39 ++++
+ mm/memlayout.c                      | 354 +++++++++++++++++++++++++++++
+ mm/memory_hotplug.c                 |  54 +++--
+ mm/page_alloc.c                     | 154 +++++++++++--
+ 23 files changed, 1866 insertions(+), 78 deletions(-)
+ create mode 100644 include/linux/dnuma.h
+ create mode 100644 include/linux/memlayout.h
+ create mode 100644 mm/dnuma.c
+ create mode 100644 mm/memlayout-debugfs.c
+ create mode 100644 mm/memlayout-debugfs.h
+ create mode 100644 mm/memlayout.c
 
 -- 
-tejun
+1.8.2.2
+
