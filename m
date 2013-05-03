@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933028Ab3ECOST (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:18:19 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:54949 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1762790Ab3ECOSS (ORCPT
+	id S933077Ab3ECOVw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:21:52 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:62205 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762307Ab3ECOVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:18:18 -0400
-Date: Fri, 3 May 2013 10:18:17 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tejun Heo <tj@kernel.org>
-cc: Colin Cross <ccross@android.com>, Linux PM list <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Oleg Nesterov <oleg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Jeff Layton <jlayton@redhat.com>,
-        Mandeep Baines <msb@chromium.org>
-Subject: Re: [PATCH v2 03/10] freezer: add new freezable helpers using
- freezer_do_not_count()
-In-Reply-To: <20130503040934.GA16968@mtj.dyndns.org>
-Message-ID: <Pine.LNX.4.44L0.1305031017030.1513-100000@iolanthe.rowland.org>
+	Fri, 3 May 2013 10:21:51 -0400
+Date: Fri, 3 May 2013 15:21:46 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org
+Subject: [PATCH 4/4 v2] staging: =?utf-8?Q?ste=5Frm?=
+ =?utf-8?Q?i4=3A_Suppress_'ignoring_return_value_of_=E2=80=98regulator=5Fe?=
+ =?utf-8?Q?nable=28=29'?= warning
+Message-ID: <20130503142146.GO24153@gmail.com>
+References: <1367509690-24022-1-git-send-email-lee.jones@linaro.org>
+ <1367509690-24022-5-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1367509690-24022-5-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 May 2013, Tejun Heo wrote:
+drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c:
+        In function ‘synaptics_rmi4_resume’:
+drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c:1090:18:
+        warning: ignoring return value of ‘regulator_enable’, declared
+        with attribute warn_unused_result [-Wunused-result
 
-> Combined with the locking problems, I was planning to update the
-> freezer such that the frozen state is implemented as a form of jobctl
-> stop, so that things like ptrace / kill -9 could work on them and we
-> also have the clear definition of the frozen state rather than the
-> current "it may get stuck somewhere in the kernel".
-> 
-> But that conflicts with what you're doing here which seems pretty
-> useful, so, to satisfy both goals, when somebody needs to put a
-> pseudo-frozen task into the actual frozen jobctl stop, those spots
-> which are currently using try_to_stop() would have to return an error,
-> most likely -EINTR with TIF_SIGPENDING set, and the control should
-> return towards userland so that signal handling path can be invoked.
-> ie. It should be possible to steer the tasks which are considered
-> frozen but not in the frozen jobctl stop into the jobctl stop without
-> any side effect.  To do that, those spots basically have to be pretty
-> close to the userland boundary where it can easily leave the kernel
-> with -EINTR and AFAICS all the spots that you converted are like that
-> (which I think is natural).  While not holding any locks doesn't
-> guarantee that, I think there'd be a fairly high correlation at least
-> and it'd be able to drive people towards finding out what's going on.
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org
+Acked-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Don't forget about freezable kernel threads.  They never cross the 
-kernel/user boundary.
-
-Alan Stern
-
+diff --git a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
+index fe667dd..386362c 100644
+--- a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
++++ b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
+@@ -1087,7 +1087,11 @@ static int synaptics_rmi4_resume(struct device *dev)
+ 	unsigned char intr_status;
+ 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+ 
+-	regulator_enable(rmi4_data->regulator);
++	retval = regulator_enable(rmi4_data->regulator);
++	if (retval) {
++		dev_err(dev, "Regulator enable failed (%d)\n", retval);
++		return retval;
++	}
+ 
+ 	enable_irq(rmi4_data->i2c_client->irq);
+ 	rmi4_data->touch_stopped = false;
