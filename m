@@ -1,147 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933628Ab3ECQvR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 12:51:17 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:54816 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933005Ab3ECQvP (ORCPT
+	id S933647Ab3ECQwF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 12:52:05 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:46726 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933005Ab3ECQwD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 12:51:15 -0400
-Message-ID: <5183EAFA.4050500@linux.vnet.ibm.com>
-Date: Sat, 04 May 2013 00:51:06 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, takuya.yoshikawa@gmail.com
-Subject: Re: [PATCH v4 4/6] KVM: MMU: fast invalid all shadow pages
-References: <1367032402-13729-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1367032402-13729-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130503010534.GA5467@amt.cnet> <51835087.8090605@linux.vnet.ibm.com> <20130503155302.GB3362@amt.cnet>
-In-Reply-To: <20130503155302.GB3362@amt.cnet>
+	Fri, 3 May 2013 12:52:03 -0400
+Date: Fri, 3 May 2013 18:51:48 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Marek Vasut <marex@denx.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <samuel@sortiz.org>
+Subject: Re: [git pull] GPIO for v3.10
+Message-ID: <20130503185148.600554bd@endymion.delvare>
+In-Reply-To: <CA+55aFw9fbZBiZDC25j4A50NmsYbpwV-wUfWMpE_D7bEXQ-XVg@mail.gmail.com>
+References: <CACxGe6vr1kh2yqnG6kpASBGDUQrC7taBu00VWu6VG+qCO2u9QA@mail.gmail.com>
+	<CA+55aFw9fbZBiZDC25j4A50NmsYbpwV-wUfWMpE_D7bEXQ-XVg@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050316-9264-0000-0000-000003AAB374
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2013 11:53 PM, Marcelo Tosatti wrote:
-> On Fri, May 03, 2013 at 01:52:07PM +0800, Xiao Guangrong wrote:
->> On 05/03/2013 09:05 AM, Marcelo Tosatti wrote:
->>
->>>> +
->>>> +/*
->>>> + * Fast invalid all shadow pages belong to @slot.
->>>> + *
->>>> + * @slot != NULL means the invalidation is caused the memslot specified
->>>> + * by @slot is being deleted, in this case, we should ensure that rmap
->>>> + * and lpage-info of the @slot can not be used after calling the function.
->>>> + *
->>>> + * @slot == NULL means the invalidation due to other reasons, we need
->>>> + * not care rmap and lpage-info since they are still valid after calling
->>>> + * the function.
->>>> + */
->>>> +void kvm_mmu_invalid_memslot_pages(struct kvm *kvm,
->>>> +				   struct kvm_memory_slot *slot)
->>>> +{
->>>> +	spin_lock(&kvm->mmu_lock);
->>>> +	kvm->arch.mmu_valid_gen++;
->>>> +
->>>> +	/*
->>>> +	 * All shadow paes are invalid, reset the large page info,
->>>> +	 * then we can safely desotry the memslot, it is also good
->>>> +	 * for large page used.
->>>> +	 */
->>>> +	kvm_clear_all_lpage_info(kvm);
->>>
->>> Xiao,
->>>
->>> I understood it was agreed that simple mmu_lock lockbreak while
->>> avoiding zapping of newly instantiated pages upon a
->>>
->>> 	if(spin_needbreak)
->>> 		cond_resched_lock()
->>>
->>> cycle was enough as a first step? And then later introduce root zapping
->>> along with measurements.
->>>
->>> https://lkml.org/lkml/2013/4/22/544
->>
->> Yes, it is.
->>
->> See the changelog in 0/0:
->>
->> " we use lock-break technique to zap all sptes linked on the
->> invalid rmap, it is not very effective but good for the first step."
->>
->> Thanks!
+Hi Linus,
+
+On Fri, 3 May 2013 09:14:44 -0700, Linus Torvalds wrote:
+> On Fri, May 3, 2013 at 3:37 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> >
+> > Here are the GPIO changes staged for v3.10. Please pull.
 > 
-> Sure, but what is up with zeroing kvm_clear_all_lpage_info(kvm) and
-> zapping the root? Only lock-break technique along with generation number 
-> was what was agreed.
+> Grrr. These clearly have not been tested at all, and they break the
+> allmodconfig build.
+> 
+> > Jean Delvare (2):
+> >       gpio: ucb1400: Can be built as a module
+> 
+> The above one is pure and utter garbage. That driver cannot be built
+> as a module, and clearly nobody ever even tested it.
 
-Marcelo,
+Actually someone has, and that would be me, but definitely not in the
+same context you did. Because for me it did build, see below.
 
-Please Wait... I am completely confused. :(
+> You have:
+> 
+>    void __init ucb1400_gpio_set_data(struct ucb1400_gpio_data *data)
+> 
+> (which, btw, seems entirely unused), but then in the header file
+> (remember: this is a totally unused function as far as I can tell) we
+> have
+> 
+>    #ifdef CONFIG_GPIO_UCB1400
+>    void __init ucb1400_gpio_set_data(struct ucb1400_gpio_data *data);
+>    #else
+>    static inline void ucb1400_gpio_set_data(struct ucb1400_gpio_data *data) {}
+>    #endif
+> 
+> which means that in the modular case, you get
+> 
+>    drivers/gpio/gpio-ucb1400.c:106:13: error: redefinition of
+> ‘ucb1400_gpio_set_data’
+> 
+> again, I see absolutely no way that (a) this piece of crap has ever
+> been tested and (b) how /why that useless piece of shit even gets
+> used.
+> 
+> I'm upset. How the f*ck did this get into your tree in the first
+> place, and after it got into the tree, WHY THE HELL DID YOU SEND THIS
+> CRAP TO ME?
+> 
+> The one-liner commit that enables this piece of shit is signed off by
+> two people, has another person with a "Reviewed-by:" and there is no
+> way in hell it was ever tested or anybody has ever looked at the
+> driver in question. WTF?
 
-Let's clarify "zeroing kvm_clear_all_lpage_info(kvm) and zapping the root" first.
-Are these changes you wanted?
+I'm afraid you are slightly overreacting here :) We've been working
+together for the past 8 years, I would think you know that I do not
+push untested crap upstream.
 
-void kvm_mmu_invalid_memslot_pages(struct kvm *kvm,
-				   struct kvm_memory_slot *slot)
-{
-	spin_lock(&kvm->mmu_lock);
-	kvm->arch.mmu_valid_gen++;
+> I'm going out on a limb here, and guessing that it wasn't in linux-next either.
 
-	/* Zero all root pages.*/
-restart:
-	list_for_each_entry_safe(sp, node, &kvm->arch.active_mmu_pages, link) {
-		if (!sp->root_count)
-			continue;
+This specific commit actually is in linux-next, and has been for 7 days
+already:
+https://git.kernel.org/cgit/linux/kernel/git/linusw/linux-gpio.git/commit/?h=for-next&id=66791d8e8f9992ad13ee1fc0e4f0fe7534b095f8
 
-		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
-			goto restart;
-	}
+> Piece of unadulterated shit.
+> 
+> Quite frankly, I'm not taking any GPIO changes from you this merge
+> window. I only noticed this after having done two other merges on top
+> of it, so now I'll have to go back and undo all of this, because quite
+> frankly, I'm upset enough that I don't want to have any remains of
+> this whole experience in my tree.
 
-	/*
-	 * All shadow paes are invalid, reset the large page info,
-	 * then we can safely desotry the memslot, it is also good
-	 * for large page used.
-	 */
-	kvm_clear_all_lpage_info(kvm);
+My patch is perfectly sane and correct, the only problem here is that
+it depends on another patch from Marek Vasut (as the header comment
+states, BTW.) That other patch has been for 3 weeks:
+http://git.kernel.org/cgit/linux/kernel/git/sameo/mfd-next.git/commit/?id=360e64d8bbe7c78784d769a60d152804f5079577
+which is why nobody complained.
 
-	kvm_mmu_commit_zap_page(kvm, &invalid_list);
-	spin_unlock(&kvm->mmu_lock);
-}
+The real problem here is that two patches which depended on each other
+went to you through 2 different maintainer trees (mfd maintained by
+Samuel Ortiz and gpio maintained by Grant L. & Linus W.), and the git
+pull requests reached you in the wrong order. That doesn't make us all
+irresponsible and lame contributors/maintainers, does it?
 
-static void rmap_remove(struct kvm *kvm, u64 *spte)
-{
-	struct kvm_mmu_page *sp;
-	gfn_t gfn;
-	unsigned long *rmapp;
+I am sorry for not noticing the problem when both maintainers applied
+the two patches in question to their respective trees. It seems
+everyone else involved missed that too.
 
-	sp = page_header(__pa(spte));
-+
-+       /* Let invalid sp do not access its rmap. */
-+	if (!sp_is_valid(sp))
-+		return;
-+
-	gfn = kvm_mmu_page_get_gfn(sp, spte - sp->spt);
-	rmapp = gfn_to_rmap(kvm, gfn, sp->role.level);
-	pte_list_remove(spte, rmapp);
-}
+Please accept my apologies for this human mistake. I'll do my best to
+pay more attention next time.
 
-If yes, there is the reason why we can not do this that i mentioned before:
-
-after call kvm_mmu_invalid_memslot_pages(), the memslot->rmap will be destroyed.
-Later, if host reclaim page, the mmu-notify handlers, ->invalidate_page and
-->invalidate_range_start, can not find any spte using the host page, then
-Accessed/Dirty for host page is missing tracked.
-(missing call kvm_set_pfn_accessed and kvm_set_pfn_dirty properly.)
-
-What's your idea?
-
-And I should apologize for my poor communications, really sorry for that...
-
-
+Have a great week-end all,
+-- 
+Jean Delvare
