@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763620Ab3ECV0X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 17:26:23 -0400
-Received: from mout.gmx.net ([212.227.15.15]:56292 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761179Ab3ECV0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 17:26:21 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1/xyOYGi/bxlGGHqWHOP/jCeYBM9CFd2T185XZVow
-	ta4Ld9HhB1j6+G
-Message-ID: <51842B79.8060302@gmx.de>
-Date: Fri, 03 May 2013 23:26:17 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130405 Thunderbird/17.0.5
+	id S1763723Ab3ECV05 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 17:26:57 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:55321 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763482Ab3ECV04 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 17:26:56 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH, RFC 14/22] oprofile: always enable IRQ_WORK
+Date: Fri, 3 May 2013 23:26:23 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Robert Richter <rric@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, oprofile-list@lists.sf.net
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <20130503115332.GT8356@rric.localhost> <1367594095.7373.14.camel@gandalf.local.home>
+In-Reply-To: <1367594095.7373.14.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: Re: 3.9.0 + CONFIG_X86_INTEL_PSTATE=y  -> ThinkPad T420 with i5 lost
- ACPI functionality
-References: <5183EC09.9080208@gmx.de> <3715884.H8PIhhjRXL@vostro.rjw.lan> <518427D4.3050104@gmail.com>
-In-Reply-To: <518427D4.3050104@gmail.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305032326.23973.arnd@arndb.de>
+X-Provags-ID: V02:K0:cfbQUDI9q3KcW6N3lzM44aaW8FRnie7B75c/E9LZYvd
+ RFzHLLKPqI8EI3OjM4lpEp3vs4P3mhvBPjI3eGJslAAd7vOekJ
+ lUgfZnDgzPS5pvJaT6XSrTav+dPc9A1sRowKywCvmojLtsBohH
+ 4QmKT0o+9u7lORZp2buFpNgwsngQq6HOel1H5CXrTHkOSr4H8Q
+ nH1iD4cr6KOST69tPXL5HHOJM2/8nqOpGMxoqtAtz187HO34vM
+ o0uN0/l6q1LHX+E3g/IelpTgp1yHanxO2jM1VXvHwdN9Ff24lx
+ jEEBae3+3+uHuJfcTCriwdiDYE1ycTvaLk6FvUE7vxcmPCfUjJ
+ 45HBIASpYYogl//bSZx4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2013 11:10 PM, Dirk Brandewie wrote:
+On Friday 03 May 2013, Steven Rostedt wrote:
+> On Fri, 2013-05-03 at 13:53 +0200, Robert Richter wrote:
+> > On 02.05.13 17:16:18, Arnd Bergmann wrote:
+> > > oprofile fails to build if CONFIG_IRQ_WORK is not already enabled,
+> > > because of the dependency on the RING_BUFFER code that now uses
+> > > the irq work library.
+> > > 
+> > > kernel/built-in.o: In function `ring_buffer_unlock_commit':
+> > > :(.text+0x5b8f0): undefined reference to `irq_work_queue'
+> > > kernel/built-in.o: In function `ring_buffer_write':
+> > > :(.text+0x5bd10): undefined reference to `irq_work_queue'
+> > 
+> > Shouldn't this be fixed in the ring_buffer implementation?
 > 
-> ignore_nice_load is a feature of the ondemand governor.
-> The intel_pstate driver is seeing the load presented by the BOINC client
-> and is adjusting the pstate accordingly.
+> Does this patch fix it?
+> 
 
-Is the intel_pstate driver a choice for a notebook and friends where a
-grid software is running as a low-prio back ground job ?
 
-Because the CPU will be running mostly at high(er) frequency - which
-always results in a high temperature and short battery time.
+Yes, this works, and looks much nicer than my version. Thanks!
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+	Arnd
