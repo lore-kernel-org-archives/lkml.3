@@ -1,48 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763372Ab3ECTJl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 15:09:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:5881 "EHLO mga03.intel.com"
+	id S1763367Ab3ECTKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 15:10:45 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:34910 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763294Ab3ECTJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 15:09:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,606,1363158000"; 
-   d="scan'208";a="297222215"
-Message-ID: <51840B70.2000205@linux.intel.com>
-Date: Fri, 03 May 2013 12:09:36 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        penberg@kernel.org, levinsasha928@gmail.com, mtosatti@redhat.com,
-        tglx@linutronix.de, bp@suse.de, fengguang.wu@intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for building
- working KVM guest kernels
-References: <20130426095140.GA15361@pd.tnic> <tip-7e0320e733eec67e40d2b53e438d9971f079862d@git.kernel.org> <alpine.DEB.2.02.1305021104440.2493@chino.kir.corp.google.com> <5182AB66.6020307@linux.intel.com> <20130502194556.GB3553@gmail.com> <20130502200703.GE16684@pd.tnic> <20130503142900.GA3433@pd.tnic> <5183CFAC.8020005@infradead.org> <20130503150818.GC3433@pd.tnic> <5183D357.8000204@suse.cz> <20130503153134.GD3433@pd.tnic> <alpine.DEB.2.02.1305030952140.30317@chino.kir.corp.google.com> <aea679e3-048a-4f28-b164-73191095a995@email.android.com> <alpine.DEB.2.02.1305031016290.32047@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1305031016290.32047@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1761946Ab3ECTKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 15:10:44 -0400
+To: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: makedumpfile mmap() benchmark
+Cc: vgoyal@redhat.com, ebiederm@xmission.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        jingbai.ma@hp.com, d.hatayama@jp.fujitsu.com
+Message-Id: <E1UYLNS-0003H3-NC@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Fri, 03 May 2013 14:10:42 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2013 10:19 AM, David Rientjes wrote:
+
+> Jingbai Ma wote on 27 Mar 2013:
+> I have tested the makedumpfile mmap patch on a machine with 2TB memory, 
+> here is testing results:
+> Test environment:
+> Machine: HP ProLiant DL980 G7 with 2TB RAM.
+> CPU: Intel(R) Xeon(R) CPU E7- 2860  @ 2.27GHz (8 sockets, 10 cores)
+> (Only 1 cpu was enabled the 2nd kernel)
+> Kernel: 3.9.0-rc3+ with mmap kernel patch v3
+> vmcore size: 2.0TB
+> Dump file size: 3.6GB
+> makedumpfile mmap branch with parameters: -c --message-level 23 -d 31 
+> --map-size <map-size>
+> All measured time from debug message of makedumpfile.
 > 
-> Works fine unless kvm_guest.config enables an option that requires a 
-> numbered choice, such as CONFIG_EXPERT enabling the the ability to select 
-> CONFIG_SLOB from the list of allocators.  Instead of relying on yes(1), 
-> I think you'll need to modify this custom script to explicitly disable 
-> remaining options and select the default when there's a choice.
+> As a comparison, I also have tested with original kernel and original 
+> makedumpfile 1.5.1 and 1.5.3.
+> I added all [Excluding unnecessary pages] and [Excluding free pages] 
+> time together as "Filter Pages", and [Copyying Data] as "Copy data" here.
 > 
+> makedumjpfile	Kernel	map-size (KB)	Filter pages (s)	Copy data (s)	Total (s)
+> 1.5.1	 3.7.0-0.36.el7.x86_64	N/A	940.28	1269.25	2209.53
+> 1.5.3	 3.7.0-0.36.el7.x86_64	N/A	380.09	992.77	1372.86
+> 1.5.3	v3.9-rc3	N/A	197.77	892.27	1090.04
+> 1.5.3+mmap	v3.9-rc3+mmap	0	164.87	606.06	770.93
+> 1.5.3+mmap	v3.9-rc3+mmap	4	88.62	576.07	664.69
+> 1.5.3+mmap	v3.9-rc3+mmap	1024	83.66	477.23	560.89
+> 1.5.3+mmap	v3.9-rc3+mmap	2048	83.44	477.21	560.65
+> 1.5.3+mmap	v3.9-rc3+mmap	10240	83.84	476.56	560.4
 
-Actually it is called:
+I have also tested the makedumpfile mmap patch on a machine with 2TB memory, 
+here are the results:
+Test environment:
+Machine: SGI UV1000 with 2TB RAM.
+CPU: Intel(R) Xeon(R) CPU E7- 8837  @ 2.67GHz
+(only 1 cpu was enabled in the 2nd kernel)
+Kernel: 3.0.13 with mmap kernel patch v3 (I had to tweak the patch a bit)
+vmcore size: 2.0TB
+Dump file size: 3.6GB
+makedumpfile mmap branch with parameters: -c --message-level 23 -d 31 
+   --map-size <map-size>
+All measured times are actual clock times.
+All tests are noncyclic.   Crash kernel memory: crashkernel=512M
 
-KCONFIG_ALLCONFIG=kvm_guest.config make allnoconfig
+As did Jingbai Ma, I also tested with an unpatched kernel and
+makedumpfile 1.5.1 and 1.5.3.  But they do 2 filtering scans: unnecessary
+pages and free pages; here added together as filter pages time.
 
-	-hpa
+                                      Filter    Copy
+makedumpfile Kernel	 map-size(KB) pages(s)	data(s) Total(s)
+1.5.1	     3.0.13	   N/A	      671   	511    1182
+1.5.3	     3.0.13	   N/A	      294       535     829
+1.5.3+mmap   3.0.13+mmap     0	       54    	506   	560
+1.5.3+mmap   3.0.13+mmap  4096	       40    	416	456
+1.5.3+mmap   3.0.13+mmap 10240	       37	424	461
 
+Using mmap for the copy data as well as for filtering pages did little:
+1.5.3+mmap   3.0.13+mmap  4096	       37    	414	451
+
+My results are quite similar to Jingbai Ma's.
+The mmap patch to the kernel greatly speeds the filtering of pages, so
+we at SGI would very much like to see this patch in the 3.10 kernel.
+  http://marc.info/?l=linux-kernel&m=136627770125345&w=2
+
+What puzzles me is that the patch greatly speeds the read's of /proc/vmcore
+(where map-size is 0) as well as providing the mmap ability.  I can now
+seek/read page structures almost as fast as mmap'ing and copying them.
+(versus Jingbai Ma's results where mmap almost doubled the speed of reads)
+I have put counters in to verify, and we are doing several million
+seek/read's vs. a few thousand mmap's.  Yet the performance is similar
+(54sec vs. 37sec, above). I can't rationalize that much improvement.
+
+Thanks,
+Cliff Wickman
