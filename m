@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762774Ab3ECI0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 04:26:51 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:56323 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762733Ab3ECI0s (ORCPT
+	id S932982Ab3ECI1M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 04:27:12 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:39962 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab3ECI1K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 04:26:48 -0400
-X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
-   d="scan'208";a="4194280"
-Message-ID: <1367569605.28742.28.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 2/3] xen: move do_stolen_accounting to
- drivers/xen/time.c
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Christopher Covington <cov@codeaurora.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 3 May 2013 09:26:45 +0100
-In-Reply-To: <5182B532.10607@codeaurora.org>
-References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com>
-	 <1367436460-10183-2-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <5182B532.10607@codeaurora.org>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Fri, 3 May 2013 04:27:10 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1367509690-24022-2-git-send-email-lee.jones@linaro.org>
+References: <1367509690-24022-1-git-send-email-lee.jones@linaro.org>
+	<1367509690-24022-2-git-send-email-lee.jones@linaro.org>
+Date: Fri, 3 May 2013 10:27:09 +0200
+Message-ID: <CACRpkdacXK-uBsQF=VGfOvh_zZ3ad-A_Zk1Bd-oz+OAUTeXqHA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] ARM: ux500: Rid ignored return value of
+ regulator_enable() compiler warning
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-02 at 19:49 +0100, Christopher Covington wrote:
-> Hi Stefano,
-> 
-> On 05/01/2013 03:27 PM, Stefano Stabellini wrote:
-> > Move do_stolen_accounting, xen_vcpu_stolen and related functions and
-> > static variables to common code (drivers/xen/time.c).
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  arch/x86/xen/time.c   |  127 +-------------------------------------------
-> 
-> In going through some of the code, it looked like there might be a few little
-> bits that you might be interested in pulling out of arch/ia64/xen/time.c as well.
+On Thu, May 2, 2013 at 5:48 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-ia64 in the hypervisor was deprecated and with the 4.3 release has been
-removed.
+> arch/arm/mach-ux500/board-mop500.c: In function ‘mop500_prox_activate’:
+> arch/arm/mach-ux500/board-mop500.c:406:18: warning: ignoring return value of
+>         ‘regulator_enable’, declared with attribute warn_unused_result
+>         [-Wunused-result]
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-AFAIK ia64/Xen support has been broken in the mainline kernel for year.
+Applied!
 
-Ian
-
+Thanks,
+Linus Walleij
