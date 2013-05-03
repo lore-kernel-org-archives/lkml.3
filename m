@@ -1,52 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751288Ab3ECEFx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 00:05:53 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:19675 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab3ECEFw convert rfc822-to-8bit (ORCPT
+	id S1751543Ab3ECEJl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 00:09:41 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:49299 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab3ECEJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 00:05:52 -0400
-From: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
-To: kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-CC: Luonengjun <luonengjun@huawei.com>, Zanghongyong <zanghongyong@huawei.com>,
-        "Huangweidong (C)" <weidong.huang@huawei.com>,
-        Qinchuanyu <qinchuanyu@huawei.com>
-Subject: KVM VM(rhel-5.5) %si is too high when TX/RX packets
-Thread-Topic: KVM VM(rhel-5.5) %si is too high when TX/RX packets
-Thread-Index: Ac5Hs1wISEMZKpucRUKMj7M5PG0M3g==
-Date: Fri, 3 May 2013 04:05:01 +0000
-Message-ID: <D3E216785288A145B7BC975F83A2ED103FE3BBB3@szxeml556-mbx.china.huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: AhDY CCQa C9Fq E2+r FfzL GZIN KNwr LPBJ M0Lb OQ6K QIa4
- ZZoN c3MY c65d d0Gy
- eKiy;3;awB2AG0AQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBxAGUAbQB1AC0AZABlAHYAZQBsAEAAbgBvAG4AZwBuAHUALgBvAHIAZwA=;Sosha1_v1;7;{64596230-311B-4B9A-AF24-3C756A30F6F8};aABhAG8AeQB1AC4AegBoAGEAbgBnAEAAaAB1AGEAdwBlAGkALgBjAG8AbQA=;Fri,
- 03 May 2013 04:04:54
- GMT;SwBWAE0AIABWAE0AKAByAGgAZQBsAC0ANQAuADUAKQAgACUAcwBpACAAaQBzACAAdABvAG8AIABoAGkAZwBoACAAdwBoAGUAbgAgAFQAWAAvAFIAWAAgAHAAYQBjAGsAZQB0AHMA
-x-cr-puzzleid: {64596230-311B-4B9A-AF24-3C756A30F6F8}
-x-originating-ip: [10.135.68.97]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 3 May 2013 00:09:39 -0400
+Date: Thu, 2 May 2013 21:09:34 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Colin Cross <ccross@android.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Oleg Nesterov <oleg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Jeff Layton <jlayton@redhat.com>,
+        Mandeep Baines <msb@chromium.org>
+Subject: Re: [PATCH v2 03/10] freezer: add new freezable helpers using
+ freezer_do_not_count()
+Message-ID: <20130503040934.GA16968@mtj.dyndns.org>
+References: <1367458508-9133-1-git-send-email-ccross@android.com>
+ <1367458508-9133-4-git-send-email-ccross@android.com>
+ <20130502235505.GW19814@mtj.dyndns.org>
+ <20130503000358.GX19814@mtj.dyndns.org>
+ <CAMbhsRSFjUvkXq66pYs_nYN5At7yB4sFM+cpxLgUF_Yns54J5A@mail.gmail.com>
+ <CAMbhsRTSCW3WOxTgw8btk2yWAucqNmyY-Sc+CHsHmZzf6ZsTNA@mail.gmail.com>
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMbhsRTSCW3WOxTgw8btk2yWAucqNmyY-Sc+CHsHmZzf6ZsTNA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I running a VM(RHEL-5.5) on KVM hypervisor(linux-3.8 + QEMU-1.4.1), and direct-assign intel 82576 VF to the VM. When TX/RX packets on VM to the other host via iperf tool, top tool result on VM shown that the %si is too high, approximately 95% ~ 100%, but from the view of host, the VM's total CPU usage is about 20% - 30%. And the throughput rate is approximately 200Mb/s, far from the line rate 1Gb/s, 
-And, I found  the hardirq rate is lower than normal by running "watch -d -n 1 cat /proc/interrupts", I think it's caused by the too high %si, because the NIC's hardirq was disabled during the softirq process.
-Then, I direct-assign the intel 82576 to the VM, the same case happened too. 
-I found the intel 82576 and intel 82576 VF's interrupt mode are both PCI-MSI-X.
+Hello,
 
-And,
-I rmmod the igb driver, and, re-insmod the igb driver(igb-4.1.2) with the parameter IntMode=0/1(0:legacy, 1:MSI, 2:MSI-x), the problem then gone, the %si is approximately 20% -30%, and the throughput rate came to the line rate, about 940Mb/s.
-I update the VM to RHEL-6.1, the problem disappeared too.
-And, I found a very strange thing, the VM's 82576VF's irq routing is set one time on Vf's one interrupt received, so frequently.
+On Thu, May 02, 2013 at 07:41:39PM -0700, Colin Cross wrote:
+> On Thu, May 2, 2013 at 7:16 PM, Colin Cross <ccross@android.com> wrote:
+> > This sounds the same as what ended up getting reverted in
+> > https://lkml.org/lkml/2013/3/4/221
+> > I can add the WARN_ON_ONCE to all my new calls, and leave them out of
+> > existing calls, but that seems a little odd, and will be redundant if
+> > the lockdep call in try_to_freeze goes back in in 3.11.  Do you still
+> > want it in the new apis?
+...
+> I could also put the lockdep check that was reveted back into
+> try_to_freeze(), and add a freezable_schedule_unsafe() that skips it
+> for use in the known-unsafe users in nfs, with a big comment not to
+> add new users of it.
 
-Thanks,
-Zhang Haoyu
+Oh yeah, that sounds like a good idea, and as for the non-ugly
+variants, at least in the mid/long term, I think it'd be best to add
+the lockdep annotation to try_to_freeze() with
+__try_to_freeze_unsafe_youre_gonna_burn_in_hell_if_you_use_this() for
+the existing users which should be gradually converted, but if that's
+too burdensome, adding warnings to the wrappers should do for now, I
+guess.
+
+And I *hope* the lockdep annotation is stricter than what was added
+before.  I think it better be "no lock ever should be held at this
+point" rather than "consider this a big lock".  I'm not sure how much
+consensus we have on this but I'd like to, in the longer term, merge
+freezer into job control stop so that frozen tasks don't appear as
+being in uninterruptible sleep.  Currently, the frozen tasks are
+essentially in UNINTERRUPTIBLE sleep which is okay for suspend but for
+cgroup freezer, it sucks.  You end up with tasks which you can't even
+kill.
+
+Combined with the locking problems, I was planning to update the
+freezer such that the frozen state is implemented as a form of jobctl
+stop, so that things like ptrace / kill -9 could work on them and we
+also have the clear definition of the frozen state rather than the
+current "it may get stuck somewhere in the kernel".
+
+But that conflicts with what you're doing here which seems pretty
+useful, so, to satisfy both goals, when somebody needs to put a
+pseudo-frozen task into the actual frozen jobctl stop, those spots
+which are currently using try_to_stop() would have to return an error,
+most likely -EINTR with TIF_SIGPENDING set, and the control should
+return towards userland so that signal handling path can be invoked.
+ie. It should be possible to steer the tasks which are considered
+frozen but not in the frozen jobctl stop into the jobctl stop without
+any side effect.  To do that, those spots basically have to be pretty
+close to the userland boundary where it can easily leave the kernel
+with -EINTR and AFAICS all the spots that you converted are like that
+(which I think is natural).  While not holding any locks doesn't
+guarantee that, I think there'd be a fairly high correlation at least
+and it'd be able to drive people towards finding out what's going on.
+
+So, that's my agenda.  Not sure how many actually agree with it.
+Rafael, Oleg, Jeff?
+
+Thanks.
+
+-- 
+tejun
