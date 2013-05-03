@@ -1,94 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934145Ab3ECR5A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 13:57:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58298 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933827Ab3ECR47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 13:56:59 -0400
-Date: Fri, 3 May 2013 13:56:52 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCHSET] blk-throttle: implement proper hierarchy support
-Message-ID: <20130503175652.GB6062@redhat.com>
-References: <20130502173428.GA4771@redhat.com>
- <20130502175701.GL19814@mtj.dyndns.org>
- <20130502181747.GH30020@redhat.com>
- <20130502182933.GN19814@mtj.dyndns.org>
- <20130502184514.GI30020@redhat.com>
- <20130502184953.GP19814@mtj.dyndns.org>
- <20130502190732.GK30020@redhat.com>
- <CAOS58YOk7G=dBG1v5Ed2z3biMMyKkkutp30vH5XC72z0_Z85cw@mail.gmail.com>
- <20130502193139.GL30020@redhat.com>
- <20130502231307.GT19814@mtj.dyndns.org>
+	id S934164Ab3ECSBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 14:01:10 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:53779 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934019Ab3ECSBI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 14:01:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130502231307.GT19814@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: linasvepstas@gmail.com
+In-Reply-To: <1367550808.2093.14.camel@ymzhang.sh.intel.com>
+References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
+ <1367454625.2093.6.camel@ymzhang.sh.intel.com> <CAHrUA34H_B-ffebx6ueHgV1ax-PL_3hLZr1JGaP2NJZ7bYgvtw@mail.gmail.com>
+ <1367541180.2093.10.camel@ymzhang.sh.intel.com> <20130503020039.GA29087@kroah.com>
+ <1367550808.2093.14.camel@ymzhang.sh.intel.com>
+From: Linas Vepstas <linasvepstas@gmail.com>
+Date: Fri, 3 May 2013 13:00:46 -0500
+Message-ID: <CAHrUA34O=JEbmMSCmycNSXa1L6KXAWBCM5TfBOvzj_zSRMubHQ@mail.gmail.com>
+Subject: Re: Subject : [ PATCH ] pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
+To: yanmin_zhang <yanmin_zhang@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Zhang, LongX" <longx.zhang@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Joseph.Liu@Emulex.Com" <Joseph.Liu@emulex.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 04:13:07PM -0700, Tejun Heo wrote:
-> Hello, Vivek.
-> 
-> On Thu, May 02, 2013 at 03:31:39PM -0400, Vivek Goyal wrote:
-> > I think my example was little flawed previously. I think you are right.
-> > Penalty is not probably as bad as I have been thinking.
-> > 
-> > So if both parent and child have limit of 1MB/s and application is doing
-> > IO (say at 2MB/sec), in long term it should still see 1MB/s rate.
-> > 
-> > 		T1	T2	T3	T4	T5	T6
-> > Parent group:		B1	B2	B3	B4	B5
-> > Child group:	B1	B2	B3	B4	B5	B6 
-> > 
-> > Above B1 to B6 are bios of 1MB size. T1 to T6 are 1 second time interval.
-> > B1 waits for T1 interval in child group and then for T2 interval in
-> > parent group and then gets dispatched. But a pipe line has formed in
-> > child group and B2 is waiting in child group in T2 slice. So penalty
-> > is not double.
-> > 
-> > So each group migration will add one extra wait period. In above case
-> > 5 bios dispatched in 6 seconds. Longer the sampling interval, delay
-> > remains the constant to one time interval and % penalty goes down.
-> 
-> Yeah, I think that's what *should* be happening but not what I'm
-> seeing.  I'm seeing ~15% penalty.
+Greg,
 
-What test are you running. I am running a simple dd with directIO and
-I am not seeing any penalty.
+I've been receiving (and reading!) these messages; I replied that I am
+not maintaining a tree, and have no way of testing these patches (no
+access to hardware.)  I believe it unlikely that my situation will
+change, and so I should probably be removed from the maintainers file.
 
-# set limit to 1000000 bytes/second both in parent and child cgroup
-# dd if=/dev/vdb of=/dev/null iflag=direct
+No acked-by or anything; the patches are not "obviously correct" by
+visual inspection; they may be right, but would require deeper
+thinking about what is actually happening than I'm capable of at this
+time; I'm a bit rusty with this code base, and might miss something
+important.
 
-I will capture blktrace and analyze it though to understand better
-what's happening.
+-- Linas
 
->  It works fine if there are more
-> than one active children but with a single child configured at the
-> same limit, it doesn't work as expected.  I'm a bit lost where the
-> difference is coming from.  Hmmm... also in the above example, we
-> really should be doing the following.
-> 
->  		T1	T2	T3	T4	T5	T6
->  Parent group:	B1	B2	B3	B4	B5	B6
->  Child group:	B1	B2	B3	B4	B5	B6 
-> 
-> I mean, if there's no other IO going on, there's no point in delaying
-> the first IO.  ie. the slice should be considered as started before so
-> that B1 can be issued immediately, right?
+p.s. you didn't see my earlier reply because I forgot to hit 'plain text reply'
 
-Yes that's the right thing to do. So may be we can tell parent group when
-bio was queued in. Parent will have to start a new time slice. It also
-needs to look into when was the last slice it finished and take greater
-of last slice finished and time slice passed by child.
 
-/me needs to think little more about time slice management.
-
-Thanks
-Vivek
+On 2 May 2013 22:13, Yanmin Zhang <yanmin_zhang@linux.intel.com> wrote:
+>
+> On Thu, 2013-05-02 at 19:00 -0700, Greg Kroah-Hartman wrote:
+> > On Fri, May 03, 2013 at 08:33:00AM +0800, Yanmin Zhang wrote:
+> > > On Wed, 2013-05-01 at 20:20 -0500, Linas Vepstas wrote:
+> > > > Hi,
+> > > >
+> > > > On 1 May 2013 19:30, Yanmin Zhang <yanmin_zhang@linux.intel.com>
+> > > > wrote:
+> > > >         On Fri, 2013-04-26 at 06:28 +0000, Zhang, LongX wrote:
+> > > >         > From: Zhang Long <longx.zhang@intel.com>
+> > > >         >
+> > > >         > Specific pci device drivers might have many functions to
+> > > >         call
+> > > >         > pci_channel_offline to check device states. When slot_reset
+> > > >         happens,
+> > > >         > drivers' slot_reset callback might call such functions and
+> > > >         eventually
+> > > >         > abort the reset.
+> > > >         >
+> > > >         > The patch resets pdev->error_state to pci_channel_io_normal
+> > > >         at
+> > > >         > the begining of report_slot_reset.
+> > > >         >
+> > > >         > Thank Liu Joseph for pointing it out.
+> > > >
+> > > >         Linas, Bjorn,
+> > > >
+> > > >         Would you like to merge the patch to your testing tree?
+> > > >         The patch resolves one issue pointed out by Joseph.
+> > > >
+> > > >
+> > > > I'm not maintaining a tree at this time, and am not able to test.
+> > > > Sorry.
+> > > Thanks Linas.
+> > >
+> > > Greg,
+> > >
+> > > Would you like to merge it into your testing tree? Joseph Liu tested
+> > > the patch and it does work.
+> >
+> > You do know about the scripts/get_maintainer.pl script, right?
+> >
+> > Hint, try it out :)
+> Greg,
+>
+> Thanks. We did send to the right people, Linas and Bjorn.
+>
+> scripts/get_maintainer.pl 0001-pci-reset-error_state-to-pci_channel_io_normal-at-re.patch
+> Bjorn Helgaas <bhelgaas@google.com> (supporter:PCI SUBSYSTEM,commit_signer:7/8=88%,commit_signer:10/11=91%)
+> Linas Vepstas <linasvepstas@gmail.com> (commit_signer:2/8=25%)
+> Yijing Wang <wangyijing@huawei.com> (commit_signer:2/8=25%,commit_signer:2/11=18%)
+> Jiang Liu <jiang.liu@huawei.com> (commit_signer:2/8=25%,commit_signer:2/11=18%)
+> Stephen Hemminger <shemminger@vyatta.com> (commit_signer:1/8=12%)
+> "Rafael J. Wysocki" <rafael.j.wysocki@intel.com> (commit_signer:6/11=55%)
+> Huang Ying <ying.huang@intel.com> (commit_signer:5/11=45%)
+> linux-pci@vger.kernel.org (open list:PCI SUBSYSTEM)
+> linux-kernel@vger.kernel.org (open list)
+>
+>
+> I remember Jesse was maintaining PCI subsystem and he responded quickly.
+>
+> Yanmin
+>
+>
