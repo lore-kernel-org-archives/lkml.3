@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab3ECMDZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 08:03:25 -0400
-Received: from mga14.intel.com ([143.182.124.37]:41732 "EHLO mga14.intel.com"
+	id S1760634Ab3ECMEV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 08:04:21 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43504 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755104Ab3ECMDX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 08:03:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,604,1363158000"; 
-   d="scan'208";a="236358527"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Daniel Vetter <daniel@ffwll.ch>, dl9pf@gmx.de
-Cc: airlied@linux.ie, daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        pageexec@freemail.hu
-Subject: Re: [Intel-gfx] [PATCH] [TRIVIAL] Fix declaration of intel_gmbus_{is_forced_bit/is_port_falid} in i915 driver.
-In-Reply-To: <20130503092348.GL5763@phenom.ffwll.local>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <1367572662-18400-1-git-send-email-dl9pf@gmx.de> <20130503092348.GL5763@phenom.ffwll.local>
-User-Agent: Notmuch/0.15.2+89~g202cdc4 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 03 May 2013 15:03:37 +0300
-Message-ID: <87k3ngtgme.fsf@intel.com>
+	id S1752426Ab3ECMET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 08:04:19 -0400
+Date: Fri, 3 May 2013 07:03:50 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Kevin Hilman <khilman@linaro.org>, Mike Turquette <mturquette@linaro.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "Andrii.Tseglytskyi" <andrii.tseglytskyi@ti.com>
+Subject: Re: [PATCH v3 1/5] regulator: Introduce TI Adaptive Body Bias(ABB)
+ on-chip LDO driver
+Message-ID: <20130503120349.GA2735@snafu>
+References: <1367515215-30753-1-git-send-email-nm@ti.com>
+ <1367515215-30753-2-git-send-email-nm@ti.com>
+ <20130503090258.GG4945@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130503090258.GG4945@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 03 May 2013, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Fri, May 03, 2013 at 11:17:42AM +0200, dl9pf@gmx.de wrote:
->> From: Jan-Simon Möller <dl9pf@gmx.de>
->> 
->> Description:
->> intel_gmbus_is_forced_bit is no extern as its body is right below.
->> Likewise for intel_gmbus_is_port_valid.
->> 
->> This fixes a compilation issue with clang. An initial version of this patch
->> was developed by PaX Team <pageexec at freemail.hu>.
->> This is respin of this patch.
->> 
->> Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
->> CC: pageexec@freemail.hu
->> CC: daniel.vetter@ffwll.ch
->> CC: airlied@linux.ie
->> CC: intel-gfx@lists.freedesktop.org
->> CC: dri-devel@lists.freedesktop.org
->> CC: linux-kernel@vger.kernel.org
-> Picked up for -fixes, thanks for the patch.
+Hi Mark,
+On 10:02-20130503, Mark Brown wrote:
+> On Thu, May 02, 2013 at 12:20:10PM -0500, Nishanth Menon wrote:
+> > From: "Andrii.Tseglytskyi" <andrii.tseglytskyi@ti.com>
+> > 
+> > Adaptive Body Biasing (ABB) modulates transistor bias voltages
+> > dynamically in order to optimize switching speed versus leakage.
+> 
+> I've applied this but please note that I still have deep concerns about
+> some of the discussion about controlling this from other regulators.
+Thanks for the merge.
 
-Please drop it.
+We don't have any further plans of pursuing the concept of regulator
+chaining for upstream. After an off-line chat with Mike T, we are
+planning on introducing OMAP specific notifier hooks to clock
+framework. This should allow us to do the appropriate sequencing
+necessary to control AVS, regulators for ABB and PMIC in the right
+sequence.
 
-The patch removes the inline keyword, creating dozens of copies of the
-functions, and consequently loads of warnings:
-
-drivers/gpu/drm/i915/i915_drv.h:1803:13: warning: ‘intel_gmbus_is_port_valid’ defined but not used [-Wunused-function]
-drivers/gpu/drm/i915/i915_drv.h:1812:13: warning: ‘intel_gmbus_is_forced_bit’ defined but not used [-Wunused-function]
-
-
-BR,
-Jani.
+-- 
+Regards,
+Nishanth Menon
