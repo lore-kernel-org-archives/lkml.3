@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545Ab3ECGA7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:00:59 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:50110 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759711Ab3ECGA6 (ORCPT
+	id S1762242Ab3ECGDl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:03:41 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:5419
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756340Ab3ECGDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:00:58 -0400
-Message-ID: <51835291.20400@linux.vnet.ibm.com>
-Date: Fri, 03 May 2013 14:00:49 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 3 May 2013 02:03:39 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 3 May 2013 14:03:29 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: <rjw@sisk.pl>, <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
+        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <robin.randhawa@arm.com>,
+        <Steve.Bannister@arm.com>, <Liviu.Dudau@arm.com>,
+        <charles.garcia-tobin@arm.com>, <arvind.chauhan@arm.com>
+Subject: Re: [PATCH V2] cpufreq: cpu0: Free parent node for error cases
+Message-ID: <20130503060327.GA19902@S2101-09.ap.freescale.net>
+References: <03c6b0e0f41238c1b4346b4186040ff69e369b4a.1367556239.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-CC: mtosatti@redhat.com, gleb@redhat.com, avi.kivity@gmail.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v4 4/6] KVM: MMU: fast invalid all shadow pages
-References: <1367032402-13729-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1367032402-13729-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130503112729.942a04b2ba2566b35328f49e@gmail.com>
-In-Reply-To: <20130503112729.942a04b2ba2566b35328f49e@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050305-0260-0000-0000-000002E71BE1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <03c6b0e0f41238c1b4346b4186040ff69e369b4a.1367556239.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2013 10:27 AM, Takuya Yoshikawa wrote:
-> On Sat, 27 Apr 2013 11:13:20 +0800
-> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+On Fri, May 03, 2013 at 10:14:25AM +0530, Viresh Kumar wrote:
+> We are freeing parent node in success cases but not in failure cases. Lets do
+> it.
 > 
->> +/*
->> + * Fast invalid all shadow pages belong to @slot.
->> + *
->> + * @slot != NULL means the invalidation is caused the memslot specified
->> + * by @slot is being deleted, in this case, we should ensure that rmap
->> + * and lpage-info of the @slot can not be used after calling the function.
->> + *
->> + * @slot == NULL means the invalidation due to other reasons, we need
-> 
-> The comment should explain what the "other reasons" are.
-> But this API may better be split into two separate functions; it depends
-> on the "other reasons".
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-NO.
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
+> ---
+>  drivers/cpufreq/cpufreq-cpu0.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
->> + * not care rmap and lpage-info since they are still valid after calling
->> + * the function.
->> + */
->> +void kvm_mmu_invalid_memslot_pages(struct kvm *kvm,
->> +				   struct kvm_memory_slot *slot)
+> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+> index 3ab8294..8565d41 100644
+> --- a/drivers/cpufreq/cpufreq-cpu0.c
+> +++ b/drivers/cpufreq/cpufreq-cpu0.c
+> @@ -189,7 +189,8 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+>  
+>  	if (!np) {
+>  		pr_err("failed to find cpu0 node\n");
+> -		return -ENOENT;
+> +		ret = -ENOENT;
+> +		goto out_put_parent;
+>  	}
+>  
+>  	cpu_dev = &pdev->dev;
+> @@ -264,6 +265,8 @@ out_free_table:
+>  	opp_free_cpufreq_table(cpu_dev, &freq_table);
+>  out_put_node:
+>  	of_node_put(np);
+> +out_put_parent:
+> +	of_node_put(parent);
+>  	return ret;
+>  }
+>  
+> -- 
+> 1.7.12.rc2.18.g61b472e
 > 
-> You yourself is explaining this as "invalidation" in the comment.
-> kvm_mmu_invalidate_shadow_pages_memslot() or something...
-
-Umm, invalidate is a better name. Will update after collecting Marcelo, Gleb
-and other guy's comments.
 
