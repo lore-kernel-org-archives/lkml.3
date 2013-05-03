@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933428Ab3ECQIy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 12:08:54 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:50585 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933289Ab3ECQIw (ORCPT
+	id S933466Ab3ECQNf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 12:13:35 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:61244 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933321Ab3ECQNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 12:08:52 -0400
+	Fri, 3 May 2013 12:13:33 -0400
+Date: Fri, 3 May 2013 18:16:37 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>, dl9pf@gmx.de, airlied@linux.ie,
+        daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        pageexec@freemail.hu
+Subject: Re: [Intel-gfx] [PATCH] [TRIVIAL] Fix declaration of
+ intel_gmbus_{is_forced_bit/is_port_falid} in i915 driver.
+Message-ID: <20130503161637.GM5763@phenom.ffwll.local>
+Mail-Followup-To: Jani Nikula <jani.nikula@linux.intel.com>, dl9pf@gmx.de,
+	airlied@linux.ie, intel-gfx@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+	pageexec@freemail.hu
+References: <1367572662-18400-1-git-send-email-dl9pf@gmx.de>
+ <20130503092348.GL5763@phenom.ffwll.local>
+ <87k3ngtgme.fsf@intel.com>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20130503143951.GB8320@zod.gha.chartermi.net>
-References: <alpine.DEB.2.00.1305030224580.12778@skynet.skynet.ie>
-	<20130503143951.GB8320@zod.gha.chartermi.net>
-Date: Fri, 3 May 2013 18:08:52 +0200
-Message-ID: <CAKMK7uF46a87KDg=n-rLhq2kjuPCpexHGwfR9UcPc_smZjqQzg@mail.gmail.com>
-Subject: Re: [git pull] drm for 3.10-rc1
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Dave Airlie <airlied@linux.ie>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87k3ngtgme.fsf@intel.com>
+X-Operating-System: Linux phenom 3.9.0-rc6+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 3, 2013 at 4:39 PM, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Fri, May 03, 2013 at 02:25:57AM +0100, Dave Airlie wrote:
->>The following changes since commit b6a9b7f6b1f21735a7456d534dc0e68e61359d2c:
->>
->>  mm: prevent mmap_cache race in find_vma() (2013-04-04 11:46:28 -0700)
->>
->>are available in the git repository at:
->>
->>  git://people.freedesktop.org/~airlied/linux.git drm-next
->>
->>for you to fetch changes up to 307b9c022720f9de90d58e51743e01e9a42aec59:
->>
->>  qxl: update to new idr interfaces. (2013-05-03 10:37:20 +1000)
->>
->>----------------------------------------------------------------
->
-> So something in this batch of commits breaks a Macbook Pro Retina I have
-> sitting here.  If I boot a Fedora kernel based on  Linux
-> v3.9-8153-g5a148af, things boot up as they did previously with 3.9.0 and
-> are generally working fine.  If I boot with a kernel based on Linux
-> v3.9-8933-gce85722, it will boot but as soon as plymouth starts, I get
-> nothing but static on the screen (like 1950s TV static).
->
-> This machine is using i915 graphics, so I booted with nomodeset and did
-> the 'modprobe drm debug=15; modprobe i915 modeset=1' trick and it
-> repeated the failure with that.  I've gathered a bunch of data like
-> dmesg, an intel_reg_snapshot, etc.  It's all attached below.
->
-> I'll start bisecting to see if I can narrow down the commit that broke
-> things, but I thought I would give a heads up now in case anyone has any
-> ideas.
+On Fri, May 03, 2013 at 03:03:37PM +0300, Jani Nikula wrote:
+> On Fri, 03 May 2013, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > On Fri, May 03, 2013 at 11:17:42AM +0200, dl9pf@gmx.de wrote:
+> >> From: Jan-Simon Möller <dl9pf@gmx.de>
+> >> 
+> >> Description:
+> >> intel_gmbus_is_forced_bit is no extern as its body is right below.
+> >> Likewise for intel_gmbus_is_port_valid.
+> >> 
+> >> This fixes a compilation issue with clang. An initial version of this patch
+> >> was developed by PaX Team <pageexec at freemail.hu>.
+> >> This is respin of this patch.
+> >> 
+> >> Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+> >> CC: pageexec@freemail.hu
+> >> CC: daniel.vetter@ffwll.ch
+> >> CC: airlied@linux.ie
+> >> CC: intel-gfx@lists.freedesktop.org
+> >> CC: dri-devel@lists.freedesktop.org
+> >> CC: linux-kernel@vger.kernel.org
+> > Picked up for -fixes, thanks for the patch.
+> 
+> Please drop it.
+> 
+> The patch removes the inline keyword, creating dozens of copies of the
+> functions, and consequently loads of warnings:
+> 
+> drivers/gpu/drm/i915/i915_drv.h:1803:13: warning: ‘intel_gmbus_is_port_valid’ defined but not used [-Wunused-function]
+> drivers/gpu/drm/i915/i915_drv.h:1812:13: warning: ‘intel_gmbus_is_forced_bit’ defined but not used [-Wunused-function]
 
-Looked through the log files and didn't see a clue. And usually DP
-tends to fail pretty noisily. So I think the bisect result would be
-interestin. Meanwhile:
-- do you have drm.debug=0xe dmesg for a working kernel, too?
-- is the panel completely dead or is just the backlight on (or panel
-on but backlight off)?
+Meh, rather embarrassing patch reading fail here. Dropped.
 
 Thanks, Daniel
---
+-- 
 Daniel Vetter
 Software Engineer, Intel Corporation
 +41 (0) 79 365 57 48 - http://blog.ffwll.ch
