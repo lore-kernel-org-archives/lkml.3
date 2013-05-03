@@ -1,140 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933381Ab3ECOtN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:49:13 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:46657 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933235Ab3ECOdc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:33:32 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 07/63] dmaengine: ste_dma40: Assign memcpy channels in the driver
-Date: Fri,  3 May 2013 15:31:53 +0100
-Message-Id: <1367591569-32197-8-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
-References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
+	id S933493Ab3ECOtZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:49:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24767 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933235Ab3ECOtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 10:49:20 -0400
+Date: Fri, 3 May 2013 10:49:12 -0400
+From: Dave Jones <davej@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: clockevents_program_event WARN_ON preventing boot.
+Message-ID: <20130503144912.GB1283@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20130430212007.GB18598@redhat.com>
+ <20130430213719.GA14988@redhat.com>
+ <alpine.LFD.2.02.1305021234510.3972@ionos>
+ <20130502154621.GA23990@redhat.com>
+ <alpine.LFD.2.02.1305022152280.2891@ionos>
+ <CAE9FiQXpV451xTzAJyNdC-+-oqF9v8Cy5evcNOHKFffERw2SwA@mail.gmail.com>
+ <alpine.LFD.2.02.1305022304370.2891@ionos>
+ <CAE9FiQWFK_ropzW_qQLcNxLYyek8-PHGW-8SxfZJSijvdrss1A@mail.gmail.com>
+ <alpine.LFD.2.02.1305022337470.2891@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1305022337470.2891@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The channels reserved for memcpy are the same for all currently
-supported platforms. With this in mind, we can ease the platform
-data passing requirement by moving these assignments out from
-platform code and place them directly into the driver.
+On Fri, May 03, 2013 at 12:49:20AM +0200, Thomas Gleixner wrote:
 
-Acked-by: Vinod Koul <vnod.koul@intel.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/mach-ux500/devices-db8500.c        |   12 ------------
- drivers/dma/ste_dma40.c                     |   12 +++++++-----
- include/linux/platform_data/dma-ste-dma40.h |    4 ----
- 3 files changed, 7 insertions(+), 21 deletions(-)
+ > I'm fundamentally confused and Daves observation about slub debug does
+ > not make it less confusing.
+ > 
+ > It'd be nice if you could add some more instrumentation or bisect the
+ > issue.
 
-diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
-index f3d9419..01cfb68 100644
---- a/arch/arm/mach-ux500/devices-db8500.c
-+++ b/arch/arm/mach-ux500/devices-db8500.c
-@@ -146,22 +146,10 @@ static const dma_addr_t dma40_rx_map[DB8500_DMA_NR_DEV] = {
- 	[DB8500_DMA_DEV48_CAC1_RX] = U8500_CRYP1_BASE + CRYP1_RX_REG_OFFSET,
- };
- 
--/* Reserved event lines for memcpy only */
--static int dma40_memcpy_event[] = {
--	DB8500_DMA_MEMCPY_TX_0,
--	DB8500_DMA_MEMCPY_TX_1,
--	DB8500_DMA_MEMCPY_TX_2,
--	DB8500_DMA_MEMCPY_TX_3,
--	DB8500_DMA_MEMCPY_TX_4,
--	DB8500_DMA_MEMCPY_TX_5,
--};
--
- static struct stedma40_platform_data dma40_plat_data = {
- 	.dev_len = DB8500_DMA_NR_DEV,
- 	.dev_rx = dma40_rx_map,
- 	.dev_tx = dma40_tx_map,
--	.memcpy = dma40_memcpy_event,
--	.memcpy_len = ARRAY_SIZE(dma40_memcpy_event),
- 	.memcpy_conf_phy = &dma40_memcpy_conf_phy,
- 	.memcpy_conf_log = &dma40_memcpy_conf_log,
- 	.disabled_channels = {-1},
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 1734fee..12de79e 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -55,6 +55,9 @@
- 
- #define MAX(a, b) (((a) < (b)) ? (b) : (a))
- 
-+/* Reserved event lines for memcpy only. */
-+static int dma40_memcpy_channels[] = { 56, 57, 58, 59, 60 };
-+
- /**
-  * enum 40_command - The different commands and/or statuses.
-  *
-@@ -2014,8 +2017,7 @@ static int d40_config_memcpy(struct d40_chan *d40c)
- 	if (dma_has_cap(DMA_MEMCPY, cap) && !dma_has_cap(DMA_SLAVE, cap)) {
- 		d40c->dma_cfg = *d40c->base->plat_data->memcpy_conf_log;
- 		d40c->dma_cfg.src_dev_type = STEDMA40_DEV_SRC_MEMORY;
--		d40c->dma_cfg.dst_dev_type = d40c->base->plat_data->
--			memcpy[d40c->chan.chan_id];
-+		d40c->dma_cfg.dst_dev_type = dma40_memcpy_channels[d40c->chan.chan_id];
- 
- 	} else if (dma_has_cap(DMA_MEMCPY, cap) &&
- 		   dma_has_cap(DMA_SLAVE, cap)) {
-@@ -2927,7 +2929,7 @@ static int __init d40_dmaengine_init(struct d40_base *base,
- 	}
- 
- 	d40_chan_init(base, &base->dma_memcpy, base->log_chans,
--		      base->num_log_chans, base->plat_data->memcpy_len);
-+		      base->num_log_chans, ARRAY_SIZE(dma40_memcpy_channels));
- 
- 	dma_cap_zero(base->dma_memcpy.cap_mask);
- 	dma_cap_set(DMA_MEMCPY, base->dma_memcpy.cap_mask);
-@@ -3215,7 +3217,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
- 			num_log_chans++;
- 
- 	base = kzalloc(ALIGN(sizeof(struct d40_base), 4) +
--		       (num_phy_chans + num_log_chans + plat_data->memcpy_len) *
-+		       (num_phy_chans + num_log_chans + ARRAY_SIZE(dma40_memcpy_channels)) *
- 		       sizeof(struct d40_chan), GFP_KERNEL);
- 
- 	if (base == NULL) {
-@@ -3276,7 +3278,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
- 	if (!base->lookup_phy_chans)
- 		goto failure;
- 
--	if (num_log_chans + plat_data->memcpy_len) {
-+	if (num_log_chans + ARRAY_SIZE(dma40_memcpy_channels)) {
- 		/*
- 		 * The max number of logical channels are event lines for all
- 		 * src devices and dst devices
-diff --git a/include/linux/platform_data/dma-ste-dma40.h b/include/linux/platform_data/dma-ste-dma40.h
-index 4b78101..a808784 100644
---- a/include/linux/platform_data/dma-ste-dma40.h
-+++ b/include/linux/platform_data/dma-ste-dma40.h
-@@ -141,8 +141,6 @@ struct stedma40_chan_cfg {
-  * @dev_len: length of dev_tx and dev_rx
-  * @dev_tx: mapping between destination event line and io address
-  * @dev_rx: mapping between source event line and io address
-- * @memcpy: list of memcpy event lines
-- * @memcpy_len: length of memcpy
-  * @memcpy_conf_phy: default configuration of physical channel memcpy
-  * @memcpy_conf_log: default configuration of logical channel memcpy
-  * @disabled_channels: A vector, ending with -1, that marks physical channels
-@@ -162,8 +160,6 @@ struct stedma40_platform_data {
- 	u32				 dev_len;
- 	const dma_addr_t		*dev_tx;
- 	const dma_addr_t		*dev_rx;
--	int				*memcpy;
--	u32				 memcpy_len;
- 	struct stedma40_chan_cfg	*memcpy_conf_phy;
- 	struct stedma40_chan_cfg	*memcpy_conf_log;
- 	int				 disabled_channels[STEDMA40_MAX_PHYS];
--- 
-1.7.10.4
+Here's what I ended up with..
+
+git bisect start
+# good: [8cf90797fc2d7172480343cda0ff5898b92afc94] Merge branch 'master' of /home/davej/src/kernel/git-trees/linux
+git bisect good 8cf90797fc2d7172480343cda0ff5898b92afc94
+# bad: [a9754f91ed5255a992dc4c230f8b4b6ee57c399a] Merge branch 'master' of /home/davej/src/kernel/git-trees/linux
+git bisect bad a9754f91ed5255a992dc4c230f8b4b6ee57c399a
+# good: [ec25e246b94a3233ab064994ef05a170bdba0e7c] Merge tag 'usb-3.10-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb
+git bisect good ec25e246b94a3233ab064994ef05a170bdba0e7c
+# good: [8700c95adb033843fc163d112b9d21d4fda78018] Merge branch 'smp-hotplug-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+git bisect good 8700c95adb033843fc163d112b9d21d4fda78018
+# good: [a6f5635e63ffa02c30a22ea4af21f3daa1e98cdf] [media] exynos4-is: Improve the ISP chain parameter count calculation
+git bisect good a6f5635e63ffa02c30a22ea4af21f3daa1e98cdf
+# good: [df90e2258950fd631cdbf322c1ee1f22068391aa] Merge branch 'devel-for-v3.10' into v4l_for_linus
+git bisect good df90e2258950fd631cdbf322c1ee1f22068391aa
+# bad: [19b344efa35dbc253e2d10403dafe6aafda73c56] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid
+git bisect bad 19b344efa35dbc253e2d10403dafe6aafda73c56
+# bad: [74c7d2f5200a340ae6655e9adcf990381e387937] Merge branch 'x86-platform-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+git bisect bad 74c7d2f5200a340ae6655e9adcf990381e387937
+# bad: [77c675ba18836802f6b73d2d773481d06ebc0f04] timekeeping: Update tk->cycle_last in resume
+git bisect bad 77c675ba18836802f6b73d2d773481d06ebc0f04
+# bad: [0ed2aef9b3bffe598045b62a31a50d912eee92d8] Merge branch 'fortglx/3.10/time' of git://git.linaro.org/people/jstultz/linux into timers/core
+git bisect bad 0ed2aef9b3bffe598045b62a31a50d912eee92d8
+# good: [dd5d70e869f960bde6376f4447fff59f16186cf5] timekeeping: __timekeeping_set_tai_offset can be static
+git bisect good dd5d70e869f960bde6376f4447fff59f16186cf5
+# bad: [989dcb645ca715129c5a2b39102c8334a20d9615] tick: Handle broadcast wakeup of multiple cpus
+git bisect bad 989dcb645ca715129c5a2b39102c8334a20d9615
+# bad: [f9ae39d04ccdec8d8ecf532191b7056c279a22c0] tick: Pass broadcast device to tick_broadcast_set_event()
+git bisect bad f9ae39d04ccdec8d8ecf532191b7056c279a22c0
+# bad: [b352bc1cbc29134a356b5c16ee2281807a7b984e] tick: Convert broadcast cpu bitmaps to cpumask_var_t
+git bisect bad b352bc1cbc29134a356b5c16ee2281807a7b984e
+# good: [ad2b13536ace08dfcca4cf86b75a5d06efe06373] tick: Call tick_init late
+git bisect good ad2b13536ace08dfcca4cf86b75a5d06efe06373
+
+b352bc1cbc29134a356b5c16ee2281807a7b984e is the first bad commit
+commit b352bc1cbc29134a356b5c16ee2281807a7b984e
+Author: Thomas Gleixner <tglx@linutronix.de>
+Date:   Tue Mar 5 14:25:32 2013 +0100
+
+    tick: Convert broadcast cpu bitmaps to cpumask_var_t
+    
+    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+    Link: http://lkml.kernel.org/r/20130306111537.366394000@linutronix.de
+    Cc: Rusty Russell <rusty@rustcorp.com.au>
+
+:040000 040000 689609c27a2c8da0b09f8136f4552ab8814a0094 9e59b78318177ec8267e1fabfdede034c3fb6b4f M	kernel
+
+
 
