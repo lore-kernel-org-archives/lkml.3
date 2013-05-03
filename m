@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763167Ab3ECLAx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 07:00:53 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:65174 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760924Ab3ECLAw (ORCPT
+	id S1763152Ab3ECLCJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 07:02:09 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:38894 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760924Ab3ECLCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 07:00:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <1367507786-505303-22-git-send-email-arnd@arndb.de>
-References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-22-git-send-email-arnd@arndb.de>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 3 May 2013 16:30:30 +0530
-Message-ID: <CA+V-a8sUPwNZq6ed=75_Lq0x_-jy5x4cXcg8BYvZP7b0PQBpcg@mail.gmail.com>
-Subject: Re: [PATCH, RFC 21/22] davinci: vpfe_capture needs i2c
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        linux-media <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 3 May 2013 07:02:07 -0400
+From: Daniel Baluta <dbaluta@ixiacom.com>
+To: lguest@lists.ozlabs.org, rusty@rustcorp.com.au
+Cc: linux-kernel@vger.kernel.org, Daniel Baluta <dbaluta@ixiacom.com>
+Subject: [PATCH v2] lguest: rename i386_head.S
+Date: Fri,  3 May 2013 14:01:57 +0300
+Message-Id: <1367578917-21083-1-git-send-email-dbaluta@ixiacom.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Since commit 9a163ed8e0 (i386: move kernel) kernel/i386_head.S
+was renamed to kernel/head_32.S. We do the same for lguest/i386_head.S.
 
-Thanks for the patch.
+Signed-off-by: Daniel Baluta <dbaluta@ixiacom.com>
+---
+Changes since v1:
+	* use head_32.o in Makefile
 
-On Thu, May 2, 2013 at 8:46 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> The vpfe_capture driver is implicitly built for three of the davinci
-> capture drivers but depends on i2c, so we need to add the dependency
-> in Kconfig for each driver using this.
->
->  drivers/media/platform/davinci/vpfe_capture.c: In function 'vpfe_probe':
->  drivers/media/platform/davinci/vpfe_capture.c:1934:2: error: implicit declaration of function 'i2c_get_adapter' [-Werror=implicit-function-declaration]
->  drivers/media/platform/davinci/vpfe_capture.c:1934:11: warning: assignment makes pointer from integer without a cast [enabled by default]
->
-> Cc: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+ arch/x86/lguest/Makefile                   |    2 +-
+ arch/x86/lguest/{i386_head.S => head_32.S} |    0
+ 2 files changed, 1 insertions(+), 1 deletions(-)
+ rename arch/x86/lguest/{i386_head.S => head_32.S} (100%)
 
-Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+diff --git a/arch/x86/lguest/Makefile b/arch/x86/lguest/Makefile
+index 94e0e54..8f38d57 100644
+--- a/arch/x86/lguest/Makefile
++++ b/arch/x86/lguest/Makefile
+@@ -1,2 +1,2 @@
+-obj-y		:= i386_head.o boot.o
++obj-y		:= head_32.o boot.o
+ CFLAGS_boot.o	:= $(call cc-option, -fno-stack-protector)
+diff --git a/arch/x86/lguest/i386_head.S b/arch/x86/lguest/head_32.S
+similarity index 100%
+rename from arch/x86/lguest/i386_head.S
+rename to arch/x86/lguest/head_32.S
+-- 
+1.7.5.4
 
-Regards,
---Prabhakar Lad
