@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933901Ab3ECXA6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 19:00:58 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:58395 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763763Ab3ECXAy (ORCPT
+	id S934415Ab3ECXBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 19:01:10 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:53726 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763588Ab3ECXBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 19:00:54 -0400
+	Fri, 3 May 2013 19:01:06 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         linux-fbdev@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>, x86@kernel.org
-Subject: [PATCH 1/7] x86: Add mtrr_{add,del}_wc_if_needed
-Date: Fri,  3 May 2013 16:00:29 -0700
-Message-Id: <e4281b0d2c36d94a1e8b98d73ec7cc29f6161e43.1367621039.git.luto@amacapital.net>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 5/7] i915: Use drm_mtrr_{add,del}_wc
+Date: Fri,  3 May 2013 16:00:33 -0700
+Message-Id: <55ce0249bc74fc15af617349cfd5e68a159cf75b.1367621039.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <cover.1367621038.git.luto@amacapital.net>
 References: <cover.1367621038.git.luto@amacapital.net>
@@ -23,132 +23,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These MTRR helpers add a WC MTRR if PAT is disabled.  Modern drivers should
-be using ioremap_wc, etc. to get WC memory; the MTRR is just a fallback
-if the system doesn't have PAT.  So, rather than allocating an unnecessary
-MTRR even on PAT systems and having error handling spread out and handled
-differently by different drivers, consolidate it all and don't waste the
-MTRR on PAT-supporting systems.  (Follow-up changes will update drivers.)
-
-This should be a simple change, a bit of a clean-up, and it will flush
-out any drivers that actually depend on the MTRR for write combining.
+i915 open-coded logic that was essentially equivalent to the new
+drm_mtrr_{add,del}_wc.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/include/asm/mtrr.h     | 21 ++++++++++++++++
- arch/x86/kernel/cpu/mtrr/main.c | 53 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 74 insertions(+)
+ drivers/gpu/drm/i915/i915_dma.c | 43 ++++++-----------------------------------
+ 1 file changed, 6 insertions(+), 37 deletions(-)
 
-diff --git a/arch/x86/include/asm/mtrr.h b/arch/x86/include/asm/mtrr.h
-index e235582..cc96c72 100644
---- a/arch/x86/include/asm/mtrr.h
-+++ b/arch/x86/include/asm/mtrr.h
-@@ -45,6 +45,18 @@ extern void mtrr_aps_init(void);
- extern void mtrr_bp_restore(void);
- extern int mtrr_trim_uncached_memory(unsigned long end_pfn);
- extern int amd_special_default_mtrr(void);
-+
-+/*
-+ * These are for drivers (mostly video) that want to add WC MTRRs as a
-+ * fallback if PAT is unavailable.  There is no need to check for errors.
-+ *
-+ * The handles used by the _if_needed functions are *not* MTRR indices.
-+ * mtrr_del_wc_if_needed(0) and mtrr_del_wc_if_needed(-1) are
-+ * guaranteed to have no effect.
-+ */
-+extern int __must_check mtrr_add_wc_if_needed(unsigned long base,
-+					      unsigned long size);
-+extern void mtrr_del_wc_if_needed(int handle);
- #  else
- static inline u8 mtrr_type_lookup(u64 addr, u64 end)
- {
-@@ -86,6 +98,15 @@ static inline void mtrr_centaur_report_mcr(int mcr, u32 lo, u32 hi)
- #define set_mtrr_aps_delayed_init() do {} while (0)
- #define mtrr_aps_init() do {} while (0)
- #define mtrr_bp_restore() do {} while (0)
-+
-+static inline int __must_check mtrr_add_wc_if_needed(unsigned long base,
-+						     unsigned long size)
-+{
-+	return -ENODEV;
-+}
-+static inline void mtrr_del_wc_if_needed(int handle)
-+{
-+}
- #  endif
- 
- #ifdef CONFIG_COMPAT
-diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-index 726bf96..6370238 100644
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -51,6 +51,7 @@
- #include <asm/e820.h>
- #include <asm/mtrr.h>
- #include <asm/msr.h>
-+#include <asm/pat.h>
- 
- #include "mtrr.h"
- 
-@@ -524,6 +525,58 @@ int mtrr_del(int reg, unsigned long base, unsigned long size)
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index 4fa6beb..0fc95ba 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1393,29 +1393,6 @@ void i915_master_destroy(struct drm_device *dev, struct drm_master *master)
+ 	master->driver_priv = NULL;
  }
- EXPORT_SYMBOL(mtrr_del);
  
-+/**
-+ * mtrr_add_wc_if_needed - add a WC MTRR and handle errors if PAT is unavailable
-+ * @base: Physical base address
-+ * @size: Size of region
-+ *
-+ * If PAT is available, this does nothing.  If PAT is unavailable, it
-+ * attempts to add a WC MTRR covering size bytes starting at base and
-+ * logs an error if this fails.
-+ *
-+ * Drivers must store the return value to pass to mtrr_del_wc_if_needed,
-+ * but drivers should not try to interpret that return value.
-+ */
-+int mtrr_add_wc_if_needed(unsigned long base, unsigned long size)
-+{
-+	int ret;
-+
-+	if (pat_enabled) {
-+		/*
-+		 * Don't bother -- we don't need the MTRR.  Return an error
-+		 * so that no one gets confused.
-+		 */
-+		return -EBUSY;  /* The error doesn't matter. */
-+	}
-+
-+	ret = mtrr_add(base, size, MTRR_TYPE_WRCOMB, true);
-+	if (ret < 0) {
-+	  pr_warn("Failed to add WC MTRR for [%p-%p]; performance will suffer.",
-+		  (void *)base, (void *)(base + size - 1));
-+		return ret;
-+	}
-+	return ret + 1000;
-+}
-+EXPORT_SYMBOL(mtrr_add_wc_if_needed);
-+
-+/*
-+ * mtrr_del_wc_if_needed - undoes mtrr_add_wc_if_needed
-+ * @handle: Return value from mtrr_add_wc_if_needed
-+ *
-+ * This cleans up after mtrr_add_wc_if_needed.
-+ *
-+ * The API guarantees that mtrr_del_wc_if_needed(-1) and
-+ * mtrr_del_wc_if_needed(0) do nothing.
-+ */
-+extern void mtrr_del_wc_if_needed(int handle)
-+{
-+	if (handle >= 1) {
-+		WARN_ON(handle < 1000);
-+		mtrr_del(handle - 1000, 0, 0);
-+	}
-+}
-+EXPORT_SYMBOL(mtrr_del_wc_if_needed);
-+
- /*
-  * HACK ALERT!
-  * These should be called implicitly, but we can't yet until all the initcall
+-static void
+-i915_mtrr_setup(struct drm_i915_private *dev_priv, unsigned long base,
+-		unsigned long size)
+-{
+-	dev_priv->mm.gtt_mtrr = -1;
+-
+-#if defined(CONFIG_X86_PAT)
+-	if (cpu_has_pat)
+-		return;
+-#endif
+-
+-	/* Set up a WC MTRR for non-PAT systems.  This is more common than
+-	 * one would think, because the kernel disables PAT on first
+-	 * generation Core chips because WC PAT gets overridden by a UC
+-	 * MTRR if present.  Even if a UC MTRR isn't present.
+-	 */
+-	dev_priv->mm.gtt_mtrr = mtrr_add(base, size, MTRR_TYPE_WRCOMB, 1);
+-	if (dev_priv->mm.gtt_mtrr < 0) {
+-		DRM_INFO("MTRR allocation failed.  Graphics "
+-			 "performance may suffer.\n");
+-	}
+-}
+-
+ static void i915_kick_out_firmware_fb(struct drm_i915_private *dev_priv)
+ {
+ 	struct apertures_struct *ap;
+@@ -1552,8 +1529,8 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
+ 		goto out_rmmap;
+ 	}
+ 
+-	i915_mtrr_setup(dev_priv, dev_priv->gtt.mappable_base,
+-			aperture_size);
++	dev_priv->mm.gtt_mtrr = drm_mtrr_add_wc(dev_priv->gtt.mappable_base,
++						aperture_size);
+ 
+ 	/* The i915 workqueue is primarily used for batched retirement of
+ 	 * requests (and thus managing bo) once the task has been completed
+@@ -1656,12 +1633,8 @@ out_gem_unload:
+ 	intel_teardown_mchbar(dev);
+ 	destroy_workqueue(dev_priv->wq);
+ out_mtrrfree:
+-	if (dev_priv->mm.gtt_mtrr >= 0) {
+-		mtrr_del(dev_priv->mm.gtt_mtrr,
+-			 dev_priv->gtt.mappable_base,
+-			 aperture_size);
+-		dev_priv->mm.gtt_mtrr = -1;
+-	}
++	drm_mtrr_del_wc(dev_priv->mm.gtt_mtrr);
++	dev_priv->mm.gtt_mtrr = -1;
+ 	io_mapping_free(dev_priv->gtt.mappable);
+ out_rmmap:
+ 	pci_iounmap(dev->pdev, dev_priv->regs);
+@@ -1697,12 +1670,8 @@ int i915_driver_unload(struct drm_device *dev)
+ 	cancel_delayed_work_sync(&dev_priv->mm.retire_work);
+ 
+ 	io_mapping_free(dev_priv->gtt.mappable);
+-	if (dev_priv->mm.gtt_mtrr >= 0) {
+-		mtrr_del(dev_priv->mm.gtt_mtrr,
+-			 dev_priv->gtt.mappable_base,
+-			 dev_priv->gtt.mappable_end);
+-		dev_priv->mm.gtt_mtrr = -1;
+-	}
++	drm_mtrr_del_wc(dev_priv->mm.gtt_mtrr);
++	dev_priv->mm.gtt_mtrr = -1;
+ 
+ 	acpi_video_unregister();
+ 
 -- 
 1.8.1.4
 
