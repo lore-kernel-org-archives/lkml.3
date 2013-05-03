@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762471Ab3ECGRx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:17:53 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:19284 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762085Ab3ECGRw (ORCPT
+	id S1762502Ab3ECGTH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:19:07 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:61092 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762165Ab3ECGTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:17:52 -0400
-X-AuditID: cbfee691-b7fe56d000004b96-aa-5183568e545a
+	Fri, 3 May 2013 02:19:04 -0400
+X-AuditID: cbfee68d-b7f016d000007930-c9-518356d7ada9
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        jgunthorpe@obsidianresearch.com
-Subject: [PATCH 2/4] backlight: ep93xx: remove unnecessary
+        "'Richard Purdie'" <rpurdie@rpsys.net>
+Subject: [PATCH 3/4] backlight: lp8788: remove unnecessary
  platform_set_drvdata()
-Date: Fri, 03 May 2013 15:17:50 +0900
-Message-id: <000c01ce47c5$f063e110$d12ba330$@samsung.com>
+Date: Fri, 03 May 2013 15:19:03 +0900
+Message-id: <000d01ce47c6$1b93c990$52bb5cb0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5HxeHaJT0uBjU+Q7WTT0XINo44BA==
+Thread-index: Ac5HxfyLw4mYBAYGSOSxCSUgdmpo4A==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zY92+sOZAg7M7jCzmrF/DZvH9hqnF
-	5V1z2Cx273rK6sDicWLGbxaP7zt6GT32zP/B6vF5k1wASxSXTUpqTmZZapG+XQJXxq9LN9kK
-	/rJVtHy6y97A+Im1i5GTQ0LAROJ1wx4oW0ziwr31bF2MXBxCAssYJZ7MucwMU3R+3RSoxCJG
-	iSvT5rBAOL8YJZ4fP8cEUsUmoCbx5cth9i5GDg4RAX2JthYNkDCzQJHE4wMQG4QFgiV+TD8B
-	Vs4ioCqx/2gDI4jNK2Ap8WX6AyhbUOLH5HssEL1aEut3HmeCsOUlNq95C3WQgsSOs6/B6kUE
-	9CS+zTjJDFEjIrHvxTtGiJp17BJPLipC7BKQ+Db5EAvIaRICshKbDkCNkZQ4uOIGywRGsVlI
-	Ns9CsnkWks2zkGxYwMiyilE0tSC5oDgpvchUrzgxt7g0L10vOT93EyMkxibuYLx/wPoQYzLQ
-	+onMUqLJ+cAYzSuJNzQ2M7IwNTE1NjK3NCNNWEmcV73FOlBIID2xJDU7NbUgtSi+qDQntfgQ
-	IxMHp1QD44oLR98zPQ35EvfYo8/79OXdXZ2Lb0UeeB+VuzA9QDnukvvRhQo/hQ4fuu0SLp1j
-	oaJRzNoWsXCj1ZnTO2L/lH//c+O+GpPeUesJjK9LFsj8iz6mY5aXXhshabpYqtPo9ocwpg+2
-	e/xqlJ6t+Nx9dfGK24fn806bX1HYtHFH6P2Y/fqnTj+uP6TEUpyRaKjFXFScCABlwUJWxwIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jAd2+sOZAg3vv9CzmrF/DZvH9hqnF
-	5V1z2Cx273rK6sDicWLGbxaP7zt6GT32zP/B6vF5k1wAS1QDo01GamJKapFCal5yfkpmXrqt
-	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
-	MI0Rur4hQXA9RgZoIGEdY8avSzfZCv6yVbR8usvewPiJtYuRk0NCwETi/LopbBC2mMSFe+uB
-	bC4OIYFFjBJXps1hgXB+MUo8P36OCaSKTUBN4suXw+xdjBwcIgL6Em0tGiBhZoEiiccH9oAN
-	FRYIlvgx/QRYOYuAqsT+ow2MIDavgKXEl+kPoGxBiR+T77FA9GpJrN95nAnClpfYvOYtM8RB
-	ChI7zr4GqxcR0JP4NuMkM0SNiMS+F+8YJzAKzEIyahaSUbOQjJqFpGUBI8sqRtHUguSC4qT0
-	XCO94sTc4tK8dL3k/NxNjOAYfia9g3FVg8UhRgEORiUeXoWWpkAh1sSy4srcQ4wSHMxKIrxu
-	P4BCvCmJlVWpRfnxRaU5qcWHGJOBPp3ILCWanA9ML3kl8YbGJmZGlkZmFkYm5uakCSuJ8x5s
-	tQ4UEkhPLEnNTk0tSC2C2cLEwSnVwMh+91NUQ2Lu7BsR4fpb1FR7zu9gPlOgvkrx3MeDCau4
-	1ibe3PNMaf+/dWyVgm4dySL8xm5Zn/YJJzJy//62RUHq9KvULftqpvc5ObX5p/9qND28u9vh
-	96SdRu5pu818Ihz4ShkF1nVFz/qw8Ncdu8hzAc6f4lYfjO5psU0zuqtrsfxy4e6J6UosxRmJ
-	hlrMRcWJALGGYUElAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t8zQ93rYc2BBkemKFnMWb+GzeLyrjls
+	Frt3PWV1YPY4MeM3i8ee+T9YPT5vkgtgjuKySUnNySxLLdK3S+DKePH2O0vBCvaKaY1NrA2M
+	89m6GDk5JARMJDY9XM8KYYtJXLi3HijOxSEksIxR4vn6M+xdjBxgRfv2M0HEpzNKrJywgx3C
+	+cUo0XT8LztIN5uAmsSXL4fBGkQE9CXaWjRAwswC/hKbv60FKxEWCJa4tW0n2GIWAVWJM8vn
+	gNm8ApYSTR0fWSBsQYkfk++xQPRqSazfeZwJwpaX2LzmLTPEoQoSO86+ZgSxRQT0JFraHrNC
+	1IhI7HvxjhHkNgmBZewSO9r2M0MsE5D4NvkQC8QzshKbDkDNkZQ4uOIGywRGsVlIVs9CsnoW
+	ktWzkKxYwMiyilE0tSC5oDgpvchQrzgxt7g0L10vOT93EyMkonp3MN4+YH2IMRlo/URmKdHk
+	fGBE5pXEGxqbGVmYmpgaG5lbmpEmrCTOq9ZiHSgkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB
+	Mb/SdevniH8H2FjTnmmcL9z71G/ZUfsmT5Zw5Ulrs/ZzH255uenQ8Y/yKU5xpdc38Sxi7dtt
+	eUQne491j825dvVHfCnXdkx7fOTgp9Uvuurff2G5umTTltyOHV7bZA9z73/vnXsj4knatX1b
+	JwetbZd0vBvqcGKPVJ/6nWPVoXPdk8SbllyN+ajEUpyRaKjFXFScCAB1s3bmvgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+xoO71sOZAg02f5SzmrF/DZnF51xw2
+	i927nrI6MHucmPGbxWPP/B+sHp83yQUwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY
+	6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVJSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdj
+	ZIAGEtYxZrx4+52lYAV7xbTGJtYGxvlsXYwcHBICJhL79jN1MXICmWISF+6tBwpzcQgJTGeU
+	WDlhBzuE84tRoun4X3aQKjYBNYkvXw6zgzSLCOhLtLVogISZBfwlNn9bC1YiLBAscWvbTjYQ
+	m0VAVeLM8jlgNq+ApURTx0cWCFtQ4sfkeywQvVoS63ceZ4Kw5SU2r3nLDHGQgsSOs68ZQWwR
+	AT2JlrbHrBA1IhL7XrxjnMAoMAvJqFlIRs1CMmoWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz
+	0vWS83M3MYLj9Zn0DsZVDRaHGAU4GJV4eBVamgKFWBPLiitzDzFKcDArifC6/QAK8aYkVlal
+	FuXHF5XmpBYfYkwG+nQis5Rocj4wleSVxBsam5gZWRqZWRiZmJuTJqwkznuw1TpQSCA9sSQ1
+	OzW1ILUIZgsTB6dUA6P6h0CemeVaP+7yPA/btUQ/O8r5X6jW4en7w7VE75w5dmZDksK1tR0X
+	f3Ptidd4yXnlx9OESe9Lb6rPYtQ/8KQtZCuLwKvUuXp8MWH5x/jF6oXnmWY3+ieZHCj7oXI4
+	Mbvkn/gRvuOMHKzaP8VCNrbby2/jfLHhvubFOZ6/uM1nz/jMImgab6zEUpyRaKjFXFScCACe
+	aEchGwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,21 +60,21 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/ep93xx_bl.c |    1 -
+ drivers/video/backlight/lp8788_bl.c |    1 -
  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/backlight/ep93xx_bl.c b/drivers/video/backlight/ep93xx_bl.c
-index 3345582..018368b 100644
---- a/drivers/video/backlight/ep93xx_bl.c
-+++ b/drivers/video/backlight/ep93xx_bl.c
-@@ -111,7 +111,6 @@ static int ep93xxbl_remove(struct platform_device *dev)
- 	struct backlight_device *bl = platform_get_drvdata(dev);
+diff --git a/drivers/video/backlight/lp8788_bl.c b/drivers/video/backlight/lp8788_bl.c
+index 4bb8b4f..980855e 100644
+--- a/drivers/video/backlight/lp8788_bl.c
++++ b/drivers/video/backlight/lp8788_bl.c
+@@ -312,7 +312,6 @@ static int lp8788_backlight_remove(struct platform_device *pdev)
+ 	backlight_update_status(bl_dev);
+ 	sysfs_remove_group(&pdev->dev.kobj, &lp8788_attr_group);
+ 	lp8788_backlight_unregister(bl);
+-	platform_set_drvdata(pdev, NULL);
  
- 	backlight_device_unregister(bl);
--	platform_set_drvdata(dev, NULL);
  	return 0;
  }
- 
 -- 
 1.7.2.5
 
