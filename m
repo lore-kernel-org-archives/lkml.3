@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762903Ab3ECPKW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 11:10:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38434 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758210Ab3ECPKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 11:10:20 -0400
-Message-ID: <5183D357.8000204@suse.cz>
-Date: Fri, 03 May 2013 17:10:15 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1762593Ab3ECPLW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 11:11:22 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:56044 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932433Ab3ECPLU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 11:11:20 -0400
+Message-ID: <5183D394.8090205@gmail.com>
+Date: Fri, 03 May 2013 09:11:16 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-Cc: Randy Dunlap <rdunlap@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        David Rientjes <rientjes@google.com>, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, penberg@kernel.org,
-        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
-        bp@suse.de, fengguang.wu@intel.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for building
- working KVM guest kernels
-References: <20130426095140.GA15361@pd.tnic> <tip-7e0320e733eec67e40d2b53e438d9971f079862d@git.kernel.org> <alpine.DEB.2.02.1305021104440.2493@chino.kir.corp.google.com> <5182AB66.6020307@linux.intel.com> <20130502194556.GB3553@gmail.com> <20130502200703.GE16684@pd.tnic> <20130503142900.GA3433@pd.tnic> <5183CFAC.8020005@infradead.org> <20130503150818.GC3433@pd.tnic>
-In-Reply-To: <20130503150818.GC3433@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
+To: Jiri Olsa <jolsa@redhat.com>
+CC: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <andi@firstfloor.org>, Ulrich Drepper <drepper@gmail.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 5/8] perf tools: Add support to preload default formulas
+References: <1367421346-18257-1-git-send-email-jolsa@redhat.com> <1367421346-18257-6-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1367421346-18257-6-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3.5.2013 17:08, Borislav Petkov wrote:
-> On Fri, May 03, 2013 at 07:54:36AM -0700, Randy Dunlap wrote:
->> Could you alternately have a kvm_guest.config that should always work
->> for you?
-> 
-> I could, and I do. The idea, however, is to have this option upstream
-> so that people don't have to go search for every relevant option for
-> running the kernel a kvm guest.
-> 
-> Which reminds me: Pekka had a 'make kvmconfig' functionality in
-> the kvmtool too. Which, TBH, is even better than having a Kconfig
-> option with a bunch of selects. So, come to think of it, after all
-> the controversy with such an option, having a 'make kvmconfig' do
-> scripts/config -e <option> where <option> is in that list we select
-> would be much better.
-> 
-> This won't break randconfigs at all, btw. :-)
+On 5/1/13 9:15 AM, Jiri Olsa wrote:
+> +int perf_formula__load_dir(struct perf_formula *f, char *path)
+> +{
+> +	struct dirent *ent;
+> +	DIR *dir;
+> +	int ret = 0;
+> +
+> +	dir = opendir(path);
+> +	if (!dir) {
+> +		pr_err("formula: can't open dir '%s' - %s\n",
+> +		       path, strerror(errno));
+> +		return -1;
+> +	}
+> +
+> +	while (!ret && (ent = readdir(dir))) {
+> +		char file[PATH_MAX];
 
-You still risk that you miss some new dependency, but for a normal
-configs as a base, this won't be an issue in most cases. Whether this is
-implemented as a series of scripts/config calls or if there is a
-kvm_guest.config does not matter much, as long as randconfig does not
-see it ;).
+readdir_r? this is going into libperf, so might as well be thread safe.
 
-Michal
+David
