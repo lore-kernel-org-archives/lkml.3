@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932927Ab3ECONv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:13:51 -0400
-Received: from fallback7.mail.ru ([94.100.176.135]:35282 "EHLO
-	fallback7.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690Ab3ECONu (ORCPT
+	id S933028Ab3ECOST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:18:19 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:54949 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1762790Ab3ECOSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:13:50 -0400
-X-Greylist: delayed 470 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 May 2013 10:13:50 EDT
-Message-ID: <5183D196.2080305@list.ru>
-Date: Fri, 03 May 2013 19:02:46 +0400
-From: Stas Sergeev <stsp@list.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Fri, 3 May 2013 10:18:18 -0400
+Date: Fri, 3 May 2013 10:18:17 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tejun Heo <tj@kernel.org>
+cc: Colin Cross <ccross@android.com>, Linux PM list <linux-pm@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Oleg Nesterov <oleg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Jeff Layton <jlayton@redhat.com>,
+        Mandeep Baines <msb@chromium.org>
+Subject: Re: [PATCH v2 03/10] freezer: add new freezable helpers using
+ freezer_do_not_count()
+In-Reply-To: <20130503040934.GA16968@mtj.dyndns.org>
+Message-ID: <Pine.LNX.4.44L0.1305031017030.1513-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Jarkko Huijts <jarkko.huijts@gmail.com>
-CC: Alan Cox <alan@linux.intel.com>,
-        Linux kernel <linux-kernel@vger.kernel.org>,
-        Caylan Van Larson <i@caylan.net>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Regression: ftdi_sio is slow (since Wed Oct 10 15:05:06 2012)
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Spam: Not detected
-X-Mras: Ok
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Thu, 2 May 2013, Tejun Heo wrote:
 
-We have a regression because of this patch:
-http://lkml.indiana.edu/hypermail/linux/kernel/1210.1/01456.html
-While it is arguably reasonable to have this for tcdrain or close,
-it also slows down poll/select a lot because n_tty_poll() does this:
+> Combined with the locking problems, I was planning to update the
+> freezer such that the frozen state is implemented as a form of jobctl
+> stop, so that things like ptrace / kill -9 could work on them and we
+> also have the clear definition of the frozen state rather than the
+> current "it may get stuck somewhere in the kernel".
+> 
+> But that conflicts with what you're doing here which seems pretty
+> useful, so, to satisfy both goals, when somebody needs to put a
+> pseudo-frozen task into the actual frozen jobctl stop, those spots
+> which are currently using try_to_stop() would have to return an error,
+> most likely -EINTR with TIF_SIGPENDING set, and the control should
+> return towards userland so that signal handling path can be invoked.
+> ie. It should be possible to steer the tasks which are considered
+> frozen but not in the frozen jobctl stop into the jobctl stop without
+> any side effect.  To do that, those spots basically have to be pretty
+> close to the userland boundary where it can easily leave the kernel
+> with -EINTR and AFAICS all the spots that you converted are like that
+> (which I think is natural).  While not holding any locks doesn't
+> guarantee that, I think there'd be a fairly high correlation at least
+> and it'd be able to drive people towards finding out what's going on.
 
-tty_chars_in_buffer(tty) < WAKEUP_CHARS
+Don't forget about freezable kernel threads.  They never cross the 
+kernel/user boundary.
 
-And it also slows down TIOCOUTQ ioctl I think (not measured).
-The slowdown of select() is big, the customer reports the inability
-to work that way.
+Alan Stern
 
-Is this patch really needed? I mean, if the time to check TEMT is
-longer than to xmit that char, then what's the use?
-Or, if it is really a big deal, I guess it would be necessary to add
-a separate, .chars_in_buffer_fast method.
-
-Thoughts?
