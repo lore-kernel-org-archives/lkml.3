@@ -1,119 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763381Ab3ECTXf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 15:23:35 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57065 "EHLO hydra.sisk.pl"
+	id S1763390Ab3ECT1F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 15:27:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64128 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763031Ab3ECTXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 15:23:33 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 4/4] ACPI / processor: Use common hotplug infrastructure
-Date: Fri, 03 May 2013 21:31:50 +0200
-Message-ID: <2355471.VAFinTCtRm@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1367605674.16154.198.camel@misato.fc.hp.com>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <8416995.PXoT3vbUMm@vostro.rjw.lan> <1367605674.16154.198.camel@misato.fc.hp.com>
+	id S1763076Ab3ECT1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 15:27:02 -0400
+Date: Fri, 3 May 2013 15:26:56 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCHSET] blk-throttle: implement proper hierarchy support
+Message-ID: <20130503192656.GD6062@redhat.com>
+References: <20130502184514.GI30020@redhat.com>
+ <20130502184953.GP19814@mtj.dyndns.org>
+ <20130502190732.GK30020@redhat.com>
+ <CAOS58YOk7G=dBG1v5Ed2z3biMMyKkkutp30vH5XC72z0_Z85cw@mail.gmail.com>
+ <20130502193139.GL30020@redhat.com>
+ <20130502231307.GT19814@mtj.dyndns.org>
+ <20130503175652.GB6062@redhat.com>
+ <20130503185751.GA22860@mtj.dyndns.org>
+ <20130503190823.GC6062@redhat.com>
+ <20130503191418.GC22860@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130503191418.GC22860@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 03, 2013 12:27:54 PM Toshi Kani wrote:
-> On Fri, 2013-05-03 at 14:05 +0200, Rafael J. Wysocki wrote:
-> > On Thursday, May 02, 2013 05:20:12 PM Toshi Kani wrote:
-> > > On Thu, 2013-05-02 at 14:31 +0200, Rafael J. Wysocki wrote:
-> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->  : 
-> > > > Index: linux-pm/drivers/base/cpu.c
-> > > > ===================================================================
-> > > > --- linux-pm.orig/drivers/base/cpu.c
-> > > > +++ linux-pm/drivers/base/cpu.c
-> > > > @@ -13,11 +13,21 @@
-> > > >  #include <linux/gfp.h>
-> > > >  #include <linux/slab.h>
-> > > >  #include <linux/percpu.h>
-> > > > +#include <linux/acpi.h>
-> > > >  
-> > > >  #include "base.h"
-> > > >  
-> > > >  static DEFINE_PER_CPU(struct device *, cpu_sys_devices);
-> > > >  
-> > > > +static int cpu_subsys_match(struct device *dev, struct device_driver *drv)
-> > > > +{
-> > > > +	/* ACPI style match is the only one that may succeed. */
-> > > > +	if (acpi_driver_match_device(dev, drv))
-> > > 
-> > > Can you explain why this change is needed?
+On Fri, May 03, 2013 at 12:14:18PM -0700, Tejun Heo wrote:
+> On Fri, May 03, 2013 at 03:08:23PM -0400, Vivek Goyal wrote:
+> > 		T1	T2	T3	T4	T5	T6	T7
+> > parent:			b1	b2	b3		b4 	b5
+> > child: 		b1	b2	b3		b4	b5	
 > > 
-> > This is the mechanism by which the driver core determines which driver to use
-> > with a processor device passed to device_attach().
 > > 
-> > Basically, it walks the list of drivers whose bus type is cpu_subsys and
-> > calls cpu_subsys->match(), which points to cpu_subsys_match(), for the device
-> > and each of the drivers.  The result of that tell is whether or not to use
-> > the given driver with the device.
-> > 
-> > Now, acpi_driver_match_device() returns 'true' if (a) the device has an ACPI
-> > handle and (b) at least one of the IDs of the struct acpi_device associated
-> > with that handle is in the driver's .acpi_match_table table.  Since the ACPI
-> > processor's .acpi_match_table contains the same set of IDs as the table
-> > of device IDs of processor_handler, this guarantees that the ACPI processor
-> > driver will be used for the devices prepared by acpi_processor_add().
-> > 
-> > What it boils down to is that acpi_processor_start() is going to be called
-> > for every device whose ACPI handle is populated by acpi_processor_add().
-> > 
-> > > Do CPU devices still behave the same on non-ACPI systems?
-> > 
-> > Yes, they do.  The whole driver matching/binding is irrelevant to them, because
-> > the ACPI processor driver is the only one registering itself under cpu_subsys.
+> > So continuity breaks down because application is waiting for previous
+> > IO to finish. This forces expiry of existing time slices and new time
+> > slice start both in child and parent and penalty keep on increasing.
 > 
-> Thanks for the detailed explanation!  I missed that the new processor
-> driver is registered to cpu_subsys.  I now see what you did.  This is
-> clever.
+> It's a problem even in flat mode as the "child" above can easily be
+> just a process which is throttling itself and it won't be able to get
+> the configured bandwidth due to the scheduling bubbles introduced
+> whenever new slice is started.  Shouldn't be too difficult to get rid
+> of, right?
 
-Well, thanks! :-)
+Key thing here is when to start a new slice. Generally when an IO has been
+dispatched from a group, we do not expire slice immediately. We kind of
+give group some grace period of throtl_slice (100ms). If next IO does not
+come with-in that duration, we start a fresh slice upon next IO arrival.
 
-> One minor comment.
-> 
-> +static __cpuinit int __acpi_processor_start(struct acpi_device *device)
-> >  {
-> > -	struct acpi_device *device = per_cpu(processor_device_array,
-> pr->id);
-> > +	struct acpi_processor *pr = acpi_driver_data(device);
-> > +	acpi_status status;
-> >  	int result = 0;
-> >  
-> > +	if (!pr)
-> > +		return -ENODEV;
-> > +
-> > +	if (pr->flags.need_hotplug_init)
-> > +		return 0;
-> > +
-> 
-> I felt the name of "need_hotplug_init" is a bit misleading since the
-> func actually skips when the need-flag is set.  It may be nice to rename
-> it to defer_online_init, offline or something like that.
+I think similar problem should happen if there are two stacked devices
+and both are doing throttling and if delays between 2 IOs are big enough
+that it forces expirty of slice on each device.
 
-I just wanted to avoid making too many non-essential changes in one patch.
-We can change the name of that field at any time later.
+Atleast for the hiearchy case, we should be able to start a fresh time
+slice when child transfer bio to parent. I will write a patch and do
+some experiment.
 
-> Otherwise the changes look very good. 
-> 
-> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-
-Thank you!
-
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Thanks
+Vivek
