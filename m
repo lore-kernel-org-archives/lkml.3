@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932870Ab3ECABx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 20:01:53 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:41929 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762060Ab3ECABY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 20:01:24 -0400
+	id S1761554Ab3ECAFp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 20:05:45 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:55466 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762128Ab3ECABw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 20:01:52 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Linux MM <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>,
         Simon Jeons <simon.jeons@gmail.com>
-Subject: [RFC PATCH v3 08/31] page_alloc: add return_pages_to_zone() when DYNAMIC_NUMA is enabled.
-Date: Thu,  2 May 2013 17:00:40 -0700
-Message-Id: <1367539263-19999-9-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [RFC PATCH v3 31/31] mm: add a early_param "extra_nr_node_ids" to increase nr_node_ids above the minimum by a percentage.
+Date: Thu,  2 May 2013 17:01:03 -0700
+Message-Id: <1367539263-19999-32-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.2
 In-Reply-To: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050300-3620-0000-0000-0000024F53CA
+x-cbid: 13050300-7182-0000-0000-00000684BA48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add return_pages_to_zone(), which uses return_page_to_zone().
-It is a minimized version of __free_pages_ok() which handles adding
-pages which have been removed from another zone into a new zone.
+For dynamic numa, sometimes the hypervisor we're running under will want
+to split a single NUMA node into multiple NUMA nodes. If the number of
+numa nodes is limited to the number avaliable when the system booted (as
+it is on x86), we may not be able to fully adopt the new memory layout
+provided by the hypervisor.
+
+This option allows reserving some extra node ids as a percentage of the
+boot time node ids. While not perfect (idealy nr_node_ids would be fully
+dynamic), this allows decent functionality without invasive changes to
+the SL{U,A}B allocators.
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- mm/internal.h   |  5 ++++-
- mm/page_alloc.c | 17 +++++++++++++++++
- 2 files changed, 21 insertions(+), 1 deletion(-)
+ Documentation/kernel-parameters.txt |  6 ++++++
+ mm/page_alloc.c                     | 24 ++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+)
 
-diff --git a/mm/internal.h b/mm/internal.h
-index b11e574..a70c77b 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -104,6 +104,10 @@ extern void prep_compound_page(struct page *page, unsigned long order);
- #ifdef CONFIG_MEMORY_FAILURE
- extern bool is_free_buddy_page(struct page *page);
- #endif
-+#ifdef CONFIG_DYNAMIC_NUMA
-+void return_pages_to_zone(struct page *page, unsigned int order,
-+			  struct zone *zone);
-+#endif
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 9653cf2..c606371 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2082,6 +2082,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			use hotplug cpu feature to put more cpu back to online.
+ 			just like you compile the kernel NR_CPUS=n
  
- #ifdef CONFIG_MEMORY_HOTPLUG
- /*
-@@ -114,7 +118,6 @@ extern int ensure_zone_is_initialized(struct zone *zone,
- #endif
++	extra_nr_node_ids= [NUMA] Increase the maximum number of NUMA nodes
++			above the number detected at boot by the specified
++			percentage (rounded up). For example:
++			extra_nr_node_ids=100 would double the number of
++			node_ids avaliable (up to a max of MAX_NUMNODES).
++
+ 	nr_uarts=	[SERIAL] maximum number of UARTs to be registered.
  
- #if defined CONFIG_COMPACTION || defined CONFIG_CMA
--
- /*
-  * in mm/compaction.c
-  */
+ 	numa_balancing=	[KNL,X86] Enable or disable automatic NUMA balancing.
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 98cbdf6..739b405 100644
+index cc7b332..1fd2f2f 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -443,6 +443,12 @@ static inline void set_page_order(struct page *page, int order)
- 	__SetPageBuddy(page);
- }
+@@ -4837,6 +4837,17 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
  
-+static inline void set_free_page_order(struct page *page, int order)
-+{
-+	set_page_private(page, order);
-+	VM_BUG_ON(!PageBuddy(page));
-+}
+ #if MAX_NUMNODES > 1
 +
- static inline void rmv_page_order(struct page *page)
- {
- 	__ClearPageBuddy(page);
-@@ -739,6 +745,17 @@ static void __free_pages_ok(struct page *page, unsigned int order)
- 	local_irq_restore(flags);
- }
- 
-+#ifdef CONFIG_DYNAMIC_NUMA
-+void return_pages_to_zone(struct page *page, unsigned int order,
-+			  struct zone *zone)
++static unsigned nr_node_ids_mod_percent;
++static int __init setup_extra_nr_node_ids(char *arg)
 +{
-+	unsigned long flags;
-+	local_irq_save(flags);
-+	free_one_page(zone, page, order, get_freepage_migratetype(page));
-+	local_irq_restore(flags);
++	int r = kstrtouint(arg, 10, &nr_node_ids_mod_percent);
++	if (r)
++		pr_err("invalid param value extra_nr_node_ids=\"%s\"\n", arg);
++	return 0;
 +}
-+#endif
++early_param("extra_nr_node_ids", setup_extra_nr_node_ids);
 +
  /*
-  * Read access to zone->managed_pages is safe because it's unsigned long,
-  * but we still need to serialize writers. Currently all callers of
+  * Figure out the number of possible node ids.
+  */
+@@ -4848,6 +4859,19 @@ void __init setup_nr_node_ids(void)
+ 	for_each_node_mask(node, node_possible_map)
+ 		highest = node;
+ 	nr_node_ids = highest + 1;
++
++	/*
++	 * expand nr_node_ids and node_possible_map so more can be onlined
++	 * later
++	 */
++	nr_node_ids +=
++		DIV_ROUND_UP(nr_node_ids * nr_node_ids_mod_percent, 100);
++
++	if (nr_node_ids > MAX_NUMNODES)
++		nr_node_ids = MAX_NUMNODES;
++
++	for (node = highest + 1; node < nr_node_ids; node++)
++		node_set(node, node_possible_map);
+ }
+ #endif
+ 
 -- 
 1.8.2.2
 
