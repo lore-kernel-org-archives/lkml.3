@@ -1,77 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763268Ab3ECSaK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 14:30:10 -0400
-Received: from smtprelay06.ispgateway.de ([80.67.31.104]:60148 "EHLO
-	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758751Ab3ECSaI (ORCPT
+	id S1763332Ab3ECSdI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 14:33:08 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46407 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759070Ab3ECSdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 14:30:08 -0400
+	Fri, 3 May 2013 14:33:07 -0400
+Date: Fri, 3 May 2013 20:32:58 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Jones <davej@redhat.com>
+cc: Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: clockevents_program_event WARN_ON preventing boot.
+In-Reply-To: <20130503144912.GB1283@redhat.com>
+Message-ID: <alpine.LFD.2.02.1305032015060.2990@ionos>
+References: <20130430212007.GB18598@redhat.com> <20130430213719.GA14988@redhat.com> <alpine.LFD.2.02.1305021234510.3972@ionos> <20130502154621.GA23990@redhat.com> <alpine.LFD.2.02.1305022152280.2891@ionos> <CAE9FiQXpV451xTzAJyNdC-+-oqF9v8Cy5evcNOHKFffERw2SwA@mail.gmail.com>
+ <alpine.LFD.2.02.1305022304370.2891@ionos> <CAE9FiQWFK_ropzW_qQLcNxLYyek8-PHGW-8SxfZJSijvdrss1A@mail.gmail.com> <alpine.LFD.2.02.1305022337470.2891@ionos> <20130503144912.GB1283@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Fri, 03 May 2013 20:30:03 +0200
-From: Dirk Eibach <dirk.eibach@gdsys.cc>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: <linux-kernel@vger.kernel.org>, Kumar Gala <galak@kernel.crashing.org>,
-        Wim Van Sebroeck <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH] powerpc: Make Book E watchdog reset type configurable
-In-Reply-To: <20130503134610.GA31037@roeck-us.net>
-References: <1367505913-18970-1-git-send-email-dirk.eibach@gdsys.cc>
- <20130502161720.GA7797@roeck-us.net>
- <429ec64cf7c30a139db40eb20fd3e682@gdsys.cc>
- <20130503011741.GA23266@roeck-us.net>
- <7be2cb3417615ff206270a756c6422d6@gdsys.cc>
- <20130503134610.GA31037@roeck-us.net>
-Message-ID: <d735c13abccd6ba75fd65658ab94654d@gdsys.cc>
-User-Agent: Roundcube Webmail/0.8.1
-X-Df-Sender: ZGlyay5laWJhY2hAZ2RzeXMuY2M=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Am 03.05.2013 15:46, schrieb Guenter Roeck:
-> On Fri, May 03, 2013 at 10:33:13AM +0200, Dirk Eibach wrote:
->> Hi Guenter,
->> 
->>>>>> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
->>>>>> index e89fc31..6048593 100644
->>>>>> --- a/drivers/watchdog/Kconfig
->>>>>> +++ b/drivers/watchdog/Kconfig
->>>>>> @@ -1172,6 +1172,38 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
->>>>>> 
->>>>>> 	  The value can be overridden by the wdt_period command-line
->>>>>> parameter.
->>>>>> 
->>>>>> +choice
->>>>>> +	prompt "PowerPC Book-E Watchdog reset type"
->>>>>> +	depends on BOOKE_WDT
->>>>>> +	default BOOKE_WDT_RESET_CHIP
->>>>>> +	help
->>>>>> +	  Specify what kind of reset will be executed on watchdog
->>>>>> timeout.
->>>>>> +
->>>>> Seems to me it would be much better to make this configurable via
->>>>> platform data
->>>>> and/or device tree.
->>>> 
->>>> good catch. What do the device-tree gurus think to be a nice
->>>> property name?
->> 
->> having a closer look, I realized booke_wdt is not device-tree based
->> yet. Migrating it would come close to a rewrite, breaking
->> compatibility for all current users. Sorry, this is way beyond the
+On Fri, 3 May 2013, Dave Jones wrote:
+> On Fri, May 03, 2013 at 12:49:20AM +0200, Thomas Gleixner wrote:
 > 
-> Really ? I don't think making it a platform driver would be that hard,
-> or break anything.
+>  > I'm fundamentally confused and Daves observation about slub debug does
+>  > not make it less confusing.
+>  > 
+>  > It'd be nice if you could add some more instrumentation or bisect the
+>  > issue.
+> 
+> Here's what I ended up with..
+> b352bc1cbc29134a356b5c16ee2281807a7b984e is the first bad commit
+> commit b352bc1cbc29134a356b5c16ee2281807a7b984e
+> Author: Thomas Gleixner <tglx@linutronix.de>
+> Date:   Tue Mar 5 14:25:32 2013 +0100
+> 
+>     tick: Convert broadcast cpu bitmaps to cpumask_var_t
+>     
+>     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+>     Link: http://lkml.kernel.org/r/20130306111537.366394000@linutronix.de
+>     Cc: Rusty Russell <rusty@rustcorp.com.au>
+> 
 
-Maybe I am missing something, but wouldn't making it a device-tree 
-driver mean, that I would have to identify all users of BOOKE_WDT and 
-add it to their device trees?
+I bet you have CONFIG_CPUMASK_OFFSTACK enabled.
 
-Cheers
-Dirk
+/me is a moron and rumages for a brown paperbag.
+
+Patch below.
+
+Thanks,
+
+	tglx
+
+------------>
+
+Subject: tick: Use zalloc_cpumask_var for allocating offstack cpumasks
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 03 May 2013 20:22:36 +0200
+
+commit b352bc1cbc (tick: Convert broadcast cpu bitmaps to
+cpumask_var_t) broke CONFIG_CPUMASK_OFFSTACK in a very subtle way.
+
+Instead of allocating the cpumasks with zalloc_cpumask_var it uses
+alloc_cpumask_var, so we can get random data there, which of course
+confuses the logic completely and causes random failures.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/tick-broadcast.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+Index: linux-2.6/kernel/time/tick-broadcast.c
+===================================================================
+--- linux-2.6.orig/kernel/time/tick-broadcast.c
++++ linux-2.6/kernel/time/tick-broadcast.c
+@@ -785,11 +785,11 @@ bool tick_broadcast_oneshot_available(vo
+ 
+ void __init tick_broadcast_init(void)
+ {
+-	alloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
+-	alloc_cpumask_var(&tmpmask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tmpmask, GFP_NOWAIT);
+ #ifdef CONFIG_TICK_ONESHOT
+-	alloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
+-	alloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
+-	alloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
+ #endif
+ }
+
+
+
