@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933522Ab3ECQsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 12:48:10 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:47636 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab3ECQsC (ORCPT
+	id S933612Ab3ECQsm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 12:48:42 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:49359 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762763Ab3ECQsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 12:48:02 -0400
+	Fri, 3 May 2013 12:48:07 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -18,57 +18,77 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [GIT PULL] nohz: Bunch of fixes
-Date: Fri,  3 May 2013 18:47:54 +0200
-Message-Id: <1367599676-2049-1-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 1/2] rcu: Fix full dynticks' dependency on wide RCU nocb mode
+Date: Fri,  3 May 2013 18:47:55 +0200
+Message-Id: <1367599676-2049-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1367599676-2049-1-git-send-email-fweisbec@gmail.com>
+References: <1367599676-2049-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+Commit 0637e029392386e6996f5d6574aadccee8315efa
+("nohz: Select wide RCU nocb for full dynticks") intended
+to force CONFIG_RCU_NOCB_CPU_ALL=y when full dynticks is
+enabled.
 
-Please pull the timers/nohz-hz1 branch that can be found at:
+However this option is part of a choice menu and Kconfig's
+"select" instruction has no effect on such targets.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	timers/nohz-hz1
+Fix this by using reverse dependencies on the targets we
+don't want instead.
 
-HEAD: a7f4d69bb1d5e1f573b680355a2ad51566338887
-
-It fixes a Kconfig dependency issue and forces a minimum of 1 tick every seconds
-to keep handling the scheduler_tick() duties, even at a very low granularity. This
-is a workaround until we can handle all these duties through on-demand driven
-solutions rather than using periodic events, as per your suggestion.
-
-I just noted two things:
-
-* update_cpu_load_active() seem to rely on the fixed periodic tick at the
-  HZ rate. There is certainly something to tweak there to make it really correct
-  with dynamick ticks. I have the feeling that modifying pending_updates won't work
-  as it seems to decay assuming the time to catch up was idle.
-
-* I'll probably have to disable CONFIG_CFS_BANDWIDTH when full dynticks
-  is enabled. First of all it modifies rq->nr_running without using inc/dec_nr_running
-  standard API, which is required for full dynticks. And second, I need to triple
-  check it's safe to use with 1 tick per second.
-
-Ah and please note the merge commit (c032862fba51a3ca504752d3a25186b324c5ce83)
-that was needed to get latest RCU and sched updates for the Kconfig fix.
-
-Thanks,
-	Frederic
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
+ init/Kconfig        |    4 ++--
+ kernel/time/Kconfig |    1 -
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-Frederic Weisbecker (2):
-      rcu: Fix full dynticks' dependency on wide RCU nocb mode
-      sched: Keep at least 1 tick per second for active dynticks tasks
+diff --git a/init/Kconfig b/init/Kconfig
+index 66f67af..b3fdf9a 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -687,7 +687,7 @@ choice
+ 
+ config RCU_NOCB_CPU_NONE
+ 	bool "No build_forced no-CBs CPUs"
+-	depends on RCU_NOCB_CPU
++	depends on RCU_NOCB_CPU && !NO_HZ_FULL
+ 	help
+ 	  This option does not force any of the CPUs to be no-CBs CPUs.
+ 	  Only CPUs designated by the rcu_nocbs= boot parameter will be
+@@ -695,7 +695,7 @@ config RCU_NOCB_CPU_NONE
+ 
+ config RCU_NOCB_CPU_ZERO
+ 	bool "CPU 0 is a build_forced no-CBs CPU"
+-	depends on RCU_NOCB_CPU
++	depends on RCU_NOCB_CPU && !NO_HZ_FULL
+ 	help
+ 	  This option forces CPU 0 to be a no-CBs CPU.  Additional CPUs
+ 	  may be designated as no-CBs CPUs using the rcu_nocbs= boot
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index a2ddd65..e4c07b0 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -109,7 +109,6 @@ config NO_HZ_FULL
+ 	select NO_HZ_COMMON
+ 	select RCU_USER_QS
+ 	select RCU_NOCB_CPU
+-	select RCU_NOCB_CPU_ALL
+ 	select VIRT_CPU_ACCOUNTING_GEN
+ 	select CONTEXT_TRACKING_FORCE
+ 	select IRQ_WORK
+-- 
+1.7.5.4
 
-
- include/linux/sched.h    |    1 +
- init/Kconfig             |    4 ++--
- kernel/sched/core.c      |   30 ++++++++++++++++++++++++++++++
- kernel/sched/idle_task.c |    1 +
- kernel/sched/sched.h     |   10 ++++++++++
- kernel/time/Kconfig      |    1 -
- kernel/time/tick-sched.c |    7 +++++++
- 7 files changed, 51 insertions(+), 3 deletions(-)
