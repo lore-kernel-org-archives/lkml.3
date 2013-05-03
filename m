@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763610Ab3ECVJS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 17:09:18 -0400
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:50003 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729Ab3ECVJR (ORCPT
+	id S1763733Ab3ECVKl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 17:10:41 -0400
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:63340 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763585Ab3ECVKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 17:09:17 -0400
+	Fri, 3 May 2013 17:10:39 -0400
+Date: Fri, 3 May 2013 14:10:34 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: Linux IDE mailing list <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: libata maintainership change
+Message-ID: <20130503211034.GD22860@mtj.dyndns.org>
+References: <5184179D.5050407@pobox.com>
 MIME-Version: 1.0
-In-Reply-To: <1367591569-32197-28-git-send-email-lee.jones@linaro.org>
-References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
-	<1367591569-32197-28-git-send-email-lee.jones@linaro.org>
-Date: Fri, 3 May 2013 23:09:16 +0200
-Message-ID: <CACRpkdZ_cnneFWtinO1dPz0Ky=29aKG=wHW447cHoE8Hnok=xA@mail.gmail.com>
-Subject: Re: [PATCH 27/63] ARM: ux500: Pass remnant platform data though to
- DMA40 driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5184179D.5050407@pobox.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Hello,
 
-> Ironically, in order to remove lots of the auxdata assignments, we have
-> to add just one more. A lot of them require DMA information to be passed
-> into clients for DMA channel allocation, but we now have this capability
-> in Device Tree. However, the DMA40 driver still relies on a reverse table
-> look-up to obtain DMA addresses. Until all of the clients are converted,
-> over to the new API, we're stuck with this.
->
-> Also, now the DMA40 has been DT:ed, there's no requirement to register
-> it using traditional methods, so let's remove it.
->
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+On Fri, May 03, 2013 at 04:01:33PM -0400, Jeff Garzik wrote:
+> Until such time as block-based storage disappears from this earth,
+> the brave Sir Tejun, basically the libata co-author at this point,
+> has agreed to be a target for slings and arrows known as libata
+> patches.
 
-Applied to my ux500-dma40 branch.
+Yes, come high water or fire, I'll soldier on!!!11!!1!one!!
+
+On a more serious note, while I haven't been too active on libata for
+quite a while now, I'm fairly confident that I can play the patch
+monkey role.  I'll set up a tree and send a pull request to update
+MAINTAINERS.
+
+I owe Jeff a lot for holding my hands when I first started hacking on
+the kernel.  I don't think I'd be here now if it weren't for his help,
+so thanks Jeff and I hope you enjoy whatever your next chapter
+brings. :)
 
 Thanks!
-Linus Walleij
+
+-- 
+tejun
