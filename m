@@ -1,53 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763291Ab3ECSL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 14:11:29 -0400
-Received: from e24smtp01.br.ibm.com ([32.104.18.85]:57374 "EHLO
-	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763253Ab3ECSL1 (ORCPT
+	id S1763273Ab3ECSRw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 14:17:52 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:24753 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762781Ab3ECSRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 14:11:27 -0400
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: netdev@vger.kernel.org
-Cc: dm@chelsio.com, linux-kernel@vger.kernel.org,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Subject: [PATCH] cxgb4: fix error recovery when t4_fw_hello returns a positive value
-Date: Fri,  3 May 2013 15:11:04 -0300
-Message-Id: <1367604664-22368-1-git-send-email-cascardo@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050318-1524-0000-0000-000006034137
+	Fri, 3 May 2013 14:17:50 -0400
+X-Greylist: delayed 484 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 May 2013 14:17:50 EDT
+Subject: Re: [PATCH 1/1] cciss: bug fix to prevent cciss from loading in
+ kdump crash kernel
+From: "Mike Miller (OS Dev)" <mike.miller@hp.com>
+Reply-To: mike.miller@hp.com, mikem@beardog.cce.hp.com
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>
+In-Reply-To: <1367604167.5981.40.camel@dabdike>
+References: <20130423172539.GA11255@beardog.cce.hp.com>
+	 <1367604167.5981.40.camel@dabdike>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 03 May 2013 13:09:42 -0500
+Message-ID: <1367604582.11907.4798.camel@thumper.usa.hp.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 636f9d371f70f22961fd598fe18380057518ca31 ("cxgb4: Add
-support for T4 configuration file"), t4_fw_hello may return a positive
-value instead of 0 for success. The recovery code tests only for zero
-and fails recovery for any other value.
+On Fri, 2013-05-03 at 11:02 -0700, James Bottomley wrote:
+> On Tue, 2013-04-23 at 12:25 -0500, Mike Miller wrote:
+> > PATCH 1/1
+> > 
+> > By default the cciss driver supports all "older" HP Smart Array controllers
+> > and hpsa supports all controllers starting with the G6 family. There are
+> > module parameters that allow a user to override those defaults and use hpsa
+> > for any HP Smart Array controller.
+> > If the user does override the default behavior and uses hpsa for older
+> > controllers it is possible that cciss may try to load in a kdump crash
+> > kernel. This may happen if cciss is loaded first from the kdump initrd
+> > image. If cciss does load rather than hpsa and reset_devices is true we
+> > immediately call cciss_hard_reset_controller. This will result in a kernel
+> > panic and the core file cannot be created.
+> > This patch prevents cciss from trying to load in this scenario.
+> > 
+> > Tested with 3.9.0-rc7.
+> > 
+> > From: Mike <mike.miller@hp.com>
+> > Signed-off-by: Mike Miller <mike.miller@hp.com>
+> > 
+> > ---
+> >  drivers/block/cciss.c |   10 ++++++++++
+> >  1 files changed, 10 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+> > index 1c1b8e5..06c8dba 100644
+> > --- a/drivers/block/cciss.c
+> > +++ b/drivers/block/cciss.c
+> > @@ -4960,6 +4960,16 @@ static int cciss_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+> >  	ctlr_info_t *h;
+> >  	unsigned long flags;
+> >  
+> > +	/*
+> > +	 * By default the cciss driver is used for all older HP Smart Array
+> > +	 * controllers. There are module paramaters that allow a user to
+> > +	 * override this behavior and instead use the hpsa SCSI driver. If
+> > +	 * this is the case cciss may be loaded first from the kdump initrd
+> > +	 * image and cause a kernel panic. So if reset_devices is true and
+> > +	 * cciss_allow_hpsa is set just bail.
+> > +	 */
+> > +	if ((reset_devices) && (cciss_allow_hpsa == 1))
+> > +		return -ENODEV;
+> >  	rc = cciss_init_reset_devices(pdev);
+> >  	if (rc) {
+> >  		if (rc != -ENOTSUPP)
+> 
+> Sigh, right change log, incomplete bug fix.
+> 
+> Can we all agree that this is the right one?
+> 
+> James
 
-This fix tests for negative error values and fails only on those cases.
-Error recovery after an error injection works after this change.
+I submitted 2 patches. Below the 2 are combined and make the fix
+complete.
 
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
----
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+-- mikem
 
-diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-index c306df7..bb4ad38 100644
---- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-@@ -4538,7 +4538,7 @@ static pci_ers_result_t eeh_slot_reset(struct pci_dev *pdev)
- 
- 	if (t4_wait_dev_ready(adap) < 0)
- 		return PCI_ERS_RESULT_DISCONNECT;
--	if (t4_fw_hello(adap, adap->fn, adap->fn, MASTER_MUST, NULL))
-+	if (t4_fw_hello(adap, adap->fn, adap->fn, MASTER_MUST, NULL) < 0)
- 		return PCI_ERS_RESULT_DISCONNECT;
- 	adap->flags |= FW_OK;
- 	if (adap_init1(adap, &c))
--- 
-1.7.1
+> 
+> ---
+> >From 746ba9f715b9037264ae0b8175c6286f5f8f62d4 Mon Sep 17 00:00:00 2001
+> From: Mike Miller <mike.miller@hp.com>
+> Date: Thu, 18 Apr 2013 13:49:37 -0500
+> Subject: [PATCH] [SCSI] cciss: bug fix to prevent cciss from loading in kdump
+>  crash kernel
+> 
+> By default the cciss driver supports all "older" HP Smart Array controllers
+> and hpsa supports all controllers starting with the G6 family. There are
+> module parameters that allow a user to override those defaults and use hpsa
+> for any HP Smart Array controller.
+> If the user does override the default behavior and uses hpsa for older
+> controllers it is possible that cciss may try to load in a kdump crash
+> kernel. This may happen if cciss is loaded first from the kdump initrd
+> image. If cciss does load rather than hpsa and reset_devices is true we
+> immediately call cciss_hard_reset_controller. This will result in a kernel
+> panic and the core file cannot be created.
+> This patch prevents cciss from trying to load in this scenario.
+> 
+> Signed-off-by: Mike Miller <mike.miller@hp.com>
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+> 
+> diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+> index 1c1b8e5..daaab88 100644
+> --- a/drivers/block/cciss.c
+> +++ b/drivers/block/cciss.c
+> @@ -75,6 +75,12 @@ module_param(cciss_simple_mode, int, S_IRUGO|S_IWUSR);
+>  MODULE_PARM_DESC(cciss_simple_mode,
+>  	"Use 'simple mode' rather than 'performant mode'");
+>  
+> +static int cciss_allow_hpsa;
+> +module_param(cciss_allow_hpsa, int, S_IRUGO|S_IWUSR);
+> +MODULE_PARM_DESC(cciss_allow_hpsa,
+> +	"Prevent cciss driver from accessing hardware known to be "
+> +	" supported by the hpsa driver");
+> +
+>  static DEFINE_MUTEX(cciss_mutex);
+>  static struct proc_dir_entry *proc_cciss;
+>  
+> @@ -4960,6 +4966,16 @@ static int cciss_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+>  	ctlr_info_t *h;
+>  	unsigned long flags;
+>  
+> +	/*
+> +	 * By default the cciss driver is used for all older HP Smart Array
+> +	 * controllers. There are module paramaters that allow a user to
+> +	 * override this behavior and instead use the hpsa SCSI driver. If
+> +	 * this is the case cciss may be loaded first from the kdump initrd
+> +	 * image and cause a kernel panic. So if reset_devices is true and
+> +	 * cciss_allow_hpsa is set just bail.
+> +	 */
+> +	if ((reset_devices) && (cciss_allow_hpsa == 1))
+> +		return -ENODEV;
+>  	rc = cciss_init_reset_devices(pdev);
+>  	if (rc) {
+>  		if (rc != -ENOTSUPP)
+> 
+> 
+
 
