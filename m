@@ -1,109 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762097Ab3ECM4v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 08:56:51 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43580 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761757Ab3ECM4u (ORCPT
+	id S1762128Ab3ECNBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 09:01:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:20507 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755821Ab3ECNBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 08:56:50 -0400
-Date: Fri, 3 May 2013 13:55:27 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] irqchip: add support for Marvell Orion SoCs
-Message-ID: <20130503125527.GE18614@n2100.arm.linux.org.uk>
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <1367538519-23940-1-git-send-email-sebastian.hesselbarth@gmail.com> <1367538519-23940-2-git-send-email-sebastian.hesselbarth@gmail.com>
+	Fri, 3 May 2013 09:01:08 -0400
+Date: Fri, 3 May 2013 15:00:36 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Keir (Xen.org)" <keir@xen.org>, Dave Scott <Dave.Scott@eu.citrix.com>,
+        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
+        Ian Jackson <Ian.Jackson@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jonathan Ludlam <Jonathan.Ludlam@eu.citrix.com>,
+        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "carsten@schiers.de" <carsten@schiers.de>
+Subject: Re: [Xen-devel] [PATCH v2 2/2] xen/balloon: Enforce various limits
+ on target
+Message-ID: <20130503130036.GA12463@debian70-amd64.local.net-space.pl>
+References: <1367235468-8360-1-git-send-email-daniel.kiper@oracle.com>
+ <1367235468-8360-3-git-send-email-daniel.kiper@oracle.com>
+ <1367246649.3142.316.camel@zakaz.uk.xensource.com>
+ <20130430125952.GD9904@debian70-amd64.local.net-space.pl>
+ <1367329458.3142.524.camel@zakaz.uk.xensource.com>
+ <20130430185852.GF9904@debian70-amd64.local.net-space.pl>
+ <alpine.DEB.2.02.1305021214510.5398@kaball.uk.xensource.com>
+ <20130502180404.GA16489@phenom.dumpdata.com>
+ <1367568932.28742.19.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1367538519-23940-2-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1367568932.28742.19.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 01:48:35AM +0200, Sebastian Hesselbarth wrote:
-> This patch adds an irqchip driver for the main interrupt controller found
-> on Marvell Orion SoCs (Kirkwood, Dove, Orion5x, Discovery Innovation).
-> Corresponding device tree documentation is also added.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Note: This patch triggers a checkpatch warning for
->   WARNING: Avoid CamelCase: <handle_IRQ>
-> 
-> Changelog:
-> v1->v2:
-> - rename compatible string to "marvell,orion-intc" (Suggested by Jason Gunthorpe)
-> - request mem regions for irq base registers (Suggested by Jason Gunthorpe)
-> - make orion_handle_irq static (Suggested by Jason Gunthorpe)
-> - make use of IRQCHIP_DECLARE (Suggested by Jason Gunthorpe)
+On Fri, May 03, 2013 at 09:15:32AM +0100, Ian Campbell wrote:
+> On Thu, 2013-05-02 at 19:04 +0100, Konrad Rzeszutek Wilk wrote:
+> > On Thu, May 02, 2013 at 12:34:32PM +0100, Stefano Stabellini wrote:
 
-It would still be a good idea to convert this to use the generic chip
-stuff which Thomas created, though exactly how is hard to see at the
-moment.
+[...]
 
-> +static void orion_irq_mask(struct irq_data *irqd)
-> +{
-> +	unsigned int irq = irqd_to_hwirq(irqd);
-> +	unsigned int irq_off = irq % 32;
-> +	int reg = irq / 32;
-> +	u32 val;
-> +
-> +	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
-> +	writel(val & ~(1 << irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
-> +}
+> > > The xapi guys, CC'ed, might have more insights on what exactly is.
+>
+> I think that unless someone can remember what this issue was we should
+> just chalk it up to a historical artefact of something xapi (or maybe
+> some historical guest) was doing which we have no reason to believe
+> needs to be carried over to libxl.
+>
+> IOW I'm suggesting we set LIBXL_MAXMEM_CONSTANT to 0 early in the 4.4
+> cycle and see how it goes. If someone can show either empirical evidence
+> or (better) logically argue that a fudge is required then we can always
+> put it back (or it may turn out to be the caller's issue, in which case
+> they can deal with it, hopefully xapi-on-libxl won't apply this fudge
+> twice...).
+>
+> Alternatively I'm also strongly considering having debug builds of the
+> toolstack randomise the amount of slack, that ought to shake out any
+> lingering issues...
 
-This could be replaced with irq_gc_mask_clr_bit().
+Do you suggest to postopone this work until 4.4 merge window?
+If yes, then I think that at least "xen/balloon: Enforce various limits on target"
+patch (without this crazy libxl hack) should be applied.
 
-> +
-> +static void orion_irq_unmask(struct irq_data *irqd)
-> +{
-> +	unsigned int irq = irqd_to_hwirq(irqd);
-> +	unsigned int irq_off = irq % 32;
-> +	int reg = irq / 32;
-> +	u32 val;
-> +
-> +	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
-> +	writel(val | (1 << irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
-> +}
+> > > I dislike having to pull this "hack" into Linux, but if it is actually
+> > > important to leave LIBXL_MAXMEM_CONSTANT unused, then it is worth doing.
+> > > I would add a big comment on top saying:
+> > >
+> > > "libxl seems to think that we need to leave LIBXL_MAXMEM_CONSTANT
+> > > kilobytes unused, let's be gentle and do that."
+>
+> It seems to me that this change in Linux is really just papering over
+> the underlying issue. Or at the very least no one has adequately
+> explained what that real issue is and why this change is relevant to it
+> and/or an appropriate fix for it.
+>
+> The guest knows what target the toolstack has set for it is (its in the
+> target xenstore node), I don't see any reason for the guest to be
+> further second guessing that value by examining maxmem (adjusted by a
+> fudge factor or otherwise). If the guest is seeing failures to increase
+> its reservation when trying to meet that target then either the
+> toolstack was buggy in asking it to hit a target greater than its maxmem
+> or it is hitting one of the other reason for increase reservation
+> failures. Since it needs to deal with the latter anyway I don't see any
+> reason to special case maxmem as a cause for a failure.
 
-This with irq_gc_mask_set_bit().
+Do not forget that guest may change target itself.
+Additionally, we would like to introduce xm compatibility
+mode which is a bit different then xl normal behavior.
+I do not mention that it is always worth check the limits.
+It will save us a lot of trouble later.
 
-> +
-> +static struct irq_chip orion_irq_chip = {
-> +	.name		= "orion_irq",
-> +	.irq_mask	= orion_irq_mask,
-> +	.irq_unmask	= orion_irq_unmask,
-> +};
-> +
-> +static int orion_irq_map(struct irq_domain *d, unsigned int virq,
-> +			 irq_hw_number_t hw)
-> +{
-> +	irq_set_chip_and_handler(virq, &orion_irq_chip,
-> +				 handle_level_irq);
-> +	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
-
-This is where it starts to get tricky, because I can't see how you'd
-merge the irq_alloc_generic_chip() and irq_setup_generic_chip() with
-this.  Maybe you don't need to do anything here and just do all that
-in orion_of_init() instead?  But then you seem to need to know the
-virq range before hand, and I can't see how that's known.  Maybe Thomas
-can provide some enlightenment about how the gc irqchip stuff works
-with the irq domain stuff...
-
-However, you wouldn't need the statically defined orion_irq_chip nor
-orion_irq_base[] either, because those would be held within the gc
-irqchip stuff and stored in the upper layer.
+Daniel
