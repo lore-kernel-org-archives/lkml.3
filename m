@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762716Ab3ECG3o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:29:44 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:60375 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762633Ab3ECG3m (ORCPT
+	id S1762726Ab3ECGaA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:30:00 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:21491 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762633Ab3ECG36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:29:42 -0400
-X-AuditID: cbfee68f-b7f066d000003683-02-518359558537
+	Fri, 3 May 2013 02:29:58 -0400
+X-AuditID: cbfee690-b7f136d000000fea-99-51835965a20a
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 14/42] rtc: rtc-davinci: remove unnecessary
+Subject: [PATCH 15/42] rtc: rtc-dm355evm: remove unnecessary
  platform_set_drvdata()
-Date: Fri, 03 May 2013 15:29:41 +0900
-Message-id: <001c01ce47c7$982a8330$c87f8990$@samsung.com>
+Date: Fri, 03 May 2013 15:29:57 +0900
+Message-id: <001d01ce47c7$a189a6e0$e49cf4a0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5Hx5cxlgY7GJgfRISVGAEFHu5qEA==
+Thread-index: Ac5Hx58fByGCvBQaQv+68KCUCjVMkw==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zY93QyOZAgxV7DS2WXLzKbjFn/Ro2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zQ93UyOZAgwu/5C2WXLzKbjFn/Ro2
 	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
-	LdK3S+DK6F9ymLlgF19F752j7A2Mr7i7GDk5JARMJL7P+ckGYYtJXLi3HswWEljGKLHqrAxM
-	zaETTYxdjFxA8UWMEmsmP2eBcH4xSuz9vYIVpIpNQE3iy5fD7F2MHBwiAvoSbS0aIDXMAt2M
-	Eo+a5zKD1AgLhEjc2LmSDaSGRUBVYl0/B0iYV8BSYvXctawQtqDEj8n3WEBsZgEtifU7jzNB
-	2PISm9e8ZYY4SEFix9nXjCC2iICeRPvE74wQNSIS+168AztUQuAUu8TRSzfAGlgEBCS+TT7E
-	ArJXQkBWYtMBqDmSEgdX3GCZwCg2C8nqWUhWz0KyehaSFQsYWVYxiqYWJBcUJ6UXGesVJ+YW
-	l+al6yXn525ihERe/w7GuwesDzEmA62fyCwlmpwPjNy8knhDYzMjC1MTU2Mjc0sz0oSVxHnV
-	WqwDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTDG55vqdF4ufriw/F05b93RFRnqO6vT5xvc
-	Srwk3bJfQuPQmcyqjcf3lfQtYPdQLejYcsu8uqEvTsHN1Zx15YrTDbc+eX3m6LcsjOMt0W/b
-	e9lvH6vapXTTPKa0i/fFVjkXMXpJyLJ8ZBOxddpuaaftpnd+++HvW3exCZRu3xCRNztO0itP
-	QImlOCPRUIu5qDgRAEIF/2nSAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd3QyOZAg6l3dC2WXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
-	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
-	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzOhfcpi5YBdfRe+do+wNjK+4uxg5OSQETCQO
-	nWhihLDFJC7cW8/WxcjFISSwiFFizeTnLBDOL0aJvb9XsIJUsQmoSXz5cpi9i5GDQ0RAX6Kt
-	RQOkhlmgm1HiUfNcZpAaYYEQiRs7V7KB1LAIqEqs6+cACfMKWEqsnruWFcIWlPgx+R4LiM0s
-	oCWxfudxJghbXmLzmrfMEAcpSOw4+xrsOBEBPYn2id8ZIWpEJPa9eMc4gVFgFpJRs5CMmoVk
-	1CwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBEf2M+kdjKsaLA4xCnAwKvHwKrQ0
-	BQqxJpYVV+YeYpTgYFYS4XX7ARTiTUmsrEotyo8vKs1JLT7EmAz06ERmKdHkfGDSySuJNzQ2
-	MTOyNDKzMDIxNydNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGxglBTKtuWjgo/XtUbh45
-	4UuH64Fo1rtzvk7zj7WWyyz2j7DQSbHZc9l4D7N15YfjeueEF2uvfTffX/dKcalIx3fj4xr3
-	C8xvSJed+b3kceVyme2v9AS6v1ids/+6e/3qH5N3zz29n787tfPPhMsFkxqN6teY1O5/yVIq
-	1770xu+OsC8LGR2O1CqxFGckGmoxFxUnAgATLFX1MAMAAA==
+	LdK3S+DKuL/hK3PBDraKPSu7WBsY17N2MXJySAiYSEz70M4MYYtJXLi3nq2LkYtDSGAZo0TP
+	6VNMMEVN3Z+gEtMZJaauvA+WEBL4xSjR1ZQJYrMJqEl8+XKYvYuRg0NEQF+irUUDpJ5ZoJtR
+	4lHzXLANwgKhEs2rTzGC2CwCqhIPJ00Bu4JXwFLiyvE3TBC2oMSPyfdYQGxmAS2J9TuPM0HY
+	8hKb17yFulRBYsfZ12BzRAT0JLYufMAKUSMise/FO0aQxRICx9glOrbehFomIPFt8iEWkOMk
+	BGQlNh2AmiMpcXDFDZYJjGKzkKyehWT1LCSrZyFZsYCRZRWjaGpBckFxUnqRiV5xYm5xaV66
+	XnJ+7iZGSOxN2MF474D1IcZkoPUTmaVEk/OBsZtXEm9obGZkYWpiamxkbmlGmrCSOK96i3Wg
+	kEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsbKNU+uLp9Y+/Gd2czLsiYX/nn5hD4/vNhVoVPp
+	6Q7NNyursh8l3S4ILs968HCCYZaNC/f1tg/uLgHvqzs/mGs859+vKvF617MJC7eEL/b4I7np
+	UcNutze/mDccTD358dW5K8YPUt9WPty4Rrm0LsR4f/mdlI5cj90r7OS9knO3HQr2lX5wojNV
+	iaU4I9FQi7moOBEAitmU1dMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jQd3UyOZAg6atMhZLLl5lt5izfg2b
+	xeWFl1gtLu+aw2axv7OD0YHVY8/Ek2weJ2b8ZvHo27KK0WP6vJ9MHp83yQWwRjUw2mSkJqak
+	Fimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVdSKEvMKQUKBSQW
+	Fyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYxZtzf8JW5YAdbxZ6VXawNjOtZuxg5OSQETCSa
+	uj+xQdhiEhfurQeyuTiEBKYzSkxdeZ8JJCEk8ItRoqspE8RmE1CT+PLlMHsXIweHiIC+RFuL
+	Bkg9s0A3o8Sj5rnMIDXCAqESzatPMYLYLAKqEg8nTQFbxitgKXHl+BsmCFtQ4sfkeywgNrOA
+	lsT6nceZIGx5ic1r3jJDHKQgsePsa7A5IgJ6ElsXPmCFqBGR2PfiHeMERoFZSEbNQjJqFpJR
+	s5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHNnPpHYwrmywOMQowMGoxMOr0NIU
+	KMSaWFZcmXuIUYKDWUmE1+0HUIg3JbGyKrUoP76oNCe1+BBjMtCnE5mlRJPzgUknryTe0NjE
+	zMjSyMzCyMTcnDRhJXHeA63WgUIC6YklqdmpqQWpRTBbmDg4pRoY41ZfsbqYZr5iQ7OGon5M
+	5BrpzDm/by24+13ylk7l2+3/y+snznJ8WVrLOu+Kzr6LdyUEDy2Uj74gFNh33exSTpvXl0X3
+	P5W0W1gwnj+/iF03Mtbv7lZJrl3CFbVNf3Un9M5Scbjz82cXV1213WLWrdtWXjbnXSVrWs6b
+	mxwxkdOeu/NvzKQYJZbijERDLeai4kQAxmto7jADAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,51 +61,18 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-davinci.c |   11 ++---------
- 1 files changed, 2 insertions(+), 9 deletions(-)
+ drivers/rtc/rtc-dm355evm.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
-index a55048c..ca62118 100644
---- a/drivers/rtc/rtc-davinci.c
-+++ b/drivers/rtc/rtc-davinci.c
-@@ -526,10 +526,9 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 	davinci_rtc->rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
- 				    &davinci_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(davinci_rtc->rtc)) {
--		ret = PTR_ERR(davinci_rtc->rtc);
- 		dev_err(dev, "unable to register RTC device, err %d\n",
- 				ret);
--		goto fail1;
-+		return PTR_ERR(davinci_rtc->rtc);
- 	}
+diff --git a/drivers/rtc/rtc-dm355evm.c b/drivers/rtc/rtc-dm355evm.c
+index 1e1ca63..1855581 100644
+--- a/drivers/rtc/rtc-dm355evm.c
++++ b/drivers/rtc/rtc-dm355evm.c
+@@ -141,7 +141,6 @@ static int dm355evm_rtc_probe(struct platform_device *pdev)
  
- 	rtcif_write(davinci_rtc, PRTCIF_INTFLG_RTCSS, PRTCIF_INTFLG);
-@@ -543,7 +542,7 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 			  0, "davinci_rtc", davinci_rtc);
- 	if (ret < 0) {
- 		dev_err(dev, "unable to register davinci RTC interrupt\n");
--		goto fail1;
-+		return ret;
- 	}
- 
- 	/* Enable interrupts */
-@@ -556,10 +555,6 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 	device_init_wakeup(&pdev->dev, 0);
- 
- 	return 0;
--
--fail1:
+ static int dm355evm_rtc_remove(struct platform_device *pdev)
+ {
 -	platform_set_drvdata(pdev, NULL);
--	return ret;
- }
- 
- static int __exit davinci_rtc_remove(struct platform_device *pdev)
-@@ -570,8 +565,6 @@ static int __exit davinci_rtc_remove(struct platform_device *pdev)
- 
- 	rtcif_write(davinci_rtc, 0, PRTCIF_INTEN);
- 
--	platform_set_drvdata(pdev, NULL);
--
  	return 0;
  }
  
