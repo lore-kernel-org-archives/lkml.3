@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762335Ab3ECGRE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:17:04 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:60628 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756734Ab3ECGRB (ORCPT
+	id S1762471Ab3ECGRx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:17:53 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:19284 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762085Ab3ECGRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:17:01 -0400
-X-AuditID: cbfee68f-b7f066d000003683-a4-5183565c1c31
+	Fri, 3 May 2013 02:17:52 -0400
+X-AuditID: cbfee691-b7fe56d000004b96-aa-5183568e545a
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
         "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/4] backlight: atmel-pwm-bl: remove unnecessary
+        jgunthorpe@obsidianresearch.com
+Subject: [PATCH 2/4] backlight: ep93xx: remove unnecessary
  platform_set_drvdata()
-Date: Fri, 03 May 2013 15:16:59 +0900
-Message-id: <000b01ce47c5$d1f66b80$75e34280$@samsung.com>
+Date: Fri, 03 May 2013 15:17:50 +0900
+Message-id: <000c01ce47c5$f063e110$d12ba330$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5HxcxX75n6OXEPSPuJvwSqHn4tQw==
+Thread-index: Ac5HxeHaJT0uBjU+Q7WTT0XINo44BA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zQ92YsOZAg3N3+S3mrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsErozn8/ax
-	F6zgrHj8cw1bA+Mv9i5GTg4JAROJy1d+skLYYhIX7q1n62Lk4hASWMYo0TJlCRNMUevPi0wQ
-	iUWMEs/f3WKBcH4xSpz+Og2sik1ATeLLl8NAYzk4RAT0JdpaNEDCzAKlElsfvGcBsYUFIiUe
-	35nOAlLCIqAq8XaDG4jJK2Ap8fqMNEgFr4CgxI/J91ggOrUk1u88zgRhy0tsXvOWGeIcBYkd
-	Z18zgtgiAnoSdxqfMUPUiEjse/GOEeQyCYFt7BL3T35iA0mwCAhIfJt8CGythICsxKYDUHMk
-	JQ6uuMEygVFsFpLVs5CsnoVk9SwkKxYwsqxiFE0tSC4oTkovMtYrTswtLs1L10vOz93ECImx
-	/h2Mdw9YH2JMBlo/kVlKNDkfGKN5JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgHCgmkJ5akZqem
-	FqQWxReV5qQWH2Jk4uCUamCMqw7T9f5jkxhzLDp0ijZ/saHz8kW8wWzP7Zef2qM9KU9tQ8YO
-	1wLJ79xSPcLrRM7vmNrzslnlyE3t9hsTUtkfRvJ1qtrMruwuuCp1eVn5MeX5c7esOKevfSPx
-	x7xvHOFfrl+5eH1eTmug4I3VSi77xdiNmqYvC7R7vZK549yS3Jll8zec3fpJiaU4I9FQi7mo
-	OBEAZiAhvMcCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAd2YsOZAgwWtPBZz1q9hs7i88BKr
-	xeVdc9gsdu96yurA4nFixm8Wjz3zf7B69G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66
-	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
-	FjCNEbq+IUFwPUYGaCBhHWPG83n72AtWcFY8/rmGrYHxF3sXIyeHhICJROvPi0wQtpjEhXvr
-	2boYuTiEBBYxSjx/d4sFwvnFKHH66zSwKjYBNYkvXw4DdXNwiAjoS7S1aICEmQVKJbY+eM8C
-	YgsLREo8vjOdBaSERUBV4u0GNxCTV8BS4vUZaZAKXgFBiR+T77FAdGpJrN95nAnClpfYvOYt
-	M8Q5ChI7zr5mBLFFBPQk7jQ+Y4aoEZHY9+Id4wRGgVlIRs1CMmoWklGzkLQsYGRZxSiaWpBc
-	UJyUnmuoV5yYW1yal66XnJ+7iREcwc+kdjCubLA4xCjAwajEw6vQ0hQoxJpYVlyZe4hRgoNZ
-	SYTX7QdQiDclsbIqtSg/vqg0J7X4EGMy0J8TmaVEk/OBySWvJN7Q2MTMyNLIzMLIxNycNGEl
-	cd4DrdaBQgLpiSWp2ampBalFMFuYODilGhinc802uhly46T6grSIyftYVSJOiubqh8669sDn
-	2Q8Rti611VG6E79cEqm9+fxwXMSOQk2/hsRNJlxmc9RWrNj8/+DUqi55hzfWH5wmf/o64V5r
-	XuvV/OD8Z6/VVE5aM/i+SilncbiQuSO4/+kzF/7ihE87p4f8/dPMV7jVXyN/7+XZSakN3XOU
-	WIozEg21mIuKEwHmb24yJAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zY92+sOZAg7M7jCzmrF/DZvH9hqnF
+	5V1z2Cx273rK6sDicWLGbxaP7zt6GT32zP/B6vF5k1wASxSXTUpqTmZZapG+XQJXxq9LN9kK
+	/rJVtHy6y97A+Im1i5GTQ0LAROJ1wx4oW0ziwr31bF2MXBxCAssYJZ7MucwMU3R+3RSoxCJG
+	iSvT5rBAOL8YJZ4fP8cEUsUmoCbx5cth9i5GDg4RAX2JthYNkDCzQJHE4wMQG4QFgiV+TD8B
+	Vs4ioCqx/2gDI4jNK2Ap8WX6AyhbUOLH5HssEL1aEut3HmeCsOUlNq95C3WQgsSOs6/B6kUE
+	9CS+zTjJDFEjIrHvxTtGiJp17BJPLipC7BKQ+Db5EAvIaRICshKbDkCNkZQ4uOIGywRGsVlI
+	Ns9CsnkWks2zkGxYwMiyilE0tSC5oDgpvchUrzgxt7g0L10vOT93EyMkxibuYLx/wPoQYzLQ
+	+onMUqLJ+cAYzSuJNzQ2M7IwNTE1NjK3NCNNWEmcV73FOlBIID2xJDU7NbUgtSi+qDQntfgQ
+	IxMHp1QD44oLR98zPQ35EvfYo8/79OXdXZ2Lb0UeeB+VuzA9QDnukvvRhQo/hQ4fuu0SLp1j
+	oaJRzNoWsXCj1ZnTO2L/lH//c+O+GpPeUesJjK9LFsj8iz6mY5aXXhshabpYqtPo9ocwpg+2
+	e/xqlJ6t+Nx9dfGK24fn806bX1HYtHFH6P2Y/fqnTj+uP6TEUpyRaKjFXFScCABlwUJWxwIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jAd2+sOZAg3vv9CzmrF/DZvH9hqnF
+	5V1z2Cx273rK6sDicWLGbxaP7zt6GT32zP/B6vF5k1wAS1QDo01GamJKapFCal5yfkpmXrqt
+	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
+	MI0Rur4hQXA9RgZoIGEdY8avSzfZCv6yVbR8usvewPiJtYuRk0NCwETi/LopbBC2mMSFe+uB
+	bC4OIYFFjBJXps1hgXB+MUo8P36OCaSKTUBN4suXw+xdjBwcIgL6Em0tGiBhZoEiiccH9oAN
+	FRYIlvgx/QRYOYuAqsT+ow2MIDavgKXEl+kPoGxBiR+T77FA9GpJrN95nAnClpfYvOYtM8RB
+	ChI7zr4GqxcR0JP4NuMkM0SNiMS+F+8YJzAKzEIyahaSUbOQjJqFpGUBI8sqRtHUguSC4qT0
+	XCO94sTc4tK8dL3k/NxNjOAYfia9g3FVg8UhRgEORiUeXoWWpkAh1sSy4srcQ4wSHMxKIrxu
+	P4BCvCmJlVWpRfnxRaU5qcWHGJOBPp3ILCWanA9ML3kl8YbGJmZGlkZmFkYm5uakCSuJ8x5s
+	tQ4UEkhPLEnNTk0tSC2C2cLEwSnVwMh+91NUQ2Lu7BsR4fpb1FR7zu9gPlOgvkrx3MeDCau4
+	1ibe3PNMaf+/dWyVgm4dySL8xm5Zn/YJJzJy//62RUHq9KvULftqpvc5ObX5p/9qND28u9vh
+	96SdRu5pu818Ihz4ShkF1nVFz/qw8Ncdu8hzAc6f4lYfjO5psU0zuqtrsfxy4e6J6UosxRmJ
+	hlrMRcWJALGGYUElAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -62,29 +61,21 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/atmel-pwm-bl.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/video/backlight/ep93xx_bl.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
-index a60d6af..0393d82 100644
---- a/drivers/video/backlight/atmel-pwm-bl.c
-+++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -195,7 +195,6 @@ static int __init atmel_pwm_bl_probe(struct platform_device *pdev)
- 	return 0;
+diff --git a/drivers/video/backlight/ep93xx_bl.c b/drivers/video/backlight/ep93xx_bl.c
+index 3345582..018368b 100644
+--- a/drivers/video/backlight/ep93xx_bl.c
++++ b/drivers/video/backlight/ep93xx_bl.c
+@@ -111,7 +111,6 @@ static int ep93xxbl_remove(struct platform_device *dev)
+ 	struct backlight_device *bl = platform_get_drvdata(dev);
  
- err_free_bl_dev:
--	platform_set_drvdata(pdev, NULL);
- 	backlight_device_unregister(bldev);
- err_free_pwm:
- 	pwm_channel_free(&pwmbl->pwmc);
-@@ -212,7 +211,6 @@ static int __exit atmel_pwm_bl_remove(struct platform_device *pdev)
- 	pwm_channel_disable(&pwmbl->pwmc);
- 	pwm_channel_free(&pwmbl->pwmc);
- 	backlight_device_unregister(pwmbl->bldev);
--	platform_set_drvdata(pdev, NULL);
- 
+ 	backlight_device_unregister(bl);
+-	platform_set_drvdata(dev, NULL);
  	return 0;
  }
+ 
 -- 
 1.7.2.5
 
