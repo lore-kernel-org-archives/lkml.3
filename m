@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762590Ab3ECE5o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 00:57:44 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:45099 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754943Ab3ECE5n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 00:57:43 -0400
-Date: Thu, 2 May 2013 21:08:31 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
-Subject: [GIT PULL] linux-pstore.git
-Message-ID: <20130503040831.GA15695@teo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753526Ab3ECFBx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 01:01:53 -0400
+Received: from mout.gmx.net ([212.227.15.15]:63881 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751199Ab3ECFBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 01:01:52 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+Xm04wgI2Xv9L8MagJZQSlTW527WrkMx2U8/EzAS
+	+3XsuI76I0KIb7
+Message-ID: <1367557300.5907.30.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: wake-affine throttle
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Fri, 03 May 2013 07:01:40 +0200
+In-Reply-To: <51833302.6090208@linux.vnet.ibm.com>
+References: <5164DCE7.8080906@linux.vnet.ibm.com>
+	 <51833302.6090208@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+On Fri, 2013-05-03 at 11:46 +0800, Michael Wang wrote: 
+> On 04/10/2013 11:30 AM, Michael Wang wrote:
+> 
+> Now long time has been passed since the first version, I'd like to 
+> do some summary about current states:
+> 
+> On a 12 cpu box with tip 3.9.0-rc7, test show that:
+> 
+> 1. remove wake-affine stuff cause regression on hackbench (could be 15%).
+> 2. reserve wake-affine stuff cause regression on pgbench (could be 45%).
+> 
+> And since neither remove or reserve is acceptable, this patch introduced a
+> knob to throttle wake-affine stuff.
+> 
+> By turning the knob, we could benefit both hackbench and pgbench, or sacrifice
+> one to significantly benefit another.
+> 
+> All similar workload which prefer or hate wake-affine behaviour could
+> been cared.
+> 
+> If this approach caused any concerns, please let me know ;-)
 
-Please pull a few updates for the pstore subsystem. Here is what is in:
+I wonder if throttling on failure is the way to go.  Note the minimal
+gain for pgbench with the default 1ms throttle interval.  It's not very
+effective out of the box for the load type it's targeted to help, and
+people generally don't twiddle scheduler knobs.  If you throttle on
+success, you directly restrict migration frequency without that being
+affected by what other tasks are doing.  Seems that would be a bit more
+effective.
 
-- A new platform data parameter to specify ECC configuration;
-- Rounding fixup to not waste memory in ecc_blocks;
-- Restore ECC information printouts;
-- A small code cleanup: use kmemdup where appropriate.
+(I still like the wakeup buddy thing, it's more effective because it
+adds and uses knowledge, though without the knob, cache domain size.
+Peter is right about the interrupt wakeups though, that could very
+easily cause regressions, dirt simple throttle is much safer).
 
-Thank you!
+-Mike
 
-The following changes since commit a937536b868b8369b98967929045f1df54234323:
-
-  Linux 3.9-rc3 (2013-03-17 15:59:32 -0700)
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/cbou/linux-pstore.git tags/for-v3.10
-
-for you to fetch changes up to bd08ec33b5c23833581e5a36b2a69ccae6b39a28:
-
-  pstore/ram: Restore ecc information block (2013-04-03 21:50:10 -0700)
-
-----------------------------------------------------------------
-Alexandru Gheorghiu (1):
-      pstore: Replace calls to kmalloc and memcpy with kmemdup
-
-Arve Hjønnevåg (3):
-      pstore/ram: Include ecc_size when calculating ecc_block
-      pstore/ram: Allow specifying ecc parameters in platform data
-      pstore/ram: Restore ecc information block
-
- fs/pstore/ram.c            | 26 +++++++++++-------
- fs/pstore/ram_core.c       | 66 ++++++++++++++++++++++++++--------------------
- include/linux/pstore_ram.h | 14 +++++++---
- 3 files changed, 64 insertions(+), 42 deletions(-)
