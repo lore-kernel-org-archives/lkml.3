@@ -1,101 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933962Ab3ECOj4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:39:56 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:52646 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933763Ab3ECOfL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:35:11 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org
-Subject: [PATCH 48/63] usb: musb: ux500: attempt to find channels by name before using pdata
-Date: Fri,  3 May 2013 15:32:34 +0100
-Message-Id: <1367591569-32197-49-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
-References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
+	id S933853Ab3ECOkW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:40:22 -0400
+Received: from mga14.intel.com ([143.182.124.37]:62581 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933652Ab3ECOfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 10:35:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,605,1363158000"; 
+   d="scan'208";a="297105456"
+Date: Fri, 3 May 2013 07:35:07 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, eranian@google.com
+Subject: Re: [PATCH 1/3] perf, x86: Blacklist all MEM_*_RETIRED events for IVB
+Message-ID: <20130503143507.GP19487@tassilo.jf.intel.com>
+References: <20130503121122.931661809@chello.nl>
+ <20130503121256.083340271@chello.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130503121256.083340271@chello.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we can ever get to a state where we can solely search for DMA channels
-by name, this will almost completely alleviate the requirement to pass
-copious amounts of information though platform data. Here we take the
-first step towards this. The next step will be to enable Device Tree
-complete with name<->event_line mapping.
+On Fri, May 03, 2013 at 02:11:23PM +0200, Peter Zijlstra wrote:
+> Errata BV98 states that all MEM_*_RETIRED events corrupt the counter
+> value of the SMT sibling's counters. Blacklist these events
 
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Acked-by: Fabio Baltieri <fabio.baltieri@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/usb/musb/ux500_dma.c |   20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+I disagree with this patch. This is just overkill and not needed
+at all.
 
-diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
-index 8d5128d..99ad1fe 100644
---- a/drivers/usb/musb/ux500_dma.c
-+++ b/drivers/usb/musb/ux500_dma.c
-@@ -33,6 +33,11 @@
- #include <linux/platform_data/usb-musb-ux500.h>
- #include "musb_core.h"
- 
-+static const char *iep_chan_names[] = { "iep_1_9", "iep_2_10", "iep_3_11", "iep_4_12",
-+					"iep_5_13", "iep_6_14", "iep_7_15", "iep_8" };
-+static const char *oep_chan_names[] = { "oep_1_9", "oep_2_10", "oep_3_11", "oep_4_12",
-+					"oep_5_13", "oep_6_14", "oep_7_15", "oep_8" };
-+
- struct ux500_dma_channel {
- 	struct dma_channel channel;
- 	struct ux500_dma_controller *controller;
-@@ -289,6 +294,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 	struct musb_hdrc_platform_data *plat = dev->platform_data;
- 	struct ux500_musb_board_data *data;
- 	struct dma_channel *dma_channel = NULL;
-+	char **chan_names;
- 	u32 ch_num;
- 	u8 dir;
- 	u8 is_tx = 0;
-@@ -310,6 +316,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 	/* Prepare the loop for RX channels */
- 	channel_array = controller->rx_channel;
- 	param_array = data ? data->dma_rx_param_array : NULL;
-+	chan_names = (char **)iep_chan_names;
- 
- 	for (dir = 0; dir < 2; dir++) {
- 		for (ch_num = 0;
-@@ -325,9 +332,15 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 			dma_channel->status = MUSB_DMA_STATUS_FREE;
- 			dma_channel->max_len = SZ_16M;
- 
--			ux500_channel->dma_chan = dma_request_channel(mask,
--							data->dma_filter,
--							param_array[ch_num]);
-+			ux500_channel->dma_chan =
-+				dma_request_slave_channel(dev, chan_names[ch_num]);
-+
-+			if (!ux500_channel->dma_chan)
-+				ux500_channel->dma_chan =
-+					dma_request_channel(mask,
-+							    data->dma_filter,
-+							    param_array[ch_num]);
-+
- 			if (!ux500_channel->dma_chan) {
- 				ERR("Dma pipe allocation error dir=%d ch=%d\n",
- 					dir, ch_num);
-@@ -343,6 +356,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 		/* Prepare the loop for TX channels */
- 		channel_array = controller->tx_channel;
- 		param_array = data ? data->dma_tx_param_array : NULL;
-+		chan_names = (char **)oep_chan_names;
- 		is_tx = 1;
- 	}
- 
--- 
-1.7.10.4
-
+-Andi
