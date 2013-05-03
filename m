@@ -1,139 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934138Ab3ECV65 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 17:58:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11520 "EHLO
+	id S934518Ab3ECV64 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 17:58:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20168 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934423Ab3ECV6w (ORCPT
+	with ESMTP id S934406Ab3ECV6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 17:58:52 -0400
-X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=rDoqQw2vEtoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=F_i-Va4x4dEA:10 a=8dkFtAC9dnHPs2Dyl1wA:9 a=jeBq3FmKZ4MA:10 a=9J5VuaLb3qoA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 3 May 2013 17:58:51 -0400
+X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=bkp49NrskG4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=1UxL-qhO9PsA:10 a=VwQbUJbxAAAA:8 a=4-pcMlRTT7BXjaTAMckA:9 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=poXN1xQ_eIjB8LCM:21 a=TKk4sC6vh2NN-pHc:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130503215850.637693210@goodmis.org>
+Message-Id: <20130503215850.456807071@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 03 May 2013 17:58:35 -0400
+Date: Fri, 03 May 2013 17:58:34 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, Mike Galbraith <bitbucket@online.de>
-Subject: [PATCH RT 3/4] swap: Use unique local lock name for swap_lock
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 2/4] x86/mce: Defer mce wakeups to threads for PREEMPT_RT
 References: <20130503215832.688847775@goodmis.org>
-Content-Disposition: inline; filename=0003-swap-Use-unique-local-lock-name-for-swap_lock.patch
+Content-Disposition: inline; filename=0002-x86-mce-Defer-mce-wakeups-to-threads-for-PREEMPT_RT.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <rostedt@goodmis.org>
 
->From lib/Kconfig.debug on CONFIG_FORCE_WEAK_PER_CPU:
+We had a customer report a lockup on a 3.0-rt kernel that had the
+following backtrace:
 
-----
-s390 and alpha require percpu variables in modules to be
-defined weak to work around addressing range issue which
-puts the following two restrictions on percpu variable
-definitions.
+[ffff88107fca3e80] rt_spin_lock_slowlock at ffffffff81499113
+[ffff88107fca3f40] rt_spin_lock at ffffffff81499a56
+[ffff88107fca3f50] __wake_up at ffffffff81043379
+[ffff88107fca3f80] mce_notify_irq at ffffffff81017328
+[ffff88107fca3f90] intel_threshold_interrupt at ffffffff81019508
+[ffff88107fca3fa0] smp_threshold_interrupt at ffffffff81019fc1
+[ffff88107fca3fb0] threshold_interrupt at ffffffff814a1853
 
-1. percpu symbols must be unique whether static or not
-2. percpu variables can't be defined inside a function
+It actually bugged because the lock was taken by the same owner that
+already had that lock. What happened was the thread that was setting
+itself on a wait queue had the lock when an MCE triggered. The MCE
+interrupt does a wake up on its wait list and grabs the same lock.
 
-To ensure that generic code follows the above rules, this
-option forces all percpu variables to be defined as weak.
-----
+NOTE: THIS IS NOT A BUG ON MAINLINE
 
-The addition of the local IRQ swap_lock in mm/swap.c broke this config
-as the name "swap_lock" is used through out the kernel. Just do a "git
-grep swap_lock" to see, and the new swap_lock is a local lock which
-defines the swap_lock for per_cpu.
+Sorry for yelling, but as I Cc'd mainline maintainers I want them to
+know that this is an PREEMPT_RT bug only. I only Cc'd them for advice.
 
-The fix was to rename swap_lock to swapvec_lock which keeps it unique.
+On PREEMPT_RT the wait queue locks are converted from normal
+"spin_locks" into an rt_mutex (see the rt_spin_lock_slowlock above).
+These are not to be taken by hard interrupt context. This usually isn't
+a problem as most all interrupts in PREEMPT_RT are converted into
+schedulable threads. Unfortunately that's not the case with the MCE irq.
 
-Reported-by: Mike Galbraith <bitbucket@online.de>
+As wait queue locks are notorious for long hold times, we can not
+convert them to raw_spin_locks without causing issues with -rt. But
+Thomas has created a "simple-wait" structure that uses raw spin locks
+which may have been a good fit.
+
+Unfortunately, wait queues are not the only issue, as the mce_notify_irq
+also does a schedule_work(), which grabs the workqueue spin locks that
+have the exact same issue.
+
+Thus, this patch I'm proposing is to move the actual work of the MCE
+interrupt into a helper thread that gets woken up on the MCE interrupt
+and does the work in a schedulable context.
+
+NOTE: THIS PATCH ONLY CHANGES THE BEHAVIOR WHEN PREEMPT_RT IS SET
+
+Oops, sorry for yelling again, but I want to stress that I keep the same
+behavior of mainline when PREEMPT_RT is not set. Thus, this only changes
+the MCE behavior when PREEMPT_RT is configured.
+
+Cc: stable-rt@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[bigeasy@linutronix: make mce_notify_work() a proper prototype, use
+		     kthread_run()]
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- mm/swap.c |   20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |   78 +++++++++++++++++++++++++++++---------
+ 1 file changed, 61 insertions(+), 17 deletions(-)
 
-diff --git a/mm/swap.c b/mm/swap.c
-index 62dc70c..15c1c53 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -42,7 +42,7 @@ static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
- static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 91466f5..63c96f9 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -15,6 +15,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/kobject.h>
+ #include <linux/uaccess.h>
++#include <linux/kthread.h>
+ #include <linux/kdebug.h>
+ #include <linux/kernel.h>
+ #include <linux/percpu.h>
+@@ -1293,6 +1294,63 @@ static void mce_do_trigger(struct work_struct *work)
  
- static DEFINE_LOCAL_IRQ_LOCK(rotate_lock);
--static DEFINE_LOCAL_IRQ_LOCK(swap_lock);
-+static DEFINE_LOCAL_IRQ_LOCK(swapvec_lock);
+ static DECLARE_WORK(mce_trigger_work, mce_do_trigger);
  
++static void __mce_notify_work(void)
++{
++	/* Not more than two messages every minute */
++	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
++
++	/* wake processes polling /dev/mcelog */
++	wake_up_interruptible(&mce_chrdev_wait);
++
++	/*
++	 * There is no risk of missing notifications because
++	 * work_pending is always cleared before the function is
++	 * executed.
++	 */
++	if (mce_helper[0] && !work_pending(&mce_trigger_work))
++		schedule_work(&mce_trigger_work);
++
++	if (__ratelimit(&ratelimit))
++		pr_info(HW_ERR "Machine check events logged\n");
++}
++
++#ifdef CONFIG_PREEMPT_RT_FULL
++struct task_struct *mce_notify_helper;
++
++static int mce_notify_helper_thread(void *unused)
++{
++	while (1) {
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule();
++		if (kthread_should_stop())
++			break;
++		__mce_notify_work();
++	}
++	return 0;
++}
++
++static int mce_notify_work_init(void)
++{
++	mce_notify_helper = kthread_run(mce_notify_helper_thread, NULL,
++					   "mce-notify");
++	if (!mce_notify_helper)
++		return -ENOMEM;
++
++	return 0;
++}
++
++static void mce_notify_work(void)
++{
++	wake_up_process(mce_notify_helper);
++}
++#else
++static void mce_notify_work(void)
++{
++	__mce_notify_work();
++}
++static inline int mce_notify_work_init(void) { return 0; }
++#endif
++
  /*
-  * This path almost never happens for VM activity - pages are normally
-@@ -332,13 +332,13 @@ static void activate_page_drain(int cpu)
- void activate_page(struct page *page)
+  * Notify the user(s) about new machine check events.
+  * Can be called from interrupt context, but not from machine check/NMI
+@@ -1300,24 +1358,8 @@ static DECLARE_WORK(mce_trigger_work, mce_do_trigger);
+  */
+ int mce_notify_irq(void)
  {
- 	if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
--		struct pagevec *pvec = &get_locked_var(swap_lock,
-+		struct pagevec *pvec = &get_locked_var(swapvec_lock,
- 						       activate_page_pvecs);
- 
- 		page_cache_get(page);
- 		if (!pagevec_add(pvec, page))
- 			pagevec_lru_move_fn(pvec, __activate_page, NULL);
--		put_locked_var(swap_lock, activate_page_pvecs);
-+		put_locked_var(swapvec_lock, activate_page_pvecs);
+-	/* Not more than two messages every minute */
+-	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
+-
+ 	if (test_and_clear_bit(0, &mce_need_notify)) {
+-		/* wake processes polling /dev/mcelog */
+-		wake_up_interruptible(&mce_chrdev_wait);
+-
+-		/*
+-		 * There is no risk of missing notifications because
+-		 * work_pending is always cleared before the function is
+-		 * executed.
+-		 */
+-		if (mce_helper[0] && !work_pending(&mce_trigger_work))
+-			schedule_work(&mce_trigger_work);
+-
+-		if (__ratelimit(&ratelimit))
+-			pr_info(HW_ERR "Machine check events logged\n");
+-
++		mce_notify_work();
+ 		return 1;
  	}
+ 	return 0;
+@@ -2295,6 +2337,8 @@ static __init int mcheck_init_device(void)
+ 	/* register character device /dev/mcelog */
+ 	misc_register(&mce_chrdev_device);
+ 
++	err = mce_notify_work_init();
++
+ 	return err;
  }
- 
-@@ -378,12 +378,12 @@ EXPORT_SYMBOL(mark_page_accessed);
- 
- void __lru_cache_add(struct page *page, enum lru_list lru)
- {
--	struct pagevec *pvec = &get_locked_var(swap_lock, lru_add_pvecs)[lru];
-+	struct pagevec *pvec = &get_locked_var(swapvec_lock, lru_add_pvecs)[lru];
- 
- 	page_cache_get(page);
- 	if (!pagevec_add(pvec, page))
- 		__pagevec_lru_add(pvec, lru);
--	put_locked_var(swap_lock, lru_add_pvecs);
-+	put_locked_var(swapvec_lock, lru_add_pvecs);
- }
- EXPORT_SYMBOL(__lru_cache_add);
- 
-@@ -548,19 +548,19 @@ void deactivate_page(struct page *page)
- 		return;
- 
- 	if (likely(get_page_unless_zero(page))) {
--		struct pagevec *pvec = &get_locked_var(swap_lock,
-+		struct pagevec *pvec = &get_locked_var(swapvec_lock,
- 						       lru_deactivate_pvecs);
- 
- 		if (!pagevec_add(pvec, page))
- 			pagevec_lru_move_fn(pvec, lru_deactivate_fn, NULL);
--		put_locked_var(swap_lock, lru_deactivate_pvecs);
-+		put_locked_var(swapvec_lock, lru_deactivate_pvecs);
- 	}
- }
- 
- void lru_add_drain(void)
- {
--	lru_add_drain_cpu(local_lock_cpu(swap_lock));
--	local_unlock_cpu(swap_lock);
-+	lru_add_drain_cpu(local_lock_cpu(swapvec_lock));
-+	local_unlock_cpu(swapvec_lock);
- }
- 
- static void lru_add_drain_per_cpu(struct work_struct *dummy)
-@@ -771,7 +771,7 @@ EXPORT_SYMBOL(pagevec_lookup_tag);
- static int __init swap_init_locks(void)
- {
- 	local_irq_lock_init(rotate_lock);
--	local_irq_lock_init(swap_lock);
-+	local_irq_lock_init(swapvec_lock);
- 	return 1;
- }
- early_initcall(swap_init_locks);
+ device_initcall(mcheck_init_device);
 -- 
 1.7.10.4
 
