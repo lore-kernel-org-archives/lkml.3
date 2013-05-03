@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933259Ab3ECPey (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 11:34:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39222 "EHLO mx2.suse.de"
+	id S933238Ab3ECPfn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 11:35:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32017 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932944Ab3ECPex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 11:34:53 -0400
-Date: Fri, 3 May 2013 17:34:50 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Christoph Lameter <cl@linux.com>
-Cc: Han Pingtian <hanpt@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, penberg@kernel.org,
-        rientjes@google.com, linux-mm@kvack.org
-Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
-Message-ID: <20130503153450.GA18709@dhcp22.suse.cz>
-References: <0000013e427023d7-9456c313-8654-420c-b85a-cb79cc3c4ffc-000000@email.amazonses.com>
- <20130426062436.GB4441@localhost.localdomain>
- <0000013e46cba821-d5c54c99-3b5c-4669-9a54-9fb8f4ee516f-000000@email.amazonses.com>
- <20130427112418.GC4441@localhost.localdomain>
- <0000013e5645b356-09aa6796-0a95-40f1-8ec5-6e2e3d0c434f-000000@email.amazonses.com>
- <20130429145711.GC1172@dhcp22.suse.cz>
- <20130502105637.GD4441@localhost.localdomain>
- <0000013e65cb32b3-047cd2d6-dfc8-41d2-a792-9b398f9a1baf-000000@email.amazonses.com>
- <20130503030345.GE4441@localhost.localdomain>
- <0000013e6aff6f95-b8fa366e-51a5-4632-962e-1b990520f5a8-000000@email.amazonses.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000013e6aff6f95-b8fa366e-51a5-4632-962e-1b990520f5a8-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752354Ab3ECPfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 11:35:41 -0400
+Message-ID: <1367595480.336.3.camel@dcbw.foobar.com>
+Subject: Re: [PATCH] USB: Added support for Cinterion's PLxx WWAN Interface
+From: Dan Williams <dcbw@redhat.com>
+To: Schemmel Hans-Christoph <Hans-Christoph.Schemmel@gemalto.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 03 May 2013 10:38:00 -0500
+In-Reply-To: <239D7A53E5B17B4BB20795A7977613A4A7ED7FC174@CROEXCFWP04.gemalto.com>
+References: <239D7A53E5B17B4BB20795A7977613A4A7ED7FC174@CROEXCFWP04.gemalto.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 03-05-13 15:25:25, Christoph Lameter wrote:
-> On Fri, 3 May 2013, Han Pingtian wrote:
+On Fri, 2013-05-03 at 09:39 +0200, Schemmel Hans-Christoph wrote:
+> /drivers/net/usb/qmi_wwan.c: Added support for Cinterion's PLxx WWAN Interface by adding Cinterion's Vendor ID as well as Product ID and QMI_FIXED_INTF.
 > 
-> > On Thu, May 02, 2013 at 03:10:15PM +0000, Christoph Lameter wrote:
-> > > On Thu, 2 May 2013, Han Pingtian wrote:
-> > >
-> > > > Looks like "ibmvscsi" + "slub" can trigger this problem.
-> > >
-> > > And the next merge of the slab-next tree will also cause SLAB to trigger
-> > > this issue. I would like to have this fixes. The slab allocator purpose is
-> > > to servr objects that are a fraction of a page and not objects that are
-> > > larger than the maximum allowed sizes of the page allocator.
-> >
-> > So the problem is in memory management code, not in ibmvscis? And looks
-> > like there is a fix already?
-> 
-> Both should be fixed.
+> /drivers/usb/serial/option.c: Added support for Cinterion's PLxx WWAN Interface by blacklisting USB Interface 4 (WWAN Port). Renamed Product IDs.
 
-Could you point to the specific commit(s), please?
+Unfortunately, you'll need to split this patch up into two patches, one
+patch sent to netdev@ for the qmi_wwan part (because it's considered
+primarily net driver rather than USB) and a second patch to linux-usb@
+for the option stuff, because it's a USB driver.
 
-> Making requests for large amounts of memory from an allocator that is
-> supposed to hand out fraction of a page does not make sense.
+(confusing, I know, even though these are all for the same device, those
+are the rules...)
 
-AFAIR there were lots of objects in size-512 as well.
+Thanks!
+Dan
 
--- 
-Michal Hocko
-SUSE Labs
+> Signed-off-by: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+> ---
+> patch is against linux-3.9
+> diff -uprN linux-3.9_original/drivers/net/usb/qmi_wwan.c linux-3.9/drivers/net/usb/qmi_wwan.c
+> --- linux-3.9_original/drivers/net/usb/qmi_wwan.c	2013-04-29 02:36:01.000000000 +0200
+> +++ linux-3.9/drivers/net/usb/qmi_wwan.c	2013-05-02 12:34:20.249979603 +0200
+> @@ -414,6 +414,9 @@ static const struct driver_info	qmi_wwan
+>  };
+>  
+>  #define HUAWEI_VENDOR_ID	0x12D1
+> +#define CINTERION_VENDOR_ID	0x1E2D
+> +
+> +#define CINTERION_PRODUCT_PLxx	0x0060
+>  
+>  /* map QMI/wwan function by a fixed interface number */
+>  #define QMI_FIXED_INTF(vend, prod, num) \
+> @@ -569,6 +572,7 @@ static const struct usb_device_id produc
+>  	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
+>  	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
+>  	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
+> +	{QMI_FIXED_INTF(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLxx, 4)},	/* Cinterion PLxx */
+>  
+>  	/* 4. Gobi 1000 devices */
+>  	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
+> diff -uprN linux-3.9_original/drivers/usb/serial/option.c linux-3.9/drivers/usb/serial/option.c
+> --- linux-3.9_original/drivers/usb/serial/option.c	2013-04-29 02:36:01.000000000 +0200
+> +++ linux-3.9/drivers/usb/serial/option.c	2013-05-02 12:28:12.044153769 +0200
+> @@ -341,8 +341,8 @@ static void option_instat_callback(struc
+>  #define CINTERION_PRODUCT_EU3_E			0x0051
+>  #define CINTERION_PRODUCT_EU3_P			0x0052
+>  #define CINTERION_PRODUCT_PH8			0x0053
+> -#define CINTERION_PRODUCT_AH6			0x0055
+> -#define CINTERION_PRODUCT_PLS8			0x0060
+> +#define CINTERION_PRODUCT_AHxx			0x0055
+> +#define CINTERION_PRODUCT_PLxx			0x0060
+>  
+>  /* Olivetti products */
+>  #define OLIVETTI_VENDOR_ID			0x0b3c
+> @@ -1263,8 +1263,9 @@ static const struct usb_device_id option
+>  	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
+>  	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
+>  	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
+> -	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AH6) },
+> -	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLS8) },
+> +	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AHxx) },
+> +	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLxx),
+> +		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+>  	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, 
+>  	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
+>  	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
