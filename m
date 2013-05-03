@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761744Ab3ECAbR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 20:31:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:27058 "EHLO mga03.intel.com"
+	id S1762197Ab3ECAdV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 20:33:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35761 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753131Ab3ECAbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 20:31:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,600,1363158000"; 
-   d="scan'208";a="236146215"
-Message-ID: <1367541180.2093.10.camel@ymzhang.sh.intel.com>
-Subject: Re: Subject : [ PATCH ]
- pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Reply-To: yanmin_zhang@linux.intel.com
-To: linasvepstas@gmail.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Zhang, LongX" <longx.zhang@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Joseph.Liu@Emulex.Com" <Joseph.Liu@emulex.com>
-Date: Fri, 03 May 2013 08:33:00 +0800
-In-Reply-To: <CAHrUA34H_B-ffebx6ueHgV1ax-PL_3hLZr1JGaP2NJZ7bYgvtw@mail.gmail.com>
-References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
-	 <1367454625.2093.6.camel@ymzhang.sh.intel.com>
-	 <CAHrUA34H_B-ffebx6ueHgV1ax-PL_3hLZr1JGaP2NJZ7bYgvtw@mail.gmail.com>
-Organization: Intel.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1753238Ab3ECAdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 20:33:19 -0400
+Subject: [PATCH 0/8] Fix assorted FS-Cache issues
+To: linux-cachefs@redhat.com
+From: David Howells <dhowells@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        hjayasur@redhat.com, jlayton@redhat.com, linux-kernel@vger.kernel.org
+Date: Fri, 03 May 2013 01:33:16 +0100
+Message-ID: <20130503003316.14952.51791.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-01 at 20:20 -0500, Linas Vepstas wrote:
-> Hi,
-> 
-> On 1 May 2013 19:30, Yanmin Zhang <yanmin_zhang@linux.intel.com>
-> wrote:
->         On Fri, 2013-04-26 at 06:28 +0000, Zhang, LongX wrote:
->         > From: Zhang Long <longx.zhang@intel.com>
->         >
->         > Specific pci device drivers might have many functions to
->         call
->         > pci_channel_offline to check device states. When slot_reset
->         happens,
->         > drivers' slot_reset callback might call such functions and
->         eventually
->         > abort the reset.
->         >
->         > The patch resets pdev->error_state to pci_channel_io_normal
->         at
->         > the begining of report_slot_reset.
->         >
->         > Thank Liu Joseph for pointing it out.
->         
->         Linas, Bjorn,
->         
->         Would you like to merge the patch to your testing tree?
->         The patch resolves one issue pointed out by Joseph.
-> 
-> 
-> I'm not maintaining a tree at this time, and am not able to test.
-> Sorry.
-Thanks Linas.
-
-Greg,
-
-Would you like to merge it into your testing tree? Joseph Liu tested
-the patch and it does work.
-
-Thanks,
-Yanmin
 
 
+Following this mail is a series of patches to fix a number of FS-Cache issues,
+including a number of oopses.  The patches can also be found at:
+
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=fscache
+
+The patches are as follows:
+
+ (1) Don't put spin_lock() in a while-condition as spin_lock() may be wrapped
+     with do {} while(0) (cleanup).
+
+ (2) Name i_mutex lock classes rather than using numbers in CacheFiles (cleanup).
+
+ (3) Don't sleep in page release if __GFP_FS is not set (deadlock vs ext4).
+
+ (4) Uninline fscache_object_init() (cleanup).
+
+ (5) Wrap checks on object state (cleanup).
+
+ (6) Provide a system wait_on_atomic_t() and wake_up_atomic_t() (enhancement).
+
+ (7) Simplify the object state machine (need #4 and #5).
+
+ (8) Simplify cookie retention by objects (oops fix, need #6 and #7).
+
+David
+---
+David Howells (6):
+      FS-Cache: Don't sleep in page release if __GFP_FS is not set
+      FS-Cache: Uninline fscache_object_init()
+      FS-Cache: Wrap checks on object state
+      Add wait_on_atomic_t() and wake_up_atomic_t()
+      FS-Cache: Fix object state machine to have separate work and wait states
+      FS-Cache: Simplify cookie retention for fscache_objects, fixing access problems
+
+J. Bruce Fields (1):
+      CacheFiles: name i_mutex lock class explicitly
+
+Sebastian Andrzej Siewior (1):
+      fs/fscache: remove spin_lock() from the condition in while()
+
+
+ fs/cachefiles/interface.c     |   11 
+ fs/cachefiles/namei.c         |   10 
+ fs/cachefiles/xattr.c         |    6 
+ fs/fscache/cache.c            |   34 +
+ fs/fscache/cookie.c           |   93 +---
+ fs/fscache/fsdef.c            |    1 
+ fs/fscache/internal.h         |   11 
+ fs/fscache/main.c             |   11 
+ fs/fscache/netfs.c            |    1 
+ fs/fscache/object-list.c      |  103 ++--
+ fs/fscache/object.c           | 1077 +++++++++++++++++++++--------------------
+ fs/fscache/operation.c        |   36 +
+ fs/fscache/page.c             |   55 +-
+ include/linux/fscache-cache.h |  170 +++---
+ include/linux/wait.h          |   29 +
+ kernel/wait.c                 |   85 +++
+ 16 files changed, 922 insertions(+), 811 deletions(-)
 
