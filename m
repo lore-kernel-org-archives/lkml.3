@@ -1,77 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762269Ab3ECNDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 09:03:16 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:49439 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761770Ab3ECNDO (ORCPT
+	id S1762257Ab3ECNN0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 09:13:26 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:43193 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760356Ab3ECNNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 09:03:14 -0400
+	Fri, 3 May 2013 09:13:24 -0400
+Message-ID: <5183B7ED.7030800@gmail.com>
+Date: Fri, 03 May 2013 15:13:17 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <5183AC54.30503@imgtec.com>
-References: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com>
-	<1366727607-27444-6-git-send-email-james.hogan@imgtec.com>
-	<CACRpkdbYwDvF=gNurLzc+wE0BYpoqog7sPdRTY59BGS7yn3n9Q@mail.gmail.com>
-	<517A6B01.5000708@imgtec.com>
-	<CACRpkdYooPNgJuA-fZOiGJV03R_783uAOmR=QgYOahYdHcad9w@mail.gmail.com>
-	<5183AC54.30503@imgtec.com>
-Date: Fri, 3 May 2013 15:03:13 +0200
-Message-ID: <CACRpkdYYhsY-2vQnxpM-rB9_6yXiY4XBNhb4eyNvK=eD=dxK5w@mail.gmail.com>
-Subject: Re: [PATCH 5/8] pinctrl-tz1090: add TZ1090 pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] irqchip: add support for Marvell Orion SoCs
+References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <1367538519-23940-1-git-send-email-sebastian.hesselbarth@gmail.com> <1367538519-23940-2-git-send-email-sebastian.hesselbarth@gmail.com> <20130503125527.GE18614@n2100.arm.linux.org.uk>
+In-Reply-To: <20130503125527.GE18614@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 3, 2013 at 2:23 PM, James Hogan <james.hogan@imgtec.com> wrote:
-> [Me]
->> If what you need is to set the pin into "GPIO mode" to drive it
->> to some default state then from pinconf-generic.h you should use
->> one of the existing defines like PIN_CONFIG_OUTPUT
->> to actively drive it to high or low as default, or
->> PIN_CONFIG_BIAS_HIGH_IMPEDANCE for some default
->> GPIO input mode.
+On 05/03/13 14:55, Russell King - ARM Linux wrote:
+> On Fri, May 03, 2013 at 01:48:35AM +0200, Sebastian Hesselbarth wrote:
+>> This patch adds an irqchip driver for the main interrupt controller found
+>> on Marvell Orion SoCs (Kirkwood, Dove, Orion5x, Discovery Innovation).
+>> Corresponding device tree documentation is also added.
 >>
->> Read the new section named "GPIO mode pitfalls" in
->> Documentation/pinctrl.txt
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> ---
+>> Note: This patch triggers a checkpatch warning for
+>>    WARNING: Avoid CamelCase: <handle_IRQ>
+>>
+>> Changelog:
+>> v1->v2:
+>> - rename compatible string to "marvell,orion-intc" (Suggested by Jason Gunthorpe)
+>> - request mem regions for irq base registers (Suggested by Jason Gunthorpe)
+>> - make orion_handle_irq static (Suggested by Jason Gunthorpe)
+>> - make use of IRQCHIP_DECLARE (Suggested by Jason Gunthorpe)
 >
-> Thanks, that was interesting. I've had a think about this (and done some
-> experiments with a multimeter), and the problem is these generic
-> pinconfs already have meanings which don't match what the SELECT
-> register does. For example, having a pin be tristate and not controlled
-> by the peripheral, and having it tristate as far as the gpio hardware is
-> concerned (e.g. no pull-up) but still controlled by the peripheral, are
-> two very different things that need disambiguation.
+> It would still be a good idea to convert this to use the generic chip
+> stuff which Thomas created, though exactly how is hard to see at the
+> moment.
 
-I don't know if that is necessary.
+Russel,
 
-While I do recognize that it is possible that we need to put
-pins into "GPIO mode", i.e. drive them actively low or high,
-as PIN_CONFIG_OUTPUT does, I'm not convinced that
-pin config should handle the case where a signal is passed
-through from a peripheral.
+that is the plan and that's why the whole patch set is preliminary.
+Maybe it would have been more precise to call it RFC instead.
 
-I think that for every pin that is put to use for a peripheral
-you must anyway at some point call .enable() on the
-struct pinmux_ops of the pin controller.
+>> +static void orion_irq_mask(struct irq_data *irqd)
+>> +{
+>> +	unsigned int irq = irqd_to_hwirq(irqd);
+>> +	unsigned int irq_off = irq % 32;
+>> +	int reg = irq / 32;
+>> +	u32 val;
+>> +
+>> +	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
+>> +	writel(val & ~(1 << irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
+>> +}
+>
+> This could be replaced with irq_gc_mask_clr_bit().
+>
+>> +
+>> +static void orion_irq_unmask(struct irq_data *irqd)
+>> +{
+>> +	unsigned int irq = irqd_to_hwirq(irqd);
+>> +	unsigned int irq_off = irq % 32;
+>> +	int reg = irq / 32;
+>> +	u32 val;
+>> +
+>> +	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
+>> +	writel(val | (1 << irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
+>> +}
+>
+> This with irq_gc_mask_set_bit().
+>
+>> +
+>> +static struct irq_chip orion_irq_chip = {
+>> +	.name		= "orion_irq",
+>> +	.irq_mask	= orion_irq_mask,
+>> +	.irq_unmask	= orion_irq_unmask,
+>> +};
+>> +
+>> +static int orion_irq_map(struct irq_domain *d, unsigned int virq,
+>> +			 irq_hw_number_t hw)
+>> +{
+>> +	irq_set_chip_and_handler(virq, &orion_irq_chip,
+>> +				 handle_level_irq);
+>> +	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
+>
+> This is where it starts to get tricky, because I can't see how you'd
+> merge the irq_alloc_generic_chip() and irq_setup_generic_chip() with
+> this.  Maybe you don't need to do anything here and just do all that
+> in orion_of_init() instead?  But then you seem to need to know the
+> virq range before hand, and I can't see how that's known.  Maybe Thomas
+> can provide some enlightenment about how the gc irqchip stuff works
+> with the irq domain stuff...
 
-Thus this part of the problem (poking that "select" bit)
-should be handled by the pinmux part of the driver.
+Exactly, and that is what I am looking into right now. But hell, I am
+not an expert in linux irq yet. Moreover, I am not even sure if it is
+okay to rely on irqdomain or at least irq_data->hw_irq at all.
 
-The pinconf part does not need to know about it.
+My current impression is, that generic chip knowns nothing about irq
+domains. But my first modification of it was to use irqd_to_hwirq(d)
+where ever it uses d->irq instead. This should allow to abstract from
+virtual irqs and retain compatibility (_if_ hw_irq is also set on
+!CONFIG_IRQ_DOMAIN).
 
-The idea is definately not for the pin config to act
-as a "backend" for pin muxing, rather to partition
-the problem into two independent parts.
+To add more juice: IRQF_VALID and IRQF_PROBE are ARM only flags. I
+tried to find out what they are good for, but stopped googl'ing after
+a while. (I know you explained that before somewhere)
 
-Yours,
-Linus Walleij
+> However, you wouldn't need the statically defined orion_irq_chip nor
+> orion_irq_base[] either, because those would be held within the gc
+> irqchip stuff and stored in the upper layer.
+
+Yeah, that would be very nice. But the current limitation to one
+register set with max 32 irqs of generic chip would still require to
+keep a list of primary generic irq chips to flip through in the
+irq_handler.
+
+This also raises the question, how to check if an generic irq chip
+flow handler has to be called. Current irq_chip_regs don't know nothing
+about a cause/status register. And actually you don't even know if it
+is high/low active and how to mask it with the high/low active mask
+register or mask_cache.
+
+Sebastian
+
