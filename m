@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762486Ab3ECGWQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:22:16 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:20059 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762117Ab3ECGWP (ORCPT
+	id S932760Ab3ECGWm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:22:42 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:58498 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762203Ab3ECGWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:22:15 -0400
-X-AuditID: cbfee690-b7f136d000000fea-ff-51835796759c
+	Fri, 3 May 2013 02:22:40 -0400
+X-AuditID: cbfee691-b7fe56d000004b96-70-518357afdac5
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 02/42] rtc: rtc-88pm860x: remove unnecessary
+Subject: [PATCH 03/42] rtc: rtc-ab3100: remove unnecessary
  platform_set_drvdata()
-Date: Fri, 03 May 2013 15:22:13 +0900
-Message-id: <001001ce47c6$8d65aa70$a830ff50$@samsung.com>
+Date: Fri, 03 May 2013 15:22:39 +0900
+Message-id: <001101ce47c6$9ca9e640$d5fdb2c0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5HxouWoPwdQDi6RA+e4ruIDwCxPQ==
+Thread-index: Ac5HxpdYnFSR5xePTfGLKrjlNWHRzQ==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zA91p4c2BBv+nC1gsuXiV3WLO+jVs
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zY9314c2BBh9WmlosuXiV3WLO+jVs
 	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
-	WqRvl8CV8XDxVqaCy2wV+zbtYG1gPM7axcjBISFgItG8IKmLkRPIFJO4cG89WxcjF4eQwDJG
-	iS2XlrBCJEwkLqzsh0pMZ5R48Xs6M4Tzi1Hi9co1YFVsAmoSX74cZgeZKiKgL9HWogFSwyzQ
-	zSjxqHkuM0iNsECoxNd/11lAbBYBVYmdyy6BxXkFLCXWLVjHCGELSvyYfA+shllAS2L9zuNM
-	ELa8xOY1b5khLlKQ2HH2NVi9iICeROe596wQNSIS+168YwRZLCFwjF1i6e7njBDLBCS+TT7E
-	AvGyrMSmA1BzJCUOrrjBMoFRbBaS1bOQrJ6FZPUsJCsWMLKsYhRNLUguKE5KLzLRK07MLS7N
-	S9dLzs/dxAiJvQk7GO8dsD7EmAy0fiKzlGhyPjB280riDY3NjCxMTUyNjcwtzUgTVhLnVW+x
-	DhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAmFnGY/btwr2vfRH14kuO1M16wjCZ28nUznrv
-	602GAS6+ecd3lCdKv8+JnK6ydb+1iNgWGYW8l3Pmz75h7OJ3QWf1TLnfMvfS8r3diwRq7n7Z
-	Pul9u9Js3/ehi2rkcxZHB1+Raz523We7Xvk8jdJ5169oibYvFq5nyHnYk5M+wWnbW/X1119L
-	K7EUZyQaajEXFScCAMMI2UfTAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jQd1p4c2BBt+O8VgsuXiV3WLO+jVs
+	WqRvl8CVsWPBZ5aCHWwV7198Z21gXMvaxcjJISFgIrHv4XkoW0ziwr31bF2MXBxCAssYJY5d
+	/sgOU9S/4g4ziC0kMJ1R4uArSYiiX4wS1xq3gnWzCahJfPlyGKiBg0NEQF+irUUDpIZZoJtR
+	4lHzXLBmYYFgidcL9rCA2CwCqhL/Gn8xgti8ApYSuw53sUPYghI/Jt8Dq2EW0JJYv/M4E4Qt
+	L7F5zVtmiIMUJHacfQ3WKyKgJ/F2/12oGhGJfS/eMULUHGKXeHtPE2KXgMS3yYdYQG6TEJCV
+	2HQAaoykxMEVN1gmMIrNQrJ5FpLNs5BsnoVkwwJGllWMoqkFyQXFSelFpnrFibnFpXnpesn5
+	uZsYIZE3cQfj/QPWhxiTgdZPZJYSTc4HRm5eSbyhsZmRhamJqbGRuaUZacJK4rzqLdaBQgLp
+	iSWp2ampBalF8UWlOanFhxiZODilGhgT5DdKdPafNrrFu2/XWtml3zQ5ky7IpzhYa7x6xSvz
+	4ETZ5RROR4to0bysj5J7P+2SdI5b+63Aeum7B3ldpemSAcd2W16d/qbzYUA9w2y209Pmr72k
+	wiTHnX9qVqCJ22zl5Qd15WLWn/D5+2LnZeai2AkBPx4YHw8SjFGuUy7+oJx3YdZJywNKLMUZ
+	iYZazEXFiQC+uY9I0gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jQd314c2BBhMfGVosuXiV3WLO+jVs
 	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
 	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
-	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmPFw8VamgstsFfs27WBtYDzO2sXIySEhYCJx
-	YWU/G4QtJnHh3nogm4tDSGA6o8SL39OZIZxfjBKvV64B62ATUJP48uUwexcjB4eIgL5EW4sG
-	SA2zQDejxKPmucwgNcICoRJf/11nAbFZBFQldi67BBbnFbCUWLdgHSOELSjxY/I9sBpmAS2J
-	9TuPM0HY8hKb17xlhrhIQWLH2ddg9SICehKd596zQtSISOx78Y5xAqPALCSjZiEZNQvJqFlI
-	WhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI7tZ9I7GFc1WBxiFOBgVOLhVWhpChRi
-	TSwrrsw9xCjBwawkwuv2AyjEm5JYWZValB9fVJqTWnyIMRno04nMUqLJ+cC0k1cSb2hsYmZk
-	aWRmYWRibk6asJI478FW60AhgfTEktTs1NSC1CKYLUwcnFINjI2p20tDJ98/+Ovu7S5Xy+zS
-	rU1r/Ptib0xqStMOXH9xaph3EN/RmUqPVCdJi7e/fcz470/IwVr/94sLb90N7Np07sSz1l+M
-	6ybtm9l3PnnlCpujUyuS+//f9FX5pHYrbPkHkwcRaXlJdv8kfaQuXmRJY/66J+dVm/uKu+7/
-	ubnr9CQLp988Eq3EUpyRaKjFXFScCACuxOB2MQMAAA==
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmLFjwWeWgh1sFe9ffGdtYFzL2sXIySEhYCLR
+	v+IOM4QtJnHh3no2EFtIYDqjxMFXkl2MXED2L0aJa41bwRrYBNQkvnw5zN7FyMEhIqAv0dai
+	AVLDLNDNKPGoeS7YIGGBYInXC/awgNgsAqoS/xp/MYLYvAKWErsOd7FD2IISPybfA6thFtCS
+	WL/zOBOELS+xec1bqIMUJHacfQ3WKyKgJ/F2/12oGhGJfS/eMU5gFJiFZNQsJKNmIRk1C0nL
+	AkaWVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBkf1MagfjygaLQ4wCHIxKPLwKLU2BQqyJ
+	ZcWVuYcYJTiYlUR43X4AhXhTEiurUovy44tKc1KLDzEmA306kVlKNDkfmHTySuINjU3MjCyN
+	zCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoHxknnkV+/bf79/dz5QWJqu7v/r
+	ne3xi04RXm+UNpjwid3UrPtTvFMwXsO7+t2caXYHFj3YkC+mpHloUYNTwyEuxVXKv1X/TtJf
+	zDx555wFV17c+Wj3OZ67V8puikrgAZPPqfriyksNhQX273i39NLs35WT75Zo7zlteE/ylWaV
+	ynZrg08nrpZMU2Ipzkg01GIuKk4EAAMRWyIwAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,17 +61,17 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-88pm860x.c |    1 -
+ drivers/rtc/rtc-ab3100.c |    1 -
  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/rtc/rtc-88pm860x.c b/drivers/rtc/rtc-88pm860x.c
-index 0f2b91b..4e30c85 100644
---- a/drivers/rtc/rtc-88pm860x.c
-+++ b/drivers/rtc/rtc-88pm860x.c
-@@ -418,7 +418,6 @@ static int pm860x_rtc_remove(struct platform_device *pdev)
- 	pm860x_set_bits(info->i2c, PM8607_MEAS_EN2, MEAS2_VRTC, 0);
- #endif	/* VRTC_CALIBRATION */
+diff --git a/drivers/rtc/rtc-ab3100.c b/drivers/rtc/rtc-ab3100.c
+index 47a4f2c..572208d 100644
+--- a/drivers/rtc/rtc-ab3100.c
++++ b/drivers/rtc/rtc-ab3100.c
+@@ -242,7 +242,6 @@ static int __init ab3100_rtc_probe(struct platform_device *pdev)
  
+ static int __exit ab3100_rtc_remove(struct platform_device *pdev)
+ {
 -	platform_set_drvdata(pdev, NULL);
  	return 0;
  }
