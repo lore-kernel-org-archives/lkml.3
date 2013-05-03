@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab3ECEog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 00:44:36 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:40447 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab3ECEoe (ORCPT
+	id S1753876Ab3ECEsQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 00:48:16 -0400
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:61366 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab3ECEsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 00:44:34 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        shawn.guo@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2] cpufreq: cpu0: Free parent node for error cases
-Date: Fri,  3 May 2013 10:14:25 +0530
-Message-Id: <03c6b0e0f41238c1b4346b4186040ff69e369b4a.1367556239.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Fri, 3 May 2013 00:48:15 -0400
+From: kosaki.motohiro@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: Olivier Langlois <olivier@trillion01.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH v4 0/7] posix timers fixlet
+Date: Fri,  3 May 2013 00:47:40 -0400
+Message-Id: <1367556468-4021-1-git-send-email-kosaki.motohiro@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are freeing parent node in success cases but not in failure cases. Lets do
-it.
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq-cpu0.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Glibc's posix timer testcase found a lot of bugs in posix timer code.
+This series, hopefully, fixes all of them. All patches are independent 
+each other logically.
 
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index 3ab8294..8565d41 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -189,7 +189,8 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 
- 	if (!np) {
- 		pr_err("failed to find cpu0 node\n");
--		return -ENOENT;
-+		ret = -ENOENT;
-+		goto out_put_parent;
- 	}
- 
- 	cpu_dev = &pdev->dev;
-@@ -264,6 +265,8 @@ out_free_table:
- 	opp_free_cpufreq_table(cpu_dev, &freq_table);
- out_put_node:
- 	of_node_put(np);
-+out_put_parent:
-+	of_node_put(parent);
- 	return ret;
- }
- 
--- 
-1.7.12.rc2.18.g61b472e
+Changes from v3
+ - task_sched_runtime() micro optimization add to care tsk->on_cpu.
+   suggested Paul Turner.
+ - fixed several typo in changelogs.
+
+
+KOSAKI Motohiro (7):
+  posix-cpu-timers: don't account cpu timer after stopped thread
+    runtime accounting
+  posix-cpu-timers: fix acounting delta_exec twice
+  posix-cpu-timers: fix wrong timer initialization
+  posix-cpu-timers: timer functions should use timer time instead of
+    clock time
+  posix-cpu-timers: check_thread_timers() uses task_sched_runtime()
+  sched: task_sched_runtime introduce micro optimization
+  posix-cpu-timers: cleanup cpu_{clock,timer}_sample{,_group}
+
+ fs/binfmt_elf.c             |    2 +-
+ fs/binfmt_elf_fdpic.c       |    2 +-
+ include/linux/kernel_stat.h |    5 --
+ include/linux/sched.h       |    5 +-
+ kernel/posix-cpu-timers.c   |  143 ++++++++++++++++++++++++-------------------
+ kernel/sched/core.c         |   34 ++++++-----
+ kernel/sched/cputime.c      |   19 +++++-
+ kernel/sched/stats.h        |    7 ++
+ 8 files changed, 125 insertions(+), 92 deletions(-)
 
