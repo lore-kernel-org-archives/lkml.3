@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762593Ab3ECPLW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 11:11:22 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:56044 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932433Ab3ECPLU (ORCPT
+	id S933061Ab3ECPOO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 11:14:14 -0400
+Received: from tango.0pointer.de ([85.214.72.216]:60226 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab3ECPON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 11:11:20 -0400
-Message-ID: <5183D394.8090205@gmail.com>
-Date: Fri, 03 May 2013 09:11:16 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Fri, 3 May 2013 11:14:13 -0400
+X-Greylist: delayed 346 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 May 2013 11:14:13 EDT
+Date: Fri, 3 May 2013 17:08:24 +0200
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Colin Walters <walters@verbum.org>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        systemd-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [systemd-devel] [PATCH 2/2] coredump: Handle programs
+ 	with	spaces in COMM
+Message-ID: <20130503150824.GB24114@tango.0pointer.de>
+References: <1367341939.6959.1.camel@localhost>
+ <20130430174731.GC3394@in.waw.pl>
+ <1367349331.6959.80.camel@localhost>
+ <20130501164246.GA7647@redhat.com>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <andi@firstfloor.org>, Ulrich Drepper <drepper@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 5/8] perf tools: Add support to preload default formulas
-References: <1367421346-18257-1-git-send-email-jolsa@redhat.com> <1367421346-18257-6-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1367421346-18257-6-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130501164246.GA7647@redhat.com>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/1/13 9:15 AM, Jiri Olsa wrote:
-> +int perf_formula__load_dir(struct perf_formula *f, char *path)
-> +{
-> +	struct dirent *ent;
-> +	DIR *dir;
-> +	int ret = 0;
-> +
-> +	dir = opendir(path);
-> +	if (!dir) {
-> +		pr_err("formula: can't open dir '%s' - %s\n",
-> +		       path, strerror(errno));
-> +		return -1;
-> +	}
-> +
-> +	while (!ret && (ent = readdir(dir))) {
-> +		char file[PATH_MAX];
+On Wed, 01.05.13 18:42, Oleg Nesterov (oleg@redhat.com) wrote:
 
-readdir_r? this is going into libperf, so might as well be thread safe.
+> On 04/30, Colin Walters wrote:
+> >
+> > On Tue, 2013-04-30 at 19:47 +0200, Zbigniew Jędrzejewski-Szmek wrote:
+> > > On Tue, Apr 30, 2013 at 01:12:19PM -0400, Colin Walters wrote:
+> > > > This patch makes systemd-coredump handle processes that have
+> > > > whitespace in their COMM fields.
+> > > >
+> > > > fs/coredump.c when given %e (as systemd-coredump uses), will end up
+> > > > joining the process arguments into a string (along with the other
+> > > > fields), then will split the entire thing up on whitespace, and use
+> > > > it as the arguments to the coredump pipe handler.
+> > > > ---
+> > > That's a workaround for a bug in the kernel. I think it makes sense, but
+> > > it'd be nice to fix the kernel too.
+> 
+> I wouldn't say this is bug... at least this is expected.
+> 
+> Sure, it is possible to rewrite format_corename/argv_split interaction,
+> but this is a bit painful and I am not sure it worth the trouble.
 
-David
+It sounds really wrong to first merge this into one string and then
+split it up again. It sounds much more sensible to instead just pass the
+string array around all the time. What's the reason to make this one
+string first?
+
+Lennart
+
+-- 
+Lennart Poettering - Red Hat, Inc.
