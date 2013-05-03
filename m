@@ -1,209 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933005Ab3ECOKF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:10:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45397 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932501Ab3ECOKA (ORCPT
+	id S932961Ab3ECOLW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:11:22 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:50980 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932501Ab3ECOLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:10:00 -0400
-Date: Fri, 3 May 2013 16:09:46 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] irqchip: add support for Marvell Orion SoCs
-In-Reply-To: <5183B7ED.7030800@gmail.com>
-Message-ID: <alpine.LFD.2.02.1305031514230.2886@ionos>
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <1367538519-23940-1-git-send-email-sebastian.hesselbarth@gmail.com> <1367538519-23940-2-git-send-email-sebastian.hesselbarth@gmail.com> <20130503125527.GE18614@n2100.arm.linux.org.uk>
- <5183B7ED.7030800@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 3 May 2013 10:11:20 -0400
+X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
+   d="scan'208";a="4210529"
+Message-ID: <1367590278.28742.108.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH v2 2/2] xen/balloon: Enforce various limits
+ on target
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Keir (Xen.org)" <keir@xen.org>,
+        "Dave Scott" <Dave.Scott@eu.citrix.com>,
+        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
+        Ian Jackson <Ian.Jackson@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jonathan Ludlam" <Jonathan.Ludlam@eu.citrix.com>,
+        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "carsten@schiers.de" <carsten@schiers.de>
+Date: Fri, 3 May 2013 15:11:18 +0100
+In-Reply-To: <20130503134704.GB12463@debian70-amd64.local.net-space.pl>
+References: <1367235468-8360-3-git-send-email-daniel.kiper@oracle.com>
+	 <1367246649.3142.316.camel@zakaz.uk.xensource.com>
+	 <20130430125952.GD9904@debian70-amd64.local.net-space.pl>
+	 <1367329458.3142.524.camel@zakaz.uk.xensource.com>
+	 <20130430185852.GF9904@debian70-amd64.local.net-space.pl>
+	 <alpine.DEB.2.02.1305021214510.5398@kaball.uk.xensource.com>
+	 <20130502180404.GA16489@phenom.dumpdata.com>
+	 <1367568932.28742.19.camel@zakaz.uk.xensource.com>
+	 <20130503130036.GA12463@debian70-amd64.local.net-space.pl>
+	 <1367587284.28742.89.camel@zakaz.uk.xensource.com>
+	 <20130503134704.GB12463@debian70-amd64.local.net-space.pl>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 May 2013, Sebastian Hesselbarth wrote:
-> On 05/03/13 14:55, Russell King - ARM Linux wrote:
-> > This is where it starts to get tricky, because I can't see how you'd
-> > merge the irq_alloc_generic_chip() and irq_setup_generic_chip() with
-> > this.  Maybe you don't need to do anything here and just do all that
-> > in orion_of_init() instead?  But then you seem to need to know the
-> > virq range before hand, and I can't see how that's known.  Maybe Thomas
-> > can provide some enlightenment about how the gc irqchip stuff works
-> > with the irq domain stuff...
+On Fri, 2013-05-03 at 14:47 +0100, Daniel Kiper wrote:
+> On Fri, May 03, 2013 at 02:21:24PM +0100, Ian Campbell wrote:
+> > On Fri, 2013-05-03 at 14:00 +0100, Daniel Kiper wrote:
+> > > On Fri, May 03, 2013 at 09:15:32AM +0100, Ian Campbell wrote:
+> > > > On Thu, 2013-05-02 at 19:04 +0100, Konrad Rzeszutek Wilk wrote:
+> > > > > On Thu, May 02, 2013 at 12:34:32PM +0100, Stefano Stabellini wrote:
+> > >
+> > > [...]
+> > >
+> > > > > > The xapi guys, CC'ed, might have more insights on what exactly is.
+> > > >
+> > > > I think that unless someone can remember what this issue was we should
+> > > > just chalk it up to a historical artefact of something xapi (or maybe
+> > > > some historical guest) was doing which we have no reason to believe
+> > > > needs to be carried over to libxl.
+> > > >
+> > > > IOW I'm suggesting we set LIBXL_MAXMEM_CONSTANT to 0 early in the 4.4
+> > > > cycle and see how it goes. If someone can show either empirical evidence
+> > > > or (better) logically argue that a fudge is required then we can always
+> > > > put it back (or it may turn out to be the caller's issue, in which case
+> > > > they can deal with it, hopefully xapi-on-libxl won't apply this fudge
+> > > > twice...).
+> > > >
+> > > > Alternatively I'm also strongly considering having debug builds of the
+> > > > toolstack randomise the amount of slack, that ought to shake out any
+> > > > lingering issues...
+> > >
+> > > Do you suggest to postopone this work until 4.4 merge window?
+> >
+> > 4.4 is a Xen version, this is a Linux patch so I'm not sure what you
+> > mean.
 > 
-> Exactly, and that is what I am looking into right now. But hell, I am
-> not an expert in linux irq yet. Moreover, I am not even sure if it is
-> okay to rely on irqdomain or at least irq_data->hw_irq at all.
+> I thought about my libxl patches. Should I post new version without
+> LIBXL_MAXMEM_CONSTANT when 4.4 merge window open?
 
-Here is a solution to that problem.
+Xen doesn't have a concept of a merge window. However we are currently
+in feature freeze for 4.3. You'd need to speak to the release manager
+(George Dunlap) to see if your xen side patches are acceptable at this
+stage of the release.
 
-1) It adds a mask field to irq_data so we dont have to compute the
-   mask over and over
+AIUI we were intending to do an RC1 release on Monday or Tuesday. It's
+probably too late to be making any major changes to libxl's behaviour
+without an extremely good rationale.
 
-2) For compability with existing users it populates the mask with 
-   1 << (d->irq - gc->irq_base)
+> > > If yes, then I think that at least "xen/balloon: Enforce various limits on target"
+> > > patch (without this crazy libxl hack) should be applied.
+> >
+> > You mean this patch with only the MAX_DOMAIN_PAGES clamping? That seems
+> > plausible.
+> 
+> ... and with XENMEM_maximum_reservation check but wihtout LIBXL_MAXMEM_CONSTANT_PAGES.
 
-3) It gives you the option to disable that mask setup or let it
-   generate from d->hwirq
+I am less convinced by this bit, but not as dead against it as I am
+against anything with LIBXL_MAXMEM_CONSTANT_PAGES in it.
 
-I'm still looking into a way how to proper support the generic chip /
-linear domain mapping in the setup path. Will send you a draft patch
-to play with later.
+> > > > > > I dislike having to pull this "hack" into Linux, but if it is actually
+> > > > > > important to leave LIBXL_MAXMEM_CONSTANT unused, then it is worth doing.
+> > > > > > I would add a big comment on top saying:
+> > > > > >
+> > > > > > "libxl seems to think that we need to leave LIBXL_MAXMEM_CONSTANT
+> > > > > > kilobytes unused, let's be gentle and do that."
+> > > >
+> > > > It seems to me that this change in Linux is really just papering over
+> > > > the underlying issue. Or at the very least no one has adequately
+> > > > explained what that real issue is and why this change is relevant to it
+> > > > and/or an appropriate fix for it.
+> > > >
+> > > > The guest knows what target the toolstack has set for it is (its in the
+> > > > target xenstore node), I don't see any reason for the guest to be
+> > > > further second guessing that value by examining maxmem (adjusted by a
+> > > > fudge factor or otherwise). If the guest is seeing failures to increase
+> > > > its reservation when trying to meet that target then either the
+> > > > toolstack was buggy in asking it to hit a target greater than its maxmem
+> > > > or it is hitting one of the other reason for increase reservation
+> > > > failures. Since it needs to deal with the latter anyway I don't see any
+> > > > reason to special case maxmem as a cause for a failure.
+> > >
+> > > Do not forget that guest may change target itself.
+> >
+> > Yes it can, and that can fail either due to maxmem or due to ENOMEM, and
+> > the kernel needs prepared to deal with that when it happens.
+> 
+> Sure but why we would like to fail in endless loop if maxmem case
+> could be easliy detected by checking XENMEM_maximum_reservation?
 
-Thanks,
+That endless loop is deliberate. When a target is set the balloon driver
+is supposed to try to reach it and if it fails at any given moment it is
+supposed to try again. This all relates to the changes made in
+bc2c0303226e.
 
-	tglx
+Now you could argue that this case is subtly different from the ENOMEM
+case which was the primary focus of that commit but have you thought
+about the behaviour you want in the case where maximum_reservation is
+subsequently raised? IMHO there's no reason why the balloon driver
+shouldn't then automatically make further progress towards the target.
 
+If the infinite loop bothers you then perhaps an exponential backoff in
+the frequency of attempts would be a suitable middle ground?
 
-Index: linux-2.6/include/linux/irq.h
-===================================================================
---- linux-2.6.orig/include/linux/irq.h
-+++ linux-2.6/include/linux/irq.h
-@@ -119,6 +119,7 @@ struct irq_domain;
- 
- /**
-  * struct irq_data - per irq and irq chip data passed down to chip functions
-+ * @mask:		precomputed bitmask for accessing the chip registers
-  * @irq:		interrupt number
-  * @hwirq:		hardware interrupt number, local to the interrupt domain
-  * @node:		node index useful for balancing
-@@ -138,6 +139,7 @@ struct irq_domain;
-  * irq_data.
-  */
- struct irq_data {
-+	u32			mask;
- 	unsigned int		irq;
- 	unsigned long		hwirq;
- 	unsigned int		node;
-@@ -700,10 +702,14 @@ struct irq_chip_generic {
-  * @IRQ_GC_INIT_NESTED_LOCK:	Set the lock class of the irqs to nested for
-  *				irq chips which need to call irq_set_wake() on
-  *				the parent irq. Usually GPIO implementations
-+ * @IRQ_GC_NO_MASK:		Do not calculate irq_data->mask
-+ * @IRQ_GC_MASK_FROM_HWIRQ:	Calculate irq_data->mask from the hwirq number
-  */
- enum irq_gc_flags {
- 	IRQ_GC_INIT_MASK_CACHE		= 1 << 0,
- 	IRQ_GC_INIT_NESTED_LOCK		= 1 << 1,
-+	IRQ_GC_NO_MASK			= 1 << 2,
-+	IRQ_GC_MASK_FROM_HWIRQ		= 1 << 4,
- };
- 
- /* Generic chip callback functions */
-Index: linux-2.6/kernel/irq/generic-chip.c
-===================================================================
---- linux-2.6.orig/kernel/irq/generic-chip.c
-+++ linux-2.6/kernel/irq/generic-chip.c
-@@ -39,7 +39,7 @@ void irq_gc_noop(struct irq_data *d)
- void irq_gc_mask_disable_reg(struct irq_data *d)
- {
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
--	u32 mask = 1 << (d->irq - gc->irq_base);
-+	u32 mask = d->mask;
- 
- 	irq_gc_lock(gc);
- 	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->disable);
-@@ -57,7 +57,7 @@ void irq_gc_mask_disable_reg(struct irq_
- void irq_gc_mask_set_bit(struct irq_data *d)
- {
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
--	u32 mask = 1 << (d->irq - gc->irq_base);
-+	u32 mask = d->mask;
- 
- 	irq_gc_lock(gc);
- 	gc->mask_cache |= mask;
-@@ -75,7 +75,7 @@ void irq_gc_mask_set_bit(struct irq_data
- void irq_gc_mask_clr_bit(struct irq_data *d)
- {
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
--	u32 mask = 1 << (d->irq - gc->irq_base);
-+	u32 mask = d->mask;
- 
- 	irq_gc_lock(gc);
- 	gc->mask_cache &= ~mask;
-@@ -93,7 +93,7 @@ void irq_gc_mask_clr_bit(struct irq_data
- void irq_gc_unmask_enable_reg(struct irq_data *d)
- {
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
--	u32 mask = 1 << (d->irq - gc->irq_base);
-+	u32 mask = d->mask;
- 
- 	irq_gc_lock(gc);
- 	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->enable);
-@@ -108,7 +108,7 @@ void irq_gc_unmask_enable_reg(struct irq
- void irq_gc_ack_set_bit(struct irq_data *d)
- {
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
--	u32 mask = 1 << (d->irq - gc->irq_base);
-+	u32 mask = d->mask;
- 
- 	irq_gc_lock(gc);
- 	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->ack);
-@@ -122,7 +122,7 @@ void irq_gc_ack_set_bit(struct irq_data 
- void irq_gc_ack_clr_bit(struct irq_data *d)
- {
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
--	u32 mask = ~(1 << (d->irq - gc->irq_base));
-+	u32 mask = ~d->mask;
- 
- 	irq_gc_lock(gc);
- 	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->ack);
-@@ -136,7 +136,7 @@ void irq_gc_ack_clr_bit(struct irq_data 
- void irq_gc_mask_disable_reg_and_ack(struct irq_data *d)
- {
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
--	u32 mask = 1 << (d->irq - gc->irq_base);
-+	u32 mask = d->mask;
- 
- 	irq_gc_lock(gc);
- 	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->mask);
-@@ -151,7 +151,7 @@ void irq_gc_mask_disable_reg_and_ack(str
- void irq_gc_eoi(struct irq_data *d)
- {
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
--	u32 mask = 1 << (d->irq - gc->irq_base);
-+	u32 mask = d->mask;
- 
- 	irq_gc_lock(gc);
- 	irq_reg_writel(mask, gc->reg_base + cur_regs(d)->eoi);
-@@ -169,7 +169,7 @@ void irq_gc_eoi(struct irq_data *d)
- int irq_gc_set_wake(struct irq_data *d, unsigned int on)
- {
- 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
--	u32 mask = 1 << (d->irq - gc->irq_base);
-+	u32 mask = d->mask;
- 
- 	if (!(mask & gc->wake_enabled))
- 		return -EINVAL;
-@@ -254,6 +254,15 @@ void irq_setup_generic_chip(struct irq_c
- 		if (flags & IRQ_GC_INIT_NESTED_LOCK)
- 			irq_set_lockdep_class(i, &irq_nested_lock_class);
- 
-+		if (!(flags & IRQ_GC_NO_MASK)) {
-+			struct irq_data *d = irq_get_irq_data(i);
-+			u32 mask;
-+
-+			if (flags & IRQ_GC_MASK_FROM_HWIRQ)
-+				d->mask = 1 << (d->hwirq % 32);
-+			else
-+				d->mask = 1 << (i - gc->irq_base);
-+		}
- 		irq_set_chip_and_handler(i, &ct->chip, ct->handler);
- 		irq_set_chip_data(i, gc);
- 		irq_modify_status(i, clr, set);
+> > > Additionally, we would like to introduce xm compatibility
+> > > mode which is a bit different then xl normal behavior.
+> >
+> > When then you really don't want to be baking specifics of the current
+> > model into the kernel, do you.
+> 
+> Hmmm... Little misunderstanding. As I stated a few times I do not
+> want bake any libxl or Xen stuff into Linux Kernel (including
+> LIBXL_MAXMEM_CONSTANT). I just want to check limits which I think
+> make sense in this case.
+
+Sorry, I never noticed you saying that. Where was it?
+
+Ian.
+
