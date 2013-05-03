@@ -1,101 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760081Ab3ECABn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 20:01:43 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:54685 "EHLO e9.ny.us.ibm.com"
+	id S1762337Ab3ECAJK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 20:09:10 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:55235 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762053Ab3ECABR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 20:01:17 -0400
+	id S1760376Ab3ECABm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 20:01:42 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Linux MM <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>,
         Simon Jeons <simon.jeons@gmail.com>
-Subject: [RFC PATCH v3 01/31] rbtree: add postorder iteration functions.
-Date: Thu,  2 May 2013 17:00:33 -0700
-Message-Id: <1367539263-19999-2-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [RFC PATCH v3 23/31] x86: memlayout: add a arch specific inital memlayout setter.
+Date: Thu,  2 May 2013 17:00:55 -0700
+Message-Id: <1367539263-19999-24-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.2
 In-Reply-To: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050300-7182-0000-0000-00000684B887
+x-cbid: 13050300-7182-0000-0000-00000684B9B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add postorder iteration functions for rbtree. These are useful for
-safely freeing an entire rbtree without modifying the tree at all.
+On x86, we have numa_info specifically to track the numa layout, which
+is precisely the data memlayout needs, so use it to create an initial
+memlayout.
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- include/linux/rbtree.h |  4 ++++
- lib/rbtree.c           | 40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 44 insertions(+)
+ arch/x86/mm/numa.c | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-index 0022c1b..2879e96 100644
---- a/include/linux/rbtree.h
-+++ b/include/linux/rbtree.h
-@@ -68,6 +68,10 @@ extern struct rb_node *rb_prev(const struct rb_node *);
- extern struct rb_node *rb_first(const struct rb_root *);
- extern struct rb_node *rb_last(const struct rb_root *);
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index a71c4e2..75819ef 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -11,6 +11,7 @@
+ #include <linux/nodemask.h>
+ #include <linux/sched.h>
+ #include <linux/topology.h>
++#include <linux/dnuma.h>
  
-+/* Postorder iteration - always visit the parent after it's children */
-+extern struct rb_node *rb_first_postorder(const struct rb_root *);
-+extern struct rb_node *rb_next_postorder(const struct rb_node *);
-+
- /* Fast replacement of a single node without remove/rebalance/add/rebalance */
- extern void rb_replace_node(struct rb_node *victim, struct rb_node *new, 
- 			    struct rb_root *root);
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index c0e31fe..65f4eff 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -518,3 +518,43 @@ void rb_replace_node(struct rb_node *victim, struct rb_node *new,
- 	*new = *victim;
- }
- EXPORT_SYMBOL(rb_replace_node);
-+
-+static struct rb_node *rb_left_deepest_node(const struct rb_node *node)
+ #include <asm/e820.h>
+ #include <asm/proto.h>
+@@ -32,6 +33,33 @@ __initdata
+ #endif
+ ;
+ 
++#ifdef CONFIG_DYNAMIC_NUMA
++void __init memlayout_global_init(void)
 +{
-+	for (;;) {
-+		if (node->rb_left)
-+			node = node->rb_left;
-+		else if (node->rb_right)
-+			node = node->rb_right;
-+		else
-+			return (struct rb_node *)node;
++	struct numa_meminfo *mi = &numa_meminfo;
++	int i;
++	struct numa_memblk *blk;
++	struct memlayout *ml = memlayout_create(ML_INITIAL);
++	if (WARN_ON(!ml))
++		return;
++
++	pr_devel("x86/memlayout: adding ranges from numa_meminfo\n");
++	for (i = 0; i < mi->nr_blks; i++) {
++		blk = mi->blk + i;
++		pr_devel("  adding range {%LX[%LX]-%LX[%LX]}:%d\n",
++			 PFN_DOWN(blk->start), blk->start,
++			 PFN_DOWN(blk->end - PAGE_SIZE / 2 - 1),
++			 blk->end - 1, blk->nid);
++		memlayout_new_range(ml, PFN_DOWN(blk->start),
++				PFN_DOWN(blk->end - PAGE_SIZE / 2 - 1),
++				blk->nid);
 +	}
++	pr_devel("  done adding ranges from numa_meminfo\n");
++
++	memlayout_commit(ml);
 +}
++#endif
 +
-+struct rb_node *rb_next_postorder(const struct rb_node *node)
-+{
-+	const struct rb_node *parent;
-+	if (!node)
-+		return NULL;
-+	parent = rb_parent(node);
-+
-+	/* If we're sitting on node, we've already seen our children */
-+	if (parent && node == parent->rb_left && parent->rb_right) {
-+		/* If we are the parent's left node, go to the parent's right
-+		 * node then all the way down to the left */
-+		return rb_left_deepest_node(parent->rb_right);
-+	} else
-+		/* Otherwise we are the parent's right node, and the parent
-+		 * should be next */
-+		return (struct rb_node *)parent;
-+}
-+EXPORT_SYMBOL(rb_next_postorder);
-+
-+struct rb_node *rb_first_postorder(const struct rb_root *root)
-+{
-+	if (!root->rb_node)
-+		return NULL;
-+
-+	return rb_left_deepest_node(root->rb_node);
-+}
-+EXPORT_SYMBOL(rb_first_postorder);
+ static int numa_distance_cnt;
+ static u8 *numa_distance;
+ 
 -- 
 1.8.2.2
 
