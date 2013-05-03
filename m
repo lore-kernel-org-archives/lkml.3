@@ -1,114 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933535Ab3ECQbL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 12:31:11 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:45772 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933486Ab3ECQbH (ORCPT
+	id S933545Ab3ECQcd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 12:32:33 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:44794 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760550Ab3ECQca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 12:31:07 -0400
-Date: Fri, 3 May 2013 09:30:45 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-Message-ID: <20130503163045.GE3780@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130501155501.GB7521@dyad.programming.kicks-ass.net>
- <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg>
- <20130502072623.GE7521@dyad.programming.kicks-ass.net>
- <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg>
- <20130502173257.GX3780@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg>
- <20130502193409.GA3780@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1305022249010.25417@ja.ssi.bg>
- <20130502223107.GB3780@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1305031024080.1657@ja.ssi.bg>
+	Fri, 3 May 2013 12:32:30 -0400
+Date: Fri, 3 May 2013 09:30:08 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Stas Sergeev <stsp@list.ru>
+Cc: Jarkko Huijts <jarkko.huijts@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        linux-usb@vger.kernel.org, linux-serial@vger.kernel.org,
+        Linux kernel <linux-kernel@vger.kernel.org>,
+        Caylan Van Larson <i@caylan.net>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Regression: ftdi_sio is slow (since Wed Oct 10 15:05:06 2012)
+Message-ID: <20130503163008.GA30699@kroah.com>
+References: <5183D196.2080305@list.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1305031024080.1657@ja.ssi.bg>
+In-Reply-To: <5183D196.2080305@list.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050316-3620-0000-0000-000002521F5E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 10:52:36AM +0300, Julian Anastasov wrote:
+On Fri, May 03, 2013 at 07:02:46PM +0400, Stas Sergeev wrote:
+> Hi.
 > 
-> 	Hello,
+> We have a regression because of this patch:
+> http://lkml.indiana.edu/hypermail/linux/kernel/1210.1/01456.html
+> While it is arguably reasonable to have this for tcdrain or close,
+> it also slows down poll/select a lot because n_tty_poll() does this:
 > 
-> On Thu, 2 May 2013, Paul E. McKenney wrote:
-> 
-> > mainline, and missed the one that you added.  Revisiting that, a
-> > question:
-> > 
-> > > +#ifdef CONFIG_PREEMPT_RCU
-> > > +#define PREEMPT_RCU_OFFSET     1
-> > 
-> > Does this really want to be "1" instead of PREEMPT_OFFSET?
-> 
-> 	In this case when CONFIG_PREEMPT_RCU is enabled
-> we (RCU) do not touch the preempt counters. Instead, the units
-> are accounted in current->rcu_read_lock_nesting:
-> 
-> #define rcu_preempt_depth() (current->rcu_read_lock_nesting)
-> 
-> __rcu_read_lock:
-> 	current->rcu_read_lock_nesting++;
-> 
-> 	and the path is __might_sleep -> preempt_count_equals ->
-> rcu_preempt_depth
-> 
-> 	For now both places do not use PREEMPT_OFFSET:
-> 
-> - #define inc_preempt_count() add_preempt_count(1)
-> - __rcu_read_lock: current->rcu_read_lock_nesting++;
-> 
-> 	so, ... it does not matter much for me. In short,
-> the trick is in preempt_count_equals() where preempt_offset
-> is a combination of preempt count and RCU preempt depth:
-> 
-> #ifdef CONFIG_PREEMPT_RCU
-> #define PREEMPT_RCU_OFFSET      (0 /* preempt */ + 1 /* RCU */)
-> #else
-> #define PREEMPT_RCU_OFFSET      (PREEMPT_CHECK_OFFSET + 0 /* RCU */)
-> #endif
-> 
-> 	Let me know for your preference about this definition...
+> tty_chars_in_buffer(tty) < WAKEUP_CHARS
 
-OK, after getting some sleep, I might have located the root cause of
-my confusion yesterday.
+What do you mean "slows down"?
 
-The key point is that I don't understand why we cannot get the effect
-we are looking for with the following in sched.h (or wherever):
+> And it also slows down TIOCOUTQ ioctl I think (not measured).
+> The slowdown of select() is big, the customer reports the inability
+> to work that way.
 
-static inline int cond_resched_rcu(void)
-{
-#if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_PREEMPT_RCU)
-	rcu_read_unlock();
-	cond_resched();
-	rcu_read_lock();
-#endif
-}
+Inability to work what way?
 
-This adds absolutely no overhead in non-debug builds of CONFIG_PREEMPT_RCU,
-does the checking in debug builds, and allows voluntary preemption in
-!CONFIG_PREEMPT_RCU builds.  CONFIG_PROVE_RCU builds will check for an
-(illegal) outer rcu_read_lock() in CONFIG_PREEMPT_RCU builds, and you
-will get "scheduling while atomic" in response to an outer rcu_read_lock()
-in !CONFIG_PREEMPT_RCU builds.
+> Is this patch really needed? I mean, if the time to check TEMT is
+> longer than to xmit that char, then what's the use?
+> Or, if it is really a big deal, I guess it would be necessary to add
+> a separate, .chars_in_buffer_fast method.
 
-It also seems to me a lot simpler.
+We need some way to check the chars in the buffer, is the device you are
+using just very slow to respond to this request?  How slow?  Do you have
+a test case that we can see how it is affected?
 
-Does this work, or am I still missing something?
+thanks,
 
-							Thanx, Paul
-
+greg k-h
