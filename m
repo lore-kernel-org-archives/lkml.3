@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933440Ab3ECOss (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:48:48 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:61769 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933273Ab3ECOdl (ORCPT
+	id S933381Ab3ECOtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:49:13 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46657 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933235Ab3ECOdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:33:41 -0400
+	Fri, 3 May 2013 10:33:32 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 10/63] dmaengine: ste_dma40: Amalgamate DMA source and destination channel numbers
-Date: Fri,  3 May 2013 15:31:56 +0100
-Message-Id: <1367591569-32197-11-git-send-email-lee.jones@linaro.org>
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 07/63] dmaengine: ste_dma40: Assign memcpy channels in the driver
+Date: Fri,  3 May 2013 15:31:53 +0100
+Message-Id: <1367591569-32197-8-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
 References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
@@ -23,1007 +21,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devices which utilise DMA use the same device numbers for transmitting
-and receiving. In this patch we encode the source and destination
-information into one single attribute. We can subsequently exploit the
-direction attribute to see which of the transfer directions are being
-described. This also lessens the burden on platform data.
+The channels reserved for memcpy are the same for all currently
+supported platforms. With this in mind, we can ease the platform
+data passing requirement by moving these assignments out from
+platform code and place them directly into the driver.
 
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <djbw@fb.com>
-Cc: Per Forlin <per.forlin@stericsson.com>
-Cc: Rabin Vincent <rabin@rab.in>
+Acked-by: Vinod Koul <vnod.koul@intel.com>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-audio.c    |   18 +--
- arch/arm/mach-ux500/board-mop500-sdi.c      |   24 ++--
- arch/arm/mach-ux500/board-mop500.c          |   33 ++---
- arch/arm/mach-ux500/cpu-db8500.c            |   32 ++---
- arch/arm/mach-ux500/devices-db8500.c        |  120 ++++++++---------
- arch/arm/mach-ux500/ste-dma40-db8500.h      |  193 ++++++++++-----------------
- arch/arm/mach-ux500/usb.c                   |   10 +-
- drivers/dma/ste_dma40.c                     |   93 +++++--------
- drivers/dma/ste_dma40_ll.c                  |    4 +-
- include/linux/platform_data/dma-ste-dma40.h |    6 +-
- 10 files changed, 207 insertions(+), 326 deletions(-)
+ arch/arm/mach-ux500/devices-db8500.c        |   12 ------------
+ drivers/dma/ste_dma40.c                     |   12 +++++++-----
+ include/linux/platform_data/dma-ste-dma40.h |    4 ----
+ 3 files changed, 7 insertions(+), 21 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-audio.c b/arch/arm/mach-ux500/board-mop500-audio.c
-index 7209db7..f012cfa 100644
---- a/arch/arm/mach-ux500/board-mop500-audio.c
-+++ b/arch/arm/mach-ux500/board-mop500-audio.c
-@@ -24,8 +24,7 @@ static struct stedma40_chan_cfg msp0_dma_rx = {
- 	.high_priority = true,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
- 
--	.src_dev_type = DB8500_DMA_DEV31_MSP0_RX_SLIM0_CH0_RX,
--	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.dev_type = DB8500_DMA_DEV31_MSP0_SLIM0_CH0,
- 
- 	.src_info.psize = STEDMA40_PSIZE_LOG_4,
- 	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
-@@ -37,8 +36,7 @@ static struct stedma40_chan_cfg msp0_dma_tx = {
- 	.high_priority = true,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
- 
--	.src_dev_type = STEDMA40_DEV_DST_MEMORY,
--	.dst_dev_type = DB8500_DMA_DEV31_MSP0_TX_SLIM0_CH0_TX,
-+	.dev_type = DB8500_DMA_DEV31_MSP0_SLIM0_CH0,
- 
- 	.src_info.psize = STEDMA40_PSIZE_LOG_4,
- 	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
-@@ -56,8 +54,7 @@ static struct stedma40_chan_cfg msp1_dma_rx = {
- 	.high_priority = true,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
- 
--	.src_dev_type = DB8500_DMA_DEV30_MSP3_RX,
--	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.dev_type = DB8500_DMA_DEV30_MSP3,
- 
- 	.src_info.psize = STEDMA40_PSIZE_LOG_4,
- 	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
-@@ -69,8 +66,7 @@ static struct stedma40_chan_cfg msp1_dma_tx = {
- 	.high_priority = true,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
- 
--	.src_dev_type = STEDMA40_DEV_DST_MEMORY,
--	.dst_dev_type = DB8500_DMA_DEV30_MSP1_TX,
-+	.dev_type = DB8500_DMA_DEV30_MSP1,
- 
- 	.src_info.psize = STEDMA40_PSIZE_LOG_4,
- 	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
-@@ -88,8 +84,7 @@ static struct stedma40_chan_cfg msp2_dma_rx = {
- 	.high_priority = true,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
- 
--	.src_dev_type = DB8500_DMA_DEV14_MSP2_RX,
--	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.dev_type = DB8500_DMA_DEV14_MSP2,
- 
- 	/* MSP2 DMA doesn't work with PSIZE == 4 on DB8500v2 */
- 	.src_info.psize = STEDMA40_PSIZE_LOG_1,
-@@ -102,8 +97,7 @@ static struct stedma40_chan_cfg msp2_dma_tx = {
- 	.high_priority = true,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
- 
--	.src_dev_type = STEDMA40_DEV_DST_MEMORY,
--	.dst_dev_type = DB8500_DMA_DEV14_MSP2_TX,
-+	.dev_type = DB8500_DMA_DEV14_MSP2,
- 
- 	.src_info.psize = STEDMA40_PSIZE_LOG_4,
- 	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
-diff --git a/arch/arm/mach-ux500/board-mop500-sdi.c b/arch/arm/mach-ux500/board-mop500-sdi.c
-index 7f2cb6c..5c28216 100644
---- a/arch/arm/mach-ux500/board-mop500-sdi.c
-+++ b/arch/arm/mach-ux500/board-mop500-sdi.c
-@@ -64,8 +64,7 @@ static int mop500_sdi0_ios_handler(struct device *dev, struct mmc_ios *ios)
- struct stedma40_chan_cfg mop500_sdi0_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
--	.src_dev_type = DB8500_DMA_DEV29_SD_MM0_RX,
--	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.dev_type = DB8500_DMA_DEV29_SD_MM0,
- 	.src_info.data_width = STEDMA40_WORD_WIDTH,
- 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
-@@ -73,8 +72,7 @@ struct stedma40_chan_cfg mop500_sdi0_dma_cfg_rx = {
- static struct stedma40_chan_cfg mop500_sdi0_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
--	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
--	.dst_dev_type = DB8500_DMA_DEV29_SD_MM0_TX,
-+	.dev_type = DB8500_DMA_DEV29_SD_MM0,
- 	.src_info.data_width = STEDMA40_WORD_WIDTH,
- 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
-@@ -135,8 +133,7 @@ void mop500_sdi_tc35892_init(struct device *parent)
- static struct stedma40_chan_cfg sdi1_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
--	.src_dev_type = DB8500_DMA_DEV32_SD_MM1_RX,
--	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.dev_type = DB8500_DMA_DEV32_SD_MM1,
- 	.src_info.data_width = STEDMA40_WORD_WIDTH,
- 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
-@@ -144,8 +141,7 @@ static struct stedma40_chan_cfg sdi1_dma_cfg_rx = {
- static struct stedma40_chan_cfg sdi1_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
--	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
--	.dst_dev_type = DB8500_DMA_DEV32_SD_MM1_TX,
-+	.dev_type = DB8500_DMA_DEV32_SD_MM1,
- 	.src_info.data_width = STEDMA40_WORD_WIDTH,
- 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
-@@ -172,8 +168,7 @@ struct mmci_platform_data mop500_sdi1_data = {
- struct stedma40_chan_cfg mop500_sdi2_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
--	.src_dev_type =  DB8500_DMA_DEV28_SD_MM2_RX,
--	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.dev_type =  DB8500_DMA_DEV28_SD_MM2,
- 	.src_info.data_width = STEDMA40_WORD_WIDTH,
- 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
-@@ -181,8 +176,7 @@ struct stedma40_chan_cfg mop500_sdi2_dma_cfg_rx = {
- static struct stedma40_chan_cfg mop500_sdi2_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
--	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
--	.dst_dev_type = DB8500_DMA_DEV28_SD_MM2_TX,
-+	.dev_type = DB8500_DMA_DEV28_SD_MM2,
- 	.src_info.data_width = STEDMA40_WORD_WIDTH,
- 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
-@@ -210,8 +204,7 @@ struct mmci_platform_data mop500_sdi2_data = {
- struct stedma40_chan_cfg mop500_sdi4_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
--	.src_dev_type =  DB8500_DMA_DEV42_SD_MM4_RX,
--	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.dev_type =  DB8500_DMA_DEV42_SD_MM4,
- 	.src_info.data_width = STEDMA40_WORD_WIDTH,
- 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
-@@ -219,8 +212,7 @@ struct stedma40_chan_cfg mop500_sdi4_dma_cfg_rx = {
- static struct stedma40_chan_cfg mop500_sdi4_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
--	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
--	.dst_dev_type = DB8500_DMA_DEV42_SD_MM4_TX,
-+	.dev_type = DB8500_DMA_DEV42_SD_MM4,
- 	.src_info.data_width = STEDMA40_WORD_WIDTH,
- 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 87d2d7b..a8b3ad9 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -452,8 +452,7 @@ void mop500_snowball_ethernet_clock_enable(void)
- static struct cryp_platform_data u8500_cryp1_platform_data = {
- 		.mem_to_engine = {
- 				.dir = STEDMA40_MEM_TO_PERIPH,
--				.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
--				.dst_dev_type = DB8500_DMA_DEV48_CAC1_TX,
-+				.dev_type = DB8500_DMA_DEV48_CAC1,
- 				.src_info.data_width = STEDMA40_WORD_WIDTH,
- 				.dst_info.data_width = STEDMA40_WORD_WIDTH,
- 				.mode = STEDMA40_MODE_LOGICAL,
-@@ -462,8 +461,7 @@ static struct cryp_platform_data u8500_cryp1_platform_data = {
- 		},
- 		.engine_to_mem = {
- 				.dir = STEDMA40_PERIPH_TO_MEM,
--				.src_dev_type = DB8500_DMA_DEV48_CAC1_RX,
--				.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+				.dev_type = DB8500_DMA_DEV48_CAC1,
- 				.src_info.data_width = STEDMA40_WORD_WIDTH,
- 				.dst_info.data_width = STEDMA40_WORD_WIDTH,
- 				.mode = STEDMA40_MODE_LOGICAL,
-@@ -474,8 +472,7 @@ static struct cryp_platform_data u8500_cryp1_platform_data = {
- 
- static struct stedma40_chan_cfg u8500_hash_dma_cfg_tx = {
- 		.dir = STEDMA40_MEM_TO_PERIPH,
--		.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
--		.dst_dev_type = DB8500_DMA_DEV50_HAC1_TX,
-+		.dev_type = DB8500_DMA_DEV50_HAC1_TX,
- 		.src_info.data_width = STEDMA40_WORD_WIDTH,
- 		.dst_info.data_width = STEDMA40_WORD_WIDTH,
- 		.mode = STEDMA40_MODE_LOGICAL,
-@@ -497,8 +494,7 @@ static struct platform_device *mop500_platform_devs[] __initdata = {
- static struct stedma40_chan_cfg ssp0_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
--	.src_dev_type =  DB8500_DMA_DEV8_SSP0_RX,
--	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.dev_type = DB8500_DMA_DEV8_SSP0,
- 	.src_info.data_width = STEDMA40_BYTE_WIDTH,
- 	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
- };
-@@ -506,8 +502,7 @@ static struct stedma40_chan_cfg ssp0_dma_cfg_rx = {
- static struct stedma40_chan_cfg ssp0_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
--	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
--	.dst_dev_type = DB8500_DMA_DEV8_SSP0_TX,
-+	.dev_type = DB8500_DMA_DEV8_SSP0,
- 	.src_info.data_width = STEDMA40_BYTE_WIDTH,
- 	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
- };
-@@ -538,8 +533,7 @@ static void __init mop500_spi_init(struct device *parent)
- static struct stedma40_chan_cfg uart0_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
--	.src_dev_type =  DB8500_DMA_DEV13_UART0_RX,
--	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.dev_type = DB8500_DMA_DEV13_UART0,
- 	.src_info.data_width = STEDMA40_BYTE_WIDTH,
- 	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
- };
-@@ -547,8 +541,7 @@ static struct stedma40_chan_cfg uart0_dma_cfg_rx = {
- static struct stedma40_chan_cfg uart0_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
--	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
--	.dst_dev_type = DB8500_DMA_DEV13_UART0_TX,
-+	.dev_type = DB8500_DMA_DEV13_UART0,
- 	.src_info.data_width = STEDMA40_BYTE_WIDTH,
- 	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
- };
-@@ -556,8 +549,7 @@ static struct stedma40_chan_cfg uart0_dma_cfg_tx = {
- static struct stedma40_chan_cfg uart1_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
--	.src_dev_type =  DB8500_DMA_DEV12_UART1_RX,
--	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.dev_type = DB8500_DMA_DEV12_UART1,
- 	.src_info.data_width = STEDMA40_BYTE_WIDTH,
- 	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
- };
-@@ -565,8 +557,7 @@ static struct stedma40_chan_cfg uart1_dma_cfg_rx = {
- static struct stedma40_chan_cfg uart1_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
--	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
--	.dst_dev_type = DB8500_DMA_DEV12_UART1_TX,
-+	.dev_type = DB8500_DMA_DEV12_UART1,
- 	.src_info.data_width = STEDMA40_BYTE_WIDTH,
- 	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
- };
-@@ -574,8 +565,7 @@ static struct stedma40_chan_cfg uart1_dma_cfg_tx = {
- static struct stedma40_chan_cfg uart2_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
--	.src_dev_type =  DB8500_DMA_DEV11_UART2_RX,
--	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
-+	.dev_type = DB8500_DMA_DEV11_UART2,
- 	.src_info.data_width = STEDMA40_BYTE_WIDTH,
- 	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
- };
-@@ -583,8 +573,7 @@ static struct stedma40_chan_cfg uart2_dma_cfg_rx = {
- static struct stedma40_chan_cfg uart2_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
--	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
--	.dst_dev_type = DB8500_DMA_DEV11_UART2_TX,
-+	.dev_type = DB8500_DMA_DEV11_UART2,
- 	.src_info.data_width = STEDMA40_BYTE_WIDTH,
- 	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
- };
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index f1a5818..2357191 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -167,25 +167,25 @@ static void __init db8500_add_gpios(struct device *parent)
- }
- 
- static int usb_db8500_rx_dma_cfg[] = {
--	DB8500_DMA_DEV38_USB_OTG_IEP_1_9,
--	DB8500_DMA_DEV37_USB_OTG_IEP_2_10,
--	DB8500_DMA_DEV36_USB_OTG_IEP_3_11,
--	DB8500_DMA_DEV19_USB_OTG_IEP_4_12,
--	DB8500_DMA_DEV18_USB_OTG_IEP_5_13,
--	DB8500_DMA_DEV17_USB_OTG_IEP_6_14,
--	DB8500_DMA_DEV16_USB_OTG_IEP_7_15,
--	DB8500_DMA_DEV39_USB_OTG_IEP_8
-+	DB8500_DMA_DEV38_USB_OTG_IEP_AND_OEP_1_9,
-+	DB8500_DMA_DEV37_USB_OTG_IEP_AND_OEP_2_10,
-+	DB8500_DMA_DEV36_USB_OTG_IEP_AND_OEP_3_11,
-+	DB8500_DMA_DEV19_USB_OTG_IEP_AND_OEP_4_12,
-+	DB8500_DMA_DEV18_USB_OTG_IEP_AND_OEP_5_13,
-+	DB8500_DMA_DEV17_USB_OTG_IEP_AND_OEP_6_14,
-+	DB8500_DMA_DEV16_USB_OTG_IEP_AND_OEP_7_15,
-+	DB8500_DMA_DEV39_USB_OTG_IEP_AND_OEP_8
- };
- 
- static int usb_db8500_tx_dma_cfg[] = {
--	DB8500_DMA_DEV38_USB_OTG_OEP_1_9,
--	DB8500_DMA_DEV37_USB_OTG_OEP_2_10,
--	DB8500_DMA_DEV36_USB_OTG_OEP_3_11,
--	DB8500_DMA_DEV19_USB_OTG_OEP_4_12,
--	DB8500_DMA_DEV18_USB_OTG_OEP_5_13,
--	DB8500_DMA_DEV17_USB_OTG_OEP_6_14,
--	DB8500_DMA_DEV16_USB_OTG_OEP_7_15,
--	DB8500_DMA_DEV39_USB_OTG_OEP_8
-+	DB8500_DMA_DEV38_USB_OTG_IEP_AND_OEP_1_9,
-+	DB8500_DMA_DEV37_USB_OTG_IEP_AND_OEP_2_10,
-+	DB8500_DMA_DEV36_USB_OTG_IEP_AND_OEP_3_11,
-+	DB8500_DMA_DEV19_USB_OTG_IEP_AND_OEP_4_12,
-+	DB8500_DMA_DEV18_USB_OTG_IEP_AND_OEP_5_13,
-+	DB8500_DMA_DEV17_USB_OTG_IEP_AND_OEP_6_14,
-+	DB8500_DMA_DEV16_USB_OTG_IEP_AND_OEP_7_15,
-+	DB8500_DMA_DEV39_USB_OTG_IEP_AND_OEP_8
- };
- 
- static const char *db8500_read_soc_id(void)
 diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
-index 8b20c91..28308f9 100644
+index f3d9419..01cfb68 100644
 --- a/arch/arm/mach-ux500/devices-db8500.c
 +++ b/arch/arm/mach-ux500/devices-db8500.c
-@@ -50,74 +50,74 @@ static struct resource dma40_resources[] = {
-  */
- static const dma_addr_t dma40_tx_map[DB8500_DMA_NR_DEV] = {
- 	/* MUSB - these will be runtime-reconfigured */
--	[DB8500_DMA_DEV39_USB_OTG_OEP_8] = -1,
--	[DB8500_DMA_DEV16_USB_OTG_OEP_7_15] = -1,
--	[DB8500_DMA_DEV17_USB_OTG_OEP_6_14] = -1,
--	[DB8500_DMA_DEV18_USB_OTG_OEP_5_13] = -1,
--	[DB8500_DMA_DEV19_USB_OTG_OEP_4_12] = -1,
--	[DB8500_DMA_DEV36_USB_OTG_OEP_3_11] = -1,
--	[DB8500_DMA_DEV37_USB_OTG_OEP_2_10] = -1,
--	[DB8500_DMA_DEV38_USB_OTG_OEP_1_9] = -1,
-+	[DB8500_DMA_DEV39_USB_OTG_IEP_AND_OEP_8] = -1,
-+	[DB8500_DMA_DEV16_USB_OTG_IEP_AND_OEP_7_15] = -1,
-+	[DB8500_DMA_DEV17_USB_OTG_IEP_AND_OEP_6_14] = -1,
-+	[DB8500_DMA_DEV18_USB_OTG_IEP_AND_OEP_5_13] = -1,
-+	[DB8500_DMA_DEV19_USB_OTG_IEP_AND_OEP_4_12] = -1,
-+	[DB8500_DMA_DEV36_USB_OTG_IEP_AND_OEP_3_11] = -1,
-+	[DB8500_DMA_DEV37_USB_OTG_IEP_AND_OEP_2_10] = -1,
-+	[DB8500_DMA_DEV38_USB_OTG_IEP_AND_OEP_1_9] = -1,
- 	/* PrimeCells - run-time configured */
--	[DB8500_DMA_DEV0_SPI0_TX] = -1,
--	[DB8500_DMA_DEV1_SD_MMC0_TX] = -1,
--	[DB8500_DMA_DEV2_SD_MMC1_TX] = -1,
--	[DB8500_DMA_DEV3_SD_MMC2_TX] = -1,
--	[DB8500_DMA_DEV8_SSP0_TX] = -1,
--	[DB8500_DMA_DEV9_SSP1_TX] = -1,
--	[DB8500_DMA_DEV11_UART2_TX] = -1,
--	[DB8500_DMA_DEV12_UART1_TX] = -1,
--	[DB8500_DMA_DEV13_UART0_TX] = -1,
--	[DB8500_DMA_DEV28_SD_MM2_TX] = -1,
--	[DB8500_DMA_DEV29_SD_MM0_TX] = -1,
--	[DB8500_DMA_DEV32_SD_MM1_TX] = -1,
--	[DB8500_DMA_DEV33_SPI2_TX] = -1,
--	[DB8500_DMA_DEV35_SPI1_TX] = -1,
--	[DB8500_DMA_DEV40_SPI3_TX] = -1,
--	[DB8500_DMA_DEV41_SD_MM3_TX] = -1,
--	[DB8500_DMA_DEV42_SD_MM4_TX] = -1,
--	[DB8500_DMA_DEV43_SD_MM5_TX] = -1,
--	[DB8500_DMA_DEV14_MSP2_TX] = U8500_MSP2_BASE + MSP_TX_RX_REG_OFFSET,
--	[DB8500_DMA_DEV30_MSP1_TX] = U8500_MSP1_BASE + MSP_TX_RX_REG_OFFSET,
--	[DB8500_DMA_DEV31_MSP0_TX_SLIM0_CH0_TX] = U8500_MSP0_BASE + MSP_TX_RX_REG_OFFSET,
--	[DB8500_DMA_DEV48_CAC1_TX] = U8500_CRYP1_BASE + CRYP1_TX_REG_OFFSET,
-+	[DB8500_DMA_DEV0_SPI0] = -1,
-+	[DB8500_DMA_DEV1_SD_MMC0] = -1,
-+	[DB8500_DMA_DEV2_SD_MMC1] = -1,
-+	[DB8500_DMA_DEV3_SD_MMC2] = -1,
-+	[DB8500_DMA_DEV8_SSP0] = -1,
-+	[DB8500_DMA_DEV9_SSP1] = -1,
-+	[DB8500_DMA_DEV11_UART2] = -1,
-+	[DB8500_DMA_DEV12_UART1] = -1,
-+	[DB8500_DMA_DEV13_UART0] = -1,
-+	[DB8500_DMA_DEV28_SD_MM2] = -1,
-+	[DB8500_DMA_DEV29_SD_MM0] = -1,
-+	[DB8500_DMA_DEV32_SD_MM1] = -1,
-+	[DB8500_DMA_DEV33_SPI2] = -1,
-+	[DB8500_DMA_DEV35_SPI1] = -1,
-+	[DB8500_DMA_DEV40_SPI3] = -1,
-+	[DB8500_DMA_DEV41_SD_MM3] = -1,
-+	[DB8500_DMA_DEV42_SD_MM4] = -1,
-+	[DB8500_DMA_DEV43_SD_MM5] = -1,
-+	[DB8500_DMA_DEV14_MSP2] = U8500_MSP2_BASE + MSP_TX_RX_REG_OFFSET,
-+	[DB8500_DMA_DEV30_MSP1] = U8500_MSP1_BASE + MSP_TX_RX_REG_OFFSET,
-+	[DB8500_DMA_DEV31_MSP0_SLIM0_CH0] = U8500_MSP0_BASE + MSP_TX_RX_REG_OFFSET,
-+	[DB8500_DMA_DEV48_CAC1] = U8500_CRYP1_BASE + CRYP1_TX_REG_OFFSET,
- 	[DB8500_DMA_DEV50_HAC1_TX] = U8500_HASH1_BASE + HASH1_TX_REG_OFFSET,
+@@ -146,22 +146,10 @@ static const dma_addr_t dma40_rx_map[DB8500_DMA_NR_DEV] = {
+ 	[DB8500_DMA_DEV48_CAC1_RX] = U8500_CRYP1_BASE + CRYP1_RX_REG_OFFSET,
  };
  
- /* Mapping between source event lines and physical device address */
- static const dma_addr_t dma40_rx_map[DB8500_DMA_NR_DEV] = {
- 	/* MUSB - these will be runtime-reconfigured */
--	[DB8500_DMA_DEV39_USB_OTG_IEP_8] = -1,
--	[DB8500_DMA_DEV16_USB_OTG_IEP_7_15] = -1,
--	[DB8500_DMA_DEV17_USB_OTG_IEP_6_14] = -1,
--	[DB8500_DMA_DEV18_USB_OTG_IEP_5_13] = -1,
--	[DB8500_DMA_DEV19_USB_OTG_IEP_4_12] = -1,
--	[DB8500_DMA_DEV36_USB_OTG_IEP_3_11] = -1,
--	[DB8500_DMA_DEV37_USB_OTG_IEP_2_10] = -1,
--	[DB8500_DMA_DEV38_USB_OTG_IEP_1_9] = -1,
-+	[DB8500_DMA_DEV39_USB_OTG_IEP_AND_OEP_8] = -1,
-+	[DB8500_DMA_DEV16_USB_OTG_IEP_AND_OEP_7_15] = -1,
-+	[DB8500_DMA_DEV17_USB_OTG_IEP_AND_OEP_6_14] = -1,
-+	[DB8500_DMA_DEV18_USB_OTG_IEP_AND_OEP_5_13] = -1,
-+	[DB8500_DMA_DEV19_USB_OTG_IEP_AND_OEP_4_12] = -1,
-+	[DB8500_DMA_DEV36_USB_OTG_IEP_AND_OEP_3_11] = -1,
-+	[DB8500_DMA_DEV37_USB_OTG_IEP_AND_OEP_2_10] = -1,
-+	[DB8500_DMA_DEV38_USB_OTG_IEP_AND_OEP_1_9] = -1,
- 	/* PrimeCells */
--	[DB8500_DMA_DEV0_SPI0_RX] = -1,
--	[DB8500_DMA_DEV1_SD_MMC0_RX] = -1,
--	[DB8500_DMA_DEV2_SD_MMC1_RX] = -1,
--	[DB8500_DMA_DEV3_SD_MMC2_RX] = -1,
--	[DB8500_DMA_DEV8_SSP0_RX] = -1,
--	[DB8500_DMA_DEV9_SSP1_RX] = -1,
--	[DB8500_DMA_DEV11_UART2_RX] = -1,
--	[DB8500_DMA_DEV12_UART1_RX] = -1,
--	[DB8500_DMA_DEV13_UART0_RX] = -1,
--	[DB8500_DMA_DEV28_SD_MM2_RX] = -1,
--	[DB8500_DMA_DEV29_SD_MM0_RX] = -1,
--	[DB8500_DMA_DEV32_SD_MM1_RX] = -1,
--	[DB8500_DMA_DEV33_SPI2_RX] = -1,
--	[DB8500_DMA_DEV35_SPI1_RX] = -1,
--	[DB8500_DMA_DEV40_SPI3_RX] = -1,
--	[DB8500_DMA_DEV41_SD_MM3_RX] = -1,
--	[DB8500_DMA_DEV42_SD_MM4_RX] = -1,
--	[DB8500_DMA_DEV43_SD_MM5_RX] = -1,
--	[DB8500_DMA_DEV14_MSP2_RX] = U8500_MSP2_BASE + MSP_TX_RX_REG_OFFSET,
--	[DB8500_DMA_DEV30_MSP3_RX] = U8500_MSP3_BASE + MSP_TX_RX_REG_OFFSET,
--	[DB8500_DMA_DEV31_MSP0_RX_SLIM0_CH0_RX] = U8500_MSP0_BASE + MSP_TX_RX_REG_OFFSET,
--	[DB8500_DMA_DEV48_CAC1_RX] = U8500_CRYP1_BASE + CRYP1_RX_REG_OFFSET,
-+	[DB8500_DMA_DEV0_SPI0] = -1,
-+	[DB8500_DMA_DEV1_SD_MMC0] = -1,
-+	[DB8500_DMA_DEV2_SD_MMC1] = -1,
-+	[DB8500_DMA_DEV3_SD_MMC2] = -1,
-+	[DB8500_DMA_DEV8_SSP0] = -1,
-+	[DB8500_DMA_DEV9_SSP1] = -1,
-+	[DB8500_DMA_DEV11_UART2] = -1,
-+	[DB8500_DMA_DEV12_UART1] = -1,
-+	[DB8500_DMA_DEV13_UART0] = -1,
-+	[DB8500_DMA_DEV28_SD_MM2] = -1,
-+	[DB8500_DMA_DEV29_SD_MM0] = -1,
-+	[DB8500_DMA_DEV32_SD_MM1] = -1,
-+	[DB8500_DMA_DEV33_SPI2] = -1,
-+	[DB8500_DMA_DEV35_SPI1] = -1,
-+	[DB8500_DMA_DEV40_SPI3] = -1,
-+	[DB8500_DMA_DEV41_SD_MM3] = -1,
-+	[DB8500_DMA_DEV42_SD_MM4] = -1,
-+	[DB8500_DMA_DEV43_SD_MM5] = -1,
-+	[DB8500_DMA_DEV14_MSP2] = U8500_MSP2_BASE + MSP_TX_RX_REG_OFFSET,
-+	[DB8500_DMA_DEV30_MSP3] = U8500_MSP3_BASE + MSP_TX_RX_REG_OFFSET,
-+	[DB8500_DMA_DEV31_MSP0_SLIM0_CH0] = U8500_MSP0_BASE + MSP_TX_RX_REG_OFFSET,
-+	[DB8500_DMA_DEV48_CAC1] = U8500_CRYP1_BASE + CRYP1_RX_REG_OFFSET,
- };
- 
- static struct stedma40_platform_data dma40_plat_data = {
-diff --git a/arch/arm/mach-ux500/ste-dma40-db8500.h b/arch/arm/mach-ux500/ste-dma40-db8500.h
-index a616419..0296ae5 100644
---- a/arch/arm/mach-ux500/ste-dma40-db8500.h
-+++ b/arch/arm/mach-ux500/ste-dma40-db8500.h
-@@ -12,133 +12,74 @@
- 
- #define DB8500_DMA_NR_DEV 64
- 
--enum dma_src_dev_type {
--	DB8500_DMA_DEV0_SPI0_RX = 0,
--	DB8500_DMA_DEV1_SD_MMC0_RX = 1,
--	DB8500_DMA_DEV2_SD_MMC1_RX = 2,
--	DB8500_DMA_DEV3_SD_MMC2_RX = 3,
--	DB8500_DMA_DEV4_I2C1_RX = 4,
--	DB8500_DMA_DEV5_I2C3_RX = 5,
--	DB8500_DMA_DEV6_I2C2_RX = 6,
--	DB8500_DMA_DEV7_I2C4_RX = 7, /* Only on V1 and later */
--	DB8500_DMA_DEV8_SSP0_RX = 8,
--	DB8500_DMA_DEV9_SSP1_RX = 9,
--	DB8500_DMA_DEV10_MCDE_RX = 10,
--	DB8500_DMA_DEV11_UART2_RX = 11,
--	DB8500_DMA_DEV12_UART1_RX = 12,
--	DB8500_DMA_DEV13_UART0_RX = 13,
--	DB8500_DMA_DEV14_MSP2_RX = 14,
--	DB8500_DMA_DEV15_I2C0_RX = 15,
--	DB8500_DMA_DEV16_USB_OTG_IEP_7_15 = 16,
--	DB8500_DMA_DEV17_USB_OTG_IEP_6_14 = 17,
--	DB8500_DMA_DEV18_USB_OTG_IEP_5_13 = 18,
--	DB8500_DMA_DEV19_USB_OTG_IEP_4_12 = 19,
--	DB8500_DMA_DEV20_SLIM0_CH0_RX_HSI_RX_CH0 = 20,
--	DB8500_DMA_DEV21_SLIM0_CH1_RX_HSI_RX_CH1 = 21,
--	DB8500_DMA_DEV22_SLIM0_CH2_RX_HSI_RX_CH2 = 22,
--	DB8500_DMA_DEV23_SLIM0_CH3_RX_HSI_RX_CH3 = 23,
--	DB8500_DMA_DEV24_SRC_SXA0_RX_TX = 24,
--	DB8500_DMA_DEV25_SRC_SXA1_RX_TX = 25,
--	DB8500_DMA_DEV26_SRC_SXA2_RX_TX = 26,
--	DB8500_DMA_DEV27_SRC_SXA3_RX_TX = 27,
--	DB8500_DMA_DEV28_SD_MM2_RX = 28,
--	DB8500_DMA_DEV29_SD_MM0_RX = 29,
--	DB8500_DMA_DEV30_MSP1_RX = 30,
-+/*
-+ * Unless otherwise specified, all channels numbers are used for
-+ * TX & RX, and can be used for either source or destination
-+ * channels.
-+ */
-+enum dma_dev_type {
-+	DB8500_DMA_DEV0_SPI0 = 0,
-+	DB8500_DMA_DEV1_SD_MMC0 = 1,
-+	DB8500_DMA_DEV2_SD_MMC1 = 2,
-+	DB8500_DMA_DEV3_SD_MMC2 = 3,
-+	DB8500_DMA_DEV4_I2C1 = 4,
-+	DB8500_DMA_DEV5_I2C3 = 5,
-+	DB8500_DMA_DEV6_I2C2 = 6,
-+	DB8500_DMA_DEV7_I2C4 = 7,			/* Only on V1 and later */
-+	DB8500_DMA_DEV8_SSP0 = 8,
-+	DB8500_DMA_DEV9_SSP1 = 9,
-+	DB8500_DMA_DEV10_MCDE_RX = 10,			/* RX only */
-+	DB8500_DMA_DEV11_UART2 = 11,
-+	DB8500_DMA_DEV12_UART1 = 12,
-+	DB8500_DMA_DEV13_UART0 = 13,
-+	DB8500_DMA_DEV14_MSP2 = 14,
-+	DB8500_DMA_DEV15_I2C0 = 15,
-+	DB8500_DMA_DEV16_USB_OTG_IEP_AND_OEP_7_15 = 16,
-+	DB8500_DMA_DEV17_USB_OTG_IEP_AND_OEP_6_14 = 17,
-+	DB8500_DMA_DEV18_USB_OTG_IEP_AND_OEP_5_13 = 18,
-+	DB8500_DMA_DEV19_USB_OTG_IEP_AND_OEP_4_12 = 19,
-+	DB8500_DMA_DEV20_SLIM0_CH0_HSI_CH0 = 20,
-+	DB8500_DMA_DEV21_SLIM0_CH1_HSI_CH1 = 21,
-+	DB8500_DMA_DEV22_SLIM0_CH2_HSI_CH2 = 22,
-+	DB8500_DMA_DEV23_SLIM0_CH3_HSI_CH3 = 23,
-+	DB8500_DMA_DEV24_SXA0 = 24,
-+	DB8500_DMA_DEV25_SXA1 = 25,
-+	DB8500_DMA_DEV26_SXA2 = 26,
-+	DB8500_DMA_DEV27_SXA3 = 27,
-+	DB8500_DMA_DEV28_SD_MM2 = 28,
-+	DB8500_DMA_DEV29_SD_MM0 = 29,
-+	DB8500_DMA_DEV30_MSP1 = 30,
- 	/* On DB8500v2, MSP3 RX replaces MSP1 RX */
--	DB8500_DMA_DEV30_MSP3_RX = 30,
--	DB8500_DMA_DEV31_MSP0_RX_SLIM0_CH0_RX = 31,
--	DB8500_DMA_DEV32_SD_MM1_RX = 32,
--	DB8500_DMA_DEV33_SPI2_RX = 33,
--	DB8500_DMA_DEV34_I2C3_RX2 = 34,
--	DB8500_DMA_DEV35_SPI1_RX = 35,
--	DB8500_DMA_DEV36_USB_OTG_IEP_3_11 = 36,
--	DB8500_DMA_DEV37_USB_OTG_IEP_2_10 = 37,
--	DB8500_DMA_DEV38_USB_OTG_IEP_1_9 = 38,
--	DB8500_DMA_DEV39_USB_OTG_IEP_8 = 39,
--	DB8500_DMA_DEV40_SPI3_RX = 40,
--	DB8500_DMA_DEV41_SD_MM3_RX = 41,
--	DB8500_DMA_DEV42_SD_MM4_RX = 42,
--	DB8500_DMA_DEV43_SD_MM5_RX = 43,
--	DB8500_DMA_DEV44_SRC_SXA4_RX_TX = 44,
--	DB8500_DMA_DEV45_SRC_SXA5_RX_TX = 45,
--	DB8500_DMA_DEV46_SLIM0_CH8_RX_SRC_SXA6_RX_TX = 46,
--	DB8500_DMA_DEV47_SLIM0_CH9_RX_SRC_SXA7_RX_TX = 47,
--	DB8500_DMA_DEV48_CAC1_RX = 48,
--	/* 49, 50 and 51 are not used */
--	DB8500_DMA_DEV52_SLIM0_CH4_RX_HSI_RX_CH4 = 52,
--	DB8500_DMA_DEV53_SLIM0_CH5_RX_HSI_RX_CH5 = 53,
--	DB8500_DMA_DEV54_SLIM0_CH6_RX_HSI_RX_CH6 = 54,
--	DB8500_DMA_DEV55_SLIM0_CH7_RX_HSI_RX_CH7 = 55,
--	/* 56, 57, 58, 59 and 60 are not used */
--	DB8500_DMA_DEV61_CAC0_RX = 61,
--	/* 62 and 63 are not used */
+-/* Reserved event lines for memcpy only */
+-static int dma40_memcpy_event[] = {
+-	DB8500_DMA_MEMCPY_TX_0,
+-	DB8500_DMA_MEMCPY_TX_1,
+-	DB8500_DMA_MEMCPY_TX_2,
+-	DB8500_DMA_MEMCPY_TX_3,
+-	DB8500_DMA_MEMCPY_TX_4,
+-	DB8500_DMA_MEMCPY_TX_5,
 -};
 -
--enum dma_dest_dev_type {
--	DB8500_DMA_DEV0_SPI0_TX = 0,
--	DB8500_DMA_DEV1_SD_MMC0_TX = 1,
--	DB8500_DMA_DEV2_SD_MMC1_TX = 2,
--	DB8500_DMA_DEV3_SD_MMC2_TX = 3,
--	DB8500_DMA_DEV4_I2C1_TX = 4,
--	DB8500_DMA_DEV5_I2C3_TX = 5,
--	DB8500_DMA_DEV6_I2C2_TX = 6,
--	DB8500_DMA_DEV7_I2C4_TX = 7, /* Only on V1 and later */
--	DB8500_DMA_DEV8_SSP0_TX = 8,
--	DB8500_DMA_DEV9_SSP1_TX = 9,
--	/* 10 is not used*/
--	DB8500_DMA_DEV11_UART2_TX = 11,
--	DB8500_DMA_DEV12_UART1_TX = 12,
--	DB8500_DMA_DEV13_UART0_TX = 13,
--	DB8500_DMA_DEV14_MSP2_TX = 14,
--	DB8500_DMA_DEV15_I2C0_TX = 15,
--	DB8500_DMA_DEV16_USB_OTG_OEP_7_15 = 16,
--	DB8500_DMA_DEV17_USB_OTG_OEP_6_14 = 17,
--	DB8500_DMA_DEV18_USB_OTG_OEP_5_13 = 18,
--	DB8500_DMA_DEV19_USB_OTG_OEP_4_12 = 19,
--	DB8500_DMA_DEV20_SLIM0_CH0_TX_HSI_TX_CH0 = 20,
--	DB8500_DMA_DEV21_SLIM0_CH1_TX_HSI_TX_CH1 = 21,
--	DB8500_DMA_DEV22_SLIM0_CH2_TX_HSI_TX_CH2 = 22,
--	DB8500_DMA_DEV23_SLIM0_CH3_TX_HSI_TX_CH3 = 23,
--	DB8500_DMA_DEV24_DST_SXA0_RX_TX = 24,
--	DB8500_DMA_DEV25_DST_SXA1_RX_TX = 25,
--	DB8500_DMA_DEV26_DST_SXA2_RX_TX = 26,
--	DB8500_DMA_DEV27_DST_SXA3_RX_TX = 27,
--	DB8500_DMA_DEV28_SD_MM2_TX = 28,
--	DB8500_DMA_DEV29_SD_MM0_TX = 29,
--	DB8500_DMA_DEV30_MSP1_TX = 30,
--	DB8500_DMA_DEV31_MSP0_TX_SLIM0_CH0_TX = 31,
--	DB8500_DMA_DEV32_SD_MM1_TX = 32,
--	DB8500_DMA_DEV33_SPI2_TX = 33,
--	DB8500_DMA_DEV34_I2C3_TX2 = 34,
--	DB8500_DMA_DEV35_SPI1_TX = 35,
--	DB8500_DMA_DEV36_USB_OTG_OEP_3_11 = 36,
--	DB8500_DMA_DEV37_USB_OTG_OEP_2_10 = 37,
--	DB8500_DMA_DEV38_USB_OTG_OEP_1_9 = 38,
--	DB8500_DMA_DEV39_USB_OTG_OEP_8 = 39,
--	DB8500_DMA_DEV40_SPI3_TX = 40,
--	DB8500_DMA_DEV41_SD_MM3_TX = 41,
--	DB8500_DMA_DEV42_SD_MM4_TX = 42,
--	DB8500_DMA_DEV43_SD_MM5_TX = 43,
--	DB8500_DMA_DEV44_DST_SXA4_RX_TX = 44,
--	DB8500_DMA_DEV45_DST_SXA5_RX_TX = 45,
--	DB8500_DMA_DEV46_SLIM0_CH8_TX_DST_SXA6_RX_TX = 46,
--	DB8500_DMA_DEV47_SLIM0_CH9_TX_DST_SXA7_RX_TX = 47,
--	DB8500_DMA_DEV48_CAC1_TX  = 48,
--	DB8500_DMA_DEV49_CAC1_TX_HAC1_TX = 49,
--	DB8500_DMA_DEV50_HAC1_TX = 50,
--	DB8500_DMA_MEMCPY_TX_0 = 51,
--	DB8500_DMA_DEV52_SLIM1_CH4_TX_HSI_TX_CH4 = 52,
--	DB8500_DMA_DEV53_SLIM1_CH5_TX_HSI_TX_CH5 = 53,
--	DB8500_DMA_DEV54_SLIM1_CH6_TX_HSI_TX_CH6 = 54,
--	DB8500_DMA_DEV55_SLIM1_CH7_TX_HSI_TX_CH7 = 55,
--	DB8500_DMA_MEMCPY_TX_1 = 56,
--	DB8500_DMA_MEMCPY_TX_2 = 57,
--	DB8500_DMA_MEMCPY_TX_3 = 58,
--	DB8500_DMA_MEMCPY_TX_4 = 59,
--	DB8500_DMA_MEMCPY_TX_5 = 60,
--	DB8500_DMA_DEV61_CAC0_TX = 61,
--	DB8500_DMA_DEV62_CAC0_TX_HAC0_TX = 62,
--	DB8500_DMA_DEV63_HAC0_TX = 63,
-+	DB8500_DMA_DEV30_MSP3 = 30,
-+	DB8500_DMA_DEV31_MSP0_SLIM0_CH0 = 31,
-+	DB8500_DMA_DEV32_SD_MM1 = 32,
-+	DB8500_DMA_DEV33_SPI2 = 33,
-+	DB8500_DMA_DEV34_I2C3_RX2_TX2 = 34,
-+	DB8500_DMA_DEV35_SPI1 = 35,
-+	DB8500_DMA_DEV36_USB_OTG_IEP_AND_OEP_3_11 = 36,
-+	DB8500_DMA_DEV37_USB_OTG_IEP_AND_OEP_2_10 = 37,
-+	DB8500_DMA_DEV38_USB_OTG_IEP_AND_OEP_1_9 = 38,
-+	DB8500_DMA_DEV39_USB_OTG_IEP_AND_OEP_8 = 39,
-+	DB8500_DMA_DEV40_SPI3 = 40,
-+	DB8500_DMA_DEV41_SD_MM3 = 41,
-+	DB8500_DMA_DEV42_SD_MM4 = 42,
-+	DB8500_DMA_DEV43_SD_MM5 = 43,
-+	DB8500_DMA_DEV44_SXA4 = 44,
-+	DB8500_DMA_DEV45_SXA5 = 45,
-+	DB8500_DMA_DEV46_SLIM0_CH8_SRC_SXA6 = 46,
-+	DB8500_DMA_DEV47_SLIM0_CH9_SRC_SXA7 = 47,
-+	DB8500_DMA_DEV48_CAC1 = 48,
-+	DB8500_DMA_DEV49_CAC1_TX_HAC1_TX = 49,		/* TX only */
-+	DB8500_DMA_DEV50_HAC1_TX = 50,			/* TX only */
-+	DB8500_DMA_MEMCPY_TX_0 = 51,			/* TX only */
-+	DB8500_DMA_DEV52_SLIM0_CH4_HSI_CH4 = 52,
-+	DB8500_DMA_DEV53_SLIM0_CH5_HSI_CH5 = 53,
-+	DB8500_DMA_DEV54_SLIM0_CH6_HSI_CH6 = 54,
-+	DB8500_DMA_DEV55_SLIM0_CH7_HSI_CH7 = 55,
-+	/* 56 -> 60 are channels reserved for memcpy only */
-+	DB8500_DMA_DEV61_CAC0 = 61,
-+	DB8500_DMA_DEV62_CAC0_TX_HAC0_TX = 62,		/* TX only */
-+	DB8500_DMA_DEV63_HAC0_TX = 63,			/* TX only */
- };
- 
- #endif
-diff --git a/arch/arm/mach-ux500/usb.c b/arch/arm/mach-ux500/usb.c
-index 78ac65f..e0ea490 100644
---- a/arch/arm/mach-ux500/usb.c
-+++ b/arch/arm/mach-ux500/usb.c
-@@ -15,7 +15,6 @@
- #define MUSB_DMA40_RX_CH { \
- 		.mode = STEDMA40_MODE_LOGICAL, \
- 		.dir = STEDMA40_PERIPH_TO_MEM, \
--		.dst_dev_type = STEDMA40_DEV_DST_MEMORY, \
- 		.src_info.data_width = STEDMA40_WORD_WIDTH, \
- 		.dst_info.data_width = STEDMA40_WORD_WIDTH, \
- 		.src_info.psize = STEDMA40_PSIZE_LOG_16, \
-@@ -25,7 +24,6 @@
- #define MUSB_DMA40_TX_CH { \
- 		.mode = STEDMA40_MODE_LOGICAL, \
- 		.dir = STEDMA40_MEM_TO_PERIPH, \
--		.src_dev_type = STEDMA40_DEV_SRC_MEMORY, \
- 		.src_info.data_width = STEDMA40_WORD_WIDTH, \
- 		.dst_info.data_width = STEDMA40_WORD_WIDTH, \
- 		.src_info.psize = STEDMA40_PSIZE_LOG_16, \
-@@ -125,20 +123,20 @@ struct platform_device ux500_musb_device = {
- 	.resource = usb_resources,
- };
- 
--static inline void ux500_usb_dma_update_rx_ch_config(int *src_dev_type)
-+static inline void ux500_usb_dma_update_rx_ch_config(int *dev_type)
- {
- 	u32 idx;
- 
- 	for (idx = 0; idx < UX500_MUSB_DMA_NUM_RX_CHANNELS; idx++)
--		musb_dma_rx_ch[idx].src_dev_type = src_dev_type[idx];
-+		musb_dma_rx_ch[idx].dev_type = dev_type[idx];
- }
- 
--static inline void ux500_usb_dma_update_tx_ch_config(int *dst_dev_type)
-+static inline void ux500_usb_dma_update_tx_ch_config(int *dev_type)
- {
- 	u32 idx;
- 
- 	for (idx = 0; idx < UX500_MUSB_DMA_NUM_TX_CHANNELS; idx++)
--		musb_dma_tx_ch[idx].dst_dev_type = dst_dev_type[idx];
-+		musb_dma_tx_ch[idx].dev_type = dev_type[idx];
- }
- 
- void ux500_add_usb(struct device *parent, resource_size_t base, int irq,
+ static struct stedma40_platform_data dma40_plat_data = {
+ 	.dev_len = DB8500_DMA_NR_DEV,
+ 	.dev_rx = dma40_rx_map,
+ 	.dev_tx = dma40_tx_map,
+-	.memcpy = dma40_memcpy_event,
+-	.memcpy_len = ARRAY_SIZE(dma40_memcpy_event),
+ 	.memcpy_conf_phy = &dma40_memcpy_conf_phy,
+ 	.memcpy_conf_log = &dma40_memcpy_conf_log,
+ 	.disabled_channels = {-1},
 diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index c79853f..2354474 100644
+index 1734fee..12de79e 100644
 --- a/drivers/dma/ste_dma40.c
 +++ b/drivers/dma/ste_dma40.c
-@@ -1288,21 +1288,17 @@ static void __d40_config_set_event(struct d40_chan *d40c,
- static void d40_config_set_event(struct d40_chan *d40c,
- 				 enum d40_events event_type)
- {
-+	u32 event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dev_type);
+@@ -55,6 +55,9 @@
+ 
+ #define MAX(a, b) (((a) < (b)) ? (b) : (a))
+ 
++/* Reserved event lines for memcpy only. */
++static int dma40_memcpy_channels[] = { 56, 57, 58, 59, 60 };
 +
- 	/* Enable event line connected to device (or memcpy) */
- 	if ((d40c->dma_cfg.dir ==  STEDMA40_PERIPH_TO_MEM) ||
--	    (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_PERIPH)) {
--		u32 event = D40_TYPE_TO_EVENT(d40c->dma_cfg.src_dev_type);
--
-+	    (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_PERIPH))
- 		__d40_config_set_event(d40c, event_type, event,
- 				       D40_CHAN_REG_SSLNK);
--	}
--
--	if (d40c->dma_cfg.dir !=  STEDMA40_PERIPH_TO_MEM) {
--		u32 event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dst_dev_type);
- 
-+	if (d40c->dma_cfg.dir !=  STEDMA40_PERIPH_TO_MEM)
- 		__d40_config_set_event(d40c, event_type, event,
- 				       D40_CHAN_REG_SDLNK);
--	}
- }
- 
- static u32 d40_chan_has_events(struct d40_chan *d40c)
-@@ -1744,8 +1740,6 @@ static int d40_validate_conf(struct d40_chan *d40c,
- 			     struct stedma40_chan_cfg *conf)
- {
- 	int res = 0;
--	u32 dst_event_group = D40_TYPE_TO_GROUP(conf->dst_dev_type);
--	u32 src_event_group = D40_TYPE_TO_GROUP(conf->src_dev_type);
- 	bool is_log = conf->mode == STEDMA40_MODE_LOGICAL;
- 
- 	if (!conf->dir) {
-@@ -1753,44 +1747,26 @@ static int d40_validate_conf(struct d40_chan *d40c,
- 		res = -EINVAL;
- 	}
- 
--	if (conf->dst_dev_type != STEDMA40_DEV_DST_MEMORY &&
--	    d40c->base->plat_data->dev_tx[conf->dst_dev_type] == 0 &&
--	    d40c->runtime_addr == 0) {
--
--		chan_err(d40c, "Invalid TX channel address (%d)\n",
--			 conf->dst_dev_type);
--		res = -EINVAL;
--	}
--
--	if (conf->src_dev_type != STEDMA40_DEV_SRC_MEMORY &&
--	    d40c->base->plat_data->dev_rx[conf->src_dev_type] == 0 &&
--	    d40c->runtime_addr == 0) {
--		chan_err(d40c, "Invalid RX channel address (%d)\n",
--			conf->src_dev_type);
-+	if ((is_log && conf->dev_type > d40c->base->num_log_chans)  ||
-+	    (!is_log && conf->dev_type > d40c->base->num_phy_chans) ||
-+	    (conf->dev_type < 0)) {
-+		chan_err(d40c, "Invalid device type (%d)\n", conf->dev_type);
- 		res = -EINVAL;
- 	}
- 
- 	if (conf->dir == STEDMA40_MEM_TO_PERIPH &&
--	    conf->dst_dev_type == STEDMA40_DEV_DST_MEMORY) {
--		chan_err(d40c, "Invalid dst\n");
-+	    d40c->base->plat_data->dev_tx[conf->dev_type] == 0 &&
-+	    d40c->runtime_addr == 0) {
-+		chan_err(d40c, "Invalid TX channel address (%d)\n",
-+			 conf->dev_type);
- 		res = -EINVAL;
- 	}
- 
- 	if (conf->dir == STEDMA40_PERIPH_TO_MEM &&
--	    conf->src_dev_type == STEDMA40_DEV_SRC_MEMORY) {
--		chan_err(d40c, "Invalid src\n");
--		res = -EINVAL;
--	}
--
--	if (conf->src_dev_type == STEDMA40_DEV_SRC_MEMORY &&
--	    conf->dst_dev_type == STEDMA40_DEV_DST_MEMORY && is_log) {
--		chan_err(d40c, "No event line\n");
--		res = -EINVAL;
--	}
--
--	if (conf->dir == STEDMA40_PERIPH_TO_PERIPH &&
--	    (src_event_group != dst_event_group)) {
--		chan_err(d40c, "Invalid event group\n");
-+	    d40c->base->plat_data->dev_rx[conf->dev_type] == 0 &&
-+	    d40c->runtime_addr == 0) {
-+		chan_err(d40c, "Invalid RX channel address (%d)\n",
-+			 conf->dev_type);
- 		res = -EINVAL;
- 	}
- 
-@@ -1911,7 +1887,7 @@ out:
- 
- static int d40_allocate_channel(struct d40_chan *d40c, bool *first_phy_user)
- {
--	int dev_type;
-+	int dev_type = d40c->dma_cfg.dev_type;
- 	int event_group;
- 	int event_line;
- 	struct d40_phy_res *phys;
-@@ -1926,13 +1902,11 @@ static int d40_allocate_channel(struct d40_chan *d40c, bool *first_phy_user)
- 	num_phy_chans = d40c->base->num_phy_chans;
- 
- 	if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM) {
--		dev_type = d40c->dma_cfg.src_dev_type;
- 		log_num = 2 * dev_type;
- 		is_src = true;
- 	} else if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_PERIPH ||
- 		   d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM) {
- 		/* dst event lines are used for logical memcpy */
--		dev_type = d40c->dma_cfg.dst_dev_type;
- 		log_num = 2 * dev_type + 1;
- 		is_src = false;
- 	} else
-@@ -2044,8 +2018,7 @@ static int d40_config_memcpy(struct d40_chan *d40c)
- 
+ /**
+  * enum 40_command - The different commands and/or statuses.
+  *
+@@ -2014,8 +2017,7 @@ static int d40_config_memcpy(struct d40_chan *d40c)
  	if (dma_has_cap(DMA_MEMCPY, cap) && !dma_has_cap(DMA_SLAVE, cap)) {
- 		d40c->dma_cfg = dma40_memcpy_conf_log;
--		d40c->dma_cfg.src_dev_type = STEDMA40_DEV_SRC_MEMORY;
--		d40c->dma_cfg.dst_dev_type = dma40_memcpy_channels[d40c->chan.chan_id];
-+		d40c->dma_cfg.dev_type = dma40_memcpy_channels[d40c->chan.chan_id];
+ 		d40c->dma_cfg = *d40c->base->plat_data->memcpy_conf_log;
+ 		d40c->dma_cfg.src_dev_type = STEDMA40_DEV_SRC_MEMORY;
+-		d40c->dma_cfg.dst_dev_type = d40c->base->plat_data->
+-			memcpy[d40c->chan.chan_id];
++		d40c->dma_cfg.dst_dev_type = dma40_memcpy_channels[d40c->chan.chan_id];
  
  	} else if (dma_has_cap(DMA_MEMCPY, cap) &&
  		   dma_has_cap(DMA_SLAVE, cap)) {
-@@ -2062,7 +2035,7 @@ static int d40_free_dma(struct d40_chan *d40c)
- {
- 
- 	int res = 0;
--	u32 event;
-+	u32 event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dev_type);
- 	struct d40_phy_res *phy = d40c->phy_chan;
- 	bool is_src;
- 
-@@ -2081,13 +2054,11 @@ static int d40_free_dma(struct d40_chan *d40c)
+@@ -2927,7 +2929,7 @@ static int __init d40_dmaengine_init(struct d40_base *base,
  	}
  
- 	if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_PERIPH ||
--	    d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM) {
--		event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dst_dev_type);
-+	    d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM)
- 		is_src = false;
--	} else if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM) {
--		event = D40_TYPE_TO_EVENT(d40c->dma_cfg.src_dev_type);
-+	else if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM)
- 		is_src = true;
--	} else {
-+	else {
- 		chan_err(d40c, "Unknown direction\n");
- 		return -EINVAL;
- 	}
-@@ -2128,7 +2099,7 @@ static bool d40_is_paused(struct d40_chan *d40c)
- 	unsigned long flags;
- 	void __iomem *active_reg;
- 	u32 status;
--	u32 event;
-+	u32 event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dev_type);
+ 	d40_chan_init(base, &base->dma_memcpy, base->log_chans,
+-		      base->num_log_chans, base->plat_data->memcpy_len);
++		      base->num_log_chans, ARRAY_SIZE(dma40_memcpy_channels));
  
- 	spin_lock_irqsave(&d40c->lock, flags);
+ 	dma_cap_zero(base->dma_memcpy.cap_mask);
+ 	dma_cap_set(DMA_MEMCPY, base->dma_memcpy.cap_mask);
+@@ -3215,7 +3217,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 			num_log_chans++;
  
-@@ -2149,10 +2120,8 @@ static bool d40_is_paused(struct d40_chan *d40c)
+ 	base = kzalloc(ALIGN(sizeof(struct d40_base), 4) +
+-		       (num_phy_chans + num_log_chans + plat_data->memcpy_len) *
++		       (num_phy_chans + num_log_chans + ARRAY_SIZE(dma40_memcpy_channels)) *
+ 		       sizeof(struct d40_chan), GFP_KERNEL);
  
- 	if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_PERIPH ||
- 	    d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM) {
--		event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dst_dev_type);
- 		status = readl(chanbase + D40_CHAN_REG_SDLNK);
- 	} else if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM) {
--		event = D40_TYPE_TO_EVENT(d40c->dma_cfg.src_dev_type);
- 		status = readl(chanbase + D40_CHAN_REG_SSLNK);
- 	} else {
- 		chan_err(d40c, "Unknown direction\n");
-@@ -2294,9 +2263,9 @@ d40_get_dev_addr(struct d40_chan *chan, enum dma_transfer_direction direction)
- 		return chan->runtime_addr;
+ 	if (base == NULL) {
+@@ -3276,7 +3278,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 	if (!base->lookup_phy_chans)
+ 		goto failure;
  
- 	if (direction == DMA_DEV_TO_MEM)
--		addr = plat->dev_rx[cfg->src_dev_type];
-+		addr = plat->dev_rx[cfg->dev_type];
- 	else if (direction == DMA_MEM_TO_DEV)
--		addr = plat->dev_tx[cfg->dst_dev_type];
-+		addr = plat->dev_tx[cfg->dev_type];
- 
- 	return addr;
- }
-@@ -2427,11 +2396,11 @@ static void d40_set_prio_realtime(struct d40_chan *d40c)
- 
- 	if ((d40c->dma_cfg.dir ==  STEDMA40_PERIPH_TO_MEM) ||
- 	    (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_PERIPH))
--		__d40_set_prio_rt(d40c, d40c->dma_cfg.src_dev_type, true);
-+		__d40_set_prio_rt(d40c, d40c->dma_cfg.dev_type, true);
- 
- 	if ((d40c->dma_cfg.dir ==  STEDMA40_MEM_TO_PERIPH) ||
- 	    (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_PERIPH))
--		__d40_set_prio_rt(d40c, d40c->dma_cfg.dst_dev_type, false);
-+		__d40_set_prio_rt(d40c, d40c->dma_cfg.dev_type, false);
- }
- 
- /* DMA ENGINE functions */
-@@ -2475,10 +2444,10 @@ static int d40_alloc_chan_resources(struct dma_chan *chan)
- 
- 		if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM)
- 			d40c->lcpa = d40c->base->lcpa_base +
--				d40c->dma_cfg.src_dev_type * D40_LCPA_CHAN_SIZE;
-+				d40c->dma_cfg.dev_type * D40_LCPA_CHAN_SIZE;
- 		else
- 			d40c->lcpa = d40c->base->lcpa_base +
--				d40c->dma_cfg.dst_dev_type *
-+				d40c->dma_cfg.dev_type *
- 				D40_LCPA_CHAN_SIZE + D40_LCPA_CHAN_DST_DELTA;
- 	}
- 
-@@ -2741,7 +2710,7 @@ static int d40_set_runtime_config(struct dma_chan *chan,
- 
- 	if (config->direction == DMA_DEV_TO_MEM) {
- 		dma_addr_t dev_addr_rx =
--			d40c->base->plat_data->dev_rx[cfg->src_dev_type];
-+			d40c->base->plat_data->dev_rx[cfg->dev_type];
- 
- 		config_addr = config->src_addr;
- 		if (dev_addr_rx)
-@@ -2764,7 +2733,7 @@ static int d40_set_runtime_config(struct dma_chan *chan,
- 
- 	} else if (config->direction == DMA_MEM_TO_DEV) {
- 		dma_addr_t dev_addr_tx =
--			d40c->base->plat_data->dev_tx[cfg->dst_dev_type];
-+			d40c->base->plat_data->dev_tx[cfg->dev_type];
- 
- 		config_addr = config->dst_addr;
- 		if (dev_addr_tx)
-diff --git a/drivers/dma/ste_dma40_ll.c b/drivers/dma/ste_dma40_ll.c
-index 7180e0d..5eb6c10 100644
---- a/drivers/dma/ste_dma40_ll.c
-+++ b/drivers/dma/ste_dma40_ll.c
-@@ -63,7 +63,7 @@ void d40_phy_cfg(struct stedma40_chan_cfg *cfg,
- 		    (cfg->dir == STEDMA40_PERIPH_TO_PERIPH)) {
- 			/* Set master port to 1 */
- 			src |= 1 << D40_SREG_CFG_MST_POS;
--			src |= D40_TYPE_TO_EVENT(cfg->src_dev_type);
-+			src |= D40_TYPE_TO_EVENT(cfg->dev_type);
- 
- 			if (cfg->src_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
- 				src |= 1 << D40_SREG_CFG_PHY_TM_POS;
-@@ -74,7 +74,7 @@ void d40_phy_cfg(struct stedma40_chan_cfg *cfg,
- 		    (cfg->dir == STEDMA40_PERIPH_TO_PERIPH)) {
- 			/* Set master port to 1 */
- 			dst |= 1 << D40_SREG_CFG_MST_POS;
--			dst |= D40_TYPE_TO_EVENT(cfg->dst_dev_type);
-+			dst |= D40_TYPE_TO_EVENT(cfg->dev_type);
- 
- 			if (cfg->dst_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
- 				dst |= 1 << D40_SREG_CFG_PHY_TM_POS;
+-	if (num_log_chans + plat_data->memcpy_len) {
++	if (num_log_chans + ARRAY_SIZE(dma40_memcpy_channels)) {
+ 		/*
+ 		 * The max number of logical channels are event lines for all
+ 		 * src devices and dst devices
 diff --git a/include/linux/platform_data/dma-ste-dma40.h b/include/linux/platform_data/dma-ste-dma40.h
-index 869c571..9e42a67 100644
+index 4b78101..a808784 100644
 --- a/include/linux/platform_data/dma-ste-dma40.h
 +++ b/include/linux/platform_data/dma-ste-dma40.h
-@@ -109,8 +109,7 @@ struct stedma40_half_channel_info {
-  * version 3+, i.e DB8500v2+
-  * @mode: channel mode: physical, logical, or operation
-  * @mode_opt: options for the chosen channel mode
-- * @src_dev_type: Src device type
-- * @dst_dev_type: Dst device type
-+ * @dev_type: src/dst device type (driver uses dir to figure out which)
-  * @src_info: Parameters for dst half channel
-  * @dst_info: Parameters for dst half channel
-  * @use_fixed_channel: if true, use physical channel specified by phy_channel
-@@ -126,8 +125,7 @@ struct stedma40_chan_cfg {
- 	bool					 realtime;
- 	enum stedma40_mode			 mode;
- 	enum stedma40_mode_opt			 mode_opt;
--	int					 src_dev_type;
--	int					 dst_dev_type;
-+	int					 dev_type;
- 	struct stedma40_half_channel_info	 src_info;
- 	struct stedma40_half_channel_info	 dst_info;
- 
+@@ -141,8 +141,6 @@ struct stedma40_chan_cfg {
+  * @dev_len: length of dev_tx and dev_rx
+  * @dev_tx: mapping between destination event line and io address
+  * @dev_rx: mapping between source event line and io address
+- * @memcpy: list of memcpy event lines
+- * @memcpy_len: length of memcpy
+  * @memcpy_conf_phy: default configuration of physical channel memcpy
+  * @memcpy_conf_log: default configuration of logical channel memcpy
+  * @disabled_channels: A vector, ending with -1, that marks physical channels
+@@ -162,8 +160,6 @@ struct stedma40_platform_data {
+ 	u32				 dev_len;
+ 	const dma_addr_t		*dev_tx;
+ 	const dma_addr_t		*dev_rx;
+-	int				*memcpy;
+-	u32				 memcpy_len;
+ 	struct stedma40_chan_cfg	*memcpy_conf_phy;
+ 	struct stedma40_chan_cfg	*memcpy_conf_log;
+ 	int				 disabled_channels[STEDMA40_MAX_PHYS];
 -- 
 1.7.10.4
 
