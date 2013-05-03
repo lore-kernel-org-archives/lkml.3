@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763077Ab3ECOIh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:08:37 -0400
+	id S1762873Ab3ECOID (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:08:03 -0400
 Received: from mailout3.samsung.com ([203.254.224.33]:10024 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762889Ab3ECOIE (ORCPT
+	with ESMTP id S1762307Ab3ECOH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:08:04 -0400
-X-AuditID: cbfee691-b7fe56d000004b96-bc-5183c4c094c6
+	Fri, 3 May 2013 10:07:59 -0400
+X-AuditID: cbfee690-b7f136d000000fea-39-5183c4bdbb8b
 From: Jonghwa Lee <jonghwa3.lee@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
@@ -17,37 +17,33 @@ Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         Viresh Kumar <viresh.kumar@linaro.org>,
         MyungJoo Ham <myungjoo.ham@samsung.com>,
         Lukasz Majewski <l.majewski@samsung.com>
-Subject: [RFC v2 3/3] cpufreq:LAB: Modify cpufreq_governor to support LAB
- Governor
-Date: Fri, 03 May 2013 23:07:52 +0900
-Message-id: <1367590072-10496-4-git-send-email-jonghwa3.lee@samsung.com>
+Subject: [RFC v2 0/3] LAB: Support for Legacy Application Booster governor
+Date: Fri, 03 May 2013 23:07:49 +0900
+Message-id: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
-References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsWyRsSkRPfAkeZAg+VfdC2eNv1gt5j3Wdbi
-	zcPNjBaXd81hs/jce4TR4nbjCjaL/oW9TBYdR74xW2z86uHA6XHn2h42j74tqxg9Hi1uYfT4
-	vEkugCWKyyYlNSezLLVI3y6BK+Pv3iXsBesFKtZ/v8PawHiBt4uRk0NCwERi1vF/jBC2mMSF
-	e+vZuhi5OIQEljJKnH37hxGmaO7jh1CJRYwSa46tZ4JwWpgkdrdOZgWpYhPQkfi/7yY7iC0i
-	oCCxufcZK0gRs8A2JokZnyYzgSSEBUIkVuxYwgZiswioSuxqO8bSxcjBwSvgITHtQjSIKQHU
-	O2eSDUgFp4CnxNY9q1hAbCGgiq6GlYwgIyUElrFLPFp5BmqMgMS3yYdYIHplJTYdYIY4WlLi
-	4IobLBMYhRcwMqxiFE0tSC4oTkovMtUrTswtLs1L10vOz93ECAz20/+eTdzBeP+A9SHGZKBx
-	E5mlRJPzgdGSVxJvaGxmZGFqYmpsZG5pRpqwkjiveot1oJBAemJJanZqakFqUXxRaU5q8SFG
-	Jg5OqQZGDub0PFkW9954cZ5/FWemKonKLQu4vVOk7v5mkZrsnJ1iqZO99eI19Pm1zWxTHUMM
-	suynG++rZRK46rl+k85HGamj7Mf+1TdMD75zNLpHTs7bYudF/SUVny59tDecr3HRcFeg+Pmf
-	yz85Hpp1NZ19//cDvaqbHyvOD9HZFuq7/bpQ9gqG0nYlluKMREMt5qLiRAAeydHQjAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t9jAd0DR5oDDWa8ULV42vSD3WLeZ1mL
-	Nw83M1pc3jWHzeJz7xFGi9uNK9gs+hf2Mll0HPnGbLHxq4cDp8eda3vYPPq2rGL0eLS4hdHj
-	8ya5AJaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfM
-	HKBTlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGENYwZf/cuYS9YL1Cx/vsd
-	1gbGC7xdjJwcEgImEnMfP2SDsMUkLtxbD2RzcQgJLGKUWHNsPROE08Iksbt1MitIFZuAjsT/
-	fTfZQWwRAQWJzb3PWEGKmAW2MUnM+DSZCSQhLBAisWLHErCxLAKqErvajrF0MXJw8Ap4SEy7
-	EA1iSgD1zplkA1LBKeApsXXPKhYQWwiooqthJeMERt4FjAyrGEVTC5ILipPScw31ihNzi0vz
-	0vWS83M3MYJj6ZnUDsaVDRaHGAU4GJV4eBVamgKFWBPLiitzDzFKcDArifBmNDYHCvGmJFZW
-	pRblxxeV5qQWH2JMBrppIrOUaHI+MM7zSuINjU3MjCyNzA0tjIzNSRNWEuc90GodKCSQnliS
-	mp2aWpBaBLOFiYNTqoFRaurZ2319l34KzDTRVbiw5b2agPvqJql7rDu6/vPONLPpF0lcvO/5
-	i5l5G7hE78y1UvM8s4bjVsT6t2czS77pXD0uXftNMr7QZpPqHe1c/6lyVxgnnXh/60TUf9Yn
-	s9iW3n4uHVxw6qBB3YIJMp5fRFiEfzxv4XDPeyt9nMGUT/bhgbe9RsKtSizFGYmGWsxFxYkA
-	T3yL6ukCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsWyRsSkSHfvkeZAgw1tRhZPm36wW8z7LGvx
+	5uFmRovLu+awWXzuPcJocbtxBZtF/8JeJouOI9+YLTZ+9XDg9LhzbQ+bR9+WVYwejxa3MHp8
+	3iQXwBLFZZOSmpNZllqkb5fAldF55i5bwTrhisndOQ2M2/m7GDk5JARMJO6/eMUGYYtJXLi3
+	Hsjm4hASWMoo0bbxPCNM0ebOFYwQiUWMEn9e9TJDOC1MEvs+PWICqWIT0JH4v+8mO4gtIqAg
+	sbn3GStIEbPANiaJGZ8mgxUJC3hJrL+9nhXEZhFQlZiyYhJYnFfAQ+L7wk6gOAfQOgWJOZNs
+	QHolBNrZJbZuug5VLyDxbfIhFogaWYlNB5ghrpOUOLjiBssERsEFjAyrGEVTC5ILipPSi0z0
+	ihNzi0vz0vWS83M3MQKD9/S/ZxN2MN47YH2IMRlo3ERmKdHkfGDw55XEGxqbGVmYmpgaG5lb
+	mpEmrCTOq95iHSgkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB0czzStmDiP2e5+5M+aA85dX/
+	z30rH+148jSq74Pq6svRfYyb11TqLLS1U34yQ5Ov4ePhtkULrju+mPG7a0vCF/7q49yuJxNu
+	n1HitvnU86W//JbJ+e+uv2W7wxMtVJbr/dzxbX7Z08Ydmi3/+H5vkCzaWemlrTnziWrn/qNv
+	a/k5LsbFWrIW1SuxFGckGmoxFxUnAgBmFZ2pdAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t9jAd29R5oDDTrmqFo8bfrBbjHvs6zF
+	m4ebGS0u75rDZvG59wijxe3GFWwW/Qt7mSw6jnxjttj41cOB0+POtT1sHn1bVjF6PFrcwujx
+	eZNcAEtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+Arltm
+	DtApSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMzjN32QrWCVdM7s5p
+	YNzO38XIySEhYCKxuXMFI4QtJnHh3nq2LkYuDiGBRYwSf171MkM4LUwS+z49YgKpYhPQkfi/
+	7yY7iC0ioCCxufcZK0gRs8A2JokZnyaDFQkLeEmsv72eFcRmEVCVmLJiElicV8BD4vvCTqA4
+	B9A6BYk5k2wmMHIvYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcG8+kdzCuarA4xCjA
+	wajEw6vQ0hQoxJpYVlyZe4hRgoNZSYQ3o7E5UIg3JbGyKrUoP76oNCe1+BBjMtDyicxSosn5
+	wLjNK4k3NDYxM7I0Mje0MDI2J01YSZz3YKt1oJBAemJJanZqakFqEcwWJg5OqQZG5tAfN1i9
+	tuWYTPUt38jYJul4bMXsGMF4seNNBZUs5yyjGiYIrV9y+vA0lZvLVsgemugWkxE2Ia560R/D
+	7d7s50ICt84v/LpfmsfYNGj/t7SdR98fP/rxZqJrSWuJDX/JqyShhl43Llt3raYgKY7qd8vS
+	Pfy3a/DfU3IMTst4sCAnsYtlvZgSS3FGoqEWc1FxIgDI46QQ0QIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,66 +53,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lukasz Majewski <l.majewski@samsung.com>
 
-Store idle_time information at newly created, per CPU struct lb_cpu_dbs_info_s
-Moreover new governor #define - GOV_LAB has been added
+The purpose of this series is to discuss assumptions and idea of implementing
+LAB governor support. It shall be treated as a proof-of-concept code for new
+(fresh) view on power consumption reduction.
 
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
----
- drivers/cpufreq/cpufreq_governor.c |    7 +++++++
- drivers/cpufreq/cpufreq_governor.h |   15 +++++++++++++++
- 2 files changed, 22 insertions(+)
+It is divided to three big parts:
+1. Low-level code for supporting frequency overclocking at Exynos4 SoCs.
+Moreover support for cpufreq_overclock_* interface functions has been added.
+This feature is implemented in a way to reduce number of changes at cpufreq
+core driver to minimum. 
 
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 443442d..ab34edf 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -143,6 +143,13 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
- 			idle_time += jiffies_to_usecs(cur_nice_jiffies);
- 		}
- 
-+		if (dbs_data->governor == GOV_LAB) {
-+			struct lb_cpu_dbs_info_s *lb_dbs_info =
-+				dbs_data->get_cpu_dbs_info_s(j);
-+
-+			lb_dbs_info->idle_time = (100 * idle_time) / wall_time;
-+		}
-+
- 		if (unlikely(!wall_time || wall_time < idle_time))
- 			continue;
- 
-diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-index 8ac3353..6bf7dcb 100644
---- a/drivers/cpufreq/cpufreq_governor.h
-+++ b/drivers/cpufreq/cpufreq_governor.h
-@@ -163,6 +163,20 @@ struct cs_cpu_dbs_info_s {
- 	unsigned int enable:1;
- };
- 
-+struct lb_cpu_dbs_info_s {
-+	struct cpu_dbs_common_info cdbs;
-+	u64 prev_cpu_iowait;
-+	struct cpufreq_frequency_table *freq_table;
-+	unsigned int freq_lo;
-+	unsigned int freq_lo_jiffies;
-+	unsigned int freq_hi_jiffies;
-+	unsigned int rate_mult;
-+	unsigned int sample_type:1;
-+
-+	unsigned int last_sampling_rate;
-+	unsigned int idle_time;
-+};
-+
- /* Per policy Governers sysfs tunables */
- struct od_dbs_tuners {
- 	unsigned int ignore_nice;
-@@ -189,6 +203,7 @@ struct common_dbs_data {
- 	/* Common across governors */
- 	#define GOV_ONDEMAND		0
- 	#define GOV_CONSERVATIVE	1
-+	#define GOV_LAB			2
- 	int governor;
- 	struct attribute_group *attr_group_gov_sys; /* one governor - system */
- 	struct attribute_group *attr_group_gov_pol; /* one governor - policy */
+It alters entries at SoC specific frequency table to allow above the standard 
+limits frequency. Exynos TMU (Thermal Management Unit) is a "safe valve" to 
+disable overclocking when overheating is detected.
+
+Despite, that this solution is Exynos4 specific it can be easily ported to other 
+SoCs.
+
+2. New LAB governor.
+It calculates number of idle CPUs (based on scheduler data). On this basis it 
+chose proper first level polynomial function for approximation.
+Moreover it enables overclocking when single, heavy loaded CPU is running.
+
+Those new heuristics allow for more platform tight frequency level decision.
+To work efficienty this governor relies on scheduler to pack as much tasks as 
+possible to running cores and put other to IDLE.
+Following patches are helpful (one of):
+- Vincent Guittot's "packing small tasks" patch
+- Alex Shi's power-aware scheduling patch
+
+3. Set of changes needed at core cpufreq code.
+The only relevant change is to store idle_time value for each CPU.
+
+Tested at 3.8 linux kernel, Exynos4412 Device
+
+For more details please see respect log messages.
+
+
+Lukasz Majewski (3):
+  cpufreq:overclocking: Overclocking support at Exynos4 SoC
+  cpufreq:LAB: Introduce new cpufreq LAB(Legacy Application Boost)
+    governor
+  cpufreq:LAB: Modify cpufreq_governor to support LAB Governor
+
+
+ drivers/cpufreq/Kconfig              |   33 +++
+ drivers/cpufreq/Makefile             |    1 +
+ drivers/cpufreq/cpufreq_governor.c   |    7 +
+ drivers/cpufreq/cpufreq_governor.h   |   15 ++
+ drivers/cpufreq/cpufreq_lab.c        |  450 ++++++++++++++++++++++++++++++++++
+ drivers/cpufreq/exynos-cpufreq.c     |  108 ++++++++
+ drivers/cpufreq/exynos-cpufreq.h     |    7 +
+ drivers/cpufreq/exynos4x12-cpufreq.c |   15 ++
+ include/linux/cpufreq.h              |   35 +++
+ 9 files changed, 671 insertions(+)
+ create mode 100644 drivers/cpufreq/cpufreq_lab.c
+
 -- 
 1.7.9.5
 
