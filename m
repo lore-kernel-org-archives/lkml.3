@@ -1,82 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933344Ab3ECGkX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:40:23 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:62122 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932918Ab3ECGkT (ORCPT
+	id S933373Ab3ECGw0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:52:26 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:51303 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab3ECGwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:40:19 -0400
-X-AuditID: cbfee68d-b7f016d000007930-f8-51835bd23201
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 42/42] rtc: rtc-tile: remove unnecessary platform_set_drvdata()
-Date: Fri, 03 May 2013 15:40:18 +0900
-Message-id: <003801ce47c9$13d6dcd0$3b849670$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5HyRMD54UhljaZSympPCHI2NrS9g==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zY91L0c2BBhNeGlksuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
-	WqRvl8CVMfXjeuaCeWwVty8tZ2xgnMTaxcjJISFgIvFy2RImCFtM4sK99WwgtpDAMkaJSfMt
-	YWq+vJzC2MXIBRRfxChxbfI7JgjnF6PEpl+rwLrZBNQkvnw5zN7FyMEhIqAv0daiAVLDLNDN
-	KPGoeS4zSI2wgL/EoYOHwTazCKhKXNnRwQJi8wpYSrx80M4KYQtK/Jh8DyzOLKAlsX7ncSYI
-	W15i85q3zBAXKUjsOPuaEcQWEdCTuH72MFS9iMS+F+/ALpUQOMYu0TD1KTPEMgGJb5MPsYAc
-	JyEgK7HpANQcSYmDK26wTGAUm4Vk9Swkq2chWT0LyYoFjCyrGEVTC5ILipPSiwz1ihNzi0vz
-	0vWS83M3MUJir3cH4+0D1ocYk4HWT2SWEk3OB8ZuXkm8obGZkYWpiamxkbmlGWnCSuK8ai3W
-	gUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYFe//PrdMaXHyvjbRv6ov9gbefXhWx9iPz61S
-	6qbt3A0r7U49/dJ7fHeeYWJG37eV5icfx9ss8Vj7b7mB+wSvSZPWt1saiTiFMbNZhrJvyZtj
-	yB/1ZuuqAtfGrkdCfyWsmZL9Gc6o+2zP4/UKWc6eNmcu28czP9Yd2eVUIMJYlf/Y9tqKcw+b
-	lViKMxINtZiLihMBPBoKk9MCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jAd1L0c2BBjOO61ssuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
-	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
-	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmDH143rmgnlsFbcvLWdsYJzE2sXIySEhYCLx
-	5eUURghbTOLCvfVsXYxcHEICixglrk1+xwTh/GKU2PRrFRNIFZuAmsSXL4fZuxg5OEQE9CXa
-	WjRAapgFuhklHjXPZQapERbwlzh08DDYBhYBVYkrOzpYQGxeAUuJlw/aWSFsQYkfk++BxZkF
-	tCTW7zzOBGHLS2xe85YZ4iIFiR1nX4NdJyKgJ3H97GGoehGJfS/eMU5gFJiFZNQsJKNmIRk1
-	C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBsf1MegfjqgaLQ4wCHIxKPLwKLU2B
-	QqyJZcWVuYcYJTiYlUR43X4AhXhTEiurUovy44tKc1KLDzEmA306kVlKNDkfmHbySuINjU3M
-	jCyNzCyMTMzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoHRXzaqf4Wea1L6zemcFirn
-	DBOfRp8O4PO7/WvRua5/1sJ6BV83XX36RLl3qdBE6U3hin8sN3a5c34O27Xv85XTXleE/Z7s
-	vO228bFWSPhs9pnvDx/ZvKl0Y2q1gQKjcHzq87inE5ZEL+S1mXA2+6f4dulMZvNFbrriIuu0
-	si+sPLi+8v2cyHnPlFiKMxINtZiLihMBiJzj4zEDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 3 May 2013 02:52:24 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org
+Subject: [PATCH RFC v3] media: i2c: mt9p031: add OF support
+Date: Fri,  3 May 2013 12:21:59 +0530
+Message-Id: <1367563919-2880-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver core clears the driver data to NULL after device_release
-or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
-(device-core: Ensure drvdata = NULL when no driver is bound).
-Thus, it is not needed to manually clear the device driver data to NULL.
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+add OF support for the mt9p031 sensor driver.
+Alongside this patch sorts the header inclusion alphabetically.
+
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: davinci-linux-open-source@linux.davincidsp.com
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 ---
- drivers/rtc/rtc-tile.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ Changes for v2:
+ 1: Used '-' instead of '_' for device properties.
+ 2: Specified gpio reset pin as phandle in device node.
+ 3: Handle platform data properly even if kernel is compiled with
+    devicetree support.
+ 4: Used dev_* for messages in drivers instead of pr_*.
+ 5: Changed compatible property to "aptina,mt9p031" and "aptina,mt9p031m".
+ 6: Sorted the header inclusion alphabetically and fixed some minor code nits.
 
-diff --git a/drivers/rtc/rtc-tile.c b/drivers/rtc/rtc-tile.c
-index 249b653..add4a7e 100644
---- a/drivers/rtc/rtc-tile.c
-+++ b/drivers/rtc/rtc-tile.c
-@@ -96,8 +96,6 @@ static int tile_rtc_probe(struct platform_device *dev)
-  */
- static int tile_rtc_remove(struct platform_device *dev)
- {
--	platform_set_drvdata(dev, NULL);
--
- 	return 0;
- }
+Changes for v3:
+ 1: Dropped check if gpio-reset is valid.
+ 2: Fixed some code nits.
+ 3: Included a reference to the V4L2 DT bindings documentation.
+
+ .../devicetree/bindings/media/i2c/mt9p031.txt      |   40 +++++++++++++
+ drivers/media/i2c/mt9p031.c                        |   60 +++++++++++++++++++-
+ 2 files changed, 97 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/media/i2c/mt9p031.txt
+
+diff --git a/Documentation/devicetree/bindings/media/i2c/mt9p031.txt b/Documentation/devicetree/bindings/media/i2c/mt9p031.txt
+new file mode 100644
+index 0000000..e740541
+--- /dev/null
++++ b/Documentation/devicetree/bindings/media/i2c/mt9p031.txt
+@@ -0,0 +1,40 @@
++* Aptina 1/2.5-Inch 5Mp CMOS Digital Image Sensor
++
++The Aptina MT9P031 is a 1/2.5-inch CMOS active pixel digital image sensor with
++an active array size of 2592H x 1944V. It is programmable through a simple
++two-wire serial interface.
++
++Required Properties :
++- compatible : value should be either one among the following
++	(a) "aptina,mt9p031" for mt9p031 sensor
++	(b) "aptina,mt9p031m" for mt9p031m sensor
++
++- input-clock-frequency : Input clock frequency.
++
++- pixel-clock-frequency : Pixel clock frequency.
++
++Optional Properties :
++-gpio-reset: Chip reset GPIO
++
++For further reading of port node refer Documentation/devicetree/bindings/media/
++video-interfaces.txt.
++
++Example:
++
++	i2c0@1c22000 {
++		...
++		...
++		mt9p031@5d {
++			compatible = "aptina,mt9p031";
++			reg = <0x5d>;
++			gpio-reset = <&gpio3 30 0>;
++
++			port {
++				mt9p031_1: endpoint {
++					input-clock-frequency = <6000000>;
++					pixel-clock-frequency = <96000000>;
++				};
++			};
++		};
++		...
++	};
+diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
+index 28cf95b..4514f8f 100644
+--- a/drivers/media/i2c/mt9p031.c
++++ b/drivers/media/i2c/mt9p031.c
+@@ -16,9 +16,11 @@
+ #include <linux/delay.h>
+ #include <linux/device.h>
+ #include <linux/gpio.h>
+-#include <linux/module.h>
+ #include <linux/i2c.h>
+ #include <linux/log2.h>
++#include <linux/module.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
+ #include <linux/pm.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/slab.h>
+@@ -28,6 +30,7 @@
+ #include <media/v4l2-chip-ident.h>
+ #include <media/v4l2-ctrls.h>
+ #include <media/v4l2-device.h>
++#include <media/v4l2-of.h>
+ #include <media/v4l2-subdev.h>
  
+ #include "aptina-pll.h"
+@@ -928,10 +931,50 @@ static const struct v4l2_subdev_internal_ops mt9p031_subdev_internal_ops = {
+  * Driver initialization and probing
+  */
+ 
++static struct mt9p031_platform_data *
++mt9p031_get_pdata(struct i2c_client *client)
++{
++	struct device_node *np;
++	struct mt9p031_platform_data *pdata;
++
++	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
++		return client->dev.platform_data;
++
++	np = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
++	if (!np)
++		return NULL;
++
++	pdata = devm_kzalloc(&client->dev, sizeof(struct mt9p031_platform_data),
++			     GFP_KERNEL);
++	if (!pdata)
++		return NULL;
++
++	pdata->reset = of_get_named_gpio(client->dev.of_node, "gpio-reset", 0);
++	of_property_read_u32(np, "input-clock-frequency", &pdata->ext_freq);
++	of_property_read_u32(np, "pixel-clock-frequency", &pdata->target_freq);
++
++	return pdata;
++}
++
++#if IS_ENABLED(CONFIG_OF)
++static const struct of_device_id mt9p031_of_match[] = {
++	{
++		.compatible = "aptina,mt9p031",
++		.data = (void *)MT9P031_MODEL_COLOR,
++	}, {
++		.compatible = "aptina,mt9p031m",
++		.data = (void *)MT9P031_MODEL_MONOCHROME,
++	}, {
++		/* sentinel */
++	},
++};
++MODULE_DEVICE_TABLE(of, mt9p031_of_match);
++#endif
++
+ static int mt9p031_probe(struct i2c_client *client,
+ 			 const struct i2c_device_id *did)
+ {
+-	struct mt9p031_platform_data *pdata = client->dev.platform_data;
++	struct mt9p031_platform_data *pdata = mt9p031_get_pdata(client);
+ 	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
+ 	struct mt9p031 *mt9p031;
+ 	unsigned int i;
+@@ -955,7 +998,17 @@ static int mt9p031_probe(struct i2c_client *client,
+ 	mt9p031->pdata = pdata;
+ 	mt9p031->output_control	= MT9P031_OUTPUT_CONTROL_DEF;
+ 	mt9p031->mode2 = MT9P031_READ_MODE_2_ROW_BLC;
+-	mt9p031->model = did->driver_data;
++
++	if (!client->dev.of_node) {
++		mt9p031->model = (enum mt9p031_model)did->driver_data;
++	} else {
++		const struct of_device_id *of_id;
++
++		of_id = of_match_device(of_match_ptr(mt9p031_of_match),
++					&client->dev);
++		if (of_id)
++			mt9p031->model = (enum mt9p031_model)of_id->data;
++	}
+ 	mt9p031->reset = -1;
+ 
+ 	mt9p031->vaa = devm_regulator_get(&client->dev, "vaa");
+@@ -1072,6 +1125,7 @@ MODULE_DEVICE_TABLE(i2c, mt9p031_id);
+ 
+ static struct i2c_driver mt9p031_i2c_driver = {
+ 	.driver = {
++		.of_match_table = of_match_ptr(mt9p031_of_match),
+ 		.name = "mt9p031",
+ 	},
+ 	.probe          = mt9p031_probe,
 -- 
-1.7.2.5
-
+1.7.4.1
 
