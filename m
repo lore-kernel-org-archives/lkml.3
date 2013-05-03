@@ -1,241 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933855Ab3ECRPk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 13:15:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28065 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933573Ab3ECRPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 13:15:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,606,1363158000"; 
-   d="scan'208";a="307613696"
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ric Mason <ric.masonn@gmail.com>, Simon Jeons <simon.jeons@gmail.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: [PATCH v2 1/2] Make the batch size of the percpu_counter configurable
-Date: Fri,  3 May 2013 03:10:52 -0700
-Message-Id: <8584b08e57e97ecc4769859b751ad459d038a730.1367574872.git.tim.c.chen@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S934069Ab3ECRQV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 13:16:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60204 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933739Ab3ECRQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 13:16:20 -0400
+Date: Fri, 3 May 2013 10:16:18 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Stas Sergeev <stsp@list.ru>
+Cc: Jarkko Huijts <jarkko.huijts@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        linux-usb@vger.kernel.org, linux-serial@vger.kernel.org,
+        Linux kernel <linux-kernel@vger.kernel.org>,
+        Caylan Van Larson <i@caylan.net>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Regression: ftdi_sio is slow (since Wed Oct 10 15:05:06 2012)
+Message-ID: <20130503171618.GA16686@kroah.com>
+References: <5183D196.2080305@list.ru>
+ <20130503163008.GA30699@kroah.com>
+ <5183F62A.1020801@list.ru>
+ <20130503165231.GA1966@kroah.com>
+ <5183FC83.8090602@list.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5183FC83.8090602@list.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, there is a single, global, variable (percpu_counter_batch) that
-controls the batch sizes for every 'struct percpu_counter' on the system.
+On Fri, May 03, 2013 at 10:05:55PM +0400, Stas Sergeev wrote:
+> 03.05.2013 20:52, Greg KH пишет:
+> >On Fri, May 03, 2013 at 09:38:50PM +0400, Stas Sergeev wrote:
+> >>03.05.2013 20:30, Greg KH пишет:
+> >>>We need some way to check the chars in the buffer, is the device you are
+> >>>using just very slow to respond to this request?  How slow?  Do you have
+> >>>a test case that we can see how it is affected?
+> >>Greg, unfortunately, I do have nothing.
+> >>The customer is in CC list, so maybe he will
+> >>provide the test-case, but I doubt.
+> >>
+> >>Please, what are your concerns here?
+> >>The patch in question does this:
+> >>---
+> >>+ ret = usb_control_msg(port->serial->dev,
+> >>+ usb_rcvctrlpipe(port->serial->dev, 0),
+> >>+ FTDI_SIO_GET_MODEM_STATUS_REQUEST,
+> >>+ FTDI_SIO_GET_MODEM_STATUS_REQUEST_TYPE,
+> >>+ 0, priv->interface,
+> >>+ buf, 2, WDR_TIMEOUT);
+> >>---
+> >>Obviously, this is too expensive to call too frequently,
+> >>or am I missing something?
+> >Why do you think that is too expensive to call?  Does it somehow stop
+> >the data being sent to the device through the serial endpoints?  Is
+> >userspace calling this function too much slowing something else down?
+> No, it doesn't slow down the data transfer.
+> But it makes a select() call to take much longer to complete,
 
-However, there are some applications, e.g. memory accounting where it is
-more appropriate to scale the batch size according to the memory size.
-This patch adds the infrastructure to be able to change the batch sizes
-for each individual instance of 'struct percpu_counter'.
+Please define "much longer".
 
-v2:
-1. Change batch from pointer to static value.
-2. Move list of percpu_counters out of CONFIG_HOTPLUG_CPU, so
-batch size could be updated.
+> and the same goes to TIOCOUTQ ioctl. Yes, the app calls select()
+> quite too much, and it is single-threaded, too. :)
 
-Thanks for the feedbacks on version 1 of this patch.
+Sounds like an application is doing a foolish thing and should stop it.
+There's no guarantee as to how long select or an ioctl will take, and
+now that we have fixed another bug, this device is slower.
 
-Tim
+If you change hardware types to use a different usb to serial chip, that
+select call might take 4 times as long.  Are we somehow supposed to
+change the kernel to "fix" that?
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
----
- include/linux/percpu_counter.h | 25 +++++++++++++++---
- lib/percpu_counter.c           | 57 +++++++++++++++++++++++++++---------------
- 2 files changed, 59 insertions(+), 23 deletions(-)
+> >>I asked the customer to comment out
+> >>tty_chars_in_buffer(tty) < WAKEUP_CHARS
+> >>line in n_tty.c, and he said that cured his problems,
+> >>so I think my guess was right.
+> >What exactly is the "problem" being seen?
+> No idea.
+> Well, I can make a test-case that does 1000000 select() calls
+> in a loop and time it. This is probably the best I can do.
 
-diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
-index d5dd465..e9f77cd 100644
---- a/include/linux/percpu_counter.h
-+++ b/include/linux/percpu_counter.h
-@@ -18,10 +18,10 @@
- struct percpu_counter {
- 	raw_spinlock_t lock;
- 	s64 count;
--#ifdef CONFIG_HOTPLUG_CPU
- 	struct list_head list;	/* All percpu_counters are on a list */
--#endif
- 	s32 __percpu *counters;
-+	int batch;
-+	int (*compute_batch)(void);
- };
- 
- extern int percpu_counter_batch;
-@@ -40,11 +40,24 @@ void percpu_counter_destroy(struct percpu_counter *fbc);
- void percpu_counter_set(struct percpu_counter *fbc, s64 amount);
- void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch);
- s64 __percpu_counter_sum(struct percpu_counter *fbc);
-+void __percpu_counter_batch_resize(struct percpu_counter *fbc);
- int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs);
- 
-+static inline int percpu_counter_and_batch_init(struct percpu_counter *fbc,
-+			s64 amount, int (*compute_batch)(void))
-+{
-+	int ret = percpu_counter_init(fbc, amount);
-+
-+	if (compute_batch && !ret){
-+		fbc->compute_batch = compute_batch;
-+		__percpu_counter_batch_resize(fbc);
-+	}
-+	return ret;
-+}
-+
- static inline void percpu_counter_add(struct percpu_counter *fbc, s64 amount)
- {
--	__percpu_counter_add(fbc, amount, percpu_counter_batch);
-+	__percpu_counter_add(fbc, amount, fbc->batch);
- }
- 
- static inline s64 percpu_counter_sum_positive(struct percpu_counter *fbc)
-@@ -95,6 +108,12 @@ static inline int percpu_counter_init(struct percpu_counter *fbc, s64 amount)
- 	return 0;
- }
- 
-+static inline int percpu_counter_and_batch_init(struct percpu_counter *fbc,
-+			s64 amount, int (*compute_batch)(void))
-+{
-+	return percpu_counter_init(fbc, amount);
-+}
-+
- static inline void percpu_counter_destroy(struct percpu_counter *fbc)
- {
- }
-diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
-index ba6085d..4ad9e18 100644
---- a/lib/percpu_counter.c
-+++ b/lib/percpu_counter.c
-@@ -10,10 +10,8 @@
- #include <linux/module.h>
- #include <linux/debugobjects.h>
- 
--#ifdef CONFIG_HOTPLUG_CPU
- static LIST_HEAD(percpu_counters);
- static DEFINE_SPINLOCK(percpu_counters_lock);
--#endif
- 
- #ifdef CONFIG_DEBUG_OBJECTS_PERCPU_COUNTER
- 
-@@ -116,17 +114,17 @@ int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
- 	lockdep_set_class(&fbc->lock, key);
- 	fbc->count = amount;
- 	fbc->counters = alloc_percpu(s32);
-+	fbc->batch = percpu_counter_batch;
-+	fbc->compute_batch = NULL;
- 	if (!fbc->counters)
- 		return -ENOMEM;
- 
- 	debug_percpu_counter_activate(fbc);
- 
--#ifdef CONFIG_HOTPLUG_CPU
- 	INIT_LIST_HEAD(&fbc->list);
- 	spin_lock(&percpu_counters_lock);
- 	list_add(&fbc->list, &percpu_counters);
- 	spin_unlock(&percpu_counters_lock);
--#endif
- 	return 0;
- }
- EXPORT_SYMBOL(__percpu_counter_init);
-@@ -138,11 +136,9 @@ void percpu_counter_destroy(struct percpu_counter *fbc)
- 
- 	debug_percpu_counter_deactivate(fbc);
- 
--#ifdef CONFIG_HOTPLUG_CPU
- 	spin_lock(&percpu_counters_lock);
- 	list_del(&fbc->list);
- 	spin_unlock(&percpu_counters_lock);
--#endif
- 	free_percpu(fbc->counters);
- 	fbc->counters = NULL;
- }
-@@ -158,31 +154,45 @@ static void compute_batch_value(void)
- 	percpu_counter_batch = max(32, nr*2);
- }
- 
-+void __percpu_counter_batch_resize(struct percpu_counter *fbc)
-+{
-+	unsigned long flags;
-+	int new_batch;
-+
-+	if (fbc->compute_batch)
-+		new_batch = max(fbc->compute_batch(), percpu_counter_batch);
-+	else
-+		new_batch = percpu_counter_batch;
-+
-+	raw_spin_lock_irqsave(&fbc->lock, flags);
-+	fbc->batch = new_batch;
-+	raw_spin_unlock_irqrestore(&fbc->lock, flags);
-+}
-+EXPORT_SYMBOL(__percpu_counter_batch_resize);
-+
- static int __cpuinit percpu_counter_hotcpu_callback(struct notifier_block *nb,
- 					unsigned long action, void *hcpu)
- {
--#ifdef CONFIG_HOTPLUG_CPU
- 	unsigned int cpu;
- 	struct percpu_counter *fbc;
- 
- 	compute_batch_value();
--	if (action != CPU_DEAD)
--		return NOTIFY_OK;
--
- 	cpu = (unsigned long)hcpu;
- 	spin_lock(&percpu_counters_lock);
- 	list_for_each_entry(fbc, &percpu_counters, list) {
--		s32 *pcount;
--		unsigned long flags;
--
--		raw_spin_lock_irqsave(&fbc->lock, flags);
--		pcount = per_cpu_ptr(fbc->counters, cpu);
--		fbc->count += *pcount;
--		*pcount = 0;
--		raw_spin_unlock_irqrestore(&fbc->lock, flags);
-+		__percpu_counter_batch_resize(fbc);
-+		if (action == CPU_DEAD) {
-+			s32 *pcount;
-+			unsigned long flags;
-+
-+			raw_spin_lock_irqsave(&fbc->lock, flags);
-+			pcount = per_cpu_ptr(fbc->counters, cpu);
-+			fbc->count += *pcount;
-+			*pcount = 0;
-+			raw_spin_unlock_irqrestore(&fbc->lock, flags);
-+		}
- 	}
- 	spin_unlock(&percpu_counters_lock);
--#endif
- 	return NOTIFY_OK;
- }
- 
-@@ -196,7 +206,7 @@ int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs)
- 
- 	count = percpu_counter_read(fbc);
- 	/* Check to see if rough count will be sufficient for comparison */
--	if (abs(count - rhs) > (percpu_counter_batch*num_online_cpus())) {
-+	if (abs(count - rhs) > (fbc->batch*num_online_cpus())) {
- 		if (count > rhs)
- 			return 1;
- 		else
-@@ -215,7 +225,14 @@ EXPORT_SYMBOL(percpu_counter_compare);
- 
- static int __init percpu_counter_startup(void)
- {
-+	struct percpu_counter *fbc;
-+
- 	compute_batch_value();
-+	spin_lock(&percpu_counters_lock);
-+	list_for_each_entry(fbc, &percpu_counters, list) {
-+		__percpu_counter_batch_resize(fbc);
-+	}
-+	spin_unlock(&percpu_counters_lock);
- 	hotcpu_notifier(percpu_counter_hotcpu_callback, 0);
- 	return 0;
- }
--- 
-1.7.11.7
+That's really not a valid test case, as it's nothing that we ever
+optimize a serial driver for.  Throughput is the proper thing to care
+about, right?
 
+And if select takes longer, nothing really "slows down" as now you get
+data more often between select calls, right?
+
+> >>The patch claims it only affects tcdrain() and close().
+> >>Its trivial to see it also affects poll(), select() and TIOCOUTQ
+> >>ioctl, so even from that it is already broken.
+> >>Why do you need a test-case for this?
+> >Because I don't know what the problem really is :)
+> Slow select() call (and other calls).
+> Can we just use usb_serial_generic_chars_in_buffer()
+> in ftdi_sio? What was the reason behind the patch at all,
+> why it is so importand to query TEMT?
+
+To actually determine how many characters the device has in its buffer.
+
+thanks,
+
+greg k-h
