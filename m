@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762742Ab3ECNw2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 09:52:28 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:52262 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762496Ab3ECNw0 (ORCPT
+	id S1762483Ab3ECNzQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 09:55:16 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:46045 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762035Ab3ECNzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 09:52:26 -0400
-X-Auth-Info: XFGYXa0I/aVJwmReZcxGpgZ67B6q62iuD9+e7AM3uEw=
-Date: Fri, 3 May 2013 15:52:23 +0200
-From: Anatolij Gustschin <agust@denx.de>
-To: Alexander Popov <a13xp0p0v88@gmail.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>
-Subject: Re: [PATCH 1/1] powerpc: mpc512x_dma: add support for data
- transfers between memory and i/o memory
-Message-ID: <20130503155223.1eff1d9f@crub>
-In-Reply-To: <CAF0T0X5cRMvoZKQQUkQHTLjbzz1xi_1pvUiywsKb5BGvyMGvpg@mail.gmail.com>
-References: <1367407689-16252-1-git-send-email-a13xp0p0v88@gmail.com>
-	<20130502171452.GP1960@intel.com>
-	<CAF0T0X7XBuL7a=8zwqMnLDB04-Tf=qhCLPZ4T29yNdN6mP5S2A@mail.gmail.com>
-	<20130503085944.69ef751e@crub>
-	<CAF0T0X5cRMvoZKQQUkQHTLjbzz1xi_1pvUiywsKb5BGvyMGvpg@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 3 May 2013 09:55:15 -0400
+Date: Fri, 3 May 2013 14:55:09 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 2/4 v2] mfd: ab8500-gpadc: Suppress 'ignoring
+ regulator_enable() return value' warning
+Message-ID: <20130503135509.GL24153@gmail.com>
+References: <1367509690-24022-1-git-send-email-lee.jones@linaro.org>
+ <1367509690-24022-3-git-send-email-lee.jones@linaro.org>
+ <20130503111537.GH24153@gmail.com>
+ <CACRpkdZUDFakgYbUsbm6y9G0TqNr2z8U-f3Y1T6vNR1+CvLpKg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZUDFakgYbUsbm6y9G0TqNr2z8U-f3Y1T6vNR1+CvLpKg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alexander,
+On Fri, 03 May 2013, Linus Walleij wrote:
 
-On Fri, 3 May 2013 14:43:23 +0400
-Alexander Popov <a13xp0p0v88@gmail.com> wrote:
-
-> Hello Anatolij,
+> On Fri, May 3, 2013 at 1:15 PM, Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> > Note that there is a patch for .device_prep_slave_sg() operation
-> > for this driver as part of this series:
-> > https://patchwork.kernel.org/patch/2368581/
-> > https://patchwork.kernel.org/patch/2368591/
-> Thanks, I haven't seen that patch.
-> It's certainly what my SCLPC device driver needs
-> (http://patchwork.ozlabs.org/patch/241010/).
-> I will send the second version of it which uses .device_prep_slave_sg().
+> > drivers/mfd/ab8500-gpadc.c: In function ‘ab8500_gpadc_resume’:
+> > drivers/mfd/ab8500-gpadc.c:911:18: warning: ignoring return value of
+> >         ‘regulator_enable’, declared with attribute warn_unused_result
+> >         [-Wunused-result]
+> >
+> > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > 
-> > maybe you can reuse and improve it.
-> > Anatolij
-> Should I propose my additions at https://patchwork.kernel.org/patch/2368591/ ?
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Yours,
+> Linus Walleij
 
-Yes, I think so. I only used drivers new .device_prep_slave_sg()
-for SDHC DMA channel transfers up to now. Adding support for other
-peripherals would be good. With generic DMA DT bindings patch for
-this driver you can use
+Nice, thanks. I'm applying this now.
 
-    dmas = <&dma0 26>;
-    dma-names = "rx-tx";
-
-in your sclpc@10100 DT node and then
-dma_request_slave_channel(&pdev->dev, "rx-tx") in the lpbfifo
-driver.
-
-Thanks,
-
-Anatolij
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
