@@ -1,143 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763239Ab3ECL3a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 07:29:30 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:56360 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761730Ab3ECL33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 07:29:29 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jonas Heinrich <onny@project-insanity.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, len.brown@intel.com, pavel@ucw.cz,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Subject: Re: [Bisected] 3.7-rc1 can't resume (still present in 3.9)
-Date: Fri, 03 May 2013 13:37:45 +0200
-Message-ID: <1536388.1prjkW6Efo@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130503110705.GA3828@onny.Speedport_W_700V>
-References: <20130218155439.GA902@onny> <1487368.CBCgti1nd5@vostro.rjw.lan> <20130503110705.GA3828@onny.Speedport_W_700V>
+	id S1763256Ab3ECLew (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 07:34:52 -0400
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:44751 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762367Ab3ECLeu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 07:34:50 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <518284E6.7040503@intel.com>
+References: <51814943.7000604@intel.com>
+	<20130501182138.GA17550@kroah.com>
+	<5B8DA87D05A7694D9FA63FD143655C1B01F18E66@HASMSX106.ger.corp.intel.com>
+	<518284E6.7040503@intel.com>
+Date: Fri, 3 May 2013 13:34:50 +0200
+X-Google-Sender-Auth: AzhJvexf1eoSPz4AaUK7ceWdWfo
+Message-ID: <CAMuHMdWSVUcwkY=xn+HjbruLxsc8Eqq=CWX78CdUc1+MAwCVhg@mail.gmail.com>
+Subject: Re: mei file2alias compile error
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: "Winkler, Tomas" <tomas.winkler@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "SamuelOrtiz@kroah.com" <SamuelOrtiz@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 03, 2013 11:07:05 AM Jonas Heinrich wrote:
-> On 05-03 01:29, Rafael J. Wysocki wrote:
-> > On Thursday, May 02, 2013 08:32:30 PM Jonas Heinrich wrote:
-> > > On 05-02 02:45, Rafael J. Wysocki wrote:
-> > > > On Wednesday, May 01, 2013 11:55:10 AM H. Peter Anvin wrote:
-> > > > > On 05/01/2013 11:51 AM, Jonas Heinrich wrote:
-> > > > > > Well, you could give me instructions on how to debug this (I'll do 
-> > > > > > everything ;)) or I could ship you the Thinkpad T43. I guess this
-> > > > > > would worth the effort since this bug is somehow critical.
-> > > > > > 
-> > > > > > Best regards, Jonas
-> > > > > 
-> > > > > I'll put together a debug patch unless I can trick Rafael into doing
-> > > > > it first...
-> > > > 
-> > > > I'm afraid that code has changed quite a bit since I looked at it last time.
-> > > > [Jarkko Sakkinen seems to have worked on it lately, CCed.]
-> > > > 
-> > > > Jonas, I wonder what happens if you drop the first hunk of the patch (it just
-> > > > uses a different register, which shouldn't matter)?  Does it still help then?
-> > > 
-> > > Hello Rafel, first of all, thank you for helping me out :)
-> > > You're right, the patch still solves the suspend bug, after removing the first 
-> > > hunk of the patch and applying it (see attachement:
-> > > suspendfix_first_hunk_dropped.patch).
-> > > 
-> > > > 
-> > > > If so, there are still a few things you can do to it, e.g:
-> > > > (1) drop the
-> > > > 
-> > > > -       btl     $WAKEUP_BEHAVIOR_RESTORE_CR4, %edi
-> > > > -       jnc     1f
-> > > > 
-> > > 
-> > > Still works :) (used suspendfix_1.patch)
-> > > 
-> > > > lines,
-> > > > (2) drop the
-> > > > 
-> > > > -       btl     $WAKEUP_BEHAVIOR_RESTORE_EFER, %edi
-> > > > -       jnc     1f
-> > > > 
-> > > > lines,
-> > > 
-> > > Still works :) (used suspendfix_2.patch)
-> > > 
-> > > > (3) drop the
-> > > > 
-> > > > +       jecxz   1f
-> > > > 
-> > > 
-> > > Still works :) (used suspendfix_3.patch)
-> > > 
-> > > > line,
-> > > > (4) drop the
-> > > > 
-> > > > +       movl    %eax, %ecx
-> > > > +       orl     %edx, %ecx
-> > > > +       jz      1f
-> > > > 
-> > > 
-> > > At this point, the bug reoccurs (used suspendfix_4.patch)! 
-> > > But that doesn't mean these lines are the only critical, because the more
-> > > minimal patch
-> > > 
-> > > @@ -119,6 +119,9 @@
-> > >         jnc     1f
-> > >         movl    pmode_efer, %eax
-> > >         movl    pmode_efer + 4, %edx
-> > > +       movl    %eax, %ecx
-> > > +       orl     %edx, %ecx
-> > > +       jz      1f
-> > >         movl    $MSR_EFER, %ecx
-> > >         wrmsr
-> > >  1:
-> > > 
-> > > 
-> > > with removing this part
-> > > 
-> > > -       movl    pmode_cr4, %eax
-> > > -       movl    %eax, %cr4
-> > > +       movl    pmode_cr4, %ecx
-> > > +       movl    %ecx, %cr4
-> > > 
-> > > also doesn't fix the issue (see suspendfix_5.patch).
-> > > 
-> > > > lines and see what the minimal patch needed for things to work again is.
-> > > > 
-> > > 
-> > > So the most minimal working patch is suspendfix_3.patch.
-> > 
-> > Thanks for doing that detective work!
-> > 
-> > The only explanation of why this particular patch can help that seems viable to
-> > us at the moment is that we have a memory corruption in the code region modified
-> > by it and the patch simply changes the alignment of the instructions that don't
-> > get corrupted.
-> > 
-> > It looks like this may be verified by putting a bunch of nops into the region
-> > in question, so can you please check if the attached patch helps too?
-> 
-> Unfortunately, your attached patch doesn't seem to fix the bug. 
-> Hope you still have some ideas to address this issue :)
+On Thu, May 2, 2013 at 5:23 PM, Dave Hansen <dave.hansen@intel.com> wrote:
+> On 05/01/2013 11:50 PM, Winkler, Tomas wrote:
+>>> On Wed, May 01, 2013 at 09:56:35AM -0700, Dave Hansen wrote:
+>>>> Linus's current git isn't compiling for me:
+>>>>>   HOSTCC  scripts/mod/file2alias.o
+>>>>> /home/davehans/linux.git/scripts/mod/file2alias.c: In function
+>>> ‘do_mei_entry’:
+>>>>> /home/davehans/linux.git/scripts/mod/file2alias.c:1140:1: error:
+>>> ‘OFF_mei_cl_device_id_name’ undeclared (first use in this function)
+>>>>> /home/davehans/linux.git/scripts/mod/file2alias.c:1140:1: note: each
+>>> undeclared identifier is reported only once for each function it appears in
+>>>>> /home/davehans/linux.git/scripts/mod/file2alias.c: At top level:
+>>>>> /home/davehans/linux.git/scripts/mod/file2alias.c:1146:1: error:
+>>> ‘SIZE_mei_cl_device_id’ undeclared here (not in a function)
+>>>>
+>>>> I confirmed that this commit: e5354107e is the one causing it for me.
+>>>> My .config is here:
+>>>>
+>>>>     http://sr71.net/~dave/linux/config-3.9-meibad
+>>>>
+>>>> Note that I don't even have CONFIG_INTEL_MEI enabled with this config.
+>>>
+>>> I don't have CONFIG_INTEL_MEI set either, and I can't duplicate this.
+>>> Samuel and Tomas, can you please track this down?
+>>
+>> I cannot reproduce it as well. I've tried with v3.9 and also with the latest tip.
+>
+> I did some more poking around.  I was building with O= to put the
+> binaries in another dir.  When I saw the error, one of the first things
+> I did was do a "make mrproper" on the binary directory.  But, I never
+> did one one the source directory.  Doing that seems to have made this go
+> away.  There must have been some build gunk in the source directory
+> causing this.
 
-Well, not really.
+Same here.
 
-We'll need a dump of the wakeup structure from your system I suppose.
-I'll try to write a patch to get that over the weekend.
+Removing "scripts/mod/devicetable-offsets.h" from the source directory fixes it.
+Unfortunately I forgot to check the date on the bogus
+scripts/mod/devicetable-offsets.h,
+so I don't know when it was generated.
 
-Thanks,
-Rafael
+Usually, if you build in the source directory, a subsequent build in the output
+directory will tell you to run "make mrproper" in the source directory. That
+obviously didn't happen.
 
+Note that I did run "make tags" in the source directory. So far that
+never caused
+problems. Just checked, it does not create scripts/mod/devicetable-offsets.h.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+JFYI, putting back scripts/mod/devicetable-offsets.h by copying from a
+freshly generated one in the output directory, with the mei lines removed,
+resurrects the problem.
+Even after touching scripts/mod/devicetable-offsets.c afterwards, it is not
+regenerated.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
