@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933077Ab3ECGgF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:36:05 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:22645 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932967Ab3ECGgB (ORCPT
+	id S933100Ab3ECGgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:36:25 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:61381 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932967Ab3ECGgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:36:01 -0400
-X-AuditID: cbfee68f-b7f066d000003683-07-51835acff27e
+	Fri, 3 May 2013 02:36:20 -0400
+X-AuditID: cbfee691-b7fe56d000004b96-ee-51835ae316cf
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 31/42] rtc: rtc-s3c: remove unnecessary platform_set_drvdata()
-Date: Fri, 03 May 2013 15:35:59 +0900
-Message-id: <002d01ce47c8$798ae4a0$6ca0ade0$@samsung.com>
+Subject: [PATCH 32/42] rtc: rtc-sa1100: remove unnecessary
+ platform_set_drvdata()
+Date: Fri, 03 May 2013 15:36:18 +0900
+Message-id: <002e01ce47c8$84dfbdd0$8e9f3970$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5HyHjWtsTIwtj7SOW/jCcWYMcKFw==
+Thread-index: Ac5HyIJ4HRR+z2gxQtCwTJ/h8Nl6SA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zA93zUc2BBj+abCyWXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
-	LdK3S+DK2NjSy1rwnrvi/ZVjjA2MFzi7GDk5JARMJP6v2MAIYYtJXLi3nq2LkYtDSGAZo8T0
-	tztZYIo+XGtmhEgsYpSY/f8wC4Tzi1HiXONNsCo2ATWJL18Os3cxcnCICOhLtLVogNQwC3Qz
-	SjxqnssMUiMs4Cfx5es0sHUsAqoSd9YtBuvlFbCUmP1zCiOELSjxY/I9sDizgJbE+p3HmSBs
-	eYnNa94yQ1ykILHj7GuwehEBPYk9Dy5C1YhI7HvxDuxSCYFj7BLHZu9gglgmIPFt8iEWkOMk
-	BGQlNh2AmiMpcXDFDZYJjGKzkKyehWT1LCSrZyFZsYCRZRWjaGpBckFxUnqRsV5xYm5xaV66
-	XnJ+7iZGSPT172C8e8D6EGMy0PqJzFKiyfnA6M0riTc0NjOyMDUxNTYytzQjTVhJnFetxTpQ
-	SCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA2Obl2phd0R0bFW3Tqgdi/Y7o4iPk94/Psp2hin+
-	Ypj6pSCV6+EPEw2uiZb0N+rOPj9VPfjfDKeyex+tsv9VXje6qMN4Us332bF/3x9eO+nJ2eTb
-	spkr4NG7thkXlj7fUyFYO/2w/LyjFzmurVThVr38rWSPv9z+bZNeTplzy+P5mnMdvtOuVE9R
-	YinOSDTUYi4qTgQA/+98c9QCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jAd3zUc2BBmdaLSyWXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
-	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
-	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzNjY0sta8J674v2VY4wNjBc4uxg5OSQETCQ+
-	XGtmhLDFJC7cW8/WxcjFISSwiFFi9v/DLBDOL0aJc403WUCq2ATUJL58OczexcjBISKgL9HW
-	ogFSwyzQzSjxqHkuM0iNsICfxJev08CmsgioStxZtxisl1fAUmL2zymMELagxI/J98DizAJa
-	Eut3HmeCsOUlNq95ywxxkYLEjrOvwepFBPQk9jy4CFUjIrHvxTvGCYwCs5CMmoVk1Cwko2Yh
-	aVnAyLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzi2n0ntYFzZYHGIUYCDUYmHV6GlKVCI
-	NbGsuDL3EKMEB7OSCK/bD6AQb0piZVVqUX58UWlOavEhxmSgTycyS4km5wPTTl5JvKGxiZmR
-	pZGZhZGJuTlpwkrivAdarQOFBNITS1KzU1MLUotgtjBxcEo1MOod4Xu/4b9Z7bSY+DM/8g57
-	rgjpPql2J7asZZ+G5KXm+LMGJQ9/z7fXOuLI5VfzWY93wvSrtqL7LbRPOD9kVVjcJSXLtc0y
-	wrs2ZnvNgiOdE94XLHIRz1kkdWLSJ/VXb05tcFRIk0n9K/rI8Zr4jx3HdHbonbz/qvDtzSgJ
-	savvVBdVLQo/I6DEUpyRaKjFXFScCABTlI6DMQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zY93HUc2BBr82M1ksuXiV3WLO+jVs
+	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
+	WqRvl8CVceKMakEnd8X29R/ZGhj/cXQxcnJICJhI7HwzmRnCFpO4cG89WxcjF4eQwDJGiU23
+	f7LCFD2++IgdIrGIUeLA8nlMEM4vRom2qZfAqtgE1CS+fDkMVMXBISKgL9HWogFSwyzQzSjx
+	qHku2AphgWCJWydmsoHYLAKqEqvW3QSzeQUsJZ6vOMwMYQtK/Jh8jwXEZhbQkli/8zgThC0v
+	sXnNW6hTFSR2nH3NCGKLCOhJXJuykw2iRkRi34t3jCCLJQSOsUtM2dTLDrFMQOLb5EMsIMdJ
+	CMhKbDoANUdS4uCKGywTGMVmIVk9C8nqWUhWz0KyYgEjyypG0dSC5ILipPQiU73ixNzi0rx0
+	veT83E2MkNibuIPx/gHrQ4zJQOsnMkuJJucDYzevJN7Q2MzIwtTE1NjI3NKMNGElcV71FutA
+	IYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYzzJryMtOZJmfNH61j/hNN1LQ/8P/y+9eLufbdN
+	bVlra38Y2v5pqj8VvY7v+uRJRa+SM2YVhtaFzei4kxa3wjPyx/L7Gy72q96ZcyFBIynr5P1L
+	0o/3pPI1n2rQsfESYTvAuc943plPj5Ys2iaut2rvza37zQ7u3B4qMa/zdHmW09OFK5fOFjrQ
+	q8RSnJFoqMVcVJwIAIrnIPvTAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd1HUc2BBo8eWlssuXiV3WLO+jVs
+	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmHHijGpBJ3fF9vUf2RoY/3F0MXJySAiYSDy+
+	+IgdwhaTuHBvPVsXIxeHkMAiRokDy+cxQTi/GCXapl5iBaliE1CT+PLlMFAHB4eIgL5EW4sG
+	SA2zQDejxKPmucwgNcICwRK3TsxkA7FZBFQlVq27CWbzClhKPF9xmBnCFpT4MfkeC4jNLKAl
+	sX7ncSYIW15i85q3zBAXKUjsOPuaEcQWEdCTuDZlJxtEjYjEvhfvGCcwCsxCMmoWklGzkIya
+	haRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgyH4mvYNxVYPFIUYBDkYlHl6FlqZA
+	IdbEsuLK3EOMEhzMSiK8bj+AQrwpiZVVqUX58UWlOanFhxiTgT6dyCwlmpwPTDp5JfGGxiZm
+	RpZGZhZGJubmpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cC4UiPPRM7HM8Df2TLpU/VR
+	tavhu01bvvBnyB4I6rkvyHZJ+1Gp2dMJO5ZeZP/5ZEb1dp3697MNCraI681RME955h54qvdF
+	/Jqfmt1lH18eX/zs6s9A3l1O4vP+lssXH/jU8bmQW/eyc3bXMbPZe350Plxz/MfSj5MTpzxX
+	7BOKUvkl8KBPWG6KEktxRqKhFnNRcSIAmndMbDADAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,48 +61,43 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-s3c.c |    9 ++-------
- 1 files changed, 2 insertions(+), 7 deletions(-)
+ drivers/rtc/rtc-sa1100.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/rtc/rtc-s3c.c b/drivers/rtc/rtc-s3c.c
-index 14040b2..4d38c6b 100644
---- a/drivers/rtc/rtc-s3c.c
-+++ b/drivers/rtc/rtc-s3c.c
-@@ -421,8 +421,6 @@ static void s3c_rtc_enable(struct platform_device *pdev, int en)
+diff --git a/drivers/rtc/rtc-sa1100.c b/drivers/rtc/rtc-sa1100.c
+index 0060560..0f7adeb 100644
+--- a/drivers/rtc/rtc-sa1100.c
++++ b/drivers/rtc/rtc-sa1100.c
+@@ -249,7 +249,7 @@ static int sa1100_rtc_probe(struct platform_device *pdev)
  
- static int s3c_rtc_remove(struct platform_device *dev)
+ 	ret = clk_prepare_enable(info->clk);
+ 	if (ret)
+-		goto err_enable_clk;
++		return ret;
+ 	/*
+ 	 * According to the manual we should be able to let RTTR be zero
+ 	 * and then a default diviser for a 32.768KHz clock is used.
+@@ -303,8 +303,6 @@ static int sa1100_rtc_probe(struct platform_device *pdev)
+ 	return 0;
+ err_dev:
+ 	clk_disable_unprepare(info->clk);
+-err_enable_clk:
+-	platform_set_drvdata(pdev, NULL);
+ 	return ret;
+ }
+ 
+@@ -312,10 +310,8 @@ static int sa1100_rtc_remove(struct platform_device *pdev)
  {
--	platform_set_drvdata(dev, NULL);
--
- 	s3c_rtc_setaie(&dev->dev, 0);
+ 	struct sa1100_rtc *info = platform_get_drvdata(pdev);
  
- 	clk_unprepare(rtc_clk);
-@@ -554,23 +552,20 @@ static int s3c_rtc_probe(struct platform_device *pdev)
- 			  0,  "s3c2410-rtc alarm", rtc);
- 	if (ret) {
- 		dev_err(&pdev->dev, "IRQ%d error %d\n", s3c_rtc_alarmno, ret);
--		goto err_alarm_irq;
-+		goto err_nortc;
- 	}
- 
- 	ret = devm_request_irq(&pdev->dev, s3c_rtc_tickno, s3c_rtc_tickirq,
- 			  0,  "s3c2410-rtc tick", rtc);
- 	if (ret) {
- 		dev_err(&pdev->dev, "IRQ%d error %d\n", s3c_rtc_tickno, ret);
--		goto err_alarm_irq;
-+		goto err_nortc;
- 	}
- 
- 	clk_disable(rtc_clk);
+-	if (info) {
++	if (info)
+ 		clk_disable_unprepare(info->clk);
+-		platform_set_drvdata(pdev, NULL);
+-	}
  
  	return 0;
- 
-- err_alarm_irq:
--	platform_set_drvdata(pdev, NULL);
--
-  err_nortc:
- 	s3c_rtc_enable(pdev, 0);
- 	clk_disable_unprepare(rtc_clk);
+ }
 -- 
 1.7.2.5
 
