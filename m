@@ -1,58 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762109Ab3ECA5y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 20:57:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4535 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761818Ab3ECA5x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1761950Ab3ECA5x (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 2 May 2013 20:57:53 -0400
-X-Authority-Analysis: v=2.0 cv=GtrACzJC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5eKZcm_OZmQA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=jz4g3xt9QgwA:10 a=myHqRekJXIowLchbwCkA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1367542669.7373.10.camel@gandalf.local.home>
-Subject: Re: [patch 4/4] sched: Distangle worker accounting from rq->lock
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 02 May 2013 20:57:49 -0400
-In-Reply-To: <20130503001206.GA19814@mtj.dyndns.org>
-References: <20110622174659.496793734@linutronix.de>
-	 <20110622174919.135236139@linutronix.de>
-	 <20130430133722.GA477@home.goodmis.org>
-	 <20130430224710.GB9583@home.goodmis.org>
-	 <20130503001206.GA19814@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+Received: from mms2.broadcom.com ([216.31.210.18]:2945 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757203Ab3ECA5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 20:57:51 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+From: "Christian Daudt" <csd@broadcom.com>
+To: "Russell King" <linux@arm.linux.org.uk>,
+        "John Stultz" <john.stultz@linaro.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Olof Johansson" <olof@lixom.net>, "Arnd Bergmann" <arnd@arndb.de>,
+        "Stephen Warren" <swarren@wwwdotorg.org>,
+        "Will Deacon" <will.deacon@arm.com>
+cc: "Christian Daudt" <csd@broadcom.com>, "arm@kernel.org" <arm@kernel.org>,
+        linux-arm-kernel@lists.infradead.org, csd_b@daudt.org,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        "Rob Landley" <rob@landley.net>,
+        "Josh Cartwright" <josh.cartwright@ni.com>,
+        "Yehuda Yitschak" <yehuday@marvell.com>,
+        "Gregory CLEMENT" <gregory.clement@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH V2] ARM: bcm281xx: Add L2 support for Rev A2 chips
+Date: Thu, 2 May 2013 17:57:33 -0700
+Message-ID: <1367542653-955-1-git-send-email-csd@broadcom.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+X-WSS-ID: 7D9DD5CA1R09561945-01-01
+Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-02 at 17:12 -0700, Tejun Heo wrote:
-> On Tue, Apr 30, 2013 at 06:47:10PM -0400, Steven Rostedt wrote:
-> > On Tue, Apr 30, 2013 at 09:37:22AM -0400, Steven Rostedt wrote:
-> > > [ Blast from the past! ]
-> > > 
-> > > When merging in 3.4.42 into the 3.4-rt branch I hit a conflict with the
-> > > try_to_wake_up_local() call. It seems that the 3.4-rt patch has this
-> > > patch applied. Although, this is not applied to any of the other -rt patches.
-> > > 
-> > 
-> > I take that back. It's in 3.0-rt, 3.2-rt and 3.4-rt, but it's not in 3.6-rt
-> > nor in 3.8-rt.
-> 
-> So, it's all good?  Or is there something I need to look into?
+Rev A2 SoCs have an unorthodox memory re-mapping and this needs
+to be reflected in the cache operations.
+This patch adds new outer cache functions for the l2x0 driver
+to support this SoC revision. It also adds a new compatible
+value for the cache to enable this functionality.
 
-It looks good to me. I don't know why it's not in 3.6-rt or 3.8-rt. Was
-there a reason that Thomas took it out? I don't know. Maybe it's not
-needed or he thought it went mainline?
+Updates from V1:
+- remove section 1 altogether and note that in comments
+- simplify section selection caused by section 1 removal
+- BUG_ON just in case section 1 shows up
 
--- Steve
+Signed-off-by: Christian Daudt <csd@broadcom.com>
+
+diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
+index cbef09b..69ddf9f 100644
+--- a/Documentation/devicetree/bindings/arm/l2cc.txt
++++ b/Documentation/devicetree/bindings/arm/l2cc.txt
+@@ -16,6 +16,9 @@ Required properties:
+      performs the same operation).
+ 	"marvell,"aurora-outer-cache: Marvell Controller designed to be
+ 	 compatible with the ARM one with outer cache mode.
++	"bcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
++	offset needs to be added to the address before passing down to the L2
++	cache controller
+ - cache-unified : Specifies the cache is a unified cache.
+ - cache-level : Should be set to 2 for a level 2 cache.
+ - reg : Physical base address and size of cache controller's memory mapped
+diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
+index 41b2c6c..5e48c85 100644
+--- a/arch/arm/boot/dts/bcm11351.dtsi
++++ b/arch/arm/boot/dts/bcm11351.dtsi
+@@ -47,10 +47,10 @@
+ 	};
+ 
+ 	L2: l2-cache {
+-		    compatible = "arm,pl310-cache";
+-		    reg = <0x3ff20000 0x1000>;
+-		    cache-unified;
+-		    cache-level = <2>;
++		compatible = "bcm,bcm11351-a2-pl310-cache";
++		reg = <0x3ff20000 0x1000>;
++		cache-unified;
++		cache-level = <2>;
+ 	};
+ 
+ 	timer@35006000 {
+diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+index c465fac..d70e0ab 100644
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -523,6 +523,147 @@ static void aurora_flush_range(unsigned long start, unsigned long end)
+ 	}
+ }
+ 
++/*
++ * For certain Broadcom SoCs, depending on the address range, different offsets
++ * need to be added to the address before passing it to L2 for
++ * invalidation/clean/flush
++ *
++ * Section Address Range              Offset        EMI
++ *   1     0x00000000 - 0x3FFFFFFF    0x80000000    VC
++ *   2     0x40000000 - 0xBFFFFFFF    0x40000000    SYS
++ *   3     0xC0000000 - 0xFFFFFFFF    0x80000000    VC
++ *
++ * When the start and end addresses have crossed two different sections, we
++ * need to break the L2 operation into two, each within its own section.
++ * For example, if we need to invalidate addresses starts at 0xBFFF0000 and
++ * ends at 0xC0001000, we need do invalidate 1) 0xBFFF0000 - 0xBFFFFFFF and 2)
++ * 0xC0000000 - 0xC0001000
++ *
++ * Note 1:
++ * By breaking a single L2 operation into two, we may potentially suffer some
++ * performance hit, but keep in mind the cross section case is very rare
++ *
++ * Note 2:
++ * We do not need to handle the case when the start address is in
++ * Section 1 and the end address is in Section 3, since it is not a valid use
++ * case
++ *
++ * Note 3:
++ * Section 1 in practical terms can no longer be used on rev A2. Because of
++ * that the code does not need to handle section 1 at all.
++ *
++ */
++#define BCM_SYS_EMI_START_ADDR        0x40000000UL
++#define BCM_VC_EMI_SEC3_START_ADDR    0xC0000000UL
++
++#define BCM_SYS_EMI_OFFSET            0x40000000UL
++#define BCM_VC_EMI_OFFSET             0x80000000UL
++
++static inline int bcm_addr_is_sys_emi(unsigned long addr)
++{
++	return (addr >= BCM_SYS_EMI_START_ADDR) &&
++		(addr < BCM_VC_EMI_SEC3_START_ADDR);
++}
++
++static inline unsigned long bcm_l2_phys_addr(unsigned long addr)
++{
++	if (bcm_addr_is_sys_emi(addr))
++		return addr + BCM_SYS_EMI_OFFSET;
++	else
++		return addr + BCM_VC_EMI_OFFSET;
++}
++
++static void bcm_inv_range(unsigned long start, unsigned long end)
++{
++	unsigned long new_start, new_end;
++
++	BUG_ON(start < BCM_SYS_EMI_START_ADDR);
++
++	if (unlikely(end <= start))
++		return;
++
++	new_start = bcm_l2_phys_addr(start);
++	new_end = bcm_l2_phys_addr(end);
++
++	/* normal case, no cross section between start and end */
++	if (likely(bcm_addr_is_sys_emi(end) || !bcm_addr_is_sys_emi(start))) {
++		l2x0_inv_range(new_start, new_end);
++		return;
++	}
++
++	/* They cross sections, so it can only be a cross from section
++	 * 2 to section 3
++	 */
++	l2x0_inv_range(new_start,
++		bcm_l2_phys_addr(BCM_VC_EMI_SEC3_START_ADDR-1));
++	l2x0_inv_range(bcm_l2_phys_addr(BCM_VC_EMI_SEC3_START_ADDR),
++		new_end);
++}
++
++static void bcm_clean_range(unsigned long start, unsigned long end)
++{
++	unsigned long new_start, new_end;
++
++	BUG_ON(start < BCM_SYS_EMI_START_ADDR);
++
++	if (unlikely(end <= start))
++		return;
++
++	if ((end - start) >= l2x0_size) {
++		l2x0_clean_all();
++		return;
++	}
++
++	new_start = bcm_l2_phys_addr(start);
++	new_end = bcm_l2_phys_addr(end);
++
++	/* normal case, no cross section between start and end */
++	if (likely(bcm_addr_is_sys_emi(end) || !bcm_addr_is_sys_emi(start))) {
++		l2x0_clean_range(new_start, new_end);
++		return;
++	}
++
++	/* They cross sections, so it can only be a cross from section
++	 * 2 to section 3
++	 */
++	l2x0_clean_range(new_start,
++		bcm_l2_phys_addr(BCM_VC_EMI_SEC3_START_ADDR-1));
++	l2x0_clean_range(bcm_l2_phys_addr(BCM_VC_EMI_SEC3_START_ADDR),
++		new_end);
++}
++
++static void bcm_flush_range(unsigned long start, unsigned long end)
++{
++	unsigned long new_start, new_end;
++
++	BUG_ON(start < BCM_SYS_EMI_START_ADDR);
++
++	if (unlikely(end <= start))
++		return;
++
++	if ((end - start) >= l2x0_size) {
++		l2x0_flush_all();
++		return;
++	}
++
++	new_start = bcm_l2_phys_addr(start);
++	new_end = bcm_l2_phys_addr(end);
++
++	/* normal case, no cross section between start and end */
++	if (likely(bcm_addr_is_sys_emi(end) || !bcm_addr_is_sys_emi(start))) {
++		l2x0_flush_range(new_start, new_end);
++		return;
++	}
++
++	/* They cross sections, so it can only be a cross from section
++	 * 2 to section 3
++	 */
++	l2x0_flush_range(new_start,
++		bcm_l2_phys_addr(BCM_VC_EMI_SEC3_START_ADDR-1));
++	l2x0_flush_range(bcm_l2_phys_addr(BCM_VC_EMI_SEC3_START_ADDR),
++		new_end);
++}
++
+ static void __init l2x0_of_setup(const struct device_node *np,
+ 				 u32 *aux_val, u32 *aux_mask)
+ {
+@@ -765,6 +906,21 @@ static const struct l2x0_of_data aurora_no_outer_data = {
+ 	},
+ };
+ 
++static const struct l2x0_of_data bcm_l2x0_data = {
++	.setup = pl310_of_setup,
++	.save  = pl310_save,
++	.outer_cache = {
++		.resume      = pl310_resume,
++		.inv_range   = bcm_inv_range,
++		.clean_range = bcm_clean_range,
++		.flush_range = bcm_flush_range,
++		.sync        = l2x0_cache_sync,
++		.flush_all   = l2x0_flush_all,
++		.inv_all     = l2x0_inv_all,
++		.disable     = l2x0_disable,
++	},
++};
++
+ static const struct of_device_id l2x0_ids[] __initconst = {
+ 	{ .compatible = "arm,pl310-cache", .data = (void *)&pl310_data },
+ 	{ .compatible = "arm,l220-cache", .data = (void *)&l2x0_data },
+@@ -773,6 +929,8 @@ static const struct of_device_id l2x0_ids[] __initconst = {
+ 	  .data = (void *)&aurora_no_outer_data},
+ 	{ .compatible = "marvell,aurora-outer-cache",
+ 	  .data = (void *)&aurora_with_outer_data},
++	{ .compatible = "bcm,bcm11351-a2-pl310-cache",
++	  .data = (void *)&bcm_l2x0_data},
+ 	{}
+ };
+ 
+-- 
+1.7.10.4
 
 
