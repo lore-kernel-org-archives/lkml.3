@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762122Ab3ECCCv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 22:02:51 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:55873 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758945Ab3ECCCt (ORCPT
+	id S1762077Ab3ECCKh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 22:10:37 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:48088 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753632Ab3ECCKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 22:02:49 -0400
-Date: Thu, 2 May 2013 19:00:39 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: linasvepstas@gmail.com, "Zhang, LongX" <longx.zhang@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Joseph.Liu@Emulex.Com" <Joseph.Liu@emulex.com>
-Subject: Re: Subject : [ PATCH ]
- pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
-Message-ID: <20130503020039.GA29087@kroah.com>
-References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
- <1367454625.2093.6.camel@ymzhang.sh.intel.com>
- <CAHrUA34H_B-ffebx6ueHgV1ax-PL_3hLZr1JGaP2NJZ7bYgvtw@mail.gmail.com>
- <1367541180.2093.10.camel@ymzhang.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367541180.2093.10.camel@ymzhang.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 2 May 2013 22:10:36 -0400
+Date: Fri, 3 May 2013 11:10:31 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: mtosatti@redhat.com, gleb@redhat.com, avi.kivity@gmail.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v4 2/6] KVM: x86: introduce memslot_set_lpage_disallowed
+Message-Id: <20130503111031.344825656c22e2c58f759cf1@gmail.com>
+In-Reply-To: <1367032402-13729-3-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+References: <1367032402-13729-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	<1367032402-13729-3-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 08:33:00AM +0800, Yanmin Zhang wrote:
-> On Wed, 2013-05-01 at 20:20 -0500, Linas Vepstas wrote:
-> > Hi,
-> > 
-> > On 1 May 2013 19:30, Yanmin Zhang <yanmin_zhang@linux.intel.com>
-> > wrote:
-> >         On Fri, 2013-04-26 at 06:28 +0000, Zhang, LongX wrote:
-> >         > From: Zhang Long <longx.zhang@intel.com>
-> >         >
-> >         > Specific pci device drivers might have many functions to
-> >         call
-> >         > pci_channel_offline to check device states. When slot_reset
-> >         happens,
-> >         > drivers' slot_reset callback might call such functions and
-> >         eventually
-> >         > abort the reset.
-> >         >
-> >         > The patch resets pdev->error_state to pci_channel_io_normal
-> >         at
-> >         > the begining of report_slot_reset.
-> >         >
-> >         > Thank Liu Joseph for pointing it out.
-> >         
-> >         Linas, Bjorn,
-> >         
-> >         Would you like to merge the patch to your testing tree?
-> >         The patch resolves one issue pointed out by Joseph.
-> > 
-> > 
-> > I'm not maintaining a tree at this time, and am not able to test.
-> > Sorry.
-> Thanks Linas.
-> 
-> Greg,
-> 
-> Would you like to merge it into your testing tree? Joseph Liu tested
-> the patch and it does work.
+On Sat, 27 Apr 2013 11:13:18 +0800
+Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
 
-You do know about the scripts/get_maintainer.pl script, right?
+> It is used to set disallowed large page on the specified level, can be
+> used in later patch
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/x86.c |   53 ++++++++++++++++++++++++++++++++++-----------------
+>  1 files changed, 35 insertions(+), 18 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 91dd9f4..52b4e97 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -6917,12 +6917,45 @@ void kvm_arch_free_memslot(struct kvm_memory_slot *free,
+>  	}
+>  }
+>  
+> +static void memslot_set_lpage_disallowed(struct kvm_memory_slot *slot,
+> +					 unsigned long npages,
+> +					 int lpage_size, int lpages)
 
-Hint, try it out :)
+What this function does is to disable large page support for this slot
+as can be seen in the comment below.
+
+Since setting lpage_info to something ("disallowed" ?) is an implementation
+detail, we'd better hide such a thing from the function name.
+
+Taking into account that we have "kvm_largepages_enabled()", something like
+disable_largepages_memslot() may be a candidate.
+
+But I want to see suggestions from others as well.
+
+	Takuya
