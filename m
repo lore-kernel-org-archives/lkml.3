@@ -1,86 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762649Ab3ECNqK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 09:46:10 -0400
-Received: from nm5.access.bullet.mail.sp2.yahoo.com ([98.139.44.132]:41431
-	"EHLO nm5.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762240Ab3ECNqI (ORCPT
+	id S1762531Ab3ECNrc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 09:47:32 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31642 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762035Ab3ECNrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 09:46:08 -0400
-X-Yahoo-Newman-Id: 55371.10300.bm@smtp114.sbc.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: WGVqOyYVM1ka36hGW89fXH6NAIjdTa4JM.5F44WlWp3Qiqi
- gx3XHP4X7w37teVbjXbBXftlquvFRtl4syizKsO0AbJR1F3upsd5qt.tjFqY
- aQn4jjkuACz9Vi9jTtIOPzfcC3v.7sJPEglORTacXc12ikeDMMMDb_zHVjY4
- R6szz7rp.fBdRWVpiiqs9X.QUc9y4EmMab7Sim26HoO.XtLb.DXuBNqiCiv4
- q0aZArgpfp0xlFlEOnbjx_4M7X7ZJuI5yDrZaMVoEjSQmdmmBHy.cMyzVSEb
- 2cmIgKcLY.IKdd_lmHBmaSJTPmTYrUDQiGTz1Fl.D56ea864Y8hVab60xj2W
- LFor250.BSb2VFbaNivtbQ53fxo5EXKhB_VK5_VJIVU_gm13zVRS7JhPASfe
- RfjCsISBRa_mtX0E4ShU1QKMo2G1eKwuswVa5yTgLqtVNpxI58h10q0XINhG
- 13bDzvJ1IH0UjN4UGQl1f3.BhUCyxoj27Icg-
-X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
-X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
-        by smtp114.sbc.mail.gq1.yahoo.com with SMTP; 03 May 2013 06:46:05 -0700 PDT
-Date: Fri, 3 May 2013 06:46:10 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Dirk Eibach <dirk.eibach@gdsys.cc>
-Cc: linux-kernel@vger.kernel.org, Kumar Gala <galak@kernel.crashing.org>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] powerpc: Make Book E watchdog reset type configurable
-Message-ID: <20130503134610.GA31037@roeck-us.net>
-References: <1367505913-18970-1-git-send-email-dirk.eibach@gdsys.cc>
- <20130502161720.GA7797@roeck-us.net>
- <429ec64cf7c30a139db40eb20fd3e682@gdsys.cc>
- <20130503011741.GA23266@roeck-us.net>
- <7be2cb3417615ff206270a756c6422d6@gdsys.cc>
+	Fri, 3 May 2013 09:47:31 -0400
+Date: Fri, 3 May 2013 15:47:04 +0200
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Keir (Xen.org)" <keir@xen.org>, Dave Scott <Dave.Scott@eu.citrix.com>,
+        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
+        Ian Jackson <Ian.Jackson@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jonathan Ludlam <Jonathan.Ludlam@eu.citrix.com>,
+        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "carsten@schiers.de" <carsten@schiers.de>
+Subject: Re: [Xen-devel] [PATCH v2 2/2] xen/balloon: Enforce various limits
+ on target
+Message-ID: <20130503134704.GB12463@debian70-amd64.local.net-space.pl>
+References: <1367235468-8360-3-git-send-email-daniel.kiper@oracle.com>
+ <1367246649.3142.316.camel@zakaz.uk.xensource.com>
+ <20130430125952.GD9904@debian70-amd64.local.net-space.pl>
+ <1367329458.3142.524.camel@zakaz.uk.xensource.com>
+ <20130430185852.GF9904@debian70-amd64.local.net-space.pl>
+ <alpine.DEB.2.02.1305021214510.5398@kaball.uk.xensource.com>
+ <20130502180404.GA16489@phenom.dumpdata.com>
+ <1367568932.28742.19.camel@zakaz.uk.xensource.com>
+ <20130503130036.GA12463@debian70-amd64.local.net-space.pl>
+ <1367587284.28742.89.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7be2cb3417615ff206270a756c6422d6@gdsys.cc>
+In-Reply-To: <1367587284.28742.89.camel@zakaz.uk.xensource.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 10:33:13AM +0200, Dirk Eibach wrote:
-> Hi Guenter,
-> 
-> >>>>diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> >>>>index e89fc31..6048593 100644
-> >>>>--- a/drivers/watchdog/Kconfig
-> >>>>+++ b/drivers/watchdog/Kconfig
-> >>>>@@ -1172,6 +1172,38 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
-> >>>>
-> >>>>	  The value can be overridden by the wdt_period command-line
-> >>>>parameter.
-> >>>>
-> >>>>+choice
-> >>>>+	prompt "PowerPC Book-E Watchdog reset type"
-> >>>>+	depends on BOOKE_WDT
-> >>>>+	default BOOKE_WDT_RESET_CHIP
-> >>>>+	help
-> >>>>+	  Specify what kind of reset will be executed on watchdog
-> >>>>timeout.
-> >>>>+
-> >>>Seems to me it would be much better to make this configurable via
-> >>>platform data
-> >>>and/or device tree.
-> >>
-> >>good catch. What do the device-tree gurus think to be a nice
-> >>property name?
-> 
-> having a closer look, I realized booke_wdt is not device-tree based
-> yet. Migrating it would come close to a rewrite, breaking
-> compatibility for all current users. Sorry, this is way beyond the
+On Fri, May 03, 2013 at 02:21:24PM +0100, Ian Campbell wrote:
+> On Fri, 2013-05-03 at 14:00 +0100, Daniel Kiper wrote:
+> > On Fri, May 03, 2013 at 09:15:32AM +0100, Ian Campbell wrote:
+> > > On Thu, 2013-05-02 at 19:04 +0100, Konrad Rzeszutek Wilk wrote:
+> > > > On Thu, May 02, 2013 at 12:34:32PM +0100, Stefano Stabellini wrote:
+> >
+> > [...]
+> >
+> > > > > The xapi guys, CC'ed, might have more insights on what exactly is.
+> > >
+> > > I think that unless someone can remember what this issue was we should
+> > > just chalk it up to a historical artefact of something xapi (or maybe
+> > > some historical guest) was doing which we have no reason to believe
+> > > needs to be carried over to libxl.
+> > >
+> > > IOW I'm suggesting we set LIBXL_MAXMEM_CONSTANT to 0 early in the 4.4
+> > > cycle and see how it goes. If someone can show either empirical evidence
+> > > or (better) logically argue that a fudge is required then we can always
+> > > put it back (or it may turn out to be the caller's issue, in which case
+> > > they can deal with it, hopefully xapi-on-libxl won't apply this fudge
+> > > twice...).
+> > >
+> > > Alternatively I'm also strongly considering having debug builds of the
+> > > toolstack randomise the amount of slack, that ought to shake out any
+> > > lingering issues...
+> >
+> > Do you suggest to postopone this work until 4.4 merge window?
+>
+> 4.4 is a Xen version, this is a Linux patch so I'm not sure what you
+> mean.
 
-Really ? I don't think making it a platform driver would be that hard,
-or break anything.
+I thought about my libxl patches. Should I post new version without
+LIBXL_MAXMEM_CONSTANT when 4.4 merge window open?
 
-> time I have for this project. So I suggest merging the change the
-> way it is, as it is clearly an improvement.
-> 
-That will be up to Wim to decide.
+> > If yes, then I think that at least "xen/balloon: Enforce various limits on target"
+> > patch (without this crazy libxl hack) should be applied.
+>
+> You mean this patch with only the MAX_DOMAIN_PAGES clamping? That seems
+> plausible.
 
-Thanks,
-Guenter
+... and with XENMEM_maximum_reservation check but wihtout LIBXL_MAXMEM_CONSTANT_PAGES.
+
+> > > > > I dislike having to pull this "hack" into Linux, but if it is actually
+> > > > > important to leave LIBXL_MAXMEM_CONSTANT unused, then it is worth doing.
+> > > > > I would add a big comment on top saying:
+> > > > >
+> > > > > "libxl seems to think that we need to leave LIBXL_MAXMEM_CONSTANT
+> > > > > kilobytes unused, let's be gentle and do that."
+> > >
+> > > It seems to me that this change in Linux is really just papering over
+> > > the underlying issue. Or at the very least no one has adequately
+> > > explained what that real issue is and why this change is relevant to it
+> > > and/or an appropriate fix for it.
+> > >
+> > > The guest knows what target the toolstack has set for it is (its in the
+> > > target xenstore node), I don't see any reason for the guest to be
+> > > further second guessing that value by examining maxmem (adjusted by a
+> > > fudge factor or otherwise). If the guest is seeing failures to increase
+> > > its reservation when trying to meet that target then either the
+> > > toolstack was buggy in asking it to hit a target greater than its maxmem
+> > > or it is hitting one of the other reason for increase reservation
+> > > failures. Since it needs to deal with the latter anyway I don't see any
+> > > reason to special case maxmem as a cause for a failure.
+> >
+> > Do not forget that guest may change target itself.
+>
+> Yes it can, and that can fail either due to maxmem or due to ENOMEM, and
+> the kernel needs prepared to deal with that when it happens.
+
+Sure but why we would like to fail in endless loop if maxmem case
+could be easliy detected by checking XENMEM_maximum_reservation?
+
+> > Additionally, we would like to introduce xm compatibility
+> > mode which is a bit different then xl normal behavior.
+>
+> When then you really don't want to be baking specifics of the current
+> model into the kernel, do you.
+
+Hmmm... Little misunderstanding. As I stated a few times I do not
+want bake any libxl or Xen stuff into Linux Kernel (including
+LIBXL_MAXMEM_CONSTANT). I just want to check limits which I think
+make sense in this case.
+
+> > I do not mention that it is always worth check the limits.
+> > It will save us a lot of trouble later.
+>
+> On the contrary, it seems to me that baking magic numbers into the
+> kernel based on current toolstack behaviour is asking for trouble later.
+
+Ditto...
+
+Daniel
