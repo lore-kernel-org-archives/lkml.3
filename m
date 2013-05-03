@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476Ab3ECOeP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:34:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:3636 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762240Ab3ECOeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:34:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,605,1363158000"; 
-   d="scan'208";a="331006863"
-Date: Fri, 3 May 2013 07:34:11 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, eranian@google.com
-Subject: Re: [PATCH 2/3] perf, x86, lbr: Fix LBR filter
-Message-ID: <20130503143411.GO19487@tassilo.jf.intel.com>
-References: <20130503121122.931661809@chello.nl>
- <20130503121256.158211806@chello.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130503121256.158211806@chello.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933536Ab3ECOqZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:46:25 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:38266 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932433Ab3ECOeO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 10:34:14 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 24/63] dmaengine: ste_dma40: Allocate plat_data on declaration
+Date: Fri,  3 May 2013 15:32:10 +0100
+Message-Id: <1367591569-32197-25-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
+References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	} else {
-> +		/*
-> +		 * The LBR logs any address in the IP, even if the IP just
-> +		 * faulted. This means userspace can control the from address.
-> +		 * Ensure we don't blindy read any address by validating it is
-> +		 * a known text address.
-> +		 */
-> +		if (kernel_text_address(from))
+It's the way that most other drivers do it.
 
-Sorry doing it this way is just incredible expensive and dumb.
+Very trivial clean-up which reduces line count and simplifies code.
 
-After all the tool is called "perf" and not "non perf"
+Acked-by: Vinod Koul <vnod.koul@intel.com>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/dma/ste_dma40.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
--Andi
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 6d81f44..ba50561 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -3132,7 +3132,7 @@ static int __init d40_phy_res_init(struct d40_base *base)
+ 
+ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ {
+-	struct stedma40_platform_data *plat_data;
++	struct stedma40_platform_data *plat_data = pdev->dev.platform_data;
+ 	struct clk *clk = NULL;
+ 	void __iomem *virtbase = NULL;
+ 	struct resource *res = NULL;
+@@ -3203,8 +3203,6 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 		goto failure;
+ 	}
+ 
+-	plat_data = pdev->dev.platform_data;
+-
+ 	/* The number of physical channels on this HW */
+ 	if (plat_data->num_of_phy_chans)
+ 		num_phy_chans = plat_data->num_of_phy_chans;
+-- 
+1.7.10.4
+
