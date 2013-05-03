@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762806Ab3ECIdY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 04:33:24 -0400
-Received: from smtprelay02.ispgateway.de ([80.67.31.29]:37352 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761195Ab3ECIdV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 04:33:21 -0400
+	id S1762813Ab3ECIh6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 04:37:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50538 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762526Ab3ECIhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 04:37:55 -0400
+Date: Fri, 3 May 2013 09:37:49 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jan Kara <jack@suse.cz>
+Cc: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
+        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
+        Theodore Tso <tytso@mit.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Bernd Schubert <bernd.schubert@fastmail.fm>,
+        David Howells <dhowells@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux-ext4 <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/3] mm: pagevec: Defer deciding what LRU to add a page
+ to until pagevec drain time
+Message-ID: <20130503083749.GL11497@suse.de>
+References: <1367253119-6461-1-git-send-email-mgorman@suse.de>
+ <1367253119-6461-2-git-send-email-mgorman@suse.de>
+ <20130503075158.GB10633@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Fri, 03 May 2013 10:33:13 +0200
-From: Dirk Eibach <dirk.eibach@gdsys.cc>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: <linux-kernel@vger.kernel.org>, Kumar Gala <galak@kernel.crashing.org>,
-        Wim Van Sebroeck <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH] powerpc: Make Book E watchdog reset type configurable
-In-Reply-To: <20130503011741.GA23266@roeck-us.net>
-References: <1367505913-18970-1-git-send-email-dirk.eibach@gdsys.cc>
- <20130502161720.GA7797@roeck-us.net>
- <429ec64cf7c30a139db40eb20fd3e682@gdsys.cc>
- <20130503011741.GA23266@roeck-us.net>
-Message-ID: <7be2cb3417615ff206270a756c6422d6@gdsys.cc>
-User-Agent: Roundcube Webmail/0.8.1
-X-Df-Sender: ZGlyay5laWJhY2hAZ2RzeXMuY2M=
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130503075158.GB10633@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+On Fri, May 03, 2013 at 09:51:58AM +0200, Jan Kara wrote:
+> > @@ -789,17 +787,16 @@ void lru_add_page_tail(struct page *page, struct page *page_tail,
+> >  static void __pagevec_lru_add_fn(struct page *page, struct lruvec *lruvec,
+> >  				 void *arg)
+> >  {
+> > -	enum lru_list lru = (enum lru_list)arg;
+> > -	int file = is_file_lru(lru);
+> > -	int active = is_active_lru(lru);
+> > +	enum lru_list requested_lru = (enum lru_list)arg;
+> > +	int file = page_is_file_cache(page);
+> > +	int active = PageActive(page);
+> > +	enum lru_list lru = page_lru(page);
+> >  
+> > -	VM_BUG_ON(PageActive(page));
+> > +	WARN_ON_ONCE(requested_lru < NR_LRU_LISTS && requested_lru != lru);
+>   Hum, so __lru_cache_add() calls this with 'requested_lru' set to whatever
+> LRU we currently want to add a page. How should this always be equal to the
+> LRU of all the pages we have cached in the pagevec?
+> 
 
->>>> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
->>>> index e89fc31..6048593 100644
->>>> --- a/drivers/watchdog/Kconfig
->>>> +++ b/drivers/watchdog/Kconfig
->>>> @@ -1172,6 +1172,38 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
->>>> 
->>>> 	  The value can be overridden by the wdt_period command-line
->>>> parameter.
->>>> 
->>>> +choice
->>>> +	prompt "PowerPC Book-E Watchdog reset type"
->>>> +	depends on BOOKE_WDT
->>>> +	default BOOKE_WDT_RESET_CHIP
->>>> +	help
->>>> +	  Specify what kind of reset will be executed on watchdog 
->>>> timeout.
->>>> +
->>> Seems to me it would be much better to make this configurable via
->>> platform data
->>> and/or device tree.
->> 
->> good catch. What do the device-tree gurus think to be a nice
->> property name?
+It wouldn't necessarily be and and for a pagevec drain, it's ignored
+completely.
 
-having a closer look, I realized booke_wdt is not device-tree based 
-yet. Migrating it would come close to a rewrite, breaking compatibility 
-for all current users. Sorry, this is way beyond the time I have for 
-this project. So I suggest merging the change the way it is, as it is 
-clearly an improvement.
+> And if I'm right, there doesn't seem to be a reason to pass requested_lru
+> to this function at all, does it?
+> 
 
-Cheers
-Dirk
+You've already noticed that it gets thrown away later in the third
+patch. It was left in this patch as a debugging aid in case there was a
+direct pagevec user that expected to place pages on an LRU that was at
+odds with the page flags.
+
+-- 
+Mel Gorman
+SUSE Labs
