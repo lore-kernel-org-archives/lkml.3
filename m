@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934271Ab3ECUNY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 16:13:24 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:44411 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760627Ab3ECUNX (ORCPT
+	id S934297Ab3ECUNn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 16:13:43 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:48184 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934274Ab3ECUNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 16:13:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <1367591569-32197-17-git-send-email-lee.jones@linaro.org>
-References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
-	<1367591569-32197-17-git-send-email-lee.jones@linaro.org>
-Date: Fri, 3 May 2013 22:13:22 +0200
-Message-ID: <CACRpkdYPDnvb+_TEf63NsW8ra0ciWAHmp-VHiXPumFJbL=PNXg@mail.gmail.com>
-Subject: Re: [PATCH 16/63] ARM: ux500: Remove superfluous 'psize' attribute
- from Audio platform data
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 3 May 2013 16:13:42 -0400
+Date: Fri, 03 May 2013 16:13:40 -0400 (EDT)
+Message-Id: <20130503.161340.725942468744060225.davem@davemloft.net>
+To: cascardo@linux.vnet.ibm.com
+Cc: netdev@vger.kernel.org, dm@chelsio.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cxgb4: fix error recovery when t4_fw_hello returns a
+ positive value
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1367604664-22368-1-git-send-email-cascardo@linux.vnet.ibm.com>
+References: <1367604664-22368-1-git-send-email-cascardo@linux.vnet.ibm.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 03 May 2013 13:13:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Date: Fri,  3 May 2013 15:11:04 -0300
 
-> 'psize' is used to calculate the maximum DMA burst size. However it
-> is only taken into consideration when editing the DMA channel's
-> configuration. The Audio DMA platform data is only used to allocate
-> a channel, not configure it. That will be done at a later date within
-> the MSP driver.
->
-> We're also removing comments which are no longer required, as
-> 'data_width' is no longer set in any device's platform data period.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Since commit 636f9d371f70f22961fd598fe18380057518ca31 ("cxgb4: Add
+> support for T4 configuration file"), t4_fw_hello may return a positive
+> value instead of 0 for success. The recovery code tests only for zero
+> and fails recovery for any other value.
+> 
+> This fix tests for negative error values and fails only on those cases.
+> Error recovery after an error injection works after this change.
+> 
+> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-Patch applied.
-
-Fabio: as I know you have audio working on the ux500
-with the mainline driver: could you confirm that this patch
-does not disturb the audio playback and provide a
-Tested-by?
-
-Yours,
-Linus Walleij
+Applied.
