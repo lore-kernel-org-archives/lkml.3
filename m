@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab3ECG7y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:59:54 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:56235 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932459Ab3ECG7x (ORCPT
+	id S1762377Ab3ECHIP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 03:08:15 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:38116 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752404Ab3ECHIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:59:53 -0400
-X-Auth-Info: WS/ybI0i5XbvtIIBKQSKxWZCYMpguKxbdQJo+TrJQSc=
-Date: Fri, 3 May 2013 08:59:44 +0200
-From: Anatolij Gustschin <agust@denx.de>
-To: Alexander Popov <a13xp0p0v88@gmail.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>
-Subject: Re: [PATCH 1/1] powerpc: mpc512x_dma: add support for data
- transfers between memory and i/o memory
-Message-ID: <20130503085944.69ef751e@crub>
-In-Reply-To: <CAF0T0X7XBuL7a=8zwqMnLDB04-Tf=qhCLPZ4T29yNdN6mP5S2A@mail.gmail.com>
-References: <1367407689-16252-1-git-send-email-a13xp0p0v88@gmail.com>
-	<20130502171452.GP1960@intel.com>
-	<CAF0T0X7XBuL7a=8zwqMnLDB04-Tf=qhCLPZ4T29yNdN6mP5S2A@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 3 May 2013 03:08:13 -0400
+Date: Fri, 3 May 2013 12:37:14 +0530
+From: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: Re: [PATCH 4/4] staging: =?utf-8?Q?ste=5Fr?=
+	=?utf-8?Q?mi4=3A_Suppress_'ignoring_return_value_of_=E2=80=98regulator=5F?=
+	=?utf-8?B?ZW5hYmxlKCkn?= warning
+Message-ID: <20130503070713.GA27956@bnru09>
+References: <1367509690-24022-1-git-send-email-lee.jones@linaro.org>
+ <1367509690-24022-5-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1367509690-24022-5-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 May 2013 10:28:02 +0400
-Alexander Popov <a13xp0p0v88@gmail.com> wrote:
-
-> Hello Vinod,
+On Thu, May 02, 2013 at 17:48:10 +0200, Lee Jones wrote:
+> drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c:
+>         In function ‘synaptics_rmi4_resume’:
+> drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c:1090:18:
+>         warning: ignoring return value of ‘regulator_enable’, declared
+>         with attribute warn_unused_result [-Wunused-result
 > 
-> Thanks for the review.
-> I will return with improved and tested version 2.
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: devel@driverdev.osuosl.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
+> index fe667dd..c4d013d 100644
+> --- a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
+> +++ b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
+> @@ -1087,7 +1087,9 @@ static int synaptics_rmi4_resume(struct device *dev)
+>  	unsigned char intr_status;
+>  	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+>  
+> -	regulator_enable(rmi4_data->regulator);
+> +	retval = regulator_enable(rmi4_data->regulator);
+> +	if (retval < 0)
+> +		return retval;
+Does it make sense to add a dev_err?
 
-Note that there is a patch for .device_prep_slave_sg() operation
-for this driver as part of this series:
-https://patchwork.kernel.org/patch/2368581/
-https://patchwork.kernel.org/patch/2368591/
 
-maybe you can reuse and improve it.
+Otherwise, you can add my
+Acked-by:srinidhi kasagar <srinidhi.kasagar@stericsson.com> for this series.
 
-Thanks,
-
-Anatolij
+>  
+>  	enable_irq(rmi4_data->i2c_client->irq);
+>  	rmi4_data->touch_stopped = false;
+> -- 
+> 1.7.10.4
+> 
