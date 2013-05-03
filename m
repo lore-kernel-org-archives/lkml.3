@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762542Ab3ECNmk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 09:42:40 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:49063 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762435Ab3ECNmj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 09:42:39 -0400
+	id S1762605Ab3ECNnk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 09:43:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46664 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762472Ab3ECNnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 09:43:39 -0400
+Message-ID: <5183BF01.9010805@redhat.com>
+Date: Fri, 03 May 2013 09:43:29 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20130503121135.GK24153@gmail.com>
-References: <1367336497-10650-1-git-send-email-lee.jones@linaro.org>
-	<20130501095243.GD25256@gmail.com>
-	<CACRpkdZtOtnUYvLm7BPA98oMOLAMPHpJ9GLoyMXOKW1nsTDYiQ@mail.gmail.com>
-	<20130503115739.GJ24153@gmail.com>
-	<CACRpkdb-_pf=9cm_Hy25nzFWKSTKc6OmmG9rhN2T1wR1=2tddg@mail.gmail.com>
-	<20130503121135.GK24153@gmail.com>
-Date: Fri, 3 May 2013 15:42:38 +0200
-Message-ID: <CACRpkdaUO=j2Ugd5MKA2iUKV_VX5KJMw=R6hCpA_MjrCQNB+fA@mail.gmail.com>
-Subject: Re: [PATCH 1/5 v2] dmaengine: ste_dma40: Allow memcpy channels to be
- configured from DT
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Yinghai Lu <yhlu.kernel@gmail.com>,
+        Dave Jones <davej@codemonkey.org.uk>
+Subject: Re: [PATCH] NOHZ, check to see if tick device is initialized in IRQ
+ handling path
+References: <1367325415-32283-1-git-send-email-prarit@redhat.com> <alpine.LFD.2.02.1305030054530.2891@ionos> <alpine.LFD.2.02.1305030923300.2886@ionos> <5183AECF.4070709@redhat.com> <alpine.LFD.2.02.1305031451561.2886@ionos>
+In-Reply-To: <alpine.LFD.2.02.1305031451561.2886@ionos>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 3, 2013 at 2:11 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
->> Then just arch/arm/boot/dts/* separately.
->
-> I'm confused, that's how it is already:
 
-Hm haha yes :-)
+On 05/03/2013 09:02 AM, Thomas Gleixner wrote:
+> On Fri, 3 May 2013, Prarit Bhargava wrote:
+>> Down a cpu and then bring it back up.
+> 
+> Ahhhh. So the issue is, that we do not clear the per cpu ts->inidle
+> and friends when we bring the cpu down.
+> 
 
-> Are you getting enough sleep? ;)
+:)  I'll give this a shot and will update with testing results.
 
-It's more like I'm getting too many patch series...
+Thanks tglx!
 
-Yours,
-Linus Walleij
+P.
