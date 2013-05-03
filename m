@@ -1,537 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763671Ab3ECXN2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 19:13:28 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:40721 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761066Ab3ECXNZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 19:13:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=vxzeiZClZISOG8SnPze
-	gxec4YJRuK0JA3I5EHymspT2zqADqJwRVl2V7PHCICbODI6DLJjEcnCHKIE+Ux5+
-	1W0xtkBa1TwNSMnOzpjL0I+ChAUlsg14k9NxiDHnHfA8gIiFBT3S+XXaepKJAMfp
-	BJM9OKr0NpZaNq+HaIbV8eIQ=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.8.3-rc1
-Date: Fri, 03 May 2013 16:13:21 -0700
-Message-ID: <7vzjwbwtbi.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1763895Ab3ECXai (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 19:30:38 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50549 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762044Ab3ECXah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 19:30:37 -0400
+Date: Sat, 4 May 2013 01:36:10 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: David Rientjes <rientjes@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        penberg@kernel.org, levinsasha928@gmail.com, mtosatti@redhat.com,
+        tglx@linutronix.de, bp@suse.de, fengguang.wu@intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/kconfig:  Add a Kconfig shortcut for
+ building working KVM guest kernels
+Message-ID: <20130503233610.GE3433@pd.tnic>
+References: <20130502200703.GE16684@pd.tnic>
+ <20130503142900.GA3433@pd.tnic>
+ <5183CFAC.8020005@infradead.org>
+ <20130503150818.GC3433@pd.tnic>
+ <5183D357.8000204@suse.cz>
+ <20130503153134.GD3433@pd.tnic>
+ <alpine.DEB.2.02.1305030952140.30317@chino.kir.corp.google.com>
+ <aea679e3-048a-4f28-b164-73191095a995@email.android.com>
+ <alpine.DEB.2.02.1305031016290.32047@chino.kir.corp.google.com>
+ <51840B70.2000205@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: 0D158302-B447-11E2-A683-E56BAAC0D69C-77302942!b-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+In-Reply-To: <51840B70.2000205@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A release candidate Git v1.8.3-rc1 is now available for testing
-at the usual places.
-
-The release tarballs are found at:
-
-    http://code.google.com/p/git-core/downloads/list
-
-and their SHA-1 checksums are:
-
-68160a9e9246a4857ccab0e68b466e0e442c1da5  git-1.8.3.rc1.tar.gz
-eecfe00a46a4b26b1f1a4a83f66aca2ab8b264f2  git-htmldocs-1.8.3.rc1.tar.gz
-4ea043cdf8c716dddb21f60f6941cda6a12fad9e  git-manpages-1.8.3.rc1.tar.gz
-
-Also the following public repositories all have a copy of the v1.8.3-rc1
-tag and the master branch that the tag points at:
-
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Git v1.8.3 Release Notes (draft)
-========================
-
-Backward compatibility notes (for Git 2.0)
-------------------------------------------
-
-When "git push [$there]" does not say what to push, we have used the
-traditional "matching" semantics so far (all your branches were sent
-to the remote as long as there already are branches of the same name
-over there).  In Git 2.0, the default will change to the "simple"
-semantics that pushes only the current branch to the branch with the same
-name, and only when the current branch is set to integrate with that
-remote branch.  Use the user preference configuration variable
-"push.default" to change this.  If you are an old-timer who is used
-to the "matching" semantics, you can set the variable to "matching"
-to keep the traditional behaviour.  If you want to live in the future
-early, you can set it to "simple" today without waiting for Git 2.0.
-
-When "git add -u" (and "git add -A") is run inside a subdirectory and
-does not specify which paths to add on the command line, it
-will operate on the entire tree in Git 2.0 for consistency
-with "git commit -a" and other commands.  There will be no
-mechanism to make plain "git add -u" behave like "git add -u .".
-Current users of "git add -u" (without a pathspec) should start
-training their fingers to explicitly say "git add -u ."
-before Git 2.0 comes.  A warning is issued when these commands are
-run without a pathspec and when you have local changes outside the
-current directory, because the behaviour in Git 2.0 will be different
-from today's version in such a situation.
-
-In Git 2.0, "git add <path>" will behave as "git add -A <path>", so
-that "git add dir/" will notice paths you removed from the directory
-and record the removal.  Versions before Git 2.0, including this
-release, will keep ignoring removals, but the users who rely on this
-behaviour are encouraged to start using "git add --ignore-removal <path>"
-now before 2.0 is released.
-
-
-Updates since v1.8.2
---------------------
-
-Foreign interface
-
- * remote-hg and remote-bzr helpers (in contrib/) have been updated.
-
-
-UI, Workflows & Features
-
- * The prompt string generator (in contrib/completion/) learned to
-   show how many changes there are in total and how many have been
-   replayed during a "git rebase" session.
-
- * "git branch --vv" learned to paint the name of the branch it
-   integrates with in a different color (color.branch.upstream,
-   which defaults to blue).
-
- * In a sparsely populated working tree, "git checkout <pathspec>" no
-   longer unmarks paths that match the given pathspec that were
-   originally ignored with "--sparse" (use --ignore-skip-worktree-bits
-   option to resurrect these paths out of the index if you really want
-   to).
-
- * "git log --format" specifier learned %C(auto) token that tells Git
-   to use color when interpolating %d (decoration), %h (short commit
-   object name), etc. for terminal output.
-
- * "git bisect" leaves the final outcome as a comment in its bisect
-   log file.
-
- * "git clone --reference" can now refer to a gitfile "textual symlink"
-   that points at the real location of the repository.
-
- * "git count-objects" learned "--human-readable" aka "-H" option to
-   show various large numbers in Ki/Mi/GiB scaled as necessary.
-
- * "git cherry-pick $blob" and "git cherry-pick $tree" are nonsense,
-   and a more readable error message e.g. "can't cherry-pick a tree"
-   is given (we used to say "expected exactly one commit").
-
- * The "--annotate" option to "git send-email" can be turned on (or
-   off) by default with sendemail.annotate configuration variable (you
-   can use --no-annotate from the command line to override it).
-
- * The "--cover-letter" option to "git format-patch" can be turned on
-   (or off) by default with format.coverLetter configuration
-   variable. By setting it to 'auto', you can turn it on only for a
-   series with two or more patches.
-
- * The bash completion support (in contrib/) learned that cherry-pick
-   takes a few more options than it already knew about.
-
- * "git help" learned "-g" option to show the list of guides just like
-   list of commands are given with "-a".
-
- * A triangular "pull from one place, push to another place" workflow
-   is supported better by new remote.pushdefault (overrides the
-   "origin" thing) and branch.*.pushremote (overrides the
-   branch.*.remote) configuration variables.
-
- * "git status" learned to report that you are in the middle of a
-   revert session, just like it does for a cherry-pick and a bisect
-   session.
-
- * The handling by "git branch --set-upstream-to" against various forms
-   of erroneous inputs was suboptimal and has been improved.
-
- * When the interactive access to git-shell is not enabled, it issues
-   a message meant to help the system administrator to enable it.
-   An explicit way to help the end users who connect to the service by
-   issuing custom messages to refuse such an access has been added.
-
- * In addition to the case where the user edits the log message with
-   the "e)dit" option of "am -i", replace the "Applying: this patch"
-   message with the final log message contents after applymsg hook
-   munges it.
-
- * "git status" suggests users to look into using --untracked=no option
-   when it takes too long.
-
- * "git status" shows a bit more information during a
-   rebase/bisect session.
-
- * "git fetch" learned to fetch a commit at the tip of an unadvertised
-   ref by specifying a raw object name from the command line when the
-   server side supports this feature.
-
- * Output from "git log --graph" works better with submodule log
-   output now.
-
- * "git count-objects -v" learned to report leftover temporary
-   packfiles and other garbage in the object store.
-
- * A new read-only credential helper (in contrib/) to interact with
-   the .netrc/.authinfo files has been added.
-
- * "git send-email" can be used with the credential helper system.
-
- * There was no Porcelain way to say "I no longer am interested in
-   this submodule", once you express your interest in a submodule with
-   "submodule init".  "submodule deinit" is the way to do so.
-
- * "git pull --rebase" learned to pass "-v/-q" options to underlying
-   "git rebase".
-
- * The new "--follow-tags" option tells "git push" to push relevant
-   annotated tags when pushing branches out.
-
- * "git merge" and "git pull" can optionally be told to inspect and
-   reject when merging a commit that does not carry a trusted GPG
-   signature.
-
- * "git mergetool" now feeds files to the "p4merge" backend in the
-   order that matches the p4 convention, where "theirs" is usually
-   shown on the left side, which is the opposite from what other backends
-   expect.
-
- * "show/log" now honors gpg.program configuration just like other
-   parts of the code that use GnuPG.
-
- * "git log" that shows the difference between the parent and the
-   child has been optimized somewhat.
-
- * "git difftool" allows the user to write into the temporary files
-   being shown; if the user makes changes to the working tree at the
-   same time, it now refrains from overwriting the copy in the working
-   tree and leaves the temporary file so that changes can be merged
-   manually.
-
- * There was no good way to ask "I have a random string that came from
-   outside world. I want to turn it into a 40-hex object name while
-   making sure such an object exists".  A new peeling suffix ^{object}
-   can be used for that purpose, together with "rev-parse --verify".
-
-
-Performance, Internal Implementation, etc.
-
- * Updates for building under msvc.
-
- * A handful of issues in the code that traverses the working tree to find
-   untracked and/or ignored files have been fixed, and the general
-   codepath involved in "status -u" and "clean" have been cleaned up
-   and optimized.
-
- * The stack footprint of some codepaths that access an object from a
-   pack has been shrunk.
-
- * The logic to coalesce the same lines removed from the parents in
-   the output from "diff -c/--cc" has been updated, but with O(n^2)
-   complexity, so this might turn out to be undesirable.
-
- * The code to enforce permission bits on files in $GIT_DIR/ for
-   shared repositories has been simplified.
-
- * A few codepaths know how much data they need to put in the
-   hashtables they use when they start, but still began with small tables
-   and repeatedly grew and rehashed them.
-
- * The API to walk reflog entries from the latest to older, which was
-   necessary for operations such as "git checkout -", was cumbersome
-   to use correctly and also inefficient.
-
- * Codepaths that inspect log-message-to-be and decide when to add a
-   new Signed-off-by line in various commands have been consolidated.
-
- * The pkt-line API, implementation and its callers have been cleaned
-   up to make them more robust.
-
- * The Cygwin port has a faster-but-lying lstat(2) emulation whose
-   incorrectness does not matter in practice except for a few
-   codepaths, and setting permission bits on directories is a codepath
-   that needs to use a more correct one.
-
- * "git checkout" had repeated pathspec matches on the same paths,
-   which have been consolidated.  Also a bug in "git checkout dir/"
-   that is started from an unmerged index has been fixed.
-
- * A few bugfixes to "git rerere" working on corner case merge
-   conflicts have been applied.
-
-
-Also contains various documentation updates and code clean-ups.
-
-
-Fixes since v1.8.2
-------------------
-
-Unless otherwise noted, all the fixes since v1.8.2 in the maintenance
-track are contained in this release (see release notes to them for
-details).
-
- * Recent versions of File::Temp (used by "git svn") started blowing
-   up when its tempfile sub is called as a class method; updated the
-   callsite to call it as a plain vanilla function to fix it.
-   (merge eafc2dd hb/git-pm-tempfile later to maint).
-
- * Various subcommands of "git remote" simply ignored extraneous
-   command line arguments instead of diagnosing them as errors.
-   (merge b17dd3f tr/remote-tighten-commandline-parsing later to maint).
-
- * When receive-pack detects an error in the pack header it received in
-   order to decide which of unpack-objects or index-pack to run, it
-   returned without closing the error stream, which led to a hung
-   sideband thread.
-
- * Zsh completion forgot that the '%' character used to signal untracked
-   files needs to be escaped with another '%'.
-
- * A commit object whose author or committer ident are malformed
-   crashed some code that trusted that a name, an email and a
-   timestamp can always be found in it.
-
- * When "upload-pack" fails while generating a pack in response to
-   "git fetch" (or "git clone"), the receiving side had
-   a programming error that triggered the die handler
-   recursively.
-
- * "rev-list --stdin" and friends kept bogus pointers into the input
-   buffer around as human readable object names.  This was not a huge
-   problem but was exposed by a new change that uses these names in
-   error output.
-   (merge 70d26c6 tr/copy-revisions-from-stdin later to maint).
-
- * Smart-capable HTTP servers were not restricted via the
-   GIT_NAMESPACE mechanism when talking with commit-walking clients,
-   like they are when talking with smart HTTP clients.
-   (merge 6130f86 jk/http-dumb-namespaces later to maint).
-
- * "git merge-tree" did not omit a merge result that is identical to
-   the "our" side in certain cases.
-   (merge aacecc3 jk/merge-tree-added-identically later to maint).
-
- * Perl scripts like "git-svn" closed (instead of redirecting to /dev/null)
-   the standard error stream, which is not a very smart thing to do.
-   A later open may return file descriptor #2 for an unrelated purpose, and
-   error reporting code may write into it.
-
- * "git show-branch" was not prepared to show a very long run of
-   ancestor operators e.g. foobar^2~2^2^2^2...^2~4 correctly.
-
- * "git diff --diff-algorithm algo" is also understood as "git diff
-   --diff-algorithm=algo".
-
- * The new core.commentchar configuration was not applied in a few
-   places.
-
- * "git bundle" erroneously bailed out when parsing a valid bundle
-   containing a prerequisite commit without a commit message.
-
- * "git log -S/-G" started paying attention to textconv filter, but
-   there was no way to disable this.  Make it honor the --no-textconv
-   option.
-
- * When used with the "-d temporary-directory" option, "git filter-branch"
-   failed to come back to the original working tree to perform the
-   final clean-up procedure.
-
- * "git merge $(git rev-parse v1.8.2)" behaved quite differently from
-   "git merge v1.8.2", as if v1.8.2 were written as v1.8.2^0 and did
-   not pay much attention to the annotated tag payload.  Make the code
-   notice the type of the tag object, in addition to the dwim_ref()
-   based classification the current code uses (i.e. the name appears
-   in refs/tags/) to decide when to special-case tag merging.
-
- * Fix a 1.8.1.x regression that stopped matching "dir" (without a
-   trailing slash) to a directory "dir".
-   (merge efa5f82 jc/directory-attrs-regression-fix later to maint-1.8.1).
-
- * "git apply --whitespace=fix" was not prepared to see a line getting
-   longer after fixing whitespaces (e.g. tab-in-indent aka Python).
-   (merge 329b26e jc/apply-ws-fix-tab-in-indent later to maint-1.8.1).
-
- * The prompt string generator (in contrib/completion/) did not notice
-   when we are in a middle of a "git revert" session.
-
- * "submodule summary --summary-limit" option did not support the
-   "--option=value" form.
-
- * "index-pack --fix-thin" used an uninitialized value to compute
-   the delta depths of objects it appends to the resulting pack.
-
- * "index-pack --verify-stat" used a few counters outside the protection
-   of a mutex, possibly showing incorrect numbers.
-
- * The code to keep track of what directory names are known to Git on
-   platforms with case insensitive filesystems could get confused upon a
-   hash collision between these pathnames and would loop forever.
-
- * Annotated tags outside the refs/tags/ hierarchy were not advertised
-   correctly to ls-remote and fetch with recent versions of Git.
-
- * Recent optimizations broke shallow clones.
-
- * "git cmd -- ':(top'" was not diagnosed as an invalid syntax, and
-   instead the parser kept reading beyond the end of the string.
-
- * "git tag -f <tag>" always said "Updated tag '<tag>'" even when
-   creating a new tag (i.e. neither overwriting nor updating).
-
- * "git p4" did not behave well when the path to the root of the P4
-   client was not its real path.
-   (merge bbd8486 pw/p4-symlinked-root later to maint).
-
- * "git archive" reported a failure when asked to create an archive out
-   of an empty tree.  It is more intuitive to give an empty
-   archive back in such a case.
-
- * When "format-patch" quoted a non-ascii string in header files,
-   it incorrectly applied rfc2047 and chopped a single character in
-   the middle of the string.
-
- * An aliased command spawned from a bare repository that does not say
-   it is bare with "core.bare = yes" was treated as non-bare by mistake.
-
- * In "git reflog expire", the REACHABLE bit was not cleared from the
-   correct objects.
-
- * The logic used by "git diff -M --stat" to shorten the names of
-   files before and after a rename did not work correctly when the
-   common prefix and suffix between the two filenames overlapped.
-
- * The "--match=<pattern>" option of "git describe", when used with
-   "--all" to allow refs that are not annotated tags to be a
-   base of description, did not restrict the output from the command
-   to those refs that match the given pattern.
-
- * Clarify in the documentation "what" gets pushed to "where" when the
-   command line to "git push" does not say these explicitly.
-
- * The "--color=<when>" argument to the commands in the diff family
-   was described poorly.
-
- * The arguments given to the pre-rebase hook were not documented.
-
- * The v4 index format was not documented.
-
- * The "--match=<pattern>" argument "git describe" takes uses glob
-   pattern but it wasn't obvious from the documentation.
-
- * Some sources failed to compile on systems that lack NI_MAXHOST in
-   their system header (e.g. z/OS).
-
- * Add an example use of "--env-filter" in "filter-branch"
-   documentation.
-
- * "git bundle verify" did not say "records a complete history" for a
-   bundle that does not have any prerequisites.
-
- * In the v1.8.0 era, we changed symbols that do not have to be global
-   to file scope static, but a few functions in graph.c were used by
-   CGit sideways, bypassing the entry points of the API the
-   in-tree users use.
-
- * "git update-index -h" did not do the usual "-h(elp)" thing.
-
- * "git index-pack" had a buffer-overflow while preparing an
-   informational message when the translated version of it was too
-   long.
-
- * 'git commit -m "$msg"' used to add an extra newline even when
-   $msg already ended with one.
-
- * The SSL peer verification done by "git imap-send" did not ask for
-   Server Name Indication (RFC 4366), failing to connect to SSL/TLS
-   sites that serve multiple hostnames on a single IP.
-
- * perl/Git.pm::cat_blob slurped everything in core only to write it
-   out to a file descriptor, which was not a very smart thing to do.
-
- * "git branch" did not bother to check nonsense command line
-   parameters.  It now issues errors in many cases.
-
- * Verification of signed tags was not done correctly when not in C
-   or en/US locale.
-
- * Some platforms and users spell UTF-8 differently; retry with the
-   most official "UTF-8" when the system does not understand the
-   user-supplied encoding name that is a common alternative
-   spelling of UTF-8.
-
- * When export-subst is used, "zip" output recorded an incorrect
-   size of the file.
-
- * "git am $maildir/" applied messages in an unexpected order; sort
-   filenames read from the maildir/ in a way that is more likely to
-   sort the messages in the order the writing MUA meant to, by sorting
-   numeric segments in numeric order and non-numeric segments in
-   alphabetical order.
-
- * "git submodule update", when recursed into sub-submodules, did not
-   accumulate the prefix paths.
-
-----------------------------------------------------------------
-
-Changes since v1.8.3-rc0 are as follows:
-
-Anders Granskogen Bjørnstad (1):
-      Documentation/git-commit: Typo under --edit
-
-Felipe Contreras (5):
-      completion: add missing format-patch options
-      documentation: trivial whitespace cleanups
-      complete: zsh: trivial simplification
-      complete: zsh: use zsh completion for the main cmd
-      completion: zsh: don't override suffix on _detault
-
-H. Merijn Brand (1):
-      Git.pm: call tempfile from File::Temp as a regular function
-
-John Keeping (2):
-      merge-tree: fix typo in "both changed identically"
-      t/Makefile: remove smoke test targets
-
-Junio C Hamano (2):
-      Update draft release notes to 1.8.3
-      Git 1.8.3-rc1
-
-Marc Branchaud (1):
-      Fix grammar in the 1.8.3 release notes.
-
-Ramkumar Ramachandra (5):
-      git-completion.bash: lexical sorting for diff.statGraphWidth
-      git-completion.bash: add diff.submodule to config list
-      git-completion.bash: complete branch.*.rebase as boolean
-      git-completion.bash: add branch.*.pushremote to config list
-      git-completion.bash: add remote.pushdefault to config list
-
-Ramsay Allan Jones (2):
-      clone: Make the 'junk_mode' symbol a file static
-      pretty: Fix bug in truncation support for %>, %< and %><
-
-René Scharfe (3):
-      pretty: simplify input line length calculation in pp_user_info()
-      pretty: simplify output line length calculation in pp_user_info()
-      pretty: remove intermediate strbufs from pp_user_info()
-
-Thomas Rast (4):
-      remote: add a test for extra arguments, according to docs
-      remote: check for superfluous arguments in 'git remote add'
-      remote: 'show' and 'prune' can take more than one remote
-      unpack_entry: avoid freeing objects in base cache
-
-Zoltan Klinger (1):
-      bash-prompt.sh: show where rebase is at when stopped
-
+On Fri, May 03, 2013 at 12:09:36PM -0700, H. Peter Anvin wrote:
+> Actually it is called:
+> 
+> KCONFIG_ALLCONFIG=kvm_guest.config make allnoconfig
+
+I guess we can do something like this - it is kinda noisy currently and
+requires a previously present .config in $objtree to work.
+
+---
+ arch/x86/Makefile                 |  5 +++++
+ arch/x86/configs/kvm_guest.config | 28 ++++++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+)
+ create mode 100644 arch/x86/configs/kvm_guest.config
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 5c477260294f..6f9c03ed999e 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -220,6 +220,11 @@ archclean:
+ 	$(Q)$(MAKE) $(clean)=$(boot)
+ 	$(Q)$(MAKE) $(clean)=arch/x86/tools
+ 
++kvmconfig:
++	$(if $(wildcard $(objtree)/.config),, $(error You need an existing .config for this target))
++	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config arch/x86/configs/kvm_guest.config
++	$(Q)yes "n" | $(MAKE) oldconfig
++
+ define archhelp
+   echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
+   echo  '  install      - Install kernel using'
+diff --git a/arch/x86/configs/kvm_guest.config b/arch/x86/configs/kvm_guest.config
+new file mode 100644
+index 000000000000..2ac38a390db3
+--- /dev/null
++++ b/arch/x86/configs/kvm_guest.config
+@@ -0,0 +1,28 @@
++CONFIG_NET=y
++CONFIG_NET_CORE=y
++CONFIG_NETDEVICES=y
++CONFIG_BLOCK=y
++CONFIG_BLK_DEV=y
++CONFIG_NETWORK_FILESYSTEMS=y
++CONFIG_INET=y
++CONFIG_TTY=y
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_BINFMT_ELF=y
++CONFIG_PCI=y
++CONFIG_PCI_MSI=y
++CONFIG_HAVE_ARCH_KGDB=y
++CONFIG_DEBUG_KERNEL=y
++CONFIG_KGDB=y
++CONFIG_KGDB_SERIAL_CONSOLE=y
++CONFIG_VIRTUALIZATION=y
++CONFIG_VIRTIO=y
++CONFIG_VIRTIO_PCI=y
++CONFIG_VIRTIO_BLK=y
++CONFIG_VIRTIO_CONSOLE=y
++CONFIG_VIRTIO_NET=y
++CONFIG_9P_FS=y
++CONFIG_NET_9P=y
++CONFIG_NET_9P_VIRTIO=y
+-- 
+1.8.3.rc0
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
