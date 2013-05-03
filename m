@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763014Ab3ECJ4U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 05:56:20 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56545 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754431Ab3ECJ4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 05:56:15 -0400
-Message-ID: <51838994.7070805@ti.com>
-Date: Fri, 3 May 2013 15:25:32 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1763006Ab3ECJ5D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 05:57:03 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:51748 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956Ab3ECJ5C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 05:57:02 -0400
+Date: Fri, 3 May 2013 17:56:43 +0800 (CST)
+From: Xiong Zhou <jencce.kernel@gmail.com>
+To: anton@enomsg.org, dwmw2@infradead.org
+cc: linux-next@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH -next] power: fix bq27x00_battery kconfig
+Message-ID: <alpine.DEB.2.02.1305031743190.6400@M2420>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LFBDEV <linux-fbdev@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: Re: [PATCH 0/6] Davinci fbdev driver and enable it for DMx platform
-References: <1366804808-22720-1-git-send-email-prabhakar.csengg@gmail.com> <1780031.B4OAypccep@avalon> <CA+V-a8sLD2dP1RLb8ibZDOsLCP8hhMNUTr-zzU1zx_2ALDaDrg@mail.gmail.com>
-In-Reply-To: <CA+V-a8sLD2dP1RLb8ibZDOsLCP8hhMNUTr-zzU1zx_2ALDaDrg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/26/2013 11:16 AM, Prabhakar Lad wrote:
-> Hi Laurent,
-> 
-> On Thu, Apr 25, 2013 at 2:32 AM, Laurent Pinchart
-> <laurent.pinchart@ideasonboard.com> wrote:
->> Hi Prabhakar,
->>
->> Thank you for the patch.
->>
->> On Wednesday 24 April 2013 17:30:02 Prabhakar Lad wrote:
->>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>>
->>> This patch series adds an fbdev driver for Texas
->>> Instruments Davinci SoC.The display subsystem consists
->>> of OSD and VENC, with OSD supporting 2 RGb planes and
->>> 2 video planes.
->>> http://focus.ti.com/general/docs/lit/
->>> getliterature.tsp?literatureNumber=sprue37d&fileType=pdf
->>>
->>> A good amount of the OSD and VENC enabling code is
->>> present in the kernel, and this patch series adds the
->>> fbdev interface.
->>>
->>> The fbdev driver exports 4 nodes representing each
->>> plane to the user - from fb0 to fb3.
->>
->> The obvious question is: why not a KMS driver instead ? :-)
->>
-> I did go through the KMS model (thanks for pointing to your work and the video)
-> and it looks like this would require a fair amount of development, at this point
-> of time I would go with the current implementation and revisit on KMS model
-> at later point of time.
+From: Xiong Zhou <jencce.kernel@gmail.com>
 
-But I doubt you will be able to sneak a new fbdev driver through. Last
-time I heard, Andrew is only taking in fixes not new features.
+This patch fixes build failure(randconfig) of next-20130501.
+When config I2C as m, BATTERY_BQ27x00 as y, here comes the failure.
+BATTERY_BQ27x00 depends on I2C according to the code.
 
-Thanks,
-Sekhar
+Failure message:
+drivers/built-in.o: In function `bq27x00_read_i2c':
+bq27x00_battery.c:(.text+0x1082a7): undefined reference to `i2c_transfer'
+drivers/built-in.o: In function `bq27x00_battery_init':
+bq27x00_battery.c:(.init.text+0x6085): undefined reference to `i2c_register_driver'
+bq27x00_battery.c:(.init.text+0x60c7): undefined reference to `i2c_del_driver'
+drivers/built-in.o: In function `bq27x00_battery_exit':
+bq27x00_battery.c:(.exit.text+0xbf0): undefined reference to `i2c_del_driver'
+make: *** [vmlinux] Error 1
+
+Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
+---
+drivers/power/Kconfig |    1 +
+1 file changed, 1 insertion(+)
+
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 0d0b5d7..89e5ebd 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -152,6 +152,7 @@ config BATTERY_SBS
+ 
+ config BATTERY_BQ27x00
+ 	tristate "BQ27x00 battery driver"
++	depends on I2C
+ 	help
+ 	  Say Y here to enable support for batteries with BQ27x00 (I2C/HDQ) chips.
+ 
