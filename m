@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762839Ab3ECGcc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:32:32 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:63792 "EHLO
+	id S1762848Ab3ECGcv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:32:51 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:63837 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762770Ab3ECGc3 (ORCPT
+	with ESMTP id S1762770Ab3ECGct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:32:29 -0400
-X-AuditID: cbfee68d-b7f016d000007930-d6-518359fc5df3
+	Fri, 3 May 2013 02:32:49 -0400
+X-AuditID: cbfee68d-b7f016d000007930-c2-51835a10b3e2
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 24/42] rtc: rtc-max8998: remove unnecessary
+Subject: [PATCH 25/42] rtc: rtc-mc13xxx: remove unnecessary
  platform_set_drvdata()
-Date: Fri, 03 May 2013 15:32:28 +0900
-Message-id: <002601ce47c7$fb7a18b0$f26e4a10$@samsung.com>
+Date: Fri, 03 May 2013 15:32:48 +0900
+Message-id: <002701ce47c8$075279c0$15f76d40$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5Hx/rNFEQqbqjpRKyhwrztmfkeTA==
+Thread-index: Ac5HyAQguWd+DFTFRUWD65GfPi5/Ww==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zQ90/kc2BBu0bFC2WXLzKbjFn/Ro2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zA12BqOZAg9frhSyWXLzKbjFn/Ro2
 	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
-	LdK3S+DKePrlMlvBNM6Ka+/vsTQwnmDvYuTkkBAwkbjd+5UFwhaTuHBvPVsXIxeHkMAyRoln
-	TfvhijpuLmSGSExnlLi5fwoLhPOLUeLwzEmsIFVsAmoSX74cBurg4BAR0Jdoa9EAqWEW6GaU
-	eNQ8lxmkRlggRGLhwoWMIDaLgKrE0ZnbGEHqeQUsJdafByvhFRCU+DH5HthFzAJaEut3HmeC
-	sOUlNq95ywxxkILEjrOvwcaICOhJbNp8iRmiRkRi34t3jBA1x9gltm/NglglIPFt8iEWkFUS
-	ArISmw5AjZGUOLjiBssERrFZSDbPQrJ5FpLNs5BsWMDIsopRNLUguaA4Kb3IUK84Mbe4NC9d
-	Lzk/dxMjJPJ6dzDePmB9iDEZaP1EZinR5Hxg5OaVxBsamxlZmJqYGhuZW5qRJqwkzqvWYh0o
-	JJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgZHt0eHjKVeVSnrMQifHX0gXabFWOXbk7uvw4J7C
-	nub/wnM0yidMULu++vjuu/cCFp1d/iwlZqJb7aWvf2NaYj/tvfP79cZAwYLXRqeOHDiRl/WK
-	e9Me32V+jGL+0kq1rCmxi3mbl8afFDasjhBiC1p1x6ztmcOU3fF7XloFOCyRmzO/74Dy7Dol
-	luKMREMt5qLiRADdzvV60gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jQd0/kc2BBncuyFosuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
-	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
-	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmPH0y2W2gmmcFdfe32NpYDzB3sXIySEhYCLR
-	cXMhM4QtJnHh3nq2LkYuDiGB6YwSN/dPYYFwfjFKHJ45iRWkik1ATeLLl8NA3RwcIgL6Em0t
-	GiA1zALdjBKPmueCTRIWCJFYuHAhI4jNIqAqcXTmNkaQel4BS4n158FKeAUEJX5MvscCYjML
-	aEms33mcCcKWl9i85i3UQQoSO86+BhsjIqAnsWnzJWaIGhGJfS/eMU5gFJiFZNQsJKNmIRk1
-	C0nLAkaWVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBkf1MagfjygaLQ4wCHIxKPLwKLU2B
-	QqyJZcWVuYcYJTiYlUR43X4AhXhTEiurUovy44tKc1KLDzEmAz06kVlKNDkfmHTySuINjU3M
-	jCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoHxWGLURuWFL49uvG3PbDE9
-	VmHp2ojfNf1bFq6absnLY7fhi14TX3STXdD2NbkS81kfnz3g+ub+vMQ7R4TdvN2del8vZVDq
-	qA2rXm8SP8tiy5ZbHe+XSwRuWBuiHJw9jeveysj3TrP4Os9+s5yzJKpsGsP0O8xXLxYneSRt
-	nSMrx/I57q7Gjvw1SizFGYmGWsxFxYkAsws5RzADAAA=
+	LdK3S+DK+LHGruAYe8W8OysZGxhnsnUxcnJICJhI9J7vZIewxSQu3FsPFOfiEBJYxiixcG4P
+	C0zRpWm9rBCJRYwS+68/g3J+MUrsvfIBrIpNQE3iy5fDQKM4OEQE9CXaWjRAapgFuhklHjXP
+	ZQaJCwuESPyZxwJisgioSnSuEwLp5BWwlPi59zALhC0o8WPyPTCbWUBLYv3O40wQtrzE5jVv
+	mSHuUZDYcfY1I4gtIqAncWHOD2aIGhGJfS/eMYKslRA4xC6x7dVOVpAEi4CAxLfJh8D2SgjI
+	Smw6ADVHUuLgihssExjFZiFZPQvJ6llIVs9CsmIBI8sqRtHUguSC4qT0IkO94sTc4tK8dL3k
+	/NxNjJC4693BePuA9SHGZKD1E5mlRJPzgXGbVxJvaGxmZGFqYmpsZG5pRpqwkjivWot1oJBA
+	emJJanZqakFqUXxRaU5q8SFGJg5OqQbGPbzFZfuKfs+avezOj3euW3Oy283Fv88VnsavW6F6
+	Ys31ryHfI1lC0k/u3H+M+fJ2LQ79oH1XXc+E1y+avCdPdmuH0Pkn76XEm87PqxVKmC3GcGX3
+	0iCRc/yHBBY57jFtnc+uaeDLc16ubPZy07A2neQtf5j2fHi/YKeY1RHxtVUv50RN3PG/RYml
+	OCPRUIu5qDgRAOZ/pt/RAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jAV2BqOZAg6Vn+CyWXLzKbjFn/Ro2
+	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
+	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzPixxq7gGHvFvDsrGRsYZ7J1MXJySAiYSFya
+	1ssKYYtJXLi3HijOxSEksIhRYv/1Z6wQzi9Gib1XPrCAVLEJqEl8+XKYvYuRg0NEQF+irUUD
+	pIZZoJtR4lHzXGaQuLBAiMSfeSwgJouAqkTnOiGQTl4BS4mfew+zQNiCEj8m3wOzmQW0JNbv
+	PM4EYctLbF7zlhniHgWJHWdfM4LYIgJ6Ehfm/GCGqBGR2PfiHeMERoFZSEbNQjJqFpJRs5C0
+	LGBkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHNXPpHcwrmqwOMQowMGoxMOr0NIUKMSa
+	WFZcmXuIUYKDWUmE1+0HUIg3JbGyKrUoP76oNCe1+BBjMtCjE5mlRJPzgQknryTe0NjEzMjS
+	yMzCyMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYtSZsM1krVOzPde96y9eleuu6
+	GP9sNz5l4ZmfGGl0TnaC6fe1FqeSGaYlpan9NNvw8NMec/7qyoyAorx1de925VzoWODsWuUb
+	fFtq38u3K54unT7NlLuk597FS+cr0vh4n2fZNEa2FrDPuxEp8ePN5EevHfYU3pb44xkwM87/
+	+/rJ0861mq47qcRSnJFoqMVcVJwIAEeEDdUuAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,33 +61,31 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-max8998.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+ drivers/rtc/rtc-mc13xxx.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/rtc/rtc-max8998.c b/drivers/rtc/rtc-max8998.c
-index 48b6612..b93842d 100644
---- a/drivers/rtc/rtc-max8998.c
-+++ b/drivers/rtc/rtc-max8998.c
-@@ -274,7 +274,7 @@ static int max8998_rtc_probe(struct platform_device *pdev)
- 	if (IS_ERR(info->rtc_dev)) {
- 		ret = PTR_ERR(info->rtc_dev);
- 		dev_err(&pdev->dev, "Failed to register RTC device: %d\n", ret);
--		goto out_rtc;
-+		return ret;
- 	}
+diff --git a/drivers/rtc/rtc-mc13xxx.c b/drivers/rtc/rtc-mc13xxx.c
+index 7a8ed27..77ea989 100644
+--- a/drivers/rtc/rtc-mc13xxx.c
++++ b/drivers/rtc/rtc-mc13xxx.c
+@@ -370,8 +370,6 @@ err_reset_irq_status:
+ err_reset_irq_request:
  
- 	ret = devm_request_threaded_irq(&pdev->dev, info->irq, NULL,
-@@ -292,10 +292,6 @@ static int max8998_rtc_probe(struct platform_device *pdev)
- 	}
- 
- 	return 0;
+ 		mc13xxx_unlock(mc13xxx);
 -
--out_rtc:
+-		platform_set_drvdata(pdev, NULL);
+ 	}
+ 
+ 	return ret;
+@@ -389,8 +387,6 @@ static int __exit mc13xxx_rtc_remove(struct platform_device *pdev)
+ 
+ 	mc13xxx_unlock(priv->mc13xxx);
+ 
 -	platform_set_drvdata(pdev, NULL);
--	return ret;
+-
+ 	return 0;
  }
  
- static int max8998_rtc_remove(struct platform_device *pdev)
 -- 
 1.7.2.5
 
