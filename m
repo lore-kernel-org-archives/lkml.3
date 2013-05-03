@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762269Ab3ECF5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 01:57:48 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:49696 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760451Ab3ECF5r (ORCPT
+	id S1762435Ab3ECF6F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 01:58:05 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41210 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756473Ab3ECF6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 01:57:47 -0400
-Message-ID: <518351CF.6090500@linux.vnet.ibm.com>
-Date: Fri, 03 May 2013 13:57:35 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Fri, 3 May 2013 01:58:03 -0400
+Message-ID: <518351D2.9050806@linux.vnet.ibm.com>
+Date: Fri, 03 May 2013 13:57:38 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: wake-affine throttle
-References: <5164DCE7.8080906@linux.vnet.ibm.com> <51833302.6090208@linux.vnet.ibm.com> <1367557300.5907.30.camel@marge.simpson.net>
-In-Reply-To: <1367557300.5907.30.camel@marge.simpson.net>
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+CC: mtosatti@redhat.com, gleb@redhat.com, avi.kivity@gmail.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v4 3/6] KVM: MMU: introduce kvm_clear_all_lpage_info
+References: <1367032402-13729-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1367032402-13729-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130503111531.b288fca3287c5f892436ade4@gmail.com>
+In-Reply-To: <20130503111531.b288fca3287c5f892436ade4@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050305-5816-0000-0000-000007CFCEC6
+x-cbid: 13050305-7014-0000-0000-000002F1C188
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Mike
-
-Thanks for your reply.
-
-On 05/03/2013 01:01 PM, Mike Galbraith wrote:
-[snip]
+On 05/03/2013 10:15 AM, Takuya Yoshikawa wrote:
+> On Sat, 27 Apr 2013 11:13:19 +0800
+> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+> 
+>> This function is used to reset the large page info of all guest pages
+>> which will be used in later patch
 >>
->> If this approach caused any concerns, please let me know ;-)
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/kvm/x86.c |   25 +++++++++++++++++++++++++
+>>  arch/x86/kvm/x86.h |    2 ++
+>>  2 files changed, 27 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>> index 52b4e97..8e4494c 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -6951,6 +6951,31 @@ static void memslot_set_lpage_disallowed(struct kvm_memory_slot *slot,
+>>  	}
+>>  }
+>>  
+>> +static void clear_memslot_lpage_info(struct kvm_memory_slot *slot)
+>> +{
+>> +	int i;
+>> +
+>> +	for (i = 1; i < KVM_NR_PAGE_SIZES; ++i) {
+>> +		int lpages;
+>> +		int level = i + 1;
+>> +
+>> +		lpages = gfn_to_index(slot->base_gfn + slot->npages - 1,
+>> +				      slot->base_gfn, level) + 1;
+>> +
+>> +		memset(slot->arch.lpage_info[i - 1], 0,
+>> +		       sizeof(*slot->arch.lpage_info[i - 1]));
+>> +		memslot_set_lpage_disallowed(slot, slot->npages, i, lpages);
 > 
-> I wonder if throttling on failure is the way to go.  Note the minimal
-> gain for pgbench with the default 1ms throttle interval.  It's not very
-> effective out of the box for the load type it's targeted to help, and
-> people generally don't twiddle scheduler knobs.  If you throttle on
-> success, you directly restrict migration frequency without that being
-> affected by what other tasks are doing.  Seems that would be a bit more
-> effective.
+> This does something other than clearing.
 
-This is a good timing to make some conclusion for this problem ;-)
+Aha, this API *clears* the count set by kvm mmu. It is meaningful enough,
+i think.
 
-Let's suppose when wake-affine failed, next time slice got a higher
-failure chance, then whether throttle on failure could be the question like:
 
-	throttle interval should cover more failure timing
-	or more success timing?
-
-Obviously we should cover more failure timing, since it's just wasting
-cycle and change nothing.
-
-However, I used to concern about the damage of succeed wake-affine at
-that rapid, sure it also contain the benefit, but which one is bigger?
-
-Now if we look at the RFC version which throttle on succeed, for
-pgbench, we could find that the default 1ms benefit is < 5%, while the
-current version which throttle on failure bring 7% at most.
-
-And that eliminate my concern :)
-
-> 
-> (I still like the wakeup buddy thing, it's more effective because it
-> adds and uses knowledge, though without the knob, cache domain size.
-> Peter is right about the interrupt wakeups though, that could very
-> easily cause regressions, dirt simple throttle is much safer).
-
-Exactly, dark issue deserve dark solution, let darkness guide him...
-
-Regards,
-Michael Wang
-
-> 
-> -Mike
-> 
 
