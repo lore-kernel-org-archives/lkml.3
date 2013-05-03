@@ -1,369 +1,553 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762929Ab3ECJNQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 05:13:16 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:55304 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762733Ab3ECJNN (ORCPT
+	id S1762925Ab3ECJSN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 05:18:13 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:39254 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab3ECJSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 05:13:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <517A6B01.5000708@imgtec.com>
-References: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com>
-	<1366727607-27444-6-git-send-email-james.hogan@imgtec.com>
-	<CACRpkdbYwDvF=gNurLzc+wE0BYpoqog7sPdRTY59BGS7yn3n9Q@mail.gmail.com>
-	<517A6B01.5000708@imgtec.com>
-Date: Fri, 3 May 2013 11:13:12 +0200
-Message-ID: <CACRpkdYooPNgJuA-fZOiGJV03R_783uAOmR=QgYOahYdHcad9w@mail.gmail.com>
-Subject: Re: [PATCH 5/8] pinctrl-tz1090: add TZ1090 pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Fri, 3 May 2013 05:18:10 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux-arm-kernel@lists.infradead.org, Wolfram Sang <wsa@the-dreams.de>
+Cc: Emilio Lopez <emilio@elopez.com.ar>, linux-i2c@vger.kernel.org,
+        kevin@allwinnertech.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
         Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] i2c: sunxi: Add Allwinner A1X i2c driver
+Date: Fri,  3 May 2013 11:17:45 +0200
+Message-Id: <1367572669-24354-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1367572669-24354-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1367572669-24354-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 1:54 PM, James Hogan <james.hogan@imgtec.com> wrote:
-> On 25/04/13 23:39, Linus Walleij wrote:
->> On Tue, Apr 23, 2013 at 4:33 PM, James Hogan <james.hogan@imgtec.com> wrote:
->> (...)
->>> +/* Pin names */
->>> +
->>> +static const struct pinctrl_pin_desc tz1090_pins[] = {
->>> +       /* Normal GPIOs */
->>> +       PINCTRL_PIN(TZ1090_PIN_SDIO_CLK,        "sdio_clk"),
->>> +       PINCTRL_PIN(TZ1090_PIN_SDIO_CMD,        "sdio_cmd"),
->>
->> Are these actually the names from the datasheet? Usually these
->> have geographical names, like D1, A7... but just checking.
->
-> Yes, these are the ball names in the datasheet, also the names of the
-> corresponding gpios, and used on board schematics to refer to the SoC
-> connections, although the corresponding ball indexes are also provided
-> in one place in $letter$number form. I suspect it's done this way
-> because many of the pins can only mux to a single peripheral (or gpio).
+This patch implements a basic driver for the I2C host driver found on
+the Allwinner A10, A13 and A31 SoCs.
 
-OK I'll live with it...
+Notable missing feature is 10-bit addressing.
 
->> (...)
->>> +/* Sub muxes */
->>
->> Can you describe here briefly what a sub mux is and how it is
->> deployed in this system? It's getting complicated at this point
->> so some help would be appreciated.
->
-> Sure. The TZ1090 doesn't have a lot of muxing capabilities (about 10
-> bits devoted to muxing if you ignore debug signals and gpios), but the
-> largest one (the TFT pins) has a 2 level mux. Here are the register fields:
->
-> CR_PADS_TFT_CTL
->         TFT pad mux control
->         0 - TFT display
->         1 - Ext DAC
->         2 - TS Out 1
->         3 - Meta2 Trace
->         4 - Phyway IF
->
-> CR_PADS_AFE_DIR_CTL
->         Control how the TFT pad direction is driven when CR_PADS_TFT_CTL = 1
->         0 - Pads are output to DAC
->         1 - not aqadc_stb
->         2 - iqdac_stb
->
-> so the submux is an internal thing that allows the tft pins to appear to
-> have all the above functions, and if any of the last 3 are chosen the
-> first level mux is set to 1.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ .../devicetree/bindings/i2c/i2c-sunxi.txt          |  19 +
+ drivers/i2c/busses/Kconfig                         |  10 +
+ drivers/i2c/busses/Makefile                        |   1 +
+ drivers/i2c/busses/i2c-sunxi.c                     | 441 +++++++++++++++++++++
+ 4 files changed, 471 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/i2c-sunxi.txt
+ create mode 100644 drivers/i2c/busses/i2c-sunxi.c
 
-OK! Please put that whole block above in a
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-sunxi.txt b/Documentation/devicetree/bindings/i2c/i2c-sunxi.txt
+new file mode 100644
+index 0000000..40c16d0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i2c/i2c-sunxi.txt
+@@ -0,0 +1,19 @@
++Allwinner SoC I2C controller
++
++Required properties:
++- compatible : Should be "allwinner,sun4i-i2c".
++- reg: Should contain register location and length.
++- interrupts: Should contain interrupt.
++- clocks : The parent clock feeding the I2C controller.
++
++Recommended properties:
++- clock-frequency : desired I2C bus clock frequency in Hz.
++
++Example:
++i2c0: i2c@01c2ac00 {
++	compatible = "allwinner,sun4i-i2c";
++	reg = <0x01c2ac00 0x400>;
++	interrupts = <7>;
++	clocks = <&apb1_gates 0>;
++	clock-frequency = <100000>;
++};
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index adfee98..327a49b 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -706,6 +706,16 @@ config I2C_STU300
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called i2c-stu300.
+ 
++config I2C_SUNXI
++	tristate "Allwinner A1X I2C controller"
++	depends on ARCH_SUNXI
++	help
++	  If you say yes to this option, support will be included for the
++	  I2C controller embedded in Allwinner A1X SoCs.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called i2c-sunxi.
++
+ config I2C_TEGRA
+ 	tristate "NVIDIA Tegra internal I2C controller"
+ 	depends on ARCH_TEGRA
+diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+index 8f4fc23..7225818 100644
+--- a/drivers/i2c/busses/Makefile
++++ b/drivers/i2c/busses/Makefile
+@@ -69,6 +69,7 @@ obj-$(CONFIG_I2C_SH_MOBILE)	+= i2c-sh_mobile.o
+ obj-$(CONFIG_I2C_SIMTEC)	+= i2c-simtec.o
+ obj-$(CONFIG_I2C_SIRF)		+= i2c-sirf.o
+ obj-$(CONFIG_I2C_STU300)	+= i2c-stu300.o
++obj-$(CONFIG_I2C_SUNXI)		+= i2c-sunxi.o
+ obj-$(CONFIG_I2C_TEGRA)		+= i2c-tegra.o
+ obj-$(CONFIG_I2C_VERSATILE)	+= i2c-versatile.o
+ obj-$(CONFIG_I2C_OCTEON)	+= i2c-octeon.o
+diff --git a/drivers/i2c/busses/i2c-sunxi.c b/drivers/i2c/busses/i2c-sunxi.c
+new file mode 100644
+index 0000000..f9f8bd4
+--- /dev/null
++++ b/drivers/i2c/busses/i2c-sunxi.c
+@@ -0,0 +1,441 @@
++/*
++ * Allwinner A1X SoCs i2c controller driver.
++ *
++ * Copyright (C) 2013 Maxime Ripard
++ *
++ * Maxime Ripard <maxime.ripard@free-electrons.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk.h>
++#include <linux/completion.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/platform_device.h>
++
++#define SUNXI_I2C_ADDR_REG		(0x00)
++#define SUNXI_I2C_ADDR_ADDR(v)			((v & 0x7f) << 1)
++#define SUNXI_I2C_XADDR_REG		(0x04)
++#define SUNXI_I2C_DATA_REG		(0x08)
++#define SUNXI_I2C_CNTR_REG		(0x0c)
++#define SUNXI_I2C_CNTR_ASSERT_ACK		BIT(2)
++#define SUNXI_I2C_CNTR_INT_FLAG			BIT(3)
++#define SUNXI_I2C_CNTR_MASTER_STOP		BIT(4)
++#define SUNXI_I2C_CNTR_MASTER_START		BIT(5)
++#define SUNXI_I2C_CNTR_BUS_ENABLE		BIT(6)
++#define SUNXI_I2C_CNTR_INT_ENABLE		BIT(7)
++#define SUNXI_I2C_STA_REG		(0x10)
++#define SUNXI_I2C_STA_BUS_ERROR			(0x00)
++#define SUNXI_I2C_STA_START			(0x08)
++#define SUNXI_I2C_STA_START_REPEAT		(0x10)
++#define SUNXI_I2C_STA_MASTER_WADDR_ACK		(0x18)
++#define SUNXI_I2C_STA_MASTER_WADDR_NAK		(0x20)
++#define SUNXI_I2C_STA_MASTER_DATA_SENT_ACK	(0x28)
++#define SUNXI_I2C_STA_MASTER_DATA_SENT_NAK	(0x30)
++#define SUNXI_I2C_STA_MASTER_RADDR_ACK		(0x40)
++#define SUNXI_I2C_STA_MASTER_RADDR_NAK		(0x48)
++#define SUNXI_I2C_STA_MASTER_DATA_RECV_ACK	(0x50)
++#define SUNXI_I2C_STA_MASTER_DATA_RECV_NAK	(0x58)
++#define SUNXI_I2C_CCR_REG		(0x14)
++#define SUNXI_I2C_CCR_DIV_N(val)		(val & 0x3)
++#define SUNXI_I2C_CCR_DIV_M(val)		((val & 0xf) << 3)
++#define SUNXI_I2C_SRST_REG		(0x18)
++#define SUNXI_I2C_SRST_RESET			BIT(0)
++#define SUNXI_I2C_EFR_REG		(0x1c)
++#define SUNXI_I2C_LCR_REG		(0x20)
++
++#define SUNXI_I2C_DONE			BIT(0)
++#define SUNXI_I2C_ERROR			BIT(1)
++#define SUNXI_I2C_NAK			BIT(2)
++#define SUNXI_I2C_BUS_ERROR		BIT(3)
++
++struct sunxi_i2c_dev {
++	struct i2c_adapter	adapter;
++	struct clk		*clk;
++	struct device		*dev;
++	struct completion	completion;
++	unsigned int		irq;
++	void __iomem		*membase;
++
++	struct i2c_msg		*msg_cur;
++	u8			*msg_buf;
++	size_t			msg_buf_remaining;
++	unsigned int		msg_err;
++};
++
++static void sunxi_i2c_write(struct sunxi_i2c_dev *i2c_dev, u16 reg, u8 value)
++{
++	writel(value, i2c_dev->membase + reg);
++}
++
++static u32 sunxi_i2c_read(struct sunxi_i2c_dev *i2c_dev, u16 reg)
++{
++	return readl(i2c_dev->membase + reg);
++}
++
++/*
++ * This is where all the magic happens. The I2C controller works as a
++ * state machine, each state being a step in the i2c protocol, with
++ * the controller sending an interrupt at each state transition.
++ *
++ * The state we're in is stored in a register, which leads to a pretty
++ * huge switch statement, all of this in the interrupt handler...
++ */
++static irqreturn_t sunxi_i2c_handler(int irq, void *data)
++{
++	struct sunxi_i2c_dev *i2c_dev = (struct sunxi_i2c_dev *)data;
++	u32 status = sunxi_i2c_read(i2c_dev, SUNXI_I2C_CNTR_REG);
++	u32 addr, val;
++
++	if (!(status & SUNXI_I2C_CNTR_INT_FLAG))
++		return IRQ_NONE;
++
++	/* Read the current state we're in */
++	status = sunxi_i2c_read(i2c_dev, SUNXI_I2C_STA_REG);
++
++	switch (status & 0xff) {
++	/* Start condition has been transmitted */
++	case SUNXI_I2C_STA_START:
++	/* A repeated start condition has been transmitted */
++	case SUNXI_I2C_STA_START_REPEAT:
++		addr = SUNXI_I2C_ADDR_ADDR(i2c_dev->msg_cur->addr);
++
++		if (i2c_dev->msg_cur->flags & I2C_M_RD)
++			addr |= 1;
++
++		sunxi_i2c_write(i2c_dev, SUNXI_I2C_DATA_REG, addr);
++		break;
++
++	/*
++	 * Address + Write bit have been transmitted, ACK has not been
++	 * received.
++	 */
++	case SUNXI_I2C_STA_MASTER_WADDR_NAK:
++	/*
++	 * Data byte has been transmitted, ACK has not been
++	 * received
++	 */
++	case SUNXI_I2C_STA_MASTER_DATA_SENT_NAK:
++		if (!(i2c_dev->msg_cur->flags & I2C_M_IGNORE_NAK)) {
++			i2c_dev->msg_err = SUNXI_I2C_NAK;
++			goto out;
++		}
++
++	/*
++	 * Address + Write bit have been transmitted, ACK has been
++	 * received
++	 */
++	case SUNXI_I2C_STA_MASTER_WADDR_ACK:
++	/* Data byte has been transmitted, ACK has been received */
++	case SUNXI_I2C_STA_MASTER_DATA_SENT_ACK:
++		if (i2c_dev->msg_buf_remaining) {
++			sunxi_i2c_write(i2c_dev, SUNXI_I2C_DATA_REG,
++					*i2c_dev->msg_buf);
++			i2c_dev->msg_buf++;
++			i2c_dev->msg_buf_remaining--;
++			break;
++		}
++
++		if (i2c_dev->msg_buf_remaining == 0) {
++			i2c_dev->msg_err = SUNXI_I2C_DONE;
++			goto out;
++		}
++
++		break;
++
++	/*
++	 * Address + Read bit have been transmitted, ACK has not been
++	 * received
++	 */
++	case SUNXI_I2C_STA_MASTER_RADDR_NAK:
++		if (!(i2c_dev->msg_cur->flags & I2C_M_IGNORE_NAK)) {
++			i2c_dev->msg_err = SUNXI_I2C_NAK;
++			goto out;
++		}
++
++	/*
++	 * Address + Read bit have been transmitted, ACK has been
++	 * received
++	 */
++	case SUNXI_I2C_STA_MASTER_RADDR_ACK:
++		/*
++		 * We only need to send the ACK for the all the bytes
++		 * but the last one
++		 */
++		if (i2c_dev->msg_buf_remaining > 1) {
++			val = sunxi_i2c_read(i2c_dev, SUNXI_I2C_CNTR_REG);
++			sunxi_i2c_write(i2c_dev, SUNXI_I2C_CNTR_REG,
++					val | SUNXI_I2C_CNTR_ASSERT_ACK);
++		}
++
++		break;
++
++	/*
++	 * Data byte has been received, ACK has not been
++	 * transmitted
++	 */
++	case SUNXI_I2C_STA_MASTER_DATA_RECV_NAK:
++		if (i2c_dev->msg_buf_remaining == 1) {
++			val = sunxi_i2c_read(i2c_dev, SUNXI_I2C_DATA_REG);
++			*i2c_dev->msg_buf = val & 0xff;
++			i2c_dev->msg_buf_remaining--;
++			i2c_dev->msg_err = SUNXI_I2C_DONE;
++			goto out;
++		}
++
++		if (!(i2c_dev->msg_cur->flags & I2C_M_IGNORE_NAK)) {
++			i2c_dev->msg_err = SUNXI_I2C_NAK;
++			goto out;
++		}
++
++	/* Data byte has been received, ACK has been transmitted */
++	case SUNXI_I2C_STA_MASTER_DATA_RECV_ACK:
++		val = sunxi_i2c_read(i2c_dev, SUNXI_I2C_DATA_REG) & 0xff;
++		*i2c_dev->msg_buf = val;
++		i2c_dev->msg_buf++;
++		i2c_dev->msg_buf_remaining--;
++
++		/* If there's only one byte left, disable the ACK */
++		if (i2c_dev->msg_buf_remaining == 1) {
++			val = sunxi_i2c_read(i2c_dev, SUNXI_I2C_CNTR_REG);
++			sunxi_i2c_write(i2c_dev, SUNXI_I2C_CNTR_REG,
++					val & ~SUNXI_I2C_CNTR_ASSERT_ACK);
++
++		};
++
++		break;
++
++	case SUNXI_I2C_STA_BUS_ERROR:
++		i2c_dev->msg_err = SUNXI_I2C_BUS_ERROR;
++		goto out;
++
++	default:
++		i2c_dev->msg_err = SUNXI_I2C_ERROR;
++		goto out;
++	}
++
++	val = sunxi_i2c_read(i2c_dev, SUNXI_I2C_CNTR_REG);
++	sunxi_i2c_write(i2c_dev, SUNXI_I2C_CNTR_REG,
++			val & ~SUNXI_I2C_CNTR_INT_FLAG);
++
++	return IRQ_HANDLED;
++
++out:
++	val = sunxi_i2c_read(i2c_dev, SUNXI_I2C_CNTR_REG);
++	sunxi_i2c_write(i2c_dev, SUNXI_I2C_CNTR_REG,
++			val | SUNXI_I2C_CNTR_MASTER_STOP);
++
++	val = sunxi_i2c_read(i2c_dev, SUNXI_I2C_CNTR_REG);
++	sunxi_i2c_write(i2c_dev, SUNXI_I2C_CNTR_REG,
++			val & ~SUNXI_I2C_CNTR_INT_FLAG);
++
++	complete(&i2c_dev->completion);
++	return IRQ_HANDLED;
++}
++
++static int sunxi_i2c_xfer_msg(struct sunxi_i2c_dev *i2c_dev,
++			      struct i2c_msg *msg)
++{
++	int time_left;
++	u32 val;
++
++	i2c_dev->msg_cur = msg;
++	i2c_dev->msg_buf = msg->buf;
++	i2c_dev->msg_buf_remaining = msg->len;
++	i2c_dev->msg_err = 0;
++	INIT_COMPLETION(i2c_dev->completion);
++
++	val = sunxi_i2c_read(i2c_dev, SUNXI_I2C_CNTR_REG);
++	val |= SUNXI_I2C_CNTR_MASTER_START;
++	sunxi_i2c_write(i2c_dev, SUNXI_I2C_CNTR_REG, val);
++
++	time_left = wait_for_completion_timeout(&i2c_dev->completion,
++						i2c_dev->adapter.timeout);
++	if (!time_left) {
++		dev_err(i2c_dev->dev, "i2c transfer timed out\n");
++		return -ETIMEDOUT;
++	}
++
++	if (likely(i2c_dev->msg_err == SUNXI_I2C_DONE))
++		return 0;
++
++	dev_dbg(i2c_dev->dev, "i2c transfer failed: %x\n", i2c_dev->msg_err);
++
++	return -EIO;
++}
++
++static int sunxi_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
++			  int num)
++{
++	struct sunxi_i2c_dev *i2c_dev = i2c_get_adapdata(adap);
++	int i, ret;
++
++	for (i = 0; i < num; i++) {
++		ret = sunxi_i2c_xfer_msg(i2c_dev, &msgs[i]);
++		if (ret)
++			return ret;
++	}
++
++	return i;
++}
++
++static u32 sunxi_i2c_func(struct i2c_adapter *adap)
++{
++	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
++}
++
++static const struct i2c_algorithm sunxi_i2c_algo = {
++	.master_xfer	= sunxi_i2c_xfer,
++	.functionality	= sunxi_i2c_func,
++};
++
++static int sunxi_i2c_probe(struct platform_device *pdev)
++{
++	struct sunxi_i2c_dev *i2c_dev;
++	struct device_node *np;
++	u32 freq, div_m, div_n;
++	int ret;
++
++	np = pdev->dev.of_node;
++	if (!np)
++		return -EINVAL;
++
++	i2c_dev = devm_kzalloc(&pdev->dev, sizeof(*i2c_dev), GFP_KERNEL);
++	if (!i2c_dev)
++		return -ENOMEM;
++	platform_set_drvdata(pdev, i2c_dev);
++	i2c_dev->dev = &pdev->dev;
++
++	init_completion(&i2c_dev->completion);
++
++	i2c_dev->membase = of_iomap(np, 0);
++	if (!i2c_dev->membase)
++		return -EADDRNOTAVAIL;
++
++	sunxi_i2c_write(i2c_dev, SUNXI_I2C_SRST_REG, SUNXI_I2C_SRST_RESET);
++
++	i2c_dev->clk = devm_clk_get(&pdev->dev, NULL);
++	if (IS_ERR(i2c_dev->clk)) {
++		ret = PTR_ERR(i2c_dev->clk);
++		goto out_iounmap;
++	}
++	clk_prepare_enable(i2c_dev->clk);
++
++	ret = of_property_read_u32(np, "clock-frequency", &freq);
++	if (ret < 0) {
++		dev_warn(&pdev->dev, "Could not read clock-frequency property\n");
++		freq = 100000;
++	}
++
++	/*
++	 * Set the clock dividers. we don't need to be super smart
++	 * here, the datasheet defines the value of the factors for
++	 * the two supported frequencies, and only the M factor
++	 * changes between 100kHz and 400kHz.
++	 *
++	 * The bus clock is generated from the parent clock with two
++	 * different dividers. It is generated as such:
++	 *     f0 = fclk / (2 ^ DIV_N)
++	 *     fbus = f0 / (10 * (DIV_M + 1))
++	 *
++	 * With DIV_N being on 3 bits, and DIV_M on 4 bits.
++	 * So DIV_N < 8, and DIV_M < 16.
++	 *
++	 * However, we can generate both the supported frequencies
++	 * with f0 = 12MHz, and only change M to get back on our
++	 * feet.
++	 */
++	div_n = ilog2(clk_get_rate(i2c_dev->clk) / 12000000);
++	if (freq == 100000)
++		div_m = 11;
++	else if (freq == 400000)
++		div_m = 2;
++	else {
++		dev_err(&pdev->dev, "Unsupported bus frequency\n");
++		ret = -EINVAL;
++		goto out_clk_dis;
++	}
++
++	sunxi_i2c_write(i2c_dev, SUNXI_I2C_CCR_REG,
++			SUNXI_I2C_CCR_DIV_N(div_n) | SUNXI_I2C_CCR_DIV_M(div_m));
++
++	i2c_dev->irq = irq_of_parse_and_map(np, 0);
++	if (!i2c_dev->irq) {
++		dev_err(&pdev->dev, "No IRQ resource\n");
++		ret = -ENODEV;
++		goto out_clk_dis;
++	}
++
++	ret = devm_request_irq(&pdev->dev, i2c_dev->irq, sunxi_i2c_handler,
++			       IRQF_SHARED, dev_name(&pdev->dev), i2c_dev);
++	if (ret) {
++		dev_err(&pdev->dev, "Could not request IRQ\n");
++		goto out_clk_dis;
++	}
++
++	i2c_set_adapdata(&i2c_dev->adapter, i2c_dev);
++
++	i2c_dev->adapter.owner = THIS_MODULE;
++	strlcpy(i2c_dev->adapter.name, "sunxi I2C adapter",
++		sizeof(i2c_dev->adapter.name));
++	i2c_dev->adapter.algo = &sunxi_i2c_algo;
++	i2c_dev->adapter.dev.parent = &pdev->dev;
++
++	sunxi_i2c_write(i2c_dev, SUNXI_I2C_CNTR_REG,
++			SUNXI_I2C_CNTR_BUS_ENABLE | SUNXI_I2C_CNTR_INT_ENABLE);
++
++	ret = i2c_add_adapter(&i2c_dev->adapter);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to register i2c adapter\n");
++		goto out_clk_dis;
++	}
++
++	return 0;
++
++out_clk_dis:
++	clk_disable_unprepare(i2c_dev->clk);
++out_iounmap:
++	iounmap(i2c_dev->membase);
++	return ret;
++}
++
++
++static int sunxi_i2c_remove(struct platform_device *pdev)
++{
++	struct sunxi_i2c_dev *i2c_dev = platform_get_drvdata(pdev);
++
++	i2c_del_adapter(&i2c_dev->adapter);
++	clk_disable_unprepare(i2c_dev->clk);
++	iounmap(i2c_dev->membase);
++
++	return 0;
++}
++
++static const struct of_device_id sunxi_i2c_of_match[] = {
++	{ .compatible = "allwinner,sun4i-i2c" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, sunxi_i2c_of_match);
++
++static struct platform_driver sunxi_i2c_driver = {
++	.probe		= sunxi_i2c_probe,
++	.remove		= sunxi_i2c_remove,
++	.driver		= {
++		.name	= "i2c-sunxi",
++		.owner	= THIS_MODULE,
++		.of_match_table = sunxi_i2c_of_match,
++	},
++};
++module_platform_driver(sunxi_i2c_driver);
++
++MODULE_AUTHOR("Maxime Ripard <maxime.ripard@free-electrons.com");
++MODULE_DESCRIPTION("Allwinner A1X I2C bus adapter");
++MODULE_LICENSE("GPL");
+-- 
+1.8.1.2
 
-/*
- * Multi-line comment in the driver so it will be obvious information
- * to the poor souls that will later have to understand the code.
- */
-
->>> +/**
->>> + * struct tz1090_pmx - Private pinctrl data
->>> + * @dev:       Platform device
->>> + * @pctl:      Pin control device
->>> + * @regs:      Register region
->>> + * @lock:      Lock protecting coherency of pin_en, gpio_en, select_en, and
->>> + *             SELECT regs
->>> + * @pin_en:    Pins that have been enabled (32 pins packed into each element)
->>> + * @gpio_en:   GPIOs that have been enabled (32 pins packed into each element)
->>> + * @select_en: Pins that have been force seleced by pinconf (32 pins packed
->>> + *             into each element)
->>> + */
->>> +struct tz1090_pmx {
->>> +       struct device           *dev;
->>> +       struct pinctrl_dev      *pctl;
->>> +       void __iomem            *regs;
->>> +       spinlock_t              lock;
->>> +       u32                     pin_en[3];
->>> +       u32                     gpio_en[3];
->>> +       u32                     select_en[3];
->>> +};
->>
->> This looks real nice! :-)
->
-> Thanks. Is the behaviour w.r.t. gpios correct/acceptable btw?...
-> The pins default to "gpio mode" (SELECT=1, where the normal SoC
-> peripheral cannot mess with it), so these last 3 fields basically allow
-> a pin to be put in gpio mode iff:
->
-> * gpio_en: gpio is requested by gpio driver
->
-> * OR !pin_en: pin hasn't had a specific mux function enabled (where each
-> pin can be individually muxed to "default" to take it out of gpio mode).
->
-> * OR select_en: pin is force selected (pinconf select=1) in DT e.g. pin
-> is part of a mux but isn't wired up to the normal thing, e.g. a TFT pin
-> that's wired to a button.
->
-> I.e. the gpio driver can always take control of a pin even if it's been
-> muxed (e.g. allowing a driver to do a gpio bitbang bus reset).
-
-Yes this is the case with most combined drivers.
-
-(Maybe the framework isn't always as helpful as it could be,
-improvements welcome.)
-
->>> +static const char *tz1090_pinctrl_get_group_name(struct pinctrl_dev *pctldev,
->>> +                                                unsigned group)
->>> +{
->>> +       if (group < ARRAY_SIZE(tz1090_groups)) {
->>> +               /* normal pingroup */
->>> +               return tz1090_groups[group].name;
->>> +       } else {
->>> +               /* individual gpio pin pseudo-pingroup */
->>> +               unsigned int pin = group - ARRAY_SIZE(tz1090_groups);
->>> +               return tz1090_pins[pin].name;
->>
->> At this point it is pretty important that the pin has a meaningful
->> name, that is why recycling the function names for pin names
->> is not good. "spi1_dout" doesn't make very much sense for a pin
->> that is now used as GPIO, so it better be named exactly like that.
->
-> I think if the pin's actual name is "spi1_dout", and board schematics
-> always refer to that pin name, e.g. having an LED connected to
-> "spi1_dout", then it does make sense for the pin (and pingroup
-> containing only that pin) to be referred to by that name, whether it's
-> in gpio mode or doing it's normal job.
-
-Yes this is OK just checking.
-
->> That a pin named "D7" is sometimes used with function "spi1"
->> and sometimes with some conjured function like "GPIO17" makes
->> much more sense.
->
-> Are you suggesting having a function for each GPIO number that is
-> enabled by muxing?
-
-No, in your case the current scheme which matches to the
-actual pin names is much better.
-
->> (...)
->>> +static const struct cfg_param {
->>> +       const char *property;
->>> +       enum tz1090_pinconf_param param;
->>> +} cfg_params[] = {
->>> +       {"select",              TZ1090_PINCONF_PARAM_SELECT},
->>> +       {"pull",                TZ1090_PINCONF_PARAM_PULL},
->>> +       {"schmitt",             TZ1090_PINCONF_PARAM_SCHMITT},
->>> +       {"slew-rate",           TZ1090_PINCONF_PARAM_SLEW_RATE},
->>> +       {"drive-strength",      TZ1090_PINCONF_PARAM_DRIVE_STRENGTH},
->>> +};
->>
->> Almost all exist in <linux/pinctrl/pinconf-generic.h>.
->>
->> What is "select"? If you need another config parameter
->> we can just add it, but explain what it is and we can tell
->> if it fits.
->
-> select refers to the registers CR_PADS_GPIO_SELECT{0,1,2} with
-> descriptions like this:
-> Reset values: 0x3fffffc0, 0x3fffffff, 0x3fffffff
-> 29:0    CR_PADS_GPIO_SEL0       GPIO select (1 bit per GPIO pin)
->                                 0 = serial interface
->                                 1 = GPIO interface
->                                 [29] SCB1_SCLK
->                                 (etc)
->
-> PARAM_GPIO may be a better name (select seems to have just stuck from
-> when the original gpio driver was written 3 years ago), although it
-> should be noted that the gpio system still has to enable it too, so it's
-> really about taking it out of the "serial interface" so that the
-> connected SoC peripheral cannot mess with it (1) by default (2) if it's
-> not connected to what the peripheral would expect, e.g. controlling
-> board power!
-
-The GPIO select should not be visible to the outside like this,
-as it is a particular bit that should only be set on request from the
-GPIO framework.
-
-If what you need is to set the pin into "GPIO mode" to drive it
-to some default state then from pinconf-generic.h you should use
-one of the existing defines like PIN_CONFIG_OUTPUT
-to actively drive it to high or low as default, or
-PIN_CONFIG_BIAS_HIGH_IMPEDANCE for some default
-GPIO input mode.
-
-Read the new section named "GPIO mode pitfalls" in
-Documentation/pinctrl.txt
-
->> (...)
->>> +/**
->>> + * tz1090_pinctrl_serial_select() - enable/disable serial interface for a pin
->>> + * @pmx:               Pinmux data
->>> + * @pin:               Pin number
->>> + * @gpio_select:       1 to enable serial interface (devices) when not GPIO,
->>> + *                     0 to leave pin in GPIO mode
->>> + *
->>> + * Records that serial usage is enabled/disabled so that SELECT register can be
->>> + * set appropriately when GPIO is disabled.
->>> + */
->>
->> Serial? Is that to be interpreted as something connected in series
->> with the pin so it means we mux in some other signal
->> than what the GPIO driver stage drives or so?
->
-> Something like that. It's from the CR_PADS_GPIO_SELECT0 register
-> description where each bit can be:
-> "0 = serial interface" (connect pin to the named peripheral signal such
-> as SCB1's SCLK (SCB is I2C controller))
-> "1 = GPIO interface" (other gpio registers control it).
->
-> I've confused more than once over why it's named so confusingly several
-> times (it sounds more like it's referring to uart than just "some SoC
-> peripheral").
-
-OK I get it, write some smallish blurb about the above in the kerneldoc
-right there.
-
-Consider renaming this function like tz1090_pinctrl_mux_pin_to_peripheral()
-which sort of tells what it does.
-
->> (...)
->>> +/**
->>> + * tz1090_pinctrl_force_select() - enable/disable force gpio select for a pin
->>> + * @pmx:               Pinmux data
->>> + * @pin:               Pin number
->>> + * @gpio_select:       1 to force GPIO select,
->>> + *                     0 to unforce GPIO select
->>> + *
->>> + * Records that the GPIO is force selected and serial interface shouldn't be
->>> + * enabled.
->>> + */
->>
->> What is the "force" in this? What is it forcing away?
->
-> It's sort of the opposite of tz1090_pinctrl_serial_select and overrides
-> it. E.g. as per the gpio behaviour described above, you might have:
-> "spi1" pin group (containing "spi1_dout"), mux to function "spi1", which
-> automatically calls tz1090_pinctrl_serial_select() for each pin.
-> "spi1_dout" pinconf select=1, which calls tz1090_pinctrl_force_select().
->
-> We want the pin to be in gpio mode as long as that select=1
-> configuration is in place, or the spi controller may mess with it.
->
-> The alternative is to explicitly need to pinconf select=0 on any used
-> pins. Enabling the function "default" on them instead seemed much nicer
-> and told the pinctrl system that the pin was in use.
-
-By the same standards as above consider renaming this function
-to tz1090_pinctrl_mux_pin_to_gpio().
-
->>> +static int tz1090_pinctrl_enable(struct pinctrl_dev *pctldev, unsigned function,
->>> +                                unsigned group)
->>> +{
->>> +       struct tz1090_pmx *pmx = pinctrl_dev_get_drvdata(pctldev);
->>> +       const struct tz1090_pingroup *grp;
->>> +       int ret;
->>> +       const unsigned int *pit;
->>> +       unsigned int i, pin;
->>> +
->>> +       if (group >= ARRAY_SIZE(tz1090_groups)) {
->>> +               pin = group - ARRAY_SIZE(tz1090_groups);
->>> +               dev_dbg(pctldev->dev, "%s(func=%u (%s), pin=%u (%s))\n",
->>> +                       __func__,
->>> +                       function, tz1090_functions[function].name,
->>> +                       pin,
->>> +                       tz1090_pins[pin].name);
->>> +
->>> +               /* no muxing necessary */
->>> +               if (function != TZ1090_MUX_DEFAULT)
->>> +                       return -EINVAL;
->>> +               tz1090_pinctrl_serial_select(pmx, pin, 1);
->>> +               return 0;
->>> +       }
->>> +
->>> +       grp = &tz1090_groups[group];
->>> +       dev_dbg(pctldev->dev, "%s(func=%u (%s), group=%u (%s))\n",
->>> +               __func__,
->>> +               function, tz1090_functions[function].name,
->>> +               group, grp->name);
->>> +
->>> +       ret = tz1090_pinctrl_enable_mux(pmx, &grp->mux, function);
->>> +       if (ret)
->>> +               return ret;
->>> +
->>> +       /* set up each pin in group to serial interface */
->>> +       for (i = 0, pit = grp->pins; i < grp->npins; ++i, ++pit)
->>> +               tz1090_pinctrl_serial_select(pmx, *pit, 1);
->>> +
->>> +       return 0;
->>> +}
->>
->> OK now I sort of understand serial too ... so you program the
->> mux to shunt in a certain peripheral and then do serial selection
->> to connect the selected signal in series with the pin. Correct?
->
-> Yes, that's how I understand it
-
-By renaming the functions per above, everything becomes much
-clearer and less obscure.
-
->>> +enum tz1090_pinconf_pull {
->>> +       TZ1090_PINCONF_PULL_TRISTATE,
->>> +       TZ1090_PINCONF_PULL_UP,
->>> +       TZ1090_PINCONF_PULL_DOWN,
->>> +       TZ1090_PINCONF_PULL_REPEATER,
->>> +};
->>
->> Compare:
->>  * @PIN_CONFIG_BIAS_HIGH_IMPEDANCE: the pin will be set to a high impedance
->>  *      mode, also know as "third-state" (tristate) or "high-Z" or "floating".
->>  *      On output pins this effectively disconnects the pin, which is useful
->>  *      if for example some other pin is going to drive the signal connected
->>  *      to it for a while. Pins used for input are usually always high
->>  *      impedance.
->>  * @PIN_CONFIG_BIAS_PULL_UP: the pin will be pulled up (usually with high
->>  *      impedance to VDD). If the argument is != 0 pull-up is enabled,
->>  *      if it is 0, pull-up is disabled.
->>  * @PIN_CONFIG_BIAS_PULL_DOWN: the pin will be pulled down (usually with high
->>  *      impedance to GROUND). If the argument is != 0 pull-down is enabled,
->>  *      if it is 0, pull-down is disabled.
->>
->> What is "repeater"?
->
-> This is described in the pads datasheet as "Repeater (Bus keeper)", also
-> known as a bus holder, which means that it keeps the last value driven
-> on a tri-state bus, so if the other end pulls it high and then goes
-> tristate it stays high, and same for low.
-
-Hm that's a pretty cool thing! I suggest you add a new #define
-in very general terms describing the above to pinconf-generic.h
-and use that.
-
-Something like PIN_CONFIG_BIAS_REPEATER right below
-HIGH_IMPEDANCE, as it is closely related and obviously
-a biasing option.
-
-Yours,
-Linus Walleij
