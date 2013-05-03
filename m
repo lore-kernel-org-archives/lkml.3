@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933117Ab3ECGgo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:36:44 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:22767 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932967Ab3ECGgm (ORCPT
+	id S933137Ab3ECGhA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:37:00 -0400
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:30216
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932264Ab3ECGfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:36:42 -0400
-X-AuditID: cbfee68f-b7f066d000003683-1e-51835af973c6
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 33/42] rtc: rtc-sh: remove unnecessary platform_set_drvdata()
-Date: Fri, 03 May 2013 15:36:41 +0900
-Message-id: <002f01ce47c8$9265a7d0$b730f770$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5HyJFAZVbkzZZ+T5e+yG/6H4c/KQ==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zA92fUc2BBh+mqVksuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
-	WqRvl8CV0fT0N1vBDLaKtfMnszcw9rJ2MXJySAiYSPze/5cdwhaTuHBvPVsXIxeHkMAyRolt
-	yz8zwxStm9MHZgsJLGKU+H5DCqLoF6PEy9YfjCAJNgE1iS9fDgNN4uAQEdCXaGvRAKlhFuhm
-	lHjUPBesWVjAV2JJ3yGwbSwCqhJ7Jp8Fi/MKWEpM2fmADcIWlPgx+R4LiM0soCWxfudxJghb
-	XmLzmrdQBylI7Dj7GmyviICexNn9bxkhakQk9r14xwhRc4hdYu0nX4hdAhLfJh9iAblNQkBW
-	YtMBqDGSEgdX3GCZwCg2C8nmWUg2z0KyeRaSDQsYWVYxiqYWJBcUJ6UXGesVJ+YWl+al6yXn
-	525ihERe/w7GuwesDzEmA62fyCwlmpwPjNy8knhDYzMjC1MTU2Mjc0sz0oSVxHnVWqwDhQTS
-	E0tSs1NTC1KL4otKc1KLDzEycXBKNTAqrb29MO+x6ObU2JWds/WD9+90L6gSEWbxXLs7e1Xd
-	tTWHn119V77r7JTmLwd/fntw1jPk1Nen6oqnw7tFxMJDFxn5PuLgNAlMfmSV3nHY0Pz54dnP
-	shX+xzc9ela+ahPT+6UB88+dep19NMD9yWxZT9/8Yo/nX1Zs/+0tpKvWlMh05XXb/rN8SizF
-	GYmGWsxFxYkAdSzqh9ICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd2fUc2BBrceKVksuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
-	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
-	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmNH09DdbwQy2irXzJ7M3MPaydjFyckgImEis
-	m9PHDGGLSVy4t54NxBYSWMQo8f2GVBcjF5D9i1HiZesPRpAEm4CaxJcvh9m7GDk4RAT0Jdpa
-	NEBqmAW6GSUeNc8FGyQs4CuxpO8QO4jNIqAqsWfyWbA4r4ClxJSdD9ggbEGJH5PvsYDYzAJa
-	Eut3HmeCsOUlNq95C3WQgsSOs6/B9ooI6Emc3f+WEaJGRGLfi3eMExgFZiEZNQvJqFlIRs1C
-	0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnBkP5PewbiqweIQowAHoxIPr0JLU6AQ
-	a2JZcWXuIUYJDmYlEV63H0Ah3pTEyqrUovz4otKc1OJDjMlAn05klhJNzgcmnbySeENjEzMj
-	SyMzCyMTc3PShJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi4JRqYCzUibm8t8/R8+yMFzbPvwgu
-	mbtircQJj3czVtiFv/+sN7fqSNOWPYqiunWsM+NE63mSTvv+Z/m0xzM+eJfpnC+a9taVE39q
-	p20y757o6N/kJ5eSq1x2YLWSXe2Zp7L+U7+FlEvY9YVZeRjpzPwQ9FD0ZdYFxkPzuy8qb/Hl
-	7zNj9D7knfb4ihJLcUaioRZzUXEiAI/0e1IwAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 3 May 2013 02:35:17 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+From: Huang Shijie <b32955@freescale.com>
+To: <dwmw2@infradead.org>
+CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Huang Shijie <b32955@freescale.com>
+Subject: [PATCH 2/4] mtd: add a new sys node to show the ecc step size
+Date: Fri, 3 May 2013 14:21:42 +0800
+Message-ID: <1367562104-8955-3-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1367562104-8955-1-git-send-email-b32955@freescale.com>
+References: <1367562104-8955-1-git-send-email-b32955@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver core clears the driver data to NULL after device_release
-or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
-(device-core: Ensure drvdata = NULL when no driver is bound).
-Thus, it is not needed to manually clear the device driver data to NULL.
+Add a new sys node to show the ecc step size.
+The application then can uses this node to get the ecc step
+size.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Huang Shijie <b32955@freescale.com>
 ---
- drivers/rtc/rtc-sh.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/mtd/mtdcore.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/rtc/rtc-sh.c b/drivers/rtc/rtc-sh.c
-index 8d5bd2e..cb2f839 100644
---- a/drivers/rtc/rtc-sh.c
-+++ b/drivers/rtc/rtc-sh.c
-@@ -770,8 +770,6 @@ static int __exit sh_rtc_remove(struct platform_device *pdev)
- 	clk_disable(rtc->clk);
- 	clk_put(rtc->clk);
+diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
+index e513fc4..2ed2827 100644
+--- a/drivers/mtd/mtdcore.c
++++ b/drivers/mtd/mtdcore.c
+@@ -287,6 +287,16 @@ static DEVICE_ATTR(bitflip_threshold, S_IRUGO | S_IWUSR,
+ 		   mtd_bitflip_threshold_show,
+ 		   mtd_bitflip_threshold_store);
  
--	platform_set_drvdata(pdev, NULL);
--
- 	kfree(rtc);
- 
- 	return 0;
++static ssize_t mtd_ecc_size_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct mtd_info *mtd = dev_get_drvdata(dev);
++
++	return snprintf(buf, PAGE_SIZE, "%lu\n", (unsigned long)mtd->ecc_size);
++
++}
++static DEVICE_ATTR(ecc_size, S_IRUGO, mtd_ecc_size_show, NULL);
++
+ static struct attribute *mtd_attrs[] = {
+ 	&dev_attr_type.attr,
+ 	&dev_attr_flags.attr,
+@@ -298,6 +308,7 @@ static struct attribute *mtd_attrs[] = {
+ 	&dev_attr_numeraseregions.attr,
+ 	&dev_attr_name.attr,
+ 	&dev_attr_ecc_strength.attr,
++	&dev_attr_ecc_size.attr,
+ 	&dev_attr_bitflip_threshold.attr,
+ 	NULL,
+ };
 -- 
-1.7.2.5
+1.7.1
 
 
