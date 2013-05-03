@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761825Ab3ECMU0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 08:20:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41300 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761377Ab3ECMUX (ORCPT
+	id S1762010Ab3ECMUl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 08:20:41 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:47110
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761576Ab3ECMUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 08:20:23 -0400
-Message-Id: <20130503121256.083340271@chello.nl>
+	Fri, 3 May 2013 08:20:25 -0400
+Message-Id: <20130503121256.230745028@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Fri, 03 May 2013 14:11:23 +0200
+Date: Fri, 03 May 2013 14:11:25 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, eranian@google.com,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 1/3] perf, x86: Blacklist all MEM_*_RETIRED events for IVB
+Subject: [PATCH 3/3] perf, x86, lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
 References: <20130503121122.931661809@chello.nl>
-Content-Disposition: inline; filename=peterz-perf-x86-ivb-mem-retired.patch
+Content-Disposition: inline; filename=peterz-perf-x86-lbr-priv.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Errata BV98 states that all MEM_*_RETIRED events corrupt the counter
-value of the SMT sibling's counters. Blacklist these events
+We should always have proper privileges when requesting kernel data.
 
+Cc: Andi Kleen <ak@linux.intel.com>
 Cc: eranian@google.com
-Reported-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-jwra43mujrv1oq9xk6mfe57v@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -128,10 +128,15 @@ static struct event_constraint intel_ivb
- 	INTEL_UEVENT_CONSTRAINT(0x08a3, 0x4), /* CYCLE_ACTIVITY.CYCLES_L1D_PENDING */
- 	INTEL_UEVENT_CONSTRAINT(0x0ca3, 0x4), /* CYCLE_ACTIVITY.STALLS_L1D_PENDING */
- 	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
--	INTEL_EVENT_CONSTRAINT(0xd0, 0xf), /* MEM_UOPS_RETIRED.* */
--	INTEL_EVENT_CONSTRAINT(0xd1, 0xf), /* MEM_LOAD_UOPS_RETIRED.* */
--	INTEL_EVENT_CONSTRAINT(0xd2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
--	INTEL_EVENT_CONSTRAINT(0xd3, 0xf), /*  MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
-+	/*
-+	 * Errata BV98 -- MEM_*_RETIRED events can leak between counters of SMT
-+	 * siblings; disable these events because they can corrupt unrelated
-+	 * counters.
-+	 */
-+	INTEL_EVENT_CONSTRAINT(0xd0, 0x0), /* MEM_UOPS_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xd1, 0x0), /* MEM_LOAD_UOPS_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xd2, 0x0), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xd3, 0x0), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
- 	EVENT_CONSTRAINT_END
- };
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -318,8 +318,11 @@ static void intel_pmu_setup_sw_lbr_filte
+ 	if (br_type & PERF_SAMPLE_BRANCH_USER)
+ 		mask |= X86_BR_USER;
+ 
+-	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
++	if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
++		if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
++			return -EACCES;
+ 		mask |= X86_BR_KERNEL;
++	}
+ 
+ 	/* we ignore BRANCH_HV here */
  
 
 
