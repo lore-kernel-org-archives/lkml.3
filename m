@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934029Ab3ECOhT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:37:19 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:63322 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933922Ab3ECOf3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933932Ab3ECOf3 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 3 May 2013 10:35:29 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:56001 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933723Ab3ECOfU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 10:35:20 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 58/63] dmaengine: ste_dma40: Convert data_width from register bit format to value
-Date: Fri,  3 May 2013 15:32:44 +0100
-Message-Id: <1367591569-32197-59-git-send-email-lee.jones@linaro.org>
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 53/63] dmaengine: ste_dma40: Use the BIT macro to replace ugly '(1 << x)'s
+Date: Fri,  3 May 2013 15:32:39 +0100
+Message-Id: <1367591569-32197-54-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
 References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
@@ -23,348 +21,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a DMA client requests and configures a DMA channel, it requests
-data_width in Bytes. The DMA40 driver then swiftly converts it over to
-the necessary register bit value. Unfortunately, for any subsequent
-calculations we have to shift '1' by the bit pattern (1 << data_width)
-times to make any sense of it.
+The aim is to make the code that little more readable.
 
-This patch flips the semantics on its head and only converts the value
-to its respective register bit pattern when writing to registers. This
-way we can use the true data_width (in Bytes) value.
-
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <djbw@fb.com>
-Cc: Per Forlin <per.forlin@stericsson.com>
-Cc: Rabin Vincent <rabin@rab.in>
+Acked-by: Vinod Koul <vnod.koul@intel.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/dma/ste_dma40.c                     |   63 +++++++++++----------------
- drivers/dma/ste_dma40_ll.c                  |   43 ++++++++++++------
- include/linux/platform_data/dma-ste-dma40.h |    9 +---
- sound/soc/ux500/ux500_pcm.c                 |   10 ++---
- 4 files changed, 60 insertions(+), 65 deletions(-)
+ drivers/dma/ste_dma40.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 78aeaa7..552a534 100644
+index 555d851..8e7fa9d 100644
 --- a/drivers/dma/ste_dma40.c
 +++ b/drivers/dma/ste_dma40.c
-@@ -66,11 +66,11 @@ struct stedma40_chan_cfg dma40_memcpy_conf_phy = {
- 	.mode = STEDMA40_MODE_PHYSICAL,
- 	.dir = DMA_MEM_TO_MEM,
+@@ -54,8 +54,8 @@
+ #define MAX_LCLA_ALLOC_ATTEMPTS 256
  
--	.src_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.src_info.data_width = DMA_SLAVE_BUSWIDTH_1_BYTE,
- 	.src_info.psize = STEDMA40_PSIZE_PHY_1,
- 	.src_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
+ /* Bit markings for allocation map */
+-#define D40_ALLOC_FREE		(1 << 31)
+-#define D40_ALLOC_PHY		(1 << 30)
++#define D40_ALLOC_FREE		BIT(31)
++#define D40_ALLOC_PHY		BIT(30)
+ #define D40_ALLOC_LOG_FREE	0
  
--	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.dst_info.data_width = DMA_SLAVE_BUSWIDTH_1_BYTE,
- 	.dst_info.psize = STEDMA40_PSIZE_PHY_1,
- 	.dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
- };
-@@ -80,11 +80,11 @@ struct stedma40_chan_cfg dma40_memcpy_conf_log = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = DMA_MEM_TO_MEM,
+ /* Reserved event lines for memcpy only. */
+@@ -1724,7 +1724,7 @@ static irqreturn_t d40_handle_interrupt(int irq, void *data)
+ 		}
  
--	.src_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.src_info.data_width = DMA_SLAVE_BUSWIDTH_1_BYTE,
- 	.src_info.psize = STEDMA40_PSIZE_LOG_1,
- 	.src_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
+ 		/* ACK interrupt */
+-		writel(1 << idx, base->virtbase + il[row].clr);
++		writel(BIT(idx), base->virtbase + il[row].clr);
  
--	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.dst_info.data_width = DMA_SLAVE_BUSWIDTH_1_BYTE,
- 	.dst_info.psize = STEDMA40_PSIZE_LOG_1,
- 	.dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
- };
-@@ -991,20 +991,21 @@ static int d40_psize_2_burst_size(bool is_log, int psize)
+ 		spin_lock(&d40c->lock);
  
- /*
-  * The dma only supports transmitting packages up to
-- * STEDMA40_MAX_SEG_SIZE << data_width. Calculate the total number of
-- * dma elements required to send the entire sg list
-+ * STEDMA40_MAX_SEG_SIZE * data_width, where data_width is stored in Bytes.
-+ *
-+ * Calculate the total number of dma elements required to send the entire sg list.
-  */
- static int d40_size_2_dmalen(int size, u32 data_width1, u32 data_width2)
- {
- 	int dmalen;
- 	u32 max_w = max(data_width1, data_width2);
- 	u32 min_w = min(data_width1, data_width2);
--	u32 seg_max = ALIGN(STEDMA40_MAX_SEG_SIZE << min_w, 1 << max_w);
-+	u32 seg_max = ALIGN(STEDMA40_MAX_SEG_SIZE * min_w, max_w);
+@@ -1814,8 +1814,8 @@ static bool d40_alloc_mask_set(struct d40_phy_res *phy,
+ 		if (phy->allocated_src == D40_ALLOC_FREE)
+ 			phy->allocated_src = D40_ALLOC_LOG_FREE;
  
- 	if (seg_max > STEDMA40_MAX_SEG_SIZE)
--		seg_max -= (1 << max_w);
-+		seg_max -= max_w;
+-		if (!(phy->allocated_src & (1 << log_event_line))) {
+-			phy->allocated_src |= 1 << log_event_line;
++		if (!(phy->allocated_src & BIT(log_event_line))) {
++			phy->allocated_src |= BIT(log_event_line);
+ 			goto found;
+ 		} else
+ 			goto not_found;
+@@ -1826,8 +1826,8 @@ static bool d40_alloc_mask_set(struct d40_phy_res *phy,
+ 		if (phy->allocated_dst == D40_ALLOC_FREE)
+ 			phy->allocated_dst = D40_ALLOC_LOG_FREE;
  
--	if (!IS_ALIGNED(size, 1 << max_w))
-+	if (!IS_ALIGNED(size, max_w))
- 		return -EINVAL;
+-		if (!(phy->allocated_dst & (1 << log_event_line))) {
+-			phy->allocated_dst |= 1 << log_event_line;
++		if (!(phy->allocated_dst & BIT(log_event_line))) {
++			phy->allocated_dst |= BIT(log_event_line);
+ 			goto found;
+ 		} else
+ 			goto not_found;
+@@ -1857,11 +1857,11 @@ static bool d40_alloc_mask_free(struct d40_phy_res *phy, bool is_src,
  
- 	if (size <= seg_max)
-@@ -1450,7 +1451,7 @@ static u32 d40_residue(struct d40_chan *d40c)
- 			  >> D40_SREG_ELEM_PHY_ECNT_POS;
+ 	/* Logical channel */
+ 	if (is_src) {
+-		phy->allocated_src &= ~(1 << log_event_line);
++		phy->allocated_src &= ~BIT(log_event_line);
+ 		if (phy->allocated_src == D40_ALLOC_LOG_FREE)
+ 			phy->allocated_src = D40_ALLOC_FREE;
+ 	} else {
+-		phy->allocated_dst &= ~(1 << log_event_line);
++		phy->allocated_dst &= ~BIT(log_event_line);
+ 		if (phy->allocated_dst == D40_ALLOC_LOG_FREE)
+ 			phy->allocated_dst = D40_ALLOC_FREE;
  	}
+@@ -2342,7 +2342,7 @@ static void __d40_set_prio_rt(struct d40_chan *d40c, int dev_type, bool src)
+ 	u32 rtreg;
+ 	u32 event = D40_TYPE_TO_EVENT(dev_type);
+ 	u32 group = D40_TYPE_TO_GROUP(dev_type);
+-	u32 bit = 1 << event;
++	u32 bit = BIT(event);
+ 	u32 prioreg;
+ 	struct d40_gen_dmac *dmac = &d40c->base->gen_dmac;
  
--	return num_elt * (1 << d40c->dma_cfg.dst_info.data_width);
-+	return num_elt * d40c->dma_cfg.dst_info.data_width;
- }
- 
- static bool d40_tx_is_linked(struct d40_chan *d40c)
-@@ -1770,9 +1771,9 @@ static int d40_validate_conf(struct d40_chan *d40c,
- 	}
- 
- 	if (d40_psize_2_burst_size(is_log, conf->src_info.psize) *
--	    (1 << conf->src_info.data_width) !=
-+	    conf->src_info.data_width !=
- 	    d40_psize_2_burst_size(is_log, conf->dst_info.psize) *
--	    (1 << conf->dst_info.data_width)) {
-+	    conf->dst_info.data_width) {
- 		/*
- 		 * The DMAC hardware only supports
- 		 * src (burst x width) == dst (burst x width)
-@@ -2659,33 +2660,10 @@ static void d40_terminate_all(struct dma_chan *chan)
- static int
- dma40_config_to_halfchannel(struct d40_chan *d40c,
- 			    struct stedma40_half_channel_info *info,
--			    enum dma_slave_buswidth width,
- 			    u32 maxburst)
- {
--	enum stedma40_periph_data_width addr_width;
- 	int psize;
- 
--	switch (width) {
--	case DMA_SLAVE_BUSWIDTH_1_BYTE:
--		addr_width = STEDMA40_BYTE_WIDTH;
--		break;
--	case DMA_SLAVE_BUSWIDTH_2_BYTES:
--		addr_width = STEDMA40_HALFWORD_WIDTH;
--		break;
--	case DMA_SLAVE_BUSWIDTH_4_BYTES:
--		addr_width = STEDMA40_WORD_WIDTH;
--		break;
--	case DMA_SLAVE_BUSWIDTH_8_BYTES:
--		addr_width = STEDMA40_DOUBLEWORD_WIDTH;
--		break;
--	default:
--		dev_err(d40c->base->dev,
--			"illegal peripheral address width "
--			"requested (%d)\n",
--			width);
--		return -EINVAL;
--	}
--
- 	if (chan_is_logical(d40c)) {
- 		if (maxburst >= 16)
- 			psize = STEDMA40_PSIZE_LOG_16;
-@@ -2706,7 +2684,6 @@ dma40_config_to_halfchannel(struct d40_chan *d40c,
- 			psize = STEDMA40_PSIZE_PHY_1;
- 	}
- 
--	info->data_width = addr_width;
- 	info->psize = psize;
- 	info->flow_ctrl = STEDMA40_NO_FLOW_CTRL;
- 
-@@ -2790,14 +2767,24 @@ static int d40_set_runtime_config(struct dma_chan *chan,
- 		src_maxburst = dst_maxburst * dst_addr_width / src_addr_width;
- 	}
- 
-+	/* Only valid widths are; 1, 2, 4 and 8. */
-+	if (src_addr_width <= DMA_SLAVE_BUSWIDTH_UNDEFINED ||
-+	    src_addr_width >  DMA_SLAVE_BUSWIDTH_8_BYTES   ||
-+	    dst_addr_width <= DMA_SLAVE_BUSWIDTH_UNDEFINED ||
-+	    dst_addr_width >  DMA_SLAVE_BUSWIDTH_8_BYTES   ||
-+	    ((src_addr_width > 1) && (src_addr_width & 1)) ||
-+	    ((dst_addr_width > 1) && (dst_addr_width & 1)))
-+		return -EINVAL;
-+
-+	cfg->src_info.data_width = src_addr_width;
-+	cfg->dst_info.data_width = dst_addr_width;
-+
- 	ret = dma40_config_to_halfchannel(d40c, &cfg->src_info,
--					  src_addr_width,
- 					  src_maxburst);
- 	if (ret)
- 		return ret;
- 
- 	ret = dma40_config_to_halfchannel(d40c, &cfg->dst_info,
--					  dst_addr_width,
- 					  dst_maxburst);
- 	if (ret)
- 		return ret;
-diff --git a/drivers/dma/ste_dma40_ll.c b/drivers/dma/ste_dma40_ll.c
-index 5ddd724..a035dfe 100644
---- a/drivers/dma/ste_dma40_ll.c
-+++ b/drivers/dma/ste_dma40_ll.c
-@@ -10,6 +10,18 @@
- 
- #include "ste_dma40_ll.h"
- 
-+u8 d40_width_to_bits(enum dma_slave_buswidth width)
-+{
-+	if (width == DMA_SLAVE_BUSWIDTH_1_BYTE)
-+		return STEDMA40_ESIZE_8_BIT;
-+	else if (width == DMA_SLAVE_BUSWIDTH_2_BYTES)
-+		return STEDMA40_ESIZE_16_BIT;
-+	else if (width == DMA_SLAVE_BUSWIDTH_8_BYTES)
-+		return STEDMA40_ESIZE_64_BIT;
-+	else
-+		return STEDMA40_ESIZE_32_BIT;
-+}
-+
- /* Sets up proper LCSP1 and LCSP3 register for a logical channel */
- void d40_log_cfg(struct stedma40_chan_cfg *cfg,
- 		 u32 *lcsp1, u32 *lcsp3)
-@@ -39,11 +51,13 @@ void d40_log_cfg(struct stedma40_chan_cfg *cfg,
- 
- 	l3 |= BIT(D40_MEM_LCSP3_DCFG_EIM_POS);
- 	l3 |= cfg->dst_info.psize << D40_MEM_LCSP3_DCFG_PSIZE_POS;
--	l3 |= cfg->dst_info.data_width << D40_MEM_LCSP3_DCFG_ESIZE_POS;
-+	l3 |= d40_width_to_bits(cfg->dst_info.data_width)
-+		<< D40_MEM_LCSP3_DCFG_ESIZE_POS;
- 
- 	l1 |= BIT(D40_MEM_LCSP1_SCFG_EIM_POS);
- 	l1 |= cfg->src_info.psize << D40_MEM_LCSP1_SCFG_PSIZE_POS;
--	l1 |= cfg->src_info.data_width << D40_MEM_LCSP1_SCFG_ESIZE_POS;
-+	l1 |= d40_width_to_bits(cfg->src_info.data_width)
-+		<< D40_MEM_LCSP1_SCFG_ESIZE_POS;
- 
- 	*lcsp1 = l1;
- 	*lcsp3 = l3;
-@@ -95,8 +109,10 @@ void d40_phy_cfg(struct stedma40_chan_cfg *cfg, u32 *src_cfg, u32 *dst_cfg)
- 	}
- 
- 	/* Element size */
--	src |= cfg->src_info.data_width << D40_SREG_CFG_ESIZE_POS;
--	dst |= cfg->dst_info.data_width << D40_SREG_CFG_ESIZE_POS;
-+	src |= d40_width_to_bits(cfg->src_info.data_width)
-+		<< D40_SREG_CFG_ESIZE_POS;
-+	dst |= d40_width_to_bits(cfg->dst_info.data_width)
-+		<< D40_SREG_CFG_ESIZE_POS;
- 
- 	/* Set the priority bit to high for the physical channel */
- 	if (cfg->high_priority) {
-@@ -133,23 +149,22 @@ static int d40_phy_fill_lli(struct d40_phy_lli *lli,
- 		num_elems = 2 << psize;
- 
- 	/* Must be aligned */
--	if (!IS_ALIGNED(data, 0x1 << data_width))
-+	if (!IS_ALIGNED(data, data_width))
- 		return -EINVAL;
- 
- 	/* Transfer size can't be smaller than (num_elms * elem_size) */
--	if (data_size < num_elems * (0x1 << data_width))
-+	if (data_size < num_elems * data_width)
- 		return -EINVAL;
- 
- 	/* The number of elements. IE now many chunks */
--	lli->reg_elt = (data_size >> data_width) << D40_SREG_ELEM_PHY_ECNT_POS;
-+	lli->reg_elt = (data_size / data_width) << D40_SREG_ELEM_PHY_ECNT_POS;
- 
- 	/*
- 	 * Distance to next element sized entry.
- 	 * Usually the size of the element unless you want gaps.
- 	 */
- 	if (addr_inc)
--		lli->reg_elt |= (0x1 << data_width) <<
--			D40_SREG_ELEM_PHY_EIDX_POS;
-+		lli->reg_elt |= data_width << D40_SREG_ELEM_PHY_EIDX_POS;
- 
- 	/* Where the data is */
- 	lli->reg_ptr = data;
-@@ -177,16 +192,16 @@ static int d40_seg_size(int size, int data_width1, int data_width2)
- {
- 	u32 max_w = max(data_width1, data_width2);
- 	u32 min_w = min(data_width1, data_width2);
--	u32 seg_max = ALIGN(STEDMA40_MAX_SEG_SIZE << min_w, 1 << max_w);
-+	u32 seg_max = ALIGN(STEDMA40_MAX_SEG_SIZE * min_w, max_w);
- 
- 	if (seg_max > STEDMA40_MAX_SEG_SIZE)
--		seg_max -= (1 << max_w);
-+		seg_max -= max_w;
- 
- 	if (size <= seg_max)
- 		return size;
- 
- 	if (size <= 2 * seg_max)
--		return ALIGN(size / 2, 1 << max_w);
-+		return ALIGN(size / 2, max_w);
- 
- 	return seg_max;
- }
-@@ -352,10 +367,10 @@ static void d40_log_fill_lli(struct d40_log_lli *lli,
- 	lli->lcsp13 = reg_cfg;
- 
- 	/* The number of elements to transfer */
--	lli->lcsp02 = ((data_size >> data_width) <<
-+	lli->lcsp02 = ((data_size / data_width) <<
- 		       D40_MEM_LCSP0_ECNT_POS) & D40_MEM_LCSP0_ECNT_MASK;
- 
--	BUG_ON((data_size >> data_width) > STEDMA40_MAX_SEG_SIZE);
-+	BUG_ON((data_size / data_width) > STEDMA40_MAX_SEG_SIZE);
- 
- 	/* 16 LSBs address of the current element */
- 	lli->lcsp02 |= data & D40_MEM_LCSP0_SPTR_MASK;
-diff --git a/include/linux/platform_data/dma-ste-dma40.h b/include/linux/platform_data/dma-ste-dma40.h
-index 54ddca6..ceba6dc 100644
---- a/include/linux/platform_data/dma-ste-dma40.h
-+++ b/include/linux/platform_data/dma-ste-dma40.h
-@@ -70,13 +70,6 @@ enum stedma40_flow_ctrl {
- 	STEDMA40_FLOW_CTRL,
- };
- 
--enum stedma40_periph_data_width {
--	STEDMA40_BYTE_WIDTH = STEDMA40_ESIZE_8_BIT,
--	STEDMA40_HALFWORD_WIDTH = STEDMA40_ESIZE_16_BIT,
--	STEDMA40_WORD_WIDTH = STEDMA40_ESIZE_32_BIT,
--	STEDMA40_DOUBLEWORD_WIDTH = STEDMA40_ESIZE_64_BIT
--};
--
- /**
-  * struct stedma40_half_channel_info - dst/src channel configuration
-  *
-@@ -87,7 +80,7 @@ enum stedma40_periph_data_width {
-  */
- struct stedma40_half_channel_info {
- 	bool big_endian;
--	enum stedma40_periph_data_width data_width;
-+	enum dma_slave_buswidth data_width;
- 	int psize;
- 	enum stedma40_flow_ctrl flow_ctrl;
- };
-diff --git a/sound/soc/ux500/ux500_pcm.c b/sound/soc/ux500/ux500_pcm.c
-index 846fa82..b897733 100644
---- a/sound/soc/ux500/ux500_pcm.c
-+++ b/sound/soc/ux500/ux500_pcm.c
-@@ -125,21 +125,21 @@ static int ux500_pcm_open(struct snd_pcm_substream *substream)
- 	runtime->hw = (stream_id == SNDRV_PCM_STREAM_PLAYBACK) ?
- 		ux500_pcm_hw_playback : ux500_pcm_hw_capture;
- 
--	mem_data_width = STEDMA40_HALFWORD_WIDTH;
-+	mem_data_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
- 
- 	dma_params = snd_soc_dai_get_dma_data(dai, substream);
- 	switch (dma_params->data_size) {
- 	case 32:
--		per_data_width = STEDMA40_WORD_WIDTH;
-+		per_data_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
- 		break;
- 	case 16:
--		per_data_width = STEDMA40_HALFWORD_WIDTH;
-+		per_data_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
- 		break;
- 	case 8:
--		per_data_width = STEDMA40_BYTE_WIDTH;
-+		per_data_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
- 		break;
- 	default:
--		per_data_width = STEDMA40_WORD_WIDTH;
-+		per_data_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
- 		dev_warn(rtd->platform->dev,
- 			"%s: Unknown data-size (%d)! Assuming 32 bits.\n",
- 			__func__, dma_params->data_size);
 -- 
 1.7.10.4
 
