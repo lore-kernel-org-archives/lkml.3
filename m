@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763412Ab3ECTdR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 15:33:17 -0400
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:57303 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729Ab3ECTdQ (ORCPT
+	id S1763445Ab3ECTdz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 15:33:55 -0400
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:46817 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763318Ab3ECTdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 15:33:16 -0400
+	Fri, 3 May 2013 15:33:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <1367591569-32197-5-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1367591569-32197-4-git-send-email-lee.jones@linaro.org>
 References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
-	<1367591569-32197-5-git-send-email-lee.jones@linaro.org>
-Date: Fri, 3 May 2013 21:33:15 +0200
-Message-ID: <CACRpkdZEYKPeutHjs7UfSGmjQQvafp1nV-ZR6DBLWZ0-oVfa_g@mail.gmail.com>
-Subject: Re: [PATCH 04/63] ARM: ux500: Supply MMC DMA configuration via Device Tree
+	<1367591569-32197-4-git-send-email-lee.jones@linaro.org>
+Date: Fri, 3 May 2013 21:33:54 +0200
+Message-ID: <CACRpkdYrb10bVpcm706NmVs7osM=gy4fT3=qZ3__pfndTWM+bQ@mail.gmail.com>
+Subject: Re: [PATCH 03/63] ARM: ux500: Supply UART's DMA configuration via
+ Device Tree
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: "linux-arm-kernel@lists.infradead.org" 
