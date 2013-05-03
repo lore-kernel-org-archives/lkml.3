@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761770Ab3ECMsz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 08:48:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60730 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755821Ab3ECMsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 08:48:54 -0400
-Date: Fri, 3 May 2013 13:48:49 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Simple concepts extracted from tip/numa/core.
-Message-ID: <20130503124849.GM11497@suse.de>
-References: <20130501174950.7229.15267.sendpatchset@srdronam.in.ibm.com>
+	id S1762117Ab3ECMtP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 08:49:15 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48237 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759816Ab3ECMtN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 08:49:13 -0400
+X-AuditID: 9c930197-b7c1fae000001854-33-5183b247044b
+From: Jongsung Kim <neidhard.kim@lge.com>
+Organization: LG Electronics
+To: linux@arm.linux.org.uk, gregkh@linuxfoundation.org, jslaby@suse.cz
+Subject: [PATCH] ARM: PL011: revise to use amba_rev macro
+Date: Fri, 3 May 2013 21:49:10 +0900
+User-Agent: KMail/1.12.4 (Linux/2.6.32-358.2.1.el6.x86_64; KDE/4.3.4; x86_64; ; )
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130501174950.7229.15267.sendpatchset@srdronam.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305032149.10482.neidhard.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 11:19:50PM +0530, Srikar Dronamraju wrote:
-> Hi,
-> 
-> Here is an attempt to pick few interesting patches from tip/numa/core.
-> For the initial stuff, I have selected the last_nidpid (which was
-> last_cpupid + Make gcc to not reread the page tables patches).
-> 
-> Here is the performance results of running autonumabenchmark on a 8 node 64
-> core system.  Each of these tests were run  for 5 iterations.
-> 
-> 
-> KernelVersion: v3.9
->                         Testcase:      Min      Max      Avg
->                           numa01:  1784.16  1864.15  1800.16
->              numa01_THREAD_ALLOC:   293.75   315.35   311.03
->                           numa02:    32.07    32.72    32.59
->                       numa02_SMT:    39.27    39.79    39.69
-> 
-> KernelVersion: v3.9 + last_nidpid + gcc: no reread patches
->                         Testcase:      Min      Max      Avg  %Change
->                           numa01:  1774.66  1870.75  1851.53   -2.77%
->              numa01_THREAD_ALLOC:   275.18   279.47   276.04   12.68%
->                           numa02:    32.75    34.64    33.13   -1.63%
->                       numa02_SMT:    32.00    36.65    32.93   20.53%
-> 
-> We do see some degradation in numa01 and numa02 cases. The degradation is
-> mostly because of the last_nidpid patch. However the last_nidpid helps
-> thread_alloc and smt cases and forms the basis for few more interesting
-> ideas in the tip/numa/core.
-> 
+This patch replaces the ugly bit-operations with the convenient
+amba_rev macro from the get_fifosize_arm function. The type of
+get_fifosize member function is also slightly changed to take
+a pointer to the amba_device.
 
-I did not have time unfortunately to review the patches properly but ran
-some of the same tests that were used for numa balancing originally.
+Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
+---
+ drivers/tty/serial/amba-pl011.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
-One of the threads segfaulted when running specjbb in single JVM mode with
-the patches applied so there is either a stability issue in there or it
-makes an existing problem with migration easier to hit by virtue of the
-fact it's migrating more agressively.
-
-Specjbb in multi-JVM somed some performance improvements with a 4%
-improvement at the peak but the results for many thread instances were a
-lot more variable with the patches applied.  System CPU time increased by
-16% and the number of pages migrated was increased by 18%.
-
-NAS-MPI showed both performance gains and losses but again the system
-CPU time was increased by 9.1% and 30% more pages were migrated with the
-patches applied.
-
-For autonuma, the system CPU time is reduced by 40% for numa01 *but* it
-increased by 70%, 34% and 9% for NUMA01_THEADLOCAL, NUMA02 and
-NUMA02_SMT respectively and 45% more pages were migrated overall.
-
-So while there are some performance improvements, they are not
-universal, tehre is at least one stability issue and I'm not keen on the
-large increase in system CPU cost and number of pages being migrated as
-a result of the patch when there is no co-operation with the scheduler
-to make processes a bit stickier on a node once memory has been migrated
-locally.
-
--- 
-Mel Gorman
-SUSE Labs
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index b2e9e17..72b57f9 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -79,13 +79,12 @@ struct vendor_data {
+ 	bool			dma_threshold;
+ 	bool			cts_event_workaround;
+ 
+-	unsigned int (*get_fifosize)(unsigned int periphid);
++	unsigned int (*get_fifosize)(struct amba_device *dev);
+ };
+ 
+-static unsigned int get_fifosize_arm(unsigned int periphid)
++static unsigned int get_fifosize_arm(struct amba_device *dev)
+ {
+-	unsigned int rev = (periphid >> 20) & 0xf;
+-	return rev < 3 ? 16 : 32;
++	return amba_rev(dev) < 3 ? 16 : 32;
+ }
+ 
+ static struct vendor_data vendor_arm = {
+@@ -98,7 +97,7 @@ static struct vendor_data vendor_arm = {
+ 	.get_fifosize		= get_fifosize_arm,
+ };
+ 
+-static unsigned int get_fifosize_st(unsigned int periphid)
++static unsigned int get_fifosize_st(struct amba_device *dev)
+ {
+ 	return 64;
+ }
+@@ -2145,7 +2144,7 @@ static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
+ 	uap->lcrh_rx = vendor->lcrh_rx;
+ 	uap->lcrh_tx = vendor->lcrh_tx;
+ 	uap->old_cr = 0;
+-	uap->fifosize = vendor->get_fifosize(dev->periphid);
++	uap->fifosize = vendor->get_fifosize(dev);
+ 	uap->port.dev = &dev->dev;
+ 	uap->port.mapbase = dev->res.start;
+ 	uap->port.membase = base;
+--
