@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762222Ab3ECGOq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:14:46 -0400
-Received: from mout.gmx.net ([212.227.15.18]:58584 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760548Ab3ECGOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:14:45 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/th0dUDsrtIygF4JH53Od6K95JP630+8YYbCxrGo
-	sndvBLWauHWpPH
-Message-ID: <1367561676.5907.50.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched: wake-affine throttle
-From: Mike Galbraith <efault@gmx.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Date: Fri, 03 May 2013 08:14:36 +0200
-In-Reply-To: <518351CF.6090500@linux.vnet.ibm.com>
-References: <5164DCE7.8080906@linux.vnet.ibm.com>
-	 <51833302.6090208@linux.vnet.ibm.com>
-	 <1367557300.5907.30.camel@marge.simpson.net>
-	 <518351CF.6090500@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1762335Ab3ECGRE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:17:04 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:60628 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756734Ab3ECGRB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 02:17:01 -0400
+X-AuditID: cbfee68f-b7f066d000003683-a4-5183565c1c31
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 1/4] backlight: atmel-pwm-bl: remove unnecessary
+ platform_set_drvdata()
+Date: Fri, 03 May 2013 15:16:59 +0900
+Message-id: <000b01ce47c5$d1f66b80$75e34280$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac5HxcxX75n6OXEPSPuJvwSqHn4tQw==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zQ92YsOZAg3N3+S3mrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsErozn8/ax
+	F6zgrHj8cw1bA+Mv9i5GTg4JAROJy1d+skLYYhIX7q1n62Lk4hASWMYo0TJlCRNMUevPi0wQ
+	iUWMEs/f3WKBcH4xSpz+Og2sik1ATeLLl8NAYzk4RAT0JdpaNEDCzAKlElsfvGcBsYUFIiUe
+	35nOAlLCIqAq8XaDG4jJK2Ap8fqMNEgFr4CgxI/J91ggOrUk1u88zgRhy0tsXvOWGeIcBYkd
+	Z18zgtgiAnoSdxqfMUPUiEjse/GOEeQyCYFt7BL3T35iA0mwCAhIfJt8CGythICsxKYDUHMk
+	JQ6uuMEygVFsFpLVs5CsnoVk9SwkKxYwsqxiFE0tSC4oTkovMtYrTswtLs1L10vOz93ECImx
+	/h2Mdw9YH2JMBlo/kVlKNDkfGKN5JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgHCgmkJ5akZqem
+	FqQWxReV5qQWH2Jk4uCUamCMqw7T9f5jkxhzLDp0ijZ/saHz8kW8wWzP7Zef2qM9KU9tQ8YO
+	1wLJ79xSPcLrRM7vmNrzslnlyE3t9hsTUtkfRvJ1qtrMruwuuCp1eVn5MeX5c7esOKevfSPx
+	x7xvHOFfrl+5eH1eTmug4I3VSi77xdiNmqYvC7R7vZK549yS3Jll8zec3fpJiaU4I9FQi7mo
+	OBEAZiAhvMcCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAd2YsOZAgwWtPBZz1q9hs7i88BKr
+	xeVdc9gsdu96yurA4nFixm8Wjz3zf7B69G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66
+	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
+	FjCNEbq+IUFwPUYGaCBhHWPG83n72AtWcFY8/rmGrYHxF3sXIyeHhICJROvPi0wQtpjEhXvr
+	2boYuTiEBBYxSjx/d4sFwvnFKHH66zSwKjYBNYkvXw4DdXNwiAjoS7S1aICEmQVKJbY+eM8C
+	YgsLREo8vjOdBaSERUBV4u0GNxCTV8BS4vUZaZAKXgFBiR+T77FAdGpJrN95nAnClpfYvOYt
+	M8Q5ChI7zr5mBLFFBPQk7jQ+Y4aoEZHY9+Id4wRGgVlIRs1CMmoWklGzkLQsYGRZxSiaWpBc
+	UJyUnmuoV5yYW1yal66XnJ+7iREcwc+kdjCubLA4xCjAwajEw6vQ0hQoxJpYVlyZe4hRgoNZ
+	SYTX7QdQiDclsbIqtSg/vqg0J7X4EGMy0J8TmaVEk/OBySWvJN7Q2MTMyNLIzMLIxNycNGEl
+	cd4DrdaBQgLpiSWp2ampBalFMFuYODilGhinc802uhly46T6grSIyftYVSJOiubqh8669sDn
+	2Q8Rti611VG6E79cEqm9+fxwXMSOQk2/hsRNJlxmc9RWrNj8/+DUqi55hzfWH5wmf/o64V5r
+	XuvV/OD8Z6/VVE5aM/i+SilncbiQuSO4/+kzF/7ihE87p4f8/dPMV7jVXyN/7+XZSakN3XOU
+	WIozEg21mIuKEwHmb24yJAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-03 at 13:57 +0800, Michael Wang wrote: 
-> Hi, Mike
-> 
-> Thanks for your reply.
-> 
-> On 05/03/2013 01:01 PM, Mike Galbraith wrote:
-> [snip]
-> >>
-> >> If this approach caused any concerns, please let me know ;-)
-> > 
-> > I wonder if throttling on failure is the way to go.  Note the minimal
-> > gain for pgbench with the default 1ms throttle interval.  It's not very
-> > effective out of the box for the load type it's targeted to help, and
-> > people generally don't twiddle scheduler knobs.  If you throttle on
-> > success, you directly restrict migration frequency without that being
-> > affected by what other tasks are doing.  Seems that would be a bit more
-> > effective.
-> 
-> This is a good timing to make some conclusion for this problem ;-)
-> 
-> Let's suppose when wake-affine failed, next time slice got a higher
-> failure chance, then whether throttle on failure could be the question like:
-> 
-> 	throttle interval should cover more failure timing
-> 	or more success timing?
-> 
-> Obviously we should cover more failure timing, since it's just wasting
-> cycle and change nothing.
-> 
-> However, I used to concern about the damage of succeed wake-affine at
-> that rapid, sure it also contain the benefit, but which one is bigger?
-> 
-> Now if we look at the RFC version which throttle on succeed, for
-> pgbench, we could find that the default 1ms benefit is < 5%, while the
-> current version which throttle on failure bring 7% at most.
+The driver core clears the driver data to NULL after device_release
+or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
+(device-core: Ensure drvdata = NULL when no driver is bound).
+Thus, it is not needed to manually clear the device driver data to NULL.
 
-OK, so scratch that thought.  Would still be good to find a dirt simple
-dirt cheap way to increase effectiveness a bit, and eliminate the knob.
-Until a better idea comes along, this helps pgbench some, and will also
-help fast movers ala tbench on AMD, where select_idle_sibling() wasn't
-particularly wonderful per my measurements.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/backlight/atmel-pwm-bl.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
--Mike
+diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+index a60d6af..0393d82 100644
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -195,7 +195,6 @@ static int __init atmel_pwm_bl_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ err_free_bl_dev:
+-	platform_set_drvdata(pdev, NULL);
+ 	backlight_device_unregister(bldev);
+ err_free_pwm:
+ 	pwm_channel_free(&pwmbl->pwmc);
+@@ -212,7 +211,6 @@ static int __exit atmel_pwm_bl_remove(struct platform_device *pdev)
+ 	pwm_channel_disable(&pwmbl->pwmc);
+ 	pwm_channel_free(&pwmbl->pwmc);
+ 	backlight_device_unregister(pwmbl->bldev);
+-	platform_set_drvdata(pdev, NULL);
+ 
+ 	return 0;
+ }
+-- 
+1.7.2.5
+
 
