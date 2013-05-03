@@ -1,77 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762117Ab3ECMtP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 08:49:15 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48237 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759816Ab3ECMtN (ORCPT
+	id S1762097Ab3ECM4v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 08:56:51 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43580 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761757Ab3ECM4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 08:49:13 -0400
-X-AuditID: 9c930197-b7c1fae000001854-33-5183b247044b
-From: Jongsung Kim <neidhard.kim@lge.com>
-Organization: LG Electronics
-To: linux@arm.linux.org.uk, gregkh@linuxfoundation.org, jslaby@suse.cz
-Subject: [PATCH] ARM: PL011: revise to use amba_rev macro
-Date: Fri, 3 May 2013 21:49:10 +0900
-User-Agent: KMail/1.12.4 (Linux/2.6.32-358.2.1.el6.x86_64; KDE/4.3.4; x86_64; ; )
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+	Fri, 3 May 2013 08:56:50 -0400
+Date: Fri, 3 May 2013 13:55:27 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] irqchip: add support for Marvell Orion SoCs
+Message-ID: <20130503125527.GE18614@n2100.arm.linux.org.uk>
+References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com> <1367538519-23940-1-git-send-email-sebastian.hesselbarth@gmail.com> <1367538519-23940-2-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201305032149.10482.neidhard.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367538519-23940-2-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces the ugly bit-operations with the convenient
-amba_rev macro from the get_fifosize_arm function. The type of
-get_fifosize member function is also slightly changed to take
-a pointer to the amba_device.
+On Fri, May 03, 2013 at 01:48:35AM +0200, Sebastian Hesselbarth wrote:
+> This patch adds an irqchip driver for the main interrupt controller found
+> on Marvell Orion SoCs (Kirkwood, Dove, Orion5x, Discovery Innovation).
+> Corresponding device tree documentation is also added.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Note: This patch triggers a checkpatch warning for
+>   WARNING: Avoid CamelCase: <handle_IRQ>
+> 
+> Changelog:
+> v1->v2:
+> - rename compatible string to "marvell,orion-intc" (Suggested by Jason Gunthorpe)
+> - request mem regions for irq base registers (Suggested by Jason Gunthorpe)
+> - make orion_handle_irq static (Suggested by Jason Gunthorpe)
+> - make use of IRQCHIP_DECLARE (Suggested by Jason Gunthorpe)
 
-Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
----
- drivers/tty/serial/amba-pl011.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+It would still be a good idea to convert this to use the generic chip
+stuff which Thomas created, though exactly how is hard to see at the
+moment.
 
-diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-index b2e9e17..72b57f9 100644
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -79,13 +79,12 @@ struct vendor_data {
- 	bool			dma_threshold;
- 	bool			cts_event_workaround;
- 
--	unsigned int (*get_fifosize)(unsigned int periphid);
-+	unsigned int (*get_fifosize)(struct amba_device *dev);
- };
- 
--static unsigned int get_fifosize_arm(unsigned int periphid)
-+static unsigned int get_fifosize_arm(struct amba_device *dev)
- {
--	unsigned int rev = (periphid >> 20) & 0xf;
--	return rev < 3 ? 16 : 32;
-+	return amba_rev(dev) < 3 ? 16 : 32;
- }
- 
- static struct vendor_data vendor_arm = {
-@@ -98,7 +97,7 @@ static struct vendor_data vendor_arm = {
- 	.get_fifosize		= get_fifosize_arm,
- };
- 
--static unsigned int get_fifosize_st(unsigned int periphid)
-+static unsigned int get_fifosize_st(struct amba_device *dev)
- {
- 	return 64;
- }
-@@ -2145,7 +2144,7 @@ static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
- 	uap->lcrh_rx = vendor->lcrh_rx;
- 	uap->lcrh_tx = vendor->lcrh_tx;
- 	uap->old_cr = 0;
--	uap->fifosize = vendor->get_fifosize(dev->periphid);
-+	uap->fifosize = vendor->get_fifosize(dev);
- 	uap->port.dev = &dev->dev;
- 	uap->port.mapbase = dev->res.start;
- 	uap->port.membase = base;
---
+> +static void orion_irq_mask(struct irq_data *irqd)
+> +{
+> +	unsigned int irq = irqd_to_hwirq(irqd);
+> +	unsigned int irq_off = irq % 32;
+> +	int reg = irq / 32;
+> +	u32 val;
+> +
+> +	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
+> +	writel(val & ~(1 << irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
+> +}
+
+This could be replaced with irq_gc_mask_clr_bit().
+
+> +
+> +static void orion_irq_unmask(struct irq_data *irqd)
+> +{
+> +	unsigned int irq = irqd_to_hwirq(irqd);
+> +	unsigned int irq_off = irq % 32;
+> +	int reg = irq / 32;
+> +	u32 val;
+> +
+> +	val = readl(orion_irq_base[reg] + ORION_IRQ_MASK);
+> +	writel(val | (1 << irq_off), orion_irq_base[reg] + ORION_IRQ_MASK);
+> +}
+
+This with irq_gc_mask_set_bit().
+
+> +
+> +static struct irq_chip orion_irq_chip = {
+> +	.name		= "orion_irq",
+> +	.irq_mask	= orion_irq_mask,
+> +	.irq_unmask	= orion_irq_unmask,
+> +};
+> +
+> +static int orion_irq_map(struct irq_domain *d, unsigned int virq,
+> +			 irq_hw_number_t hw)
+> +{
+> +	irq_set_chip_and_handler(virq, &orion_irq_chip,
+> +				 handle_level_irq);
+> +	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
+
+This is where it starts to get tricky, because I can't see how you'd
+merge the irq_alloc_generic_chip() and irq_setup_generic_chip() with
+this.  Maybe you don't need to do anything here and just do all that
+in orion_of_init() instead?  But then you seem to need to know the
+virq range before hand, and I can't see how that's known.  Maybe Thomas
+can provide some enlightenment about how the gc irqchip stuff works
+with the irq domain stuff...
+
+However, you wouldn't need the statically defined orion_irq_chip nor
+orion_irq_base[] either, because those would be held within the gc
+irqchip stuff and stored in the upper layer.
