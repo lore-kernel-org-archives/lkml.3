@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760119Ab3ECK0j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 06:26:39 -0400
-Received: from smtp-out-053.synserver.de ([212.40.185.53]:1045 "EHLO
-	smtp-out-053.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab3ECK0h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 06:26:37 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 6035
-Message-ID: <51838F2B.5020402@metafoo.de>
-Date: Fri, 03 May 2013 12:19:23 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1761957Ab3ECK3X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 06:29:23 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:53532 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754282Ab3ECK3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 06:29:21 -0400
+X-IronPort-AV: E=Sophos;i="4.87,602,1363132800"; 
+   d="scan'208";a="23128149"
+Date: Fri, 3 May 2013 11:29:14 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Christopher Covington <cov@codeaurora.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 2/3] xen: move do_stolen_accounting to
+ drivers/xen/time.c
+In-Reply-To: <1367569605.28742.28.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1305031118080.5398@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com>  <1367436460-10183-2-git-send-email-stefano.stabellini@eu.citrix.com>  <5182B532.10607@codeaurora.org> <1367569605.28742.28.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com
-Subject: Re: [PATCH 03/42] rtc: rtc-ab3100: remove unnecessary platform_set_drvdata()
-References: <001101ce47c6$9ca9e640$d5fdb2c0$@samsung.com>
-In-Reply-To: <001101ce47c6$9ca9e640$d5fdb2c0$@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/2013 08:22 AM, Jingoo Han wrote:
-> The driver core clears the driver data to NULL after device_release
-> or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
-> (device-core: Ensure drvdata = NULL when no driver is bound).
-> Thus, it is not needed to manually clear the device driver data to NULL.
+On Fri, 3 May 2013, Ian Campbell wrote:
+> On Thu, 2013-05-02 at 19:49 +0100, Christopher Covington wrote:
+> > Hi Stefano,
+> > 
+> > On 05/01/2013 03:27 PM, Stefano Stabellini wrote:
+> > > Move do_stolen_accounting, xen_vcpu_stolen and related functions and
+> > > static variables to common code (drivers/xen/time.c).
+> > > 
+> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > ---
+> > >  arch/x86/xen/time.c   |  127 +-------------------------------------------
+> > 
+> > In going through some of the code, it looked like there might be a few little
+> > bits that you might be interested in pulling out of arch/ia64/xen/time.c as well.
 > 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/rtc/rtc-ab3100.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
+> ia64 in the hypervisor was deprecated and with the 4.3 release has been
+> removed.
 > 
-> diff --git a/drivers/rtc/rtc-ab3100.c b/drivers/rtc/rtc-ab3100.c
-> index 47a4f2c..572208d 100644
-> --- a/drivers/rtc/rtc-ab3100.c
-> +++ b/drivers/rtc/rtc-ab3100.c
-> @@ -242,7 +242,6 @@ static int __init ab3100_rtc_probe(struct platform_device *pdev)
->  
->  static int __exit ab3100_rtc_remove(struct platform_device *pdev)
->  {
-> -	platform_set_drvdata(pdev, NULL);
->  	return 0;
->  }
+> AFAIK ia64/Xen support has been broken in the mainline kernel for year.
 
-Since it's empty you can remove the function altogether.
+Yes, that's why it didn't occur to me to do anything about it.
 
-Same comment for all the other patches in this series where the function
-ends up being empty
-
+Also, the ia64 code differs from the x86 code, I can't just replace it
+with the newly introduced common code unfortunately.
