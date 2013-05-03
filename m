@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762755Ab3ECGa5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:30:57 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:60640 "EHLO
+	id S1762766Ab3ECGbJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:31:09 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:60709 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762633Ab3ECGa4 (ORCPT
+	with ESMTP id S1760176Ab3ECGbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:30:56 -0400
-X-AuditID: cbfee691-b7fe56d000004b96-11-51835995c5b0
+	Fri, 3 May 2013 02:31:04 -0400
+X-AuditID: cbfee68d-b7f016d000007930-65-518359a74e3b
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 18/42] rtc: rtc-jz4740: remove unnecessary
+Subject: [PATCH 19/42] rtc: rtc-lp8788: remove unnecessary
  platform_set_drvdata()
-Date: Fri, 03 May 2013 15:30:45 +0900
-Message-id: <002001ce47c7$be5e05e0$3b1a11a0$@samsung.com>
+Date: Fri, 03 May 2013 15:31:03 +0900
+Message-id: <002101ce47c7$c8c41240$5a4c36c0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5Hx72sLj2/LOXUQM2GsgfzaxuMFQ==
+Thread-index: Ac5Hx8gdQDoREjI2QBmBKldMbOFEhA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zY92pkc2BBuvbLSyWXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
-	LdK3S+DKmLL+H2tBK0fFh5+vmBsY77J1MXJySAiYSNw8u5YFwhaTuHBvPVCci0NIYBmjxN3r
-	p9lhig5dO8YKkZjOKLFy7n9GCOcXo8TEA78YQarYBNQkvnw5DNTBwSEioC/R1qIBUsMs0M0o
-	8ah5LjNIjbBAsMTVh+/AprIIqEr8+vUSzOYVsJS43j2NBcIWlPgx+R6YzSygJbF+53EmCFte
-	YvOat8wQFylI7Dj7GmyviICeROOzP1D1IhL7XrwDO05C4BC7xIndPcwQywQkvk0+xAJynISA
-	rMSmA1BzJCUOrrjBMoFRbBaS1bOQrJ6FZPUsJCsWMLKsYhRNLUguKE5KLzLVK07MLS7NS9dL
-	zs/dxAiJvok7GO8fsD7EmAy0fiKzlGhyPjB680riDY3NjCxMTUyNjcwtzUgTVhLnVW+xDhQS
-	SE8sSc1OTS1ILYovKs1JLT7EyMTBKdXA6HG1OS7kcOa7dwd/3Fn8/nHjM3N9n8mcacsnb1f4
-	sL2Vv2JmSeZCq2Vy4fxbtY5ds0u4sPLvoeAvnr/j+ktLGz8IODCpuRZpFpxV+rZk1yLnupm9
-	c59yTNjz+aCBwv8bT0+dFYxKUFKwOF/i01udwLRlSi7Pz7qX/1tm5shUhf5L1Xz4/M9VXiWW
-	4oxEQy3mouJEAD+2GXLUAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jQd2pkc2BBvPnmFgsuXiV3WLO+jVs
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zA93lkc2BBrM2KVssuXiV3WLO+jVs
+	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
+	WqRvl8CV0f1qJVPBOraKPet+MjUwLmbtYuTkkBAwkVj0awcjhC0mceHeerYuRi4OIYFljBLP
+	zvczwhT1/l/HDJFYxChx+PB/KOcXo8TOjXuZQarYBNQkvnw5zN7FyMEhIqAv0daiAVLDLNDN
+	KPGoeS5YjbBAsMS1g6tZQGwWAVWJh+v3gG3gFbCU6F+ygB3CFpT4MfkeWA2zgJbE+p3HmSBs
+	eYnNa94yQ1ykILHj7GuwXhEBPYnJ+4+yQtSISOx78Y4RZLGEwDF2iXPL/0MtE5D4NvkQC8hx
+	EgKyEpsOQM2RlDi44gbLBEaxWUhWz0KyehaS1bOQrFjAyLKKUTS1ILmgOCm9yFCvODG3uDQv
+	XS85P3cTIyT6encw3j5gfYgxGWj9RGYp0eR8YPTmlcQbGpsZWZiamBobmVuakSasJM6r1mId
+	KCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGxc0lW4+PGS7fYWP6G7XEqehqb2Rj8RUD+udOx
+	Zwbm82ef+vA05cmvW926nhHzMpw7L1pd7W/l27+1wK2R49T3YGPJ/M1bjyft3PkoZ7nj5R9G
+	bNdb+s1m3Jw989ChaU7v2W7UZNy/FZmhoXp5zbVzlQtMeLO2KJ/e8jqXhWVau0yVrbvne7PV
+	SizFGYmGWsxFxYkA9sbFfNQCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jAd3lkc2BBn+vyVssuXiV3WLO+jVs
 	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
 	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
-	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmDFl/T/WglaOig8/XzE3MN5l62Lk5JAQMJE4
-	dO0YK4QtJnHh3nqgOBeHkMB0RomVc/8zQji/GCUmHvjFCFLFJqAm8eXLYfYuRg4OEQF9ibYW
-	DZAaZoFuRolHzXOZQWqEBYIlrj58xw5iswioSvz69RLM5hWwlLjePY0FwhaU+DH5HpjNLKAl
-	sX7ncSYIW15i85q3zBAXKUjsOPsabK+IgJ5E47M/UPUiEvtevGOcwCgwC8moWUhGzUIyahaS
-	lgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgmP7mdQOxpUNFocYBTgYlXh4FVqaAoVY
-	E8uKK3MPMUpwMCuJ8Lr9AArxpiRWVqUW5ccXleakFh9iTAb6dCKzlGhyPjDt5JXEGxqbmBlZ
-	GplZGJmYm5MmrCTOe6DVOlBIID2xJDU7NbUgtQhmCxMHp1QDI5+PpF9VjFrop6PHtecauq88
-	99DsyeIl2sF8TFbXXzmmsNtYcD9ZqKWjEHr3QNOJ7ZI3jXVWWYTIcV/bcyPo+OeTGefkcwMC
-	4pdHPOacc9rp6NywG6uirr9M3bLFq9r78OJ5b/xXJwdXM5xvORPDzr4r+bLOheiYLEPJCFPv
-	aX1y/q9PC742UWIpzkg01GIuKk4EAPzXmywxAwAA
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmNH9aiVTwTq2ij3rfjI1MC5m7WLk5JAQMJHo
+	/b+OGcIWk7hwbz1bFyMXh5DAIkaJw4f/M0M4vxgldm7cC1bFJqAm8eXLYfYuRg4OEQF9ibYW
+	DZAaZoFuRolHzXPBaoQFgiWuHVzNAmKzCKhKPFy/hxHE5hWwlOhfsoAdwhaU+DH5HlgNs4CW
+	xPqdx5kgbHmJzWveQl2kILHj7GuwXhEBPYnJ+4+yQtSISOx78Y5xAqPALCSjZiEZNQvJqFlI
+	WhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI7tZ9I7GFc1WBxiFOBgVOLhVWhpChRi
+	TSwrrsw9xCjBwawkwuv2AyjEm5JYWZValB9fVJqTWnyIMRno04nMUqLJ+cC0k1cSb2hsYmZk
+	aWRmYWRibk6asJI478FW60AhgfTEktTs1NSC1CKYLUwcnFINjDqpPs3ncy0eZIe+ifKaxX7G
+	/OSmcynXglZbTZkUyc79denHVycObZ/xYNUzsxKByW99FS/m6XL5iIZxHTLZN+1v8k2mp+wK
+	2pHPRDQf3eN+5vH0d5vFhICF1WXR8nsZFwtfZ01KncWzacPRDae+cOUGF7wPf1PcduSCyou/
+	Ju71hwvftAZw3FRiKc5INNRiLipOBADkOc0pMQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,25 +61,17 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-jz4740.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ drivers/rtc/rtc-lp8788.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/rtc/rtc-jz4740.c b/drivers/rtc/rtc-jz4740.c
-index 1e48686..c6573585 100644
---- a/drivers/rtc/rtc-jz4740.c
-+++ b/drivers/rtc/rtc-jz4740.c
-@@ -287,7 +287,6 @@ err_free_irq:
- err_unregister_rtc:
- 	rtc_device_unregister(rtc->rtc);
- err_iounmap:
--	platform_set_drvdata(pdev, NULL);
- 	iounmap(rtc->base);
- err_release_mem_region:
- 	release_mem_region(rtc->mem->start, resource_size(rtc->mem));
-@@ -310,8 +309,6 @@ static int jz4740_rtc_remove(struct platform_device *pdev)
+diff --git a/drivers/rtc/rtc-lp8788.c b/drivers/rtc/rtc-lp8788.c
+index 9853ac1..76a82dc 100644
+--- a/drivers/rtc/rtc-lp8788.c
++++ b/drivers/rtc/rtc-lp8788.c
+@@ -314,8 +314,6 @@ static int lp8788_rtc_probe(struct platform_device *pdev)
  
- 	kfree(rtc);
- 
+ static int lp8788_rtc_remove(struct platform_device *pdev)
+ {
 -	platform_set_drvdata(pdev, NULL);
 -
  	return 0;
