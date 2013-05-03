@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab3ECVw1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 17:52:27 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47060 "EHLO
+	id S1763656Ab3ECVus (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 17:50:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47042 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763693Ab3ECVuu (ORCPT
+	with ESMTP id S1753427Ab3ECVur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 17:50:50 -0400
-Message-Id: <20130503214629.536981253@linutronix.de>
+	Fri, 3 May 2013 17:50:47 -0400
+Message-Id: <20130503212258.385818955@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Fri, 03 May 2013 21:50:48 -0000
+Date: Fri, 03 May 2013 21:50:43 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
@@ -26,16 +26,9 @@ Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         Jean-Francois Moine <moinejf@free.fr>,
         Gerlando Falauto <gerlando.falauto@keymile.com>,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Lennert Buytenhek <kernel@wantstofly.org>,
-        Simon Guinot <simon@sequanux.org>, Joey Oravec <joravec@drewtech.com>,
-        Ben Dooks <ben-linux@fluff.org>, Nicolas Pitre <nico@fluxnic.net>,
-        Holger Brunck <Holger.Brunck@keymile.com>
-Subject: [RFC patch 3/8] genirq: generic chip: Handle separate mask registers
-References: <alpine.LFD.2.02.1305031514230.2886@ionos>
- <20130503212258.385818955@linutronix.de>
-Content-Disposition: inline;
- filename=genirq-handle-separate-mask-registers.patch
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <alpine.LFD.2.02.1305031514230.2886@ionos>
+Subject: [RFC patch 0/8] genirq: Support for irq domains in generic irq chip
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -43,82 +36,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gerlando Falauto <gerlando.falauto@keymile.com>
+The ongoing device tree support for ARM is creating new irq chip
+drivers in drivers/irqchip/ in a frenzy. Quite some of them are
+ripping out the generic irq chip implementation from arch/arm/* and
+just creating the same mess of duplicated code again, which was
+cleaned up with the generic irq chip implementation with a lot of
+effort. Sigh!
 
-There are cases where all irq_chip_type instances have separate mask
-registers, making a shared mask register cache unsuitable for the
-purpose.
+I already prodded a few people in reviews to tackle that issue with no
+outcome. Even more sigh!
 
-Introduce a new flag IRQ_GC_MASK_CACHE_PER_TYPE. If set, point the per
-chip mask pointer to the per chip private mask cache instead.
+Poor Sebastian triggered me into rant mode, but he ad hoc
+volunteered to give it a try. YAY!
 
-[ tglx: Simplified code, renamed flag and massaged changelog ]
+Though he asked for a bit of kickstart help. So I squeezed out a few
+spare cycles and implemented the basics as far as I think that they
+should work.
 
-Signed-off-by: Gerlando Falauto <gerlando.falauto@keymile.com>
-Cc: Lennert Buytenhek <kernel@wantstofly.org>
-Cc: Simon Guinot <simon@sequanux.org>
-Cc: Joey Oravec <joravec@drewtech.com>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Nicolas Pitre <nico@fluxnic.net>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Holger Brunck <Holger.Brunck@keymile.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+The following series contains the missing bits and pieces including a
+somehow forgotten and now slightly modified series from Gerlando
+adding support for irq chips which need separate mask caches for
+different chip (control flow) types.
+
+At the moment this supports only linear irq domains, but it could be
+extended to other types as well if the need arises. Though the ARM
+chips are pretty much all about linear domains AFAICT.
+
+It also lacks support for removing an irq domain at the moment, but
+that should be rather trivial to fix.
+
+The last patch in the series is a blind conversion of the irq-sun4i
+irq chip driver, completely untested and not even compiled. I just
+added it for demonstration purposes. As Russell expected, there is a
+lot of consolidation potential. The changelog of that patch is:
+
+ 1 file changed, 29 insertions(+), 71 deletions(-)
+
+The preparing series has
+
+ 4 files changed, 294 insertions(+), 50 deletions(-)
+
+So for removing 42 lines in a single driver the core grows 244 lines
+including header changes and comments. Convert 6 drivers and we are
+more than even because we get the benefit of sharing and therefor
+exposing the same code to broader testing and utilization.
+
+We have already 11 of those candidates in drivers/irqchips and new
+ones are knocking on the door.
+
+There might be even more consolidation potential, but I leave that to the
+DT/irq domain experts.
+
+
+WARNING: It's compile tested only. So if you find bugs you can keep
+them and fix them yourself :)
+
+
+Thanks,
+
+	tglx
 ---
- include/linux/irq.h       |    2 ++
- kernel/irq/generic-chip.c |   17 ++++++++++-------
- 2 files changed, 12 insertions(+), 7 deletions(-)
-
-Index: linux-2.6/include/linux/irq.h
-===================================================================
---- linux-2.6.orig/include/linux/irq.h
-+++ linux-2.6/include/linux/irq.h
-@@ -704,10 +704,12 @@ struct irq_chip_generic {
-  * @IRQ_GC_INIT_NESTED_LOCK:	Set the lock class of the irqs to nested for
-  *				irq chips which need to call irq_set_wake() on
-  *				the parent irq. Usually GPIO implementations
-+ * @IRQ_GC_MASK_CACHE_PER_TYPE:	Mask cache is chip type private
-  */
- enum irq_gc_flags {
- 	IRQ_GC_INIT_MASK_CACHE		= 1 << 0,
- 	IRQ_GC_INIT_NESTED_LOCK		= 1 << 1,
-+	IRQ_GC_MASK_CACHE_PER_TYPE	= 1 << 2,
- };
- 
- /* Generic chip callback functions */
-Index: linux-2.6/kernel/irq/generic-chip.c
-===================================================================
---- linux-2.6.orig/kernel/irq/generic-chip.c
-+++ linux-2.6/kernel/irq/generic-chip.c
-@@ -241,18 +241,21 @@ void irq_setup_generic_chip(struct irq_c
- {
- 	struct irq_chip_type *ct = gc->chip_types;
- 	unsigned int i;
-+	u32 *mskptr = &gc->mask_cache, mskreg = ct->regs.mask;
- 
- 	raw_spin_lock(&gc_lock);
- 	list_add_tail(&gc->list, &gc_list);
- 	raw_spin_unlock(&gc_lock);
- 
--	/* Init mask cache ? */
--	if (flags & IRQ_GC_INIT_MASK_CACHE)
--		gc->mask_cache = irq_reg_readl(gc->reg_base + ct->regs.mask);
--
--	/* Initialize mask cache pointer */
--	for (i = 0; i < gc->num_ct; i++)
--		ct[i].mask_cache = &gc->mask_cache;
-+	for (i = 0; i < gc->num_ct; i++) {
-+		if (flags & IRQ_GC_MASK_CACHE_PER_TYPE) {
-+			mskptr = &ct[i].mask_cache_priv;
-+			mskreg = ct[i].regs.mask;
-+		}
-+		ct[i].mask_cache = mskptr;
-+		if (flags & IRQ_GC_INIT_MASK_CACHE)
-+			*mskptr = irq_reg_readl(gc->reg_base + mskreg);
-+	}
- 
- 	for (i = gc->irq_base; msk; msk >>= 1, i++) {
- 		if (!(msk & 0x01))
-
+ drivers/irqchip/irq-sun4i.c |  100 ++++-----------
+ include/linux/irq.h         |   45 ++++++-
+ include/linux/irqdomain.h   |   12 +
+ kernel/irq/generic-chip.c   |  281 +++++++++++++++++++++++++++++++++++++-------
+ kernel/irq/irqdomain.c      |    6 
+ 5 files changed, 323 insertions(+), 121 deletions(-)
 
