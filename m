@@ -1,28 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934254Ab3ECT6S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 15:58:18 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:34560 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933038Ab3ECT6R (ORCPT
+	id S1763078Ab3ECUAh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 16:00:37 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:51670 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729Ab3ECUAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 15:58:17 -0400
+	Fri, 3 May 2013 16:00:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <1367591569-32197-10-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1367591569-32197-11-git-send-email-lee.jones@linaro.org>
 References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
-	<1367591569-32197-10-git-send-email-lee.jones@linaro.org>
-Date: Fri, 3 May 2013 21:58:16 +0200
-Message-ID: <CACRpkdYY7Z2invp-Eq2+n+hqdqxKx05QuKCqAe+PudU9JWGXrg@mail.gmail.com>
-Subject: Re: [PATCH 09/63] dmaengine: ste_dma40: Rectify incorrect
- configuration validation checking
+	<1367591569-32197-11-git-send-email-lee.jones@linaro.org>
+Date: Fri, 3 May 2013 22:00:36 +0200
+Message-ID: <CACRpkdYmuyj7tpnykUcdbjw4zjWvuLN3UBsnFc7dG=OpaEVfcA@mail.gmail.com>
+Subject: Re: [PATCH 10/63] dmaengine: ste_dma40: Amalgamate DMA source and
+ destination channel numbers
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>, Vinod Koul <vinod.koul@intel.com>
+To: Lee Jones <lee.jones@linaro.org>
 Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Arnd Bergmann <arnd@arndb.de>,
         Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,18 +32,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, May 3, 2013 at 4:31 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> If we compare an event's group (dev_type / 16) with STEDMA40_DEV_DST_MEMORY
-> (-1), the only way we'd obtain a positive result is if we passed -16 as a
-> device type, which is unfeasible. Instead, it would be much more sane to
-> compare STEDMA40_DEV_DST_MEMORY against the raw dev_type in order to expect
-> the expected result.
+> Devices which utilise DMA use the same device numbers for transmitting
+> and receiving. In this patch we encode the source and destination
+> information into one single attribute. We can subsequently exploit the
+> direction attribute to see which of the transfer directions are being
+> described. This also lessens the burden on platform data.
 >
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Per Forlin <per.forlin@stericsson.com>
+> Cc: Rabin Vincent <rabin@rab.in>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-I'd like Vinod's ACK on this before I send it to ARM SoC but tentatively
-applied (and just what I wanted!)
+Patch applied to my ux500-dma40 branch!
 
-Vinod can I have your ACK on this?
-
-Yours,
+Thanks,
 Linus Walleij
