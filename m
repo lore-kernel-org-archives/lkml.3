@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763269Ab3ECLf3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 07:35:29 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:56368 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763228Ab3ECLf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 07:35:27 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Cc: Colin Cross <ccross@android.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arve@android.com
-Subject: Re: [PATCH v2 00/10] optimize freezing tasks by reducing task wakeups
-Date: Fri, 03 May 2013 13:43:46 +0200
-Message-ID: <6539209.phsENQLmv5@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130503001026.GZ19814@mtj.dyndns.org>
-References: <1367458508-9133-1-git-send-email-ccross@android.com> <1678114.cijx7evM08@vostro.rjw.lan> <20130503001026.GZ19814@mtj.dyndns.org>
+	id S1763262Ab3ECLgh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 07:36:37 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:46046 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762367Ab3ECLgg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 07:36:36 -0400
+Message-ID: <5183A137.4060808@linux.vnet.ibm.com>
+Date: Fri, 03 May 2013 19:36:23 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Pavel Emelyanov <xemul@parallels.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Matt Mackall <mpm@selenic.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 4/5] mm: soft-dirty bits for user memory changes tracking
+References: <517FED13.8090806@parallels.com> <517FED64.4020400@parallels.com>
+In-Reply-To: <517FED64.4020400@parallels.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050311-8256-0000-0000-000007525EFD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 02, 2013 05:10:26 PM Tejun Heo wrote:
-> Hey, Rafael.
-> 
-> On Thu, May 02, 2013 at 11:06:35PM +0200, Rafael J. Wysocki wrote:
-> > > v2 moves the skip check to freeze_task(), and expands the commit
-> > > messages.
-> > 
-> > The entire series makes sense to me, so are there any objections?
-> > 
-> > Tejun, Oleg??
-> 
-> Generally looks good to me.  I'm a bit uncomfortable with the
-> generic-looking expansion of the freezable API as it can't be
-> something which can be used in any generic manner.  It'd be great if
-> we just add only the used ones (do we already?)
+On 05/01/2013 12:12 AM, Pavel Emelyanov wrote:
 
-I'm not sure about that, unfortunately.
+> +static inline void clear_soft_dirty(struct vm_area_struct *vma,
+> +		unsigned long addr, pte_t *pte)
+> +{
+> +#ifdef CONFIG_MEM_SOFT_DIRTY
+> +	/*
+> +	 * The soft-dirty tracker uses #PF-s to catch writes
+> +	 * to pages, so write-protect the pte as well. See the
+> +	 * Documentation/vm/soft-dirty.txt for full description
+> +	 * of how soft-dirty works.
+> +	 */
+> +	pte_t ptent = *pte;
+> +	ptent = pte_wrprotect(ptent);
+> +	ptent = pte_clear_flags(ptent, _PAGE_SOFT_DIRTY);
+> +	set_pte_at(vma->vm_mm, addr, pte, ptent);
+> +#endif
 
-> and add some sort of lockdep annotation so that people don't use them while
-> holding any locks.
+It seems that TLBs are not flushed and mmu-notification is not called?
 
-I guess we can add that anyway?
-
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
