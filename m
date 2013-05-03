@@ -1,115 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934164Ab3ECSBK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 14:01:10 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:53779 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934019Ab3ECSBI (ORCPT
+	id S1762886Ab3ECSCv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 14:02:51 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55596 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758925Ab3ECSCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 14:01:08 -0400
-MIME-Version: 1.0
-Reply-To: linasvepstas@gmail.com
-In-Reply-To: <1367550808.2093.14.camel@ymzhang.sh.intel.com>
-References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
- <1367454625.2093.6.camel@ymzhang.sh.intel.com> <CAHrUA34H_B-ffebx6ueHgV1ax-PL_3hLZr1JGaP2NJZ7bYgvtw@mail.gmail.com>
- <1367541180.2093.10.camel@ymzhang.sh.intel.com> <20130503020039.GA29087@kroah.com>
- <1367550808.2093.14.camel@ymzhang.sh.intel.com>
-From: Linas Vepstas <linasvepstas@gmail.com>
-Date: Fri, 3 May 2013 13:00:46 -0500
-Message-ID: <CAHrUA34O=JEbmMSCmycNSXa1L6KXAWBCM5TfBOvzj_zSRMubHQ@mail.gmail.com>
-Subject: Re: Subject : [ PATCH ] pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
-To: yanmin_zhang <yanmin_zhang@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Zhang, LongX" <longx.zhang@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Joseph.Liu@Emulex.Com" <Joseph.Liu@emulex.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 3 May 2013 14:02:49 -0400
+Message-ID: <1367604167.5981.40.camel@dabdike>
+Subject: Re: [PATCH 1/1] cciss: bug fix to prevent cciss from loading in
+ kdump crash kernel
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Mike Miller <mike.miller@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>
+Date: Fri, 03 May 2013 11:02:47 -0700
+In-Reply-To: <20130423172539.GA11255@beardog.cce.hp.com>
+References: <20130423172539.GA11255@beardog.cce.hp.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+On Tue, 2013-04-23 at 12:25 -0500, Mike Miller wrote:
+> PATCH 1/1
+> 
+> By default the cciss driver supports all "older" HP Smart Array controllers
+> and hpsa supports all controllers starting with the G6 family. There are
+> module parameters that allow a user to override those defaults and use hpsa
+> for any HP Smart Array controller.
+> If the user does override the default behavior and uses hpsa for older
+> controllers it is possible that cciss may try to load in a kdump crash
+> kernel. This may happen if cciss is loaded first from the kdump initrd
+> image. If cciss does load rather than hpsa and reset_devices is true we
+> immediately call cciss_hard_reset_controller. This will result in a kernel
+> panic and the core file cannot be created.
+> This patch prevents cciss from trying to load in this scenario.
+> 
+> Tested with 3.9.0-rc7.
+> 
+> From: Mike <mike.miller@hp.com>
+> Signed-off-by: Mike Miller <mike.miller@hp.com>
+> 
+> ---
+>  drivers/block/cciss.c |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+> index 1c1b8e5..06c8dba 100644
+> --- a/drivers/block/cciss.c
+> +++ b/drivers/block/cciss.c
+> @@ -4960,6 +4960,16 @@ static int cciss_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+>  	ctlr_info_t *h;
+>  	unsigned long flags;
+>  
+> +	/*
+> +	 * By default the cciss driver is used for all older HP Smart Array
+> +	 * controllers. There are module paramaters that allow a user to
+> +	 * override this behavior and instead use the hpsa SCSI driver. If
+> +	 * this is the case cciss may be loaded first from the kdump initrd
+> +	 * image and cause a kernel panic. So if reset_devices is true and
+> +	 * cciss_allow_hpsa is set just bail.
+> +	 */
+> +	if ((reset_devices) && (cciss_allow_hpsa == 1))
+> +		return -ENODEV;
+>  	rc = cciss_init_reset_devices(pdev);
+>  	if (rc) {
+>  		if (rc != -ENOTSUPP)
 
-I've been receiving (and reading!) these messages; I replied that I am
-not maintaining a tree, and have no way of testing these patches (no
-access to hardware.)  I believe it unlikely that my situation will
-change, and so I should probably be removed from the maintainers file.
+Sigh, right change log, incomplete bug fix.
 
-No acked-by or anything; the patches are not "obviously correct" by
-visual inspection; they may be right, but would require deeper
-thinking about what is actually happening than I'm capable of at this
-time; I'm a bit rusty with this code base, and might miss something
-important.
+Can we all agree that this is the right one?
 
--- Linas
+James
 
-p.s. you didn't see my earlier reply because I forgot to hit 'plain text reply'
+---
+>From 746ba9f715b9037264ae0b8175c6286f5f8f62d4 Mon Sep 17 00:00:00 2001
+From: Mike Miller <mike.miller@hp.com>
+Date: Thu, 18 Apr 2013 13:49:37 -0500
+Subject: [PATCH] [SCSI] cciss: bug fix to prevent cciss from loading in kdump
+ crash kernel
+
+By default the cciss driver supports all "older" HP Smart Array controllers
+and hpsa supports all controllers starting with the G6 family. There are
+module parameters that allow a user to override those defaults and use hpsa
+for any HP Smart Array controller.
+If the user does override the default behavior and uses hpsa for older
+controllers it is possible that cciss may try to load in a kdump crash
+kernel. This may happen if cciss is loaded first from the kdump initrd
+image. If cciss does load rather than hpsa and reset_devices is true we
+immediately call cciss_hard_reset_controller. This will result in a kernel
+panic and the core file cannot be created.
+This patch prevents cciss from trying to load in this scenario.
+
+Signed-off-by: Mike Miller <mike.miller@hp.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 1c1b8e5..daaab88 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -75,6 +75,12 @@ module_param(cciss_simple_mode, int, S_IRUGO|S_IWUSR);
+ MODULE_PARM_DESC(cciss_simple_mode,
+ 	"Use 'simple mode' rather than 'performant mode'");
+ 
++static int cciss_allow_hpsa;
++module_param(cciss_allow_hpsa, int, S_IRUGO|S_IWUSR);
++MODULE_PARM_DESC(cciss_allow_hpsa,
++	"Prevent cciss driver from accessing hardware known to be "
++	" supported by the hpsa driver");
++
+ static DEFINE_MUTEX(cciss_mutex);
+ static struct proc_dir_entry *proc_cciss;
+ 
+@@ -4960,6 +4966,16 @@ static int cciss_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	ctlr_info_t *h;
+ 	unsigned long flags;
+ 
++	/*
++	 * By default the cciss driver is used for all older HP Smart Array
++	 * controllers. There are module paramaters that allow a user to
++	 * override this behavior and instead use the hpsa SCSI driver. If
++	 * this is the case cciss may be loaded first from the kdump initrd
++	 * image and cause a kernel panic. So if reset_devices is true and
++	 * cciss_allow_hpsa is set just bail.
++	 */
++	if ((reset_devices) && (cciss_allow_hpsa == 1))
++		return -ENODEV;
+ 	rc = cciss_init_reset_devices(pdev);
+ 	if (rc) {
+ 		if (rc != -ENOTSUPP)
 
 
-On 2 May 2013 22:13, Yanmin Zhang <yanmin_zhang@linux.intel.com> wrote:
->
-> On Thu, 2013-05-02 at 19:00 -0700, Greg Kroah-Hartman wrote:
-> > On Fri, May 03, 2013 at 08:33:00AM +0800, Yanmin Zhang wrote:
-> > > On Wed, 2013-05-01 at 20:20 -0500, Linas Vepstas wrote:
-> > > > Hi,
-> > > >
-> > > > On 1 May 2013 19:30, Yanmin Zhang <yanmin_zhang@linux.intel.com>
-> > > > wrote:
-> > > >         On Fri, 2013-04-26 at 06:28 +0000, Zhang, LongX wrote:
-> > > >         > From: Zhang Long <longx.zhang@intel.com>
-> > > >         >
-> > > >         > Specific pci device drivers might have many functions to
-> > > >         call
-> > > >         > pci_channel_offline to check device states. When slot_reset
-> > > >         happens,
-> > > >         > drivers' slot_reset callback might call such functions and
-> > > >         eventually
-> > > >         > abort the reset.
-> > > >         >
-> > > >         > The patch resets pdev->error_state to pci_channel_io_normal
-> > > >         at
-> > > >         > the begining of report_slot_reset.
-> > > >         >
-> > > >         > Thank Liu Joseph for pointing it out.
-> > > >
-> > > >         Linas, Bjorn,
-> > > >
-> > > >         Would you like to merge the patch to your testing tree?
-> > > >         The patch resolves one issue pointed out by Joseph.
-> > > >
-> > > >
-> > > > I'm not maintaining a tree at this time, and am not able to test.
-> > > > Sorry.
-> > > Thanks Linas.
-> > >
-> > > Greg,
-> > >
-> > > Would you like to merge it into your testing tree? Joseph Liu tested
-> > > the patch and it does work.
-> >
-> > You do know about the scripts/get_maintainer.pl script, right?
-> >
-> > Hint, try it out :)
-> Greg,
->
-> Thanks. We did send to the right people, Linas and Bjorn.
->
-> scripts/get_maintainer.pl 0001-pci-reset-error_state-to-pci_channel_io_normal-at-re.patch
-> Bjorn Helgaas <bhelgaas@google.com> (supporter:PCI SUBSYSTEM,commit_signer:7/8=88%,commit_signer:10/11=91%)
-> Linas Vepstas <linasvepstas@gmail.com> (commit_signer:2/8=25%)
-> Yijing Wang <wangyijing@huawei.com> (commit_signer:2/8=25%,commit_signer:2/11=18%)
-> Jiang Liu <jiang.liu@huawei.com> (commit_signer:2/8=25%,commit_signer:2/11=18%)
-> Stephen Hemminger <shemminger@vyatta.com> (commit_signer:1/8=12%)
-> "Rafael J. Wysocki" <rafael.j.wysocki@intel.com> (commit_signer:6/11=55%)
-> Huang Ying <ying.huang@intel.com> (commit_signer:5/11=45%)
-> linux-pci@vger.kernel.org (open list:PCI SUBSYSTEM)
-> linux-kernel@vger.kernel.org (open list)
->
->
-> I remember Jesse was maintaining PCI subsystem and he responded quickly.
->
-> Yanmin
->
->
