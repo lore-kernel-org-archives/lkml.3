@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762790Ab3ECGbn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 02:31:43 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:60844 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762722Ab3ECGbl (ORCPT
+	id S1762803Ab3ECGcA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 02:32:00 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:63671 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762722Ab3ECGb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 02:31:41 -0400
-X-AuditID: cbfee68e-b7efa6d000004d12-c2-518359cc90e7
+	Fri, 3 May 2013 02:31:58 -0400
+X-AuditID: cbfee691-b7fe56d000004b96-94-518359dc42a6
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 21/42] rtc: rtc-ls1x: remove unnecessary platform_set_drvdata()
-Date: Fri, 03 May 2013 15:31:39 +0900
-Message-id: <002301ce47c7$decf3ab0$9c6db010$@samsung.com>
+Subject: [PATCH 22/42] rtc: rtc-m48t59: remove unnecessary
+ platform_set_drvdata()
+Date: Fri, 03 May 2013 15:31:56 +0900
+Message-id: <002401ce47c7$e8be6960$ba3b3c20$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5Hx9uNrntO4hOZRuiJSkGfaSRfCQ==
+Thread-index: Ac5Hx+Wim3POLoyoTuWXq+8gV1bLhw==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zA90zkc2BBo+/y1osuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
-	WqRvl8CVcXPPObaCt6wVO2ebNjA+Y+li5OSQEDCRuD5pMROELSZx4d56ti5GLg4hgWWMEjfv
-	rmKDKbp77TI7RGI6o0T3xWZGCOcXo8TKa7sZQarYBNQkvnw5DFTFwSEioC/R1qIBUsMs0M0o
-	8ah5LjNIjbCAv8S2I9/B1rEIqEr03jwP1ssrYCnx4dE3FghbUOLH5HtgNrOAlsT6nceZIGx5
-	ic1r3jJDXKQgsePsa7BeEQE9iWktv6BqRCT2vXgHdpyEwCF2ie5pj6CWCUh8m3yIBeQ4CQFZ
-	iU0HoOZIShxccYNlAqPYLCSrZyFZPQvJ6llIVixgZFnFKJpakFxQnJReZKRXnJhbXJqXrpec
-	n7uJERJ7fTsYbx6wPsSYDLR+IrOUaHI+MHbzSuINjc2MLExNTI2NzC3NSBNWEudVa7EOFBJI
-	TyxJzU5NLUgtii8qzUktPsTIxMEp1cAofuHUrOU7pPQ2S+3jV514vOGZ8Jt40wpzk2KP+rTE
-	nFDt2evrecq43zaqffNxm/ZuYtVe70L2pCU/96pL3j7Ef6rmq/uPt2mtRhtXrTdq7XyXz6jq
-	9bVt6u2tHhyH+CO6/wmK3dxtMY0z4GhhC8upJjmJZ7MbDnzu3sx5YLLnOZ2dh5effvNeiaU4
-	I9FQi7moOBEATEOU/9MCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jQd0zkc2BBj3dUhZLLl5lt5izfg2b
-	xeWFl1gtLu+aw2axv7OD0YHVY8/Ek2weJ2b8ZvHo27KK0WP6vJ9MHp83yQWwRjUw2mSkJqak
-	Fimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVdSKEvMKQUKBSQW
-	Fyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYxZtzcc46t4C1rxc7Zpg2Mz1i6GDk5JARMJO5e
-	u8wOYYtJXLi3nq2LkYtDSGA6o0T3xWZGCOcXo8TKa7sZQarYBNQkvnw5DNTBwSEioC/R1qIB
-	UsMs0M0o8ah5LjNIjbCAv8S2I9+ZQGwWAVWJ3pvnwXp5BSwlPjz6xgJhC0r8mHwPzGYW0JJY
-	v/M4E4QtL7F5zVtmiIsUJHacfQ3WKyKgJzGt5RdUjYjEvhfvGCcwCsxCMmoWklGzkIyahaRl
-	ASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgyH4mvYNxVYPFIUYBDkYlHl6FlqZAIdbE
-	suLK3EOMEhzMSiK8bj+AQrwpiZVVqUX58UWlOanFhxiTgT6dyCwlmpwPTDp5JfGGxiZmRpZG
-	ZhZGJubmpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cDIvlCXe2+GV5fJ+xleKcXOMq1T
-	T2dEzlnXNS+trJUndt5+/m7JL19fcjbIme9c9zT+YcL25oCPXKEb3VYfMbp9s/imV2vDy5Dd
-	hUetrEwd+6pfxiXkZvorO+17M4lZ41Dr4Rl+lzcJtUgZPelVqIjkd2G5yZhme7TpnWLiWkfv
-	uJU/lLMYdyuxFGckGmoxFxUnAgCd0BwHMAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zA927kc2BBi8lLJZcvMpuMWf9GjaL
+	ywsvsVpc3jWHzWJ/ZwejA6vHnokn2TxOzPjN4tG3ZRWjx/R5P5k8Pm+SC2CN4rJJSc3JLEst
+	0rdL4Mo42T+fseAGW8WZvmesDYwnWbsYOTkkBEwkJrxdCGWLSVy4t56ti5GLQ0hgGaPE7s1v
+	WWCKurvusUAkFjFKrOmfzgzh/GKU2PJpEVg7m4CaxJcvh9m7GDk4RAT0JdpaNEBqmAW6GSUe
+	Nc9lBqkRFgiWeLtyJhuIzSKgKrFk/S2wXl4BS4mrH/ZD2YISPybfA9vMLKAlsX7ncSYIW15i
+	85q3zBAXKUjsOPuaEcQWEdCTeDTvABtEjYjEvhfvGEEWSwgcYpeY1nifCWKZgMS3yYdYQI6T
+	EJCV2HQAao6kxMEVN1gmMIrNQrJ6FpLVs5CsnoVkxQJGllWMoqkFyQXFSelFpnrFibnFpXnp
+	esn5uZsYIbE3cQfj/QPWhxiTgdZPZJYSTc4Hxm5eSbyhsZmRhamJqbGRuaUZacJK4rzqLdaB
+	QgLpiSWp2ampBalF8UWlOanFhxiZODilGhgr7qzReLzfWWvq7nDWU9F69+o4OnYmeXpMPdpu
+	rJmu/CzzleWa8rSbqXzrZlSpGGT3yS9O3DlpdfIGx4DdIiLbF7N8Ohr8xOaz57YTXCdO5ulJ
+	lKsyr59Td/iNy8XubpYr+s0O1Zfn9Wu1fqha1yb538l3Tu+TE5/jj7ot+jHNepL7hInFSw8r
+	sRRnJBpqMRcVJwIACu+LhNMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jAd07kc2BBhtWWlosuXiV3WLO+jVs
+	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmHGyfz5jwQ22ijN9z1gbGE+ydjFyckgImEh0
+	d91jgbDFJC7cW8/WxcjFISSwiFFiTf90ZgjnF6PElk+LwDrYBNQkvnw5zN7FyMEhIqAv0dai
+	AVLDLNDNKPGoeS4zSI2wQLDE25Uz2UBsFgFViSXrb4H18gpYSlz9sB/KFpT4MRliM7OAlsT6
+	nceZIGx5ic1r3jJDXKQgsePsa0YQW0RAT+LRvANsEDUiEvtevGOcwCgwC8moWUhGzUIyahaS
+	lgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgmP7mfQOxlUNFocYBTgYlXh4FVqaAoVY
+	E8uKK3MPMUpwMCuJ8Lr9AArxpiRWVqUW5ccXleakFh9iTAb6dCKzlGhyPjDt5JXEGxqbmBlZ
+	GplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QDozPDs0iO7w+KH5ZtSltq3aDO
+	4LMha7tY2SSrdYla9r4zCz6X76tn9rrCZX0yeccVVfmGEIEHE7L8QnYum3wk5c2DjU9nPbo5
+	Y9qDgtktTJZzz6zQCJbfGfW3U0F0+6P2SQuWcl8Q9N0qlcQadfGHRc074VrpLYWZ50JOF21u
+	ncf+qmgFn8mqRCWW4oxEQy3mouJEAIwc1/cxAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,22 +61,21 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-ls1x.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-m48t59.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/rtc/rtc-ls1x.c b/drivers/rtc/rtc-ls1x.c
-index db82f91..e913f38 100644
---- a/drivers/rtc/rtc-ls1x.c
-+++ b/drivers/rtc/rtc-ls1x.c
-@@ -187,8 +187,6 @@ err:
- 
- static int ls1x_rtc_remove(struct platform_device *pdev)
- {
+diff --git a/drivers/rtc/rtc-m48t59.c b/drivers/rtc/rtc-m48t59.c
+index 130f29a..d4d31fa 100644
+--- a/drivers/rtc/rtc-m48t59.c
++++ b/drivers/rtc/rtc-m48t59.c
+@@ -513,7 +513,6 @@ static int m48t59_rtc_remove(struct platform_device *pdev)
+ 		iounmap(m48t59->ioaddr);
+ 	if (m48t59->irq != NO_IRQ)
+ 		free_irq(m48t59->irq, &pdev->dev);
 -	platform_set_drvdata(pdev, NULL);
--
+ 	kfree(m48t59);
  	return 0;
  }
- 
 -- 
 1.7.2.5
 
