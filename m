@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762961Ab3ECJxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 05:53:13 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:34914 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754431Ab3ECJxM (ORCPT
+	id S1762970Ab3ECJxw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 05:53:52 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42861 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754282Ab3ECJxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 05:53:12 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] media: davinci: vpbe: fix layer availability for NV12 format
-Date: Fri,  3 May 2013 15:23:03 +0530
-Message-Id: <1367574783-19090-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 3 May 2013 05:53:51 -0400
+Message-ID: <5183892B.8020400@pengutronix.de>
+Date: Fri, 03 May 2013 11:53:47 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Oliver Hartkopp <socketcan@hartkopp.net>, linux-can@vger.kernel.org
+Subject: Re: [PATCH, RFC 01/22] can: move CONFIG_HAVE_CAN_FLEXCAN out of CAN_DEV
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-2-git-send-email-arnd@arndb.de>
+In-Reply-To: <1367507786-505303-2-git-send-email-arnd@arndb.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2RLNQFBWPGEEENDMLDLME"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2RLNQFBWPGEEENDMLDLME
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-For NV12 format, even if display data is single image,
-both VIDWIN0 and VIDWIN1 parameters must be used. The start
-address of Y data plane and C data plane is configured in
-VIDEOWIN0ADH/L and VIDEOWIN1ADH/L respectively.
-cuurently only one layer was requested, which is suffice
-for yuv422, but for yuv420(NV12) two layers are required and
-fix the same by requesting for other layer if pix fmt is NV12
-during set_fmt.
+On 05/02/2013 05:16 PM, Arnd Bergmann wrote:
+> CONFIG_HAVE_CAN_FLEXCAN is a silect symbol that is meant to be selected=
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/platform/davinci/vpbe_display.c |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
+> by platforms that support this driver, but that is not possible without=
 
-diff --git a/drivers/media/platform/davinci/vpbe_display.c b/drivers/media/platform/davinci/vpbe_display.c
-index 0341dcc..f2ee07b 100644
---- a/drivers/media/platform/davinci/vpbe_display.c
-+++ b/drivers/media/platform/davinci/vpbe_display.c
-@@ -922,6 +922,22 @@ static int vpbe_display_s_fmt(struct file *file, void *priv,
- 	other video window */
- 
- 	layer->pix_fmt = *pixfmt;
-+	if (pixfmt->pixelformat == V4L2_PIX_FMT_NV12 &&
-+	    cpu_is_davinci_dm365()) {
-+		struct vpbe_layer *otherlayer;
-+
-+		otherlayer = _vpbe_display_get_other_win_layer(disp_dev, layer);
-+		/* if other layer is available, only
-+		* claim it, do not configure it
-+		*/
-+		ret = osd_device->ops.request_layer(osd_device,
-+						    otherlayer->layer_info.id);
-+		if (ret < 0) {
-+			v4l2_err(&vpbe_dev->v4l2_dev,
-+				 "Display Manager failed to allocate layer\n");
-+			return -EBUSY;
-+		}
-+	}
- 
- 	/* Get osd layer config */
- 	osd_device->ops.get_layer_config(osd_device,
--- 
-1.7.4.1
+> also selecting CAN_DEV, unless we move it out of the "if CAN_DEV"
+> section of the Kconfig file.
+>=20
+> warning: (SOC_IMX28 && SOC_IMX25 && SOC_IMX35 &&
+>  IMX_HAVE_PLATFORM_FLEXCAN && SOC_IMX53 && SOC_IMX6Q) selects HAVE_CAN_=
+FLEXCAN
+>  which has unmet direct dependencies (NET && CAN && CAN_DEV)
 
+With the advent of multi platform kernels I like to get rid of
+HAVE_CAN_FLEXCAN completely.
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+------enig2RLNQFBWPGEEENDMLDLME
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGDiSsACgkQjTAFq1RaXHPmjACfRDYRA0AqYwoOhxMHTIf4wwGR
+kdMAniOfggzXZYyEnm8BpusfWOkAUnAM
+=TRIL
+-----END PGP SIGNATURE-----
+
+------enig2RLNQFBWPGEEENDMLDLME--
