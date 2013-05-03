@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934313Ab3ECUPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 16:15:19 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:49430 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934192Ab3ECUPR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 16:15:17 -0400
+	id S1763397Ab3ECURA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 16:17:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3978 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750729Ab3ECUQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 16:16:59 -0400
+Date: Fri, 3 May 2013 16:16:56 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: dhowells@redhat.com
+Subject: Add missing MODULE_LICENSE tag to oid_registry
+Message-ID: <20130503201656.GA12510@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, dhowells@redhat.com
 MIME-Version: 1.0
-In-Reply-To: <1367591569-32197-18-git-send-email-lee.jones@linaro.org>
-References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
-	<1367591569-32197-18-git-send-email-lee.jones@linaro.org>
-Date: Fri, 3 May 2013 22:15:16 +0200
-Message-ID: <CACRpkdatVVLX8S=OGUFs-ab+HZ6mrj6nyqCxg_YzojNJ=FJPoQ@mail.gmail.com>
-Subject: Re: [PATCH 17/63] dmaengine: ste_dma40: Calculate number of logical
- channels from physical ones
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
+if CONFIG_OID_REGISTRY=m
 
-> This change will cost ~25KB of memory, but it's worth the trade-off,
-> as it removes a great deal of overhead. It means that instead of only
-> allocating memory for the logical channels in use, it does so for all
-> available ones, which is 32 per physical channel. However, this now
-> means we can remove some platform data and we don't have to worry
-> about adding vendor specific variables to Device Tree.
->
-> Acked-by: Vinod Koul <vnod.koul@intel.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+[  241.094450] oid_registry: module license 'unspecified' taints kernel.
 
-Patch applied to my ux500-dma40 branch.
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-Thanks!
-Linus Walleij
+diff --git a/lib/oid_registry.c b/lib/oid_registry.c
+index d8de11f..6eff319 100644
+--- a/lib/oid_registry.c
++++ b/lib/oid_registry.c
+@@ -9,6 +9,7 @@
+  * 2 of the Licence, or (at your option) any later version.
+  */
+ 
++#include <linux/module.h>
+ #include <linux/export.h>
+ #include <linux/oid_registry.h>
+ #include <linux/kernel.h>
+@@ -168,3 +169,5 @@ int sprint_OID(enum OID oid, char *buffer, size_t bufsize)
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(sprint_OID);
++
++MODULE_LICENSE("GPL");
