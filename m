@@ -1,153 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934337Ab3ECUby (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 16:31:54 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:46883 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763474Ab3ECUbw (ORCPT
+	id S1763518Ab3ECUdc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 16:33:32 -0400
+Received: from nm2-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.158]:33362
+	"EHLO nm2-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762019Ab3ECUdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 16:31:52 -0400
-Date: Fri, 3 May 2013 16:31:49 -0400
-From: Josh Boyer <jwboyer@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Dave Airlie <airlied@linux.ie>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: [git pull] drm for 3.10-rc1
-Message-ID: <20130503203149.GD8320@zod.gha.chartermi.net>
-References: <alpine.DEB.2.00.1305030224580.12778@skynet.skynet.ie>
- <20130503143951.GB8320@zod.gha.chartermi.net>
- <CAKMK7uF46a87KDg=n-rLhq2kjuPCpexHGwfR9UcPc_smZjqQzg@mail.gmail.com>
- <20130503165720.GC8320@zod.gha.chartermi.net>
+	Fri, 3 May 2013 16:33:31 -0400
+X-Yahoo-Newman-Id: 844983.95737.bm@smtp118.sbc.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: H4P3sQwVM1lxwPMmT3GT.FVIRPk.k7UVjYXD1kxDuPoSx1K
+ mKIm3X_l92c0B3gDmnHgdMcE8aZKT..hir8GzkvfuinVPEXenXscSX5LsRlV
+ 2pQN4j0Cc42Tgr.JZWGKFUmlnETtX9khMAwIBkVKj.njBN1iGQXl3PGA1NPj
+ _kskq3PtF6eDfrlCOcixjJCO6TVrdcZX3_xlyALcD7l_9z8M2kjGDme6h2OJ
+ luypwVQsgqMBMA50W38Y00DPcvrHLMPqtmWuSc2ZAXdCRh4W2wFvz9jhw.Tf
+ yYhEZXkd5qyl1mqN_tyHHpe47HLbhWs0wRkXzGtrEr5Oxy2vy_dzFj5VhOXg
+ VXlPZH0_OojjfLKb0T4cDhSUpVy6okZSs1tKvLrTvu3DHYvsnskK8K_PCJrP
+ _Sugjvz__bIZVggKtY_PzzQ2GUNY6aAzTnvVQw.M7__8kHR6B0MeAacYv40U
+ DzwnC5ZtmoOFLSw11Wv_9xnVkGQHDY14lE_E-
+X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
+X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
+        by smtp118.sbc.mail.gq1.yahoo.com with SMTP; 03 May 2013 20:33:30 +0000 UTC
+Date: Fri, 3 May 2013 13:33:35 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Dirk Eibach <dirk.eibach@gdsys.cc>
+Cc: linux-kernel@vger.kernel.org, Kumar Gala <galak@kernel.crashing.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] powerpc: Make Book E watchdog reset type configurable
+Message-ID: <20130503203335.GA13417@roeck-us.net>
+References: <1367505913-18970-1-git-send-email-dirk.eibach@gdsys.cc>
+ <20130502161720.GA7797@roeck-us.net>
+ <429ec64cf7c30a139db40eb20fd3e682@gdsys.cc>
+ <20130503011741.GA23266@roeck-us.net>
+ <7be2cb3417615ff206270a756c6422d6@gdsys.cc>
+ <20130503134610.GA31037@roeck-us.net>
+ <d735c13abccd6ba75fd65658ab94654d@gdsys.cc>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130503165720.GC8320@zod.gha.chartermi.net>
+In-Reply-To: <d735c13abccd6ba75fd65658ab94654d@gdsys.cc>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 12:57:20PM -0400, Josh Boyer wrote:
->On Fri, May 03, 2013 at 06:08:52PM +0200, Daniel Vetter wrote:
->>On Fri, May 3, 2013 at 4:39 PM, Josh Boyer <jwboyer@gmail.com> wrote:
->>> On Fri, May 03, 2013 at 02:25:57AM +0100, Dave Airlie wrote:
->>>>The following changes since commit b6a9b7f6b1f21735a7456d534dc0e68e61359d2c:
->>>>
->>>>  mm: prevent mmap_cache race in find_vma() (2013-04-04 11:46:28 -0700)
->>>>
->>>>are available in the git repository at:
->>>>
->>>>  git://people.freedesktop.org/~airlied/linux.git drm-next
->>>>
->>>>for you to fetch changes up to 307b9c022720f9de90d58e51743e01e9a42aec59:
->>>>
->>>>  qxl: update to new idr interfaces. (2013-05-03 10:37:20 +1000)
->>>>
->>>>----------------------------------------------------------------
->>>
->>> So something in this batch of commits breaks a Macbook Pro Retina I have
->>> sitting here.  If I boot a Fedora kernel based on  Linux
->>> v3.9-8153-g5a148af, things boot up as they did previously with 3.9.0 and
->>> are generally working fine.  If I boot with a kernel based on Linux
->>> v3.9-8933-gce85722, it will boot but as soon as plymouth starts, I get
->>> nothing but static on the screen (like 1950s TV static).
->>>
->>> This machine is using i915 graphics, so I booted with nomodeset and did
->>> the 'modprobe drm debug=15; modprobe i915 modeset=1' trick and it
->>> repeated the failure with that.  I've gathered a bunch of data like
->>> dmesg, an intel_reg_snapshot, etc.  It's all attached below.
->>>
->>> I'll start bisecting to see if I can narrow down the commit that broke
->>> things, but I thought I would give a heads up now in case anyone has any
->>> ideas.
->>
->>Looked through the log files and didn't see a clue. And usually DP
->>tends to fail pretty noisily. So I think the bisect result would be
->>interestin. Meanwhile:
->
->Yeah, working on that.
+On Fri, May 03, 2013 at 08:30:03PM +0200, Dirk Eibach wrote:
+> 
+> 
+> Am 03.05.2013 15:46, schrieb Guenter Roeck:
+> >On Fri, May 03, 2013 at 10:33:13AM +0200, Dirk Eibach wrote:
+> >>Hi Guenter,
+> >>
+> >>>>>>diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> >>>>>>index e89fc31..6048593 100644
+> >>>>>>--- a/drivers/watchdog/Kconfig
+> >>>>>>+++ b/drivers/watchdog/Kconfig
+> >>>>>>@@ -1172,6 +1172,38 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
+> >>>>>>
+> >>>>>>	  The value can be overridden by the wdt_period command-line
+> >>>>>>parameter.
+> >>>>>>
+> >>>>>>+choice
+> >>>>>>+	prompt "PowerPC Book-E Watchdog reset type"
+> >>>>>>+	depends on BOOKE_WDT
+> >>>>>>+	default BOOKE_WDT_RESET_CHIP
+> >>>>>>+	help
+> >>>>>>+	  Specify what kind of reset will be executed on watchdog
+> >>>>>>timeout.
+> >>>>>>+
+> >>>>>Seems to me it would be much better to make this configurable via
+> >>>>>platform data
+> >>>>>and/or device tree.
+> >>>>
+> >>>>good catch. What do the device-tree gurus think to be a nice
+> >>>>property name?
+> >>
+> >>having a closer look, I realized booke_wdt is not device-tree based
+> >>yet. Migrating it would come close to a rewrite, breaking
+> >>compatibility for all current users. Sorry, this is way beyond the
+> >
+> >Really ? I don't think making it a platform driver would be that hard,
+> >or break anything.
+> 
+> Maybe I am missing something, but wouldn't making it a device-tree
+> driver mean, that I would have to identify all users of BOOKE_WDT
+> and add it to their device trees?
+> 
+Not necessarily; only if the platform driver doesn't auto-instantiate.
+I'll play with it and see if I can get it working.
 
-OK.  Git bisect tells me this:
+On the other side, that wouldn't be too bad either. As far as I can see
+from a quick search, there is no default configuration in the upstream kernel
+which has BOOKE_WDT enabled.
 
-57c219633275c7e7413f8bc7be250dc092887458 is the first bad commit
-commit 57c219633275c7e7413f8bc7be250dc092887458
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Thu Apr 4 17:19:37 2013 +0200
-
-    drm/i915: revert eDP bpp clamping code changes
-    
-    The behaviour around handling the eDP bpp value from vbt has been
-    slightly changed in
-    
-    commit 3600836585e3fdef0a1410d63fe5ce4015007aac
-    Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-    Date:   Wed Mar 27 00:44:59 2013 +0100
-    
-        drm/i915: convert DP autodither code to new infrastructure
-    
-    The old behaviour was that we used the plane's bpp (usually 24bpp) for
-    computing the dp link bw, but set up the pipe with the bpp value from
-    vbt if available. This takes the vbt bpp override into account even
-    for the dp link bw configuration.
-    
-    On Paulo's hsw machine this resulted in a slower link clock and a
-    black screen - but the mode actually /should/ fit even with the lower
-    clock. Until we've cleared up simply stay bug-for-bug compatible with
-    the old code.
-    
-    While at it, also restore a debug message lost in:
-    
-    commit 4e53c2e010e531b4a014692199e978482d471c7e
-    Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-    Date:   Wed Mar 27 00:44:58 2013 +0100
-    
-        drm/i915: precompute pipe bpp before touching the hw
-    
-    Cc: Paulo Zanoni <przanoni@gmail.com>
-    Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-    Tested-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-
-:040000 040000 a7529c568073885302e5ca03cce5bd224e244b57 d5d860a0d4b04ad98d77abb1df774c1448bd1697 M	drivers
-
-The bisect log is below.  I can try to revert it directly on top of
-Linus' latest tree later.
-
->>- do you have drm.debug=0xe dmesg for a working kernel, too?
->
->No, but I can try and get one.
-
-I haven't gotten to this quite yet.  I'll try to get to it over the
-weekend.
-
-josh
-
-[jwboyer@obiwan linux]$ git bisect log
-git bisect start
-# good: [5a148af66932c31814e263366094b5812210b501] Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc
-git bisect good 5a148af66932c31814e263366094b5812210b501
-# bad: [ce857229e0c3adc211944a13a5579ef84fd7b4af] ipc: fix GETALL/IPC_RM race for sysv semaphores
-git bisect bad ce857229e0c3adc211944a13a5579ef84fd7b4af
-# bad: [4ed108352d9b60a723a5071ed05e722826c2b72f] drm/radeon: put UVD PLLs in bypass mode
-git bisect bad 4ed108352d9b60a723a5071ed05e722826c2b72f
-# bad: [dc652f90e088798bfa31f496ba994ddadd5d5680] drm/i915: ensure single initialization and cleanup of backlight device
-git bisect bad dc652f90e088798bfa31f496ba994ddadd5d5680
-# good: [bb60b9695ced58768ba05b2d88fb4ee815df18f4] drm/i915: emit a hotplug event on resume
-git bisect good bb60b9695ced58768ba05b2d88fb4ee815df18f4
-# good: [8b47047bd103c9fdb50440790a2ef17fa69a35c4] drm/i915: rip out superflous is_dp&is_cpu_edp tracking
-git bisect good 8b47047bd103c9fdb50440790a2ef17fa69a35c4
-# bad: [4615d4c9e27eda42c3e965f208a4b4065841498c] drm/i915: Use MLC (l3$) for context objects
-git bisect bad 4615d4c9e27eda42c3e965f208a4b4065841498c
-# bad: [40c7ead980945ac96eadbd6d99b050458d797e2b] drm/i915: PCH_NOP
-git bisect bad 40c7ead980945ac96eadbd6d99b050458d797e2b
-# good: [9c8e09b7a551fc81842a2d9cdc3e42a5b729820f] drm/i915: Set PIPECONF color range bit on Valleyview
-git bisect good 9c8e09b7a551fc81842a2d9cdc3e42a5b729820f
-# bad: [57c219633275c7e7413f8bc7be250dc092887458] drm/i915: revert eDP bpp clamping code changes
-git bisect bad 57c219633275c7e7413f8bc7be250dc092887458
-# good: [2af8898bed4d127a2b0d9f5109f6089f7f60e424] Revert "drm/i915: fix DP get_hw_state return value"
-git bisect good 2af8898bed4d127a2b0d9f5109f6089f7f60e424
-[jwboyer@obiwan linux]$ 
-
+Guenter
