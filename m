@@ -1,85 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763195Ab3ECLWh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 07:22:37 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:62710 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853Ab3ECLWg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 07:22:36 -0400
-Date: Fri, 3 May 2013 12:22:29 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Bengt =?iso-8859-1?Q?J=F6nsson?= <bengt.g.jonsson@stericsson.com>
-Subject: Re: [PATCH 2/4] mfd: ab8500-gpadc: Suppress 'ignoring
- regulator_enable() return value' warning
-Message-ID: <20130503112229.GI24153@gmail.com>
-References: <1367509690-24022-1-git-send-email-lee.jones@linaro.org>
- <1367509690-24022-3-git-send-email-lee.jones@linaro.org>
- <CACRpkdaf75sQduyfw58PFmC1ZyNDMxpwAf0OSyRLPP6vFc+wBQ@mail.gmail.com>
- <20130503110424.GG24153@gmail.com>
+	id S1763239Ab3ECL3a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 07:29:30 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:56360 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761730Ab3ECL33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 07:29:29 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jonas Heinrich <onny@project-insanity.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, len.brown@intel.com, pavel@ucw.cz,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Subject: Re: [Bisected] 3.7-rc1 can't resume (still present in 3.9)
+Date: Fri, 03 May 2013 13:37:45 +0200
+Message-ID: <1536388.1prjkW6Efo@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130503110705.GA3828@onny.Speedport_W_700V>
+References: <20130218155439.GA902@onny> <1487368.CBCgti1nd5@vostro.rjw.lan> <20130503110705.GA3828@onny.Speedport_W_700V>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130503110424.GG24153@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 03 May 2013, Lee Jones wrote:
-
-> On Fri, 03 May 2013, Linus Walleij wrote:
-> 
-> > On Thu, May 2, 2013 at 5:48 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> > > drivers/mfd/ab8500-gpadc.c: In function ‘ab8500_gpadc_resume’:
-> > > drivers/mfd/ab8500-gpadc.c:911:18: warning: ignoring return value of
-> > >         ‘regulator_enable’, declared with attribute warn_unused_result
-> > >         [-Wunused-result]
-> > >
-> > > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > > ---
-> > >  drivers/mfd/ab8500-gpadc.c |    5 ++++-
-> > >  1 file changed, 4 insertions(+), 1 deletion(-)
-> > >
-> > > diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
-> > > index 5e65b28..7278e53 100644
-> > > --- a/drivers/mfd/ab8500-gpadc.c
-> > > +++ b/drivers/mfd/ab8500-gpadc.c
-> > > @@ -907,8 +907,11 @@ static int ab8500_gpadc_suspend(struct device *dev)
-> > >  static int ab8500_gpadc_resume(struct device *dev)
-> > >  {
-> > >         struct ab8500_gpadc *gpadc = dev_get_drvdata(dev);
-> > > +       int ret;
-> > >
-> > > -       regulator_enable(gpadc->regu);
-> > > +       ret = regulator_enable(gpadc->regu);
-> > > +       if (ret < 0)
-> > > +               return ret;
-> > >
-> > >         pm_runtime_mark_last_busy(gpadc->dev);
-> > >         pm_runtime_put_autosuspend(gpadc->dev);
+On Friday, May 03, 2013 11:07:05 AM Jonas Heinrich wrote:
+> On 05-03 01:29, Rafael J. Wysocki wrote:
+> > On Thursday, May 02, 2013 08:32:30 PM Jonas Heinrich wrote:
+> > > On 05-02 02:45, Rafael J. Wysocki wrote:
+> > > > On Wednesday, May 01, 2013 11:55:10 AM H. Peter Anvin wrote:
+> > > > > On 05/01/2013 11:51 AM, Jonas Heinrich wrote:
+> > > > > > Well, you could give me instructions on how to debug this (I'll do 
+> > > > > > everything ;)) or I could ship you the Thinkpad T43. I guess this
+> > > > > > would worth the effort since this bug is somehow critical.
+> > > > > > 
+> > > > > > Best regards, Jonas
+> > > > > 
+> > > > > I'll put together a debug patch unless I can trick Rafael into doing
+> > > > > it first...
+> > > > 
+> > > > I'm afraid that code has changed quite a bit since I looked at it last time.
+> > > > [Jarkko Sakkinen seems to have worked on it lately, CCed.]
+> > > > 
+> > > > Jonas, I wonder what happens if you drop the first hunk of the patch (it just
+> > > > uses a different register, which shouldn't matter)?  Does it still help then?
+> > > 
+> > > Hello Rafel, first of all, thank you for helping me out :)
+> > > You're right, the patch still solves the suspend bug, after removing the first 
+> > > hunk of the patch and applying it (see attachement:
+> > > suspendfix_first_hunk_dropped.patch).
+> > > 
+> > > > 
+> > > > If so, there are still a few things you can do to it, e.g:
+> > > > (1) drop the
+> > > > 
+> > > > -       btl     $WAKEUP_BEHAVIOR_RESTORE_CR4, %edi
+> > > > -       jnc     1f
+> > > > 
+> > > 
+> > > Still works :) (used suspendfix_1.patch)
+> > > 
+> > > > lines,
+> > > > (2) drop the
+> > > > 
+> > > > -       btl     $WAKEUP_BEHAVIOR_RESTORE_EFER, %edi
+> > > > -       jnc     1f
+> > > > 
+> > > > lines,
+> > > 
+> > > Still works :) (used suspendfix_2.patch)
+> > > 
+> > > > (3) drop the
+> > > > 
+> > > > +       jecxz   1f
+> > > > 
+> > > 
+> > > Still works :) (used suspendfix_3.patch)
+> > > 
+> > > > line,
+> > > > (4) drop the
+> > > > 
+> > > > +       movl    %eax, %ecx
+> > > > +       orl     %edx, %ecx
+> > > > +       jz      1f
+> > > > 
+> > > 
+> > > At this point, the bug reoccurs (used suspendfix_4.patch)! 
+> > > But that doesn't mean these lines are the only critical, because the more
+> > > minimal patch
+> > > 
+> > > @@ -119,6 +119,9 @@
+> > >         jnc     1f
+> > >         movl    pmode_efer, %eax
+> > >         movl    pmode_efer + 4, %edx
+> > > +       movl    %eax, %ecx
+> > > +       orl     %edx, %ecx
+> > > +       jz      1f
+> > >         movl    $MSR_EFER, %ecx
+> > >         wrmsr
+> > >  1:
+> > > 
+> > > 
+> > > with removing this part
+> > > 
+> > > -       movl    pmode_cr4, %eax
+> > > -       movl    %eax, %cr4
+> > > +       movl    pmode_cr4, %ecx
+> > > +       movl    %ecx, %cr4
+> > > 
+> > > also doesn't fix the issue (see suspendfix_5.patch).
+> > > 
+> > > > lines and see what the minimal patch needed for things to work again is.
+> > > > 
+> > > 
+> > > So the most minimal working patch is suspendfix_3.patch.
 > > 
-> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > Thanks for doing that detective work!
+> > 
+> > The only explanation of why this particular patch can help that seems viable to
+> > us at the moment is that we have a memory corruption in the code region modified
+> > by it and the patch simply changes the alignment of the instructions that don't
+> > get corrupted.
+> > 
+> > It looks like this may be verified by putting a bunch of nops into the region
+> > in question, so can you please check if the attached patch helps too?
 > 
-> As it has your Ack, I'm going to add an error print as per Srinidhi's
-> suggestion, test it again and apply this to my MFD tree.
+> Unfortunately, your attached patch doesn't seem to fix the bug. 
+> Hope you still have some ideas to address this issue :)
 
-Slight change of plan, as I've changed the semantics.
+Well, not really.
 
-Would you be kind enough to see v2?
+We'll need a dump of the wakeup structure from your system I suppose.
+I'll try to write a patch to get that over the weekend.
+
+Thanks,
+Rafael
+
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
