@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751087Ab3ECEAz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 00:00:55 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37095 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab3ECEAy (ORCPT
+	id S1751288Ab3ECEFx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 00:05:53 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:19675 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab3ECEFw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 00:00:54 -0400
-Date: Fri, 03 May 2013 00:00:52 -0400 (EDT)
-Message-Id: <20130503.000052.680733925880090504.davem@davemloft.net>
-To: gregkh@linuxfoundation.org
-Cc: hayeswang@realtek.com, oliver@neukum.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        nic_swsd@realtek.com
-Subject: Re: [PATCH v3 net-next] net/usb: new driver for RTL8152
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130503032315.GA22077@kroah.com>
-References: <20130503023328.GB26712@kroah.com>
-	<4215C45C849149B8A86B57F8D603AAEA@realtek.com.tw>
-	<20130503032315.GA22077@kroah.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Thu, 02 May 2013 21:00:53 -0700 (PDT)
+	Fri, 3 May 2013 00:05:52 -0400
+From: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
+To: kvm list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>
+CC: Luonengjun <luonengjun@huawei.com>, Zanghongyong <zanghongyong@huawei.com>,
+        "Huangweidong (C)" <weidong.huang@huawei.com>,
+        Qinchuanyu <qinchuanyu@huawei.com>
+Subject: KVM VM(rhel-5.5) %si is too high when TX/RX packets
+Thread-Topic: KVM VM(rhel-5.5) %si is too high when TX/RX packets
+Thread-Index: Ac5Hs1wISEMZKpucRUKMj7M5PG0M3g==
+Date: Fri, 3 May 2013 04:05:01 +0000
+Message-ID: <D3E216785288A145B7BC975F83A2ED103FE3BBB3@szxeml556-mbx.china.huawei.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: AhDY CCQa C9Fq E2+r FfzL GZIN KNwr LPBJ M0Lb OQ6K QIa4
+ ZZoN c3MY c65d d0Gy
+ eKiy;3;awB2AG0AQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBxAGUAbQB1AC0AZABlAHYAZQBsAEAAbgBvAG4AZwBuAHUALgBvAHIAZwA=;Sosha1_v1;7;{64596230-311B-4B9A-AF24-3C756A30F6F8};aABhAG8AeQB1AC4AegBoAGEAbgBnAEAAaAB1AGEAdwBlAGkALgBjAG8AbQA=;Fri,
+ 03 May 2013 04:04:54
+ GMT;SwBWAE0AIABWAE0AKAByAGgAZQBsAC0ANQAuADUAKQAgACUAcwBpACAAaQBzACAAdABvAG8AIABoAGkAZwBoACAAdwBoAGUAbgAgAFQAWAAvAFIAWAAgAHAAYQBjAGsAZQB0AHMA
+x-cr-puzzleid: {64596230-311B-4B9A-AF24-3C756A30F6F8}
+x-originating-ip: [10.135.68.97]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: 'Greg KH' <gregkh@linuxfoundation.org>
-Date: Thu, 2 May 2013 20:23:15 -0700
+I running a VM(RHEL-5.5) on KVM hypervisor(linux-3.8 + QEMU-1.4.1), and direct-assign intel 82576 VF to the VM. When TX/RX packets on VM to the other host via iperf tool, top tool result on VM shown that the %si is too high, approximately 95% ~ 100%, but from the view of host, the VM's total CPU usage is about 20% - 30%. And the throughput rate is approximately 200Mb/s, far from the line rate 1Gb/s, 
+And, I found  the hardirq rate is lower than normal by running "watch -d -n 1 cat /proc/interrupts", I think it's caused by the too high %si, because the NIC's hardirq was disabled during the softirq process.
+Then, I direct-assign the intel 82576 to the VM, the same case happened too. 
+I found the intel 82576 and intel 82576 VF's interrupt mode are both PCI-MSI-X.
 
-> On Fri, May 03, 2013 at 11:11:47AM +0800, hayeswang wrote:
->> Greg KH [mailto:gregkh@linuxfoundation.org] 
->> > Sent: Friday, May 03, 2013 10:33 AM
->> > To: Hayeswang
->> > Cc: oliver@neukum.org; netdev@vger.kernel.org; 
->> > linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org; nic_swsd
->> > Subject: Re: [PATCH v3 net-next] net/usb: new driver for RTL8152
->> > 
->> > On Fri, May 03, 2013 at 10:01:25AM +0800, Hayes Wang wrote:
->> > > Add new driver for supporting Realtek RTL8152 Based USB 2.0 
->> > Ethernet Adapters
->> > > 
->> > > Signed-off-by: Hayes Wang <hayeswang@realtek.com>
->> > > Cc: Realtek linux nic maintainers <nic_swsd@realtek.com>
->> > 
->> > You removed the wording I had questions about last time, does 
->> > that mean
->> > the previous wording was not correct, or that you no longer are
->> > publicising the fact that this driver reads on some patents that you
->> > own?
->> > 
->> > You also failed to answer my previous questions, why?
->> 
->> That description is about the patent for the hw design, not for
->> software. It indicates that the design of the hw uses those patents
->> from the other compnay. I have no idea about how to deal with those
->> patents. What should I do for sending a patch? 
-> 
-> That makes sense to me, removing it is correct.  It's now up to the
-> netdev developers to accept this, thanks for the quick response.
+And,
+I rmmod the igb driver, and, re-insmod the igb driver(igb-4.1.2) with the parameter IntMode=0/1(0:legacy, 1:MSI, 2:MSI-x), the problem then gone, the %si is approximately 20% -30%, and the throughput rate came to the line rate, about 940Mb/s.
+I update the VM to RHEL-6.1, the problem disappeared too.
+And, I found a very strange thing, the VM's 82576VF's irq routing is set one time on Vf's one interrupt received, so frequently.
 
-I think this clears things up and that specific issue is no longer a
-blocker for inclusion.
-
-I'll let this sit on the list so that it may be reviewed on it's
-technical merits.
+Thanks,
+Zhang Haoyu
