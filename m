@@ -1,270 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761950Ab3ECA5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 20:57:53 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:2945 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757203Ab3ECA5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 20:57:51 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-From: "Christian Daudt" <csd@broadcom.com>
-To: "Russell King" <linux@arm.linux.org.uk>,
-        "John Stultz" <john.stultz@linaro.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Olof Johansson" <olof@lixom.net>, "Arnd Bergmann" <arnd@arndb.de>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Will Deacon" <will.deacon@arm.com>
-cc: "Christian Daudt" <csd@broadcom.com>, "arm@kernel.org" <arm@kernel.org>,
-        linux-arm-kernel@lists.infradead.org, csd_b@daudt.org,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        "Rob Landley" <rob@landley.net>,
-        "Josh Cartwright" <josh.cartwright@ni.com>,
-        "Yehuda Yitschak" <yehuday@marvell.com>,
-        "Gregory CLEMENT" <gregory.clement@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V2] ARM: bcm281xx: Add L2 support for Rev A2 chips
-Date: Thu, 2 May 2013 17:57:33 -0700
-Message-ID: <1367542653-955-1-git-send-email-csd@broadcom.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-X-WSS-ID: 7D9DD5CA1R09561945-01-01
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+	id S1762143Ab3ECBD3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 21:03:29 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34111 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043Ab3ECBD2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 May 2013 21:03:28 -0400
+Date: Fri, 3 May 2013 11:03:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Alex Courbot <acourbot@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [GIT PULL] Removal of GENERIC_GPIO
+Message-Id: <20130503110318.0d30b773852640ee94ba07b5@canb.auug.org.au>
+In-Reply-To: <20130503105234.6e9c8aa5ed2784bbe084caa8@canb.auug.org.au>
+References: <51823DDA.7010103@nvidia.com>
+	<20130503105234.6e9c8aa5ed2784bbe084caa8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__3_May_2013_11_03_18_+1000_w/XPNNnLrlUlu2x/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rev A2 SoCs have an unorthodox memory re-mapping and this needs
-to be reflected in the cache operations.
-This patch adds new outer cache functions for the l2x0 driver
-to support this SoC revision. It also adds a new compatible
-value for the cache to enable this functionality.
+--Signature=_Fri__3_May_2013_11_03_18_+1000_w/XPNNnLrlUlu2x/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Updates from V1:
-- remove section 1 altogether and note that in comments
-- simplify section selection caused by section 1 removal
-- BUG_ON just in case section 1 shows up
+Hi Guys,
 
-Signed-off-by: Christian Daudt <csd@broadcom.com>
+On Fri, 3 May 2013 10:52:34 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> I currently have 3 merge fix patches for the gen-cpio tree:
+>=20
+> gen-gpio: GPIOLIB merge fix up
+> merge fix for Convert selectors of GENERIC_GPIO to GPIOLIB
+> merge fix 2 for Convert selectors of GENERIC_GPIO to GPIOLIB
+>=20
+> I have attached them.  All three are now applicable to Linus' tree.
 
-diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
-index cbef09b..69ddf9f 100644
---- a/Documentation/devicetree/bindings/arm/l2cc.txt
-+++ b/Documentation/devicetree/bindings/arm/l2cc.txt
-@@ -16,6 +16,9 @@ Required properties:
-      performs the same operation).
- 	"marvell,"aurora-outer-cache: Marvell Controller designed to be
- 	 compatible with the ARM one with outer cache mode.
-+	"bcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
-+	offset needs to be added to the address before passing down to the L2
-+	cache controller
- - cache-unified : Specifies the cache is a unified cache.
- - cache-level : Should be set to 2 for a level 2 cache.
- - reg : Physical base address and size of cache controller's memory mapped
-diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-index 41b2c6c..5e48c85 100644
---- a/arch/arm/boot/dts/bcm11351.dtsi
-+++ b/arch/arm/boot/dts/bcm11351.dtsi
-@@ -47,10 +47,10 @@
- 	};
- 
- 	L2: l2-cache {
--		    compatible = "arm,pl310-cache";
--		    reg = <0x3ff20000 0x1000>;
--		    cache-unified;
--		    cache-level = <2>;
-+		compatible = "bcm,bcm11351-a2-pl310-cache";
-+		reg = <0x3ff20000 0x1000>;
-+		cache-unified;
-+		cache-level = <2>;
- 	};
- 
- 	timer@35006000 {
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index c465fac..d70e0ab 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -523,6 +523,147 @@ static void aurora_flush_range(unsigned long start, unsigned long end)
- 	}
- }
- 
-+/*
-+ * For certain Broadcom SoCs, depending on the address range, different offsets
-+ * need to be added to the address before passing it to L2 for
-+ * invalidation/clean/flush
-+ *
-+ * Section Address Range              Offset        EMI
-+ *   1     0x00000000 - 0x3FFFFFFF    0x80000000    VC
-+ *   2     0x40000000 - 0xBFFFFFFF    0x40000000    SYS
-+ *   3     0xC0000000 - 0xFFFFFFFF    0x80000000    VC
-+ *
-+ * When the start and end addresses have crossed two different sections, we
-+ * need to break the L2 operation into two, each within its own section.
-+ * For example, if we need to invalidate addresses starts at 0xBFFF0000 and
-+ * ends at 0xC0001000, we need do invalidate 1) 0xBFFF0000 - 0xBFFFFFFF and 2)
-+ * 0xC0000000 - 0xC0001000
-+ *
-+ * Note 1:
-+ * By breaking a single L2 operation into two, we may potentially suffer some
-+ * performance hit, but keep in mind the cross section case is very rare
-+ *
-+ * Note 2:
-+ * We do not need to handle the case when the start address is in
-+ * Section 1 and the end address is in Section 3, since it is not a valid use
-+ * case
-+ *
-+ * Note 3:
-+ * Section 1 in practical terms can no longer be used on rev A2. Because of
-+ * that the code does not need to handle section 1 at all.
-+ *
-+ */
-+#define BCM_SYS_EMI_START_ADDR        0x40000000UL
-+#define BCM_VC_EMI_SEC3_START_ADDR    0xC0000000UL
-+
-+#define BCM_SYS_EMI_OFFSET            0x40000000UL
-+#define BCM_VC_EMI_OFFSET             0x80000000UL
-+
-+static inline int bcm_addr_is_sys_emi(unsigned long addr)
-+{
-+	return (addr >= BCM_SYS_EMI_START_ADDR) &&
-+		(addr < BCM_VC_EMI_SEC3_START_ADDR);
-+}
-+
-+static inline unsigned long bcm_l2_phys_addr(unsigned long addr)
-+{
-+	if (bcm_addr_is_sys_emi(addr))
-+		return addr + BCM_SYS_EMI_OFFSET;
-+	else
-+		return addr + BCM_VC_EMI_OFFSET;
-+}
-+
-+static void bcm_inv_range(unsigned long start, unsigned long end)
-+{
-+	unsigned long new_start, new_end;
-+
-+	BUG_ON(start < BCM_SYS_EMI_START_ADDR);
-+
-+	if (unlikely(end <= start))
-+		return;
-+
-+	new_start = bcm_l2_phys_addr(start);
-+	new_end = bcm_l2_phys_addr(end);
-+
-+	/* normal case, no cross section between start and end */
-+	if (likely(bcm_addr_is_sys_emi(end) || !bcm_addr_is_sys_emi(start))) {
-+		l2x0_inv_range(new_start, new_end);
-+		return;
-+	}
-+
-+	/* They cross sections, so it can only be a cross from section
-+	 * 2 to section 3
-+	 */
-+	l2x0_inv_range(new_start,
-+		bcm_l2_phys_addr(BCM_VC_EMI_SEC3_START_ADDR-1));
-+	l2x0_inv_range(bcm_l2_phys_addr(BCM_VC_EMI_SEC3_START_ADDR),
-+		new_end);
-+}
-+
-+static void bcm_clean_range(unsigned long start, unsigned long end)
-+{
-+	unsigned long new_start, new_end;
-+
-+	BUG_ON(start < BCM_SYS_EMI_START_ADDR);
-+
-+	if (unlikely(end <= start))
-+		return;
-+
-+	if ((end - start) >= l2x0_size) {
-+		l2x0_clean_all();
-+		return;
-+	}
-+
-+	new_start = bcm_l2_phys_addr(start);
-+	new_end = bcm_l2_phys_addr(end);
-+
-+	/* normal case, no cross section between start and end */
-+	if (likely(bcm_addr_is_sys_emi(end) || !bcm_addr_is_sys_emi(start))) {
-+		l2x0_clean_range(new_start, new_end);
-+		return;
-+	}
-+
-+	/* They cross sections, so it can only be a cross from section
-+	 * 2 to section 3
-+	 */
-+	l2x0_clean_range(new_start,
-+		bcm_l2_phys_addr(BCM_VC_EMI_SEC3_START_ADDR-1));
-+	l2x0_clean_range(bcm_l2_phys_addr(BCM_VC_EMI_SEC3_START_ADDR),
-+		new_end);
-+}
-+
-+static void bcm_flush_range(unsigned long start, unsigned long end)
-+{
-+	unsigned long new_start, new_end;
-+
-+	BUG_ON(start < BCM_SYS_EMI_START_ADDR);
-+
-+	if (unlikely(end <= start))
-+		return;
-+
-+	if ((end - start) >= l2x0_size) {
-+		l2x0_flush_all();
-+		return;
-+	}
-+
-+	new_start = bcm_l2_phys_addr(start);
-+	new_end = bcm_l2_phys_addr(end);
-+
-+	/* normal case, no cross section between start and end */
-+	if (likely(bcm_addr_is_sys_emi(end) || !bcm_addr_is_sys_emi(start))) {
-+		l2x0_flush_range(new_start, new_end);
-+		return;
-+	}
-+
-+	/* They cross sections, so it can only be a cross from section
-+	 * 2 to section 3
-+	 */
-+	l2x0_flush_range(new_start,
-+		bcm_l2_phys_addr(BCM_VC_EMI_SEC3_START_ADDR-1));
-+	l2x0_flush_range(bcm_l2_phys_addr(BCM_VC_EMI_SEC3_START_ADDR),
-+		new_end);
-+}
-+
- static void __init l2x0_of_setup(const struct device_node *np,
- 				 u32 *aux_val, u32 *aux_mask)
- {
-@@ -765,6 +906,21 @@ static const struct l2x0_of_data aurora_no_outer_data = {
- 	},
- };
- 
-+static const struct l2x0_of_data bcm_l2x0_data = {
-+	.setup = pl310_of_setup,
-+	.save  = pl310_save,
-+	.outer_cache = {
-+		.resume      = pl310_resume,
-+		.inv_range   = bcm_inv_range,
-+		.clean_range = bcm_clean_range,
-+		.flush_range = bcm_flush_range,
-+		.sync        = l2x0_cache_sync,
-+		.flush_all   = l2x0_flush_all,
-+		.inv_all     = l2x0_inv_all,
-+		.disable     = l2x0_disable,
-+	},
-+};
-+
- static const struct of_device_id l2x0_ids[] __initconst = {
- 	{ .compatible = "arm,pl310-cache", .data = (void *)&pl310_data },
- 	{ .compatible = "arm,l220-cache", .data = (void *)&l2x0_data },
-@@ -773,6 +929,8 @@ static const struct of_device_id l2x0_ids[] __initconst = {
- 	  .data = (void *)&aurora_no_outer_data},
- 	{ .compatible = "marvell,aurora-outer-cache",
- 	  .data = (void *)&aurora_with_outer_data},
-+	{ .compatible = "bcm,bcm11351-a2-pl310-cache",
-+	  .data = (void *)&bcm_l2x0_data},
- 	{}
- };
- 
--- 
-1.7.10.4
+Just to absolutely clear, I *do not* expect either of you to rebase your
+trees or backmerge Linus' tree to fix these, I *do* expect whoever send
+this stuff to Linus to mention the necessary fixes to him.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Fri__3_May_2013_11_03_18_+1000_w/XPNNnLrlUlu2x/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRgwzWAAoJEECxmPOUX5FEWMcP+wTmk7O2tuZWLo8NHnhED2t4
+vuzPCnFsIm7MnjP1CGyjvwBYaVnDnn5BP/L7upA0AXIm/pDqa8owF6iQ1VPFfnRT
+/o8pwnKiejGT4XISmA4A4KdcPRQOoHIsfKQK4Hno/B4XOAQKD5xAaht6zkrs065B
+fGachtioCvJVJsFm58Y6by2UFi9QThaRP/QS3vbFA8HKRVMwUypUv63rPXHdjy5b
++Loga7p1S21CwxDGfwRE4NXrH/OrpK3WB7VBlh6HZXpuzEX+z7Yx2LC41J4amQDO
+6lgTAm5ZWJpa3yLmsDxhy9afbB04a00xCK50OVlNKb6pQXlTILV0hDQV7H0kbE6A
+I7/hqUDZ4h79QWeelVt1UpkPapAlQTRpbMFamiihRNuFrgg1lESFHI2Rts3ZkkoH
+Rl9jpy4OhFF0OxIfafe110XSnK9+WmC8KBzo/sZGvqQtpky7jZQGDhvqm3PEaRxn
+D/jsQZ7iMytN+J+xXnwhF95Eaea97/76HT7ik+Xr3SR5vqYy7iyZDM7QiqhsPY8Y
+dqMjRJXgQAsi3jdqm2337D3RY5ptmvW2BQW0o7xxsyi2N28vYX9E3NqmN3esx3Vt
+DL1YtsdvOMNfDFj52TZTXENEYL0KSIAGod63yedBJ1wGE7bEkCYCy4CpfqYEzN+K
+Ovj2d9EZuv5N6vleMz4t
+=vcFM
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__3_May_2013_11_03_18_+1000_w/XPNNnLrlUlu2x/--
