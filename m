@@ -1,178 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763698Ab3ECVQD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 17:16:03 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:50263 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760851Ab3ECVQB (ORCPT
+	id S934355Ab3ECVQS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 17:16:18 -0400
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:50754 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934261Ab3ECVQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 17:16:01 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] iscsi-target: Make buf param of iscsit_do_crypto_hash_buf() const void *
-Date: Fri,  3 May 2013 23:15:57 +0200
-Message-Id: <1367615757-1447-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 3 May 2013 17:16:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <1367591569-32197-32-git-send-email-lee.jones@linaro.org>
+References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
+	<1367591569-32197-32-git-send-email-lee.jones@linaro.org>
+Date: Fri, 3 May 2013 23:16:13 +0200
+Message-ID: <CACRpkdZgPs1i=Lna41di97jZ2h-=_XzfZXMN8z9QFa-U-Avxog@mail.gmail.com>
+Subject: Re: [PATCH 31/63] dmaengine: ste_dma40: Only use addresses passed as
+ configuration information
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the "buf" input param of iscsit_do_crypto_hash_buf() "const void *".
-This allows to remove lots of casts in its callers.
+On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/target/iscsi/iscsi_target.c |   57 ++++++++++++++---------------------
- 1 files changed, 23 insertions(+), 34 deletions(-)
+> Addresses are passed in from the client's driver via the invocation of
+> dmaengine_slave_config(), so there's no need to fetch them from platform
+> data too, hardwired or otherwise. This is a great step forward, as it
+> elevates a large burden from platform data in the way of a look-up
+> table.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index ffbc6a9..721ecc5 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -1250,7 +1250,7 @@ static u32 iscsit_do_crypto_hash_sg(
- 
- static void iscsit_do_crypto_hash_buf(
- 	struct hash_desc *hash,
--	unsigned char *buf,
-+	const void *buf,
- 	u32 payload_length,
- 	u32 padding,
- 	u8 *pad_bytes,
-@@ -2524,9 +2524,8 @@ static int iscsit_send_conn_drop_async_message(
- 	if (conn->conn_ops->HeaderDigest) {
- 		u32 *header_digest = (u32 *)&cmd->pdu[ISCSI_HDR_LEN];
- 
--		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash,
--				(unsigned char *)hdr, ISCSI_HDR_LEN,
--				0, NULL, (u8 *)header_digest);
-+		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash, hdr,
-+				ISCSI_HDR_LEN, 0, NULL, (u8 *)header_digest);
- 
- 		cmd->tx_size += ISCSI_CRC_LEN;
- 		pr_debug("Attaching CRC32C HeaderDigest to"
-@@ -2662,9 +2661,8 @@ static int iscsit_send_datain(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
- 	if (conn->conn_ops->HeaderDigest) {
- 		u32 *header_digest = (u32 *)&cmd->pdu[ISCSI_HDR_LEN];
- 
--		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash,
--				(unsigned char *)cmd->pdu, ISCSI_HDR_LEN,
--				0, NULL, (u8 *)header_digest);
-+		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash, cmd->pdu,
-+				ISCSI_HDR_LEN, 0, NULL, (u8 *)header_digest);
- 
- 		iov[0].iov_len += ISCSI_CRC_LEN;
- 		tx_size += ISCSI_CRC_LEN;
-@@ -2841,9 +2839,8 @@ iscsit_send_logout(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
- 	if (conn->conn_ops->HeaderDigest) {
- 		u32 *header_digest = (u32 *)&cmd->pdu[ISCSI_HDR_LEN];
- 
--		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash,
--				(unsigned char *)&cmd->pdu[0], ISCSI_HDR_LEN,
--				0, NULL, (u8 *)header_digest);
-+		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash, &cmd->pdu[0],
-+				ISCSI_HDR_LEN, 0, NULL, (u8 *)header_digest);
- 
- 		iov[0].iov_len += ISCSI_CRC_LEN;
- 		tx_size += ISCSI_CRC_LEN;
-@@ -2900,9 +2897,8 @@ static int iscsit_send_unsolicited_nopin(
- 	if (conn->conn_ops->HeaderDigest) {
- 		u32 *header_digest = (u32 *)&cmd->pdu[ISCSI_HDR_LEN];
- 
--		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash,
--				(unsigned char *)hdr, ISCSI_HDR_LEN,
--				0, NULL, (u8 *)header_digest);
-+		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash, hdr,
-+				ISCSI_HDR_LEN, 0, NULL, (u8 *)header_digest);
- 
- 		tx_size += ISCSI_CRC_LEN;
- 		pr_debug("Attaching CRC32C HeaderDigest to"
-@@ -2949,9 +2945,8 @@ iscsit_send_nopin(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
- 	if (conn->conn_ops->HeaderDigest) {
- 		u32 *header_digest = (u32 *)&cmd->pdu[ISCSI_HDR_LEN];
- 
--		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash,
--				(unsigned char *)hdr, ISCSI_HDR_LEN,
--				0, NULL, (u8 *)header_digest);
-+		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash, hdr,
-+				ISCSI_HDR_LEN, 0, NULL, (u8 *)header_digest);
- 
- 		iov[0].iov_len += ISCSI_CRC_LEN;
- 		tx_size += ISCSI_CRC_LEN;
-@@ -3040,9 +3035,8 @@ static int iscsit_send_r2t(
- 	if (conn->conn_ops->HeaderDigest) {
- 		u32 *header_digest = (u32 *)&cmd->pdu[ISCSI_HDR_LEN];
- 
--		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash,
--				(unsigned char *)hdr, ISCSI_HDR_LEN,
--				0, NULL, (u8 *)header_digest);
-+		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash, hdr,
-+				ISCSI_HDR_LEN, 0, NULL, (u8 *)header_digest);
- 
- 		cmd->iov_misc[0].iov_len += ISCSI_CRC_LEN;
- 		tx_size += ISCSI_CRC_LEN;
-@@ -3256,9 +3250,8 @@ static int iscsit_send_response(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
- 	if (conn->conn_ops->HeaderDigest) {
- 		u32 *header_digest = (u32 *)&cmd->pdu[ISCSI_HDR_LEN];
- 
--		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash,
--				(unsigned char *)cmd->pdu, ISCSI_HDR_LEN,
--				0, NULL, (u8 *)header_digest);
-+		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash, cmd->pdu,
-+				ISCSI_HDR_LEN, 0, NULL, (u8 *)header_digest);
- 
- 		iov[0].iov_len += ISCSI_CRC_LEN;
- 		tx_size += ISCSI_CRC_LEN;
-@@ -3329,9 +3322,8 @@ iscsit_send_task_mgt_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
- 	if (conn->conn_ops->HeaderDigest) {
- 		u32 *header_digest = (u32 *)&cmd->pdu[ISCSI_HDR_LEN];
- 
--		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash,
--				(unsigned char *)hdr, ISCSI_HDR_LEN,
--				0, NULL, (u8 *)header_digest);
-+		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash, hdr,
-+				ISCSI_HDR_LEN, 0, NULL, (u8 *)header_digest);
- 
- 		cmd->iov_misc[0].iov_len += ISCSI_CRC_LEN;
- 		tx_size += ISCSI_CRC_LEN;
-@@ -3504,9 +3496,8 @@ static int iscsit_send_text_rsp(
- 	if (conn->conn_ops->HeaderDigest) {
- 		u32 *header_digest = (u32 *)&cmd->pdu[ISCSI_HDR_LEN];
- 
--		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash,
--				(unsigned char *)hdr, ISCSI_HDR_LEN,
--				0, NULL, (u8 *)header_digest);
-+		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash, hdr,
-+				ISCSI_HDR_LEN, 0, NULL, (u8 *)header_digest);
- 
- 		iov[0].iov_len += ISCSI_CRC_LEN;
- 		tx_size += ISCSI_CRC_LEN;
-@@ -3574,9 +3565,8 @@ static int iscsit_send_reject(
- 	if (conn->conn_ops->HeaderDigest) {
- 		u32 *header_digest = (u32 *)&cmd->pdu[ISCSI_HDR_LEN];
- 
--		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash,
--				(unsigned char *)hdr, ISCSI_HDR_LEN,
--				0, NULL, (u8 *)header_digest);
-+		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash, hdr,
-+				ISCSI_HDR_LEN, 0, NULL, (u8 *)header_digest);
- 
- 		iov[0].iov_len += ISCSI_CRC_LEN;
- 		tx_size += ISCSI_CRC_LEN;
-@@ -3585,9 +3575,8 @@ static int iscsit_send_reject(
- 	}
- 
- 	if (conn->conn_ops->DataDigest) {
--		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash,
--				(unsigned char *)cmd->buf_ptr, ISCSI_HDR_LEN,
--				0, NULL, (u8 *)&cmd->data_crc);
-+		iscsit_do_crypto_hash_buf(&conn->conn_tx_hash, cmd->buf_ptr,
-+				ISCSI_HDR_LEN, 0, NULL, (u8 *)&cmd->data_crc);
- 
- 		iov[iov_count].iov_base = &cmd->data_crc;
- 		iov[iov_count++].iov_len  = ISCSI_CRC_LEN;
--- 
-1.7.0.4
+I get uncertain at this point and need Vinod's ACK so I stop
+applying patches here.
 
+Please base further submissions on my ux500-dma40 branch to
+avoid resending already applied patches, if possible. (Atleast
+that make things convenient for me.)
+
+Is it possible to move patches with hairy dependencies
+toward the end of the series or something?
+
+Yours,
+Linus Walleij
