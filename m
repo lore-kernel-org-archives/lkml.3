@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933135Ab3ECPO6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 11:14:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3575 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932459Ab3ECPO5 (ORCPT
+	id S933159Ab3ECPSL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 11:18:11 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:58196 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932459Ab3ECPSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 11:14:57 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=O4Sx1LqlDMUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=IGil-QtXnCsA:10 a=zxyhxeHiEAsVogvHwHIA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1367594095.7373.14.camel@gandalf.local.home>
-Subject: Re: [PATCH, RFC 14/22] oprofile: always enable IRQ_WORK
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Robert Richter <rric@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, oprofile-list@lists.sf.net
-Date: Fri, 03 May 2013 11:14:55 -0400
-In-Reply-To: <20130503115332.GT8356@rric.localhost>
-References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
-	 <1367507786-505303-15-git-send-email-arnd@arndb.de>
-	 <20130503115332.GT8356@rric.localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	Fri, 3 May 2013 11:18:10 -0400
+Message-ID: <5183D52D.7060303@gmail.com>
+Date: Fri, 03 May 2013 09:18:05 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <andi@firstfloor.org>, Ulrich Drepper <drepper@gmail.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 6/8] perf tests: Add automated tests for formula object
+References: <1367421346-18257-1-git-send-email-jolsa@redhat.com> <1367421346-18257-7-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1367421346-18257-7-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-03 at 13:53 +0200, Robert Richter wrote:
-> On 02.05.13 17:16:18, Arnd Bergmann wrote:
-> > oprofile fails to build if CONFIG_IRQ_WORK is not already enabled,
-> > because of the dependency on the RING_BUFFER code that now uses
-> > the irq work library.
-> > 
-> > kernel/built-in.o: In function `ring_buffer_unlock_commit':
-> > :(.text+0x5b8f0): undefined reference to `irq_work_queue'
-> > kernel/built-in.o: In function `ring_buffer_write':
-> > :(.text+0x5bd10): undefined reference to `irq_work_queue'
-> 
-> Shouldn't this be fixed in the ring_buffer implementation?
+On 5/1/13 9:15 AM, Jiri Olsa wrote:
+> +static int __test_basics(char *file)
+> +{
+> +	struct perf_formula fml;
+> +	struct perf_formula_set *set;
+> +	struct perf_formula_counter *counter;
+> +	struct perf_evlist *evlist;
+> +	struct perf_evsel *evsel;
+> +	struct perf_counts *counts;
+> +	struct perf_formula_expr expr;
+> +	int ret;
+> +
+> +	pr_debug("file %s\n", file);
+> +
+> +	perf_formula__init(&fml);
+> +
+> +	ret = perf_formula__load(&fml, file);
+> +	TEST_ASSERT_VAL("failed to load formula", !ret);
 
-Does this patch fix it?
+With all the asserts when something goes wrong you should delete the 
+file right after perf_formula__load. so maybe
 
--- Steve
+file = file_get(data, sizeof(data));
+ret = perf_formula__load(&fml, file);
+file_put(file);
 
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 5e9efd4..015f85a 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -71,6 +71,7 @@ config TRACE_CLOCK
- config RING_BUFFER
- 	bool
- 	select TRACE_CLOCK
-+	select IRQ_WORK
- 
- config FTRACE_NMI_ENTER
-        bool
-@@ -107,7 +108,6 @@ config TRACING
- 	select BINARY_PRINTF
- 	select EVENT_TRACING
- 	select TRACE_CLOCK
--	select IRQ_WORK
- 
- config GENERIC_TRACER
- 	bool
-
-
+David
