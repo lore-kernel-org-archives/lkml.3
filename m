@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763367Ab3ECTKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 15:10:45 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:34910 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761946Ab3ECTKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 15:10:44 -0400
-To: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: makedumpfile mmap() benchmark
-Cc: vgoyal@redhat.com, ebiederm@xmission.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        jingbai.ma@hp.com, d.hatayama@jp.fujitsu.com
-Message-Id: <E1UYLNS-0003H3-NC@eag09.americas.sgi.com>
-From: Cliff Wickman <cpw@sgi.com>
-Date: Fri, 03 May 2013 14:10:42 -0500
+	id S934113Ab3ECTOZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 15:14:25 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:43004 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755485Ab3ECTOX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 15:14:23 -0400
+Date: Fri, 3 May 2013 12:14:18 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCHSET] blk-throttle: implement proper hierarchy support
+Message-ID: <20130503191418.GC22860@mtj.dyndns.org>
+References: <20130502182933.GN19814@mtj.dyndns.org>
+ <20130502184514.GI30020@redhat.com>
+ <20130502184953.GP19814@mtj.dyndns.org>
+ <20130502190732.GK30020@redhat.com>
+ <CAOS58YOk7G=dBG1v5Ed2z3biMMyKkkutp30vH5XC72z0_Z85cw@mail.gmail.com>
+ <20130502193139.GL30020@redhat.com>
+ <20130502231307.GT19814@mtj.dyndns.org>
+ <20130503175652.GB6062@redhat.com>
+ <20130503185751.GA22860@mtj.dyndns.org>
+ <20130503190823.GC6062@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130503190823.GC6062@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Jingbai Ma wote on 27 Mar 2013:
-> I have tested the makedumpfile mmap patch on a machine with 2TB memory, 
-> here is testing results:
-> Test environment:
-> Machine: HP ProLiant DL980 G7 with 2TB RAM.
-> CPU: Intel(R) Xeon(R) CPU E7- 2860  @ 2.27GHz (8 sockets, 10 cores)
-> (Only 1 cpu was enabled the 2nd kernel)
-> Kernel: 3.9.0-rc3+ with mmap kernel patch v3
-> vmcore size: 2.0TB
-> Dump file size: 3.6GB
-> makedumpfile mmap branch with parameters: -c --message-level 23 -d 31 
-> --map-size <map-size>
-> All measured time from debug message of makedumpfile.
+On Fri, May 03, 2013 at 03:08:23PM -0400, Vivek Goyal wrote:
+> 		T1	T2	T3	T4	T5	T6	T7
+> parent:			b1	b2	b3		b4 	b5
+> child: 		b1	b2	b3		b4	b5	
 > 
-> As a comparison, I also have tested with original kernel and original 
-> makedumpfile 1.5.1 and 1.5.3.
-> I added all [Excluding unnecessary pages] and [Excluding free pages] 
-> time together as "Filter Pages", and [Copyying Data] as "Copy data" here.
 > 
-> makedumjpfile	Kernel	map-size (KB)	Filter pages (s)	Copy data (s)	Total (s)
-> 1.5.1	 3.7.0-0.36.el7.x86_64	N/A	940.28	1269.25	2209.53
-> 1.5.3	 3.7.0-0.36.el7.x86_64	N/A	380.09	992.77	1372.86
-> 1.5.3	v3.9-rc3	N/A	197.77	892.27	1090.04
-> 1.5.3+mmap	v3.9-rc3+mmap	0	164.87	606.06	770.93
-> 1.5.3+mmap	v3.9-rc3+mmap	4	88.62	576.07	664.69
-> 1.5.3+mmap	v3.9-rc3+mmap	1024	83.66	477.23	560.89
-> 1.5.3+mmap	v3.9-rc3+mmap	2048	83.44	477.21	560.65
-> 1.5.3+mmap	v3.9-rc3+mmap	10240	83.84	476.56	560.4
+> So continuity breaks down because application is waiting for previous
+> IO to finish. This forces expiry of existing time slices and new time
+> slice start both in child and parent and penalty keep on increasing.
 
-I have also tested the makedumpfile mmap patch on a machine with 2TB memory, 
-here are the results:
-Test environment:
-Machine: SGI UV1000 with 2TB RAM.
-CPU: Intel(R) Xeon(R) CPU E7- 8837  @ 2.67GHz
-(only 1 cpu was enabled in the 2nd kernel)
-Kernel: 3.0.13 with mmap kernel patch v3 (I had to tweak the patch a bit)
-vmcore size: 2.0TB
-Dump file size: 3.6GB
-makedumpfile mmap branch with parameters: -c --message-level 23 -d 31 
-   --map-size <map-size>
-All measured times are actual clock times.
-All tests are noncyclic.   Crash kernel memory: crashkernel=512M
+It's a problem even in flat mode as the "child" above can easily be
+just a process which is throttling itself and it won't be able to get
+the configured bandwidth due to the scheduling bubbles introduced
+whenever new slice is started.  Shouldn't be too difficult to get rid
+of, right?
 
-As did Jingbai Ma, I also tested with an unpatched kernel and
-makedumpfile 1.5.1 and 1.5.3.  But they do 2 filtering scans: unnecessary
-pages and free pages; here added together as filter pages time.
+Thanks.
 
-                                      Filter    Copy
-makedumpfile Kernel	 map-size(KB) pages(s)	data(s) Total(s)
-1.5.1	     3.0.13	   N/A	      671   	511    1182
-1.5.3	     3.0.13	   N/A	      294       535     829
-1.5.3+mmap   3.0.13+mmap     0	       54    	506   	560
-1.5.3+mmap   3.0.13+mmap  4096	       40    	416	456
-1.5.3+mmap   3.0.13+mmap 10240	       37	424	461
-
-Using mmap for the copy data as well as for filtering pages did little:
-1.5.3+mmap   3.0.13+mmap  4096	       37    	414	451
-
-My results are quite similar to Jingbai Ma's.
-The mmap patch to the kernel greatly speeds the filtering of pages, so
-we at SGI would very much like to see this patch in the 3.10 kernel.
-  http://marc.info/?l=linux-kernel&m=136627770125345&w=2
-
-What puzzles me is that the patch greatly speeds the read's of /proc/vmcore
-(where map-size is 0) as well as providing the mmap ability.  I can now
-seek/read page structures almost as fast as mmap'ing and copying them.
-(versus Jingbai Ma's results where mmap almost doubled the speed of reads)
-I have put counters in to verify, and we are doing several million
-seek/read's vs. a few thousand mmap's.  Yet the performance is similar
-(54sec vs. 37sec, above). I can't rationalize that much improvement.
-
-Thanks,
-Cliff Wickman
+-- 
+tejun
