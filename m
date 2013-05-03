@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933036Ab3ECHxK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 03:53:10 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:32901 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758639Ab3ECHxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 03:53:08 -0400
-Date: Fri, 3 May 2013 10:52:36 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-In-Reply-To: <20130502223107.GB3780@linux.vnet.ibm.com>
-Message-ID: <alpine.LFD.2.00.1305031024080.1657@ja.ssi.bg>
-References: <20130501091012.GB28253@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305011344320.1603@ja.ssi.bg> <20130501155501.GB7521@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg> <20130502072623.GE7521@dyad.programming.kicks-ass.net>
- <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg> <20130502173257.GX3780@linux.vnet.ibm.com> <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg> <20130502193409.GA3780@linux.vnet.ibm.com> <alpine.LFD.2.00.1305022249010.25417@ja.ssi.bg>
- <20130502223107.GB3780@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S933104Ab3ECH4d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 03:56:33 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40020 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932934Ab3ECH4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 03:56:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,602,1363158000"; 
+   d="scan'208";a="307361323"
+Message-ID: <51836D74.2030409@intel.com>
+Date: Fri, 03 May 2013 15:55:32 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
+        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
+        riel@redhat.com
+Subject: Re: [PATCH v4 0/6] sched: use runnable load based balance
+References: <1367040344-14485-1-git-send-email-alex.shi@intel.com> <20130501121421.GA19602@dyad.programming.kicks-ass.net> <5181B579.9000808@intel.com> <20130502103508.GA13196@dyad.programming.kicks-ass.net>
+In-Reply-To: <20130502103508.GA13196@dyad.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-	Hello,
-
-On Thu, 2 May 2013, Paul E. McKenney wrote:
-
-> mainline, and missed the one that you added.  Revisiting that, a
-> question:
+> That should probably look like:
 > 
-> > +#ifdef CONFIG_PREEMPT_RCU
-> > +#define PREEMPT_RCU_OFFSET     1
+> 	preempt_disable();
+> 	raw_spin_unlock_irq();
+> 	preempt_enable_no_resched();
+> 	schedule();
 > 
-> Does this really want to be "1" instead of PREEMPT_OFFSET?
+> Otherwise you might find a performance regression on PREEMPT=y kernels.
 
-	In this case when CONFIG_PREEMPT_RCU is enabled
-we (RCU) do not touch the preempt counters. Instead, the units
-are accounted in current->rcu_read_lock_nesting:
+Yes, right!
+Thanks a lot for reminder. The following patch will fix it.
+> 
+> OK, so what I was asking after is if you changed the scheduler after PJTs
+> patches landed to deal with this bulk wakeup. Also while aim7 might no longer
+> trigger the bad pattern what is to say nothing ever will? In particular
+> anything using pthread_cond_broadcast() is known to be suspect of bulk wakeups.
 
-#define rcu_preempt_depth() (current->rcu_read_lock_nesting)
+Just find a benchmark named as pthread_cond_broadcast. 
+http://kristiannielsen.livejournal.com/13577.html. will play with it. :)
+> 
+> Anyway, I'll go try and make sense of some of the actual patches.. :-)
+> 
 
-__rcu_read_lock:
-	current->rcu_read_lock_nesting++;
+---
 
-	and the path is __might_sleep -> preempt_count_equals ->
-rcu_preempt_depth
+>From 4c9b4b8a9b92bcbe6934637fd33c617e73dbda97 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Fri, 3 May 2013 14:51:25 +0800
+Subject: [PATCH 8/8] rwsem: small optimizing rwsem_down_failed_common
 
-	For now both places do not use PREEMPT_OFFSET:
+Peter Zijlstra suggest adding a preempt_enable_no_resched() to prevent
+a unnecessary scheduler in raw_spin_unlock.
+And we also can pack 2 raw_spin_lock to save one. So has this patch.
 
-- #define inc_preempt_count() add_preempt_count(1)
-- __rcu_read_lock: current->rcu_read_lock_nesting++;
+Thanks Peter!
 
-	so, ... it does not matter much for me. In short,
-the trick is in preempt_count_equals() where preempt_offset
-is a combination of preempt count and RCU preempt depth:
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ lib/rwsem.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-#ifdef CONFIG_PREEMPT_RCU
-#define PREEMPT_RCU_OFFSET      (0 /* preempt */ + 1 /* RCU */)
-#else
-#define PREEMPT_RCU_OFFSET      (PREEMPT_CHECK_OFFSET + 0 /* RCU */)
-#endif
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index ad5e0df..9aacf81 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -212,23 +212,25 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 		 adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
+ 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
+ 
+-	raw_spin_unlock_irq(&sem->wait_lock);
+-
+ 	/* wait to be given the lock */
+ 	for (;;) {
+-		if (!waiter.task)
++		if (!waiter.task) {
++			raw_spin_unlock_irq(&sem->wait_lock);
+ 			break;
++		}
+ 
+-		raw_spin_lock_irq(&sem->wait_lock);
+-		/* Try to get the writer sem, may steal from the head writer: */
++		/* Try to get the writer sem, may steal from the head writer */
+ 		if (flags == RWSEM_WAITING_FOR_WRITE)
+ 			if (try_get_writer_sem(sem, &waiter)) {
+ 				raw_spin_unlock_irq(&sem->wait_lock);
+ 				return sem;
+ 			}
++		preempt_disable();
+ 		raw_spin_unlock_irq(&sem->wait_lock);
++		preempt_enable_no_resched();
+ 		schedule();
+ 		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
++		raw_spin_lock_irq(&sem->wait_lock);
+ 	}
+ 
+ 	tsk->state = TASK_RUNNING;
+-- 
+1.7.12
 
-	Let me know for your preference about this definition...
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
