@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760356Ab3ECEtd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 00:49:33 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:52222 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715Ab3ECEta (ORCPT
+	id S1762451Ab3ECEto (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 00:49:44 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:65155 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762370Ab3ECEtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 00:49:30 -0400
+	Fri, 3 May 2013 00:49:41 -0400
 From: kosaki.motohiro@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: Olivier Langlois <olivier@trillion01.com>,
@@ -14,9 +14,9 @@ Cc: Olivier Langlois <olivier@trillion01.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 3/7] posix-cpu-timers: fix wrong timer initialization
-Date: Fri,  3 May 2013 00:47:44 -0400
-Message-Id: <1367556468-4021-5-git-send-email-kosaki.motohiro@gmail.com>
+Subject: [PATCH 5/7] posix-cpu-timers: check_thread_timers() uses task_sched_runtime()
+Date: Fri,  3 May 2013 00:47:46 -0400
+Message-Id: <1367556468-4021-7-git-send-email-kosaki.motohiro@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1367556468-4021-1-git-send-email-kosaki.motohiro@gmail.com>
 References: <1367556468-4021-1-git-send-email-kosaki.motohiro@gmail.com>
@@ -26,19 +26,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Currently glibc's rt/tst-cputimer1 testcase sporadically fails because
-a timer created by timer_create() may fire earlier than specified.
-
-posix_cpu_timer_set() uses "val" as current time for three purpose. 1)
-initialize sig->cputimer. 2) calculation "old" val. 3) calculations an
-expires.
-
-(1) and (2) should only use committed time (i.e. without delta_exec)
-because run_posix_cpu_timers() don't care of delta_exec and we need
-consistency, but (3) need exact current time (aka cpu clock time) because
-an expires should be "now + timeout" by definition.
-
-This patch distinguishes between two kinds of "now".
+A type of tsk->se.sum_exec_runtime is u64. Thus, reading it is racy when
+running 32bit. We should use task_sched_runtime().
 
 Cc: Olivier Langlois <olivier@trillion01.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -47,83 +36,23 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Acked-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
- include/linux/kernel_stat.h |    5 -----
- kernel/posix-cpu-timers.c   |   14 ++++++++++++--
- kernel/sched/core.c         |   13 -------------
- 3 files changed, 12 insertions(+), 20 deletions(-)
+ kernel/posix-cpu-timers.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index ed5f6ed..f5d4fdf 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -117,11 +117,6 @@ static inline unsigned int kstat_cpu_irqs_sum(unsigned int cpu)
- 	return kstat_cpu(cpu).irqs_sum;
- }
- 
--/*
-- * Lock/unlock the current runqueue - to extract task statistics:
-- */
--extern unsigned long long task_delta_exec(struct task_struct *);
--
- extern void account_user_time(struct task_struct *, cputime_t, cputime_t);
- extern void account_system_time(struct task_struct *, int, cputime_t, cputime_t);
- extern void account_steal_time(cputime_t);
 diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index e56be4c..98f354e 100644
+index c69b8d8..4043282 100644
 --- a/kernel/posix-cpu-timers.c
 +++ b/kernel/posix-cpu-timers.c
-@@ -635,7 +635,7 @@ static int cpu_timer_sample_group(const clockid_t which_clock,
- 		cpu->cpu = cputime.utime;
- 		break;
- 	case CPUCLOCK_SCHED:
--		cpu->sched = cputime.sum_exec_runtime + task_delta_exec(p);
-+		cpu->sched = cputime.sum_exec_runtime;
- 		break;
- 	}
- 	return 0;
-@@ -749,7 +749,17 @@ static int posix_cpu_timer_set(struct k_itimer *timer, int flags,
- 	}
- 
- 	if (new_expires.sched != 0 && !(flags & TIMER_ABSTIME)) {
--		cpu_time_add(timer->it_clock, &new_expires, val);
-+		union cpu_time_count now;
-+
-+		/*
-+		 * The expires is "now + timeout" by definition. So,
-+		 * we need exact current time.
-+		 */
-+		if (CPUCLOCK_PERTHREAD(timer->it_clock))
-+			now = val;
-+		else
-+			cpu_clock_sample_group(timer->it_clock, p, &now);
-+		cpu_time_add(timer->it_clock, &new_expires, now);
- 	}
- 
- 	/*
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ad3339f..b817e6d 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2646,19 +2646,6 @@ static u64 do_task_delta_exec(struct task_struct *p, struct rq *rq)
- 	return ns;
- }
- 
--unsigned long long task_delta_exec(struct task_struct *p)
--{
--	unsigned long flags;
--	struct rq *rq;
--	u64 ns = 0;
--
--	rq = task_rq_lock(p, &flags);
--	ns = do_task_delta_exec(p, rq);
--	task_rq_unlock(rq, p, &flags);
--
--	return ns;
--}
--
- /*
-  * Return accounted runtime for the task.
-  * In case the task is currently running, return the runtime plus current's
+@@ -958,7 +958,8 @@ static void check_thread_timers(struct task_struct *tsk,
+ 		struct cpu_timer_list *t = list_first_entry(timers,
+ 						      struct cpu_timer_list,
+ 						      entry);
+-		if (!--maxfire || tsk->se.sum_exec_runtime < t->expires.sched) {
++		unsigned long long runtime = task_sched_runtime(tsk, false);
++		if (!--maxfire || runtime < t->expires.sched) {
+ 			tsk->cputime_expires.sched_exp = t->expires.sched;
+ 			break;
+ 		}
 -- 
 1.7.1
 
