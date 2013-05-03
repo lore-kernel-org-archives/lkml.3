@@ -1,149 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763705Ab3ECVFZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 17:05:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21865 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763435Ab3ECVFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 17:05:23 -0400
-Date: Fri, 3 May 2013 17:05:13 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCHSET] blk-throttle: implement proper hierarchy support
-Message-ID: <20130503210513.GE6062@redhat.com>
-References: <20130502184514.GI30020@redhat.com>
- <20130502184953.GP19814@mtj.dyndns.org>
- <20130502190732.GK30020@redhat.com>
- <CAOS58YOk7G=dBG1v5Ed2z3biMMyKkkutp30vH5XC72z0_Z85cw@mail.gmail.com>
- <20130502193139.GL30020@redhat.com>
- <20130502231307.GT19814@mtj.dyndns.org>
- <20130503175652.GB6062@redhat.com>
- <20130503185751.GA22860@mtj.dyndns.org>
- <20130503190823.GC6062@redhat.com>
- <20130503191418.GC22860@mtj.dyndns.org>
+	id S1763610Ab3ECVJS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 17:09:18 -0400
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:50003 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729Ab3ECVJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 17:09:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130503191418.GC22860@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1367591569-32197-28-git-send-email-lee.jones@linaro.org>
+References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
+	<1367591569-32197-28-git-send-email-lee.jones@linaro.org>
+Date: Fri, 3 May 2013 23:09:16 +0200
+Message-ID: <CACRpkdZ_cnneFWtinO1dPz0Ky=29aKG=wHW447cHoE8Hnok=xA@mail.gmail.com>
+Subject: Re: [PATCH 27/63] ARM: ux500: Pass remnant platform data though to
+ DMA40 driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 12:14:18PM -0700, Tejun Heo wrote:
-> On Fri, May 03, 2013 at 03:08:23PM -0400, Vivek Goyal wrote:
-> > 		T1	T2	T3	T4	T5	T6	T7
-> > parent:			b1	b2	b3		b4 	b5
-> > child: 		b1	b2	b3		b4	b5	
-> > 
-> > 
-> > So continuity breaks down because application is waiting for previous
-> > IO to finish. This forces expiry of existing time slices and new time
-> > slice start both in child and parent and penalty keep on increasing.
-> 
-> It's a problem even in flat mode as the "child" above can easily be
-> just a process which is throttling itself and it won't be able to get
-> the configured bandwidth due to the scheduling bubbles introduced
-> whenever new slice is started.  Shouldn't be too difficult to get rid
-> of, right?
+On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Hi Tejun,
+> Ironically, in order to remove lots of the auxdata assignments, we have
+> to add just one more. A lot of them require DMA information to be passed
+> into clients for DMA channel allocation, but we now have this capability
+> in Device Tree. However, the DMA40 driver still relies on a reverse table
+> look-up to obtain DMA addresses. Until all of the clients are converted,
+> over to the new API, we're stuck with this.
+>
+> Also, now the DMA40 has been DT:ed, there's no requirement to register
+> it using traditional methods, so let's remove it.
+>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Following inline patch implements transferring child's start time to 
-parent, if parent slice had expired at the time of bio migration.
+Applied to my ux500-dma40 branch.
 
-I does seem to help a lot on my machine. Can you please give it a try.
-
-I think even this approach is flawed. If there are multiple children,
-it might happen that one child pushes up the bio early (as it is smaller
-size bio or group rate is high). And later other child pushes up the bio
-(bio was big or group limit was slow). We still lost time and effective
-rate will still be lower than anticipated.
-
-Thanks
-Vivek
-
-
----
- block/blk-throttle.c |   40 ++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 38 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/block/blk-throttle.c
-===================================================================
---- linux-2.6.orig/block/blk-throttle.c	2013-05-03 16:03:10.279016400 -0400
-+++ linux-2.6/block/blk-throttle.c	2013-05-03 16:46:11.398936631 -0400
-@@ -547,6 +547,30 @@ static bool throtl_schedule_next_dispatc
- 	return false;
- }
- 
-+static inline void throtl_start_new_slice_with_credit(struct throtl_grp *tg,
-+		bool rw, unsigned long start)
-+{
-+	tg->bytes_disp[rw] = 0;
-+	tg->io_disp[rw] = 0;
-+
-+	/*
-+	 * Previous slice has expired. We must have trimmed it after last
-+	 * bio dispatch. That means since start of last slice, we never used
-+	 * that bandwidth. Do try to make use of that bandwidth while giving
-+	 * credit
-+	 */
-+	if (time_after_eq(start, tg->slice_start[rw])) {
-+		tg->slice_start[rw] = start;
-+	} else
-+		tg->slice_start[rw] = tg->slice_start[rw];
-+
-+	tg->slice_end[rw] = jiffies + throtl_slice;
-+	throtl_log(&tg->service_queue,
-+		   "[%c] new slice with credit start=%lu end=%lu jiffies=%lu",
-+		   rw == READ ? 'R' : 'W', tg->slice_start[rw],
-+		   tg->slice_end[rw], jiffies);
-+}
-+
- static inline void throtl_start_new_slice(struct throtl_grp *tg, bool rw)
- {
- 	tg->bytes_disp[rw] = 0;
-@@ -888,6 +912,16 @@ static void tg_update_disptime(struct th
- 	tg->flags &= ~THROTL_TG_WAS_EMPTY;
- }
- 
-+static void start_parent_slice_with_credit(struct throtl_grp *child_tg,
-+					struct throtl_grp *parent_tg, bool rw)
-+{
-+	if (throtl_slice_used(parent_tg, rw)) {
-+		throtl_start_new_slice_with_credit(parent_tg, rw,
-+				child_tg->slice_start[rw]);
-+	}
-+
-+}
-+
- static void tg_dispatch_one_bio(struct throtl_grp *tg, bool rw)
- {
- 	struct throtl_service_queue *sq = &tg->service_queue;
-@@ -908,7 +942,9 @@ static void tg_dispatch_one_bio(struct t
- 	 * responsible for issuing these bios.
- 	 */
- 	if (parent_tg) {
-+		throtl_log(parent_sq, "add bio sz=%u", bio->bi_size);
- 		throtl_add_bio_tg(bio, parent_tg);
-+		start_parent_slice_with_credit(tg, parent_tg, rw);
- 	} else {
- 		bio_list_add(&parent_sq->bio_lists[rw], bio);
- 		BUG_ON(tg->td->nr_queued[rw] <= 0);
-@@ -1369,11 +1405,11 @@ bool blk_throtl_bio(struct request_queue
- 	}
- 
- 	/* out-of-limit, queue to @tg */
--	throtl_log(sq, "[%c] bio. bdisp=%llu sz=%u bps=%llu iodisp=%u iops=%u queued=%d/%d",
-+	throtl_log(sq, "[%c] bio. bdisp=%llu sz=%u bps=%llu iodisp=%u iops=%u queued=%d/%d sz=%u",
- 		   rw == READ ? 'R' : 'W',
- 		   tg->bytes_disp[rw], bio->bi_size, tg->bps[rw],
- 		   tg->io_disp[rw], tg->iops[rw],
--		   sq->nr_queued[READ], sq->nr_queued[WRITE]);
-+		   sq->nr_queued[READ], sq->nr_queued[WRITE], bio->bi_size);
- 
- 	bio_associate_current(bio);
- 	tg->td->nr_queued[rw]++;
+Thanks!
+Linus Walleij
