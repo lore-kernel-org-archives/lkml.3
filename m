@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762352Ab3ECAJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 May 2013 20:09:29 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:58112 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762118Ab3ECABk (ORCPT
+	id S1762372Ab3ECAKd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 May 2013 20:10:33 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:56110 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758404Ab3ECAKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 May 2013 20:01:40 -0400
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Linux MM <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Simon Jeons <simon.jeons@gmail.com>
-Subject: [RFC PATCH v3 04/31] memory_hotplug: export ensure_zone_is_initialized() in mm/internal.h
-Date: Thu,  2 May 2013 17:00:36 -0700
-Message-Id: <1367539263-19999-5-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1367539263-19999-1-git-send-email-cody@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050300-2398-0000-0000-000013FA6417
+	Thu, 2 May 2013 20:10:31 -0400
+Date: Thu, 2 May 2013 17:10:26 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Colin Cross <ccross@android.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arve@android.com
+Subject: Re: [PATCH v2 00/10] optimize freezing tasks by reducing task wakeups
+Message-ID: <20130503001026.GZ19814@mtj.dyndns.org>
+References: <1367458508-9133-1-git-send-email-ccross@android.com>
+ <1678114.cijx7evM08@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1678114.cijx7evM08@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export ensure_zone_is_initialized() so that it can be used to initialize
-new zones within the dynamic numa code.
+Hey, Rafael.
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- mm/internal.h       | 8 ++++++++
- mm/memory_hotplug.c | 2 +-
- 2 files changed, 9 insertions(+), 1 deletion(-)
+On Thu, May 02, 2013 at 11:06:35PM +0200, Rafael J. Wysocki wrote:
+> > v2 moves the skip check to freeze_task(), and expands the commit
+> > messages.
+> 
+> The entire series makes sense to me, so are there any objections?
+> 
+> Tejun, Oleg??
 
-diff --git a/mm/internal.h b/mm/internal.h
-index 8562de0..b11e574 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -105,6 +105,14 @@ extern void prep_compound_page(struct page *page, unsigned long order);
- extern bool is_free_buddy_page(struct page *page);
- #endif
- 
-+#ifdef CONFIG_MEMORY_HOTPLUG
-+/*
-+ * in mm/memory_hotplug.c
-+ */
-+extern int ensure_zone_is_initialized(struct zone *zone,
-+			unsigned long start_pfn, unsigned long num_pages);
-+#endif
-+
- #if defined CONFIG_COMPACTION || defined CONFIG_CMA
- 
- /*
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index fafeaae..f4cb01a 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -284,7 +284,7 @@ static void fix_zone_id(struct zone *zone, unsigned long start_pfn,
- 
- /* Can fail with -ENOMEM from allocating a wait table with vmalloc() or
-  * alloc_bootmem_node_nopanic() */
--static int __ref ensure_zone_is_initialized(struct zone *zone,
-+int __ref ensure_zone_is_initialized(struct zone *zone,
- 			unsigned long start_pfn, unsigned long num_pages)
- {
- 	if (!zone_is_initialized(zone))
+Generally looks good to me.  I'm a bit uncomfortable with the
+generic-looking expansion of the freezable API as it can't be
+something which can be used in any generic manner.  It'd be great if
+we just add only the used ones (do we already?) and add some sort of
+lockdep annotation so that people don't use them while holding any
+locks.
+
+Thanks.
+
 -- 
-1.8.2.2
-
+tejun
