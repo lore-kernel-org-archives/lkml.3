@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763397Ab3ECURA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 16:17:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3978 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750729Ab3ECUQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 16:16:59 -0400
-Date: Fri, 3 May 2013 16:16:56 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: dhowells@redhat.com
-Subject: Add missing MODULE_LICENSE tag to oid_registry
-Message-ID: <20130503201656.GA12510@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, dhowells@redhat.com
+	id S934329Ab3ECUR1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 16:17:27 -0400
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:57714 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934031Ab3ECUR0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 16:17:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1367591569-32197-19-git-send-email-lee.jones@linaro.org>
+References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
+	<1367591569-32197-19-git-send-email-lee.jones@linaro.org>
+Date: Fri, 3 May 2013 22:17:26 +0200
+Message-ID: <CACRpkda2+49CjTOBcnfjp=EXOhOnrLHz4K+yOH-bKp+s7OmpsA@mail.gmail.com>
+Subject: Re: [PATCH 18/63] dmaengine: ste_dma40: Remove 'always true' checking
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if CONFIG_OID_REGISTRY=m
+On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-[  241.094450] oid_registry: module license 'unspecified' taints kernel.
+> Before allocating memory for logical channels, the current driver
+> checks to see if there are any. Well as the dma40_memcpy_channels[]
+> array is always populated, the check is always true. Best to
+> remove the check.
+>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Per Forlin <per.forlin@stericsson.com>
+> Cc: Rabin Vincent <rabin@rab.in>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+Tentatively applied to my ux500-dma40 branch.
 
-diff --git a/lib/oid_registry.c b/lib/oid_registry.c
-index d8de11f..6eff319 100644
---- a/lib/oid_registry.c
-+++ b/lib/oid_registry.c
-@@ -9,6 +9,7 @@
-  * 2 of the Licence, or (at your option) any later version.
-  */
- 
-+#include <linux/module.h>
- #include <linux/export.h>
- #include <linux/oid_registry.h>
- #include <linux/kernel.h>
-@@ -168,3 +169,5 @@ int sprint_OID(enum OID oid, char *buffer, size_t bufsize)
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(sprint_OID);
-+
-+MODULE_LICENSE("GPL");
+Vinod, can I have your ACK on this patch?
+
+Yours,
+Linus Walleij
