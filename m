@@ -1,59 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761957Ab3ECK3X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 06:29:23 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:53532 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754282Ab3ECK3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 06:29:21 -0400
-X-IronPort-AV: E=Sophos;i="4.87,602,1363132800"; 
-   d="scan'208";a="23128149"
-Date: Fri, 3 May 2013 11:29:14 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Christopher Covington <cov@codeaurora.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH 2/3] xen: move do_stolen_accounting to
- drivers/xen/time.c
-In-Reply-To: <1367569605.28742.28.camel@zakaz.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1305031118080.5398@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com>  <1367436460-10183-2-git-send-email-stefano.stabellini@eu.citrix.com>  <5182B532.10607@codeaurora.org> <1367569605.28742.28.camel@zakaz.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1762063Ab3ECKh1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 06:37:27 -0400
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:42843 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754943Ab3ECKh0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 06:37:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 3 May 2013 11:37:05 +0100
+X-Google-Sender-Auth: 53A-T7KFhVEvIABzMILS-HK1IJY
+Message-ID: <CACxGe6vr1kh2yqnG6kpASBGDUQrC7taBu00VWu6VG+qCO2u9QA@mail.gmail.com>
+Subject: [git pull] GPIO for v3.10
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 May 2013, Ian Campbell wrote:
-> On Thu, 2013-05-02 at 19:49 +0100, Christopher Covington wrote:
-> > Hi Stefano,
-> > 
-> > On 05/01/2013 03:27 PM, Stefano Stabellini wrote:
-> > > Move do_stolen_accounting, xen_vcpu_stolen and related functions and
-> > > static variables to common code (drivers/xen/time.c).
-> > > 
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > ---
-> > >  arch/x86/xen/time.c   |  127 +-------------------------------------------
-> > 
-> > In going through some of the code, it looked like there might be a few little
-> > bits that you might be interested in pulling out of arch/ia64/xen/time.c as well.
-> 
-> ia64 in the hypervisor was deprecated and with the 4.3 release has been
-> removed.
-> 
-> AFAIK ia64/Xen support has been broken in the mainline kernel for year.
+Hi Linus,
 
-Yes, that's why it didn't occur to me to do anything about it.
+Here are the GPIO changes staged for v3.10. Please pull. I will send
+another separate pull request for a large change removing
+CONFIG_GENERIC_GPIO.
 
-Also, the ia64 code differs from the x86 code, I can't just replace it
-with the newly introduced common code unfortunately.
+g.
+
+The following changes since commit e97f9b5277afeabb54892ebc6f68500098467ba1:
+
+  gpio/gpio-ich: fix ichx_gpio_check_available() return what callers
+expect (2013-03-02 13:20:21 +0000)
+
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux tags/gpio-for-linus
+
+for you to fetch changes up to ab6ec0fb8901ce4359269ac56c691ffcb5071ccb:
+
+  gpio/omap: ensure gpio context is initialised (2013-04-26 09:52:57 +0200)
+
+----------------------------------------------------------------
+GPIO changes for Linux 3.10
+
+The usual selection of bug fixes and driver updates for GPIO. Nothing
+really stands out except the addition of the GRGPIO driver and some
+enhacements to ACPI support
+
+----------------------------------------------------------------
+Alexander Shiyan (1):
+      GPIO: gpio-generic: remove kfree() from bgpio_remove call
+
+Andreas Larsson (3):
+      gpio: gpio-generic: Add 16 and 32 bit big endian byte order support
+      gpio: grgpio: Add device driver for GRGPIO cores
+      gpio: grgpio: Add irq support
+
+Axel Lin (3):
+      gpio: viperboard: Remove duplicate code to set gpio->gpiob_val
+      gpio: samsung: Add terminating entry for exynos_pinctrl_ids
+      gpio: lpc32xx: Fix off-by-one valid range checking for bank
+
+Christophe Leroy (1):
+      MAX7301 GPIO: Do not force SPI speed when using OF Platform
+
+Darren Hart (1):
+      gpio-sch: Allow for more than 8 lines in the resume well
+
+Jean Delvare (2):
+      gpio-ich: Check for pin availability at request time
+      gpio: ucb1400: Can be built as a module
+
+Jingoo Han (9):
+      gpio: adp5520: use devm_kzalloc()
+      gpio: max7300: use devm_kzalloc()
+      gpio: max7301: use devm_kzalloc()
+      gpio: max732x: use devm_kzalloc()
+      gpio: mc33880: use devm_kzalloc()
+      gpio: pcf857x: use devm_kzalloc()
+      gpio: mc33880: use dev_err() instead of printk()
+      gpio: 74x164: use spi_get_drvdata() and spi_set_drvdata()
+      gpio: mc33880: use spi_get_drvdata() and spi_set_drvdata()
+
+Jon Hunter (6):
+      gpio/omap: convert gpio irq domain to linear mapping
+      gpio/omap: warn if bank is not enabled on setting irq type
+      gpio/omap: free irq domain in probe() failure paths
+      gpio/omap: optimise interrupt service routine
+      gpio/omap: force restore if context loss is not detectable
+      gpio/omap: ensure gpio context is initialised
+
+Lars Poeschel (1):
+      gpio: mcp23s08: convert driver to DT
+
+Laurent Navet (10):
+      gpio: gpiolib-of.c: fix checkpatch error
+      gpio: gpio-mvebu.c: fix checkpatch errors
+      gpio: gpio-omap.c: fix checkpatch error
+      gpio: gpio-pca953x.c: fix checkpatch error
+      gpio: gpio-pxa.c: fix checkpatch errors
+      gpio: gpio-sch.c: fix checkpatch error
+      gpio: gpio-stp-xway.c: fix checkpatch error
+      gpio: gpio-tc3589x.c: fix checkpatch errors
+      gpio: gpio-timberdale.c: fix checkpatch error
+      gpio: gpio-tps65910.c: fix checkpatch error
+
+Magnus Damm (2):
+      gpio/em: Add Device Tree support
+      gpio: em: Make use of devm functions
+
+Mathias Nyman (1):
+      gpio-lynxpoint: Add X86 dependency and io-port handling header.
+
+Mika Westerberg (2):
+      gpio/gpio-ich: make ichx_gpio_check_available() return a pure
+boolean value
+      gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
+
+Nikolay Balandin (1):
+      Add TI TCA9554 to supported devices table
+
+Rafael J. Wysocki (1):
+      gpio / ACPI: Handle ACPI events in accordance with the spec
+
+Sachin Kamat (1):
+      gpio/vt8500: Convert to devm_ioremap_resource()
+
+Simon Guinot (1):
+      gpio: mvebu: add dbg_show function
+
+Stephen Warren (1):
+      gpio/tegra: assume CONFIG_OF
+
+Tarun Kanti DebBarma (1):
+      gpio/omap: remove extra context restores in *_runtime_resume()
+
+ Documentation/acpi/enumeration.txt                 |  32 +-
+ .../devicetree/bindings/gpio/gpio-grgpio.txt       |  26 ++
+ .../devicetree/bindings/gpio/gpio-mcp23s08.txt     |  47 ++
+ .../devicetree/bindings/gpio/gpio-omap.txt         |   7 +-
+ drivers/gpio/Kconfig                               |  13 +-
+ drivers/gpio/Makefile                              |   1 +
+ drivers/gpio/gpio-74x164.c                         |   8 +-
+ drivers/gpio/gpio-adp5520.c                        |   4 +-
+ drivers/gpio/gpio-em.c                             |  94 ++--
+ drivers/gpio/gpio-generic.c                        |  62 ++-
+ drivers/gpio/gpio-grgpio.c                         | 505 +++++++++++++++++++++
+ drivers/gpio/gpio-ich.c                            |  17 +-
+ drivers/gpio/gpio-lpc32xx.c                        |   2 +-
+ drivers/gpio/gpio-lynxpoint.c                      |   1 +
+ drivers/gpio/gpio-max7300.c                        |   4 +-
+ drivers/gpio/gpio-max7301.c                        |   7 +-
+ drivers/gpio/gpio-max732x.c                        |   5 +-
+ drivers/gpio/gpio-mc33880.c                        |  19 +-
+ drivers/gpio/gpio-mcp23s08.c                       | 137 ++++--
+ drivers/gpio/gpio-mvebu.c                          |  85 +++-
+ drivers/gpio/gpio-omap.c                           | 162 ++++---
+ drivers/gpio/gpio-pca953x.c                        |   3 +-
+ drivers/gpio/gpio-pcf857x.c                        |   8 +-
+ drivers/gpio/gpio-pxa.c                            |   4 +-
+ drivers/gpio/gpio-samsung.c                        |   1 +
+ drivers/gpio/gpio-sch.c                            | 111 +++--
+ drivers/gpio/gpio-stp-xway.c                       |   2 +-
+ drivers/gpio/gpio-tc3589x.c                        |   8 +-
+ drivers/gpio/gpio-tegra.c                          |  11 +-
+ drivers/gpio/gpio-timberdale.c                     |   3 +-
+ drivers/gpio/gpio-tps65910.c                       |   2 +-
+ drivers/gpio/gpio-viperboard.c                     |   4 -
+ drivers/gpio/gpio-vt8500.c                         |   8 +-
+ drivers/gpio/gpiolib-acpi.c                        | 217 ++++++++-
+ drivers/gpio/gpiolib-of.c                          |   2 +-
+ include/linux/acpi_gpio.h                          |  19 +
+ include/linux/basic_mmio_gpio.h                    |   1 +
+ 37 files changed, 1341 insertions(+), 301 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-grgpio.txt
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+ create mode 100644 drivers/gpio/gpio-grgpio.c
