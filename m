@@ -1,70 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762337Ab3ECNTa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 09:19:30 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51761 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761940Ab3ECNT3 (ORCPT
+	id S1762372Ab3ECNV3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 09:21:29 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:31224 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762150Ab3ECNV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 09:19:29 -0400
-Date: Fri, 3 May 2013 14:19:08 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Haojian Zhuang <haojian.zhuang@linaro.org>, Milo Kim <milo.kim@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20130503131908.GA3820@sirena.org.uk>
-References: <1367585170.7397.1.camel@phoenix>
+	Fri, 3 May 2013 09:21:27 -0400
+X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
+   d="scan'208";a="4207803"
+Message-ID: <1367587284.28742.89.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH v2 2/2] xen/balloon: Enforce various limits
+ on target
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Keir (Xen.org)" <keir@xen.org>,
+        "Dave Scott" <Dave.Scott@eu.citrix.com>,
+        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
+        Ian Jackson <Ian.Jackson@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jonathan Ludlam" <Jonathan.Ludlam@eu.citrix.com>,
+        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "carsten@schiers.de" <carsten@schiers.de>
+Date: Fri, 3 May 2013 14:21:24 +0100
+In-Reply-To: <20130503130036.GA12463@debian70-amd64.local.net-space.pl>
+References: <1367235468-8360-1-git-send-email-daniel.kiper@oracle.com>
+	 <1367235468-8360-3-git-send-email-daniel.kiper@oracle.com>
+	 <1367246649.3142.316.camel@zakaz.uk.xensource.com>
+	 <20130430125952.GD9904@debian70-amd64.local.net-space.pl>
+	 <1367329458.3142.524.camel@zakaz.uk.xensource.com>
+	 <20130430185852.GF9904@debian70-amd64.local.net-space.pl>
+	 <alpine.DEB.2.02.1305021214510.5398@kaball.uk.xensource.com>
+	 <20130502180404.GA16489@phenom.dumpdata.com>
+	 <1367568932.28742.19.camel@zakaz.uk.xensource.com>
+	 <20130503130036.GA12463@debian70-amd64.local.net-space.pl>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
-Content-Disposition: inline
-In-Reply-To: <1367585170.7397.1.camel@phoenix>
-X-Cookie: Don't get to bragging.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 212.183.132.20
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: Remove all platform_set_drvdata(pdev, NULL)
- in drivers
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-05-03 at 14:00 +0100, Daniel Kiper wrote:
+> On Fri, May 03, 2013 at 09:15:32AM +0100, Ian Campbell wrote:
+> > On Thu, 2013-05-02 at 19:04 +0100, Konrad Rzeszutek Wilk wrote:
+> > > On Thu, May 02, 2013 at 12:34:32PM +0100, Stefano Stabellini wrote:
+> 
+> [...]
+> 
+> > > > The xapi guys, CC'ed, might have more insights on what exactly is.
+> >
+> > I think that unless someone can remember what this issue was we should
+> > just chalk it up to a historical artefact of something xapi (or maybe
+> > some historical guest) was doing which we have no reason to believe
+> > needs to be carried over to libxl.
+> >
+> > IOW I'm suggesting we set LIBXL_MAXMEM_CONSTANT to 0 early in the 4.4
+> > cycle and see how it goes. If someone can show either empirical evidence
+> > or (better) logically argue that a fudge is required then we can always
+> > put it back (or it may turn out to be the caller's issue, in which case
+> > they can deal with it, hopefully xapi-on-libxl won't apply this fudge
+> > twice...).
+> >
+> > Alternatively I'm also strongly considering having debug builds of the
+> > toolstack randomise the amount of slack, that ought to shake out any
+> > lingering issues...
+> 
+> Do you suggest to postopone this work until 4.4 merge window?
 
---J/dobhs11T7y2rNN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+4.4 is a Xen version, this is a Linux patch so I'm not sure what you
+mean.
 
-On Fri, May 03, 2013 at 08:46:10PM +0800, Axel Lin wrote:
-> Since 0998d06310 "device-core: Ensure drvdata = NULL when no driver is bound",
-> this is done by driver core after device_release or on probe failure.
-> Thus we can remove all platform_set_drvdata(pdev, NULL) in drivers.
+> If yes, then I think that at least "xen/balloon: Enforce various limits on target"
+> patch (without this crazy libxl hack) should be applied.
 
-Applied, but note that this is nothing to do with the above commit - it
-has always been a bug for drivers to rely on drvdata except while bound
-so any driver that relied on clearing it was buggy.
+You mean this patch with only the MAX_DOMAIN_PAGES clamping? That seems
+plausible.
 
---J/dobhs11T7y2rNN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> > > > I dislike having to pull this "hack" into Linux, but if it is actually
+> > > > important to leave LIBXL_MAXMEM_CONSTANT unused, then it is worth doing.
+> > > > I would add a big comment on top saying:
+> > > >
+> > > > "libxl seems to think that we need to leave LIBXL_MAXMEM_CONSTANT
+> > > > kilobytes unused, let's be gentle and do that."
+> >
+> > It seems to me that this change in Linux is really just papering over
+> > the underlying issue. Or at the very least no one has adequately
+> > explained what that real issue is and why this change is relevant to it
+> > and/or an appropriate fix for it.
+> >
+> > The guest knows what target the toolstack has set for it is (its in the
+> > target xenstore node), I don't see any reason for the guest to be
+> > further second guessing that value by examining maxmem (adjusted by a
+> > fudge factor or otherwise). If the guest is seeing failures to increase
+> > its reservation when trying to meet that target then either the
+> > toolstack was buggy in asking it to hit a target greater than its maxmem
+> > or it is hitting one of the other reason for increase reservation
+> > failures. Since it needs to deal with the latter anyway I don't see any
+> > reason to special case maxmem as a cause for a failure.
+> 
+> Do not forget that guest may change target itself.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Yes it can, and that can fail either due to maxmem or due to ENOMEM, and
+the kernel needs prepared to deal with that when it happens.
 
-iQIcBAEBAgAGBQJRg7lEAAoJELSic+t+oim9KZkP/2gsf1TqyKVJg2n1G+4Ppqf2
-T/F1sMJbO40HNMqPeFiYHZ+nFo1Es7OyOqApjCUTlbqKt0BcBx3I15Tt7gb6pojG
-uvND2Zpxw9AJG/ahTvCCZ9F41DWIGSkr/4JrcnpINC8eGJnlZzUNBs510ljUUw3m
-nv1XFBIrZNSiSVpiePPO655mH+Lc0k3npSip/+svjWJxRgVKHpIsKHFVBU1ke5bM
-BmSH1MSqlcVvIYtuB7nQmq2FL1ap9WrMokt/R55lYKTkKTpBkYDZKMQlPKG2cq2Y
-i4FRV3ggpTIVjus63a8xH4KMinMw4Y+zvBV2NfkXLXIt5pinQZqgesdMNxKOpqBO
-RvEl1s+6aSdXK6bczpVoCHORbP5QKmxwT/AR49+6/w3Z9oE2Sj/pG583tUKxH2dR
-yS4h6W5Qjjwf9fKcw7zuJCmiOW0jZbHIO0RCcoowfUjSvGkTrB4xOAgGTBHaaa1F
-pTqTkcKPQdSDENA6lzpo55l9GqRh+iX8ytoX5ObS9eVU7mBVGVVwyD6X54vfmBEw
-CIlPdPy3YA+IUDuQE84Lo5yCJeSJKGBdqNjCl8cephds2rWs22UaEPgvRDC4YCwX
-qZKdXs58knpQ9zjmLEM4ICLh7P6wQg4WcIvM4u/OFcb/ZiQhdd0vxJTdJ7EZx2yL
-jNhLHU7Wyrh5TLyzdAIv
-=RZgQ
------END PGP SIGNATURE-----
+> Additionally, we would like to introduce xm compatibility
+> mode which is a bit different then xl normal behavior.
 
---J/dobhs11T7y2rNN--
+When then you really don't want to be baking specifics of the current
+model into the kernel, do you.
+
+> I do not mention that it is always worth check the limits.
+> It will save us a lot of trouble later.
+
+On the contrary, it seems to me that baking magic numbers into the
+kernel based on current toolstack behaviour is asking for trouble later.
+
+Ian.
+
+
