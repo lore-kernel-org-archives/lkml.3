@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763567Ab3ECUlz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 16:41:55 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:58499 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab3ECUly (ORCPT
+	id S1763592Ab3ECUq0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 16:46:26 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:37994 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763578Ab3ECUqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 16:41:54 -0400
+	Fri, 3 May 2013 16:46:25 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] [media] dib8000: Fix dib8000_set_frontend() never setting ret
+Date: Fri,  3 May 2013 22:46:22 +0200
+Message-Id: <1367613982-28634-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-In-Reply-To: <1367591569-32197-22-git-send-email-lee.jones@linaro.org>
-References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
-	<1367591569-32197-22-git-send-email-lee.jones@linaro.org>
-Date: Fri, 3 May 2013 22:41:51 +0200
-Message-ID: <CACRpkdbZmzJhZuST+T+qomK_q3q9wt34CGS6sqk0JkZV-Q6O7A@mail.gmail.com>
-Subject: Re: [PATCH 21/63] dmaengine: ste_dma40: Don't configure runtime
- configurable setup during allocate
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
+drivers/media/dvb-frontends/dib8000.c: In function ‘dib8000_set_frontend’:
+drivers/media/dvb-frontends/dib8000.c:3556: warning: ‘ret’ is used uninitialized in this function
 
-> Using the dmaengine API, allocating and configuring a channel are two
-> separate actions. Here we're removing logical channel configuration from
-> the channel allocating routines.
->
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Cc: Rabin Vincent <rabin@rab.in>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-(...)
+Remove the variable and return zero instead.
 
-> @@ -2024,6 +2024,9 @@ static int d40_config_memcpy(struct d40_chan *d40c)
->                 d40c->dma_cfg = dma40_memcpy_conf_log;
->                 d40c->dma_cfg.dev_type = dma40_memcpy_channels[d40c->chan.chan_id];
->
-> +               d40_log_cfg(&d40c->dma_cfg,
-> +                           &d40c->log_def.lcsp1, &d40c->log_def.lcsp3);
-> +
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/media/dvb-frontends/dib8000.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-So it only gets configured for memcpy now?
+diff --git a/drivers/media/dvb-frontends/dib8000.c b/drivers/media/dvb-frontends/dib8000.c
+index a54182d..9053614 100644
+--- a/drivers/media/dvb-frontends/dib8000.c
++++ b/drivers/media/dvb-frontends/dib8000.c
+@@ -3406,7 +3406,7 @@ static int dib8000_set_frontend(struct dvb_frontend *fe)
+ {
+ 	struct dib8000_state *state = fe->demodulator_priv;
+ 	struct dtv_frontend_properties *c = &state->fe[0]->dtv_property_cache;
+-	int l, i, active, time, ret, time_slave = FE_CALLBACK_TIME_NEVER;
++	int l, i, active, time, time_slave = FE_CALLBACK_TIME_NEVER;
+ 	u8 exit_condition, index_frontend;
+ 	u32 delay, callback_time;
+ 
+@@ -3553,7 +3553,7 @@ static int dib8000_set_frontend(struct dvb_frontend *fe)
+ 		}
+ 	}
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ static int dib8000_read_status(struct dvb_frontend *fe, fe_status_t * stat)
+-- 
+1.7.0.4
 
-What happens if you use a logical channel for a device transfer?
-
-Where will that be configured?
-
-Have you tested this combo?
-
-Yours,
-Linus Walleij
