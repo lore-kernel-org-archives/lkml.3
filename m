@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762549Ab3ECEt4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 00:49:56 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:42990 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761394Ab3ECEtx (ORCPT
+	id S1762480Ab3ECEvs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 00:51:48 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:47948 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754943Ab3ECEvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 00:49:53 -0400
-From: kosaki.motohiro@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: Olivier Langlois <olivier@trillion01.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 6/7] sched: task_sched_runtime introduce micro optimization
-Date: Fri,  3 May 2013 00:47:47 -0400
-Message-Id: <1367556468-4021-8-git-send-email-kosaki.motohiro@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1367556468-4021-1-git-send-email-kosaki.motohiro@gmail.com>
-References: <1367556468-4021-1-git-send-email-kosaki.motohiro@gmail.com>
+	Fri, 3 May 2013 00:51:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <1367507786-505303-3-git-send-email-arnd@arndb.de>
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
+	<1367507786-505303-3-git-send-email-arnd@arndb.de>
+Date: Fri, 3 May 2013 10:21:45 +0530
+Message-ID: <CAKohpomBKuaxk+sSF63cu6JKut1uV7J7Sj2o85c3wQ=fodx+Ow@mail.gmail.com>
+Subject: Re: [PATCH, RFC 02/22] cpufreq: ARM_DT_BL_CPUFREQ needs ARM_CPU_TOPOLOGY
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On 2 May 2013 20:46, Arnd Bergmann <arnd@arndb.de> wrote:
+> The big.LITTLE cpufreq driver uses the CPU topology API, which
+> needs to be reflected in Kconfig to prevent broken configurations.
+>
+> warning: (ARM_DT_BL_CPUFREQ) selects ARM_BIG_LITTLE_CPUFREQ which
+> has unmet direct dependencies (ARCH_HAS_CPUFREQ && CPU_FREQ && ARM && ARM_CPU_TOPOLOGY)
+>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Cc: cpufreq@vger.kernel.org
+> Cc: linux-pm@vger.kernel.org
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  drivers/cpufreq/Kconfig.arm | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+> index f3af18b..3fd6bdf 100644
+> --- a/drivers/cpufreq/Kconfig.arm
+> +++ b/drivers/cpufreq/Kconfig.arm
+> @@ -10,6 +10,7 @@ config ARM_DT_BL_CPUFREQ
+>         tristate "Generic ARM big LITTLE CPUfreq driver probed via DT"
+>         select ARM_BIG_LITTLE_CPUFREQ
+>         depends on OF && HAVE_CLK
+> +       depends on ARM_CPU_TOPOLOGY
+>         help
+>           This enables the Generic CPUfreq driver for ARM big.LITTLE platform.
+>           This gets frequency tables from DT.
 
-rq lock in task_sched_runtime() is necessary for two reasons. 1)
-accessing se.sum_exec_runtime is not atomic on 32bit and 2)
-do_task_delta_exec() require it.
+This Kconfig thing has always been confusing to me. This is how the code looks
+currently.
 
-So, 64bit can avoid holding rq lock when add_delta is false and
-delta_exec is 0.
+config ARM_BIG_LITTLE_CPUFREQ
+        tristate
+        depends on ARM_CPU_TOPOLOGY
 
-Cc: Olivier Langlois <olivier@trillion01.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Suggested-by: Paul Turner <pjt@google.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- kernel/sched/core.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+config ARM_DT_BL_CPUFREQ
+        tristate "Generic ARM big LITTLE CPUfreq driver probed via DT"
+        select ARM_BIG_LITTLE_CPUFREQ
+        depends on OF && HAVE_CLK
+        help
+          This enables the Generic CPUfreq driver for ARM big.LITTLE platform.
+          This gets frequency tables from DT.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b817e6d..75872c3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2657,6 +2657,21 @@ unsigned long long task_sched_runtime(struct task_struct *p, bool add_delta)
- 	struct rq *rq;
- 	u64 ns = 0;
- 
-+#ifdef CONFIG_64BIT
-+	/*
-+	 * 64-bit doesn't need locks to atomically read a 64bit value. So we
-+	 * have two optimization chances, 1) when caller doesn't need
-+	 * delta_exec and 2) when the task's delta_exec is 0. The former is
-+	 * obvious. The latter is complicated. reading ->on_cpu is racy, but
-+	 * this is ok. If we race with it leaving cpu, we'll take a lock. So
-+	 * we're correct. If we race with it entering cpu, unaccounted time
-+	 * is 0. This is indistinguishable from the read occurring a few
-+	 * cycles earlier.
-+	 */
-+	if (!add_delta || !p->on_cpu)
-+		return p->se.sum_exec_runtime;
-+#endif
-+
- 	rq = task_rq_lock(p, &flags);
- 	ns = p->se.sum_exec_runtime;
- 	if (add_delta)
--- 
-1.7.1
-
+Because all ARM big LITTLE cpufreq stuff have dependency on
+ARM_CPU_TOPOLOGY, i have added dependency at a common place. So that
+we don't end up adding this in every glue layer driver. How should this be done?
