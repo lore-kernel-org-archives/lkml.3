@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933926Ab3ECOjc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 10:39:32 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:35476 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933742Ab3ECOja (ORCPT
+	id S933811Ab3ECOfI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 10:35:08 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:35762 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933763Ab3ECOfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 10:39:30 -0400
+	Fri, 3 May 2013 10:35:05 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 08/63] dmaengine: ste_dma40: Move default memcpy configs into the driver
-Date: Fri,  3 May 2013 15:31:54 +0100
-Message-Id: <1367591569-32197-9-git-send-email-lee.jones@linaro.org>
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org
+Subject: [PATCH 45/63] usb: musb: ux500: move the MUSB HDRC configuration into the driver
+Date: Fri,  3 May 2013 15:32:31 +0100
+Message-Id: <1367591569-32197-46-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
 References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
@@ -21,144 +22,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are only two default memcpy configurations used for the DMA40
-driver; one for physical memcpy and one for logical memcpy. Instead
-of invariably passing the same configurations though platform data,
-we're moving them into the driver instead.
+The MUSB HDRC configuration never changes between each of the ux500
+supported platforms, so there's little point passing it though platform
+data. If we set it in the driver instead, we can make good use of it
+when booting with either ATAGs or Device Tree.
 
-Acked-by: Vinod Koul <vnod.koul@intel.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: linux-usb@vger.kernel.org
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Acked-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/devices-db8500.c        |   28 -----------------------
- drivers/dma/ste_dma40.c                     |   32 +++++++++++++++++++++++++--
- include/linux/platform_data/dma-ste-dma40.h |    4 ----
- 3 files changed, 30 insertions(+), 34 deletions(-)
+ arch/arm/mach-ux500/usb.c |    8 --------
+ drivers/usb/musb/ux500.c  |    8 ++++++++
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
-index 01cfb68..8b20c91 100644
---- a/arch/arm/mach-ux500/devices-db8500.c
-+++ b/arch/arm/mach-ux500/devices-db8500.c
-@@ -42,32 +42,6 @@ static struct resource dma40_resources[] = {
- 	}
- };
+diff --git a/arch/arm/mach-ux500/usb.c b/arch/arm/mach-ux500/usb.c
+index 8aff9a4..4f68a9c 100644
+--- a/arch/arm/mach-ux500/usb.c
++++ b/arch/arm/mach-ux500/usb.c
+@@ -76,16 +76,8 @@ static struct ux500_musb_board_data musb_board_data = {
  
--/* Default configuration for physcial memcpy */
--struct stedma40_chan_cfg dma40_memcpy_conf_phy = {
--	.mode = STEDMA40_MODE_PHYSICAL,
--	.dir = STEDMA40_MEM_TO_MEM,
--
--	.src_info.data_width = STEDMA40_BYTE_WIDTH,
--	.src_info.psize = STEDMA40_PSIZE_PHY_1,
--	.src_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
--
--	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
--	.dst_info.psize = STEDMA40_PSIZE_PHY_1,
--	.dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
--};
--/* Default configuration for logical memcpy */
--struct stedma40_chan_cfg dma40_memcpy_conf_log = {
--	.dir = STEDMA40_MEM_TO_MEM,
--
--	.src_info.data_width = STEDMA40_BYTE_WIDTH,
--	.src_info.psize = STEDMA40_PSIZE_LOG_1,
--	.src_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
--
--	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
--	.dst_info.psize = STEDMA40_PSIZE_LOG_1,
--	.dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
+ static u64 ux500_musb_dmamask = DMA_BIT_MASK(32);
+ 
+-static struct musb_hdrc_config musb_hdrc_config = {
+-	.multipoint	= true,
+-	.dyn_fifo	= true,
+-	.num_eps	= 16,
+-	.ram_bits	= 16,
 -};
 -
- /*
-  * Mapping between destination event lines and physical device address.
-  * The event line is tied to a device and therefore the address is constant.
-@@ -150,8 +124,6 @@ static struct stedma40_platform_data dma40_plat_data = {
- 	.dev_len = DB8500_DMA_NR_DEV,
- 	.dev_rx = dma40_rx_map,
- 	.dev_tx = dma40_tx_map,
--	.memcpy_conf_phy = &dma40_memcpy_conf_phy,
--	.memcpy_conf_log = &dma40_memcpy_conf_log,
- 	.disabled_channels = {-1},
+ static struct musb_hdrc_platform_data musb_platform_data = {
+ 	.mode = MUSB_OTG,
+-	.config = &musb_hdrc_config,
+ 	.board_data = &musb_board_data,
  };
  
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 12de79e..3b83dee 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -58,6 +58,34 @@
- /* Reserved event lines for memcpy only. */
- static int dma40_memcpy_channels[] = { 56, 57, 58, 59, 60 };
+diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
+index 13a3929..4a8f5c9 100644
+--- a/drivers/usb/musb/ux500.c
++++ b/drivers/usb/musb/ux500.c
+@@ -29,6 +29,13 @@
  
-+/* Default configuration for physcial memcpy */
-+struct stedma40_chan_cfg dma40_memcpy_conf_phy = {
-+	.mode = STEDMA40_MODE_PHYSICAL,
-+	.dir = STEDMA40_MEM_TO_MEM,
-+
-+	.src_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.src_info.psize = STEDMA40_PSIZE_PHY_1,
-+	.src_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
-+
-+	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.dst_info.psize = STEDMA40_PSIZE_PHY_1,
-+	.dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
+ #include "musb_core.h"
+ 
++static struct musb_hdrc_config ux500_musb_hdrc_config = {
++	.multipoint	= true,
++	.dyn_fifo	= true,
++	.num_eps	= 16,
++	.ram_bits	= 16,
 +};
 +
-+/* Default configuration for logical memcpy */
-+struct stedma40_chan_cfg dma40_memcpy_conf_log = {
-+	.mode = STEDMA40_MODE_LOGICAL,
-+	.dir = STEDMA40_MEM_TO_MEM,
-+
-+	.src_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.src_info.psize = STEDMA40_PSIZE_LOG_1,
-+	.src_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
-+
-+	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
-+	.dst_info.psize = STEDMA40_PSIZE_LOG_1,
-+	.dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL,
-+};
-+
- /**
-  * enum 40_command - The different commands and/or statuses.
-  *
-@@ -2015,13 +2043,13 @@ static int d40_config_memcpy(struct d40_chan *d40c)
- 	dma_cap_mask_t cap = d40c->chan.device->cap_mask;
+ struct ux500_glue {
+ 	struct device		*dev;
+ 	struct platform_device	*musb;
+@@ -123,6 +130,7 @@ static int ux500_probe(struct platform_device *pdev)
+ 	glue->clk			= clk;
  
- 	if (dma_has_cap(DMA_MEMCPY, cap) && !dma_has_cap(DMA_SLAVE, cap)) {
--		d40c->dma_cfg = *d40c->base->plat_data->memcpy_conf_log;
-+		d40c->dma_cfg = dma40_memcpy_conf_log;
- 		d40c->dma_cfg.src_dev_type = STEDMA40_DEV_SRC_MEMORY;
- 		d40c->dma_cfg.dst_dev_type = dma40_memcpy_channels[d40c->chan.chan_id];
+ 	pdata->platform_ops		= &ux500_ops;
++	pdata->config 			= &ux500_musb_hdrc_config;
  
- 	} else if (dma_has_cap(DMA_MEMCPY, cap) &&
- 		   dma_has_cap(DMA_SLAVE, cap)) {
--		d40c->dma_cfg = *d40c->base->plat_data->memcpy_conf_phy;
-+		d40c->dma_cfg = dma40_memcpy_conf_phy;
- 	} else {
- 		chan_err(d40c, "No memcpy\n");
- 		return -EINVAL;
-diff --git a/include/linux/platform_data/dma-ste-dma40.h b/include/linux/platform_data/dma-ste-dma40.h
-index a808784..869c571 100644
---- a/include/linux/platform_data/dma-ste-dma40.h
-+++ b/include/linux/platform_data/dma-ste-dma40.h
-@@ -141,8 +141,6 @@ struct stedma40_chan_cfg {
-  * @dev_len: length of dev_tx and dev_rx
-  * @dev_tx: mapping between destination event line and io address
-  * @dev_rx: mapping between source event line and io address
-- * @memcpy_conf_phy: default configuration of physical channel memcpy
-- * @memcpy_conf_log: default configuration of logical channel memcpy
-  * @disabled_channels: A vector, ending with -1, that marks physical channels
-  * that are for different reasons not available for the driver.
-  * @soft_lli_chans: A vector, that marks physical channels will use LLI by SW
-@@ -160,8 +158,6 @@ struct stedma40_platform_data {
- 	u32				 dev_len;
- 	const dma_addr_t		*dev_tx;
- 	const dma_addr_t		*dev_rx;
--	struct stedma40_chan_cfg	*memcpy_conf_phy;
--	struct stedma40_chan_cfg	*memcpy_conf_log;
- 	int				 disabled_channels[STEDMA40_MAX_PHYS];
- 	int				*soft_lli_chans;
- 	int				 num_of_soft_lli_chans;
+ 	platform_set_drvdata(pdev, glue);
+ 
 -- 
 1.7.10.4
 
