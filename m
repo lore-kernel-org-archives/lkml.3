@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759513Ab3EDWXd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 18:23:33 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:43085 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757737Ab3EDWXb (ORCPT
+	id S1755276Ab3EDWzy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 18:55:54 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49046 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087Ab3EDWzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 18:23:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOS58YO2b=zFGUVqrV1dHV6gDouNJpN2Wnwo_D6f5V7G9Wz9Vg@mail.gmail.com>
-References: <1367458508-9133-1-git-send-email-ccross@android.com>
-	<1367458508-9133-11-git-send-email-ccross@android.com>
-	<20130503000812.GY19814@mtj.dyndns.org>
-	<85487641.pdFCOjE3G7@vostro.rjw.lan>
-	<CAOS58YO2b=zFGUVqrV1dHV6gDouNJpN2Wnwo_D6f5V7G9Wz9Vg@mail.gmail.com>
-Date: Sat, 4 May 2013 15:23:30 -0700
-X-Google-Sender-Auth: VIzG48fefBfJPQAsdTu-U2EB0ns
-Message-ID: <CAMbhsRSm74tsqXT7TG1h8L1DoKQV0_wKd3asxvHPR7bttWkxag@mail.gmail.com>
-Subject: Re: [PATCH v2 10/10] af_unix: use freezable blocking calls in read
-From: Colin Cross <ccross@android.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Oleg Nesterov <oleg@redhat.com>,
+	Sat, 4 May 2013 18:55:53 -0400
+Date: Sun, 5 May 2013 00:55:49 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Colin Cross <ccross@android.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
         "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>, netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>, netdev@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>
+Subject: Re: [PATCH 1/2] freezer: add unsafe versions of freezable helpers
+Message-ID: <20130504225549.GA24276@amd.pavel.ucw.cz>
+References: <1367615050-3894-1-git-send-email-ccross@android.com>
+ <20130504130033.GB13770@amd.pavel.ucw.cz>
+ <CAMbhsRS6+hjTmrihVzgu3Dtyp8XAhJJ4VKMj=28G6xH3H73=6Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMbhsRS6+hjTmrihVzgu3Dtyp8XAhJJ4VKMj=28G6xH3H73=6Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 4, 2013 at 1:39 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Rafael.
->
-> On Sat, May 4, 2013 at 12:19 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>> Heh, so you are aware of the deadlock possibilities.  Good selection
->>> of spots.  For all the conversion patches.
->>>
->>>  Acked-by: Tejun Heo <tj@kernel.org>
->>
->> I wonder if that includes [3/10] (just to get the record straight)?
->
-> I think we want the lockdep annotations before these go in. I'll
-> review Colin's new series later today.
+Hi!
 
-Just to make sure the merge order is clear, the two patches I posted
-yesterday to reintroduce the lockdep warning in try_to_freeze()
-(https://lkml.org/lkml/2013/5/3/488) need to be merged first, then I
-will repost this series on top of that one.
+> >> NFS calls the freezable helpers with locks held, which is unsafe
+> >> and caused lockdep warnings when 6aa9707 "lockdep: check that no
+> >> locks held at freeze time" was applied (reverted in dbf520a).
+> >> Add new *_unsafe versions of the helpers that will not run the
+> >> lockdep test when 6aa9707 is reapplied, and call them from NFS.
+> >>
+> >> Signed-off-by: Colin Cross <ccross@android.com>
+> >
+> > Looks mostly good.
+> >
+> >> @@ -152,6 +169,14 @@ static inline bool freezer_should_skip(struct task_struct *p)
+> >>       freezer_count();                                                \
+> >>  })
+> >>
+> >> +/* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
+> >> +#define freezable_schedule_unsafe()                                  \
+> >> +({                                                                   \
+> >> +     freezer_do_not_count();                                         \
+> >> +     schedule();                                                     \
+> >> +     freezer_count_unsafe();                                         \
+> >> +})
+> >> +
+> >
+> > Make it inline function? :-). Add short explanation why it is good
+> > idea?
+> 
+> These are exact copies of the existing non-unsafe versions, except
+> they call freezer_count_unsafe() instead of freezer_count().  The next
+> version of my other patch stack that goes on top of this has a patch
+> to convert the macros in this file to static inline functions (at
+> least the ones that can be).  I'd rather not mix it in with this patch
+> for ease of comparison with the existing calls.
+
+Ok.
+
+Acked-by: Pavel Machek <pavel@ucw.cz>
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
