@@ -1,205 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763620Ab3EDA7h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 20:59:37 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57512 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934089Ab3EDA66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 20:58:58 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>,
-        linux-mm@kvack.org
-Subject: [PATCH 1/3 RFC] ACPI / memhotplug: Bind removable memory blocks to ACPI device nodes
-Date: Sat, 04 May 2013 03:03:22 +0200
-Message-ID: <2075762.5ZqhFms9cx@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1583356.7oqZ7gBy2q@vostro.rjw.lan>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <3166726.elbgrUIZ0L@vostro.rjw.lan> <1583356.7oqZ7gBy2q@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S934337Ab3EDBA0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 21:00:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15366 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763809Ab3EDBAS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 May 2013 21:00:18 -0400
+X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=XJUvtiS10aAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=1UxL-qhO9PsA:10 a=VwQbUJbxAAAA:8 a=5-10TdLpAAAA:8 a=sq4sGaHwAAAA:8 a=4-pcMlRTT7BXjaTAMckA:9 a=b_U7oGouiYAA:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=4opI5b6X7z7WTLu1:21 a=_gtItDp4O5uSdHEi:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130504010016.729310985@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Fri, 03 May 2013 20:59:58 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 3/6] x86/mce: Defer mce wakeups to threads for PREEMPT_RT
+References: <20130504005955.061874443@goodmis.org>
+Content-Disposition: inline; filename=0003-x86-mce-Defer-mce-wakeups-to-threads-for-PREEMPT_RT.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-During ACPI memory hotplug configuration bind memory blocks residing
-in modules removable through the standard ACPI mechanism to struct
-acpi_device objects associated with ACPI namespace objects
-representing those modules.  Accordingly, unbind those memory blocks
-from the struct acpi_device objects when the memory modules in
-question are being removed.
+We had a customer report a lockup on a 3.0-rt kernel that had the
+following backtrace:
 
-When "offline" operation for devices representing memory blocks is
-introduced, this will allow the ACPI core's device hot-remove code to
-use it to carry out remove_memory() for those memory blocks and check
-the results of that before it actually removes the modules holding
-them from the system.
+[ffff88107fca3e80] rt_spin_lock_slowlock at ffffffff81499113
+[ffff88107fca3f40] rt_spin_lock at ffffffff81499a56
+[ffff88107fca3f50] __wake_up at ffffffff81043379
+[ffff88107fca3f80] mce_notify_irq at ffffffff81017328
+[ffff88107fca3f90] intel_threshold_interrupt at ffffffff81019508
+[ffff88107fca3fa0] smp_threshold_interrupt at ffffffff81019fc1
+[ffff88107fca3fb0] threshold_interrupt at ffffffff814a1853
 
-Since walk_memory_range() is used for accessing all memory blocks
-corresponding to a given ACPI namespace object, it is exported from
-memory_hotplug.c so that the code in acpi_memhotplug.c can use it.
+It actually bugged because the lock was taken by the same owner that
+already had that lock. What happened was the thread that was setting
+itself on a wait queue had the lock when an MCE triggered. The MCE
+interrupt does a wake up on its wait list and grabs the same lock.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+NOTE: THIS IS NOT A BUG ON MAINLINE
+
+Sorry for yelling, but as I Cc'd mainline maintainers I want them to
+know that this is an PREEMPT_RT bug only. I only Cc'd them for advice.
+
+On PREEMPT_RT the wait queue locks are converted from normal
+"spin_locks" into an rt_mutex (see the rt_spin_lock_slowlock above).
+These are not to be taken by hard interrupt context. This usually isn't
+a problem as most all interrupts in PREEMPT_RT are converted into
+schedulable threads. Unfortunately that's not the case with the MCE irq.
+
+As wait queue locks are notorious for long hold times, we can not
+convert them to raw_spin_locks without causing issues with -rt. But
+Thomas has created a "simple-wait" structure that uses raw spin locks
+which may have been a good fit.
+
+Unfortunately, wait queues are not the only issue, as the mce_notify_irq
+also does a schedule_work(), which grabs the workqueue spin locks that
+have the exact same issue.
+
+Thus, this patch I'm proposing is to move the actual work of the MCE
+interrupt into a helper thread that gets woken up on the MCE interrupt
+and does the work in a schedulable context.
+
+NOTE: THIS PATCH ONLY CHANGES THE BEHAVIOR WHEN PREEMPT_RT IS SET
+
+Oops, sorry for yelling again, but I want to stress that I keep the same
+behavior of mainline when PREEMPT_RT is not set. Thus, this only changes
+the MCE behavior when PREEMPT_RT is configured.
+
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[bigeasy@linutronix: make mce_notify_work() a proper prototype, use
+		     kthread_run()]
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/acpi/acpi_memhotplug.c |   53 ++++++++++++++++++++++++++++++++++++++---
- include/linux/memory_hotplug.h |    2 +
- mm/memory_hotplug.c            |    4 ++-
- 3 files changed, 55 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |   78 +++++++++++++++++++++++++++++---------
+ 1 file changed, 61 insertions(+), 17 deletions(-)
 
-Index: linux-pm/mm/memory_hotplug.c
-===================================================================
---- linux-pm.orig/mm/memory_hotplug.c
-+++ linux-pm/mm/memory_hotplug.c
-@@ -1618,6 +1618,7 @@ int offline_pages(unsigned long start_pf
- {
- 	return __offline_pages(start_pfn, start_pfn + nr_pages, 120 * HZ);
- }
-+#endif /* CONFIG_MEMORY_HOTREMOVE */
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 7e4f230..8ceb100 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -15,6 +15,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/kobject.h>
+ #include <linux/uaccess.h>
++#include <linux/kthread.h>
+ #include <linux/kdebug.h>
+ #include <linux/kernel.h>
+ #include <linux/percpu.h>
+@@ -1158,6 +1159,63 @@ static void mce_do_trigger(struct work_struct *work)
  
- /**
-  * walk_memory_range - walks through all mem sections in [start_pfn, end_pfn)
-@@ -1631,7 +1632,7 @@ int offline_pages(unsigned long start_pf
-  *
-  * Returns the return value of func.
-  */
--static int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
-+int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
- 		void *arg, int (*func)(struct memory_block *, void *))
- {
- 	struct memory_block *mem = NULL;
-@@ -1668,6 +1669,7 @@ static int walk_memory_range(unsigned lo
- 	return 0;
- }
+ static DECLARE_WORK(mce_trigger_work, mce_do_trigger);
  
-+#ifdef CONFIG_MEMORY_HOTREMOVE
- /**
-  * offline_memory_block_cb - callback function for offlining memory block
-  * @mem: the memory block to be offlined
-Index: linux-pm/include/linux/memory_hotplug.h
-===================================================================
---- linux-pm.orig/include/linux/memory_hotplug.h
-+++ linux-pm/include/linux/memory_hotplug.h
-@@ -245,6 +245,8 @@ static inline int is_mem_section_removab
- static inline void try_offline_node(int nid) {}
- #endif /* CONFIG_MEMORY_HOTREMOVE */
- 
-+extern int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
-+		void *arg, int (*func)(struct memory_block *, void *));
- extern int mem_online_node(int nid);
- extern int add_memory(int nid, u64 start, u64 size);
- extern int arch_add_memory(int nid, u64 start, u64 size);
-Index: linux-pm/drivers/acpi/acpi_memhotplug.c
-===================================================================
---- linux-pm.orig/drivers/acpi/acpi_memhotplug.c
-+++ linux-pm/drivers/acpi/acpi_memhotplug.c
-@@ -28,6 +28,7 @@
-  */
- 
- #include <linux/acpi.h>
-+#include <linux/memory.h>
- #include <linux/memory_hotplug.h>
- 
- #include "internal.h"
-@@ -166,13 +167,50 @@ static int acpi_memory_check_device(stru
- 	return 0;
- }
- 
-+static unsigned long acpi_meminfo_start_pfn(struct acpi_memory_info *info)
++static void __mce_notify_work(void)
 +{
-+	return PFN_DOWN(info->start_addr);
++	/* Not more than two messages every minute */
++	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
++
++	/* wake processes polling /dev/mcelog */
++	wake_up_interruptible(&mce_chrdev_wait);
++
++	/*
++	 * There is no risk of missing notifications because
++	 * work_pending is always cleared before the function is
++	 * executed.
++	 */
++	if (mce_helper[0] && !work_pending(&mce_trigger_work))
++		schedule_work(&mce_trigger_work);
++
++	if (__ratelimit(&ratelimit))
++		pr_info(HW_ERR "Machine check events logged\n");
 +}
 +
-+static unsigned long acpi_meminfo_end_pfn(struct acpi_memory_info *info)
-+{
-+	return PFN_UP(info->start_addr + info->length-1);
-+}
++#ifdef CONFIG_PREEMPT_RT_FULL
++struct task_struct *mce_notify_helper;
 +
-+static int acpi_bind_memblk(struct memory_block *mem, void *arg)
++static int mce_notify_helper_thread(void *unused)
 +{
-+	return acpi_bind_one(&mem->dev, (acpi_handle)arg);
-+}
-+
-+static int acpi_bind_memory_blocks(struct acpi_memory_info *info,
-+				   acpi_handle handle)
-+{
-+	return walk_memory_range(acpi_meminfo_start_pfn(info),
-+				 acpi_meminfo_end_pfn(info), (void *)handle,
-+				 acpi_bind_memblk);
-+}
-+
-+static int acpi_unbind_memblk(struct memory_block *mem, void *arg)
-+{
-+	acpi_unbind_one(&mem->dev);
++	while (1) {
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule();
++		if (kthread_should_stop())
++			break;
++		__mce_notify_work();
++	}
 +	return 0;
 +}
 +
-+static void acpi_unbind_memory_blocks(struct acpi_memory_info *info,
-+				      acpi_handle handle)
++static int mce_notify_work_init(void)
 +{
-+	walk_memory_range(acpi_meminfo_start_pfn(info),
-+			  acpi_meminfo_end_pfn(info), NULL, acpi_unbind_memblk);
++	mce_notify_helper = kthread_run(mce_notify_helper_thread, NULL,
++					   "mce-notify");
++	if (!mce_notify_helper)
++		return -ENOMEM;
++
++	return 0;
 +}
 +
- static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
- {
-+	acpi_handle handle = mem_device->device->handle;
- 	int result, num_enabled = 0;
- 	struct acpi_memory_info *info;
- 	int node;
- 
--	node = acpi_get_node(mem_device->device->handle);
-+	node = acpi_get_node(handle);
- 	/*
- 	 * Tell the VM there is more memory here...
- 	 * Note: Assume that this function returns zero on success
-@@ -203,6 +241,12 @@ static int acpi_memory_enable_device(str
- 		if (result && result != -EEXIST)
- 			continue;
- 
-+		result = acpi_bind_memory_blocks(info, handle);
-+		if (result) {
-+			acpi_unbind_memory_blocks(info, handle);
-+			return -ENODEV;
-+		}
++static void mce_notify_work(void)
++{
++	wake_up_process(mce_notify_helper);
++}
++#else
++static void mce_notify_work(void)
++{
++	__mce_notify_work();
++}
++static inline int mce_notify_work_init(void) { return 0; }
++#endif
 +
- 		info->enabled = 1;
- 
- 		/*
-@@ -229,10 +273,11 @@ static int acpi_memory_enable_device(str
- 
- static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+ /*
+  * Notify the user(s) about new machine check events.
+  * Can be called from interrupt context, but not from machine check/NMI
+@@ -1165,26 +1223,10 @@ static DECLARE_WORK(mce_trigger_work, mce_do_trigger);
+  */
+ int mce_notify_irq(void)
  {
-+	acpi_handle handle = mem_device->device->handle;
- 	int result = 0, nid;
- 	struct acpi_memory_info *info, *n;
+-	/* Not more than two messages every minute */
+-	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
+-
+ 	clear_thread_flag(TIF_MCE_NOTIFY);
  
--	nid = acpi_get_node(mem_device->device->handle);
-+	nid = acpi_get_node(handle);
- 
- 	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
- 		if (!info->enabled)
-@@ -240,6 +285,8 @@ static int acpi_memory_remove_memory(str
- 
- 		if (nid < 0)
- 			nid = memory_add_physaddr_to_nid(info->start_addr);
-+
-+		acpi_unbind_memory_blocks(info, handle);
- 		result = remove_memory(nid, info->start_addr, info->length);
- 		if (result)
- 			return result;
-@@ -300,7 +347,7 @@ static int acpi_memory_device_add(struct
- 	if (result) {
- 		dev_err(&device->dev, "acpi_memory_enable_device() error\n");
- 		acpi_memory_device_free(mem_device);
--		return -ENODEV;
-+		return result;
+ 	if (test_and_clear_bit(0, &mce_need_notify)) {
+-		/* wake processes polling /dev/mcelog */
+-		wake_up_interruptible(&mce_chrdev_wait);
+-
+-		/*
+-		 * There is no risk of missing notifications because
+-		 * work_pending is always cleared before the function is
+-		 * executed.
+-		 */
+-		if (mce_helper[0] && !work_pending(&mce_trigger_work))
+-			schedule_work(&mce_trigger_work);
+-
+-		if (__ratelimit(&ratelimit))
+-			pr_info(HW_ERR "Machine check events logged\n");
+-
++		mce_notify_work();
+ 		return 1;
  	}
+ 	return 0;
+@@ -2146,6 +2188,8 @@ static __init int mcheck_init_device(void)
+ 	/* register character device /dev/mcelog */
+ 	misc_register(&mce_chrdev_device);
  
- 	dev_dbg(&device->dev, "Memory device configured by ACPI\n");
++	err = mce_notify_work_init();
++
+ 	return err;
+ }
+ device_initcall(mcheck_init_device);
+-- 
+1.7.10.4
+
 
