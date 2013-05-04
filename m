@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762003Ab3EDR7Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 13:59:24 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:10110 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401Ab3EDR7W (ORCPT
+	id S1761878Ab3EDSD3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 14:03:29 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:38762 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757433Ab3EDSD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 13:59:22 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18EBK9fl4WbLwW0CK1w1lpy1KlCgy1F+GY=
-Date: Sat, 4 May 2013 13:58:39 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
-Message-ID: <20130504175839.GM31290@titan.lakedaemon.net>
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130502185322.GA29333@obsidianresearch.com>
- <5182B902.7040908@gmail.com>
- <20130502193510.GA29522@obsidianresearch.com>
- <5182C322.3030304@gmail.com>
+	Sat, 4 May 2013 14:03:27 -0400
+Date: Sat, 4 May 2013 11:03:16 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+Message-ID: <20130504180315.GB3659@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130502072623.GE7521@dyad.programming.kicks-ass.net>
+ <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg>
+ <20130502173257.GX3780@linux.vnet.ibm.com>
+ <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg>
+ <20130502193409.GA3780@linux.vnet.ibm.com>
+ <alpine.LFD.2.00.1305022249010.25417@ja.ssi.bg>
+ <20130502223107.GB3780@linux.vnet.ibm.com>
+ <alpine.LFD.2.00.1305031024080.1657@ja.ssi.bg>
+ <20130503163045.GE3780@linux.vnet.ibm.com>
+ <alpine.LFD.2.00.1305041018520.1645@ja.ssi.bg>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5182C322.3030304@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1305041018520.1645@ja.ssi.bg>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050418-7282-0000-0000-000016D0380E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 09:48:50PM +0200, Sebastian Hesselbarth wrote:
-> On 05/02/2013 09:35 PM, Jason Gunthorpe wrote:
-> >I have kirkwood HW but I haven't had time to make newer kernels run on
-> >it, otherwise I'd test it too :(
+On Sat, May 04, 2013 at 10:23:31AM +0300, Julian Anastasov wrote:
 > 
-> I also have kirkwood HW but that will cut me from email as I use it as
-> relay server ;) Maybe I can turn it into a test bed for a while.
+> 	Hello,
 > 
-> There is also Orion5x and Discovery Innovation (mv78xx0) to be tested.
+> On Fri, 3 May 2013, Paul E. McKenney wrote:
 > 
-> @Jason Cooper: I will merge both irqchip and dove patches into one
-> patch set. I wasn't earlier because I didn't want the above SoCs to
-> slow down patch integration. And I will split dtsi changes into
-> separate patches as requested.
+> > static inline int cond_resched_rcu(void)
+> > {
+> > #if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_PREEMPT_RCU)
+> > 	rcu_read_unlock();
+> > 	cond_resched();
+> > 	rcu_read_lock();
+> > #endif
+> > }
+> > 
+> > This adds absolutely no overhead in non-debug builds of CONFIG_PREEMPT_RCU,
+> > does the checking in debug builds, and allows voluntary preemption in
+> > !CONFIG_PREEMPT_RCU builds.  CONFIG_PROVE_RCU builds will check for an
+> > (illegal) outer rcu_read_lock() in CONFIG_PREEMPT_RCU builds, and you
+> > will get "scheduling while atomic" in response to an outer rcu_read_lock()
+> > in !CONFIG_PREEMPT_RCU builds.
+> > 
+> > It also seems to me a lot simpler.
+> > 
+> > Does this work, or am I still missing something?
+> 
+> 	Works perfectly. Thanks! Tested CONFIG_PREEMPT_RCU=y/n,
+> the errors messages with extra RCU lock.
 
-Understood.  I'd prefer to keep patches developed together in the same
-series, that way, discussions about who is taking what and which patch
-depends on what are all in the same thread of the archives.
+Very good!  Please send the patch along, and I will ack it.
 
-It's difficult because some series (eg pcie) touch many different areas
-and _need_ to be kept together because of the chain of dependencies.
-Most other series though, aren't in that situation.
+						Thanx, Paul
 
-thx,
-
-Jason.
