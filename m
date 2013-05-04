@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765Ab3EDLLS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 07:11:18 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52568 "EHLO bear.ext.ti.com"
+	id S1757354Ab3EDLNB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 07:13:01 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54832 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754837Ab3EDLLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 07:11:16 -0400
-From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-To: <devicetree-discuss@lists.ozlabs.org>, <linux-input@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-CC: <grant.likely@secretlab.ca>, <dmitry.torokhov@gmail.com>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <manishv.b@ti.com>
-Subject: [PATCH V2 0/2] Add DT support for tps6507x touchscreen
-Date: Sat, 4 May 2013 16:42:29 +0530
-Message-ID: <1367665951-29848-1-git-send-email-manishv.b@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755368Ab3EDLM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 07:12:59 -0400
+Date: Sat, 4 May 2013 13:19:07 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: mingo@kernel.org, a.p.zijlstra@chello.nl
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        ak@linux.intel.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/urgent] perf/x86/intel/lbr: Demand proper privileges
+ for PERF_SAMPLE_BRANCH_KERNEL
+Message-ID: <20130504111907.GA3411@pd.tnic>
+References: <20130503121256.230745028@chello.nl>
+ <tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch set adds DT support for tps6507x based touchscreen
-Also, add DT data for tps6507x touchscreen in da850-evm by
-providing touchscreen node inside tps6507x mfd device.
+On Sat, May 04, 2013 at 01:22:57AM -0700, tip-bot for Peter Zijlstra wrote:
+> Commit-ID:  0f5c78b5f33ce940034743e5f9485fc81ad75b0f
+> Gitweb:     http://git.kernel.org/tip/0f5c78b5f33ce940034743e5f9485fc81ad75b0f
+> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+> AuthorDate: Fri, 3 May 2013 14:11:25 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Sat, 4 May 2013 08:37:48 +0200
+> 
+> perf/x86/intel/lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
+> 
+> We should always have proper privileges when requesting kernel
+> data.
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: <stable@kernel.org>
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Cc: eranian@google.com
+> Link: http://lkml.kernel.org/r/20130503121256.230745028@chello.nl
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> Link: http://lkml.kernel.org/n/tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> index de341d4..0e92871 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> @@ -318,8 +318,11 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
+>  	if (br_type & PERF_SAMPLE_BRANCH_USER)
+>  		mask |= X86_BR_USER;
+>  
+> -	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
+> +	if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
+> +		if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+> +			return -EACCES;
 
-This patch series applies on top of linux-next tree
-and depends on [1].
+It is probably not too late to amend this patch and remove the "-EACCES":
 
-[1]tps6507x-ts: update to devm_* API
-   https://patchwork.kernel.org/patch/2324441/
-
-Tested on da850-evm board.
-
-Changes since V1:
- - Updated tps6507x documentation.
- - Updated commit message.
- - return proper error value in absence platform and DT data
-   for touchscreen.
-
-Vishwanathrao Badarkhe, Manish (2):
-  tps6507x-ts: Add DT support
-  ARM: davinci: da850: add tps6507x touchscreen DT data
-
- Documentation/devicetree/bindings/mfd/tps6507x.txt |   28 +++++-
- arch/arm/boot/dts/da850-evm.dts                    |    9 ++
- drivers/input/touchscreen/tps6507x-ts.c            |  105 ++++++++++++++------
- 3 files changed, 111 insertions(+), 31 deletions(-)
+arch/x86/kernel/cpu/perf_event_intel_lbr.c: In function ‘intel_pmu_setup_sw_lbr_filter’:
+arch/x86/kernel/cpu/perf_event_intel_lbr.c:323:4: warning: ‘return’ with a value, in function returning void [enabled by default]
 
 -- 
-1.7.4.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
