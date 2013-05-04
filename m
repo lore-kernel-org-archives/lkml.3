@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761989Ab3EDSDe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 14:03:34 -0400
-Received: from stator.leun.net ([85.214.203.199]:46345 "EHLO stator.leun.net"
+	id S1761898Ab3EDSFS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 14:05:18 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51615 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761777Ab3EDSDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 14:03:32 -0400
-Date: Sat, 4 May 2013 20:02:40 +0200
-From: Michael Leun <lkml20130126@newton.leun.net>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [REGRESSION] bisected: 3.8 -> 3.9 cannot umount after using
- fuse
-Message-ID: <20130504200240.10a8bae0@xenia.leun.net>
-In-Reply-To: <20130504155214.GD25399@ZenIV.linux.org.uk>
-References: <20130504124519.032ac684@xenia.leun.net>
-	<20130504155214.GD25399@ZenIV.linux.org.uk>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753960Ab3EDSFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 14:05:16 -0400
+Date: Sat, 4 May 2013 20:12:45 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+Cc: Emmanuel Benisty <benisty.e@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@surriel.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
+        "Low, Jason" <jason.low2@hp.com>,
+        Michel Lespinasse <walken@google.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+Message-ID: <20130504181245.GA9711@pd.tnic>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+ <CA+i8gKKK_VxZtyyp1tqHnztd4++XyNXwbEEr-A29-J23PyuCfQ@mail.gmail.com>
+ <CA+55aFzqBEX=cGGZJJsfNWcDwQcUOP7njEog-kZZLRxuDg8Tzg@mail.gmail.com>
+ <CA+i8gK+h+FyPiOL85BPa-Pu8+bDw6LW60-oRoLHgP2AnzMADCA@mail.gmail.com>
+ <20130504155558.GA12870@logfs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130504155558.GA12870@logfs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 4 May 2013 16:52:14 +0100
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+On Sat, May 04, 2013 at 11:55:58AM -0400, Jörn Engel wrote:
+> Blockconsole currently lives here:
+> https://git.kernel.org/cgit/linux/kernel/git/joern/bcon2.git/
 
-> On Sat, May 04, 2013 at 12:45:19PM +0200, Michael Leun wrote:
-> 
-> > After reverting 57eccb830f1cc93d4b506ba306d8dfa685e0c88f from 3.9
-> > that umount above works (not busy).
-> 
-> Sigh...  Check if the following fix works for your testcase:
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index b4f96a5..b68eef2d 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-[...]
-
-Yup, that fixes it.
+Tja, if only that were upstream...
 
 -- 
-MfG,
+Regards/Gruss,
+    Boris.
 
-Michael Leun
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
