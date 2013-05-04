@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758470Ab3EDIjD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 04:39:03 -0400
-Received: from smtp32.i.mail.ru ([94.100.177.92]:60451 "EHLO smtp32.i.mail.ru"
+	id S1757442Ab3EDI4m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 04:56:42 -0400
+Received: from r00tworld.com ([212.85.137.150]:43119 "EHLO r00tworld.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754507Ab3EDIi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 04:38:58 -0400
-Message-ID: <5184D6BF.5040701@list.ru>
-Date: Sat, 04 May 2013 13:37:03 +0400
-From: Stas Sergeev <stsp@list.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1753025Ab3EDI4k convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 04:56:40 -0400
+From: "PaX Team" <pageexec@freemail.hu>
+To: Daniel Vetter <daniel@ffwll.ch>, dl9pf@gmx.de,
+        Jani Nikula <jani.nikula@linux.intel.com>
+Date: Sat, 04 May 2013 10:55:50 +0200
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Jarkko Huijts <jarkko.huijts@gmail.com>, Alan Cox <alan@linux.intel.com>,
-        linux-usb@vger.kernel.org, linux-serial@vger.kernel.org,
-        Linux kernel <linux-kernel@vger.kernel.org>,
-        Caylan Van Larson <i@caylan.net>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Regression: ftdi_sio is slow (since Wed Oct 10 15:05:06 2012)
-References: <5183D196.2080305@list.ru> <20130503163008.GA30699@kroah.com> <5183F62A.1020801@list.ru> <20130503165231.GA1966@kroah.com> <5183FC83.8090602@list.ru> <20130503171618.GA16686@kroah.com> <51840186.7000608@list.ru> <20130503203419.GA25932@kroah.com>
-In-Reply-To: <20130503203419.GA25932@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Spam: Not detected
-X-Mras: Ok
+Subject: Re: [Intel-gfx] [PATCH] [TRIVIAL] Fix declaration of intel_gmbus_{is_forced_bit/is_port_falid} in i915 driver.
+Reply-to: pageexec@freemail.hu
+CC: airlied@linux.ie, daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Message-ID: <5184CD16.8569.184037FF@pageexec.freemail.hu>
+In-reply-to: <87k3ngtgme.fsf@intel.com>
+References: <1367572662-18400-1-git-send-email-dl9pf@gmx.de>, <20130503092348.GL5763@phenom.ffwll.local>, <87k3ngtgme.fsf@intel.com>
+X-mailer: Pegasus Mail for Windows (4.63)
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Sat, 04 May 2013 10:55:57 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-04.05.2013 00:34, Greg KH пишет:
-> Don't call select for every character :)
-OK, let me draw an approximate workflow of the
-setup in question.
-Lets say we have 3 tty devices, A, B and C.
-A and B are blazingly fast, while C is a casual usb-serial
-chip.
-The app must establish a bidirectional relay between
-A and C, making sure that the output queue on C never
-exceeds some margin M. B is used for acknowledges: the
-next char from A will arrive only after an acknowledge is
-sent via B.
+On 3 May 2013 at 15:03, Jani Nikula wrote:
 
-Here's what the app approximately does:
-1. select() on A and C for _input only_.
-2. relay the char
-3. if the char was from A, send ack to B and increment
-an ack counter (call that counter Q).
-4. If Q>N (N is a threshold value that should be below M,
-currently 14), do TIOCOUTQ ioctl to make sure C is not
-overflowing, set Q to the value returned by TIOCOUTQ. If
-Q still above N, stop sending acks to B and do TIOCOUTQ
-periodically, until Q is below N, then resume the normal
-operations.
-5. goto 1
+> >> This fixes a compilation issue with clang. An initial version of this patch
+> >> was developed by PaX Team <pageexec at freemail.hu>.
+> >> This is respin of this patch.
+> >> 
+> >> Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+> >> CC: pageexec@freemail.hu
+> >> CC: daniel.vetter@ffwll.ch
+> >> CC: airlied@linux.ie
+> >> CC: intel-gfx@lists.freedesktop.org
+> >> CC: dri-devel@lists.freedesktop.org
+> >> CC: linux-kernel@vger.kernel.org
+> > Picked up for -fixes, thanks for the patch.
+> 
+> Please drop it.
+> 
+> The patch removes the inline keyword, creating dozens of copies of the
+> functions, and consequently loads of warnings:
 
-So that's the workflow, and it used to work perfectly in the
-past. Now even on step 1, when select returns, there is
-already a big delay. Not to speak about TIOCOUTQ, a very
-funny way to query the buffer: the buffer is now entirely
-flushed while we query it.
-What exactly is so horrible here that it was deserved to break?
-How to improve the algo? And no, we can't improve the protocol.
-For instance, we can't send multiple acks and hope that multiple
-chars will be received from A - the protocol cannot be changed.
-Any suggestions?
+in my original patch they were both static inline, not sure where the
+inline got lost...
+
