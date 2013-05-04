@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761878Ab3EDSD3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 14:03:29 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:38762 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757433Ab3EDSD1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 14:03:27 -0400
-Date: Sat, 4 May 2013 11:03:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
-Message-ID: <20130504180315.GB3659@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130502072623.GE7521@dyad.programming.kicks-ass.net>
- <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg>
- <20130502173257.GX3780@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg>
- <20130502193409.GA3780@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1305022249010.25417@ja.ssi.bg>
- <20130502223107.GB3780@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1305031024080.1657@ja.ssi.bg>
- <20130503163045.GE3780@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1305041018520.1645@ja.ssi.bg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1305041018520.1645@ja.ssi.bg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050418-7282-0000-0000-000016D0380E
+	id S1761989Ab3EDSDe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 14:03:34 -0400
+Received: from stator.leun.net ([85.214.203.199]:46345 "EHLO stator.leun.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761777Ab3EDSDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 14:03:32 -0400
+Date: Sat, 4 May 2013 20:02:40 +0200
+From: Michael Leun <lkml20130126@newton.leun.net>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [REGRESSION] bisected: 3.8 -> 3.9 cannot umount after using
+ fuse
+Message-ID: <20130504200240.10a8bae0@xenia.leun.net>
+In-Reply-To: <20130504155214.GD25399@ZenIV.linux.org.uk>
+References: <20130504124519.032ac684@xenia.leun.net>
+	<20130504155214.GD25399@ZenIV.linux.org.uk>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 04, 2013 at 10:23:31AM +0300, Julian Anastasov wrote:
-> 
-> 	Hello,
-> 
-> On Fri, 3 May 2013, Paul E. McKenney wrote:
-> 
-> > static inline int cond_resched_rcu(void)
-> > {
-> > #if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_PREEMPT_RCU)
-> > 	rcu_read_unlock();
-> > 	cond_resched();
-> > 	rcu_read_lock();
-> > #endif
-> > }
-> > 
-> > This adds absolutely no overhead in non-debug builds of CONFIG_PREEMPT_RCU,
-> > does the checking in debug builds, and allows voluntary preemption in
-> > !CONFIG_PREEMPT_RCU builds.  CONFIG_PROVE_RCU builds will check for an
-> > (illegal) outer rcu_read_lock() in CONFIG_PREEMPT_RCU builds, and you
-> > will get "scheduling while atomic" in response to an outer rcu_read_lock()
-> > in !CONFIG_PREEMPT_RCU builds.
-> > 
-> > It also seems to me a lot simpler.
-> > 
-> > Does this work, or am I still missing something?
-> 
-> 	Works perfectly. Thanks! Tested CONFIG_PREEMPT_RCU=y/n,
-> the errors messages with extra RCU lock.
+On Sat, 4 May 2013 16:52:14 +0100
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
-Very good!  Please send the patch along, and I will ack it.
+> On Sat, May 04, 2013 at 12:45:19PM +0200, Michael Leun wrote:
+> 
+> > After reverting 57eccb830f1cc93d4b506ba306d8dfa685e0c88f from 3.9
+> > that umount above works (not busy).
+> 
+> Sigh...  Check if the following fix works for your testcase:
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index b4f96a5..b68eef2d 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+[...]
 
-						Thanx, Paul
+Yup, that fixes it.
+
+-- 
+MfG,
+
+Michael Leun
 
