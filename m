@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab3EDUXn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 16:23:43 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46820 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab3EDUXl (ORCPT
+	id S1758490Ab3EDUYA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 16:24:00 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:37503 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757433Ab3EDUX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 16:23:41 -0400
-Date: Sat, 4 May 2013 21:23:40 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] vfs.git pile 2
-Message-ID: <20130504202340.GI25399@ZenIV.linux.org.uk>
+	Sat, 4 May 2013 16:23:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130504130033.GB13770@amd.pavel.ucw.cz>
+References: <1367615050-3894-1-git-send-email-ccross@android.com>
+	<20130504130033.GB13770@amd.pavel.ucw.cz>
+Date: Sat, 4 May 2013 13:23:54 -0700
+X-Google-Sender-Auth: cPqVsu8-s9SoVzvN1rWtVzFUCNk
+Message-ID: <CAMbhsRS6+hjTmrihVzgu3Dtyp8XAhJJ4VKMj=28G6xH3H73=6Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] freezer: add unsafe versions of freezable helpers
+From: Colin Cross <ccross@android.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>, netdev@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assorted fixes, etc.  Please, pull from
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+On Sat, May 4, 2013 at 6:00 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>> NFS calls the freezable helpers with locks held, which is unsafe
+>> and caused lockdep warnings when 6aa9707 "lockdep: check that no
+>> locks held at freeze time" was applied (reverted in dbf520a).
+>> Add new *_unsafe versions of the helpers that will not run the
+>> lockdep test when 6aa9707 is reapplied, and call them from NFS.
+>>
+>> Signed-off-by: Colin Cross <ccross@android.com>
+>
+> Looks mostly good.
+>
+>> @@ -152,6 +169,14 @@ static inline bool freezer_should_skip(struct task_struct *p)
+>>       freezer_count();                                                \
+>>  })
+>>
+>> +/* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
+>> +#define freezable_schedule_unsafe()                                  \
+>> +({                                                                   \
+>> +     freezer_do_not_count();                                         \
+>> +     schedule();                                                     \
+>> +     freezer_count_unsafe();                                         \
+>> +})
+>> +
+>
+> Make it inline function? :-). Add short explanation why it is good
+> idea?
 
-Shortlog:
-Al Viro (6):
-      do_mount(): fix a leak introduced in 3.9 ("mount: consolidate permission checks")
-      do_coredump(): don't wait for thaw if coredump has already been interrupted
-      more mode_t whack-a-mole...
-      kill fs/read_write.h
-      create_mnt_ns: unidiomatic use of list_add()
-      xtensa simdisk: fix braino in "xtensa simdisk: switch to proc_create_data()"
+These are exact copies of the existing non-unsafe versions, except
+they call freezer_count_unsafe() instead of freezer_count().  The next
+version of my other patch stack that goes on top of this has a patch
+to convert the macros in this file to static inline functions (at
+least the ones that can be).  I'd rather not mix it in with this patch
+for ease of comparison with the existing calls.
 
-Geert Uytterhoeven (2):
-      nubus: Kill nubus_proc_detach_device()
-      sun3_scsi: add ->show_info()
-
-Han Shen (1):
-      Removed unused typedef to avoid "unused local typedef" warnings.
-
-James Hogan (3):
-      hostfs: remove "will unlock" comment
-      hostfs: move HOSTFS_SUPER_MAGIC to <linux/magic.h>
-      hostfs: use kmalloc instead of kzalloc
-
-Jan Kara (1):
-      fs: Fix hang with BSD accounting on frozen filesystem
-
-Syam Sidhardhan (1):
-      proc_devtree: Replace include linux/module.h with linux/export.h
-
-Wei Yongjun (1):
-      vfs: use list_move instead of list_del/list_add
-
-Yan, Zheng (1):
-      fs: remove dentry_lru_prune()
-
-Diffstat:
- arch/xtensa/platforms/iss/simdisk.c |    2 +-
- drivers/hwmon/abx500.c              |    2 +-
- drivers/nubus/proc.c                |   15 ---
- drivers/scsi/sun3_NCR5380.c         |  185 +++++++++++++++--------------------
- drivers/scsi/sun3_scsi.c            |    1 +
- drivers/scsi/sun3_scsi.h            |    2 +-
- fs/compat.c                         |    2 -
- fs/compat_ioctl.c                   |    1 -
- fs/coredump.c                       |    9 +-
- fs/dcache.c                         |   34 ++-----
- fs/hostfs/hostfs_kern.c             |    8 +-
- fs/namespace.c                      |    7 +-
- fs/proc/proc_devtree.c              |    2 +-
- fs/read_write.c                     |    5 +-
- fs/read_write.h                     |    9 --
- include/linux/fs.h                  |    7 ++
- include/linux/nubus.h               |    1 -
- include/uapi/linux/magic.h          |    1 +
- kernel/acct.c                       |    7 +-
- 19 files changed, 124 insertions(+), 176 deletions(-)
- delete mode 100644 fs/read_write.h
+>> +/* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
+>> +#define freezable_schedule_timeout_killable_unsafe(timeout)          \
+>> +({                                                                   \
+>> +     long __retval;                                                  \
+>> +     freezer_do_not_count();                                         \
+>> +     __retval = schedule_timeout_killable(timeout);                  \
+>> +     freezer_count_unsafe();                                         \
+>> +     __retval;                                                       \
+>> +})
+>
+> Function too?
+>                                                                         Pavel
+> --
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
