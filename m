@@ -1,77 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab3EDLNB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 07:13:01 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:54832 "EHLO mail.skyhub.de"
+	id S1759095Ab3EDLNR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 07:13:17 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:58193 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755368Ab3EDLM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 07:12:59 -0400
-Date: Sat, 4 May 2013 13:19:07 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: mingo@kernel.org, a.p.zijlstra@chello.nl
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        ak@linux.intel.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf/x86/intel/lbr: Demand proper privileges
- for PERF_SAMPLE_BRANCH_KERNEL
-Message-ID: <20130504111907.GA3411@pd.tnic>
-References: <20130503121256.230745028@chello.nl>
- <tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org>
+	id S1756356Ab3EDLNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 07:13:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>,
+        linux-mm@kvack.org
+Subject: [PATCH 2/2 v2, RFC] Driver core: Introduce offline/online callbacks for memory blocks
+Date: Sat, 04 May 2013 13:21:16 +0200
+Message-ID: <19540491.PRsM4lKIYM@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <2376818.CRj1BTLk0Y@vostro.rjw.lan>
+References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <1583356.7oqZ7gBy2q@vostro.rjw.lan> <2376818.CRj1BTLk0Y@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 04, 2013 at 01:22:57AM -0700, tip-bot for Peter Zijlstra wrote:
-> Commit-ID:  0f5c78b5f33ce940034743e5f9485fc81ad75b0f
-> Gitweb:     http://git.kernel.org/tip/0f5c78b5f33ce940034743e5f9485fc81ad75b0f
-> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> AuthorDate: Fri, 3 May 2013 14:11:25 +0200
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Sat, 4 May 2013 08:37:48 +0200
-> 
-> perf/x86/intel/lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
-> 
-> We should always have proper privileges when requesting kernel
-> data.
-> 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: <stable@kernel.org>
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Cc: eranian@google.com
-> Link: http://lkml.kernel.org/r/20130503121256.230745028@chello.nl
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> Link: http://lkml.kernel.org/n/tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> index de341d4..0e92871 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> @@ -318,8 +318,11 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
->  	if (br_type & PERF_SAMPLE_BRANCH_USER)
->  		mask |= X86_BR_USER;
->  
-> -	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
-> +	if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
-> +		if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-> +			return -EACCES;
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-It is probably not too late to amend this patch and remove the "-EACCES":
+Introduce .offline() and .online() callbacks for memory_subsys
+that will allow the generic device_offline() and device_online()
+to be used with device objects representing memory blocks.  That,
+in turn, allows the ACPI subsystem to use device_offline() to put
+removable memory blocks offline, if possible, before removing
+memory modules holding them.
 
-arch/x86/kernel/cpu/perf_event_intel_lbr.c: In function ‘intel_pmu_setup_sw_lbr_filter’:
-arch/x86/kernel/cpu/perf_event_intel_lbr.c:323:4: warning: ‘return’ with a value, in function returning void [enabled by default]
+The 'online' sysfs attribute of memory block devices will attempt to
+put them offline if 0 is written to it and will attempt to apply the
+previously used online type when onlining them (i.e. when 1 is
+written to it).
 
--- 
-Regards/Gruss,
-    Boris.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/base/memory.c  |  105 +++++++++++++++++++++++++++++++++++++------------
+ include/linux/memory.h |    1 
+ 2 files changed, 81 insertions(+), 25 deletions(-)
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Index: linux-pm/drivers/base/memory.c
+===================================================================
+--- linux-pm.orig/drivers/base/memory.c
++++ linux-pm/drivers/base/memory.c
+@@ -37,9 +37,14 @@ static inline int base_memory_block_id(i
+ 	return section_nr / sections_per_block;
+ }
+ 
++static int memory_subsys_online(struct device *dev);
++static int memory_subsys_offline(struct device *dev);
++
+ static struct bus_type memory_subsys = {
+ 	.name = MEMORY_CLASS_NAME,
+ 	.dev_name = MEMORY_CLASS_NAME,
++	.online = memory_subsys_online,
++	.offline = memory_subsys_offline,
+ };
+ 
+ static BLOCKING_NOTIFIER_HEAD(memory_chain);
+@@ -278,33 +283,64 @@ static int __memory_block_change_state(s
+ {
+ 	int ret = 0;
+ 
+-	if (mem->state != from_state_req) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
++	if (mem->state != from_state_req)
++		return -EINVAL;
+ 
+ 	if (to_state == MEM_OFFLINE)
+ 		mem->state = MEM_GOING_OFFLINE;
+ 
+ 	ret = memory_block_action(mem->start_section_nr, to_state, online_type);
+-
+ 	if (ret) {
+ 		mem->state = from_state_req;
+-		goto out;
++	} else {
++		mem->state = to_state;
++		if (to_state == MEM_ONLINE)
++			mem->last_online = online_type;
+ 	}
++	return ret;
++}
+ 
+-	mem->state = to_state;
+-	switch (mem->state) {
+-	case MEM_OFFLINE:
+-		kobject_uevent(&mem->dev.kobj, KOBJ_OFFLINE);
+-		break;
+-	case MEM_ONLINE:
+-		kobject_uevent(&mem->dev.kobj, KOBJ_ONLINE);
+-		break;
+-	default:
+-		break;
++static int memory_subsys_online(struct device *dev)
++{
++	struct memory_block *mem = container_of(dev, struct memory_block, dev);
++	int ret;
++
++	mutex_lock(&mem->state_mutex);
++	ret = __memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE,
++					  mem->last_online);
++	mutex_unlock(&mem->state_mutex);
++	return ret;
++}
++
++static int memory_subsys_offline(struct device *dev)
++{
++	struct memory_block *mem = container_of(dev, struct memory_block, dev);
++	int ret;
++
++	mutex_lock(&mem->state_mutex);
++	ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
++	mutex_unlock(&mem->state_mutex);
++	return ret;
++}
++
++static int __memory_block_change_state_uevent(struct memory_block *mem,
++		unsigned long to_state, unsigned long from_state_req,
++		int online_type)
++{
++	int ret = __memory_block_change_state(mem, to_state, from_state_req,
++					      online_type);
++	if (!ret) {
++		switch (mem->state) {
++		case MEM_OFFLINE:
++			kobject_uevent(&mem->dev.kobj, KOBJ_OFFLINE);
++			break;
++		case MEM_ONLINE:
++			kobject_uevent(&mem->dev.kobj, KOBJ_ONLINE);
++			break;
++		default:
++			break;
++		}
+ 	}
+-out:
+ 	return ret;
+ }
+ 
+@@ -315,8 +351,8 @@ static int memory_block_change_state(str
+ 	int ret;
+ 
+ 	mutex_lock(&mem->state_mutex);
+-	ret = __memory_block_change_state(mem, to_state, from_state_req,
+-					  online_type);
++	ret = __memory_block_change_state_uevent(mem, to_state, from_state_req,
++						 online_type);
+ 	mutex_unlock(&mem->state_mutex);
+ 
+ 	return ret;
+@@ -326,22 +362,34 @@ store_mem_state(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t count)
+ {
+ 	struct memory_block *mem;
++	bool offline;
+ 	int ret = -EINVAL;
+ 
+ 	mem = container_of(dev, struct memory_block, dev);
+ 
+-	if (!strncmp(buf, "online_kernel", min_t(int, count, 13)))
++	lock_device_hotplug();
++
++	if (!strncmp(buf, "online_kernel", min_t(int, count, 13))) {
++		offline = false;
+ 		ret = memory_block_change_state(mem, MEM_ONLINE,
+ 						MEM_OFFLINE, ONLINE_KERNEL);
+-	else if (!strncmp(buf, "online_movable", min_t(int, count, 14)))
++	} else if (!strncmp(buf, "online_movable", min_t(int, count, 14))) {
++		offline = false;
+ 		ret = memory_block_change_state(mem, MEM_ONLINE,
+ 						MEM_OFFLINE, ONLINE_MOVABLE);
+-	else if (!strncmp(buf, "online", min_t(int, count, 6)))
++	} else if (!strncmp(buf, "online", min_t(int, count, 6))) {
++		offline = false;
+ 		ret = memory_block_change_state(mem, MEM_ONLINE,
+ 						MEM_OFFLINE, ONLINE_KEEP);
+-	else if(!strncmp(buf, "offline", min_t(int, count, 7)))
++	} else if(!strncmp(buf, "offline", min_t(int, count, 7))) {
++		offline = true;
+ 		ret = memory_block_change_state(mem, MEM_OFFLINE,
+ 						MEM_ONLINE, -1);
++	}
++	if (!ret)
++		dev->offline = offline;
++
++	unlock_device_hotplug();
+ 
+ 	if (ret)
+ 		return ret;
+@@ -563,6 +611,7 @@ static int init_memory_block(struct memo
+ 			base_memory_block_id(scn_nr) * sections_per_block;
+ 	mem->end_section_nr = mem->start_section_nr + sections_per_block - 1;
+ 	mem->state = state;
++	mem->last_online = ONLINE_KEEP;
+ 	mem->section_count++;
+ 	mutex_init(&mem->state_mutex);
+ 	start_pfn = section_nr_to_pfn(mem->start_section_nr);
+@@ -686,10 +735,16 @@ int offline_memory_block(struct memory_b
+ {
+ 	int ret = 0;
+ 
++	lock_device_hotplug();
+ 	mutex_lock(&mem->state_mutex);
+-	if (mem->state != MEM_OFFLINE)
+-		ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
++	if (mem->state != MEM_OFFLINE) {
++		ret = __memory_block_change_state_uevent(mem, MEM_OFFLINE,
++							 MEM_ONLINE, -1);
++		if (!ret)
++			mem->dev.offline = true;
++	}
+ 	mutex_unlock(&mem->state_mutex);
++	unlock_device_hotplug();
+ 
+ 	return ret;
+ }
+Index: linux-pm/include/linux/memory.h
+===================================================================
+--- linux-pm.orig/include/linux/memory.h
++++ linux-pm/include/linux/memory.h
+@@ -26,6 +26,7 @@ struct memory_block {
+ 	unsigned long start_section_nr;
+ 	unsigned long end_section_nr;
+ 	unsigned long state;
++	int last_online;
+ 	int section_count;
+ 
+ 	/*
+
