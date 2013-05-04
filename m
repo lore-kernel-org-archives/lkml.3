@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751641Ab3EDEHA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 00:07:00 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:21433 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab3EDEG6 convert rfc822-to-8bit (ORCPT
+	id S1752339Ab3EDFDN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 01:03:13 -0400
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:47961 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab3EDFDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 00:06:58 -0400
-From: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
-To: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-CC: Qinchuanyu <qinchuanyu@huawei.com>,
-        "Huangweidong (C)" <weidong.huang@huawei.com>,
-        Zanghongyong <zanghongyong@huawei.com>,
-        Luonengjun <luonengjun@huawei.com>
-Subject: Re: KVM VM(rhel-5.5) %si is too high when TX/RX packets
-Thread-Topic: KVM VM(rhel-5.5) %si is too high when TX/RX packets
-Thread-Index: Ac5Hs1wISEMZKpucRUKMj7M5PG0M3gAxJBQw
-Date: Sat, 4 May 2013 04:06:39 +0000
-Message-ID: <D3E216785288A145B7BC975F83A2ED103FE3FE28@szxeml556-mbx.china.huawei.com>
-References: <D3E216785288A145B7BC975F83A2ED103FE3BBB3@szxeml556-mbx.china.huawei.com>
-In-Reply-To: <D3E216785288A145B7BC975F83A2ED103FE3BBB3@szxeml556-mbx.china.huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.135.68.97]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 4 May 2013 01:03:12 -0400
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+In-Reply-To: <alpine.LFD.2.02.1305032015060.2990@ionos>
+References: <20130430212007.GB18598@redhat.com>
+	<20130430213719.GA14988@redhat.com>
+	<alpine.LFD.2.02.1305021234510.3972@ionos>
+	<20130502154621.GA23990@redhat.com>
+	<alpine.LFD.2.02.1305022152280.2891@ionos>
+	<CAE9FiQXpV451xTzAJyNdC-+-oqF9v8Cy5evcNOHKFffERw2SwA@mail.gmail.com>
+	<alpine.LFD.2.02.1305022304370.2891@ionos>
+	<CAE9FiQWFK_ropzW_qQLcNxLYyek8-PHGW-8SxfZJSijvdrss1A@mail.gmail.com>
+	<alpine.LFD.2.02.1305022337470.2891@ionos>
+	<20130503144912.GB1283@redhat.com>
+	<alpine.LFD.2.02.1305032015060.2990@ionos>
+Date: Fri, 3 May 2013 22:03:11 -0700
+X-Google-Sender-Auth: FcX5Numq991sQUyLJP2FK_EhFSs
+Message-ID: <CAE9FiQUHETMqN2jxaSGV8Rq6_pdnCiFXhJydh3xPmCV3S5Bb7w@mail.gmail.com>
+Subject: Re: clockevents_program_event WARN_ON preventing boot.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I running a VM(RHEL-5.5) on KVM hypervisor(linux-3.8 + QEMU-1.4.1), and direct-assign intel 82576 VF to the VM. When TX/RX packets on VM to the other host via iperf tool, top tool result on VM shown that the %si is too high, approximately 95% ~ 100%, but from the view of host, the VM's total CPU usage is about 20% - 30%. And the throughput rate is approximately 200Mb/s, far from the line rate 1Gb/s, And, I found  the hardirq rate is lower than normal by running "watch -d -n 1 cat /proc/interrupts", I think it's caused by the too high %si, because the NIC's hardirq was disabled during the softirq process.
-> Then, I direct-assign the intel 82576 to the VM, the same case happened too. 
-> I found the intel 82576 and intel 82576 VF's interrupt mode are both PCI-MSI-X.
-> 
-> And,
-> I rmmod the igb driver, and, re-insmod the igb driver(igb-4.1.2) with the parameter IntMode=0/1(0:legacy, 1:MSI, 2:MSI-x), the problem then gone, the %si is approximately 20% -30%, and the throughput rate came to the line rate, about 940Mb/s.
-> I update the VM to RHEL-6.1, the problem disappeared too.
-> And, I found a very strange thing, the VM's 82576VF's irq routing is set one time on Vf's one interrupt received, so frequently.
+On Fri, May 3, 2013 at 11:32 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Subject: tick: Use zalloc_cpumask_var for allocating offstack cpumasks
+> From: Thomas Gleixner <tglx@linutronix.de>
+> Date: Fri, 03 May 2013 20:22:36 +0200
+>
+> commit b352bc1cbc (tick: Convert broadcast cpu bitmaps to
+> cpumask_var_t) broke CONFIG_CPUMASK_OFFSTACK in a very subtle way.
+>
+> Instead of allocating the cpumasks with zalloc_cpumask_var it uses
+> alloc_cpumask_var, so we can get random data there, which of course
+> confuses the logic completely and causes random failures.
+>
+> Reported-by: Dave Jones <davej@redhat.com>
+> Reported-by: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  kernel/time/tick-broadcast.c |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+>
+> Index: linux-2.6/kernel/time/tick-broadcast.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/time/tick-broadcast.c
+> +++ linux-2.6/kernel/time/tick-broadcast.c
+> @@ -785,11 +785,11 @@ bool tick_broadcast_oneshot_available(vo
+>
+>  void __init tick_broadcast_init(void)
+>  {
+> -       alloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
+> -       alloc_cpumask_var(&tmpmask, GFP_NOWAIT);
+> +       zalloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
+> +       zalloc_cpumask_var(&tmpmask, GFP_NOWAIT);
+>  #ifdef CONFIG_TICK_ONESHOT
+> -       alloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
+> -       alloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
+> -       alloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
+> +       zalloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
+> +       zalloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
+> +       zalloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
+>  #endif
+>  }
 
-With regard to rhel-5.5(linux-2.6.18), in ISR process, mask and unmask msi-x vector function msi_set_mask_bit() was invoked every time, which result in VMEXIT, then QEMU will invoke kvm_irqchip_update_msi_route() to ask KVM hypervisor to update the VM irq routing table. In KVM hypervisor, synchronizing process needed after updating routing table, so much time consumed for waiting in wait_rcu_gp(). 
-So %si in VM is so high, while from the view of host, VM's total CPU usage is so low. 
+Yes, it works on Nehalem-EX 8 socket system now.
 
-Why in ISR process, masking and unmasking msi-x vector is needed every time? 
-
-Thanks,
-Zhang Haoyu
+Tested-by: Yinghai Lu <yinghai@kernel.org>
