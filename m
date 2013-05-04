@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758791Ab3EDLqF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 07:46:05 -0400
-Received: from smtp46.i.mail.ru ([94.100.177.106]:54265 "EHLO smtp46.i.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752022Ab3EDLqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 07:46:01 -0400
-Message-ID: <51850295.6020601@list.ru>
-Date: Sat, 04 May 2013 16:44:05 +0400
-From: Stas Sergeev <stsp@list.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1759009Ab3EDMgG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 08:36:06 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:29131 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757990Ab3EDMgE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 08:36:04 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz17326ah8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h1151h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Sat, 4 May 2013 20:35:56 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: Re: [PATCH, RFC 04/22] staging/drm: imx: add missing dependencies
+Message-ID: <20130504123555.GA1749@S2101-09.ap.freescale.net>
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
+ <1367507786-505303-5-git-send-email-arnd@arndb.de>
+ <20130503021650.GL3442@S2101-09.ap.freescale.net>
+ <201305031721.37954.arnd@arndb.de>
 MIME-Version: 1.0
-To: Johan Hovold <jhovold@gmail.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Jarkko Huijts <jarkko.huijts@gmail.com>,
-        Alan Cox <alan@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        Linux kernel <linux-kernel@vger.kernel.org>,
-        Caylan Van Larson <i@caylan.net>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Regression: ftdi_sio is slow (since Wed Oct 10 15:05:06 2012)
-References: <5183D196.2080305@list.ru> <20130503163008.GA30699@kroah.com> <5183F62A.1020801@list.ru> <20130503165231.GA1966@kroah.com> <5183FC83.8090602@list.ru> <20130503171618.GA16686@kroah.com> <51840186.7000608@list.ru> <20130503203419.GA25932@kroah.com> <51843132.9040304@list.ru> <20130504111535.GC16818@localhost>
-In-Reply-To: <20130504111535.GC16818@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Spam: Not detected
-X-Mras: Ok
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <201305031721.37954.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-04.05.2013 15:15, Johan Hovold пишет:
-> The query takes longer than the transmit at decent baudrates (>=38k)
-> and under the assumption that flow control isn't causing any delays.
->
-> But you do have a point, and I have been meaning to look into whether
-> the added overhead of checking the hardware buffers could be mitigated
-> by adding wait_until_sent support to usb-serial. This way the we would
-> only query the hardware buffers on tty_wait_until_sent (e.g. at close)
-> and select and TIOCMOUTQ would not suffer. This is also the way things
-> are handled in serial_core.
-Thanks for taking a look.
-Indeed, it seems .wait_until_sent is the best candidate for that
-kind of things, and the patch in question would even match its
-description be it using .wait_until_sent and not .chars_in_buffer.
-Please count on testing your patches here when they are ready.
+On Fri, May 03, 2013 at 05:21:37PM +0200, Arnd Bergmann wrote:
+> On Friday 03 May 2013, Shawn Guo wrote:
+> > On Thu, May 02, 2013 at 05:16:08PM +0200, Arnd Bergmann wrote:
+> > > The imx DRM driver needs a couple of extra Kconfig dependencies
+> > > to avoid random build failures:
+> > > 
+> > > drivers/staging/imx-drm/ipuv3-crtc.c:448:
+> > >  undefined reference to `ipu_idmac_put'
+> > >  drivers/staging/imx-drm/ipuv3-crtc.c:450: undefined reference to
+> > >  `ipu_dmfc_put' drivers/staging/imx-drm/ipuv3-crtc.c:452:
+> > >  undefined reference to `ipu_dp_put'
+> > >  drivers/staging/imx-drm/ipuv3-crtc.c:454: undefined reference to
+> > >  `ipu_di_put'
+> > > drivers/built-in.o: In function `ipu_probe':
+> > >  :(.text+0x4b4174): undefined reference to `device_reset'
+> > > drivers/built-in.o: In function `imx_tve_probe':
+> > >  drivers/staging/imx-drm/imx-tve.c:648: undefined reference to
+> > >  `devm_regmap_init_mmio_clk'
+> > > drivers/built-in.o: In function
+> > >  `imx_pd_connector_get_modes':
+> > 
+> > >  drivers/staging/imx-drm/parallel-display.c:78: undefined
+> > >  reference to `of_get_drm_display_mode'
+> > 
+> > There is a patch [1] from Marek fixing this one.
+> > 
+> > Shawn
+> > 
+> > [1] http://thread.gmane.org/gmane.linux.ports.arm.kernel/233449
+> > 
+> 
+> That patch only addresses one of the four missing dependencies.
+> I originally had four separate patches, but did not want to
+> bother everyone with those so I combined them into one.
+
+Yea, I agree we can address all of them in one patch.  But it seems
+people agreed that there is a more correct way [1] to fix
+of_get_drm_display_mode one, and that's how v2 of Marek's patch comes.
+
+Shawn
+
+[1] http://thread.gmane.org/gmane.linux.ports.arm.kernel/232861/focus=232898
+
