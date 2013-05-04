@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761744Ab3EDSNF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 14:13:05 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:18513 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756831Ab3EDSNC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 14:13:02 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/iDG3JF9ipzmYnwqvN1U0qaLHVQAt7tIA=
-Date: Sat, 4 May 2013 14:12:27 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
-Message-ID: <20130504181227.GN31290@titan.lakedaemon.net>
-References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <alpine.LFD.2.02.1305022324371.2891@ionos>
- <5182E11E.5010103@gmail.com>
- <201305030009.57041.arnd@arndb.de>
- <5182EAA0.9070208@gmail.com>
+	id S1761844Ab3EDSYP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 14:24:15 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:32868 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758427Ab3EDSYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 14:24:14 -0400
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <tony@atomide.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Vaibhav Hiremath <hvaibhav@ti.com>
+Subject: [PATCH] ARM: OMAP2: AM33XX: id: Add support for new AM335x PG2.1 Si
+Date: Sat, 4 May 2013 23:53:40 +0530
+Message-ID: <1367691820-11875-1-git-send-email-hvaibhav@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5182EAA0.9070208@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 12:37:20AM +0200, Sebastian Hesselbarth wrote:
-> (@Jason C: Are you sure that I should merge dove and orion
-> irqchip patches? I doubt that anything touching generic irq
-> will not go through irq tree.)
+Add support for chip id detection of AM335x PG2.1 Silicon.
 
-Putting them in the same patch series does not imply they have to go
-through the same tree.  But it *does* allow us to see relationships,
-conflicts, etc.
+Currently omap3xxx_check_revision() detects PG1.0 and PG2.0 only,
+this patch extends it by adding PG2.1 Si support.
 
-Based on how the finally dependencies work out, we may ask the irq
-maintainers for an Ack to take it through arm-soc.  This would happen if
-we can't remove the dependency between the trees.  The resulting
-potential merge conflicts weigh into it, and that's where the irqchip
-maintainer's Ack get decided.
+Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+---
+ arch/arm/mach-omap2/id.c  |    8 ++++++--
+ arch/arm/mach-omap2/soc.h |    1 +
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
-If the changes to irqchip are just Makefile/Kconfig, then it's easy.
-However, if several other files are changed and conflicting, then we let
-it go through irqchip and wait one merge window for the board changes
-depending on it.
+diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
+index 0f4c18e..9bc5a18 100644
+--- a/arch/arm/mach-omap2/id.c
++++ b/arch/arm/mach-omap2/id.c
+@@ -419,11 +419,15 @@ void __init omap3xxx_check_revision(void)
+ 			cpu_rev = "1.0";
+ 			break;
+ 		case 1:
+-		/* FALLTHROUGH */
+-		default:
+ 			omap_revision = AM335X_REV_ES2_0;
+ 			cpu_rev = "2.0";
+ 			break;
++		case 2:
++		/* FALLTHROUGH */
++		default:
++			omap_revision = AM335X_REV_ES2_1;
++			cpu_rev = "2.1";
++			break;
+ 		}
+ 		break;
+ 	case 0xb8f2:
+diff --git a/arch/arm/mach-omap2/soc.h b/arch/arm/mach-omap2/soc.h
+index 18fdeeb..ccef2dd 100644
+--- a/arch/arm/mach-omap2/soc.h
++++ b/arch/arm/mach-omap2/soc.h
+@@ -396,6 +396,7 @@ IS_OMAP_TYPE(3430, 0x3430)
+ #define AM335X_CLASS		0x33500033
+ #define AM335X_REV_ES1_0	AM335X_CLASS
+ #define AM335X_REV_ES2_0	(AM335X_CLASS | (0x1 << 8))
++#define AM335X_REV_ES2_1	(AM335X_CLASS | (0x2 << 8))
 
-The goal here is to identify and remove branch dependencies within
-arm-soc and between arm-soc and other trees.  A secondary goal is to
-identify high-risk series (risk of being dropped), and keep them
-in separate branches from other changes.
+ #define OMAP443X_CLASS		0x44300044
+ #define OMAP4430_REV_ES1_0	(OMAP443X_CLASS | (0x10 << 8))
+--
+1.7.0.4
 
-thx,
-
-Jason.
