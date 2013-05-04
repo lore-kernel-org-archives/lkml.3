@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab3EDG57 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 02:57:59 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:44850 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753772Ab3EDG55 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 02:57:57 -0400
-Message-ID: <5184AFC4.60009@gmail.com>
-Date: Sat, 04 May 2013 08:50:44 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1755541Ab3EDHWQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 03:22:16 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:34329 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753576Ab3EDHWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 03:22:14 -0400
+Date: Sat, 4 May 2013 10:23:31 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Simon Horman <horms@verge.net.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH v2 1/2] sched: Add cond_resched_rcu_lock() helper
+In-Reply-To: <20130503163045.GE3780@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.00.1305041018520.1645@ja.ssi.bg>
+References: <20130501155501.GB7521@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305012004360.3397@ja.ssi.bg> <20130502072623.GE7521@dyad.programming.kicks-ass.net> <alpine.LFD.2.00.1305021848450.31548@ja.ssi.bg> <20130502173257.GX3780@linux.vnet.ibm.com>
+ <alpine.LFD.2.00.1305022140020.31548@ja.ssi.bg> <20130502193409.GA3780@linux.vnet.ibm.com> <alpine.LFD.2.00.1305022249010.25417@ja.ssi.bg> <20130502223107.GB3780@linux.vnet.ibm.com> <alpine.LFD.2.00.1305031024080.1657@ja.ssi.bg>
+ <20130503163045.GE3780@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: Alexander Viro <viro@zeniv.linux.org.uk>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Chuck Lever <chuck.lever@oracle.com>, linux-kernel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 4/4] fsfreeze: return EINTR from mnt_want_write and mnt_want_write_file
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced sb_start_write with sb_start_write_killable inside
-mnt_want_write and mnt_want_write_file.
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
----
- fs/namei.c     |    6 ++++++
- fs/namespace.c |    8 ++++++--
- ipc/mqueue.c   |    6 +++++-
- 3 files changed, 17 insertions(+), 3 deletions(-)
+	Hello,
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 57ae9c8..5f239fd 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2750,6 +2750,8 @@ static int do_last(struct nameidata *nd, struct path *path,
- retry_lookup:
- 	if (op->open_flag & (O_CREAT | O_TRUNC | O_WRONLY | O_RDWR)) {
- 		error = mnt_want_write(nd->path.mnt);
-+		if (error == -EINTR)
-+			goto out;
- 		if (!error)
- 			got_write = true;
- 		/*
-@@ -3053,6 +3055,10 @@ struct dentry *kern_path_create(int dfd, const char *pathname,
- 
- 	/* don't fail immediately if it's r/o, at least try to report other errors */
- 	err2 = mnt_want_write(nd.path.mnt);
-+	if (err2 == -EINTR) {
-+		dentry = ERR_PTR(-EINTR);
-+		goto out;
-+	}
- 	/*
- 	 * Do the final lookup.
- 	 */
-diff --git a/fs/namespace.c b/fs/namespace.c
-index b4f96a5..2028e74 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -345,7 +345,9 @@ int mnt_want_write(struct vfsmount *m)
- {
- 	int ret;
- 
--	sb_start_write(m->mnt_sb);
-+	ret = sb_start_write_killable(m->mnt_sb);
-+	if (ret < 0)
-+		return ret;
- 	ret = __mnt_want_write(m);
- 	if (ret)
- 		sb_end_write(m->mnt_sb);
-@@ -405,7 +407,9 @@ int mnt_want_write_file(struct file *file)
- {
- 	int ret;
- 
--	sb_start_write(file->f_path.mnt->mnt_sb);
-+	ret = sb_start_write_killable(file->f_path.mnt->mnt_sb);
-+	if (ret < 0)
-+		return ret;
- 	ret = __mnt_want_write_file(file);
- 	if (ret)
- 		sb_end_write(file->f_path.mnt->mnt_sb);
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index e4e47f6..e8fdc03 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -800,7 +800,11 @@ SYSCALL_DEFINE4(mq_open, const char __user *, u_name, int, oflag, umode_t, mode,
- 	if (fd < 0)
- 		goto out_putname;
- 
--	ro = mnt_want_write(mnt);	/* we'll drop it in any case */
-+	ro = mnt_want_write(mnt);
-+	if (ro == -EINTR) {
-+		fd = ro;
-+		goto out_putname;
-+	}
- 	error = 0;
- 	mutex_lock(&root->d_inode->i_mutex);
- 	path.dentry = lookup_one_len(name->name, root, strlen(name->name));
--- 
-1.7.3.4
+On Fri, 3 May 2013, Paul E. McKenney wrote:
+
+> static inline int cond_resched_rcu(void)
+> {
+> #if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_PREEMPT_RCU)
+> 	rcu_read_unlock();
+> 	cond_resched();
+> 	rcu_read_lock();
+> #endif
+> }
+> 
+> This adds absolutely no overhead in non-debug builds of CONFIG_PREEMPT_RCU,
+> does the checking in debug builds, and allows voluntary preemption in
+> !CONFIG_PREEMPT_RCU builds.  CONFIG_PROVE_RCU builds will check for an
+> (illegal) outer rcu_read_lock() in CONFIG_PREEMPT_RCU builds, and you
+> will get "scheduling while atomic" in response to an outer rcu_read_lock()
+> in !CONFIG_PREEMPT_RCU builds.
+> 
+> It also seems to me a lot simpler.
+> 
+> Does this work, or am I still missing something?
+
+	Works perfectly. Thanks! Tested CONFIG_PREEMPT_RCU=y/n,
+the errors messages with extra RCU lock.
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
