@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761844Ab3EDSYP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 14:24:15 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:32868 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758427Ab3EDSYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 14:24:14 -0400
-From: Vaibhav Hiremath <hvaibhav@ti.com>
-To: <linux-omap@vger.kernel.org>
-CC: <tony@atomide.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Vaibhav Hiremath <hvaibhav@ti.com>
-Subject: [PATCH] ARM: OMAP2: AM33XX: id: Add support for new AM335x PG2.1 Si
-Date: Sat, 4 May 2013 23:53:40 +0530
-Message-ID: <1367691820-11875-1-git-send-email-hvaibhav@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S932242Ab3EDSaS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 14:30:18 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:53203 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760726Ab3EDSaP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 14:30:15 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19JwPxGEjUeizZXLsPMgqUWDu0VnjuA700=
+Date: Sat, 4 May 2013 14:29:35 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Andrew Lunn <andrew@lunn.ch>, Florian Fainelli <florian@openwrt.org>,
+        David Miller <davem@davemloft.net>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/5] ARM: dove: add DT parsing for legacy mv643xx_eth
+Message-ID: <20130504182935.GO31290@titan.lakedaemon.net>
+References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1367538519-23940-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1367538519-23940-3-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20130503050632.GC24965@lunn.ch>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130503050632.GC24965@lunn.ch>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for chip id detection of AM335x PG2.1 Silicon.
+On Fri, May 03, 2013 at 07:06:32AM +0200, Andrew Lunn wrote:
+> Jason: what is the status of the ethernet driver conversion to DT?
+> Will it get merged this week, or is it material for the next merge
+> window?
 
-Currently omap3xxx_check_revision() detects PG1.0 and PG2.0 only,
-this patch extends it by adding PG2.1 Si support.
+You'd have to ask Florian/David Miller.  I'm not sure wether David was
+able to pull that in for v3.10 or not.  He was pretty responsive to all
+of the other changes Florian posted.
 
-Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
----
- arch/arm/mach-omap2/id.c  |    8 ++++++--
- arch/arm/mach-omap2/soc.h |    1 +
- 2 files changed, 7 insertions(+), 2 deletions(-)
+thx,
 
-diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
-index 0f4c18e..9bc5a18 100644
---- a/arch/arm/mach-omap2/id.c
-+++ b/arch/arm/mach-omap2/id.c
-@@ -419,11 +419,15 @@ void __init omap3xxx_check_revision(void)
- 			cpu_rev = "1.0";
- 			break;
- 		case 1:
--		/* FALLTHROUGH */
--		default:
- 			omap_revision = AM335X_REV_ES2_0;
- 			cpu_rev = "2.0";
- 			break;
-+		case 2:
-+		/* FALLTHROUGH */
-+		default:
-+			omap_revision = AM335X_REV_ES2_1;
-+			cpu_rev = "2.1";
-+			break;
- 		}
- 		break;
- 	case 0xb8f2:
-diff --git a/arch/arm/mach-omap2/soc.h b/arch/arm/mach-omap2/soc.h
-index 18fdeeb..ccef2dd 100644
---- a/arch/arm/mach-omap2/soc.h
-+++ b/arch/arm/mach-omap2/soc.h
-@@ -396,6 +396,7 @@ IS_OMAP_TYPE(3430, 0x3430)
- #define AM335X_CLASS		0x33500033
- #define AM335X_REV_ES1_0	AM335X_CLASS
- #define AM335X_REV_ES2_0	(AM335X_CLASS | (0x1 << 8))
-+#define AM335X_REV_ES2_1	(AM335X_CLASS | (0x2 << 8))
-
- #define OMAP443X_CLASS		0x44300044
- #define OMAP4430_REV_ES1_0	(OMAP443X_CLASS | (0x10 << 8))
---
-1.7.0.4
-
+Jason.
