@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934574Ab3EDBDR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 May 2013 21:03:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22345 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934476Ab3EDBCb (ORCPT
+	id S933563Ab3EDB0r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 May 2013 21:26:47 -0400
+Received: from mail-ye0-f182.google.com ([209.85.213.182]:45698 "EHLO
+	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763291Ab3EDB0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 May 2013 21:02:31 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ynTncTNsQRQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=6vidgQ2l4MoA:10 a=WcQw1p1tIgrU-G_rG6gA:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130504010230.177264864@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 03 May 2013 21:02:11 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 4/4] Linux 3.0.75-rt103-rc1
-References: <20130504010207.365885836@goodmis.org>
-Content-Disposition: inline; filename=0004-Linux-3.0.75-rt103-rc1.patch
+	Fri, 3 May 2013 21:26:46 -0400
+Date: Fri, 3 May 2013 21:18:37 -0400
+From: Josh Boyer <jwboyer@gmail.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Dave Airlie <airlied@linux.ie>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: [git pull] drm for 3.10-rc1
+Message-ID: <20130504011836.GE8320@zod.gha.chartermi.net>
+References: <alpine.DEB.2.00.1305030224580.12778@skynet.skynet.ie>
+ <20130503143951.GB8320@zod.gha.chartermi.net>
+ <CAKMK7uF46a87KDg=n-rLhq2kjuPCpexHGwfR9UcPc_smZjqQzg@mail.gmail.com>
+ <20130503165720.GC8320@zod.gha.chartermi.net>
+ <20130503203149.GD8320@zod.gha.chartermi.net>
+ <CAKMK7uGO4cUByr3kTWF7po55B1qrZy_=P_EW0+6trBsq_fGtSA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKMK7uGO4cUByr3kTWF7po55B1qrZy_=P_EW0+6trBsq_fGtSA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Fri, May 03, 2013 at 10:40:17PM +0200, Daniel Vetter wrote:
+>On Fri, May 3, 2013 at 10:31 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+>> OK.  Git bisect tells me this:
+>>
+>> 57c219633275c7e7413f8bc7be250dc092887458 is the first bad commit
+>> commit 57c219633275c7e7413f8bc7be250dc092887458
+>> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+>> Date:   Thu Apr 4 17:19:37 2013 +0200
+>>
+>>     drm/i915: revert eDP bpp clamping code changes
+>
+>Yeah, that commit is a bit dubios and for 3.11 we've already planned
+>to kick it out. It tries to work around an issue on a funky
+>pre-release hw. Does reverting this commit fix your issue?
 
----
- localversion-rt |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Yes, seems so.  I reverted it on top of Linus tree as of commit
+ce857229e0c3adc2 and things boot normally on the machine after that.
 
-diff --git a/localversion-rt b/localversion-rt
-index 33017cd..b809d7b 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt102
-+-rt103-rc1
--- 
-1.7.10.4
-
-
+josh
