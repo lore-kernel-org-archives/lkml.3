@@ -1,53 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760761Ab3EDPzL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 11:55:11 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58737 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760569Ab3EDPzJ (ORCPT
+	id S1761161Ab3EDQ0R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 12:26:17 -0400
+Received: from mail-gg0-f178.google.com ([209.85.161.178]:37213 "EHLO
+	mail-gg0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761004Ab3EDQ0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 11:55:09 -0400
-Message-ID: <51852F3D.5000802@dawncrow.de>
-Date: Sat, 04 May 2013 17:54:37 +0200
-From: =?UTF-8?B?QW5kcsOpIEhlbnRzY2hlbA==?= <nerv@dawncrow.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Sat, 4 May 2013 12:26:15 -0400
+X-Greylist: delayed 388 seconds by postgrey-1.27 at vger.kernel.org; Sat, 04 May 2013 12:26:15 EDT
+Date: Sat, 4 May 2013 11:21:17 -0400
+From: Jake Champlin <jake.champlin.27@gmail.com>
+To: willy@meta-x.org, gregkh@linuxfoundation.org, yamanetoshi@gmail.com,
+        adam.buchbinder@gmail.com, peterhuewe@gmx.de, fengguang.wu@intel.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: Panel: panel: Fixed checkpatch line length warnings
+Message-ID: <20130504152058.GA20790@gmail.com>
 MIME-Version: 1.0
-To: Jonathan Austin <jonathan.austin@arm.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv2] arm: Preserve TPIDRURW on context switch
-References: <517168BB.3070903@dawncrow.de> <20130422143616.GP14496@n2100.arm.linux.org.uk> <20130422151836.GA15665@mudshark.cambridge.arm.com> <5175A697.3080308@dawncrow.de> <20130423091536.GB17593@mudshark.cambridge.arm.com> <51770E4E.2040003@dawncrow.de> <20130424094251.GA21850@mudshark.cambridge.arm.com> <5182C480.3080001@dawncrow.de> <5183819E.50308@arm.com> <20130503095547.GD18614@n2100.arm.linux.org.uk> <5183D6C3.8090402@arm.com>
-In-Reply-To: <5183D6C3.8090402@arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V02:K0:xBWT9/ZsueQ7MiZDqlnRJ7rlt3K2yR3weje50IOnC92
- OOvaQfgkOXpu16cH+srH2hT+wu1e0Fwcv1nNKob4MhRC3fFazB
- zyBbmumTETwsnML+2by6MSqwqQiD1lXtMu6FdQscNJvBPxKxSJ
- qJ7oawEEAGZgVAvHWcZ08dgjVYXEkUAm9Ivf+s0Bu3BTqREv93
- wxr3Gq/ZTf1ytbp7T/1cHC3ELZ6ZX/J0rtU9sMsybOQ9lrL616
- K9gpI2uQK/bEqJovf0ETGQ5/OYaFXUP0EY2QcgwmI/a7ckx6oJ
- Yr6PKBzuzeNw4K5SOd1va/bZhnXlHN5q5koDQgYQvx7g2ZNNw0
- CTRUmNmrtSMgQb2WovCM=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 03.05.2013 17:24, schrieb Jonathan Austin:
-> Hi Russell,
-> 
-> Thanks for the comments - you're right about the 'switch_tls'
-> being more appropriate - needed to take a step back to see that.
-> 
-> I've got a few questions, added inline.
-> 
-> André, Assuming I've understood things okay, there's a patch that
-> uses Russell's asm stuff (with minor modifications, see the questions)
-> and includes the C-world changes too. Perhaps you could see that it
-> solves your problem?
+Fixed 4 cases of line length issues with checkpatch. Checkpatch is now clean
+for panel.c.
 
-I'll test it tomorrow with my test tool and Wine.
-FWIW i hacked together a test tool and it's available at https://github.com/AndreRH/tpidrurw-test
+Signed-off-by: 'Jake Champlin <jake.champlin.27@gmail.com>'
+---
+ drivers/staging/panel/panel.c | 25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index c54df39..cbc15c1 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -1756,17 +1756,18 @@ static inline int input_state_high(struct logical_input *input)
+ 
+ 			if (input->high_timer == 0) {
+ 				char *press_str = input->u.kbd.press_str;
+-				if (press_str[0])
+-					keypad_send_key(press_str,
+-							sizeof(input->u.kbd.press_str));
++				if (press_str[0]) {
++					int s = sizeof(input->u.kbd.press_str);
++					keypad_send_key(press_str, s);
++				}
+ 			}
+ 
+ 			if (input->u.kbd.repeat_str[0]) {
+ 				char *repeat_str = input->u.kbd.repeat_str;
+ 				if (input->high_timer >= KEYPAD_REP_START) {
++					int s = sizeof(input->u.kbd.repeat_str);
+ 					input->high_timer -= KEYPAD_REP_DELAY;
+-					keypad_send_key(repeat_str,
+-							sizeof(input->u.kbd.repeat_str));
++					keypad_send_key(repeat_str, s);
+ 				}
+ 				/* we will need to come back here soon */
+ 				inputs_stable = 0;
+@@ -1802,10 +1803,11 @@ static inline void input_state_falling(struct logical_input *input)
+ 
+ 			if (input->u.kbd.repeat_str[0]) {
+ 				char *repeat_str = input->u.kbd.repeat_str;
+-				if (input->high_timer >= KEYPAD_REP_START)
++				if (input->high_timer >= KEYPAD_REP_START) {
++					int s = sizeof(input->u.kbd.repeat_str);
+ 					input->high_timer -= KEYPAD_REP_DELAY;
+-					keypad_send_key(repeat_str,
+-							sizeof(input->u.kbd.repeat_str));
++					keypad_send_key(repeat_str, s);
++				}
+ 				/* we will need to come back here soon */
+ 				inputs_stable = 0;
+ 			}
+@@ -1822,9 +1824,10 @@ static inline void input_state_falling(struct logical_input *input)
+ 				release_fct(input->u.std.release_data);
+ 		} else if (input->type == INPUT_TYPE_KBD) {
+ 			char *release_str = input->u.kbd.release_str;
+-			if (release_str[0])
+-				keypad_send_key(release_str,
+-						sizeof(input->u.kbd.release_str));
++			if (release_str[0]) {
++				int s = sizeof(input->u.kbd.release_str);
++				keypad_send_key(release_str, s);
++			}
+ 		}
+ 
+ 		input->state = INPUT_ST_LOW;
+-- 
+1.8.2.1
+
+
+-- 
+Jake Champlin
+jake.champlin.27@gmail.com
+<MuttClient>
