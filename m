@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab3EDJsE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 05:48:04 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:2356 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752264Ab3EDJsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 05:48:01 -0400
-Message-ID: <5184D93C.7000806@parallels.com>
-Date: Sat, 04 May 2013 13:47:40 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1756147Ab3EDKLy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 06:11:54 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:65366 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab3EDKLx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 06:11:53 -0400
 MIME-Version: 1.0
-To: Matt Helsley <matthltc@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Linux MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] pagemap: Introduce the /proc/PID/pagemap2 file
-References: <51669E5F.4000801@parallels.com> <51669EA5.20209@parallels.com> <20130502170857.GB24627@us.ibm.com>
-In-Reply-To: <20130502170857.GB24627@us.ibm.com>
+In-Reply-To: <51838C3E.5090303@metafoo.de>
+References: <alpine.DEB.2.02.1305031743190.6400@M2420>
+	<51838C3E.5090303@metafoo.de>
+Date: Sat, 4 May 2013 18:11:51 +0800
+Message-ID: <CADJHv_s7TqdfULQKA6eTVEHkxBKqr44c9qeP8KCFXJuBxMmsYQ@mail.gmail.com>
+Subject: Re: [PATCH -next] power: fix bq27x00_battery kconfig
+From: zhou jencce <jencce.kernel@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: anton@enomsg.org, dwmw2@infradead.org, linux-next@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2013 09:08 PM, Matt Helsley wrote:
-> On Thu, Apr 11, 2013 at 03:29:41PM +0400, Pavel Emelyanov wrote:
->> This file is the same as the pagemap one, but shows entries with bits
->> 55-60 being zero (reserved for future use). Next patch will occupy one
->> of them.
-> 
-> This approach doesn't scale as well as it could. As best I can see
-> CRIU would do:
-> 
-> for each vma in /proc/<pid>/smaps
-> 	for each page in /proc/<pid>/pagemap2
-> 		if soft dirty bit
-> 			copy page
-> 
-> (possibly with pfn checks to avoid copying the same page mapped in
-> multiple locations..)
+2013/5/3 Lars-Peter Clausen <lars@metafoo.de>:
+> On 05/03/2013 11:56 AM, Xiong Zhou wrote:
+>> From: Xiong Zhou <jencce.kernel@gmail.com>
+>>
+>> This patch fixes build failure(randconfig) of next-20130501.
+>> When config I2C as m, BATTERY_BQ27x00 as y, here comes the failure.
+>> BATTERY_BQ27x00 depends on I2C according to the code.
+>>
+>
+>> Failure message:
+>> drivers/built-in.o: In function `bq27x00_read_i2c':
+>> bq27x00_battery.c:(.text+0x1082a7): undefined reference to `i2c_transfer'
+>> drivers/built-in.o: In function `bq27x00_battery_init':
+>> bq27x00_battery.c:(.init.text+0x6085): undefined reference to `i2c_register_driver'
+>> bq27x00_battery.c:(.init.text+0x60c7): undefined reference to `i2c_del_driver'
+>> drivers/built-in.o: In function `bq27x00_battery_exit':
+>> bq27x00_battery.c:(.exit.text+0xbf0): undefined reference to `i2c_del_driver'
+>> make: *** [vmlinux] Error 1
+>>
+>> Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
+>
+> It's actually a bit more tricky. The driver can be built without I2C
 
-Comparing pfns got from two subsequent pagemap reads doesn't help at all.
-If they are equal, this can mean that either page is shared or (less likely,
-but still) that the page, that used to be at the 1st pagemap was reclaimed
-and mapped to the 2nd between two reads. If they differ, it can again mean
-either not-shared (most likely) or shared (pfns were equal, but got reclaimed
-and swapped in back).
+What about the build error ?
 
-Some better API for pages sharing would be nice, probably such API could be
-also re-used for the user-space KSM :)
+> support, so it does not depend on I2C, but if I2C is built as a module the
+> driver should also only be built as a module.
 
-> However, if soft dirty bit changes could be queued up (from say the
-> fault handler and page table ops that map/unmap pages) and accumulated
-> in something like an interval tree it could be something like:
-> 
-> for each range of changed pages
-> 	for each page in range
-> 		copy page
-> 
-> IOW something that scales with the number of changed pages rather
-> than the number of mapped pages.
-> 
-> So I wonder if CRIU would abandon pagemap2 in the future for something
-> like this.
+ And this is what this patch trying to do.
 
-We'd surely adopt such APIs is one exists. One thing to note about one is that
-we'd also appreciate if this API would be able to batch "present" bits as well
-as "swapped" and "page-file" ones. We use these three in CRIU as well, and
-these bits scanning can also be optimized.
+>
+> I think the best solution is to put the platform code and the i2c code of
+> the bq27x00 driver each in their on module, but if you want a quick solution
 
-> Cheers,
-> 	-Matt Helsley
-> 
+Yes, more clear.
 
-Thanks,
-Pavel
+>
+> depends on I2C || I2C=n
+>
+> should work.
+>
+
+Thanks. :)
+
+>> ---
+>> drivers/power/Kconfig |    1 +
+>> 1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+>> index 0d0b5d7..89e5ebd 100644
+>> --- a/drivers/power/Kconfig
+>> +++ b/drivers/power/Kconfig
+>> @@ -152,6 +152,7 @@ config BATTERY_SBS
+>>
+>>  config BATTERY_BQ27x00
+>>       tristate "BQ27x00 battery driver"
+>> +     depends on I2C
+>>       help
+>>         Say Y here to enable support for batteries with BQ27x00 (I2C/HDQ) chips.
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
