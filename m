@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab3EDF6D (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 01:58:03 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:44817 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab3EDF6B (ORCPT
+	id S1752899Ab3EDGP5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 02:15:57 -0400
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:54382 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab3EDGP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 01:58:01 -0400
-Message-ID: <1367647075.4394.1.camel@phoenix>
-Subject: [PATCH] power_supply: wm831x_backup: Remove kfree call for
- devdata->backup.name
-From: Axel Lin <axel.lin@ingics.com>
-To: Anton Vorontsov <cbou@mail.ru>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Date: Sat, 04 May 2013 13:57:55 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 4 May 2013 02:15:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <003001ce47c8$9ba8df10$d2fa9d30$@samsung.com>
+References: <003001ce47c8$9ba8df10$d2fa9d30$@samsung.com>
+Date: Sat, 4 May 2013 11:45:55 +0530
+X-Google-Sender-Auth: rnIt6KTcTjARpfSV-qcaNwNu5Tg
+Message-ID: <CAOh2x=mW7p+9rQNWPpXB5AcF3FJF84O_AMgdPJjY8v3=9iaM-A@mail.gmail.com>
+Subject: Re: [PATCH 34/42] rtc: rtc-spear: remove unnecessary platform_set_drvdata()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devdata->backup.name points to devdata->name, the memory for devdata->name is
-part of struct wm831x_backup. Thus remove kfree call for devdata->backup.name.
+On Fri, May 3, 2013 at 12:06 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+> The driver core clears the driver data to NULL after device_release
+> or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
+> (device-core: Ensure drvdata = NULL when no driver is bound).
+> Thus, it is not needed to manually clear the device driver data to NULL.
+>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/rtc/rtc-spear.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/power/wm831x_backup.c | 1 -
- 1 file changed, 1 deletion(-)
+Thanks.
 
-diff --git a/drivers/power/wm831x_backup.c b/drivers/power/wm831x_backup.c
-index 58cbb00..56fb509 100644
---- a/drivers/power/wm831x_backup.c
-+++ b/drivers/power/wm831x_backup.c
-@@ -207,7 +207,6 @@ static int wm831x_backup_remove(struct platform_device *pdev)
- 	struct wm831x_backup *devdata = platform_get_drvdata(pdev);
- 
- 	power_supply_unregister(&devdata->backup);
--	kfree(devdata->backup.name);
- 
- 	return 0;
- }
--- 
-1.8.1.2
-
-
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
