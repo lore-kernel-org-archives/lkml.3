@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299Ab3EDSnM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 14:43:12 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46548 "EHLO
+	id S1762019Ab3EDSvY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 14:51:24 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46578 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758768Ab3EDSnK (ORCPT
+	with ESMTP id S1758096Ab3EDSvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 14:43:10 -0400
-Date: Sat, 4 May 2013 19:43:09 +0100
+	Sat, 4 May 2013 14:51:22 -0400
+Date: Sat, 4 May 2013 19:51:17 +0100
 From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Michael Leun <lkml20130126@newton.leun.net>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [REGRESSION] bisected: 3.8 -> 3.9 cannot umount after using fuse
-Message-ID: <20130504184308.GE25399@ZenIV.linux.org.uk>
-References: <20130504124519.032ac684@xenia.leun.net>
- <20130504155214.GD25399@ZenIV.linux.org.uk>
- <20130504200240.10a8bae0@xenia.leun.net>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Sam Creasey <sammy@sammy.net>, scsi <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>
+Subject: Re: [PATCH -next 2/2] sun3_scsi: switch to ->show_info()
+Message-ID: <20130504185117.GF25399@ZenIV.linux.org.uk>
+References: <1365594729-25759-1-git-send-email-geert@linux-m68k.org>
+ <1365594729-25759-2-git-send-email-geert@linux-m68k.org>
+ <CAMuHMdWEMT8FWaByiBh+Y2qhwWyqT4JyVZmLsCEYv30v2qM4yg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130504200240.10a8bae0@xenia.leun.net>
+In-Reply-To: <CAMuHMdWEMT8FWaByiBh+Y2qhwWyqT4JyVZmLsCEYv30v2qM4yg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 04, 2013 at 08:02:40PM +0200, Michael Leun wrote:
-> On Sat, 4 May 2013 16:52:14 +0100
-> Al Viro <viro@ZenIV.linux.org.uk> wrote:
+On Fri, May 03, 2013 at 10:03:43PM +0200, Geert Uytterhoeven wrote:
+> Ping?
 > 
-> > On Sat, May 04, 2013 at 12:45:19PM +0200, Michael Leun wrote:
-> > 
-> > > After reverting 57eccb830f1cc93d4b506ba306d8dfa685e0c88f from 3.9
-> > > that umount above works (not busy).
-> > 
-> > Sigh...  Check if the following fix works for your testcase:
-> > diff --git a/fs/namespace.c b/fs/namespace.c
-> > index b4f96a5..b68eef2d 100644
-> > --- a/fs/namespace.c
-> > +++ b/fs/namespace.c
-> [...]
+> Now the build failure is also in Linus' tree:
 > 
-> Yup, that fixes it.
+> http://kisskb.ellerman.id.au/kisskb/buildresult/8674437/
+> 
+> BTW, this patch depends on "[PATCH 1/2] sun3_scsi: Fill in missing
+> scsi_host_template.proc_info method"
 
-OK, committed, will go to Linus today, with Cc: stable
+Collapsed together and applied, will go out today
