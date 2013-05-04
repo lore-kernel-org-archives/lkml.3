@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758490Ab3EDUYA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 16:24:00 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:37503 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757433Ab3EDUX4 (ORCPT
+	id S1758145Ab3EDU11 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 16:27:27 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:64799 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755029Ab3EDU1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 16:23:56 -0400
+	Sat, 4 May 2013 16:27:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130504130033.GB13770@amd.pavel.ucw.cz>
+In-Reply-To: <20130504130440.GC13770@amd.pavel.ucw.cz>
 References: <1367615050-3894-1-git-send-email-ccross@android.com>
-	<20130504130033.GB13770@amd.pavel.ucw.cz>
-Date: Sat, 4 May 2013 13:23:54 -0700
-X-Google-Sender-Auth: cPqVsu8-s9SoVzvN1rWtVzFUCNk
-Message-ID: <CAMbhsRS6+hjTmrihVzgu3Dtyp8XAhJJ4VKMj=28G6xH3H73=6Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] freezer: add unsafe versions of freezable helpers
+	<1367615050-3894-2-git-send-email-ccross@android.com>
+	<20130504130440.GC13770@amd.pavel.ucw.cz>
+Date: Sat, 4 May 2013 13:27:23 -0700
+X-Google-Sender-Auth: rMc8WQXKlYiWeb1IbCeTCqpvy34
+Message-ID: <CAMbhsRScr+3Zk5Bi6390bGRbtE4oh2H-mHrGHS0wew5hdkivUg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] lockdep: check that no locks held at freeze time
 From: Colin Cross <ccross@android.com>
 To: Pavel Machek <pavel@ucw.cz>
 Cc: lkml <linux-kernel@vger.kernel.org>,
@@ -36,54 +37,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 4, 2013 at 6:00 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
->
->> NFS calls the freezable helpers with locks held, which is unsafe
->> and caused lockdep warnings when 6aa9707 "lockdep: check that no
->> locks held at freeze time" was applied (reverted in dbf520a).
->> Add new *_unsafe versions of the helpers that will not run the
->> lockdep test when 6aa9707 is reapplied, and call them from NFS.
+On Sat, May 4, 2013 at 6:04 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> On Fri 2013-05-03 14:04:10, Colin Cross wrote:
+>> From: Mandeep Singh Baines <msb@chromium.org>
 >>
->> Signed-off-by: Colin Cross <ccross@android.com>
+>> We shouldn't try_to_freeze if locks are held.  Holding a lock can cause a
+>> deadlock if the lock is later acquired in the suspend or hibernate path
+>> (e.g.  by dpm).  Holding a lock can also cause a deadlock in the case of
+>> cgroup_freezer if a lock is held inside a frozen cgroup that is later
+>> acquired by a process outside that group.
 >
-> Looks mostly good.
+> Ok, but this does not explain why
 >
->> @@ -152,6 +169,14 @@ static inline bool freezer_should_skip(struct task_struct *p)
->>       freezer_count();                                                \
->>  })
->>
->> +/* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
->> +#define freezable_schedule_unsafe()                                  \
->> +({                                                                   \
->> +     freezer_do_not_count();                                         \
->> +     schedule();                                                     \
->> +     freezer_count_unsafe();                                         \
->> +})
->> +
+>> --- a/include/linux/debug_locks.h
+>> +++ b/include/linux/debug_locks.h
+>> @@ -51,7 +51,7 @@ struct task_struct;
+>>  extern void debug_show_all_locks(void);
+>>  extern void debug_show_held_locks(struct task_struct *task);
+>>  extern void debug_check_no_locks_freed(const void *from, unsigned long len);
+>> -extern void debug_check_no_locks_held(struct task_struct *task);
+>> +extern void debug_check_no_locks_held(void);
+>>  #else
+>>  static inline void debug_show_all_locks(void)
+>>  {
 >
-> Make it inline function? :-). Add short explanation why it is good
-> idea?
+> Removing task_struct argument from  those functions is good idea?
 
-These are exact copies of the existing non-unsafe versions, except
-they call freezer_count_unsafe() instead of freezer_count().  The next
-version of my other patch stack that goes on top of this has a patch
-to convert the macros in this file to static inline functions (at
-least the ones that can be).  I'd rather not mix it in with this patch
-for ease of comparison with the existing calls.
+This is an existing patch that was merged in 3.9 and then reverted
+again, so it has already been reviewed and accepted once.
 
->> +/* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
->> +#define freezable_schedule_timeout_killable_unsafe(timeout)          \
->> +({                                                                   \
->> +     long __retval;                                                  \
->> +     freezer_do_not_count();                                         \
->> +     __retval = schedule_timeout_killable(timeout);                  \
->> +     freezer_count_unsafe();                                         \
->> +     __retval;                                                       \
->> +})
+>> --- a/kernel/exit.c
+>> +++ b/kernel/exit.c
+>> @@ -835,7 +835,7 @@ void do_exit(long code)
+>>       /*
+>>        * Make sure we are holding no locks:
+>>        */
+>> -     debug_check_no_locks_held(tsk);
+>> +     debug_check_no_locks_held();
 >
-> Function too?
->                                                                         Pavel
-> --
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> Is task guaranteed == current?
+
+Yes, the first line of do_exit is:
+        struct task_struct *tsk = current;
