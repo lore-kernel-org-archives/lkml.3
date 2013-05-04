@@ -1,56 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759204Ab3EDTLc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 15:11:32 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:58742 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750938Ab3EDTL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 15:11:29 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Cc: Colin Cross <ccross@android.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arve@android.com,
-        Oleg Nesterov <oleg@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 10/10] af_unix: use freezable blocking calls in read
-Date: Sat, 04 May 2013 21:19:49 +0200
-Message-ID: <85487641.pdFCOjE3G7@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130503000812.GY19814@mtj.dyndns.org>
-References: <1367458508-9133-1-git-send-email-ccross@android.com> <1367458508-9133-11-git-send-email-ccross@android.com> <20130503000812.GY19814@mtj.dyndns.org>
+	id S1756240Ab3EDT76 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 15:59:58 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:50987 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956Ab3EDT74 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 15:59:56 -0400
+Date: Sat, 4 May 2013 21:59:50 +0200
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Ezequiel =?iso-8859-1?Q?Garc=EDa?= <elezegarcia@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        linux-media <linux-media@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: Splitting stk1160-ac97 as a module (Re: linux-next: Tree for May
+ 1 (media/usb/stk1160))
+Message-ID: <20130504195950.GA3254@free.fr>
+References: <20130501183734.7ad1efca2d06e75432edabbd@canb.auug.org.au>
+ <518157EB.3010700@infradead.org>
+ <51827DB1.7000304@redhat.com>
+ <20130504172142.GA21656@localhost>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130504172142.GA21656@localhost>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 02, 2013 05:08:12 PM Tejun Heo wrote:
-> On Wed, May 01, 2013 at 06:35:08PM -0700, Colin Cross wrote:
-> > Avoid waking up every thread sleeping in read call on an AF_UNIX
-> > socket during suspend and resume by calling a freezable blocking
-> > call.  Previous patches modified the freezer to avoid sending
-> > wakeups to threads that are blocked in freezable blocking calls.
-> > 
-> > This call was selected to be converted to a freezable call because
-> > it doesn't hold any locks or release any resources when interrupted
-> > that might be needed by another freezing task or a kernel driver
-> > during suspend, and is a common site where idle userspace tasks are
-> > blocked.
+Ezequiel, All,
+
+On Sat, May 04, 2013 at 02:21:44PM -0300, Ezequiel Garcia wrote:
+> I'm trying to split the ac97 support into a separate module.
+> So far I've managed to do this with two different approaches,
+> but both of them are broken in some way :-(
 > 
-> Heh, so you are aware of the deadlock possibilities.  Good selection
-> of spots.  For all the conversion patches.
+> Couple questions:
 > 
->  Acked-by: Tejun Heo <tj@kernel.org>
+> 1. Is it possible to force two symbols to be both built-in (=y) or both
+> modules (=m)? This would make one of my solutions work.
 
-I wonder if that includes [3/10] (just to get the record straight)?
+If they are always the same value, there is no need to have two symbols
+in the first place.
 
-Rafael
+However, given the original problem from this thread, if what you meant
+was to have the second symbol either 'n' or the same as the first symbol,
+ie. the following table:
 
+    A:  n   m   m   y   y
+    B:  n   n   m   n   y
+
+Then the closest I came up with is:
+
+    config MODULES
+        bool "Modules"
+    
+    config A
+        tristate "A"
+    
+    config B_dummy
+        bool "B"
+        depends on A
+    
+    config B
+        tristate
+        default m if A=m && B_dummy
+        default y if A=y && B_dummy
+
+where B_dummy is not used outside of Kconfig, and only A and B are the
+symbols of interest (eg. to build the drivers).
+
+Otherwise, I was not able to get the desired behviour with only the A
+and B symbols.
+
+Regards,
+Yann E. MORIN.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
