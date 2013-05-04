@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab3EDGe0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 02:34:26 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:51449 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab3EDGeY (ORCPT
+	id S1753803Ab3EDGhl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 02:37:41 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:50275 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752744Ab3EDGhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 02:34:24 -0400
-Date: Sat, 4 May 2013 08:34:20 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        eranian@google.com, Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH 2/3] perf, x86, lbr: Fix LBR filter
-Message-ID: <20130504063420.GA14614@gmail.com>
-References: <20130503121122.931661809@chello.nl>
- <20130503121256.158211806@chello.nl>
- <20130503143411.GO19487@tassilo.jf.intel.com>
+	Sat, 4 May 2013 02:37:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130503143411.GO19487@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130503165844.GG3780@linux.vnet.ibm.com>
+References: <1367599676-2049-1-git-send-email-fweisbec@gmail.com>
+	<1367599676-2049-2-git-send-email-fweisbec@gmail.com>
+	<20130503165844.GG3780@linux.vnet.ibm.com>
+Date: Sat, 4 May 2013 08:37:38 +0200
+Message-ID: <CAFTL4hxcmoNV54NG2=xswgvjStYLdOBwi=FP7q_=s0vmp4uTrQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] rcu: Fix full dynticks' dependency on wide RCU nocb mode
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013/5/3 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> On Fri, May 03, 2013 at 06:47:55PM +0200, Frederic Weisbecker wrote:
+>> Commit 0637e029392386e6996f5d6574aadccee8315efa
+>> ("nohz: Select wide RCU nocb for full dynticks") intended
+>> to force CONFIG_RCU_NOCB_CPU_ALL=y when full dynticks is
+>> enabled.
+>>
+>> However this option is part of a choice menu and Kconfig's
+>> "select" instruction has no effect on such targets.
+>>
+>> Fix this by using reverse dependencies on the targets we
+>> don't want instead.
+>>
+>> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Christoph Lameter <cl@linux.com>
+>> Cc: Hakan Akkan <hakanakkan@gmail.com>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Cc: Kevin Hilman <khilman@linaro.org>
+>> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+>> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-* Andi Kleen <ak@linux.intel.com> wrote:
+Nice!
 
-> > +	} else {
-> > +		/*
-> > +		 * The LBR logs any address in the IP, even if the IP just
-> > +		 * faulted. This means userspace can control the from address.
-> > +		 * Ensure we don't blindy read any address by validating it is
-> > +		 * a known text address.
-> > +		 */
-> > +		if (kernel_text_address(from))
-> 
-> Sorry doing it this way is just incredible expensive and dumb.
+Ingo, if you haven't yet pulled, please rather pick the
+"timers/nohz-hz1-v2" branch that has the Reviewed-by: tag from Paul.
 
-If anyone using this feature notices the __module_address() overhead then 
-a 'module addresses RCU rbtree' could be added, which should solve the 
-overhead impact.
-
-In any case Peter's patch fixes the bug without regressing the feature as 
-it is implemented today. Do you have a better solution that does not break 
-the ABI? The solution you proposed before regresses existing 
-functionality.
-
-Thanks,
-
-	Ingo
+Thanks.
