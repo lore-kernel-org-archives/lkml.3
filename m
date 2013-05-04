@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758005Ab3EDLkE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 07:40:04 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:52813 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752022Ab3EDLkC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 07:40:02 -0400
-Message-ID: <5184F38D.9090507@hurleysoftware.com>
-Date: Sat, 04 May 2013 07:39:57 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1758791Ab3EDLqF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 07:46:05 -0400
+Received: from smtp46.i.mail.ru ([94.100.177.106]:54265 "EHLO smtp46.i.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752022Ab3EDLqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 07:46:01 -0400
+Message-ID: <51850295.6020601@list.ru>
+Date: Sat, 04 May 2013 16:44:05 +0400
+From: Stas Sergeev <stsp@list.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
 To: Johan Hovold <jhovold@gmail.com>
-CC: Stas Sergeev <stsp@list.ru>, Greg KH <gregkh@linuxfoundation.org>,
+CC: Greg KH <gregkh@linuxfoundation.org>,
         Jarkko Huijts <jarkko.huijts@gmail.com>,
         Alan Cox <alan@linux.intel.com>, linux-usb@vger.kernel.org,
         linux-serial@vger.kernel.org,
@@ -24,39 +23,13 @@ References: <5183D196.2080305@list.ru> <20130503163008.GA30699@kroah.com> <5183F
 In-Reply-To: <20130504111535.GC16818@localhost>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2013 07:15 AM, Johan Hovold wrote:
-> On Sat, May 04, 2013 at 01:50:42AM +0400, Stas Sergeev wrote:
->> 04.05.2013 00:34, Greg KH пишет:
->>> On Fri, May 03, 2013 at 10:27:18PM +0400, Stas Sergeev wrote:
->>>> 03.05.2013 21:16, Greg KH пишет:
->
-> [...]
->
->>>>> There's no guarantee as to how long select or an ioctl will take, and
->>>>> now that we have fixed another bug, this device is slower.
->>>>>
->>>>> If you change hardware types to use a different usb to serial chip, that
->>>>> select call might take 4 times as long.  Are we somehow supposed to
->>>>> change the kernel to "fix" that?
->>>> Previously, the kernel was not calling to a device at all, so
->>>> select() was independent of the chip, and it was fast. I was
->>>> not aware you changed that willingly.
->>> I don't understand, what do you mean by this?  Some drivers just return
->>> the value of an internally held number, and don't query the device.
->>>
->>> The only way the FTDI driver can determine if the hardware buffer on the
->>> chip way out on the end of the USB cable is empty or not, is to query
->>> it.  So the driver now does so.
->> It does so only for one char. And the query takes longer than
->> to just xmit that char. So why do you think this even works as
->> expected?
->
+04.05.2013 15:15, Johan Hovold пишет:
 > The query takes longer than the transmit at decent baudrates (>=38k)
 > and under the assumption that flow control isn't causing any delays.
 >
@@ -66,22 +39,8 @@ On 05/04/2013 07:15 AM, Johan Hovold wrote:
 > only query the hardware buffers on tty_wait_until_sent (e.g. at close)
 > and select and TIOCMOUTQ would not suffer. This is also the way things
 > are handled in serial_core.
-
-Agreed. This is the correct solution.
-
-> I'll prepare a series which adds wait_until_sent to usb-serial, but I
-> doubt it would be stable material (even if it could get into 3.10).
->
-> What do you think Greg, is this overhead to chars_in_buffer reason
-> enough to disable it in the stable trees or should we simply fix it in
-> 3.11 (or 3.10)? (The overhead is about 3-400 us per call when the port
-> fifo is empty, which makes chars_in_buffer about 100 times slower on my
-> test system.)
-
-A better solution for stable would be to set port->drain_delay. It
-won't help tcdrain() but at least the port won't shutdown on live
-outbound data.
-
-Regards,
-Peter Hurley
-
+Thanks for taking a look.
+Indeed, it seems .wait_until_sent is the best candidate for that
+kind of things, and the patch in question would even match its
+description be it using .wait_until_sent and not .chars_in_buffer.
+Please count on testing your patches here when they are ready.
