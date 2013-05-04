@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758569Ab3EDHsX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 03:48:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53713 "EHLO mx1.redhat.com"
+	id S1759490Ab3EDHsd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 03:48:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22528 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757377Ab3EDHsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 03:48:21 -0400
+	id S1758700Ab3EDHsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 03:48:31 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 Subject: [PATCH] Give the OID registry file module info to avoid kernel
  tainting
-To: torvalds@linux-foundation.com
+To: torvalds@linux-foundation.org
 From: David Howells <dhowells@redhat.com>
 Cc: linux-nfs@vger.kernel.org, Dros Adamson <Weston.Adamson@netapp.com>,
         Trond Myklebust <Trond.Myklebust@netapp.com>,
         linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Date: Sat, 04 May 2013 08:48:17 +0100
-Message-ID: <20130504074816.21909.63945.stgit@warthog.procyon.org.uk>
+Date: Sat, 04 May 2013 08:48:27 +0100
+Message-ID: <20130504074827.21933.61711.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
