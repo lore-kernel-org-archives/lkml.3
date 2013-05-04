@@ -1,85 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab3EDGl4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 02:41:56 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60377 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733Ab3EDGlz (ORCPT
+	id S1754720Ab3EDG5O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 02:57:14 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:39775 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753772Ab3EDG5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 02:41:55 -0400
-Date: Sat, 4 May 2013 08:41:51 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] nohz: Bunch of fixes
-Message-ID: <20130504064151.GB14614@gmail.com>
-References: <1367599676-2049-1-git-send-email-fweisbec@gmail.com>
+	Sat, 4 May 2013 02:57:12 -0400
+Message-ID: <5184AF95.9060604@gmail.com>
+Date: Sat, 04 May 2013 08:49:57 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367599676-2049-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-fsdevel@vger.kernel.org
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: [PATCH 1/4] fsfreeze: wait in killable state in __sb_start_write
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Added a new enum to decide if we want to sleep in uninterruptible or
+killable state or we want simply to return immediately.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
+---
+ fs/super.c         |   24 ++++++++++++++++++------
+ include/linux/fs.h |   19 +++++++++++++------
+ 2 files changed, 31 insertions(+), 12 deletions(-)
 
-> Ingo,
-> 
-> Please pull the timers/nohz-hz1 branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> 	timers/nohz-hz1
-> 
-> HEAD: a7f4d69bb1d5e1f573b680355a2ad51566338887
-> 
-> It fixes a Kconfig dependency issue and forces a minimum of 1 tick every seconds
-> to keep handling the scheduler_tick() duties, even at a very low granularity. This
-> is a workaround until we can handle all these duties through on-demand driven
-> solutions rather than using periodic events, as per your suggestion.
-> 
-> I just noted two things:
-> 
-> * update_cpu_load_active() seem to rely on the fixed periodic tick at the
->   HZ rate. There is certainly something to tweak there to make it really correct
->   with dynamick ticks. I have the feeling that modifying pending_updates won't work
->   as it seems to decay assuming the time to catch up was idle.
-> 
-> * I'll probably have to disable CONFIG_CFS_BANDWIDTH when full dynticks
->   is enabled. First of all it modifies rq->nr_running without using inc/dec_nr_running
->   standard API, which is required for full dynticks. And second, I need to triple
->   check it's safe to use with 1 tick per second.
-> 
-> Ah and please note the merge commit (c032862fba51a3ca504752d3a25186b324c5ce83)
-> that was needed to get latest RCU and sched updates for the Kconfig fix.
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Frederic Weisbecker (2):
->       rcu: Fix full dynticks' dependency on wide RCU nocb mode
->       sched: Keep at least 1 tick per second for active dynticks tasks
-> 
-> 
->  include/linux/sched.h    |    1 +
->  init/Kconfig             |    4 ++--
->  kernel/sched/core.c      |   30 ++++++++++++++++++++++++++++++
->  kernel/sched/idle_task.c |    1 +
->  kernel/sched/sched.h     |   10 ++++++++++
->  kernel/time/Kconfig      |    1 -
->  kernel/time/tick-sched.c |    7 +++++++
->  7 files changed, 51 insertions(+), 3 deletions(-)
-
-Pulled, thanks Frederic!
-
-	Ingo
+diff --git a/fs/super.c b/fs/super.c
+index 7465d43..6b70c7f 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -1190,14 +1190,25 @@ static void acquire_freeze_lock(struct super_block *sb, int level, bool trylock,
+  * This is an internal function, please use sb_start_{write,pagefault,intwrite}
+  * instead.
+  */
+-int __sb_start_write(struct super_block *sb, int level, bool wait)
++int __sb_start_write(struct super_block *sb, int level, int wait)
+ {
++	int ret = 0;
+ retry:
+ 	if (unlikely(sb->s_writers.frozen >= level)) {
+-		if (!wait)
+-			return 0;
+-		wait_event(sb->s_writers.wait_unfrozen,
+-			   sb->s_writers.frozen < level);
++		switch (wait) {
++		case FREEZE_NOWAIT:
++			return ret;
++		case FREEZE_WAIT:
++			wait_event(sb->s_writers.wait_unfrozen,
++				   sb->s_writers.frozen < level);
++			break;
++		case FREEZE_WAIT_KILLABLE:
++			ret = wait_event_killable(sb->s_writers.wait_unfrozen,
++				   sb->s_writers.frozen < level);
++			if (ret)
++				return -EINTR;
++			break;
++		}
+ 	}
+ 
+ #ifdef CONFIG_LOCKDEP
+@@ -1213,7 +1224,8 @@ retry:
+ 		__sb_end_write(sb, level);
+ 		goto retry;
+ 	}
+-	return 1;
++	ret = 1;
++	return ret;
+ }
+ EXPORT_SYMBOL(__sb_start_write);
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e8cd6b8..6d9bcef 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1220,6 +1220,13 @@ enum {
+ 
+ #define SB_FREEZE_LEVELS (SB_FREEZE_COMPLETE - 1)
+ 
++/* Possible waiting modes */
++enum {
++	FREEZE_NOWAIT = 0,		/* no blocking call */
++	FREEZE_WAIT	= 1,		/* wait in uninterruptible state */
++	FREEZE_WAIT_KILLABLE = 2,	/* wait in killable state */
++};
++
+ struct sb_writers {
+ 	/* Counters for counting writers at each level */
+ 	struct percpu_counter	counter[SB_FREEZE_LEVELS];
+@@ -1335,7 +1342,7 @@ extern struct timespec current_fs_time(struct super_block *sb);
+  */
+ 
+ void __sb_end_write(struct super_block *sb, int level);
+-int __sb_start_write(struct super_block *sb, int level, bool wait);
++int __sb_start_write(struct super_block *sb, int level, int wait);
+ 
+ /**
+  * sb_end_write - drop write access to a superblock
+@@ -1394,12 +1401,12 @@ static inline void sb_end_intwrite(struct super_block *sb)
+  */
+ static inline void sb_start_write(struct super_block *sb)
+ {
+-	__sb_start_write(sb, SB_FREEZE_WRITE, true);
++	__sb_start_write(sb, SB_FREEZE_WRITE, FREEZE_WAIT);
+ }
+ 
+ static inline int sb_start_write_trylock(struct super_block *sb)
+ {
+-	return __sb_start_write(sb, SB_FREEZE_WRITE, false);
++	return __sb_start_write(sb, SB_FREEZE_WRITE, FREEZE_NOWAIT);
+ }
+ 
+ /**
+@@ -1423,7 +1430,7 @@ static inline int sb_start_write_trylock(struct super_block *sb)
+  */
+ static inline void sb_start_pagefault(struct super_block *sb)
+ {
+-	__sb_start_write(sb, SB_FREEZE_PAGEFAULT, true);
++	__sb_start_write(sb, SB_FREEZE_PAGEFAULT, FREEZE_WAIT);
+ }
+ 
+ /*
+@@ -1441,7 +1448,7 @@ static inline void sb_start_pagefault(struct super_block *sb)
+  */
+ static inline void sb_start_intwrite(struct super_block *sb)
+ {
+-	__sb_start_write(sb, SB_FREEZE_FS, true);
++	__sb_start_write(sb, SB_FREEZE_FS, FREEZE_WAIT);
+ }
+ 
+ 
+@@ -2224,7 +2231,7 @@ static inline void file_start_write(struct file *file)
+ {
+ 	if (!S_ISREG(file_inode(file)->i_mode))
+ 		return;
+-	__sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, true);
++	__sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, FREEZE_WAIT);
+ }
+ 
+ static inline void file_end_write(struct file *file)
+-- 
+1.7.3.4
