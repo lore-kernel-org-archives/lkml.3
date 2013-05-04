@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761898Ab3EDSFS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 14:05:18 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51615 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753960Ab3EDSFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 14:05:16 -0400
-Date: Sat, 4 May 2013 20:12:45 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-Cc: Emmanuel Benisty <benisty.e@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@surriel.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
-        "Low, Jason" <jason.low2@hp.com>,
-        Michel Lespinasse <walken@google.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>
-Subject: Re: ipc,sem: sysv semaphore scalability
-Message-ID: <20130504181245.GA9711@pd.tnic>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
- <CA+i8gKKK_VxZtyyp1tqHnztd4++XyNXwbEEr-A29-J23PyuCfQ@mail.gmail.com>
- <CA+55aFzqBEX=cGGZJJsfNWcDwQcUOP7njEog-kZZLRxuDg8Tzg@mail.gmail.com>
- <CA+i8gK+h+FyPiOL85BPa-Pu8+bDw6LW60-oRoLHgP2AnzMADCA@mail.gmail.com>
- <20130504155558.GA12870@logfs.org>
+	id S1761744Ab3EDSNF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 14:13:05 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:18513 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756831Ab3EDSNC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 14:13:02 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/iDG3JF9ipzmYnwqvN1U0qaLHVQAt7tIA=
+Date: Sat, 4 May 2013 14:12:27 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irqchip: add support for Marvell Orion SoCs
+Message-ID: <20130504181227.GN31290@titan.lakedaemon.net>
+References: <1367519104-19677-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <alpine.LFD.2.02.1305022324371.2891@ionos>
+ <5182E11E.5010103@gmail.com>
+ <201305030009.57041.arnd@arndb.de>
+ <5182EAA0.9070208@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130504155558.GA12870@logfs.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5182EAA0.9070208@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 04, 2013 at 11:55:58AM -0400, Jörn Engel wrote:
-> Blockconsole currently lives here:
-> https://git.kernel.org/cgit/linux/kernel/git/joern/bcon2.git/
+On Fri, May 03, 2013 at 12:37:20AM +0200, Sebastian Hesselbarth wrote:
+> (@Jason C: Are you sure that I should merge dove and orion
+> irqchip patches? I doubt that anything touching generic irq
+> will not go through irq tree.)
 
-Tja, if only that were upstream...
+Putting them in the same patch series does not imply they have to go
+through the same tree.  But it *does* allow us to see relationships,
+conflicts, etc.
 
--- 
-Regards/Gruss,
-    Boris.
+Based on how the finally dependencies work out, we may ask the irq
+maintainers for an Ack to take it through arm-soc.  This would happen if
+we can't remove the dependency between the trees.  The resulting
+potential merge conflicts weigh into it, and that's where the irqchip
+maintainer's Ack get decided.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+If the changes to irqchip are just Makefile/Kconfig, then it's easy.
+However, if several other files are changed and conflicting, then we let
+it go through irqchip and wait one merge window for the board changes
+depending on it.
+
+The goal here is to identify and remove branch dependencies within
+arm-soc and between arm-soc and other trees.  A secondary goal is to
+identify high-risk series (risk of being dropped), and keep them
+in separate branches from other changes.
+
+thx,
+
+Jason.
