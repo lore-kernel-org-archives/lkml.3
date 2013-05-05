@@ -1,150 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab3EECm3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 22:42:29 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:35191 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab3EECm0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 22:42:26 -0400
-Date: Sat, 04 May 2013 22:42:25 -0400 (EDT)
-Message-Id: <20130504.224225.1329294730869442752.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1751311Ab3EED5m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 23:57:42 -0400
+Received: from gate.crashing.org ([63.228.1.57]:54160 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751192Ab3EED5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 May 2013 23:57:40 -0400
+Message-ID: <1367721709.11982.37.camel@pasglop>
+Subject: Re: [PATCH v8 1/3] of/pci: Unify pci_process_bridge_OF_ranges from
+ Microblaze and PowerPC
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Andrew Murray <Andrew.Murray@arm.com>
+Cc: linux-mips@linux-mips.org, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        jgunthorpe@obsidianresearch.com, linux@arm.linux.org.uk,
+        siva.kallam@samsung.com, linux-pci@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, jg1.han@samsung.com,
+        Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        bhelgaas@google.com, suren.reddy@samsung.com,
+        linux-arm-kernel@lists.infradead.org, monstr@monstr.eu,
+        paulus@samba.org, thomas.petazzoni@free-electrons.com,
+        thierry.reding@avionic-design.de, thomas.abraham@linaro.org,
+        arnd@arndb.de, linus.walleij@linaro.org, juhosg@openwrt.org,
+        grant.likely@linaro.org, Rob Herring <robherring2@gmail.com>
+Date: Sun, 05 May 2013 12:41:49 +1000
+In-Reply-To: <1366627295-16964-2-git-send-email-Andrew.Murray@arm.com>
+References: <1366627295-16964-1-git-send-email-Andrew.Murray@arm.com>
+	 <1366627295-16964-2-git-send-email-Andrew.Murray@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sat, 04 May 2013 19:42:26 -0700 (PDT)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2013-04-22 at 11:41 +0100, Andrew Murray wrote:
+> The pci_process_bridge_OF_ranges function, used to parse the "ranges"
+> property of a PCI host device, is found in both Microblaze and PowerPC
+> architectures. These implementations are nearly identical. This patch
+> moves this common code to a common place.
 
-1) Several routines do not use netdev_features_t to hold such bitmasks,
-   fixes from Patrick McHardy and Bjørn Mork.
+What's happening with this ? I'd like to avoid that patch for now
+as I'm doing some changes to pci_process_bridge_OF_ranges
+which are fairly urgent (I might even stick them in the current
+merge window) to deal with memory windows having separate offsets.
 
-2) Update cpsw IRQ software state and the actual HW irq enabling in
-   the correct order.  From Mugunthan V N.
+There's also a few hacks in there that are really ppc specific...
 
-3) When sending tipc packets to multiple bearers, we have to make copies
-   of the SKB rather than just giving the original SKB directly.  Fix
-   from Gerlando Falauto.
+I think the right long term approach is to change the way powerpc
+(and microblaze ?) initializes PCI host bridges. Move it away from
+setup_arch() (which is a PITA anyway since it's way too early) to
+an early init call of some sort, and encapsulate the new struct
+pci_host_bridge.
 
-4) Fix race with bridging topology change timer, from Stephen
-   Hemminger.
+We can then directly configure the host bridge windows rather
+than having this "intermediary" set of resources in our pci_controller
+and in fact move most of the fields from pci_controller to
+pci_host_bridge to the point where the former can remain as a
+simple platform specific wrapper if needed.
 
-5) Fix TCPv6 segmentation handling in GRE and VXLAN, from Pravin B
-   Shelar.
+So for new stuff (hint: DT based ARM PCI) or stuff that has to deal with
+a lot less archaic platforms (hint: Microblaze), I'd recommend going
+straight for that approach rather than perpetuating the PowerPC code
+which I'll try to deal with in the next few monthes.
 
-6) Endian bug in USB pegasus driver, from Dan Carpenter.
+Cheers,
+Ben.
+ 
 
-7) Fix crashes on MTU reduction in USB asix driver, from Holger
-   Eitzenberger.
-
-8) Don't allow the kernel to BUG() just because the user puts some
-   crap in an AF_PACKET mmap() ring descriptor.  Fix from Daniel
-   Borkmann.
-
-9) Don't use variable sized arrays on the stack in xen-netback, from
-   Wei Liu.
-
-10) Fix stats reporting and an unbalanced napi_disable() in be2net
-    driver.  From Somnath Kotur and Ajit Khaparde.
-
-Please pull, thanks a lot!
-
-The following changes since commit 99c6bcf46d2233d33e441834e958ed0bc22b190a:
-
-  Merge tag 'multiplatform-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc (2013-05-02 09:38:16 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to 777c2300865cb9b1b1791862ed23da677abfe6dc:
-
-  cxgb4: fix error recovery when t4_fw_hello returns a positive value (2013-05-03 16:10:34 -0400)
-
-----------------------------------------------------------------
-Ajit Khaparde (4):
-      be2net: Fix to use version 2 of cq_create for SkyHawk-R devices
-      be2net: Fix to use 32-bit stats to report rx_drops_no_fragment
-      be2net: Fix to show tx priority pause counter in ethtool -S
-      be2net: Fix to receive Multicast Packets when Promiscuous mode is enabled on certain devices
-
-Bjørn Mork (1):
-      net: vlan,ethtool: netdev_features_t is more than 32 bit
-
-Dan Carpenter (1):
-      usbnet: pegasus: endian bug in write_mii_word()
-
-Daniel Borkmann (1):
-      packet: tpacket_v3: do not trigger bug() on wrong header status
-
-Gerlando Falauto (3):
-      tipc: cosmetic: clean up comments and break a long line
-      tipc: tipc_bcbearer_send(): simplify bearer selection
-      tipc: pskb_copy() buffers when sending on more than one bearer
-
-Kirill Smelkov (1):
-      sky2: Fix crash on receiving VLAN frames
-
-Mugunthan V N (1):
-      drivers: net: cpsw: irq not disabled in cpsw isr in particular sequence
-
-Patrick McHardy (1):
-      net: use netdev_features_t in skb_needs_linearize()
-
-Pravin B Shelar (2):
-      gre: Fix GREv4 TCPv6 segmentation.
-      vxlan: Fix TCPv6 segmentation.
-
-Somnath Kotur (3):
-      be2net: Fix firmware download for Lancer
-      be2net: avoid napi_disable() when it has not been enabled
-      be2net: Fix to fail probe if MSI-X enable fails for a VF
-
-Teppo Kotilainen (1):
-      net: qmi_wwan: Add Telewell TW-LTE 4G
-
-Thadeu Lima de Souza Cascardo (1):
-      cxgb4: fix error recovery when t4_fw_hello returns a positive value
-
-Wei Liu (3):
-      xen-netback: remove redundent parameter in netbk_count_requests
-      xen-netback: avoid allocating variable size array on stack
-      xen-netback: better names for thresholds
-
-holger@eitzenberger.org (1):
-      asix: fix BUG in receive path when lowering MTU
-
-stephen hemminger (1):
-      bridge: fix race with topology change timer
-
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c |  2 +-
- drivers/net/ethernet/emulex/benet/be.h          |  1 +
- drivers/net/ethernet/emulex/benet/be_cmds.c     | 35 +++++++++++++++++---------------
- drivers/net/ethernet/emulex/benet/be_cmds.h     |  2 +-
- drivers/net/ethernet/emulex/benet/be_ethtool.c  |  1 +
- drivers/net/ethernet/emulex/benet/be_main.c     | 54 +++++++++++++++++++++++++++++++++++--------------
- drivers/net/ethernet/marvell/sky2.c             |  2 ++
- drivers/net/ethernet/ti/cpsw.c                  |  2 +-
- drivers/net/usb/asix_common.c                   |  3 +++
- drivers/net/usb/pegasus.c                       |  3 ++-
- drivers/net/usb/qmi_wwan.c                      |  1 +
- drivers/net/xen-netback/netback.c               | 69 ++++++++++++++++++++++++++++++++++++++++-----------------------
- net/8021q/vlan_dev.c                            |  2 +-
- net/bridge/br_stp_timer.c                       |  2 +-
- net/core/dev.c                                  |  2 +-
- net/core/ethtool.c                              |  2 +-
- net/ipv4/af_inet.c                              |  1 +
- net/ipv4/gre.c                                  |  4 +++-
- net/ipv4/udp.c                                  |  7 ++++++-
- net/packet/af_packet.c                          | 53 +++++++++++++++++++++---------------------------
- net/tipc/bcast.c                                | 40 +++++++++++++++++++++++-------------
- 21 files changed, 178 insertions(+), 110 deletions(-)
