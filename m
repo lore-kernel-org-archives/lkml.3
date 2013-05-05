@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454Ab3EEVZV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 17:25:21 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:38034 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab3EEVZT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 17:25:19 -0400
-Date: Sun, 5 May 2013 14:25:12 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL, RFC] Full dynticks, CONFIG_NO_HZ_FULL feature
-Message-ID: <20130505212511.GC3659@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130505110351.GA4768@gmail.com>
- <CA+55aFzPHkCH7CVZ4tkaF91+=GLZAxxncTq0J9d6AKpSPqovZw@mail.gmail.com>
+	id S1752493Ab3EEVbZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 17:31:25 -0400
+Received: from mout.gmx.net ([212.227.17.21]:62476 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752433Ab3EEVbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 May 2013 17:31:22 -0400
+X-Authenticated: #1045983
+X-Provags-ID: V01U2FsdGVkX1/ciLVZp1ncsIq5uxNxplWFOlnDqVmvUtAfMN60iY
+	qt2NTag9X5oWFP
+Date: Sun, 5 May 2013 23:31:18 +0200
+From: Helge Deller <deller@gmx.de>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-parisc@vger.kernel.org, linux-security-module@vger.kernel.org,
+        dhowells@redhat.com
+Subject: [PATCH] kernel/modsign_certificate.S: fix build on parisc
+ architecture
+Message-ID: <20130505213118.GA1622@p100.box>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzPHkCH7CVZ4tkaF91+=GLZAxxncTq0J9d6AKpSPqovZw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050521-7606-0000-0000-00000B187FE2
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 05, 2013 at 01:33:45PM -0700, Linus Torvalds wrote:
-> On Sun, May 5, 2013 at 4:03 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > Please consider pulling the latest timers-nohz-for-linus git tree from:
-> 
-> Ok, it seems to work for me, so pulled.
-> 
-> However, by "work for me" I mean "doesn't actually seem to make any
-> difference for me". Maybe I'm odd, but the most common situation is
-> either a fairly idle machine (in which case the old NOHZ did fine) or
-> a fairly over-crowded one when I'm running something sufficiently
-> threaded (in which case the new NOHZ_FULL doesn't do anything either).
-> 
-> So I really hope the "cpu has more than one running thread" case is
-> getting a lot of attention. Not for 3.10, but right now it seems to
-> still result in the same old 1kHz timer interrupts..
-> 
-> So I haven't actually found a real load where any of this makes a
-> noticeable *difference*.
+Module signing functionality breaks the kernel build on parisc with the
+following error: 
 
-The workloads where we expect the most noticeable differences are
-HPC workloads with short iterations and a HPC-style barrier between
-each interation on the one hand and real-time workloads on the other.
-My guess is that you aren't doing too much of either.
+kernel/built-in.o: In function `load_module_signing_keys':
+kernel/modsign_pubkey.c:67: undefined reference to `modsign_certificate_list_end'
+kernel/modsign_pubkey.c:66: undefined reference to `modsign_certificate_list'
+make[3]: *** [vmlinux] Error 1
 
-We do have some measurements taken on an early prototype of this patchset,
-which are on slides 5 and 6 of:
+The reason why the build fails is because on parisc assembly syntax is
+different than on other architectures. Most importantly, a semicolon
+marks the start of a comment, while exclamation marks separates
+statements.
 
-http://linuxplumbersconf.org/2009/slides/Josh-Triplett-painless-kernel.pdf
+Currently the GLOBAL(name) macro uses a semicolon to separate the .globl
+and the ASM_SYMBOL() statements. On PA-RISC the semicolon will now just
+strip the ASM_SYMBOL() statements since it thinks it is a comment and as
+such the modsign_certificate_list/modsign_certificate_list_end symbols
+will not get defined and will not be in the vmlinux binary.
 
-This is for an HPC workload with a 100-microsecond iteration time.
+Fix this problem by adding an own implementation for GLOBAL() on the
+PARISC architecture.
 
-							Thanx, Paul
+Signed-off-by: Helge Deller <deller@gmx.de>
 
+diff --git a/kernel/modsign_certificate.S b/kernel/modsign_certificate.S
+index 246b4c6..9b9c2ab 100644
+--- a/kernel/modsign_certificate.S
++++ b/kernel/modsign_certificate.S
+@@ -7,9 +7,17 @@
+ #define ASM_SYMBOL(sym) PASTE(SYMBOL_PREFIX, sym)
+ #endif
+ 
+-#define GLOBAL(name)	\
+-	.globl ASM_SYMBOL(name);	\
++#if defined(__hppa__)
++ /* HPPA/PA-RISC assembly is special: comments start with semicolon
++  * and exclamation marks separates statements. */
++ #define GLOBAL(name)	\
++	.globl ASM_SYMBOL(name) ! \
+ 	ASM_SYMBOL(name):
++#else
++ #define GLOBAL(name)	\
++	.globl ASM_SYMBOL(name) ; \
++	ASM_SYMBOL(name):
++#endif
+ 
+ 	.section ".init.data","aw"
+ 
