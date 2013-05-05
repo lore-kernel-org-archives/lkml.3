@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327Ab3EESeD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 14:34:03 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:56293 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab3EESdM (ORCPT
+	id S1752281Ab3EESeB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 14:34:01 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:54036 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab3EESdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 5 May 2013 14:33:12 -0400
 From: Johan Hovold <jhovold@gmail.com>
@@ -15,9 +15,9 @@ Cc: Peter Hurley <peter@hurleysoftware.com>, Stas Sergeev <stsp@list.ru>,
         linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
         Caylan Van Larson <i@caylan.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 4/7] USB: ftdi_sio: fix chars_in_buffer overhead
-Date: Sun,  5 May 2013 20:32:30 +0200
-Message-Id: <1367778753-22297-5-git-send-email-jhovold@gmail.com>
+Subject: [PATCH 7/7] USB: serial: clean up chars_in_buffer
+Date: Sun,  5 May 2013 20:32:33 +0200
+Message-Id: <1367778753-22297-8-git-send-email-jhovold@gmail.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367778753-22297-1-git-send-email-jhovold@gmail.com>
 References: <20130505182913.GE16818@localhost>
@@ -26,74 +26,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new generic usb-serial wait_until_sent implementation to wait
-for hardware buffers to drain.
+No need to grab disconnect mutex in chars_in_buffer now that no
+sub-driver is or should be querying hardware buffers anymore. (They
+should use wait_until_sent.)
 
-This removes the need to check the hardware buffers in chars_in_buffer
-and thus removes the overhead introduced by commit 6f602912 ("usb:
-serial: ftdi_sio: Add missing chars_in_buffer function") without
-breaking tty_wait_until_sent (used by, for example, tcdrain, tcsendbreak
-and close).
-
-Reported-by: Stas Sergeev <stsp@list.ru>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
- drivers/usb/serial/ftdi_sio.c | 19 +++++--------------
- 1 file changed, 5 insertions(+), 14 deletions(-)
+ drivers/usb/serial/usb-serial.c | 11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 1159fd4..a62a75a 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -924,7 +924,7 @@ static int  ftdi_tiocmset(struct tty_struct *tty,
- static int  ftdi_ioctl(struct tty_struct *tty,
- 			unsigned int cmd, unsigned long arg);
- static void ftdi_break_ctl(struct tty_struct *tty, int break_state);
--static int ftdi_chars_in_buffer(struct tty_struct *tty);
-+static bool ftdi_tx_empty(struct usb_serial_port *port);
- static int ftdi_get_modem_status(struct usb_serial_port *port,
- 						unsigned char status[2]);
- 
-@@ -961,7 +961,7 @@ static struct usb_serial_driver ftdi_sio_device = {
- 	.ioctl =		ftdi_ioctl,
- 	.set_termios =		ftdi_set_termios,
- 	.break_ctl =		ftdi_break_ctl,
--	.chars_in_buffer =      ftdi_chars_in_buffer,
-+	.tx_empty =		ftdi_tx_empty,
- };
- 
- static struct usb_serial_driver * const serial_drivers[] = {
-@@ -2056,27 +2056,18 @@ static void ftdi_break_ctl(struct tty_struct *tty, int break_state)
- 
- }
- 
--static int ftdi_chars_in_buffer(struct tty_struct *tty)
-+static bool ftdi_tx_empty(struct usb_serial_port *port)
+diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
+index 60caf9c..4753c00 100644
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -359,20 +359,13 @@ static int serial_chars_in_buffer(struct tty_struct *tty)
  {
--	struct usb_serial_port *port = tty->driver_data;
--	int chars;
- 	unsigned char buf[2];
- 	int ret;
+ 	struct usb_serial_port *port = tty->driver_data;
+ 	struct usb_serial *serial = port->serial;
+-	int count = 0;
  
--	chars = usb_serial_generic_chars_in_buffer(tty);
--	if (chars)
--		goto out;
--
--	/* Check if hardware buffer is empty. */
- 	ret = ftdi_get_modem_status(port, buf);
- 	if (ret == 2) {
- 		if (!(buf[1] & FTDI_RS_TEMT))
--			chars = 1;
-+			return false;
- 	}
--out:
--	dev_dbg(&port->dev, "%s - %d\n", __func__, chars);
+ 	dev_dbg(tty->dev, "%s\n", __func__);
  
--	return chars;
-+	return true;
+-	mutex_lock(&serial->disc_mutex);
+-	/* if the device was unplugged then any remaining characters
+-	   fell out of the connector ;) */
+ 	if (serial->disconnected)
+-		count = 0;
+-	else
+-		count = serial->type->chars_in_buffer(tty);
+-	mutex_unlock(&serial->disc_mutex);
++		return 0;
+ 
+-	return count;
++	return serial->type->chars_in_buffer(tty);
  }
  
- /* old_termios contains the original termios settings and tty->termios contains
+ static void serial_wait_until_sent(struct tty_struct *tty, int timeout)
 -- 
 1.8.2.1
 
