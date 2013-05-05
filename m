@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255Ab3EEAXF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 20:23:05 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:57298 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3EEAXD (ORCPT
+	id S1751183Ab3EEAke (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 20:40:34 -0400
+Received: from ppp121-44-32-163.lns20.syd6.internode.on.net ([121.44.32.163]:50019
+	"EHLO mail.enc.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931Ab3EEAkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 20:23:03 -0400
+	Sat, 4 May 2013 20:40:33 -0400
+X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Sat, 04 May 2013 20:40:32 EDT
+Date: Sun, 5 May 2013 10:30:28 +1000
+From: Craig Small <csmall@enc.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Craig Small <csmall@enc.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] TTY: fix atime/mtime regression
+Message-ID: <20130505003028.GA24796@enc.com.au>
+References: <CA+55aFxVDub+aXyOrojz_yRCHHG50MnviOjP_-uRxKLuQRYXUw@mail.gmail.com>
+ <1366976933-5514-1-git-send-email-jslaby@suse.cz>
+ <CA+55aFxwCY3uagCUf1th6sr5+HGO0Mba-dhS-OtsnJ6o41JANw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130505000528.GA25454@amd.pavel.ucw.cz>
-References: <1367615050-3894-1-git-send-email-ccross@android.com>
-	<1367615050-3894-2-git-send-email-ccross@android.com>
-	<20130504130440.GC13770@amd.pavel.ucw.cz>
-	<CAMbhsRScr+3Zk5Bi6390bGRbtE4oh2H-mHrGHS0wew5hdkivUg@mail.gmail.com>
-	<20130504225715.GB24276@amd.pavel.ucw.cz>
-	<CAMbhsRS_cF7kF-QZ9BMBUS3ytU0ukRCbC3D549HW_XOsQbEZhg@mail.gmail.com>
-	<20130505000528.GA25454@amd.pavel.ucw.cz>
-Date: Sat, 4 May 2013 17:23:01 -0700
-X-Google-Sender-Auth: u-wqSIoQfkM2_VnVVVCCMv1Ct_k
-Message-ID: <CAMbhsRQso4fW_DVL6U3zfbX3YbLsTy8-rUA-fo61Aw93bU+sQQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] lockdep: check that no locks held at freeze time
-From: Colin Cross <ccross@android.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Andrew Morton <akpm@osdl.org>, lkml <linux-kernel@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxwCY3uagCUf1th6sr5+HGO0Mba-dhS-OtsnJ6o41JANw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 4, 2013 at 5:05 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
->
->> >> >> --- a/kernel/exit.c
->> >> >> +++ b/kernel/exit.c
->> >> >> @@ -835,7 +835,7 @@ void do_exit(long code)
->> >> >>       /*
->> >> >>        * Make sure we are holding no locks:
->> >> >>        */
->> >> >> -     debug_check_no_locks_held(tsk);
->> >> >> +     debug_check_no_locks_held();
->> >> >
->> >> > Is task guaranteed == current?
->> >>
->> >> Yes, the first line of do_exit is:
->> >>         struct task_struct *tsk = current;
->> >
->> > Aha, I understand it now.
->> >
->> > Accessing current is slower than local variable. So your "new" code
->> > will work but will be slower. Please revert this part.
->>
->> Using current instead of passing in tsk was done at Andrew Morton's
->> suggestion, and makes no difference from the freezer's perspective
->> since it would have to use current to get the task to pass in, so I'm
->> going to leave it as is.
->
-> Well, current is:
->
-> static inline struct thread_info *current_thread_info(void)
-> {
->         register unsigned long sp asm ("sp");
->         return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
-> }
->
-> #define get_current() (current_thread_info()->task)
->
-> #define current get_current()
->
-> Instead of passing computed value to debug_check_no_locks_held(), you
-> force it to be computed again. do_exit() performance matters for
-> configure scripts, etc.
->
-> I'd say it makes sense to keep the optimalization. akpm can correct
-> me.
+On Fri, Apr 26, 2013 at 10:02:12AM -0700, Linus Torvalds wrote:
+> Craig, background: the current git kernel (so 3.9, and these commits
+> will presumably be back-ported) does not update tty timestamps very
+> often, because you can use the timestamps to look at peoples typing
+> behavior. Initially it didn't update the timestamps AT ALL, but that
+> broke the whole idle routine. Now it updates it only at minute
+> boundaries, so things like "w" _work_, but the hundreth-of-a-second
+> idle precision is obviously just totally random noise.
+I've always personally got confused with that field!  Joey Hess kept
+bugging me for the -o option which was derived from w.bassman though
+its been so long ago I forget where that came from.
 
-That translates to 3 instructions, with no memory accesses:
-c0008350:       e1a0300d        mov     r3, sp
-c0008354:       e3c32d7f        bic     r2, r3, #8128   ; 0x1fc0
-c0008358:       e3c2203f        bic     r2, r2, #63     ; 0x3f
+I saw someone wants the 10 second resolution, can I get it confirmed
+that the kernel will only be updating at minute intervals (so the .1 
+second stuff is completely useless) or 10 second (so the .1 second
+stuff is just confusing for most of us).
+
+I'll then make some sort of change to w, possibly flipping the logic of
+the -o flag.
+
+ - Craig
+-- 
+Craig Small VK2XLZ   http://enc.com.au/          csmall at : enc.com.au
+Debian GNU/Linux     http://www.debian.org/      csmall at : debian.org
+GPG fingerprint:     5D2F B320 B825 D939 04D2  0519 3938 F96B DF50 FEA5
