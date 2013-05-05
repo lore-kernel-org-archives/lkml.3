@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634Ab3EEJFK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 05:05:10 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:49453 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab3EEJFI (ORCPT
+	id S1751728Ab3EEJRb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 05:17:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33032 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab3EEJR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 05:05:08 -0400
-Date: Sun, 5 May 2013 11:05:04 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: a.p.zijlstra@chello.nl, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, ak@linux.intel.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf/x86/intel/lbr: Demand proper privileges
- for PERF_SAMPLE_BRANCH_KERNEL
-Message-ID: <20130505090504.GB22239@gmail.com>
-References: <20130503121256.230745028@chello.nl>
- <tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org>
- <20130504111907.GA3411@pd.tnic>
+	Sun, 5 May 2013 05:17:29 -0400
+Date: Sun, 5 May 2013 02:17:16 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-fbd44a607a1a5019bc32c3615cead8c5ee8f89c9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, davej@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, davej@redhat.com
+In-Reply-To: <alpine.LFD.2.02.1305032015060.2990@ionos>
+References: <alpine.LFD.2.02.1305032015060.2990@ionos>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] tick:
+  Use zalloc_cpumask_var for allocating offstack cpumasks
+Git-Commit-ID: fbd44a607a1a5019bc32c3615cead8c5ee8f89c9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130504111907.GA3411@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  fbd44a607a1a5019bc32c3615cead8c5ee8f89c9
+Gitweb:     http://git.kernel.org/tip/fbd44a607a1a5019bc32c3615cead8c5ee8f89c9
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Fri, 3 May 2013 20:22:36 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sun, 5 May 2013 11:12:19 +0200
 
-* Borislav Petkov <bp@alien8.de> wrote:
+tick: Use zalloc_cpumask_var for allocating offstack cpumasks
 
-> On Sat, May 04, 2013 at 01:22:57AM -0700, tip-bot for Peter Zijlstra wrote:
-> > Commit-ID:  0f5c78b5f33ce940034743e5f9485fc81ad75b0f
-> > Gitweb:     http://git.kernel.org/tip/0f5c78b5f33ce940034743e5f9485fc81ad75b0f
-> > Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > AuthorDate: Fri, 3 May 2013 14:11:25 +0200
-> > Committer:  Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Sat, 4 May 2013 08:37:48 +0200
-> > 
-> > perf/x86/intel/lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
-> > 
-> > We should always have proper privileges when requesting kernel
-> > data.
-> > 
-> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: <stable@kernel.org>
-> > Cc: Andi Kleen <ak@linux.intel.com>
-> > Cc: eranian@google.com
-> > Link: http://lkml.kernel.org/r/20130503121256.230745028@chello.nl
-> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> > Link: http://lkml.kernel.org/n/tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org
-> > ---
-> >  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 5 ++++-
-> >  1 file changed, 4 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> > index de341d4..0e92871 100644
-> > --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> > +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> > @@ -318,8 +318,11 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
-> >  	if (br_type & PERF_SAMPLE_BRANCH_USER)
-> >  		mask |= X86_BR_USER;
-> >  
-> > -	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
-> > +	if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
-> > +		if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-> > +			return -EACCES;
-> 
-> It is probably not too late to amend this patch and remove the "-EACCES":
-> 
-> arch/x86/kernel/cpu/perf_event_intel_lbr.c: In function ???intel_pmu_setup_sw_lbr_filter???:
-> arch/x86/kernel/cpu/perf_event_intel_lbr.c:323:4: warning: ???return??? with a value, in function returning void [enabled by default]
+commit b352bc1cbc (tick: Convert broadcast cpu bitmaps to
+cpumask_var_t) broke CONFIG_CPUMASK_OFFSTACK in a very subtle way.
 
-Well, the better fix is to propagate that error condition down instead of 
-ignoring it.
+Instead of allocating the cpumasks with zalloc_cpumask_var it uses
+alloc_cpumask_var, so we can get random data there, which of course
+confuses the logic completely and causes random failures.
 
-Since it was the head commit for a tree others don't typically pull and 
-base development work off I amended it.
+Reported-and-tested-by: Dave Jones <davej@redhat.com>
+Reported-and-tested-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1305032015060.2990@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/time/tick-broadcast.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Thanks,
-
-	Ingo
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 61d00a8..d70cdc4 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -785,11 +785,11 @@ bool tick_broadcast_oneshot_available(void)
+ 
+ void __init tick_broadcast_init(void)
+ {
+-	alloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
+-	alloc_cpumask_var(&tmpmask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tmpmask, GFP_NOWAIT);
+ #ifdef CONFIG_TICK_ONESHOT
+-	alloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
+-	alloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
+-	alloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
+ #endif
+ }
