@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746Ab3EEOOe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 10:14:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34624 "EHLO
+	id S1751804Ab3EEOPa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 10:15:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34646 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318Ab3EEOOd (ORCPT
+	with ESMTP id S1751337Ab3EEOP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 10:14:33 -0400
-Date: Sun, 5 May 2013 07:14:01 -0700
+	Sun, 5 May 2013 10:15:29 -0400
+Date: Sun, 5 May 2013 07:15:18 -0700
 From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-3fa479b9a7762e12bdad2db39f983ba1b5f51ba2@git.kernel.org>
+Message-ID: <tip-642fb0f86fa38efefc0cf0e46ac20fa03e7f7f01@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        bitbucket@online.de, tglx@linutronix.de, prarit@redhat.com
+        yinghai@kernel.org, davej@redhat.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        bitbucket@online.de, tglx@linutronix.de, prarit@redhat.com
-In-Reply-To: <alpine.LFD.2.02.1305031451561.2886@ionos>
-References: <alpine.LFD.2.02.1305031451561.2886@ionos>
+        yinghai@kernel.org, tglx@linutronix.de, davej@redhat.com
+In-Reply-To: <alpine.LFD.2.02.1305032015060.2990@ionos>
+References: <alpine.LFD.2.02.1305032015060.2990@ionos>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] tick: Cleanup NOHZ per cpu data on cpu down
-Git-Commit-ID: 3fa479b9a7762e12bdad2db39f983ba1b5f51ba2
+Subject: [tip:timers/urgent] tick:
+  Use zalloc_cpumask_var for allocating offstack cpumasks
+Git-Commit-ID: 642fb0f86fa38efefc0cf0e46ac20fa03e7f7f01
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,92 +32,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3fa479b9a7762e12bdad2db39f983ba1b5f51ba2
-Gitweb:     http://git.kernel.org/tip/3fa479b9a7762e12bdad2db39f983ba1b5f51ba2
+Commit-ID:  642fb0f86fa38efefc0cf0e46ac20fa03e7f7f01
+Gitweb:     http://git.kernel.org/tip/642fb0f86fa38efefc0cf0e46ac20fa03e7f7f01
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Fri, 3 May 2013 15:02:50 +0200
+AuthorDate: Fri, 3 May 2013 20:22:36 +0200
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sun, 5 May 2013 16:06:27 +0200
+CommitDate: Sun, 5 May 2013 16:06:35 +0200
 
-tick: Cleanup NOHZ per cpu data on cpu down
+tick: Use zalloc_cpumask_var for allocating offstack cpumasks
 
-Prarit reported a crash on CPU offline/online. The reason is that on
-CPU down the NOHZ related per cpu data of the dead cpu is not cleaned
-up. If at cpu online an interrupt happens before the per cpu tick
-device is registered the irq_enter() check potentially sees stale data
-and dereferences a NULL pointer.
+commit b352bc1cbc (tick: Convert broadcast cpu bitmaps to
+cpumask_var_t) broke CONFIG_CPUMASK_OFFSTACK in a very subtle way.
 
-Cleanup the data after the cpu is dead.
+Instead of allocating the cpumasks with zalloc_cpumask_var it uses
+alloc_cpumask_var, so we can get random data there, which of course
+confuses the logic completely and causes random failures.
 
-[ hrtimer fix from Mike Galbraith ]
-
-Reported-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Cc: Mike Galbraith <bitbucket@online.de>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1305031451561.2886@ionos
+Reported-and-tested-by: Dave Jones <davej@redhat.com>
+Reported-and-tested-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1305032015060.2990@ionos
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/hrtimer.c            | 2 +-
- kernel/time/tick-common.c   | 1 +
- kernel/time/tick-internal.h | 6 ++++++
- kernel/time/tick-sched.c    | 7 +++++++
- 4 files changed, 15 insertions(+), 1 deletion(-)
+ kernel/time/tick-broadcast.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 609d8ff..90f8642 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1759,8 +1759,8 @@ static int __cpuinit hrtimer_cpu_notify(struct notifier_block *self,
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
- 	{
--		clockevents_notify(CLOCK_EVT_NOTIFY_CPU_DEAD, &scpu);
- 		migrate_hrtimers(scpu);
-+		clockevents_notify(CLOCK_EVT_NOTIFY_CPU_DEAD, &scpu);
- 		break;
- 	}
- #endif
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 6176a3e..29b765d 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -387,6 +387,7 @@ static int tick_notify(struct notifier_block *nb, unsigned long reason,
- 		tick_shutdown_broadcast_oneshot(dev);
- 		tick_shutdown_broadcast(dev);
- 		tick_shutdown(dev);
-+		tick_shutdown_nohz(dev);
- 		break;
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 61d00a8..d70cdc4 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -785,11 +785,11 @@ bool tick_broadcast_oneshot_available(void)
  
- 	case CLOCK_EVT_NOTIFY_SUSPEND:
-diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
-index f0299ea..9644b29 100644
---- a/kernel/time/tick-internal.h
-+++ b/kernel/time/tick-internal.h
-@@ -144,3 +144,9 @@ static inline int tick_device_is_functional(struct clock_event_device *dev)
+ void __init tick_broadcast_init(void)
+ {
+-	alloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
+-	alloc_cpumask_var(&tmpmask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tmpmask, GFP_NOWAIT);
+ #ifdef CONFIG_TICK_ONESHOT
+-	alloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
+-	alloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
+-	alloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
  #endif
- 
- extern void do_timer(unsigned long ticks);
-+
-+#ifdef CONFIG_NO_HZ
-+extern void tick_shutdown_nohz(unsigned int *cpup);
-+#else
-+static inline void tick_shutdown_nohz(unsigned int *cpup) { }
-+#endif
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 225f8bf..b79f562 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -797,6 +797,13 @@ static inline void tick_check_nohz(int cpu)
- 	}
  }
- 
-+void tick_shutdown_nohz(unsigned int *cpup)
-+{
-+	struct tick_sched *ts = &per_cpu(tick_cpu_sched, *cpup);
-+
-+	memset(ts, 0, sizeof(*ts));
-+}
-+
- #else
- 
- static inline void tick_nohz_switch_to_nohz(void) { }
