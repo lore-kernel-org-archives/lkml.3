@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab3EETyh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 15:54:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41815 "EHLO mx1.redhat.com"
+	id S1752153Ab3EEU0w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 16:26:52 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43935 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751824Ab3EETyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 15:54:35 -0400
-Message-ID: <5186B8F1.9090105@redhat.com>
-Date: Sun, 05 May 2013 15:54:25 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1751885Ab3EEU0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 May 2013 16:26:51 -0400
+Date: Sun, 5 May 2013 22:29:46 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [PATCH, RFC 11/22] iwlegacy: il_pm_ops is only provided for
+ PM_SLEEP
+Message-ID: <20130505202946.GB12757@pd.tnic>
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de>
+ <1367507786-505303-12-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, prarit@redhat.com
-CC: tip-bot for Thomas Gleixner <tipbot@zytor.com>,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:timers/urgent] tick: Cleanup NOHZ per cpu data on cpu down
-References: <alpine.LFD.2.02.1305031451561.2886@ionos> <tip-ae7868e241c015aadc8632d9fe633a102a5918f6@git.kernel.org>
-In-Reply-To: <tip-ae7868e241c015aadc8632d9fe633a102a5918f6@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1367507786-505303-12-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 05/05/2013 02:20 AM, tip-bot for Thomas Gleixner wrote:
-> Commit-ID:  ae7868e241c015aadc8632d9fe633a102a5918f6
-> Gitweb:     http://git.kernel.org/tip/ae7868e241c015aadc8632d9fe633a102a5918f6
-> Author:     Thomas Gleixner <tglx@linutronix.de>
-> AuthorDate: Fri, 3 May 2013 15:02:50 +0200
-> Committer:  Thomas Gleixner <tglx@linutronix.de>
-> CommitDate: Sun, 5 May 2013 08:15:11 +0200
+On Thu, May 02, 2013 at 05:16:15PM +0200, Arnd Bergmann wrote:
+> This makes sure the conditionals for the declaration match the
+> definition, so we provide the alternative
 > 
-> tick: Cleanup NOHZ per cpu data on cpu down
-> 
-> Prarit reported a crash on CPU offline/online. The reason is that on
-> CPU down the NOHZ related per cpu data of the dead cpu is not cleaned
-> up. If at cpu online an interrupt happens before the per cpu tick
-> device is registered the irq_enter() check potentially sees stale data
-> and dereferences a NULL pointer.
-> 
-> Cleanup the data after the cpu is dead.
-> 
-> Reported-by: Prarit Bhargava <prarit@redhat.com>
-> Cc: stable@vger.kernel.org
-> Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1305031451561.2886@ionos
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  kernel/time/tick-common.c   | 1 +
->  kernel/time/tick-internal.h | 6 ++++++
->  kernel/time/tick-sched.c    | 7 +++++++
->  3 files changed, 14 insertions(+)
-
-Whoa -- I thought I said I'll test this first.  It doesn't work :( so that means
-something else is wrong ... I'm in the middle of debug ATM.
-
-P.
-
-> 
-> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-> index 6176a3e..29b765d 100644
-> --- a/kernel/time/tick-common.c
-> +++ b/kernel/time/tick-common.c
-> @@ -387,6 +387,7 @@ static int tick_notify(struct notifier_block *nb, unsigned long reason,
->  		tick_shutdown_broadcast_oneshot(dev);
->  		tick_shutdown_broadcast(dev);
->  		tick_shutdown(dev);
-> +		tick_shutdown_nohz(dev);
->  		break;
->  
->  	case CLOCK_EVT_NOTIFY_SUSPEND:
-> diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
-> index f0299ea..9644b29 100644
-> --- a/kernel/time/tick-internal.h
-> +++ b/kernel/time/tick-internal.h
-> @@ -144,3 +144,9 @@ static inline int tick_device_is_functional(struct clock_event_device *dev)
->  #endif
->  
->  extern void do_timer(unsigned long ticks);
-> +
-> +#ifdef CONFIG_NO_HZ
-> +extern void tick_shutdown_nohz(unsigned int *cpup);
-> +#else
-> +static inline void tick_shutdown_nohz(unsigned int *cpup) { }
-> +#endif
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 225f8bf..e985ccd 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -797,6 +797,13 @@ static inline void tick_check_nohz(int cpu)
->  	}
->  }
->  
-> +void tick_shutdown_nohz(unsigned int *cpup)
-> +{
-> +	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
-> +
-> +	memset(ts, 0, sizeof(*ts));
-> +}
-> +
 >  #else
+>  #define IL_LEGACY_PM_OPS NULL
+>  #endif
+> 
+> in the correct cases.
+> 
+> drivers/built-in.o:(.data+0x57974): undefined reference to `il_pm_ops'
+
+Yep, I see this too here.
+
+> 
+> Cc: Johannes Berg <johannes.berg@intel.com>
+> Cc: John W. Linville <linville@tuxdriver.com>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  drivers/net/wireless/iwlegacy/common.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/wireless/iwlegacy/common.h b/drivers/net/wireless/iwlegacy/common.h
+> index f8246f2..734f1b4 100644
+> --- a/drivers/net/wireless/iwlegacy/common.h
+> +++ b/drivers/net/wireless/iwlegacy/common.h
+> @@ -1832,7 +1832,7 @@ u32 il_usecs_to_beacons(struct il_priv *il, u32 usec, u32 beacon_interval);
+>  __le32 il_add_beacon_time(struct il_priv *il, u32 base, u32 addon,
+>  			  u32 beacon_interval);
 >  
->  static inline void tick_nohz_switch_to_nohz(void) { }
+> -#ifdef CONFIG_PM
+> +#ifdef CONFIG_PM_SLEEP
+>  extern const struct dev_pm_ops il_pm_ops;
+>  
+>  #define IL_LEGACY_PM_OPS	(&il_pm_ops)
+
+Btw, you might want to adjust the macro comments for consistency too,
+like so. Alternatively, you could simply remove them since they only
+clutter two-liner and one can see what it encloses.
+
+--
+diff --git a/drivers/net/wireless/iwlegacy/common.h b/drivers/net/wireless/iwlegacy/common.h
+index f8246f2d88f9..4caaf52986a4 100644
+--- a/drivers/net/wireless/iwlegacy/common.h
++++ b/drivers/net/wireless/iwlegacy/common.h
+@@ -1832,16 +1832,16 @@ u32 il_usecs_to_beacons(struct il_priv *il, u32 usec, u32 beacon_interval);
+ __le32 il_add_beacon_time(struct il_priv *il, u32 base, u32 addon,
+ 			  u32 beacon_interval);
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ extern const struct dev_pm_ops il_pm_ops;
+ 
+ #define IL_LEGACY_PM_OPS	(&il_pm_ops)
+ 
+-#else /* !CONFIG_PM */
++#else /* !CONFIG_PM_SLEEP */
+ 
+ #define IL_LEGACY_PM_OPS	NULL
+ 
+-#endif /* !CONFIG_PM */
++#endif /* !CONFIG_PM_SLEEP */
+ 
+ /*****************************************************
+ *  Error Handling Debugging
+--
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
