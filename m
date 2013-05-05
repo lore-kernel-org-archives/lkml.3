@@ -1,44 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751270Ab3EEAEH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 May 2013 20:04:07 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60271 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751007Ab3EEAEG (ORCPT
+	id S1751225Ab3EEAFd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 May 2013 20:05:33 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49948 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab3EEAFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 May 2013 20:04:06 -0400
-X-Sasl-enc: a4NY4k4nMGCBf3eF5gAxcwIOJkH4yDA8euzn3PgK+X5w 1367712244
-Subject: Re: [systemd-devel] [PATCH 2/2] coredump: Handle programs with
- spaces in COMM
-From: Colin Walters <walters@verbum.org>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Oleg Nesterov <oleg@redhat.com>, Denys Vlasenko <vda.linux@googlemail.com>,
-        systemd-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20130503150824.GB24114@tango.0pointer.de>
-References: <1367341939.6959.1.camel@localhost>
-	 <20130430174731.GC3394@in.waw.pl> <1367349331.6959.80.camel@localhost>
-	 <20130501164246.GA7647@redhat.com>
-	 <20130503150824.GB24114@tango.0pointer.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 04 May 2013 20:04:03 -0400
-Message-ID: <1367712243.6959.213.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	Sat, 4 May 2013 20:05:31 -0400
+Date: Sun, 5 May 2013 02:05:28 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Colin Cross <ccross@android.com>, Andrew Morton <akpm@osdl.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>
+Subject: Re: [PATCH 2/2] lockdep: check that no locks held at freeze time
+Message-ID: <20130505000528.GA25454@amd.pavel.ucw.cz>
+References: <1367615050-3894-1-git-send-email-ccross@android.com>
+ <1367615050-3894-2-git-send-email-ccross@android.com>
+ <20130504130440.GC13770@amd.pavel.ucw.cz>
+ <CAMbhsRScr+3Zk5Bi6390bGRbtE4oh2H-mHrGHS0wew5hdkivUg@mail.gmail.com>
+ <20130504225715.GB24276@amd.pavel.ucw.cz>
+ <CAMbhsRS_cF7kF-QZ9BMBUS3ytU0ukRCbC3D549HW_XOsQbEZhg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMbhsRS_cF7kF-QZ9BMBUS3ytU0ukRCbC3D549HW_XOsQbEZhg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-03 at 17:08 +0200, Lennart Poettering wrote:
+Hi!
 
-> It sounds really wrong to first merge this into one string and then
-> split it up again. It sounds much more sensible to instead just pass the
-> string array around all the time. What's the reason to make this one
-> string first?
+> >> >> --- a/kernel/exit.c
+> >> >> +++ b/kernel/exit.c
+> >> >> @@ -835,7 +835,7 @@ void do_exit(long code)
+> >> >>       /*
+> >> >>        * Make sure we are holding no locks:
+> >> >>        */
+> >> >> -     debug_check_no_locks_held(tsk);
+> >> >> +     debug_check_no_locks_held();
+> >> >
+> >> > Is task guaranteed == current?
+> >>
+> >> Yes, the first line of do_exit is:
+> >>         struct task_struct *tsk = current;
+> >
+> > Aha, I understand it now.
+> >
+> > Accessing current is slower than local variable. So your "new" code
+> > will work but will be slower. Please revert this part.
+> 
+> Using current instead of passing in tsk was done at Andrew Morton's
+> suggestion, and makes no difference from the freezer's perspective
+> since it would have to use current to get the task to pass in, so I'm
+> going to leave it as is.
 
-I'm wondering if there are compatibility concerns; abrt wouldn't care
-from what I can tell if we just changed the kernel.  systemd-coredump is
-just plain broken right now.  I'll look for the source to the Ubuntu
-one...
+Well, current is:
 
+static inline struct thread_info *current_thread_info(void)
+{
+        register unsigned long sp asm ("sp");
+        return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
+}
 
+#define get_current() (current_thread_info()->task)
+
+#define current get_current()
+
+Instead of passing computed value to debug_check_no_locks_held(), you
+force it to be computed again. do_exit() performance matters for
+configure scripts, etc.
+
+I'd say it makes sense to keep the optimalization. akpm can correct
+me.
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
