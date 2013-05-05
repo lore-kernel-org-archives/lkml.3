@@ -1,68 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab3EEKXg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 06:23:36 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38529 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab3EEKXe (ORCPT
+	id S1752066Ab3EEKYR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 06:24:17 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43047 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab3EEKYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 06:23:34 -0400
-Date: Sun, 5 May 2013 11:23:07 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: "Andrii.Tseglytskyi" <andrii.tseglytskyi@ti.com>,
-        Nishanth Menon <nm@ti.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130505102307.GV4945@sirena.org.uk>
-References: <1367676147.5124.1.camel@phoenix>
+	Sun, 5 May 2013 06:24:14 -0400
+Message-ID: <5186334A.7000904@gmail.com>
+Date: Sun, 05 May 2013 12:24:10 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Lez9QO3Seu3ycz0M"
-Content-Disposition: inline
-In-Reply-To: <1367676147.5124.1.camel@phoenix>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: ti-abb: Fix off-by-one valid range checking
- for abb->current_info_idx
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: David Miller <davem@davemloft.net>, Bruce Allan <bruce.w.allan@intel.com>
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+References: <20130504.224225.1329294730869442752.davem@davemloft.net>
+In-Reply-To: <20130504.224225.1329294730869442752.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey,
 
---Lez9QO3Seu3ycz0M
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Op 05-05-13 04:42, David Miller schreef:
+> 1) Several routines do not use netdev_features_t to hold such bitmasks,
+>    fixes from Patrick McHardy and Bjørn Mork.
+>
+> 2) Update cpsw IRQ software state and the actual HW irq enabling in
+>    the correct order.  From Mugunthan V N.
+>
+> 3) When sending tipc packets to multiple bearers, we have to make copies
+>    of the SKB rather than just giving the original SKB directly.  Fix
+>    from Gerlando Falauto.
+>
+> 4) Fix race with bridging topology change timer, from Stephen
+>    Hemminger.
+>
+> 5) Fix TCPv6 segmentation handling in GRE and VXLAN, from Pravin B
+>    Shelar.
+>
+> 6) Endian bug in USB pegasus driver, from Dan Carpenter.
+>
+> 7) Fix crashes on MTU reduction in USB asix driver, from Holger
+>    Eitzenberger.
+>
+> 8) Don't allow the kernel to BUG() just because the user puts some
+>    crap in an AF_PACKET mmap() ring descriptor.  Fix from Daniel
+>    Borkmann.
+>
+> 9) Don't use variable sized arrays on the stack in xen-netback, from
+>    Wei Liu.
+>
+> 10) Fix stats reporting and an unbalanced napi_disable() in be2net
+>     driver.  From Somnath Kotur and Ajit Khaparde.
+>
+I finally decided to try 3.10rc0, but I'm getting a lot of this:
 
-On Sat, May 04, 2013 at 10:02:27PM +0800, Axel Lin wrote:
-> abb->current_info_idx is used as array subscript to access volt_table,
-> thus the valid value range should be 0 ... desc->n_voltages - 1.
+BUG: scheduling while atomic: irq/43-eth1/1465/0x00000102
+Modules linked in: adt7475 ebtable_nat ebtables nouveau ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat xt_CHECKSUM iptable_mangle bridge snd_hda_codec_hdmi stp llc ttm drm_kms_helper drm snd_hda_codec_realtek mxm_wmi intel_powerclamp kvm_intel kvm snd_hda_intel snd_hda_codec snd_hwdep e1000e snd_pcm video parport_pc snd_page_alloc ptp ppdev pps_core parport nfsd lockd nfs_acl auth_rpcgss sunrpc oid_registry(P)
+CPU: 0 PID: 1465 Comm: irq/43-eth1 Tainted: P        W    3.10.0-rc0-patser+ #70
+Hardware name: Acer Aspire M3985/Aspire M3985, BIOS P01-A1 03/12/2012
+ 0000000000000000 ffff88041dc03cc8 ffffffff8165ea16 ffff88041dc03cd8
+ ffffffff8165a84a ffff88041dc03d58 ffffffff8166200d 000000000000c350
+ 000000000000c350 ffff8803f827a180 ffff8803f8275fd8 ffff8803f8275fd8
+Call Trace:
+ <IRQ>  [<ffffffff8165ea16>] dump_stack+0x19/0x1b
+ [<ffffffff8165a84a>] __schedule_bug+0x48/0x56
+ [<ffffffff8166200d>] __schedule+0x7fa/0x832
+ [<ffffffff81662154>] schedule+0x29/0x59
+ [<ffffffff81660aa0>] schedule_hrtimeout_range_clock+0xeb/0x129
+ [<ffffffff81078c5f>] ? update_rmtp+0x65/0x65
+ [<ffffffff81660af1>] schedule_hrtimeout_range+0x13/0x15
+ [<ffffffff8106140a>] usleep_range+0x40/0x42
+ [<ffffffffa012a39a>] e1000_irq_enable+0x18b/0x202 [e1000e]
+ [<ffffffffa012e022>] e1000e_poll+0x1d1/0x2e2 [e1000e]
+ [<ffffffff81535e1b>] net_rx_action+0xaa/0x1f3
+ [<ffffffff8105b055>] __do_softirq+0xcc/0x2a9
+ [<ffffffff810d49e1>] ? irq_thread_fn+0x48/0x48
+ [<ffffffff8166b3cc>] call_softirq+0x1c/0x30
+ <EOI>  [<ffffffff810042d3>] do_softirq+0x4d/0x8a
+ [<ffffffff8105ad57>] local_bh_enable+0xa0/0xa2
+ [<ffffffff810d4a2a>] irq_forced_thread_fn+0x49/0x5a
+ [<ffffffff810d467d>] irq_thread+0x122/0x145
+ [<ffffffff810d48e9>] ? irq_finalize_oneshot.part.33+0xe7/0xe7
+ [<ffffffff810d455b>] ? wake_threads_waitq+0x44/0x44
+ [<ffffffff81075fe5>] kthread+0xc0/0xc5
+ [<ffffffff81075f25>] ? flush_kthread_work+0x10c/0x10c
+ [<ffffffff8166a16c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff81075f25>] ? flush_kthread_work+0x10c/0x10c
 
-Applied, thanks.
+BUG: scheduling while atomic: Socket Thread/3163/0x00000402
 
---Lez9QO3Seu3ycz0M
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+etc, from various places..
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+I was using CONFIG_RCU_NOCB_CPU_ALL=y and threadirqs, I'm not sure if it's related or not..
+Looking at e1000e there has been a few commits to change everything to usleep_range, maybe
+it was a bit too much?
 
-iQIcBAEBAgAGBQJRhjMHAAoJELSic+t+oim9PsUQAJgTrFCw68kAezZEf6+kAYxI
-4Ds5RVSsPDQufm292aEfOStMf/dMa1kOVnccaW56QKT9lllqmjnlZakfRGAV69+a
-iLKDizsLevTdZp2OFMS1evXzp7NvDU82MTIp3pQAjkzir0tqvXVFgwRN4sADvA/b
-bggSRhqGsAHBA79DuIE9l4VxHQGUCCqexQfFJwcmxf6ZDVpQIqWbhgWrZTNugtgH
-SQwtedtCWVKo62lA5UmpIna9DeunOAFz0GUFNG+R9NQrkapo2rzOtRMrniQVT4Ax
-0cvk0lqvKJBuNqokCXcrvDg/CyrvxcS45pMNb5bR4USIgXJKsJ+DvQdXYcoYjnJw
-oQ22M5/iWQFoM7i9Qpyea0u56S7XCISMc1t/JknjRMWb4hMRezswRhiy32E//4Lu
-n3/eNLUb72C8t/ekTCNNoVStWrFbsINhG6vOjeyIl/aKw39FobwFGpuIWpMaLIqe
-6mPkKvZhqxR0r94Gn1is5Sdt3Xx0k+w+EYA1k03yWy+D7yejd34swEFj4+0a/tvz
-I127GKU4YNUWKnoL53EH0ICY1X3wism1dtRIanyWkjdvAU+s2sacg2D93FrqBd/f
-smnBFyRgfzTb78lUAUzIczhvZIEEhqE3lpGdjIc7kPDbgdxVSEjG8jQWCYXcw2f7
-6sYjS58V8EK0Opz4iGeq
-=H2m4
------END PGP SIGNATURE-----
+~Maarten
 
---Lez9QO3Seu3ycz0M--
