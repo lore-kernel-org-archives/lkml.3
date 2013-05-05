@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab3EEWI2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 18:08:28 -0400
-Received: from mout.gmx.net ([212.227.15.18]:58587 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751998Ab3EEWI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 18:08:26 -0400
-X-Authenticated: #1045983
-X-Provags-ID: V01U2FsdGVkX18z/VcGF74z9YMQVQGHkzo8svClO7s2VGUTJdKzRH
-	JCBmgjxzNiy46C
-Date: Mon, 6 May 2013 00:08:22 +0200
-From: Helge Deller <deller@gmx.de>
-To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-parisc@vger.kernel.org
-Subject: [PATCH] MPILIB: disable usage of floating point registers on parisc
-Message-ID: <20130505220822.GA7819@p100.box>
+	id S1752267Ab3EEWMk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 18:12:40 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46440 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988Ab3EEWMi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 May 2013 18:12:38 -0400
+Date: Mon, 6 May 2013 00:12:34 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
+        linux-pm@vger.kernel.org, netdev@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>
+Subject: Re: [PATCH 1/2] freezer: add unsafe versions of freezable helpers
+Message-ID: <20130505221234.GA18470@amd.pavel.ucw.cz>
+References: <1367615050-3894-1-git-send-email-ccross@android.com>
+ <20130505092318.GD22239@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Y-GMX-Trusted: 0
+In-Reply-To: <20130505092318.GD22239@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The umul_ppmm() macro for parisc uses the xmpyu assembler statement
-which does calculation via a floating point register.
+Hi!
 
-But usage of floating point registers inside the Linux kernel are not
-allowed and gcc will stop compilation due to the -mdisable-fpregs
-compiler option.
+> > NFS calls the freezable helpers with locks held, which is unsafe
+> > and caused lockdep warnings when 6aa9707 "lockdep: check that no
+> > locks held at freeze time" was applied (reverted in dbf520a).
+> > Add new *_unsafe versions of the helpers that will not run the
+> > lockdep test when 6aa9707 is reapplied, and call them from NFS.
+> > 
+> > Signed-off-by: Colin Cross <ccross@android.com>
+> > ---
+> >  fs/nfs/inode.c          |  2 +-
+> >  fs/nfs/nfs3proc.c       |  2 +-
+> >  fs/nfs/nfs4proc.c       |  4 ++--
+> >  include/linux/freezer.h | 42 +++++++++++++++++++++++++++++++++++++++++-
+> >  net/sunrpc/sched.c      |  2 +-
+> >  5 files changed, 46 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+> > index 1f94167..53cbee5 100644
+> > --- a/fs/nfs/inode.c
+> > +++ b/fs/nfs/inode.c
+> > @@ -79,7 +79,7 @@ int nfs_wait_bit_killable(void *word)
+> >  {
+> >  	if (fatal_signal_pending(current))
+> >  		return -ERESTARTSYS;
+> > -	freezable_schedule();
+> > +	freezable_schedule_unsafe();
+> 
+> I'd suggest naming such variants _unkillable() instead of _unsafe().
+> 
+> There's nothing inherently 'unsafe' about it: the user asked for a hard 
+> NFS mount and is getting it: with the side effect that it exposes the 
+> machine to network delays in a 'hard' way as well. Which means suspend may 
+> block indefinitely as well on network failure.
 
-Fix this by disabling the umul_ppmm() and udiv_qrnnd() macros. The
-mpilib will then use the generic built-in implementations instead.
+You only want to use _unsafe() variants when you enter refrigerator
+with locks held.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
+And entering refrigerator with locks is tricky... and unsafe :-). It
+is not directly related to killability.
 
-diff --git a/lib/mpi/longlong.h b/lib/mpi/longlong.h
-index 095ab15..d411355 100644
---- a/lib/mpi/longlong.h
-+++ b/lib/mpi/longlong.h
-@@ -318,7 +318,8 @@ extern UDItype __udiv_qrnnd();
- 	     "rM" ((USItype)(bh)), \
- 	     "rM" ((USItype)(al)), \
- 	     "rM" ((USItype)(bl)))
--#if defined(_PA_RISC1_1)
-+#if 0 && defined(_PA_RISC1_1)
-+/* xmpyu uses floating point register which is not allowed in Linux kernel. */
- #define umul_ppmm(wh, wl, u, v) \
- do { \
- 	union {UDItype __ll; \
-@@ -337,7 +338,7 @@ do { \
- #define UMUL_TIME 40
- #define UDIV_TIME 80
- #endif
--#ifndef LONGLONG_STANDALONE
-+#if 0 /* #ifndef LONGLONG_STANDALONE */
- #define udiv_qrnnd(q, r, n1, n0, d) \
- do { USItype __r; \
- 	(q) = __udiv_qrnnd(&__r, (n1), (n0), (d)); \
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
