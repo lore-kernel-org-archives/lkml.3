@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab3EEWMk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 18:12:40 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46440 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988Ab3EEWMi (ORCPT
+	id S1752614Ab3EEWjr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 18:39:47 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:41528 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988Ab3EEWjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 18:12:38 -0400
-Date: Mon, 6 May 2013 00:12:34 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
-        linux-pm@vger.kernel.org, netdev@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>
-Subject: Re: [PATCH 1/2] freezer: add unsafe versions of freezable helpers
-Message-ID: <20130505221234.GA18470@amd.pavel.ucw.cz>
-References: <1367615050-3894-1-git-send-email-ccross@android.com>
- <20130505092318.GD22239@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130505092318.GD22239@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 5 May 2013 18:39:46 -0400
+X-AuditID: cbfee691-b7fe56d000004b96-12-5186dfb03bad
+Date: Sun, 05 May 2013 22:39:44 +0000 (GMT)
+From: EUNBONG SONG <eunb.song@samsung.com>
+Subject: Re: Re: MIPS : die at free_initmem() function 3.9+
+To: Jiang Liu <liuj97@gmail.com>
+Cc: "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jogo@openwrt.org" <jogo@openwrt.org>,
+        "david.daney@cavium.com" <david.daney@cavium.com>
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20130505223519122@eunb.song
+Msgkey: 20130505223519122@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20130505223519122@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <21534601.395241367793582818.JavaMail.weblogic@epv6ml08>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjleLIzCtJLcpLzFFi42I5/e+Zru6G+22BBjdeKlhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M83/vsRQ0sFe0713O0sD4hK2LkZNDSEBFouX/d0YQW0LARGLN
+	0aVMELaYxIV764FquIBqljFKdGz4zA5TtKXvMitEYj6jxLbelawgCRagSS8XrAXrZhPQlnj7
+	5QFYXFjAWmLjzQ3MILaIgJLEjHtHmECamQU6mSRen/vACnGGvMTk05fBNvAKCEqcnPmEBWKb
+	ksSj13vYIOLKEvMetrBCxCUkZk2/AGXzSsxofwpVLycx7esaZghbWuL8rA2MMO8s/v4YKs4v
+	cez2DqAjOMB6n9wPhhmze/MXNghbQGLqmYOMECXqEse+5UGE+STWLHzLAjNl16nlzDCt97fM
+	BXudWUBRYkr3Q3YIW0viy499bKi+4gCyXSSmnlaYwKg8C0lmFpLuWUi6kdUsYGRZxSiaWpBc
+	UJyUXmSqV5yYW1yal66XnJ+7iRGSFibuYLx/wPoQYzIwRiYyS4km5wPTSl5JvKGxmZGFqYmp
+	sZG5pRlpwkrivOot1oFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGOXM3PNfOAbkGSXzt9/U
+	rknnz9Yo1Xx7JUNQWryof9otoz8H51gc9ekwuH2g2veB8Qm7mu6rExbL3Jz07OhCz6Ln8zeI
+	vN0uLsX//qd+7OkJv/ct0t84N0Nk9q6V380v3/6kHO0X3PFq/62NDOsv92z5ItDAmbteT/BK
+	WlzWlsUHZk1aGJlZxqbEUpyRaKjFXFScCAAKBLEeIQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e/2DN0N99sCDf4tlbO4vGsOmwOjx+dN
+	cgGMURk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
+	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StFGBsZ6RqYmekbGBnomBrFWhgYGRqZAVQkZ
+	Gef/3mMpaGCvaN+7nKWB8QlbFyMnh5CAikTL/++MILaEgInElr7LrBC2mMSFe+uBariAauYz
+	SmzrXQmWYAFqeLlgLROIzSagLfH2ywOwuLCAtcTGmxuYQWwRASWJGfeOMIE0Mwt0Mkm8PveB
+	FWKbvMTk05fZQWxeAUGJkzOfsEBsU5J49HoPG0RcWWLewxaoKyQkZk2/AGXzSsxofwpVLycx
+	7esaZghbWuL8rA2MMFcv/v4YKs4vcez2DqAjOMB6n9wPhhmze/MXNghbQGLqmYOMECXqEse+
+	5UGE+STWLHzLAjNl16nlzDCt97fMBXudWUBRYkr3Q3YIW0viy499bKi+4gCyXSSmnlaYwCg3
+	C0lmFpLuWUi6kdUsYGRZxSiaWpBcUJyUXmGoV5yYW1yal66XnJ+7iRGcoJ4t3MH45bz1IUYB
+	DkYlHt4bta2BQqyJZcWVuYcYJTiYlUR4ffa2BQrxpiRWVqUW5ccXleakFh9iTAbG30RmKdHk
+	fGDyzCuJNzQ2MDY0tDQ3MDU0siBNWEmc92mrdaCQQHpiSWp2ampBahHMFiYOTqkGxlOzmVNe
+	T7jxJ3uZbLfv3uKSeN7QnRnBmx7eyVv3YmH49fBuT8PuRVqOEjpB+XWGnEymNRsSZj080Frh
+	JLjOhanfYmVWkdftBEulM/7zmnQ3VcnXqlSyll/1nleazHv9ezLvP6PCIrWjaWVhhus0K30c
+	dd8ITNoyj22qpa6EHcuTrDjdDwlKLMUZiYZazEXFiQAQLbY8lAMAAA==
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r45Mdwiv021165
 
-Hi!
 
-> > NFS calls the freezable helpers with locks held, which is unsafe
-> > and caused lockdep warnings when 6aa9707 "lockdep: check that no
-> > locks held at freeze time" was applied (reverted in dbf520a).
-> > Add new *_unsafe versions of the helpers that will not run the
-> > lockdep test when 6aa9707 is reapplied, and call them from NFS.
-> > 
-> > Signed-off-by: Colin Cross <ccross@android.com>
-> > ---
-> >  fs/nfs/inode.c          |  2 +-
-> >  fs/nfs/nfs3proc.c       |  2 +-
-> >  fs/nfs/nfs4proc.c       |  4 ++--
-> >  include/linux/freezer.h | 42 +++++++++++++++++++++++++++++++++++++++++-
-> >  net/sunrpc/sched.c      |  2 +-
-> >  5 files changed, 46 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-> > index 1f94167..53cbee5 100644
-> > --- a/fs/nfs/inode.c
-> > +++ b/fs/nfs/inode.c
-> > @@ -79,7 +79,7 @@ int nfs_wait_bit_killable(void *word)
-> >  {
-> >  	if (fatal_signal_pending(current))
-> >  		return -ERESTARTSYS;
-> > -	freezable_schedule();
-> > +	freezable_schedule_unsafe();
-> 
-> I'd suggest naming such variants _unkillable() instead of _unsafe().
-> 
-> There's nothing inherently 'unsafe' about it: the user asked for a hard 
-> NFS mount and is getting it: with the side effect that it exposes the 
-> machine to network delays in a 'hard' way as well. Which means suspend may 
-> block indefinitely as well on network failure.
+>So on 64bits MIPS platforms, __va(__pa(x)) may not equal to x, that may cause
+>trouble to free_initmem_default(). Could you please help to do another test
+>by changing
+>free_initmem_default(POISON_FREE_INITMEM);
+>to
+>free_initmem_default(0);
 
-You only want to use _unsafe() variants when you enter refrigerator
-with locks held.
+>This test could help to identify whether this panic is caused by
+>memset((void *)pos, poison, PAGE_SIZE);
+>in function free_reserved_area().
 
-And entering refrigerator with locks is tricky... and unsafe :-). It
-is not directly related to killability.
+Hello, as you said i changed  "free_initmem_default(POISON_FREE_INITMEM);" to
+"free_initmem_default(0);". Panic still occurred. 
+Actually, i put the some debug messages. and i confirmed panic occurs in __free_reserved_page() function.
+Thanks!
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
