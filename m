@@ -1,513 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab3EEMAj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 08:00:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10006 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529Ab3EEMAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 08:00:36 -0400
-Date: Sun, 5 May 2013 15:00:31 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [GIT PULL] KVM updates for the 3.10 merge window
-Message-ID: <20130505120031.GB1475@redhat.com>
+	id S1752007Ab3EEM1m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 08:27:42 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:44688 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab3EEM1i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 May 2013 08:27:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Date: Sun, 5 May 2013 13:27:37 +0100
+X-Google-Sender-Auth: dU7v7FPYba8DHkStrHVA7dDb108
+Message-ID: <CAPweEDym3TSEKWB1PsRWZ77irkTPF-Qdm9nRGfRBrv72CQ8zJA@mail.gmail.com>
+Subject: device tree not the answer in the ARM world [was: Re: running Debian
+ on a Cubieboard]
+From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+To: David Goodenough <david.goodenough@btconnect.com>
+Cc: debian-arm@lists.debian.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+this message came up on debian-arm and i figured that it is worthwhile
+endeavouring to get across to people why device tree cannot and will
+not ever be the solution it was believed to be, in the ARM world.
 
-Please pull from
+[just a quick note to david who asked this question on the debian-arm
+mailing list: any chance you could use replies with plaintext in
+future?  converting from HTML to text proved rather awkward and
+burdensome, requiring considerable editing.  the generally-accepted
+formatting rules for international technical mailing lists are
+plaintext only and 7-bit characters]
 
-git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/kvm-3.10-1
+On Sun, May 5, 2013 at 11:14 AM, David Goodenough
+<david.goodenough@btconnect.com> wrote:
+> On Sunday 05 May 2013, Luke Kenneth Casson Leighton wrote:
 
-to receive the KVM updates for the 3.10 merge window. 
+>> > And I have a question: as the Debian installer takes the arch armhf in
+>> > charge, do you think a standard install' from a netboot image will work
+>> > ?
+>>
+>
+>> this has been on my list for a loooong time. as with *all* debian
+>> installer images however you are hampered by the fact that there is no
+>> BIOS - at all - on ARM devices - and therefore it is impossible to
+>> have a "one size fits all" debian installer.
 
-Highlights of the updates are:
+> I wonder if the device tree is the answer here. If the box comes with
+> a DT or one is available on the web then the installer could read it and
+> know what to install. That and the armmp kernel should solve the problem.
 
-general:
- - new emulated device API
- - legacy device assignment is now optional
- - irqfd interface is more generic and can be shared between arches
-x86:
- - VMCS shadow support and other nested VMX improvements
- - APIC virtualization and Posted Interrupt hardware support
- - Optimize mmio spte zapping
-ppc:
-  - BookE: in-kernel MPIC emulation with irqfd support
-  - Book3S: in-kernel XICS emulation (incomplete)
-  - Book3S: HV: migration fixes
-  - BookE: more debug support preparation
-  - BookE: e6500 support
-ARM:
- - reworking of Hyp idmaps
-s390:
- - ioeventfd for virtio-ccw
+ you'd think so, and it's a very good question, to which the answer
+could have been and was predicted to be "not a snowbal in hell's
+chance", even before work started on device tree, and turns out to
+*be* "not a snowball in hell's chance" which i believe people are now
+beginning to learn, based on the ultra-low adoption rate of device
+tree in the ARM world (side-note: [*0]).
 
-And many other bug fixes, cleanups and improvements.
+ in the past, i've written at some length as to why this is the case,
+however the weighting given to my opinions on linux kernel strategic
+decision-making is negligeable, so as one associate of mine once
+wisely said, "you just gotta let the train wreck happen".
 
-Abel Gordon (11):
-      KVM: nVMX: Shadow-vmcs control fields/bits
-      KVM: nVMX: Detect shadow-vmcs capability
-      KVM: nVMX: Introduce vmread and vmwrite bitmaps
-      KVM: nVMX: Refactor handle_vmwrite
-      KVM: nVMX: Fix VMXON emulation
-      KVM: nVMX: Allocate shadow vmcs
-      KVM: nVMX: Release shadow vmcs
-      KVM: nVMX: Copy processor-specific shadow-vmcs to VMCS12
-      KVM: nVMX: Copy VMCS12 to processor-specific shadow vmcs
-      KVM: nVMX: Synchronize VMCS12 content with the shadow vmcs
-      KVM: nVMX: Enable and disable shadow vmcs functionality
+ device tree was designed to take the burden off of the linux kernel
+due to proliferation of platform-specific hard-coding of support for
+peripherals.  however it was designed ***WITHOUT*** its advocates
+having a full grasp of the sheer overwhelming diversity of the
+platforms.
 
-Alex Williamson (2):
-      kvm: Allow build-time configuration of KVM device assignment
-      kvm: KVM_CAP_IOMMU only available with device assignment
+ specifically i am referring to linus torvald's complete lack of
+understanding of the ARM linux kernel world, as his primary experience
+is with x86.  in his mind, and the minds of those people who do not
+understand how ARM-based boxes are built and linux brought up on them,
+*surely* it cannot be all that complicated, *surely* it cannot be as
+bad as it is, right?
 
-Alexander Graf (15):
-      Merge commit 'origin/next' into kvm-ppc-next
-      KVM: ARM: Fix kvm_vm_ioctl_irq_line
-      Merge commit 'origin/next' into kvm-ppc-next
-      KVM: Add KVM_IRQCHIP_NUM_PINS in addition to KVM_IOAPIC_NUM_PINS
-      KVM: Introduce CONFIG_HAVE_KVM_IRQ_ROUTING
-      KVM: Drop __KVM_HAVE_IOAPIC condition on irq routing
-      KVM: Remove kvm_get_intr_delivery_bitmask
-      KVM: Move irq routing to generic code
-      KVM: Extract generic irqchip logic into irqchip.c
-      KVM: Move irq routing setup to irqchip.c
-      KVM: Move irqfd resample cap handling to generic code
-      KVM: PPC: Support irq routing and irqfd for in-kernel MPIC
-      KVM: PPC: MPIC: Add support for KVM_IRQ_LINE
-      KVM: PPC: MPIC: Restrict to e500 platforms
-      KVM: IA64: Carry non-ia64 changes into ia64
+ what they're completely missing is the following:
 
-Andre Przywara (1):
-      ARM: KVM: iterate over all CPUs for CPU compatibility check
+ * the x86 world resolves around standards such as ACPI, BIOSes and
+general-purpose dynamic buses.
+ * ACPI normalises every single piece of hardware from the perspective
+of most low-level peripherals.
+ * the BIOS also helps in that normalisation.  DOS INT33 is the
+classic one i remember.
+ * the general-purpose dynamic buses include:
+   - USB and its speed variants (self-describing peripherals)
+   - PCI and its derivatives (self-describing peripherals)
+   - SATA and its speed variants (self-describing peripherals)
 
-Andrew Honig (1):
-      KVM: x86: Fix memory leak in vmx.c
+exceptions to the above include i2c (unusual, and taken care of by
+i2c-sensors, which uses good heuristics to "probe" devices from
+userspace) and the ISA bus and its derivatives such as Compact Flash
+and IDE.  even PCMCIA got sufficient advances to auto-identify devices
+from userspace at runtime.
 
-Arnd Bergmann (1):
-      ARM: KVM: define KVM_ARM_MAX_VCPUS unconditionally
+so as a general rule, supporting a new x86-based piece of hardware is
+a piece of piss.  get datasheet or reverse-engineer, drop it in, it's
+got BIOS, ACPI, USB, PCIe, SATA, wow big deal, job done.  also as a
+general rule, hardware that conforms to x86-motherboard-like layouts
+such as the various powerpc architectures are along the same lines.
 
-Benjamin Herrenschmidt (3):
-      KVM: PPC: Book3S: Add kernel emulation for the XICS interrupt controller
-      KVM: PPC: Book3S HV: Speed up wakeups of CPUs on HV KVM
-      KVM: PPC: Book3S HV: Add support for real mode ICP in XICS emulation
+so here, device tree is a real easy thing to add, and to some extent a
+"nice-to-have".  i.e. it's not really essential to have device tree on
+top of something where 99% of the peripherals can describe themselves
+dynamically over their bus architecture when they're plugged in!
 
-Bharat Bhushan (9):
-      KVM: PPC: move tsr update in a separate function
-      KVM: PPC: Added one_reg interface for timer registers
-      KVM: PPC: booke: Added debug handler
-      Added ONE_REG interface for debug instruction
-      KVM: PPC: cache flush for kernel managed pages
-      KVM: PPC: debug stub interface parameter defined
-      Rename EMULATE_DO_PAPR to EMULATE_EXIT_USER
-      KVM: extend EMULATE_EXIT_USER to support different exit reasons
-      booke: exit to user space if emulator request
+now let's look at the ARM world.
 
-Borislav Petkov (1):
-      kvm, svm: Fix typo in printk message
+* is there a BIOS?  no.  so all the boot-up procedures including
+ultra-low-level stuff like DDR3 RAM timings initialisation, which is
+normally the job of the BIOS - must be taken care of BY YOU (usually
+in u-boot) and it must be done SPECIFICALLY CUSTOMISED EACH AND EVERY
+SINGLE TIME FOR EVERY SINGLE SPECIFIC HARDWARE COMBINATION.
 
-Chegu Vinod (1):
-      KVM: x86: Increase the "hard" max VCPU limit
+* is there ACPI present?  no.  so anything related to power
+management, fans (if there are any), temperature detection (if there
+is any), all of that must be taken care of BY YOU.
 
-Chen Gang (1):
-      arch/x86/kvm: beautify source code for __u32 irq which is never < 0
+ * what about the devices?  here's where it becomes absolute hell on
+earth as far as attempting to "streamline" the linux kernel into a
+"one size fits all" monolithic package.
 
-Christian Borntraeger (1):
-      KVM: s390: Dont do a gmap update on minor memslot changes
+the classic example i give here is the HTC Universal, which was a
+device that, after 3 years of dedicated reverse-engineering, finally
+had fully-working hardware with the exception of write to its on-board
+NAND.  the reason for the complexity is in the hardware design, where
+not even 110 GPIO pins of the PXA270 were enough to cover all of the
+peripherals, so they had to use a custom ASIC with an additional 64
+GPIO pins.  it turned out that *that* wasn't enough either, so in
+desperation the designers used the 16 GPIO pins of the Ericsson 3G
+Radio ROM, in order to do basic things like switch on the camera flash
+LED.
 
-Christoffer Dall (3):
-      KVM: ARM: Reintroduce trace_kvm_hvc
-      KVM: ARM: Fix API documentation for ONE_REG encoding
-      KVM: ARM: Fix spelling in error message
+the point is: each device that's designed using an ARM processor is
+COMPLETELY AND UTTERLY DIFFERENT from any other device in the world.
 
-Cornelia Huck (6):
-      KVM: s390: Export virtio-ccw api.
-      KVM: Initialize irqfd from kvm_init().
-      KVM: Introduce KVM_VIRTIO_CCW_NOTIFY_BUS.
-      KVM: ioeventfd for virtio-ccw devices.
-      KVM: s390: Wire up ioeventfd.
-      KVM: s390: virtio_ccw: reset errors for new I/O.
+when i say "completely and utterly different", i am not just talking
+about the processor, i am not just talking about the GPIO, or even the
+buses: i'm talking about the sensors, the power-up mechanisms, the
+startup procedures - everything.  one device uses GPIO pin 32 for
+powering up and resetting a USB hub peripheral, yet for another device
+that exact same GPIO pin is used not even as a GPIO but as an
+alternate multiplexed function e.g. as RS232 TX pin!
 
-Geoff Levand (4):
-      KVM: Move vm_list kvm_lock declarations out of x86
-      KVM: Make local routines static
-      KVM: Move kvm_spurious_fault to x86.c
-      KVM: Move kvm_rebooting declaration out of x86
+additionally, there are complexities in the bring-up procedure for
+devices, where a hardware revision has made a mistake (or made too
+many cost savings), and by the skin of their teeth the kernel
+developers work out a bring-up procedure. the example i give here is
+the one of the HTC Blueangel, where the PXA processor's GPIO was used
+(directly) to power the device.  unfortunately, there simply wasn't
+enough current.  but that's ok!  why?  because what they did was:
 
-Gleb Natapov (10):
-      Merge  'git://github.com/agraf/linux-2.6.git kvm-ppc-next' into queue
-      KVM: emulator: fix unimplemented instruction detection
-      KVM: VMX: do not try to reexecute failed instruction while emulating invalid guest state
-      KVM: emulator: Do not fail on emulation of undefined opcode
-      KVM: emulator: mark 0xff 0x7d opcode as undefined.
-      KVM: VMX: Fix check guest state validity if a guest is in VM86 mode
-      Merge git://github.com/agraf/linux-2.6.git kvm-ppc-next into queue
-      KVM: X86 emulator: fix source operand decoding for 8bit mov[zs]x instructions
-      Merge branch 'kvm-arm-cleanup' from git://github.com/columbia/linux-kvm-arm.git
-      Merge git://github.com/agraf/linux-2.6.git kvm-ppc-next into queue
+* bring up the 3.3v GPIO (power to the GSM chip)
+* bring up the 2nd 3.3v GPIO
+* pull the GPIO pin connected to the GSM "reset" chip
+* wait 5 milliseconds
+* **PULL EVERYTHING BACK DOWN AGAIN**
+* wait 1 millisecond
+* bring up the 1st 3.3v GPIO (again)
+* wait 10 milliseconds
+* bring up the 2nd 3.3v GPIO (again)
+* wait 5 milliseconds
+* pull up the "RESET" GPIO
+* wait 10 milliseconds
+* pull the "RESET" GPIO down
+* ***AGAIN*** do the reset GPIO.
 
-Heiko Carstens (15):
-      s390/kvm,gaccess: fix guest access return code handling
-      s390/mm,gmap: implement gmap_translate()
-      s390/kvm,tprot: use new gmap_translate() function
-      s390/kvm: remove explicit -EFAULT return code checking on guest access
-      s390/kvm,gaccess: shorten put/get_guest code
-      s390/kvm,gaccess: shorten copy_to/from_guest code
-      s390/kvm: cleanup/fix handle_tpi()
-      s390/kvm,gaccess: add address space annotations
-      KVM: s390: fix 24 bit psw handling in lpsw/lpswe handler
-      KVM: s390: fix psw conversion in lpsw handler
-      KVM: s390: fix return code handling in lpsw/lpswe handlers
-      KVM: s390: make if statements in lpsw/lpswe handlers readable
-      KVM: s390: fix and enforce return code handling for irq injections
-      KVM: s390: fix stsi exception handling
-      KVM: s390: fix compile with !CONFIG_COMPAT
+this procedure was clearly designed to put enough power into the
+capacitors of the on-board GSM chip so that it could start up (and
+crash) then try again (crash again), and finally have enough power to
+not drain itself beyond its capacity.
 
-Ioan Orghici (1):
-      kvm: remove cast for kmalloc return value
+... the pointed question is: how the bloody hell are you going to
+represent *that* in "device tree"???  and why - even if it was
+possible to do - should you burden other platforms with such an insane
+boot-up procedure even if they *did* use the exact same chipset?
 
-Jan Kiszka (33):
-      KVM: nVMX: Improve I/O exit handling
-      KVM: nVMX: Trap unconditionally if msr bitmap access fails
-      x86: kvmclock: Do not setup kvmclock vsyscall in the absence of that clock
-      KVM: VMX: Make prepare_vmcs12 and load_vmcs12_host_state static
-      KVM: nVMX: Advertise PAUSE and WBINVD exiting support
-      KVM: nVMX: Clear segment cache after switching between L1 and L2
-      KVM: nVMX: Use cached exit reason
-      KVM: nVMX: Avoid one redundant vmcs_read in prepare_vmcs12
-      KVM: VMX: Pass vcpu to __vmx_complete_interrupts
-      KVM: nVMX: Fix switching of debug state
-      KVM: nVMX: Reset RFLAGS on VM-exit
-      KVM: nVMX: Fix content of MSR_IA32_VMX_ENTRY/EXIT_CTLS
-      KVM: nVMX: Fix setting of CR0 and CR4 in guest mode
-      KVM: x86: Drop unused return code from VCPU reset callback
-      KVM: x86: Rework INIT and SIPI handling
-      KVM: nVMX: Clean up and fix pin-based execution controls
-      KVM: nVMX: Provide EFER.LMA saving support
-      KVM: nVMX: Add preemption timer support
-      KVM: VMX: Require KVM_SET_TSS_ADDR being called prior to running a VCPU
-      KVM: nVMX: Check exit control for VM_EXIT_SAVE_IA32_PAT, not entry controls
-      KVM: VMX: Add missing braces to avoid redundant error check
-      KVM: nVMX: Fix injection of PENDING_INTERRUPT and NMI_WINDOW exits to L1
-      KVM: nVMX: Rework event injection and recovery
-      KVM: nVMX: Fix conditions for interrupt injection
-      KVM: nVMX: Avoid reading VM_EXIT_INTR_ERROR_CODE needlessly on nested exits
-      KVM: VMX: Move vmx_nmi_allowed after vmx_set_nmi_mask
-      KVM: nVMX: Fix conditions for NMI injection
-      KVM: nVMX: Validate EFER values for VM_ENTRY/EXIT_LOAD_IA32_EFER
-      KVM: nVMX: VM_ENTRY/EXIT_LOAD_IA32_EFER overrides EFER.LMA settings
-      KVM: VMX: remove unprintable characters from comment
-      KVM: x86: Rework request for immediate exit
-      KVM: nVMX: Skip PF interception check when queuing during nested run
-      KVM: x86: Account for failing enable_irq_window for NMI window request
+... but these devices, because they are in a huge market with
+ever-changing prices and are simply overwhelmed with choice for
+low-level I2C, I2S devices etc, each made in different countries, each
+with their NDAs, simply don't use the same peripheral chips.  and even
+if they did, they certainly don't use them in the same way!
 
-Jonghwan Choi (1):
-      KVM: ARM: Fix wrong address in comment
+again, the example that i give here is of the Phillips UDA1381 which
+was quite a common sound IC used in Compaq iPAQ PDAs (designed by
+HTC).  so, of course, when HTC did the Himalaya, they used the same
+sound IC.
 
-Kevin Wolf (1):
-      KVM: x86 emulator: Fix segment loading in VM86
+.... did they power it up in the exact same way across both devices?
 
-Marc Zyngier (39):
-      ARM: KVM: convert GP registers from u32 to unsigned long
-      ARM: KVM: abstract fault register accesses
-      ARM: KVM: abstract HSR_ISV away
-      ARM: KVM: abstract HSR_WNR away
-      ARM: KVM: abstract HSR_SSE away
-      ARM: KVM: abstract HSR_SRT_{MASK,SHIFT} away
-      ARM: KVM: abstract (and fix) external abort detection away
-      ARM: KVM: abstract S1TW abort detection away
-      ARM: KVM: abstract SAS decoding away
-      ARM: KVM: abstract IL decoding away
-      ARM: KVM: abstract exception class decoding away
-      ARM: KVM: abstract fault decoding away
-      ARM: KVM: abstract HSR_EC_IABT away
-      ARM: KVM: move kvm_condition_valid to emulate.c
-      ARM: KVM: move exit handler selection to a separate file
-      ARM: KVM: abstract most MMU operations
-      ARM: KVM: remove superfluous include from kvm_vgic.h
-      ARM: KVM: move hyp init to kvm_host.h
-      ARM: KVM: use kvm_kernel_vfp_t as an abstract type for VFP containers
-      ARM: KVM: allow HYP mappings to be at an offset from kernel mappings
-      ARM: KVM: fix address validation for HYP mappings
-      ARM: KVM: move kvm_target_cpu to guest.c
-      ARM: KVM: fix fault_ipa computing
-      ARM: KVM: vgic: decouple alignment restriction from page size
-      ARM: KVM: move include of asm/idmap.h to kvm_mmu.h
-      ARM: KVM: change kvm_tlb_flush_vmid to kvm_tlb_flush_vmid_ipa
-      ARM: KVM: move kvm_handle_wfi to handle_exit.c
-      ARM: KVM: sanitize freeing of HYP page tables
-      ARM: KVM: Fix length of mmio access
-      ARM: KVM: add support for minimal host vs guest profiling
-      ARM: KVM: simplify HYP mapping population
-      ARM: KVM: fix HYP mapping limitations around zero
-      ARM: KVM: move to a KVM provided HYP idmap
-      ARM: KVM: enforce maximum size for identity mapped code
-      ARM: KVM: rework HYP page table freeing
-      ARM: KVM: switch to a dual-step HYP init code
-      ARM: KVM: perform HYP initilization for hotplugged CPUs
-      ARM: KVM: add architecture specific hook for capabilities
-      ARM: KVM: promote vfp_host pointer to generic host cpu context
+no.
 
-Marcelo Tosatti (5):
-      Merge branch 'master' into queue
-      VMX: x86: handle host TSC calibration failure
-      KVM: MMU: make kvm_mmu_available_pages robust against n_used_mmu_pages > n_max_mmu_pages
-      Merge remote-tracking branch 'upstream/master' into queue
-      Merge branch 'kvm-arm-for-3.10' of git://github.com/columbia/linux-kvm-arm into queue
+did they even use the same *interfaces* across both devices?
 
-Mark Rutland (1):
-      ARM: KVM: arch_timer: use symbolic constants
+no.
 
-Michael Ellerman (1):
-      KVM: PPC: Book3S: Add infrastructure to implement kernel-side RTAS calls
+why not?
 
-Michael S. Tsirkin (2):
-      virtio_ccw: pass a cookie value to kvm hypercall
-      kvm: fix MMIO/PIO collision misdetection
+because the UDA1381 can be used *either* in I2S mode *or* in SPI mode,
+and one [completely independent] team used one mode, and the other
+team used the other.
 
-Mihai Caraman (8):
-      KVM: PPC: Book3E: Refactor ONE_REG ioctl implementation
-      KVM: PPC: e500: Expose MMU registers via ONE_REG
-      KVM: PPC: e500: Move vcpu's MMU configuration to dedicated functions
-      KVM: PPC: e500: Add support for TLBnPS registers
-      KVM: PPC: e500: Add support for EPTCFG register
-      KVM: PPC: e500: Remove E.PT and E.HV.LRAT categories from VCPUs
-      KVM: PPC: e500mc: Enable e6500 cores
-      KVM: PPC: e500: Add e6500 core to Kconfig description
+so when it came to looking at the existing uda1381.c source code, and
+trying to share that code across both platforms, could i do that?
 
-Nick Wang (3):
-      KVM: s390: Change the virtual memory mapping location for virtio devices
-      KVM: s390: Remove the sanity checks for kvm memory slot
-      KVM: s390: Enable KVM_CAP_NR_MEMSLOTS on s390
+no.
 
-Paolo Bonzini (3):
-      KVM: x86: correctly initialize the CS base on reset
-      pmu: prepare for migration support
-      KVM: nVMX: check vmcs12 for valid activity state
+then - as if that wasn't enough you also have the diversity amongst
+the ARM chips themselves.  if you look for example at the history of
+the development of the S3C6410, then the S5PC100 and the S5PC110, it
+just doesn't make any sense... *until* you are aware that my associate
+was the global director of R&D at samsung and he instigated the
+procedure of having two overlapping teams, one who does development
+and the other does testing; they swap every 8-9 months.
 
-Paul Mackerras (7):
-      KVM: PPC: Remove unused argument to kvmppc_core_dequeue_external
-      KVM: PPC: Book3S HV: Make HPT reading code notice R/C bit changes
-      KVM: PPC: Book3S HV: Report VPA and DTL modifications in dirty map
-      KVM: PPC: Book3S HV: Improve real-mode handling of external interrupts
-      KVM: PPC: Book3S: Add support for ibm,int-on/off RTAS calls
-      KVM: PPC: Book3S: Facilities to save/restore XICS presentation ctrler state
-      KVM: PPC: Book3S: Add API for in-kernel XICS emulation
+basically what happened was that the S3C6410 used FIMD 3D GPU, and so
+did the 800mhz S5PC100.  by the time the S5PC110 came out (which was
+nothing more than a 1ghz jump) it had been flipped over to a
+*completely* different 3D engine!  changing the 3D GPU in mid-flow on
+a CPU series!
 
-Raghavendra K T (2):
-      kvm: Record the preemption status of vcpus using preempt notifiers
-      kvm: Iterate over only vcpus that are preempted
+and that's just within *one* of the fabless semiconductor companies,
+and you have to bear in mind that there are *several hundred* ARM
+licensees.  when this topic was last raised, someone mentioned that
+ARM attempted to standardise on dynamic peripheral publication on the
+internal AXI/AHB bus, so that things like device tree or udev could
+read it.  what happened?  some company failed to implement the
+standard properly, and it was game over right there.
 
-Scott Wood (17):
-      kvm/ppc/e500: h2g_tlb1_rmap: esel 0 is valid
-      kvm/ppc/e500: g2h_tlb1_map: clear old bit before setting new bit
-      kvm/ppc/e500: eliminate tlb_refs
-      kvm/ppc: don't call complete_mmio_load when it's a store
-      kvm: add device control API
-      kvm/ppc/mpic: import hw/openpic.c from QEMU
-      kvm/ppc/mpic: remove some obviously unneeded code
-      kvm/ppc/mpic: adapt to kernel style and environment
-      kvm/ppc/mpic: in-kernel MPIC emulation
-      kvm/ppc/mpic: add KVM_CAP_IRQ_MPIC
-      kvm: destroy emulated devices on VM exit
-      kvm/ppc/mpic: Eliminate mmio_mapped
-      kvm/ppc/mpic: remove default routes from documentation
-      kvm/ppc/mpic: fix mmio region lists when multiple guests used
-      kvm/ppc/mpic: remove users
-      kvm/ppc: Hold srcu lock when calling kvm_io_bus_read/write
-      kvm: Add compat_ioctl for device control API
 
-Stuart Yoder (1):
-      KVM: PPC: emulate dcbst
+are you beginning to see the sheer scope of the problem, here?  can
+you see now why russell is so completely overwhelmed? are you
+beginning to get a picture as to why device tree can never solve the
+problem?
 
-Takuya Yoshikawa (14):
-      KVM: set_memory_region: Drop user_alloc from prepare/commit_memory_region()
-      KVM: set_memory_region: Drop user_alloc from set_memory_region()
-      KVM: set_memory_region: Make kvm_mr_change available to arch code
-      KVM: set_memory_region: Refactor prepare_memory_region()
-      KVM: set_memory_region: Refactor commit_memory_region()
-      KVM: ARM: Remove kvm_arch_set_memory_region()
-      KVM: MMU: Fix and clean up for_each_gfn_* macros
-      KVM: MMU: Use list_for_each_entry_safe in kvm_mmu_commit_zap_page()
-      KVM: MMU: Introduce a helper function for FIFO zapping
-      KVM: MMU: Mark sp mmio cached when creating mmio spte
-      KVM: x86: Optimize mmio spte zapping when creating/moving memslot
-      KVM: MMU: Move kvm_mmu_free_some_pages() into kvm_mmu_alloc_page()
-      KVM: MMU: Rename kvm_mmu_free_some_pages() to make_mmu_pages_available()
-      Revert "KVM: MMU: Move kvm_mmu_free_some_pages() into kvm_mmu_alloc_page()"
+the best that device tree does in the ARM world is add an extra burden
+for device development, because there is so little that can actually
+be shared between disparate hardware platforms - so much so that it is
+utterly hopeless and pointless for a time-pressured product designer
+to even consider going down that route when they *know* it's not going
+to be of benefit for them.
 
-Wei Yongjun (2):
-      KVM: x86: fix error return code in kvm_arch_vcpu_init()
-      kvm/ppc/mpic: fix missing unlock in set_base_addr()
+you also have to bear in mind that the SoC vendors don't really talk
+to each other.  you also have to bear in mind that they are usually
+overwhelmed by the ignorance of the factories and OEMs that use their
+SoCs - a situation that's not helped in many cases by their failure to
+provide adequate documentation [but if you're selling 50 million SoCs
+a year through android and the SoC is, at $7.50, a small part of the
+BOM, why would you care about or even answer requests for adequate
+documentation??] - so it's often the SoC vendors that have to write
+the linux kernel source code themselves.  MStar Semi take this to its
+logical GPL-violating extreme by even preventing and prohibiting
+*everyone* from gaining access to even the *product* designs.  if they
+like your idea, they will design it for you - in total secrecy - from
+start to finish.  and if not, you f*** off.
 
-Yang Zhang (17):
-      KVM: Call kvm_apic_match_dest() to check destination vcpu
-      KVM: x86: fix memory leak in vmx_init
-      KVM: Add vcpu info to ioapic_update_eoi()
-      KVM: Introduce struct rtc_status
-      KVM: Return destination vcpu on interrupt injection
-      KVM: Add reset/restore rtc_status support
-      KVM: Force vmexit with virtual interrupt delivery
-      KVM: Let ioapic know the irq line status
-      KVM: Use eoi to track RTC interrupt delivery status
-      KVM: VMX: Enable acknowledge interupt on vmexit
-      KVM: VMX: Register a new IPI for posted interrupt
-      KVM: VMX: Check the posted interrupt capability
-      KVM: Call common update function when ioapic entry changed.
-      KVM: Set TMR when programming ioapic entry
-      KVM: VMX: Add the deliver posted interrupt algorithm
-      KVM: VMX: Use posted interrupt to deliver virtual interrupt
-      KVM: ia64: Fix kvm_vm_ioctl_irq_line
+so at worst, device tree becomes a burden on the product designers
+when using ARM processors, because of the sheer overwhelming
+diversity.  at best... no, there is no "best".  device tree just moves
+the problem from the linux kernel source code into the device tree
+specifications.
 
-Zhang, Yang Z (1):
-      KVM: x86: Fix posted interrupt with CONFIG_SMP=n
+possible solutions:
 
- Documentation/virtual/kvm/api.txt          |  146 ++-
- Documentation/virtual/kvm/devices/README   |    1 +
- Documentation/virtual/kvm/devices/mpic.txt |   53 +
- Documentation/virtual/kvm/devices/xics.txt |   66 +
- arch/arm/include/asm/idmap.h               |    1 -
- arch/arm/include/asm/kvm_arm.h             |    4 +
- arch/arm/include/asm/kvm_asm.h             |    2 +-
- arch/arm/include/asm/kvm_emulate.h         |  107 +-
- arch/arm/include/asm/kvm_host.h            |   57 +-
- arch/arm/include/asm/kvm_mmu.h             |   87 +-
- arch/arm/include/asm/kvm_vgic.h            |    1 -
- arch/arm/include/uapi/asm/kvm.h            |   12 +-
- arch/arm/kernel/asm-offsets.c              |   10 +-
- arch/arm/kernel/vmlinux.lds.S              |    7 +-
- arch/arm/kvm/Kconfig                       |    6 +-
- arch/arm/kvm/Makefile                      |    4 +-
- arch/arm/kvm/arch_timer.c                  |    7 +-
- arch/arm/kvm/arm.c                         |  315 ++---
- arch/arm/kvm/coproc.c                      |   28 +-
- arch/arm/kvm/coproc.h                      |    4 +-
- arch/arm/kvm/emulate.c                     |   75 +-
- arch/arm/kvm/guest.c                       |   17 +
- arch/arm/kvm/handle_exit.c                 |  164 +++
- arch/arm/kvm/init.S                        |   78 +-
- arch/arm/kvm/interrupts.S                  |   13 +-
- arch/arm/kvm/mmio.c                        |   46 +-
- arch/arm/kvm/mmu.c                         |  543 ++++----
- arch/arm/kvm/perf.c                        |   68 +
- arch/arm/kvm/vgic.c                        |    2 +-
- arch/arm/mm/idmap.c                        |   32 +-
- arch/ia64/include/asm/kvm_host.h           |    1 +
- arch/ia64/include/uapi/asm/kvm.h           |    1 -
- arch/ia64/kvm/Kconfig                      |   14 +-
- arch/ia64/kvm/Makefile                     |    6 +-
- arch/ia64/kvm/kvm-ia64.c                   |   35 +-
- arch/ia64/kvm/lapic.h                      |    6 -
- arch/powerpc/include/asm/hvcall.h          |    3 +
- arch/powerpc/include/asm/kvm_book3s.h      |    7 +-
- arch/powerpc/include/asm/kvm_book3s_64.h   |   13 +
- arch/powerpc/include/asm/kvm_book3s_asm.h  |    8 +-
- arch/powerpc/include/asm/kvm_booke.h       |    2 +
- arch/powerpc/include/asm/kvm_host.h        |   41 +-
- arch/powerpc/include/asm/kvm_ppc.h         |  114 +-
- arch/powerpc/include/asm/reg.h             |    1 +
- arch/powerpc/include/uapi/asm/kvm.h        |   94 ++
- arch/powerpc/kernel/asm-offsets.c          |    4 +
- arch/powerpc/kvm/44x.c                     |   12 +
- arch/powerpc/kvm/Kconfig                   |   26 +-
- arch/powerpc/kvm/Makefile                  |   12 +-
- arch/powerpc/kvm/book3s.c                  |   36 +-
- arch/powerpc/kvm/book3s_64_mmu_hv.c        |  120 +-
- arch/powerpc/kvm/book3s_emulate.c          |    4 +-
- arch/powerpc/kvm/book3s_hv.c               |   92 +-
- arch/powerpc/kvm/book3s_hv_rm_mmu.c        |   11 -
- arch/powerpc/kvm/book3s_hv_rm_xics.c       |  406 ++++++
- arch/powerpc/kvm/book3s_hv_rmhandlers.S    |  228 +++-
- arch/powerpc/kvm/book3s_pr.c               |    7 +-
- arch/powerpc/kvm/book3s_pr_papr.c          |   21 +
- arch/powerpc/kvm/book3s_rtas.c             |  274 ++++
- arch/powerpc/kvm/book3s_xics.c             | 1270 +++++++++++++++++++
- arch/powerpc/kvm/book3s_xics.h             |  130 ++
- arch/powerpc/kvm/booke.c                   |  158 ++-
- arch/powerpc/kvm/booke_interrupts.S        |   42 +-
- arch/powerpc/kvm/e500.c                    |   14 +
- arch/powerpc/kvm/e500.h                    |   46 +-
- arch/powerpc/kvm/e500_emulate.c            |   19 +
- arch/powerpc/kvm/e500_mmu.c                |  192 ++-
- arch/powerpc/kvm/e500_mmu_host.c           |   84 +-
- arch/powerpc/kvm/e500mc.c                  |   16 +
- arch/powerpc/kvm/emulate.c                 |    2 +
- arch/powerpc/kvm/irq.h                     |   20 +
- arch/powerpc/kvm/mpic.c                    | 1853 ++++++++++++++++++++++++++++
- arch/powerpc/kvm/powerpc.c                 |  133 +-
- arch/powerpc/sysdev/xics/icp-native.c      |    8 +
- arch/s390/include/asm/pgtable.h            |    2 +
- arch/s390/include/uapi/asm/Kbuild          |    1 +
- arch/s390/include/uapi/asm/virtio-ccw.h    |   21 +
- arch/s390/kvm/Kconfig                      |    1 +
- arch/s390/kvm/Makefile                     |    2 +-
- arch/s390/kvm/diag.c                       |   26 +
- arch/s390/kvm/gaccess.h                    |  429 ++-----
- arch/s390/kvm/intercept.c                  |   18 +-
- arch/s390/kvm/interrupt.c                  |  245 ++--
- arch/s390/kvm/kvm-s390.c                   |   43 +-
- arch/s390/kvm/kvm-s390.h                   |   12 +-
- arch/s390/kvm/priv.c                       |  270 ++--
- arch/s390/mm/pgtable.c                     |  107 +-
- arch/x86/include/asm/entry_arch.h          |    4 +
- arch/x86/include/asm/hardirq.h             |    3 +
- arch/x86/include/asm/hw_irq.h              |    1 +
- arch/x86/include/asm/irq_vectors.h         |    5 +
- arch/x86/include/asm/kvm_host.h            |   26 +-
- arch/x86/include/asm/vmx.h                 |   18 +
- arch/x86/include/uapi/asm/kvm.h            |    1 -
- arch/x86/include/uapi/asm/msr-index.h      |    2 +
- arch/x86/include/uapi/asm/vmx.h            |    5 +-
- arch/x86/kernel/entry_64.S                 |    5 +
- arch/x86/kernel/irq.c                      |   22 +
- arch/x86/kernel/irqinit.c                  |    4 +
- arch/x86/kernel/kvmclock.c                 |    9 +-
- arch/x86/kvm/Kconfig                       |   14 +-
- arch/x86/kvm/Makefile                      |    5 +-
- arch/x86/kvm/emulate.c                     |   31 +-
- arch/x86/kvm/i8254.c                       |    4 +-
- arch/x86/kvm/lapic.c                       |  189 +--
- arch/x86/kvm/lapic.h                       |   22 +-
- arch/x86/kvm/mmu.c                         |  108 +-
- arch/x86/kvm/mmu.h                         |   11 +-
- arch/x86/kvm/paging_tmpl.h                 |    2 +-
- arch/x86/kvm/pmu.c                         |   14 +-
- arch/x86/kvm/svm.c                         |   40 +-
- arch/x86/kvm/vmx.c                         | 1077 ++++++++++++----
- arch/x86/kvm/x86.c                         |  243 ++--
- drivers/s390/kvm/kvm_virtio.c              |   11 +-
- drivers/s390/kvm/virtio_ccw.c              |   21 +-
- include/linux/kvm_host.h                   |  166 ++-
- include/trace/events/kvm.h                 |   12 +-
- include/uapi/linux/kvm.h                   |   45 +-
- virt/kvm/Kconfig                           |    3 +
- virt/kvm/assigned-dev.c                    |   43 +-
- virt/kvm/eventfd.c                         |   53 +-
- virt/kvm/ioapic.c                          |  163 ++-
- virt/kvm/ioapic.h                          |   27 +-
- virt/kvm/irq_comm.c                        |  215 +---
- virt/kvm/irqchip.c                         |  237 ++++
- virt/kvm/kvm_main.c                        |  258 +++-
- 126 files changed, 9158 insertions(+), 2680 deletions(-)
- create mode 100644 Documentation/virtual/kvm/devices/README
- create mode 100644 Documentation/virtual/kvm/devices/mpic.txt
- create mode 100644 Documentation/virtual/kvm/devices/xics.txt
- create mode 100644 arch/arm/kvm/handle_exit.c
- create mode 100644 arch/arm/kvm/perf.c
- create mode 100644 arch/powerpc/kvm/book3s_hv_rm_xics.c
- create mode 100644 arch/powerpc/kvm/book3s_rtas.c
- create mode 100644 arch/powerpc/kvm/book3s_xics.c
- create mode 100644 arch/powerpc/kvm/book3s_xics.h
- create mode 100644 arch/powerpc/kvm/irq.h
- create mode 100644 arch/powerpc/kvm/mpic.c
- create mode 100644 arch/s390/include/uapi/asm/virtio-ccw.h
- create mode 100644 virt/kvm/irqchip.c
---
-			Gleb.
+* can a BIOS help?  no, because you will never get disparate ARM SoC
+licensees to agree to use it.  their SoCs are all highly-specialised.
+and, why would they add extra layers of complexity and function cals
+in a memory-constrained, CPU-constrained and power-constrained
+specialist environment?
+
+* can ACPI help?  no, because power management is done in a completely
+different way, and low-level peripherals are typically connected
+directly to the chip and managed directly.  ACPI is an x86 solution.
+
+* can splitting CPUs into northbridge architectural designs help?  no,
+because again that's an x86 solution.  and it usually adds 2 watts to
+the power budget to drive the 128-bit or 256-bit-wide bus between the
+two chips.  which is insane, considering that some ARM SoCs are 0.1 to
+1 watts.  Not Gonna Happen.  plus, it doesn't help you with the
+existing mess.
+
+* can hardware standardisation help?  yes [*1] but that has its own
+challenges, as well as additional costs which need to have some sort
+of strategic benefit before companies will adopt it [or users].
+
+* can chip-level standardisation help?  no - ARM tried that already,
+one SoC vendor screwed it up (failed to implement the tables properly)
+and that was the end of the standard.  plus, it doesn't help with the
+existing SoCs nor the NDA situation wrt all the sensors and
+peripherals nor the proliferation and localisation and
+contact-relationships associated with these hard-wired sensors and
+peripherals.
+
+* what about splitting up the linux kernel into "core" and
+"peripheral"?  that might do it.  something along the lines of OSKit -
+except done right, and along lines that are acceptable to and
+initiated by the key linux kernel developers.  the "core" could be as
+little as 2% of the entire linux kernel code-base: lib/* arch/*,
+kernel/* and so on.  the rest (peripherals) done as a gitmodule.
+whilst it doesn't *actually* solve the problem, it reduces and
+clarifies the development scope on each side of the fence,
+so-to-speak, and, critically, separates out the discussions and focus
+for each part.  perhaps even go further and have forks of the "core"
+which deal *exclusively* with each architecture.
+
+i don't know.  i don't know - honestly - what the solution is here,
+and perhaps there really isn't one - certainly not at the software
+level, not with the sheer overwhelming hardware diversity.  linus
+"ordered" the ARM representatives at that 2007 conference to "go away,
+get themselves organised, come back with only one representative" and
+that really says it all, the level of naivete and lack of
+understanding of the scope, and the fact that each ARM processor
+*really is* a completely different processor: they might as well have
+completely different instruction sets and it's just damn lucky that
+they do.
+
+so i'm attempting to solve this from a different angle: the hardware
+level.  drastic and i mean *drastic* simplification of the permitted
+interfaces, thus allowing hardware to become a series of dynamic buses
+plus a series of about 10 device tree descriptions.
+
+so, in answer to your question, david: *yes* device-tree could help,
+if the hardware was simple enough and was standardised, and that's
+what i'm working towards, but the EOMA standards are the *only* ones
+which are simple enough and have taken this problem properly into
+consideration.  if you don't use hardware standards then the answer
+is, sadly i feel, that device tree has absolutely no place in the ARM
+world and will only cause harm rather than good [*2]
+
+thoughts on a postcard....
+
+l.
+
+[*0] allwinner use "script.fex".  it's an alternative to device-tree
+and it's a hell of a lot better.  INI config file format.
+standardised across *all* hardware that uses the A10.  it even allows
+setting of the pin mux functions.  _and_ there is a GUI application
+which helps ODMs to customise the linux kernel for their clients...
+WITHOUT RECOMPILING THE LINUX KERNEL AT ALL.  the designers of
+devicetree could learn a lot from what allwinner have achieved.
+
+[*1] http://elinux.org/Embedded_Open_Modular_Architecture/EOMA-68
+
+[*2] that's not quite true.  if there were multiple ARM-based systems
+that conformed to x86 hardware standards such as ITX motherboard
+layout, those ARM systems would actually work and benefit from
+device-tree.  if aarm64 starts to get put regularly into x86-style
+hardware form-factors, that would work.  but right now, and for the
+forseeable future, any ARM SoC that's used for "embedded" single-board
+purposes, flat-out forget it.  and even when aarm64 comes out, there
+will still be plenty of cheap 32-bit ARM systems out there.
