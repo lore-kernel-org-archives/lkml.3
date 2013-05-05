@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757Ab3EEQrV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 12:47:21 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:18234 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab3EEQrU (ORCPT
+	id S1751946Ab3EERgr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 13:36:47 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45711 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613Ab3EERgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 12:47:20 -0400
-X-IronPort-AV: E=Sophos;i="4.87,616,1363132800"; 
-   d="scan'208";a="22288051"
-Date: Sun, 5 May 2013 17:47:12 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [Xen-devel] [PATCH 1/3] arm_arch_timer: introduce
- arch_timer_stolen_ticks
-In-Reply-To: <5183976A.6000703@arm.com>
-Message-ID: <alpine.DEB.2.02.1305051745390.4756@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com> <1367436460-10183-1-git-send-email-stefano.stabellini@eu.citrix.com> <51817CBE.4050003@codeaurora.org> <1367482772.21869.26.camel@zakaz.uk.xensource.com> <5182DBA9.9080609@codeaurora.org>
- <alpine.DEB.2.02.1305031130210.5398@kaball.uk.xensource.com> <5183976A.6000703@arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Sun, 5 May 2013 13:36:46 -0400
+Date: Sun, 05 May 2013 13:36:42 -0400 (EDT)
+Message-Id: <20130505.133642.523571665638952150.davem@davemloft.net>
+To: khlebnikov@openvz.org
+Cc: netdev@vger.kernel.org, edumazet@google.com, fw@strlen.de,
+        linux-kernel@vger.kernel.org, brouer@redhat.com
+Subject: Re: [PATCH] net: frag, fix race conditions in LRU list maintenance
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130505145622.9351.86587.stgit@zurg>
+References: <20130505145622.9351.86587.stgit@zurg>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 05 May 2013 10:36:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 May 2013, Marc Zyngier wrote:
-> On 03/05/13 11:43, Stefano Stabellini wrote:
-> > On Thu, 2 May 2013, Christopher Covington wrote:
-> >>> So the virtual timer should appear to have been running even while time
-> >>> is being stolen and therefore stolen time needs to be accounted via some
-> >>> other means.
-> >>
-> >> Something that's not currently obvious to me is that given that the stolen
-> >> cycle accounting should be done, what makes the architected timer interrupt
-> >> handler the ideal place to do it?
-> > 
-> > That is a good question and I would appreciate suggestions to improve
-> > the patch.
-> > 
-> > Given that Xen x86 and ia64 does stolen time accounting from the timer
-> > interrupt handler:
-> > 
-> > arch/x86/xen/time.c:xen_timer_interrupt
-> > arch/ia64/kernel/time.c:timer_interrupt
-> > 
-> > and given that the arch_timer is the only timer used by Xen on ARM and
-> > that it includes a virt_timer that is made on purpose to be used by
-> > virtual machines, I thought that it might be a good place for it.
-> > 
-> > I also thought that doing it this way, KVM should be able to reuse the
-> > same hook.
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Sun, 05 May 2013 18:56:22 +0400
+
+> This patch fixes race between inet_frag_lru_move() and inet_frag_lru_add()
+> which was introduced in commit 3ef0eb0db4bf92c6d2510fe5c4dc51852746f206
+> ("net: frag, move LRU list maintenance outside of rwlock")
 > 
-> Indeed. I just need to understand how time stealing works there ;-).
+> One cpu already added new fragment queue into hash but not into LRU.
+> Other cpu found it in hash and tries to move it to the end of LRU.
+> This leads to NULL pointer dereference inside of list_move_tail().
 > 
-> Now, KVM is not necessarily limited to arch_timers, and we've run KVM
-> using a QEMU-provided timer in the past. Can you think of a more generic
-> location for this hook? Possibly something that would satisfy the
-> requirements of other architectures while we're at it?
+> Another possible race condition is between inet_frag_lru_move() and
+> inet_frag_lru_del(): move can happens after deletion.
+> 
+> This patch initializes LRU list head before adding fragment into hash and
+> inet_frag_lru_move() doesn't touches it if it's empty.
+> 
+> I saw this kernel oops two times in a couple of days.
+ ...
+> Oops happened on this path:
+> ip_defrag() -> ip_frag_queue() -> inet_frag_lru_move() -> list_move_tail() -> __list_del_entry()
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-Probably the best option would be to reuse
-
-kernel/sched/cputime.c:steal_account_process_tick
-
-but that also means introducing CONFIG_PARAVIRT on arm.
-I am up for that, what do you think?
+This looks good to me, Jesper and co. please review.
