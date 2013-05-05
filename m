@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab3EEOPa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 10:15:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34646 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337Ab3EEOP3 (ORCPT
+	id S1751736Ab3EEOTi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 10:19:38 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:21104 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab3EEOTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 10:15:29 -0400
-Date: Sun, 5 May 2013 07:15:18 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-642fb0f86fa38efefc0cf0e46ac20fa03e7f7f01@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, davej@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, davej@redhat.com
-In-Reply-To: <alpine.LFD.2.02.1305032015060.2990@ionos>
-References: <alpine.LFD.2.02.1305032015060.2990@ionos>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] tick:
-  Use zalloc_cpumask_var for allocating offstack cpumasks
-Git-Commit-ID: 642fb0f86fa38efefc0cf0e46ac20fa03e7f7f01
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 5 May 2013 10:19:37 -0400
+Date: Sun, 5 May 2013 17:18:55 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 4/4] staging: =?utf-8?Q?ste=5Fr?=
+ =?utf-8?Q?mi4=3A_Suppress_'ignoring_return_value_of_=E2=80=98regulator=5F?=
+ =?utf-8?B?ZW5hYmxlKCkn?= warning
+Message-ID: <20130505141855.GB4686@mwanda>
+References: <1367509690-24022-1-git-send-email-lee.jones@linaro.org>
+ <1367509690-24022-5-git-send-email-lee.jones@linaro.org>
+ <20130503070713.GA27956@bnru09>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130503070713.GA27956@bnru09>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  642fb0f86fa38efefc0cf0e46ac20fa03e7f7f01
-Gitweb:     http://git.kernel.org/tip/642fb0f86fa38efefc0cf0e46ac20fa03e7f7f01
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Fri, 3 May 2013 20:22:36 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sun, 5 May 2013 16:06:35 +0200
+On Fri, May 03, 2013 at 12:37:14PM +0530, Srinidhi Kasagar wrote:
+> On Thu, May 02, 2013 at 17:48:10 +0200, Lee Jones wrote:
+> > drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c:
+> >         In function ‘synaptics_rmi4_resume’:
+> > drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c:1090:18:
+> >         warning: ignoring return value of ‘regulator_enable’, declared
+> >         with attribute warn_unused_result [-Wunused-result
+> > 
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: devel@driverdev.osuosl.org
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c |    4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
+> > index fe667dd..c4d013d 100644
+> > --- a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
+> > +++ b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
+> > @@ -1087,7 +1087,9 @@ static int synaptics_rmi4_resume(struct device *dev)
+> >  	unsigned char intr_status;
+> >  	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+> >  
+> > -	regulator_enable(rmi4_data->regulator);
+> > +	retval = regulator_enable(rmi4_data->regulator);
+> > +	if (retval < 0)
+> > +		return retval;
+> Does it make sense to add a dev_err?
+> 
 
-tick: Use zalloc_cpumask_var for allocating offstack cpumasks
+Is that a question?
 
-commit b352bc1cbc (tick: Convert broadcast cpu bitmaps to
-cpumask_var_t) broke CONFIG_CPUMASK_OFFSTACK in a very subtle way.
+regulator_enable() already prints some warnings.  Probably it's not
+going to fail and adding code that is duplicative or will never be
+run is pointless.
 
-Instead of allocating the cpumasks with zalloc_cpumask_var it uses
-alloc_cpumask_var, so we can get random data there, which of course
-confuses the logic completely and causes random failures.
+regards,
+dan carpenter
 
-Reported-and-tested-by: Dave Jones <davej@redhat.com>
-Reported-and-tested-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1305032015060.2990@ionos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/tick-broadcast.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 61d00a8..d70cdc4 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -785,11 +785,11 @@ bool tick_broadcast_oneshot_available(void)
- 
- void __init tick_broadcast_init(void)
- {
--	alloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
--	alloc_cpumask_var(&tmpmask, GFP_NOWAIT);
-+	zalloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
-+	zalloc_cpumask_var(&tmpmask, GFP_NOWAIT);
- #ifdef CONFIG_TICK_ONESHOT
--	alloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
--	alloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
--	alloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
-+	zalloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
-+	zalloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
-+	zalloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
- #endif
- }
