@@ -1,94 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438Ab3EEGgA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 02:36:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60485 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320Ab3EEGf6 (ORCPT
+	id S1751585Ab3EEIYt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 04:24:49 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:40123 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477Ab3EEIYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 02:35:58 -0400
-Date: Sat, 4 May 2013 23:35:11 -0700
-From: tip-bot for Kevin Hilman <tipbot@zytor.com>
-Message-ID: <tip-485cf5dac2966b93ef2b6211cf2fd42d66c823e6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
-        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, khilman@linaro.org,
-        magnus.damm@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, rusty@rustcorp.com.au,
-        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, khilman@linaro.org, tglx@linutronix.de,
-        magnus.damm@gmail.com
-In-Reply-To: <1366849153-25564-1-git-send-email-khilman@linaro.org>
-References: <1366849153-25564-1-git-send-email-khilman@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] idle: Fix hlt/
- nohlt command-line handling in new generic idle
-Git-Commit-ID: 485cf5dac2966b93ef2b6211cf2fd42d66c823e6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 5 May 2013 04:24:45 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <87sj22zuga.fsf_-_@hase.home>
+References: <51814943.7000604@intel.com>
+	<20130501182138.GA17550@kroah.com>
+	<5B8DA87D05A7694D9FA63FD143655C1B01F18E66@HASMSX106.ger.corp.intel.com>
+	<518284E6.7040503@intel.com>
+	<CAMuHMdWSVUcwkY=xn+HjbruLxsc8Eqq=CWX78CdUc1+MAwCVhg@mail.gmail.com>
+	<87sj22zuga.fsf_-_@hase.home>
+Date: Sun, 5 May 2013 10:24:43 +0200
+X-Google-Sender-Auth: tF6maA4U0P2IaT7hGRovWp4owA8
+Message-ID: <CAMuHMdX6PETQqQG-ASDv4OtLyB=X0hNyQRaSO13rUHf_HqNt3w@mail.gmail.com>
+Subject: Re: [PATCH] Fix cleaning in scripts/mod
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Dave Hansen <dave.hansen@intel.com>,
+        "Winkler, Tomas" <tomas.winkler@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "SamuelOrtiz@kroah.com" <SamuelOrtiz@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  485cf5dac2966b93ef2b6211cf2fd42d66c823e6
-Gitweb:     http://git.kernel.org/tip/485cf5dac2966b93ef2b6211cf2fd42d66c823e6
-Author:     Kevin Hilman <khilman@linaro.org>
-AuthorDate: Wed, 24 Apr 2013 17:19:13 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sun, 5 May 2013 08:29:40 +0200
+On Sat, May 4, 2013 at 4:32 PM, Andreas Schwab <schwab@linux-m68k.org> wrote:
+> Make sure devicetable-offsets.h is cleaned in the scripts/mod directory
+>
+> Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
 
-idle: Fix hlt/nohlt command-line handling in new generic idle
+Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit d1669912 (idle: Implement generic idle function) added a new
-generic idle along with support for hlt/nohlt command line options to
-override default idle loop behavior.  However, the command-line
-processing is never compiled.
+> ---
+>  scripts/mod/Makefile | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/scripts/mod/Makefile b/scripts/mod/Makefile
+> index 9415b56..75d59fc 100644
+> --- a/scripts/mod/Makefile
+> +++ b/scripts/mod/Makefile
+> @@ -37,6 +37,8 @@ scripts/mod/devicetable-offsets.s: scripts/mod/devicetable-offsets.c FORCE
+>  $(obj)/$(devicetable-offsets-file): scripts/mod/devicetable-offsets.s
+>         $(call cmd,offsets)
+>
+> +targets += $(devicetable-offsets-file)
+> +
+>  # dependencies on generated files need to be listed explicitly
+>
+>  $(obj)/modpost.o $(obj)/file2alias.o $(obj)/sumversion.o: $(obj)/elfconfig.h
 
-The command-line handling is wrapped by CONFIG_GENERIC_IDLE_POLL_SETUP
-and arches that use this feature select it in their Kconfigs.
-However, no Kconfig definition was created for this option, so it is
-never enabled, and therefore command-line override of the idle-loop
-behavior is broken after migrating to the generic idle loop.
+Gr{oetje,eeting}s,
 
-To fix, add a Kconfig definition for GENERIC_IDLE_POLL_SETUP.
+                        Geert
 
-Tested on ARM (OMAP4/Panda) which enables the command-line overrides
-by default.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linaro-kernel@lists.linaro.org
-Link: http://lkml.kernel.org/r/1366849153-25564-1-git-send-email-khilman@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/Kconfig | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 99f0e17..3e64403 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -213,6 +213,9 @@ config USE_GENERIC_SMP_HELPERS
- config GENERIC_SMP_IDLE_THREAD
-        bool
- 
-+config GENERIC_IDLE_POLL_SETUP
-+       bool
-+
- # Select if arch init_task initializer is different to init/init_task.c
- config ARCH_INIT_TASK
-        bool
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
