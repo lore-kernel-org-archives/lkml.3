@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388Ab3EEUiI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 16:38:08 -0400
-Received: from tex.lwn.net ([70.33.254.29]:40849 "EHLO vena.lwn.net"
+	id S1752345Ab3EEUv4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 16:51:56 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:55784 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752101Ab3EEUiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 16:38:06 -0400
-Date: Sun, 5 May 2013 14:38:03 -0600
-From: Jake Edge <jake@lwn.net>
-To: linux-wireless@vger.kernel.org
-Cc: Johannes Berg <johannes.berg@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Bisected 3.9 regression for iwl4965 connection problem to 1672c0e3
-Message-ID: <20130505143803.7e46e4c6@chukar.edge2.net>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.16; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752065Ab3EEUvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 May 2013 16:51:55 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, spruce-project@linuxtesting.org
+Subject: [PATCH] ext4: implement error handling of ext4_mb_new_preallocation()
+Date: Mon,  6 May 2013 00:51:15 +0400
+Message-Id: <1367787075-11626-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If memory allocation in ext4_mb_new_group_pa() is failed,
+it returns error code, ext4_mb_new_preallocation() propages it,
+but ext4_mb_new_blocks() ignores it.
 
-After building 3.9 for my HP/Compaq 2510p laptop, the wireless (iwl4965)
-would seemingly no longer connect.  Actually, it seems that it *will*
-eventually, where that is somewhere between 4 and 21+ retries (from KDE
-network manager).  Going back to 3.8 (and earlier) and the problem goes
-away.  (All on Fedora 18, fwiw, but I don't think that's significant).
+An observed result was:
+- allocation fail means ext4_mb_new_group_pa() does not update ext4_allocation_context;
+- ext4_mb_new_blocks() sets ext4_allocation_request->len (ar->len = ac->ac_b_ex.fe_len;)
+  to number of blocks preallocated (512) instead of number of blocks requested (1);
+- that activates update cycle in ext4_splice_branch():
+    for (i = 1; i < blks; i++) <-- blks is 512 instead of 1 here
+      *(where->p + i) = cpu_to_le32(current_block++);
+- it iterates 511 times and corrupts a chunk of memory including inode structure;
+- page fault happens at EXT4_SB(inode->i_sb) in ext4_mark_inode_dirty();
+- system hangs with 'scheduling while atomic' BUG.
 
-I bisected the problem to:
+The patch implements a check for ext4_mb_new_preallocation() error code
+and handles its failure as if ext4_mb_regular_allocator() fails.
 
-commit 1672c0e31917f49d31d30d79067103432bc20cc7
-Author: Johannes Berg <johannes.berg@intel.com>
-Date:   Tue Jan 29 15:02:27 2013 +0100
+Found by Linux File System Verification project (linuxtesting.org).
 
-    mac80211: start auth/assoc timeout on frame status
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ fs/ext4/mballoc.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-but I can't (easily) revert that in 3.9 (maybe I can in -rc1 or
-something?  haven't tried that)
-
-What more information is needed from me?  I may still mess around with
-trying to revert that patch just to nail it down for sure, but two
-separate bisection exercises ended up at the same place.
-
-There are a few traps for the unwary if anyone else ends up bisecting
-in through here -- the first bisection (3.8 - 3.9-rc1) ran into an IPv6
-build error along the way, which I "fixed" by configuring it out --
-also, the amount of retries goes from *many* (15-21+) to relatively few
-(4) somewhere in there, which confused me and led to the second
-bisection (3.8-3.9) ...
-
-jake
-
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index b1ed9e0..95c6b0d 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4401,17 +4401,18 @@ ext4_fsblk_t ext4_mb_new_blocks(handle_t *handle,
+ repeat:
+ 		/* allocate space in core */
+ 		*errp = ext4_mb_regular_allocator(ac);
++		if (!*errp) {
++			/* as we've just preallocated more space than
++			 * user requested orinally, we store allocated
++			 * space in a special descriptor */
++			if (ac->ac_status == AC_STATUS_FOUND &&
++					ac->ac_o_ex.fe_len < ac->ac_b_ex.fe_len)
++				*errp = ext4_mb_new_preallocation(ac);
++		}
+ 		if (*errp) {
+ 			ext4_discard_allocated_blocks(ac);
+ 			goto errout;
+ 		}
+-
+-		/* as we've just preallocated more space than
+-		 * user requested orinally, we store allocated
+-		 * space in a special descriptor */
+-		if (ac->ac_status == AC_STATUS_FOUND &&
+-				ac->ac_o_ex.fe_len < ac->ac_b_ex.fe_len)
+-			ext4_mb_new_preallocation(ac);
+ 	}
+ 	if (likely(ac->ac_status == AC_STATUS_FOUND)) {
+ 		*errp = ext4_mb_mark_diskspace_used(ac, handle, reserv_clstrs);
 -- 
-Jake Edge - LWN - jake@lwn.net - http://lwn.net
+1.7.9.5
+
