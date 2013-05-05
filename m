@@ -1,79 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345Ab3EEUv4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 16:51:56 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:55784 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752065Ab3EEUvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 16:51:55 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, spruce-project@linuxtesting.org
-Subject: [PATCH] ext4: implement error handling of ext4_mb_new_preallocation()
-Date: Mon,  6 May 2013 00:51:15 +0400
-Message-Id: <1367787075-11626-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752300Ab3EEU6a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 16:58:30 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47982 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065Ab3EEU63 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 May 2013 16:58:29 -0400
+Date: Sun, 05 May 2013 16:58:25 -0400 (EDT)
+Message-Id: <20130505.165825.1787385657172692387.davem@davemloft.net>
+To: stephen@networkplumber.org
+Cc: jasowang@redhat.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        akong@redhat.com
+Subject: Re: [PATCH] virtio: don't expose u16 in userspace api
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130503174941.043d10b7@nehalam.linuxnetplumber.net>
+References: <20130503174941.043d10b7@nehalam.linuxnetplumber.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 05 May 2013 13:58:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If memory allocation in ext4_mb_new_group_pa() is failed,
-it returns error code, ext4_mb_new_preallocation() propages it,
-but ext4_mb_new_blocks() ignores it.
+From: Stephen Hemminger <stephen@networkplumber.org>
+Date: Fri, 3 May 2013 17:49:41 -0700
 
-An observed result was:
-- allocation fail means ext4_mb_new_group_pa() does not update ext4_allocation_context;
-- ext4_mb_new_blocks() sets ext4_allocation_request->len (ar->len = ac->ac_b_ex.fe_len;)
-  to number of blocks preallocated (512) instead of number of blocks requested (1);
-- that activates update cycle in ext4_splice_branch():
-    for (i = 1; i < blks; i++) <-- blks is 512 instead of 1 here
-      *(where->p + i) = cpu_to_le32(current_block++);
-- it iterates 511 times and corrupts a chunk of memory including inode structure;
-- page fault happens at EXT4_SB(inode->i_sb) in ext4_mark_inode_dirty();
-- system hangs with 'scheduling while atomic' BUG.
+> Programs using virtio headers outside of kernel will no longer
+> build because u16 type does not exist in userspace. All user ABI
+> must use __u16 typedef instead.
+> 
+> Bug introduce by:
+>   commit 986a4f4d452dec004697f667439d27c3fda9c928
+>   Author: Jason Wang <jasowang@redhat.com>
+>   Date:   Fri Dec 7 07:04:56 2012 +0000
+> 
+>     virtio_net: multiqueue support
+> 
+> Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
 
-The patch implements a check for ext4_mb_new_preallocation() error code
-and handles its failure as if ext4_mb_regular_allocator() fails.
-
-Found by Linux File System Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- fs/ext4/mballoc.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
-
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index b1ed9e0..95c6b0d 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4401,17 +4401,18 @@ ext4_fsblk_t ext4_mb_new_blocks(handle_t *handle,
- repeat:
- 		/* allocate space in core */
- 		*errp = ext4_mb_regular_allocator(ac);
-+		if (!*errp) {
-+			/* as we've just preallocated more space than
-+			 * user requested orinally, we store allocated
-+			 * space in a special descriptor */
-+			if (ac->ac_status == AC_STATUS_FOUND &&
-+					ac->ac_o_ex.fe_len < ac->ac_b_ex.fe_len)
-+				*errp = ext4_mb_new_preallocation(ac);
-+		}
- 		if (*errp) {
- 			ext4_discard_allocated_blocks(ac);
- 			goto errout;
- 		}
--
--		/* as we've just preallocated more space than
--		 * user requested orinally, we store allocated
--		 * space in a special descriptor */
--		if (ac->ac_status == AC_STATUS_FOUND &&
--				ac->ac_o_ex.fe_len < ac->ac_b_ex.fe_len)
--			ext4_mb_new_preallocation(ac);
- 	}
- 	if (likely(ac->ac_status == AC_STATUS_FOUND)) {
- 		*errp = ext4_mb_mark_diskspace_used(ac, handle, reserv_clstrs);
--- 
-1.7.9.5
-
+Applied and queued up for -stable.
