@@ -1,103 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab3EESd7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 14:33:59 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:41321 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab3EESdM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 14:33:12 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Peter Hurley <peter@hurleysoftware.com>, Stas Sergeev <stsp@list.ru>,
-        Jarkko Huijts <jarkko.huijts@gmail.com>,
-        Alan Cox <alan@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Caylan Van Larson <i@caylan.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 5/7] USB: io_ti: fix chars_in_buffer overhead
-Date: Sun,  5 May 2013 20:32:31 +0200
-Message-Id: <1367778753-22297-6-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1367778753-22297-1-git-send-email-jhovold@gmail.com>
-References: <20130505182913.GE16818@localhost>
- <1367778753-22297-1-git-send-email-jhovold@gmail.com>
+	id S1752134Ab3EETyh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 15:54:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41815 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751824Ab3EETyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 May 2013 15:54:35 -0400
+Message-ID: <5186B8F1.9090105@redhat.com>
+Date: Sun, 05 May 2013 15:54:25 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, prarit@redhat.com
+CC: tip-bot for Thomas Gleixner <tipbot@zytor.com>,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:timers/urgent] tick: Cleanup NOHZ per cpu data on cpu down
+References: <alpine.LFD.2.02.1305031451561.2886@ionos> <tip-ae7868e241c015aadc8632d9fe633a102a5918f6@git.kernel.org>
+In-Reply-To: <tip-ae7868e241c015aadc8632d9fe633a102a5918f6@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new generic usb-serial wait_until_sent implementation to wait
-for hardware buffers to drain.
 
-This removes the need to check the hardware buffers in chars_in_buffer
-and thus removes the overhead introduced by commit 263e1f9f ("USB:
-io_ti: query hardware-buffer status in chars_in_buffer") without
-breaking tty_wait_until_sent (used by, for example, tcdrain, tcsendbreak
-and close).
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/usb/serial/io_ti.c | 22 ++++++++++++++--------
- 1 file changed, 14 insertions(+), 8 deletions(-)
+On 05/05/2013 02:20 AM, tip-bot for Thomas Gleixner wrote:
+> Commit-ID:  ae7868e241c015aadc8632d9fe633a102a5918f6
+> Gitweb:     http://git.kernel.org/tip/ae7868e241c015aadc8632d9fe633a102a5918f6
+> Author:     Thomas Gleixner <tglx@linutronix.de>
+> AuthorDate: Fri, 3 May 2013 15:02:50 +0200
+> Committer:  Thomas Gleixner <tglx@linutronix.de>
+> CommitDate: Sun, 5 May 2013 08:15:11 +0200
+> 
+> tick: Cleanup NOHZ per cpu data on cpu down
+> 
+> Prarit reported a crash on CPU offline/online. The reason is that on
+> CPU down the NOHZ related per cpu data of the dead cpu is not cleaned
+> up. If at cpu online an interrupt happens before the per cpu tick
+> device is registered the irq_enter() check potentially sees stale data
+> and dereferences a NULL pointer.
+> 
+> Cleanup the data after the cpu is dead.
+> 
+> Reported-by: Prarit Bhargava <prarit@redhat.com>
+> Cc: stable@vger.kernel.org
+> Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1305031451561.2886@ionos
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  kernel/time/tick-common.c   | 1 +
+>  kernel/time/tick-internal.h | 6 ++++++
+>  kernel/time/tick-sched.c    | 7 +++++++
+>  3 files changed, 14 insertions(+)
 
-diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
-index 158bf4b..1be6ba7 100644
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -2019,8 +2019,6 @@ static int edge_chars_in_buffer(struct tty_struct *tty)
- 	struct edgeport_port *edge_port = usb_get_serial_port_data(port);
- 	int chars = 0;
- 	unsigned long flags;
--	int ret;
--
- 	if (edge_port == NULL)
- 		return 0;
- 
-@@ -2028,16 +2026,22 @@ static int edge_chars_in_buffer(struct tty_struct *tty)
- 	chars = kfifo_len(&edge_port->write_fifo);
- 	spin_unlock_irqrestore(&edge_port->ep_lock, flags);
- 
--	if (!chars) {
--		ret = tx_active(edge_port);
--		if (ret > 0)
--			chars = ret;
--	}
--
- 	dev_dbg(&port->dev, "%s - returns %d\n", __func__, chars);
- 	return chars;
- }
- 
-+static bool edge_tx_empty(struct usb_serial_port *port)
-+{
-+	struct edgeport_port *edge_port = usb_get_serial_port_data(port);
-+	int ret;
-+
-+	ret = tx_active(edge_port);
-+	if (ret > 0)
-+		return false;
-+
-+	return true;
-+}
-+
- static void edge_throttle(struct tty_struct *tty)
- {
- 	struct usb_serial_port *port = tty->driver_data;
-@@ -2557,6 +2561,7 @@ static struct usb_serial_driver edgeport_1port_device = {
- 	.write			= edge_write,
- 	.write_room		= edge_write_room,
- 	.chars_in_buffer	= edge_chars_in_buffer,
-+	.tx_empty		= edge_tx_empty,
- 	.break_ctl		= edge_break,
- 	.read_int_callback	= edge_interrupt_callback,
- 	.read_bulk_callback	= edge_bulk_in_callback,
-@@ -2589,6 +2594,7 @@ static struct usb_serial_driver edgeport_2port_device = {
- 	.write			= edge_write,
- 	.write_room		= edge_write_room,
- 	.chars_in_buffer	= edge_chars_in_buffer,
-+	.tx_empty		= edge_tx_empty,
- 	.break_ctl		= edge_break,
- 	.read_int_callback	= edge_interrupt_callback,
- 	.read_bulk_callback	= edge_bulk_in_callback,
--- 
-1.8.2.1
+Whoa -- I thought I said I'll test this first.  It doesn't work :( so that means
+something else is wrong ... I'm in the middle of debug ATM.
 
+P.
+
+> 
+> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+> index 6176a3e..29b765d 100644
+> --- a/kernel/time/tick-common.c
+> +++ b/kernel/time/tick-common.c
+> @@ -387,6 +387,7 @@ static int tick_notify(struct notifier_block *nb, unsigned long reason,
+>  		tick_shutdown_broadcast_oneshot(dev);
+>  		tick_shutdown_broadcast(dev);
+>  		tick_shutdown(dev);
+> +		tick_shutdown_nohz(dev);
+>  		break;
+>  
+>  	case CLOCK_EVT_NOTIFY_SUSPEND:
+> diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
+> index f0299ea..9644b29 100644
+> --- a/kernel/time/tick-internal.h
+> +++ b/kernel/time/tick-internal.h
+> @@ -144,3 +144,9 @@ static inline int tick_device_is_functional(struct clock_event_device *dev)
+>  #endif
+>  
+>  extern void do_timer(unsigned long ticks);
+> +
+> +#ifdef CONFIG_NO_HZ
+> +extern void tick_shutdown_nohz(unsigned int *cpup);
+> +#else
+> +static inline void tick_shutdown_nohz(unsigned int *cpup) { }
+> +#endif
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 225f8bf..e985ccd 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -797,6 +797,13 @@ static inline void tick_check_nohz(int cpu)
+>  	}
+>  }
+>  
+> +void tick_shutdown_nohz(unsigned int *cpup)
+> +{
+> +	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+> +
+> +	memset(ts, 0, sizeof(*ts));
+> +}
+> +
+>  #else
+>  
+>  static inline void tick_nohz_switch_to_nohz(void) { }
