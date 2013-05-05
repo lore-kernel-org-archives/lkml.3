@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649Ab3EEMtp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 08:49:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34172 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab3EEMto (ORCPT
+	id S1751599Ab3EENHE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 09:07:04 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:31521 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab3EENHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 08:49:44 -0400
-Date: Sun, 5 May 2013 05:49:33 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-9978ec69635548d00f7dabec95cf0412b3c313c4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, davej@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, davej@redhat.com
-In-Reply-To: <alpine.LFD.2.02.1305032015060.2990@ionos>
-References: <alpine.LFD.2.02.1305032015060.2990@ionos>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] tick:
-  Use zalloc_cpumask_var for allocating offstack cpumasks
-Git-Commit-ID: 9978ec69635548d00f7dabec95cf0412b3c313c4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 5 May 2013 09:07:03 -0400
+Date: Sun, 5 May 2013 16:06:40 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jake Champlin <jake.champlin.27@gmail.com>
+Cc: willy@meta-x.org, gregkh@linuxfoundation.org, yamanetoshi@gmail.com,
+        adam.buchbinder@gmail.com, peterhuewe@gmx.de, fengguang.wu@intel.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: Panel: panel: Fixed checkpatch line length
+ warnings
+Message-ID: <20130505130640.GA4686@mwanda>
+References: <20130504152058.GA20790@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130504152058.GA20790@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9978ec69635548d00f7dabec95cf0412b3c313c4
-Gitweb:     http://git.kernel.org/tip/9978ec69635548d00f7dabec95cf0412b3c313c4
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Fri, 3 May 2013 20:22:36 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sun, 5 May 2013 14:44:08 +0200
+On Sat, May 04, 2013 at 11:21:17AM -0400, Jake Champlin wrote:
+> @@ -1802,10 +1803,11 @@ static inline void input_state_falling(struct logical_input *input)
+>  
+>  			if (input->u.kbd.repeat_str[0]) {
+>  				char *repeat_str = input->u.kbd.repeat_str;
+> -				if (input->high_timer >= KEYPAD_REP_START)
+> +				if (input->high_timer >= KEYPAD_REP_START) {
+> +					int s = sizeof(input->u.kbd.repeat_str);
+>  					input->high_timer -= KEYPAD_REP_DELAY;
+> -					keypad_send_key(repeat_str,
+> -							sizeof(input->u.kbd.repeat_str));
+> +					keypad_send_key(repeat_str, s);
+> +				}
 
-tick: Use zalloc_cpumask_var for allocating offstack cpumasks
 
-commit b352bc1cbc (tick: Convert broadcast cpu bitmaps to
-cpumask_var_t) broke CONFIG_CPUMASK_OFFSTACK in a very subtle way.
+This looks like a bugfix.  Good job.  Please mention bug fixes in
+the changelog next time.
 
-Instead of allocating the cpumasks with zalloc_cpumask_var it uses
-alloc_cpumask_var, so we can get random data there, which of course
-confuses the logic completely and causes random failures.
+regards,
+dan carpenter
 
-Reported-and-tested-by: Dave Jones <davej@redhat.com>
-Reported-and-tested-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1305032015060.2990@ionos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/tick-broadcast.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 61d00a8..d70cdc4 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -785,11 +785,11 @@ bool tick_broadcast_oneshot_available(void)
- 
- void __init tick_broadcast_init(void)
- {
--	alloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
--	alloc_cpumask_var(&tmpmask, GFP_NOWAIT);
-+	zalloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
-+	zalloc_cpumask_var(&tmpmask, GFP_NOWAIT);
- #ifdef CONFIG_TICK_ONESHOT
--	alloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
--	alloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
--	alloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
-+	zalloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
-+	zalloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
-+	zalloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
- #endif
- }
