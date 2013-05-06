@@ -1,82 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758706Ab3EFVE5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:04:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59156 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757669Ab3EFUqb (ORCPT
+	id S1758713Ab3EFVFm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:05:42 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35460 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757683Ab3EFVFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:31 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Alex A. Mihaylov" <minimumlaw@rambler.ru>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 053/115] rt2x00: Fix transmit power troubles on some Ralink RT30xx cards
-Date: Mon,  6 May 2013 13:44:49 -0700
-Message-Id: <20130506203101.006346129@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
-References: <20130506203055.537199268@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 6 May 2013 17:05:39 -0400
+Date: Mon, 06 May 2013 17:05:37 -0400 (EDT)
+Message-Id: <20130506.170537.2116026617074159336.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 06 May 2013 14:05:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+Just a small pile of fixes:
 
-From: "Alex A. Mihaylov" <minimumlaw@rambler.ru>
+1) Fix race conditions in IP fragmentation LRU list handling,
+   from Konstantin Khlebnikov.
 
-commit 7e9dafd873034dd64ababcb858be424c4780ae13 upstream.
+2) vfree() is no longer verboten in interrupts, so deferring is
+   pointless, from Al Viro.
 
-Some cards on Ralink RT30xx chipset not have correctly TX_MIXER_GAIN
-value in them EEPROM/EFUSE. In this case, we must use default value,
-but always used EEPROM/EFUSE value. As result we have tranmitt power
-range from -10dBm to +6dBm instead 0dBm to +16dBm.
+3) Conversion from mutex to semaphore in netpoll left trylock
+   test inverted, caught by Dan Carpenter.
 
-Correctly value in EEPROM/EFUSE is one or more for RT3070 and two or
-more for other RT30xx chips.
+4) 3c59x uses wrong base address when releasing regions, from
+   Sergei Shtylyov.
 
-Tested on Canyon CNP-WF518N1 usb Wi-Fi dongle and Jorjin WN8020 usb
-embedded Wi-Fi module.
+5) Bounds checking in TIPC from Dan Carpenter.
 
-Signed-off-by: Alex A. Mihaylov <minimumlaw@rambler.ru>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Acked-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+6) Fastopen cookies should not be expired as aggressively as other
+   TCP metrics.  From Eric Dumazet.
 
----
- drivers/net/wireless/rt2x00/rt2800lib.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+7) Fix retrieval of MAC address in ibmveth, from Ben Herrenschmidt.
 
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -4436,6 +4436,8 @@ static int rt2800_init_rfcsr(struct rt2x
- 
- 	if (!rt2x00_rt(rt2x00dev, RT5390) &&
- 	    !rt2x00_rt(rt2x00dev, RT5392)) {
-+		u8 min_gain = rt2x00_rt(rt2x00dev, RT3070) ? 1 : 2;
-+
- 		rt2800_rfcsr_read(rt2x00dev, 17, &rfcsr);
- 		rt2x00_set_field8(&rfcsr, RFCSR17_TX_LO1_EN, 0);
- 		if (rt2x00_rt(rt2x00dev, RT3070) ||
-@@ -4446,8 +4448,10 @@ static int rt2800_init_rfcsr(struct rt2x
- 				      &rt2x00dev->cap_flags))
- 				rt2x00_set_field8(&rfcsr, RFCSR17_R, 1);
- 		}
--		rt2x00_set_field8(&rfcsr, RFCSR17_TXMIXER_GAIN,
--				  drv_data->txmixer_gain_24g);
-+		if (drv_data->txmixer_gain_24g >= min_gain) {
-+			rt2x00_set_field8(&rfcsr, RFCSR17_TXMIXER_GAIN,
-+					  drv_data->txmixer_gain_24g);
-+		}
- 		rt2800_rfcsr_write(rt2x00dev, 17, rfcsr);
- 	}
- 
+8) Don't use "u16" in virtio user headers, from Stephen Hemminger.
+
+Please pull, thanks a lot!
+
+The following changes since commit f8ce1faf55955de62e0a12e330c6d9a526071f65:
+
+  Merge tag 'modules-next-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux (2013-05-05 10:58:06 -0700)
+
+are available in the git repository at:
 
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net master
+
+for you to fetch changes up to 6bf15191f666c5965d212561d7a5c7b78b808dfa:
+
+  tipc: potential divide by zero in tipc_link_recv_fragment() (2013-05-06 16:16:52 -0400)
+
+----------------------------------------------------------------
+Al Viro (2):
+      fib_trie: no need to delay vfree()
+      rps_dev_flow_table_release(): no need to delay vfree()
+
+Benjamin Herrenschmidt (1):
+      net/eth/ibmveth: Fixup retrieval of MAC address
+
+Dan Carpenter (3):
+      netpoll: inverted down_trylock() test
+      tipc: add a bounds check in link_recv_changeover_msg()
+      tipc: potential divide by zero in tipc_link_recv_fragment()
+
+Eric Dumazet (1):
+      tcp: do not expire TCP fastopen cookies
+
+Konstantin Khlebnikov (1):
+      net: frag, fix race conditions in LRU list maintenance
+
+Sergei Shtylyov (1):
+      3c59x: fix freeing nonexistent resource on driver unload
+
+hayeswang (1):
+      net/usb: new driver for RTL8152
+
+stephen hemminger (1):
+      virtio: don't expose u16 in userspace api
+
+ drivers/net/ethernet/3com/3c59x.c  |    2 +-
+ drivers/net/ethernet/ibm/ibmveth.c |   23 +-
+ drivers/net/usb/Kconfig            |   11 +
+ drivers/net/usb/Makefile           |    1 +
+ drivers/net/usb/cdc_ether.c        |   10 +
+ drivers/net/usb/r8152.c            | 1767 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/netdevice.h          |    1 -
+ include/net/inet_frag.h            |    5 +-
+ include/uapi/linux/virtio_net.h    |    2 +-
+ net/core/net-sysfs.c               |   12 +-
+ net/core/netpoll.c                 |    2 +-
+ net/ipv4/fib_trie.c                |   13 +-
+ net/ipv4/inet_fragment.c           |    1 +
+ net/ipv4/tcp_metrics.c             |   15 +-
+ net/tipc/link.c                    |   11 +-
+ 15 files changed, 1826 insertions(+), 50 deletions(-)
+ create mode 100644 drivers/net/usb/r8152.c
