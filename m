@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab3EFUqI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58998 "EHLO
+	id S1759201Ab3EFVOR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:14:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757294Ab3EFUqC (ORCPT
+	with ESMTP id S1757383Ab3EFUqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:02 -0400
+	Mon, 6 May 2013 16:46:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 012/115] powerpc: Fix hardware IRQs with MMU on exceptions when HV=0
-Date: Mon,  6 May 2013 13:44:08 -0700
-Message-Id: <20130506203056.853056062@linuxfoundation.org>
+        Ben Jencks <ben@bjencks.net>
+Subject: [ 021/115] usb/misc/appledisplay: Add 24" LED Cinema display
+Date: Mon,  6 May 2013 13:44:17 -0700
+Message-Id: <20130506203057.747171846@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,43 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Ben Jencks <ben@bjencks.net>
 
-commit 3e96ca7f007ddb06b82a74a68585d1dbafa85ff1 upstream.
+commit e7d3b6e22c871ba36d052ca99bc8ceca4d546a60 upstream.
 
-POWER8 allows us to take interrupts with the MMU on.  This gives us a
-second set of vectors offset at 0x4000.
+Add the Apple 24" LED Cinema display to the supported devices.
 
-Unfortunately when coping these vectors we missed checking for MSR HV
-for hardware interrupts (0x500).  This results in us trying to use
-HSRR0/1 when HV=0, rather than SRR0/1 on HW IRQs
-
-The below fixes this to check CPU_FTR_HVMODE when patching the code at
-0x4500.
-
-Also we remove the check for CPU_FTR_ARCH_206 since relocation on IRQs
-are only available in arch 2.07 and beyond.
-
-Thanks to benh for helping find this.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Ben Jencks <ben@bjencks.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/exceptions-64s.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/misc/appledisplay.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/kernel/exceptions-64s.S
-+++ b/arch/powerpc/kernel/exceptions-64s.S
-@@ -797,7 +797,7 @@ hardware_interrupt_relon_hv:
- 		_MASKABLE_RELON_EXCEPTION_PSERIES(0x502, hardware_interrupt, EXC_HV, SOFTEN_TEST_HV)
- 	FTR_SECTION_ELSE
- 		_MASKABLE_RELON_EXCEPTION_PSERIES(0x500, hardware_interrupt, EXC_STD, SOFTEN_TEST_PR)
--	ALT_FTR_SECTION_END_IFSET(CPU_FTR_ARCH_206)
-+	ALT_FTR_SECTION_END_IFSET(CPU_FTR_HVMODE)
- 	STD_RELON_EXCEPTION_PSERIES(0x4600, 0x600, alignment)
- 	STD_RELON_EXCEPTION_PSERIES(0x4700, 0x700, program_check)
- 	STD_RELON_EXCEPTION_PSERIES(0x4800, 0x800, fp_unavailable)
+--- a/drivers/usb/misc/appledisplay.c
++++ b/drivers/usb/misc/appledisplay.c
+@@ -63,6 +63,7 @@ static const struct usb_device_id appled
+ 	{ APPLEDISPLAY_DEVICE(0x9219) },
+ 	{ APPLEDISPLAY_DEVICE(0x921c) },
+ 	{ APPLEDISPLAY_DEVICE(0x921d) },
++	{ APPLEDISPLAY_DEVICE(0x9236) },
+ 
+ 	/* Terminating entry */
+ 	{ }
 
 
