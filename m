@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab3EFD3W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 23:29:22 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:35780 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab3EFD3V (ORCPT
+	id S1752908Ab3EFDaw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 23:30:52 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:24349 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752538Ab3EFDau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 23:29:21 -0400
-X-AuditID: cbfee68f-b7f066d000003683-b9-5187238f8418
+	Sun, 5 May 2013 23:30:50 -0400
+X-AuditID: cbfee691-b7fe56d000004b96-d2-518723e949d4
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Grant Likely'" <grant.likely@secretlab.ca>
 Cc: "'Linus Walleij'" <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 3/7] gpio: rdc321x: remove unnecessary platform_set_drvdata()
-Date: Mon, 06 May 2013 12:29:18 +0900
-Message-id: <001901ce4a09$e48fe640$adafb2c0$@samsung.com>
+        Jingoo Han <jg1.han@samsung.com>,
+        "'Gabriel Fernandez'" <gabriel.fernandez@stericsson.com>
+Subject: [PATCH 4/7] gpio: stmpe: remove unnecessary platform_set_drvdata()
+Date: Mon, 06 May 2013 12:30:49 +0900
+Message-id: <001a01ce4a0a$1a72e9b0$4f58bd10$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5KCdlUNWbB0aS4SfuMWqfggC0pYQ==
+Thread-index: Ac5KCe3JRaoOGp4LRbSKX3fmAj1NHw==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t8zA91+5fZAg/VXJCxendnIZnF54SVW
-	iyl/ljNZXN41h82BxePOtT1sHn1bVjF6/Hyp4/F5k1wASxSXTUpqTmZZapG+XQJXxoyzT5kK
-	3nJXzH84g7mB8QlnFyMnh4SAicSshk1MELaYxIV769m6GLk4hASWMUrMXTSbDabo2/+tTBCJ
-	6YwSXWcXMEI4vxglFv99wwJSxSagJvHly2F2EFtEQE/ixoUORhCbWaBA4vTBt2CThAV8JXZd
-	ngS2jkVAVWLixe2sIDavgKXE/FcQ9bwCghI/Jt9jgejVkli/8zgThC0vsXnNW2aIixQkdpx9
-	zQiz69vRlVC7RCT2vXgHdpyEwDp2iXO7lrJCLBOQ+Db5ENBQDqCErMSmA1BzJCUOrrjBMoFR
-	bBaS1bOQrJ6FZPUsJCsWMLKsYhRNLUguKE5KLzLWK07MLS7NS9dLzs/dxAiJs/4djHcPWB9i
-	TAZaP5FZSjQ5HxineSXxhsZmRhamJqbGRuaWZqQJK4nzqrVYBwoJpCeWpGanphakFsUXleak
-	Fh9iZOLglGpgnKe1bGHbdjnh3S6TBfcuCTjBckBh61zh5l8MfzuNbFnOqOhejDm2VWjxkaaa
-	mOM3N2XrrPTi8l7MKcVqqSRdJaT/yytzzpZr/uliKq+D/eyO7X8yjeXq2qPMRx/vtPF+eUU8
-	/liG+QwBv/m1j759ZfAoOvLSeKZhOOP+K/WOG06dmXT9hISOkRJLcUaioRZzUXEiAFO8UUnJ	AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsVy+t9jQd1+5fZAg4MXRSxendnIZnF54SVW
-	iyl/ljNZXN41h82BxePOtT1sHn1bVjF6/Hyp4/F5k1wAS1QDo01GamJKapFCal5yfkpmXrqt
-	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
-	MI0Rur4hQXA9RgZoIGEdY8aMs0+ZCt5yV8x/OIO5gfEJZxcjJ4eEgInEt/9bmSBsMYkL99az
-	dTFycQgJTGeU6Dq7gBHC+cUosfjvGxaQKjYBNYkvXw6zg9giAnoSNy50MILYzAIFEqcPvmUD
-	sYUFfCV2XZ4ENpVFQFVi4sXtrCA2r4ClxPxXEPW8AoISPybfY4Ho1ZJYv/M4E4QtL7F5zVtm
-	iIsUJHacfc0Is+vb0ZVQu0Qk9r14xziBUWAWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca
-	6hUn5haX5qXrJefnbmIER/EzqR2MKxssDjEKcDAq8fAWPGkLFGJNLCuuzD3EKMHBrCTC67MX
-	KMSbklhZlVqUH19UmpNafIgxGejTicxSosn5wASTVxJvaGxiZmRpZGZhZGJuTpqwkjjvgVbr
-	QCGB9MSS1OzU1ILUIpgtTBycUg2M1skGO+ep106N3+P6uTxQN2uvTdyyf4debBReqhQms/9n
-	7DEbxdsRB92jt+9YPDFmDcvkXaGlfP9mS5yYlfR1wpIa0bf2F1I4ElKPmDN9XFxhs3uvVv0V
-	47SO7x43YmebmKxVefFmgbXAT6Mv22e4fbw/817swU2RWpbTPZtvByv47T/nxlX6XYmlOCPR
-	UIu5qDgRAMC5gaYmAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zQ92Xyu2BBp+u6ljs2O5i8erMRjaL
+	ywsvsVpM+bOcyeLyrjlsDqwed67tYfPo27KK0ePnSx2P70vXsHt83iQXwBrFZZOSmpNZllqk
+	b5fAlfFu51Tmgo1sFY27trM1MC5h7WLk5JAQMJHYdOg7C4QtJnHh3nq2LkYuDiGBZYwSZ/+f
+	hyuacG4yVGIRo8THCYdYIJxfjBL9By+wg1SxCahJfPlyGMwWEdCTuHGhgxGkiFlgFaPE1Y6Z
+	jCAJYQFviR9/VoAVsQioSjydspkZxOYVsJTY+2kKI4QtKPFj8j2wm5gFtCTW7zzOBGHLS2xe
+	85YZ4iQFiR1nXzPCLHu64DkrRI2IxL4X78AWSwjsY5c4cXEeE8QyAYlvk0HO5gBKyEpsOgA1
+	R1Li4IobLBMYxWYhWT0LyepZSFbPQrJiASPLKkbR1ILkguKk9CJTveLE3OLSvHS95PzcTYyQ
+	2Ju4g/H+AetDjMlA6ycyS4km5wNjN68k3tDYzMjC1MTU2Mjc0ow0YSVxXvUW60AhgfTEktTs
+	1NSC1KL4otKc1OJDjEwcnFINjFKXBQX2r1ba7f78cd2KgmQvQ6UqoUy/D0t+hYTFvf6XKfhB
+	8lfGS5v0oo8HZxTqVf824u7a5qXl/4LTjm9tL9+Xqa+6ipiPhiaF5/va2Gx+csG8/gm/aOA0
+	x9OXTb+350Vad/p+yrkS/aRmwf8tsSILp/wsnL/8QNop16wf7SembG7eO6X5sRJLcUaioRZz
+	UXEiADqN7z/TAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd2Xyu2BBi82aFjs2O5i8erMRjaL
+	ywsvsVpM+bOcyeLyrjlsDqwed67tYfPo27KK0ePnSx2P70vXsHt83iQXwBrVwGiTkZqYklqk
+	kJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RbSaEsMacUKBSQWFys
+	pG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYx5jxbudU5oKNbBWNu7azNTAuYe1i5OSQEDCRmHBu
+	MhuELSZx4d56IJuLQ0hgEaPExwmHWCCcX4wS/QcvsINUsQmoSXz5chjMFhHQk7hxoYMRpIhZ
+	YBWjxNWOmYwgCWEBb4kff1aAFbEIqEo8nbKZGcTmFbCU2PtpCiOELSjxY/I9FhCbWUBLYv3O
+	40wQtrzE5jVvmSFOUpDYcfY1I8yypwues0LUiEjse/GOcQKjwCwko2YhGTULyahZSFoWMLKs
+	YhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiO7GdSOxhXNlgcYhTgYFTi4S140hYoxJpYVlyZ
+	e4hRgoNZSYTXZy9QiDclsbIqtSg/vqg0J7X4EGMy0KcTmaVEk/OBSSevJN7Q2MTMyNLIzMLI
+	xNycNGElcd4DrdaBQgLpiSWp2ampBalFMFuYODilGhhneT/49u91xcF795dE5006z7ZX77GG
+	SMg5FhW/pJZHdyY/3xv1xGY5y7Yi6wOsZ/WOK9Qcv5m06BrfrK4Kr+aXSganbM1uhG5Ojz9l
+	2S4Vbc/4pN55YX0HwybPxVtYLybNPdSx+0fSJuVzHueOL9eQYP/Vy51sxCs2Jf9W6DbTvzOb
+	Tn078L5biaU4I9FQi7moOBEA1NVPsjADAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,44 +61,21 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/gpio/gpio-rdc321x.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/gpio/gpio-stmpe.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpio/gpio-rdc321x.c b/drivers/gpio/gpio-rdc321x.c
-index 1bf55f6..368c3c0 100644
---- a/drivers/gpio/gpio-rdc321x.c
-+++ b/drivers/gpio/gpio-rdc321x.c
-@@ -187,20 +187,18 @@ static int rdc321x_gpio_probe(struct platform_device *pdev)
- 					rdc321x_gpio_dev->reg1_data_base,
- 					&rdc321x_gpio_dev->data_reg[0]);
- 	if (err)
--		goto out_drvdata;
-+		goto out_free;
+diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
+index 3ce5bc3..671913e 100644
+--- a/drivers/gpio/gpio-stmpe.c
++++ b/drivers/gpio/gpio-stmpe.c
+@@ -431,7 +431,6 @@ static int stmpe_gpio_remove(struct platform_device *pdev)
+ 	if (irq >= 0)
+ 		free_irq(irq, stmpe_gpio);
  
- 	err = pci_read_config_dword(rdc321x_gpio_dev->sb_pdev,
- 					rdc321x_gpio_dev->reg2_data_base,
- 					&rdc321x_gpio_dev->data_reg[1]);
- 	if (err)
--		goto out_drvdata;
-+		goto out_free;
- 
- 	dev_info(&pdev->dev, "registering %d GPIOs\n",
- 					rdc321x_gpio_dev->chip.ngpio);
- 	return gpiochip_add(&rdc321x_gpio_dev->chip);
- 
--out_drvdata:
 -	platform_set_drvdata(pdev, NULL);
- out_free:
- 	kfree(rdc321x_gpio_dev);
- 	return err;
-@@ -216,7 +214,6 @@ static int rdc321x_gpio_remove(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "failed to unregister chip\n");
+ 	kfree(stmpe_gpio);
  
- 	kfree(rdc321x_gpio_dev);
--	platform_set_drvdata(pdev, NULL);
- 
- 	return ret;
- }
+ 	return 0;
 -- 
 1.7.2.5
 
