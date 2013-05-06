@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758320Ab3EFUtl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:49:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59398 "EHLO
+	id S1758143Ab3EFUrH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:47:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59362 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758088Ab3EFUrI (ORCPT
+	with ESMTP id S1758088Ab3EFUrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:47:08 -0400
+	Mon, 6 May 2013 16:47:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 108/115] mmc: at91/avr32/atmel-mci: fix DMA-channel leak on module unload
-Date: Mon,  6 May 2013 13:45:44 -0700
-Message-Id: <20130506203106.658306466@linuxfoundation.org>
+        Robin Holt <holt@sgi.com>, Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 096/115] ipc: sysv shared memory limited to 8TiB
+Date: Mon,  6 May 2013 13:45:32 -0700
+Message-Id: <20130506203105.465029670@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -28,93 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Robin Holt <holt@sgi.com>
 
-commit 91cf54feecf815bec0b6a8d6d9dbd0e219f2f2cc upstream.
+commit d69f3bad4675ac519d41ca2b11e1c00ca115cecd upstream.
 
-Fix regression introduced by commit 796211b7953 ("mmc: atmel-mci: add
-pdc support and runtime capabilities detection") which removed the need
-for CONFIG_MMC_ATMELMCI_DMA but kept the Kconfig-entry as well as the
-compile guards around dma_release_channel() in remove(). Consequently,
-DMA is always enabled (if supported), but the DMA-channel is not
-released on module unload unless the DMA-config option is selected.
+Trying to run an application which was trying to put data into half of
+memory using shmget(), we found that having a shmall value below 8EiB-8TiB
+would prevent us from using anything more than 8TiB.  By setting
+kernel.shmall greater than 8EiB-8TiB would make the job work.
 
-Remove the no longer used CONFIG_MMC_ATMELMCI_DMA option completely.
+In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+ipc/shm.c:
+ 458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ 459 {
+...
+ 465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
+...
+ 474         if (ns->shm_tot + numpages > ns->shm_ctlall)
+ 475                 return -ENOSPC;
+
+[akpm@linux-foundation.org: make ipc/shm.c:newseg()'s numpages size_t, not int]
+Signed-off-by: Robin Holt <holt@sgi.com>
+Reported-by: Alex Thorlton <athorlton@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/configs/at91sam9g45_defconfig |    1 -
- arch/avr32/configs/favr-32_defconfig   |    1 -
- arch/avr32/configs/merisc_defconfig    |    1 -
- drivers/mmc/host/Kconfig               |   10 ----------
- drivers/mmc/host/atmel-mci.c           |    2 --
- 5 files changed, 15 deletions(-)
+ include/linux/ipc_namespace.h |    2 +-
+ ipc/shm.c                     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/configs/at91sam9g45_defconfig
-+++ b/arch/arm/configs/at91sam9g45_defconfig
-@@ -173,7 +173,6 @@ CONFIG_MMC=y
- # CONFIG_MMC_BLOCK_BOUNCE is not set
- CONFIG_SDIO_UART=m
- CONFIG_MMC_ATMELMCI=y
--CONFIG_MMC_ATMELMCI_DMA=y
- CONFIG_LEDS_ATMEL_PWM=y
- CONFIG_LEDS_GPIO=y
- CONFIG_LEDS_TRIGGER_TIMER=y
---- a/arch/avr32/configs/favr-32_defconfig
-+++ b/arch/avr32/configs/favr-32_defconfig
-@@ -122,7 +122,6 @@ CONFIG_USB_G_SERIAL=m
- CONFIG_USB_CDC_COMPOSITE=m
- CONFIG_MMC=y
- CONFIG_MMC_ATMELMCI=y
--CONFIG_MMC_ATMELMCI_DMA=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
- CONFIG_LEDS_ATMEL_PWM=m
---- a/arch/avr32/configs/merisc_defconfig
-+++ b/arch/avr32/configs/merisc_defconfig
-@@ -102,7 +102,6 @@ CONFIG_FRAMEBUFFER_CONSOLE=y
- CONFIG_LOGO=y
- CONFIG_MMC=y
- CONFIG_MMC_ATMELMCI=y
--CONFIG_MMC_ATMELMCI_DMA=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
- CONFIG_LEDS_ATMEL_PWM=y
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -300,16 +300,6 @@ config MMC_ATMELMCI
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -43,8 +43,8 @@ struct ipc_namespace {
  
- 	  If unsure, say N.
- 
--config MMC_ATMELMCI_DMA
--	bool "Atmel MCI DMA support"
--	depends on MMC_ATMELMCI && (AVR32 || ARCH_AT91SAM9G45) && DMA_ENGINE
--	help
--	  Say Y here to have the Atmel MCI driver use a DMA engine to
--	  do data transfers and thus increase the throughput and
--	  reduce the CPU utilization.
--
--	  If unsure, say N.
--
- config MMC_MSM
- 	tristate "Qualcomm SDCC Controller Support"
- 	depends on MMC && ARCH_MSM
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -2487,10 +2487,8 @@ static int __exit atmci_remove(struct pl
- 	atmci_readl(host, ATMCI_SR);
- 	clk_disable(host->mck);
- 
--#ifdef CONFIG_MMC_ATMELMCI_DMA
- 	if (host->dma.chan)
- 		dma_release_channel(host->dma.chan);
--#endif
- 
- 	free_irq(platform_get_irq(pdev, 0), host);
- 	iounmap(host->regs);
+ 	size_t		shm_ctlmax;
+ 	size_t		shm_ctlall;
++	unsigned long	shm_tot;
+ 	int		shm_ctlmni;
+-	int		shm_tot;
+ 	/*
+ 	 * Defines whether IPC_RMID is forced for _all_ shm segments regardless
+ 	 * of shmctl()
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -462,7 +462,7 @@ static int newseg(struct ipc_namespace *
+ 	size_t size = params->u.size;
+ 	int error;
+ 	struct shmid_kernel *shp;
+-	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
++	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	struct file * file;
+ 	char name[13];
+ 	int id;
 
 
