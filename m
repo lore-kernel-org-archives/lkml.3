@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760791Ab3EFXVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:21:37 -0400
-Received: from kymasys.com ([64.62.140.43]:45712 "HELO kymasys.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757070Ab3EFXVd convert rfc822-to-8bit (ORCPT
+	id S933358Ab3EFXVH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:21:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36933 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759123Ab3EFXOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:21:33 -0400
-Subject: Re: [PATCH] mips/kvm: Fix ABI for compatibility with 64-bit guests.
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Sanjay Lal <sanjayl@kymasys.com>
-In-Reply-To: <1367879980-2440-1-git-send-email-ddaney.cavm@gmail.com>
-Date: Mon, 6 May 2013 16:11:34 -0700
-Cc: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1069B54B-C9CD-4333-B56F-B0E1D740CADB@kymasys.com>
-References: <1367879980-2440-1-git-send-email-ddaney.cavm@gmail.com>
-To: David Daney <ddaney.cavm@gmail.com>
-X-Mailer: Apple Mail (2.1283)
+	Mon, 6 May 2013 19:14:03 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jonathan Brassow <jbrassow@redhat.com>, NeilBrown <neilb@suse.de>
+Subject: [ 082/104] md: bad block list should default to disabled.
+Date: Mon,  6 May 2013 16:12:41 -0700
+Message-Id: <20130506230052.091093028@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
+References: <20130506230043.526528358@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-On May 6, 2013, at 3:39 PM, David Daney wrote:
+------------------
 
-> 
-> /* for KVM_GET_REGS and KVM_SET_REGS */
-> +/*
-> + * If Config[AT] is zero (32-bit CPU), the register contents are
-> + * stored in the lower 32-bits of the struct kvm_regs fields and sign
-> + * extended to 64-bits.
-> + */
-> struct kvm_regs {
-> -	__u32 gprs[32];
-> -	__u32 hi;
-> -	__u32 lo;
-> -	__u32 pc;
-> +	/* out (KVM_GET_REGS) / in (KVM_SET_REGS) */
-> +	__u64 gpr[32];
-> +	__u64 hi, lo;
-> +	__u64 pc;
-> +};
-> 
-> -	__u32 cp0reg[N_MIPS_COPROC_REGS][N_MIPS_COPROC_SEL];
+From: NeilBrown <neilb@suse.de>
 
-Hi David, I'll try out the diff with QEMU and confirm that it works as expected. Could you just leave the GPR field in kvm_regs as "gprs". Its a minor change but avoids diffs that just replace "gprs" with "gpr".
+commit 486adf72ccc0c235754923d47a2270c5dcb0c98b upstream.
 
-Regards
-Sanjay
+Maintenance of a bad-block-list currently defaults to 'enabled'
+and is then disabled when it cannot be supported.
+This is backwards and causes problem for dm-raid which didn't know
+to disable it.
+
+So fix the defaults, and only enabled for v1.x metadata which
+explicitly has bad blocks enabled.
+
+The problem with dm-raid has been present since badblock support was
+added in v3.1, so this patch is suitable for any -stable from 3.1
+onwards.
+
+Reported-by: Jonathan Brassow <jbrassow@redhat.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/md/md.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
+
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -1564,8 +1564,8 @@ static int super_1_load(struct md_rdev *
+ 					     sector, count, 1) == 0)
+ 				return -EINVAL;
+ 		}
+-	} else if (sb->bblog_offset == 0)
+-		rdev->badblocks.shift = -1;
++	} else if (sb->bblog_offset != 0)
++		rdev->badblocks.shift = 0;
+ 
+ 	if (!refdev) {
+ 		ret = 1;
+@@ -3221,7 +3221,7 @@ int md_rdev_init(struct md_rdev *rdev)
+ 	 * be used - I wonder if that matters
+ 	 */
+ 	rdev->badblocks.count = 0;
+-	rdev->badblocks.shift = 0;
++	rdev->badblocks.shift = -1; /* disabled until explicitly enabled */
+ 	rdev->badblocks.page = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 	seqlock_init(&rdev->badblocks.lock);
+ 	if (rdev->badblocks.page == NULL)
+@@ -3293,9 +3293,6 @@ static struct md_rdev *md_import_device(
+ 			goto abort_free;
+ 		}
+ 	}
+-	if (super_format == -1)
+-		/* hot-add for 0.90, or non-persistent: so no badblocks */
+-		rdev->badblocks.shift = -1;
+ 
+ 	return rdev;
+ 
+
 
