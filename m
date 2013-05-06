@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756601Ab3EFUkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:40:06 -0400
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:35074 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756251Ab3EFUkD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:40:03 -0400
-Date: Mon, 6 May 2013 13:39:59 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
+	id S1756698Ab3EFUlw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:41:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756312Ab3EFUlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 16:41:51 -0400
+Date: Mon, 6 May 2013 16:41:41 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
 Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org
 Subject: Re: [PATCH 21/31] blk-throttle: implement sq_to_tg(), sq_to_td() and
  throtl_log()
-Message-ID: <20130506203959.GF800@mtj.dyndns.org>
+Message-ID: <20130506204141.GF11731@redhat.com>
 References: <1367455189-6957-1-git-send-email-tj@kernel.org>
  <1367455189-6957-22-git-send-email-tj@kernel.org>
  <20130506173644.GD11731@redhat.com>
@@ -54,11 +53,6 @@ On Mon, May 06, 2013 at 01:38:27PM -0700, Tejun Heo wrote:
 > instead of "throtl %s " is because when the path is nil, we don't
 > wanna print out two consecutive spaces, so AFAICS the code is correct.
 
-Oops, I was wrong again, you mean after '%s'.  Yeah, right.  I need to
-change it so that it does __pbuf[0] = '\0' if no path and add space
-after '%s'.  Updating...
+What about space after the cgroup path info (when path is not nil).
 
-Sorry about the confusion.
-
--- 
-tejun
+Vivek
