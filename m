@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933584Ab3EFX14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:27:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36809 "EHLO
+	id S1760568Ab3EFXNn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:13:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36747 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760575Ab3EFXNo (ORCPT
+	with ESMTP id S1757514Ab3EFXNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:44 -0400
+	Mon, 6 May 2013 19:13:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 048/104] PCI / ACPI: Dont query OSC support with all possible controls
-Date: Mon,  6 May 2013 16:12:07 -0700
-Message-Id: <20130506230048.536520190@linuxfoundation.org>
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 043/104] tracing: Reset ftrace_graph_filter_enabled if count is zero
+Date: Mon,  6 May 2013 16:12:02 -0700
+Message-Id: <20130506230048.042800025@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -27,67 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-commit 545d6e189a41c94c11f55045a771118eccc9d9eb upstream.
+commit 9f50afccfdc15d95d7331acddcb0f7703df089ae upstream.
 
-Found problem on system that firmware that could handle pci aer.
-Firmware get error reporting after pci injecting error, before os boots.
-But after os boots, firmware can not get report anymore, even pci=noaer
-is passed.
+The ftrace_graph_count can be decreased with a "!" pattern, so that
+the enabled flag should be updated too.
 
-Root cause: BIOS _OSC has problem with query bit checking.
-It turns out that BIOS vendor is copying example code from ACPI Spec.
-In ACPI Spec 5.0, page 290:
+Link: http://lkml.kernel.org/r/1365663698-2413-1-git-send-email-namhyung@kernel.org
 
-	If (Not(And(CDW1,1))) // Query flag clear?
-	{	// Disable GPEs for features granted native control.
-		If (And(CTRL,0x01)) // Hot plug control granted?
-		{
-			Store(0,HPCE) // clear the hot plug SCI enable bit
-			Store(1,HPCS) // clear the hot plug SCI status bit
-		}
-	...
-	}
-
-When Query flag is set, And(CDW1,1) will be 1, Not(1) will return 0xfffffffe.
-So it will get into code path that should be for control set only.
-BIOS acpi code should be changed to "If (LEqual(And(CDW1,1), 0)))"
-
-Current kernel code is using _OSC query to notify firmware about support
-from OS and then use _OSC to set control bits.
-During query support, current code is using all possible controls.
-So will execute code that should be only for control set stage.
-
-That will have problem when pci=noaer or aer firmware_first is used.
-As firmware have that control set for os aer already in query support stage,
-but later will not os aer handling.
-
-We should avoid passing all possible controls, just use osc_control_set
-instead.
-That should workaround BIOS bugs with affected systems on the field
-as more bios vendors are copying sample code from ACPI spec.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/pci_root.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/ftrace.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -240,8 +240,8 @@ static acpi_status acpi_pci_query_osc(st
- 		*control &= OSC_PCI_CONTROL_MASKS;
- 		capbuf[OSC_CONTROL_TYPE] = *control | root->osc_control_set;
- 	} else {
--		/* Run _OSC query for all possible controls. */
--		capbuf[OSC_CONTROL_TYPE] = OSC_PCI_CONTROL_MASKS;
-+		/* Run _OSC query only with existing controls. */
-+		capbuf[OSC_CONTROL_TYPE] = root->osc_control_set;
- 	}
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3714,7 +3714,8 @@ out:
+ 	if (fail)
+ 		return -EINVAL;
  
- 	status = acpi_pci_run_osc(root->device->handle, capbuf, &result);
+-	ftrace_graph_filter_enabled = 1;
++	ftrace_graph_filter_enabled = !!(*idx);
++
+ 	return 0;
+ }
+ 
 
 
