@@ -1,164 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab3EFIY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 04:24:56 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:36742 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab3EFIYz (ORCPT
+	id S1752345Ab3EFIeX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 04:34:23 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49704 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab3EFIeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 04:24:55 -0400
+	Mon, 6 May 2013 04:34:21 -0400
+Message-ID: <51876AFE.80906@linux.vnet.ibm.com>
+Date: Mon, 06 May 2013 16:34:06 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1367804711-30308-2-git-send-email-alex.shi@intel.com>
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-2-git-send-email-alex.shi@intel.com>
-From: Paul Turner <pjt@google.com>
-Date: Mon, 6 May 2013 01:24:23 -0700
-Message-ID: <CAPM31R+4Ar5FFGSgfts76qNiQ5GMpPk7wkuj1fwsFrugVwnLfQ@mail.gmail.com>
-Subject: Re: [PATCH v5 1/7] Revert "sched: Introduce temporary
- FAIR_GROUP_SCHED dependency for load-tracking"
 To: Alex Shi <alex.shi@intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: pjt@google.com, mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, bp@alien8.de, namhyung@kernel.org,
+        efault@gmx.de, morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com
+Subject: Re: [PATCH v5 7/7] sched: consider runnable load average in effective_load
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-8-git-send-email-alex.shi@intel.com> <518724D1.9040006@linux.vnet.ibm.com> <51874229.8050202@intel.com> <5187609C.5050209@linux.vnet.ibm.com> <518763B0.30200@intel.com>
+In-Reply-To: <518763B0.30200@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050608-4790-0000-0000-0000082CDF71
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 5, 2013 at 6:45 PM, Alex Shi <alex.shi@intel.com> wrote:
-> Remove CONFIG_FAIR_GROUP_SCHED that covers the runnable info, then
-> we can use runnable load variables.
->
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  include/linux/sched.h |  7 +------
->  kernel/sched/core.c   |  7 +------
->  kernel/sched/fair.c   | 13 ++-----------
->  kernel/sched/sched.h  |  9 +--------
->  4 files changed, 5 insertions(+), 31 deletions(-)
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index e692a02..9539597 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1161,12 +1161,7 @@ struct sched_entity {
->         struct cfs_rq           *my_q;
->  #endif
->
-> -/*
-> - * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
-> - * removed when useful for applications beyond shares distribution (e.g.
-> - * load-balance).
-> - */
-> -#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
-> +#ifdef CONFIG_SMP
->         /* Per-entity load-tracking */
->         struct sched_avg        avg;
->  #endif
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 67d0465..c8db984 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1563,12 +1563,7 @@ static void __sched_fork(struct task_struct *p)
->         p->se.vruntime                  = 0;
->         INIT_LIST_HEAD(&p->se.group_node);
->
-> -/*
-> - * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
-> - * removed when useful for applications beyond shares distribution (e.g.
-> - * load-balance).
-> - */
-> -#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
-> +#ifdef CONFIG_SMP
->         p->se.avg.runnable_avg_period = 0;
->         p->se.avg.runnable_avg_sum = 0;
->  #endif
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 7a33e59..9c2f726 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1109,8 +1109,7 @@ static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
->  }
->  #endif /* CONFIG_FAIR_GROUP_SCHED */
->
-> -/* Only depends on SMP, FAIR_GROUP_SCHED may be removed when useful in lb */
-> -#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
-> +#ifdef CONFIG_SMP
->  /*
->   * We choose a half-life close to 1 scheduling period.
->   * Note: The tables below are dependent on this value.
-> @@ -3394,12 +3393,6 @@ unlock:
->  }
->
->  /*
-> - * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
-> - * removed when useful for applications beyond shares distribution (e.g.
-> - * load-balance).
-> - */
-> -#ifdef CONFIG_FAIR_GROUP_SCHED
-> -/*
->   * Called immediately before a task is migrated to a new cpu; task_cpu(p) and
->   * cfs_rq_of(p) references at time of call are still valid and identify the
->   * previous cpu.  However, the caller only guarantees p->pi_lock is held; no
-> @@ -3422,7 +3415,6 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
->                 atomic64_add(se->avg.load_avg_contrib, &cfs_rq->removed_load);
->         }
->  }
-> -#endif
->  #endif /* CONFIG_SMP */
->
->  static unsigned long
-> @@ -6114,9 +6106,8 @@ const struct sched_class fair_sched_class = {
->
->  #ifdef CONFIG_SMP
->         .select_task_rq         = select_task_rq_fair,
-> -#ifdef CONFIG_FAIR_GROUP_SCHED
->         .migrate_task_rq        = migrate_task_rq_fair,
-> -#endif
-> +
->         .rq_online              = rq_online_fair,
->         .rq_offline             = rq_offline_fair,
->
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index cc03cfd..7f36024f 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -227,12 +227,6 @@ struct cfs_rq {
->  #endif
->
->  #ifdef CONFIG_SMP
-> -/*
-> - * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
-> - * removed when useful for applications beyond shares distribution (e.g.
-> - * load-balance).
-> - */
-> -#ifdef CONFIG_FAIR_GROUP_SCHED
->         /*
->          * CFS Load tracking
->          * Under CFS, load is tracked on a per-entity basis and aggregated up.
-> @@ -242,8 +236,7 @@ struct cfs_rq {
->         u64 runnable_load_avg, blocked_load_avg;
->         atomic64_t decay_counter, removed_load;
->         u64 last_decay;
-> -#endif /* CONFIG_FAIR_GROUP_SCHED */
-> -/* These always depend on CONFIG_FAIR_GROUP_SCHED */
+On 05/06/2013 04:02 PM, Alex Shi wrote:
+> On 05/06/2013 03:49 PM, Michael Wang wrote:
+>> On 05/06/2013 01:39 PM, Alex Shi wrote:
+>> [snip]
+>>
+>> Rough test done:
+>>
+>>>
+>>> 1, change back the tg_weight in calc_tg_weight() to use tg_load_contrib not direct load.
+>>
+>> This way stop the regression of patch 7.
+>>
+>>>
+>>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>>> index 6f4f14b..c770f8d 100644
+>>> --- a/kernel/sched/fair.c
+>>> +++ b/kernel/sched/fair.c
+>>> @@ -1037,8 +1037,8 @@ static inline long calc_tg_weight(struct task_group *tg, struct cfs_rq *cfs_rq)
+>>>  	 * update_cfs_rq_load_contribution().
+>>>  	 */
+>>>  	tg_weight = atomic64_read(&tg->load_avg);
+>>> -	tg_weight -= cfs_rq->tg_load_contrib;
+>>> -	tg_weight += cfs_rq->load.weight;
+>>> +	//tg_weight -= cfs_rq->tg_load_contrib;
+>>> +	//tg_weight += cfs_rq->load.weight;
+>>>
+>>>  	return tg_weight;
+>>>  }
+>>>
+>>> 2, another try is follow the current calc_tg_weight, so remove the follow change.
+>>
+>> This way show even better results than only patch 1~6.
+> 
+> how much better to the first change?
 
-We should perhaps replace this with a comment that these are only
-needed to aggregate the point-wise representation in the
-FAIR_GROUP_SCHED case.
+Nevermind, it's just a rough test, consider them as same...
 
-> +
->  #ifdef CONFIG_FAIR_GROUP_SCHED
->         u32 tg_runnable_contrib;
->         u64 tg_load_contrib;
-> --
-> 1.7.12
->
+>>
+>> But the way Preeti suggested doesn't works...
+> 
+> What's the Preeti suggestion? :)
+
+Paste at last.
+
+>>
+>> May be we should record some explanation about this change here, do we?
+> 
+> I don't know why we need this, PJT, would you like to tell us why the
+> calc_tg_weight use cfs_rq->load.weight not cfs_rq->tg_load_contrib?
+
+The comment said this is more accurate, but that was for the world
+without decay load I suppose...
+
+But if it using 'cfs_rq->load.weight', which means denominator M contain
+that factor, than numerator w has to contain it also...
+
+Regards,
+Michael Wang
+
+> 
+> 
+>>
+>> Regards,
+>> Michael Wang
+>>
+
+sched: Modify effective_load() to use runnable load average
+
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+
+The runqueue weight distribution should update the runnable load average of
+the cfs_rq on which the task will be woken up.
+
+However since the computation of se->load.weight takes into consideration
+the runnable load average in update_cfs_shares(),no need to modify this in
+effective_load().
+---
+ kernel/sched/fair.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 790e23d..5489022 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3045,7 +3045,7 @@ static long effective_load(struct task_group *tg,
+int cpu, long wl, long wg)
+ 		/*
+ 		 * w = rw_i + @wl
+ 		 */
+-		w = se->my_q->load.weight + wl;
++		w = se->my_q->runnable_load_avg + wl;
+
+ 		/*
+ 		 * wl = S * s'_i; see (2)
+@@ -3066,6 +3066,9 @@ static long effective_load(struct task_group *tg,
+int cpu, long wl, long wg)
+ 		/*
+ 		 * wl = dw_i = S * (s'_i - s_i); see (3)
+ 		 */
++		/* Do not modify the below as it already contains runnable
++		 * load average in its computation
++		 */
+ 		wl -= se->load.weight;
+
+ 		/*
+@@ -3112,14 +3115,14 @@ static int wake_affine(struct sched_domain *sd,
+struct task_struct *p, int sync)
+ 	 */
+ 	if (sync) {
+ 		tg = task_group(current);
+-		weight = current->se.load.weight;
++		weight = current->se.avg.load_avg_contrib;
+
+ 		this_load += effective_load(tg, this_cpu, -weight, -weight);
+ 		load += effective_load(tg, prev_cpu, 0, -weight);
+ 	}
+
+ 	tg = task_group(p);
+-	weight = p->se.load.weight;
++	weight = p->se.avg.load_avg_contrib;
+
+ 	/*
+ 	 * In low-load situations, where prev_cpu is idle and this_cpu is idle
+
+
+Regards
+Preeti U Murthy
+
+
+
+
