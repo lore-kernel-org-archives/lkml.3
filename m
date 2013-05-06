@@ -1,109 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab3EFD0T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 23:26:19 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:42125 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab3EFD0S (ORCPT
+	id S1752701Ab3EFD11 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 23:27:27 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:23850 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547Ab3EFD10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 23:26:18 -0400
-Message-ID: <5187226C.3000509@linux.vnet.ibm.com>
-Date: Mon, 06 May 2013 08:54:28 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
-        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
-        riel@redhat.com
-Subject: Re: [patch v7 02/21] sched: set initial value of runnable avg for
- new forked task
-References: <1365040862-8390-1-git-send-email-alex.shi@intel.com> <1365040862-8390-3-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1365040862-8390-3-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050603-2000-0000-0000-00000BFC83B7
+	Sun, 5 May 2013 23:27:26 -0400
+X-AuditID: cbfee68e-b7efa6d000004d12-0f-5187231cb275
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Grant Likely'" <grant.likely@secretlab.ca>
+Cc: "'Linus Walleij'" <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 1/7] gpio: langwell: remove unnecessary platform_set_drvdata()
+Date: Mon, 06 May 2013 12:27:24 +0900
+Message-id: <001701ce4a09$a04af0b0$e0e0d210$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac5KCZ07urt0PbqhS6y9GGX8tv7etg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t8zQ10Z5fZAgxUntS1endnIZnF54SVW
+	iyl/ljNZXN41h82BxePOtT1sHn1bVjF6/Hyp4/F5k1wASxSXTUpqTmZZapG+XQJXxuktp5kL
+	7rBVnH7Yzt7AeJ61i5GTQ0LARGLdnyNQtpjEhXvr2boYuTiEBJYxShxb9Z25i5EDrGji32SI
+	+CJGiQW7+5khnF+MEg82doF1swmoSXz5cpgdxBYR0JO4caGDEcRmFiiSeN41C6xGWMBPonHt
+	cxYQm0VAVeLmjwawOK+ApcSz5nuMELagxI/J91ggerUk1u88zgRhy0tsXvOWGeJSBYkdZ18z
+	wuxa83oe1C4RiX0v3jGCHCchsI5d4tTEfjaIZQIS3yYfYoH4RlZi0wGoOZISB1fcYJnAKDYL
+	yepZSFbPQrJ6FpIVCxhZVjGKphYkFxQnpRcZ6RUn5haX5qXrJefnbmKERFnfDsabB6wPMSYD
+	rZ/ILCWanA+M0rySeENjMyMLUxNTYyNzSzPShJXEedVarAOFBNITS1KzU1MLUovii0pzUosP
+	MTJxcEo1MLb6FPilTPVMPHvx0rurcTf7Ln5dOPuQaWtFzSedx/mXj9qserqL+eY9Lu7UW8ZX
+	koX5s9Rf7bU78VLlat6576UHRYryTeXynl7/5tRYFWAdyZrw8blOzfJtduwcfGfmrzvEOP2c
+	pETsg+27Sn41PBeuzN6U+tPZpbg+O0f4shjr87+8Jf/ljimxFGckGmoxFxUnAgAbKtY3yAIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jAV0Z5fZAg2eP1S1endnIZnF54SVW
+	iyl/ljNZXN41h82BxePOtT1sHn1bVjF6/Hyp4/F5k1wAS1QDo01GamJKapFCal5yfkpmXrqt
+	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
+	MI0Rur4hQXA9RgZoIGEdY8bpLaeZC+6wVZx+2M7ewHietYuRg0NCwERi4t/kLkZOIFNM4sK9
+	9WxdjFwcQgKLGCUW7O5nhnB+MUo82NjFClLFJqAm8eXLYXYQW0RAT+LGhQ5GEJtZoEjiedcs
+	sBphAT+JxrXPWUBsFgFViZs/GsDivAKWEs+a7zFC2IISPybfY4Ho1ZJYv/M4E4QtL7F5zVtm
+	iIsUJHacfc0Is2vN63lQu0Qk9r14xziBUWAWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca
+	6RUn5haX5qXrJefnbmIEx/Az6R2MqxosDjEKcDAq8fAWPGkLFGJNLCuuzD3EKMHBrCTC67MX
+	KMSbklhZlVqUH19UmpNafIgxGejTicxSosn5wPSSVxJvaGxiZmRpZGZhZGJuTpqwkjjvwVbr
+	QCGB9MSS1OzU1ILUIpgtTBycUg2MArf8H1keyt8z31ikiTncX3TOJI06B78FcyqOKTdLtU2/
+	/FIu/PnbW52LYgN8tJKUg2abcmvlslmG61U9mab8NfFo740avbpDnn8fmPMtqxA899fjr8SO
+	81d41j57YlpQ7jpvxuY98zrCVB1VM/K57O99ue0mO+me8JLapUvC95WvOvxx8uf/SizFGYmG
+	WsxFxYkAjyjGCSUDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+The driver core clears the driver data to NULL after device_release
+or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
+(device-core: Ensure drvdata = NULL when no driver is bound).
+Thus, it is not needed to manually clear the device driver data to NULL.
 
-The below patch looks good to me.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/gpio/gpio-langwell.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-On 04/04/2013 07:30 AM, Alex Shi wrote:
-> We need initialize the se.avg.{decay_count, load_avg_contrib} for a
-> new forked task.
-> Otherwise random values of above variables cause mess when do new task
-> enqueue:
->     enqueue_task_fair
->         enqueue_entity
->             enqueue_entity_load_avg
-> 
-> and make forking balancing imbalance since incorrect load_avg_contrib.
-> 
-> set avg.decay_count = 0, and avg.load_avg_contrib = se->load.weight to
-> resolve such issues.
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/core.c | 6 ++++++
->  kernel/sched/fair.c | 4 ++++
->  2 files changed, 10 insertions(+)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 54eaaa2..8843cd3 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1564,6 +1564,7 @@ static void __sched_fork(struct task_struct *p)
->  #ifdef CONFIG_SMP
->  	p->se.avg.runnable_avg_period = 0;
->  	p->se.avg.runnable_avg_sum = 0;
-> +	p->se.avg.decay_count = 0;
->  #endif
->  #ifdef CONFIG_SCHEDSTATS
->  	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
-> @@ -1651,6 +1652,11 @@ void sched_fork(struct task_struct *p)
->  		p->sched_reset_on_fork = 0;
->  	}
-> 
-> +	/* New forked task assumed with full utilization */
-> +#if defined(CONFIG_SMP)
-> +	p->se.avg.load_avg_contrib = p->se.load.weight;
-> +#endif
-> +
->  	if (!rt_prio(p->prio))
->  		p->sched_class = &fair_sched_class;
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 9c2f726..2881d42 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1508,6 +1508,10 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
->  	 * We track migrations using entity decay_count <= 0, on a wake-up
->  	 * migration we use a negative decay count to track the remote decays
->  	 * accumulated while sleeping.
-> +	 *
-> +	 * When enqueue a new forked task, the se->avg.decay_count == 0, so
-> +	 * we bypass update_entity_load_avg(), use avg.load_avg_contrib initial
-> +	 * value: se->load.weight.
->  	 */
->  	if (unlikely(se->avg.decay_count <= 0)) {
->  		se->avg.last_runnable_update = rq_of(cfs_rq)->clock_task;
-> 
+diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
+index 634c3d3..de08bc1 100644
+--- a/drivers/gpio/gpio-langwell.c
++++ b/drivers/gpio/gpio-langwell.c
+@@ -478,7 +478,6 @@ static int wp_gpio_remove(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "failed to remove gpio_chip.\n");
+ 	iounmap(lnw->reg_base);
+ 	kfree(lnw);
+-	platform_set_drvdata(pdev, NULL);
+ 	return 0;
+ }
+ 
+-- 
+1.7.2.5
 
-Reviewed-by:Preeti U Murthy
-
-Thanks
-
-Regards
-Preeti U Murthy
 
