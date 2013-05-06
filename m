@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933323Ab3EFXUX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:20:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36948 "EHLO
+	id S1760654Ab3EFXOE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:14:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36912 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760659Ab3EFXOF (ORCPT
+	with ESMTP id S932275Ab3EFXOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:05 -0400
+	Mon, 6 May 2013 19:14:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 087/104] nfsd: Decode and send 64bit time values
-Date: Mon,  6 May 2013 16:12:46 -0700
-Message-Id: <20130506230052.583024075@linuxfoundation.org>
+        Greg Thelen <gthelen@google.com>, Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 079/104] fs/dcache.c: add cond_resched() to shrink_dcache_parent()
+Date: Mon,  6 May 2013 16:12:38 -0700
+Message-Id: <20130506230051.772750262@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -27,76 +28,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan Schumaker <bjschuma@netapp.com>
+From: Greg Thelen <gthelen@google.com>
 
-commit bf8d909705e9d9bac31d9b8eac6734d2b51332a7 upstream.
+commit 421348f1ca0bf17769dee0aed4d991845ae0536d upstream.
 
-The seconds field of an nfstime4 structure is 64bit, but we are assuming
-that the first 32bits are zero-filled.  So if the client tries to set
-atime to a value before the epoch (touch -t 196001010101), then the
-server will save the wrong value on disk.
+Call cond_resched() in shrink_dcache_parent() to maintain interactivity.
 
-Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Before this patch:
+
+	void shrink_dcache_parent(struct dentry * parent)
+	{
+		while ((found = select_parent(parent, &dispose)) != 0)
+			shrink_dentry_list(&dispose);
+	}
+
+select_parent() populates the dispose list with dentries which
+shrink_dentry_list() then deletes.  select_parent() carefully uses
+need_resched() to avoid doing too much work at once.  But neither
+shrink_dcache_parent() nor its called functions call cond_resched().  So
+once need_resched() is set select_parent() will return single dentry
+dispose list which is then deleted by shrink_dentry_list().  This is
+inefficient when there are a lot of dentry to process.  This can cause
+softlockup and hurts interactivity on non preemptable kernels.
+
+This change adds cond_resched() in shrink_dcache_parent().  The benefit
+of this is that need_resched() is quickly cleared so that future calls
+to select_parent() are able to efficiently return a big batch of dentry.
+
+These additional cond_resched() do not seem to impact performance, at
+least for the workload below.
+
+Here is a program which can cause soft lockup if other system activity
+sets need_resched().
+
+	int main()
+	{
+	        struct rlimit rlim;
+	        int i;
+	        int f[100000];
+	        char buf[20];
+	        struct timeval t1, t2;
+	        double diff;
+
+	        /* cleanup past run */
+	        system("rm -rf x");
+
+	        /* boost nfile rlimit */
+	        rlim.rlim_cur = 200000;
+	        rlim.rlim_max = 200000;
+	        if (setrlimit(RLIMIT_NOFILE, &rlim))
+	                err(1, "setrlimit");
+
+	        /* make directory for files */
+	        if (mkdir("x", 0700))
+	                err(1, "mkdir");
+
+	        if (gettimeofday(&t1, NULL))
+	                err(1, "gettimeofday");
+
+	        /* populate directory with open files */
+	        for (i = 0; i < 100000; i++) {
+	                snprintf(buf, sizeof(buf), "x/%d", i);
+	                f[i] = open(buf, O_CREAT);
+	                if (f[i] == -1)
+	                        err(1, "open");
+	        }
+
+	        /* close some of the files */
+	        for (i = 0; i < 85000; i++)
+	                close(f[i]);
+
+	        /* unlink all files, even open ones */
+	        system("rm -rf x");
+
+	        if (gettimeofday(&t2, NULL))
+	                err(1, "gettimeofday");
+
+	        diff = (((double)t2.tv_sec * 1000000 + t2.tv_usec) -
+	                ((double)t1.tv_sec * 1000000 + t1.tv_usec));
+
+	        printf("done: %g elapsed\n", diff/1e6);
+	        return 0;
+	}
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4xdr.c |   19 +++++--------------
- 1 file changed, 5 insertions(+), 14 deletions(-)
+ fs/dcache.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -344,10 +344,7 @@ nfsd4_decode_fattr(struct nfsd4_compound
- 			   all 32 bits of 'nseconds'. */
- 			READ_BUF(12);
- 			len += 12;
--			READ32(dummy32);
--			if (dummy32)
--				return nfserr_inval;
--			READ32(iattr->ia_atime.tv_sec);
-+			READ64(iattr->ia_atime.tv_sec);
- 			READ32(iattr->ia_atime.tv_nsec);
- 			if (iattr->ia_atime.tv_nsec >= (u32)1000000000)
- 				return nfserr_inval;
-@@ -370,10 +367,7 @@ nfsd4_decode_fattr(struct nfsd4_compound
- 			   all 32 bits of 'nseconds'. */
- 			READ_BUF(12);
- 			len += 12;
--			READ32(dummy32);
--			if (dummy32)
--				return nfserr_inval;
--			READ32(iattr->ia_mtime.tv_sec);
-+			READ64(iattr->ia_mtime.tv_sec);
- 			READ32(iattr->ia_mtime.tv_nsec);
- 			if (iattr->ia_mtime.tv_nsec >= (u32)1000000000)
- 				return nfserr_inval;
-@@ -2386,8 +2380,7 @@ out_acl:
- 	if (bmval1 & FATTR4_WORD1_TIME_ACCESS) {
- 		if ((buflen -= 12) < 0)
- 			goto out_resource;
--		WRITE32(0);
--		WRITE32(stat.atime.tv_sec);
-+		WRITE64((s64)stat.atime.tv_sec);
- 		WRITE32(stat.atime.tv_nsec);
- 	}
- 	if (bmval1 & FATTR4_WORD1_TIME_DELTA) {
-@@ -2400,15 +2393,13 @@ out_acl:
- 	if (bmval1 & FATTR4_WORD1_TIME_METADATA) {
- 		if ((buflen -= 12) < 0)
- 			goto out_resource;
--		WRITE32(0);
--		WRITE32(stat.ctime.tv_sec);
-+		WRITE64((s64)stat.ctime.tv_sec);
- 		WRITE32(stat.ctime.tv_nsec);
- 	}
- 	if (bmval1 & FATTR4_WORD1_TIME_MODIFY) {
- 		if ((buflen -= 12) < 0)
- 			goto out_resource;
--		WRITE32(0);
--		WRITE32(stat.mtime.tv_sec);
-+		WRITE64((s64)stat.mtime.tv_sec);
- 		WRITE32(stat.mtime.tv_nsec);
- 	}
- 	if (bmval1 & FATTR4_WORD1_MOUNTED_ON_FILEID) {
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1232,8 +1232,10 @@ void shrink_dcache_parent(struct dentry
+ 	LIST_HEAD(dispose);
+ 	int found;
+ 
+-	while ((found = select_parent(parent, &dispose)) != 0)
++	while ((found = select_parent(parent, &dispose)) != 0) {
+ 		shrink_dentry_list(&dispose);
++		cond_resched();
++	}
+ }
+ EXPORT_SYMBOL(shrink_dcache_parent);
+ 
 
 
