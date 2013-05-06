@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933793Ab3EFXee (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:34:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36707 "EHLO
+	id S933810Ab3EFXet (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:34:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36703 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760415Ab3EFXN2 (ORCPT
+	with ESMTP id S1760448Ab3EFXN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:28 -0400
+	Mon, 6 May 2013 19:13:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 034/104] arm: set the page table freeing ceiling to TASK_SIZE
-Date: Mon,  6 May 2013 16:11:53 -0700
-Message-Id: <20130506230047.119717923@linuxfoundation.org>
+        Federico Vaga <federico.vaga@gmail.com>
+Subject: [ 033/104] serial_core.c: add put_device() after device_find_child()
+Date: Mon,  6 May 2013 16:11:52 -0700
+Message-Id: <20130506230047.020578249@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -29,55 +26,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Federico Vaga <federico.vaga@gmail.com>
 
-commit 104ad3b32d7a71941c8ab2dee78eea38e8a23309 upstream.
+commit 5a65dcc04cda41f4122aacc37a5a348454645399 upstream.
 
-ARM processors with LPAE enabled use 3 levels of page tables, with an
-entry in the top level (pgd) covering 1GB of virtual space.  Because of
-the branch relocation limitations on ARM, the loadable modules are
-mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
-between kernel modules and user space.
+The serial core uses device_find_child() but does not drop the reference to
+the retrieved child after using it. This patch add the missing put_device().
 
-If free_pgtables() is called with the default ceiling 0,
-free_pgd_range() (and subsequently called functions) also frees the page
-table shared between user space and kernel modules (which is normally
-handled by the ARM-specific pgd_free() function).  This patch changes
-defines the ARM USER_PGTABLES_CEILING to TASK_SIZE when CONFIG_ARM_LPAE
-is enabled.
+What I have done to test this issue.
 
-Note that the pgd_free() function already checks the presence of the
-shared pmd page allocated by pgd_alloc() and frees it, though with
-ceiling 0 this wasn't necessary.
+I used a machine with an AMBA PL011 serial driver. I tested the patch on
+next-20120408 because the last branch [next-20120415] does not boot on this
+board.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+For test purpose, I added some pr_info() messages to print the refcount
+after device_find_child() (lines: 1937,2009), and after put_device()
+(lines: 1947, 2021).
+
+Boot the machine *without* put_device(). Then:
+
+echo reboot > /sys/power/disk
+echo disk > /sys/power/state
+[   87.058575] uart_suspend_port:1937 refcount 4
+[   87.058582] uart_suspend_port:1947 refcount 4
+[   87.098083] uart_resume_port:2009refcount 5
+[   87.098088] uart_resume_port:2021 refcount 5
+
+echo disk > /sys/power/state
+[  103.055574] uart_suspend_port:1937 refcount 6
+[  103.055580] uart_suspend_port:1947 refcount 6
+[  103.095322] uart_resume_port:2009 refcount 7
+[  103.095327] uart_resume_port:2021 refcount 7
+
+echo disk > /sys/power/state
+[  252.459580] uart_suspend_port:1937 refcount 8
+[  252.459586] uart_suspend_port:1947 refcount 8
+[  252.499611] uart_resume_port:2009 refcount 9
+[  252.499616] uart_resume_port:2021 refcount 9
+
+The refcount continuously increased.
+
+Boot the machine *with* this patch. Then:
+
+echo reboot > /sys/power/disk
+echo disk > /sys/power/state
+[  159.333559] uart_suspend_port:1937 refcount 4
+[  159.333566] uart_suspend_port:1947 refcount 3
+[  159.372751] uart_resume_port:2009 refcount 4
+[  159.372755] uart_resume_port:2021 refcount 3
+
+echo disk > /sys/power/state
+[  185.713614] uart_suspend_port:1937 refcount 4
+[  185.713621] uart_suspend_port:1947 refcount 3
+[  185.752935] uart_resume_port:2009 refcount 4
+[  185.752940] uart_resume_port:2021 refcount 3
+
+echo disk > /sys/power/state
+[  207.458584] uart_suspend_port:1937 refcount 4
+[  207.458591] uart_suspend_port:1947 refcount 3
+[  207.498598] uart_resume_port:2009 refcount 4
+[  207.498605] uart_resume_port:2021 refcount 3
+
+The refcount correctly handled.
+
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/pgtable.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/tty/serial/serial_core.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -61,6 +61,15 @@ extern void __pgd_error(const char *file
- #define FIRST_USER_ADDRESS	PAGE_SIZE
- 
- /*
-+ * Use TASK_SIZE as the ceiling argument for free_pgtables() and
-+ * free_pgd_range() to avoid freeing the modules pmd when LPAE is enabled (pmd
-+ * page shared between user and kernel).
-+ */
-+#ifdef CONFIG_ARM_LPAE
-+#define USER_PGTABLES_CEILING	TASK_SIZE
-+#endif
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -1940,6 +1940,8 @@ int uart_suspend_port(struct uart_driver
+ 		mutex_unlock(&port->mutex);
+ 		return 0;
+ 	}
++	put_device(tty_dev);
 +
-+/*
-  * The pgprot_* and protection_map entries will be fixed up in runtime
-  * to include the cachable and bufferable bits based on memory policy,
-  * as well as any architecture dependent bits like global/ASID and SMP
+ 	if (console_suspend_enabled || !uart_console(uport))
+ 		uport->suspended = 1;
+ 
+@@ -2005,9 +2007,11 @@ int uart_resume_port(struct uart_driver
+ 			disable_irq_wake(uport->irq);
+ 			uport->irq_wake = 0;
+ 		}
++		put_device(tty_dev);
+ 		mutex_unlock(&port->mutex);
+ 		return 0;
+ 	}
++	put_device(tty_dev);
+ 	uport->suspended = 0;
+ 
+ 	/*
 
 
