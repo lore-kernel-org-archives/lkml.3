@@ -1,92 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab3EFVVR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:21:17 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:37172 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757013Ab3EFVVP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 17:21:15 -0400
-From: "Ortiz, Lance E" <lance.oritz@hp.com>
-To: Borislav Petkov <bp@alien8.de>,
-        =?utf-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Linux-ACPI <linux-acpi@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Luck <tony.luck@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Dall, Elizabeth J (MCLinux)" <betty.dall@hp.com>
-Subject: RE: WARNING at drivers/pci/search.c:214 for 3.9
-Thread-Topic: WARNING at drivers/pci/search.c:214 for 3.9
-Thread-Index: AQHOSmT7XmlaV8+Pw0um1uzzkieDY5j4QjGAgABiRIA=
-Date: Mon, 6 May 2013 21:20:04 +0000
-Message-ID: <A961433CDFF2F640A2866803152E61F951772648@G9W0715.americas.hpqcorp.net>
-References: <20130506162112.6b79b7b1@pluto.restena.lu>
- <20130506150757.GC22041@pd.tnic>
-In-Reply-To: <20130506150757.GC22041@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.31]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1757564Ab3EFVWx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:22:53 -0400
+Received: from ozlabs.org ([203.10.76.45]:43932 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756042Ab3EFVWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 17:22:52 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc, perf: Fix processing conditions for invalid BHRB entries
+In-reply-to: <5187A144.9080307@linux.vnet.ibm.com>
+References: <1367831206-16331-1-git-send-email-khandual@linux.vnet.ibm.com> <24261.1367838705@ale.ozlabs.ibm.com> <5187A144.9080307@linux.vnet.ibm.com>
+Comments: In-reply-to Anshuman Khandual <khandual@linux.vnet.ibm.com>
+   message dated "Mon, 06 May 2013 17:55:40 +0530."
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Tue, 07 May 2013 07:22:51 +1000
+Message-ID: <26310.1367875371@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r46LLMBc027132
 
-> > [   69.965933] ------------[ cut here ]------------
-> > [   69.965938] WARNING: at /data/kernel/linux-
-> git/drivers/pci/search.c:214 pci_get_dev_by_id+0x8a/0x90()
-> > [   69.965941] Hardware name: PRIMERGY RX200 S7
-> > [   69.965946] Modules linked in:
-> > [   69.965950] Pid: 0, comm: swapper/11 Tainted: G        W    3.9.0-
-> x86_64-fj #1
-> > [   69.965953] Call Trace:
-> > [   69.965956]  <IRQ>  [<ffffffff8106689a>]
-> warn_slowpath_common+0x7a/0xc0
-> > [   69.965967]  [<ffffffff810668f5>] warn_slowpath_null+0x15/0x20
-> > [   69.965975]  [<ffffffff8125b98a>] pci_get_dev_by_id+0x8a/0x90
-> > [   69.965981]  [<ffffffff8125baa0>] pci_get_subsys+0x30/0x40
-> > [   69.965987]  [<ffffffff8125bac3>] pci_get_device+0x13/0x20
-> > [   69.965993]  [<ffffffff8125baff>]
-> pci_get_domain_bus_and_slot+0x2f/0x70
-> > [   69.966001]  [<ffffffff812bf3ed>]
-> cper_print_pcie.isra.1+0x5d/0x200
-> > [   69.966007]  [<ffffffff812bf8c5>]
-> apei_estatus_print_section+0x1e5/0x2c0
-> > [   69.966013]  [<ffffffff812bfa27>] apei_estatus_print+0x87/0xb0
-> > [   69.966019]  [<ffffffff812c2015>]
-> __ghes_print_estatus.isra.8+0x75/0xc0
-> > [   69.966027]  [<ffffffff81239d50>] ? ___ratelimit.part.0+0x80/0xe0
-> > [   69.966033]  [<ffffffff812c20b9>]
-> ghes_print_estatus.constprop.10+0x59/0x70
-> > [   69.966039]  [<ffffffff812c24f0>] ? ghes_irq_func+0x20/0x20
-> > [   69.966044]  [<ffffffff812c244c>] ghes_proc+0x5c/0x70
-> > [   69.966050]  [<ffffffff812c2501>] ghes_poll_func+0x11/0x30
-> > [   69.966057]  [<ffffffff8107332d>] call_timer_fn.isra.30+0x2d/0x90
-> > [   69.966065]  [<ffffffff81073536>] run_timer_softirq+0x1a6/0x1e0
-> > [   69.966071]  [<ffffffff8106dcc8>] __do_softirq+0xc8/0x180
-> > [   69.966077]  [<ffffffff8106dec6>] irq_exit+0x86/0xa0
-> > [   69.966084]  [<ffffffff810248d9>]
-> smp_apic_timer_interrupt+0x69/0xa0
-> > [   69.966090]  [<ffffffff815f4b4a>] apic_timer_interrupt+0x6a/0x70
-> > [   69.966093]  <EOI>  [<ffffffff814c8408>] ?
-> cpuidle_wrap_enter+0x48/0x90
-> > [   69.966101]  [<ffffffff814c8404>] ? cpuidle_wrap_enter+0x44/0x90
-> > [   69.966107]  [<ffffffff814c8460>] cpuidle_enter_tk+0x10/0x20
-> > [   69.966116]  [<ffffffff814c81c5>] cpuidle_idle_call+0x85/0x100
-> > [   69.966122]  [<ffffffff8100b97f>] cpu_idle+0xbf/0x110
-> > [   69.966129]  [<ffffffff815db2ed>] start_secondary+0xbd/0xbf
-> > [   69.966134] ---[ end trace 9ea0454133ddf8a3 ]---
+Anshuman Khandual <khandual@linux.vnet.ibm.com> wrote:
+
+> On 05/06/2013 04:41 PM, Michael Neuling wrote:
+> > Anshuman Khandual <khandual@linux.vnet.ibm.com> wrote:
+> > 
+> >> Fixing some conditions during BHRB entry processing.
+> > 
+> > I think we can simplify this a lot more... something like the below.
+> > 
 > 
-> Apparently you're not supposed to do pci_get* in IRQ context. But this
-> code is older than 3.9 so why does it trigger now?
+> I feel that the conditional handling of the invalid BHRB entries should be
+> present which would help us during the debug and also could be used for more
+> granular branch classification or error handling later on.
 
-Right Boris, looks like we are hitting the WARN_ON(in_interrupt) in pci_get_dev_by_id().  We recently started seeing this on our test systems when injecting errors.  The only reason we are calling pci_get_domain_bus_and_slot() is to get the pci_dev* to pass into cper_print_aer() so we can have the device's name to put into the trace event for AER.  If we can find another way to get the device name for the trace event we could remove this call to pci_get_domain_bus_and_slot().  I will continue to look into an alternative. If you have any ideas on how to get the device data from this context let me know.
+If we need that, then we can add it later on.  You'd still need to
+modify the code to do any debug, branch classification or error handling
+as the code is now.  It's just an unnecessary place holder.  
 
-I'm not sure why the pci_get_domain_bus_and_slot() is failing to find the PCI device though.  We are not hitting that issue.  We are just seeing the in_interrupt warning.
+The code is unnecessarily verbose now.  This patch removes about 20
+lines of code and does the same thing.
 
-Lance
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Mikey
+
+> 
+> > Also, this marks the "to" address as all 1s, which is better poison
+> > value since it's possible to branch to/from 0x0.
+> >
+> 
+> Agreed.
+> 
+> 
+> > diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+> > index c627843..d410d65 100644
+> > --- a/arch/powerpc/perf/core-book3s.c
+> > +++ b/arch/powerpc/perf/core-book3s.c
+> > @@ -1463,65 +1463,45 @@ void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
+> >  {
+> >  	u64 val;
+> >  	u64 addr;
+> > -	int r_index, u_index, target, pred;
+> > +	int r_index, u_index, pred;
+> > 
+> >  	r_index = 0;
+> >  	u_index = 0;
+> >  	while (r_index < ppmu->bhrb_nr) {
+> >  		/* Assembly read function */
+> > -		val = read_bhrb(r_index);
+> > +		val = read_bhrb(r_index++);
+> > 
+> >  		/* Terminal marker: End of valid BHRB entries */
+> > -		if (val == 0) {
+> > +		if (!val) {
+> >  			break;
+> >  		} else {
+> >  			/* BHRB field break up */
+> >  			addr = val & BHRB_EA;
+> >  			pred = val & BHRB_PREDICTION;
+> > -			target = val & BHRB_TARGET;
+> > 
+> > -			/* Probable Missed entry: Not applicable for POWER8 */
+> > -			if ((addr == 0) && (target == 0) && (pred == 1)) {
+> > -				r_index++;
+> > +			if (!addr)
+> > +				/* invalid entry */
+> >  				continue;
+> > -			}
+> > -
+> > -			/* Real Missed entry: Power8 based missed entry */
+> > -			if ((addr == 0) && (target == 1) && (pred == 1)) {
+> > -				r_index++;
+> > -				continue;
+> > -			}
+> > 
+> > -			/* Reserved condition: Not a valid entry  */
+> > -			if ((addr == 0) && (target == 1) && (pred == 0)) {
+> > -				r_index++;
+> > -				continue;
+> > -			}
+> > -
+> > -			/* Is a target address */
+> >  			if (val & BHRB_TARGET) {
+> >  				/* First address cannot be a target address */
+> > -				if (r_index == 0) {
+> > -					r_index++;
+> > +				if (r_index == 0)
+> >  					continue;
+> > -				}
+> > 
+> >  				/* Update target address for the previous entry */
+> >  				cpuhw->bhrb_entries[u_index - 1].to = addr;
+> >  				cpuhw->bhrb_entries[u_index - 1].mispred = pred;
+> >  				cpuhw->bhrb_entries[u_index - 1].predicted = ~pred;
+> > -
+> > -				/* Dont increment u_index */
+> > -				r_index++;
+> >  			} else {
+> >  				/* Update address, flags for current entry */
+> >  				cpuhw->bhrb_entries[u_index].from = addr;
+> > +				cpuhw->bhrb_entries[u_index].to =
+> > +					0xffffffffffffffff;
+> >  				cpuhw->bhrb_entries[u_index].mispred = pred;
+> >  				cpuhw->bhrb_entries[u_index].predicted = ~pred;
+> > 
+> >  				/* Successfully popullated one entry */
+> >  				u_index++;
+> > -				r_index++;
+> >  			}
+> >  		}
+> >  	}
+> > _______________________________________________
+> > Linuxppc-dev mailing list
+> > Linuxppc-dev@lists.ozlabs.org
+> > https://lists.ozlabs.org/listinfo/linuxppc-dev
+> > 
+> 
