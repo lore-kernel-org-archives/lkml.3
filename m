@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757902Ab3EFUqs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59257 "EHLO
+	id S932112Ab3EFU5m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:57:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59272 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757762Ab3EFUqq (ORCPT
+	with ESMTP id S1757891Ab3EFUqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:46 -0400
+	Mon, 6 May 2013 16:46:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>,
+        Derek Basehore <dbasehore@chromium.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 071/115] swap: redirty page if page write fails on swap file
-Date: Mon,  6 May 2013 13:45:07 -0700
-Message-Id: <20130506203102.847560149@linuxfoundation.org>
+Subject: [ 073/115] drivers/rtc/rtc-cmos.c: dont disable hpet emulation on suspend
+Date: Mon,  6 May 2013 13:45:09 -0700
+Message-Id: <20130506203103.052924000@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -30,42 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Marchand <jmarchan@redhat.com>
+From: Derek Basehore <dbasehore@chromium.org>
 
-commit 2d30d31ea3c5be426ce25607b9bd1835acb85e0a upstream.
+commit e005715efaf674660ae59af83b13822567e3a758 upstream.
 
-Since commit 62c230bc1790 ("mm: add support for a filesystem to activate
-swap files and use direct_IO for writing swap pages"), swap_writepage()
-calls direct_IO on swap files.  However, in that case the page isn't
-redirtied if I/O fails, and is therefore handled afterwards as if it has
-been successfully written to the swap file, leading to memory corruption
-when the page is eventually swapped back in.
+There's a bug where rtc alarms are ignored after the rtc cmos suspends
+but before the system finishes suspend.  Since hpet emulation is
+disabled and it still handles the interrupts, a wake event is never
+registered which is done from the rtc layer.
 
-This patch sets the page dirty when direct_IO() fails.  It fixes a
-memory corruption that happened while using swap-over-NFS.
+This patch reverts commit d1b2efa83fbf ("rtc: disable hpet emulation on
+suspend") which disabled hpet emulation.  To fix the problem mentioned
+in that commit, hpet_rtc_timer_init() is called directly on resume.
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Derek Basehore <dbasehore@chromium.org>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_io.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/rtc/rtc-cmos.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -222,6 +222,8 @@ int swap_writepage(struct page *page, st
- 		if (ret == PAGE_SIZE) {
- 			count_vm_event(PSWPOUT);
- 			ret = 0;
-+		} else {
-+			set_page_dirty(page);
- 		}
- 		return ret;
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -804,9 +804,8 @@ static int cmos_suspend(struct device *d
+ 			mask = RTC_IRQMASK;
+ 		tmp &= ~mask;
+ 		CMOS_WRITE(tmp, RTC_CONTROL);
++		hpet_mask_rtc_irq_bit(mask);
+ 
+-		/* shut down hpet emulation - we don't need it for alarm */
+-		hpet_mask_rtc_irq_bit(RTC_PIE|RTC_AIE|RTC_UIE);
+ 		cmos_checkintr(cmos, tmp);
+ 	}
+ 	spin_unlock_irq(&rtc_lock);
+@@ -870,6 +869,7 @@ static int cmos_resume(struct device *de
+ 			rtc_update_irq(cmos->rtc, 1, mask);
+ 			tmp &= ~RTC_AIE;
+ 			hpet_mask_rtc_irq_bit(RTC_AIE);
++			hpet_rtc_timer_init();
+ 		} while (mask & RTC_AIE);
+ 		spin_unlock_irq(&rtc_lock);
  	}
 
 
