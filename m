@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab3EFEFr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 00:05:47 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:46641 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab3EFEFp (ORCPT
+	id S1752342Ab3EFEGf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 00:06:35 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:42068 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab3EFEGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 00:05:45 -0400
-X-AuditID: cbfee691-b7fe56d000004b96-44-51872c17e3c1
+	Mon, 6 May 2013 00:06:33 -0400
+X-AuditID: cbfee691-b7fe56d000004b96-9b-51872c480651
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 2/8] mfd: jz4740-adc: remove unnecessary platform_set_drvdata()
-Date: Mon, 06 May 2013 13:05:43 +0900
-Message-id: <002f01ce4a0e$faaad3e0$f0007ba0$@samsung.com>
+        "'Peter Ujfalusi'" <peter.ujfalusi@ti.com>
+Subject: [PATCH 3/8] mfd: twl4030-audio: remove unnecessary
+ platform_set_drvdata()
+Date: Mon, 06 May 2013 13:06:31 +0900
+Message-id: <003001ce4a0f$1771ec70$4655c550$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5KDtf0EjEBxSG2Rfma0hdQMb/kIA==
+Thread-index: Ac5KDwE+PfMUFsFkRBuYxbg/+ATdnQ==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zfV1xnfZAg8UNehaXF15itVgyeT6r
-	xeVdc9gsTnezOrB4zDsZ6LHkzSFWj74tqxg9Pm+SC2CJ4rJJSc3JLEst0rdL4Mr4N/kBe8Ei
-	jooP1y4xNjB+Y+ti5OSQEDCR+NW3hgnCFpO4cG89UJyLQ0hgGaNE2+W7jDBFC/bOZoJILGKU
-	2P/9IlTVL0aJ+fubwUaxCahJfPlymB3EFhHQkug+dh4sziyQJXHk60SwFcIC/hJHXzWwdDFy
-	cLAIqEpsmOIIEuYVsJQ4/W8tC4QtKPFj8j0WiFYtifU7jzNB2PISm9e8ZYY4SEFix9nXjBCr
-	9CR+nnrHDFEjIrHvxTtGkNskBNaxS6z8+wKsiEVAQOLb5ENgeyUEZCU2HYCaIylxcMUNlgmM
-	YrOQrJ6FZPUsJKtnIVmxgJFlFaNoakFyQXFSepGpXnFibnFpXrpecn7uJkZIjE3cwXj/gPUh
-	xmSg9ROZpUST84ExmlcSb2hsZmRhamJqbGRuaUaasJI4r3qLdaCQQHpiSWp2ampBalF8UWlO
-	avEhRiYOTqkGRqm3HH9PazxjmNv0cp/Qgv92q3SPWYnM3yuSnL5M2TlmlklA1q5XK/au3uJY
-	/GbCzBlX9l8r8r7z+4ju9m0FekXuvKpV2mfm9B0/KLKxYufNf+o5vtYlZ86Uttt3VP/jX5uU
-	zrzJT3eV4s9DQt6/03edyDgon2i8MuqKxu4deqZPLmw7c+xXqrsSS3FGoqEWc1FxIgDKq7r2
-	xwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAV1xnfZAg9PrtCwuL7zEarFk8nxW
-	i8u75rBZnO5mdWDxmHcy0GPJm0OsHn1bVjF6fN4kF8AS1cBok5GamJJapJCal5yfkpmXbqvk
-	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0UUmhLDGnFCgUkFhcrKRvh2lCaIibrgVM
-	Y4Sub0gQXI+RARpIWMeY8W/yA/aCRRwVH65dYmxg/MbWxcjJISFgIrFg72wmCFtM4sK99UBx
-	Lg4hgUWMEvu/X4RyfjFKzN/fDNbBJqAm8eXLYXYQW0RAS6L72HmwOLNAlsSRrxPBJgkL+Esc
-	fdXA0sXIwcEioCqxYYojSJhXwFLi9L+1LBC2oMSPyfdYIFq1JNbvPM4EYctLbF7zlhniIAWJ
-	HWdfM0Ks0pP4eeodM0SNiMS+F+8YJzAKzEIyahaSUbOQjJqFpGUBI8sqRtHUguSC4qT0XEO9
-	4sTc4tK8dL3k/NxNjOAIfia1g3Flg8UhRgEORiUe3oInbYFCrIllxZW5hxglOJiVRHh99gKF
-	eFMSK6tSi/Lji0pzUosPMSYDPTqRWUo0OR+YXPJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Qah0o
-	JJCeWJKanZpakFoEs4WJg1OqgTFi5w/dpoWVprorPf9vNPrzhOHq8jkC8dvXbzmhcZ7DbJ9H
-	weX+p+cVXu5WvD9vwazEWGeWJZJO216yLFyuEx7XfqVe+2aoxJdlkyace/9qXjpn0qNlm07z
-	VmfKrJTTaThbP8HR/v8z1cDSJMMXaQu5t+9WdCk9HHPj+IHvZSfkF98zVtp+9NsuJZbijERD
-	Leai4kQA6MvRdCQDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zfV0PnfZAg7NXhS0uL7zEanF51xw2
+	i1kff7BanO5mdWDxmHcy0KNvyypGj+M3tjN5fN4kF8ASxWWTkpqTWZZapG+XwJXx6+9r1oLH
+	HBXHr8xib2Cczd7FyMkhIWAicXX7bxYIW0ziwr31bF2MXBxCAssYJb519sIV/V/RCZVYxCjx
+	/lEvK4Tzi1Hi65GdbCBVbAJqEl++HAbrEBHQkug+dh4sziyQJ7F66iymLkYODmGBEIlrawJA
+	wiwCqhIrf94D28wrYCmx4dcbKFtQ4sdkiDgz0Jj1O48zQdjyEpvXvGWGOEhBYsfZ14wQq/Qk
+	jq1rZYeoEZHY9+IdI8htEgKr2CUentrNDrFMQOLb5EMsIDdICMhKbDoANUdS4uCKGywTGMVm
+	IVk9C8nqWUhWz0KyYgEjyypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MkBibuIPx/gHrQ4zJ
+	QOsnMkuJJucDYzSvJN7Q2MzIwtTE1NjI3NKMNGElcV71FutAIYH0xJLU7NTUgtSi+KLSnNTi
+	Q4xMHJxSDYwLkwytOLl8Vz9gs6p613n/4BefD6EZTLyK+vrr1mpv5HzTYFj8Ysbt2Uu1vTOF
+	GdKsTlSevx68guPFrrMJe0Qi5jr1PbpQmLeHhXnlV8GghkldsydUWh6Sea3Hy3HhCvs6szlC
+	JTpunGG/lBXPhV+uN66tdfwl+u7xu8T8+dXCzD+9zKoT3iuxFGckGmoxFxUnAgABPPq3xwIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAV0PnfZAg8aJAhaXF15itbi8aw6b
+	xayPP1gtTnezOrB4zDsZ6NG3ZRWjx/Eb25k8Pm+SC2CJamC0yUhNTEktUkjNS85PycxLt1Xy
+	Do53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAHaqKRQlphTChQKSCwuVtK3wzQhNMRN1wKm
+	MULXNyQIrsfIAA0krGPM+PX3NWvBY46K41dmsTcwzmbvYuTkkBAwkfi/opMNwhaTuHBvPZDN
+	xSEksIhR4v2jXlYI5xejxNcjO8Gq2ATUJL58OQzWLSKgJdF97DxYnFkgT2L11FlMXYwcHMIC
+	IRLX1gSAhFkEVCVW/rzHAmLzClhKbPj1BsoWlPgxGSLODDRm/c7jTBC2vMTmNW+ZIQ5SkNhx
+	9jUjxCo9iWPrWtkhakQk9r14xziBUWAWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca6RUn
+	5haX5qXrJefnbmIER/Az6R2MqxosDjEKcDAq8fAWPGkLFGJNLCuuzD3EKMHBrCTC67MXKMSb
+	klhZlVqUH19UmpNafIgxGejTicxSosn5wOSSVxJvaGxiZmRpZGZhZGJuTpqwkjjvwVbrQCGB
+	9MSS1OzU1ILUIpgtTBycUg2MQZyO5mlHGAVn5Cuf31ocd+6+RUGHybwcpdyM8ut8aeU7au0S
+	G48xPut67VQqXeVl4Tw/5k5DS/a5SH6ZBIUdJx/OmndkdsWHhFU1r4tCtvKYRqz/VznrD0ej
+	pPasUrbupe8Zkp/f2a01u34Td+LiDCYj9+MbimNeSL01CxE8enavS0Y4m4gSS3FGoqEWc1Fx
+	IgDIdEp3JAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,30 +60,33 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/jz4740-adc.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ drivers/mfd/twl4030-audio.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/jz4740-adc.c b/drivers/mfd/jz4740-adc.c
-index e80587f..01e86ce 100644
---- a/drivers/mfd/jz4740-adc.c
-+++ b/drivers/mfd/jz4740-adc.c
-@@ -294,7 +294,6 @@ static int jz4740_adc_probe(struct platform_device *pdev)
- err_clk_put:
- 	clk_put(adc->clk);
- err_iounmap:
--	platform_set_drvdata(pdev, NULL);
- 	iounmap(adc->base);
- err_release_mem_region:
- 	release_mem_region(adc->mem->start, resource_size(adc->mem));
-@@ -317,8 +316,6 @@ static int jz4740_adc_remove(struct platform_device *pdev)
+diff --git a/drivers/mfd/twl4030-audio.c b/drivers/mfd/twl4030-audio.c
+index d2ab222..a31fba9 100644
+--- a/drivers/mfd/twl4030-audio.c
++++ b/drivers/mfd/twl4030-audio.c
+@@ -261,10 +261,8 @@ static int twl4030_audio_probe(struct platform_device *pdev)
+ 		ret = -ENODEV;
+ 	}
  
- 	clk_put(adc->clk);
+-	if (ret) {
+-		platform_set_drvdata(pdev, NULL);
++	if (ret)
+ 		twl4030_audio_dev = NULL;
+-	}
  
--	platform_set_drvdata(pdev, NULL);
--
- 	return 0;
+ 	return ret;
  }
+@@ -272,7 +270,6 @@ static int twl4030_audio_probe(struct platform_device *pdev)
+ static int twl4030_audio_remove(struct platform_device *pdev)
+ {
+ 	mfd_remove_devices(&pdev->dev);
+-	platform_set_drvdata(pdev, NULL);
+ 	twl4030_audio_dev = NULL;
  
+ 	return 0;
 -- 
 1.7.2.5
 
