@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761581Ab3EFXrA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:47:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36199 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932828Ab3EFW5X (ORCPT
+	id S1761624Ab3EFXr2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:47:28 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:64865 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761560Ab3EFXrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:23 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonathan Brassow <jbrassow@redhat.com>, NeilBrown <neilb@suse.de>
-Subject: [ 47/63] md: bad block list should default to disabled.
-Date: Mon,  6 May 2013 15:56:25 -0700
-Message-Id: <20130506225326.227359635@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
-References: <20130506225314.802167948@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 6 May 2013 19:47:23 -0400
+Date: Tue, 7 May 2013 01:47:19 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: kosaki.motohiro@gmail.com
+Cc: linux-kernel@vger.kernel.org, Olivier Langlois <olivier@trillion01.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 1/7] posix-cpu-timers: don't account cpu timer after
+ stopped thread runtime accounting
+Message-ID: <20130506234717.GA1703@somewhere>
+References: <1367556468-4021-1-git-send-email-kosaki.motohiro@gmail.com>
+ <1367556468-4021-3-git-send-email-kosaki.motohiro@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367556468-4021-3-git-send-email-kosaki.motohiro@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, May 03, 2013 at 12:47:42AM -0400, kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 
+> When tsk->signal->cputimer->running is 1, signal->cputimer and
+> tsk->sum_sched_runtime increase at the same pace because update_curr()
+> increases both accounting.
+> 
+> However, there is one exception. When thread exiting, __exit_signal() turns
+> over task's sum_shced_runtime to sig->sum_sched_runtime, but it doesn't stop
+> signal->cputimer accounting.
+> 
+> This inconsistency makes POSIX timer wake up too early. This patch fixes it.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Acked-by: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> ---
+>  kernel/sched/stats.h |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/sched/stats.h b/kernel/sched/stats.h
+> index 2ef90a5..5a0cfc4 100644
+> --- a/kernel/sched/stats.h
+> +++ b/kernel/sched/stats.h
+> @@ -225,6 +225,13 @@ static inline void account_group_exec_runtime(struct task_struct *tsk,
+>  	if (!cputimer->running)
+>  		return;
+>  
+> +	/*
+> +	 * After turning over se.sum_exec_runtime to sig->sum_sched_runtime
+> +	 * in __exit_signal(), we must not account exec_runtime for consistency.
+> +	 */
+> +	if (unlikely(!tsk->sighand))
+> +		return;
 
-------------------
+Ok, if we want the clock and timer to be consistent, do we also want the same check in
+account_group_user_time() and account_group_system_time()? The task can still account
+a tick after autoreaping itself between release_task() and the final schedule().
 
-From: NeilBrown <neilb@suse.de>
-
-commit 486adf72ccc0c235754923d47a2270c5dcb0c98b upstream.
-
-Maintenance of a bad-block-list currently defaults to 'enabled'
-and is then disabled when it cannot be supported.
-This is backwards and causes problem for dm-raid which didn't know
-to disable it.
-
-So fix the defaults, and only enabled for v1.x metadata which
-explicitly has bad blocks enabled.
-
-The problem with dm-raid has been present since badblock support was
-added in v3.1, so this patch is suitable for any -stable from 3.1
-onwards.
-
-Reported-by: Jonathan Brassow <jbrassow@redhat.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/md.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
-
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -1587,8 +1587,8 @@ static int super_1_load(struct md_rdev *
- 					     sector, count, 1) == 0)
- 				return -EINVAL;
- 		}
--	} else if (sb->bblog_offset == 0)
--		rdev->badblocks.shift = -1;
-+	} else if (sb->bblog_offset != 0)
-+		rdev->badblocks.shift = 0;
- 
- 	if (!refdev) {
- 		ret = 1;
-@@ -3107,7 +3107,7 @@ int md_rdev_init(struct md_rdev *rdev)
- 	 * be used - I wonder if that matters
- 	 */
- 	rdev->badblocks.count = 0;
--	rdev->badblocks.shift = 0;
-+	rdev->badblocks.shift = -1; /* disabled until explicitly enabled */
- 	rdev->badblocks.page = kmalloc(PAGE_SIZE, GFP_KERNEL);
- 	seqlock_init(&rdev->badblocks.lock);
- 	if (rdev->badblocks.page == NULL)
-@@ -3179,9 +3179,6 @@ static struct md_rdev *md_import_device(
- 			goto abort_free;
- 		}
- 	}
--	if (super_format == -1)
--		/* hot-add for 0.90, or non-persistent: so no badblocks */
--		rdev->badblocks.shift = -1;
- 
- 	return rdev;
- 
-
-
+> +
+>  	raw_spin_lock(&cputimer->lock);
+>  	cputimer->cputime.sum_exec_runtime += ns;
+>  	raw_spin_unlock(&cputimer->lock);
+> -- 
+> 1.7.1
+> 
