@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760959Ab3EFXXk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:23:40 -0400
-Received: from mail.vivienda.gob.pe ([181.65.236.250]:25488 "EHLO
-	mail.vivienda.gob.pe" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758795Ab3EFXXe convert rfc822-to-8bit (ORCPT
+	id S933385Ab3EFXYC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:24:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36879 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932170Ab3EFXNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:23:34 -0400
-X-Greylist: delayed 3604 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 May 2013 19:23:33 EDT
-X-IronPort-AV: E=Sophos;i="4.87,624,1363150800"; 
-   d="scan'208";a="2159945"
-Content-Type: text/plain; charset=US-ASCII
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: CONFIRM YOUR EMAIL ACCOUNT
-To: Recipients <info1@web.net>
-From: "SYSTEM ADMINISTRATOR" <info1@web.net>
-Date: Tue, 07 May 2013 13:47:54 -0700
-Reply-To: upgrade1@dgoh.org
-X-Antivirus: avast! (VPS 130506-0, 05/06/2013), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20130506204440.D4A24BDE8BE9@zimbra.vivienda.gob.pe>
+	Mon, 6 May 2013 19:13:55 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 073/104] cgroup: fix an off-by-one bug which may trigger BUG_ON()
+Date: Mon,  6 May 2013 16:12:32 -0700
+Message-Id: <20130506230051.132165514@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
+References: <20130506230043.526528358@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your E-mail has exceeded 2 GB was established by our website administrator,
-you are currently runing at 2.30GB, you can not send or receive new
-messages until you confirm your mailbox. Complete the form below to verify
-your account.
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-Fill in the required form below to cornfirm your account and sent the
-following e-mail:
+------------------
 
-(1) E-mail:
-(2) Username:
-(3) Password:
-(4) Confirm Password:
+From: Li Zefan <lizefan@huawei.com>
 
-thank you
-system administrator
+commit 3ac1707a13a3da9cfc8f242a15b2fae6df2c5f88 upstream.
+
+The 3rd parameter of flex_array_prealloc() is the number of elements,
+not the index of the last element.
+
+The effect of the bug is, when opening cgroup.procs, a flex array will
+be allocated and all elements of the array is allocated with
+GFP_KERNEL flag, but the last one is GFP_ATOMIC, and if we fail to
+allocate memory for it, it'll trigger a BUG_ON().
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/cgroup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2066,7 +2066,7 @@ static int cgroup_attach_proc(struct cgr
+ 	if (!group)
+ 		return -ENOMEM;
+ 	/* pre-allocate to guarantee space while iterating in rcu read-side. */
+-	retval = flex_array_prealloc(group, 0, group_size - 1, GFP_KERNEL);
++	retval = flex_array_prealloc(group, 0, group_size, GFP_KERNEL);
+ 	if (retval)
+ 		goto out_free_group_list;
+ 
+
+
