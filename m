@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801Ab3EFBqc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 21:46:32 -0400
+	id S1752581Ab3EFBqU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 21:46:20 -0400
 Received: from mga02.intel.com ([134.134.136.20]:64038 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752528Ab3EFBqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 21:46:30 -0400
+	id S1752528Ab3EFBqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 May 2013 21:46:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,618,1363158000"; 
-   d="scan'208";a="308658667"
+   d="scan'208";a="308658603"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
@@ -17,9 +17,9 @@ Cc: vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
         viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
         alex.shi@intel.com, mgorman@suse.de, riel@redhat.com,
         wangyun@linux.vnet.ibm.com
-Subject: [PATCH v5 6/7] sched: consider runnable load average in move_tasks
-Date: Mon,  6 May 2013 09:45:10 +0800
-Message-Id: <1367804711-30308-7-git-send-email-alex.shi@intel.com>
+Subject: [PATCH v5 2/7] sched: remove SMP cover for runnable variables in cfs_rq
+Date: Mon,  6 May 2013 09:45:06 +0800
+Message-Id: <1367804711-30308-3-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
 References: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
@@ -27,41 +27,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Except using runnable load average in background, move_tasks is also
-the key functions in load balance. We need consider the runnable load
-average in it in order to the apple to apple load comparison.
+The following variables were covered under CONFIG_SMP in struct cfs_rq.
+but similar runnable variables work for UP in struct rq and task_group.
+like rq->avg, task_group->load_avg.
+So move them out, they also can work with UP.
+
+         u64 runnable_load_avg, blocked_load_avg;
+         atomic64_t decay_counter, removed_load;
+         u64 last_decay;
+
+         u32 tg_runnable_contrib;
+         u64 tg_load_contrib;
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ kernel/sched/sched.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0bf88e8..790e23d 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3966,6 +3966,12 @@ static unsigned long task_h_load(struct task_struct *p);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 7f36024f..1a02b90 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -226,7 +226,6 @@ struct cfs_rq {
+ 	unsigned int nr_spread_over;
+ #endif
  
- static const unsigned int sched_nr_migrate_break = 32;
+-#ifdef CONFIG_SMP
+ 	/*
+ 	 * CFS Load tracking
+ 	 * Under CFS, load is tracked on a per-entity basis and aggregated up.
+@@ -242,6 +241,7 @@ struct cfs_rq {
+ 	u64 tg_load_contrib;
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
  
-+static unsigned long task_h_load_avg(struct task_struct *p)
-+{
-+	return div_u64(task_h_load(p) * (u64)p->se.avg.runnable_avg_sum,
-+			p->se.avg.runnable_avg_period + 1);
-+}
-+
- /*
-  * move_tasks tries to move up to imbalance weighted load from busiest to
-  * this_rq, as part of a balancing operation within domain "sd".
-@@ -4001,7 +4007,7 @@ static int move_tasks(struct lb_env *env)
- 		if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
- 			goto next;
- 
--		load = task_h_load(p);
-+		load = task_h_load_avg(p);
- 
- 		if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
- 			goto next;
++#ifdef CONFIG_SMP
+ 	/*
+ 	 *   h_load = weight * f(tg)
+ 	 *
 -- 
 1.7.12
 
