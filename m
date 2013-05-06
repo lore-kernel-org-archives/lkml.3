@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760409Ab3EFXNV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:13:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36646 "EHLO
+	id S1757568Ab3EFXNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:13:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36668 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760353Ab3EFXNQ (ORCPT
+	with ESMTP id S1760407Ab3EFXNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:16 -0400
+	Mon, 6 May 2013 19:13:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 015/104] iwlwifi: fix freeing uninitialized pointer
-Date: Mon,  6 May 2013 16:11:34 -0700
-Message-Id: <20130506230045.158934143@linuxfoundation.org>
+        Adrian Thomasset <adrian.thomasset@st.com>
+Subject: [ 023/104] USB: ftdi_sio: enable two UART ports on ST Microconnect Lite
+Date: Mon,  6 May 2013 16:11:42 -0700
+Message-Id: <20130506230045.963645374@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -28,52 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Adrian Thomasset <adrian.thomasset@st.com>
 
-commit 3309ccf7fcebceef540ebe90c65d2f94d745a45b upstream.
+commit 71d9a2b95fc9c9474d46d764336efd7a5a805555 upstream.
 
-If on iwl_dump_nic_event_log() error occurs before that function
-initialize buf, we process uninitiated pointer in
-iwl_dbgfs_log_event_read() and can hit "BUG at mm/slub.c:3409"
+The FT4232H used in the ST Micro Connect Lite has four hi-speed UART ports.
+The first two ports are reserved for the JTAG interface.
 
-Resolves:
-https://bugzilla.redhat.com/show_bug.cgi?id=951241
+We enable by default ports 2 and 3 as UARTs (where port 2 is a
+conventional RS-232 UART)
 
-Reported-by: ian.odette@eprize.com
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Adrian Thomasset <adrian.thomasset@st.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/debugfs.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/usb/serial/ftdi_sio.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/debugfs.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/debugfs.c
-@@ -2237,15 +2237,15 @@ static ssize_t iwl_dbgfs_log_event_read(
- 					 size_t count, loff_t *ppos)
- {
- 	struct iwl_priv *priv = file->private_data;
--	char *buf;
--	int pos = 0;
--	ssize_t ret = -ENOMEM;
-+	char *buf = NULL;
-+	ssize_t ret;
- 
--	ret = pos = iwl_dump_nic_event_log(priv, true, &buf, true);
--	if (buf) {
--		ret = simple_read_from_buffer(user_buf, count, ppos, buf, pos);
--		kfree(buf);
--	}
-+	ret = iwl_dump_nic_event_log(priv, true, &buf, true);
-+	if (ret < 0)
-+		goto err;
-+	ret = simple_read_from_buffer(user_buf, count, ppos, buf, ret);
-+err:
-+	kfree(buf);
- 	return ret;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -1795,20 +1795,24 @@ static int ftdi_8u2232c_probe(struct usb
  }
  
+ /*
+- * First and second port on STMCLiteadaptors is reserved for JTAG interface
+- * and the forth port for pio
++ * First two ports on JTAG adaptors using an FT4232 such as STMicroelectronics's
++ * ST Micro Connect Lite are reserved for JTAG or other non-UART interfaces and
++ * can be accessed from userspace.
++ * The next two ports are enabled as UARTs by default, where port 2 is
++ * a conventional RS-232 UART.
+  */
+ static int ftdi_stmclite_probe(struct usb_serial *serial)
+ {
+ 	struct usb_device *udev = serial->dev;
+ 	struct usb_interface *interface = serial->interface;
+ 
+-	if (interface == udev->actconfig->interface[2])
+-		return 0;
++	if (interface == udev->actconfig->interface[0] ||
++	    interface == udev->actconfig->interface[1]) {
++		dev_info(&udev->dev, "Ignoring serial port reserved for JTAG\n");
++		return -ENODEV;
++	}
+ 
+-	dev_info(&udev->dev, "Ignoring serial port reserved for JTAG\n");
+-
+-	return -ENODEV;
++	return 0;
+ }
+ 
+ /*
 
 
