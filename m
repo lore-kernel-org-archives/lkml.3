@@ -1,228 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab3EFUNJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:13:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35112 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755892Ab3EFUNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:13:07 -0400
-Date: Mon, 6 May 2013 16:50:22 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, takuya.yoshikawa@gmail.com
-Subject: Re: [PATCH v4 4/6] KVM: MMU: fast invalid all shadow pages
-Message-ID: <20130506195022.GA5706@amt.cnet>
-References: <1367032402-13729-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1367032402-13729-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130503010534.GA5467@amt.cnet>
- <51835087.8090605@linux.vnet.ibm.com>
- <20130503155302.GB3362@amt.cnet>
- <5183EAFA.4050500@linux.vnet.ibm.com>
- <20130504005201.GA11823@amt.cnet>
- <518725DF.5090503@linux.vnet.ibm.com>
+	id S1756196Ab3EFUNZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:13:25 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:34821 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755892Ab3EFUNW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 16:13:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <518725DF.5090503@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130506200656.GA26927@linux.vnet.ibm.com>
+References: <CAE9FiQUTV_e9De-6zCPs6OQrVAUJV2VLZDBmxFpJtnjNO3rKfw@mail.gmail.com>
+	<20130506190611.GE3501@linux.vnet.ibm.com>
+	<20130506200656.GA26927@linux.vnet.ibm.com>
+Date: Mon, 6 May 2013 13:13:22 -0700
+X-Google-Sender-Auth: NfjJ6FLlY3nTthM2o_Jm2HzB_es
+Message-ID: <CAE9FiQWb2OrPaX=GizGXbzZKrALJn26D_-4PgR8of_fGSz5mFg@mail.gmail.com>
+Subject: Re: RCU init call bootmem allocation after slub us ready.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 11:39:11AM +0800, Xiao Guangrong wrote:
-> On 05/04/2013 08:52 AM, Marcelo Tosatti wrote:
-> > On Sat, May 04, 2013 at 12:51:06AM +0800, Xiao Guangrong wrote:
-> >> On 05/03/2013 11:53 PM, Marcelo Tosatti wrote:
-> >>> On Fri, May 03, 2013 at 01:52:07PM +0800, Xiao Guangrong wrote:
-> >>>> On 05/03/2013 09:05 AM, Marcelo Tosatti wrote:
-> >>>>
-> >>>>>> +
-> >>>>>> +/*
-> >>>>>> + * Fast invalid all shadow pages belong to @slot.
-> >>>>>> + *
-> >>>>>> + * @slot != NULL means the invalidation is caused the memslot specified
-> >>>>>> + * by @slot is being deleted, in this case, we should ensure that rmap
-> >>>>>> + * and lpage-info of the @slot can not be used after calling the function.
-> >>>>>> + *
-> >>>>>> + * @slot == NULL means the invalidation due to other reasons, we need
-> >>>>>> + * not care rmap and lpage-info since they are still valid after calling
-> >>>>>> + * the function.
-> >>>>>> + */
-> >>>>>> +void kvm_mmu_invalid_memslot_pages(struct kvm *kvm,
-> >>>>>> +				   struct kvm_memory_slot *slot)
-> >>>>>> +{
-> >>>>>> +	spin_lock(&kvm->mmu_lock);
-> >>>>>> +	kvm->arch.mmu_valid_gen++;
-> >>>>>> +
-> >>>>>> +	/*
-> >>>>>> +	 * All shadow paes are invalid, reset the large page info,
-> >>>>>> +	 * then we can safely desotry the memslot, it is also good
-> >>>>>> +	 * for large page used.
-> >>>>>> +	 */
-> >>>>>> +	kvm_clear_all_lpage_info(kvm);
-> >>>>>
-> >>>>> Xiao,
-> >>>>>
-> >>>>> I understood it was agreed that simple mmu_lock lockbreak while
-> >>>>> avoiding zapping of newly instantiated pages upon a
-> >>>>>
-> >>>>> 	if(spin_needbreak)
-> >>>>> 		cond_resched_lock()
-> >>>>>
-> >>>>> cycle was enough as a first step? And then later introduce root zapping
-> >>>>> along with measurements.
-> >>>>>
-> >>>>> https://lkml.org/lkml/2013/4/22/544
-> >>>>
-> >>>> Yes, it is.
-> >>>>
-> >>>> See the changelog in 0/0:
-> >>>>
-> >>>> " we use lock-break technique to zap all sptes linked on the
-> >>>> invalid rmap, it is not very effective but good for the first step."
-> >>>>
-> >>>> Thanks!
-> >>>
-> >>> Sure, but what is up with zeroing kvm_clear_all_lpage_info(kvm) and
-> >>> zapping the root? Only lock-break technique along with generation number 
-> >>> was what was agreed.
-> >>
-> >> Marcelo,
-> >>
-> >> Please Wait... I am completely confused. :(
-> >>
-> >> Let's clarify "zeroing kvm_clear_all_lpage_info(kvm) and zapping the root" first.
-> >> Are these changes you wanted?
-> >>
-> >> void kvm_mmu_invalid_memslot_pages(struct kvm *kvm,
-> >> 				   struct kvm_memory_slot *slot)
-> >> {
-> >> 	spin_lock(&kvm->mmu_lock);
-> >> 	kvm->arch.mmu_valid_gen++;
-> >>
-> >> 	/* Zero all root pages.*/
-> >> restart:
-> >> 	list_for_each_entry_safe(sp, node, &kvm->arch.active_mmu_pages, link) {
-> >> 		if (!sp->root_count)
-> >> 			continue;
-> >>
-> >> 		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
-> >> 			goto restart;
-> >> 	}
-> >>
-> >> 	/*
-> >> 	 * All shadow paes are invalid, reset the large page info,
-> >> 	 * then we can safely desotry the memslot, it is also good
-> >> 	 * for large page used.
-> >> 	 */
-> >> 	kvm_clear_all_lpage_info(kvm);
-> >>
-> >> 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
-> >> 	spin_unlock(&kvm->mmu_lock);
-> >> }
-> >>
-> >> static void rmap_remove(struct kvm *kvm, u64 *spte)
-> >> {
-> >> 	struct kvm_mmu_page *sp;
-> >> 	gfn_t gfn;
-> >> 	unsigned long *rmapp;
-> >>
-> >> 	sp = page_header(__pa(spte));
-> >> +
-> >> +       /* Let invalid sp do not access its rmap. */
-> >> +	if (!sp_is_valid(sp))
-> >> +		return;
-> >> +
-> >> 	gfn = kvm_mmu_page_get_gfn(sp, spte - sp->spt);
-> >> 	rmapp = gfn_to_rmap(kvm, gfn, sp->role.level);
-> >> 	pte_list_remove(spte, rmapp);
-> >> }
-> >>
-> >> If yes, there is the reason why we can not do this that i mentioned before:
-> >>
-> >> after call kvm_mmu_invalid_memslot_pages(), the memslot->rmap will be destroyed.
-> >> Later, if host reclaim page, the mmu-notify handlers, ->invalidate_page and
-> >> ->invalidate_range_start, can not find any spte using the host page, then
-> >> Accessed/Dirty for host page is missing tracked.
-> >> (missing call kvm_set_pfn_accessed and kvm_set_pfn_dirty properly.)
-> >>
-> >> What's your idea?
-> > 
-> > 
-> > Step 1) Fix kvm_mmu_zap_all's behaviour: introduce lockbreak via
-> > spin_needbreak. Use generation numbers so that in case kvm_mmu_zap_all 
-> > releases mmu_lock and reacquires it again, only shadow pages 
-> > from the generation with which kvm_mmu_zap_all started are zapped (this
-> > guarantees forward progress and eventual termination).
-> > 
-> > kvm_mmu_zap_generation()
-> > 	spin_lock(mmu_lock)
-> > 	int generation = kvm->arch.mmu_generation;
-> > 
-> > 	for_each_shadow_page(sp) {
-> > 		if (sp->generation == kvm->arch.mmu_generation)
-> > 			zap_page(sp)
-> > 		if (spin_needbreak(mmu_lock)) {
-> > 			kvm->arch.mmu_generation++;
-> > 			cond_resched_lock(mmu_lock);
-> > 		}
-> > 	}
-> > 
-> > kvm_mmu_zap_all()
-> > 	spin_lock(mmu_lock)
-> > 	for_each_shadow_page(sp) {
-> > 		if (spin_needbreak(mmu_lock)) {
-> > 			cond_resched_lock(mmu_lock);
-> > 		}
-> > 	}
-> > 
-> > Use kvm_mmu_zap_generation for kvm_arch_flush_shadow_memslot.
-> > Use kvm_mmu_zap_all for kvm_mmu_notifier_release,kvm_destroy_vm.
-> > 
-> > This addresses the main problem: excessively long hold times 
-> > of kvm_mmu_zap_all with very large guests.
-> > 
-> > Do you see any problem with this logic? This was what i was thinking 
-> > we agreed.
-> 
-> No. I understand it and it can work.
-> 
-> Actually, it is similar with Gleb's idea that "zapping stale shadow pages
-> (and uses lock break technique)", after some discussion, we thought "only zap
-> shadow pages that are reachable from the slot's rmap" is better, that is this
-> patchset does.
-> (https://lkml.org/lkml/2013/4/23/73)
-> 
-> > 
-> > Step 2) Show that the optimization to zap only the roots is worthwhile
-> > via benchmarking, and implement it.
-> 
-> This is what i am confused. I can not understand how "zap only the roots"
-> works. You mean these change?
-> 
-> kvm_mmu_zap_generation()
->  	spin_lock(mmu_lock)
->  	int generation = kvm->arch.mmu_generation;
-> 
->  	for_each_shadow_page(sp) {
-> 		/* Change here. */
-> => 		if ((sp->generation == kvm->arch.mmu_generation) &&
-> =>		      sp->root_count)
->  			zap_page(sp)
-> 
->  		if (spin_needbreak(mmu_lock)) {
->  			kvm->arch.mmu_generation++;
->  			cond_resched_lock(mmu_lock);
->  		}
->  	}
-> 
-> If we do this, there will have shadow pages that are linked to invalid memslot's
-> rmap. How do we handle these pages and the mmu-notify issue?
-> 
-> Thanks!
+On Mon, May 6, 2013 at 1:06 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Mon, May 06, 2013 at 12:06:11PM -0700, Paul E. McKenney wrote:
+>> On Mon, May 06, 2013 at 11:53:56AM -0700, Yinghai Lu wrote:
+>> > [    0.000000] SLUB: Genslabs=15, HWalign=64, Order=0-3, MinObjects=0,
+>> > CPUs=160, Nodes=8
+>> > [    0.000000] Hierarchical RCU implementation.
+>> > [    0.000000]  RCU restricting CPUs from NR_CPUS=4096 to nr_cpu_ids=160.
+>> > [    0.000000] ------------[ cut here ]------------
+>> > [    0.000000] WARNING: at mm/nobootmem.c:234
+>> > ___alloc_bootmem_nopanic+0x3a/0x7d()
+>> > [    0.000000] Modules linked in:
+>> > [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted
+>> > 3.9.0-yh-10495-gfc7ffbc-dirty #1543
+>> > [    0.000000] Hardware name: Oracle Corporation  Sun Fire X4800 M2 /
+>> >    , BIOS 15013200    04/19/2012
+>> > [    0.000000]  0000000000000009 ffffffff82a01e58 ffffffff8209dc61
+>> > ffffffff82a01e98
+>> > [    0.000000]  ffffffff8108a9d0 0000000000000000 0000000000000000
+>> > 0000000000000200
+>> > [    0.000000]  ffffffffffffffff 0000000000000040 0000000000000000
+>> > ffffffff82a01ea8
+>> > [    0.000000] Call Trace:
+>> > [    0.000000]  [<ffffffff8209dc61>] dump_stack+0x19/0x1b
+>> > [    0.000000]  [<ffffffff8108a9d0>] warn_slowpath_common+0x70/0xa0
+>> > [    0.000000]  [<ffffffff8108aa1a>] warn_slowpath_null+0x1a/0x20
+>> > [    0.000000]  [<ffffffff82dd54cd>] ___alloc_bootmem_nopanic+0x3a/0x7d
+>> > [    0.000000]  [<ffffffff82dd5695>] __alloc_bootmem+0x12/0x38
+>> > [    0.000000]  [<ffffffff82de976a>] alloc_bootmem_cpumask_var+0x1a/0x21
+>> > [    0.000000]  [<ffffffff82dce4da>] rcu_init+0x66/0x283
+>> > [    0.000000]  [<ffffffff82dd15ed>] ? perf_event_init+0x136/0x15f
+>> > [    0.000000]  [<ffffffff82dabf95>] start_kernel+0x24a/0x423
+>> > [    0.000000]  [<ffffffff82dababe>] ? repair_env_string+0x5e/0x5e
+>> > [    0.000000]  [<ffffffff820936b6>] ? __memblock_reserve+0x81/0x89
+>> > [    0.000000]  [<ffffffff82dab5a8>] x86_64_start_reservations+0x2f/0x31
+>> > [    0.000000]  [<ffffffff82dab79e>] x86_64_start_kernel+0x1f4/0x1fc
+>> > [    0.000000] ---[ end trace 53ae8bb075006d8f ]---
+>>
+>> Do you have commit fa0f93cd6a (rcu: Don't allocate bootmem from rcu_init())?
+>> If not, could you please try applying it?
+>
+> As Dave Jones pointed out, this one is not yet in mainline.  Here is the
+> corresponding patch.
 
-By "zap only roots" i mean zapping roots plus generation number on
-shadow pages. But this as a second step, after it has been demonstrated
-its worthwhile.
+Yes, found that in you reply to Dave Jones.
 
+>
+>                                                         Thanx, Paul
+>
+> ------------------------------------------------------------------------
+>
+> rcu: Don't allocate bootmem from rcu_init()
+>
+> When rcu_init() is called we already have slab working, allocating
+> bootmem at that point results in warnings and an allocation from
+> slab.  This commit therefore changes alloc_bootmem_cpumask_var() to
+> alloc_cpumask_var() in rcu_bootup_announce_oddness(), which is called
+> from rcu_init().
+>
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index ca6e39c..44b0998 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -86,7 +86,7 @@ static void __init rcu_bootup_announce_oddness(void)
+>  #ifdef CONFIG_RCU_NOCB_CPU
+>  #ifndef CONFIG_RCU_NOCB_CPU_NONE
+>         if (!have_rcu_nocb_mask) {
+> -               alloc_bootmem_cpumask_var(&rcu_nocb_mask);
+> +               alloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
+
+alloc_bootmem will return zeroed buffer.
+
+so need to use zalloc_cpumask_var instead.
+
+
+>                 have_rcu_nocb_mask = true;
+>         }
+>  #ifdef CONFIG_RCU_NOCB_CPU_ZERO
+>
