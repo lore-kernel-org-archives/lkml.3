@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790Ab3EFJtY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 05:49:24 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:45085 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab3EFJtX (ORCPT
+	id S1753822Ab3EFKA4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 06:00:56 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:35153 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753664Ab3EFKAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 05:49:23 -0400
-From: Denis Efremov <yefremov.denis@gmail.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Denis Efremov <yefremov.denis@gmail.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        ldv-project@linuxtesting.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] clk: fixed-factor: remove exported function from __init section
-Date: Mon,  6 May 2013 13:48:38 +0400
-Message-Id: <1367833718-2626-1-git-send-email-yefremov.denis@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
+	Mon, 6 May 2013 06:00:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <51877970.8010303@intel.com>
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
+ <1367804711-30308-8-git-send-email-alex.shi@intel.com> <518724D1.9040006@linux.vnet.ibm.com>
+ <51874229.8050202@intel.com> <5187609C.5050209@linux.vnet.ibm.com>
+ <518763B0.30200@intel.com> <51876AFE.80906@linux.vnet.ibm.com>
+ <CAPM31RK-N=Cnt3cBo1f6er6TewQJKY+fgdj9QHvKziHe+TxTxw@mail.gmail.com> <51877970.8010303@intel.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 6 May 2013 03:00:23 -0700
+Message-ID: <CAPM31RLKf=3WnUmnXartb21HmdCFeimvtxgL_A3sjC8=UvC-Kw@mail.gmail.com>
+Subject: Re: [PATCH v5 7/7] sched: consider runnable load average in effective_load
+To: Alex Shi <alex.shi@intel.com>
+Cc: Michael Wang <wangyun@linux.vnet.ibm.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The symbol of_fixed_factor_clk_setup is exported and annotated __init.
-It looks like section mismatch. Fix by removing the __init annotation of
-of_fixed_factor_clk_setup. The patch is similar to e4eda8e06.
+On Mon, May 6, 2013 at 2:35 AM, Alex Shi <alex.shi@intel.com> wrote:
+> On 05/06/2013 05:06 PM, Paul Turner wrote:
+>> I don't think this is a good idea:
+>>
+>> The problem with not using the instantaneous weight here is that you
+>> potentially penalize the latency of interactive tasks (similarly,
+>> potentially important background threads -- e.g. garbage collection).
+>>
+>> Counter-intuitively we actually want such tasks on the least loaded
+>> cpus to minimize their latency.  If the load they contribute ever
+>> becomes more substantial we trust that periodic balance will start
+>> taking notice of them.
+>
+> Sounds reasonable. Many thanks for your input, Paul!
+>
+> So, will use the seconds try. :)
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
----
- drivers/clk/clk-fixed-factor.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/clk/clk-fixed-factor.c b/drivers/clk/clk-fixed-factor.c
-index 9ff7d51..4022297 100644
---- a/drivers/clk/clk-fixed-factor.c
-+++ b/drivers/clk/clk-fixed-factor.c
-@@ -101,7 +101,7 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
- /**
-  * of_fixed_factor_clk_setup() - Setup function for simple fixed factor clock
-  */
--void __init of_fixed_factor_clk_setup(struct device_node *node)
-+void of_fixed_factor_clk_setup(struct device_node *node)
- {
- 	struct clk *clk;
- 	const char *clk_name = node->name;
--- 
-1.8.1.4
-
+Sorry -- not sure what you mean here.  I'm suggesting leaving
+effective_load() unchanged.
+>>
+>> [ This is similar to why we have to use the instantaneous weight in
+>> calc_cfs_shares. ]
+>>
+>
+>
+> --
+> Thanks
+>     Alex
