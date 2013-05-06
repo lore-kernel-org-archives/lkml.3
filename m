@@ -1,153 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab3EFUJq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:09:46 -0400
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:44918 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755871Ab3EFUJo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:09:44 -0400
-Date: Mon, 06 May 2013 15:01:58 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: device tree not the answer in the ARM world [was: Re: running
- Debian on a Cubieboard]
-To: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-Cc: James Courtier-Dutton <james.dutton@gmail.com>,
-        Robert Hancock <hancockrwd@gmail.com>,
-        David Goodenough <david.goodenough@btconnect.com>,
-        debian-arm@lists.debian.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>
-In-Reply-To: <CAPweEDwZrXQ4Wqw6_-YvmR7uNxWWNvE_c0-8UMuEhFzYW-BZWQ@mail.gmail.com>
-	(from lkcl@lkcl.net on Mon May  6 07:08:44 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1367870518.18069.211@driftwood>
+	id S1756150Ab3EFUNJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:13:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35112 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755892Ab3EFUNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 16:13:07 -0400
+Date: Mon, 6 May 2013 16:50:22 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, takuya.yoshikawa@gmail.com
+Subject: Re: [PATCH v4 4/6] KVM: MMU: fast invalid all shadow pages
+Message-ID: <20130506195022.GA5706@amt.cnet>
+References: <1367032402-13729-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1367032402-13729-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130503010534.GA5467@amt.cnet>
+ <51835087.8090605@linux.vnet.ibm.com>
+ <20130503155302.GB3362@amt.cnet>
+ <5183EAFA.4050500@linux.vnet.ibm.com>
+ <20130504005201.GA11823@amt.cnet>
+ <518725DF.5090503@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <518725DF.5090503@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 07:08:44 AM, Luke Kenneth Casson Leighton wrote:
-> > I suppose that ARM multi-platform will never cover all ARM CPUs, but
-> > the more it covers, the easier and cheaper it will be to work with  
-> new
-> > hardware and ARM.
+On Mon, May 06, 2013 at 11:39:11AM +0800, Xiao Guangrong wrote:
+> On 05/04/2013 08:52 AM, Marcelo Tosatti wrote:
+> > On Sat, May 04, 2013 at 12:51:06AM +0800, Xiao Guangrong wrote:
+> >> On 05/03/2013 11:53 PM, Marcelo Tosatti wrote:
+> >>> On Fri, May 03, 2013 at 01:52:07PM +0800, Xiao Guangrong wrote:
+> >>>> On 05/03/2013 09:05 AM, Marcelo Tosatti wrote:
+> >>>>
+> >>>>>> +
+> >>>>>> +/*
+> >>>>>> + * Fast invalid all shadow pages belong to @slot.
+> >>>>>> + *
+> >>>>>> + * @slot != NULL means the invalidation is caused the memslot specified
+> >>>>>> + * by @slot is being deleted, in this case, we should ensure that rmap
+> >>>>>> + * and lpage-info of the @slot can not be used after calling the function.
+> >>>>>> + *
+> >>>>>> + * @slot == NULL means the invalidation due to other reasons, we need
+> >>>>>> + * not care rmap and lpage-info since they are still valid after calling
+> >>>>>> + * the function.
+> >>>>>> + */
+> >>>>>> +void kvm_mmu_invalid_memslot_pages(struct kvm *kvm,
+> >>>>>> +				   struct kvm_memory_slot *slot)
+> >>>>>> +{
+> >>>>>> +	spin_lock(&kvm->mmu_lock);
+> >>>>>> +	kvm->arch.mmu_valid_gen++;
+> >>>>>> +
+> >>>>>> +	/*
+> >>>>>> +	 * All shadow paes are invalid, reset the large page info,
+> >>>>>> +	 * then we can safely desotry the memslot, it is also good
+> >>>>>> +	 * for large page used.
+> >>>>>> +	 */
+> >>>>>> +	kvm_clear_all_lpage_info(kvm);
+> >>>>>
+> >>>>> Xiao,
+> >>>>>
+> >>>>> I understood it was agreed that simple mmu_lock lockbreak while
+> >>>>> avoiding zapping of newly instantiated pages upon a
+> >>>>>
+> >>>>> 	if(spin_needbreak)
+> >>>>> 		cond_resched_lock()
+> >>>>>
+> >>>>> cycle was enough as a first step? And then later introduce root zapping
+> >>>>> along with measurements.
+> >>>>>
+> >>>>> https://lkml.org/lkml/2013/4/22/544
+> >>>>
+> >>>> Yes, it is.
+> >>>>
+> >>>> See the changelog in 0/0:
+> >>>>
+> >>>> " we use lock-break technique to zap all sptes linked on the
+> >>>> invalid rmap, it is not very effective but good for the first step."
+> >>>>
+> >>>> Thanks!
+> >>>
+> >>> Sure, but what is up with zeroing kvm_clear_all_lpage_info(kvm) and
+> >>> zapping the root? Only lock-break technique along with generation number 
+> >>> was what was agreed.
+> >>
+> >> Marcelo,
+> >>
+> >> Please Wait... I am completely confused. :(
+> >>
+> >> Let's clarify "zeroing kvm_clear_all_lpage_info(kvm) and zapping the root" first.
+> >> Are these changes you wanted?
+> >>
+> >> void kvm_mmu_invalid_memslot_pages(struct kvm *kvm,
+> >> 				   struct kvm_memory_slot *slot)
+> >> {
+> >> 	spin_lock(&kvm->mmu_lock);
+> >> 	kvm->arch.mmu_valid_gen++;
+> >>
+> >> 	/* Zero all root pages.*/
+> >> restart:
+> >> 	list_for_each_entry_safe(sp, node, &kvm->arch.active_mmu_pages, link) {
+> >> 		if (!sp->root_count)
+> >> 			continue;
+> >>
+> >> 		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
+> >> 			goto restart;
+> >> 	}
+> >>
+> >> 	/*
+> >> 	 * All shadow paes are invalid, reset the large page info,
+> >> 	 * then we can safely desotry the memslot, it is also good
+> >> 	 * for large page used.
+> >> 	 */
+> >> 	kvm_clear_all_lpage_info(kvm);
+> >>
+> >> 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+> >> 	spin_unlock(&kvm->mmu_lock);
+> >> }
+> >>
+> >> static void rmap_remove(struct kvm *kvm, u64 *spte)
+> >> {
+> >> 	struct kvm_mmu_page *sp;
+> >> 	gfn_t gfn;
+> >> 	unsigned long *rmapp;
+> >>
+> >> 	sp = page_header(__pa(spte));
+> >> +
+> >> +       /* Let invalid sp do not access its rmap. */
+> >> +	if (!sp_is_valid(sp))
+> >> +		return;
+> >> +
+> >> 	gfn = kvm_mmu_page_get_gfn(sp, spte - sp->spt);
+> >> 	rmapp = gfn_to_rmap(kvm, gfn, sp->role.level);
+> >> 	pte_list_remove(spte, rmapp);
+> >> }
+> >>
+> >> If yes, there is the reason why we can not do this that i mentioned before:
+> >>
+> >> after call kvm_mmu_invalid_memslot_pages(), the memslot->rmap will be destroyed.
+> >> Later, if host reclaim page, the mmu-notify handlers, ->invalidate_page and
+> >> ->invalidate_range_start, can not find any spte using the host page, then
+> >> Accessed/Dirty for host page is missing tracked.
+> >> (missing call kvm_set_pfn_accessed and kvm_set_pfn_dirty properly.)
+> >>
+> >> What's your idea?
+> > 
+> > 
+> > Step 1) Fix kvm_mmu_zap_all's behaviour: introduce lockbreak via
+> > spin_needbreak. Use generation numbers so that in case kvm_mmu_zap_all 
+> > releases mmu_lock and reacquires it again, only shadow pages 
+> > from the generation with which kvm_mmu_zap_all started are zapped (this
+> > guarantees forward progress and eventual termination).
+> > 
+> > kvm_mmu_zap_generation()
+> > 	spin_lock(mmu_lock)
+> > 	int generation = kvm->arch.mmu_generation;
+> > 
+> > 	for_each_shadow_page(sp) {
+> > 		if (sp->generation == kvm->arch.mmu_generation)
+> > 			zap_page(sp)
+> > 		if (spin_needbreak(mmu_lock)) {
+> > 			kvm->arch.mmu_generation++;
+> > 			cond_resched_lock(mmu_lock);
+> > 		}
+> > 	}
+> > 
+> > kvm_mmu_zap_all()
+> > 	spin_lock(mmu_lock)
+> > 	for_each_shadow_page(sp) {
+> > 		if (spin_needbreak(mmu_lock)) {
+> > 			cond_resched_lock(mmu_lock);
+> > 		}
+> > 	}
+> > 
+> > Use kvm_mmu_zap_generation for kvm_arch_flush_shadow_memslot.
+> > Use kvm_mmu_zap_all for kvm_mmu_notifier_release,kvm_destroy_vm.
+> > 
+> > This addresses the main problem: excessively long hold times 
+> > of kvm_mmu_zap_all with very large guests.
+> > 
+> > Do you see any problem with this logic? This was what i was thinking 
+> > we agreed.
 > 
->  no.  no, no no and wrong.  absolutely dead wrong.  you're completely
-> misunderstanding the economics of large and mass-volume product
-> development.  the hardware cost is
-> EEEEEEVVVEEERRRRRRYYYTTHHHHIIINNNNGGGG.
-
-And economies of scale are everything to hardware cost. Unit volume  
-amortizes the development (and often licensing) costs down, in the long  
-run who has the highest unit volume has the cheapest product. Being  
-able to reuse off the shelf components is nice, but being able to  
-repurpose existing high-volume smartphone packages semi-verbatim is  
-nicer.
-
-Also, your cheap little one-off product tends to have a lifespan  
-measured in months. Especially since the most common southeast asian  
-business model used to be something like "develop thing through shell  
-company, fill inventory channel with product, launder profits through  
-series of shell companies that patent infringement suits can't burrow  
-through in a reasonable amount of time, dissolve company and shell  
-companies before product ever winds up on store shelves leaving nobody  
-to sue, re-hire the same set of engineers at new shell company, rinse,  
-repeat.'
-
-(Has this changed recently? I haven't really been paying attention  
-since smartphones started replacing the PC the way the PC replaced  
-minicomputers and mainframes, so the billion seats of Android are more  
-interesting than the rest of the embedded space combined. I did a talk  
-about that at ELC if you're bored:
-http://www.youtube.com/watch?v=SGmtP5Lg_t0 )
-
->  the software development cost because it is a one-off (non-recurring
-> expense) is completely and utterly irrelevant.  again, see reply to
-> oliver's message.
-
-Which is why this hardware tends to ship with crappy, unusable,  
-unsupported software. Because actually programming the sucker is an  
-afterthought, and the company that created it won't be _around_ long  
-enough to support it, because if it did it would be around long enough  
-to be sued for "we patented breathing, pay up".
-
-The reason we should care about this business model when the vendors  
-don't is...?
-
-> > Say, if a manufacturer has 20 different models of mobile phone out
-> > there, all based on ARM.
-> > Currently, they need a different kernel for each one. If they could
-> > use the same kernel across all 20 models, that would reduce their
-> > development costs considerably.
+> No. I understand it and it can work.
 > 
->  let's do some maths.  let's say that the cost of re-using a DT-based
-> kernel is $50k, but the custom development (not using DT) is $250,000.
-
-If you use a DT-based kernel you can upgrade to new vanilla releases  
-for 5 years, and if you don't you probably never upgrade to a new  
-version ever.
-
-Except the type of company you're describing won't be around long  
-enough to provide an upgrade. They'll just tell you to buy a new one  
-next year, from the same engineers working at new shell company du jour  
-(which has already dissolved by the time product hits the shelves; this  
-stuff can get outsourced and rebadged with other people's branding to  
-disguise the churn but the short-term thinking is there for a _reason_).
-
->  let's say that you have to use a freescale $20 processor (iMX6 Dual)
-> with that, because linaro is being paid $1m per year to help freescale
-> to make devicetree work, and it gets them in on that
-> one-kernel-across-20-models thing.
+> Actually, it is similar with Gleb's idea that "zapping stale shadow pages
+> (and uses lock break technique)", after some discussion, we thought "only zap
+> shadow pages that are reachable from the slot's rmap" is better, that is this
+> patchset does.
+> (https://lkml.org/lkml/2013/4/23/73)
 > 
->  so they work out the BOM, against the projected expenditure over say
-> 2 years they expect to sell say 100 million phones.
+> > 
+> > Step 2) Show that the optimization to zap only the roots is worthwhile
+> > via benchmarking, and implement it.
+> 
+> This is what i am confused. I can not understand how "zap only the roots"
+> works. You mean these change?
+> 
+> kvm_mmu_zap_generation()
+>  	spin_lock(mmu_lock)
+>  	int generation = kvm->arch.mmu_generation;
+> 
+>  	for_each_shadow_page(sp) {
+> 		/* Change here. */
+> => 		if ((sp->generation == kvm->arch.mmu_generation) &&
+> =>		      sp->root_count)
+>  			zap_page(sp)
+> 
+>  		if (spin_needbreak(mmu_lock)) {
+>  			kvm->arch.mmu_generation++;
+>  			cond_resched_lock(mmu_lock);
+>  		}
+>  	}
+> 
+> If we do this, there will have shadow pages that are linked to invalid memslot's
+> rmap. How do we handle these pages and the mmu-notify issue?
+> 
+> Thanks!
 
-You realize that nobody except Samsung and Apple is currently making  
-money in the smartphone space, right?
+By "zap only roots" i mean zapping roots plus generation number on
+shadow pages. But this as a second step, after it has been demonstrated
+its worthwhile.
 
-http://www.slate.com/blogs/moneybox/2013/04/02/smartphone_profit_shares_apple_and_samsung_have_the_whole_pie.html
-
-And that they're doing better because neither one is as stupid as the  
-companies you're describing?
-
-http://www.bbc.co.uk/news/business-22036876
-
-Yes, you can install Linux on cheap plastic pieces of nonstandard crap  
-that have already ceased production before you can buy one. It's about  
-as interesting as hollowing out a Furby and making it run Linux.
-
->  do you see the point, james?  the cost of the software development is
-> utterly, utterly, utterly irrelevant.
-
-Which means that nothing we do matters to them anyway, they will never  
-listen to us, we have no reason to listen to them, and they can  
-basically piss off and stop bothering us? (Which was pretty much what  
-Linus asked?)
-
-Meanwhile, we pay attention to the companies that have a future, and  
-not the modern gold rush iteration. (Before the smartphone we had the  
-digital watch boom, the calculator boom, the incomptible 8-bit  
-microcomputer boom, the dot-com pets.com/drkoop.com era... this is not  
-a new thing, and unix has lived through all of it.)
-
-Don't get me wrong: I'm happy to provide them with good tools. But  
-making their needs a primary design consideration when it comes to  
-sustainability and upgrade paths is wrong. A company that lives or dies  
-based on half a cent in component selection is NOT worried about an  
-upgrade path. It's making something disposable, and the company itself  
-is disposable.
-
->  but the amount of time taken on software development is *not* the
-> same as the *cost* of the software development.
-
-And neither is the same as the quality or sustainability of the  
-resulting software. But if the product line will be be discontinued  
-three months after its introduction, who cares about being able to  
-maintain anything?
-
-Rob
