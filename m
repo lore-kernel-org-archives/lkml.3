@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758286Ab3EFUux (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:50:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59369 "EHLO
+	id S1758114Ab3EFUrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:47:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59359 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758118Ab3EFUrF (ORCPT
+	with ESMTP id S1758018Ab3EFUrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:47:05 -0400
+	Mon, 6 May 2013 16:47:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 101/115] jbd2: fix race between jbd2_journal_remove_checkpoint and ->j_commit_callback
-Date: Mon,  6 May 2013 13:45:37 -0700
-Message-Id: <20130506203105.955742791@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 095/115] wireless: regulatory: fix channel disabling race condition
+Date: Mon,  6 May 2013 13:45:31 -0700
+Message-Id: <20130506203105.365323585@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -26,154 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 794446c6946513c684d448205fbd76fa35f38b72 upstream.
+commit 990de49f74e772b6db5208457b7aa712a5f4db86 upstream.
 
-The following race is possible:
+When a full scan 2.4 and 5 GHz scan is scheduled, but then the 2.4 GHz
+part of the scan disables a 5.2 GHz channel due to, e.g. receiving
+country or frequency information, that 5.2 GHz channel might already
+be in the list of channels to scan next. Then, when the driver checks
+if it should do a passive scan, that will return false and attempt an
+active scan. This is not only wrong but can also lead to the iwlwifi
+device firmware crashing since it checks regulatory as well.
 
-[kjournald2]                              other_task
-jbd2_journal_commit_transaction()
-  j_state = T_FINISHED;
-  spin_unlock(&journal->j_list_lock);
-                                         ->jbd2_journal_remove_checkpoint()
-					   ->jbd2_journal_free_transaction();
-					     ->kmem_cache_free(transaction)
-  ->j_commit_callback(journal, transaction);
-    -> USE_AFTER_FREE
+Fix this by not setting the channel flags to just disabled but rather
+OR'ing in the disabled flag. That way, even if the race happens, the
+channel will be scanned passively which is still (mostly) correct.
 
-WARNING: at lib/list_debug.c:62 __list_del_entry+0x1c0/0x250()
-Hardware name:
-list_del corruption. prev->next should be ffff88019a4ec198, but was 6b6b6b6b6b6b6b6b
-Modules linked in: cpufreq_ondemand acpi_cpufreq freq_table mperf coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode sg xhci_hcd button sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw aes_x86_64 xts gf128mul ahci libahci pata_acpi ata_generic dm_mirror dm_region_hash dm_log dm_mod
-Pid: 16400, comm: jbd2/dm-1-8 Tainted: G        W    3.8.0-rc3+ #107
-Call Trace:
- [<ffffffff8106fb0d>] warn_slowpath_common+0xad/0xf0
- [<ffffffff8106fc06>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff813637e9>] ? ext4_journal_commit_callback+0x99/0xc0
- [<ffffffff8148cae0>] __list_del_entry+0x1c0/0x250
- [<ffffffff813637bf>] ext4_journal_commit_callback+0x6f/0xc0
- [<ffffffff813ca336>] jbd2_journal_commit_transaction+0x23a6/0x2570
- [<ffffffff8108aa42>] ? try_to_del_timer_sync+0x82/0xa0
- [<ffffffff8108b491>] ? del_timer_sync+0x91/0x1e0
- [<ffffffff813d3ecf>] kjournald2+0x19f/0x6a0
- [<ffffffff810ad630>] ? wake_up_bit+0x40/0x40
- [<ffffffff813d3d30>] ? bit_spin_lock+0x80/0x80
- [<ffffffff810ac6be>] kthread+0x10e/0x120
- [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
- [<ffffffff818ff6ac>] ret_from_fork+0x7c/0xb0
- [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
-
-In order to demonstrace this issue one should mount ext4 with mount -o
-discard option on SSD disk.  This makes callback longer and race
-window becomes wider.
-
-In order to fix this we should mark transaction as finished only after
-callbacks have completed
-
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jbd2/commit.c     |   50 ++++++++++++++++++++++++++++----------------------
- include/linux/jbd2.h |    1 +
- 2 files changed, 29 insertions(+), 22 deletions(-)
+ net/wireless/reg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/jbd2/commit.c
-+++ b/fs/jbd2/commit.c
-@@ -382,7 +382,7 @@ void jbd2_journal_commit_transaction(jou
- 	int space_left = 0;
- 	int first_tag = 0;
- 	int tag_flag;
--	int i, to_free = 0;
-+	int i;
- 	int tag_bytes = journal_tag_bytes(journal);
- 	struct buffer_head *cbh = NULL; /* For transactional checksums */
- 	__u32 crc32_sum = ~0;
-@@ -1134,7 +1134,7 @@ restart_loop:
- 	journal->j_stats.run.rs_blocks_logged += stats.run.rs_blocks_logged;
- 	spin_unlock(&journal->j_history_lock);
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -855,7 +855,7 @@ static void handle_channel(struct wiphy
+ 			return;
  
--	commit_transaction->t_state = T_FINISHED;
-+	commit_transaction->t_state = T_COMMIT_CALLBACK;
- 	J_ASSERT(commit_transaction == journal->j_committing_transaction);
- 	journal->j_commit_sequence = commit_transaction->t_tid;
- 	journal->j_committing_transaction = NULL;
-@@ -1149,38 +1149,44 @@ restart_loop:
- 				journal->j_average_commit_time*3) / 4;
- 	else
- 		journal->j_average_commit_time = commit_time;
-+
- 	write_unlock(&journal->j_state_lock);
- 
--	if (commit_transaction->t_checkpoint_list == NULL &&
--	    commit_transaction->t_checkpoint_io_list == NULL) {
--		__jbd2_journal_drop_transaction(journal, commit_transaction);
--		to_free = 1;
-+	if (journal->j_checkpoint_transactions == NULL) {
-+		journal->j_checkpoint_transactions = commit_transaction;
-+		commit_transaction->t_cpnext = commit_transaction;
-+		commit_transaction->t_cpprev = commit_transaction;
- 	} else {
--		if (journal->j_checkpoint_transactions == NULL) {
--			journal->j_checkpoint_transactions = commit_transaction;
--			commit_transaction->t_cpnext = commit_transaction;
--			commit_transaction->t_cpprev = commit_transaction;
--		} else {
--			commit_transaction->t_cpnext =
--				journal->j_checkpoint_transactions;
--			commit_transaction->t_cpprev =
--				commit_transaction->t_cpnext->t_cpprev;
--			commit_transaction->t_cpnext->t_cpprev =
--				commit_transaction;
--			commit_transaction->t_cpprev->t_cpnext =
-+		commit_transaction->t_cpnext =
-+			journal->j_checkpoint_transactions;
-+		commit_transaction->t_cpprev =
-+			commit_transaction->t_cpnext->t_cpprev;
-+		commit_transaction->t_cpnext->t_cpprev =
-+			commit_transaction;
-+		commit_transaction->t_cpprev->t_cpnext =
- 				commit_transaction;
--		}
+ 		REG_DBG_PRINT("Disabling freq %d MHz\n", chan->center_freq);
+-		chan->flags = IEEE80211_CHAN_DISABLED;
++		chan->flags |= IEEE80211_CHAN_DISABLED;
+ 		return;
  	}
- 	spin_unlock(&journal->j_list_lock);
--
-+	/* Drop all spin_locks because commit_callback may be block.
-+	 * __journal_remove_checkpoint() can not destroy transaction
-+	 * under us because it is not marked as T_FINISHED yet */
- 	if (journal->j_commit_callback)
- 		journal->j_commit_callback(journal, commit_transaction);
- 
- 	trace_jbd2_end_commit(journal, commit_transaction);
- 	jbd_debug(1, "JBD2: commit %d complete, head %d\n",
- 		  journal->j_commit_sequence, journal->j_tail_sequence);
--	if (to_free)
--		jbd2_journal_free_transaction(commit_transaction);
- 
-+	write_lock(&journal->j_state_lock);
-+	spin_lock(&journal->j_list_lock);
-+	commit_transaction->t_state = T_FINISHED;
-+	/* Recheck checkpoint lists after j_list_lock was dropped */
-+	if (commit_transaction->t_checkpoint_list == NULL &&
-+	    commit_transaction->t_checkpoint_io_list == NULL) {
-+		__jbd2_journal_drop_transaction(journal, commit_transaction);
-+		jbd2_journal_free_transaction(commit_transaction);
-+	}
-+	spin_unlock(&journal->j_list_lock);
-+	write_unlock(&journal->j_state_lock);
- 	wake_up(&journal->j_wait_done_commit);
- }
---- a/include/linux/jbd2.h
-+++ b/include/linux/jbd2.h
-@@ -480,6 +480,7 @@ struct transaction_s
- 		T_COMMIT,
- 		T_COMMIT_DFLUSH,
- 		T_COMMIT_JFLUSH,
-+		T_COMMIT_CALLBACK,
- 		T_FINISHED
- 	}			t_state;
  
 
 
