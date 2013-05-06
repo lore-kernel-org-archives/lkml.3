@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934093Ab3EGADx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 20:03:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36074 "EHLO
+	id S1758805Ab3EGAEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:04:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36072 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759405Ab3EFW4z (ORCPT
+	with ESMTP id S1759394Ab3EFW4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:56:55 -0400
+	Mon, 6 May 2013 18:56:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Ming Lei <ming.lei@canonical.com>
-Subject: [ 27/63] sysfs: fix use after free in case of concurrent read/write and readdir
-Date: Mon,  6 May 2013 15:56:05 -0700
-Message-Id: <20130506225321.659418116@linuxfoundation.org>
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [ 26/63] i2c: xiic: must always write 16-bit words to TX_FIFO
+Date: Mon,  6 May 2013 15:56:04 -0700
+Message-Id: <20130506225321.449655248@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -26,76 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: "Steven A. Falco" <sfalco@harris.com>
 
-commit f7db5e7660b122142410dcf36ba903c73d473250 upstream.
+commit c39e8e4354ce4daf23336de5daa28a3b01f00aa6 upstream.
 
-The inode->i_mutex isn't hold when updating filp->f_pos
-in read()/write(), so the filp->f_pos might be read as
-0 or 1 in readdir() when there is concurrent read()/write()
-on this same file, then may cause use after free in readdir().
+The TX_FIFO register is 10 bits wide.  The lower 8 bits are the data to be
+written, while the upper two bits are flags to indicate stop/start.
 
-The bug can be reproduced with Li Zefan's test code on the
-link:
+The driver apparently attempted to optimize write access, by only writing a
+byte in those cases where the stop/start bits are zero.  However, we have
+seen cases where the lower byte is duplicated onto the upper byte by the
+hardware, which causes inadvertent stop/starts.
 
-	https://patchwork.kernel.org/patch/2160771/
+This patch changes the write access to the transmit FIFO to always be 16 bits
+wide.
 
-This patch fixes the use after free under this situation.
-
-Reported-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Signed off by: Steven A. Falco <sfalco@harris.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/sysfs/dir.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/i2c/busses/i2c-xiic.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -994,6 +994,7 @@ static int sysfs_readdir(struct file * f
- 	enum kobj_ns_type type;
- 	const void *ns;
- 	ino_t ino;
-+	loff_t off;
- 
- 	type = sysfs_ns_type(parent_sd);
- 	ns = sysfs_info(dentry->d_sb)->ns[type];
-@@ -1016,6 +1017,7 @@ static int sysfs_readdir(struct file * f
- 			return 0;
+--- a/drivers/i2c/busses/i2c-xiic.c
++++ b/drivers/i2c/busses/i2c-xiic.c
+@@ -311,10 +311,8 @@ static void xiic_fill_tx_fifo(struct xii
+ 			/* last message in transfer -> STOP */
+ 			data |= XIIC_TX_DYN_STOP_MASK;
+ 			dev_dbg(i2c->adap.dev.parent, "%s TX STOP\n", __func__);
+-
+-			xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
+-		} else
+-			xiic_setreg8(i2c, XIIC_DTR_REG_OFFSET, data);
++		}
++		xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
  	}
- 	mutex_lock(&sysfs_mutex);
-+	off = filp->f_pos;
- 	for (pos = sysfs_dir_pos(ns, parent_sd, filp->f_pos, pos);
- 	     pos;
- 	     pos = sysfs_dir_next_pos(ns, parent_sd, filp->f_pos, pos)) {
-@@ -1027,19 +1029,24 @@ static int sysfs_readdir(struct file * f
- 		len = strlen(name);
- 		ino = pos->s_ino;
- 		type = dt_type(pos);
--		filp->f_pos = pos->s_hash;
-+		off = filp->f_pos = pos->s_hash;
- 		filp->private_data = sysfs_get(pos);
- 
- 		mutex_unlock(&sysfs_mutex);
--		ret = filldir(dirent, name, len, filp->f_pos, ino, type);
-+		ret = filldir(dirent, name, len, off, ino, type);
- 		mutex_lock(&sysfs_mutex);
- 		if (ret < 0)
- 			break;
- 	}
- 	mutex_unlock(&sysfs_mutex);
--	if ((filp->f_pos > 1) && !pos) { /* EOF */
--		filp->f_pos = INT_MAX;
-+
-+	/* don't reference last entry if its refcount is dropped */
-+	if (!pos) {
- 		filp->private_data = NULL;
-+
-+		/* EOF and not changed as 0 or 1 in read/write path */
-+		if (off == filp->f_pos && off > 1)
-+			filp->f_pos = INT_MAX;
- 	}
- 	return 0;
  }
+ 
 
 
