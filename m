@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932807Ab3EFW5K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:57:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36124 "EHLO
+	id S932817Ab3EFX7L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:59:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36142 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080Ab3EFW5I (ORCPT
+	with ESMTP id S932805Ab3EFW5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:08 -0400
+	Mon, 6 May 2013 18:57:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dylan Reid <dgreid@chromium.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 39/63] ASoC: max98088: Fix logging of hardware revision.
-Date: Mon,  6 May 2013 15:56:17 -0700
-Message-Id: <20130506225324.473071334@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 43/63] cgroup: fix an off-by-one bug which may trigger BUG_ON()
+Date: Mon,  6 May 2013 15:56:21 -0700
+Message-Id: <20130506225325.304445754@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -27,31 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dylan Reid <dgreid@chromium.org>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 98682063549bedd6e2d2b6b7222f150c6fbce68c upstream.
+commit 3ac1707a13a3da9cfc8f242a15b2fae6df2c5f88 upstream.
 
-The hardware revision of the codec is based at 0x40.  Subtract that
-before convering to ASCII.  The same as it is done for 98095.
+The 3rd parameter of flex_array_prealloc() is the number of elements,
+not the index of the last element.
 
-Signed-off-by: Dylan Reid <dgreid@chromium.org>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+The effect of the bug is, when opening cgroup.procs, a flex array will
+be allocated and all elements of the array is allocated with
+GFP_KERNEL flag, but the last one is GFP_ATOMIC, and if we fail to
+allocate memory for it, it'll trigger a BUG_ON().
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/max98088.c |    2 +-
+ kernel/cgroup.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/max98088.c
-+++ b/sound/soc/codecs/max98088.c
-@@ -2006,7 +2006,7 @@ static int max98088_probe(struct snd_soc
-                        ret);
-                goto err_access;
-        }
--       dev_info(codec->dev, "revision %c\n", ret + 'A');
-+       dev_info(codec->dev, "revision %c\n", ret - 0x40 + 'A');
- 
-        snd_soc_write(codec, M98088_REG_51_PWR_SYS, M98088_PWRSV);
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2020,7 +2020,7 @@ static int cgroup_attach_proc(struct cgr
+ 	if (!group)
+ 		return -ENOMEM;
+ 	/* pre-allocate to guarantee space while iterating in rcu read-side. */
+-	retval = flex_array_prealloc(group, 0, group_size - 1, GFP_KERNEL);
++	retval = flex_array_prealloc(group, 0, group_size, GFP_KERNEL);
+ 	if (retval)
+ 		goto out_free_group_list;
  
 
 
