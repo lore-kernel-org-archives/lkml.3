@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760443Ab3EFXN1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:13:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36676 "EHLO
+	id S933829Ab3EFXfM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:35:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36700 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760414Ab3EFXNX (ORCPT
+	with ESMTP id S1760436Ab3EFXN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:23 -0400
+	Mon, 6 May 2013 19:13:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Felipe Balbi <balbi@ti.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [ 025/104] usb: chipidea: udc: fix memory access of shared memory on armv5 machines
-Date: Mon,  6 May 2013 16:11:44 -0700
-Message-Id: <20130506230046.158080499@linuxfoundation.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 032/104] xen/smp/spinlock: Fix leakage of the spinlock interrupt line for every CPU online/offline
+Date: Mon,  6 May 2013 16:11:51 -0700
+Message-Id: <20130506230046.921948290@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -28,81 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit a9c174302b1590ef3ead485d804a303c5f89174b upstream.
+commit 66ff0fe9e7bda8aec99985b24daad03652f7304e upstream.
 
-The udc uses an shared dma memory space between hard and software. This
-memory layout is described in ci13xxx_qh and ci13xxx_td which are marked
-with the attribute ((packed)).
+While we don't use the spinlock interrupt line (see for details
+commit f10cd522c5fbfec9ae3cc01967868c9c2401ed23 -
+xen: disable PV spinlocks on HVM) - we should still do the proper
+init / deinit sequence. We did not do that correctly and for the
+CPU init for PVHVM guest we would allocate an interrupt line - but
+failed to deallocate the old interrupt line.
 
-The compiler currently does not know about the alignment of the memory
-layout, and will create strb and ldrb operations.
+This resulted in leakage of an irq_desc but more importantly this splat
+as we online an offlined CPU:
 
-The Datasheet of the synopsys core describes, that some operations on
-the mapped memory need to be atomic double word operations. I.e. the
-next pointer addressing in the qhead, as otherwise the hardware will
-read wrong data and totally stuck.
+genirq: Flags mismatch irq 71. 0002cc20 (spinlock1) vs. 0002cc20 (spinlock1)
+Pid: 2542, comm: init.late Not tainted 3.9.0-rc6upstream #1
+Call Trace:
+ [<ffffffff811156de>] __setup_irq+0x23e/0x4a0
+ [<ffffffff81194191>] ? kmem_cache_alloc_trace+0x221/0x250
+ [<ffffffff811161bb>] request_threaded_irq+0xfb/0x160
+ [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
+ [<ffffffff813a8423>] bind_ipi_to_irqhandler+0xa3/0x160
+ [<ffffffff81303758>] ? kasprintf+0x38/0x40
+ [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
+ [<ffffffff810cad35>] ? update_max_interval+0x15/0x40
+ [<ffffffff816605db>] xen_init_lock_cpu+0x3c/0x78
+ [<ffffffff81660029>] xen_hvm_cpu_notify+0x29/0x33
+ [<ffffffff81676bdd>] notifier_call_chain+0x4d/0x70
+ [<ffffffff810bb2a9>] __raw_notifier_call_chain+0x9/0x10
+ [<ffffffff8109402b>] __cpu_notify+0x1b/0x30
+ [<ffffffff8166834a>] _cpu_up+0xa0/0x14b
+ [<ffffffff816684ce>] cpu_up+0xd9/0xec
+ [<ffffffff8165f754>] store_online+0x94/0xd0
+ [<ffffffff8141d15b>] dev_attr_store+0x1b/0x20
+ [<ffffffff81218f44>] sysfs_write_file+0xf4/0x170
+ [<ffffffff811a2864>] vfs_write+0xb4/0x130
+ [<ffffffff811a302a>] sys_write+0x5a/0xa0
+ [<ffffffff8167ada9>] system_call_fastpath+0x16/0x1b
+cpu 1 spinlock event irq -16
+smpboot: Booting Node 0 Processor 1 APIC 0x2
 
-This is also possible while working with the current active td queue,
-and preparing the td->ptr.next in software while the hardware is still
-working with the current active td which is supposed to be changed:
+And if one looks at the /proc/interrupts right after
+offlining (CPU1):
 
-writeb(0xde, &td->ptr.next + 0x0); /* strb */
-writeb(0xad, &td->ptr.next + 0x1); /* strb */
+  70:          0          0  xen-percpu-ipi       spinlock0
+  71:          0          0  xen-percpu-ipi       spinlock1
+  77:          0          0  xen-percpu-ipi       spinlock2
 
-<----- hardware reads value of td->ptr.next and get stuck!
+There is the oddity of the 'spinlock1' still being present.
 
-writeb(0xbe, &td->ptr.next + 0x2); /* strb */
-writeb(0xef, &td->ptr.next + 0x3); /* strb */
-
-This appeares on armv5 machines where the hardware does not support
-unaligned 32bit operations.
-
-This patch adds the attribute ((aligned(4))) to the structures to tell
-the compiler to use 32bit operations. It also adds an wmb() for the
-prepared TD data before it gets enqueued into the qhead.
-
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/chipidea/udc.c |    2 ++
- drivers/usb/chipidea/udc.h |    4 ++--
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/xen/smp.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/chipidea/udc.c
-+++ b/drivers/usb/chipidea/udc.c
-@@ -461,6 +461,8 @@ static int _hardware_enqueue(struct ci13
- 		mReq->ptr->page[i] =
- 			(mReq->req.dma + i * CI13XXX_PAGE_SIZE) & ~TD_RESERVED_MASK;
- 
-+	wmb();
-+
- 	if (!list_empty(&mEp->qh.queue)) {
- 		struct ci13xxx_req *mReqPrev;
- 		int n = hw_ep_bit(mEp->num, mEp->dir);
---- a/drivers/usb/chipidea/udc.h
-+++ b/drivers/usb/chipidea/udc.h
-@@ -40,7 +40,7 @@ struct ci13xxx_td {
- #define TD_CURR_OFFSET        (0x0FFFUL <<  0)
- #define TD_FRAME_NUM          (0x07FFUL <<  0)
- #define TD_RESERVED_MASK      (0x0FFFUL <<  0)
--} __attribute__ ((packed));
-+} __attribute__ ((packed, aligned(4)));
- 
- /* DMA layout of queue heads */
- struct ci13xxx_qh {
-@@ -57,7 +57,7 @@ struct ci13xxx_qh {
- 	/* 9 */
- 	u32 RESERVED;
- 	struct usb_ctrlrequest   setup;
--} __attribute__ ((packed));
-+} __attribute__ ((packed, aligned(4)));
- 
- /**
-  * struct ci13xxx_req - usb request representation
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -658,6 +658,7 @@ static void xen_hvm_cpu_die(unsigned int
+ 	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
++	xen_uninit_lock_cpu(cpu);
+ 	xen_teardown_timer(cpu);
+ 	native_cpu_die(cpu);
+ }
 
 
