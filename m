@@ -1,124 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab3EFOcF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 10:32:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52206 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714Ab3EFOaX (ORCPT
+	id S1753865Ab3EFOcV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 10:32:21 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17025 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836Ab3EFOcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 10:30:23 -0400
-Message-Id: <20130506142539.152569748@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Mon, 06 May 2013 14:30:21 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Gerlando Falauto <gerlando.falauto@keymile.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Lennert Buytenhek <kernel@wantstofly.org>,
-        Simon Guinot <simon@sequanux.org>, Joey Oravec <joravec@drewtech.com>,
-        Ben Dooks <ben-linux@fluff.org>, Nicolas Pitre <nico@fluxnic.net>,
-        Holger Brunck <Holger.Brunck@keymile.com>
-Subject: [patch 3/8] genirq: generic chip: Handle separate mask registers
-References: <20130503212258.385818955@linutronix.de>
- <20130506142348.321859745@linutronix.de>
-Content-Disposition: inline;
- filename=genirq-handle-separate-mask-registers.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 6 May 2013 10:32:18 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 06 May 2013 07:32:03 -0700
+Message-ID: <5187BDAF.2040303@nvidia.com>
+Date: Mon, 6 May 2013 19:56:55 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "cw00.choi@samsung.com" <cw00.choi@samsung.com>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "ruchika@ti.com" <ruchika@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH v4] extcon: Palmas Extcon Driver
+References: <1362662506-14823-4-git-send-email-kishon@ti.com> <1367846225-15685-1-git-send-email-kishon@ti.com>
+In-Reply-To: <1367846225-15685-1-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gerlando Falauto <gerlando.falauto@keymile.com>
+On Monday 06 May 2013 06:47 PM, Kishon Vijay Abraham I wrote:
+> +
+> +static irqreturn_t palmas_vbus_wakeup_irq(int irq, void *_palmas_usb)
 
-There are cases where all irq_chip_type instances have separate mask
-registers, making a shared mask register cache unsuitable for the
-purpose.
+Can we name the function to palams_vbus_irq_handler() for better 
+understanding? Reserve the wakeup word for the suspend-wakeups.
 
-Introduce a new flag IRQ_GC_MASK_CACHE_PER_TYPE. If set, point the per
-chip mask pointer to the per chip private mask cache instead.
 
-[ tglx: Simplified code, renamed flag and massaged changelog ]
+> +
+> +
+> +static irqreturn_t palmas_id_wakeup_irq(int irq, void *_palmas_usb)
 
-Signed-off-by: Gerlando Falauto <gerlando.falauto@keymile.com>
-Cc: Lennert Buytenhek <kernel@wantstofly.org>
-Cc: Simon Guinot <simon@sequanux.org>
-Cc: Joey Oravec <joravec@drewtech.com>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Nicolas Pitre <nico@fluxnic.net>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Holger Brunck <Holger.Brunck@keymile.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/irq.h       |    2 ++
- kernel/irq/generic-chip.c |   17 ++++++++++-------
- 2 files changed, 12 insertions(+), 7 deletions(-)
+Same here for better name.
 
-Index: linux-2.6/include/linux/irq.h
-===================================================================
---- linux-2.6.orig/include/linux/irq.h
-+++ linux-2.6/include/linux/irq.h
-@@ -704,10 +704,12 @@ struct irq_chip_generic {
-  * @IRQ_GC_INIT_NESTED_LOCK:	Set the lock class of the irqs to nested for
-  *				irq chips which need to call irq_set_wake() on
-  *				the parent irq. Usually GPIO implementations
-+ * @IRQ_GC_MASK_CACHE_PER_TYPE:	Mask cache is chip type private
-  */
- enum irq_gc_flags {
- 	IRQ_GC_INIT_MASK_CACHE		= 1 << 0,
- 	IRQ_GC_INIT_NESTED_LOCK		= 1 << 1,
-+	IRQ_GC_MASK_CACHE_PER_TYPE	= 1 << 2,
- };
- 
- /* Generic chip callback functions */
-Index: linux-2.6/kernel/irq/generic-chip.c
-===================================================================
---- linux-2.6.orig/kernel/irq/generic-chip.c
-+++ linux-2.6/kernel/irq/generic-chip.c
-@@ -241,18 +241,21 @@ void irq_setup_generic_chip(struct irq_c
- {
- 	struct irq_chip_type *ct = gc->chip_types;
- 	unsigned int i;
-+	u32 *mskptr = &gc->mask_cache, mskreg = ct->regs.mask;
- 
- 	raw_spin_lock(&gc_lock);
- 	list_add_tail(&gc->list, &gc_list);
- 	raw_spin_unlock(&gc_lock);
- 
--	/* Init mask cache ? */
--	if (flags & IRQ_GC_INIT_MASK_CACHE)
--		gc->mask_cache = irq_reg_readl(gc->reg_base + ct->regs.mask);
--
--	/* Initialize mask cache pointer */
--	for (i = 0; i < gc->num_ct; i++)
--		ct[i].mask_cache = &gc->mask_cache;
-+	for (i = 0; i < gc->num_ct; i++) {
-+		if (flags & IRQ_GC_MASK_CACHE_PER_TYPE) {
-+			mskptr = &ct[i].mask_cache_priv;
-+			mskreg = ct[i].regs.mask;
-+		}
-+		ct[i].mask_cache = mskptr;
-+		if (flags & IRQ_GC_INIT_MASK_CACHE)
-+			*mskptr = irq_reg_readl(gc->reg_base + mskreg);
-+	}
- 
- 	for (i = gc->irq_base; msk; msk >>= 1, i++) {
- 		if (!(msk & 0x01))
+
+> +
+> +static void palmas_set_vbus_work(struct work_struct *data)
+> +{
+> +       int ret;
+> +       struct palmas_usb *palmas_usb = container_of(data, struct palmas_usb,
+> +                                                               set_vbus_work);
+> +
+> +       if (IS_ERR_OR_NULL(palmas_usb->vbus_reg)) {
+> +               dev_err(palmas_usb->dev, "invalid regulator\n");
+> +               return;
+> +       }
+
+This error will keep coming if the vbus is not require as workqueue get 
+scheduled always. I think we should remove it.
+
+
+> +
+
+> +static void palmas_dt_to_pdata(struct device_node *node,
+> +               struct palmas_usb_platform_data *pdata)
+> +{
+> +       pdata->no_control_vbus = of_property_read_bool(node,
+> +                                       "ti,no_control_vbus");
+
+
+Can we change the variable names to enable_control_bus and logic 
+accordingly as it looks more appropriate and easy to understand?
+
+
+> +
+> +       palmas_usb->irq1 = regmap_irq_get_virq(palmas->irq_data,
+> +                                               PALMAS_ID_OTG_IRQ);
+> +       palmas_usb->irq2 = regmap_irq_get_virq(palmas->irq_data,
+> +                                               PALMAS_ID_IRQ);
+> +       palmas_usb->irq3 = regmap_irq_get_virq(palmas->irq_data,
+> +                                               PALMAS_VBUS_OTG_IRQ);
+> +       palmas_usb->irq4 = regmap_irq_get_virq(palmas->irq_data,
+> +                                               PALMAS_VBUS_IRQ);
+> +
+
+Better to name irq1, irq2 in more logical names for easy understanding.
+
+
+> +
+> +       if (device_create_file(&pdev->dev, &dev_attr_vbus))
+> +               dev_warn(&pdev->dev, "could not create sysfs file\n");
+> +
+> +       palmas_usb->edev.name = "palmas_usb";
+> +       palmas_usb->edev.supported_cable = palmas_extcon_cable;
+> +       palmas_usb->edev.mutually_exclusive = mutually_exclusive;
+> +
+> +       ret = extcon_dev_register(&palmas_usb->edev, palmas_usb->dev);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "failed to register extcon device\n");
+> +               return ret;
+
+It need to destroy sysfs also.
+
+> +       }
+> +
+> +       /* init spinlock for workqueue */
+> +       spin_lock_init(&palmas_usb->lock);
+
+It is already done above.
+
+> +
+> +       INIT_WORK(&palmas_usb->set_vbus_work, palmas_set_vbus_work);
+
+Better to create the workqueu when control_vbus is require.
+
+
+> +
+> +
+> diff --git a/include/linux/extcon/extcon_palmas.h b/include/linux/extcon/extcon_palmas.h
+> new file mode 100644
+> index 0000000..a5119c9
+> --- /dev/null
+> +++ b/include/linux/extcon/extcon_palmas.h
+
+I think it can be use palama.h only. No need to have one more header for 
+this.
+
+> @@ -0,0 +1,26 @@
+>
+>
+> -       u8 linkstat;
+> +       int mailboxstat;
+Do we really require mailboxstat?
+
 
 
