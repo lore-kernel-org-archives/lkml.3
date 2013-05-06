@@ -1,110 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978Ab3EFPfc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 11:35:32 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:40238 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754006Ab3EFPfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 11:35:31 -0400
-Date: Mon, 6 May 2013 08:35:17 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL, RFC] Full dynticks, CONFIG_NO_HZ_FULL feature
-Message-ID: <20130506153517.GA3501@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130505110351.GA4768@gmail.com>
- <CA+55aFzPHkCH7CVZ4tkaF91+=GLZAxxncTq0J9d6AKpSPqovZw@mail.gmail.com>
- <20130505212511.GC3659@linux.vnet.ibm.com>
- <20130506092537.GA8879@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130506092537.GA8879@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050615-5806-0000-0000-000021046909
+	id S1755142Ab3EFPiK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 11:38:10 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:59380 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753874Ab3EFPiI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 11:38:08 -0400
+Date: Mon, 06 May 2013 11:38:00 -0400 (EDT)
+Message-Id: <20130506.113800.203598940932244298.davem@davemloft.net>
+To: sebastian.hesselbarth@gmail.com
+Cc: grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
+        buytenh@wantstofly.org, florian@openwrt.org, arnaud.patard@rtp-net.org,
+        linux@arm.linux.org.uk, jason@lakedaemon.net, andrew@lunn.ch,
+        moinejf@free.fr, thomas.petazzoni@free-electrons.com,
+        simon.guinot@sequanux.org, jm@lentin.co.uk, michael@walle.cc,
+        hutter.eric@gmail.com, josh.coombs@gmail.com, w@1wt.eu,
+        gmbnomis@gmail.com, alanbutty12@gmail.com, nigel@nobiscuit.com,
+        valentin.longchamp@keymile.com, s.peter@mpl.ch, arno@natisbad.org,
+        iwamatsu@nigauri.org, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] mv643xx_eth: device tree bindings
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1365071235-11611-1-git-send-email-florian@openwrt.org>
+	<1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 06 May 2013 08:38:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 11:25:37AM +0200, Ingo Molnar wrote:
-> 
-> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > On Sun, May 05, 2013 at 01:33:45PM -0700, Linus Torvalds wrote:
-> > > On Sun, May 5, 2013 at 4:03 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> > > >
-> > > > Please consider pulling the latest timers-nohz-for-linus git tree from:
-> > > 
-> > > Ok, it seems to work for me, so pulled.
-> > > 
-> > > However, by "work for me" I mean "doesn't actually seem to make any
-> > > difference for me". Maybe I'm odd, but the most common situation is
-> > > either a fairly idle machine (in which case the old NOHZ did fine) or
-> > > a fairly over-crowded one when I'm running something sufficiently
-> > > threaded (in which case the new NOHZ_FULL doesn't do anything either).
-> > > 
-> > > So I really hope the "cpu has more than one running thread" case is
-> > > getting a lot of attention. Not for 3.10, but right now it seems to
-> > > still result in the same old 1kHz timer interrupts..
-> > > 
-> > > So I haven't actually found a real load where any of this makes a
-> > > noticeable *difference*.
-> > 
-> > The workloads where we expect the most noticeable differences are HPC 
-> > workloads with short iterations and a HPC-style barrier between each 
-> > interation on the one hand and real-time workloads on the other. My 
-> > guess is that you aren't doing too much of either.
-> 
-> I think Linus might have referred to my 'future plans' entry:
-> 
-> | Future plans:
-> |
-> | - there's ongoing work to reduce 1Hz to 0Hz, to essentially shut
-> |   off the periodic tick altogether when there's a single busy task on a
-> |   CPU. We'd first like 1 Hz to be exposed more widely before we go for
-> |   the 0 Hz target though.
-> |
-> | - once we reach 0 Hz we can and remove the periodic tick assumption from
-> |   nr_running>=2 as well, by essentially interrupting busy tasks only as
-> |   frequently as the sched_latency constraints require us to do - once
-> |   every 4-40 msecs, depending on nr_running.
-> 
-> and indicated that in practice desktop and developer workload will see the 
-> full win from reduced HZ only once we implement those two points and 
-> extend the scope of dynticks even more and make HZ truly variable 
-> regardless of rq->nr_running.
 
-You are right, that would make more sense given his response.  I guess
-I should read these things more carefully before replying.  :-/
+Two things:
 
-> > We do have some measurements taken on an early prototype of this patchset,
-> > which are on slides 5 and 6 of:
-> > 
-> > http://linuxplumbersconf.org/2009/slides/Josh-Triplett-painless-kernel.pdf
-> > 
-> > This is for an HPC workload with a 100-microsecond iteration time.
-> 
-> Interesting that HZ=1000 caused 8% overhead there. On a regular x86 server 
-> PC I've measured the HZ=1000 overhead to pure user-space execution to be 
-> around 1% (sometimes a bit less, sometimes a bit more).
-> 
-> But even 1% is worth it.
+1) None of your postings make the mailing lists because your CC: line is
+   too large, and we block large ones because those are %99 of SPAM.
 
-I believe that the difference is tick skew -- the data above was collected
-with it enabled, but it now is disabled by default (but can be enabled
-via the skew_tick= boot parameter).  Large systems benefit from tick
-skew due to reduced lock contention, but Frederic's patches allow them
-to avoid the contention when there are multiple runnable processes per
-CPU on the one hand but also to avoid OS jitter when there is but one
-runnable process per CPU on the other hand.
+   It really isn't reasonable to CC: so many people, and I do understand
+   that you're just sifting email addresses from MAINTAINERS or whatever,
+   but just use the appropriate mailing lists and the absolute most direct
+   developer(s).  Probably just the person who you believe should apply
+   this patch.
 
-							Thanx, Paul
+2) Networking feature patch submissions are closed, as per:
 
+	http://marc.info/?l=linux-netdev&m=136730964130303&w=2
+
+   Therefore please resubmit this after the merge window is closed
+   and I have explicitly announced that the net-next tree is open again
+   for submissions.
+
+Thanks.
