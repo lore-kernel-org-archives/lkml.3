@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758575Ab3EFWkv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:40:51 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:51076 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757534Ab3EFWku (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:40:50 -0400
+	id S1758625Ab3EFWly (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:41:54 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52392 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758561Ab3EFWlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 18:41:53 -0400
+Message-ID: <51883175.8010001@ti.com>
+Date: Mon, 6 May 2013 18:40:53 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1367864663-1309-1-git-send-email-dsahern@gmail.com>
-References: <1367864663-1309-1-git-send-email-dsahern@gmail.com>
-Date: Tue, 7 May 2013 00:40:49 +0200
-Message-ID: <CABPqkBTj6Jt82mvVJKJxXaGnbD5GbW5mo4L71StOZuA=8MwDdw@mail.gmail.com>
-Subject: Re: [PATCH] perf record: handle death by SIGTERM
-From: Stephane Eranian <eranian@google.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <tony@atomide.com>,
+        <linux-omap@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RESEND][PATCH 1/3] arm: dts: introduce config HAS_BANDGAP
+References: <1367874058-2378-1-git-send-email-eduardo.valentin@ti.com> <1367874058-2378-2-git-send-email-eduardo.valentin@ti.com> <20130506213413.GH5634@blackmetal.musicnaut.iki.fi>
+In-Reply-To: <20130506213413.GH5634@blackmetal.musicnaut.iki.fi>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2XIADUSPFQQCAIOPDKHKC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a good fix. I have run into this infinite loop in perf report
-many times.
-Thanks David.
+------enig2XIADUSPFQQCAIOPDKHKC
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, May 6, 2013 at 8:24 PM, David Ahern <dsahern@gmail.com> wrote:
-> perf data files cannot be processed until the header file is update
-> which is done via an on_exit handler. If perf is killed due to a SIGTERM
-> it does not run the on_exit hooks leaving the perf.data file in a
-> random state which perf-report will happily spin on trying to read. As
-> noted by Mike an easy reproducer is:
->   perf record -a -g & sleep 1; killall perf
->
-> Fix by catching SIGTERM like it does SIGINT.  Also need to remove the
-> kill which was added via commit f7b7c26e.
->
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Stephane Eranian <eranian@google.com>
-> ---
->  tools/perf/builtin-record.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index cdf58ec..fff985c 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -198,7 +198,6 @@ static void perf_record__sig_exit(int exit_status __maybe_unused, void *arg)
->                 return;
->
->         signal(signr, SIG_DFL);
-> -       kill(getpid(), signr);
->  }
->
->  static bool perf_evlist__equal(struct perf_evlist *evlist,
-> @@ -404,6 +403,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
->         signal(SIGCHLD, sig_handler);
->         signal(SIGINT, sig_handler);
->         signal(SIGUSR1, sig_handler);
-> +       signal(SIGTERM, sig_handler);
->
->         if (!output_name) {
->                 if (!fstat(STDOUT_FILENO, &st) && S_ISFIFO(st.st_mode))
-> --
-> 1.7.10.1
->
+On 06-05-2013 17:34, Aaro Koskinen wrote:
+> On Mon, May 06, 2013 at 05:00:56PM -0400, Eduardo Valentin wrote:
+>> Introduce HAS_BANDGAP config entry. This config is a
+>> boolean value so that arch code can flag is they
+>> feature a bandgap device.
+>=20
+> Maybe it could be mentioned that omap-thermal already depend on this?
+> At least for a random reviewer it was not immediately clear why this is=
+
+> added, especially since there were no users for it in subsequent patche=
+s.
+>=20
+> A.
+>=20
+>=20
+The flag has been proposed here [1]. The adaptation on the driver has
+been introduced here [2,3]. It has reached the staging (next) tree. That
+is why you do not see any follow up patch. Although it does not have
+users at v3.9, the patch on the user has been sent several weeks ago.
+
+[1] -
+http://lists.infradead.org/pipermail/linux-arm-kernel/2012-May/101827.htm=
+l
+[2] - http://marc.info/?l=3Dlinux-omap&m=3D136335347305197&w=3D2
+[3] - http://marc.info/?l=3Dlinux-driver-devel&m=3D136335404205514&w=3D1
+
+
+------enig2XIADUSPFQQCAIOPDKHKC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlGIMYEACgkQCXcVR3XQvP1c4wEAk3fkX0Nof1JRgpeNjGNnbpqe
+SFHC6EvXxjdon1tkT8QBANg72RQCIYz5qd6BgaHOG21iR7D0vu2t2IsvN5iX7+4K
+=xy6d
+-----END PGP SIGNATURE-----
+
+------enig2XIADUSPFQQCAIOPDKHKC--
