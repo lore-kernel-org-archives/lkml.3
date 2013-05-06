@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761479Ab3EFXpr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:45:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36211 "EHLO
+	id S932914Ab3EFW5Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:57:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36195 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932919Ab3EFW50 (ORCPT
+	with ESMTP id S932896Ab3EFW5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:26 -0400
+	Mon, 6 May 2013 18:57:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robin Holt <holt@sgi.com>, Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 52/63] ipc: sysv shared memory limited to 8TiB
-Date: Mon,  6 May 2013 15:56:30 -0700
-Message-Id: <20130506225327.358536348@linuxfoundation.org>
+        Marc Eshel <eshel@us.ibm.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 46/63] LOCKD: Ensure that nlmclnt_block resets block->b_status after a server reboot
+Date: Mon,  6 May 2013 15:56:24 -0700
+Message-Id: <20130506225325.933629766@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -28,60 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit d69f3bad4675ac519d41ca2b11e1c00ca115cecd upstream.
+commit 1dfd89af8697a299e7982ae740d4695ecd917eef upstream.
 
-Trying to run an application which was trying to put data into half of
-memory using shmget(), we found that having a shmall value below 8EiB-8TiB
-would prevent us from using anything more than 8TiB.  By setting
-kernel.shmall greater than 8EiB-8TiB would make the job work.
+After a server reboot, the reclaimer thread will recover all the existing
+locks. For locks that are blocked, however, it will change the value
+of block->b_status to nlm_lck_denied_grace_period in order to signal that
+they need to wake up and resend the original blocking lock request.
 
-In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
+Due to a bug, however, the block->b_status never gets reset after the
+blocked locks have been woken up, and so the process goes into an
+infinite loop of resends until the blocked lock is satisfied.
 
-ipc/shm.c:
- 458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
- 459 {
-...
- 465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
-...
- 474         if (ns->shm_tot + numpages > ns->shm_ctlall)
- 475                 return -ENOSPC;
-
-[akpm@linux-foundation.org: make ipc/shm.c:newseg()'s numpages size_t, not int]
-Signed-off-by: Robin Holt <holt@sgi.com>
-Reported-by: Alex Thorlton <athorlton@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Marc Eshel <eshel@us.ibm.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ipc_namespace.h |    2 +-
- ipc/shm.c                     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/lockd/clntlock.c |    3 +++
+ fs/lockd/clntproc.c |    3 ---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -42,8 +42,8 @@ struct ipc_namespace {
- 
- 	size_t		shm_ctlmax;
- 	size_t		shm_ctlall;
-+	unsigned long	shm_tot;
- 	int		shm_ctlmni;
--	int		shm_tot;
- 	/*
- 	 * Defines whether IPC_RMID is forced for _all_ shm segments regardless
- 	 * of shmctl()
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -450,7 +450,7 @@ static int newseg(struct ipc_namespace *
- 	size_t size = params->u.size;
- 	int error;
- 	struct shmid_kernel *shp;
--	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
-+	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	struct file * file;
- 	char name[13];
- 	int id;
+--- a/fs/lockd/clntlock.c
++++ b/fs/lockd/clntlock.c
+@@ -144,6 +144,9 @@ int nlmclnt_block(struct nlm_wait *block
+ 			timeout);
+ 	if (ret < 0)
+ 		return -ERESTARTSYS;
++	/* Reset the lock status after a server reboot so we resend */
++	if (block->b_status == nlm_lck_denied_grace_period)
++		block->b_status = nlm_lck_blocked;
+ 	req->a_res.status = block->b_status;
+ 	return 0;
+ }
+--- a/fs/lockd/clntproc.c
++++ b/fs/lockd/clntproc.c
+@@ -551,9 +551,6 @@ again:
+ 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
+ 		if (status < 0)
+ 			break;
+-		/* Resend the blocking lock request after a server reboot */
+-		if (resp->status ==  nlm_lck_denied_grace_period)
+-			continue;
+ 		if (resp->status != nlm_lck_blocked)
+ 			break;
+ 	}
 
 
