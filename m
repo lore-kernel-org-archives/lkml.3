@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932975Ab3EFW5f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:57:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36211 "EHLO
+	id S932960Ab3EFW5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:57:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36214 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932916Ab3EFW53 (ORCPT
+	with ESMTP id S932941Ab3EFW5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:29 -0400
+	Mon, 6 May 2013 18:57:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Terry Barnaby <terry@beam.ltd.uk>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 62/63] mmc: atmel-mci: pio hang on block errors
-Date: Mon,  6 May 2013 15:56:40 -0700
-Message-Id: <20130506225329.527959022@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [ 63/63] mfd: adp5520: Restore mode bits on resume
+Date: Mon,  6 May 2013 15:56:41 -0700
+Message-Id: <20130506225329.778961432@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -28,85 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Terry Barnaby <terry@beam.ltd.uk>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit bdbc5d0c60f3e9de3eeccf1c1a18bdc11dca62cc upstream.
+commit c6cc25fda58da8685ecef3f179adc7b99c8253b2 upstream.
 
-The driver is doing, by default, multi-block reads. When a block error
-occurs, card/block.c instigates a single block read: "mmcblk0: retrying
-using single block read".  It leaves the sg chain intact and just changes
-the length attribute for the first sg entry and the overall sg_len
-parameter.  When atmci_read_data_pio is called to read the single block
-of data it ignores the sg_len and expects to read more than 512 bytes as
-it sees there are multiple items in the sg list. No more data comes as
-the controller has only been commanded to get one block.
+The adp5520 unfortunately also clears the BL_EN bit when the nSTNDBY bit is
+cleared. So we need to make sure to restore it during resume if it was set
+before suspend.
 
-Signed-off-by: Terry Barnaby <terry@beam.ltd.uk>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/atmel-mci.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/mfd/adp5520.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -165,6 +165,7 @@ struct atmel_mci {
- 	void __iomem		*regs;
+--- a/drivers/mfd/adp5520.c
++++ b/drivers/mfd/adp5520.c
+@@ -36,6 +36,7 @@ struct adp5520_chip {
+ 	struct blocking_notifier_head notifier_list;
+ 	int irq;
+ 	unsigned long id;
++	uint8_t mode;
+ };
  
- 	struct scatterlist	*sg;
-+	unsigned int		sg_len;
- 	unsigned int		pio_offset;
+ static int __adp5520_read(struct i2c_client *client,
+@@ -326,7 +327,10 @@ static int adp5520_suspend(struct device
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
  
- 	struct atmel_mci_slot	*cur_slot;
-@@ -754,6 +755,7 @@ static u32 atmci_prepare_data(struct atm
- 	data->error = -EINPROGRESS;
+-	adp5520_clr_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
++	adp5520_read(chip->dev, ADP5520_MODE_STATUS, &chip->mode);
++	/* All other bits are W1C */
++	chip->mode &= ADP5520_BL_EN | ADP5520_DIM_EN | ADP5520_nSTNBY;
++	adp5520_write(chip->dev, ADP5520_MODE_STATUS, 0);
+ 	return 0;
+ }
  
- 	host->sg = data->sg;
-+	host->sg_len = data->sg_len;
- 	host->data = data;
- 	host->data_chan = NULL;
+@@ -335,7 +339,7 @@ static int adp5520_resume(struct device
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
  
-@@ -1592,7 +1594,8 @@ static void atmci_read_data_pio(struct a
- 			if (offset == sg->length) {
- 				flush_dcache_page(sg_page(sg));
- 				host->sg = sg = sg_next(sg);
--				if (!sg)
-+				host->sg_len--;
-+				if (!sg || !host->sg_len)
- 					goto done;
- 
- 				offset = 0;
-@@ -1605,7 +1608,8 @@ static void atmci_read_data_pio(struct a
- 
- 			flush_dcache_page(sg_page(sg));
- 			host->sg = sg = sg_next(sg);
--			if (!sg)
-+			host->sg_len--;
-+			if (!sg || !host->sg_len)
- 				goto done;
- 
- 			offset = 4 - remaining;
-@@ -1659,7 +1663,8 @@ static void atmci_write_data_pio(struct
- 			nbytes += 4;
- 			if (offset == sg->length) {
- 				host->sg = sg = sg_next(sg);
--				if (!sg)
-+				host->sg_len--;
-+				if (!sg || !host->sg_len)
- 					goto done;
- 
- 				offset = 0;
-@@ -1673,7 +1678,8 @@ static void atmci_write_data_pio(struct
- 			nbytes += remaining;
- 
- 			host->sg = sg = sg_next(sg);
--			if (!sg) {
-+			host->sg_len--;
-+			if (!sg || !host->sg_len) {
- 				atmci_writel(host, ATMCI_TDR, value);
- 				goto done;
- 			}
+-	adp5520_set_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
++	adp5520_write(chip->dev, ADP5520_MODE_STATUS, chip->mode);
+ 	return 0;
+ }
+ #endif
 
 
