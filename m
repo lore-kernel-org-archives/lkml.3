@@ -1,45 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab3EFHSi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 03:18:38 -0400
-Received: from mga14.intel.com ([143.182.124.37]:19226 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752572Ab3EFHSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 03:18:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,619,1363158000"; 
-   d="scan'208";a="237352626"
-Message-ID: <51875944.9020409@intel.com>
-Date: Mon, 06 May 2013 15:18:28 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1753250Ab3EFHVK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 03:21:10 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:44684 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043Ab3EFHVI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 03:21:08 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] SUNRPC: Refactor gssx_dec_option_array() to kill uninitialized warning
+Date: Mon,  6 May 2013 09:21:03 +0200
+Message-Id: <1367824863-1857-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
-        wangyun@linux.vnet.ibm.com
-Subject: Re: [PATCH v5 2/7] sched: remove SMP cover for runnable variables
- in cfs_rq
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-3-git-send-email-alex.shi@intel.com> <51872D7F.30909@linux.vnet.ibm.com>
-In-Reply-To: <51872D7F.30909@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 12:11 PM, Preeti U Murthy wrote:
-> Hi Alex,
-> 
-> You might want to do the below for struct sched_entity also?
-> AFAIK,struct sched_entity has struct sched_avg under CONFIG_SMP.
-> 
+net/sunrpc/auth_gss/gss_rpc_xdr.c: In function ‘gssx_dec_option_array’:
+net/sunrpc/auth_gss/gss_rpc_xdr.c:258: warning: ‘creds’ may be used uninitialized in this function
 
-Ops, why it passed my UP config building? Anyway will check and test more.
-Thanks Preeti!
+Return early if count is zero, to make it clearer to the compiler (and the
+casual reviewer) that no more processing is done.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ net/sunrpc/auth_gss/gss_rpc_xdr.c |   32 +++++++++++++++++---------------
+ 1 files changed, 17 insertions(+), 15 deletions(-)
+
+diff --git a/net/sunrpc/auth_gss/gss_rpc_xdr.c b/net/sunrpc/auth_gss/gss_rpc_xdr.c
+index 5c4c61d..a1e1b1a 100644
+--- a/net/sunrpc/auth_gss/gss_rpc_xdr.c
++++ b/net/sunrpc/auth_gss/gss_rpc_xdr.c
+@@ -264,25 +264,27 @@ static int gssx_dec_option_array(struct xdr_stream *xdr,
+ 	if (unlikely(p == NULL))
+ 		return -ENOSPC;
+ 	count = be32_to_cpup(p++);
+-	if (count != 0) {
+-		/* we recognize only 1 currently: CREDS_VALUE */
+-		oa->count = 1;
++	if (!count)
++		return 0;
+ 
+-		oa->data = kmalloc(sizeof(struct gssx_option), GFP_KERNEL);
+-		if (!oa->data)
+-			return -ENOMEM;
++	/* we recognize only 1 currently: CREDS_VALUE */
++	oa->count = 1;
+ 
+-		creds = kmalloc(sizeof(struct svc_cred), GFP_KERNEL);
+-		if (!creds) {
+-			kfree(oa->data);
+-			return -ENOMEM;
+-		}
++	oa->data = kmalloc(sizeof(struct gssx_option), GFP_KERNEL);
++	if (!oa->data)
++		return -ENOMEM;
+ 
+-		oa->data[0].option.data = CREDS_VALUE;
+-		oa->data[0].option.len = sizeof(CREDS_VALUE);
+-		oa->data[0].value.data = (void *)creds;
+-		oa->data[0].value.len = 0;
++	creds = kmalloc(sizeof(struct svc_cred), GFP_KERNEL);
++	if (!creds) {
++		kfree(oa->data);
++		return -ENOMEM;
+ 	}
++
++	oa->data[0].option.data = CREDS_VALUE;
++	oa->data[0].option.len = sizeof(CREDS_VALUE);
++	oa->data[0].value.data = (void *)creds;
++	oa->data[0].value.len = 0;
++
+ 	for (i = 0; i < count; i++) {
+ 		gssx_buffer dummy = { 0, NULL };
+ 		u32 length;
 -- 
-Thanks
-    Alex
+1.7.0.4
+
