@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab3EFUrM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:47:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59394 "EHLO
+	id S1756771Ab3EFUr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:47:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59433 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758147Ab3EFUrI (ORCPT
+	with ESMTP id S1758202Ab3EFUrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:47:08 -0400
+	Mon, 6 May 2013 16:47:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 107/115] do_mount(): fix a leak introduced in 3.9 ("mount: consolidate permission checks")
-Date: Mon,  6 May 2013 13:45:43 -0700
-Message-Id: <20130506203106.550214339@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 106/115] ext4: fix Kconfig documentation for CONFIG_EXT4_DEBUG
+Date: Mon,  6 May 2013 13:45:42 -0700
+Message-Id: <20130506203106.445005498@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -26,34 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 0d5cadb87e0fa764db7fa0b78d8a6f173cb475a1 upstream.
+commit 7f3e3c7cfcec148ccca9c0dd2dbfd7b00b7ac10f upstream.
 
-Bisected-by: Michael Leun <lkml20130126@newton.leun.net>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Fox the Kconfig documentation for CONFIG_EXT4_DEBUG to match the
+change made by commit a0b30c1229: ext4: use module parameters instead
+of debugfs for mballoc_debug
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namespace.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ fs/ext4/Kconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2238,12 +2238,11 @@ long do_mount(const char *dev_name, cons
+--- a/fs/ext4/Kconfig
++++ b/fs/ext4/Kconfig
+@@ -71,4 +71,5 @@ config EXT4_DEBUG
+ 	  Enables run-time debugging support for the ext4 filesystem.
  
- 	retval = security_sb_mount(dev_name, &path,
- 				   type_page, flags, data_page);
-+	if (!retval && !may_mount())
-+		retval = -EPERM;
- 	if (retval)
- 		goto dput_out;
- 
--	if (!may_mount())
--		return -EPERM;
--
- 	/* Default to relatime unless overriden */
- 	if (!(flags & MS_NOATIME))
- 		mnt_flags |= MNT_RELATIME;
+ 	  If you select Y here, then you will be able to turn on debugging
+-	  with a command such as "echo 1 > /sys/kernel/debug/ext4/mballoc-debug"
++	  with a command such as:
++		echo 1 > /sys/module/ext4/parameters/mballoc_debug
 
 
