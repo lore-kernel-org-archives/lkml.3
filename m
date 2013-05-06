@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758450Ab3EFWgz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:36:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12650 "EHLO mga09.intel.com"
+	id S1758524Ab3EFWhO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:37:14 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:52842 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756366Ab3EFWgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:36:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,624,1363158000"; 
-   d="scan'208";a="332790832"
-Date: Mon, 6 May 2013 15:42:35 -0700
-From: Bin Gao <bin.gao@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86/pci/mrst: force all pci config toward 0:0:0, 0:2:0 and 0:3:0
- to type 1
-Message-ID: <20130506224235.GB50060@bingao-desk1.fm.intel.com>
-References: <20130430072147.GA37866@bingao-desk1.fm.intel.com>
- <CAErSpo6g0xXo+HH+ZOYZav_Y6ZUH2D2FAqN+uDqrJqxQCRObog@mail.gmail.com>
- <20130502065358.GA41008@bingao-desk1.fm.intel.com>
- <CAErSpo66x7eHOy3nqH5kgKjOd-176zgNs3EGpJxYrk1dcKPQPg@mail.gmail.com>
- <CAErSpo4GPMD1kSW7qxBvQmN30NOyx_KruzsFY6SVXkFRMBcDmQ@mail.gmail.com>
+	id S1758500Ab3EFWhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 18:37:09 -0400
+Date: Mon, 6 May 2013 16:36:53 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>, tony@atomide.com,
+        linux-omap@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RESEND][PATCH 1/3] arm: dts: introduce config HAS_BANDGAP
+Message-ID: <20130506223653.GA12089@obsidianresearch.com>
+References: <1367874058-2378-1-git-send-email-eduardo.valentin@ti.com>
+ <1367874058-2378-2-git-send-email-eduardo.valentin@ti.com>
+ <20130506213413.GH5634@blackmetal.musicnaut.iki.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo4GPMD1kSW7qxBvQmN30NOyx_KruzsFY6SVXkFRMBcDmQ@mail.gmail.com>
+In-Reply-To: <20130506213413.GH5634@blackmetal.musicnaut.iki.fi>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.195
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 11:56:38AM -0700, Bjorn Helgaas wrote:
-> I hate it when I go to the trouble of reviewing something and asking
-> relevant questions, and then people ignore the questions :(
-Sorry for that.
- 
-> I'd still like to know whether multi-function devices are possible at
-> bus 0, device 0, 2, or 3.
-0000:00:00.0 is host bridge.
-0000:00:02.0 and 0000:00:03.0 are single-function devices.
+On Tue, May 07, 2013 at 12:34:13AM +0300, Aaro Koskinen wrote:
+> On Mon, May 06, 2013 at 05:00:56PM -0400, Eduardo Valentin wrote:
+> > Introduce HAS_BANDGAP config entry. This config is a
+> > boolean value so that arch code can flag is they
+> > feature a bandgap device.
+> 
+> Maybe it could be mentioned that omap-thermal already depend on this?
+> At least for a random reviewer it was not immediately clear why this is
+> added, especially since there were no users for it in subsequent patches.
 
-> Are these devices built-in, so you know exactly what they are and they
-> can never be anything else? 
-Yes, they are built-in devices and I know exactly what they are.
+I looked (very briefly), and it seemed like omap-thermal is self
+contained and doesn't need arch support?
 
-> Or is there a slot or other way to connect a user-chosen device?
-No, not that way.
+I get the impression it is desired to minimize driver kconfig
+dependencies to the minimum required to compile to increase build
+testing coverage, so maybe it would be appropriate to drop this
+entirely?
 
-> If you included "lspci -vv" output, that would make this much easier
-> to talk about.
-I'm sorry the busybox shrinks lspci options so it doesn't have
-meaningful ouput excpet for DID:VID and class code.
+Jason
