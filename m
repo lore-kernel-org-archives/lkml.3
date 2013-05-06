@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151Ab3EFVBA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:01:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59217 "EHLO
+	id S1757751Ab3EFUqh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:46:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757773Ab3EFUqk (ORCPT
+	with ESMTP id S1756525Ab3EFUqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:40 -0400
+	Mon, 6 May 2013 16:46:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dylan Reid <dgreid@chromium.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 068/115] ASoC: max98088: Fix logging of hardware revision.
-Date: Mon,  6 May 2013 13:45:04 -0700
-Message-Id: <20130506203102.520095226@linuxfoundation.org>
+        "Chris J. Benenati" <chris.j.benenati@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: [ 052/115] PCI/PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
+Date: Mon,  6 May 2013 13:44:48 -0700
+Message-Id: <20130506203100.910589118@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,31 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dylan Reid <dgreid@chromium.org>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 98682063549bedd6e2d2b6b7222f150c6fbce68c upstream.
+commit 769ba7212f2059ca9fe0c73371e3d415c8c1c529 upstream.
 
-The hardware revision of the codec is based at 0x40.  Subtract that
-before convering to ASCII.  The same as it is done for 98095.
+Commit b51306c (PCI: Set device power state to PCI_D0 for device
+without native PM support) modified pci_platform_power_transition()
+by adding code causing dev->current_state for devices that don't
+support native PCI PM but are power-manageable by the platform to be
+changed to PCI_D0 regardless of the value returned by the preceding
+platform_pci_set_power_state().  In particular, that also is done
+if the platform_pci_set_power_state() has been successful, which
+causes the correct power state of the device set by
+pci_update_current_state() in that case to be overwritten by PCI_D0.
 
-Signed-off-by: Dylan Reid <dgreid@chromium.org>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Fix that mistake by making the fallback to PCI_D0 only happen if
+the platform_pci_set_power_state() has returned an error.
+
+[bhelgaas: folded in Yinghai's simplification, added URL & stable info]
+Reference: http://lkml.kernel.org/r/27806FC4E5928A408B78E88BBC67A2306F466BBA@ORSMSX101.amr.corp.intel.com
+Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/max98088.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pci/pci.c |   12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
---- a/sound/soc/codecs/max98088.c
-+++ b/sound/soc/codecs/max98088.c
-@@ -2006,7 +2006,7 @@ static int max98088_probe(struct snd_soc
-                        ret);
-                goto err_access;
-        }
--       dev_info(codec->dev, "revision %c\n", ret + 'A');
-+       dev_info(codec->dev, "revision %c\n", ret - 0x40 + 'A');
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -646,15 +646,11 @@ static int pci_platform_power_transition
+ 		error = platform_pci_set_power_state(dev, state);
+ 		if (!error)
+ 			pci_update_current_state(dev, state);
+-		/* Fall back to PCI_D0 if native PM is not supported */
+-		if (!dev->pm_cap)
+-			dev->current_state = PCI_D0;
+-	} else {
++	} else
+ 		error = -ENODEV;
+-		/* Fall back to PCI_D0 if native PM is not supported */
+-		if (!dev->pm_cap)
+-			dev->current_state = PCI_D0;
+-	}
++
++	if (error && !dev->pm_cap) /* Fall back to PCI_D0 */
++		dev->current_state = PCI_D0;
  
-        snd_soc_write(codec, M98088_REG_51_PWR_SYS, M98088_PWRSV);
- 
+ 	return error;
+ }
 
 
