@@ -1,89 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562Ab3EFUqW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59088 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757452Ab3EFUqT (ORCPT
+	id S1758880Ab3EFVJp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:09:45 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:58145 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758752Ab3EFVJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Kirby <sim@hostway.ca>, Jiri Slaby <jslaby@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 038/115] tty: fix up atime/mtime mess, take three
-Date: Mon,  6 May 2013 13:44:34 -0700
-Message-Id: <20130506203059.488747562@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
-References: <20130506203055.537199268@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 6 May 2013 17:09:43 -0400
+Date: Mon, 6 May 2013 14:09:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: rcu_init allocation failure trace on bootup
+Message-ID: <20130506210936.GK3501@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130506175647.GA1309@redhat.com>
+ <20130506190522.GD3501@linux.vnet.ibm.com>
+ <20130506192653.GA16819@redhat.com>
+ <20130506194351.GH3501@linux.vnet.ibm.com>
+ <CAE9FiQU6+eQ-e=mX9A8AG5cUn0DWPS9sg3DS=B+jH3ZbXq+1Cg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQU6+eQ-e=mX9A8AG5cUn0DWPS9sg3DS=B+jH3ZbXq+1Cg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050621-7606-0000-0000-00000B21918D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On Mon, May 06, 2013 at 01:09:22PM -0700, Yinghai Lu wrote:
+> On Mon, May 6, 2013 at 12:43 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Mon, May 06, 2013 at 03:26:53PM -0400, Dave Jones wrote:
+> >> On Mon, May 06, 2013 at 12:05:22PM -0700, Paul E. McKenney wrote:
+> >>  > On Mon, May 06, 2013 at 01:56:47PM -0400, Dave Jones wrote:
+> >>  > > [    0.000000]  RCU debugfs-based tracing is enabled.
+> >>  > > [    0.000000]  RCU lockdep checking is enabled.
+> >>  > > [    0.000000] ------------[ cut here ]------------
+> >>  > > [    0.000000] WARNING: at mm/nobootmem.c:215 ___alloc_bootmem_nopanic+0x3a/0x7d()
+> >>  > > [    0.000000] Modules linked in:
+> >>  > > [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.9.0+ #128
+> >>  > > [    0.000000] Hardware name:                  /D975XBX, BIOS BX97510J.86A.1209.2006.0601.1340 06/01/2006
+> >>  > > [    0.000000]  ffffffff819f4246 ffffffff81c01e68 ffffffff816a0db2 ffffffff81c01ea8
+> >>  > > [    0.000000]  ffffffff8104b1a0 ffffffff819e1078 0000000000000000 0000000000000008
+> >>  > > [    0.000000]  ffffffffffffffff 0000000000000040 0000000000000000 ffffffff81c01eb8
+> >>  > > [    0.000000] Call Trace:
+> >>  > > [    0.000000]  [<ffffffff816a0db2>] dump_stack+0x19/0x1b
+> >>  > > [    0.000000]  [<ffffffff8104b1a0>] warn_slowpath_common+0x70/0xa0
+> >>  > > [    0.000000]  [<ffffffff8104b1ea>] warn_slowpath_null+0x1a/0x20
+> >>  > > [    0.000000]  [<ffffffff81ef8914>] ___alloc_bootmem_nopanic+0x3a/0x7d
+> >>  > > [    0.000000]  [<ffffffff81ef8b87>] __alloc_bootmem+0x13/0x39
+> >>  > > [    0.000000]  [<ffffffff81f090ad>] alloc_bootmem_cpumask_var+0x1a/0x21
+> >>  > > [    0.000000]  [<ffffffff81ef1f5a>] rcu_init+0x7f/0x261
+> >>  > > [    0.000000]  [<ffffffff81ef4acb>] ? perf_event_init+0x178/0x181
+> >>  > > [    0.000000]  [<ffffffff81ed6c79>] start_kernel+0x232/0x3d3
+> >>  > > [    0.000000]  [<ffffffff81ed6846>] ? repair_env_string+0x5e/0x5e
+> >>  > > [    0.000000]  [<ffffffff81ed6577>] x86_64_start_reservations+0x2a/0x2c
+> >>  > > [    0.000000]  [<ffffffff81ed6646>] x86_64_start_kernel+0xcd/0xd1
+> >>  > > [    0.000000] ---[ end trace 0acfc82c197165dd ]---
+> >>  > > [    0.000000]  Experimental no-CBs for all CPUs
+> >>  > > [    0.000000]  Experimental no-CBs CPUs: 0-1.
+> >>  > > [    0.000000] NO_HZ: Full dynticks CPUs: 1.
+> >>  >
+> >>  > Do you have commit fa0f93cd6a (rcu: Don't allocate bootmem from rcu_init())?
+> >>  > If not, could you please try applying it?
+> >>
+> >> That commit isn't in Linus tree.
+> >
+> > You are quite right, I am getting ahead of myself.  Please see below
+> > for the patch.
+> >
+> >                                                         Thanx, Paul
+> >
+> > ------------------------------------------------------------------------
+> >
+> > rcu: Don't allocate bootmem from rcu_init()
+> >
+> > When rcu_init() is called we already have slab working, allocating
+> > bootmem at that point results in warnings and an allocation from
+> > slab.  This commit therefore changes alloc_bootmem_cpumask_var() to
+> > alloc_cpumask_var() in rcu_bootup_announce_oddness(), which is called
+> > from rcu_init().
+> >
+> > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> >
+> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> > index ca6e39c..44b0998 100644
+> > --- a/kernel/rcutree_plugin.h
+> > +++ b/kernel/rcutree_plugin.h
+> > @@ -86,7 +86,7 @@ static void __init rcu_bootup_announce_oddness(void)
+> >  #ifdef CONFIG_RCU_NOCB_CPU
+> >  #ifndef CONFIG_RCU_NOCB_CPU_NONE
+> >         if (!have_rcu_nocb_mask) {
+> > -               alloc_bootmem_cpumask_var(&rcu_nocb_mask);
+> > +               alloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
+> 
+> Do you need to use zalloc_cpumask_var instead?
 
-------------------
+Good point!  I have queued up a fix for this.
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+							Thanx, Paul
 
-commit b0b885657b6c8ef63a46bc9299b2a7715d19acde upstream.
-
-We first tried to avoid updating atime/mtime entirely (commit
-b0de59b5733d: "TTY: do not update atime/mtime on read/write"), and then
-limited it to only update it occasionally (commit 37b7f3c76595: "TTY:
-fix atime/mtime regression"), but it turns out that this was both
-insufficient and overkill.
-
-It was insufficient because we let people attach to the shared ptmx node
-to see activity without even reading atime/mtime, and it was overkill
-because the "only once a minute" means that you can't really tell an
-idle person from an active one with 'w'.
-
-So this tries to fix the problem properly.  It marks the shared ptmx
-node as un-notifiable, and it lowers the "only once a minute" to a few
-seconds instead - still long enough that you can't time individual
-keystrokes, but short enough that you can tell whether somebody is
-active or not.
-
-Reported-by: Simon Kirby <sim@hostway.ca>
-Acked-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/tty/pty.c    |    3 +++
- drivers/tty/tty_io.c |    4 ++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
-
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -682,6 +682,9 @@ static int ptmx_open(struct inode *inode
- 
- 	nonseekable_open(inode, filp);
- 
-+	/* We refuse fsnotify events on ptmx, since it's a shared resource */
-+	filp->f_mode |= FMODE_NONOTIFY;
-+
- 	retval = tty_alloc_file(filp);
- 	if (retval)
- 		return retval;
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -941,10 +941,10 @@ void start_tty(struct tty_struct *tty)
- 
- EXPORT_SYMBOL(start_tty);
- 
-+/* We limit tty time update visibility to every 8 seconds or so. */
- static void tty_update_time(struct timespec *time)
- {
--	unsigned long sec = get_seconds();
--	sec -= sec % 60;
-+	unsigned long sec = get_seconds() & ~7;
- 	if ((long)(sec - time->tv_sec) > 0)
- 		time->tv_sec = sec;
- }
-
+> >                 have_rcu_nocb_mask = true;
+> >         }
+> >  #ifdef CONFIG_RCU_NOCB_CPU_ZERO
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
