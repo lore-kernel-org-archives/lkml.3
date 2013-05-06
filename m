@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759543Ab3EFXBl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:01:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36471 "EHLO
+	id S1759559Ab3EFXBz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:01:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36467 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933128Ab3EFW7V (ORCPT
+	with ESMTP id S933123Ab3EFW7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:21 -0400
+	Mon, 6 May 2013 18:59:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Marc Eshel <eshel@us.ibm.com>,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 36/46] NFSv4: Handle NFS4ERR_DELAY and NFS4ERR_GRACE in nfs4_open_delegation_recall
-Date: Mon,  6 May 2013 15:58:42 -0700
-Message-Id: <20130506225824.452008991@linuxfoundation.org>
+Subject: [ 35/46] LOCKD: Ensure that nlmclnt_block resets block->b_status after a server reboot
+Date: Mon,  6 May 2013 15:58:41 -0700
+Message-Id: <20130506225824.358365464@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -28,34 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 8b6cc4d6f841d31f72fe7478453759166d366274 upstream.
+commit 1dfd89af8697a299e7982ae740d4695ecd917eef upstream.
 
-A server shouldn't normally return NFS4ERR_GRACE if the client holds a
-delegation, since no conflicting lock reclaims can be granted, however
-the spec does not require the server to grant the open in this
-instance
+After a server reboot, the reclaimer thread will recover all the existing
+locks. For locks that are blocked, however, it will change the value
+of block->b_status to nlm_lck_denied_grace_period in order to signal that
+they need to wake up and resend the original blocking lock request.
 
+Due to a bug, however, the block->b_status never gets reset after the
+blocked locks have been woken up, and so the process goes into an
+infinite loop of resends until the blocked lock is satisfied.
+
+Reported-by: Marc Eshel <eshel@us.ibm.com>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/lockd/clntlock.c |    3 +++
+ fs/lockd/clntproc.c |    3 ---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1335,6 +1335,12 @@ int nfs4_open_delegation_recall(struct n
- 			case -ENOMEM:
- 				err = 0;
- 				goto out;
-+			case -NFS4ERR_DELAY:
-+			case -NFS4ERR_GRACE:
-+				set_bit(NFS_DELEGATED_STATE, &state->flags);
-+				ssleep(1);
-+				err = -EAGAIN;
-+				goto out;
- 		}
- 		err = nfs4_handle_exception(server, err, &exception);
- 	} while (exception.retry);
+--- a/fs/lockd/clntlock.c
++++ b/fs/lockd/clntlock.c
+@@ -141,6 +141,9 @@ int nlmclnt_block(struct nlm_wait *block
+ 			timeout);
+ 	if (ret < 0)
+ 		return -ERESTARTSYS;
++	/* Reset the lock status after a server reboot so we resend */
++	if (block->b_status == nlm_lck_denied_grace_period)
++		block->b_status = nlm_lck_blocked;
+ 	req->a_res.status = block->b_status;
+ 	return 0;
+ }
+--- a/fs/lockd/clntproc.c
++++ b/fs/lockd/clntproc.c
+@@ -550,9 +550,6 @@ again:
+ 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
+ 		if (status < 0)
+ 			break;
+-		/* Resend the blocking lock request after a server reboot */
+-		if (resp->status ==  nlm_lck_denied_grace_period)
+-			continue;
+ 		if (resp->status != nlm_lck_blocked)
+ 			break;
+ 	}
 
 
