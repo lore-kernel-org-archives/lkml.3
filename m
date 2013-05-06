@@ -1,36 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab3EFFRp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 01:17:45 -0400
-Received: from alvesta.synopsys.com ([198.182.60.77]:61001 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab3EFFRo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 01:17:44 -0400
-Message-ID: <51873CEB.4050603@synopsys.com>
-Date: Mon, 6 May 2013 10:47:31 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1752502Ab3EFFXN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 01:23:13 -0400
+Received: from mga11.intel.com ([192.55.52.93]:28593 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752137Ab3EFFXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 01:23:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,619,1363158000"; 
+   d="scan'208";a="333005213"
+Message-ID: <51873E06.4040505@intel.com>
+Date: Mon, 06 May 2013 13:22:14 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Alexander Shiyan <shc_work@mail.ru>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARC: Remove non existent reference to GENERIC_KERNEL_EXECVE
- & GENERIC_KERNEL_THREAD
-References: <1367755064-13130-1-git-send-email-shc_work@mail.ru>
-In-Reply-To: <1367755064-13130-1-git-send-email-shc_work@mail.ru>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
+        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
+        riel@redhat.com
+Subject: Re: [patch v7 05/21] sched: log the cpu utilization at rq
+References: <1365040862-8390-1-git-send-email-alex.shi@intel.com> <1365040862-8390-6-git-send-email-alex.shi@intel.com> <518722C9.2070409@linux.vnet.ibm.com>
+In-Reply-To: <518722C9.2070409@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.177]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2013 05:27 PM, Alexander Shiyan wrote:
-> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+On 05/06/2013 11:26 AM, Preeti U Murthy wrote:
+> Hi Alex,
+> 
+> You can add my Reviewed-by for the below patch.
+> 
+> Thanks
 
-Applied to my for-curr for 3.10 (to be pushed to Linus is a day or two).
+Thanks a lot for the review!
 
-Thx,
--Vineet
-
+-- 
+Thanks
+    Alex
