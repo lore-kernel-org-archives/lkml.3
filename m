@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758794Ab3EFXRj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:17:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36985 "EHLO
+	id S932492Ab3EFXOL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:14:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36951 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932513Ab3EFXOM (ORCPT
+	with ESMTP id S1758979Ab3EFXOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:12 -0400
+	Mon, 6 May 2013 19:14:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 097/104] mmc: at91/avr32/atmel-mci: fix DMA-channel leak on module unload
-Date: Mon,  6 May 2013 16:12:56 -0700
-Message-Id: <20130506230053.608423877@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 088/104] wireless: regulatory: fix channel disabling race condition
+Date: Mon,  6 May 2013 16:12:47 -0700
+Message-Id: <20130506230052.679491087@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -28,93 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 91cf54feecf815bec0b6a8d6d9dbd0e219f2f2cc upstream.
+commit 990de49f74e772b6db5208457b7aa712a5f4db86 upstream.
 
-Fix regression introduced by commit 796211b7953 ("mmc: atmel-mci: add
-pdc support and runtime capabilities detection") which removed the need
-for CONFIG_MMC_ATMELMCI_DMA but kept the Kconfig-entry as well as the
-compile guards around dma_release_channel() in remove(). Consequently,
-DMA is always enabled (if supported), but the DMA-channel is not
-released on module unload unless the DMA-config option is selected.
+When a full scan 2.4 and 5 GHz scan is scheduled, but then the 2.4 GHz
+part of the scan disables a 5.2 GHz channel due to, e.g. receiving
+country or frequency information, that 5.2 GHz channel might already
+be in the list of channels to scan next. Then, when the driver checks
+if it should do a passive scan, that will return false and attempt an
+active scan. This is not only wrong but can also lead to the iwlwifi
+device firmware crashing since it checks regulatory as well.
 
-Remove the no longer used CONFIG_MMC_ATMELMCI_DMA option completely.
+Fix this by not setting the channel flags to just disabled but rather
+OR'ing in the disabled flag. That way, even if the race happens, the
+channel will be scanned passively which is still (mostly) correct.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/configs/at91sam9g45_defconfig |    1 -
- arch/avr32/configs/favr-32_defconfig   |    1 -
- arch/avr32/configs/merisc_defconfig    |    1 -
- drivers/mmc/host/Kconfig               |   10 ----------
- drivers/mmc/host/atmel-mci.c           |    2 --
- 5 files changed, 15 deletions(-)
+ net/wireless/reg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/configs/at91sam9g45_defconfig
-+++ b/arch/arm/configs/at91sam9g45_defconfig
-@@ -173,7 +173,6 @@ CONFIG_MMC=y
- # CONFIG_MMC_BLOCK_BOUNCE is not set
- CONFIG_SDIO_UART=m
- CONFIG_MMC_ATMELMCI=y
--CONFIG_MMC_ATMELMCI_DMA=y
- CONFIG_LEDS_ATMEL_PWM=y
- CONFIG_LEDS_GPIO=y
- CONFIG_LEDS_TRIGGER_TIMER=y
---- a/arch/avr32/configs/favr-32_defconfig
-+++ b/arch/avr32/configs/favr-32_defconfig
-@@ -122,7 +122,6 @@ CONFIG_USB_G_SERIAL=m
- CONFIG_USB_CDC_COMPOSITE=m
- CONFIG_MMC=y
- CONFIG_MMC_ATMELMCI=y
--CONFIG_MMC_ATMELMCI_DMA=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
- CONFIG_LEDS_ATMEL_PWM=m
---- a/arch/avr32/configs/merisc_defconfig
-+++ b/arch/avr32/configs/merisc_defconfig
-@@ -102,7 +102,6 @@ CONFIG_FRAMEBUFFER_CONSOLE=y
- CONFIG_LOGO=y
- CONFIG_MMC=y
- CONFIG_MMC_ATMELMCI=y
--CONFIG_MMC_ATMELMCI_DMA=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
- CONFIG_LEDS_ATMEL_PWM=y
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -292,16 +292,6 @@ config MMC_ATMELMCI
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -883,7 +883,7 @@ static void handle_channel(struct wiphy
+ 			return;
  
- 	  If unsure, say N.
+ 		REG_DBG_PRINT("Disabling freq %d MHz\n", chan->center_freq);
+-		chan->flags = IEEE80211_CHAN_DISABLED;
++		chan->flags |= IEEE80211_CHAN_DISABLED;
+ 		return;
+ 	}
  
--config MMC_ATMELMCI_DMA
--	bool "Atmel MCI DMA support"
--	depends on MMC_ATMELMCI && (AVR32 || ARCH_AT91SAM9G45) && DMA_ENGINE
--	help
--	  Say Y here to have the Atmel MCI driver use a DMA engine to
--	  do data transfers and thus increase the throughput and
--	  reduce the CPU utilization.
--
--	  If unsure, say N.
--
- config MMC_MSM
- 	tristate "Qualcomm SDCC Controller Support"
- 	depends on MMC && ARCH_MSM
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -2487,10 +2487,8 @@ static int __exit atmci_remove(struct pl
- 	atmci_readl(host, ATMCI_SR);
- 	clk_disable(host->mck);
- 
--#ifdef CONFIG_MMC_ATMELMCI_DMA
- 	if (host->dma.chan)
- 		dma_release_channel(host->dma.chan);
--#endif
- 
- 	free_irq(platform_get_irq(pdev, 0), host);
- 	iounmap(host->regs);
 
 
