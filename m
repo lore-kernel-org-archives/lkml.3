@@ -1,146 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab3EFNCz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 09:02:55 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:54483 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab3EFNCx (ORCPT
+	id S1753396Ab3EFNEM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 09:04:12 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:47679 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074Ab3EFNEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 09:02:53 -0400
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Jean Delvare <jdelvare@suse.de>, Michal Marek <mmarek@suse.cz>,
-        Roland Eggner <edvx1@systemanalysen.net>,
-        Wang YanQing <udknight@gmail.com>
-Subject: [PATCH] kconfig: sort found symbols by relevance
-Date: Mon,  6 May 2013 15:02:45 +0200
-Message-Id: <1367845365-13316-1-git-send-email-yann.morin.1998@free.fr>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1367826629.4494.30.camel@chaos.site>
-References: <1367826629.4494.30.camel@chaos.site>
+	Mon, 6 May 2013 09:04:11 -0400
+Message-ID: <5187A144.9080307@linux.vnet.ibm.com>
+Date: Mon, 06 May 2013 17:55:40 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Michael Neuling <mikey@neuling.org>
+CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc, perf: Fix processing conditions for invalid
+ BHRB entries
+References: <1367831206-16331-1-git-send-email-khandual@linux.vnet.ibm.com> <24261.1367838705@ale.ozlabs.ibm.com>
+In-Reply-To: <24261.1367838705@ale.ozlabs.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050612-0260-0000-0000-000002ED7F79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+On 05/06/2013 04:41 PM, Michael Neuling wrote:
+> Anshuman Khandual <khandual@linux.vnet.ibm.com> wrote:
+> 
+>> Fixing some conditions during BHRB entry processing.
+> 
+> I think we can simplify this a lot more... something like the below.
+> 
 
-When searching for symbols, return the symbols sorted by relevance.
+I feel that the conditional handling of the invalid BHRB entries should be
+present which would help us during the debug and also could be used for more
+granular branch classification or error handling later on.
 
-Relevance is the ratio of the length of the matched string and the
-length of the symbol name. Symbols of equal relevance are sorted
-alphabetically.
+> Also, this marks the "to" address as all 1s, which is better poison
+> value since it's possible to branch to/from 0x0.
+>
 
-Reported-by: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Jean Delvare <jdelvare@suse.de>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Roland Eggner <edvx1@systemanalysen.net>
-Cc: Wang YanQing <udknight@gmail.com>
----
- scripts/kconfig/symbol.c | 66 +++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 57 insertions(+), 9 deletions(-)
+Agreed.
 
-diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-index ecc5aa5..baba030 100644
---- a/scripts/kconfig/symbol.c
-+++ b/scripts/kconfig/symbol.c
-@@ -943,38 +943,86 @@ const char *sym_escape_string_value(const char *in)
- 	return res;
- }
- 
-+struct sym_match {
-+	struct symbol	*sym;
-+	int 		rel;
-+};
-+
-+/* Compare matched symbols as thus:
-+ * - highest relevance first
-+ * - equal relevance sorted alphabetically
-+ */
-+static int sym_rel_comp( const void *sym1, const void *sym2 )
-+{
-+	struct sym_match **s1 = (struct sym_match **)sym1;
-+	struct sym_match **s2 = (struct sym_match **)sym2;
-+
-+	if ( (*s1)->rel > (*s2)->rel )
-+		return -1;
-+	else if ( (*s1)->rel < (*s2)->rel )
-+		return 1;
-+	else
-+		return strcmp( (*s1)->sym->name, (*s2)->sym->name );
-+}
-+
- struct symbol **sym_re_search(const char *pattern)
- {
- 	struct symbol *sym, **sym_arr = NULL;
-+	struct sym_match **sym_match_arr = NULL;
- 	int i, cnt, size;
- 	regex_t re;
-+	regmatch_t match[1];
- 
- 	cnt = size = 0;
- 	/* Skip if empty */
- 	if (strlen(pattern) == 0)
- 		return NULL;
--	if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB|REG_ICASE))
-+	if (regcomp(&re, pattern, REG_EXTENDED|REG_ICASE))
- 		return NULL;
- 
- 	for_all_symbols(i, sym) {
-+		struct sym_match *tmp_sym_match;
- 		if (sym->flags & SYMBOL_CONST || !sym->name)
- 			continue;
--		if (regexec(&re, sym->name, 0, NULL, 0))
-+		if (regexec(&re, sym->name, 1, match, 0))
- 			continue;
- 		if (cnt + 1 >= size) {
--			void *tmp = sym_arr;
-+			void *tmp;
- 			size += 16;
--			sym_arr = realloc(sym_arr, size * sizeof(struct symbol *));
--			if (!sym_arr) {
--				free(tmp);
--				return NULL;
-+			tmp = realloc(sym_match_arr, size * sizeof(struct sym_match *));
-+			if (!tmp) {
-+				goto sym_re_search_free;
- 			}
-+			sym_match_arr = tmp;
- 		}
- 		sym_calc_value(sym);
--		sym_arr[cnt++] = sym;
-+		tmp_sym_match = (struct sym_match*)malloc(sizeof(struct sym_match));
-+		if (!tmp_sym_match)
-+			goto sym_re_search_free;
-+		tmp_sym_match->sym = sym;
-+		/* As regexec return 0, we know we have a match, so
-+		 * we can use match[0].rm_[se]o without further checks
-+		 */
-+		tmp_sym_match->rel = (100*(match[0].rm_eo-match[0].rm_so))
-+				     /strlen(sym->name);
-+		sym_match_arr[cnt++] = tmp_sym_match;
- 	}
--	if (sym_arr)
-+
-+	if( sym_match_arr ) {
-+		qsort( sym_match_arr, cnt, sizeof(struct sym_match*), sym_rel_comp );
-+		sym_arr = malloc( (cnt+1) * sizeof(struct symbol) );
-+		if (!sym_arr)
-+			goto sym_re_search_free;
-+		for ( i=0; i<cnt; i++ )
-+			sym_arr[i] = sym_match_arr[i]->sym;
- 		sym_arr[cnt] = NULL;
-+	}
-+sym_re_search_free:
-+	if (sym_match_arr) {
-+		for ( i=0; i<cnt; i++ )
-+			free( sym_match_arr[i] );
-+		free( sym_match_arr );
-+	}
- 	regfree(&re);
- 
- 	return sym_arr;
--- 
-1.8.1.2
+
+> diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+> index c627843..d410d65 100644
+> --- a/arch/powerpc/perf/core-book3s.c
+> +++ b/arch/powerpc/perf/core-book3s.c
+> @@ -1463,65 +1463,45 @@ void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
+>  {
+>  	u64 val;
+>  	u64 addr;
+> -	int r_index, u_index, target, pred;
+> +	int r_index, u_index, pred;
+> 
+>  	r_index = 0;
+>  	u_index = 0;
+>  	while (r_index < ppmu->bhrb_nr) {
+>  		/* Assembly read function */
+> -		val = read_bhrb(r_index);
+> +		val = read_bhrb(r_index++);
+> 
+>  		/* Terminal marker: End of valid BHRB entries */
+> -		if (val == 0) {
+> +		if (!val) {
+>  			break;
+>  		} else {
+>  			/* BHRB field break up */
+>  			addr = val & BHRB_EA;
+>  			pred = val & BHRB_PREDICTION;
+> -			target = val & BHRB_TARGET;
+> 
+> -			/* Probable Missed entry: Not applicable for POWER8 */
+> -			if ((addr == 0) && (target == 0) && (pred == 1)) {
+> -				r_index++;
+> +			if (!addr)
+> +				/* invalid entry */
+>  				continue;
+> -			}
+> -
+> -			/* Real Missed entry: Power8 based missed entry */
+> -			if ((addr == 0) && (target == 1) && (pred == 1)) {
+> -				r_index++;
+> -				continue;
+> -			}
+> 
+> -			/* Reserved condition: Not a valid entry  */
+> -			if ((addr == 0) && (target == 1) && (pred == 0)) {
+> -				r_index++;
+> -				continue;
+> -			}
+> -
+> -			/* Is a target address */
+>  			if (val & BHRB_TARGET) {
+>  				/* First address cannot be a target address */
+> -				if (r_index == 0) {
+> -					r_index++;
+> +				if (r_index == 0)
+>  					continue;
+> -				}
+> 
+>  				/* Update target address for the previous entry */
+>  				cpuhw->bhrb_entries[u_index - 1].to = addr;
+>  				cpuhw->bhrb_entries[u_index - 1].mispred = pred;
+>  				cpuhw->bhrb_entries[u_index - 1].predicted = ~pred;
+> -
+> -				/* Dont increment u_index */
+> -				r_index++;
+>  			} else {
+>  				/* Update address, flags for current entry */
+>  				cpuhw->bhrb_entries[u_index].from = addr;
+> +				cpuhw->bhrb_entries[u_index].to =
+> +					0xffffffffffffffff;
+>  				cpuhw->bhrb_entries[u_index].mispred = pred;
+>  				cpuhw->bhrb_entries[u_index].predicted = ~pred;
+> 
+>  				/* Successfully popullated one entry */
+>  				u_index++;
+> -				r_index++;
+>  			}
+>  		}
+>  	}
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> 
 
