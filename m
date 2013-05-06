@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182Ab3EFV4f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:56:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59188 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756585Ab3EFV4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 17:56:34 -0400
-Date: Mon, 6 May 2013 17:56:29 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_init allocation failure trace on bootup
-Message-ID: <20130506215629.GA20273@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20130506175647.GA1309@redhat.com>
- <20130506190522.GD3501@linux.vnet.ibm.com>
- <20130506192653.GA16819@redhat.com>
- <20130506194351.GH3501@linux.vnet.ibm.com>
- <20130506202413.GA1261@redhat.com>
- <20130506210249.GJ3501@linux.vnet.ibm.com>
+	id S1758251Ab3EFV6e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:58:34 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:59323 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756782Ab3EFV6c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 17:58:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130506210249.GJ3501@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMbhsRQP+NFwn8C9-mXUVCZNi_oE+TCK1L1NgdGUA_CTw0eiMA@mail.gmail.com>
+References: <1367615050-3894-1-git-send-email-ccross@android.com>
+	<20130506065605.6e5ed5e2@tlielax.poochiereds.net>
+	<CAMbhsRQsFT2j_CuPL45J03itymcp3PNP8ckt3fAAo+hzavNrbw@mail.gmail.com>
+	<20130506174336.447d0d75@tlielax.poochiereds.net>
+	<CAMbhsRQP+NFwn8C9-mXUVCZNi_oE+TCK1L1NgdGUA_CTw0eiMA@mail.gmail.com>
+Date: Mon, 6 May 2013 14:58:31 -0700
+X-Google-Sender-Auth: 4l8wQEgLBvjHovQHDccwbS_zvmo
+Message-ID: <CA+55aFwbXk_r-4p37YiMTQj2HNRA94xohr6DADuQXpHsKSA7NQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] freezer: add unsafe versions of freezable helpers
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Colin Cross <ccross@android.com>
+Cc: Jeff Layton <jlayton@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Ben Chan <benchan@chromium.org>, Steve French <smfrench@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 02:02:49PM -0700, Paul E. McKenney wrote:
+On Mon, May 6, 2013 at 2:54 PM, Colin Cross <ccross@android.com> wrote:
+>>
+>> There are many other possibilities for other codepaths that end up in
+>> wait_for_response(). Once we get a solution in place for NFS, we'll
+>> need to do something very similar for CIFS.
+>
+> Makes sense, I will add CIFS to the patch.  Would you prefer it in the
+> same or separate patches.
 
- > >  > You are quite right, I am getting ahead of myself.  Please see below
- > >  > for the patch.
- > > 
- > > Doesn't fix it for me.
- > > 
- > > Is it this one instead perhaps ?
- > > 
- > >   89 #ifndef CONFIG_RCU_NOCB_CPU_NONE
- > >   90         if (!have_rcu_nocb_mask) {
- > >   91                 alloc_bootmem_cpumask_var(&rcu_nocb_mask);
- > >   92                 have_rcu_nocb_mask = true;
- > >   93         }
- > 
- > Hmmm...  That was in fact the one that the patch was intended to change.
- > Just out of curiosity, where did the patch apply instead?
+Quite frankly, is it worth resurrecting these patches at all?
 
-I think this might be my screwup. I did it by hand, and misapplied it
-to the top of rcu_nocb_setup() instead.
+The only things it actually complained about are not worth the pain
+fixing and are getting explicitly not warned about - is there any
+reason to believe the patches are worth maintaining and the extra
+complexity is worth it?
 
-	Dave
-
-
-
+           Linus
