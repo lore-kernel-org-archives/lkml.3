@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761499Ab3EFXps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:45:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36209 "EHLO
+	id S1761479Ab3EFXpr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:45:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36211 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932896Ab3EFW50 (ORCPT
+	with ESMTP id S932919Ab3EFW50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 18:57:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 51/63] wireless: regulatory: fix channel disabling race condition
-Date: Mon,  6 May 2013 15:56:29 -0700
-Message-Id: <20130506225327.104727909@linuxfoundation.org>
+        Robin Holt <holt@sgi.com>, Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 52/63] ipc: sysv shared memory limited to 8TiB
+Date: Mon,  6 May 2013 15:56:30 -0700
+Message-Id: <20130506225327.358536348@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -26,39 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Robin Holt <holt@sgi.com>
 
-commit 990de49f74e772b6db5208457b7aa712a5f4db86 upstream.
+commit d69f3bad4675ac519d41ca2b11e1c00ca115cecd upstream.
 
-When a full scan 2.4 and 5 GHz scan is scheduled, but then the 2.4 GHz
-part of the scan disables a 5.2 GHz channel due to, e.g. receiving
-country or frequency information, that 5.2 GHz channel might already
-be in the list of channels to scan next. Then, when the driver checks
-if it should do a passive scan, that will return false and attempt an
-active scan. This is not only wrong but can also lead to the iwlwifi
-device firmware crashing since it checks regulatory as well.
+Trying to run an application which was trying to put data into half of
+memory using shmget(), we found that having a shmall value below 8EiB-8TiB
+would prevent us from using anything more than 8TiB.  By setting
+kernel.shmall greater than 8EiB-8TiB would make the job work.
 
-Fix this by not setting the channel flags to just disabled but rather
-OR'ing in the disabled flag. That way, even if the race happens, the
-channel will be scanned passively which is still (mostly) correct.
+In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+ipc/shm.c:
+ 458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ 459 {
+...
+ 465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
+...
+ 474         if (ns->shm_tot + numpages > ns->shm_ctlall)
+ 475                 return -ENOSPC;
+
+[akpm@linux-foundation.org: make ipc/shm.c:newseg()'s numpages size_t, not int]
+Signed-off-by: Robin Holt <holt@sgi.com>
+Reported-by: Alex Thorlton <athorlton@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/reg.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/ipc_namespace.h |    2 +-
+ ipc/shm.c                     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -862,7 +862,7 @@ static void handle_channel(struct wiphy
- 			return;
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -42,8 +42,8 @@ struct ipc_namespace {
  
- 		REG_DBG_PRINT("Disabling freq %d MHz\n", chan->center_freq);
--		chan->flags = IEEE80211_CHAN_DISABLED;
-+		chan->flags |= IEEE80211_CHAN_DISABLED;
- 		return;
- 	}
- 
+ 	size_t		shm_ctlmax;
+ 	size_t		shm_ctlall;
++	unsigned long	shm_tot;
+ 	int		shm_ctlmni;
+-	int		shm_tot;
+ 	/*
+ 	 * Defines whether IPC_RMID is forced for _all_ shm segments regardless
+ 	 * of shmctl()
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -450,7 +450,7 @@ static int newseg(struct ipc_namespace *
+ 	size_t size = params->u.size;
+ 	int error;
+ 	struct shmid_kernel *shp;
+-	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
++	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	struct file * file;
+ 	char name[13];
+ 	int id;
 
 
