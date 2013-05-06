@@ -1,153 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933241Ab3EFXS0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:18:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36966 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760670Ab3EFXOJ (ORCPT
+	id S1760763Ab3EFXSn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:18:43 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:47759 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757435Ab3EFXSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:09 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>,
-        Jan Kara <jack@suse.cz>
-Subject: [ 093/104] ext4: fix journal callback list traversal
-Date: Mon,  6 May 2013 16:12:52 -0700
-Message-Id: <20130506230053.196089701@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
-References: <20130506230043.526528358@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 6 May 2013 19:18:40 -0400
+Date: Tue, 7 May 2013 01:18:37 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Olivier Langlois <olivier@olivierlanglois.net>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
+        Steven Rostedt <rostedt@goodmis.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/3] posix_timers: do not account group_exec_runtime
+ for dying autoreaped tasks
+Message-ID: <20130506231835.GC1225@somewhere>
+References: <1367258649.8833.19.camel@Wailaba2>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367258649.8833.19.camel@Wailaba2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Apr 29, 2013 at 02:04:09PM -0400, Olivier Langlois wrote:
+> 
+> 
+> Forbids the cputimer to drift ahead of its process clock by
+> blocking its update when a tick occurs while a autoreaping task
+> is currently in do_exit() between the call to release_task() and
+> its final call to schedule().
+> 
+> Any task stats update after having called release_task() will
+> be lost because they are added to the global process stats located
+> in the signal struct from release_task().
 
-------------------
+I wonder if this is real problem that the clock is ahead of the timer.
+Have you seen any issue in practice with this? Or may be it's a
+guarantee that the posix clock should provide wrt. to the timer?
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+thanks.
 
-commit 5d3ee20855e28169d711b394857ee608a5023094 upstream.
-
-It is incorrect to use list_for_each_entry_safe() for journal callback
-traversial because ->next may be removed by other task:
-->ext4_mb_free_metadata()
-  ->ext4_mb_free_metadata()
-    ->ext4_journal_callback_del()
-
-This results in the following issue:
-
-WARNING: at lib/list_debug.c:62 __list_del_entry+0x1c0/0x250()
-Hardware name:
-list_del corruption. prev->next should be ffff88019a4ec198, but was 6b6b6b6b6b6b6b6b
-Modules linked in: cpufreq_ondemand acpi_cpufreq freq_table mperf coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode sg xhci_hcd button sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw aes_x86_64 xts gf128mul ahci libahci pata_acpi ata_generic dm_mirror dm_region_hash dm_log dm_mod
-Pid: 16400, comm: jbd2/dm-1-8 Tainted: G        W    3.8.0-rc3+ #107
-Call Trace:
- [<ffffffff8106fb0d>] warn_slowpath_common+0xad/0xf0
- [<ffffffff8106fc06>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff813637e9>] ? ext4_journal_commit_callback+0x99/0xc0
- [<ffffffff8148cae0>] __list_del_entry+0x1c0/0x250
- [<ffffffff813637bf>] ext4_journal_commit_callback+0x6f/0xc0
- [<ffffffff813ca336>] jbd2_journal_commit_transaction+0x23a6/0x2570
- [<ffffffff8108aa42>] ? try_to_del_timer_sync+0x82/0xa0
- [<ffffffff8108b491>] ? del_timer_sync+0x91/0x1e0
- [<ffffffff813d3ecf>] kjournald2+0x19f/0x6a0
- [<ffffffff810ad630>] ? wake_up_bit+0x40/0x40
- [<ffffffff813d3d30>] ? bit_spin_lock+0x80/0x80
- [<ffffffff810ac6be>] kthread+0x10e/0x120
- [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
- [<ffffffff818ff6ac>] ret_from_fork+0x7c/0xb0
- [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
-
-This patch fix the issue as follows:
-- ext4_journal_commit_callback() make list truly traversial safe
-  simply by always starting from list_head
-- fix race between two ext4_journal_callback_del() and
-  ext4_journal_callback_try_del()
-
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ext4/ext4_jbd2.h |    6 +++++-
- fs/ext4/mballoc.c   |    8 ++++----
- fs/ext4/super.c     |    7 +++++--
- 3 files changed, 14 insertions(+), 7 deletions(-)
-
---- a/fs/ext4/ext4_jbd2.h
-+++ b/fs/ext4/ext4_jbd2.h
-@@ -170,16 +170,20 @@ static inline void ext4_journal_callback
-  * ext4_journal_callback_del: delete a registered callback
-  * @handle: active journal transaction handle on which callback was registered
-  * @jce: registered journal callback entry to unregister
-+ * Return true if object was sucessfully removed
-  */
--static inline void ext4_journal_callback_del(handle_t *handle,
-+static inline bool ext4_journal_callback_try_del(handle_t *handle,
- 					     struct ext4_journal_cb_entry *jce)
- {
-+	bool deleted;
- 	struct ext4_sb_info *sbi =
- 			EXT4_SB(handle->h_transaction->t_journal->j_private);
- 
- 	spin_lock(&sbi->s_md_lock);
-+	deleted = !list_empty(&jce->jce_list);
- 	list_del_init(&jce->jce_list);
- 	spin_unlock(&sbi->s_md_lock);
-+	return deleted;
- }
- 
- int
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4449,11 +4449,11 @@ ext4_mb_free_metadata(handle_t *handle,
- 	node = rb_prev(new_node);
- 	if (node) {
- 		entry = rb_entry(node, struct ext4_free_data, efd_node);
--		if (can_merge(entry, new_entry)) {
-+		if (can_merge(entry, new_entry) &&
-+		    ext4_journal_callback_try_del(handle, &entry->efd_jce)) {
- 			new_entry->efd_start_cluster = entry->efd_start_cluster;
- 			new_entry->efd_count += entry->efd_count;
- 			rb_erase(node, &(db->bb_free_root));
--			ext4_journal_callback_del(handle, &entry->efd_jce);
- 			kmem_cache_free(ext4_free_data_cachep, entry);
- 		}
- 	}
-@@ -4461,10 +4461,10 @@ ext4_mb_free_metadata(handle_t *handle,
- 	node = rb_next(new_node);
- 	if (node) {
- 		entry = rb_entry(node, struct ext4_free_data, efd_node);
--		if (can_merge(new_entry, entry)) {
-+		if (can_merge(new_entry, entry) &&
-+		    ext4_journal_callback_try_del(handle, &entry->efd_jce)) {
- 			new_entry->efd_count += entry->efd_count;
- 			rb_erase(node, &(db->bb_free_root));
--			ext4_journal_callback_del(handle, &entry->efd_jce);
- 			kmem_cache_free(ext4_free_data_cachep, entry);
- 		}
- 	}
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -452,10 +452,13 @@ static void ext4_journal_commit_callback
- 	struct super_block		*sb = journal->j_private;
- 	struct ext4_sb_info		*sbi = EXT4_SB(sb);
- 	int				error = is_journal_aborted(journal);
--	struct ext4_journal_cb_entry	*jce, *tmp;
-+	struct ext4_journal_cb_entry	*jce;
- 
-+	BUG_ON(txn->t_state == T_FINISHED);
- 	spin_lock(&sbi->s_md_lock);
--	list_for_each_entry_safe(jce, tmp, &txn->t_private_list, jce_list) {
-+	while (!list_empty(&txn->t_private_list)) {
-+		jce = list_entry(txn->t_private_list.next,
-+				 struct ext4_journal_cb_entry, jce_list);
- 		list_del_init(&jce->jce_list);
- 		spin_unlock(&sbi->s_md_lock);
- 		jce->jce_func(sb, jce, error);
-
-
+> 
+> Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+> ---
+>  kernel/sched/fair.c | 10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 7a33e59..52d7b10 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -708,7 +708,15 @@ static void update_curr(struct cfs_rq *cfs_rq)
+>  
+>                 trace_sched_stat_runtime(curtask, delta_exec, curr->vruntime);
+>                 cpuacct_charge(curtask, delta_exec);
+> -               account_group_exec_runtime(curtask, delta_exec);
+> +               /*
+> +                * Do not update the cputimer if the task is already released by
+> +                * release_task().
+> +                *
+> +                * it would preferable to defer the autoreap release_task
+> +                * after the last context switch but harder to do.
+> +                */
+> +               if (likely(curtask->sighand))
+> +                       account_group_exec_runtime(curtask, delta_exec);
+>         }
+>  
+>         account_cfs_rq_runtime(cfs_rq, delta_exec);
+> -- 
+> 1.8.2.1
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
