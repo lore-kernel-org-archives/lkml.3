@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab3EFXNy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:13:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36827 "EHLO
+	id S933421Ab3EFXYj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:24:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36868 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758996Ab3EFXNs (ORCPT
+	with ESMTP id S932065Ab3EFXNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:48 -0400
+	Mon, 6 May 2013 19:13:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 062/104] ALSA: hda - Add the support for ALC286 codec
-Date: Mon,  6 May 2013 16:12:21 -0700
-Message-Id: <20130506230050.004710534@linuxfoundation.org>
+        Aaron Lu <aaron.lu@intel.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 070/104] libata: acpi: make ata_ap_acpi_handle not block
+Date: Mon,  6 May 2013 16:12:29 -0700
+Message-Id: <20130506230050.826088446@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,55 +26,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit 7fc7d047216aa4923d401c637be2ebc6e3d5bd9b upstream.
+commit d66af4df0837f21bf267305dc5ccab2d29e24d86 upstream.
 
-It's yet another ALC269-variant.
+Since commit 30dcf76acc, ata_ap_acpi_handle will always do a namespace
+walk, which requires acquiring an acpi namespace mutex. This made it
+impossible to be used when calling path has held a spinlock.
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+For example, it can occur in the following code path for pata_acpi:
+ata_scsi_queuecmd (ap->lock is acquired)
+  __ata_scsi_queuecmd
+    ata_scsi_translate
+      ata_qc_issue
+        pacpi_qc_issue
+          ata_acpi_stm
+            ata_ap_acpi_handle
+              acpi_get_child
+                acpi_walk_namespace
+                  acpi_ut_acquire_mutex (acquire mutex while holding lock)
+This caused scheduling while atomic bug, as reported in bug #56781.
+
+Actually, ata_ap_acpi_handle doesn't have to walk the namespace every
+time it is called, it can simply return the bound acpi handle on the
+corresponding SCSI host. The reason previously it is not done this way
+is, ata_ap_acpi_handle is used in the binding function
+ata_acpi_bind_host by ata_acpi_gtm when the handle is not bound to the
+SCSI host yet. Since we already have the ATA port's handle in its
+binding function, we can simply use it instead of calling
+ata_ap_acpi_handle there. So introduce a new function __ata_acpi_gtm,
+where it will receive an acpi handle param in addition to the ATA port
+which is solely used for debug statement. With this change, we can make
+ata_ap_acpi_handle simply return the bound handle for SCSI host instead
+of walking the acpi namespace now.
+
+Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=56781
+Reported-and-tested-by: <kenzopl@o2.pl>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/ata/libata-acpi.c |   45 +++++++++++++++++++++++++++------------------
+ 1 file changed, 27 insertions(+), 18 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5823,6 +5823,7 @@ enum {
- 	ALC269_TYPE_ALC280,
- 	ALC269_TYPE_ALC282,
- 	ALC269_TYPE_ALC284,
-+	ALC269_TYPE_ALC286,
- };
+--- a/drivers/ata/libata-acpi.c
++++ b/drivers/ata/libata-acpi.c
+@@ -60,7 +60,8 @@ acpi_handle ata_ap_acpi_handle(struct at
+ 	if (ap->flags & ATA_FLAG_ACPI_SATA)
+ 		return NULL;
  
- /*
-@@ -5846,6 +5847,7 @@ static int alc269_parse_auto_config(stru
- 	case ALC269_TYPE_ALC269VB:
- 	case ALC269_TYPE_ALC269VD:
- 	case ALC269_TYPE_ALC282:
-+	case ALC269_TYPE_ALC286:
- 		ssids = alc269_ssids;
- 		break;
- 	default:
-@@ -6451,6 +6453,9 @@ static int patch_alc269(struct hda_codec
- 	case 0x10ec0292:
- 		spec->codec_variant = ALC269_TYPE_ALC284;
- 		break;
-+	case 0x10ec0286:
-+		spec->codec_variant = ALC269_TYPE_ALC286;
-+		break;
+-	return acpi_get_child(DEVICE_ACPI_HANDLE(ap->host->dev), ap->port_no);
++	return ap->scsi_host ?
++		DEVICE_ACPI_HANDLE(&ap->scsi_host->shost_gendev) : NULL;
+ }
+ EXPORT_SYMBOL(ata_ap_acpi_handle);
+ 
+@@ -239,28 +240,15 @@ void ata_acpi_dissociate(struct ata_host
  	}
+ }
  
- 	/* automatic parse from the BIOS config */
-@@ -7157,6 +7162,7 @@ static const struct hda_codec_preset snd
- 	{ .id = 0x10ec0282, .name = "ALC282", .patch = patch_alc269 },
- 	{ .id = 0x10ec0283, .name = "ALC283", .patch = patch_alc269 },
- 	{ .id = 0x10ec0284, .name = "ALC284", .patch = patch_alc269 },
-+	{ .id = 0x10ec0286, .name = "ALC286", .patch = patch_alc269 },
- 	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
- 	{ .id = 0x10ec0292, .name = "ALC292", .patch = patch_alc269 },
- 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
+-/**
+- * ata_acpi_gtm - execute _GTM
+- * @ap: target ATA port
+- * @gtm: out parameter for _GTM result
+- *
+- * Evaluate _GTM and store the result in @gtm.
+- *
+- * LOCKING:
+- * EH context.
+- *
+- * RETURNS:
+- * 0 on success, -ENOENT if _GTM doesn't exist, -errno on failure.
+- */
+-int ata_acpi_gtm(struct ata_port *ap, struct ata_acpi_gtm *gtm)
++static int __ata_acpi_gtm(struct ata_port *ap, acpi_handle handle,
++			  struct ata_acpi_gtm *gtm)
+ {
+ 	struct acpi_buffer output = { .length = ACPI_ALLOCATE_BUFFER };
+ 	union acpi_object *out_obj;
+ 	acpi_status status;
+ 	int rc = 0;
+ 
+-	status = acpi_evaluate_object(ata_ap_acpi_handle(ap), "_GTM", NULL,
+-				      &output);
++	status = acpi_evaluate_object(handle, "_GTM", NULL, &output);
+ 
+ 	rc = -ENOENT;
+ 	if (status == AE_NOT_FOUND)
+@@ -294,6 +282,27 @@ int ata_acpi_gtm(struct ata_port *ap, st
+ 	return rc;
+ }
+ 
++/**
++ * ata_acpi_gtm - execute _GTM
++ * @ap: target ATA port
++ * @gtm: out parameter for _GTM result
++ *
++ * Evaluate _GTM and store the result in @gtm.
++ *
++ * LOCKING:
++ * EH context.
++ *
++ * RETURNS:
++ * 0 on success, -ENOENT if _GTM doesn't exist, -errno on failure.
++ */
++int ata_acpi_gtm(struct ata_port *ap, struct ata_acpi_gtm *gtm)
++{
++	if (ata_ap_acpi_handle(ap))
++		return __ata_acpi_gtm(ap, ata_ap_acpi_handle(ap), gtm);
++	else
++		return -EINVAL;
++}
++
+ EXPORT_SYMBOL_GPL(ata_acpi_gtm);
+ 
+ /**
+@@ -1095,7 +1104,7 @@ static int ata_acpi_bind_host(struct ata
+ 	if (!*handle)
+ 		return -ENODEV;
+ 
+-	if (ata_acpi_gtm(ap, &ap->__acpi_init_gtm) == 0)
++	if (__ata_acpi_gtm(ap, *handle, &ap->__acpi_init_gtm) == 0)
+ 		ap->pflags |= ATA_PFLAG_INIT_GTM_VALID;
+ 
+ 	return 0;
 
 
