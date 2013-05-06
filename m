@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757650Ab3EFUq2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59077 "EHLO
+	id S1758739Ab3EFVGK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:06:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59137 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757520Ab3EFUqS (ORCPT
+	with ESMTP id S1757641Ab3EFUq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:18 -0400
+	Mon, 6 May 2013 16:46:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 036/115] arm: set the page table freeing ceiling to TASK_SIZE
-Date: Mon,  6 May 2013 13:44:32 -0700
-Message-Id: <20130506203059.287028634@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, Ming Lei <ming.lei@canonical.com>
+Subject: [ 049/115] sysfs: fix use after free in case of concurrent read/write and readdir
+Date: Mon,  6 May 2013 13:44:45 -0700
+Message-Id: <20130506203100.600983101@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -29,55 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Ming Lei <ming.lei@canonical.com>
 
-commit 104ad3b32d7a71941c8ab2dee78eea38e8a23309 upstream.
+commit f7db5e7660b122142410dcf36ba903c73d473250 upstream.
 
-ARM processors with LPAE enabled use 3 levels of page tables, with an
-entry in the top level (pgd) covering 1GB of virtual space.  Because of
-the branch relocation limitations on ARM, the loadable modules are
-mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
-between kernel modules and user space.
+The inode->i_mutex isn't hold when updating filp->f_pos
+in read()/write(), so the filp->f_pos might be read as
+0 or 1 in readdir() when there is concurrent read()/write()
+on this same file, then may cause use after free in readdir().
 
-If free_pgtables() is called with the default ceiling 0,
-free_pgd_range() (and subsequently called functions) also frees the page
-table shared between user space and kernel modules (which is normally
-handled by the ARM-specific pgd_free() function).  This patch changes
-defines the ARM USER_PGTABLES_CEILING to TASK_SIZE when CONFIG_ARM_LPAE
-is enabled.
+The bug can be reproduced with Li Zefan's test code on the
+link:
 
-Note that the pgd_free() function already checks the presence of the
-shared pmd page allocated by pgd_alloc() and frees it, though with
-ceiling 0 this wasn't necessary.
+	https://patchwork.kernel.org/patch/2160771/
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This patch fixes the use after free under this situation.
+
+Reported-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/pgtable.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/sysfs/dir.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -61,6 +61,15 @@ extern void __pgd_error(const char *file
- #define FIRST_USER_ADDRESS	PAGE_SIZE
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -1012,6 +1012,7 @@ static int sysfs_readdir(struct file * f
+ 	enum kobj_ns_type type;
+ 	const void *ns;
+ 	ino_t ino;
++	loff_t off;
  
- /*
-+ * Use TASK_SIZE as the ceiling argument for free_pgtables() and
-+ * free_pgd_range() to avoid freeing the modules pmd when LPAE is enabled (pmd
-+ * page shared between user and kernel).
-+ */
-+#ifdef CONFIG_ARM_LPAE
-+#define USER_PGTABLES_CEILING	TASK_SIZE
-+#endif
+ 	type = sysfs_ns_type(parent_sd);
+ 	ns = sysfs_info(dentry->d_sb)->ns[type];
+@@ -1034,6 +1035,7 @@ static int sysfs_readdir(struct file * f
+ 			return 0;
+ 	}
+ 	mutex_lock(&sysfs_mutex);
++	off = filp->f_pos;
+ 	for (pos = sysfs_dir_pos(ns, parent_sd, filp->f_pos, pos);
+ 	     pos;
+ 	     pos = sysfs_dir_next_pos(ns, parent_sd, filp->f_pos, pos)) {
+@@ -1045,19 +1047,24 @@ static int sysfs_readdir(struct file * f
+ 		len = strlen(name);
+ 		ino = pos->s_ino;
+ 		type = dt_type(pos);
+-		filp->f_pos = pos->s_hash;
++		off = filp->f_pos = pos->s_hash;
+ 		filp->private_data = sysfs_get(pos);
+ 
+ 		mutex_unlock(&sysfs_mutex);
+-		ret = filldir(dirent, name, len, filp->f_pos, ino, type);
++		ret = filldir(dirent, name, len, off, ino, type);
+ 		mutex_lock(&sysfs_mutex);
+ 		if (ret < 0)
+ 			break;
+ 	}
+ 	mutex_unlock(&sysfs_mutex);
+-	if ((filp->f_pos > 1) && !pos) { /* EOF */
+-		filp->f_pos = INT_MAX;
 +
-+/*
-  * The pgprot_* and protection_map entries will be fixed up in runtime
-  * to include the cachable and bufferable bits based on memory policy,
-  * as well as any architecture dependent bits like global/ASID and SMP
++	/* don't reference last entry if its refcount is dropped */
++	if (!pos) {
+ 		filp->private_data = NULL;
++
++		/* EOF and not changed as 0 or 1 in read/write path */
++		if (off == filp->f_pos && off > 1)
++			filp->f_pos = INT_MAX;
+ 	}
+ 	return 0;
+ }
 
 
