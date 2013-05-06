@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab3EFUwg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:52:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59350 "EHLO
+	id S1758059Ab3EFUq7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:46:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59336 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758068Ab3EFUrA (ORCPT
+	with ESMTP id S1757937Ab3EFUq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:47:00 -0400
+	Mon, 6 May 2013 16:46:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 105/115] ext4: fix online resizing for ext3-compat file systems
-Date: Mon,  6 May 2013 13:45:41 -0700
-Message-Id: <20130506203106.344649686@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 089/115] NFSv4: Handle NFS4ERR_DELAY and NFS4ERR_GRACE in nfs4_lock_delegation_recall
+Date: Mon,  6 May 2013 13:45:25 -0700
+Message-Id: <20130506203104.730053565@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -26,33 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit c5c72d814cf0f650010337c73638b25e6d14d2d4 upstream.
+commit dbb21c25a35a71baf413f5176f028ee11b88cfbc upstream.
 
-Commit fb0a387dcdc restricts block allocations for indirect-mapped
-files to block groups less than s_blockfile_groups.  However, the
-online resizing code wasn't setting s_blockfile_groups, so the newly
-added block groups were not available for non-extent mapped files.
+A server shouldn't normally return NFS4ERR_GRACE if the client holds a
+delegation, since no conflicting lock reclaims can be granted, however
+the spec does not require the server to grant the lock in this
+instance.
 
-Reported-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/resize.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/nfs/nfs4proc.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1341,6 +1341,8 @@ static void ext4_update_super(struct sup
- 
- 	/* Update the global fs size fields */
- 	sbi->s_groups_count += flex_gd->count;
-+	sbi->s_blockfile_groups = min_t(ext4_group_t, sbi->s_groups_count,
-+			(EXT4_MAX_BLOCK_FILE_PHYS / EXT4_BLOCKS_PER_GROUP(sb)));
- 
- 	/* Update the reserved block counts only once the new group is
- 	 * active. */
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -5025,6 +5025,12 @@ int nfs4_lock_delegation_recall(struct n
+ 				nfs4_schedule_stateid_recovery(server, state);
+ 				err = 0;
+ 				goto out;
++			case -NFS4ERR_DELAY:
++			case -NFS4ERR_GRACE:
++				set_bit(NFS_DELEGATED_STATE, &state->flags);
++				ssleep(1);
++				err = -EAGAIN;
++				goto out;
+ 			case -ENOMEM:
+ 			case -NFS4ERR_DENIED:
+ 				/* kill_proc(fl->fl_pid, SIGLOST, 1); */
 
 
