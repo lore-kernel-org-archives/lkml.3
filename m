@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758572Ab3EFVB4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:01:56 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48407 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756405Ab3EFVBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 17:01:54 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <tony@atomide.com>
-CC: <linux-omap@vger.kernel.org>, Eduardo Valentin <eduardo.valentin@ti.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [RESEND][PATCH 2/3] arm: dts: add bandgap entry for OMAP443x devices
-Date: Mon, 6 May 2013 17:00:57 -0400
-Message-ID: <1367874058-2378-3-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
-In-Reply-To: <1367874058-2378-1-git-send-email-eduardo.valentin@ti.com>
-References: <1367874058-2378-1-git-send-email-eduardo.valentin@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+	id S932217Ab3EFVCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:02:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59185 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757726Ab3EFUqf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 16:46:35 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 060/115] ALSA: snd-usb: try harder to find USB_DT_CS_ENDPOINT
+Date: Mon,  6 May 2013 13:44:56 -0700
+Message-Id: <20130506203101.695035074@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
+References: <20130506203055.537199268@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add the bandgap entry for OMAP4430 devices.
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
-Cc: "Benoît Cousson" <b-cousson@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-omap@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+------------------
+
+From: Daniel Mack <zonque@gmail.com>
+
+commit ebfc594c02148b6a85c2f178cf167a44a3c3ce10 upstream.
+
+The USB_DT_CS_ENDPOINT class-specific endpoint descriptor is usually
+stuffed directly after the standard USB endpoint descriptor, and this is
+where the driver currently expects it to be.
+
+There are, however, devices in the wild that have it the other way
+around in their descriptor sets, so the USB_DT_CS_ENDPOINT comes
+*before* the standard enpoint. Devices known to implement it that way
+are "Sennheiser BTD-500" and Plantronics USB headsets.
+
+When the driver can't find the USB_DT_CS_ENDPOINT, it won't be able to
+change sample rates, as the bitmask for the validity of this command is
+storen in bmAttributes of that descriptor.
+
+Fix this by searching the entire interface instead of just the extra
+bytes of the first endpoint, in case the latter fails.
+
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-and-tested-by: Torstein Hegge <hegge@resisty.net>
+Reported-and-tested-by: Yves G <alsa-user@vivigatt.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/arm/boot/dts/omap443x.dtsi | 4 ++++
- 1 file changed, 4 insertions(+)
+ sound/usb/stream.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/arm/boot/dts/omap443x.dtsi b/arch/arm/boot/dts/omap443x.dtsi
-index cccf39a..8d6c968 100644
---- a/arch/arm/boot/dts/omap443x.dtsi
-+++ b/arch/arm/boot/dts/omap443x.dtsi
-@@ -24,4 +24,8 @@
- 			clock-latency = <300000>; /* From legacy driver */
- 		};
- 	};
-+	bandgap {
-+		reg = <0x4a002260 0x4 0x4a00232C 0x4>;
-+		compatible = "ti,omap4430-bandgap";
-+	};
- };
--- 
-1.8.2.1.342.gfa7285d
+--- a/sound/usb/stream.c
++++ b/sound/usb/stream.c
+@@ -396,6 +396,14 @@ static int parse_uac_endpoint_attributes
+ 	if (!csep && altsd->bNumEndpoints >= 2)
+ 		csep = snd_usb_find_desc(alts->endpoint[1].extra, alts->endpoint[1].extralen, NULL, USB_DT_CS_ENDPOINT);
+ 
++	/*
++	 * If we can't locate the USB_DT_CS_ENDPOINT descriptor in the extra
++	 * bytes after the first endpoint, go search the entire interface.
++	 * Some devices have it directly *before* the standard endpoint.
++	 */
++	if (!csep)
++		csep = snd_usb_find_desc(alts->extra, alts->extralen, NULL, USB_DT_CS_ENDPOINT);
++
+ 	if (!csep || csep->bLength < 7 ||
+ 	    csep->bDescriptorSubtype != UAC_EP_GENERAL) {
+ 		snd_printk(KERN_WARNING "%d:%u:%d : no or invalid"
+
 
