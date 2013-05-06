@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759749Ab3EFXFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:05:06 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:54063 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757754Ab3EFXFB (ORCPT
+	id S1759763Ab3EFXF3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:05:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36412 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933095Ab3EFW7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:05:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrVe=JSPB=x79e1fAK=DrMgo7_Liagihib9quJDJ0N670Q@mail.gmail.com>
-References: <cover.1367621038.git.luto@amacapital.net>
-	<d6e5e371e464b7de1115a00f02b5b834315cd986.1367621039.git.luto@amacapital.net>
-	<CALCETrVe=JSPB=x79e1fAK=DrMgo7_Liagihib9quJDJ0N670Q@mail.gmail.com>
-Date: Mon, 6 May 2013 19:04:59 -0400
-Message-ID: <CAH3drwYSZVrM4uWwFAxD+c0n1Q9i-et=Mwbk253E+cd+BtW9yw@mail.gmail.com>
-Subject: Re: [PATCH 3/7] drm: Update drm_addmap and drm_mmap to use PAT WC
- instead of MTRRs
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-fbdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 May 2013 18:59:12 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [ 21/46] i2c: xiic: must always write 16-bit words to TX_FIFO
+Date: Mon,  6 May 2013 15:58:27 -0700
+Message-Id: <20130506225822.882768175@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
+References: <20130506225820.628893970@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 6, 2013 at 5:22 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Fri, May 3, 2013 at 4:00 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>
->> This needs careful review.  I don't really know what this code does, nor
->> do I have the hardware.  (I don't understand AGP and the associated
->> caching implications.)
->
-> This patch is wrong (I didn't update the matching mtrr_del), and I'm
-> reworking this whole series.  But I may need some help on this one:
-> why is the mtrr handle of a map (whatever a map is) exported to
-> userspace via the ADD_MAP and GET_MAP ioctls?  What (if anything) is
-> userspace supposed to do with it?  Do I need to return a valid MTRR
-> register number?  Is there any userspace code at all that sets
-> _DRM_WRITE_COMBINING in DRM_IOCTL_ADD_MAP with appropriate alignment
-> and needs the MTRR, for which the drm driver doesn't already add the
-> MTRR?
->
-> --Andy
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
->From memory, even on pat system we need mtrr for VRAM is PCI BAR. We
-cover it with a write combine MTRR. The whole ioctl is use by some ddx
-or maybe even directly the XServer to do this mtrr mess in userspace.
+------------------
 
-Sorry for the bad news, but that's what i remember on that front
-thought i would need to read all the code again.
+From: "Steven A. Falco" <sfalco@harris.com>
 
-Cheers,
-Jerome
+commit c39e8e4354ce4daf23336de5daa28a3b01f00aa6 upstream.
+
+The TX_FIFO register is 10 bits wide.  The lower 8 bits are the data to be
+written, while the upper two bits are flags to indicate stop/start.
+
+The driver apparently attempted to optimize write access, by only writing a
+byte in those cases where the stop/start bits are zero.  However, we have
+seen cases where the lower byte is duplicated onto the upper byte by the
+hardware, which causes inadvertent stop/starts.
+
+This patch changes the write access to the transmit FIFO to always be 16 bits
+wide.
+
+Signed off by: Steven A. Falco <sfalco@harris.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/i2c/busses/i2c-xiic.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+--- a/drivers/i2c/busses/i2c-xiic.c
++++ b/drivers/i2c/busses/i2c-xiic.c
+@@ -311,10 +311,8 @@ static void xiic_fill_tx_fifo(struct xii
+ 			/* last message in transfer -> STOP */
+ 			data |= XIIC_TX_DYN_STOP_MASK;
+ 			dev_dbg(i2c->adap.dev.parent, "%s TX STOP\n", __func__);
+-
+-			xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
+-		} else
+-			xiic_setreg8(i2c, XIIC_DTR_REG_OFFSET, data);
++		}
++		xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
+ 	}
+ }
+ 
+
+
