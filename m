@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab3EFIyS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 04:54:18 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:63661 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745Ab3EFIyR (ORCPT
+	id S1753865Ab3EFI4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 04:56:05 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:43327 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752700Ab3EFI4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 04:54:17 -0400
+	Mon, 6 May 2013 04:56:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1367804711-30308-7-git-send-email-alex.shi@intel.com>
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-7-git-send-email-alex.shi@intel.com>
+In-Reply-To: <51876E92.3010300@intel.com>
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
+ <1367804711-30308-2-git-send-email-alex.shi@intel.com> <CAPM31R+4Ar5FFGSgfts76qNiQ5GMpPk7wkuj1fwsFrugVwnLfQ@mail.gmail.com>
+ <51876E92.3010300@intel.com>
 From: Paul Turner <pjt@google.com>
-Date: Mon, 6 May 2013 01:53:44 -0700
-Message-ID: <CAPM31RK71tBPdnXzLmr1o6nmFhbhU9+b_DqX9zNSbDc4EhC8FQ@mail.gmail.com>
-Subject: Re: [PATCH v5 6/7] sched: consider runnable load average in move_tasks
+Date: Mon, 6 May 2013 01:55:31 -0700
+Message-ID: <CAPM31RLOHcDGJy6bpXeMN90+NpGNkKS=32Wyq5r0LkdGb=SKkQ@mail.gmail.com>
+Subject: Re: [PATCH v5 1/7] Revert "sched: Introduce temporary
+ FAIR_GROUP_SCHED dependency for load-tracking"
 To: Alex Shi <alex.shi@intel.com>
 Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
@@ -32,53 +35,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 5, 2013 at 6:45 PM, Alex Shi <alex.shi@intel.com> wrote:
-> Except using runnable load average in background, move_tasks is also
-> the key functions in load balance. We need consider the runnable load
-> average in it in order to the apple to apple load comparison.
+On Mon, May 6, 2013 at 1:49 AM, Alex Shi <alex.shi@intel.com> wrote:
+> On 05/06/2013 04:24 PM, Paul Turner wrote:
+>>> >         /*
+>>> >          * CFS Load tracking
+>>> >          * Under CFS, load is tracked on a per-entity basis and aggregated up.
+>>> > @@ -242,8 +236,7 @@ struct cfs_rq {
+>>> >         u64 runnable_load_avg, blocked_load_avg;
+>>> >         atomic64_t decay_counter, removed_load;
+>>> >         u64 last_decay;
+>>> > -#endif /* CONFIG_FAIR_GROUP_SCHED */
+>>> > -/* These always depend on CONFIG_FAIR_GROUP_SCHED */
+>> We should perhaps replace this with a comment that these are only
+>> needed to aggregate the point-wise representation in the
+>> FAIR_GROUP_SCHED case.
+>>
 >
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/fair.c | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
+> Is the comments ok? :)
 >
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 0bf88e8..790e23d 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3966,6 +3966,12 @@ static unsigned long task_h_load(struct task_struct *p);
->
->  static const unsigned int sched_nr_migrate_break = 32;
->
-> +static unsigned long task_h_load_avg(struct task_struct *p)
-> +{
-> +       return div_u64(task_h_load(p) * (u64)p->se.avg.runnable_avg_sum,
-> +                       p->se.avg.runnable_avg_period + 1);
+> /* runnable related variables only used in FAIR_GROUP_SCHED */
 
-Similarly, I think you also want to at least include blocked_load_avg here.
+Perhaps:
 
-More fundamentally:
-I suspect the instability from comparing these to an average taken on
-them will not give a representative imbalance weight.  While we should
-be no worse off than the present situation; we could be doing much
-better.
+ -/* These always depend on CONFIG_FAIR_GROUP_SCHED */
+#ifdef ...
++/* Required to track per-cpu representation of a task_group */
 
-Consider that by not consuming {runnable, blocked}_load_avg directly
-you are "hiding" the movement from one load-balancer to the next.
-> +}
-> +
->  /*
->   * move_tasks tries to move up to imbalance weighted load from busiest to
->   * this_rq, as part of a balancing operation within domain "sd".
-> @@ -4001,7 +4007,7 @@ static int move_tasks(struct lb_env *env)
->                 if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
->                         goto next;
+
 >
-> -               load = task_h_load(p);
-> +               load = task_h_load_avg(p);
->
->                 if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
->                         goto next;
 > --
-> 1.7.12
->
+> Thanks
+>     Alex
