@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab3EFUqE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58989 "EHLO
+	id S1759298Ab3EFVQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:16:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59004 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756888Ab3EFUqB (ORCPT
+	with ESMTP id S1757310Ab3EFUqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:01 -0400
+	Mon, 6 May 2013 16:46:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [ 010/115] ARM: at91/trivial: typos in compatible property
-Date: Mon,  6 May 2013 13:44:06 -0700
-Message-Id: <20130506203056.658562019@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 016/115] iwlwifi: dvm: dont send zeroed LQ cmd
+Date: Mon,  6 May 2013 13:44:12 -0700
+Message-Id: <20130506203057.261417876@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,79 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 2a5a461f179509142c661d79f878855798b85201 upstream.
+commit 63b77bf489881747c5118476918cc8c29378ee63 upstream.
 
-- unneeded whitespace
-- missing double quote
+When the stations are being restored because of unassoc
+RXON, the LQ cmd may not have been initialized because it
+is initialized only after association.
+Sending zeroed LQ_CMD makes the fw unhappy: it raises
+SYSASSERT_2078.
 
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+[move zero_lq and make static const]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/at91sam9g15.dtsi |    2 +-
- arch/arm/boot/dts/at91sam9g25.dtsi |    2 +-
- arch/arm/boot/dts/at91sam9g35.dtsi |    2 +-
- arch/arm/boot/dts/at91sam9x25.dtsi |    2 +-
- arch/arm/boot/dts/at91sam9x35.dtsi |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/sta.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/arm/boot/dts/at91sam9g15.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g15.dtsi
-@@ -10,7 +10,7 @@
- 
- / {
- 	model = "Atmel AT91SAM9G15 SoC";
--	compatible = "atmel, at91sam9g15, atmel,at91sam9x5";
-+	compatible = "atmel,at91sam9g15", "atmel,at91sam9x5";
- 
- 	ahb {
- 		apb {
---- a/arch/arm/boot/dts/at91sam9g25.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g25.dtsi
-@@ -10,7 +10,7 @@
- 
- / {
- 	model = "Atmel AT91SAM9G25 SoC";
--	compatible = "atmel, at91sam9g25, atmel,at91sam9x5";
-+	compatible = "atmel,at91sam9g25", "atmel,at91sam9x5";
- 
- 	ahb {
- 		apb {
---- a/arch/arm/boot/dts/at91sam9g35.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g35.dtsi
-@@ -10,7 +10,7 @@
- 
- / {
- 	model = "Atmel AT91SAM9G35 SoC";
--	compatible = "atmel, at91sam9g35, atmel,at91sam9x5";
-+	compatible = "atmel,at91sam9g35", "atmel,at91sam9x5";
- 
- 	ahb {
- 		apb {
---- a/arch/arm/boot/dts/at91sam9x25.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x25.dtsi
-@@ -10,7 +10,7 @@
- 
- / {
- 	model = "Atmel AT91SAM9X25 SoC";
--	compatible = "atmel, at91sam9x25, atmel,at91sam9x5";
-+	compatible = "atmel,at91sam9x25", "atmel,at91sam9x5";
- 
- 	ahb {
- 		apb {
---- a/arch/arm/boot/dts/at91sam9x35.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x35.dtsi
-@@ -10,7 +10,7 @@
- 
- / {
- 	model = "Atmel AT91SAM9X35 SoC";
--	compatible = "atmel, at91sam9x35, atmel,at91sam9x5";
-+	compatible = "atmel,at91sam9x35", "atmel,at91sam9x5";
- 
- 	ahb {
- 		apb {
+--- a/drivers/net/wireless/iwlwifi/dvm/sta.c
++++ b/drivers/net/wireless/iwlwifi/dvm/sta.c
+@@ -695,6 +695,7 @@ void iwl_clear_ucode_stations(struct iwl
+ void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+ {
+ 	struct iwl_addsta_cmd sta_cmd;
++	static const struct iwl_link_quality_cmd zero_lq = {};
+ 	struct iwl_link_quality_cmd lq;
+ 	int i;
+ 	bool found = false;
+@@ -733,7 +734,9 @@ void iwl_restore_stations(struct iwl_pri
+ 				else
+ 					memcpy(&lq, priv->stations[i].lq,
+ 					       sizeof(struct iwl_link_quality_cmd));
+-				send_lq = true;
++
++				if (!memcmp(&lq, &zero_lq, sizeof(lq)))
++					send_lq = true;
+ 			}
+ 			spin_unlock_bh(&priv->sta_lock);
+ 			ret = iwl_send_add_sta(priv, &sta_cmd, CMD_SYNC);
 
 
