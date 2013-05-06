@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab3EFUTa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:19:30 -0400
-Received: from host122-8-static.224-95-b.business.telecomitalia.it ([95.224.8.122]:40161
-	"EHLO zoo.ghostprotocols.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755971Ab3EFUT3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:19:29 -0400
-X-Greylist: delayed 43102 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 May 2013 16:19:29 EDT
-Date: Mon, 6 May 2013 05:20:08 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: peterz@infradead.org, jolsa@redhat.com, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, rob@landley.net
-Subject: Re: [RFC/PATCH] perf: Expand definition of sysfs format attribute
-Message-ID: <20130506082008.GA2784@ghostprotocols.net>
-References: <1362370865-4437-1-git-send-email-michael@ellerman.id.au>
- <20130408072422.GA4476@concordia>
- <20130506010829.GA32607@concordia>
+	id S1756382Ab3EFUYV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:24:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14208 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755909Ab3EFUYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 16:24:20 -0400
+Date: Mon, 6 May 2013 16:24:13 -0400
+From: Dave Jones <davej@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: rcu_init allocation failure trace on bootup
+Message-ID: <20130506202413.GA1261@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20130506175647.GA1309@redhat.com>
+ <20130506190522.GD3501@linux.vnet.ibm.com>
+ <20130506192653.GA16819@redhat.com>
+ <20130506194351.GH3501@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130506010829.GA32607@concordia>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <20130506194351.GH3501@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, May 06, 2013 at 11:08:30AM +1000, Michael Ellerman escreveu:
-> On Mon, Apr 08, 2013 at 05:24:22PM +1000, Michael Ellerman wrote:
-> > On Mon, Mar 04, 2013 at 03:21:05PM +1100, Michael Ellerman wrote:
-> > > Make it explicit that the format attributes may define overlapping bit
-> > > ranges. Unfortunately this was left unspecified originally, and all the
-> > > examples show non-overlapping ranges. I don't believe this is an ABI
-> > > change, as we are defining something that was previously undefined, but
-> > > others may disagree.
-> > > 
-> > > The POWER8 PMU would like to define overlapping ranges, as bit ranges in
-> > > the event code have different meanings for certain events. It will also
-> > > allow us to define an overarching "event" field, that encompasses all
-> > > others.
-> > > 
-> > > As far as I can see perf is comfortable with this change, however I am
-> > > not sure if there are any other users of the interface.
-> > 
-> > Any comments on this one?
+On Mon, May 06, 2013 at 12:43:51PM -0700, Paul E. McKenney wrote:
+ > On Mon, May 06, 2013 at 03:26:53PM -0400, Dave Jones wrote:
+ > > On Mon, May 06, 2013 at 12:05:22PM -0700, Paul E. McKenney wrote:
+ > >  > On Mon, May 06, 2013 at 01:56:47PM -0400, Dave Jones wrote:
+ > >  > > [    0.000000]  RCU debugfs-based tracing is enabled.
+ > >  > > [    0.000000]  RCU lockdep checking is enabled.
+ > >  > > [    0.000000] ------------[ cut here ]------------
+ > >  > > [    0.000000] WARNING: at mm/nobootmem.c:215 ___alloc_bootmem_nopanic+0x3a/0x7d()
+ > >  > > [    0.000000] Modules linked in:
+ > >  > > [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.9.0+ #128
+ > >  > > [    0.000000] Hardware name:                  /D975XBX, BIOS BX97510J.86A.1209.2006.0601.1340 06/01/2006
+ > >  > > [    0.000000]  ffffffff819f4246 ffffffff81c01e68 ffffffff816a0db2 ffffffff81c01ea8
+ > >  > > [    0.000000]  ffffffff8104b1a0 ffffffff819e1078 0000000000000000 0000000000000008
+ > >  > > [    0.000000]  ffffffffffffffff 0000000000000040 0000000000000000 ffffffff81c01eb8
+ > >  > > [    0.000000] Call Trace:
+ > >  > > [    0.000000]  [<ffffffff816a0db2>] dump_stack+0x19/0x1b
+ > >  > > [    0.000000]  [<ffffffff8104b1a0>] warn_slowpath_common+0x70/0xa0
+ > >  > > [    0.000000]  [<ffffffff8104b1ea>] warn_slowpath_null+0x1a/0x20
+ > >  > > [    0.000000]  [<ffffffff81ef8914>] ___alloc_bootmem_nopanic+0x3a/0x7d
+ > >  > > [    0.000000]  [<ffffffff81ef8b87>] __alloc_bootmem+0x13/0x39
+ > >  > > [    0.000000]  [<ffffffff81f090ad>] alloc_bootmem_cpumask_var+0x1a/0x21
+ > >  > > [    0.000000]  [<ffffffff81ef1f5a>] rcu_init+0x7f/0x261
+ > >  > > [    0.000000]  [<ffffffff81ef4acb>] ? perf_event_init+0x178/0x181
+ > >  > > [    0.000000]  [<ffffffff81ed6c79>] start_kernel+0x232/0x3d3
+ > >  > > [    0.000000]  [<ffffffff81ed6846>] ? repair_env_string+0x5e/0x5e
+ > >  > > [    0.000000]  [<ffffffff81ed6577>] x86_64_start_reservations+0x2a/0x2c
+ > >  > > [    0.000000]  [<ffffffff81ed6646>] x86_64_start_kernel+0xcd/0xd1
+ > >  > > [    0.000000] ---[ end trace 0acfc82c197165dd ]---
+ > >  > > [    0.000000]  Experimental no-CBs for all CPUs
+ > >  > > [    0.000000]  Experimental no-CBs CPUs: 0-1.
+ > >  > > [    0.000000] NO_HZ: Full dynticks CPUs: 1.
+ > >  > 
+ > >  > Do you have commit fa0f93cd6a (rcu: Don't allocate bootmem from rcu_init())?
+ > >  > If not, could you please try applying it?
+ > > 
+ > > That commit isn't in Linus tree.
+ > 
+ > You are quite right, I am getting ahead of myself.  Please see below
+ > for the patch.
 
-> I think the consensus from Peter and Jiri was that this was OK, are you
-> happy to merge it?
+Doesn't fix it for me.
 
-I'll do it eventually, but now I'm on vacations, so perhaps Jiri can
-process it and push to Ingo? Jiri?
+Is it this one instead perhaps ?
 
-- Arnaldo
+  89 #ifndef CONFIG_RCU_NOCB_CPU_NONE
+  90         if (!have_rcu_nocb_mask) {
+  91                 alloc_bootmem_cpumask_var(&rcu_nocb_mask);
+  92                 have_rcu_nocb_mask = true;
+  93         }
+
+
