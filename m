@@ -1,113 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364Ab3EFCY5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 22:24:57 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59026 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880Ab3EFCYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 22:24:55 -0400
-X-IronPort-AV: E=Sophos;i="4.87,618,1363104000"; 
-   d="scan'208";a="7192472"
-Message-ID: <51871520.6020703@cn.fujitsu.com>
-Date: Mon, 06 May 2013 10:27:44 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752247Ab3EFDEQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 23:04:16 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:56978 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751778Ab3EFDEO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 May 2013 23:04:14 -0400
+From: Chao Xie <chao.xie@marvell.com>
+To: <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <dmitry.torokhov@gmail.com>, <haojian.zhuang@gmail.com>,
+        <xiechao.mail@gmail.com>
+CC: Chao Xie <chao.xie@marvell.com>
+Subject: [PATCH V2 1/5] input: pxa27x-keypad: use matrix_keymap for matrix keyes
+Date: Sun, 5 May 2013 23:04:04 -0400
+Message-ID: <1367809448-9437-2-git-send-email-chao.xie@marvell.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1367809448-9437-1-git-send-email-chao.xie@marvell.com>
+References: <1367809448-9437-1-git-send-email-chao.xie@marvell.com>
 MIME-Version: 1.0
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-CC: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org, laijs@cn.fujitsu.com,
-        davem@davemloft.net, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v2 10/13] x86, acpi, numa, mem-hotplug: Introduce MEMBLK_HOTPLUGGABLE
- to mark and reserve hotpluggable memory.
-References: <1367313683-10267-1-git-send-email-tangchen@cn.fujitsu.com> <1367313683-10267-11-git-send-email-tangchen@cn.fujitsu.com> <20130503105037.GA4533@dhcp-192-168-178-175.profitbricks.localdomain>
-In-Reply-To: <20130503105037.GA4533@dhcp-192-168-178-175.profitbricks.localdomain>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/06 10:22:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/06 10:23:01,
-	Serialize complete at 2013/05/06 10:23:01
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vasilis,
+pxa27x-keypad includes matrix keyes. Make use of matrix_keymap
+for the matrix keyes.
 
-Sorry for the delay and thank you for reviewing and testing. :)
+Signed-off-by: Chao Xie <chao.xie@marvell.com>
+---
+ drivers/input/keyboard/Kconfig              |    1 +
+ drivers/input/keyboard/pxa27x_keypad.c      |   36 +++++++++++++++++---------
+ include/linux/platform_data/keypad-pxa27x.h |    1 +
+ 3 files changed, 25 insertions(+), 13 deletions(-)
 
-On 05/03/2013 06:50 PM, Vasilis Liaskovitis wrote:
->
-> Should we skip ranges on nodes that the kernel uses? e.g. with
->
->          if (memblock_is_kernel_node(nid))
->              continue;
-
-Yes. I think I forgot to call it in this patch.
-Will update in the next version.
-
->
->
-> - I am getting a "PANIC: early exception" when rebooting with movablecore=acpi
-> after hotplugging memory on node0 or node1 of a 2-node VM. The guest kernel is
-> based on
-> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-> for-x86-mm (e9058baf) + these v2 patches.
->
-> This happens with or without the above memblock_is_kernel_node(nid) check.
-> Perhaps I am missing something or I need a newer "ACPI, numa: Parse numa info
-> early" patch-set?
-
-I didn't test it on a VM. But on my real box, I haven't got a panic
-when rebooting. I think I can help to test it in a VM, but would you 
-please to
-tell me how to setup a environment as yours ?
-
->
-> A general question: Disabling hot-pluggability/zone-movable eligibility for a
-> whole node sounds a bit inflexible, if the machine only has one node to begin
-> with.  Would it be possible to keep movable information per SRAT entry? I.e
-> if the BIOS presents multiple SRAT entries for one node/PXM (say node 0), and
-> there is no memblock/kernel allocation on one of these SRAT entries, could
-> we still mark this SRAT entry's range as hot-pluggable/movable?  Not sure if
-> many real machine BIOSes would do this, but seabios could.  This implies that
-> SRAT entries are processed for movable-zone eligilibity before they are merged
-> on node/PXM basis entry-granularity (I think numa_cleanup_meminfo currently does
-> this merge).
-
-Yes, this can be done. But in real usage, part of the memory in a node
-is hot-removable makes no sense, I think. We cannot remove the whole node,
-so we cannot remove a real hardware device.
-
-But in virtualization, would you please give a reason why we need this
-entry-granularity ?
-
-
-Another thinking. Assume I didn't understand your question correctly. :)
-
-Now in kernel, we can recognize a node (by PXM in SRAT), but we cannot
-recognize a memory device. Are you saying if we have this 
-entry-granularity,
-we can hotplug a single memory device in a node ? (Perhaps there are more
-than on memory device in a node.)
-
-If so, it makes sense. But I don't the kernel is able to recognize which
-device a memory range belongs to now. And I'm not sure if we can do this.
-
->
-> Of course the kernel should still have enough memory(i.e. non movable zone) to
-> boot. Can we ensure that at least certain amount of memory is non-movable, and
-> then, given more separate SRAT entries for node0 not used by kernel, treat
-> these rest entries as movable?
-
-I tried this idea before. But as HPA said, it seems no way to calculate 
-how much
-memory the kernel needs.
-https://lkml.org/lkml/2012/11/27/29
-
-
-Thanks. :)
+diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+index ac05006..fff3751 100644
+--- a/drivers/input/keyboard/Kconfig
++++ b/drivers/input/keyboard/Kconfig
+@@ -441,6 +441,7 @@ config KEYBOARD_OPENCORES
+ config KEYBOARD_PXA27x
+ 	tristate "PXA27x/PXA3xx keypad support"
+ 	depends on PXA27x || PXA3xx || ARCH_MMP
++	select INPUT_MATRIXKMAP
+ 	help
+ 	  Enable support for PXA27x/PXA3xx keypad controller.
+ 
+diff --git a/drivers/input/keyboard/pxa27x_keypad.c b/drivers/input/keyboard/pxa27x_keypad.c
+index 5330d8f..c9f212a 100644
+--- a/drivers/input/keyboard/pxa27x_keypad.c
++++ b/drivers/input/keyboard/pxa27x_keypad.c
+@@ -118,25 +118,29 @@ struct pxa27x_keypad {
+ 	unsigned int direct_key_mask;
+ };
+ 
+-static void pxa27x_keypad_build_keycode(struct pxa27x_keypad *keypad)
++static int pxa27x_keypad_build_keycode(struct pxa27x_keypad *keypad)
+ {
+ 	struct pxa27x_keypad_platform_data *pdata = keypad->pdata;
+ 	struct input_dev *input_dev = keypad->input_dev;
+ 	unsigned short keycode;
+-	int i;
++	int ret, i;
++	const struct matrix_keymap_data *keymap_data =
++				pdata ? pdata->matrix_keymap_data : NULL;
+ 
+-	for (i = 0; i < pdata->matrix_key_map_size; i++) {
+-		unsigned int key = pdata->matrix_key_map[i];
+-		unsigned int row = KEY_ROW(key);
+-		unsigned int col = KEY_COL(key);
+-		unsigned int scancode = MATRIX_SCAN_CODE(row, col,
+-							 MATRIX_ROW_SHIFT);
++	ret = matrix_keypad_build_keymap(keymap_data, NULL,
++					 pdata->matrix_key_rows,
++					 pdata->matrix_key_cols,
++					 keypad->keycodes, input_dev);
++	if (ret)
++		return ret;
+ 
+-		keycode = KEY_VAL(key);
+-		keypad->keycodes[scancode] = keycode;
+-		__set_bit(keycode, input_dev->keybit);
+-	}
++	/*
++	 * The keycodes may not only includes matrix key but also the direct
++	 * key or rotary key.
++	 */
++	input_dev->keycodemax = ARRAY_SIZE(keypad->keycodes);
+ 
++	/* For direct key. */
+ 	for (i = 0; i < pdata->direct_key_num; i++) {
+ 		keycode = pdata->direct_key_map[i];
+ 		keypad->keycodes[MAX_MATRIX_KEY_NUM + i] = keycode;
+@@ -178,6 +182,8 @@ static void pxa27x_keypad_build_keycode(struct pxa27x_keypad *keypad)
+ 	}
+ 
+ 	__clear_bit(KEY_RESERVED, input_dev->keybit);
++
++	return 0;
+ }
+ 
+ static void pxa27x_keypad_scan_matrix(struct pxa27x_keypad *keypad)
+@@ -555,7 +561,11 @@ static int pxa27x_keypad_probe(struct platform_device *pdev)
+ 	input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REP);
+ 	input_set_capability(input_dev, EV_MSC, MSC_SCAN);
+ 
+-	pxa27x_keypad_build_keycode(keypad);
++	error  = pxa27x_keypad_build_keycode(keypad);
++	if (error) {
++		dev_err(&pdev->dev, "failed to build keycode\n");
++		goto failed_put_clk;
++	}
+ 
+ 	if ((pdata->enable_rotary0 && keypad->rotary_rel_code[0] != -1) ||
+ 	    (pdata->enable_rotary1 && keypad->rotary_rel_code[1] != -1)) {
+diff --git a/include/linux/platform_data/keypad-pxa27x.h b/include/linux/platform_data/keypad-pxa27x.h
+index 5ce8d5e6..0db423b 100644
+--- a/include/linux/platform_data/keypad-pxa27x.h
++++ b/include/linux/platform_data/keypad-pxa27x.h
+@@ -36,6 +36,7 @@
+ struct pxa27x_keypad_platform_data {
+ 
+ 	/* code map for the matrix keys */
++	const struct matrix_keymap_data *matrix_keymap_data;
+ 	unsigned int	matrix_key_rows;
+ 	unsigned int	matrix_key_cols;
+ 	unsigned int	*matrix_key_map;
+-- 
+1.7.4.1
 
