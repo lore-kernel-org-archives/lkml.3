@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760630Ab3EFXNw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:13:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36824 "EHLO
+	id S933468Ab3EFXZn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:25:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36849 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760591Ab3EFXNr (ORCPT
+	with ESMTP id S1759000Ab3EFXNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:47 -0400
+	Mon, 6 May 2013 19:13:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Rayhawk <jrayhawk@fairlystable.org>,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 061/104] ALSA: USB: adjust for changed 3.8 USB API
-Date: Mon,  6 May 2013 16:12:20 -0700
-Message-Id: <20130506230049.878783105@linuxfoundation.org>
+        Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 057/104] ALSA: snd-usb: try harder to find USB_DT_CS_ENDPOINT
+Date: Mon,  6 May 2013 16:12:16 -0700
+Message-Id: <20130506230049.458326857@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -27,130 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Daniel Mack <zonque@gmail.com>
 
-commit c75c5ab575af7db707689cdbb5a5c458e9a034bb upstream.
+commit ebfc594c02148b6a85c2f178cf167a44a3c3ce10 upstream.
 
-The recent changes in the USB API ("implement new semantics for
-URB_ISO_ASAP") made the former meaning of the URB_ISO_ASAP flag the
-default, and changed this flag to mean that URBs can be delayed.
-This is not the behaviour wanted by any of the audio drivers because
-it leads to discontinuous playback with very small period sizes.
-Therefore, our URBs need to be submitted without this flag.
+The USB_DT_CS_ENDPOINT class-specific endpoint descriptor is usually
+stuffed directly after the standard USB endpoint descriptor, and this is
+where the driver currently expects it to be.
 
-Reported-by: Joe Rayhawk <jrayhawk@fairlystable.org>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+There are, however, devices in the wild that have it the other way
+around in their descriptor sets, so the USB_DT_CS_ENDPOINT comes
+*before* the standard enpoint. Devices known to implement it that way
+are "Sennheiser BTD-500" and Plantronics USB headsets.
+
+When the driver can't find the USB_DT_CS_ENDPOINT, it won't be able to
+change sample rates, as the bitmask for the validity of this command is
+storen in bmAttributes of that descriptor.
+
+Fix this by searching the entire interface instead of just the extra
+bytes of the first endpoint, in case the latter fails.
+
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-and-tested-by: Torstein Hegge <hegge@resisty.net>
+Reported-and-tested-by: Yves G <alsa-user@vivigatt.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/6fire/pcm.c           |    1 -
- sound/usb/caiaq/audio.c         |    3 ---
- sound/usb/endpoint.c            |    5 ++---
- sound/usb/misc/ua101.c          |    3 +--
- sound/usb/usx2y/usb_stream.c    |    1 -
- sound/usb/usx2y/usbusx2yaudio.c |    1 -
- sound/usb/usx2y/usx2yhwdeppcm.c |    1 -
- 7 files changed, 3 insertions(+), 12 deletions(-)
+ sound/usb/stream.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/sound/usb/6fire/pcm.c
-+++ b/sound/usb/6fire/pcm.c
-@@ -575,7 +575,6 @@ static void usb6fire_pcm_init_urb(struct
- 	urb->instance.pipe = in ? usb_rcvisocpipe(chip->dev, ep)
- 			: usb_sndisocpipe(chip->dev, ep);
- 	urb->instance.interval = 1;
--	urb->instance.transfer_flags = URB_ISO_ASAP;
- 	urb->instance.complete = handler;
- 	urb->instance.context = urb;
- 	urb->instance.number_of_packets = PCM_N_PACKETS_PER_URB;
---- a/sound/usb/caiaq/audio.c
-+++ b/sound/usb/caiaq/audio.c
-@@ -670,7 +670,6 @@ static void read_completed(struct urb *u
+--- a/sound/usb/stream.c
++++ b/sound/usb/stream.c
+@@ -396,6 +396,14 @@ static int parse_uac_endpoint_attributes
+ 	if (!csep && altsd->bNumEndpoints >= 2)
+ 		csep = snd_usb_find_desc(alts->endpoint[1].extra, alts->endpoint[1].extralen, NULL, USB_DT_CS_ENDPOINT);
  
- 	if (send_it) {
- 		out->number_of_packets = outframe;
--		out->transfer_flags = URB_ISO_ASAP;
- 		usb_submit_urb(out, GFP_ATOMIC);
- 	} else {
- 		struct snd_usb_caiaq_cb_info *oinfo = out->context;
-@@ -686,7 +685,6 @@ requeue:
- 	}
- 
- 	urb->number_of_packets = FRAMES_PER_URB;
--	urb->transfer_flags = URB_ISO_ASAP;
- 	usb_submit_urb(urb, GFP_ATOMIC);
- }
- 
-@@ -751,7 +749,6 @@ static struct urb **alloc_urbs(struct sn
- 						* BYTES_PER_FRAME;
- 		urbs[i]->context = &dev->data_cb_info[i];
- 		urbs[i]->interval = 1;
--		urbs[i]->transfer_flags = URB_ISO_ASAP;
- 		urbs[i]->number_of_packets = FRAMES_PER_URB;
- 		urbs[i]->complete = (dir == SNDRV_PCM_STREAM_CAPTURE) ?
- 					read_completed : write_completed;
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -677,7 +677,7 @@ static int data_ep_set_params(struct snd
- 		if (!u->urb->transfer_buffer)
- 			goto out_of_memory;
- 		u->urb->pipe = ep->pipe;
--		u->urb->transfer_flags = URB_ISO_ASAP | URB_NO_TRANSFER_DMA_MAP;
-+		u->urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
- 		u->urb->interval = 1 << ep->datainterval;
- 		u->urb->context = u;
- 		u->urb->complete = snd_complete_urb;
-@@ -716,8 +716,7 @@ static int sync_ep_set_params(struct snd
- 		u->urb->transfer_dma = ep->sync_dma + i * 4;
- 		u->urb->transfer_buffer_length = 4;
- 		u->urb->pipe = ep->pipe;
--		u->urb->transfer_flags = URB_ISO_ASAP |
--					 URB_NO_TRANSFER_DMA_MAP;
-+		u->urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
- 		u->urb->number_of_packets = 1;
- 		u->urb->interval = 1 << ep->syncinterval;
- 		u->urb->context = u;
---- a/sound/usb/misc/ua101.c
-+++ b/sound/usb/misc/ua101.c
-@@ -1120,8 +1120,7 @@ static int alloc_stream_urbs(struct ua10
- 			usb_init_urb(&urb->urb);
- 			urb->urb.dev = ua->dev;
- 			urb->urb.pipe = stream->usb_pipe;
--			urb->urb.transfer_flags = URB_ISO_ASAP |
--					URB_NO_TRANSFER_DMA_MAP;
-+			urb->urb.transfer_flags = URB_NO_TRANSFER_DMA_MAP;
- 			urb->urb.transfer_buffer = addr;
- 			urb->urb.transfer_dma = dma;
- 			urb->urb.transfer_buffer_length = max_packet_size;
---- a/sound/usb/usx2y/usb_stream.c
-+++ b/sound/usb/usx2y/usb_stream.c
-@@ -69,7 +69,6 @@ static void init_pipe_urbs(struct usb_st
- 	     ++u, transfer += transfer_length) {
- 		struct urb *urb = urbs[u];
- 		struct usb_iso_packet_descriptor *desc;
--		urb->transfer_flags = URB_ISO_ASAP;
- 		urb->transfer_buffer = transfer;
- 		urb->dev = dev;
- 		urb->pipe = pipe;
---- a/sound/usb/usx2y/usbusx2yaudio.c
-+++ b/sound/usb/usx2y/usbusx2yaudio.c
-@@ -503,7 +503,6 @@ static int usX2Y_urbs_start(struct snd_u
- 			if (0 == i)
- 				atomic_set(&subs->state, state_STARTING3);
- 			urb->dev = usX2Y->dev;
--			urb->transfer_flags = URB_ISO_ASAP;
- 			for (pack = 0; pack < nr_of_packs(); pack++) {
- 				urb->iso_frame_desc[pack].offset = subs->maxpacksize * pack;
- 				urb->iso_frame_desc[pack].length = subs->maxpacksize;
---- a/sound/usb/usx2y/usx2yhwdeppcm.c
-+++ b/sound/usb/usx2y/usx2yhwdeppcm.c
-@@ -443,7 +443,6 @@ static int usX2Y_usbpcm_urbs_start(struc
- 					if (0 == u)
- 						atomic_set(&subs->state, state_STARTING3);
- 					urb->dev = usX2Y->dev;
--					urb->transfer_flags = URB_ISO_ASAP;
- 					for (pack = 0; pack < nr_of_packs(); pack++) {
- 						urb->iso_frame_desc[pack].offset = subs->maxpacksize * (pack + u * nr_of_packs());
- 						urb->iso_frame_desc[pack].length = subs->maxpacksize;
++	/*
++	 * If we can't locate the USB_DT_CS_ENDPOINT descriptor in the extra
++	 * bytes after the first endpoint, go search the entire interface.
++	 * Some devices have it directly *before* the standard endpoint.
++	 */
++	if (!csep)
++		csep = snd_usb_find_desc(alts->extra, alts->extralen, NULL, USB_DT_CS_ENDPOINT);
++
+ 	if (!csep || csep->bLength < 7 ||
+ 	    csep->bDescriptorSubtype != UAC_EP_GENERAL) {
+ 		snd_printk(KERN_WARNING "%d:%u:%d : no or invalid"
 
 
