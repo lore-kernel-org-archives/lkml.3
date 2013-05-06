@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933041Ab3EFW7F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:59:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36345 "EHLO
+	id S933191Ab3EFW73 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:59:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36488 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933016Ab3EFW7A (ORCPT
+	with ESMTP id S933159Ab3EFW7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:00 -0400
+	Mon, 6 May 2013 18:59:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adrian Thomasset <adrian.thomasset@st.com>
-Subject: [ 07/46] USB: ftdi_sio: correct ST Micro Connect Lite PIDs
-Date: Mon,  6 May 2013 15:58:13 -0700
-Message-Id: <20130506225821.447841044@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [ 44/46] mfd: adp5520: Restore mode bits on resume
+Date: Mon,  6 May 2013 15:58:50 -0700
+Message-Id: <20130506225825.320976967@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -26,51 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adrian Thomasset <adrian.thomasset@st.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 9f06d15f8db6946e41f73196a122b84a37938878 upstream.
+commit c6cc25fda58da8685ecef3f179adc7b99c8253b2 upstream.
 
-The current ST Micro Connect Lite uses the FT4232H hi-speed quad USB
-UART FTDI chip. It is also possible to drive STM reference targets
-populated with an on-board JTAG debugger based on the FT2232H chip with
-the same STMicroelectronics tools.
+The adp5520 unfortunately also clears the BL_EN bit when the nSTNDBY bit is
+cleared. So we need to make sure to restore it during resume if it was set
+before suspend.
 
-For this reason, the ST Micro Connect Lite PIDs should be
-ST_STMCLT_2232_PID: 0x3746
-ST_STMCLT_4232_PID: 0x3747
-
-Signed-off-by: Adrian Thomasset <adrian.thomasset@st.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    4 +++-
- drivers/usb/serial/ftdi_sio_ids.h |    3 ++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/mfd/adp5520.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -877,7 +877,9 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_DOTEC_PID) },
- 	{ USB_DEVICE(QIHARDWARE_VID, MILKYMISTONE_JTAGSERIAL_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
--	{ USB_DEVICE(ST_VID, ST_STMCLT1030_PID),
-+	{ USB_DEVICE(ST_VID, ST_STMCLT_2232_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(ST_VID, ST_STMCLT_4232_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_stmclite_quirk },
- 	{ USB_DEVICE(FTDI_VID, FTDI_RF_R106) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_DISTORTEC_JTAG_LOCK_PICK_PID),
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1151,7 +1151,8 @@
-  * STMicroelectonics
-  */
- #define ST_VID			0x0483
--#define ST_STMCLT1030_PID	0x3747 /* ST Micro Connect Lite STMCLT1030 */
-+#define ST_STMCLT_2232_PID	0x3746
-+#define ST_STMCLT_4232_PID	0x3747
+--- a/drivers/mfd/adp5520.c
++++ b/drivers/mfd/adp5520.c
+@@ -36,6 +36,7 @@ struct adp5520_chip {
+ 	struct blocking_notifier_head notifier_list;
+ 	int irq;
+ 	unsigned long id;
++	uint8_t mode;
+ };
  
- /*
-  * Papouch products (http://www.papouch.com/)
+ static int __adp5520_read(struct i2c_client *client,
+@@ -326,7 +327,10 @@ static int adp5520_suspend(struct device
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
+ 
+-	adp5520_clr_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
++	adp5520_read(chip->dev, ADP5520_MODE_STATUS, &chip->mode);
++	/* All other bits are W1C */
++	chip->mode &= ADP5520_BL_EN | ADP5520_DIM_EN | ADP5520_nSTNBY;
++	adp5520_write(chip->dev, ADP5520_MODE_STATUS, 0);
+ 	return 0;
+ }
+ 
+@@ -335,7 +339,7 @@ static int adp5520_resume(struct device
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
+ 
+-	adp5520_set_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
++	adp5520_write(chip->dev, ADP5520_MODE_STATUS, chip->mode);
+ 	return 0;
+ }
+ #endif
 
 
