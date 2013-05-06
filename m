@@ -1,45 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab3EFWtw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:49:52 -0400
-Received: from mail-ye0-f175.google.com ([209.85.213.175]:38107 "EHLO
-	mail-ye0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758945Ab3EFWtv (ORCPT
+	id S932562Ab3EFWuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:50:22 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:37804 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932236Ab3EFWrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:49:51 -0400
-Date: Mon, 6 May 2013 15:49:45 -0700
+	Mon, 6 May 2013 18:47:05 -0400
 From: Tejun Heo <tj@kernel.org>
-To: Marc Dionne <marc.c.dionne@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] workqueue: Make schedule_work() available again to non
- GPL modules
-Message-ID: <20130506224945.GI800@mtj.dyndns.org>
-References: <1367876695-3697-1-git-send-email-marc.dionne@your-file-system.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367876695-3697-1-git-send-email-marc.dionne@your-file-system.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        vgoyal@redhat.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 24/33] blk-throttle: implement dispatch looping
+Date: Mon,  6 May 2013 15:46:03 -0700
+Message-Id: <1367880372-28312-25-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1367880372-28312-1-git-send-email-tj@kernel.org>
+References: <1367880372-28312-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 05:44:55PM -0400, Marc Dionne wrote:
-> Commit 8425e3d5bdbe ("workqueue: inline trivial wrappers") changed
-> schedule_work() and schedule_delayed_work() to inline wrappers,
-> but these rely on some symbols that are EXPORT_SYMBOL_GPL, while
-> the original functions were EXPORT_SYMBOL.  This has the effect of
-> changing the licensing requirement for these functions and making
-> them unavailable to non GPL modules.
-> 
-> Make them available again by removing the restriction on the
-> required symbols.
-> 
-> Signed-off-by: Marc Dionne <marc.dionne@your-file-system.com>
+throtl_select_dispatch() only dispatches throtl_quantum bios on each
+invocation.  blk_throtl_dispatch_work_fn() in turn depends on
+throtl_schedule_next_dispatch() scheduling the next dispatch window
+immediately so that undue delays aren't incurred.  This effectively
+chains multiple dispatch work item executions back-to-back when there
+are more than throtl_quantum bios to dispatch on a given tick.
 
-Will apply to workqueue/for-3.10-fixes once v3.10-rc1 drops.
+There is no reason to finish the current work item just to repeat it
+immediately.  This patch makes throtl_schedule_next_dispatch() return
+%false without doing anything if the current dispatch window is still
+open and updates blk_throtl_dispatch_work_fn() repeat dispatching
+after cpu_relax() on %false return.
 
-Thanks.
+This change will help implementing hierarchy support as dispatching
+will be done from pending_timer and immediate reschedule of timer
+function isn't supported and doesn't make much sense.
 
+While this patch changes how dispatch behaves when there are more than
+throtl_quantum bios to dispatch on a single tick, the behavior change
+is immaterial.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ block/blk-throttle.c | 82 +++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 56 insertions(+), 26 deletions(-)
+
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index a8d23f0..8ee8e4e 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -467,24 +467,41 @@ static void throtl_schedule_pending_timer(struct throtl_service_queue *sq,
+ 		   expires - jiffies, jiffies);
+ }
+ 
+-static void throtl_schedule_next_dispatch(struct throtl_service_queue *sq)
++/**
++ * throtl_schedule_next_dispatch - schedule the next dispatch cycle
++ * @sq: the service_queue to schedule dispatch for
++ * @force: force scheduling
++ *
++ * Arm @sq->pending_timer so that the next dispatch cycle starts on the
++ * dispatch time of the first pending child.  Returns %true if either timer
++ * is armed or there's no pending child left.  %false if the current
++ * dispatch window is still open and the caller should continue
++ * dispatching.
++ *
++ * If @force is %true, the dispatch timer is always scheduled and this
++ * function is guaranteed to return %true.  This is to be used when the
++ * caller can't dispatch itself and needs to invoke pending_timer
++ * unconditionally.  Note that forced scheduling is likely to induce short
++ * delay before dispatch starts even if @sq->first_pending_disptime is not
++ * in the future and thus shouldn't be used in hot paths.
++ */
++static bool throtl_schedule_next_dispatch(struct throtl_service_queue *sq,
++					  bool force)
+ {
+-	struct throtl_data *td = sq_to_td(sq);
+-
+ 	/* any pending children left? */
+ 	if (!sq->nr_pending)
+-		return;
++		return true;
+ 
+ 	update_min_dispatch_time(sq);
+ 
+ 	/* is the next dispatch time in the future? */
+-	if (time_after(sq->first_pending_disptime, jiffies)) {
++	if (force || time_after(sq->first_pending_disptime, jiffies)) {
+ 		throtl_schedule_pending_timer(sq, sq->first_pending_disptime);
+-		return;
++		return true;
+ 	}
+ 
+-	/* kick immediate execution */
+-	queue_work(kthrotld_workqueue, &td->dispatch_work);
++	/* tell the caller to continue dispatching */
++	return false;
+ }
+ 
+ static inline void throtl_start_new_slice(struct throtl_grp *tg, bool rw)
+@@ -930,39 +947,47 @@ void blk_throtl_dispatch_work_fn(struct work_struct *work)
+ 					      dispatch_work);
+ 	struct throtl_service_queue *sq = &td->service_queue;
+ 	struct request_queue *q = td->queue;
+-	unsigned int nr_disp = 0;
+ 	struct bio_list bio_list_on_stack;
+ 	struct bio *bio;
+ 	struct blk_plug plug;
+-	int rw;
++	bool dispatched = false;
++	int rw, ret;
+ 
+ 	spin_lock_irq(q->queue_lock);
+ 
+ 	bio_list_init(&bio_list_on_stack);
+ 
+-	throtl_log(sq, "dispatch nr_queued=%u read=%u write=%u",
+-		   td->nr_queued[READ] + td->nr_queued[WRITE],
+-		   td->nr_queued[READ], td->nr_queued[WRITE]);
++	while (true) {
++		throtl_log(sq, "dispatch nr_queued=%u read=%u write=%u",
++			   td->nr_queued[READ] + td->nr_queued[WRITE],
++			   td->nr_queued[READ], td->nr_queued[WRITE]);
++
++		ret = throtl_select_dispatch(sq);
++		if (ret) {
++			for (rw = READ; rw <= WRITE; rw++) {
++				bio_list_merge(&bio_list_on_stack, &sq->bio_lists[rw]);
++				bio_list_init(&sq->bio_lists[rw]);
++			}
++			throtl_log(sq, "bios disp=%u", ret);
++			dispatched = true;
++		}
+ 
+-	nr_disp = throtl_select_dispatch(sq);
++		if (throtl_schedule_next_dispatch(sq, false))
++			break;
+ 
+-	if (nr_disp) {
+-		for (rw = READ; rw <= WRITE; rw++) {
+-			bio_list_merge(&bio_list_on_stack, &sq->bio_lists[rw]);
+-			bio_list_init(&sq->bio_lists[rw]);
+-		}
+-		throtl_log(sq, "bios disp=%u", nr_disp);
++		/* this dispatch windows is still open, relax and repeat */
++		spin_unlock_irq(q->queue_lock);
++		cpu_relax();
++		spin_lock_irq(q->queue_lock);
+ 	}
+ 
+-	throtl_schedule_next_dispatch(sq);
+-
+ 	spin_unlock_irq(q->queue_lock);
+ 
+ 	/*
+ 	 * If we dispatched some requests, unplug the queue to make sure
+ 	 * immediate dispatch
+ 	 */
+-	if (nr_disp) {
++	if (dispatched) {
+ 		blk_start_plug(&plug);
+ 		while((bio = bio_list_pop(&bio_list_on_stack)))
+ 			generic_make_request(bio);
+@@ -1078,7 +1103,7 @@ static int tg_set_conf(struct cgroup *cgrp, struct cftype *cft, const char *buf,
+ 
+ 	if (tg->flags & THROTL_TG_PENDING) {
+ 		tg_update_disptime(tg);
+-		throtl_schedule_next_dispatch(sq->parent_sq);
++		throtl_schedule_next_dispatch(sq->parent_sq, true);
+ 	}
+ 
+ 	blkg_conf_finish(&ctx);
+@@ -1229,10 +1254,15 @@ queue_bio:
+ 	throtl_add_bio_tg(bio, tg);
+ 	throttled = true;
+ 
+-	/* update @tg's dispatch time if @tg was empty before @bio */
++	/*
++	 * Update @tg's dispatch time and force schedule dispatch if @tg
++	 * was empty before @bio.  The forced scheduling isn't likely to
++	 * cause undue delay as @bio is likely to be dispatched directly if
++	 * its @tg's disptime is not in the future.
++	 */
+ 	if (tg->flags & THROTL_TG_WAS_EMPTY) {
+ 		tg_update_disptime(tg);
+-		throtl_schedule_next_dispatch(tg->service_queue.parent_sq);
++		throtl_schedule_next_dispatch(tg->service_queue.parent_sq, true);
+ 	}
+ 
+ out_unlock:
 -- 
-tejun
+1.8.1.4
+
