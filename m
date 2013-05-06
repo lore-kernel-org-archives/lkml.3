@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758527Ab3EFUya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:54:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59324 "EHLO
+	id S1758538Ab3EFUzA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:55:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59310 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756753Ab3EFUqz (ORCPT
+	with ESMTP id S1756917Ab3EFUqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:55 -0400
+	Mon, 6 May 2013 16:46:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Eshel <eshel@us.ibm.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 086/115] LOCKD: Ensure that nlmclnt_block resets block->b_status after a server reboot
-Date: Mon,  6 May 2013 13:45:22 -0700
-Message-Id: <20130506203104.432400899@linuxfoundation.org>
+        Zhao Hongjiang <zhaohongjiang@huawei.com>,
+        Jim Somerville <Jim.Somerville@windriver.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Eric Paris <eparis@parisplace.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 083/115] inotify: invalid mask should return a error number but not set it
+Date: Mon,  6 May 2013 13:45:19 -0700
+Message-Id: <20130506203104.119534915@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,51 +32,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Zhao Hongjiang <zhaohongjiang@huawei.com>
 
-commit 1dfd89af8697a299e7982ae740d4695ecd917eef upstream.
+commit 04df32fa10ab9a6f0643db2949d42efc966bc844 upstream.
 
-After a server reboot, the reclaimer thread will recover all the existing
-locks. For locks that are blocked, however, it will change the value
-of block->b_status to nlm_lck_denied_grace_period in order to signal that
-they need to wake up and resend the original blocking lock request.
+When we run the crackerjack testsuite, the inotify_add_watch test is
+stalled.
 
-Due to a bug, however, the block->b_status never gets reset after the
-blocked locks have been woken up, and so the process goes into an
-infinite loop of resends until the blocked lock is satisfied.
+This is caused by the invalid mask 0 - the task is waiting for the event
+but it never comes.  inotify_add_watch() should return -EINVAL as it did
+before commit 676a0675cf92 ("inotify: remove broken mask checks causing
+unmount to be EINVAL").  That commit removes the invalid mask check, but
+that check is needed.
 
-Reported-by: Marc Eshel <eshel@us.ibm.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Check the mask's ALL_INOTIFY_BITS before the inotify_arg_to_mask() call.
+If none are set, just return -EINVAL.
+
+Because IN_UNMOUNT is in ALL_INOTIFY_BITS, this change will not trigger
+the problem that above commit fixed.
+
+[akpm@linux-foundation.org: fix build]
+Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+Acked-by: Jim Somerville <Jim.Somerville@windriver.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>
+Cc: Eric Paris <eparis@parisplace.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/clntlock.c |    3 +++
- fs/lockd/clntproc.c |    3 ---
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ fs/notify/inotify/inotify_user.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/lockd/clntlock.c
-+++ b/fs/lockd/clntlock.c
-@@ -144,6 +144,9 @@ int nlmclnt_block(struct nlm_wait *block
- 			timeout);
- 	if (ret < 0)
- 		return -ERESTARTSYS;
-+	/* Reset the lock status after a server reboot so we resend */
-+	if (block->b_status == nlm_lck_denied_grace_period)
-+		block->b_status = nlm_lck_blocked;
- 	req->a_res.status = block->b_status;
- 	return 0;
- }
---- a/fs/lockd/clntproc.c
-+++ b/fs/lockd/clntproc.c
-@@ -550,9 +550,6 @@ again:
- 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
- 		if (status < 0)
- 			break;
--		/* Resend the blocking lock request after a server reboot */
--		if (resp->status ==  nlm_lck_denied_grace_period)
--			continue;
- 		if (resp->status != nlm_lck_blocked)
- 			break;
- 	}
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -572,7 +572,6 @@ static int inotify_update_existing_watch
+ 	int add = (arg & IN_MASK_ADD);
+ 	int ret;
+ 
+-	/* don't allow invalid bits: we don't want flags set */
+ 	mask = inotify_arg_to_mask(arg);
+ 
+ 	fsn_mark = fsnotify_find_inode_mark(group, inode);
+@@ -623,7 +622,6 @@ static int inotify_new_watch(struct fsno
+ 	struct idr *idr = &group->inotify_data.idr;
+ 	spinlock_t *idr_lock = &group->inotify_data.idr_lock;
+ 
+-	/* don't allow invalid bits: we don't want flags set */
+ 	mask = inotify_arg_to_mask(arg);
+ 
+ 	tmp_i_mark = kmem_cache_alloc(inotify_inode_mark_cachep, GFP_KERNEL);
+@@ -751,6 +749,10 @@ SYSCALL_DEFINE3(inotify_add_watch, int,
+ 	int ret;
+ 	unsigned flags = 0;
+ 
++	/* don't allow invalid bits: we don't want flags set */
++	if (unlikely(!(mask & ALL_INOTIFY_BITS)))
++		return -EINVAL;
++
+ 	f = fdget(fd);
+ 	if (unlikely(!f.file))
+ 		return -EBADF;
 
 
