@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760909Ab3EFXXQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:23:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36871 "EHLO
+	id S1760934Ab3EFXXf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:23:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36885 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758996Ab3EFXN5 (ORCPT
+	with ESMTP id S1757781Ab3EFXN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:57 -0400
+	Mon, 6 May 2013 19:13:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Robert P. J. Day" <rpjday@crashcourse.ca>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 075/104] localmodconfig: Process source kconfig files as they are found
-Date: Mon,  6 May 2013 16:12:34 -0700
-Message-Id: <20130506230051.345713121@linuxfoundation.org>
+        Alexey Kodanev <alexey.kodanev@oracle.com>,
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 074/104] cgroup: fix broken file xattrs
+Date: Mon,  6 May 2013 16:12:33 -0700
+Message-Id: <20130506230051.247988948@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -27,96 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Li Zefan <lizefan@huawei.com>
 
-commit ced9cb1af1e3486cc14dca755a1b3fbadf06e90b upstream.
+commit 712317ad97f41e738e1a19aa0a6392a78a84094e upstream.
 
-A bug was reported that caused localmodconfig to not keep all the
-dependencies of ATH9K. This was caused by the kconfig file:
+We should store file xattrs in struct cfent instead of struct cftype,
+because cftype is a type while cfent is object instance of cftype.
 
-In drivers/net/wireless/ath/Kconfig:
+For example each cgroup has a tasks file, and each tasks file is
+associated with a uniq cfent, but all those files share the same
+struct cftype.
 
----
-if ATH_CARDS
+Alexey Kodanev reported a crash, which can be reproduced:
 
-config ATH_DEBUG
-        bool "Atheros wireless debugging"
-        ---help---
-          Say Y, if you want to debug atheros wireless drivers.
-          Right now only ath9k makes use of this.
+  # mount -t cgroup -o xattr /sys/fs/cgroup
+  # mkdir /sys/fs/cgroup/test
+  # setfattr -n trusted.value -v test_value /sys/fs/cgroup/tasks
+  # rmdir /sys/fs/cgroup/test
+  # umount /sys/fs/cgroup
+  oops!
 
-source "drivers/net/wireless/ath/ath5k/Kconfig"
-source "drivers/net/wireless/ath/ath9k/Kconfig"
-source "drivers/net/wireless/ath/carl9170/Kconfig"
-source "drivers/net/wireless/ath/ath6kl/Kconfig"
-source "drivers/net/wireless/ath/ar5523/Kconfig"
-source "drivers/net/wireless/ath/wil6210/Kconfig"
+In this case, simple_xattrs_free() will free the same struct simple_xattrs
+twice.
 
-endif
----
+tj: Dropped unused local variable @cft from cgroup_diput().
 
-The current way kconfig works, it processes new source files after the
-first file is completed. It creates an array of new source config files
-and when the one file is finished, it continues with the next file.
-
-Unfortunately, this means that it loses the fact that the source file is
-within an "if" statement, and this means that each of these source file's
-configs will not have the proper dependencies set.
-
-As ATH9K requires ATH_CARDS set, the localmodconfig did not see that
-dependency, and did not enable ATH_CARDS. When the oldconfig was run, it
-forced ATH9K to be disabled.
-
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1304291022320.9234@oneiric
-
-Reported-by: Robert P. J. Day <rpjday@crashcourse.ca>
-Tested-by: Robert P. J. Day <rpjday@crashcourse.ca>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Alexey Kodanev <alexey.kodanev@oracle.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/kconfig/streamline_config.pl |   17 +++++++----------
- 1 file changed, 7 insertions(+), 10 deletions(-)
+ include/linux/cgroup.h |    3 ---
+ kernel/cgroup.c        |   11 ++++++-----
+ 2 files changed, 6 insertions(+), 8 deletions(-)
 
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -156,7 +156,6 @@ sub read_kconfig {
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -303,9 +303,6 @@ struct cftype {
+ 	/* CFTYPE_* flags */
+ 	unsigned int flags;
  
-     my $state = "NONE";
-     my $config;
--    my @kconfigs;
- 
-     my $cont = 0;
-     my $line;
-@@ -190,7 +189,13 @@ sub read_kconfig {
- 
- 	# collect any Kconfig sources
- 	if (/^source\s*"(.*)"/) {
--	    $kconfigs[$#kconfigs+1] = $1;
-+	    my $kconfig = $1;
-+	    # prevent reading twice.
-+	    if (!defined($read_kconfigs{$kconfig})) {
-+		$read_kconfigs{$kconfig} = 1;
-+		read_kconfig($kconfig);
-+	    }
-+	    next;
- 	}
- 
- 	# configs found
-@@ -250,14 +255,6 @@ sub read_kconfig {
- 	}
-     }
-     close($kinfile);
+-	/* file xattrs */
+-	struct simple_xattrs xattrs;
 -
--    # read in any configs that were found.
--    foreach my $kconfig (@kconfigs) {
--	if (!defined($read_kconfigs{$kconfig})) {
--	    $read_kconfigs{$kconfig} = 1;
--	    read_kconfig($kconfig);
--	}
--    }
+ 	int (*open)(struct inode *inode, struct file *file);
+ 	ssize_t (*read)(struct cgroup *cgrp, struct cftype *cft,
+ 			struct file *file,
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -162,6 +162,9 @@ struct cfent {
+ 	struct list_head		node;
+ 	struct dentry			*dentry;
+ 	struct cftype			*type;
++
++	/* file xattrs */
++	struct simple_xattrs		xattrs;
+ };
+ 
+ /*
+@@ -908,13 +911,12 @@ static void cgroup_diput(struct dentry *
+ 	} else {
+ 		struct cfent *cfe = __d_cfe(dentry);
+ 		struct cgroup *cgrp = dentry->d_parent->d_fsdata;
+-		struct cftype *cft = cfe->type;
+ 
+ 		WARN_ONCE(!list_empty(&cfe->node) &&
+ 			  cgrp != &cgrp->root->top_cgroup,
+ 			  "cfe still linked for %s\n", cfe->type->name);
++		simple_xattrs_free(&cfe->xattrs);
+ 		kfree(cfe);
+-		simple_xattrs_free(&cft->xattrs);
+ 	}
+ 	iput(inode);
+ }
+@@ -2553,7 +2555,7 @@ static struct simple_xattrs *__d_xattrs(
+ 	if (S_ISDIR(dentry->d_inode->i_mode))
+ 		return &__d_cgrp(dentry)->xattrs;
+ 	else
+-		return &__d_cft(dentry)->xattrs;
++		return &__d_cfe(dentry)->xattrs;
  }
  
- if ($kconfig) {
+ static inline int xattr_enabled(struct dentry *dentry)
+@@ -2729,8 +2731,6 @@ static int cgroup_add_file(struct cgroup
+ 	umode_t mode;
+ 	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
+ 
+-	simple_xattrs_init(&cft->xattrs);
+-
+ 	if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
+ 		strcpy(name, subsys->name);
+ 		strcat(name, ".");
+@@ -2755,6 +2755,7 @@ static int cgroup_add_file(struct cgroup
+ 		cfe->type = (void *)cft;
+ 		cfe->dentry = dentry;
+ 		dentry->d_fsdata = cfe;
++		simple_xattrs_init(&cfe->xattrs);
+ 		list_add_tail(&cfe->node, &parent->files);
+ 		cfe = NULL;
+ 	}
 
 
