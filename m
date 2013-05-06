@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab3EFUnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:43:12 -0400
-Received: from mail-ye0-f170.google.com ([209.85.213.170]:34479 "EHLO
-	mail-ye0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755941Ab3EFUnK (ORCPT
+	id S1756821Ab3EFUnT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:43:19 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:47146 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756752Ab3EFUnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:43:10 -0400
-Date: Mon, 6 May 2013 13:43:05 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH 21/31] blk-throttle: implement sq_to_tg(), sq_to_td() and
- throtl_log()
-Message-ID: <20130506204305.GG800@mtj.dyndns.org>
-References: <1367455189-6957-1-git-send-email-tj@kernel.org>
- <1367455189-6957-22-git-send-email-tj@kernel.org>
- <20130506173644.GD11731@redhat.com>
- <20130506203827.GE800@mtj.dyndns.org>
- <20130506204141.GF11731@redhat.com>
+	Mon, 6 May 2013 16:43:16 -0400
+Message-ID: <518815DA.2090008@redhat.com>
+Date: Mon, 06 May 2013 22:43:06 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130506204141.GF11731@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        linux-scsi@vger.kernel.org
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: PING^6 Re: [PATCH v2 00/14] Corrections and customization of the
+ SG_IO command whitelist (CVE-2012-4542)
+References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com> <5124F600.9030908@redhat.com>
+In-Reply-To: <5124F600.9030908@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 04:41:41PM -0400, Vivek Goyal wrote:
-> On Mon, May 06, 2013 at 01:38:27PM -0700, Tejun Heo wrote:
-> > On Mon, May 06, 2013 at 01:36:44PM -0400, Vivek Goyal wrote:
-> > > On Wed, May 01, 2013 at 05:39:39PM -0700, Tejun Heo wrote:
-> > > 
-> > > [..]
-> > > > +#define throtl_log(sq, fmt, args...)	do {				\
-> > > > +	struct throtl_grp *__tg = sq_to_tg((sq));			\
-> > > > +	struct throtl_data *__td = sq_to_td((sq));			\
-> > > >  	char __pbuf[128];						\
-> > > >  									\
-> > > > -	blkg_path(tg_to_blkg(tg), __pbuf, sizeof(__pbuf));		\
-> > > > -	blk_add_trace_msg((tg)->td->queue, "throtl %s " fmt, __pbuf, ##args); \
-> > > > +	__pbuf[0] = ' ';						\
-> > > > +	__pbuf[1] = '\0';						\
-> > > > +	if ((__tg))							\
-> > > > +		blkg_path(tg_to_blkg(__tg), __pbuf + 1, sizeof(__pbuf) - 1); \
-> > > > +	blk_add_trace_msg(__td->queue, "throtl%s" fmt, __pbuf, ##args); \
-> > > 
-> > > We need one extra space ("throtl%s "), otherwise all the messages
-> > > start right after cgroup path. We need a space between cgroup path
-> > > and actual message.
-> > 
-> > Okay, we don't - __pbuf[0] = ' '.  The reason it's doing the above
-> > instead of "throtl %s " is because when the path is nil, we don't
-> > wanna print out two consecutive spaces, so AFAICS the code is correct.
+Il 20/02/2013 17:12, Paolo Bonzini ha scritto:
+> Il 06/02/2013 16:15, Paolo Bonzini ha scritto:
+>> This series regards the whitelist that is used for the SG_IO ioctl.  This
+>> whitelist has three problems:
+>>
+>> * the bitmap of allowed commands is designed for MMC devices (roughly,
+>>   "play/burn CDs without requiring root") but some opcodes overlap across SCSI
+>>   device classes and have different meanings for different classes.
+>>
+>> * also because the bitmap of allowed commands is designed for MMC devices
+>>   only, some commands are missing even though they are generally useful and
+>>   not insecure.  At least not more insecure than anything else you can
+>>   do if you have access to /dev/sdX or /dev/stX nodes.
+>>
+>> * the whitelist can be disabled per-process but not per-disk.  In addition,
+>>   the required capability (CAP_SYS_RAWIO) gives access to a range of other 
+>>   resources, enough to make it insecure.
+>>
+>> The series corrects these problems.  Patches 1-4 solve the first problem,
+>> which also has an assigned CVE, by using different bitmaps for the various
+>> device classes.  Patches 5-11 solve the second by adding more commands
+>> to the bitmaps.  Patches 12 and 13 solve the third, and were already
+>> posted but ignored by the maintainers despite multiple pings.
+>>
+>> Note: checkpatch hates the formatting of the command table.  I know about this,
+>> and ensured that there are no errors in the rest of the code.  The current
+>> formatting is IMHO quite handy, and roughly based on the files available
+>> from the SCSI standard body.
+>>
+>> Ok for the next merge window?
+>>
+>> Paolo
+>>
+>> v1->v2: remove 2 MMC commands and 6 SBC commands (see patches 6 and 9
+>>         for details).  Added patch 14 and added a few more scanner
+>>         commands based on SANE (scanners are not whitelisted by default,
+>>         also were not in v1, but this makes it possible to opt into the
+>>         whitelist out of paranoia).  Removed C++ comments.  Removed the
+>>         large #if 0'd list of commands that the kernel does not pass
+>>         though.  Marked blk_set_cmd_filter_defaults as __init.
 > 
-> What about space after the cgroup path info (when path is not nil).
+> Ping...
+> 
+> Jens/James, is anyone going to pick this up for 3.9?
+> 
+> Paolo
+> 
+>>
+>> Paolo Bonzini (14):
+>>   sg_io: pass request_queue to blk_verify_command
+>>   sg_io: reorganize list of allowed commands
+>>   sg_io: use different default filters for each device class
+>>   sg_io: resolve conflicts between commands assigned to multiple
+>>     classes (CVE-2012-4542)
+>>   sg_io: whitelist a few more commands for rare & obsolete device types
+>>   sg_io: whitelist another command for multimedia devices
+>>   sg_io: whitelist a few more commands for media changers
+>>   sg_io: whitelist a few more commands for tapes
+>>   sg_io: whitelist a few more commands for disks
+>>   sg_io: whitelist a few obsolete commands
+>>   sg_io: mark blk_set_cmd_filter_defaults as __init
+>>   sg_io: remove remnants of sysfs SG_IO filters
+>>   sg_io: introduce unpriv_sgio queue flag
+>>   sg_io: use unpriv_sgio to disable whitelisting for scanners
+>>
+>>  Documentation/block/queue-sysfs.txt |    8 +
+>>  block/blk-sysfs.c                   |   33 +++
+>>  block/bsg.c                         |    2 +-
+>>  block/scsi_ioctl.c                  |  369 ++++++++++++++++++++++++++---------
+>>  drivers/scsi/scsi_scan.c            |   14 ++-
+>>  drivers/scsi/sg.c                   |    6 +-
+>>  include/linux/blkdev.h              |    8 +-
+>>  include/linux/genhd.h               |    9 -
+>>  include/scsi/scsi.h                 |    3 +
+>>  9 files changed, 344 insertions(+), 108 deletions(-)
+>>
+> 
 
-Yeah, I mis-read it.  Fixing it right now.
-
--- 
-tejun
