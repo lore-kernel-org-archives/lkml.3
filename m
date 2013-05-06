@@ -1,135 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab3EFM77 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 08:59:59 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20847 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748Ab3EFM76 (ORCPT
+	id S1753364Ab3EFNCz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 09:02:55 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:54483 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090Ab3EFNCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 08:59:58 -0400
-Date: Mon, 6 May 2013 08:59:37 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, fenghua.yu@intel.com
-Cc: xen-devel@lists.xensource.com
-Subject: v3.9 - CPU hotplug and microcode earlier loading hits a mutex
- deadlock (x86_cpu_hotplug_driver_mutex)
-Message-ID: <20130506125937.GA14036@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 6 May 2013 09:02:53 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Jean Delvare <jdelvare@suse.de>, Michal Marek <mmarek@suse.cz>,
+        Roland Eggner <edvx1@systemanalysen.net>,
+        Wang YanQing <udknight@gmail.com>
+Subject: [PATCH] kconfig: sort found symbols by relevance
+Date: Mon,  6 May 2013 15:02:45 +0200
+Message-Id: <1367845365-13316-1-git-send-email-yann.morin.1998@free.fr>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1367826629.4494.30.camel@chaos.site>
+References: <1367826629.4494.30.camel@chaos.site>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-Hey,
+When searching for symbols, return the symbols sorted by relevance.
 
-As I was fixing the PV HVM's broken CPU hotplug mechanism I discovered
-a deadlock in the microcode and generic code.
+Relevance is the ratio of the length of the matched string and the
+length of the symbol name. Symbols of equal relevance are sorted
+alphabetically.
 
-I am not sure if the ACPI generic mechanism would expose this, but
-looking at the flow (arch_register_cpu, then expecting user-space to call
-cpu_up), it should trigger this.
+Reported-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Jean Delvare <jdelvare@suse.de>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Roland Eggner <edvx1@systemanalysen.net>
+Cc: Wang YanQing <udknight@gmail.com>
+---
+ scripts/kconfig/symbol.c | 66 +++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 57 insertions(+), 9 deletions(-)
 
-Anyhow, this can easily be triggered if a new CPU is added and
-from user-space do:
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index ecc5aa5..baba030 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -943,38 +943,86 @@ const char *sym_escape_string_value(const char *in)
+ 	return res;
+ }
+ 
++struct sym_match {
++	struct symbol	*sym;
++	int 		rel;
++};
++
++/* Compare matched symbols as thus:
++ * - highest relevance first
++ * - equal relevance sorted alphabetically
++ */
++static int sym_rel_comp( const void *sym1, const void *sym2 )
++{
++	struct sym_match **s1 = (struct sym_match **)sym1;
++	struct sym_match **s2 = (struct sym_match **)sym2;
++
++	if ( (*s1)->rel > (*s2)->rel )
++		return -1;
++	else if ( (*s1)->rel < (*s2)->rel )
++		return 1;
++	else
++		return strcmp( (*s1)->sym->name, (*s2)->sym->name );
++}
++
+ struct symbol **sym_re_search(const char *pattern)
+ {
+ 	struct symbol *sym, **sym_arr = NULL;
++	struct sym_match **sym_match_arr = NULL;
+ 	int i, cnt, size;
+ 	regex_t re;
++	regmatch_t match[1];
+ 
+ 	cnt = size = 0;
+ 	/* Skip if empty */
+ 	if (strlen(pattern) == 0)
+ 		return NULL;
+-	if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB|REG_ICASE))
++	if (regcomp(&re, pattern, REG_EXTENDED|REG_ICASE))
+ 		return NULL;
+ 
+ 	for_all_symbols(i, sym) {
++		struct sym_match *tmp_sym_match;
+ 		if (sym->flags & SYMBOL_CONST || !sym->name)
+ 			continue;
+-		if (regexec(&re, sym->name, 0, NULL, 0))
++		if (regexec(&re, sym->name, 1, match, 0))
+ 			continue;
+ 		if (cnt + 1 >= size) {
+-			void *tmp = sym_arr;
++			void *tmp;
+ 			size += 16;
+-			sym_arr = realloc(sym_arr, size * sizeof(struct symbol *));
+-			if (!sym_arr) {
+-				free(tmp);
+-				return NULL;
++			tmp = realloc(sym_match_arr, size * sizeof(struct sym_match *));
++			if (!tmp) {
++				goto sym_re_search_free;
+ 			}
++			sym_match_arr = tmp;
+ 		}
+ 		sym_calc_value(sym);
+-		sym_arr[cnt++] = sym;
++		tmp_sym_match = (struct sym_match*)malloc(sizeof(struct sym_match));
++		if (!tmp_sym_match)
++			goto sym_re_search_free;
++		tmp_sym_match->sym = sym;
++		/* As regexec return 0, we know we have a match, so
++		 * we can use match[0].rm_[se]o without further checks
++		 */
++		tmp_sym_match->rel = (100*(match[0].rm_eo-match[0].rm_so))
++				     /strlen(sym->name);
++		sym_match_arr[cnt++] = tmp_sym_match;
+ 	}
+-	if (sym_arr)
++
++	if( sym_match_arr ) {
++		qsort( sym_match_arr, cnt, sizeof(struct sym_match*), sym_rel_comp );
++		sym_arr = malloc( (cnt+1) * sizeof(struct symbol) );
++		if (!sym_arr)
++			goto sym_re_search_free;
++		for ( i=0; i<cnt; i++ )
++			sym_arr[i] = sym_match_arr[i]->sym;
+ 		sym_arr[cnt] = NULL;
++	}
++sym_re_search_free:
++	if (sym_match_arr) {
++		for ( i=0; i<cnt; i++ )
++			free( sym_match_arr[i] );
++		free( sym_match_arr );
++	}
+ 	regfree(&re);
+ 
+ 	return sym_arr;
+-- 
+1.8.1.2
 
-echo 1 > /sys/devices/system/cpu/cpu3/online
-
-on a newly appeared CPU. The deadlock is that the "store_online" in
-drivers/base/cpu.c takes the cpu_hotplug_driver_lock() lock, then
-calls "cpu_up". "cpu_up" eventually ends up calling "save_mc_for_early"
-which also takes the cpu_hotplug_driver_lock() lock.
-
-And here is that kernel thinks of it:
-
-smpboot: Stack at about ffff880075c39f44
-smpboot: CPU3: has booted.
-microcode: CPU3 sig=0x206a7, pf=0x2, revision=0x25
-
-=============================================
-[ INFO: possible recursive locking detected ]
-3.9.0upstream-10129-g167af0e #1 Not tainted
----------------------------------------------
-sh/2487 is trying to acquire lock:
- (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
-
-but task is already holding lock:
- (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
-
-other info that might help us debug this:
- Possible unsafe locking scenario:
-
-       CPU0
-       ----
-  lock(x86_cpu_hotplug_driver_mutex);
-  lock(x86_cpu_hotplug_driver_mutex);
-
- *** DEADLOCK ***
-
- May be due to missing lock nesting notation
-
-6 locks held by sh/2487:
- #0:  (sb_writers#5){.+.+.+}, at: [<ffffffff811ca48d>] vfs_write+0x17d/0x190
- #1:  (&buffer->mutex){+.+.+.}, at: [<ffffffff812464ef>] sysfs_write_file+0x3f/0x160
- #2:  (s_active#20){.+.+.+}, at: [<ffffffff81246578>] sysfs_write_file+0xc8/0x160
- #3:  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
- #4:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff810961c2>] cpu_maps_update_begin+0x12/0x20
- #5:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff810962a7>] cpu_hotplug_begin+0x27/0x60
-
-stack backtrace:
-CPU: 1 PID: 2487 Comm: sh Not tainted 3.9.0upstream-10129-g167af0e #1
-Hardware name: Xen HVM domU, BIOS 4.3-unstable 05/03/2013
- ffffffff8229b710 ffff880064e75538 ffffffff816fe47e ffff880064e75608
- ffffffff81100cb6 ffff880064e75560 ffff88006670e290 ffff880064e75588
- ffffffff00000000 ffff88006670e9b8 21710c800c83a1f5 ffff880064e75598
-Call Trace:
- [<ffffffff816fe47e>] dump_stack+0x19/0x1b
- [<ffffffff81100cb6>] __lock_acquire+0x726/0x1890
- [<ffffffff8110b352>] ? is_module_text_address+0x22/0x40
- [<ffffffff810bbff8>] ? __kernel_text_address+0x58/0x80
- [<ffffffff81101eca>] lock_acquire+0xaa/0x190
- [<ffffffff81075512>] ? cpu_hotplug_driver_lock+0x12/0x20
- [<ffffffff816fee1e>] __mutex_lock_common+0x5e/0x450
- [<ffffffff81075512>] ? cpu_hotplug_driver_lock+0x12/0x20
- [<ffffffff810d4225>] ? sched_clock_local+0x25/0x90
- [<ffffffff81075512>] ? cpu_hotplug_driver_lock+0x12/0x20
- [<ffffffff816ff340>] mutex_lock_nested+0x40/0x50
- [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
- [<ffffffff81080757>] save_mc_for_early+0x27/0xf0
- [<ffffffff810ffd30>] ? mark_held_locks+0x90/0x150
- [<ffffffff81176a5d>] ? get_page_from_freelist+0x46d/0x8e0
- [<ffffffff8110029d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff81056a39>] ? sched_clock+0x9/0x10
- [<ffffffff81177275>] ? __alloc_pages_nodemask+0x165/0xa30
- [<ffffffff810d4225>] ? sched_clock_local+0x25/0x90
- [<ffffffff810d4348>] ? sched_clock_cpu+0xb8/0x110
- [<ffffffff810fb88d>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff811a5e79>] ? vmap_page_range_noflush+0x279/0x370
- [<ffffffff811a5f9d>] ? map_vm_area+0x2d/0x50
- [<ffffffff811a7dce>] ? __vmalloc_node_range+0x18e/0x260
- [<ffffffff810812a8>] ? generic_load_microcode+0xb8/0x1c0
- [<ffffffff8108135c>] generic_load_microcode+0x16c/0x1c0
- [<ffffffff8110917e>] ? generic_exec_single+0x7e/0xb0
- [<ffffffff81081470>] ? request_microcode_user+0x20/0x20
- [<ffffffff8108142f>] request_microcode_fw+0x7f/0xa0
- [<ffffffff813356ab>] ? kobject_uevent+0xb/0x10
- [<ffffffff81081004>] microcode_init_cpu+0xf4/0x110
- [<ffffffff816f6b8c>] mc_cpu_callback+0x5b/0xb3
- [<ffffffff81706d7c>] notifier_call_chain+0x5c/0x120
- [<ffffffff810c6359>] __raw_notifier_call_chain+0x9/0x10
- [<ffffffff8109616b>] __cpu_notify+0x1b/0x30
- [<ffffffff816f72e1>] _cpu_up+0x103/0x14b
- [<ffffffff816f7404>] cpu_up+0xdb/0xee
- [<ffffffff816eda0a>] store_online+0xba/0x120
- [<ffffffff8145f08b>] dev_attr_store+0x1b/0x20
- [<ffffffff81246591>] sysfs_write_file+0xe1/0x160
- [<ffffffff811ca3ef>] vfs_write+0xdf/0x190
- [<ffffffff811ca96d>] SyS_write+0x5d/0xa0
- [<ffffffff8133f4fe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff8170b7a9>] system_call_fastpath+0x16/0x1b
-
-Thoughts? 
