@@ -1,126 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab3EFSbK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 14:31:10 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42851 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754031Ab3EFSbH convert rfc822-to-8bit (ORCPT
+	id S1754883Ab3EFSe6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 14:34:58 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:56425 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab3EFSe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 14:31:07 -0400
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: mach-omap2/timer.c: Bug introduced while merging patch -
- ff931c82
-Thread-Topic: mach-omap2/timer.c: Bug introduced while merging patch -
- ff931c82
-Thread-Index: Ac5KKDi66bBp82szRKKLkCu0fW3iLwAAuOcAABaw+tA=
-Date: Mon, 6 May 2013 18:30:36 +0000
-Message-ID: <79CD15C6BA57404B839C016229A409A83EC7C93A@DBDE04.ent.ti.com>
-References: <79CD15C6BA57404B839C016229A409A83EC7C45D@DBDE04.ent.ti.com>
- <20130506152706.GD28721@atomide.com>
-In-Reply-To: <20130506152706.GD28721@atomide.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Mon, 6 May 2013 14:34:57 -0400
 MIME-Version: 1.0
+In-Reply-To: <5187C59F.1020305@intel.com>
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
+ <1367804711-30308-6-git-send-email-alex.shi@intel.com> <CAPM31RLJe19FH+RYipwm4kwtzmFHoS2xGTx4iZ9+qwDJZ_pf3A@mail.gmail.com>
+ <5187C59F.1020305@intel.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 6 May 2013 11:34:24 -0700
+Message-ID: <CAPM31RJBiGtLPbBwuWJQvW6e=5x=X7+Qx5YKJkjtyr_HDEqivg@mail.gmail.com>
+Subject: Re: [PATCH v5 5/7] sched: compute runnable load avg in cpu_load and cpu_avg_load_per_task
+To: Alex Shi <alex.shi@intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
-> owner@vger.kernel.org] On Behalf Of Tony Lindgren
-> Sent: Monday, May 06, 2013 8:57 PM
-> To: Hiremath, Vaibhav
-> Cc: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
-> arm-kernel@lists.infradead.org
-> Subject: Re: mach-omap2/timer.c: Bug introduced while merging patch -
-> ff931c82
-> 
-> * Hiremath, Vaibhav <hvaibhav@ti.com> [130506 00:12]:
-> > Hi,
-> >
-> > Not sure whether this got discussed and fixed already, but Google
-> didn't give me anything :)
-> >
-> > The below commit got merged wrongly to Mainline (Changes from timer.c
-> got missed), and
-> > due to this none of omap boards will boot.
-> >
-> >
-> > From ff931c821bab6713a52b768b0cd7ee7e90713b36 Mon Sep 17 00:00:00
-> 2001
-> > From: Rajendra Nayak <rnayak@ti.com>
-> > Date: Thu, 21 Mar 2013 11:04:52 +0000
-> > Subject: ARM: OMAP: clocks: Delay clk inits atleast until slab is
-> initialized
-> >
-> >
-> > It seems Linux-omap tree has the fix patch for this, and it should
-> get pushed ASAP.
-> > Below are links for Linus's mainline commit [1], the actual patch
-> submitted to the list [2] and
-> > Commit  present in Linux-omap [3].
-> 
-> Can you please provide a proper patch for the regression since sounds
-> like you already figured out what happened?
-> 
+On Mon, May 6, 2013 at 8:00 AM, Alex Shi <alex.shi@intel.com> wrote:
+>>
+>> blocked_load_avg is the expected "to wake" contribution from tasks
+>> already assigned to this rq.
+>>
+>> e.g. this could be:
+>>   load = this_rq->cfs.runnable_load_avg + this_rq->cfs.blocked_load_avg;
+>
+> Current load balance doesn't consider slept task's load which is
+> represented by blocked_load_avg. And the slept task is not on_rq, so
+> consider it in load balance is a little strange.
 
-Ohh yeah, I already have a patch for it -
+The load-balancer has a longer time horizon; think of blocked_loag_avg
+to be a signal for the load, already assigned to this cpu, which is
+expected to appear (within roughly the next quantum).
 
+Consider the following scenario:
 
+tasks: A,B (40% busy), C (90% busy)
 
-From: Vaibhav Hiremath <hvaibhav@ti.com>
-Date: Mon, 6 May 2013 13:23:27 +0530
-Subject: [PATCH] ARM: OMAP2+: Regression: Add missing code while merging commit ff931c82 to Mainline
+Suppose we have:
+CPU 0:  CPU 1:
+ A            C
+ B
 
-While merging commit ff931c82 [1] to Mainline,, it seems not all the changes from 
-the original patch [2] have been merged; changes from mach-omap2/timer.c have been
-dropped, which invokes xxx_clk_init() function required to register platform
-clock table. And without this none of OMAP family of devices will boot from
-Mainline.
+Then, when C blocks the load balancer ticks.
 
-[1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/arch/arm/mach-omap2/io.c?id=ff931c821bab6713a52b768b0cd7ee7e90713b36
-[2] https://patchwork.kernel.org/patch/2300071/
+If we considered only runnable_load then A or B would be eligible for
+migration to CPU 1, which is essentially where we are today.
 
-Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
----
-arch/arm/mach-omap2/timer.c |    4 ++++
-1 files changed, 4 insertions(+), 0 deletions(-)
+>
+> But your concern is worth to try. I will change the patchset and give
+> the testing results.
+>
+>>
+>> Although, in general I have a major concern with the current implementation:
+>>
+>> The entire reason for stability with the bottom up averages is that
+>> when load migrates between cpus we are able to migrate it between the
+>> tracked sums.
+>>
+>> Stuffing observed averages of these into the load_idxs loses that
+>> mobility; we will have to stall (as we do today for idx > 0) before we
+>> can recognize that a cpu's load has truly left it; this is a very
+>> similar problem to the need to stably track this for group shares
+>> computation.
+>>
+>> To that end, I would rather see the load_idx disappear completely:
+>>  (a) We can calculate the imbalance purely from delta (runnable_avg +
+>> blocked_avg)
+>>  (b) It eliminates a bad tunable.
+>
+> I also show the similar concern of load_idx months ago. seems overlooked. :)
+>>
+>>> -       return cpu_rq(cpu)->load.weight;
+>>> +       return (unsigned long)cpu_rq(cpu)->cfs.runnable_load_avg;
+>>
+>> Isn't this going to truncate on the 32-bit case?
+>
+> I guess not, the old load.weight is unsigned long, and runnable_load_avg
+> is smaller than the load.weight. so it should be fine.
+>
+> btw, according to above reason, guess move runnable_load_avg to
+> 'unsigned long' type is ok, do you think so?
+>
 
-diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-index f12aa6c..31ae764 100644
---- a/arch/arm/mach-omap2/timer.c
-+++ b/arch/arm/mach-omap2/timer.c
-@@ -549,6 +549,8 @@ static inline void __init realtime_counter_init(void)
-                               clksrc_nr, clksrc_src, clksrc_prop)      \
- void __init omap##name##_gptimer_timer_init(void)                      \
- {                                                                      \
-+       if (omap_clk_init)                                              \
-+               omap_clk_init();                                        \
-        omap_dmtimer_init();                                            \
-        omap2_gp_clockevent_init((clkev_nr), clkev_src, clkev_prop);    \
-        omap2_gptimer_clocksource_init((clksrc_nr), clksrc_src,         \
-@@ -559,6 +561,8 @@ void __init omap##name##_gptimer_timer_init(void)                   \
-                                clksrc_nr, clksrc_src, clksrc_prop)     \
- void __init omap##name##_sync32k_timer_init(void)              \
- {                                                                      \
-+       if (omap_clk_init)                                              \
-+               omap_clk_init();                                        \
-        omap_dmtimer_init();                                            \
-        omap2_gp_clockevent_init((clkev_nr), clkev_src, clkev_prop);    \
-        /* Enable the use of clocksource="gp_timer" kernel parameter */ \
+Hmm, so long as it's unsigned long and not u32 that should be OK.
 
+>From a technical standpoint:
+We make the argument that we run out of address space before we can
+overflow load.weight in the 32-bit case, we can make the same argument
+here.
 
-
-
-Thanks,
-Vaibhav
+>
+> --
+> Thanks
+>     Alex
