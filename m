@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757885Ab3EFU7f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:59:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59230 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757809Ab3EFUqm (ORCPT
+	id S1756697Ab3EFU74 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:59:56 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:39816 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757248Ab3EFU7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:42 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, Matthias <morpheusxyz123@yahoo.de>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <syrjala@sci.fi>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 077/115] ACPI / thermal: do not always return THERMAL_TREND_RAISING for active trip points
-Date: Mon,  6 May 2013 13:45:13 -0700
-Message-Id: <20130506203103.460168038@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
-References: <20130506203055.537199268@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 6 May 2013 16:59:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130506150428.GD15446@dyad.programming.kicks-ass.net>
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
+ <1367804711-30308-7-git-send-email-alex.shi@intel.com> <CAPM31RK71tBPdnXzLmr1o6nmFhbhU9+b_DqX9zNSbDc4EhC8FQ@mail.gmail.com>
+ <20130506150428.GD15446@dyad.programming.kicks-ass.net>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 6 May 2013 13:59:22 -0700
+Message-ID: <CAPM31RKqMGAvFh1JmUjCjBo4EJWqA39i8=YPiUw8GUkG9dj7Fw@mail.gmail.com>
+Subject: Re: [PATCH v5 6/7] sched: consider runnable load average in move_tasks
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On Mon, May 6, 2013 at 8:04 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Mon, May 06, 2013 at 01:53:44AM -0700, Paul Turner wrote:
+>> On Sun, May 5, 2013 at 6:45 PM, Alex Shi <alex.shi@intel.com> wrote:
+>> > Except using runnable load average in background, move_tasks is also
+>> > the key functions in load balance. We need consider the runnable load
+>> > average in it in order to the apple to apple load comparison.
+>> >
+>> > Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> > ---
+>> >  kernel/sched/fair.c | 8 +++++++-
+>> >  1 file changed, 7 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> > index 0bf88e8..790e23d 100644
+>> > --- a/kernel/sched/fair.c
+>> > +++ b/kernel/sched/fair.c
+>> > @@ -3966,6 +3966,12 @@ static unsigned long task_h_load(struct task_struct *p);
+>> >
+>> >  static const unsigned int sched_nr_migrate_break = 32;
+>> >
+>> > +static unsigned long task_h_load_avg(struct task_struct *p)
+>> > +{
+>> > +       return div_u64(task_h_load(p) * (u64)p->se.avg.runnable_avg_sum,
+>> > +                       p->se.avg.runnable_avg_period + 1);
+>>
+>> Similarly, I think you also want to at least include blocked_load_avg here.
+>
+> I'm puzzled, this is an entity weight. Entity's don't have blocked_load_avg.
+>
+> The purpose here is to compute the amount of weight that's being moved by this
+> task; to subtract from the imbalance.
 
-------------------
-
-From: Zhang Rui <rui.zhang@intel.com>
-
-commit 94a409319561ec1847fd9bf996a2d5843ad00932 upstream.
-
-Commit 4ae46be "Thermal: Introduce thermal_zone_trip_update()"
-introduced a regression causing the fan to be always on even when
-the system is idle.
-
-My original idea in that commit is that:
- - when the current temperature is above the trip point,
-   keep the fan on, even if the temperature is dropping.
- - when the current temperature is below the trip point,
-   turn on the fan when the temperature is raising,
-   turn off the fan when the temperature is dropping.
-
-But this is what the code actually does:
- - when the current temperature is above the trip point,
-   the fan keeps on.
- - when the current temperature is below the trip point,
-   the fan is always on because thermal_get_trend()
-   in driver/acpi/thermal.c returns THERMAL_TREND_RAISING.
-Thus the fan keeps running even if the system is idle.
-
-Fix this in drivers/acpi/thermal.c.
-
-[rjw: Changelog]
-References: https://bugzilla.kernel.org/show_bug.cgi?id=56591
-References: https://bugzilla.kernel.org/show_bug.cgi?id=56601
-References: https://bugzilla.kernel.org/show_bug.cgi?id=50041#c45
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Tested-by: Matthias <morpheusxyz123@yahoo.de>
-Tested-by: Ville Syrjälä <syrjala@sci.fi>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/acpi/thermal.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
-
---- a/drivers/acpi/thermal.c
-+++ b/drivers/acpi/thermal.c
-@@ -723,9 +723,19 @@ static int thermal_get_trend(struct ther
- 		return -EINVAL;
- 
- 	if (type == THERMAL_TRIP_ACTIVE) {
--		/* aggressive active cooling */
--		*trend = THERMAL_TREND_RAISING;
--		return 0;
-+		unsigned long trip_temp;
-+		unsigned long temp = KELVIN_TO_MILLICELSIUS(tz->temperature,
-+							tz->kelvin_offset);
-+		if (thermal_get_trip_temp(thermal, trip, &trip_temp))
-+			return -EINVAL;
-+
-+		if (temp > trip_temp) {
-+			*trend = THERMAL_TREND_RAISING;
-+			return 0;
-+		} else {
-+			/* Fall back on default trend */
-+			return -EINVAL;
-+		}
- 	}
- 
- 	/*
-
-
+Sorry, what I meant to say here is:
+If we're going to be using a runnable average based load here the
+fraction we take (currently instantaneous) in tg_load_down should be
+consistent.
