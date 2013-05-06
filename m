@@ -1,138 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab3EFMKo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 08:10:44 -0400
-Received: from 87-119-183-129.tll.elisa.ee ([87.119.183.129]:33375 "EHLO
-	fatphil.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752767Ab3EFMKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 08:10:43 -0400
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 May 2013 08:10:43 EDT
-Date: Mon, 6 May 2013 15:03:18 +0300
-From: Phil Carmody <pc+lkml@asdf.org>
-To: alex.shi@intel.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [patch v7 05/21] sched: log the cpu utilization at rq
-Message-ID: <20130506120318.GM21274@fatphil.org>
+	id S1753243Ab3EFMLK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 08:11:10 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35715 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab3EFMLI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 08:11:08 -0400
+Date: Mon, 6 May 2013 14:11:06 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@kernel.org>, Colin Cross <ccross@android.com>,
+        Andrew Morton <akpm@osdl.org>, lkml <linux-kernel@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ingo Molnar <mingo@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>
+Subject: Re: [PATCH 2/2] lockdep: check that no locks held at freeze time
+Message-ID: <20130506121106.GA25615@amd.pavel.ucw.cz>
+References: <1367615050-3894-1-git-send-email-ccross@android.com>
+ <1367615050-3894-2-git-send-email-ccross@android.com>
+ <20130504130440.GC13770@amd.pavel.ucw.cz>
+ <CAMbhsRScr+3Zk5Bi6390bGRbtE4oh2H-mHrGHS0wew5hdkivUg@mail.gmail.com>
+ <20130504225715.GB24276@amd.pavel.ucw.cz>
+ <CAMbhsRS_cF7kF-QZ9BMBUS3ytU0ukRCbC3D549HW_XOsQbEZhg@mail.gmail.com>
+ <20130505000528.GA25454@amd.pavel.ucw.cz>
+ <20130505091844.GC22239@gmail.com>
+ <20130506085547.GC13861@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365040862-8390-6-git-send-email-alex.shi@intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130506085547.GC13861@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Apologies if threading mangled, all headers written by hand]
+1;2403;0cOn Mon 2013-05-06 10:55:47, Peter Zijlstra wrote:
+> On Sun, May 05, 2013 at 11:18:44AM +0200, Ingo Molnar wrote:
+> > That's the old 32-bit x86 trick to compute 'current' from the kernel stack 
+> > pointer.
+> > 
+> > It can be done better - for example on platforms with optimized percpu 
+> > variables (x86-64) it looks like this:
+> 
+> Doesn't i386 have all the funny per-cpu stuff too? So the only reason it still
+> does the fugly stack based thing is because nobody could be arsed to do the
+> work of converting it.
 
-On 04/04/2013 07:30 AM, Alex Shi wrote:
-> The cpu's utilization is to measure how busy is the cpu.
->         util = cpu_rq(cpu)->avg.runnable_avg_sum * SCHED_POEWR_SCALE
->                 / cpu_rq(cpu)->avg.runnable_avg_period;
-> 
-> Since the util is no more than 1, we scale its value with 1024, same as
-> SCHED_POWER_SCALE and set the FULL_UTIL as 1024.
-> 
-> In later power aware scheduling, we are sensitive for how busy of the
-> cpu. Since as to power consuming, it is tight related with cpu busy
-> time.
-> 
-> BTW, rq->util can be used for any purposes if needed, not only power
-> scheduling.
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  include/linux/sched.h | 2 +-
->  kernel/sched/debug.c  | 1 +
->  kernel/sched/fair.c   | 5 +++++
->  kernel/sched/sched.h  | 4 ++++
->  4 files changed, 11 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 5a4cf37..226a515 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -793,7 +793,7 @@ enum cpu_idle_type {
->  #define SCHED_LOAD_SCALE     (1L << SCHED_LOAD_SHIFT)
-> 
->  /*
-> - * Increase resolution of cpu_power calculations
-> + * Increase resolution of cpu_power and rq->util calculations
->   */
->  #define SCHED_POWER_SHIFT    10
->  #define SCHED_POWER_SCALE    (1L << SCHED_POWER_SHIFT)
-> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-> index 75024a6..f5db759 100644
-> --- a/kernel/sched/debug.c
-> +++ b/kernel/sched/debug.c
-> @@ -311,6 +311,7 @@ do {                                                                      \
-> 
->       P(ttwu_count);
->       P(ttwu_local);
-> +     P(util);
-> 
->  #undef P
->  #undef P64
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 2e49c3f..7124244 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1495,8 +1495,13 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
-> 
->  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
->  {
-> +     u32 period;
->       __update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
->       __update_tg_runnable_avg(&rq->avg, &rq->cfs);
-> +
-> +     period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
-> +     rq->util = (u64)(rq->avg.runnable_avg_sum << SCHED_POWER_SHIFT)
-> +                             / period;
-
-Greetings, Alex.
-
-That cast achieves nothing where it is. If the shift has overflowed,
-then you've already lost information; and if it can't overflow, then
-it's not needed at all. 
-
-It's itsy-bitsy, but note that there exists a div_u64(u64 dividend,
-u32 divisor) helper which may be implemented to be superior to just '/'.
-(And also note that the assignment to ``period'' is a good candidate for
-gcc's ``?:'' operator.)
-
-If you pull the cast inside the brackets, then you may add my
-Reviewed-by: Phil Carmody <pc+lkml@asdf.org>
-
-Cheers,
-Phil
-
->  }
-> 
->  /* Add the load generated by se into cfs_rq's child load-average */
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 804ee41..8682110 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -351,6 +351,9 @@ extern struct root_domain def_root_domain;
-> 
->  #endif /* CONFIG_SMP */
-> 
-> +/* full cpu utilization */
-> +#define FULL_UTIL    SCHED_POWER_SCALE
-> +
->  /*
->   * This is the main, per-CPU runqueue data structure.
->   *
-> @@ -482,6 +485,7 @@ struct rq {
->  #endif
-> 
->       struct sched_avg avg;
-> +     unsigned int util;
->  };
-> 
->  static inline int cpu_of(struct rq *rq)
-> 
+(Note that the quoted example was from ARM. But also note that the
+percpu stuff requires memory access, so...)
+									Pavel
 -- 
-"In a world of magnets and miracles" 
--- Insane Clown Posse, Miracles, 2009. Much derided.
-"Magnets, how do they work"
--- Pink Floyd, High Hopes, 1994. Lauded as lyrical geniuses.
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
