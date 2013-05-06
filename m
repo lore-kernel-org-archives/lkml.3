@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933155Ab3EFXQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:16:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36996 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932579Ab3EFXOO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932582Ab3EFXOO (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 May 2013 19:14:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36975 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932414Ab3EFXOK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 19:14:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>
-Subject: [ 099/104] KVM: X86 emulator: fix source operand decoding for 8bit mov[zs]x instructions
-Date: Mon,  6 May 2013 16:12:58 -0700
-Message-Id: <20130506230053.800877246@linuxfoundation.org>
+        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 085/104] nfsd4: dont close read-write opens too soon
+Date: Mon,  6 May 2013 16:12:44 -0700
+Message-Id: <20130506230052.392834329@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,32 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gleb Natapov <gleb@redhat.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 660696d1d16a71e15549ce1bf74953be1592bcd3 upstream.
+commit 0c7c3e67ab91ec6caa44bdf1fc89a48012ceb0c5 upstream.
 
-Source operand for one byte mov[zs]x is decoded incorrectly if it is in
-high byte register. Fix that.
+Don't actually close any opens until we don't need them at all.
 
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+This means being left with write access when it's not really necessary,
+but that's better than putting a file that might still have posix locks
+held on it, as we have been.
+
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/emulate.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/nfsd/nfs4state.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -4030,6 +4030,10 @@ static int decode_operand(struct x86_emu
- 		break;
- 	case OpMem8:
- 		ctxt->memop.bytes = 1;
-+		if (ctxt->memop.type == OP_REG) {
-+			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm, 1);
-+			fetch_register_operand(&ctxt->memop);
-+		}
- 		goto mem_common;
- 	case OpMem16:
- 		ctxt->memop.bytes = 2;
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -210,13 +210,7 @@ static void __nfs4_file_put_access(struc
+ {
+ 	if (atomic_dec_and_test(&fp->fi_access[oflag])) {
+ 		nfs4_file_put_fd(fp, oflag);
+-		/*
+-		 * It's also safe to get rid of the RDWR open *if*
+-		 * we no longer have need of the other kind of access
+-		 * or if we already have the other kind of open:
+-		 */
+-		if (fp->fi_fds[1-oflag]
+-			|| atomic_read(&fp->fi_access[1 - oflag]) == 0)
++		if (atomic_read(&fp->fi_access[1 - oflag]) == 0)
+ 			nfs4_file_put_fd(fp, O_RDWR);
+ 	}
+ }
 
 
