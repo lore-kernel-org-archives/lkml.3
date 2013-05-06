@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759955Ab3EFXIV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:08:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36382 "EHLO
+	id S1759977Ab3EFXIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:08:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36379 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933048Ab3EFW7H (ORCPT
+	with ESMTP id S933016Ab3EFW7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:07 -0400
+	Mon, 6 May 2013 18:59:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mika Kuoppala <mika.kuoppala@intel.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 14/46] fbcon: when font is freed, clear also vc_font.data
-Date: Mon,  6 May 2013 15:58:20 -0700
-Message-Id: <20130506225822.190147853@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 28/46] ALSA: usb-audio: Fix autopm error during probing
+Date: Mon,  6 May 2013 15:58:34 -0700
+Message-Id: <20130506225823.622444855@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,39 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Kuoppala <mika.kuoppala@linux.intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit e6637d5427d2af9f3f33b95447bfc5347e5ccd85 upstream.
+commit 60af3d037eb8c670dcce31401501d1271e7c5d95 upstream.
 
-commit ae1287865f5361fa138d4d3b1b6277908b54eac9
-Author: Dave Airlie <airlied@redhat.com>
-Date:   Thu Jan 24 16:12:41 2013 +1000
+We've got strange errors in get_ctl_value() in mixer.c during
+probing, e.g. on Hercules RMX2 DJ Controller:
 
-    fbcon: don't lose the console font across generic->chip driver switch
+  ALSA mixer.c:352 cannot get ctl value: req = 0x83, wValue = 0x201, wIndex = 0xa00, type = 4
+  ALSA mixer.c:352 cannot get ctl value: req = 0x83, wValue = 0x200, wIndex = 0xa00, type = 4
+  ....
 
-uses a pointer in vc->vc_font.data to load font into the new driver.
-However if the font is actually freed, we need to clear the data
-so that we don't reload font from dangling pointer.
+It turned out that the culprit is autopm: snd_usb_autoresume() returns
+-ENODEV when called during card->probing = 1.
 
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=892340
-Signed-off-by: Mika Kuoppala <mika.kuoppala@intel.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Since the call itself during card->probing = 1 is valid, let's fix the
+return value of snd_usb_autoresume() as success.
+
+Reported-and-tested-by: Daniel Schürmann <daschuer@mixxx.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/console/fbcon.c |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/usb/card.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -1229,6 +1229,8 @@ static void fbcon_deinit(struct vc_data
- finished:
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -610,7 +610,9 @@ int snd_usb_autoresume(struct snd_usb_au
+ 	int err = -ENODEV;
  
- 	fbcon_free_font(p, free_font);
-+	if (free_font)
-+		vc->vc_font.data = NULL;
+ 	down_read(&chip->shutdown_rwsem);
+-	if (!chip->shutdown && !chip->probing)
++	if (chip->probing)
++		err = 0;
++	else if (!chip->shutdown)
+ 		err = usb_autopm_get_interface(chip->pm_intf);
+ 	up_read(&chip->shutdown_rwsem);
  
- 	if (!con_is_bound(&fb_con))
- 		fbcon_exit();
 
 
