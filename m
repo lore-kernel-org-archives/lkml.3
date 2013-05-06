@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758893Ab3EFVKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:10:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59099 "EHLO
+	id S1758907Ab3EFVKr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:10:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59074 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756724Ab3EFUqV (ORCPT
+	with ESMTP id S1757511Ab3EFUqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:21 -0400
+	Mon, 6 May 2013 16:46:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 040/115] tracing: Use stack of calling function for stack tracer
-Date: Mon,  6 May 2013 13:44:36 -0700
-Message-Id: <20130506203059.680354234@linuxfoundation.org>
+        Adrian Thomasset <adrian.thomasset@st.com>
+Subject: [ 023/115] USB: ftdi_sio: correct ST Micro Connect Lite PIDs
+Date: Mon,  6 May 2013 13:44:19 -0700
+Message-Id: <20130506203057.933940961@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -26,75 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Adrian Thomasset <adrian.thomasset@st.com>
 
-commit 87889501d0adfae10e3b0f0e6f2d7536eed9ae84 upstream.
+commit 9f06d15f8db6946e41f73196a122b84a37938878 upstream.
 
-Use the stack of stack_trace_call() instead of check_stack() as
-the test pointer for max stack size. It makes it a bit cleaner
-and a little more accurate.
+The current ST Micro Connect Lite uses the FT4232H hi-speed quad USB
+UART FTDI chip. It is also possible to drive STM reference targets
+populated with an on-board JTAG debugger based on the FT2232H chip with
+the same STMicroelectronics tools.
 
-Adding stable, as a later fix depends on this patch.
+For this reason, the ST Micro Connect Lite PIDs should be
+ST_STMCLT_2232_PID: 0x3746
+ST_STMCLT_4232_PID: 0x3747
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Adrian Thomasset <adrian.thomasset@st.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_stack.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    4 +++-
+ drivers/usb/serial/ftdi_sio_ids.h |    3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -39,20 +39,21 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
- int stack_tracer_enabled;
- static int last_stack_tracer_enabled;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -871,7 +871,9 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DOTEC_PID) },
+ 	{ USB_DEVICE(QIHARDWARE_VID, MILKYMISTONE_JTAGSERIAL_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+-	{ USB_DEVICE(ST_VID, ST_STMCLT1030_PID),
++	{ USB_DEVICE(ST_VID, ST_STMCLT_2232_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(ST_VID, ST_STMCLT_4232_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_stmclite_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RF_R106) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DISTORTEC_JTAG_LOCK_PICK_PID),
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1151,7 +1151,8 @@
+  * STMicroelectonics
+  */
+ #define ST_VID			0x0483
+-#define ST_STMCLT1030_PID	0x3747 /* ST Micro Connect Lite STMCLT1030 */
++#define ST_STMCLT_2232_PID	0x3746
++#define ST_STMCLT_4232_PID	0x3747
  
--static inline void check_stack(void)
-+static inline void
-+check_stack(unsigned long *stack)
- {
- 	unsigned long this_size, flags;
- 	unsigned long *p, *top, *start;
- 	int i;
- 
--	this_size = ((unsigned long)&this_size) & (THREAD_SIZE-1);
-+	this_size = ((unsigned long)stack) & (THREAD_SIZE-1);
- 	this_size = THREAD_SIZE - this_size;
- 
- 	if (this_size <= max_stack_size)
- 		return;
- 
- 	/* we do not handle interrupt stacks yet */
--	if (!object_is_on_stack(&this_size))
-+	if (!object_is_on_stack(stack))
- 		return;
- 
- 	local_irq_save(flags);
-@@ -73,7 +74,7 @@ static inline void check_stack(void)
- 	 * Now find where in the stack these are.
- 	 */
- 	i = 0;
--	start = &this_size;
-+	start = stack;
- 	top = (unsigned long *)
- 		(((unsigned long)start & ~(THREAD_SIZE-1)) + THREAD_SIZE);
- 
-@@ -113,6 +114,7 @@ static void
- stack_trace_call(unsigned long ip, unsigned long parent_ip,
- 		 struct ftrace_ops *op, struct pt_regs *pt_regs)
- {
-+	unsigned long stack;
- 	int cpu;
- 
- 	preempt_disable_notrace();
-@@ -122,7 +124,7 @@ stack_trace_call(unsigned long ip, unsig
- 	if (per_cpu(trace_active, cpu)++ != 0)
- 		goto out;
- 
--	check_stack();
-+	check_stack(&stack);
- 
-  out:
- 	per_cpu(trace_active, cpu)--;
+ /*
+  * Papouch products (http://www.papouch.com/)
 
 
