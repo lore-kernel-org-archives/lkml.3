@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933062Ab3EFW7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:59:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36351 "EHLO
+	id S933041Ab3EFW7F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:59:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36345 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933018Ab3EFW7B (ORCPT
+	with ESMTP id S933016Ab3EFW7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:01 -0400
+	Mon, 6 May 2013 18:59:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Stikkolorum <d.r.stikkolorum@hhs.nl>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 08/46] usbfs: Always allow ctrl requests with USB_RECIP_ENDPOINT on the ctrl ep
-Date: Mon,  6 May 2013 15:58:14 -0700
-Message-Id: <20130506225821.566570483@linuxfoundation.org>
+        Adrian Thomasset <adrian.thomasset@st.com>
+Subject: [ 07/46] USB: ftdi_sio: correct ST Micro Connect Lite PIDs
+Date: Mon,  6 May 2013 15:58:13 -0700
+Message-Id: <20130506225821.447841044@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -28,46 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Adrian Thomasset <adrian.thomasset@st.com>
 
-commit 1361bf4b9f9ef45e628a5b89e0fd9bedfdcb7104 upstream.
+commit 9f06d15f8db6946e41f73196a122b84a37938878 upstream.
 
-When usbfs receives a ctrl-request from userspace it calls check_ctrlrecip,
-which for a request with USB_RECIP_ENDPOINT tries to map this to an interface
-to see if this interface is claimed, except for ctrl-requests with a type of
-USB_TYPE_VENDOR.
+The current ST Micro Connect Lite uses the FT4232H hi-speed quad USB
+UART FTDI chip. It is also possible to drive STM reference targets
+populated with an on-board JTAG debugger based on the FT2232H chip with
+the same STMicroelectronics tools.
 
-When trying to use this device: http://www.akaipro.com/eiepro
-redirected to a Windows vm running on qemu on top of Linux.
+For this reason, the ST Micro Connect Lite PIDs should be
+ST_STMCLT_2232_PID: 0x3746
+ST_STMCLT_4232_PID: 0x3747
 
-The windows driver makes a ctrl-req with USB_TYPE_CLASS and
-USB_RECIP_ENDPOINT with index 0, and the mapping of the endpoint (0) to
-the interface fails since ep 0 is the ctrl endpoint and thus never is
-part of an interface.
-
-This patch fixes this ctrl-req failing by skipping the checkintf call for
-USB_RECIP_ENDPOINT ctrl-reqs on the ctrl endpoint.
-
-Reported-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
-Tested-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Adrian Thomasset <adrian.thomasset@st.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/devio.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    4 +++-
+ drivers/usb/serial/ftdi_sio_ids.h |    3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -642,6 +642,8 @@ static int check_ctrlrecip(struct dev_st
- 	index &= 0xff;
- 	switch (requesttype & USB_RECIP_MASK) {
- 	case USB_RECIP_ENDPOINT:
-+		if ((index & ~USB_DIR_IN) == 0)
-+			return 0;
- 		ret = findintfep(ps->dev, index);
- 		if (ret >= 0)
- 			ret = checkintf(ps, ret);
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -877,7 +877,9 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DOTEC_PID) },
+ 	{ USB_DEVICE(QIHARDWARE_VID, MILKYMISTONE_JTAGSERIAL_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+-	{ USB_DEVICE(ST_VID, ST_STMCLT1030_PID),
++	{ USB_DEVICE(ST_VID, ST_STMCLT_2232_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(ST_VID, ST_STMCLT_4232_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_stmclite_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RF_R106) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DISTORTEC_JTAG_LOCK_PICK_PID),
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1151,7 +1151,8 @@
+  * STMicroelectonics
+  */
+ #define ST_VID			0x0483
+-#define ST_STMCLT1030_PID	0x3747 /* ST Micro Connect Lite STMCLT1030 */
++#define ST_STMCLT_2232_PID	0x3746
++#define ST_STMCLT_4232_PID	0x3747
+ 
+ /*
+  * Papouch products (http://www.papouch.com/)
 
 
