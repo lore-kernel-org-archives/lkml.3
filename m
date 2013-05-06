@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab3EFHZK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 03:25:10 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:55873 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab3EFHZI (ORCPT
+	id S1753544Ab3EFHZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 03:25:29 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:56544 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284Ab3EFHZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 03:25:08 -0400
+	Mon, 6 May 2013 03:25:25 -0400
 From: Jassi Brar <jassisinghbrar@gmail.com>
 To: s-anna@ti.com, loic.pallardy@st.com
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Jassi Brar <jaswinder.singh@linaro.org>
-Subject: [PATCHv2 3/4] mailbox: pl320: Introduce common API driver
-Date: Mon,  6 May 2013 12:54:23 +0530
-Message-Id: <1367825063-6263-1-git-send-email-jaswinder.singh@linaro.org>
+Subject: [PATCHv2 4/4] mailbox: omap2: Introduce common API driver
+Date: Mon,  6 May 2013 12:54:40 +0530
+Message-Id: <1367825080-6297-1-git-send-email-jaswinder.singh@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1367824946-6160-1-git-send-email-jaswinder.singh@linaro.org>
 References: <1367824946-6160-1-git-send-email-jaswinder.singh@linaro.org>
@@ -22,518 +22,692 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the PL320 controller driver to work with the common
-mailbox API. Also convert the only user of PL320, highbank-cpufreq.c
-to work with thee API. Drop the obsoleted driver pl320-ipc.c
+A new driver conforming to the common API.
 
 Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
 ---
- drivers/cpufreq/highbank-cpufreq.c |   22 +++-
- drivers/mailbox/Makefile           |    2 +-
- drivers/mailbox/pl320-ipc.c        |  198 ---------------------------------
- drivers/mailbox/pl320.c            |  212 ++++++++++++++++++++++++++++++++++++
- include/linux/pl320-ipc.h          |   17 ---
- 5 files changed, 233 insertions(+), 218 deletions(-)
- delete mode 100644 drivers/mailbox/pl320-ipc.c
- create mode 100644 drivers/mailbox/pl320.c
- delete mode 100644 include/linux/pl320-ipc.h
+ arch/arm/mach-omap2/omap_hwmod_2420_data.c |   12 +
+ arch/arm/mach-omap2/omap_hwmod_2430_data.c |   11 +
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |   11 +
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   13 +
+ drivers/mailbox/Kconfig                    |    9 +
+ drivers/mailbox/Makefile                   |    1 +
+ drivers/mailbox/omap2.c                    |  420 ++++++++++++++++++++++++++++
+ include/linux/platform_data/mailbox-omap.h |   64 +++++
+ 8 files changed, 541 insertions(+)
+ create mode 100644 drivers/mailbox/omap2.c
+ create mode 100644 include/linux/platform_data/mailbox-omap.h
 
-diff --git a/drivers/cpufreq/highbank-cpufreq.c b/drivers/cpufreq/highbank-cpufreq.c
-index 3118b87..5c057e0 100644
---- a/drivers/cpufreq/highbank-cpufreq.c
-+++ b/drivers/cpufreq/highbank-cpufreq.c
-@@ -19,7 +19,7 @@
- #include <linux/cpu.h>
- #include <linux/err.h>
- #include <linux/of.h>
--#include <linux/pl320-ipc.h>
-+#include <linux/mailbox_client.h>
- #include <linux/platform_device.h>
+diff --git a/arch/arm/mach-omap2/omap_hwmod_2420_data.c b/arch/arm/mach-omap2/omap_hwmod_2420_data.c
+index 5137cc8..dbcb928 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_2420_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_2420_data.c
+@@ -16,6 +16,7 @@
+ #include <linux/i2c-omap.h>
+ #include <linux/platform_data/spi-omap2-mcspi.h>
+ #include <linux/omap-dma.h>
++#include <linux/platform_data/mailbox-omap.h>
+ #include <plat/dmtimer.h>
  
- #define HB_CPUFREQ_CHANGE_NOTE	0x80000001
-@@ -29,8 +29,26 @@
- static int hb_voltage_change(unsigned int freq)
- {
- 	u32 msg[HB_CPUFREQ_IPC_LEN] = {HB_CPUFREQ_CHANGE_NOTE, freq / 1000000};
-+	struct ipc_client cl;
-+	int ret = -ETIMEDOUT;
-+	void *chan;
+ #include "omap_hwmod.h"
+@@ -166,6 +167,16 @@ static struct omap_hwmod omap2420_dma_system_hwmod = {
+ };
  
--	return pl320_ipc_transmit(msg);
-+	cl.rxcb = NULL;
-+	cl.txcb = NULL;
-+	cl.tx_block = true;
-+	cl.tx_tout = 1000; /* 1 sec */
-+	cl.cntlr_data = NULL;
-+	cl.knows_txdone = false;
-+	cl.chan_name = "pl320:A9_to_M3";
-+
-+	chan = ipc_request_channel(&cl);
-+
-+	if (ipc_send_message(chan, (void *)msg))
-+		ret = msg[1]; /* PL320 updates buffer with FIFO after ACK */
-+
-+	ipc_free_channel(chan);
-+
-+	return ret;
- }
- 
- static int hb_cpufreq_clk_notify(struct notifier_block *nb,
-diff --git a/drivers/mailbox/Makefile b/drivers/mailbox/Makefile
-index fefef7e..7b897f3 100644
---- a/drivers/mailbox/Makefile
-+++ b/drivers/mailbox/Makefile
-@@ -2,4 +2,4 @@
- 
- obj-$(CONFIG_MAILBOX)		+= mailbox.o
- 
--obj-$(CONFIG_PL320_MBOX)	+= pl320-ipc.o
-+obj-$(CONFIG_PL320_MBOX)	+= pl320.o
-diff --git a/drivers/mailbox/pl320-ipc.c b/drivers/mailbox/pl320-ipc.c
-deleted file mode 100644
-index f3755e0..0000000
---- a/drivers/mailbox/pl320-ipc.c
-+++ /dev/null
-@@ -1,198 +0,0 @@
--/*
-- * Copyright 2012 Calxeda, Inc.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program.  If not, see <http://www.gnu.org/licenses/>.
-- */
--#include <linux/types.h>
--#include <linux/err.h>
--#include <linux/delay.h>
--#include <linux/export.h>
--#include <linux/io.h>
--#include <linux/interrupt.h>
--#include <linux/completion.h>
--#include <linux/mutex.h>
--#include <linux/notifier.h>
--#include <linux/spinlock.h>
--#include <linux/device.h>
--#include <linux/amba/bus.h>
--
--#include <linux/pl320-ipc.h>
--
--#define IPCMxSOURCE(m)		((m) * 0x40)
--#define IPCMxDSET(m)		(((m) * 0x40) + 0x004)
--#define IPCMxDCLEAR(m)		(((m) * 0x40) + 0x008)
--#define IPCMxDSTATUS(m)		(((m) * 0x40) + 0x00C)
--#define IPCMxMODE(m)		(((m) * 0x40) + 0x010)
--#define IPCMxMSET(m)		(((m) * 0x40) + 0x014)
--#define IPCMxMCLEAR(m)		(((m) * 0x40) + 0x018)
--#define IPCMxMSTATUS(m)		(((m) * 0x40) + 0x01C)
--#define IPCMxSEND(m)		(((m) * 0x40) + 0x020)
--#define IPCMxDR(m, dr)		(((m) * 0x40) + ((dr) * 4) + 0x024)
--
--#define IPCMMIS(irq)		(((irq) * 8) + 0x800)
--#define IPCMRIS(irq)		(((irq) * 8) + 0x804)
--
--#define MBOX_MASK(n)		(1 << (n))
--#define IPC_TX_MBOX		1
--#define IPC_RX_MBOX		2
--
--#define CHAN_MASK(n)		(1 << (n))
--#define A9_SOURCE		1
--#define M3_SOURCE		0
--
--static void __iomem *ipc_base;
--static int ipc_irq;
--static DEFINE_MUTEX(ipc_m1_lock);
--static DECLARE_COMPLETION(ipc_completion);
--static ATOMIC_NOTIFIER_HEAD(ipc_notifier);
--
--static inline void set_destination(int source, int mbox)
--{
--	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDSET(mbox));
--	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMSET(mbox));
--}
--
--static inline void clear_destination(int source, int mbox)
--{
--	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDCLEAR(mbox));
--	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMCLEAR(mbox));
--}
--
--static void __ipc_send(int mbox, u32 *data)
--{
--	int i;
--	for (i = 0; i < 7; i++)
--		__raw_writel(data[i], ipc_base + IPCMxDR(mbox, i));
--	__raw_writel(0x1, ipc_base + IPCMxSEND(mbox));
--}
--
--static u32 __ipc_rcv(int mbox, u32 *data)
--{
--	int i;
--	for (i = 0; i < 7; i++)
--		data[i] = __raw_readl(ipc_base + IPCMxDR(mbox, i));
--	return data[1];
--}
--
--/* blocking implmentation from the A9 side, not usuable in interrupts! */
--int pl320_ipc_transmit(u32 *data)
--{
--	int ret;
--
--	mutex_lock(&ipc_m1_lock);
--
--	init_completion(&ipc_completion);
--	__ipc_send(IPC_TX_MBOX, data);
--	ret = wait_for_completion_timeout(&ipc_completion,
--					  msecs_to_jiffies(1000));
--	if (ret == 0) {
--		ret = -ETIMEDOUT;
--		goto out;
--	}
--
--	ret = __ipc_rcv(IPC_TX_MBOX, data);
--out:
--	mutex_unlock(&ipc_m1_lock);
--	return ret;
--}
--EXPORT_SYMBOL_GPL(pl320_ipc_transmit);
--
--static irqreturn_t ipc_handler(int irq, void *dev)
--{
--	u32 irq_stat;
--	u32 data[7];
--
--	irq_stat = __raw_readl(ipc_base + IPCMMIS(1));
--	if (irq_stat & MBOX_MASK(IPC_TX_MBOX)) {
--		__raw_writel(0, ipc_base + IPCMxSEND(IPC_TX_MBOX));
--		complete(&ipc_completion);
--	}
--	if (irq_stat & MBOX_MASK(IPC_RX_MBOX)) {
--		__ipc_rcv(IPC_RX_MBOX, data);
--		atomic_notifier_call_chain(&ipc_notifier, data[0], data + 1);
--		__raw_writel(2, ipc_base + IPCMxSEND(IPC_RX_MBOX));
--	}
--
--	return IRQ_HANDLED;
--}
--
--int pl320_ipc_register_notifier(struct notifier_block *nb)
--{
--	return atomic_notifier_chain_register(&ipc_notifier, nb);
--}
--EXPORT_SYMBOL_GPL(pl320_ipc_register_notifier);
--
--int pl320_ipc_unregister_notifier(struct notifier_block *nb)
--{
--	return atomic_notifier_chain_unregister(&ipc_notifier, nb);
--}
--EXPORT_SYMBOL_GPL(pl320_ipc_unregister_notifier);
--
--static int pl320_probe(struct amba_device *adev, const struct amba_id *id)
--{
--	int ret;
--
--	ipc_base = ioremap(adev->res.start, resource_size(&adev->res));
--	if (ipc_base == NULL)
--		return -ENOMEM;
--
--	__raw_writel(0, ipc_base + IPCMxSEND(IPC_TX_MBOX));
--
--	ipc_irq = adev->irq[0];
--	ret = request_irq(ipc_irq, ipc_handler, 0, dev_name(&adev->dev), NULL);
--	if (ret < 0)
--		goto err;
--
--	/* Init slow mailbox */
--	__raw_writel(CHAN_MASK(A9_SOURCE),
--			ipc_base + IPCMxSOURCE(IPC_TX_MBOX));
--	__raw_writel(CHAN_MASK(M3_SOURCE),
--			ipc_base + IPCMxDSET(IPC_TX_MBOX));
--	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
--		     ipc_base + IPCMxMSET(IPC_TX_MBOX));
--
--	/* Init receive mailbox */
--	__raw_writel(CHAN_MASK(M3_SOURCE),
--			ipc_base + IPCMxSOURCE(IPC_RX_MBOX));
--	__raw_writel(CHAN_MASK(A9_SOURCE),
--			ipc_base + IPCMxDSET(IPC_RX_MBOX));
--	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
--		     ipc_base + IPCMxMSET(IPC_RX_MBOX));
--
--	return 0;
--err:
--	iounmap(ipc_base);
--	return ret;
--}
--
--static struct amba_id pl320_ids[] = {
--	{
--		.id	= 0x00041320,
--		.mask	= 0x000fffff,
--	},
--	{ 0, 0 },
--};
--
--static struct amba_driver pl320_driver = {
--	.drv = {
--		.name	= "pl320",
--	},
--	.id_table	= pl320_ids,
--	.probe		= pl320_probe,
--};
--
--static int __init ipc_init(void)
--{
--	return amba_driver_register(&pl320_driver);
--}
--module_init(ipc_init);
-diff --git a/drivers/mailbox/pl320.c b/drivers/mailbox/pl320.c
-new file mode 100644
-index 0000000..7ddae5c
---- /dev/null
-+++ b/drivers/mailbox/pl320.c
-@@ -0,0 +1,212 @@
-+/*
-+ * Copyright 2012 Calxeda, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/types.h>
-+#include <linux/err.h>
-+#include <linux/delay.h>
-+#include <linux/export.h>
-+#include <linux/io.h>
-+#include <linux/interrupt.h>
-+#include <linux/completion.h>
-+#include <linux/mutex.h>
-+#include <linux/notifier.h>
-+#include <linux/spinlock.h>
-+#include <linux/device.h>
-+#include <linux/amba/bus.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/mailbox_controller.h>
-+
-+#define IPCMSOURCE(m)		((m) * 0x40)
-+#define IPCMDSET(m)		(((m) * 0x40) + 0x004)
-+#define IPCMDCLEAR(m)		(((m) * 0x40) + 0x008)
-+#define IPCMDSTATUS(m)		(((m) * 0x40) + 0x00C)
-+#define IPCMMODE(m)		(((m) * 0x40) + 0x010)
-+#define IPCMMSET(m)		(((m) * 0x40) + 0x014)
-+#define IPCMMCLEAR(m)		(((m) * 0x40) + 0x018)
-+#define IPCMMSTATUS(m)		(((m) * 0x40) + 0x01C)
-+#define IPCMSEND(m)		(((m) * 0x40) + 0x020)
-+#define IPCMDR(m, dr)		(((m) * 0x40) + ((dr) * 4) + 0x024)
-+
-+#define IPCMMIS(irq)		(((irq) * 8) + 0x800)
-+#define IPCMRIS(irq)		(((irq) * 8) + 0x804)
-+
-+#define MBOX_MASK(n)		(1 << (n))
-+#define IPC_TX_MBOX		1
-+
-+#define CHAN_MASK(n)		(1 << (n))
-+#define A9_SOURCE		1
-+#define M3_SOURCE		0
-+
-+struct pl320_con {
-+	u32 *data;
-+	int ipc_irq;
-+	struct device *dev;
-+	struct ipc_link link;
-+	void __iomem *ipc_base;
-+	struct ipc_controller ipc_con;
+ /* mailbox */
++static struct omap_mbox_dev_info omap2420_mailbox_info[] = {
++	{ .name = "dsp", .tx_id = 0, .rx_id = 1, .irq_id = 0, .usr_id = 0 },
++	{ .name = "iva", .tx_id = 2, .rx_id = 3, .irq_id = 1, .usr_id = 3 },
 +};
 +
-+static inline struct pl320_con *to_pl320(struct ipc_link *l)
++static struct omap_mbox_pdata omap2420_mailbox_attrs = {
++	.info_cnt	= ARRAY_SIZE(omap2420_mailbox_info),
++	.info		= omap2420_mailbox_info,
++};
++
+ static struct omap_hwmod_irq_info omap2420_mailbox_irqs[] = {
+ 	{ .name = "dsp", .irq = 26 + OMAP_INTC_START, },
+ 	{ .name = "iva", .irq = 34 + OMAP_INTC_START, },
+@@ -186,6 +197,7 @@ static struct omap_hwmod omap2420_mailbox_hwmod = {
+ 			.idlest_idle_bit = OMAP24XX_ST_MAILBOXES_SHIFT,
+ 		},
+ 	},
++	.dev_attr	= &omap2420_mailbox_attrs,
+ };
+ 
+ /*
+diff --git a/arch/arm/mach-omap2/omap_hwmod_2430_data.c b/arch/arm/mach-omap2/omap_hwmod_2430_data.c
+index 4ce999e..df2f874 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_2430_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_2430_data.c
+@@ -17,6 +17,7 @@
+ #include <linux/platform_data/asoc-ti-mcbsp.h>
+ #include <linux/platform_data/spi-omap2-mcspi.h>
+ #include <linux/omap-dma.h>
++#include <linux/platform_data/mailbox-omap.h>
+ #include <plat/dmtimer.h>
+ 
+ #include "omap_hwmod.h"
+@@ -170,6 +171,15 @@ static struct omap_hwmod omap2430_dma_system_hwmod = {
+ };
+ 
+ /* mailbox */
++static struct omap_mbox_dev_info omap2430_mailbox_info[] = {
++	{ .name = "dsp", .tx_id = 0, .rx_id = 1 },
++};
++
++static struct omap_mbox_pdata omap2430_mailbox_attrs = {
++	.info_cnt	= ARRAY_SIZE(omap2430_mailbox_info),
++	.info		= omap2430_mailbox_info,
++};
++
+ static struct omap_hwmod_irq_info omap2430_mailbox_irqs[] = {
+ 	{ .irq = 26 + OMAP_INTC_START, },
+ 	{ .irq = -1 },
+@@ -189,6 +199,7 @@ static struct omap_hwmod omap2430_mailbox_hwmod = {
+ 			.idlest_idle_bit = OMAP24XX_ST_MAILBOXES_SHIFT,
+ 		},
+ 	},
++	.dev_attr	= &omap2430_mailbox_attrs,
+ };
+ 
+ /* mcspi3 */
+diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+index 4083606..3833e96 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -25,6 +25,7 @@
+ #include <linux/platform_data/asoc-ti-mcbsp.h>
+ #include <linux/platform_data/spi-omap2-mcspi.h>
+ #include <linux/platform_data/iommu-omap.h>
++#include <linux/platform_data/mailbox-omap.h>
+ #include <plat/dmtimer.h>
+ 
+ #include "am35xx.h"
+@@ -1501,6 +1502,15 @@ static struct omap_hwmod_class omap3xxx_mailbox_hwmod_class = {
+ 	.sysc = &omap3xxx_mailbox_sysc,
+ };
+ 
++static struct omap_mbox_dev_info omap3xxx_mailbox_info[] = {
++	{ .name = "dsp", .tx_id = 0, .rx_id = 1 },
++};
++
++static struct omap_mbox_pdata omap3xxx_mailbox_attrs = {
++	.info_cnt	= ARRAY_SIZE(omap3xxx_mailbox_info),
++	.info		= omap3xxx_mailbox_info,
++};
++
+ static struct omap_hwmod_irq_info omap3xxx_mailbox_irqs[] = {
+ 	{ .irq = 26 + OMAP_INTC_START, },
+ 	{ .irq = -1 },
+@@ -1520,6 +1530,7 @@ static struct omap_hwmod omap3xxx_mailbox_hwmod = {
+ 			.idlest_idle_bit = OMAP3430_ST_MAILBOXES_SHIFT,
+ 		},
+ 	},
++	.dev_attr	= &omap3xxx_mailbox_attrs,
+ };
+ 
+ /*
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index eaba9dc..44d99b6 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -29,6 +29,7 @@
+ #include <linux/platform_data/spi-omap2-mcspi.h>
+ #include <linux/platform_data/asoc-ti-mcbsp.h>
+ #include <linux/platform_data/iommu-omap.h>
++#include <linux/platform_data/mailbox-omap.h>
+ #include <plat/dmtimer.h>
+ 
+ #include "omap_hwmod.h"
+@@ -1861,6 +1862,17 @@ static struct omap_hwmod_class omap44xx_mailbox_hwmod_class = {
+ };
+ 
+ /* mailbox */
++static struct omap_mbox_dev_info omap44xx_mailbox_info[] = {
++	{ .name = "mbox-ipu", .tx_id = 0, .rx_id = 1 },
++	{ .name = "mbox-dsp", .tx_id = 3, .rx_id = 2 },
++};
++
++static struct omap_mbox_pdata omap44xx_mailbox_attrs = {
++	.intr_type	= MBOX_INTR_CFG_TYPE2,
++	.info_cnt	= ARRAY_SIZE(omap44xx_mailbox_info),
++	.info		= omap44xx_mailbox_info,
++};
++
+ static struct omap_hwmod_irq_info omap44xx_mailbox_irqs[] = {
+ 	{ .irq = 26 + OMAP44XX_IRQ_GIC_START },
+ 	{ .irq = -1 }
+@@ -1877,6 +1889,7 @@ static struct omap_hwmod omap44xx_mailbox_hwmod = {
+ 			.context_offs = OMAP4_RM_L4CFG_MAILBOX_CONTEXT_OFFSET,
+ 		},
+ 	},
++	.dev_attr	= &omap44xx_mailbox_attrs,
+ };
+ 
+ /*
+diff --git a/drivers/mailbox/Kconfig b/drivers/mailbox/Kconfig
+index 9545c9f..897b1c7 100644
+--- a/drivers/mailbox/Kconfig
++++ b/drivers/mailbox/Kconfig
+@@ -16,4 +16,13 @@ config PL320_MBOX
+ 	  Management Engine, primarily for cpufreq. Say Y here if you want
+ 	  to use the PL320 IPCM support.
+ 
++config OMAP2PLUS_MBOX
++	tristate "OMAP2+ Mailbox framework support"
++	depends on ARCH_OMAP2PLUS
++	help
++	  Mailbox implementation for OMAP family chips with hardware for
++	  interprocessor communication involving DSP, IVA1.0 and IVA2 in
++	  OMAP2/3; or IPU, IVA HD and DSP in OMAP4. Say Y here if you want
++	  to use OMAP2+ Mailbox framework support.
++
+ endif
+diff --git a/drivers/mailbox/Makefile b/drivers/mailbox/Makefile
+index 7b897f3..b1c9b14 100644
+--- a/drivers/mailbox/Makefile
++++ b/drivers/mailbox/Makefile
+@@ -3,3 +3,4 @@
+ obj-$(CONFIG_MAILBOX)		+= mailbox.o
+ 
+ obj-$(CONFIG_PL320_MBOX)	+= pl320.o
++obj-$(CONFIG_OMAP2PLUS_MBOX)	+= omap2.o
+diff --git a/drivers/mailbox/omap2.c b/drivers/mailbox/omap2.c
+new file mode 100644
+index 0000000..c22a82a
+--- /dev/null
++++ b/drivers/mailbox/omap2.c
+@@ -0,0 +1,420 @@
++/*
++ * Mailbox driver for OMAP4
++ *
++ * Copyright (C) 2013 Linaro Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/pm_runtime.h>
++#include <linux/platform_device.h>
++#include <linux/platform_data/mailbox-omap.h>
++
++#define MAILBOX_REVISION		0x000
++#define MAILBOX_MESSAGE(m)		(0x040 + 4 * (m))
++#define MAILBOX_FIFOSTATUS(m)		(0x080 + 4 * (m))
++#define MAILBOX_MSGSTATUS(m)		(0x0c0 + 4 * (m))
++#define MAILBOX_IRQSTATUS(u)		(0x100 + 8 * (u))
++#define MAILBOX_IRQENABLE(u)		(0x104 + 8 * (u))
++
++#define OMAP4_MAILBOX_IRQSTATUS(u)	(0x104 + 0x10 * (u))
++#define OMAP4_MAILBOX_IRQENABLE(u)	(0x108 + 0x10 * (u))
++#define OMAP4_MAILBOX_IRQENABLE_CLR(u)	(0x10c + 0x10 * (u))
++
++#define MAILBOX_IRQ_NEWMSG(m)		(1 << (2 * (m)))
++#define MAILBOX_IRQ_NOTFULL(m)		(1 << (2 * (m) + 1))
++
++#define RX_IRQ	0
++#define TX_IRQ	1
++
++/* We assume peak RX activity won't be more than 32 packets together */
++#define RXBUF_LEN	32
++
++/*
++ * Logical link is a pair of independent physical TX+RX mailboxes.
++ * IDEALLY, a client should acquire RX and TX separately as 2 links, so
++ * that (for example) when it can't take in anymore packets it could
++ * release the RX link and re-acquire only when it has appetite once again.
++ */
++struct omap2_mbox_link {
++	int irq;
++	bool active;
++	unsigned usr_id;
++	unsigned mb_rx, mb_tx;
++	u32 rxbuf[RXBUF_LEN];
++	struct ipc_link link;
++	struct omap2_mbox_con *omc;
++};
++
++struct omap2_mbox_con {
++	struct device *dev;
++	unsigned intr_type;
++	void __iomem *mbox_base;
++	struct omap2_mbox_link oml[4];
++	struct ipc_controller ipc_con;
++	struct mutex lock;
++};
++
++static inline struct omap2_mbox_link *to_oml(struct ipc_link *l)
 +{
 +	if (!l)
 +		return NULL;
 +
-+	return container_of(l, struct pl320_con, link);
++	return container_of(l, struct omap2_mbox_link, link);
++}
++
++static inline void omap_mb_write(struct omap2_mbox_con *omc, u32 val, u32 off)
++{
++	__raw_writel(val, omc->mbox_base + off);
++}
++
++static inline u32 omap_mb_read(struct omap2_mbox_con *omc, u32 off)
++{
++	return __raw_readl(omc->mbox_base + off);
++}
++
++static void omc_enable_irq(struct omap2_mbox_link *oml, int tx)
++{
++	struct omap2_mbox_con *omc = oml->omc;
++	u32 val, off;
++
++	if (omc->intr_type)
++		off = OMAP4_MAILBOX_IRQENABLE(oml->usr_id);
++	else
++		off = MAILBOX_IRQENABLE(oml->usr_id);
++
++	val = omap_mb_read(omc, off);
++	if (tx)
++		val |= MAILBOX_IRQ_NOTFULL(oml->mb_tx);
++	else
++		val |= MAILBOX_IRQ_NEWMSG(oml->mb_rx);
++
++	omap_mb_write(omc, val, off);
++}
++
++static void omc_disable_irq(struct omap2_mbox_link *oml, int tx)
++{
++	struct omap2_mbox_con *omc = oml->omc;
++	u32 val, off;
++
++	if (tx)
++		val = MAILBOX_IRQ_NOTFULL(oml->mb_tx);
++	else
++		val = MAILBOX_IRQ_NEWMSG(oml->mb_rx);
++
++	if (omc->intr_type) {
++		off = OMAP4_MAILBOX_IRQENABLE_CLR(oml->usr_id);
++	} else {
++		off = MAILBOX_IRQENABLE(oml->usr_id);
++		val = omap_mb_read(omc, off) & ~val;
++	}
++
++	omap_mb_write(omc, val, off);
++}
++
++static void omc_ack_irq(struct omap2_mbox_link *oml, int tx)
++{
++	struct omap2_mbox_con *omc = oml->omc;
++	u32 val, off;
++
++	if (tx)
++		val = MAILBOX_IRQ_NOTFULL(oml->mb_tx);
++	else
++		val = MAILBOX_IRQ_NEWMSG(oml->mb_rx);
++
++	if (omc->intr_type)
++		off = OMAP4_MAILBOX_IRQSTATUS(oml->usr_id);
++	else
++		off = MAILBOX_IRQSTATUS(oml->usr_id);
++
++	omap_mb_write(omc, val, off);
++	/* Flush posted write for irq status to avoid spurious interrupts */
++	omap_mb_read(omc, off);
++}
++
++static int omc_is_irq(struct omap2_mbox_link *oml, int tx)
++{
++	struct omap2_mbox_con *omc = oml->omc;
++	u32 val, off;
++
++	if (tx)
++		val = MAILBOX_IRQ_NOTFULL(oml->mb_tx);
++	else
++		val = MAILBOX_IRQ_NEWMSG(oml->mb_rx);
++
++	if (omc->intr_type)
++		off = OMAP4_MAILBOX_IRQSTATUS(oml->usr_id);
++	else
++		off = MAILBOX_IRQSTATUS(oml->usr_id);
++
++	return omap_mb_read(omc, off) & val;
++}
++
++static void omc_tx_irq(struct omap2_mbox_link *oml)
++{
++	omc_disable_irq(oml, TX_IRQ);
++	ipc_link_txdone(&oml->link, XFER_OK);
++}
++
++static void omc_rx_irq(struct omap2_mbox_link *oml)
++{
++	struct omap2_mbox_con *omc = oml->omc;
++	int i, j, count = omap_mb_read(omc, MAILBOX_MSGSTATUS(oml->mb_rx));
++	struct omap2_mbox_rxdata pkt;
++
++	j = 0;
++	while (count && j < RXBUF_LEN) {
++
++		for (i = 0; i < count; i++)
++			oml->rxbuf[j++] = omap_mb_read(omc,
++						MAILBOX_MESSAGE(oml->mb_rx));
++
++		count = omap_mb_read(omc, MAILBOX_MSGSTATUS(oml->mb_rx));
++	}
++	pkt.len = j;
++	pkt.buf = oml->rxbuf;
++	ipc_link_received_data(&oml->link, (void *)&pkt)
 +}
 +
 +static irqreturn_t ipc_handler(int irq, void *p)
 +{
-+	struct ipc_link *link = (struct ipc_link *)p;
-+	struct pl320_con *pl320 = to_pl320(link);
-+	void __iomem *ipc_base = pl320->ipc_base;
-+	u32 irq_stat;
++	struct omap2_mbox_link *oml = p;
++	struct omap2_mbox_con *omc = oml->omc;
++	int i;
 +
-+	irq_stat = __raw_readl(ipc_base + IPCMMIS(1));
-+	if (irq_stat & MBOX_MASK(IPC_TX_MBOX)) {
-+		u32 *data = pl320->data;
-+		int i;
++	for (i = 0; i < 4; i++) {
++		struct omap2_mbox_link *l = &omc->oml[i];
 +
-+		__raw_writel(0, ipc_base + IPCMSEND(IPC_TX_MBOX));
++		if (!l->active)
++			continue;
 +
-+		/*
-+		 * The PL320 driver specifies that the send buffer
-+		 * will be overwritten by same fifo upon TX ACK.
-+		 */
-+		for (i = 0; i < 7; i++)
-+			data[i] = __raw_readl(ipc_base
-+					 + IPCMDR(IPC_TX_MBOX, i));
++		if (omc_is_irq(l, TX_IRQ)) {
++			omc_tx_irq(l);
++			omc_ack_irq(l, TX_IRQ);
++		}
 +
-+		ipc_link_txdone(link, XFER_OK);
-+
-+		pl320->data = NULL;
++		if (omc_is_irq(l, RX_IRQ)) {
++			omc_rx_irq(l);
++			omc_ack_irq(l, RX_IRQ);
++		}
 +	}
 +
 +	return IRQ_HANDLED;
 +}
 +
-+static int pl320_send_data(struct ipc_link *link, void *msg)
++static int mhu_send_data(struct ipc_link *link, void *data)
 +{
-+	struct pl320_con *pl320 = to_pl320(link);
-+	void __iomem *ipc_base = pl320->ipc_base;
-+	u32 *data = (u32 *)msg;
-+	int i;
++	struct omap2_mbox_link *oml = to_oml(link);
++	struct omap2_mbox_con *omc = oml->omc;
 +
-+	pl320->data = data;
++	/* If FIFO is already full */
++	if (omap_mb_read(omc, MAILBOX_FIFOSTATUS(oml->mb_tx)) & 0x1) {
++		/* Enable IRQ and return busy */
++		omc_enable_irq(oml, TX_IRQ);
++		return -EBUSY;
++	}
 +
-+	for (i = 0; i < 7; i++)
-+		__raw_writel(data[i], ipc_base + IPCMDR(IPC_TX_MBOX, i));
-+
-+	__raw_writel(0x1, ipc_base + IPCMSEND(IPC_TX_MBOX));
++	omap_mb_write(omc, (u32)data, MAILBOX_MESSAGE(oml->mb_tx));
++	ipc_link_txdone(link, XFER_OK);
 +
 +	return 0;
 +}
 +
-+static int pl320_startup(struct ipc_link *link, void *ignored)
++static int mhu_startup(struct ipc_link *link, void *ignored)
 +{
-+	struct pl320_con *pl320 = to_pl320(link);
-+	void __iomem *ipc_base = pl320->ipc_base;
-+	int err, ipc_irq = pl320->ipc_irq;
++	struct omap2_mbox_link *oml = to_oml(link);
++	struct omap2_mbox_con *omc = oml->omc;
++	int i, irq_taken, err = 0;
 +
-+	__raw_writel(0, ipc_base + IPCMSEND(IPC_TX_MBOX));
++	pm_runtime_enable(omc->dev);
++	pm_runtime_get_sync(omc->dev);
 +
-+	err = request_irq(ipc_irq, ipc_handler, 0, dev_name(pl320->dev), link);
-+	if (err)
-+		return err;
++	mutex_lock(&omc->lock);
 +
-+	/* Init slow mailbox */
-+	__raw_writel(CHAN_MASK(A9_SOURCE),
-+			ipc_base + IPCMSOURCE(IPC_TX_MBOX));
-+	__raw_writel(CHAN_MASK(M3_SOURCE),
-+			ipc_base + IPCMDSET(IPC_TX_MBOX));
-+	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
-+		     ipc_base + IPCMMSET(IPC_TX_MBOX));
++	irq_taken = 0;
++	for (i = 0; i < 4; i++) {
++		struct omap2_mbox_link *l = &omc->oml[i];
++		if (l->irq == oml->irq && l->active)
++			irq_taken = 1;
++	}
++	oml->active = true;
++	if (!irq_taken) {
++		err = request_irq(oml->irq, ipc_handler,
++			0, omc->oml[i].link.link_name, oml);
++		if (err)
++			oml->active = false;
++	}
 +
-+	pl320->data = NULL;
-+	return 0;
++	mutex_unlock(&omc->lock);
++
++	if (err) {
++		pm_runtime_put_sync(omc->dev);
++		pm_runtime_disable(omc->dev);
++	} else {
++		omc_disable_irq(oml, TX_IRQ);
++		/* Start accepting messages */
++		omc_enable_irq(oml, RX_IRQ);
++	}
++
++	return err;
 +}
 +
-+static void pl320_shutdown(struct ipc_link *link)
++static void mhu_shutdown(struct ipc_link *link)
 +{
-+	struct pl320_con *pl320 = to_pl320(link);
++	struct omap2_mbox_link *oml = to_oml(link);
++	struct omap2_mbox_con *omc = oml->omc;
++	int irq_taken;
 +
-+	pl320->data = NULL;
-+	free_irq(pl320->ipc_irq, link);
++	/* Stop accepting messages */
++	omc_disable_irq(oml, RX_IRQ);
++	/* Flush the TX FIFO */
++	omc_disable_irq(oml, TX_IRQ);
++	omap_mb_read(omc, MAILBOX_MESSAGE(oml->mb_tx));
++	omap_mb_read(omc, MAILBOX_MESSAGE(oml->mb_tx));
++	omap_mb_read(omc, MAILBOX_MESSAGE(oml->mb_tx));
++	omap_mb_read(omc, MAILBOX_MESSAGE(oml->mb_tx));
++
++	mutex_lock(&omc->lock);
++
++	irq_taken = 0;
++	oml->active = false;
++	for (i = 0; i < 4; i++) {
++		struct omap2_mbox_link *l = &omc->oml[i];
++		if (l->irq == oml->irq && l->active)
++			irq_taken = 1;
++	}
++	if (!irq_taken)
++		free_irq(oml->irq, omc);
++
++	mutex_unlock(&omc->lock);
++
++	pm_runtime_put_sync(omc->dev);
++	pm_runtime_disable(omc->dev);
 +}
 +
-+static struct ipc_link_ops pl320_ops = {
-+	.send_data = pl320_send_data,
-+	.startup = pl320_startup,
-+	.shutdown = pl320_shutdown,
++static struct ipc_link_ops omap2_mbox_ops = {
++	.startup = omap2_mbox_startup,
++	.send_data = omap2_mbox_send_data,
++	.shutdown = omap2_mbox_shutdown,
 +};
 +
-+static int pl320_probe(struct amba_device *adev, const struct amba_id *id)
++static int omap2_mbox_probe(struct platform_device *pdev)
 +{
-+	struct pl320_con *pl320;
-+	struct ipc_link *l[2];
-+	int ret;
++	struct omap_mbox_pdata *pdata = pdev->dev.platform_data;
++	struct omap_mbox_dev_info *info;
++	struct omap2_mbox_con *omc;
++	void __iomem *base;
++	struct ipc_link *l[5];
++	struct resource *mem;
++	int i, ret;
 +
-+	pl320 = kzalloc(sizeof(struct pl320_con), GFP_KERNEL);
-+	if (!pl320)
-+		return -ENOMEM;
++	if (!pdata || !pdata->info_cnt || !pdata->info) {
++		pr_err("%s: platform not supported\n", __func__);
++		return -ENODEV;
++	}
 +
-+	pl320->ipc_base = ioremap(adev->res.start, resource_size(&adev->res));
-+	if (pl320->ipc_base == NULL) {
-+		kfree(pl320);
++	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!mem) {
++		pr_err("%s: No mem resource\n", __func__);
 +		return -ENOMEM;
 +	}
 +
-+	pl320->dev = &adev->dev;
-+	pl320->ipc_irq = adev->irq[0];
-+	amba_set_drvdata(adev, pl320);
++	base = ioremap(mem->start, resource_size(mem));
++	if (!base) {
++		pr_err("%s: Ioremap failed\n", __func__);
++		return -ENOMEM;
++	}
 +
-+	l[0] = &pl320->link;
-+	l[1] = NULL;
-+	pl320->ipc_con.links = l;
-+	pl320->ipc_con.txdone_irq = true;
-+	pl320->ipc_con.ops = &pl320_ops;
-+	snprintf(pl320->link.link_name, 16, "A9_to_M3");
-+	snprintf(pl320->ipc_con.controller_name, 16, "pl320");
++	omc = kzalloc(sizeof(*omc), GFP_KERNEL);
++	if (!omc) {
++		pr_err("%s: Unable to alloc omap2_mbox_con\n", __func__);
++		ret = -ENOMEM;
++		goto err_alloc;
++	}
 +
-+	ret = ipc_links_register(&pl320->ipc_con);
++	info = pdata->info;
++	for (i = 0; i < pdata->info_cnt; i++, info++, priv++) {
++		omc->oml[i].irq = platform_get_irq(pdev, info->irq_id);
++		omc->oml[i].active = false;
++		omc->oml[i].usr_id = info->usr_id;
++		omc->oml[i].mb_rx = info->rx_id;
++		omc->oml[i].mb_tx = info->tx_id;
++		omc->oml[i].omc = omc;
++		snprintf(omc->oml[i].link.link_name, 16, "%s", info->name);
++		l[i] = &omc->oml[i].link;
++		omc->intr_type = pdata->intr_type;
++	}
++	l[i] = NULL;
++	omc->ipc_con.links = l;
++	omc->mbox_base = base;
++	omc->dev = &pdev->dev;
++	/*
++	 * OMAP has "TX-FIFO Not Full" IRQ, not the "TX-Done" IRQ
++	 * So we simply put data in FIFO and assume we are done.
++	 */
++	omc->ipc_con.txdone_irq = true;
++	omc->ipc_con.ops = &omap2_mbox_ops;
++	snprintf(ipcu->ipc_con.controller_name, 16, "omap2");
++	mutex_init(&omc->lock);
++
++	ret = ipc_links_register(&omc->ipc_con);
 +	if (ret) {
-+		iounmap(pl320->ipc_base);
-+		kfree(pl320);
++		pr_err("%s: IPC register failed\n", __func__);
++		ret = -EINVAL;
++		goto err_reg;
 +	}
 +
++	platform_set_drvdata(pdev, omc);
++
++	return ret;
++
++err_alloc:
++	iounmap(base);
++err_reg:
++	kfree(omc);
 +	return ret;
 +}
 +
-+static struct amba_id pl320_ids[] = {
-+	{
-+		.id	= 0x00041320,
-+		.mask	= 0x000fffff,
-+	},
-+	{ 0, 0 },
-+};
-+
-+static struct amba_driver pl320_driver = {
-+	.drv = {
-+		.name	= "pl320",
-+	},
-+	.id_table	= pl320_ids,
-+	.probe		= pl320_probe,
-+};
-+
-+static int __init ipc_init(void)
++static int omap2_mbox_remove(struct platform_device *pdev)
 +{
-+	return amba_driver_register(&pl320_driver);
++	struct omap2_mbox_con *omc = platform_set_drvdata(pdev);
++
++	ipc_links_unregister(&omc->ipc_con);
++	iounmap(omc->mbox_base);
++	kfree(omc);
++
++	return 0;
 +}
-+module_init(ipc_init);
-diff --git a/include/linux/pl320-ipc.h b/include/linux/pl320-ipc.h
-deleted file mode 100644
-index 5161f63..0000000
---- a/include/linux/pl320-ipc.h
-+++ /dev/null
-@@ -1,17 +0,0 @@
--/*
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program.  If not, see <http://www.gnu.org/licenses/>.
-- */
--
--int pl320_ipc_transmit(u32 *data);
--int pl320_ipc_register_notifier(struct notifier_block *nb);
--int pl320_ipc_unregister_notifier(struct notifier_block *nb);
++
++static struct platform_driver omap2_mbox_driver = {
++	.probe	= omap2_mbox_probe,
++	.remove	= omap2_mbox_remove,
++	.driver	= {
++		.name = "omap-mailbox",
++	},
++};
++
++static int __init omap2_mbox_init(void)
++{
++	return platform_driver_register(&omap2_mbox_driver);
++}
++module_init(omap2_mbox_init);
++
++static void __exit omap2_mbox_exit(void)
++{
++	platform_driver_unregister(&omap2_mbox_driver);
++}
++module_exit(omap2_mbox_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("omap mailbox: omap2/3/4 architecture specific functions");
++MODULE_AUTHOR("Jaswinder Singh <jaswinder.singh@linaro.org>");
++MODULE_AUTHOR("Suman Anna <s-anna@ti.com>");
++MODULE_ALIAS("platform:omap2-mailbox");
+diff --git a/include/linux/platform_data/mailbox-omap.h b/include/linux/platform_data/mailbox-omap.h
+new file mode 100644
+index 0000000..b35eaee
+--- /dev/null
++++ b/include/linux/platform_data/mailbox-omap.h
+@@ -0,0 +1,64 @@
++/*
++ * mailbox-omap.h
++ *
++ * Copyright (C) 2013 Texas Instruments, Inc.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef _PLAT_MAILBOX_H
++#define _PLAT_MAILBOX_H
++
++/* Interrupt register configuration types */
++#define MBOX_INTR_CFG_TYPE1	(0)
++#define MBOX_INTR_CFG_TYPE2	(1)
++
++/**
++ * struct omap_mbox_dev_info - OMAP mailbox device attribute info
++ * @name:	name of the mailbox device
++ * @tx_id:	mailbox queue id used for transmitting messages
++ * @rx_id:	mailbox queue id on which messages are received
++ * @irq_id:	irq identifier number to use from the hwmod data
++ * @usr_id:	mailbox user id for identifying the interrupt into
++ *			the MPU interrupt controller.
++ */
++struct omap_mbox_dev_info {
++	const char *name;
++	u32 tx_id;
++	u32 rx_id;
++	u32 irq_id;
++	u32 usr_id;
++};
++
++/**
++ * struct omap_mbox_pdata - OMAP mailbox platform data
++ * @intr_type:	type of interrupt configuration registers used
++			while programming mailbox queue interrupts
++ * @info_cnt:	number of mailbox devices for the platform
++ * @info:	array of mailbox device attributes
++ */
++struct omap_mbox_pdata {
++	u32 intr_type;
++	u32 info_cnt;
++	struct omap_mbox_dev_info *info;
++};
++
++/**
++ * struct omap2_mbox_rxdata - RX Packet handed over to a client by controller.
++ *  For TX, clients simply provide a (void *)u32 packet at a time.
++ * @len: Number of words received
++ * @buf: Array of received words
++ */
++struct omap2_mbox_rxdata {
++	int len;
++	u32 *buf;
++};
++
++#endif /* _PLAT_MAILBOX_H */
 -- 
 1.7.10.4
 
