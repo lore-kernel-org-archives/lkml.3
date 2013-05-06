@@ -1,133 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab3EFBbT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 21:31:19 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:46313 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752333Ab3EFBbR (ORCPT
+	id S1752466Ab3EFBn6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 21:43:58 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:46404 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926Ab3EFBn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 21:31:17 -0400
-From: Chao Xie <chao.xie@marvell.com>
-To: <thierry.reding@avionic-design.de>, <linux-kernel@vger.kernel.org>,
-        <xiechao.mail@gmail.com>, <eric.y.miao@gmail.com>
-CC: Chao Xie <chao.xie@marvell.com>
-Subject: [PATCH V4 3/3] pwm: pxa: add device tree support
-Date: Sun, 5 May 2013 21:30:01 -0400
-Message-ID: <1367803801-17111-4-git-send-email-chao.xie@marvell.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1367803801-17111-1-git-send-email-chao.xie@marvell.com>
-References: <1367803801-17111-1-git-send-email-chao.xie@marvell.com>
+	Sun, 5 May 2013 21:43:57 -0400
+Message-ID: <51870ADA.4020102@hp.com>
+Date: Mon, 06 May 2013 09:43:54 +0800
+From: "Li, Zhen-Hua (USL-China)" <zhen-hual@hp.com>
+Organization: USL-China
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] driver,usb: Fix a warning in uhci-hcd driver
+References: <Pine.LNX.4.44L0.1304281447010.23571-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1304281447010.23571-100000@netrider.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the deice tree support for pwm-pxa.
+On 04/29/2013 02:55 AM, Alan Stern wrote:
+> On Sun, 28 Apr 2013, ZhenHua wrote:
+>
+>>>>> In fact, the patch is so easy that I am including it below.  Please
+>>>>> test this (without either of your patches) to see if it works.
+>>>>>
+>>>>> Alan Stern
+>>>>>
+>>>>>
+>>>>>
+>>>>>
+>>>>> Index: usb-3.9/drivers/usb/host/uhci-hub.c
+>>>>> ===================================================================
+>>>>> --- usb-3.9.orig/drivers/usb/host/uhci-hub.c
+>>>>> +++ usb-3.9/drivers/usb/host/uhci-hub.c
+>>>>> @@ -225,7 +225,8 @@ static int uhci_hub_status_data(struct u
+>>>>>     		/* auto-stop if nothing connected for 1 second */
+>>>>>     		if (any_ports_active(uhci))
+>>>>>     			uhci->rh_state = UHCI_RH_RUNNING;
+>>>>> -		else if (time_after_eq(jiffies, uhci->auto_stop_time))
+>>>>> +		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
+>>>>> +				!uhci->wait_for_hp)
+>>>>>     			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
+>>>>>     		break;
+>>>>>     
+>>>>>
+>>>> I have tested the UHCI_RH_RUNNING_NODEVS case yeasterday, and it works.
+>>>> But the function suspend_rh is also called in other places, so I think
+>>>> it only fixes
+>>>> the warning when auto stop is called, but not fix the warning when
+>>>> uhci's bus_suspend
+>>>> is called,  it will come out again.
+>>> Have you tried this?  I expect the warning will not occur when the
+>>> bus_suspend routine is called, because then there will be a 1-ms delay,
+>>> not just a 400-us delay.
+>> I tested this, and the warning is gone.  Is this patch committed ?
+>> I need to paste the link to suse bugzilla.
+Not joking. I tested both of them , uhci->wait_for_hp and no_auto_stop , 
+for the UHCI_RH_RUNNING_NODEVS
+  case. And as uhci->wait_for_hp is 1 on my system, so they got the same 
+result.
 
-Signed-off-by: Chao Xie <chao.xie@marvell.com>
----
- drivers/pwm/pwm-pxa.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 51 insertions(+), 1 deletions(-)
+> You must be joking.  I wrote that patch while composing the email
+> message to you, and nobody except you has tested it.
+>
+> Since you confirm that it works, I will submit it.  But new patches
+> like this won't be accepted until after the upcoming merge window
+> closes, which won't be for more than two weeks.
 
-diff --git a/drivers/pwm/pwm-pxa.c b/drivers/pwm/pwm-pxa.c
-index aa4bea7..c8d59a2 100644
---- a/drivers/pwm/pwm-pxa.c
-+++ b/drivers/pwm/pwm-pxa.c
-@@ -9,6 +9,8 @@
-  *
-  * 2008-02-13	initial version
-  * 		eric miao <eric.miao@marvell.com>
-+ * 2013-04-24   add device tree support
-+ *             Chao Xie <chao.xie@marvell.com>
-  */
- 
- #include <linux/module.h>
-@@ -18,6 +20,8 @@
- #include <linux/err.h>
- #include <linux/clk.h>
- #include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- #include <linux/pwm.h>
- 
- #include <asm/div64.h>
-@@ -124,6 +128,38 @@ static struct pwm_ops pxa_pwm_ops = {
- 	.owner = THIS_MODULE,
- };
- 
-+static const struct of_device_id pxa_pwm_of_match[] = {
-+	{
-+		.compatible = "marvell,pxa25x-pwm",
-+	}, {
-+		.compatible = "marvell,pxa27x-pwm",
-+		.data = (void *)HAS_SECONDARY_PWM
-+	}, {
-+		.compatible = "marvell,pxa168-pwm",
-+	}, {
-+		.compatible = "marvell,pxa910-pwm",
-+	},
-+	{}
-+};
-+
-+MODULE_DEVICE_TABLE(of, pxa_pwm_of_match);
-+
-+static int pxa_pwm_parse_data_dt(struct platform_device *pdev,
-+				struct pxa_pwm_chip *pwm)
-+{
-+	const struct of_device_id *of_id =
-+			of_match_device(pxa_pwm_of_match, &pdev->dev);
-+	unsigned int npwm;
-+
-+	if (!of_id)
-+		return -ENODEV;
-+
-+	npwm = (unsigned int)of_id->data;
-+	pwm->chip.npwm = (npwm & HAS_SECONDARY_PWM) ? 2 : 1;
-+
-+	return 0;
-+}
-+
- static int pwm_probe(struct platform_device *pdev)
- {
- 	const struct platform_device_id *id = platform_get_device_id(pdev);
-@@ -144,7 +180,6 @@ static int pwm_probe(struct platform_device *pdev)
- 	pwm->chip.dev = &pdev->dev;
- 	pwm->chip.ops = &pxa_pwm_ops;
- 	pwm->chip.base = -1;
--	pwm->chip.npwm = (id->driver_data & HAS_SECONDARY_PWM) ? 2 : 1;
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (r == NULL) {
-@@ -156,6 +191,20 @@ static int pwm_probe(struct platform_device *pdev)
- 	if (IS_ERR(pwm->mmio_base))
- 		return PTR_ERR(pwm->mmio_base);
- 
-+	if (!id) {
-+		if (IS_ENABLED(CONFIG_OF))
-+			ret = pxa_pwm_parse_data_dt(pdev, pwm);
-+		else
-+			ret = -ENODEV;
-+	} else {
-+		pwm->chip.npwm = (id->driver_data & HAS_SECONDARY_PWM) ? 2 : 1;
-+	}
-+
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to parse data from device id\n");
-+		return ret;
-+	}
-+
- 	ret = pwmchip_add(&pwm->chip);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
-@@ -181,6 +230,7 @@ static struct platform_driver pwm_driver = {
- 	.driver		= {
- 		.name	= "pxa25x-pwm",
- 		.owner	= THIS_MODULE,
-+		.of_match_table	= pxa_pwm_of_match,
- 	},
- 	.probe		= pwm_probe,
- 	.remove		= pwm_remove,
--- 
-1.7.4.1
+>
+>>>> And if you add uhci->wait_for_hp check in the UHCI_RH_RUNNING_NODEVS case,
+>>>> all hp uhci devices will not auto stop, not only the virtual devices. I
+>>>> guess it may waste resource.
+>>> If you want, you can add a new flag specifically for virtual
+>>> controllers.  But it shouldn't matter -- as long as your kernels are
+>>> built with CONFIG_PM_RUNTIME enabled, there won't be any significant
+>>> waste of resources.
+>>>
+>>> Alan Stern
+>>>
+>> I think we can check the product id to determine whether a device is
+>> virtual.
+>> Do you know if there is another way to check this?
+> I don't know anything at all about your virtual UHCI controllers, other
+> than what you have told me.  In particular, I don't know what product
+> IDs are used by HP's virtual and non-virtual controllers.  Maybe
+> somebody else at HP can tell you.
+>
+> Alan Stern
+>
+> .
+So I can only check the product IDs.
+
+Thanks for helping me on this bug.
+
+
+Regards
+Zhen-Hua
 
