@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933566Ab3EFX1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:27:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36813 "EHLO
+	id S933601Ab3EFX16 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:27:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36806 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760583Ab3EFXNp (ORCPT
+	with ESMTP id S1757514Ab3EFXNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:45 -0400
+	Mon, 6 May 2013 19:13:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Calvin Owens <jcalvinowens@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 058/104] ALSA: usb: Add quirk for 192KHz recording on E-Mu devices
-Date: Mon,  6 May 2013 16:12:17 -0700
-Message-Id: <20130506230049.557905893@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 056/104] ALSA: emu10k1: Fix dock firmware loading
+Date: Mon,  6 May 2013 16:12:15 -0700
+Message-Id: <20130506230049.365561001@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,76 +26,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Calvin Owens <jcalvinowens@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 1539d4f82ad534431cc67935e8e442ccf107d17d upstream.
+commit e08b34e86dfdb72a62196ce0f03d33f48958d8b9 upstream.
 
-When recording at 176.2KHz or 192Khz, the device adds a 32-bit length
-header to the capture packets, which obviously needs to be ignored for
-recording to work properly.
+The commit [b209c4df: ALSA: emu10k1: cache emu1010 firmware] broke the
+firmware loading of the dock, just (mistakenly) ignoring a different
+firmware for docks on some models.  This patch revives them again.
 
-Userspace expected:  L0 L1 L2 R0 R1 R2
-...but actually got: R2 L0 L1 L2 R0 R1
-
-Also, the last byte of the length header being interpreted as L0 of
-the first sample caused spikes every 0.5ms, resulting in a loud 16KHz
-tone (about the highest 'B' on a piano) being present throughout
-captures.
-
-Tested at all sample rates on an E-Mu 0404USB, and tested for
-regressions on a generic USB headset.
-
-Signed-off-by: Calvin Owens <jcalvinowens@gmail.com>
+Bugzilla: https://bugs.archlinux.org/task/34865
+Reported-and-tested-by: Tobias Powalowski <tobias.powalowski@googlemail.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/card.h   |    1 +
- sound/usb/pcm.c    |    2 +-
- sound/usb/quirks.c |    1 +
- sound/usb/stream.c |    1 +
- 4 files changed, 4 insertions(+), 1 deletion(-)
+ include/sound/emu10k1.h          |    1 +
+ sound/pci/emu10k1/emu10k1_main.c |   39 +++++++++++++++++++++++++++++++++------
+ 2 files changed, 34 insertions(+), 6 deletions(-)
 
---- a/sound/usb/card.h
-+++ b/sound/usb/card.h
-@@ -116,6 +116,7 @@ struct snd_usb_substream {
- 	unsigned int altset_idx;     /* USB data format: index of alternate setting */
- 	unsigned int txfr_quirk:1;	/* allow sub-frame alignment */
- 	unsigned int fmt_type;		/* USB audio format type (1-3) */
-+	unsigned int pkt_offset_adj;	/* Bytes to drop from beginning of packets (for non-compliant devices) */
+--- a/include/sound/emu10k1.h
++++ b/include/sound/emu10k1.h
+@@ -1787,6 +1787,7 @@ struct snd_emu10k1 {
+ 	unsigned int next_free_voice;
  
- 	unsigned int running: 1;	/* running status */
+ 	const struct firmware *firmware;
++	const struct firmware *dock_fw;
  
---- a/sound/usb/pcm.c
-+++ b/sound/usb/pcm.c
-@@ -1161,7 +1161,7 @@ static void retire_capture_urb(struct sn
- 	stride = runtime->frame_bits >> 3;
- 
- 	for (i = 0; i < urb->number_of_packets; i++) {
--		cp = (unsigned char *)urb->transfer_buffer + urb->iso_frame_desc[i].offset;
-+		cp = (unsigned char *)urb->transfer_buffer + urb->iso_frame_desc[i].offset + subs->pkt_offset_adj;
- 		if (urb->iso_frame_desc[i].status && printk_ratelimit()) {
- 			snd_printdd(KERN_ERR "frame %d active: %d\n", i, urb->iso_frame_desc[i].status);
- 			// continue;
---- a/sound/usb/quirks.c
-+++ b/sound/usb/quirks.c
-@@ -837,6 +837,7 @@ static void set_format_emu_quirk(struct
- 		break;
- 	}
- 	snd_emuusb_set_samplerate(subs->stream->chip, emu_samplerate_id);
-+	subs->pkt_offset_adj = (emu_samplerate_id >= EMU_QUIRK_SR_176400HZ) ? 4 : 0;
+ #ifdef CONFIG_PM_SLEEP
+ 	unsigned int *saved_ptr;
+--- a/sound/pci/emu10k1/emu10k1_main.c
++++ b/sound/pci/emu10k1/emu10k1_main.c
+@@ -657,14 +657,14 @@ static int snd_emu10k1_cardbus_init(stru
+ 	return 0;
  }
  
- void snd_usb_set_format_quirk(struct snd_usb_substream *subs,
---- a/sound/usb/stream.c
-+++ b/sound/usb/stream.c
-@@ -94,6 +94,7 @@ static void snd_usb_init_substream(struc
- 	subs->dev = as->chip->dev;
- 	subs->txfr_quirk = as->chip->txfr_quirk;
- 	subs->speed = snd_usb_get_speed(subs->dev);
-+	subs->pkt_offset_adj = 0;
+-static int snd_emu1010_load_firmware(struct snd_emu10k1 *emu)
++static int snd_emu1010_load_firmware(struct snd_emu10k1 *emu,
++				     const struct firmware *fw_entry)
+ {
+ 	int n, i;
+ 	int reg;
+ 	int value;
+ 	unsigned int write_post;
+ 	unsigned long flags;
+-	const struct firmware *fw_entry = emu->firmware;
  
- 	snd_usb_set_pcm_ops(as->pcm, stream);
+ 	if (!fw_entry)
+ 		return -EIO;
+@@ -725,9 +725,34 @@ static int emu1010_firmware_thread(void
+ 			/* Return to Audio Dock programming mode */
+ 			snd_printk(KERN_INFO "emu1010: Loading Audio Dock Firmware\n");
+ 			snd_emu1010_fpga_write(emu, EMU_HANA_FPGA_CONFIG, EMU_HANA_FPGA_CONFIG_AUDIODOCK);
+-			err = snd_emu1010_load_firmware(emu);
+-			if (err != 0)
+-				continue;
++
++			if (!emu->dock_fw) {
++				const char *filename = NULL;
++				switch (emu->card_capabilities->emu_model) {
++				case EMU_MODEL_EMU1010:
++					filename = DOCK_FILENAME;
++					break;
++				case EMU_MODEL_EMU1010B:
++					filename = MICRO_DOCK_FILENAME;
++					break;
++				case EMU_MODEL_EMU1616:
++					filename = MICRO_DOCK_FILENAME;
++					break;
++				}
++				if (filename) {
++					err = request_firmware(&emu->dock_fw,
++							       filename,
++							       &emu->pci->dev);
++					if (err)
++						continue;
++				}
++			}
++
++			if (emu->dock_fw) {
++				err = snd_emu1010_load_firmware(emu, emu->dock_fw);
++				if (err)
++					continue;
++			}
  
+ 			snd_emu1010_fpga_write(emu, EMU_HANA_FPGA_CONFIG, 0);
+ 			snd_emu1010_fpga_read(emu, EMU_HANA_IRQ_STATUS, &reg);
+@@ -862,7 +887,7 @@ static int snd_emu10k1_emu1010_init(stru
+ 			   filename, emu->firmware->size);
+ 	}
+ 
+-	err = snd_emu1010_load_firmware(emu);
++	err = snd_emu1010_load_firmware(emu, emu->firmware);
+ 	if (err != 0) {
+ 		snd_printk(KERN_INFO "emu1010: Loading Firmware failed\n");
+ 		return err;
+@@ -1253,6 +1278,8 @@ static int snd_emu10k1_free(struct snd_e
+ 		kthread_stop(emu->emu1010.firmware_thread);
+ 	if (emu->firmware)
+ 		release_firmware(emu->firmware);
++	if (emu->dock_fw)
++		release_firmware(emu->dock_fw);
+ 	if (emu->irq >= 0)
+ 		free_irq(emu->irq, emu);
+ 	/* remove reserved page */
 
 
