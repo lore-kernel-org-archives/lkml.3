@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab3EFEjo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 00:39:44 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:34711 "EHLO
+	id S1752720Ab3EFEkY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 00:40:24 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:34841 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137Ab3EFEjm (ORCPT
+	with ESMTP id S1752137Ab3EFEkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 00:39:42 -0400
-X-AuditID: cbfee68e-b7efa6d000004d12-cd-5187340b3afa
+	Mon, 6 May 2013 00:40:23 -0400
+X-AuditID: cbfee68d-b7f016d000007930-26-51873435ddb5
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Herbert Xu'" <herbert@gondor.hengli.com.au>
 Cc: linux-kernel@vger.kernel.org, "'Matt Mackall'" <mpm@selenic.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "'Alexander Clouter'" <alex@digriz.org.uk>
-Subject: [PATCH 3/4] hwrng: timeriomem - remove unnecessary
- platform_set_drvdata()
-Date: Mon, 06 May 2013 13:39:38 +0900
-Message-id: <004801ce4a13$b7853ec0$268fbc40$@samsung.com>
+        Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH 4/4] hwrng: tx4939 - remove unnecessary platform_set_drvdata()
+Date: Mon, 06 May 2013 13:40:21 +0900
+Message-id: <004901ce4a13$d14b7360$73e25a20$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5KE6Iom5LjHSXcTAuF2l3mhzRM1Q==
+Thread-index: Ac5KE8Czjmf+pnA5Tqe0g9sYqixAug==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsVy+t8zfV1uk/ZAg7vzBSw6mkMsul/JWFxe
-	eInV4vKuOWwWC7b1MTqweqybN5fNY9sBVY++LasYPfpebmD0+LxJLoA1issmJTUnsyy1SN8u
-	gSvj31u7grscFTtbbzA1MG5m72Lk5JAQMJFo+vudFcIWk7hwbz1bFyMXh5DAMkaJZ3tnMsEU
-	7W5vZ4RILGKU2DRrNTuE84tRYtbzv8wgVWwCahJfvhwGGysioCfRt74RrINZYAKjxIwfr8CK
-	hAVCJFbN3gFkc3CwCKhKTJ6jDBLmFbCUmDTvKiuELSjxY/I9FhCbWUBLYv3O40wQtrzE5jVv
-	mSEuUpDYcfY1I8yuE6duQdWISOx78Q5sr4TALnaJOa0QQ1kEBCS+TT7EArJXQkBWYtMBqDmS
-	EgdX3GCZwCg2C8nqWUhWz0KyehaSFQsYWVYxiqYWJBcUJ6UXGekVJ+YWl+al6yXn525ihERd
-	3w7GmwesDzEmA62fyCwlmpwPjNq8knhDYzMjC1MTU2Mjc0sz0oSVxHnVWqwDhQTSE0tSs1NT
-	C1KL4otKc1KLDzEycXBKNTDO2mx1N+IQ50kdS/5s/rWC+/vvzH8mJf2j6Zvn/3fzOc5sTBdl
-	+NbsrhrH9eIzg/a/2NSXvVw7zQok1y5Tj/dd4H0/q5ZhRdTX/XEeF/mnzFLb8XDBJqElTI+3
-	anrrBUXeMrTkuHAvYan6ZA3/nntchz7v1u8KOzXzQazGnNgps/s+fq132zFBiaU4I9FQi7mo
-	OBEAWnPdbNACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFKsWRmVeSWpSXmKPExsVy+t9jAV0uk/ZAg+M71S06mkMsul/JWFxe
-	eInV4vKuOWwWC7b1MTqweqybN5fNY9sBVY++LasYPfpebmD0+LxJLoA1qoHRJiM1MSW1SCE1
-	Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdotZJCWWJOKVAoILG4WEnf
-	DtOE0BA3XQuYxghd35AguB4jAzSQsI4x499bu4K7HBU7W28wNTBuZu9i5OSQEDCR2N3ezghh
-	i0lcuLeerYuRi0NIYBGjxKZZq9khnF+MErOe/2UGqWITUJP48uUwWLeIgJ5E3/pGRpAiZoEJ
-	jBIzfrwCKxIWCJFYNXsHkM3BwSKgKjF5jjJImFfAUmLSvKusELagxI/J91hAbGYBLYn1O48z
-	QdjyEpvXvGWGuEhBYsfZ14wwu06cugVVIyKx78U7xgmMArOQjJqFZNQsJKNmIWlZwMiyilE0
-	tSC5oDgpPddQrzgxt7g0L10vOT93EyM4pp9J7WBc2WBxiFGAg1GJh7fgSVugEGtiWXFl7iFG
-	CQ5mJRFen71AId6UxMqq1KL8+KLSnNTiQ4zJQI9OZJYSTc4Hppu8knhDYxMzI0sjMwsjE3Nz
-	0oSVxHkPtFoHCgmkJ5akZqemFqQWwWxh4uCUamC0+sAWuCmc5fEv3htiSkmOhmpOq+7un+XW
-	5lW6+u/duKLHAncWi+ZP63o+IdzH+fYjXhnnos6zX58l/ruo2cpun3uiaX2H07FNmbcvqSyY
-	YH64c579gn92Ex4Ze+ydeGOZJs/Lu7on+aaIHPFYl7I06WAHwwpGsUij2PuvLV5e8V15aU/V
-	Jg4bJZbijERDLeai4kQA6AdeBS0DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t8zfV1Tk/ZAg2+LbSy6X8lYXF54idXi
+	8q45bBYLtvUxOrB4bDug6tG3ZRWjR9/LDYwenzfJBbBEcdmkpOZklqUW6dslcGX8nnGUtaCZ
+	vWJO427WBsbvrF2MnBwSAiYSV6e+h7LFJC7cW8/WxcjFISSwjFHi/84HzDBF934eZoRITGeU
+	uDvhLlTVL0aJ3293M4FUsQmoSXz5cpgdxBYR0JPoW9/ICGIzC6RJbN/4nw3EFhbwk9i6YTYL
+	iM0ioCpx7cw7sF5eAUuJ9hU72CFsQYkfk++xQPRqSazfeZwJwpaX2LzmLdRFChI7zr5mhNl1
+	/zbEfGYBEYl9L96BXSohsIpdYsPZTjaIZQIS3yYfAhrKAZSQldh0AGqOpMTBFTdYJjCKzUKy
+	ehaS1bOQrJ6FZMUCRpZVjKKpBckFxUnpRYZ6xYm5xaV56XrJ+bmbGCFR1ruD8fYB60OMyUDr
+	JzJLiSbnA6M0ryTe0NjMyMLUxNTYyNzSjDRhJXFetRbrQCGB9MSS1OzU1ILUovii0pzU4kOM
+	TBycUg2MJowMT6tz659PfuL5x211fCmXxfdkgYdfKmL68nc+udUxT5k7led229Zoy85Xtz77
+	V6/Z9eSQqqmXWtz5I5MOTN6zdOadj4KvLKZbhF24JLjx306Nd/KKeo0M3zlebTv5XutVznKm
+	N/v2rNj9/krdcf5EM+kdm9QP+b9d/8ppthDbopNLBCRvWCuxFGckGmoxFxUnAgCLzg/LyAIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jQV1Tk/ZAg8/HTCy6X8lYXF54idXi
+	8q45bBYLtvUxOrB4bDug6tG3ZRWjR9/LDYwenzfJBbBENTDaZKQmpqQWKaTmJeenZOal2yp5
+	B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gBtVFIoS8wpBQoFJBYXK+nbYZoQGuKmawHT
+	GKHrGxIE12NkgAYS1jFm/J5xlLWgmb1iTuNu1gbG76xdjJwcEgImEvd+HmaEsMUkLtxbz9bF
+	yMUhJDCdUeLuhLtQzi9Gid9vdzOBVLEJqEl8+XKYHcQWEdCT6FvfCNbNLJAmsX3jfzYQW1jA
+	T2LrhtksIDaLgKrEtTPvwHp5BSwl2lfsYIewBSV+TL7HAtGrJbF+53EmCFteYvOat8wQFylI
+	7Dj7mhFm1/3bEPOZBUQk9r14xziBUWAWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca6hUn
+	5haX5qXrJefnbmIEx/AzqR2MKxssDjEKcDAq8fAWPGkLFGJNLCuuzD3EKMHBrCTC67MXKMSb
+	klhZlVqUH19UmpNafIgxGejTicxSosn5wPSSVxJvaGxiZmRpZGZhZGJuTpqwkjjvgVbrQCGB
+	9MSS1OzU1ILUIpgtTBycUg2MPdlyR15EW+sbZF9k+9Uee/KGeDyD5/wPQQd3zih/9uNC7PaH
+	XbmMSY8W9W6tD4yr3rb6ic5jhUlibz9URmrejd34tlh08n32SdUHl5/wilCc7/u56BWXU+W1
+	A1VHbveuOnZ45m9+K0vjl5++Gws6p83WfrLvutIB0/vnbtzlu3TM7dUip9BFmkosxRmJhlrM
+	RcWJABfZjpolAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -62,29 +59,21 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/char/hw_random/timeriomem-rng.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/char/hw_random/tx4939-rng.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/char/hw_random/timeriomem-rng.c b/drivers/char/hw_random/timeriomem-rng.c
-index 3e75737..d2120ba 100644
---- a/drivers/char/hw_random/timeriomem-rng.c
-+++ b/drivers/char/hw_random/timeriomem-rng.c
-@@ -192,7 +192,6 @@ out_release_io:
- out_timer:
- 	del_timer_sync(&priv->timer);
- out_free:
--	platform_set_drvdata(pdev, NULL);
- 	kfree(priv);
- 	return err;
- }
-@@ -209,7 +208,6 @@ static int timeriomem_rng_remove(struct platform_device *pdev)
- 	del_timer_sync(&priv->timer);
- 	iounmap(priv->io_base);
- 	release_mem_region(res->start, resource_size(res));
--	platform_set_drvdata(pdev, NULL);
- 	kfree(priv);
+diff --git a/drivers/char/hw_random/tx4939-rng.c b/drivers/char/hw_random/tx4939-rng.c
+index d34a24a..00593c8 100644
+--- a/drivers/char/hw_random/tx4939-rng.c
++++ b/drivers/char/hw_random/tx4939-rng.c
+@@ -154,7 +154,6 @@ static int __exit tx4939_rng_remove(struct platform_device *dev)
+ 	struct tx4939_rng *rngdev = platform_get_drvdata(dev);
  
+ 	hwrng_unregister(&rngdev->rng);
+-	platform_set_drvdata(dev, NULL);
  	return 0;
+ }
+ 
 -- 
 1.7.2.5
 
