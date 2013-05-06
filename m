@@ -1,111 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab3EFLLy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 07:11:54 -0400
-Received: from ozlabs.org ([203.10.76.45]:56975 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753988Ab3EFLLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 07:11:53 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        michael@ellerman.id.au, benh@kernel.crashing.org
-Subject: Re: [PATCH] powerpc, perf: Fix processing conditions for invalid BHRB entries
-In-reply-to: <1367831206-16331-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1367831206-16331-1-git-send-email-khandual@linux.vnet.ibm.com>
-Comments: In-reply-to Anshuman Khandual <khandual@linux.vnet.ibm.com>
-   message dated "Mon, 06 May 2013 14:36:46 +0530."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Mon, 06 May 2013 21:11:45 +1000
-Message-ID: <24261.1367838705@ale.ozlabs.ibm.com>
+	id S1754202Ab3EFLMi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 07:12:38 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33925
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754001Ab3EFLMh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 07:12:37 -0400
+Date: Mon, 6 May 2013 13:10:41 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 5/7] sched: compute runnable load avg in cpu_load and
+ cpu_avg_load_per_task
+Message-ID: <20130506111041.GA15446@dyad.programming.kicks-ass.net>
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
+ <1367804711-30308-6-git-send-email-alex.shi@intel.com>
+ <CAPM31RLJe19FH+RYipwm4kwtzmFHoS2xGTx4iZ9+qwDJZ_pf3A@mail.gmail.com>
+ <20130506101936.GE13861@dyad.programming.kicks-ass.net>
+ <CAPM31RJg87C0nO_tAaOGLaDCUAB+QmfV4LkNcwnk9j9voNocfg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM31RJg87C0nO_tAaOGLaDCUAB+QmfV4LkNcwnk9j9voNocfg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anshuman Khandual <khandual@linux.vnet.ibm.com> wrote:
+On Mon, May 06, 2013 at 03:33:45AM -0700, Paul Turner wrote:
+> Yeah, most of the rationale is super hand-wavy; especially the fairly
+> arbitrary choice of periods (e.g. busy_idx vs newidle).
+> 
+> I think the other rationale is:
+>   For smaller indicies (e.g. newidle) we speed up response time by
+> also cutting motion out of the averages.
+> 
+> The runnable_avgs themselves actually have a fair bit of history in
+> them already (50% is last 32ms); but given that they don't need to be
+> cut-off to respond to load being migrated I'm guessing we could
+> actually potentially get by with just "instaneous" and "use averages"
+> where appropriate?
 
-> Fixing some conditions during BHRB entry processing.
+Sure,. worth a try. If things fall over we can always look at it again.
 
-I think we can simplify this a lot more... something like the below.
+> We always end up having to re-pick/tune them based on a variety of
+> workloads; if we can eliminate them I think it would be a win.
 
-Also, this marks the "to" address as all 1s, which is better poison
-value since it's possible to branch to/from 0x0.
+Agreed, esp. the plethora of weird idx things we currently have. If we need to
+re-introduce something it would likely only be the busy case and for that we
+can immediately link to the balance interval or so.
 
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index c627843..d410d65 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -1463,65 +1463,45 @@ void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
- {
- 	u64 val;
- 	u64 addr;
--	int r_index, u_index, target, pred;
-+	int r_index, u_index, pred;
- 
- 	r_index = 0;
- 	u_index = 0;
- 	while (r_index < ppmu->bhrb_nr) {
- 		/* Assembly read function */
--		val = read_bhrb(r_index);
-+		val = read_bhrb(r_index++);
- 
- 		/* Terminal marker: End of valid BHRB entries */
--		if (val == 0) {
-+		if (!val) {
- 			break;
- 		} else {
- 			/* BHRB field break up */
- 			addr = val & BHRB_EA;
- 			pred = val & BHRB_PREDICTION;
--			target = val & BHRB_TARGET;
- 
--			/* Probable Missed entry: Not applicable for POWER8 */
--			if ((addr == 0) && (target == 0) && (pred == 1)) {
--				r_index++;
-+			if (!addr)
-+				/* invalid entry */
- 				continue;
--			}
--
--			/* Real Missed entry: Power8 based missed entry */
--			if ((addr == 0) && (target == 1) && (pred == 1)) {
--				r_index++;
--				continue;
--			}
- 
--			/* Reserved condition: Not a valid entry  */
--			if ((addr == 0) && (target == 1) && (pred == 0)) {
--				r_index++;
--				continue;
--			}
--
--			/* Is a target address */
- 			if (val & BHRB_TARGET) {
- 				/* First address cannot be a target address */
--				if (r_index == 0) {
--					r_index++;
-+				if (r_index == 0)
- 					continue;
--				}
- 
- 				/* Update target address for the previous entry */
- 				cpuhw->bhrb_entries[u_index - 1].to = addr;
- 				cpuhw->bhrb_entries[u_index - 1].mispred = pred;
- 				cpuhw->bhrb_entries[u_index - 1].predicted = ~pred;
--
--				/* Dont increment u_index */
--				r_index++;
- 			} else {
- 				/* Update address, flags for current entry */
- 				cpuhw->bhrb_entries[u_index].from = addr;
-+				cpuhw->bhrb_entries[u_index].to =
-+					0xffffffffffffffff;
- 				cpuhw->bhrb_entries[u_index].mispred = pred;
- 				cpuhw->bhrb_entries[u_index].predicted = ~pred;
- 
- 				/* Successfully popullated one entry */
- 				u_index++;
--				r_index++;
- 			}
- 		}
- 	}
+
+
