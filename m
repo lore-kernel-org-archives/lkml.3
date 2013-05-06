@@ -1,149 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760994Ab3EFXcs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:32:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36728 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758810Ab3EFXNc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:32 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 039/104] tracing: Fix stack tracer with fentry use
-Date: Mon,  6 May 2013 16:11:58 -0700
-Message-Id: <20130506230047.626961022@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
-References: <20130506230043.526528358@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1761009Ab3EFXc7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:32:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:21958 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757621Ab3EFXc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 19:32:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,624,1363158000"; 
+   d="asc'?scan'208";a="329910811"
+Message-ID: <1367883166.16445.13.camel@jtkirshe-mobl>
+Subject: Re: [GIT] Networking
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bruce.w.allan@intel.com
+Date: Mon, 06 May 2013 16:32:46 -0700
+In-Reply-To: <20130506.190922.168696209163637134.davem@davemloft.net>
+References: <20130506.170537.2116026617074159336.davem@davemloft.net>
+	 <CA+55aFzQ8MzrmPQNPfLFA3nVQVDR3HL+RwcGrAwanJCKRxL2=A@mail.gmail.com>
+	 <20130506.190922.168696209163637134.davem@davemloft.net>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-9+2u/fKRmvtpRVYMB+cl"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--=-9+2u/fKRmvtpRVYMB+cl
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Mon, 2013-05-06 at 19:09 -0400, David Miller wrote:
+> From: Linus Torvalds <torvalds@linux-foundation.org>
+> Date: Mon, 6 May 2013 15:57:15 -0700
+>=20
+> > On Mon, May 6, 2013 at 2:05 PM, David Miller <davem@davemloft.net> wrot=
+e:
+> >>
+> >> Just a small pile of fixes:
+> >=20
+> > Ok, apparently the e1000e problem didn't get fixed yet. Should I just
+> > revert ce43a2168c59 for now, or do we have a fix for that forthcoming
+> > shortly?
+>=20
+> It is coming very shortly.
 
-commit d4ecbfc49b4b1d4b597fb5ba9e4fa25d62f105c5 upstream.
+I am preparing the patch now to send upstream...
 
-When gcc 4.6 on x86 is used, the function tracer will use the new
-option -mfentry which does a call to "fentry" at every function
-instead of "mcount". The significance of this is that fentry is
-called as the first operation of the function instead of the mcount
-usage of being called after the stack.
+--=-9+2u/fKRmvtpRVYMB+cl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-This causes the stack tracer to show some bogus results for the size
-of the last function traced, as well as showing "ftrace_call" instead
-of the function. This is due to the stack frame not being set up
-by the function that is about to be traced.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
 
- # cat stack_trace
-        Depth    Size   Location    (48 entries)
-        -----    ----   --------
-  0)     4824     216   ftrace_call+0x5/0x2f
-  1)     4608     112   ____cache_alloc+0xb7/0x22d
-  2)     4496      80   kmem_cache_alloc+0x63/0x12f
+iQIcBAABCgAGBQJRiD2eAAoJEOVv75VaS+3OxNUP/0GbnIVeUtVXFc9IkWNaWihv
+U4zRF+bZrp+Wg/bWnTEr4bVElxti1Y1QOxVrXljadBb4vC47wxewtunflHSVnEO3
+29KYJoi6y0eZ2fp+vqmZsWpUsfkwfLz092j3i4oN+qsLaGkVpMNzEjSUx071tGzq
+DPTKYg8sXPCCjnnHfYXVbrzv0Ukz2MyZO5DQWIrO6DE2VScWZjRLGjs3L5TGMyLG
+YCNs4oZlxBUkbctwRMzWKrrr41dLgIfQsUAxdZ6wYjKmWoQkQeoSsBkYONibPDka
+zfR75+n5+Mwd8AIE8xljAwCvX3leH3Xb+JTUeGU4u+WULAoOli7W6BIEFnvpEL7c
+ZnacZCoLlpKvFlpxldvmhuwLnxVNrQQDEjlI44cM2DzCVhAUP0cIAFPVDGZ4FwQZ
+AdpcoGZB6icNPpeskWtD+v7M6Jz+/tLo7MtMd3BhgOB28hXqs2/sGoSJkQdEYxlH
+bmxWlj9tYRe5E0nNX7YK2YOckCQ9SMjB/Md0LI2QriKtGjS4a9ZA4qRcZpQLu87c
+LsLii1wmHnObgJU98bR4WJyJSbuBIaeh6HVtAczq8jg3HF+tHclowGuKqegM3Poz
+uInb6h5JEprTrZN6YqC0dRlGcyv0tXjgP4QjA/7XazYoZjpYlnWlDTwgN6waKdm3
+YDgikDTt0AOJeBvlWp6E
+=6wVd
+-----END PGP SIGNATURE-----
 
-The 216 size for ftrace_call includes both the ftrace_call stack
-(which includes the saving of registers it does), as well as the
-stack size of the parent.
-
-To fix this, if CC_USING_FENTRY is defined, then the stack_tracer
-will reserve the first item in stack_dump_trace[] array when
-calling save_stack_trace(), and it will fill it in with the parent ip.
-Then the code will look for the parent pointer on the stack and
-give the real size of the parent's stack pointer:
-
- # cat stack_trace
-        Depth    Size   Location    (14 entries)
-        -----    ----   --------
-  0)     2640      48   update_group_power+0x26/0x187
-  1)     2592     224   update_sd_lb_stats+0x2a5/0x4ac
-  2)     2368     160   find_busiest_group+0x31/0x1f1
-  3)     2208     256   load_balance+0xd9/0x662
-
-I'm Cc'ing stable, although it's not urgent, as it only shows bogus
-size for item #0, the rest of the trace is legit. It should still be
-corrected in previous stable releases.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/trace/trace_stack.c |   33 +++++++++++++++++++++++++++++----
- 1 file changed, 29 insertions(+), 4 deletions(-)
-
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -20,13 +20,27 @@
- 
- #define STACK_TRACE_ENTRIES 500
- 
-+/*
-+ * If fentry is used, then the function being traced will
-+ * jump to fentry directly before it sets up its stack frame.
-+ * We need to ignore that one and record the parent. Since
-+ * the stack frame for the traced function wasn't set up yet,
-+ * the stack_trace wont see the parent. That needs to be added
-+ * manually to stack_dump_trace[] as the first element.
-+ */
-+#ifdef CC_USING_FENTRY
-+# define add_func	1
-+#else
-+# define add_func	0
-+#endif
-+
- static unsigned long stack_dump_trace[STACK_TRACE_ENTRIES+1] =
- 	 { [0 ... (STACK_TRACE_ENTRIES)] = ULONG_MAX };
- static unsigned stack_dump_index[STACK_TRACE_ENTRIES];
- 
- static struct stack_trace max_stack_trace = {
--	.max_entries		= STACK_TRACE_ENTRIES,
--	.entries		= stack_dump_trace,
-+	.max_entries		= STACK_TRACE_ENTRIES - add_func,
-+	.entries		= &stack_dump_trace[add_func],
- };
- 
- static unsigned long max_stack_size;
-@@ -40,7 +54,7 @@ int stack_tracer_enabled;
- static int last_stack_tracer_enabled;
- 
- static inline void
--check_stack(unsigned long *stack)
-+check_stack(unsigned long ip, unsigned long *stack)
- {
- 	unsigned long this_size, flags;
- 	unsigned long *p, *top, *start;
-@@ -71,6 +85,17 @@ check_stack(unsigned long *stack)
- 	save_stack_trace(&max_stack_trace);
- 
- 	/*
-+	 * When fentry is used, the traced function does not get
-+	 * its stack frame set up, and we lose the parent.
-+	 * Add that one in manally. We set up save_stack_trace()
-+	 * to not touch the first element in this case.
-+	 */
-+	if (add_func) {
-+		stack_dump_trace[0] = ip;
-+		max_stack_trace.nr_entries++;
-+	}
-+
-+	/*
- 	 * Now find where in the stack these are.
- 	 */
- 	i = 0;
-@@ -124,7 +149,7 @@ stack_trace_call(unsigned long ip, unsig
- 	if (per_cpu(trace_active, cpu)++ != 0)
- 		goto out;
- 
--	check_stack(&stack);
-+	check_stack(parent_ip, &stack);
- 
-  out:
- 	per_cpu(trace_active, cpu)--;
-
+--=-9+2u/fKRmvtpRVYMB+cl--
 
