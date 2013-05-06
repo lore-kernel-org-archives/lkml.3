@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761150Ab3EFXfZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:35:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9012 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758156Ab3EFXfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:35:20 -0400
-Message-ID: <1367883316.22645.2.camel@dcbw.foobar.com>
-Subject: Re: [GIT] Networking
-From: Dan Williams <dcbw@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, hayeswang <hayeswang@realtek.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 06 May 2013 18:35:16 -0500
-In-Reply-To: <1367526148.7757.30.camel@dcbw.foobar.com>
-References: <20130501.164755.1859264969403837546.davem@davemloft.net>
-	 <CA+55aFzsvyQLLKbuETBqfhpgkSaXH9cvT0O-cQ-mTTXXxcMqwg@mail.gmail.com>
-	 <1367512467.4000.7.camel@dcbw.foobar.com>
-	 <1367519066.7757.19.camel@dcbw.foobar.com>
-	 <CA+55aFy04mY5g-Aics9dcGpv6zgn2bu4iQ-_ifE5hun_t4E54Q@mail.gmail.com>
-	 <CA+55aFy1P6TKZjWSvrJN6o=gAr7OTYQsoZORXGF6g8OnonBT=Q@mail.gmail.com>
-	 <1367522254.7757.23.camel@dcbw.foobar.com>
-	 <1367526148.7757.30.camel@dcbw.foobar.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1761174Ab3EFXf6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:35:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36697 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760424Ab3EFXN0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 19:13:26 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 031/104] xen/smp: Fix leakage of timer interrupt line for every CPU online/offline.
+Date: Mon,  6 May 2013 16:11:50 -0700
+Message-Id: <20130506230046.817568763@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
+References: <20130506230043.526528358@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-02 at 15:22 -0500, Dan Williams wrote:
-> On Thu, 2013-05-02 at 14:17 -0500, Dan Williams wrote:
-> > On Thu, 2013-05-02 at 11:53 -0700, Linus Torvalds wrote:
-> > > On Thu, May 2, 2013 at 11:52 AM, Linus Torvalds
-> > > <torvalds@linux-foundation.org> wrote:
-> > > >
-> > > > but for some reason in the bad case NM just doesn't react past the
-> > > > "carrier now ON" part.
-> > > 
-> > > Grr. That was much more readable while editing, then gmail ended up
-> > > doing its "smart line wrap" thing and my nice long lines became a
-> > > mess. I think you can still figure it out,
-> > 
-> > Yeah, the dump is good, and it seems to point to a problem in NM for
-> > now.  I'm investigating.
-> 
-> If you don't mind helping me confirm/reject a theory, would you mind:
-> 
-> 1) drop "level=debug" into the [logging] section
-> of /etc/NetworkManager/NetworkManager.conf (create the section if it
-> doesn't exist)
-> 
-> 2) reboot (or just rmmod/modprobe r8169 if that's enough to trigger it)
-> 
-> 3) grab syslog and send it to me (privately if you wish)
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-Spent a while trying to reproduce this on a tg3 today, twiddling the
-carrier from the code, but failed to do so...  if you're at all able to
-get the debug logs here as mentioned here, that would help greatly.
+------------------
 
-Contrary to the suggestion above, changing the log level in
-NetworkManager.conf does not immediately start logging in that level,
-you do need to restart NM.  So with that in mind, I'd suggest a full
-reboot of the system just to make sure we have the exact same situation
-as when you experience the problem.
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-(I'm still mystified how the netdev features thing "fixes" this
-though...)
+commit 888b65b4bc5e7fcbbb967023300cd5d44dba1950 upstream.
 
-Thanks!
-Dan
+In the PVHVM path when we do CPU online/offline path we would
+leak the timer%d IRQ line everytime we do a offline event. The
+online path (xen_hvm_setup_cpu_clockevents via
+x86_cpuinit.setup_percpu_clockev) would allocate a new interrupt
+line for the timer%d.
+
+But we would still use the old interrupt line leading to:
+
+kernel BUG at /home/konrad/ssd/konrad/linux/kernel/hrtimer.c:1261!
+invalid opcode: 0000 [#1] SMP
+RIP: 0010:[<ffffffff810b9e21>]  [<ffffffff810b9e21>] hrtimer_interrupt+0x261/0x270
+.. snip..
+ <IRQ>
+ [<ffffffff810445ef>] xen_timer_interrupt+0x2f/0x1b0
+ [<ffffffff81104825>] ? stop_machine_cpu_stop+0xb5/0xf0
+ [<ffffffff8111434c>] handle_irq_event_percpu+0x7c/0x240
+ [<ffffffff811175b9>] handle_percpu_irq+0x49/0x70
+ [<ffffffff813a74a3>] __xen_evtchn_do_upcall+0x1c3/0x2f0
+ [<ffffffff813a760a>] xen_evtchn_do_upcall+0x2a/0x40
+ [<ffffffff8167c26d>] xen_hvm_callback_vector+0x6d/0x80
+ <EOI>
+ [<ffffffff81666d01>] ? start_secondary+0x193/0x1a8
+ [<ffffffff81666cfd>] ? start_secondary+0x18f/0x1a8
+
+There is also the oddity (timer1) in the /proc/interrupts after
+offlining CPU1:
+
+  64:       1121          0  xen-percpu-virq      timer0
+  78:          0          0  xen-percpu-virq      timer1
+  84:          0       2483  xen-percpu-virq      timer2
+
+This patch fixes it.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/xen/smp.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -658,6 +658,7 @@ static void xen_hvm_cpu_die(unsigned int
+ 	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
++	xen_teardown_timer(cpu);
+ 	native_cpu_die(cpu);
+ }
+ 
+
 
