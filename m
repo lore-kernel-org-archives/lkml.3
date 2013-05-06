@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab3EFRtD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 13:49:03 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59323 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270Ab3EFRs7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 13:48:59 -0400
-Message-ID: <5187ECE8.70005@infradead.org>
-Date: Mon, 06 May 2013 10:48:24 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1755404Ab3EFRym (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 13:54:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44356 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754221Ab3EFRyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 13:54:41 -0400
+Date: Mon, 6 May 2013 19:54:01 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <andi@firstfloor.org>, Ulrich Drepper <drepper@gmail.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 6/8] perf tests: Add automated tests for formula object
+Message-ID: <20130506175401.GD4562@krava.brq.redhat.com>
+References: <1367421346-18257-1-git-send-email-jolsa@redhat.com>
+ <1367421346-18257-7-git-send-email-jolsa@redhat.com>
+ <5183D52D.7060303@gmail.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, James Smart <james.smart@emulex.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: linux-next: Tree for May 6 (lpfc)
-References: <20130506144207.c812a0227d7763d26e5fec80@canb.auug.org.au>  <5187D6F1.9070103@infradead.org> <1367858965.1868.24.camel@dabdike>
-In-Reply-To: <1367858965.1868.24.camel@dabdike>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5183D52D.7060303@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/13 09:49, James Bottomley wrote:
-> On Mon, 2013-05-06 at 09:14 -0700, Randy Dunlap wrote:
->> On 05/05/13 21:42, Stephen Rothwell wrote:
->>> Hi all,
->>>
->>> Please do not add any v3.11 destined work to your linux-next included
->>> branches until after v3.10-rc1 is released.
->>>
->>> I am receiving a (un)reasonable number of conflicts from there being
->>> multiple copies of some commits in various trees.   Please clean this up
->>> and resist the temptataion to rebase your trees on the way to your
->>> upstream ...
->>>
->>> Changes since 20130506:
->>>
->>
->> on i386:
->> # CONFIG_CRC_T10DIF is not set
->>
->>
->> drivers/built-in.o: In function `lpfc_bg_crc':
->> (.text+0x3cb3c9): undefined reference to `crc_t10dif'
+On Fri, May 03, 2013 at 09:18:05AM -0600, David Ahern wrote:
+> On 5/1/13 9:15 AM, Jiri Olsa wrote:
+> >+static int __test_basics(char *file)
+> >+{
+> >+	struct perf_formula fml;
+> >+	struct perf_formula_set *set;
+> >+	struct perf_formula_counter *counter;
+> >+	struct perf_evlist *evlist;
+> >+	struct perf_evsel *evsel;
+> >+	struct perf_counts *counts;
+> >+	struct perf_formula_expr expr;
+> >+	int ret;
+> >+
+> >+	pr_debug("file %s\n", file);
+> >+
+> >+	perf_formula__init(&fml);
+> >+
+> >+	ret = perf_formula__load(&fml, file);
+> >+	TEST_ASSERT_VAL("failed to load formula", !ret);
 > 
-> That's the usual minor config cockup, isn't it?  lpfc apparently also
-> needs the generic checksum, so the fix would seem to be this.
+> With all the asserts when something goes wrong you should delete the
+> file right after perf_formula__load. so maybe
 > 
-> James
-> 
+> file = file_get(data, sizeof(data));
+> ret = perf_formula__load(&fml, file);
+> file_put(file);
 
-Thanks, that works.
+hum, the TEST_ASSERT_VAL call 'return' from __test_basics on error and
+that goes back to test_basics where file_put is called..
 
-for your S-O-B patch:
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-
-> ---
-> diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
-> index db95c54..86af29f 100644
-> --- a/drivers/scsi/Kconfig
-> +++ b/drivers/scsi/Kconfig
-> @@ -1353,6 +1353,8 @@ config SCSI_LPFC
->  	tristate "Emulex LightPulse Fibre Channel Support"
->  	depends on PCI && SCSI
->  	select SCSI_FC_ATTRS
-> +	select GENERIC_CSUM
-> +	select CRC_T10DIF
->  	help
->            This lpfc driver supports the Emulex LightPulse
->            Family of Fibre Channel PCI host adapters.
-> 
-> 
-> --
-
-
--- 
-~Randy
+thanks,
+jirka
