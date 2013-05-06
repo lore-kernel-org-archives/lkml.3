@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab3EFFrX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 01:47:23 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51282 "EHLO
+	id S1752791Ab3EFFtf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 01:49:35 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41869 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752443Ab3EFFrV (ORCPT
+	by vger.kernel.org with ESMTP id S1752443Ab3EFFte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 01:47:21 -0400
-X-Sasl-enc: 97eSuGNEiIwmYds97jA8eijWz3lDFwpisPP6BtjF1KB8 1367819240
-Subject: [REPOST PATCH] autofs - fix sparse warning for autofs4_d_manage()
+	Mon, 6 May 2013 01:49:34 -0400
+X-Sasl-enc: ADkztwXDZWgw0YB2LIIXtJYZYfdQOMxvk76cjdG8hmMc 1367819373
+Subject: [REPOST PATCH] autofs - remove autofs dentry mount check
 To: Linus Torvalds <torvalds@linux-foundation.org>
 From: Ian Kent <raven@themaw.net>
-Cc: Claudiu Ghioc <claudiughioc@gmail.com>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 06 May 2013 13:47:16 +0800
-Message-ID: <20130506054716.6004.92087.stgit@perseus.fritz.box>
+Cc: autofs mailing list <autofs@vger.kernel.org>,
+        David Jeffery <djeffery@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org
+Date: Mon, 06 May 2013 13:49:30 +0800
+Message-ID: <20130506054929.6107.5469.stgit@perseus.fritz.box>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -24,35 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Claudiu Ghioc <claudiughioc@gmail.com>
+From: David Jeffery <djeffery@redhat.com>
 
-Fixed the sparse warning:
-*   "fs/autofs4/root.c:411:5: warning:
-    symbol 'autofs4_d_manage' was not declared.
-    Should it be static?"
+When checking if an autofs mount point is busy it isn't sufficient to
+only check if it's a mount point.
 
-edit: imk
-Clearly it should be static as the function is declared static at
-the top of root.c.
-end edit: imk
+For example, if the mount of an offset mountpoint in a tree is denied
+for this host by its export and the dentry becomes a process working
+directory the check incorrectly returns the mount as not in use at expire.
 
-Signed-off-by: Claudiu Ghioc <claudiu.ghioc@gmail.com>
+This can happen since the default when mounting within a tree is nostrict,
+which means ingnore mount fails on mounts within the tree and continue. The
+nostrict option is meant to allow mounting in this case.
+
+Signed-off-by: David Jeffery <djeffery@redhat.com>
 Signed-off-by: Ian Kent <raven@themaw.net>
+Cc: stable@vger.kernel.org
 ---
- fs/autofs4/root.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/autofs4/expire.c |    9 ---------
+ 1 file changed, 9 deletions(-)
 
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index 9bd1625..085da86 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -408,7 +408,7 @@ done:
- 	return NULL;
- }
+diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
+index 01443ce..13ddec9 100644
+--- a/fs/autofs4/expire.c
++++ b/fs/autofs4/expire.c
+@@ -61,15 +61,6 @@ static int autofs4_mount_busy(struct vfsmount *mnt, struct dentry *dentry)
+ 		/* This is an autofs submount, we can't expire it */
+ 		if (autofs_type_indirect(sbi->type))
+ 			goto done;
+-
+-		/*
+-		 * Otherwise it's an offset mount and we need to check
+-		 * if we can umount its mount, if there is one.
+-		 */
+-		if (!d_mountpoint(path.dentry)) {
+-			status = 0;
+-			goto done;
+-		}
+ 	}
  
--int autofs4_d_manage(struct dentry *dentry, bool rcu_walk)
-+static int autofs4_d_manage(struct dentry *dentry, bool rcu_walk)
- {
- 	struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
- 	struct autofs_info *ino = autofs4_dentry_ino(dentry);
+ 	/* Update the expiry counter if fs is busy */
 
