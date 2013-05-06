@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab3EFUqS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59050 "EHLO
+	id S1758893Ab3EFVKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:10:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59099 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757452Ab3EFUqN (ORCPT
+	with ESMTP id S1756724Ab3EFUqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:13 -0400
+	Mon, 6 May 2013 16:46:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Felipe Balbi <balbi@ti.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [ 027/115] usb: chipidea: udc: fix memory access of shared memory on armv5 machines
-Date: Mon,  6 May 2013 13:44:23 -0700
-Message-Id: <20130506203058.365460009@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 040/115] tracing: Use stack of calling function for stack tracer
+Date: Mon,  6 May 2013 13:44:36 -0700
+Message-Id: <20130506203059.680354234@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -28,81 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit a9c174302b1590ef3ead485d804a303c5f89174b upstream.
+commit 87889501d0adfae10e3b0f0e6f2d7536eed9ae84 upstream.
 
-The udc uses an shared dma memory space between hard and software. This
-memory layout is described in ci13xxx_qh and ci13xxx_td which are marked
-with the attribute ((packed)).
+Use the stack of stack_trace_call() instead of check_stack() as
+the test pointer for max stack size. It makes it a bit cleaner
+and a little more accurate.
 
-The compiler currently does not know about the alignment of the memory
-layout, and will create strb and ldrb operations.
+Adding stable, as a later fix depends on this patch.
 
-The Datasheet of the synopsys core describes, that some operations on
-the mapped memory need to be atomic double word operations. I.e. the
-next pointer addressing in the qhead, as otherwise the hardware will
-read wrong data and totally stuck.
-
-This is also possible while working with the current active td queue,
-and preparing the td->ptr.next in software while the hardware is still
-working with the current active td which is supposed to be changed:
-
-writeb(0xde, &td->ptr.next + 0x0); /* strb */
-writeb(0xad, &td->ptr.next + 0x1); /* strb */
-
-<----- hardware reads value of td->ptr.next and get stuck!
-
-writeb(0xbe, &td->ptr.next + 0x2); /* strb */
-writeb(0xef, &td->ptr.next + 0x3); /* strb */
-
-This appeares on armv5 machines where the hardware does not support
-unaligned 32bit operations.
-
-This patch adds the attribute ((aligned(4))) to the structures to tell
-the compiler to use 32bit operations. It also adds an wmb() for the
-prepared TD data before it gets enqueued into the qhead.
-
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/chipidea/udc.c |    2 ++
- drivers/usb/chipidea/udc.h |    4 ++--
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ kernel/trace/trace_stack.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/chipidea/udc.c
-+++ b/drivers/usb/chipidea/udc.c
-@@ -461,6 +461,8 @@ static int _hardware_enqueue(struct ci13
- 		mReq->ptr->page[i] =
- 			(mReq->req.dma + i * CI13XXX_PAGE_SIZE) & ~TD_RESERVED_MASK;
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -39,20 +39,21 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
+ int stack_tracer_enabled;
+ static int last_stack_tracer_enabled;
  
-+	wmb();
-+
- 	if (!list_empty(&mEp->qh.queue)) {
- 		struct ci13xxx_req *mReqPrev;
- 		int n = hw_ep_bit(mEp->num, mEp->dir);
---- a/drivers/usb/chipidea/udc.h
-+++ b/drivers/usb/chipidea/udc.h
-@@ -40,7 +40,7 @@ struct ci13xxx_td {
- #define TD_CURR_OFFSET        (0x0FFFUL <<  0)
- #define TD_FRAME_NUM          (0x07FFUL <<  0)
- #define TD_RESERVED_MASK      (0x0FFFUL <<  0)
--} __attribute__ ((packed));
-+} __attribute__ ((packed, aligned(4)));
+-static inline void check_stack(void)
++static inline void
++check_stack(unsigned long *stack)
+ {
+ 	unsigned long this_size, flags;
+ 	unsigned long *p, *top, *start;
+ 	int i;
  
- /* DMA layout of queue heads */
- struct ci13xxx_qh {
-@@ -57,7 +57,7 @@ struct ci13xxx_qh {
- 	/* 9 */
- 	u32 RESERVED;
- 	struct usb_ctrlrequest   setup;
--} __attribute__ ((packed));
-+} __attribute__ ((packed, aligned(4)));
+-	this_size = ((unsigned long)&this_size) & (THREAD_SIZE-1);
++	this_size = ((unsigned long)stack) & (THREAD_SIZE-1);
+ 	this_size = THREAD_SIZE - this_size;
  
- /**
-  * struct ci13xxx_req - usb request representation
+ 	if (this_size <= max_stack_size)
+ 		return;
+ 
+ 	/* we do not handle interrupt stacks yet */
+-	if (!object_is_on_stack(&this_size))
++	if (!object_is_on_stack(stack))
+ 		return;
+ 
+ 	local_irq_save(flags);
+@@ -73,7 +74,7 @@ static inline void check_stack(void)
+ 	 * Now find where in the stack these are.
+ 	 */
+ 	i = 0;
+-	start = &this_size;
++	start = stack;
+ 	top = (unsigned long *)
+ 		(((unsigned long)start & ~(THREAD_SIZE-1)) + THREAD_SIZE);
+ 
+@@ -113,6 +114,7 @@ static void
+ stack_trace_call(unsigned long ip, unsigned long parent_ip,
+ 		 struct ftrace_ops *op, struct pt_regs *pt_regs)
+ {
++	unsigned long stack;
+ 	int cpu;
+ 
+ 	preempt_disable_notrace();
+@@ -122,7 +124,7 @@ stack_trace_call(unsigned long ip, unsig
+ 	if (per_cpu(trace_active, cpu)++ != 0)
+ 		goto out;
+ 
+-	check_stack();
++	check_stack(&stack);
+ 
+  out:
+ 	per_cpu(trace_active, cpu)--;
 
 
