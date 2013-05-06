@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab3EFHzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 03:55:11 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:60272 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab3EFHzI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 03:55:08 -0400
-Date: Mon, 6 May 2013 03:55:06 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-mm <linux-mm@kvack.org>
-Message-ID: <22600323.7586117.1367826906910.JavaMail.root@redhat.com>
-In-Reply-To: <109078046.7585350.1367826730309.JavaMail.root@redhat.com>
-Subject: 3.9.0: panic during boot - kernel BUG at include/linux/gfp.h:323!
+	id S1753467Ab3EFHyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 03:54:40 -0400
+Received: from ozlabs.org ([203.10.76.45]:47343 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753111Ab3EFHyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 03:54:39 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Daniel Baluta <dbaluta@ixiacom.com>, lguest@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, Daniel Baluta <dbaluta@ixiacom.com>
+Subject: Re: [PATCH v2] lguest: rename i386_head.S
+In-Reply-To: <1367578917-21083-1-git-send-email-dbaluta@ixiacom.com>
+References: <1367578917-21083-1-git-send-email-dbaluta@ixiacom.com>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 06 May 2013 16:01:24 +0930
+Message-ID: <87obcopqkj.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF20 (Linux)/8.0.3_GA_5664)
-Thread-Topic: 3.9.0: panic during boot - kernel BUG at include/linux/gfp.h:323!
-Thread-Index: NOJfIyNvipZW2aP65eRrnULPZNOSWw==
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Never saw any of those in any of 3.9 RC releases, but now saw it on
-multiple systems,
+Daniel Baluta <dbaluta@ixiacom.com> writes:
 
-[    0.878873] Performance Events: AMD PMU driver. 
-[    0.884837] ... version:                0 
-[    0.890248] ... bit width:              48 
-[    0.895815] ... generic registers:      4 
-[    0.901048] ... value mask:             0000ffffffffffff 
-[    0.908207] ... max period:             00007fffffffffff 
-[    0.915165] ... fixed-purpose events:   0 
-[    0.920620] ... event mask:             000000000000000f 
-[    0.928031] ------------[ cut here ]------------ 
-[    0.934231] kernel BUG at include/linux/gfp.h:323! 
-[    0.940581] invalid opcode: 0000 [#1] SMP  
-[    0.945982] Modules linked in: 
-[    0.950048] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.9.0+ #1 
-[    0.957877] Hardware name: ProLiant BL465c G7, BIOS A19 12/10/2011 
-[    1.066325] task: ffff880234608000 ti: ffff880234602000 task.ti: ffff880234602000 
-[    1.076603] RIP: 0010:[<ffffffff8117495d>]  [<ffffffff8117495d>] new_slab+0x2ad/0x340 
-[    1.087043] RSP: 0000:ffff880234603bf8  EFLAGS: 00010246 
-[    1.094067] RAX: 0000000000000000 RBX: ffff880237404b40 RCX: 00000000000000d0 
-[    1.103565] RDX: 0000000000000001 RSI: 0000000000000003 RDI: 00000000002052d0 
-[    1.113071] RBP: ffff880234603c28 R08: 0000000000000000 R09: 0000000000000001 
-[    1.122461] R10: 0000000000000001 R11: ffffffff812e3aa8 R12: 0000000000000001 
-[    1.132025] R13: ffff8802378161c0 R14: 0000000000030027 R15: 00000000000040d0 
-[    1.141532] FS:  0000000000000000(0000) GS:ffff880237800000(0000) knlGS:0000000000000000 
-[    1.152306] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b 
-[    1.160004] CR2: ffff88043fdff000 CR3: 00000000018d5000 CR4: 00000000000007f0 
-[    1.169519] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000 
-[    1.179009] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400 
-[    1.188383] Stack: 
-[    1.191088]  ffff880234603c28 0000000000000001 00000000000000d0 ffff8802378161c0 
-[    1.200825]  ffff880237404b40 ffff880237404b40 ffff880234603d28 ffffffff815edba1 
-[    1.21ea0008dd0300 ffff880237816140 0000000000000000 ffff88023740e1c0 
-[    1.519233] Call Trace: 
-[    1.522392]  [<ffffffff815edba1>] __slab_alloc+0x330/0x4f2 
-[    1.529758]  [<ffffffff812e3aa8>] ? alloc_cpumask_var_node+0x28/0x90 
-[    1.538126]  [<ffffffff81a0bd6e>] ? wq_numa_init+0xc8/0x1be 
-[    1.545642]  [<ffffffff81174b25>] kmem_cache_alloc_node_trace+0xa5/0x200 
-[    1.554480]  [<ffffffff812e8>] ? alloc_cpumask_var_node+0x28/0x90 
-[    1.662913]  [<ffffffff812e3aa8>] alloc_cpumask_var_node+0x28/0x90 
-[    1.671224]  [<ffffffff81a0bdb3>] wq_numa_init+0x10d/0x1be 
-[    1.678483]  [<ffffffff81a0be64>] ? wq_numa_init+0x1be/0x1be 
-[    1.686085]  [<ffffffff81a0bec8>] init_workqueues+0x64/0x341 
-[    1.693537]  [<ffffffff8107b687>] ? smpboot_register_percpu_thread+0xc7/0xf0 
-[    1.702970]  [<ffffffff81a0ac4a>] ? ftrace_define_fields_softirq+0x32/0x32 
-[    1.712039]  [<ffffffff81a0be64>] ? wq_numa_init+0x1be/0x1be 
-[    1.719683]  [<ffffffff810002ea>] do_one_initcall+0xea/0x1a0 
-[    1.727162]  [<ffffffff819f1f31>] kernel_init_freeable+0xb7/0x1ec 
-[    1.735316]  [<ffffffff815d50d0>] ? rest_init+0x80/0x80 
-[    1.742121]  [<ffffffff815d50de>] kernel_init+0xe/0xf0 
-[    1.748950]  [<ffffffff815ff89c>] ret_from_fork+0x7c/0xb0 
-[    1.756443]  [<ffffffff815d50d0>] ? rest_init+0x80/0x80 
-[    1.763250] Code: 45  84 ac 00 00 00 f0 41 80 4d 00 40 e9 f6 fe ff ff 66 0f 1f 84 00 00 00 00 00 e8 eb 4b ff ff 49 89 c5 e9 05 fe ff ff <0f> 0b 4c 8b 73 38 44 89 ff 81 cf 00 00 20 00 4c 89 f6 48 c1 ee  
-[    2.187072] RIP  [<ffffffff8117495d>] new_slab+0x2ad/0x340 
-[    2.194238]  RSP <ffff880234603bf8> 
-[    2.198982] ---[ end trace 43bf8bb0334e5135 ]--- 
-[    2.205097] Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b 
+> Since commit 9a163ed8e0 (i386: move kernel) kernel/i386_head.S
+> was renamed to kernel/head_32.S. We do the same for lguest/i386_head.S.
+>
+> Signed-off-by: Daniel Baluta <dbaluta@ixiacom.com>
 
-CAI Qian
+Better.  Applied.
+
+Thanks,
+Rusty.
+
+> ---
+> Changes since v1:
+> 	* use head_32.o in Makefile
+>
+>  arch/x86/lguest/Makefile                   |    2 +-
+>  arch/x86/lguest/{i386_head.S => head_32.S} |    0
+>  2 files changed, 1 insertions(+), 1 deletions(-)
+>  rename arch/x86/lguest/{i386_head.S => head_32.S} (100%)
+>
+> diff --git a/arch/x86/lguest/Makefile b/arch/x86/lguest/Makefile
+> index 94e0e54..8f38d57 100644
+> --- a/arch/x86/lguest/Makefile
+> +++ b/arch/x86/lguest/Makefile
+> @@ -1,2 +1,2 @@
+> -obj-y		:= i386_head.o boot.o
+> +obj-y		:= head_32.o boot.o
+>  CFLAGS_boot.o	:= $(call cc-option, -fno-stack-protector)
+> diff --git a/arch/x86/lguest/i386_head.S b/arch/x86/lguest/head_32.S
+> similarity index 100%
+> rename from arch/x86/lguest/i386_head.S
+> rename to arch/x86/lguest/head_32.S
+> -- 
+> 1.7.5.4
