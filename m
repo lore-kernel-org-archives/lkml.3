@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758430Ab3EFXht (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:37:49 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:22220 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757248Ab3EFXhq (ORCPT
+	id S1758348Ab3EFXiH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:38:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36663 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760351Ab3EFXNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:37:46 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/5WUci0Pm3yQUnAtSnZ9MP
-Date: Mon, 6 May 2013 16:37:43 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: mach-omap2/timer.c: Bug introduced while merging patch -
- ff931c82
-Message-ID: <20130506233743.GJ28721@atomide.com>
-References: <79CD15C6BA57404B839C016229A409A83EC7C45D@DBDE04.ent.ti.com>
- <20130506152706.GD28721@atomide.com>
- <79CD15C6BA57404B839C016229A409A83EC7C93A@DBDE04.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <79CD15C6BA57404B839C016229A409A83EC7C93A@DBDE04.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 6 May 2013 19:13:20 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [ 021/104] USB: add ftdi_sio USB ID for GDM Boost V1.x
+Date: Mon,  6 May 2013 16:11:40 -0700
+Message-Id: <20130506230045.772526107@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
+References: <20130506230043.526528358@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Hiremath, Vaibhav <hvaibhav@ti.com> [130506 11:35]:
-> 
-> Ohh yeah, I already have a patch for it -
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-Thanks, I'll add that into omap-for-v3.10/fixes. I modified
-the comments a bit trying to figure out where it changed, updated
-patch below.
+------------------
 
-Regards,
+From: Stefani Seibold <stefani@seibold.net>
 
-Tony
+commit 58f8b6c4fa5a13cb2ddb400e26e9e65766d71e38 upstream.
+
+This patch add a missing usb device id for the GDMBoost V1.x device
+
+The patch is against 3.9-rc5
+
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+)
+
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -189,6 +189,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_THROTTLE_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GATEWAY_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_BOOST_PID) },
+ 	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -74,6 +74,7 @@
+ #define FTDI_OPENDCC_THROTTLE_PID	0xBFDA
+ #define FTDI_OPENDCC_GATEWAY_PID	0xBFDB
+ #define FTDI_OPENDCC_GBM_PID	0xBFDC
++#define FTDI_OPENDCC_GBM_BOOST_PID	0xBFDD
+ 
+ /* NZR SEM 16+ USB (http://www.nzr.de) */
+ #define FTDI_NZR_SEM_USB_PID	0xC1E0	/* NZR SEM-LOG16+ */
 
 
-From: Vaibhav Hiremath <hvaibhav@ti.com>
-Date: Mon, 6 May 2013 15:19:01 -0700
-Subject: [PATCH] ARM: OMAP2+: Fix mismerge for timer.c between ff931c82 and da4a686a
-
-Looks like the timer.c fixes in commit ff931c82 (ARM: OMAP: clocks:
-Delay clk inits atleast until slab is initialized) got lost in a
-merge with da4a686a (ARM: smp_twd: convert to use CLKSRC_OF init).
-
-Without the omap_clk_init() calls none of OMAP family of devices
-boot.
-
-Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-[tony@atomide.com: updated comments to describe merge error]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-
---- a/arch/arm/mach-omap2/timer.c
-+++ b/arch/arm/mach-omap2/timer.c
-@@ -549,6 +549,8 @@ static inline void __init realtime_counter_init(void)
- 			       clksrc_nr, clksrc_src, clksrc_prop)	\
- void __init omap##name##_gptimer_timer_init(void)			\
- {									\
-+	if (omap_clk_init)						\
-+		omap_clk_init();					\
- 	omap_dmtimer_init();						\
- 	omap2_gp_clockevent_init((clkev_nr), clkev_src, clkev_prop);	\
- 	omap2_gptimer_clocksource_init((clksrc_nr), clksrc_src,		\
-@@ -559,6 +561,8 @@ void __init omap##name##_gptimer_timer_init(void)			\
- 				clksrc_nr, clksrc_src, clksrc_prop)	\
- void __init omap##name##_sync32k_timer_init(void)		\
- {									\
-+	if (omap_clk_init)						\
-+		omap_clk_init();					\
- 	omap_dmtimer_init();						\
- 	omap2_gp_clockevent_init((clkev_nr), clkev_src, clkev_prop);	\
- 	/* Enable the use of clocksource="gp_timer" kernel parameter */	\
