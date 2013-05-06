@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759042Ab3EFVMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:12:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59043 "EHLO
+	id S1757424Ab3EFUqL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:46:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59031 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757397Ab3EFUqM (ORCPT
+	with ESMTP id S1757397Ab3EFUqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:12 -0400
+	Mon, 6 May 2013 16:46:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 025/115] USB: io_ti: fix TIOCGSERIAL
-Date: Mon,  6 May 2013 13:44:21 -0700
-Message-Id: <20130506203058.160038584@linuxfoundation.org>
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 014/115] powerpc/spufs: Initialise inode->i_ino in spufs_new_inode()
+Date: Mon,  6 May 2013 13:44:10 -0700
+Message-Id: <20130506203057.044077871@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -26,31 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Michael Ellerman <michael@ellerman.id.au>
 
-commit b6fd35ee5766143d6bc3c333edf374c336ebdca6 upstream.
+commit 6747e83235caecd30b186d1282e4eba7679f81b7 upstream.
 
-Fix regression introduced by commit f40d78155 ("USB: io_ti: kill custom
-closing_wait implementation") which made TIOCGSERIAL return the wrong
-value for closing_wait.
+In commit 85fe402 (fs: do not assign default i_ino in new_inode), the
+initialisation of i_ino was removed from new_inode() and pushed down
+into the callers. However spufs_new_inode() was not updated.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+This exhibits as no files appearing in /spu, because all our dirents
+have a zero inode, which readdir() seems to dislike.
+
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/io_ti.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/platforms/cell/spufs/inode.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -2392,7 +2392,7 @@ static int get_serial_info(struct edgepo
+--- a/arch/powerpc/platforms/cell/spufs/inode.c
++++ b/arch/powerpc/platforms/cell/spufs/inode.c
+@@ -99,6 +99,7 @@ spufs_new_inode(struct super_block *sb,
+ 	if (!inode)
+ 		goto out;
  
- 	cwait = edge_port->port->port.closing_wait;
- 	if (cwait != ASYNC_CLOSING_WAIT_NONE)
--		cwait = jiffies_to_msecs(closing_wait) / 10;
-+		cwait = jiffies_to_msecs(cwait) / 10;
- 
- 	memset(&tmp, 0, sizeof(tmp));
- 
++	inode->i_ino = get_next_ino();
+ 	inode->i_mode = mode;
+ 	inode->i_uid = current_fsuid();
+ 	inode->i_gid = current_fsgid();
 
 
