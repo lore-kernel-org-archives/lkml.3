@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758839Ab3EFWqe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:46:34 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:48120 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758808Ab3EFWqb (ORCPT
+	id S1758926Ab3EFWqn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:46:43 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:57230 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758808Ab3EFWqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:46:31 -0400
+	Mon, 6 May 2013 18:46:40 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         vgoyal@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/33] blkcg: move bulk of blkcg_gq release operations to the RCU callback
-Date: Mon,  6 May 2013 15:45:44 -0700
-Message-Id: <1367880372-28312-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 10/33] blk-throttle: remove pointless throtl_nr_queued() optimizations
+Date: Mon,  6 May 2013 15:45:49 -0700
+Message-Id: <1367880372-28312-11-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367880372-28312-1-git-send-email-tj@kernel.org>
 References: <1367880372-28312-1-git-send-email-tj@kernel.org>
@@ -22,107 +22,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, when the last reference of a blkcg_gq is put, all then
-release operations sans the actual freeing happen directly in
-blkg_put().  As blkg_put() may be called under queue_lock, all
-pd_exit_fn()s may be too.  This makes it impossible for pd_exit_fn()s
-to use del_timer_sync() on timers which grab the queue_lock which is
-an irq-safe lock due to the deadlock possibility described in the
-comment on top of del_timer_sync().
+throtl_nr_queued() is used in several places to avoid performing
+certain operations when the throtl_data is empty.  This usually is
+useless as those paths usually aren't traveled if there's no bio
+queued.
 
-This can be easily avoided by perfoming the release operations in the
-RCU callback instead of directly from blkg_put().  This patch moves
-the blkcg_gq release operations to the RCU callback.
+* throtl_schedule_delayed_work() skips scheduling dispatch work item
+  if @td doesn't have any bios queued; however, the only case it can
+  be called when @td is empty is from tg_set_conf() which isn't
+  something we should be optimizing for.
 
-As this leaves __blkg_release() with only call_rcu() invocation,
-blkg_rcu_free() is renamed to __blkg_release_rcu(), exported and
-call_rcu() invocation is now done directly from blkg_put() instead of
-going through __blkg_release() which is removed.
+* throtl_schedule_next_dispatch() takes a quick exit if @td is empty;
+  however, right after that it triggers BUG if the service tree is
+  empty.  The two conditions are equivalent and it can just test
+  @st->count for the quick exit.
+
+* blk_throtl_dispatch_work_fn() skips dispatch if @td is empty.  This
+  work function isn't usually invoked when @td is empty.  The only
+  possibility is from tg_set_conf() and when it happens the normal
+  dispatching path can handle empty @td fine.  No need to add special
+  skip path.
+
+This patch removes the above three unnecessary optimizations, which
+leave throtl_log() call in blk_throtl_dispatch_work_fn() the only user
+of throtl_nr_queued().  Remove throtl_nr_queued() and open code it in
+throtl_log().  I don't think we need td->nr_queued[] at all.  Maybe we
+can remove it later.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/blk-cgroup.c | 34 ++++++++++++++++------------------
- block/blk-cgroup.h |  4 ++--
- 2 files changed, 18 insertions(+), 20 deletions(-)
+ block/blk-throttle.c | 29 +++++++----------------------
+ 1 file changed, 7 insertions(+), 22 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index f13cf95..af2ca27 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -369,13 +369,17 @@ static void blkg_destroy_all(struct request_queue *q)
- 	q->root_rl.blkg = NULL;
- }
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index 507b1c6..dbeef30 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -166,11 +166,6 @@ THROTL_TG_FNS(on_rr);
+ #define throtl_log(td, fmt, args...)	\
+ 	blk_add_trace_msg((td)->queue, "throtl " fmt, ##args)
  
--static void blkg_rcu_free(struct rcu_head *rcu_head)
+-static inline unsigned int total_nr_queued(struct throtl_data *td)
 -{
--	blkg_free(container_of(rcu_head, struct blkcg_gq, rcu_head));
+-	return td->nr_queued[0] + td->nr_queued[1];
 -}
 -
--void __blkg_release(struct blkcg_gq *blkg)
-+/*
-+ * A group is RCU protected, but having an rcu lock does not mean that one
-+ * can access all the fields of blkg and assume these are valid.  For
-+ * example, don't try to follow throtl_data and request queue links.
-+ *
-+ * Having a reference to blkg under an rcu allows accesses to only values
-+ * local to groups like group stats and group rate limits.
-+ */
-+void __blkg_release_rcu(struct rcu_head *rcu_head)
+ /*
+  * Worker for allocating per cpu stat for tgs. This is scheduled on the
+  * system_wq once there are some groups on the alloc_list waiting for
+@@ -402,25 +397,18 @@ static void throtl_schedule_delayed_work(struct throtl_data *td,
  {
-+	struct blkcg_gq *blkg = container_of(rcu_head, struct blkcg_gq, rcu_head);
- 	int i;
+ 	struct delayed_work *dwork = &td->dispatch_work;
  
- 	/* tell policies that this one is being freed */
-@@ -388,21 +392,15 @@ void __blkg_release(struct blkcg_gq *blkg)
+-	if (total_nr_queued(td)) {
+-		mod_delayed_work(kthrotld_workqueue, dwork, delay);
+-		throtl_log(td, "schedule work. delay=%lu jiffies=%lu",
+-			   delay, jiffies);
+-	}
++	mod_delayed_work(kthrotld_workqueue, dwork, delay);
++	throtl_log(td, "schedule work. delay=%lu jiffies=%lu", delay, jiffies);
+ }
  
- 	/* release the blkcg and parent blkg refs this blkg has been holding */
- 	css_put(&blkg->blkcg->css);
--	if (blkg->parent)
-+	if (blkg->parent) {
-+		spin_lock_irq(blkg->q->queue_lock);
- 		blkg_put(blkg->parent);
-+		spin_unlock_irq(blkg->q->queue_lock);
-+	}
+ static void throtl_schedule_next_dispatch(struct throtl_data *td)
+ {
+ 	struct throtl_rb_root *st = &td->tg_service_tree;
  
 -	/*
--	 * A group is freed in rcu manner. But having an rcu lock does not
--	 * mean that one can access all the fields of blkg and assume these
--	 * are valid. For example, don't try to follow throtl_data and
--	 * request queue links.
--	 *
--	 * Having a reference to blkg under an rcu allows acess to only
--	 * values local to groups like group stats and group rate limits
+-	 * If there are more bios pending, schedule more work.
 -	 */
--	call_rcu(&blkg->rcu_head, blkg_rcu_free);
-+	blkg_free(blkg);
- }
--EXPORT_SYMBOL_GPL(__blkg_release);
-+EXPORT_SYMBOL_GPL(__blkg_release_rcu);
+-	if (!total_nr_queued(td))
++	/* any pending children left? */
++	if (!st->count)
+ 		return;
  
- /*
-  * The next function used by blk_queue_for_each_rl().  It's a bit tricky
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index e15f731..8056c03 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -266,7 +266,7 @@ static inline void blkg_get(struct blkcg_gq *blkg)
- 	blkg->refcnt++;
- }
+-	BUG_ON(!st->count);
+-
+ 	update_min_dispatch_time(st);
  
--void __blkg_release(struct blkcg_gq *blkg);
-+void __blkg_release_rcu(struct rcu_head *rcu);
+ 	if (time_before_eq(st->min_disptime, jiffies))
+@@ -844,14 +832,11 @@ void blk_throtl_dispatch_work_fn(struct work_struct *work)
  
- /**
-  * blkg_put - put a blkg reference
-@@ -279,7 +279,7 @@ static inline void blkg_put(struct blkcg_gq *blkg)
- 	lockdep_assert_held(blkg->q->queue_lock);
- 	WARN_ON_ONCE(blkg->refcnt <= 0);
- 	if (!--blkg->refcnt)
--		__blkg_release(blkg);
-+		call_rcu(&blkg->rcu_head, __blkg_release_rcu);
- }
+ 	spin_lock_irq(q->queue_lock);
  
- struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg, struct request_queue *q,
+-	if (!total_nr_queued(td))
+-		goto out;
+-
+ 	bio_list_init(&bio_list_on_stack);
+ 
+ 	throtl_log(td, "dispatch nr_queued=%u read=%u write=%u",
+-			total_nr_queued(td), td->nr_queued[READ],
+-			td->nr_queued[WRITE]);
++		   td->nr_queued[READ] + td->nr_queued[WRITE],
++		   td->nr_queued[READ], td->nr_queued[WRITE]);
+ 
+ 	nr_disp = throtl_select_dispatch(td, &bio_list_on_stack);
+ 
+@@ -859,7 +844,7 @@ void blk_throtl_dispatch_work_fn(struct work_struct *work)
+ 		throtl_log(td, "bios disp=%u", nr_disp);
+ 
+ 	throtl_schedule_next_dispatch(td);
+-out:
++
+ 	spin_unlock_irq(q->queue_lock);
+ 
+ 	/*
 -- 
 1.8.1.4
 
