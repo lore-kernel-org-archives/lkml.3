@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933138Ab3EFW7W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:59:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36430 "EHLO
+	id S1759537Ab3EFXBT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:01:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36474 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759168Ab3EFW7P (ORCPT
+	with ESMTP id S933136Ab3EFW7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:15 -0400
+	Mon, 6 May 2013 18:59:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 41/46] ext4: fix Kconfig documentation for CONFIG_EXT4_DEBUG
-Date: Mon,  6 May 2013 15:58:47 -0700
-Message-Id: <20130506225824.974431033@linuxfoundation.org>
+        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 37/46] nfsd4: dont close read-write opens too soon
+Date: Mon,  6 May 2013 15:58:43 -0700
+Message-Id: <20130506225824.541146030@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,29 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 7f3e3c7cfcec148ccca9c0dd2dbfd7b00b7ac10f upstream.
+commit 0c7c3e67ab91ec6caa44bdf1fc89a48012ceb0c5 upstream.
 
-Fox the Kconfig documentation for CONFIG_EXT4_DEBUG to match the
-change made by commit a0b30c1229: ext4: use module parameters instead
-of debugfs for mballoc_debug
+Don't actually close any opens until we don't need them at all.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+This means being left with write access when it's not really necessary,
+but that's better than putting a file that might still have posix locks
+held on it, as we have been.
+
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/Kconfig |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/nfsd/nfs4state.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
---- a/fs/ext4/Kconfig
-+++ b/fs/ext4/Kconfig
-@@ -82,4 +82,5 @@ config EXT4_DEBUG
- 	  Enables run-time debugging support for the ext4 filesystem.
- 
- 	  If you select Y here, then you will be able to turn on debugging
--	  with a command such as "echo 1 > /sys/kernel/debug/ext4/mballoc-debug"
-+	  with a command such as:
-+		echo 1 > /sys/module/ext4/parameters/mballoc_debug
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -189,13 +189,7 @@ static void __nfs4_file_put_access(struc
+ {
+ 	if (atomic_dec_and_test(&fp->fi_access[oflag])) {
+ 		nfs4_file_put_fd(fp, oflag);
+-		/*
+-		 * It's also safe to get rid of the RDWR open *if*
+-		 * we no longer have need of the other kind of access
+-		 * or if we already have the other kind of open:
+-		 */
+-		if (fp->fi_fds[1-oflag]
+-			|| atomic_read(&fp->fi_access[1 - oflag]) == 0)
++		if (atomic_read(&fp->fi_access[1 - oflag]) == 0)
+ 			nfs4_file_put_fd(fp, O_RDWR);
+ 	}
+ }
 
 
