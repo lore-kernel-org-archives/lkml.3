@@ -1,52 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab3EFU5A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:57:00 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:52423 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757272Ab3EFU46 (ORCPT
+	id S1758614Ab3EFU5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:57:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59274 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757762Ab3EFUqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:56:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130506203118.GK28282@csclub.uwaterloo.ca>
-References: <CAPweEDwZrXQ4Wqw6_-YvmR7uNxWWNvE_c0-8UMuEhFzYW-BZWQ@mail.gmail.com>
-	<1367870518.18069.211@driftwood>
-	<20130506203118.GK28282@csclub.uwaterloo.ca>
-Date: Mon, 6 May 2013 21:56:57 +0100
-X-Google-Sender-Auth: -n3OJdsR13lImobxShHubTOBnx8
-Message-ID: <CAPweEDwrnb2vt2ef5WZqOdVTyp384nCVJW-Qp4JiDXbpXFB=sg@mail.gmail.com>
-Subject: Re: device tree not the answer in the ARM world [was: Re: running
- Debian on a Cubieboard]
-From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
-Cc: Rob Landley <rob@landley.net>,
-        James Courtier-Dutton <james.dutton@gmail.com>,
-        Robert Hancock <hancockrwd@gmail.com>,
-        David Goodenough <david.goodenough@btconnect.com>,
-        debian-arm@lists.debian.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 6 May 2013 16:46:48 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 074/115] drivers/rtc/rtc-at91rm9200.c: fix missing iounmap
+Date: Mon,  6 May 2013 13:45:10 -0700
+Message-Id: <20130506203103.147895657@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
+References: <20130506203055.537199268@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 6, 2013 at 9:31 PM, Lennart Sorensen
-<lsorense@csclub.uwaterloo.ca> wrote:
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
->> And neither is the same as the quality or sustainability of the
->> resulting software. But if the product line will be be discontinued
->> three months after its introduction, who cares about being able to
->> maintain anything?
->
-> Sounds good to me.  Those that think devicetree will never work can go
-> do whatever they want with the hardware they have from the makers of
-> cheap junk with no expected lifetime in the market.  The rest of us can
-> go focus on making something efficient and usable long term.
+------------------
 
- ahh, lennart, it's a pity we were writing at the same time.  i'd be
-interested to hear your honest thoughts and opinions on my reply to
-rob.
+From: Johan Hovold <jhovold@gmail.com>
 
- l.
+commit 3427de92ac70a064098ff843c72ac76c420bb1cb upstream.
+
+Add missing iounmap to probe error path and remove.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/rtc/rtc-at91rm9200.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -297,7 +297,7 @@ static int __init at91_rtc_probe(struct
+ 				"at91_rtc", pdev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "IRQ %d already in use.\n", irq);
+-		return ret;
++		goto err_unmap;
+ 	}
+ 
+ 	/* cpu init code should really have flagged this device as
+@@ -309,13 +309,20 @@ static int __init at91_rtc_probe(struct
+ 	rtc = rtc_device_register(pdev->name, &pdev->dev,
+ 				&at91_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(rtc)) {
+-		free_irq(irq, pdev);
+-		return PTR_ERR(rtc);
++		ret = PTR_ERR(rtc);
++		goto err_free_irq;
+ 	}
+ 	platform_set_drvdata(pdev, rtc);
+ 
+ 	dev_info(&pdev->dev, "AT91 Real Time Clock driver.\n");
+ 	return 0;
++
++err_free_irq:
++	free_irq(irq, pdev);
++err_unmap:
++	iounmap(at91_rtc_regs);
++
++	return ret;
+ }
+ 
+ /*
+@@ -332,6 +339,7 @@ static int __exit at91_rtc_remove(struct
+ 	free_irq(irq, pdev);
+ 
+ 	rtc_device_unregister(rtc);
++	iounmap(at91_rtc_regs);
+ 	platform_set_drvdata(pdev, NULL);
+ 
+ 	return 0;
+
+
