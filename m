@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759574Ab3EFXCJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:02:09 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55220 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759417Ab3EFXCF (ORCPT
+	id S1759591Ab3EFXC3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:02:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36464 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759060Ab3EFW7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:02:05 -0400
-Date: Tue, 7 May 2013 01:01:38 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] timer changes for v3.10
-Message-ID: <20130506230137.GA16801@amd.pavel.ucw.cz>
-References: <20130430074322.GA20110@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130430074322.GA20110@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 6 May 2013 18:59:20 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Vitaliy Fillipov <vitalif@yourcmc.ru>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, 700333@bugs.debian.org
+Subject: [ 34/46] clockevents: Set dummy handler on CPU_DEAD shutdown
+Date: Mon,  6 May 2013 15:58:40 -0700
+Message-Id: <20130506225824.240147830@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
+References: <20130506225820.628893970@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
->  - suspend/resume enhancements by Feng Tang: on certain new Intel Atom 
->    processors (Penwell and Cloverview), there is a feature that the TSC 
->    won't stop in S3 state, so the TSC value won't be reset to 0 after
->    resume. This can be taken advantage of by the generic via the
->    CLOCK_SOURCE_SUSPEND_NONSTOP flag: instead of using the RTC to 
->    recover/approximate sleep time, the main (and precise) clocksource can
->    be used.
+------------------
 
-Ok, so for system time, we use three different timers:
+From: Thomas Gleixner <tglx@linutronix.de>
 
-1) RTC, while system is off
+commit 6f7a05d7018de222e40ca003721037a530979974 upstream.
 
-2) PIT, while system is running (plus TSC for parts of second)
+Vitaliy reported that a per cpu HPET timer interrupt crashes the
+system during hibernation. What happens is that the per cpu HPET timer
+gets shut down when the nonboot cpus are stopped. When the nonboot
+cpus are onlined again the HPET code sets up the MSI interrupt which
+fires before the clock event device is registered. The event handler
+is still set to hrtimer_interrupt, which then crashes the machine due
+to highres mode not being active.
 
-3) TSC, while system is sleeping
+See http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=700333
 
-Now. we have ntpd that is trying to compute "speed of clock", and
-adjust accordingly (adjtimex). But will it still do the right thing
-when we switch to different source during sleep?
+There is no real good way to avoid that in the HPET code. The HPET
+code alrady has a mechanism to detect spurious interrupts when event
+handler == NULL for a similar reason.
 
-And is the TSC even good enough? According to man page, PIT is not
-precise enough, so we sync from RTC every 11 minutes. I'd imagine TSC
-is even worse than that. Machine can stay is s2ram for weeks (for a
-lot more if it is desktop and you do s2ram for powersaving). Also
-temperature of CPU varies a lot between active and s2ram states. Is
-TSC good enough?
+We can handle that in the clockevent/tick layer and replace the
+previous functional handler with a dummy handler like we do in
+tick_setup_new_device().
 
-								Pavel
+The original clockevents code did this in clockevents_exchange_device(),
+but that got removed by commit 7c1e76897 (clockevents: prevent
+clockevent event_handler ending up handler_noop) which forgot to fix
+it up in tick_shutdown(). Same issue with the broadcast device.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Reported-by: Vitaliy Fillipov <vitalif@yourcmc.ru>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: 700333@bugs.debian.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/time/tick-broadcast.c |    4 ++++
+ kernel/time/tick-common.c    |    1 +
+ 2 files changed, 5 insertions(+)
+
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -66,6 +66,8 @@ static void tick_broadcast_start_periodi
+  */
+ int tick_check_broadcast_device(struct clock_event_device *dev)
+ {
++	struct clock_event_device *cur = tick_broadcast_device.evtdev;
++
+ 	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
+ 	    (tick_broadcast_device.evtdev &&
+ 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
+@@ -73,6 +75,8 @@ int tick_check_broadcast_device(struct c
+ 		return 0;
+ 
+ 	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
++	if (cur)
++		cur->event_handler = clockevents_handle_noop;
+ 	tick_broadcast_device.evtdev = dev;
+ 	if (!cpumask_empty(tick_get_broadcast_mask()))
+ 		tick_broadcast_start_periodic(dev);
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -323,6 +323,7 @@ static void tick_shutdown(unsigned int *
+ 		 */
+ 		dev->mode = CLOCK_EVT_MODE_UNUSED;
+ 		clockevents_exchange_device(dev, NULL);
++		dev->event_handler = clockevents_handle_noop;
+ 		td->evtdev = NULL;
+ 	}
+ 	raw_spin_unlock_irqrestore(&tick_device_lock, flags);
+
+
