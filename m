@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759651Ab3EFXDk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:03:40 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:38834 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759389Ab3EFXDh (ORCPT
+	id S1759672Ab3EFXEP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:04:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36423 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758369Ab3EFW7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:03:37 -0400
-Date: Tue, 7 May 2013 01:03:33 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Olivier Langlois <olivier@trillion01.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/3] posix_timers: Defer per process timer stop after
- timers processing
-Message-ID: <20130506230332.GA1225@somewhere>
-References: <1366305822-5499-1-git-send-email-fweisbec@gmail.com>
- <1366305822-5499-3-git-send-email-fweisbec@gmail.com>
- <1366345802.2855.38.camel@Wailaba2>
- <CAFTL4hzTbko=jArO+kFF3icDbXmZzamDr1FJL3Vx+11Q54NABg@mail.gmail.com>
- <1366950479.7911.22.camel@Wailaba2>
- <20130430125423.GB8272@somewhere>
- <1367344318.8833.59.camel@Wailaba2>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367344318.8833.59.camel@Wailaba2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 May 2013 18:59:14 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 39/46] wireless: regulatory: fix channel disabling race condition
+Date: Mon,  6 May 2013 15:58:45 -0700
+Message-Id: <20130506225824.760313478@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
+References: <20130506225820.628893970@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 01:51:58PM -0400, Olivier Langlois wrote:
-> 
-> > 
-> > > Maybe the condition around the posix_cpu_timer_schedule() block inside
-> > > cpu_timer_fire() could even be a good candidate for 'unlikely'
-> > > qualifier.
-> > 
-> > Well, cpu_timer_fire() is probably not a fast path. So helping branch
-> > prediction there probably won't have much measurable effect in practice.
-> > 
-> Frederic, I'm totally sure that you are right on the measurable effect.
-> When I did propose the 'unlikely' qualifier, please note, that I also
-> had a documentary purpose in mind.
-> 
-> Would you have searched the 'likely' path that does
-> posix_cpu_timer_schedule() when you did modify the code if the
-> 'unlikely' tag would have been present?
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-It's indeed sometimes a good indicator.
+------------------
 
-But here it's in the end of a batch of conditional blocks, so it sort
-of already suggests itself as an unlikely event.
+From: Johannes Berg <johannes.berg@intel.com>
 
-But if you feel the comment can be improved, don't hesitate to send a patch.
+commit 990de49f74e772b6db5208457b7aa712a5f4db86 upstream.
+
+When a full scan 2.4 and 5 GHz scan is scheduled, but then the 2.4 GHz
+part of the scan disables a 5.2 GHz channel due to, e.g. receiving
+country or frequency information, that 5.2 GHz channel might already
+be in the list of channels to scan next. Then, when the driver checks
+if it should do a passive scan, that will return false and attempt an
+active scan. This is not only wrong but can also lead to the iwlwifi
+device firmware crashing since it checks regulatory as well.
+
+Fix this by not setting the channel flags to just disabled but rather
+OR'ing in the disabled flag. That way, even if the race happens, the
+channel will be scanned passively which is still (mostly) correct.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ net/wireless/reg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -852,7 +852,7 @@ static void handle_channel(struct wiphy
+ 			return;
+ 
+ 		REG_DBG_PRINT("Disabling freq %d MHz\n", chan->center_freq);
+-		chan->flags = IEEE80211_CHAN_DISABLED;
++		chan->flags |= IEEE80211_CHAN_DISABLED;
+ 		return;
+ 	}
+ 
 
 
-
-> 
-> Greetings,
-> Olivier
-> 
-> 
-> 
