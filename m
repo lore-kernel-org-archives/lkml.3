@@ -1,142 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760177Ab3EFXL5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:11:57 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:43823 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758808Ab3EFXLz (ORCPT
+	id S1758573Ab3EFXMs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:12:48 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:39038 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757766Ab3EFXMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:11:55 -0400
+	Mon, 6 May 2013 19:12:43 -0400
+Date: Tue, 7 May 2013 01:12:39 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sourceware.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: systemtap broken by removal of register_timer_hook
+Message-ID: <20130506231237.GB1225@somewhere>
+References: <20130403075017.GA2534@suse.de>
+ <CAFTL4hyYezB2ZxM-GJ70VoxOeRSG64V6u+nX2hTuhF30R-GdPg__32168.962484184$1364986928$gmane$org@mail.gmail.com>
+ <y0mvc83u79f.fsf@fche.csb>
+ <CAFTL4hxx_GHoa4uguSAtY0A=cC43qJPKvpqaoguS-WAjFj+HSw@mail.gmail.com>
+ <20130403144428.GA15432@redhat.com>
+ <CAFTL4hy+U-dLPwGR8BcZt=C8Tug-jvh+24epadfte7Ci2cDU5Q@mail.gmail.com>
+ <20130419144655.GD8308@redhat.com>
+ <20130430001858.GF1760@somewhere>
+ <20130430172720.GA21499@redhat.com>
 MIME-Version: 1.0
-Date: Mon, 6 May 2013 19:11:53 -0400
-Message-ID: <CAOULuOb79h99RiyYpMGLzzM2QeawYfG8CfrvNtk4WtJJxRn87g@mail.gmail.com>
-Subject: [PATCH] radeon: Allow disabling UVD
-From: Parag Warudkar <parag.lkml@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
-        airlied@linux.ie, alexander.deucher@amd.com, christian.koenig@amd.com
-Content-Type: multipart/mixed; boundary=f46d0443048a8f40b704dc14d3ba
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130430172720.GA21499@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d0443048a8f40b704dc14d3ba
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, Apr 30, 2013 at 01:27:20PM -0400, Frank Ch. Eigler wrote:
+> Hi -
+> 
+> > [...]  How about creating trace_tick() in
+> > include/trace/events/timer.h and call it from tick_periodic() and
+> > tick_sched_handle(). [...]
+> 
+> Like this?
+> 
+> 
+> From facee64445c0dcc717e99c474c5c7dcdd31b9a74 Mon Sep 17 00:00:00 2001
+> From: "Frank Ch. Eigler" <fche@redhat.com>
+> Date: Wed, 3 Apr 2013 10:35:21 -0400
+> Subject: [PATCH] profiling: add tick tracepoint
 
-Apparently UVD doesn't yet work everywhere - so allow it to be
-disabled. Shaves off some reboot and suspend/resume time on machines
-where it doesn't work. Might be useful for problematic chips in the
-future as well.
+I'd rather entitle "timer: Add tick tracepoint", as it doesn't depend
+on the profiling stuff.
 
-Patch attached as well as inline below.
+> 
+> Commit ba6fdda4 removed the timer_hook mechanism for modules to listen
+> to profiling timer ticks (without having to set up more complicated
+> perf mechanisms).  To reduce the impact on out-of-tree users such as
+> systemtap, a TRACE_EVENT-flavoured tracepoint is added in its place,
+> invoked right beside profile_tick() in kernel/time/tick-*.c.
+> Tested with perf and systemtap.
+> 
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Signed-off-by: Frank Ch. Eigler <fche@redhat.com>
+> ---
+>  include/trace/events/timer.h | 20 ++++++++++++++++++++
+>  kernel/time/tick-common.c    |  2 ++
+>  kernel/time/tick-sched.c     |  2 ++
+>  3 files changed, 24 insertions(+)
+> 
+> diff --git a/include/trace/events/timer.h b/include/trace/events/timer.h
+> index 425bcfe..ec4c2d0 100644
+> --- a/include/trace/events/timer.h
+> +++ b/include/trace/events/timer.h
+> @@ -323,6 +323,26 @@ TRACE_EVENT(itimer_expire,
+>  		  (int) __entry->pid, (unsigned long long)__entry->now)
+>  );
+>  
+> +
+> +struct pt_regs;
+> +
+> +/**
+> + * tick - called when the profiling timer ticks
+> + * @regs:	pointer to struct pt_regs*
+> + */
+> +TRACE_EVENT(tick,
+> +	TP_PROTO(struct pt_regs *regs),
+> +	TP_ARGS(regs),
+> +	TP_STRUCT__entry(
+> +		__field( struct pt_regs*,	regs	)
 
-Signed-off-by: Parag Warudkar <parag.lkml@gmail.com>
+I doubt the pointer to the regs is interesting in userland.
+How about "void *ip" instead?
 
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index 1442ce7..f131d8f 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -79,6 +79,7 @@
-  * Modules parameters.
-  */
- extern int radeon_no_wb;
-+extern int radeon_no_uvd;
- extern int radeon_modeset;
- extern int radeon_dynclks;
- extern int radeon_r4xx_atom;
-diff --git a/drivers/gpu/drm/radeon/radeon_drv.c
-b/drivers/gpu/drm/radeon/radeon_drv.c
-index d33f484..7e5b171 100644
---- a/drivers/gpu/drm/radeon/radeon_drv.c
-+++ b/drivers/gpu/drm/radeon/radeon_drv.c
-@@ -147,6 +147,7 @@ static inline void radeon_unregister_atpx_handler(void) {}
- #endif
+> +	),
+> +	TP_fast_assign(
+> +		__entry->regs	= regs;
+> +	),
+> +	TP_printk("ip=%p", (void *) instruction_pointer(__entry->regs))
+> +);
+> +
+> +
+>  #endif /*  _TRACE_TIMER_H */
+>  
+>  /* This part must be outside protection */
+> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+> index b1600a6..5f4227f 100644
+> --- a/kernel/time/tick-common.c
+> +++ b/kernel/time/tick-common.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/percpu.h>
+>  #include <linux/profile.h>
+>  #include <linux/sched.h>
+> +#include <trace/events/timer.h>
+>  
+>  #include <asm/irq_regs.h>
+>  
+> @@ -74,6 +75,7 @@ static void tick_periodic(int cpu)
+>  
+>  	update_process_times(user_mode(get_irq_regs()));
+>  	profile_tick(CPU_PROFILING);
+> +	trace_tick(get_irq_regs());
 
- int radeon_no_wb;
-+int radeon_no_uvd;
- int radeon_modeset = 1;
- int radeon_dynclks = -1;
- int radeon_r4xx_atom = 0;
-@@ -168,6 +169,9 @@ int radeon_fastfb = 0;
- MODULE_PARM_DESC(no_wb, "Disable AGP writeback for scratch registers");
- module_param_named(no_wb, radeon_no_wb, int, 0444);
+I suggest storing get_irq_regs() in a local variable so the function
+doesn't fetch it twice from whatever per cpu area.
 
-+MODULE_PARM_DESC(no_uvd, "Disable UVD");
-+module_param_named(no_uvd, radeon_no_uvd, int, 0444);
-+
- MODULE_PARM_DESC(modeset, "Disable/Enable modesetting");
- module_param_named(modeset, radeon_modeset, int, 0400);
+>  }
+>  
+>  /*
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index a19a399..447be56 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/sched.h>
+>  #include <linux/module.h>
+>  #include <linux/irq_work.h>
+> +#include <trace/events/timer.h>
+>  
+>  #include <asm/irq_regs.h>
+>  
+> @@ -140,6 +141,7 @@ static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
+>  #endif
+>  	update_process_times(user_mode(regs));
+>  	profile_tick(CPU_PROFILING);
+> +	trace_tick(get_irq_regs());
 
-diff --git a/drivers/gpu/drm/radeon/radeon_drv.h
-b/drivers/gpu/drm/radeon/radeon_drv.h
-index b369d42..4320973 100644
---- a/drivers/gpu/drm/radeon/radeon_drv.h
-+++ b/drivers/gpu/drm/radeon/radeon_drv.h
-@@ -329,6 +329,7 @@ typedef struct drm_radeon_kcmd_buffer {
- } drm_radeon_kcmd_buffer_t;
+And here you can reuse the regs parameter.
 
- extern int radeon_no_wb;
-+extern int radeon_no_uvd;
- extern struct drm_ioctl_desc radeon_ioctls[];
- extern int radeon_max_ioctl;
-
-diff --git a/drivers/gpu/drm/radeon/radeon_uvd.c
-b/drivers/gpu/drm/radeon/radeon_uvd.c
-index 906e5c0..93a7dbb 100644
---- a/drivers/gpu/drm/radeon/radeon_uvd.c
-+++ b/drivers/gpu/drm/radeon/radeon_uvd.c
-@@ -58,7 +58,8 @@ int radeon_uvd_init(struct radeon_device *rdev)
-  unsigned long bo_size;
-  const char *fw_name;
-  int i, r;
--
-+ if (radeon_no_uvd)
-+ return -EINVAL;
-  INIT_DELAYED_WORK(&rdev->uvd.idle_work, radeon_uvd_idle_work_handler);
-
-  pdev = platform_device_register_simple("radeon_uvd", 0, NULL, 0);
-
---f46d0443048a8f40b704dc14d3ba
-Content-Type: application/octet-stream; name="radeon-option-no-uvd.patch"
-Content-Disposition: attachment; filename="radeon-option-no-uvd.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hge9jpa80
-
-U2lnbmVkLW9mZi1ieTogUGFyYWcgV2FydWRrYXIgPHBhcmFnLmxrbWxAZ21haWwuY29tPgoKZGlm
-ZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vcmFkZW9uLmggYi9kcml2ZXJzL2dwdS9k
-cm0vcmFkZW9uL3JhZGVvbi5oCmluZGV4IDE0NDJjZTcuLmYxMzFkOGYgMTAwNjQ0Ci0tLSBhL2Ry
-aXZlcnMvZ3B1L2RybS9yYWRlb24vcmFkZW9uLmgKKysrIGIvZHJpdmVycy9ncHUvZHJtL3JhZGVv
-bi9yYWRlb24uaApAQCAtNzksNiArNzksNyBAQAogICogTW9kdWxlcyBwYXJhbWV0ZXJzLgogICov
-CiBleHRlcm4gaW50IHJhZGVvbl9ub193YjsKK2V4dGVybiBpbnQgcmFkZW9uX25vX3V2ZDsKIGV4
-dGVybiBpbnQgcmFkZW9uX21vZGVzZXQ7CiBleHRlcm4gaW50IHJhZGVvbl9keW5jbGtzOwogZXh0
-ZXJuIGludCByYWRlb25fcjR4eF9hdG9tOwpkaWZmIC0tZ2l0IGEvZHJpdmVycy9ncHUvZHJtL3Jh
-ZGVvbi9yYWRlb25fZHJ2LmMgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVvbl9kcnYuYwpp
-bmRleCBkMzNmNDg0Li43ZTViMTcxIDEwMDY0NAotLS0gYS9kcml2ZXJzL2dwdS9kcm0vcmFkZW9u
-L3JhZGVvbl9kcnYuYworKysgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVvbl9kcnYuYwpA
-QCAtMTQ3LDYgKzE0Nyw3IEBAIHN0YXRpYyBpbmxpbmUgdm9pZCByYWRlb25fdW5yZWdpc3Rlcl9h
-dHB4X2hhbmRsZXIodm9pZCkge30KICNlbmRpZgogCiBpbnQgcmFkZW9uX25vX3diOworaW50IHJh
-ZGVvbl9ub191dmQ7CiBpbnQgcmFkZW9uX21vZGVzZXQgPSAxOwogaW50IHJhZGVvbl9keW5jbGtz
-ID0gLTE7CiBpbnQgcmFkZW9uX3I0eHhfYXRvbSA9IDA7CkBAIC0xNjgsNiArMTY5LDkgQEAgaW50
-IHJhZGVvbl9mYXN0ZmIgPSAwOwogTU9EVUxFX1BBUk1fREVTQyhub193YiwgIkRpc2FibGUgQUdQ
-IHdyaXRlYmFjayBmb3Igc2NyYXRjaCByZWdpc3RlcnMiKTsKIG1vZHVsZV9wYXJhbV9uYW1lZChu
-b193YiwgcmFkZW9uX25vX3diLCBpbnQsIDA0NDQpOwogCitNT0RVTEVfUEFSTV9ERVNDKG5vX3V2
-ZCwgIkRpc2FibGUgVVZEIik7Cittb2R1bGVfcGFyYW1fbmFtZWQobm9fdXZkLCByYWRlb25fbm9f
-dXZkLCBpbnQsIDA0NDQpOworCiBNT0RVTEVfUEFSTV9ERVNDKG1vZGVzZXQsICJEaXNhYmxlL0Vu
-YWJsZSBtb2Rlc2V0dGluZyIpOwogbW9kdWxlX3BhcmFtX25hbWVkKG1vZGVzZXQsIHJhZGVvbl9t
-b2Rlc2V0LCBpbnQsIDA0MDApOwogCmRpZmYgLS1naXQgYS9kcml2ZXJzL2dwdS9kcm0vcmFkZW9u
-L3JhZGVvbl9kcnYuaCBiL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vcmFkZW9uX2Rydi5oCmluZGV4
-IGIzNjlkNDIuLjQzMjA5NzMgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vcmFk
-ZW9uX2Rydi5oCisrKyBiL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vcmFkZW9uX2Rydi5oCkBAIC0z
-MjksNiArMzI5LDcgQEAgdHlwZWRlZiBzdHJ1Y3QgZHJtX3JhZGVvbl9rY21kX2J1ZmZlciB7CiB9
-IGRybV9yYWRlb25fa2NtZF9idWZmZXJfdDsKIAogZXh0ZXJuIGludCByYWRlb25fbm9fd2I7Citl
-eHRlcm4gaW50IHJhZGVvbl9ub191dmQ7CiBleHRlcm4gc3RydWN0IGRybV9pb2N0bF9kZXNjIHJh
-ZGVvbl9pb2N0bHNbXTsKIGV4dGVybiBpbnQgcmFkZW9uX21heF9pb2N0bDsKIApkaWZmIC0tZ2l0
-IGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9yYWRlb25fdXZkLmMgYi9kcml2ZXJzL2dwdS9kcm0v
-cmFkZW9uL3JhZGVvbl91dmQuYwppbmRleCA5MDZlNWMwLi45M2E3ZGJiIDEwMDY0NAotLS0gYS9k
-cml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVvbl91dmQuYworKysgYi9kcml2ZXJzL2dwdS9kcm0v
-cmFkZW9uL3JhZGVvbl91dmQuYwpAQCAtNTgsNyArNTgsOCBAQCBpbnQgcmFkZW9uX3V2ZF9pbml0
-KHN0cnVjdCByYWRlb25fZGV2aWNlICpyZGV2KQogCXVuc2lnbmVkIGxvbmcgYm9fc2l6ZTsKIAlj
-b25zdCBjaGFyICpmd19uYW1lOwogCWludCBpLCByOwotCisJaWYgKHJhZGVvbl9ub191dmQpCisJ
-CXJldHVybiAtRUlOVkFMOwogCUlOSVRfREVMQVlFRF9XT1JLKCZyZGV2LT51dmQuaWRsZV93b3Jr
-LCByYWRlb25fdXZkX2lkbGVfd29ya19oYW5kbGVyKTsKIAogCXBkZXYgPSBwbGF0Zm9ybV9kZXZp
-Y2VfcmVnaXN0ZXJfc2ltcGxlKCJyYWRlb25fdXZkIiwgMCwgTlVMTCwgMCk7Cg==
---f46d0443048a8f40b704dc14d3ba--
+>  }
+>  
+>  /*
+> -- 
+> 1.8.2
+> 
