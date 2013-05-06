@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758964Ab3EFXNl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:13:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36752 "EHLO
+	id S933671Ab3EFX3c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:29:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36786 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760407Ab3EFXNf (ORCPT
+	with ESMTP id S1758846Ab3EFXNl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:35 -0400
+	Mon, 6 May 2013 19:13:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [ 044/104] i2c: xiic: must always write 16-bit words to TX_FIFO
-Date: Mon,  6 May 2013 16:12:03 -0700
-Message-Id: <20130506230048.139088480@linuxfoundation.org>
+        Stephan Schreiber <info@fs-driver.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [ 052/104] Wrong asm register contraints in the kvm implementation
+Date: Mon,  6 May 2013 16:12:11 -0700
+Message-Id: <20130506230048.926785195@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,43 +27,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven A. Falco" <sfalco@harris.com>
+From: Stephan Schreiber <info@fs-driver.org>
 
-commit c39e8e4354ce4daf23336de5daa28a3b01f00aa6 upstream.
+commit de53e9caa4c6149ef4a78c2f83d7f5b655848767 upstream.
 
-The TX_FIFO register is 10 bits wide.  The lower 8 bits are the data to be
-written, while the upper two bits are flags to indicate stop/start.
+The Linux Kernel contains some inline assembly source code which has
+wrong asm register constraints in arch/ia64/kvm/vtlb.c.
 
-The driver apparently attempted to optimize write access, by only writing a
-byte in those cases where the stop/start bits are zero.  However, we have
-seen cases where the lower byte is duplicated onto the upper byte by the
-hardware, which causes inadvertent stop/starts.
+I observed this on Kernel 3.2.35 but it is also true on the most
+recent Kernel 3.9-rc1.
 
-This patch changes the write access to the transmit FIFO to always be 16 bits
-wide.
+File arch/ia64/kvm/vtlb.c:
 
-Signed off by: Steven A. Falco <sfalco@harris.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+u64 guest_vhpt_lookup(u64 iha, u64 *pte)
+{
+	u64 ret;
+	struct thash_data *data;
+
+	data = __vtr_lookup(current_vcpu, iha, D_TLB);
+	if (data != NULL)
+		thash_vhpt_insert(current_vcpu, data->page_flags,
+			data->itir, iha, D_TLB);
+
+	asm volatile (
+			"rsm psr.ic|psr.i;;"
+			"srlz.d;;"
+			"ld8.s r9=[%1];;"
+			"tnat.nz p6,p7=r9;;"
+			"(p6) mov %0=1;"
+			"(p6) mov r9=r0;"
+			"(p7) extr.u r9=r9,0,53;;"
+			"(p7) mov %0=r0;"
+			"(p7) st8 [%2]=r9;;"
+			"ssm psr.ic;;"
+			"srlz.d;;"
+			"ssm psr.i;;"
+			"srlz.d;;"
+			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
+
+	return ret;
+}
+
+The list of output registers is
+			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
+The constraint "=r" means that the GCC has to maintain that these vars
+are in registers and contain valid info when the program flow leaves
+the assembly block (output registers).
+But "=r" also means that GCC can put them in registers that are used
+as input registers. Input registers are iha, pte on the example.
+If the predicate p7 is true, the 8th assembly instruction
+			"(p7) mov %0=r0;"
+is the first one which writes to a register which is maintained by the
+register constraints; it sets %0. %0 means the first register operand;
+it is ret here.
+This instruction might overwrite the %2 register (pte) which is needed
+by the next instruction:
+			"(p7) st8 [%2]=r9;;"
+Whether it really happens depends on how GCC decides what registers it
+uses and how it optimizes the code.
+
+The attached patch  fixes the register operand constraints in
+arch/ia64/kvm/vtlb.c.
+The register constraints should be
+			: "=&r"(ret) : "r"(iha), "r"(pte):"memory");
+The & means that GCC must not use any of the input registers to place
+this output register in.
+
+This is Debian bug#702639
+(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=702639).
+
+The patch is applicable on Kernel 3.9-rc1, 3.2.35 and many other versions.
+
+Signed-off-by: Stephan Schreiber <info@fs-driver.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-xiic.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ arch/ia64/kvm/vtlb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/i2c/busses/i2c-xiic.c
-+++ b/drivers/i2c/busses/i2c-xiic.c
-@@ -312,10 +312,8 @@ static void xiic_fill_tx_fifo(struct xii
- 			/* last message in transfer -> STOP */
- 			data |= XIIC_TX_DYN_STOP_MASK;
- 			dev_dbg(i2c->adap.dev.parent, "%s TX STOP\n", __func__);
--
--			xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
--		} else
--			xiic_setreg8(i2c, XIIC_DTR_REG_OFFSET, data);
-+		}
-+		xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
- 	}
- }
+--- a/arch/ia64/kvm/vtlb.c
++++ b/arch/ia64/kvm/vtlb.c
+@@ -256,7 +256,7 @@ u64 guest_vhpt_lookup(u64 iha, u64 *pte)
+ 			"srlz.d;;"
+ 			"ssm psr.i;;"
+ 			"srlz.d;;"
+-			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
++			: "=&r"(ret) : "r"(iha), "r"(pte) : "memory");
  
+ 	return ret;
+ }
 
 
