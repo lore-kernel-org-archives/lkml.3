@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab3EFDo5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 23:44:57 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:26749 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817Ab3EFDo4 (ORCPT
+	id S1753495Ab3EFDvU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 23:51:20 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40631 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817Ab3EFDvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 23:44:56 -0400
-X-AuditID: cbfee68d-b7f016d000007930-46-51872737c7e4
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Linus Walleij'" <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 4/4] pinctrl: u300: remove unnecessary platform_set_drvdata()
-Date: Mon, 06 May 2013 12:44:55 +0900
-Message-id: <002401ce4a0c$12a10ad0$37e32070$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5KC+RiJivNKjagSLOAmHOc81Y/gw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t8zfV1z9fZAg7nr5CwuL7zEajHlz3Im
-	i8u75rA5MHvcubaHzaNvyypGj8+b5AKYo7hsUlJzMstSi/TtErgy1vR8YCt4xFax4eN19gbG
-	66xdjJwcEgImEls3T2GEsMUkLtxbz9bFyMUhJLCMUeLwotksMEXTzjSxQiQWMUpM3PQbquoX
-	o8STibOYQKrYBNQkvnw5zA5iiwjoSbz52gJmMws4SfzcMhNoEgeHsICvxM5HMiAmi4CqRHeX
-	MkgFr4ClxIxbp1ggbEGJH5PvsUB0akms33mcCcKWl9i85i0zxD0KEjvOvmaE2fS+6zHUJhGJ
-	fS/eMYKcJiEwj13if1cD2CAWAQGJb5MPgZ0gISArsekA1BxJiYMrbrBMYBSbhWT1LCSrZyFZ
-	PQvJigWMLKsYRVMLkguKk9KLDPWKE3OLS/PS9ZLzczcxQiKqdwfj7QPWhxiTgdZPZJYSTc4H
-	RmReSbyhsZmRhamJqbGRuaUZacJK4rxqLdaBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhhz
-	1Sc7+J+pqTwRW/X97IRFy64wdsemJfi7Hb7PEFQTOPcg885FByv3rkq7qrOz05z1SeKsLQcf
-	3wnr2TOzuHl5qeinv8+Drp92idj0J2ndWvfCF6uVmt/Jtf6+rba09oL+7IQJLz+uSUrmOZp/
-	6n7+vTM2M7nrVdMNPj0V1Xk59Yjuv0txX/c8V2Ipzkg01GIuKk4EALCe7De+AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+xgK65enugwcQWaYvLCy+xWkz5s5zJ
-	4vKuOWwOzB53ru1h8+jbsorR4/MmuQDmqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwND
-	XUNLC3MlhbzE3FRbJRefAF23zBygTUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqM
-	DNBAwjrGjDU9H9gKHrFVbPh4nb2B8TprFyMnh4SAicS0M01QtpjEhXvr2boYuTiEBBYxSkzc
-	9BvK+cUo8WTiLCaQKjYBNYkvXw6zg9giAnoSb762gNnMAk4SP7fMZOli5OAQFvCV2PlIBsRk
-	EVCV6O5SBqngFbCUmHHrFAuELSjxY/I9FohOLYn1O48zQdjyEpvXvGWGuEdBYsfZ14wwm953
-	PYbaJCKx78U7xgmMArOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddIrzgxt7g0L10vOT93
-	EyM4Xp9J72Bc1WBxiFGAg1GJh7fgSVugEGtiWXFl7iFGCQ5mJRFen71AId6UxMqq1KL8+KLS
-	nNTiQ4zJQI9OZJYSTc4HppK8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQW
-	wWxh4uCUamB0v9B/w+bfa71lW+f+zLcRW3aiJmaeyqTVufsa33A+ik8TMuOb8eLL1D2dUVpF
-	ml1r16WJrzleyiqee8DVoDVwzftVXBs7dkyQrN+muVTE5l5N++OjMuXmPhOWhq+zXBvExaP2
-	W127mPdylJtqxa+ISr/FvrM8ZG9+7z5cZLH42aXSgh29gfeUWIozEg21mIuKEwFUmDtdGwMA	AA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 5 May 2013 23:51:19 -0400
+Date: Mon, 6 May 2013 13:51:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: linux-next: manual merge of the akpm tree with the  tree
+Message-Id: <20130506135109.9c0b24ea1e22784fb28ae6b9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__6_May_2013_13_51_09_+1000_xua6eR5cnSxyYVw4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver core clears the driver data to NULL after device_release
-or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
-(device-core: Ensure drvdata = NULL when no driver is bound).
-Thus, it is not needed to manually clear the device driver data to NULL.
+--Signature=_Mon__6_May_2013_13_51_09_+1000_xua6eR5cnSxyYVw4
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/pinctrl/pinctrl-u300.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Hi Andrew,
 
-diff --git a/drivers/pinctrl/pinctrl-u300.c b/drivers/pinctrl/pinctrl-u300.c
-index 6a3a750..195191a 100644
---- a/drivers/pinctrl/pinctrl-u300.c
-+++ b/drivers/pinctrl/pinctrl-u300.c
-@@ -1100,7 +1100,6 @@ static int u300_pmx_remove(struct platform_device *pdev)
- 	struct u300_pmx *upmx = platform_get_drvdata(pdev);
- 
- 	pinctrl_unregister(upmx->pctl);
--	platform_set_drvdata(pdev, NULL);
- 
- 	return 0;
- }
--- 
-1.7.2.5
+Today's linux-next merge of the akpm tree got a conflict in ipc/sem.c
+between commit 321310ced2d6 ("ipc: move sem_obtain_lock() rcu locking
+into the only caller") from Linus' tree and commit "ipc/sem.c:
+alternatives to preempt_disable()" from the akpm tree.
 
+I just dropped the akpm tree commit for now.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__6_May_2013_13_51_09_+1000_xua6eR5cnSxyYVw4
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRhyitAAoJEECxmPOUX5FE940QAKSRRBUYd34QqGl1iiKVWcTs
+tmBP/LC6uOmZrQwnw4Ru24gGw8vJrJtf+HExCOeC6TPcjshZSWt/1V7t2LbQ5Yd4
+PGpgPveyMQBhLx1gder4e0Qcaq6XfdM0FOPtD3LhULx27DlPCramUSZN8bs0bQ0D
+C6NIecGS4xSfvUBzWAznnpV911VDgtNL3JlvXZx9aj/Nj7uYTq0ibsxchkrXjGCz
+AHSomzuxdGIidXQZWTJj3ahDfW9IRuqkRT8hfbmxGjgUjV4mjaCGoFU/Zb7Q8Gcv
+bJ1aUaIYlilvZ3VtU0MPgztgFhP8iZDhq11mq9iWi6nzN/58NbXecOgEo4EJ+Gvi
+zNB2Nyj/ZYJb9aUCX3spNqvqwe5/D5S3CHH5OcEu7orYwJGprMH/KFJPNECBsdvT
+MBUv+gK5CqdWSezoLaSYdRoDYobgdiYhQxGKN3XoEf5tjL1rCBQ6hZNoFmhIu5yJ
+dXkM2SmeqmOyNkTpO7TPR8bHw8Aut4IKG86pDOiTsxX4X/gb6yuryDICRVxeuxj6
+hxP+aATzChwZvcedf2Gxz2EvxNPTjaVGnDFezpIgWi/VFzj0y631zr0g5Lw2QMVa
+6secpgWiuPqawWNXEUzhWejyNNi4SaoWGG1PkPhUQEU1NDGKHUyydjAQ+Udm0keq
+qNsVNUKX0++Hpt3Xe9y3
+=JNmf
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__6_May_2013_13_51_09_+1000_xua6eR5cnSxyYVw4--
