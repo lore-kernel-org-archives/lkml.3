@@ -1,119 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab3EFIJX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 04:09:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43487 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab3EFIJW (ORCPT
+	id S1753846Ab3EFIJo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 04:09:44 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:44518 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464Ab3EFIJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 04:09:22 -0400
-Date: Mon, 6 May 2013 10:07:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: mingo@kernel.org, a.p.zijlstra@chello.nl, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, ak@linux.intel.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf/x86/intel/lbr: Demand proper privileges
- for PERF_SAMPLE_BRANCH_KERNEL
-Message-ID: <20130506080737.GA13410@dyad.programming.kicks-ass.net>
-References: <20130503121256.230745028@chello.nl>
- <tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org>
- <20130504111907.GA3411@pd.tnic>
+	Mon, 6 May 2013 04:09:42 -0400
+Message-ID: <5187449A.1000202@linux.vnet.ibm.com>
+Date: Mon, 06 May 2013 13:50:18 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130504111907.GA3411@pd.tnic>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Robin Holt <holt@sgi.com>, stable@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [PATCH RESEND] mm: mmu_notifier: re-fix freed page still mapped in
+ secondary MMU
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050608-1396-0000-0000-000002E83CB1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > @@ -318,8 +318,11 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
-> >  	if (br_type & PERF_SAMPLE_BRANCH_USER)
-> >  		mask |= X86_BR_USER;
-> >  
-> > -	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
-> > +	if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
-> > +		if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-> > +			return -EACCES;
-> 
-> It is probably not too late to amend this patch and remove the "-EACCES":
-> 
-> arch/x86/kernel/cpu/perf_event_intel_lbr.c: In function ‘intel_pmu_setup_sw_lbr_filter’:
-> arch/x86/kernel/cpu/perf_event_intel_lbr.c:323:4: warning: ‘return’ with a value, in function returning void [enabled by default]
+The commit 751efd8610d3 (mmu_notifier_unregister NULL Pointer deref
+and multiple ->release()) breaks the fix:
+    3ad3d901bbcfb15a5e4690e55350db0899095a68
+    (mm: mmu_notifier: fix freed page still mapped in secondary MMU)
 
-Oh urgh, looks like I forgot a refresh before posting..
+Since hlist_for_each_entry_rcu() is changed now, we can not revert that patch
+directly, so this patch reverts the commit and simply fix the bug spotted
+by that patch
 
-This one actually compiles a defconfig bzImage.
+This bug spotted by commit 751efd8610d3 is:
+======
+There is a race condition between mmu_notifier_unregister() and
+__mmu_notifier_release().
 
+Assume two tasks, one calling mmu_notifier_unregister() as a result of a
+filp_close() ->flush() callout (task A), and the other calling
+mmu_notifier_release() from an mmput() (task B).
+
+                    A                               B
+t1                                              srcu_read_lock()
+t2              if (!hlist_unhashed())
+t3                                              srcu_read_unlock()
+t4              srcu_read_lock()
+t5                                              hlist_del_init_rcu()
+t6                                              synchronize_srcu()
+t7              srcu_read_unlock()
+t8              hlist_del_rcu()  <--- NULL pointer deref.
+======
+
+This can be fixed by using hlist_del_init_rcu instead of hlist_del_rcu.
+
+The another issue spotted in the commit is
+"multiple ->release() callouts", we needn't care it too much because
+it is really rare (e.g, can not happen on kvm since mmu-notify is unregistered
+after exit_mmap()) and the later call of multiple ->release should be
+fast since all the pages have already been released by the first call.
+Anyway, this issue should be fixed in a separate patch.
+
+-stable suggestions:
+Any version has commit 751efd8610d3 need to be backported. I find the oldest
+version has this commit is 3.0-stable.
+
+Tested-by: Robin Holt <holt@sgi.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
-Subject: perf, x86, lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri May 03 14:07:49 CEST 2013
 
-We should always have proper privileges when requesting kernel data.
+Andrew, this patch has been tested by Robin and the test shows that the bug
+of "NULL Pointer deref" bas been fixed. However, we have the argument that
+whether the fix of "multiple ->release" should be merged into this patch.
+(This patch just do fix the bug of "NULL Pointer deref")
 
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: eranian@google.com
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-deb8yrh5fq2bijn5tlmezkmd@git.kernel.org
----
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+Your thought?
 
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -310,7 +310,7 @@ void intel_pmu_lbr_read(void)
-  * - in case there is no HW filter
-  * - in case the HW filter has errata or limitations
-  */
--static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
-+static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- {
- 	u64 br_type = event->attr.branch_sample_type;
- 	int mask = 0;
-@@ -318,8 +318,11 @@ static void intel_pmu_setup_sw_lbr_filte
- 	if (br_type & PERF_SAMPLE_BRANCH_USER)
- 		mask |= X86_BR_USER;
- 
--	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
-+	if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
-+		if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-+			return -EACCES;
- 		mask |= X86_BR_KERNEL;
-+	}
- 
- 	/* we ignore BRANCH_HV here */
- 
-@@ -339,6 +342,8 @@ static void intel_pmu_setup_sw_lbr_filte
- 	 * be used by fixup code for some CPU
+ mm/mmu_notifier.c |   81 +++++++++++++++++++++++++++--------------------------
+ 1 files changed, 41 insertions(+), 40 deletions(-)
+
+diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
+index be04122..606777a 100644
+--- a/mm/mmu_notifier.c
++++ b/mm/mmu_notifier.c
+@@ -40,48 +40,45 @@ void __mmu_notifier_release(struct mm_struct *mm)
+ 	int id;
+
+ 	/*
+-	 * srcu_read_lock() here will block synchronize_srcu() in
+-	 * mmu_notifier_unregister() until all registered
+-	 * ->release() callouts this function makes have
+-	 * returned.
++	 * SRCU here will block mmu_notifier_unregister until
++	 * ->release returns.
  	 */
- 	event->hw.branch_reg.reg = mask;
+ 	id = srcu_read_lock(&srcu);
++	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist)
++		/*
++		 * if ->release runs before mmu_notifier_unregister it
++		 * must be handled as it's the only way for the driver
++		 * to flush all existing sptes and stop the driver
++		 * from establishing any more sptes before all the
++		 * pages in the mm are freed.
++		 */
++		if (mn->ops->release)
++			mn->ops->release(mn, mm);
++	srcu_read_unlock(&srcu, id);
 +
-+	return 0;
- }
- 
- /*
-@@ -375,7 +380,7 @@ static int intel_pmu_setup_hw_lbr_filter
- 
- int intel_pmu_setup_lbr_filter(struct perf_event *event)
- {
--	int ret = 0;
-+	int ret;
- 
- 	/*
- 	 * no LBR on this PMU
-@@ -386,7 +391,9 @@ int intel_pmu_setup_lbr_filter(struct pe
- 	/*
- 	 * setup SW LBR filter
- 	 */
--	intel_pmu_setup_sw_lbr_filter(event);
-+	ret = intel_pmu_setup_sw_lbr_filter(event);
-+	if (ret)
-+		return ret;
- 
- 	/*
- 	 * setup HW LBR filter, if any
+ 	spin_lock(&mm->mmu_notifier_mm->lock);
+ 	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
+ 		mn = hlist_entry(mm->mmu_notifier_mm->list.first,
+ 				 struct mmu_notifier,
+ 				 hlist);
+-
+ 		/*
+-		 * Unlink.  This will prevent mmu_notifier_unregister()
+-		 * from also making the ->release() callout.
++		 * We arrived before mmu_notifier_unregister so
++		 * mmu_notifier_unregister will do nothing other than
++		 * to wait ->release to finish and
++		 * mmu_notifier_unregister to return.
+ 		 */
+ 		hlist_del_init_rcu(&mn->hlist);
+-		spin_unlock(&mm->mmu_notifier_mm->lock);
+-
+-		/*
+-		 * Clear sptes. (see 'release' description in mmu_notifier.h)
+-		 */
+-		if (mn->ops->release)
+-			mn->ops->release(mn, mm);
+-
+-		spin_lock(&mm->mmu_notifier_mm->lock);
+ 	}
+ 	spin_unlock(&mm->mmu_notifier_mm->lock);
 
+ 	/*
+-	 * All callouts to ->release() which we have done are complete.
+-	 * Allow synchronize_srcu() in mmu_notifier_unregister() to complete
+-	 */
+-	srcu_read_unlock(&srcu, id);
+-
+-	/*
+-	 * mmu_notifier_unregister() may have unlinked a notifier and may
+-	 * still be calling out to it.	Additionally, other notifiers
+-	 * may have been active via vmtruncate() et. al. Block here
+-	 * to ensure that all notifier callouts for this mm have been
+-	 * completed and the sptes are really cleaned up before returning
+-	 * to exit_mmap().
++	 * synchronize_srcu here prevents mmu_notifier_release to
++	 * return to exit_mmap (which would proceed freeing all pages
++	 * in the mm) until the ->release method returns, if it was
++	 * invoked by mmu_notifier_unregister.
++	 *
++	 * The mmu_notifier_mm can't go away from under us because one
++	 * mm_count is hold by exit_mmap.
+ 	 */
+ 	synchronize_srcu(&srcu);
+ }
+@@ -292,31 +289,35 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
+ {
+ 	BUG_ON(atomic_read(&mm->mm_count) <= 0);
+
+-	spin_lock(&mm->mmu_notifier_mm->lock);
+ 	if (!hlist_unhashed(&mn->hlist)) {
++		/*
++		 * SRCU here will force exit_mmap to wait ->release to finish
++		 * before freeing the pages.
++		 */
+ 		int id;
+
++		id = srcu_read_lock(&srcu);
+ 		/*
+-		 * Ensure we synchronize up with __mmu_notifier_release().
++		 * exit_mmap will block in mmu_notifier_release to
++		 * guarantee ->release is called before freeing the
++		 * pages.
+ 		 */
+-		id = srcu_read_lock(&srcu);
+-
+-		hlist_del_rcu(&mn->hlist);
+-		spin_unlock(&mm->mmu_notifier_mm->lock);
+-
+ 		if (mn->ops->release)
+ 			mn->ops->release(mn, mm);
++		srcu_read_unlock(&srcu, id);
+
++		spin_lock(&mm->mmu_notifier_mm->lock);
+ 		/*
+-		 * Allow __mmu_notifier_release() to complete.
++		 * Can not use list_del_rcu() since __mmu_notifier_release
++		 * can delete it before we hold the lock.
+ 		 */
+-		srcu_read_unlock(&srcu, id);
+-	} else
++		hlist_del_init_rcu(&mn->hlist);
+ 		spin_unlock(&mm->mmu_notifier_mm->lock);
++	}
+
+ 	/*
+-	 * Wait for any running method to finish, including ->release() if it
+-	 * was run by __mmu_notifier_release() instead of us.
++	 * Wait any running method to finish, of course including
++	 * ->release if it was run by mmu_notifier_relase instead of us.
+ 	 */
+ 	synchronize_srcu(&srcu);
+
+-- 
+1.7.7.6
 
