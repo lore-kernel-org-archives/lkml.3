@@ -1,129 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567Ab3EFOGW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 10:06:22 -0400
-Received: from mail.datasphere.ch ([195.70.3.149]:34893 "EHLO
-	mail.datasphere.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab3EFOGU convert rfc822-to-8bit (ORCPT
+	id S1752718Ab3EFOHS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 10:07:18 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:37071
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751821Ab3EFOHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 10:06:20 -0400
-X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 May 2013 10:06:20 EDT
-X-Account-Key: account1
+	Mon, 6 May 2013 10:07:16 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 15
+X-BigFish: VS15(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah132dlzz8275bh8275dh8275chz2dh1eh2a8h668h839hf0ah107ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14afh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh4a8s1155h)
+From: <y@shlinux1.ap.freescale.net>
+To: <linux-kernel@vger.kernel.org>
+CC: <davem@davemloft.net>, <dborkman@redhat.com>, <tglx@linutronix.de>,
+        <john.stultz@linaro.org>, <liu.y.victor@gmail.com>,
+        Liu Ying <Ying.Liu@freescale.com>
+Subject: [PATCH 1/1] ktime: Use macro NSEC_PER_USEC instead of a magic number
+Date: Mon, 6 May 2013 20:42:15 +0800
+Message-ID: <1367844135-31383-1-git-send-email-y>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <y>
+References: <y>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-FCC: imap://pm@mail.datasphere.ch/Sent
-X-Identity-Key: id1
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-X-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0
-Content-class: urn:content-classes:message
-Subject: [PATCH 1/1] Create megaraid ioctl device node
-Date: Mon, 6 May 2013 15:58:31 +0200
-Message-ID: <AB5E58B87EB73C46A38073D8F459F113D9FBA4@dataspheresrv01>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 1/1] Create megaraid ioctl device node
-Thread-Index: Ac5KYcqbRtpaTN6jRRipemNS+FSTnQ==
-From: "Patrick Monnerat" <Patrick.Monnerat@datasphere.ch>
-To: "Neela Syam Kolli" <megaraidlinux@lsi.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Content-Type: text/plain
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrick Monnerat <pm@datasphere.ch>
+From: Liu Ying <Ying.Liu@freescale.com>
 
-  Create ioctl device node for megaraid_sas driver. Let this node be
-managed by udev. Fix a typo.
+We've got the macro NSEC_PER_USEC defined in header file
+include/linux/time.h. To make the code decent, this patch
+replaces the magic number 1000 to convert bewteen a time
+value in microseconds and one in nanoseconds with the
+macro NSEC_PER_USEC.
 
-Reported-by: pm@datasphere.ch
-To: Neela Syam Kolli <megaraidlinux@lsi.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Patrick Monnerat <pm@datasphere.ch>
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Daniel Borkmann <dborkman@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
 ---
-diff -uprN
-linux-3.8.11-200.1pm.fc18.x86_64.orig/drivers/scsi/megaraid/megaraid_sas
-_base.c
-linux-3.8.11-200.1pm.fc18.x86_64.new/drivers/scsi/megaraid/megaraid_sas_
-base.c
----
-linux-3.8.11-200.1pm.fc18.x86_64.orig/drivers/scsi/megaraid/megaraid_sas
-_base.c	2013-02-19 00:58:34.000000000 +0100
-+++
-linux-3.8.11-200.1pm.fc18.x86_64.new/drivers/scsi/megaraid/megaraid_sas_
-base.c	2013-05-06 13:39:27.903234426 +0200
-@@ -49,6 +49,7 @@
- #include <linux/blkdev.h>
- #include <linux/mutex.h>
- #include <linux/poll.h>
-+#include <linux/device.h>
- 
- #include <scsi/scsi.h>
- #include <scsi/scsi_cmnd.h>
-@@ -127,6 +128,8 @@ static struct pci_device_id megasas_pci_
- 
- MODULE_DEVICE_TABLE(pci, megasas_pci_table);
- 
-+static struct class *megasas_mgmt_class;
-+static struct device *megasas_mgmt_device;
- static int megasas_mgmt_majorno;
- static struct megasas_mgmt_info megasas_mgmt_info;
- static struct fasync_struct *megasas_async_queue;
-@@ -5450,7 +5453,7 @@ static int __init megasas_init(void)
- 	rval = pci_register_driver(&megasas_pci_driver);
- 
- 	if (rval) {
--		printk(KERN_DEBUG "megasas: PCI hotplug regisration
-failed \n");
-+		printk(KERN_DEBUG "megasas: PCI hotplug registration
-failed\n");
- 		goto err_pcidrv;
- 	}
- 
-@@ -5477,8 +5480,28 @@ static int __init megasas_init(void)
- 	if (rval)
- 		goto err_dcf_support_device_change;
- 
--	return rval;
-+	/*
-+	 * Register as an udev-controlled device.
-+	 */
-+	megasas_mgmt_class = class_create(THIS_MODULE, "megaraid");
-+	rval = PTR_ERR(megasas_mgmt_class);
-+	if (IS_ERR(megasas_mgmt_class))
-+		goto err_class;
-+
-+	megasas_mgmt_device = device_create(megasas_mgmt_class, NULL,
-+					    MKDEV(megasas_mgmt_majorno,
-0),
-+					    NULL, "megaraid_sas_ioctl");
-+	rval = PTR_ERR(megasas_mgmt_device);
-+	if (IS_ERR(megasas_mgmt_device))
-+		goto err_create_device;
- 
-+	return 0;
-+
-+err_create_device:
-+	class_destroy(megasas_mgmt_class);
-+err_class:
-+	driver_remove_file(&megasas_pci_driver.driver,
-+			   &driver_attr_support_device_change);
- err_dcf_support_device_change:
- 	driver_remove_file(&megasas_pci_driver.driver,
- 			   &driver_attr_dbg_lvl);
-@@ -5504,6 +5527,9 @@ err_pcidrv:
-  */
- static void __exit megasas_exit(void)
+ include/linux/ktime.h |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/ktime.h b/include/linux/ktime.h
+index bbca128..5de963d 100644
+--- a/include/linux/ktime.h
++++ b/include/linux/ktime.h
+@@ -229,7 +229,8 @@ static inline ktime_t timespec_to_ktime(const struct timespec ts)
+ static inline ktime_t timeval_to_ktime(const struct timeval tv)
  {
-+	device_destroy(megasas_mgmt_class, MKDEV(megasas_mgmt_majorno,
-0));
-+	class_destroy(megasas_mgmt_class);
-+
- 	driver_remove_file(&megasas_pci_driver.driver,
- 			   &driver_attr_dbg_lvl);
- 	driver_remove_file(&megasas_pci_driver.driver,
+ 	return (ktime_t) { .tv = { .sec = (s32)tv.tv_sec,
+-				   .nsec = (s32)tv.tv_usec * 1000 } };
++				   .nsec = (s32)tv.tv_usec *
++					   (s32)NSEC_PER_USEC} };
+ }
+ 
+ /**
+@@ -320,12 +321,12 @@ static inline s64 ktime_us_delta(const ktime_t later, const ktime_t earlier)
+ 
+ static inline ktime_t ktime_add_us(const ktime_t kt, const u64 usec)
+ {
+-	return ktime_add_ns(kt, usec * 1000);
++	return ktime_add_ns(kt, usec * NSEC_PER_USEC);
+ }
+ 
+ static inline ktime_t ktime_sub_us(const ktime_t kt, const u64 usec)
+ {
+-	return ktime_sub_ns(kt, usec * 1000);
++	return ktime_sub_ns(kt, usec * NSEC_PER_USEC);
+ }
+ 
+ extern ktime_t ktime_add_safe(const ktime_t lhs, const ktime_t rhs);
+-- 
+1.7.1
+
+
