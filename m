@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757790Ab3EFUql (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59208 "EHLO
+	id S1758224Ab3EFUrP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:47:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59430 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756545Ab3EFUqj (ORCPT
+	with ESMTP id S1756437Ab3EFUrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:39 -0400
+	Mon, 6 May 2013 16:47:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anurup m <anurup.m@huawei.com>, shyju pv <shyju.pv@huawei.com>,
-        Sanil kumar <sanil.kumar@huawei.com>, Nataraj m <nataraj.m@huawei.com>,
-        Li Zefan <lizefan@huawei.com>, David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 056/115] fs/fscache/stats.c: fix memory leak
-Date: Mon,  6 May 2013 13:44:52 -0700
-Message-Id: <20130506203101.309028518@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [ 115/115] mfd: adp5520: Restore mode bits on resume
+Date: Mon,  6 May 2013 13:45:51 -0700
+Message-Id: <20130506203107.362766813@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -30,41 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anurup m <anurup.m@huawei.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit ec686c9239b4d472052a271c505d04dae84214cc upstream.
+commit c6cc25fda58da8685ecef3f179adc7b99c8253b2 upstream.
 
-There is a kernel memory leak observed when the proc file
-/proc/fs/fscache/stats is read.
+The adp5520 unfortunately also clears the BL_EN bit when the nSTNDBY bit is
+cleared. So we need to make sure to restore it during resume if it was set
+before suspend.
 
-The reason is that in fscache_stats_open, single_open is called and the
-respective release function is not called during release.  Hence fix
-with correct release function - single_release().
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=57101
-
-Signed-off-by: Anurup m <anurup.m@huawei.com>
-Cc: shyju pv <shyju.pv@huawei.com>
-Cc: Sanil kumar <sanil.kumar@huawei.com>
-Cc: Nataraj m <nataraj.m@huawei.com>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fscache/stats.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/adp5520.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/fscache/stats.c
-+++ b/fs/fscache/stats.c
-@@ -287,5 +287,5 @@ const struct file_operations fscache_sta
- 	.open		= fscache_stats_open,
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
--	.release	= seq_release,
-+	.release        = single_release,
+--- a/drivers/mfd/adp5520.c
++++ b/drivers/mfd/adp5520.c
+@@ -36,6 +36,7 @@ struct adp5520_chip {
+ 	struct blocking_notifier_head notifier_list;
+ 	int irq;
+ 	unsigned long id;
++	uint8_t mode;
  };
+ 
+ static int __adp5520_read(struct i2c_client *client,
+@@ -326,7 +327,10 @@ static int adp5520_suspend(struct device
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
+ 
+-	adp5520_clr_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
++	adp5520_read(chip->dev, ADP5520_MODE_STATUS, &chip->mode);
++	/* All other bits are W1C */
++	chip->mode &= ADP5520_BL_EN | ADP5520_DIM_EN | ADP5520_nSTNBY;
++	adp5520_write(chip->dev, ADP5520_MODE_STATUS, 0);
+ 	return 0;
+ }
+ 
+@@ -335,7 +339,7 @@ static int adp5520_resume(struct device
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
+ 
+-	adp5520_set_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
++	adp5520_write(chip->dev, ADP5520_MODE_STATUS, chip->mode);
+ 	return 0;
+ }
+ #endif
 
 
