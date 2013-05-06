@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933549Ab3EFX1X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:27:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36809 "EHLO
+	id S933566Ab3EFX1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:27:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36813 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759059Ab3EFXNq (ORCPT
+	with ESMTP id S1760583Ab3EFXNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:46 -0400
+	Mon, 6 May 2013 19:13:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 059/104] ALSA: usb-audio: disable autopm for MIDI devices
-Date: Mon,  6 May 2013 16:12:18 -0700
-Message-Id: <20130506230049.671434684@linuxfoundation.org>
+        Calvin Owens <jcalvinowens@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 058/104] ALSA: usb: Add quirk for 192KHz recording on E-Mu devices
+Date: Mon,  6 May 2013 16:12:17 -0700
+Message-Id: <20130506230049.557905893@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,87 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Calvin Owens <jcalvinowens@gmail.com>
 
-commit cbc200bca4b51a8e2406d4b654d978f8503d430b upstream.
+commit 1539d4f82ad534431cc67935e8e442ccf107d17d upstream.
 
-Commit 88a8516a2128 (ALSA: usbaudio: implement USB autosuspend)
-introduced autopm for all USB audio/MIDI devices.  However, many MIDI
-devices, such as synthesizers, do not merely transmit MIDI messages but
-use their MIDI inputs to control other functions.  With autopm, these
-devices would get powered down as soon as the last MIDI port device is
-closed on the host.
+When recording at 176.2KHz or 192Khz, the device adds a 32-bit length
+header to the capture packets, which obviously needs to be ignored for
+recording to work properly.
 
-Even some plain MIDI interfaces could get broken: they automatically
-send Active Sensing messages while powered up, but as soon as these
-messages cease, the receiving device would interpret this as an
-accidental disconnection.
+Userspace expected:  L0 L1 L2 R0 R1 R2
+...but actually got: R2 L0 L1 L2 R0 R1
 
-Commit f5f165418cab (ALSA: usb-audio: Fix missing autopm for MIDI input)
-introduced another regression: some devices (e.g. the Roland GAIA SH-01)
-are self-powered but do a reset whenever the USB interface's power state
-changes.
+Also, the last byte of the length header being interpreted as L0 of
+the first sample caused spikes every 0.5ms, resulting in a loud 16KHz
+tone (about the highest 'B' on a piano) being present throughout
+captures.
 
-To work around all this, just disable autopm for all USB MIDI devices.
+Tested at all sample rates on an E-Mu 0404USB, and tested for
+regressions on a generic USB headset.
 
-Reported-by: Laurens Holst
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Calvin Owens <jcalvinowens@gmail.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/midi.c |   13 ++-----------
- 1 file changed, 2 insertions(+), 11 deletions(-)
+ sound/usb/card.h   |    1 +
+ sound/usb/pcm.c    |    2 +-
+ sound/usb/quirks.c |    1 +
+ sound/usb/stream.c |    1 +
+ 4 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/sound/usb/midi.c
-+++ b/sound/usb/midi.c
-@@ -126,7 +126,6 @@ struct snd_usb_midi {
- 		struct snd_usb_midi_in_endpoint *in;
- 	} endpoints[MIDI_MAX_ENDPOINTS];
- 	unsigned long input_triggered;
--	bool autopm_reference;
- 	unsigned int opened[2];
- 	unsigned char disconnected;
- 	unsigned char input_running;
-@@ -1040,7 +1039,6 @@ static int substream_open(struct snd_raw
- {
- 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
- 	struct snd_kcontrol *ctl;
--	int err;
+--- a/sound/usb/card.h
++++ b/sound/usb/card.h
+@@ -116,6 +116,7 @@ struct snd_usb_substream {
+ 	unsigned int altset_idx;     /* USB data format: index of alternate setting */
+ 	unsigned int txfr_quirk:1;	/* allow sub-frame alignment */
+ 	unsigned int fmt_type;		/* USB audio format type (1-3) */
++	unsigned int pkt_offset_adj;	/* Bytes to drop from beginning of packets (for non-compliant devices) */
  
- 	down_read(&umidi->disc_rwsem);
- 	if (umidi->disconnected) {
-@@ -1051,13 +1049,6 @@ static int substream_open(struct snd_raw
- 	mutex_lock(&umidi->mutex);
- 	if (open) {
- 		if (!umidi->opened[0] && !umidi->opened[1]) {
--			err = usb_autopm_get_interface(umidi->iface);
--			umidi->autopm_reference = err >= 0;
--			if (err < 0 && err != -EACCES) {
--				mutex_unlock(&umidi->mutex);
--				up_read(&umidi->disc_rwsem);
--				return -EIO;
--			}
- 			if (umidi->roland_load_ctl) {
- 				ctl = umidi->roland_load_ctl;
- 				ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
-@@ -1080,8 +1071,6 @@ static int substream_open(struct snd_raw
- 				snd_ctl_notify(umidi->card,
- 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
- 			}
--			if (umidi->autopm_reference)
--				usb_autopm_put_interface(umidi->iface);
- 		}
- 	}
- 	mutex_unlock(&umidi->mutex);
-@@ -2256,6 +2245,8 @@ int snd_usbmidi_create(struct snd_card *
- 		return err;
- 	}
+ 	unsigned int running: 1;	/* running status */
  
-+	usb_autopm_get_interface_no_resume(umidi->iface);
-+
- 	list_add_tail(&umidi->list, midi_list);
- 	return 0;
+--- a/sound/usb/pcm.c
++++ b/sound/usb/pcm.c
+@@ -1161,7 +1161,7 @@ static void retire_capture_urb(struct sn
+ 	stride = runtime->frame_bits >> 3;
+ 
+ 	for (i = 0; i < urb->number_of_packets; i++) {
+-		cp = (unsigned char *)urb->transfer_buffer + urb->iso_frame_desc[i].offset;
++		cp = (unsigned char *)urb->transfer_buffer + urb->iso_frame_desc[i].offset + subs->pkt_offset_adj;
+ 		if (urb->iso_frame_desc[i].status && printk_ratelimit()) {
+ 			snd_printdd(KERN_ERR "frame %d active: %d\n", i, urb->iso_frame_desc[i].status);
+ 			// continue;
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -837,6 +837,7 @@ static void set_format_emu_quirk(struct
+ 		break;
+ 	}
+ 	snd_emuusb_set_samplerate(subs->stream->chip, emu_samplerate_id);
++	subs->pkt_offset_adj = (emu_samplerate_id >= EMU_QUIRK_SR_176400HZ) ? 4 : 0;
  }
+ 
+ void snd_usb_set_format_quirk(struct snd_usb_substream *subs,
+--- a/sound/usb/stream.c
++++ b/sound/usb/stream.c
+@@ -94,6 +94,7 @@ static void snd_usb_init_substream(struc
+ 	subs->dev = as->chip->dev;
+ 	subs->txfr_quirk = as->chip->txfr_quirk;
+ 	subs->speed = snd_usb_get_speed(subs->dev);
++	subs->pkt_offset_adj = 0;
+ 
+ 	snd_usb_set_pcm_ops(as->pcm, stream);
+ 
 
 
