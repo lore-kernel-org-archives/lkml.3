@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab3EFU6C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:58:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59262 "EHLO
+	id S1757871Ab3EFUqp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:46:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59214 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757877Ab3EFUqr (ORCPT
+	with ESMTP id S1757762Ab3EFUqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:47 -0400
+	Mon, 6 May 2013 16:46:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Jerome Marchand <jmarchan@redhat.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Hugh Dickins <hughd@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 072/115] mm: swap: mark swap pages writeback before queueing for direct IO
-Date: Mon,  6 May 2013 13:45:08 -0700
-Message-Id: <20130506203102.950873647@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 067/115] ARM: 7702/1: Set the page table freeing ceiling to TASK_SIZE
+Date: Mon,  6 May 2013 13:45:03 -0700
+Message-Id: <20130506203102.410919957@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -29,93 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit 0cdc444a67ccdbd58bfbcba865cb17a9f17a7691 upstream.
+commit 6aaa189f8712471a250bfdf8fc8d08277258b8ab upstream.
 
-As pointed out by Andrew Morton, the swap-over-NFS writeback is not
-setting PageWriteback before it is queued for direct IO.  While swap
-pages do not participate in BDI or process dirty accounting and the IO
-is synchronous, the writeback bit is still required and not setting it
-in this case was an oversight.  swapoff depends on the page writeback to
-synchronoise all pending writes on a swap page before it is reused.
-Swapcache freeing and reuse depend on checking the PageWriteback under
-lock to ensure the page is safe to reuse.
+ARM processors with LPAE enabled use 3 levels of page tables, with an
+entry in the top level (pgd) covering 1GB of virtual space. Because of
+the branch relocation limitations on ARM, the loadable modules are
+mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
+between kernel modules and user space.
 
-Direct IO handlers and the direct IO handler for NFS do not deal with
-PageWriteback as they are synchronous writes.  In the case of NFS, it
-schedules pages (or a page in the case of swap) for IO and then waits
-synchronously for IO to complete in nfs_direct_write().  It is
-recognised that this is a slowdown from normal swap handling which is
-asynchronous and uses a completion handler.  Shoving PageWriteback
-handling down into direct IO handlers looks like a bad fit to handle the
-swap case although it may have to be dealt with some day if swap is
-converted to use direct IO in general and bmap is finally done away
-with.  At that point it will be necessary to refit asynchronous direct
-IO with completion handlers onto the swap subsystem.
+If free_pgtables() is called with the default ceiling 0,
+free_pgd_range() (and subsequently called functions) also frees the page
+table shared between user space and kernel modules (which is normally
+handled by the ARM-specific pgd_free() function). This patch changes
+defines the ARM USER_PGTABLES_CEILING to TASK_SIZE when CONFIG_ARM_LPAE
+is enabled.
 
-As swapcache currently depends on PageWriteback to protect against
-races, this patch sets PageWriteback under the page lock before queueing
-it for direct IO.  It is cleared when the direct IO handler returns.  IO
-errors are treated similarly to the direct-to-bio case except PageError
-is not set as in the case of swap-over-NFS, it is likely to be a
-transient error.
+Note that the pgd_free() function already checks the presence of the
+shared pmd page allocated by pgd_alloc() and frees it, though with
+ceiling 0 this wasn't necessary.
 
-It was asked what prevents such a page being reclaimed in parallel.
-With this patch applied, such a page will now be skipped (most of the
-time) or blocked until the writeback completes.  Reclaim checks
-PageWriteback under the page lock before calling try_to_free_swap and
-the page lock should prevent the page being requeued for IO before it is
-freed.
-
-This and Jerome's related patch should considered for -stable as far
-back as 3.6 when swap-over-NFS was introduced.
-
-[akpm@linux-foundation.org: use pr_err_ratelimited()]
-[akpm@linux-foundation.org: remove hopefully-unneeded cast in printk]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Cc: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_io.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ arch/arm/include/asm/pgtable.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -214,6 +214,7 @@ int swap_writepage(struct page *page, st
- 		kiocb.ki_left = PAGE_SIZE;
- 		kiocb.ki_nbytes = PAGE_SIZE;
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -70,6 +70,15 @@ extern void __pgd_error(const char *file
+ #endif
  
-+		set_page_writeback(page);
- 		unlock_page(page);
- 		ret = mapping->a_ops->direct_IO(KERNEL_WRITE,
- 						&kiocb, &iov,
-@@ -223,8 +224,22 @@ int swap_writepage(struct page *page, st
- 			count_vm_event(PSWPOUT);
- 			ret = 0;
- 		} else {
-+			/*
-+			 * In the case of swap-over-nfs, this can be a
-+			 * temporary failure if the system has limited
-+			 * memory for allocating transmit buffers.
-+			 * Mark the page dirty and avoid
-+			 * rotate_reclaimable_page but rate-limit the
-+			 * messages but do not flag PageError like
-+			 * the normal direct-to-bio case as it could
-+			 * be temporary.
-+			 */
- 			set_page_dirty(page);
-+			ClearPageReclaim(page);
-+			pr_err_ratelimited("Write error on dio swapfile (%Lu)\n",
-+				page_file_offset(page));
- 		}
-+		end_page_writeback(page);
- 		return ret;
- 	}
- 
+ /*
++ * Use TASK_SIZE as the ceiling argument for free_pgtables() and
++ * free_pgd_range() to avoid freeing the modules pmd when LPAE is enabled (pmd
++ * page shared between user and kernel).
++ */
++#ifdef CONFIG_ARM_LPAE
++#define USER_PGTABLES_CEILING	TASK_SIZE
++#endif
++
++/*
+  * The pgprot_* and protection_map entries will be fixed up in runtime
+  * to include the cachable and bufferable bits based on memory policy,
+  * as well as any architecture dependent bits like global/ASID and SMP
 
 
