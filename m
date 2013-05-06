@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760683Ab3EFXPf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:15:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37010 "EHLO
+	id S1760705Ab3EFXPz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:15:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37004 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932631Ab3EFXOQ (ORCPT
+	with ESMTP id S932604Ab3EFXOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:16 -0400
+	Mon, 6 May 2013 19:14:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Terry Barnaby <terry@beam.ltd.uk>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Elad Yi <elad.yi@gmail.com>, Philip Rakity <prakity@yahoo.com>,
         Chris Ball <cjb@laptop.org>
-Subject: [ 102/104] mmc: atmel-mci: pio hang on block errors
-Date: Mon,  6 May 2013 16:13:01 -0700
-Message-Id: <20130506230054.099403296@linuxfoundation.org>
+Subject: [ 101/104] mmc: core: Fix bit width test failing on old eMMC cards
+Date: Mon,  6 May 2013 16:13:00 -0700
+Message-Id: <20130506230053.998097464@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -28,85 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Terry Barnaby <terry@beam.ltd.uk>
+From: Philip Rakity <prakity@yahoo.com>
 
-commit bdbc5d0c60f3e9de3eeccf1c1a18bdc11dca62cc upstream.
+commit 836dc2fe89c968c10cada87e0dfae6626f8f9da3 upstream.
 
-The driver is doing, by default, multi-block reads. When a block error
-occurs, card/block.c instigates a single block read: "mmcblk0: retrying
-using single block read".  It leaves the sg chain intact and just changes
-the length attribute for the first sg entry and the overall sg_len
-parameter.  When atmci_read_data_pio is called to read the single block
-of data it ignores the sg_len and expects to read more than 512 bytes as
-it sees there are multiple items in the sg list. No more data comes as
-the controller has only been commanded to get one block.
+PARTITION_SUPPORT needs to be set before doing the compare on version
+number so the bit width test does not get invalid data.  Before this
+patch, a Sandisk iNAND eMMC card would detect 1-bit width although
+the hardware supports 4-bit.
 
-Signed-off-by: Terry Barnaby <terry@beam.ltd.uk>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Only affects old emmc devices - pre 4.4 devices.
+
+Reported-by: Elad Yi <elad.yi@gmail.com>
+Signed-off-by: Philip Rakity <prakity@yahoo.com>
 Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/atmel-mci.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/mmc/core/mmc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -178,6 +178,7 @@ struct atmel_mci {
- 	void __iomem		*regs;
- 
- 	struct scatterlist	*sg;
-+	unsigned int		sg_len;
- 	unsigned int		pio_offset;
- 	unsigned int		*buffer;
- 	unsigned int		buf_size;
-@@ -892,6 +893,7 @@ static u32 atmci_prepare_data(struct atm
- 	data->error = -EINPROGRESS;
- 
- 	host->sg = data->sg;
-+	host->sg_len = data->sg_len;
- 	host->data = data;
- 	host->data_chan = NULL;
- 
-@@ -1826,7 +1828,8 @@ static void atmci_read_data_pio(struct a
- 			if (offset == sg->length) {
- 				flush_dcache_page(sg_page(sg));
- 				host->sg = sg = sg_next(sg);
--				if (!sg)
-+				host->sg_len--;
-+				if (!sg || !host->sg_len)
- 					goto done;
- 
- 				offset = 0;
-@@ -1839,7 +1842,8 @@ static void atmci_read_data_pio(struct a
- 
- 			flush_dcache_page(sg_page(sg));
- 			host->sg = sg = sg_next(sg);
--			if (!sg)
-+			host->sg_len--;
-+			if (!sg || !host->sg_len)
- 				goto done;
- 
- 			offset = 4 - remaining;
-@@ -1890,7 +1894,8 @@ static void atmci_write_data_pio(struct
- 			nbytes += 4;
- 			if (offset == sg->length) {
- 				host->sg = sg = sg_next(sg);
--				if (!sg)
-+				host->sg_len--;
-+				if (!sg || !host->sg_len)
- 					goto done;
- 
- 				offset = 0;
-@@ -1904,7 +1909,8 @@ static void atmci_write_data_pio(struct
- 			nbytes += remaining;
- 
- 			host->sg = sg = sg_next(sg);
--			if (!sg) {
-+			host->sg_len--;
-+			if (!sg || !host->sg_len) {
- 				atmci_writel(host, ATMCI_TDR, value);
- 				goto done;
- 			}
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -368,13 +368,13 @@ static int mmc_read_ext_csd(struct mmc_c
+ 		ext_csd[EXT_CSD_SEC_FEATURE_SUPPORT];
+ 	card->ext_csd.raw_trim_mult =
+ 		ext_csd[EXT_CSD_TRIM_MULT];
++	card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
+ 	if (card->ext_csd.rev >= 4) {
+ 		/*
+ 		 * Enhanced area feature support -- check whether the eMMC
+ 		 * card has the Enhanced area enabled.  If so, export enhanced
+ 		 * area offset and size to user by adding sysfs interface.
+ 		 */
+-		card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
+ 		if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
+ 		    (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
+ 			hc_erase_grp_sz =
 
 
