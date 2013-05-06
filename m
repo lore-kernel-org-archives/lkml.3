@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab3EFHSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 03:18:11 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:32905 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752572Ab3EFHSK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 03:18:10 -0400
-Date: Mon, 6 May 2013 12:47:34 +0530
-From: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 56/63] ARM: ux500: Remove recently unused
- stedma40_xfer_dir enums
-Message-ID: <20130506071733.GA30181@bnru10>
-References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
- <1367591569-32197-57-git-send-email-lee.jones@linaro.org>
+	id S1753177Ab3EFHSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 03:18:38 -0400
+Received: from mga14.intel.com ([143.182.124.37]:19226 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752572Ab3EFHSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 03:18:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,619,1363158000"; 
+   d="scan'208";a="237352626"
+Message-ID: <51875944.9020409@intel.com>
+Date: Mon, 06 May 2013 15:18:28 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1367591569-32197-57-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
+        wangyun@linux.vnet.ibm.com
+Subject: Re: [PATCH v5 2/7] sched: remove SMP cover for runnable variables
+ in cfs_rq
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-3-git-send-email-alex.shi@intel.com> <51872D7F.30909@linux.vnet.ibm.com>
+In-Reply-To: <51872D7F.30909@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 16:32:42 +0200, Lee Jones wrote:
-> We're now using the transfer direction definitions provided by the DMA
-> sub-system, so the home-brew ones have become obsolete.
+On 05/06/2013 12:11 PM, Preeti U Murthy wrote:
+> Hi Alex,
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  include/linux/platform_data/dma-ste-dma40.h |   10 +---------
->  1 file changed, 1 insertion(+), 9 deletions(-)
+> You might want to do the below for struct sched_entity also?
+> AFAIK,struct sched_entity has struct sched_avg under CONFIG_SMP.
 > 
-> diff --git a/include/linux/platform_data/dma-ste-dma40.h b/include/linux/platform_data/dma-ste-dma40.h
-> index 288dc24..54ddca6 100644
-> --- a/include/linux/platform_data/dma-ste-dma40.h
-> +++ b/include/linux/platform_data/dma-ste-dma40.h
-> @@ -77,14 +77,6 @@ enum stedma40_periph_data_width {
->  	STEDMA40_DOUBLEWORD_WIDTH = STEDMA40_ESIZE_64_BIT
->  };
->  
-> -enum stedma40_xfer_dir {
-> -	STEDMA40_MEM_TO_MEM = 1,
-> -	STEDMA40_MEM_TO_PERIPH,
-> -	STEDMA40_PERIPH_TO_MEM,
-> -	STEDMA40_PERIPH_TO_PERIPH
-> -};
-> -
-> -
->  /**
->   * struct stedma40_half_channel_info - dst/src channel configuration
->   *
-> @@ -120,7 +112,7 @@ struct stedma40_half_channel_info {
->   *
->   */
->  struct stedma40_chan_cfg {
-> -	enum stedma40_xfer_dir			 dir;
-> +	enum dma_transfer_direction		 dir;
 
-
-Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
-
-srinidhi
-
->  	bool					 high_priority;
->  	bool					 realtime;
->  	enum stedma40_mode			 mode;
-> -- 
-> 1.7.10.4
-> 
+Ops, why it passed my UP config building? Anyway will check and test more.
+Thanks Preeti!
+-- 
+Thanks
+    Alex
