@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933011Ab3EFW66 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:58:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36319 "EHLO
+	id S933062Ab3EFW7I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:59:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36351 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758017Ab3EFW6y (ORCPT
+	with ESMTP id S933018Ab3EFW7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:58:54 -0400
+	Mon, 6 May 2013 18:59:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 10/46] s390/memory hotplug: prevent offline of active memory increments
-Date: Mon,  6 May 2013 15:58:16 -0700
-Message-Id: <20130506225821.772355556@linuxfoundation.org>
+        Dave Stikkolorum <d.r.stikkolorum@hhs.nl>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 08/46] usbfs: Always allow ctrl requests with USB_RECIP_ENDPOINT on the ctrl ep
+Date: Mon,  6 May 2013 15:58:14 -0700
+Message-Id: <20130506225821.566570483@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -28,58 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 94c163663fc1dcfc067a5fb3cc1446b9469975ce upstream.
+commit 1361bf4b9f9ef45e628a5b89e0fd9bedfdcb7104 upstream.
 
-In case a machine supports memory hotplug all active memory increments
-present at IPL time have been initialized with a "usecount" of 1.
-This is wrong if the memory increment size is larger than the memory
-section size of the memory hotplug code. If that is the case the
-usecount must be initialized with the number of memory sections that
-fit into one memory increment.
-Otherwise it is possible to put a memory increment into standby state
-even if there are still active sections.
-Afterwards addressing exceptions might happen which cause the kernel
-to panic.
-However even worse, if a memory increment was put into standby state
-and afterwards into active state again, it's contents would have been
-zeroed, leading to memory corruption.
+When usbfs receives a ctrl-request from userspace it calls check_ctrlrecip,
+which for a request with USB_RECIP_ENDPOINT tries to map this to an interface
+to see if this interface is claimed, except for ctrl-requests with a type of
+USB_TYPE_VENDOR.
 
-This was only an issue for machines that support standby memory and
-have at least 256GB memory.
+When trying to use this device: http://www.akaipro.com/eiepro
+redirected to a Windows vm running on qemu on top of Linux.
 
-This is broken since commit fdb1bb15 "[S390] sclp/memory hotplug: fix
-initial usecount of increments".
+The windows driver makes a ctrl-req with USB_TYPE_CLASS and
+USB_RECIP_ENDPOINT with index 0, and the mapping of the endpoint (0) to
+the interface fails since ep 0 is the ctrl endpoint and thus never is
+part of an interface.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Reviewed-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+This patch fixes this ctrl-req failing by skipping the checkintf call for
+USB_RECIP_ENDPOINT ctrl-reqs on the ctrl endpoint.
+
+Reported-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
+Tested-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/char/sclp_cmd.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/core/devio.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/s390/char/sclp_cmd.c
-+++ b/drivers/s390/char/sclp_cmd.c
-@@ -507,6 +507,8 @@ static void __init sclp_add_standby_memo
- 	add_memory_merged(0);
- }
- 
-+#define MEM_SCT_SIZE (1UL << SECTION_SIZE_BITS)
-+
- static void __init insert_increment(u16 rn, int standby, int assigned)
- {
- 	struct memory_increment *incr, *new_incr;
-@@ -519,7 +521,7 @@ static void __init insert_increment(u16
- 	new_incr->rn = rn;
- 	new_incr->standby = standby;
- 	if (!standby)
--		new_incr->usecount = 1;
-+		new_incr->usecount = rzm > MEM_SCT_SIZE ? rzm/MEM_SCT_SIZE : 1;
- 	last_rn = 0;
- 	prev = &sclp_mem_list;
- 	list_for_each_entry(incr, &sclp_mem_list, list) {
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -642,6 +642,8 @@ static int check_ctrlrecip(struct dev_st
+ 	index &= 0xff;
+ 	switch (requesttype & USB_RECIP_MASK) {
+ 	case USB_RECIP_ENDPOINT:
++		if ((index & ~USB_DIR_IN) == 0)
++			return 0;
+ 		ret = findintfep(ps->dev, index);
+ 		if (ret >= 0)
+ 			ret = checkintf(ps, ret);
 
 
