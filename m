@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab3EFTBZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 15:01:25 -0400
-Received: from mail-ye0-f178.google.com ([209.85.213.178]:44019 "EHLO
-	mail-ye0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754882Ab3EFTBW (ORCPT
+	id S1755642Ab3EFTCD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 15:02:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52873 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755485Ab3EFTCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 15:01:22 -0400
-X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 May 2013 15:01:22 EDT
-Date: Mon, 6 May 2013 12:01:15 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
-        linux-pm@vger.kernel.org, netdev@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Chan <benchan@chromium.org>
-Subject: Re: [PATCH 2/2] lockdep: check that no locks held at freeze time
-Message-ID: <20130506190115.GB800@mtj.dyndns.org>
-References: <1367615050-3894-1-git-send-email-ccross@android.com>
- <1367615050-3894-2-git-send-email-ccross@android.com>
+	Mon, 6 May 2013 15:02:01 -0400
+Date: Mon, 6 May 2013 21:00:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf, x86: Add workaround for MEM_*_RETIRED errata BV98
+Message-ID: <20130506190024.GB17723@dyad.programming.kicks-ass.net>
+References: <1367261108-9567-1-git-send-email-andi@firstfloor.org>
+ <20130501090718.GA28253@dyad.programming.kicks-ass.net>
+ <m261z3uipb.fsf@firstfloor.org>
+ <20130501111219.GF28253@dyad.programming.kicks-ass.net>
+ <CABPqkBT-VdWQ0c5AASDfQLssBRSfbtoH0-L1eHMXONqe5d_YRw@mail.gmail.com>
+ <20130501191342.GH17814@two.firstfloor.org>
+ <CABPqkBS7FxoT1fioe_VdBMcLAdZtfwRiMmSMocSY5TB3QAyPQQ@mail.gmail.com>
+ <20130502073252.GG7521@dyad.programming.kicks-ass.net>
+ <CABPqkBSqs8f9jomytPs5tyXMum1UCwSYHcTDuYwg0c-MTVvEow@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1367615050-3894-2-git-send-email-ccross@android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBSqs8f9jomytPs5tyXMum1UCwSYHcTDuYwg0c-MTVvEow@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 02:04:10PM -0700, Colin Cross wrote:
-> From: Mandeep Singh Baines <msb@chromium.org>
-> 
-> We shouldn't try_to_freeze if locks are held.  Holding a lock can cause a
-> deadlock if the lock is later acquired in the suspend or hibernate path
-> (e.g.  by dpm).  Holding a lock can also cause a deadlock in the case of
-> cgroup_freezer if a lock is held inside a frozen cgroup that is later
-> acquired by a process outside that group.
-> 
-> History:
-> This patch was originally applied as 6aa9707099c and reverted in
-> dbf520a9d7d4 because NFS was freezing with locks held.  It was
-> deemed better to keep the bad freeze point in NFS to allow laptops
-> to suspend consistently.  The previous patch in this series converts
-> NFS to call _unsafe versions of the freezable helpers so that
-> lockdep doesn't complain about them until a more correct fix
-> can be applied.
+On Mon, May 06, 2013 at 07:41:54PM +0200, Stephane Eranian wrote:
 
-I don't care about %current change, especially given that it's a debug
-interface but that really should be a separate patch, so please split
-it out if you want it (and I think we want it).
+> Problem is, those events are really important. We need to be able to
+> measure them.
 
-Thanks.
+At what cost? If the code we need to make it work is horrendous we need to
+maintain that too -- possibly quite a lot longer than Intel thinks IVB is
+relevant.
 
--- 
-tejun
+Anyway; since these events are immediately dangerous (they corrupt state)
+blocking them is the right thing; we can always merge a patch that undoes that
+once we've figured out a sane way.
+
+Currently I'm still waiting for someone to explain (in complete detail) how the
+corruption manifests. Until that is clear I can't even begin formulating what
+might be needed to make it work again.
+
+One mode that makes sense to me is where CNTx on SMTi corrupts CNTx on SMTj for
+i != j. However there's also been said that the only case that doesn't corrupt
+is for SMTj to have all counters disabled -- which contradicts the previous
+case.
+
+The former case we could maybe make work; the latter I can't see how we could
+possible make work at all.
