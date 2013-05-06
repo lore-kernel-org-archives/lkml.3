@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759175Ab3EFX6i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:58:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36149 "EHLO
+	id S932450Ab3EFX6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:58:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36145 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932817Ab3EFW5M (ORCPT
+	with ESMTP id S932080Ab3EFW5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:12 -0400
+	Mon, 6 May 2013 18:57:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Chris J. Benenati" <chris.j.benenati@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: [ 30/63] PCI/PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
-Date: Mon,  6 May 2013 15:56:08 -0700
-Message-Id: <20130506225322.323402714@linuxfoundation.org>
+        Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 29/63] PCI / ACPI: Dont query OSC support with all possible controls
+Date: Mon,  6 May 2013 15:56:07 -0700
+Message-Id: <20130506225322.121220139@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -28,56 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit 769ba7212f2059ca9fe0c73371e3d415c8c1c529 upstream.
+commit 545d6e189a41c94c11f55045a771118eccc9d9eb upstream.
 
-Commit b51306c (PCI: Set device power state to PCI_D0 for device
-without native PM support) modified pci_platform_power_transition()
-by adding code causing dev->current_state for devices that don't
-support native PCI PM but are power-manageable by the platform to be
-changed to PCI_D0 regardless of the value returned by the preceding
-platform_pci_set_power_state().  In particular, that also is done
-if the platform_pci_set_power_state() has been successful, which
-causes the correct power state of the device set by
-pci_update_current_state() in that case to be overwritten by PCI_D0.
+Found problem on system that firmware that could handle pci aer.
+Firmware get error reporting after pci injecting error, before os boots.
+But after os boots, firmware can not get report anymore, even pci=noaer
+is passed.
 
-Fix that mistake by making the fallback to PCI_D0 only happen if
-the platform_pci_set_power_state() has returned an error.
+Root cause: BIOS _OSC has problem with query bit checking.
+It turns out that BIOS vendor is copying example code from ACPI Spec.
+In ACPI Spec 5.0, page 290:
 
-[bhelgaas: folded in Yinghai's simplification, added URL & stable info]
-Reference: http://lkml.kernel.org/r/27806FC4E5928A408B78E88BBC67A2306F466BBA@ORSMSX101.amr.corp.intel.com
-Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
+	If (Not(And(CDW1,1))) // Query flag clear?
+	{	// Disable GPEs for features granted native control.
+		If (And(CTRL,0x01)) // Hot plug control granted?
+		{
+			Store(0,HPCE) // clear the hot plug SCI enable bit
+			Store(1,HPCS) // clear the hot plug SCI status bit
+		}
+	...
+	}
+
+When Query flag is set, And(CDW1,1) will be 1, Not(1) will return 0xfffffffe.
+So it will get into code path that should be for control set only.
+BIOS acpi code should be changed to "If (LEqual(And(CDW1,1), 0)))"
+
+Current kernel code is using _OSC query to notify firmware about support
+from OS and then use _OSC to set control bits.
+During query support, current code is using all possible controls.
+So will execute code that should be only for control set stage.
+
+That will have problem when pci=noaer or aer firmware_first is used.
+As firmware have that control set for os aer already in query support stage,
+but later will not os aer handling.
+
+We should avoid passing all possible controls, just use osc_control_set
+instead.
+That should workaround BIOS bugs with affected systems on the field
+as more bios vendors are copying sample code from ACPI spec.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ drivers/acpi/pci_root.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -673,15 +673,11 @@ static int pci_platform_power_transition
- 		error = platform_pci_set_power_state(dev, state);
- 		if (!error)
- 			pci_update_current_state(dev, state);
--		/* Fall back to PCI_D0 if native PM is not supported */
--		if (!dev->pm_cap)
--			dev->current_state = PCI_D0;
--	} else {
-+	} else
- 		error = -ENODEV;
--		/* Fall back to PCI_D0 if native PM is not supported */
--		if (!dev->pm_cap)
--			dev->current_state = PCI_D0;
--	}
-+
-+	if (error && !dev->pm_cap) /* Fall back to PCI_D0 */
-+		dev->current_state = PCI_D0;
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -247,8 +247,8 @@ static acpi_status acpi_pci_query_osc(st
+ 		*control &= OSC_PCI_CONTROL_MASKS;
+ 		capbuf[OSC_CONTROL_TYPE] = *control | root->osc_control_set;
+ 	} else {
+-		/* Run _OSC query for all possible controls. */
+-		capbuf[OSC_CONTROL_TYPE] = OSC_PCI_CONTROL_MASKS;
++		/* Run _OSC query only with existing controls. */
++		capbuf[OSC_CONTROL_TYPE] = root->osc_control_set;
+ 	}
  
- 	return error;
- }
+ 	status = acpi_pci_run_osc(root->device->handle, capbuf, &result);
 
 
