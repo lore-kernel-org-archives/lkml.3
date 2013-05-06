@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761646Ab3EFXrr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:47:47 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:35135 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761627Ab3EFXrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:47:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: Immediate wakeup after suspend
-Date: Tue, 07 May 2013 01:56:08 +0200
-Message-ID: <1612326.XDA8n1le4S@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAOULuObQq+WPf97LdsD5kN6cq=E9TvaHzqGzdKSWRme-Nk+WQQ@mail.gmail.com>
-References: <CAOULuObQq+WPf97LdsD5kN6cq=E9TvaHzqGzdKSWRme-Nk+WQQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1761676Ab3EFXsI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:48:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36189 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932880Ab3EFW5V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 18:57:21 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>
+Subject: [ 59/63] KVM: X86 emulator: fix source operand decoding for 8bit mov[zs]x instructions
+Date: Mon,  6 May 2013 15:56:37 -0700
+Message-Id: <20130506225328.881551788@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
+References: <20130506225314.802167948@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 06, 2013 06:22:47 PM Parag Warudkar wrote:
-> Sometime after 3.9 my iMac has started to resume almost immediately
-> after suspend.  Even with 3.9 it was all working as expected.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-It'd be good to know something more precise, like for example which merge
-introduced the problem.  I'm not aware of anything that might result is this
-kind of breakage.
+------------------
 
-> Relevant dmesg output below. Any way to find out the source of the wakeup?
+From: Gleb Natapov <gleb@redhat.com>
 
-Not really.
+commit 660696d1d16a71e15549ce1bf74953be1592bcd3 upstream.
 
-You can play with the wakeup settings of various devices.
+Source operand for one byte mov[zs]x is decoded incorrectly if it is in
+high byte register. Fix that.
 
-Can you send the contents of /proc/acpi/wakeup from the machine?
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Rafael
+---
+ arch/x86/kvm/emulate.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -3737,6 +3737,10 @@ static int decode_operand(struct x86_emu
+ 		break;
+ 	case OpMem8:
+ 		ctxt->memop.bytes = 1;
++		if (ctxt->memop.type == OP_REG) {
++			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm, 1);
++			fetch_register_operand(&ctxt->memop);
++		}
+ 		goto mem_common;
+ 	case OpMem16:
+ 		ctxt->memop.bytes = 2;
 
 
-> Linux parag-iMac 3.9.0+ #5 SMP PREEMPT Mon May 6 17:01:19 EDT 2013
-> x86_64 x86_64 x86_64 GNU/Linux
-> 
-> [ 3631.441257] PM: Entering mem sleep
-> [ 3631.441274] Suspending console(s) (use no_console_suspend to debug)
-> [ 3631.441825] sd 0:0:0:0: [sda] Synchronizing SCSI cache
-> [ 3631.442003] sd 0:0:0:0: [sda] Stopping disk
-> [ 3631.755076] PM: suspend of devices complete after 313.257 msecs
-> [ 3631.755219] PM: late suspend of devices complete after 0.134 msecs
-> [ 3631.795185] PM: noirq suspend of devices complete after 39.904 msecs
-> [ 3631.821922] pcieport 0000:00:1c.1: power state changed by ACPI to D0
-> [ 3631.915378] PM: noirq resume of devices complete after 119.999 msecs
-> [ 3631.915459] PM: early resume of devices complete after 0.062 msecs
-> [ 3631.915525] ahci 0000:00:1f.2: setting latency timer to 64
-> [ 3631.915609] ehci-pci 0000:00:1a.7: setting latency timer to 64
-> [ 3631.915654] uhci_hcd 0000:00:1a.0: setting latency timer to 64
-> [ 3631.915690] usb usb1: root hub lost power or was reset
-> [ 3631.915709] snd_hda_intel 0000:00:1b.0: irq 46 for MSI/MSI-X
-> [ 3631.915770] uhci_hcd 0000:00:1d.0: setting latency timer to 64
-> [ 3631.915792] usb usb2: root hub lost power or was reset
-> [ 3631.915804] ehci-pci 0000:00:1d.7: setting latency timer to 64
-> [ 3631.915821] snd_hda_intel 0000:01:00.1: irq 48 for MSI/MSI-X
-> [ 3631.918662] [drm] probing gen 2 caps for device 8086:101 = 2212d02/0
-> [ 3631.918665] [drm] PCIE gen 2 link speeds already enabled
-> [ 3631.921479] [drm] PCIE GART of 512M enabled (table at 0x0000000000040000).
-> [ 3631.921584] radeon 0000:01:00.0: WB enabled
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
