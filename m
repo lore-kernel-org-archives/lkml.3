@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758306Ab3EFUtX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:49:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59403 "EHLO
+	id S1758320Ab3EFUtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:49:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59398 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758155Ab3EFUrJ (ORCPT
+	with ESMTP id S1758088Ab3EFUrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:47:09 -0400
+	Mon, 6 May 2013 16:47:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dros Adamson <Weston.Adamson@netapp.com>,
-        David Howells <dhowells@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 109/115] Give the OID registry file module info to avoid kernel tainting
-Date: Mon,  6 May 2013 13:45:45 -0700
-Message-Id: <20130506203106.762487438@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Chris Ball <cjb@laptop.org>
+Subject: [ 108/115] mmc: at91/avr32/atmel-mci: fix DMA-channel leak on module unload
+Date: Mon,  6 May 2013 13:45:44 -0700
+Message-Id: <20130506203106.658306466@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -29,43 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 9e6879460c8edb0cd3c24c09b83d06541b5af0dc upstream.
+commit 91cf54feecf815bec0b6a8d6d9dbd0e219f2f2cc upstream.
 
-Give the OID registry file module information so that it doesn't taint the
-kernel when compiled as a module and loaded.
+Fix regression introduced by commit 796211b7953 ("mmc: atmel-mci: add
+pdc support and runtime capabilities detection") which removed the need
+for CONFIG_MMC_ATMELMCI_DMA but kept the Kconfig-entry as well as the
+compile guards around dma_release_channel() in remove(). Consequently,
+DMA is always enabled (if supported), but the DMA-channel is not
+released on module unload unless the DMA-config option is selected.
 
-Reported-by: Dros Adamson <Weston.Adamson@netapp.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Remove the no longer used CONFIG_MMC_ATMELMCI_DMA option completely.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/oid_registry.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/configs/at91sam9g45_defconfig |    1 -
+ arch/avr32/configs/favr-32_defconfig   |    1 -
+ arch/avr32/configs/merisc_defconfig    |    1 -
+ drivers/mmc/host/Kconfig               |   10 ----------
+ drivers/mmc/host/atmel-mci.c           |    2 --
+ 5 files changed, 15 deletions(-)
 
---- a/lib/oid_registry.c
-+++ b/lib/oid_registry.c
-@@ -9,6 +9,7 @@
-  * 2 of the Licence, or (at your option) any later version.
-  */
+--- a/arch/arm/configs/at91sam9g45_defconfig
++++ b/arch/arm/configs/at91sam9g45_defconfig
+@@ -173,7 +173,6 @@ CONFIG_MMC=y
+ # CONFIG_MMC_BLOCK_BOUNCE is not set
+ CONFIG_SDIO_UART=m
+ CONFIG_MMC_ATMELMCI=y
+-CONFIG_MMC_ATMELMCI_DMA=y
+ CONFIG_LEDS_ATMEL_PWM=y
+ CONFIG_LEDS_GPIO=y
+ CONFIG_LEDS_TRIGGER_TIMER=y
+--- a/arch/avr32/configs/favr-32_defconfig
++++ b/arch/avr32/configs/favr-32_defconfig
+@@ -122,7 +122,6 @@ CONFIG_USB_G_SERIAL=m
+ CONFIG_USB_CDC_COMPOSITE=m
+ CONFIG_MMC=y
+ CONFIG_MMC_ATMELMCI=y
+-CONFIG_MMC_ATMELMCI_DMA=y
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+ CONFIG_LEDS_ATMEL_PWM=m
+--- a/arch/avr32/configs/merisc_defconfig
++++ b/arch/avr32/configs/merisc_defconfig
+@@ -102,7 +102,6 @@ CONFIG_FRAMEBUFFER_CONSOLE=y
+ CONFIG_LOGO=y
+ CONFIG_MMC=y
+ CONFIG_MMC_ATMELMCI=y
+-CONFIG_MMC_ATMELMCI_DMA=y
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+ CONFIG_LEDS_ATMEL_PWM=y
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -300,16 +300,6 @@ config MMC_ATMELMCI
  
-+#include <linux/module.h>
- #include <linux/export.h>
- #include <linux/oid_registry.h>
- #include <linux/kernel.h>
-@@ -16,6 +17,10 @@
- #include <linux/bug.h>
- #include "oid_registry_data.c"
+ 	  If unsure, say N.
  
-+MODULE_DESCRIPTION("OID Registry");
-+MODULE_AUTHOR("Red Hat, Inc.");
-+MODULE_LICENSE("GPL");
-+
- /**
-  * look_up_OID - Find an OID registration for the specified data
-  * @data: Binary representation of the OID
+-config MMC_ATMELMCI_DMA
+-	bool "Atmel MCI DMA support"
+-	depends on MMC_ATMELMCI && (AVR32 || ARCH_AT91SAM9G45) && DMA_ENGINE
+-	help
+-	  Say Y here to have the Atmel MCI driver use a DMA engine to
+-	  do data transfers and thus increase the throughput and
+-	  reduce the CPU utilization.
+-
+-	  If unsure, say N.
+-
+ config MMC_MSM
+ 	tristate "Qualcomm SDCC Controller Support"
+ 	depends on MMC && ARCH_MSM
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -2487,10 +2487,8 @@ static int __exit atmci_remove(struct pl
+ 	atmci_readl(host, ATMCI_SR);
+ 	clk_disable(host->mck);
+ 
+-#ifdef CONFIG_MMC_ATMELMCI_DMA
+ 	if (host->dma.chan)
+ 		dma_release_channel(host->dma.chan);
+-#endif
+ 
+ 	free_irq(platform_get_irq(pdev, 0), host);
+ 	iounmap(host->regs);
 
 
