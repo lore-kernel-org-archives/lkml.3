@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933178Ab3EFW71 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:59:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36492 "EHLO
+	id S1759295Ab3EFW7y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:59:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36502 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759168Ab3EFW7Z (ORCPT
+	with ESMTP id S933165Ab3EFW70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:25 -0400
+	Mon, 6 May 2013 18:59:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [ 45/46] s390: move dummy io_remap_pfn_range() to asm/pgtable.h
-Date: Mon,  6 May 2013 15:58:51 -0700
-Message-Id: <20130506225825.429475910@linuxfoundation.org>
+        Elad Yi <elad.yi@gmail.com>, Philip Rakity <prakity@yahoo.com>,
+        Chris Ball <cjb@laptop.org>
+Subject: [ 43/46] mmc: core: Fix bit width test failing on old eMMC cards
+Date: Mon,  6 May 2013 15:58:49 -0700
+Message-Id: <20130506225825.192879092@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -29,45 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Philip Rakity <prakity@yahoo.com>
 
-commit 4f2e29031e6c67802e7370292dd050fd62f337ee upstream.
+commit 836dc2fe89c968c10cada87e0dfae6626f8f9da3 upstream.
 
-Commit b4cbb197c7e7 ("vm: add vm_iomap_memory() helper function") added
-a helper function wrapper around io_remap_pfn_range(), and every other
-architecture defined it in <asm/pgtable.h>.
+PARTITION_SUPPORT needs to be set before doing the compare on version
+number so the bit width test does not get invalid data.  Before this
+patch, a Sandisk iNAND eMMC card would detect 1-bit width although
+the hardware supports 4-bit.
 
-The s390 choice of <asm/io.h> may make sense, but is not very convenient
-for this case, and gratuitous differences like that cause unexpected errors like this:
+Only affects old emmc devices - pre 4.4 devices.
 
-   mm/memory.c: In function 'vm_iomap_memory':
-   mm/memory.c:2439:2: error: implicit declaration of function 'io_remap_pfn_range' [-Werror=implicit-function-declaration]
-
-Glory be the kbuild test robot who noticed this, bisected it, and
-reported it to the guilty parties (ie me).
-
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Jiri Slaby <jslaby@suse.cz>
+Reported-by: Elad Yi <elad.yi@gmail.com>
+Signed-off-by: Philip Rakity <prakity@yahoo.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/pgtable.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/mmc/core/mmc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -67,6 +67,10 @@ static inline int is_zero_pfn(unsigned l
- 
- #define my_zero_pfn(addr)	page_to_pfn(ZERO_PAGE(addr))
- 
-+/* TODO: s390 cannot support io_remap_pfn_range... */
-+#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) 	       \
-+	remap_pfn_range(vma, vaddr, pfn, size, prot)
-+
- #endif /* !__ASSEMBLY__ */
- 
- /*
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -353,13 +353,13 @@ static int mmc_read_ext_csd(struct mmc_c
+ 		ext_csd[EXT_CSD_SEC_FEATURE_SUPPORT];
+ 	card->ext_csd.raw_trim_mult =
+ 		ext_csd[EXT_CSD_TRIM_MULT];
++	card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
+ 	if (card->ext_csd.rev >= 4) {
+ 		/*
+ 		 * Enhanced area feature support -- check whether the eMMC
+ 		 * card has the Enhanced area enabled.  If so, export enhanced
+ 		 * area offset and size to user by adding sysfs interface.
+ 		 */
+-		card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
+ 		if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
+ 		    (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
+ 			u8 hc_erase_grp_sz =
 
 
