@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759591Ab3EFXC3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:02:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36464 "EHLO
+	id S933119Ab3EFW7T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:59:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36426 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759060Ab3EFW7U (ORCPT
+	with ESMTP id S1759060Ab3EFW7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:20 -0400
+	Mon, 6 May 2013 18:59:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vitaliy Fillipov <vitalif@yourcmc.ru>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, 700333@bugs.debian.org
-Subject: [ 34/46] clockevents: Set dummy handler on CPU_DEAD shutdown
-Date: Mon,  6 May 2013 15:58:40 -0700
-Message-Id: <20130506225824.240147830@linuxfoundation.org>
+        Robin Holt <holt@sgi.com>, Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 40/46] ipc: sysv shared memory limited to 8TiB
+Date: Mon,  6 May 2013 15:58:46 -0700
+Message-Id: <20130506225824.874776761@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -28,73 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Robin Holt <holt@sgi.com>
 
-commit 6f7a05d7018de222e40ca003721037a530979974 upstream.
+commit d69f3bad4675ac519d41ca2b11e1c00ca115cecd upstream.
 
-Vitaliy reported that a per cpu HPET timer interrupt crashes the
-system during hibernation. What happens is that the per cpu HPET timer
-gets shut down when the nonboot cpus are stopped. When the nonboot
-cpus are onlined again the HPET code sets up the MSI interrupt which
-fires before the clock event device is registered. The event handler
-is still set to hrtimer_interrupt, which then crashes the machine due
-to highres mode not being active.
+Trying to run an application which was trying to put data into half of
+memory using shmget(), we found that having a shmall value below 8EiB-8TiB
+would prevent us from using anything more than 8TiB.  By setting
+kernel.shmall greater than 8EiB-8TiB would make the job work.
 
-See http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=700333
+In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
 
-There is no real good way to avoid that in the HPET code. The HPET
-code alrady has a mechanism to detect spurious interrupts when event
-handler == NULL for a similar reason.
+ipc/shm.c:
+ 458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ 459 {
+...
+ 465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
+...
+ 474         if (ns->shm_tot + numpages > ns->shm_ctlall)
+ 475                 return -ENOSPC;
 
-We can handle that in the clockevent/tick layer and replace the
-previous functional handler with a dummy handler like we do in
-tick_setup_new_device().
-
-The original clockevents code did this in clockevents_exchange_device(),
-but that got removed by commit 7c1e76897 (clockevents: prevent
-clockevent event_handler ending up handler_noop) which forgot to fix
-it up in tick_shutdown(). Same issue with the broadcast device.
-
-Reported-by: Vitaliy Fillipov <vitalif@yourcmc.ru>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: 700333@bugs.debian.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[akpm@linux-foundation.org: make ipc/shm.c:newseg()'s numpages size_t, not int]
+Signed-off-by: Robin Holt <holt@sgi.com>
+Reported-by: Alex Thorlton <athorlton@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/tick-broadcast.c |    4 ++++
- kernel/time/tick-common.c    |    1 +
- 2 files changed, 5 insertions(+)
+ include/linux/ipc_namespace.h |    2 +-
+ ipc/shm.c                     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -66,6 +66,8 @@ static void tick_broadcast_start_periodi
-  */
- int tick_check_broadcast_device(struct clock_event_device *dev)
- {
-+	struct clock_event_device *cur = tick_broadcast_device.evtdev;
-+
- 	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
- 	    (tick_broadcast_device.evtdev &&
- 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
-@@ -73,6 +75,8 @@ int tick_check_broadcast_device(struct c
- 		return 0;
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -42,8 +42,8 @@ struct ipc_namespace {
  
- 	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
-+	if (cur)
-+		cur->event_handler = clockevents_handle_noop;
- 	tick_broadcast_device.evtdev = dev;
- 	if (!cpumask_empty(tick_get_broadcast_mask()))
- 		tick_broadcast_start_periodic(dev);
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -323,6 +323,7 @@ static void tick_shutdown(unsigned int *
- 		 */
- 		dev->mode = CLOCK_EVT_MODE_UNUSED;
- 		clockevents_exchange_device(dev, NULL);
-+		dev->event_handler = clockevents_handle_noop;
- 		td->evtdev = NULL;
- 	}
- 	raw_spin_unlock_irqrestore(&tick_device_lock, flags);
+ 	size_t		shm_ctlmax;
+ 	size_t		shm_ctlall;
++	unsigned long	shm_tot;
+ 	int		shm_ctlmni;
+-	int		shm_tot;
+ 
+ 	struct notifier_block ipcns_nb;
+ 
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -343,7 +343,7 @@ static int newseg(struct ipc_namespace *
+ 	size_t size = params->u.size;
+ 	int error;
+ 	struct shmid_kernel *shp;
+-	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
++	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	struct file * file;
+ 	char name[13];
+ 	int id;
 
 
