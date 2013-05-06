@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933829Ab3EFXfM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:35:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36700 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760436Ab3EFXN1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:27 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 032/104] xen/smp/spinlock: Fix leakage of the spinlock interrupt line for every CPU online/offline
-Date: Mon,  6 May 2013 16:11:51 -0700
-Message-Id: <20130506230046.921948290@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
-References: <20130506230043.526528358@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1761150Ab3EFXfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:35:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9012 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758156Ab3EFXfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 19:35:20 -0400
+Message-ID: <1367883316.22645.2.camel@dcbw.foobar.com>
+Subject: Re: [GIT] Networking
+From: Dan Williams <dcbw@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, hayeswang <hayeswang@realtek.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 06 May 2013 18:35:16 -0500
+In-Reply-To: <1367526148.7757.30.camel@dcbw.foobar.com>
+References: <20130501.164755.1859264969403837546.davem@davemloft.net>
+	 <CA+55aFzsvyQLLKbuETBqfhpgkSaXH9cvT0O-cQ-mTTXXxcMqwg@mail.gmail.com>
+	 <1367512467.4000.7.camel@dcbw.foobar.com>
+	 <1367519066.7757.19.camel@dcbw.foobar.com>
+	 <CA+55aFy04mY5g-Aics9dcGpv6zgn2bu4iQ-_ifE5hun_t4E54Q@mail.gmail.com>
+	 <CA+55aFy1P6TKZjWSvrJN6o=gAr7OTYQsoZORXGF6g8OnonBT=Q@mail.gmail.com>
+	 <1367522254.7757.23.camel@dcbw.foobar.com>
+	 <1367526148.7757.30.camel@dcbw.foobar.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 2013-05-02 at 15:22 -0500, Dan Williams wrote:
+> On Thu, 2013-05-02 at 14:17 -0500, Dan Williams wrote:
+> > On Thu, 2013-05-02 at 11:53 -0700, Linus Torvalds wrote:
+> > > On Thu, May 2, 2013 at 11:52 AM, Linus Torvalds
+> > > <torvalds@linux-foundation.org> wrote:
+> > > >
+> > > > but for some reason in the bad case NM just doesn't react past the
+> > > > "carrier now ON" part.
+> > > 
+> > > Grr. That was much more readable while editing, then gmail ended up
+> > > doing its "smart line wrap" thing and my nice long lines became a
+> > > mess. I think you can still figure it out,
+> > 
+> > Yeah, the dump is good, and it seems to point to a problem in NM for
+> > now.  I'm investigating.
+> 
+> If you don't mind helping me confirm/reject a theory, would you mind:
+> 
+> 1) drop "level=debug" into the [logging] section
+> of /etc/NetworkManager/NetworkManager.conf (create the section if it
+> doesn't exist)
+> 
+> 2) reboot (or just rmmod/modprobe r8169 if that's enough to trigger it)
+> 
+> 3) grab syslog and send it to me (privately if you wish)
 
-------------------
+Spent a while trying to reproduce this on a tg3 today, twiddling the
+carrier from the code, but failed to do so...  if you're at all able to
+get the debug logs here as mentioned here, that would help greatly.
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Contrary to the suggestion above, changing the log level in
+NetworkManager.conf does not immediately start logging in that level,
+you do need to restart NM.  So with that in mind, I'd suggest a full
+reboot of the system just to make sure we have the exact same situation
+as when you experience the problem.
 
-commit 66ff0fe9e7bda8aec99985b24daad03652f7304e upstream.
+(I'm still mystified how the netdev features thing "fixes" this
+though...)
 
-While we don't use the spinlock interrupt line (see for details
-commit f10cd522c5fbfec9ae3cc01967868c9c2401ed23 -
-xen: disable PV spinlocks on HVM) - we should still do the proper
-init / deinit sequence. We did not do that correctly and for the
-CPU init for PVHVM guest we would allocate an interrupt line - but
-failed to deallocate the old interrupt line.
-
-This resulted in leakage of an irq_desc but more importantly this splat
-as we online an offlined CPU:
-
-genirq: Flags mismatch irq 71. 0002cc20 (spinlock1) vs. 0002cc20 (spinlock1)
-Pid: 2542, comm: init.late Not tainted 3.9.0-rc6upstream #1
-Call Trace:
- [<ffffffff811156de>] __setup_irq+0x23e/0x4a0
- [<ffffffff81194191>] ? kmem_cache_alloc_trace+0x221/0x250
- [<ffffffff811161bb>] request_threaded_irq+0xfb/0x160
- [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
- [<ffffffff813a8423>] bind_ipi_to_irqhandler+0xa3/0x160
- [<ffffffff81303758>] ? kasprintf+0x38/0x40
- [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
- [<ffffffff810cad35>] ? update_max_interval+0x15/0x40
- [<ffffffff816605db>] xen_init_lock_cpu+0x3c/0x78
- [<ffffffff81660029>] xen_hvm_cpu_notify+0x29/0x33
- [<ffffffff81676bdd>] notifier_call_chain+0x4d/0x70
- [<ffffffff810bb2a9>] __raw_notifier_call_chain+0x9/0x10
- [<ffffffff8109402b>] __cpu_notify+0x1b/0x30
- [<ffffffff8166834a>] _cpu_up+0xa0/0x14b
- [<ffffffff816684ce>] cpu_up+0xd9/0xec
- [<ffffffff8165f754>] store_online+0x94/0xd0
- [<ffffffff8141d15b>] dev_attr_store+0x1b/0x20
- [<ffffffff81218f44>] sysfs_write_file+0xf4/0x170
- [<ffffffff811a2864>] vfs_write+0xb4/0x130
- [<ffffffff811a302a>] sys_write+0x5a/0xa0
- [<ffffffff8167ada9>] system_call_fastpath+0x16/0x1b
-cpu 1 spinlock event irq -16
-smpboot: Booting Node 0 Processor 1 APIC 0x2
-
-And if one looks at the /proc/interrupts right after
-offlining (CPU1):
-
-  70:          0          0  xen-percpu-ipi       spinlock0
-  71:          0          0  xen-percpu-ipi       spinlock1
-  77:          0          0  xen-percpu-ipi       spinlock2
-
-There is the oddity of the 'spinlock1' still being present.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/xen/smp.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -658,6 +658,7 @@ static void xen_hvm_cpu_die(unsigned int
- 	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
- 	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
- 	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
-+	xen_uninit_lock_cpu(cpu);
- 	xen_teardown_timer(cpu);
- 	native_cpu_die(cpu);
- }
-
+Thanks!
+Dan
 
