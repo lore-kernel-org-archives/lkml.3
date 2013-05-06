@@ -1,38 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab3EFHAg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 03:00:36 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58643 "EHLO mga02.intel.com"
+	id S1753117Ab3EFHGz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 03:06:55 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39006 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752111Ab3EFHAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 03:00:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,619,1363158000"; 
-   d="scan'208";a="308781377"
-Date: Mon, 6 May 2013 10:04:29 +0300
-From: "'Mika Westerberg'" <mika.westerberg@linux.intel.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] mfd: intel_msic: remove unnecessary
- platform_set_drvdata()
-Message-ID: <20130506070429.GA29823@intel.com>
-References: <002e01ce4a0e$cbe76460$63b62d20$@samsung.com>
+	id S1752504Ab3EFHGy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 03:06:54 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: mach-omap2/timer.c: Bug introduced while merging patch - ff931c82
+Thread-Topic: mach-omap2/timer.c: Bug introduced while merging patch -
+ ff931c82
+Thread-Index: Ac5KKDi66bBp82szRKKLkCu0fW3iLw==
+Date: Mon, 6 May 2013 07:06:25 +0000
+Message-ID: <79CD15C6BA57404B839C016229A409A83EC7C45D@DBDE04.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <002e01ce4a0e$cbe76460$63b62d20$@samsung.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 01:04:25PM +0900, Jingoo Han wrote:
-> The driver core clears the driver data to NULL after device_release
-> or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
-> (device-core: Ensure drvdata = NULL when no driver is bound).
-> Thus, it is not needed to manually clear the device driver data to NULL.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Hi,
 
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Not sure whether this got discussed and fixed already, but Google didn't give me anything :)
+
+The below commit got merged wrongly to Mainline (Changes from timer.c got missed), and 
+due to this none of omap boards will boot.
+
+
+>From ff931c821bab6713a52b768b0cd7ee7e90713b36 Mon Sep 17 00:00:00 2001
+From: Rajendra Nayak <rnayak@ti.com>
+Date: Thu, 21 Mar 2013 11:04:52 +0000
+Subject: ARM: OMAP: clocks: Delay clk inits atleast until slab is initialized
+
+
+It seems Linux-omap tree has the fix patch for this, and it should get pushed ASAP. 
+Below are links for Linus's mainline commit [1], the actual patch submitted to the list [2] and
+Commit  present in Linux-omap [3].
+
+
+[1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/arch/arm/mach-omap2/io.c?id=ff931c821bab6713a52b768b0cd7ee7e90713b36
+[2] https://patchwork.kernel.org/patch/2300071/
+[3] http://git.kernel.org/cgit/linux/kernel/git/tmlind/linux-omap.git/commit/arch/arm/mach-omap2/timer.c?id=ff931c821bab6713a52b768b0cd7ee7e90713b36
+
+
+Thanks,
+Vaibhav
+
