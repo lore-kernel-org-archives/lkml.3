@@ -1,66 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab3EFMJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 08:09:28 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35663 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab3EFMJ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 08:09:27 -0400
-Date: Mon, 6 May 2013 14:09:25 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Shuah Khan <shuah.kh@samsung.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH] PM: Fix dev_pm_put_subsys_data() to not call kfree()
- while holding device power lock
-Message-ID: <20130506120925.GA25542@amd.pavel.ucw.cz>
-References: <1367614010.8452.2.camel@lorien>
- <20130504125116.GA13770@amd.pavel.ucw.cz>
- <1882177.s6zpHZ6crc@vostro.rjw.lan>
+	id S1753251Ab3EFMKo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 08:10:44 -0400
+Received: from 87-119-183-129.tll.elisa.ee ([87.119.183.129]:33375 "EHLO
+	fatphil.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752767Ab3EFMKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 08:10:43 -0400
+X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 May 2013 08:10:43 EDT
+Date: Mon, 6 May 2013 15:03:18 +0300
+From: Phil Carmody <pc+lkml@asdf.org>
+To: alex.shi@intel.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [patch v7 05/21] sched: log the cpu utilization at rq
+Message-ID: <20130506120318.GM21274@fatphil.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1882177.s6zpHZ6crc@vostro.rjw.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1365040862-8390-6-git-send-email-alex.shi@intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+[Apologies if threading mangled, all headers written by hand]
 
-> > Wow, that function is fragile. It returns 0/1/-EINVAL, while being
-> > documented for 0/1...
+On 04/04/2013 07:30 AM, Alex Shi wrote:
+> The cpu's utilization is to measure how busy is the cpu.
+>         util = cpu_rq(cpu)->avg.runnable_avg_sum * SCHED_POEWR_SCALE
+>                 / cpu_rq(cpu)->avg.runnable_avg_period;
 > 
-> Oh, it generally should return 1 for !psd.
+> Since the util is no more than 1, we scale its value with 1024, same as
+> SCHED_POWER_SCALE and set the FULL_UTIL as 1024.
 > 
-> > Patch does not look obviously wrong, but maybe 
-> > 
-> > @@ -73,13 +73,17 @@ int dev_pm_put_subsys_data(struct device *dev)
-> >  
-> >  	if (--psd->refcount == 0) {
-> >  		dev->power.subsys_data = NULL;
-> > +		spin_unlock_irq(&dev->power.lock);
-> > -		kfree(psd);
-> > - 		ret = 1;
-> > +		return 1;
-> >  	}
-> > 
-> > Would be cleaner.
+> In later power aware scheduling, we are sensitive for how busy of the
+> cpu. Since as to power consuming, it is tight related with cpu busy
+> time.
 > 
-> What about this:
+> BTW, rq->util can be used for any purposes if needed, not only power
+> scheduling.
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  include/linux/sched.h | 2 +-
+>  kernel/sched/debug.c  | 1 +
+>  kernel/sched/fair.c   | 5 +++++
+>  kernel/sched/sched.h  | 4 ++++
+>  4 files changed, 11 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 5a4cf37..226a515 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -793,7 +793,7 @@ enum cpu_idle_type {
+>  #define SCHED_LOAD_SCALE     (1L << SCHED_LOAD_SHIFT)
+> 
+>  /*
+> - * Increase resolution of cpu_power calculations
+> + * Increase resolution of cpu_power and rq->util calculations
+>   */
+>  #define SCHED_POWER_SHIFT    10
+>  #define SCHED_POWER_SCALE    (1L << SCHED_POWER_SHIFT)
+> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+> index 75024a6..f5db759 100644
+> --- a/kernel/sched/debug.c
+> +++ b/kernel/sched/debug.c
+> @@ -311,6 +311,7 @@ do {                                                                      \
+> 
+>       P(ttwu_count);
+>       P(ttwu_local);
+> +     P(util);
+> 
+>  #undef P
+>  #undef P64
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 2e49c3f..7124244 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1495,8 +1495,13 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+> 
+>  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+>  {
+> +     u32 period;
+>       __update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
+>       __update_tg_runnable_avg(&rq->avg, &rq->cfs);
+> +
+> +     period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
+> +     rq->util = (u64)(rq->avg.runnable_avg_sum << SCHED_POWER_SHIFT)
+> +                             / period;
 
-Looks good to me.
+Greetings, Alex.
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
+That cast achieves nothing where it is. If the shift has overflowed,
+then you've already lost information; and if it can't overflow, then
+it's not needed at all. 
 
-									Pavel
+It's itsy-bitsy, but note that there exists a div_u64(u64 dividend,
+u32 divisor) helper which may be implemented to be superior to just '/'.
+(And also note that the assignment to ``period'' is a good candidate for
+gcc's ``?:'' operator.)
 
+If you pull the cast inside the brackets, then you may add my
+Reviewed-by: Phil Carmody <pc+lkml@asdf.org>
+
+Cheers,
+Phil
+
+>  }
+> 
+>  /* Add the load generated by se into cfs_rq's child load-average */
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 804ee41..8682110 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -351,6 +351,9 @@ extern struct root_domain def_root_domain;
+> 
+>  #endif /* CONFIG_SMP */
+> 
+> +/* full cpu utilization */
+> +#define FULL_UTIL    SCHED_POWER_SCALE
+> +
+>  /*
+>   * This is the main, per-CPU runqueue data structure.
+>   *
+> @@ -482,6 +485,7 @@ struct rq {
+>  #endif
+> 
+>       struct sched_avg avg;
+> +     unsigned int util;
+>  };
+> 
+>  static inline int cpu_of(struct rq *rq)
+> 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+"In a world of magnets and miracles" 
+-- Insane Clown Posse, Miracles, 2009. Much derided.
+"Magnets, how do they work"
+-- Pink Floyd, High Hopes, 1994. Lauded as lyrical geniuses.
