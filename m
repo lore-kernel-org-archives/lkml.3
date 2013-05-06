@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758352Ab3EFUvL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:51:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59375 "EHLO
+	id S1758371Ab3EFUvl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:51:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59369 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758110Ab3EFUrE (ORCPT
+	with ESMTP id S1758095Ab3EFUrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:47:04 -0400
+	Mon, 6 May 2013 16:47:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Fernando=20Luis=20V=C3=A1zquez=20Cao?= 
-	<fernando@oss.ntt.co.jp>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 099/115] x86-64, init: Do not set NX bits on non-NX capable hardware
-Date: Mon,  6 May 2013 13:45:35 -0700
-Message-Id: <20130506203105.770869908@linuxfoundation.org>
+        Richard Cochran <richardcochran@gmail.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [ 098/115] e1000e: fix numeric overflow in phc settime method
+Date: Mon,  6 May 2013 13:45:34 -0700
+Message-Id: <20130506203105.658820364@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,54 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Richard Cochran <richardcochran@gmail.com>
 
-commit 78d77df71510a96e042de7ba6dbd7998103642cb upstream.
+commit 73e3dd6b45c4c870fc2641eb04c24e3f12dab1e0 upstream.
 
-During early init, we would incorrectly set the NX bit even if the NX
-feature was not supported.  Instead, only set this bit if NX is
-actually available and enabled.  We already do very early detection of
-the NX bit to enable it in EFER, this simply extends this detection to
-the early page table mask.
+The PTP Hardware Clock settime function in the e1000e driver
+computes nanoseconds from a struct timespec. The code converts the
+seconds field .tv_sec by multiplying it with NSEC_PER_SEC. However,
+both operands are of type long, resulting in an unintended overflow.
+The patch fixes the issue by using the helper function from time.h.
 
-Reported-by: Fernando Luis Vázquez Cao <fernando@oss.ntt.co.jp>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/1367476850.5660.2.camel@nexus
+Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/head64.c  |    3 ++-
- arch/x86/kernel/head_64.S |    1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/intel/e1000e/ptp.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -34,6 +34,7 @@
- extern pgd_t early_level4_pgt[PTRS_PER_PGD];
- extern pmd_t early_dynamic_pgts[EARLY_DYNAMIC_PAGE_TABLES][PTRS_PER_PMD];
- static unsigned int __initdata next_early_pgt = 2;
-+pmdval_t __initdata early_pmd_flags = __PAGE_KERNEL_LARGE & ~(_PAGE_GLOBAL | _PAGE_NX);
+--- a/drivers/net/ethernet/intel/e1000e/ptp.c
++++ b/drivers/net/ethernet/intel/e1000e/ptp.c
+@@ -145,8 +145,7 @@ static int e1000e_phc_settime(struct ptp
+ 	unsigned long flags;
+ 	u64 ns;
  
- /* Wipe all early page tables except for the kernel symbol map */
- static void __init reset_early_page_tables(void)
-@@ -99,7 +100,7 @@ again:
- 			pmd_p[i] = 0;
- 		*pud_p = (pudval_t)pmd_p - __START_KERNEL_map + phys_base + _KERNPG_TABLE;
- 	}
--	pmd = (physaddr & PMD_MASK) + (__PAGE_KERNEL_LARGE & ~_PAGE_GLOBAL);
-+	pmd = (physaddr & PMD_MASK) + early_pmd_flags;
- 	pmd_p[pmd_index(address)] = pmd;
+-	ns = ts->tv_sec * NSEC_PER_SEC;
+-	ns += ts->tv_nsec;
++	ns = timespec_to_ns(ts);
  
- 	return 0;
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -200,6 +200,7 @@ ENTRY(secondary_startup_64)
- 	btl	$20,%edi		/* No Execute supported? */
- 	jnc     1f
- 	btsl	$_EFER_NX, %eax
-+	btsq	$_PAGE_BIT_NX,early_pmd_flags(%rip)
- 1:	wrmsr				/* Make changes effective */
- 
- 	/* Setup cr0 */
+ 	/* reset the timecounter */
+ 	spin_lock_irqsave(&adapter->systim_lock, flags);
 
 
