@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab3EFU6c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:58:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59244 "EHLO
+	id S1757953Ab3EFU6q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:58:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59238 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756525Ab3EFUqp (ORCPT
+	with ESMTP id S1757837Ab3EFUqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:45 -0400
+	Mon, 6 May 2013 16:46:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Engraf <david.engraf@sysgo.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [ 069/115] hrtimer: Fix ktime_add_ns() overflow on 32bit architectures
-Date: Mon,  6 May 2013 13:45:05 -0700
-Message-Id: <20130506203102.622003727@linuxfoundation.org>
+        Alexey Kodanev <alexey.kodanev@oracle.com>,
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 079/115] cgroup: fix broken file xattrs
+Date: Mon,  6 May 2013 13:45:15 -0700
+Message-Id: <20130506203103.676849401@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,54 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Engraf <david.engraf@sysgo.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 51fd36f3fad8447c487137ae26b9d0b3ce77bb25 upstream.
+commit 712317ad97f41e738e1a19aa0a6392a78a84094e upstream.
 
-One can trigger an overflow when using ktime_add_ns() on a 32bit
-architecture not supporting CONFIG_KTIME_SCALAR.
+We should store file xattrs in struct cfent instead of struct cftype,
+because cftype is a type while cfent is object instance of cftype.
 
-When passing a very high value for u64 nsec, e.g. 7881299347898368000
-the do_div() function converts this value to seconds (7881299347) which
-is still to high to pass to the ktime_set() function as long. The result
-in is a negative value.
+For example each cgroup has a tasks file, and each tasks file is
+associated with a uniq cfent, but all those files share the same
+struct cftype.
 
-The problem on my system occurs in the tick-sched.c,
-tick_nohz_stop_sched_tick() when time_delta is set to
-timekeeping_max_deferment(). The check for time_delta < KTIME_MAX is
-valid, thus ktime_add_ns() is called with a too large value resulting in
-a negative expire value. This leads to an endless loop in the ticker code:
+Alexey Kodanev reported a crash, which can be reproduced:
 
-time_delta: 7881299347898368000
-expires = ktime_add_ns(last_update, time_delta)
-expires: negative value
+  # mount -t cgroup -o xattr /sys/fs/cgroup
+  # mkdir /sys/fs/cgroup/test
+  # setfattr -n trusted.value -v test_value /sys/fs/cgroup/tasks
+  # rmdir /sys/fs/cgroup/test
+  # umount /sys/fs/cgroup
+  oops!
 
-This fix caps the value to KTIME_MAX.
+In this case, simple_xattrs_free() will free the same struct simple_xattrs
+twice.
 
-This error doesn't occurs on 64bit or architectures supporting
-CONFIG_KTIME_SCALAR (e.g. ARM, x86-32).
+tj: Dropped unused local variable @cft from cgroup_diput().
 
-Signed-off-by: David Engraf <david.engraf@sysgo.com>
-[jstultz: Minor tweaks to commit message & header]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Reported-by: Alexey Kodanev <alexey.kodanev@oracle.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/hrtimer.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ include/linux/cgroup.h |    3 ---
+ kernel/cgroup.c        |   11 ++++++-----
+ 2 files changed, 6 insertions(+), 8 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -276,6 +276,10 @@ ktime_t ktime_add_ns(const ktime_t kt, u
- 	} else {
- 		unsigned long rem = do_div(nsec, NSEC_PER_SEC);
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -304,9 +304,6 @@ struct cftype {
+ 	/* CFTYPE_* flags */
+ 	unsigned int flags;
  
-+		/* Make sure nsec fits into long */
-+		if (unlikely(nsec > KTIME_SEC_MAX))
-+			return (ktime_t){ .tv64 = KTIME_MAX };
+-	/* file xattrs */
+-	struct simple_xattrs xattrs;
+-
+ 	int (*open)(struct inode *inode, struct file *file);
+ 	ssize_t (*read)(struct cgroup *cgrp, struct cftype *cft,
+ 			struct file *file,
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -162,6 +162,9 @@ struct cfent {
+ 	struct list_head		node;
+ 	struct dentry			*dentry;
+ 	struct cftype			*type;
 +
- 		tmp = ktime_set((long)nsec, rem);
- 	}
++	/* file xattrs */
++	struct simple_xattrs		xattrs;
+ };
  
+ /*
+@@ -910,13 +913,12 @@ static void cgroup_diput(struct dentry *
+ 	} else {
+ 		struct cfent *cfe = __d_cfe(dentry);
+ 		struct cgroup *cgrp = dentry->d_parent->d_fsdata;
+-		struct cftype *cft = cfe->type;
+ 
+ 		WARN_ONCE(!list_empty(&cfe->node) &&
+ 			  cgrp != &cgrp->root->top_cgroup,
+ 			  "cfe still linked for %s\n", cfe->type->name);
++		simple_xattrs_free(&cfe->xattrs);
+ 		kfree(cfe);
+-		simple_xattrs_free(&cft->xattrs);
+ 	}
+ 	iput(inode);
+ }
+@@ -2551,7 +2553,7 @@ static struct simple_xattrs *__d_xattrs(
+ 	if (S_ISDIR(dentry->d_inode->i_mode))
+ 		return &__d_cgrp(dentry)->xattrs;
+ 	else
+-		return &__d_cft(dentry)->xattrs;
++		return &__d_cfe(dentry)->xattrs;
+ }
+ 
+ static inline int xattr_enabled(struct dentry *dentry)
+@@ -2727,8 +2729,6 @@ static int cgroup_add_file(struct cgroup
+ 	umode_t mode;
+ 	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
+ 
+-	simple_xattrs_init(&cft->xattrs);
+-
+ 	if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
+ 		strcpy(name, subsys->name);
+ 		strcat(name, ".");
+@@ -2753,6 +2753,7 @@ static int cgroup_add_file(struct cgroup
+ 		cfe->type = (void *)cft;
+ 		cfe->dentry = dentry;
+ 		dentry->d_fsdata = cfe;
++		simple_xattrs_init(&cfe->xattrs);
+ 		list_add_tail(&cfe->node, &parent->files);
+ 		cfe = NULL;
+ 	}
 
 
