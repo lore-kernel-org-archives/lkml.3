@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab3EFU6q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:58:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59238 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757837Ab3EFUqo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757844Ab3EFUqo (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 May 2013 16:46:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59200 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756525Ab3EFUqi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 16:46:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexey Kodanev <alexey.kodanev@oracle.com>,
-        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
-Subject: [ 079/115] cgroup: fix broken file xattrs
-Date: Mon,  6 May 2013 13:45:15 -0700
-Message-Id: <20130506203103.676849401@linuxfoundation.org>
+        Joe Rayhawk <jrayhawk@fairlystable.org>,
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 064/115] ALSA: USB: adjust for changed 3.8 USB API
+Date: Mon,  6 May 2013 13:45:00 -0700
+Message-Id: <20130506203102.101348029@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,105 +27,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 712317ad97f41e738e1a19aa0a6392a78a84094e upstream.
+commit c75c5ab575af7db707689cdbb5a5c458e9a034bb upstream.
 
-We should store file xattrs in struct cfent instead of struct cftype,
-because cftype is a type while cfent is object instance of cftype.
+The recent changes in the USB API ("implement new semantics for
+URB_ISO_ASAP") made the former meaning of the URB_ISO_ASAP flag the
+default, and changed this flag to mean that URBs can be delayed.
+This is not the behaviour wanted by any of the audio drivers because
+it leads to discontinuous playback with very small period sizes.
+Therefore, our URBs need to be submitted without this flag.
 
-For example each cgroup has a tasks file, and each tasks file is
-associated with a uniq cfent, but all those files share the same
-struct cftype.
-
-Alexey Kodanev reported a crash, which can be reproduced:
-
-  # mount -t cgroup -o xattr /sys/fs/cgroup
-  # mkdir /sys/fs/cgroup/test
-  # setfattr -n trusted.value -v test_value /sys/fs/cgroup/tasks
-  # rmdir /sys/fs/cgroup/test
-  # umount /sys/fs/cgroup
-  oops!
-
-In this case, simple_xattrs_free() will free the same struct simple_xattrs
-twice.
-
-tj: Dropped unused local variable @cft from cgroup_diput().
-
-Reported-by: Alexey Kodanev <alexey.kodanev@oracle.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Joe Rayhawk <jrayhawk@fairlystable.org>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/cgroup.h |    3 ---
- kernel/cgroup.c        |   11 ++++++-----
- 2 files changed, 6 insertions(+), 8 deletions(-)
+ sound/usb/6fire/pcm.c           |    1 -
+ sound/usb/caiaq/audio.c         |    3 ---
+ sound/usb/endpoint.c            |    5 ++---
+ sound/usb/misc/ua101.c          |    3 +--
+ sound/usb/usx2y/usb_stream.c    |    1 -
+ sound/usb/usx2y/usbusx2yaudio.c |    1 -
+ sound/usb/usx2y/usx2yhwdeppcm.c |    1 -
+ 7 files changed, 3 insertions(+), 12 deletions(-)
 
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -304,9 +304,6 @@ struct cftype {
- 	/* CFTYPE_* flags */
- 	unsigned int flags;
+--- a/sound/usb/6fire/pcm.c
++++ b/sound/usb/6fire/pcm.c
+@@ -575,7 +575,6 @@ static void usb6fire_pcm_init_urb(struct
+ 	urb->instance.pipe = in ? usb_rcvisocpipe(chip->dev, ep)
+ 			: usb_sndisocpipe(chip->dev, ep);
+ 	urb->instance.interval = 1;
+-	urb->instance.transfer_flags = URB_ISO_ASAP;
+ 	urb->instance.complete = handler;
+ 	urb->instance.context = urb;
+ 	urb->instance.number_of_packets = PCM_N_PACKETS_PER_URB;
+--- a/sound/usb/caiaq/audio.c
++++ b/sound/usb/caiaq/audio.c
+@@ -670,7 +670,6 @@ static void read_completed(struct urb *u
  
--	/* file xattrs */
--	struct simple_xattrs xattrs;
--
- 	int (*open)(struct inode *inode, struct file *file);
- 	ssize_t (*read)(struct cgroup *cgrp, struct cftype *cft,
- 			struct file *file,
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -162,6 +162,9 @@ struct cfent {
- 	struct list_head		node;
- 	struct dentry			*dentry;
- 	struct cftype			*type;
-+
-+	/* file xattrs */
-+	struct simple_xattrs		xattrs;
- };
- 
- /*
-@@ -910,13 +913,12 @@ static void cgroup_diput(struct dentry *
+ 	if (send_it) {
+ 		out->number_of_packets = outframe;
+-		out->transfer_flags = URB_ISO_ASAP;
+ 		usb_submit_urb(out, GFP_ATOMIC);
  	} else {
- 		struct cfent *cfe = __d_cfe(dentry);
- 		struct cgroup *cgrp = dentry->d_parent->d_fsdata;
--		struct cftype *cft = cfe->type;
- 
- 		WARN_ONCE(!list_empty(&cfe->node) &&
- 			  cgrp != &cgrp->root->top_cgroup,
- 			  "cfe still linked for %s\n", cfe->type->name);
-+		simple_xattrs_free(&cfe->xattrs);
- 		kfree(cfe);
--		simple_xattrs_free(&cft->xattrs);
+ 		struct snd_usb_caiaq_cb_info *oinfo = out->context;
+@@ -686,7 +685,6 @@ requeue:
  	}
- 	iput(inode);
- }
-@@ -2551,7 +2553,7 @@ static struct simple_xattrs *__d_xattrs(
- 	if (S_ISDIR(dentry->d_inode->i_mode))
- 		return &__d_cgrp(dentry)->xattrs;
- 	else
--		return &__d_cft(dentry)->xattrs;
-+		return &__d_cfe(dentry)->xattrs;
+ 
+ 	urb->number_of_packets = FRAMES_PER_URB;
+-	urb->transfer_flags = URB_ISO_ASAP;
+ 	usb_submit_urb(urb, GFP_ATOMIC);
  }
  
- static inline int xattr_enabled(struct dentry *dentry)
-@@ -2727,8 +2729,6 @@ static int cgroup_add_file(struct cgroup
- 	umode_t mode;
- 	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
- 
--	simple_xattrs_init(&cft->xattrs);
--
- 	if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
- 		strcpy(name, subsys->name);
- 		strcat(name, ".");
-@@ -2753,6 +2753,7 @@ static int cgroup_add_file(struct cgroup
- 		cfe->type = (void *)cft;
- 		cfe->dentry = dentry;
- 		dentry->d_fsdata = cfe;
-+		simple_xattrs_init(&cfe->xattrs);
- 		list_add_tail(&cfe->node, &parent->files);
- 		cfe = NULL;
- 	}
+@@ -751,7 +749,6 @@ static struct urb **alloc_urbs(struct sn
+ 						* BYTES_PER_FRAME;
+ 		urbs[i]->context = &dev->data_cb_info[i];
+ 		urbs[i]->interval = 1;
+-		urbs[i]->transfer_flags = URB_ISO_ASAP;
+ 		urbs[i]->number_of_packets = FRAMES_PER_URB;
+ 		urbs[i]->complete = (dir == SNDRV_PCM_STREAM_CAPTURE) ?
+ 					read_completed : write_completed;
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -677,7 +677,7 @@ static int data_ep_set_params(struct snd
+ 		if (!u->urb->transfer_buffer)
+ 			goto out_of_memory;
+ 		u->urb->pipe = ep->pipe;
+-		u->urb->transfer_flags = URB_ISO_ASAP | URB_NO_TRANSFER_DMA_MAP;
++		u->urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
+ 		u->urb->interval = 1 << ep->datainterval;
+ 		u->urb->context = u;
+ 		u->urb->complete = snd_complete_urb;
+@@ -716,8 +716,7 @@ static int sync_ep_set_params(struct snd
+ 		u->urb->transfer_dma = ep->sync_dma + i * 4;
+ 		u->urb->transfer_buffer_length = 4;
+ 		u->urb->pipe = ep->pipe;
+-		u->urb->transfer_flags = URB_ISO_ASAP |
+-					 URB_NO_TRANSFER_DMA_MAP;
++		u->urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
+ 		u->urb->number_of_packets = 1;
+ 		u->urb->interval = 1 << ep->syncinterval;
+ 		u->urb->context = u;
+--- a/sound/usb/misc/ua101.c
++++ b/sound/usb/misc/ua101.c
+@@ -1120,8 +1120,7 @@ static int alloc_stream_urbs(struct ua10
+ 			usb_init_urb(&urb->urb);
+ 			urb->urb.dev = ua->dev;
+ 			urb->urb.pipe = stream->usb_pipe;
+-			urb->urb.transfer_flags = URB_ISO_ASAP |
+-					URB_NO_TRANSFER_DMA_MAP;
++			urb->urb.transfer_flags = URB_NO_TRANSFER_DMA_MAP;
+ 			urb->urb.transfer_buffer = addr;
+ 			urb->urb.transfer_dma = dma;
+ 			urb->urb.transfer_buffer_length = max_packet_size;
+--- a/sound/usb/usx2y/usb_stream.c
++++ b/sound/usb/usx2y/usb_stream.c
+@@ -69,7 +69,6 @@ static void init_pipe_urbs(struct usb_st
+ 	     ++u, transfer += transfer_length) {
+ 		struct urb *urb = urbs[u];
+ 		struct usb_iso_packet_descriptor *desc;
+-		urb->transfer_flags = URB_ISO_ASAP;
+ 		urb->transfer_buffer = transfer;
+ 		urb->dev = dev;
+ 		urb->pipe = pipe;
+--- a/sound/usb/usx2y/usbusx2yaudio.c
++++ b/sound/usb/usx2y/usbusx2yaudio.c
+@@ -503,7 +503,6 @@ static int usX2Y_urbs_start(struct snd_u
+ 			if (0 == i)
+ 				atomic_set(&subs->state, state_STARTING3);
+ 			urb->dev = usX2Y->dev;
+-			urb->transfer_flags = URB_ISO_ASAP;
+ 			for (pack = 0; pack < nr_of_packs(); pack++) {
+ 				urb->iso_frame_desc[pack].offset = subs->maxpacksize * pack;
+ 				urb->iso_frame_desc[pack].length = subs->maxpacksize;
+--- a/sound/usb/usx2y/usx2yhwdeppcm.c
++++ b/sound/usb/usx2y/usx2yhwdeppcm.c
+@@ -443,7 +443,6 @@ static int usX2Y_usbpcm_urbs_start(struc
+ 					if (0 == u)
+ 						atomic_set(&subs->state, state_STARTING3);
+ 					urb->dev = usX2Y->dev;
+-					urb->transfer_flags = URB_ISO_ASAP;
+ 					for (pack = 0; pack < nr_of_packs(); pack++) {
+ 						urb->iso_frame_desc[pack].offset = subs->maxpacksize * (pack + u * nr_of_packs());
+ 						urb->iso_frame_desc[pack].length = subs->maxpacksize;
 
 
