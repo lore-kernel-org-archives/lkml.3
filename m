@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab3EFLhD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 07:37:03 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:59152 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752470Ab3EFLhB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 07:37:01 -0400
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Cc: michael@ellerman.id.au, mikey@neuling.org, benh@kernel.crashing.org
-Subject: [PATCH] powerpc, perf: Clear out branch entries to avoid any previous stale values
-Date: Mon,  6 May 2013 13:34:40 +0530
-Message-Id: <1367827480-5375-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050611-0260-0000-0000-000002ED6A4B
+	id S1753000Ab3EFLhl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 07:37:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29843 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752470Ab3EFLhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 07:37:12 -0400
+Date: Mon, 6 May 2013 13:36:42 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Michael Ellerman <michael@ellerman.id.au>, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        rob@landley.net
+Subject: Re: [RFC/PATCH] perf: Expand definition of sysfs format attribute
+Message-ID: <20130506113642.GA1093@krava.brq.redhat.com>
+References: <1362370865-4437-1-git-send-email-michael@ellerman.id.au>
+ <20130408072422.GA4476@concordia>
+ <20130506010829.GA32607@concordia>
+ <20130506082008.GA2784@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130506082008.GA2784@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'to' field inside branch entries might contain stale values from previous
-PMU interrupt instances which had indirect branches. So clear all the values
-before reading a fresh set of BHRB entries after a PMU interrupt.
+On Mon, May 06, 2013 at 05:20:08AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, May 06, 2013 at 11:08:30AM +1000, Michael Ellerman escreveu:
+> > On Mon, Apr 08, 2013 at 05:24:22PM +1000, Michael Ellerman wrote:
+> > > On Mon, Mar 04, 2013 at 03:21:05PM +1100, Michael Ellerman wrote:
+> > > > Make it explicit that the format attributes may define overlapping bit
+> > > > ranges. Unfortunately this was left unspecified originally, and all the
+> > > > examples show non-overlapping ranges. I don't believe this is an ABI
+> > > > change, as we are defining something that was previously undefined, but
+> > > > others may disagree.
+> > > > 
+> > > > The POWER8 PMU would like to define overlapping ranges, as bit ranges in
+> > > > the event code have different meanings for certain events. It will also
+> > > > allow us to define an overarching "event" field, that encompasses all
+> > > > others.
+> > > > 
+> > > > As far as I can see perf is comfortable with this change, however I am
+> > > > not sure if there are any other users of the interface.
+> > > 
+> > > Any comments on this one?
+> 
+> > I think the consensus from Peter and Jiri was that this was OK, are you
+> > happy to merge it?
+> 
+> I'll do it eventually, but now I'm on vacations, so perhaps Jiri can
+> process it and push to Ingo? Jiri?
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- arch/powerpc/perf/core-book3s.c | 2 ++
- 1 file changed, 2 insertions(+)
+ok, I'll try to do this soon ;)
 
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index c627843..09db68d 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -1590,6 +1590,8 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
- 		if (event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK) {
- 			struct cpu_hw_events *cpuhw;
- 			cpuhw = &__get_cpu_var(cpu_hw_events);
-+			memset(cpuhw->bhrb_entries, 0,
-+				sizeof(struct perf_branch_entry) * BHRB_MAX_ENTRIES);
- 			power_pmu_bhrb_read(cpuhw);
- 			data.br_stack = &cpuhw->bhrb_stack;
- 		}
--- 
-1.7.11.7
-
+jirka
