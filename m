@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142Ab3EFPiK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 11:38:10 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:59380 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753874Ab3EFPiI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 11:38:08 -0400
-Date: Mon, 06 May 2013 11:38:00 -0400 (EDT)
-Message-Id: <20130506.113800.203598940932244298.davem@davemloft.net>
-To: sebastian.hesselbarth@gmail.com
-Cc: grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
-        buytenh@wantstofly.org, florian@openwrt.org, arnaud.patard@rtp-net.org,
-        linux@arm.linux.org.uk, jason@lakedaemon.net, andrew@lunn.ch,
-        moinejf@free.fr, thomas.petazzoni@free-electrons.com,
-        simon.guinot@sequanux.org, jm@lentin.co.uk, michael@walle.cc,
-        hutter.eric@gmail.com, josh.coombs@gmail.com, w@1wt.eu,
-        gmbnomis@gmail.com, alanbutty12@gmail.com, nigel@nobiscuit.com,
-        valentin.longchamp@keymile.com, s.peter@mpl.ch, arno@natisbad.org,
-        iwamatsu@nigauri.org, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] mv643xx_eth: device tree bindings
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1365071235-11611-1-git-send-email-florian@openwrt.org>
-	<1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 06 May 2013 08:38:07 -0700 (PDT)
+	id S1755203Ab3EFPjZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 11:39:25 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:41581 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754210Ab3EFPjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 11:39:23 -0400
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Vincent=20Stehl=C3=A9?= <v-stehle@ti.com>,
+        trivial@kernel.org
+Subject: [PATCH] ARM: omap2: gpmc: fix compilation warning
+Date: Mon,  6 May 2013 17:38:49 +0200
+Message-Id: <1367854729-11416-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Vincent Stehlé <v-stehle@ti.com>
 
-Two things:
+Fix the following compilation warning:
 
-1) None of your postings make the mailing lists because your CC: line is
-   too large, and we block large ones because those are %99 of SPAM.
+  arch/arm/mach-omap2/gpmc.c: In function 'gpmc_probe_generic_child':
+  arch/arm/mach-omap2/gpmc.c:1477:4: warning: format '%x' expects argument of type 'unsigned int', but argument 4 has type 'resource_size_t' [-Wformat]
 
-   It really isn't reasonable to CC: so many people, and I do understand
-   that you're just sifting email addresses from MAINTAINERS or whatever,
-   but just use the appropriate mailing lists and the absolute most direct
-   developer(s).  Probably just the person who you believe should apply
-   this patch.
+Signed-off-by: Vincent Stehlé <v-stehle@ti.com>
+Cc: trivial@kernel.org
+---
 
-2) Networking feature patch submissions are closed, as per:
+(This is a resend.)
 
-	http://marc.info/?l=linux-netdev&m=136730964130303&w=2
+ arch/arm/mach-omap2/gpmc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-   Therefore please resubmit this after the merge window is closed
-   and I have explicitly announced that the net-next tree is open again
-   for submissions.
+diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+index ed946df..3cd7074 100644
+--- a/arch/arm/mach-omap2/gpmc.c
++++ b/arch/arm/mach-omap2/gpmc.c
+@@ -1474,7 +1474,7 @@ static int gpmc_probe_generic_child(struct platform_device *pdev,
+ 	ret = gpmc_cs_remap(cs, res.start);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "cannot remap GPMC CS %d to 0x%x\n",
+-			cs, res.start);
++			cs, (unsigned)res.start);
+ 		goto err;
+ 	}
+ 
+-- 
+1.7.10.4
 
-Thanks.
