@@ -1,131 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab3EFNEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 09:04:12 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:47679 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab3EFNEL (ORCPT
+	id S1753807Ab3EFNFO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 09:05:14 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:23874 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277Ab3EFNFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 09:04:11 -0400
-Message-ID: <5187A144.9080307@linux.vnet.ibm.com>
-Date: Mon, 06 May 2013 17:55:40 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Michael Neuling <mikey@neuling.org>
-CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] powerpc, perf: Fix processing conditions for invalid
- BHRB entries
-References: <1367831206-16331-1-git-send-email-khandual@linux.vnet.ibm.com> <24261.1367838705@ale.ozlabs.ibm.com>
-In-Reply-To: <24261.1367838705@ale.ozlabs.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050612-0260-0000-0000-000002ED7F79
+	Mon, 6 May 2013 09:05:07 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        stefano.stabellini@eu.citrix.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@vger.kernel.org
+Subject: [PATCH 1/4] xen/vcpu/pvhvm: Fix vcpu hotplugging hanging.
+Date: Mon,  6 May 2013 09:04:55 -0400
+Message-Id: <1367845498-14290-2-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1367845498-14290-1-git-send-email-konrad.wilk@oracle.com>
+References: <1367845498-14290-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 04:41 PM, Michael Neuling wrote:
-> Anshuman Khandual <khandual@linux.vnet.ibm.com> wrote:
-> 
->> Fixing some conditions during BHRB entry processing.
-> 
-> I think we can simplify this a lot more... something like the below.
-> 
+If a user did:
 
-I feel that the conditional handling of the invalid BHRB entries should be
-present which would help us during the debug and also could be used for more
-granular branch classification or error handling later on.
+	echo 0 > /sys/devices/system/cpu/cpu1/online
+	echo 1 > /sys/devices/system/cpu/cpu1/online
 
-> Also, this marks the "to" address as all 1s, which is better poison
-> value since it's possible to branch to/from 0x0.
->
+we would (this a build with DEBUG enabled) get to:
+smpboot: ++++++++++++++++++++=_---CPU UP  1
+.. snip..
+smpboot: Stack at about ffff880074c0ff44
+smpboot: CPU1: has booted.
 
-Agreed.
+and hang. The RCU mechanism would kick in an try to IPI the CPU1
+but the IPIs (and all other interrupts) would never arrive at the
+CPU1. At first glance at least. A bit digging in the hypervisor
+trace shows that (using xenanalyze):
 
+[vla] d4v1 vec 243 injecting
+   0.043163027 --|x d4v1 intr_window vec 243 src 5(vector) intr f3
+]  0.043163639 --|x d4v1 vmentry cycles 1468
+]  0.043164913 --|x d4v1 vmexit exit_reason PENDING_INTERRUPT eip ffffffff81673254
+   0.043164913 --|x d4v1 inj_virq vec 243  real
+  [vla] d4v1 vec 243 injecting
+   0.043164913 --|x d4v1 intr_window vec 243 src 5(vector) intr f3
+]  0.043165526 --|x d4v1 vmentry cycles 1472
+]  0.043166800 --|x d4v1 vmexit exit_reason PENDING_INTERRUPT eip ffffffff81673254
+   0.043166800 --|x d4v1 inj_virq vec 243  real
+  [vla] d4v1 vec 243 injecting
 
-> diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-> index c627843..d410d65 100644
-> --- a/arch/powerpc/perf/core-book3s.c
-> +++ b/arch/powerpc/perf/core-book3s.c
-> @@ -1463,65 +1463,45 @@ void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
->  {
->  	u64 val;
->  	u64 addr;
-> -	int r_index, u_index, target, pred;
-> +	int r_index, u_index, pred;
-> 
->  	r_index = 0;
->  	u_index = 0;
->  	while (r_index < ppmu->bhrb_nr) {
->  		/* Assembly read function */
-> -		val = read_bhrb(r_index);
-> +		val = read_bhrb(r_index++);
-> 
->  		/* Terminal marker: End of valid BHRB entries */
-> -		if (val == 0) {
-> +		if (!val) {
->  			break;
->  		} else {
->  			/* BHRB field break up */
->  			addr = val & BHRB_EA;
->  			pred = val & BHRB_PREDICTION;
-> -			target = val & BHRB_TARGET;
-> 
-> -			/* Probable Missed entry: Not applicable for POWER8 */
-> -			if ((addr == 0) && (target == 0) && (pred == 1)) {
-> -				r_index++;
-> +			if (!addr)
-> +				/* invalid entry */
->  				continue;
-> -			}
-> -
-> -			/* Real Missed entry: Power8 based missed entry */
-> -			if ((addr == 0) && (target == 1) && (pred == 1)) {
-> -				r_index++;
-> -				continue;
-> -			}
-> 
-> -			/* Reserved condition: Not a valid entry  */
-> -			if ((addr == 0) && (target == 1) && (pred == 0)) {
-> -				r_index++;
-> -				continue;
-> -			}
-> -
-> -			/* Is a target address */
->  			if (val & BHRB_TARGET) {
->  				/* First address cannot be a target address */
-> -				if (r_index == 0) {
-> -					r_index++;
-> +				if (r_index == 0)
->  					continue;
-> -				}
-> 
->  				/* Update target address for the previous entry */
->  				cpuhw->bhrb_entries[u_index - 1].to = addr;
->  				cpuhw->bhrb_entries[u_index - 1].mispred = pred;
->  				cpuhw->bhrb_entries[u_index - 1].predicted = ~pred;
-> -
-> -				/* Dont increment u_index */
-> -				r_index++;
->  			} else {
->  				/* Update address, flags for current entry */
->  				cpuhw->bhrb_entries[u_index].from = addr;
-> +				cpuhw->bhrb_entries[u_index].to =
-> +					0xffffffffffffffff;
->  				cpuhw->bhrb_entries[u_index].mispred = pred;
->  				cpuhw->bhrb_entries[u_index].predicted = ~pred;
-> 
->  				/* Successfully popullated one entry */
->  				u_index++;
-> -				r_index++;
->  			}
->  		}
->  	}
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
-> 
+there is a pending event (subsequent debugging shows it is the IPI
+from the VCPU0 when smpboot.c on VCPU1 has done
+"set_cpu_online(smp_processor_id(), true)") and the guest VCPU1 is
+interrupted with the callback IPI (0xf3 aka 243) which ends up calling
+__xen_evtchn_do_upcall.
+
+The __xen_evtchn_do_upcall seems to do *something* but not acknowledge
+the pending events. And the moment the guest does a 'cli' (that is the
+ffffffff81673254 in the log above) the hypervisor is invoked again to
+inject the IPI (0xf3) to tell the guest it has pending interrupts.
+This repeats itself forever.
+
+The culprit was the per_cpu(xen_vcpu, cpu) pointer. At the bootup
+we set each per_cpu(xen_vcpu, cpu) to point to the
+shared_info->vcpu_info[vcpu] but later on use the VCPUOP_register_vcpu_info
+to register per-CPU  structures (xen_vcpu_setup).
+This is used to allow events for more than 32 VCPUs and for performance
+optimizations reasons.
+
+When the user performs the VCPU hotplug we end up calling the
+the xen_vcpu_setup once more. We make the hypercall which returns
+-EINVAL as it does not allow multiple registration calls (and
+already has re-assigned where the events are being set). We pick
+the fallback case and set per_cpu(xen_vcpu, cpu) to point to the
+shared_info->vcpu_info[vcpu] (which is a good fallback during bootup).
+However the hypervisor is still setting events in the register
+per-cpu structure (per_cpu(xen_vcpu_info, cpu)).
+
+As such when the events are set by the hypervisor (such as timer one),
+and when we iterate in __xen_evtchn_do_upcall we end up reading stale
+events from the shared_info->vcpu_info[vcpu] instead of the
+per_cpu(xen_vcpu_info, cpu) structures. Hence we never acknowledge the
+events that the hypervisor has set and the hypervisor keeps on reminding
+us to ack the events which we never do.
+
+The fix is simple. Don't on the second time when xen_vcpu_setup is
+called over-write the per_cpu(xen_vcpu, cpu) if it points to
+per_cpu(xen_vcpu_info).
+
+CC: stable@vger.kernel.org
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/enlighten.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index ddbd54a..94a81f4 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -157,6 +157,21 @@ static void xen_vcpu_setup(int cpu)
+ 
+ 	BUG_ON(HYPERVISOR_shared_info == &xen_dummy_shared_info);
+ 
++	/*
++	 * This path is called twice on PVHVM - first during bootup via
++	 * smp_init -> xen_hvm_cpu_notify, and then if the VCPU is being
++	 * hotplugged: cpu_up -> xen_hvm_cpu_notify.
++	 * As we can only do the VCPUOP_register_vcpu_info once lets
++	 * not over-write its result.
++	 *
++	 * For PV it is called during restore (xen_vcpu_restore) and bootup
++	 * (xen_setup_vcpu_info_placement). The hotplug mechanism does not
++	 * use this function.
++	 */
++	if (xen_hvm_domain()) {
++		if (per_cpu(xen_vcpu, cpu) == &per_cpu(xen_vcpu_info, cpu))
++			return;
++	}
+ 	if (cpu < MAX_VIRT_CPUS)
+ 		per_cpu(xen_vcpu,cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
+ 
+-- 
+1.8.1.4
 
