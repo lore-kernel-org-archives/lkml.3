@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932914Ab3EFW5Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:57:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36195 "EHLO
+	id S1761523Ab3EFXqY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:46:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36204 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932896Ab3EFW5W (ORCPT
+	with ESMTP id S932908Ab3EFW5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:22 -0400
+	Mon, 6 May 2013 18:57:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Eshel <eshel@us.ibm.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 46/63] LOCKD: Ensure that nlmclnt_block resets block->b_status after a server reboot
-Date: Mon,  6 May 2013 15:56:24 -0700
-Message-Id: <20130506225325.933629766@linuxfoundation.org>
+        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 49/63] nfsd4: dont close read-write opens too soon
+Date: Mon,  6 May 2013 15:56:27 -0700
+Message-Id: <20130506225326.683329231@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,51 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 1dfd89af8697a299e7982ae740d4695ecd917eef upstream.
+commit 0c7c3e67ab91ec6caa44bdf1fc89a48012ceb0c5 upstream.
 
-After a server reboot, the reclaimer thread will recover all the existing
-locks. For locks that are blocked, however, it will change the value
-of block->b_status to nlm_lck_denied_grace_period in order to signal that
-they need to wake up and resend the original blocking lock request.
+Don't actually close any opens until we don't need them at all.
 
-Due to a bug, however, the block->b_status never gets reset after the
-blocked locks have been woken up, and so the process goes into an
-infinite loop of resends until the blocked lock is satisfied.
+This means being left with write access when it's not really necessary,
+but that's better than putting a file that might still have posix locks
+held on it, as we have been.
 
-Reported-by: Marc Eshel <eshel@us.ibm.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/clntlock.c |    3 +++
- fs/lockd/clntproc.c |    3 ---
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ fs/nfsd/nfs4state.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
---- a/fs/lockd/clntlock.c
-+++ b/fs/lockd/clntlock.c
-@@ -144,6 +144,9 @@ int nlmclnt_block(struct nlm_wait *block
- 			timeout);
- 	if (ret < 0)
- 		return -ERESTARTSYS;
-+	/* Reset the lock status after a server reboot so we resend */
-+	if (block->b_status == nlm_lck_denied_grace_period)
-+		block->b_status = nlm_lck_blocked;
- 	req->a_res.status = block->b_status;
- 	return 0;
- }
---- a/fs/lockd/clntproc.c
-+++ b/fs/lockd/clntproc.c
-@@ -551,9 +551,6 @@ again:
- 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
- 		if (status < 0)
- 			break;
--		/* Resend the blocking lock request after a server reboot */
--		if (resp->status ==  nlm_lck_denied_grace_period)
--			continue;
- 		if (resp->status != nlm_lck_blocked)
- 			break;
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -213,13 +213,7 @@ static void __nfs4_file_put_access(struc
+ {
+ 	if (atomic_dec_and_test(&fp->fi_access[oflag])) {
+ 		nfs4_file_put_fd(fp, oflag);
+-		/*
+-		 * It's also safe to get rid of the RDWR open *if*
+-		 * we no longer have need of the other kind of access
+-		 * or if we already have the other kind of open:
+-		 */
+-		if (fp->fi_fds[1-oflag]
+-			|| atomic_read(&fp->fi_access[1 - oflag]) == 0)
++		if (atomic_read(&fp->fi_access[1 - oflag]) == 0)
+ 			nfs4_file_put_fd(fp, O_RDWR);
  	}
+ }
 
 
