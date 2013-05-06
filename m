@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933385Ab3EFXYC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:24:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36879 "EHLO
+	id S933402Ab3EFXYE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:24:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36871 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932170Ab3EFXNz (ORCPT
+	with ESMTP id S932124Ab3EFXNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:55 -0400
+	Mon, 6 May 2013 19:13:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
-Subject: [ 073/104] cgroup: fix an off-by-one bug which may trigger BUG_ON()
-Date: Mon,  6 May 2013 16:12:32 -0700
-Message-Id: <20130506230051.132165514@linuxfoundation.org>
+        Wang YanQing <udknight@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 071/104] ACPI: Fix wrong parameter passed to memblock_reserve
+Date: Mon,  6 May 2013 16:12:30 -0700
+Message-Id: <20130506230050.940590445@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,36 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Wang YanQing <udknight@gmail.com>
 
-commit 3ac1707a13a3da9cfc8f242a15b2fae6df2c5f88 upstream.
+commit a6432ded299726f123b93d0132fead200551535c upstream.
 
-The 3rd parameter of flex_array_prealloc() is the number of elements,
-not the index of the last element.
+Commit 53aac44 (ACPI: Store valid ACPI tables passed via early initrd
+in reserved memblock areas) introduced acpi_initrd_override() that
+passes a wrong value as the second argument to memblock_reserve().
 
-The effect of the bug is, when opening cgroup.procs, a flex array will
-be allocated and all elements of the array is allocated with
-GFP_KERNEL flag, but the last one is GFP_ATOMIC, and if we fail to
-allocate memory for it, it'll trigger a BUG_ON().
+Namely, the second argument of memblock_reserve() is the size of the
+region, not the address of the top of it, so make
+acpi_initrd_override() pass the size in there as appropriate.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+[rjw: Changelog]
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cgroup.c |    2 +-
+ drivers/acpi/osl.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2066,7 +2066,7 @@ static int cgroup_attach_proc(struct cgr
- 	if (!group)
- 		return -ENOMEM;
- 	/* pre-allocate to guarantee space while iterating in rcu read-side. */
--	retval = flex_array_prealloc(group, 0, group_size - 1, GFP_KERNEL);
-+	retval = flex_array_prealloc(group, 0, group_size, GFP_KERNEL);
- 	if (retval)
- 		goto out_free_group_list;
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -642,7 +642,7 @@ void __init acpi_initrd_override(void *d
+ 	 * Both memblock_reserve and e820_add_region (via arch_reserve_mem_area)
+ 	 * works fine.
+ 	 */
+-	memblock_reserve(acpi_tables_addr, acpi_tables_addr + all_tables_size);
++	memblock_reserve(acpi_tables_addr, all_tables_size);
+ 	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
  
+ 	p = early_ioremap(acpi_tables_addr, all_tables_size);
 
 
