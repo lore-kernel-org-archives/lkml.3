@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab3EFI4F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 04:56:05 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:43327 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700Ab3EFI4D (ORCPT
+	id S1753961Ab3EFI5j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 04:57:39 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33304
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752388Ab3EFI5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 04:56:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <51876E92.3010300@intel.com>
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
- <1367804711-30308-2-git-send-email-alex.shi@intel.com> <CAPM31R+4Ar5FFGSgfts76qNiQ5GMpPk7wkuj1fwsFrugVwnLfQ@mail.gmail.com>
- <51876E92.3010300@intel.com>
-From: Paul Turner <pjt@google.com>
-Date: Mon, 6 May 2013 01:55:31 -0700
-Message-ID: <CAPM31RLOHcDGJy6bpXeMN90+NpGNkKS=32Wyq5r0LkdGb=SKkQ@mail.gmail.com>
-Subject: Re: [PATCH v5 1/7] Revert "sched: Introduce temporary
- FAIR_GROUP_SCHED dependency for load-tracking"
-To: Alex Shi <alex.shi@intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	Mon, 6 May 2013 04:57:37 -0400
+Date: Mon, 6 May 2013 10:55:47 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Pavel Machek <pavel@ucw.cz>, Colin Cross <ccross@android.com>,
+        Andrew Morton <akpm@osdl.org>, lkml <linux-kernel@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ingo Molnar <mingo@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Mandeep Singh Baines <msb@chromium.org>,
+        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>
+Subject: Re: [PATCH 2/2] lockdep: check that no locks held at freeze time
+Message-ID: <20130506085547.GC13861@dyad.programming.kicks-ass.net>
+References: <1367615050-3894-1-git-send-email-ccross@android.com>
+ <1367615050-3894-2-git-send-email-ccross@android.com>
+ <20130504130440.GC13770@amd.pavel.ucw.cz>
+ <CAMbhsRScr+3Zk5Bi6390bGRbtE4oh2H-mHrGHS0wew5hdkivUg@mail.gmail.com>
+ <20130504225715.GB24276@amd.pavel.ucw.cz>
+ <CAMbhsRS_cF7kF-QZ9BMBUS3ytU0ukRCbC3D549HW_XOsQbEZhg@mail.gmail.com>
+ <20130505000528.GA25454@amd.pavel.ucw.cz>
+ <20130505091844.GC22239@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130505091844.GC22239@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 6, 2013 at 1:49 AM, Alex Shi <alex.shi@intel.com> wrote:
-> On 05/06/2013 04:24 PM, Paul Turner wrote:
->>> >         /*
->>> >          * CFS Load tracking
->>> >          * Under CFS, load is tracked on a per-entity basis and aggregated up.
->>> > @@ -242,8 +236,7 @@ struct cfs_rq {
->>> >         u64 runnable_load_avg, blocked_load_avg;
->>> >         atomic64_t decay_counter, removed_load;
->>> >         u64 last_decay;
->>> > -#endif /* CONFIG_FAIR_GROUP_SCHED */
->>> > -/* These always depend on CONFIG_FAIR_GROUP_SCHED */
->> We should perhaps replace this with a comment that these are only
->> needed to aggregate the point-wise representation in the
->> FAIR_GROUP_SCHED case.
->>
->
-> Is the comments ok? :)
->
-> /* runnable related variables only used in FAIR_GROUP_SCHED */
+On Sun, May 05, 2013 at 11:18:44AM +0200, Ingo Molnar wrote:
+> That's the old 32-bit x86 trick to compute 'current' from the kernel stack 
+> pointer.
+> 
+> It can be done better - for example on platforms with optimized percpu 
+> variables (x86-64) it looks like this:
 
-Perhaps:
-
- -/* These always depend on CONFIG_FAIR_GROUP_SCHED */
-#ifdef ...
-+/* Required to track per-cpu representation of a task_group */
-
-
->
-> --
-> Thanks
->     Alex
+Doesn't i386 have all the funny per-cpu stuff too? So the only reason it still
+does the fugly stack based thing is because nobody could be arsed to do the
+work of converting it.
