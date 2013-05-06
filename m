@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933763Ab3EFXbU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:31:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36758 "EHLO
+	id S933752Ab3EFXbT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:31:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36762 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760510Ab3EFXNh (ORCPT
+	with ESMTP id S1760516Ab3EFXNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 19:13:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Ming Lei <ming.lei@canonical.com>
-Subject: [ 046/104] sysfs: fix use after free in case of concurrent read/write and readdir
-Date: Mon,  6 May 2013 16:12:05 -0700
-Message-Id: <20130506230048.350485985@linuxfoundation.org>
+        Fred Hartnett <fred.hartnett@hp.com>, Tony Luck <tony.luck@intel.com>
+Subject: [ 047/104] Fix initialization of CMCI/CMCP interrupts
+Date: Mon,  6 May 2013 16:12:06 -0700
+Message-Id: <20130506230048.442206876@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,76 +26,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Tony Luck <tony.luck@intel.com>
 
-commit f7db5e7660b122142410dcf36ba903c73d473250 upstream.
+commit d303e9e98fce56cdb3c6f2ac92f626fc2bd51c77 upstream.
 
-The inode->i_mutex isn't hold when updating filp->f_pos
-in read()/write(), so the filp->f_pos might be read as
-0 or 1 in readdir() when there is concurrent read()/write()
-on this same file, then may cause use after free in readdir().
+Back 2010 during a revamp of the irq code some initializations
+were moved from ia64_mca_init() to ia64_mca_late_init() in
 
-The bug can be reproduced with Li Zefan's test code on the
-link:
+	commit c75f2aa13f5b268aba369b5dc566088b5194377c
+	Cannot use register_percpu_irq() from ia64_mca_init()
 
-	https://patchwork.kernel.org/patch/2160771/
+But this was hideously wrong. First of all these initializations
+are now down far too late. Specifically after all the other cpus
+have been brought up and initialized their own CMC vectors from
+smp_callin(). Also ia64_mca_late_init() may be called from any cpu
+so the line:
+	ia64_mca_cmc_vector_setup();       /* Setup vector on BSP */
+is generally not executed on the BSP, and so the CMC vector isn't
+setup at all on that processor.
 
-This patch fixes the use after free under this situation.
+Make use of the arch_early_irq_init() hook to get this code executed
+at just the right moment: not too early, not too late.
 
-Reported-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Reported-by: Fred Hartnett <fred.hartnett@hp.com>
+Tested-by: Fred Hartnett <fred.hartnett@hp.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/sysfs/dir.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ arch/ia64/include/asm/mca.h |    1 +
+ arch/ia64/kernel/irq.c      |    8 ++++++++
+ arch/ia64/kernel/mca.c      |   37 ++++++++++++++++++++++++-------------
+ 3 files changed, 33 insertions(+), 13 deletions(-)
 
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -1012,6 +1012,7 @@ static int sysfs_readdir(struct file * f
- 	enum kobj_ns_type type;
- 	const void *ns;
- 	ino_t ino;
-+	loff_t off;
+--- a/arch/ia64/include/asm/mca.h
++++ b/arch/ia64/include/asm/mca.h
+@@ -143,6 +143,7 @@ extern unsigned long __per_cpu_mca[NR_CP
+ extern int cpe_vector;
+ extern int ia64_cpe_irq;
+ extern void ia64_mca_init(void);
++extern void ia64_mca_irq_init(void);
+ extern void ia64_mca_cpu_init(void *);
+ extern void ia64_os_mca_dispatch(void);
+ extern void ia64_os_mca_dispatch_end(void);
+--- a/arch/ia64/kernel/irq.c
++++ b/arch/ia64/kernel/irq.c
+@@ -23,6 +23,8 @@
+ #include <linux/interrupt.h>
+ #include <linux/kernel_stat.h>
  
- 	type = sysfs_ns_type(parent_sd);
- 	ns = sysfs_info(dentry->d_sb)->ns[type];
-@@ -1034,6 +1035,7 @@ static int sysfs_readdir(struct file * f
- 			return 0;
- 	}
- 	mutex_lock(&sysfs_mutex);
-+	off = filp->f_pos;
- 	for (pos = sysfs_dir_pos(ns, parent_sd, filp->f_pos, pos);
- 	     pos;
- 	     pos = sysfs_dir_next_pos(ns, parent_sd, filp->f_pos, pos)) {
-@@ -1045,19 +1047,24 @@ static int sysfs_readdir(struct file * f
- 		len = strlen(name);
- 		ino = pos->s_ino;
- 		type = dt_type(pos);
--		filp->f_pos = pos->s_hash;
-+		off = filp->f_pos = pos->s_hash;
- 		filp->private_data = sysfs_get(pos);
++#include <asm/mca.h>
++
+ /*
+  * 'what should we do if we get a hw irq event on an illegal vector'.
+  * each architecture has to answer this themselves.
+@@ -83,6 +85,12 @@ bool is_affinity_mask_valid(const struct
  
- 		mutex_unlock(&sysfs_mutex);
--		ret = filldir(dirent, name, len, filp->f_pos, ino, type);
-+		ret = filldir(dirent, name, len, off, ino, type);
- 		mutex_lock(&sysfs_mutex);
- 		if (ret < 0)
- 			break;
- 	}
- 	mutex_unlock(&sysfs_mutex);
--	if ((filp->f_pos > 1) && !pos) { /* EOF */
--		filp->f_pos = INT_MAX;
+ #endif /* CONFIG_SMP */
+ 
++int __init arch_early_irq_init(void)
++{
++	ia64_mca_irq_init();
++	return 0;
++}
 +
-+	/* don't reference last entry if its refcount is dropped */
-+	if (!pos) {
- 		filp->private_data = NULL;
-+
-+		/* EOF and not changed as 0 or 1 in read/write path */
-+		if (off == filp->f_pos && off > 1)
-+			filp->f_pos = INT_MAX;
- 	}
- 	return 0;
+ #ifdef CONFIG_HOTPLUG_CPU
+ unsigned int vectors_in_migration[NR_IRQS];
+ 
+--- a/arch/ia64/kernel/mca.c
++++ b/arch/ia64/kernel/mca.c
+@@ -2074,22 +2074,16 @@ ia64_mca_init(void)
+ 	printk(KERN_INFO "MCA related initialization done\n");
  }
+ 
++
+ /*
+- * ia64_mca_late_init
+- *
+- *	Opportunity to setup things that require initialization later
+- *	than ia64_mca_init.  Setup a timer to poll for CPEs if the
+- *	platform doesn't support an interrupt driven mechanism.
+- *
+- *  Inputs  :   None
+- *  Outputs :   Status
++ * These pieces cannot be done in ia64_mca_init() because it is called before
++ * early_irq_init() which would wipe out our percpu irq registrations. But we
++ * cannot leave them until ia64_mca_late_init() because by then all the other
++ * processors have been brought online and have set their own CMC vectors to
++ * point at a non-existant action. Called from arch_early_irq_init().
+  */
+-static int __init
+-ia64_mca_late_init(void)
++void __init ia64_mca_irq_init(void)
+ {
+-	if (!mca_init)
+-		return 0;
+-
+ 	/*
+ 	 *  Configure the CMCI/P vector and handler. Interrupts for CMC are
+ 	 *  per-processor, so AP CMC interrupts are setup in smp_callin() (smpboot.c).
+@@ -2108,6 +2102,23 @@ ia64_mca_late_init(void)
+ 	/* Setup the CPEI/P handler */
+ 	register_percpu_irq(IA64_CPEP_VECTOR, &mca_cpep_irqaction);
+ #endif
++}
++
++/*
++ * ia64_mca_late_init
++ *
++ *	Opportunity to setup things that require initialization later
++ *	than ia64_mca_init.  Setup a timer to poll for CPEs if the
++ *	platform doesn't support an interrupt driven mechanism.
++ *
++ *  Inputs  :   None
++ *  Outputs :   Status
++ */
++static int __init
++ia64_mca_late_init(void)
++{
++	if (!mca_init)
++		return 0;
+ 
+ 	register_hotcpu_notifier(&mca_cpu_notifier);
+ 
 
 
