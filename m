@@ -1,158 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932521Ab3EFWtk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:49:40 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:56139 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932240Ab3EFWrH (ORCPT
+	id S932542Ab3EFWtw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:49:52 -0400
+Received: from mail-ye0-f175.google.com ([209.85.213.175]:38107 "EHLO
+	mail-ye0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758945Ab3EFWtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:47:07 -0400
+	Mon, 6 May 2013 18:49:51 -0400
+Date: Mon, 6 May 2013 15:49:45 -0700
 From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        vgoyal@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 25/33] blk-throttle: dispatch from throtl_pending_timer_fn()
-Date: Mon,  6 May 2013 15:46:04 -0700
-Message-Id: <1367880372-28312-26-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1367880372-28312-1-git-send-email-tj@kernel.org>
-References: <1367880372-28312-1-git-send-email-tj@kernel.org>
+To: Marc Dionne <marc.c.dionne@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] workqueue: Make schedule_work() available again to non
+ GPL modules
+Message-ID: <20130506224945.GI800@mtj.dyndns.org>
+References: <1367876695-3697-1-git-send-email-marc.dionne@your-file-system.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367876695-3697-1-git-send-email-marc.dionne@your-file-system.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, blk_throtl_dispatch_work_fn() is responsible for both
-dispatching bio's from throtl_grp's according to their limits and then
-issuing the dispatched bios.
+On Mon, May 06, 2013 at 05:44:55PM -0400, Marc Dionne wrote:
+> Commit 8425e3d5bdbe ("workqueue: inline trivial wrappers") changed
+> schedule_work() and schedule_delayed_work() to inline wrappers,
+> but these rely on some symbols that are EXPORT_SYMBOL_GPL, while
+> the original functions were EXPORT_SYMBOL.  This has the effect of
+> changing the licensing requirement for these functions and making
+> them unavailable to non GPL modules.
+> 
+> Make them available again by removing the restriction on the
+> required symbols.
+> 
+> Signed-off-by: Marc Dionne <marc.dionne@your-file-system.com>
 
-This patch moves the dispatch part to throtl_pending_timer_fn() so
-that the work item is kicked iff there are bio's to issue.  This is to
-avoid work item execution at each step when hierarchy support is
-enabled.  bio's will be dispatched towards the top-level service_queue
-from the timers at each layer and the work item will only be used to
-issue the bio's which reached the top-level service_queue.
+Will apply to workqueue/for-3.10-fixes once v3.10-rc1 drops.
 
-While fetching bio's to issue from bio_lists[],
-blk_throtl_dispatch_work_fn() fetches all READs before WRITEs.  While
-the original code also dispatched READs first, if multiple throtl_grps
-are dispatched on the same run, WRITEs from throtl_grp which is
-dispatched first would precede READs from throtl_grps which are
-dispatched later.  While this is a behavior change, given that the
-previous code already prioritized READs and block layer generally
-prioritizes and segregates READs from WRITEs, this isn't likely to
-make any noticeable differences.
+Thanks.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- block/blk-throttle.c | 69 +++++++++++++++++++++++++++++++++-------------------
- 1 file changed, 44 insertions(+), 25 deletions(-)
-
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 8ee8e4e..918d222 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -932,31 +932,26 @@ static int throtl_select_dispatch(struct throtl_service_queue *parent_sq)
- 	return nr_disp;
- }
- 
-+/**
-+ * throtl_pending_timer_fn - timer function for service_queue->pending_timer
-+ * @arg: the throtl_service_queue being serviced
-+ *
-+ * This timer is armed when a child throtl_grp with active bio's become
-+ * pending and queued on the service_queue's pending_tree and expires when
-+ * the first child throtl_grp should be dispatched.  This function
-+ * dispatches bio's from the children throtl_grps and kicks
-+ * throtl_data->dispatch_work if there are bio's ready to be issued.
-+ */
- static void throtl_pending_timer_fn(unsigned long arg)
- {
- 	struct throtl_service_queue *sq = (void *)arg;
- 	struct throtl_data *td = sq_to_td(sq);
--
--	queue_work(kthrotld_workqueue, &td->dispatch_work);
--}
--
--/* work function to dispatch throttled bios */
--void blk_throtl_dispatch_work_fn(struct work_struct *work)
--{
--	struct throtl_data *td = container_of(work, struct throtl_data,
--					      dispatch_work);
--	struct throtl_service_queue *sq = &td->service_queue;
- 	struct request_queue *q = td->queue;
--	struct bio_list bio_list_on_stack;
--	struct bio *bio;
--	struct blk_plug plug;
- 	bool dispatched = false;
--	int rw, ret;
-+	int ret;
- 
- 	spin_lock_irq(q->queue_lock);
- 
--	bio_list_init(&bio_list_on_stack);
--
- 	while (true) {
- 		throtl_log(sq, "dispatch nr_queued=%u read=%u write=%u",
- 			   td->nr_queued[READ] + td->nr_queued[WRITE],
-@@ -964,10 +959,6 @@ void blk_throtl_dispatch_work_fn(struct work_struct *work)
- 
- 		ret = throtl_select_dispatch(sq);
- 		if (ret) {
--			for (rw = READ; rw <= WRITE; rw++) {
--				bio_list_merge(&bio_list_on_stack, &sq->bio_lists[rw]);
--				bio_list_init(&sq->bio_lists[rw]);
--			}
- 			throtl_log(sq, "bios disp=%u", ret);
- 			dispatched = true;
- 		}
-@@ -981,13 +972,41 @@ void blk_throtl_dispatch_work_fn(struct work_struct *work)
- 		spin_lock_irq(q->queue_lock);
- 	}
- 
-+	if (dispatched)
-+		queue_work(kthrotld_workqueue, &td->dispatch_work);
-+
- 	spin_unlock_irq(q->queue_lock);
-+}
- 
--	/*
--	 * If we dispatched some requests, unplug the queue to make sure
--	 * immediate dispatch
--	 */
--	if (dispatched) {
-+/**
-+ * blk_throtl_dispatch_work_fn - work function for throtl_data->dispatch_work
-+ * @work: work item being executed
-+ *
-+ * This function is queued for execution when bio's reach the bio_lists[]
-+ * of throtl_data->service_queue.  Those bio's are ready and issued by this
-+ * function.
-+ */
-+void blk_throtl_dispatch_work_fn(struct work_struct *work)
-+{
-+	struct throtl_data *td = container_of(work, struct throtl_data,
-+					      dispatch_work);
-+	struct throtl_service_queue *td_sq = &td->service_queue;
-+	struct request_queue *q = td->queue;
-+	struct bio_list bio_list_on_stack;
-+	struct bio *bio;
-+	struct blk_plug plug;
-+	int rw;
-+
-+	bio_list_init(&bio_list_on_stack);
-+
-+	spin_lock_irq(q->queue_lock);
-+	for (rw = READ; rw <= WRITE; rw++) {
-+		bio_list_merge(&bio_list_on_stack, &td_sq->bio_lists[rw]);
-+		bio_list_init(&td_sq->bio_lists[rw]);
-+	}
-+	spin_unlock_irq(q->queue_lock);
-+
-+	if (!bio_list_empty(&bio_list_on_stack)) {
- 		blk_start_plug(&plug);
- 		while((bio = bio_list_pop(&bio_list_on_stack)))
- 			generic_make_request(bio);
 -- 
-1.8.1.4
-
+tejun
