@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab3EFI5j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 04:57:39 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33304
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752388Ab3EFI5h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 04:57:37 -0400
-Date: Mon, 6 May 2013 10:55:47 +0200
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Pavel Machek <pavel@ucw.cz>, Colin Cross <ccross@android.com>,
-        Andrew Morton <akpm@osdl.org>, lkml <linux-kernel@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Ingo Molnar <mingo@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>
-Subject: Re: [PATCH 2/2] lockdep: check that no locks held at freeze time
-Message-ID: <20130506085547.GC13861@dyad.programming.kicks-ass.net>
-References: <1367615050-3894-1-git-send-email-ccross@android.com>
- <1367615050-3894-2-git-send-email-ccross@android.com>
- <20130504130440.GC13770@amd.pavel.ucw.cz>
- <CAMbhsRScr+3Zk5Bi6390bGRbtE4oh2H-mHrGHS0wew5hdkivUg@mail.gmail.com>
- <20130504225715.GB24276@amd.pavel.ucw.cz>
- <CAMbhsRS_cF7kF-QZ9BMBUS3ytU0ukRCbC3D549HW_XOsQbEZhg@mail.gmail.com>
- <20130505000528.GA25454@amd.pavel.ucw.cz>
- <20130505091844.GC22239@gmail.com>
+	id S1752395Ab3EFI6I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 04:58:08 -0400
+Received: from mga14.intel.com ([143.182.124.37]:15889 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752066Ab3EFI6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 04:58:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,620,1363158000"; 
+   d="scan'208";a="329445660"
+Message-ID: <5187708A.20103@intel.com>
+Date: Mon, 06 May 2013 16:57:46 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130505091844.GC22239@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Paul Turner <pjt@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 2/7] sched: remove SMP cover for runnable variables
+ in cfs_rq
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-3-git-send-email-alex.shi@intel.com> <CAPM31R+oBDRF4geM451-ySCtkU1NpqFT_R1mtB95jV-pnLBimQ@mail.gmail.com>
+In-Reply-To: <CAPM31R+oBDRF4geM451-ySCtkU1NpqFT_R1mtB95jV-pnLBimQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 05, 2013 at 11:18:44AM +0200, Ingo Molnar wrote:
-> That's the old 32-bit x86 trick to compute 'current' from the kernel stack 
-> pointer.
+On 05/06/2013 04:01 PM, Paul Turner wrote:
+> On Sun, May 5, 2013 at 6:45 PM, Alex Shi <alex.shi@intel.com> wrote:
+>> The following variables were covered under CONFIG_SMP in struct cfs_rq.
+>> but similar runnable variables work for UP in struct rq and task_group.
+>> like rq->avg, task_group->load_avg.
+>> So move them out, they also can work with UP.
 > 
-> It can be done better - for example on platforms with optimized percpu 
-> variables (x86-64) it looks like this:
+> Is there a proposed use-case for UP?  My apologies if I missed it in
+> an alternate patch.
 
-Doesn't i386 have all the funny per-cpu stuff too? So the only reason it still
-does the fugly stack based thing is because nobody could be arsed to do the
-work of converting it.
+> It would seem the only possibly useful thing there would the the
+> per-rq average for p-state selection; but we can get that without the
+> per-entity values already.
+
+
+Do you mean to move the rq->avg and task_group->load_avg into CONFIG_SMP?
+
+-- 
+Thanks
+    Alex
