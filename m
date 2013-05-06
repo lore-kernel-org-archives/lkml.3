@@ -1,104 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299Ab3EFOCG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 10:02:06 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:41562 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596Ab3EFOCE (ORCPT
+	id S1752528Ab3EFODO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 10:03:14 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:52869 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab3EFODN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 10:02:04 -0400
+	Mon, 6 May 2013 10:03:13 -0400
+Message-ID: <5187B813.8000907@ahsoftware.de>
+Date: Mon, 06 May 2013 16:02:59 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Date: Mon, 6 May 2013 09:02:02 -0500
-Message-ID: <CAH2r5mukY9ERoHnE3qj9B-MGKFTFptJMotZ7N27a1G+P_g3C=Q@mail.gmail.com>
-Subject: [GIT] CIFS Fixes
-From: Steve French <smfrench@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-cifs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+CC: rtc-linux@googlegroups.com, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: adjusting the monotonic system time (from inside the kernel)
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A set of cifs cleanup fixes.  The only big one of this set optimizes
-the cifs error logging, renaming cFYI and cERROR macros to cifs_dbg,
-and in the process makes it clearer and reduces module size.
+Hello,
 
-The following changes since commit 173192958d06b8d1eb44f56d74373052ad6a9a60:
+I'm looking at how to adjust the (monotonic) system time from inside the 
+kernel.
 
-  Merge tag 'mmc-updates-for-3.10-rc1' of
-git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc (2013-05-04
-13:45:17 -0700)
+Use case is that I have a hw-clock which (not necessarily) regulary 
+sends a timestamp with millisecond precision which I want to use to 
+adjust the system time.
 
-are available in the git repository at:
+It seems the usual solution to do such, is to use NTP which uses it's 
+own driver (which usually seems to be based on some serial connection):
 
+hw-clock --serial--> kernel --serial-device--> ntpd -> kernel -> system-time
 
-  git://git.samba.org/sfrench/cifs-2.6.git for-next
+So one solution would be to emulate such a serial device:
 
-for you to fetch changes up to b13ce4bbcae6181eb9cdda5a5bf88a28b0acd7aa:
+hw-clock --> kernel --emulated-serial-device--> ntpd -> kernel -> 
+system-time
 
-  cifs: small variable name cleanup (2013-05-04 22:18:10 -0500)
+Another solution would be to "invent" a ntp-device and write a driver 
+for ntpd to use it:
 
-----------------------------------------------------------------
-Dan Carpenter (1):
-      cifs: small variable name cleanup
+hw-clock --> kernel --ntp-device--> ntpd -> kernel -> system-time
 
-Dia Vasile (1):
-      cifs: replaced kmalloc + memset with kzalloc
+But I would prefer the following:
 
-Jeff Layton (4):
-      cifs: ignore the unc= and prefixpath= mount options
-      cifs: remove ENOSPC handling in smb_sendv
-      cifs: on send failure, readjust server sequence number downward
-      cifs: store the real expected sequence number in the mid
+hw-clock --> kernel -> system-time
 
-Joe Perches (1):
-      [CIFS] cifs: Rename cERROR and cFYI to cifs_dbg
+Problem is that the hw-clock in question doesn't offer something like a 
+tick. It just might send a timestamp with millisecond precision whenever 
+it wants.
 
-Silviu-Mihai Popescu (1):
-      fs: cifs: use kmemdup instead of kmalloc + memcpy
+Because I don't want to reinvent the wheel and because I think there are 
+some people which already have spend some thoughts on similiar things, 
+I'm asking here before I try to implement something which then never 
+might find it's way into the mainline kernel.
 
-Wei Yongjun (1):
-      CIFS: fix error return code in cifs_atomic_open()
+Any hints, suggestions, whatever?
 
- fs/cifs/asn1.c          |  40 ++--
- fs/cifs/cache.c         |   6 +-
- fs/cifs/cifs_debug.c    |  67 ++++---
- fs/cifs/cifs_debug.h    |  70 +++----
- fs/cifs/cifs_dfs_ref.c  |  41 ++--
- fs/cifs/cifs_spnego.c   |   5 +-
- fs/cifs/cifs_unicode.c  |   4 +-
- fs/cifs/cifsacl.c       | 130 ++++++-------
- fs/cifs/cifsencrypt.c   | 106 +++++------
- fs/cifs/cifsfs.c        |  36 ++--
- fs/cifs/cifsproto.h     |  10 +-
- fs/cifs/cifssmb.c       | 488 ++++++++++++++++++++++++------------------------
- fs/cifs/connect.c       | 368 +++++++++++++++---------------------
- fs/cifs/dir.c           |  48 ++---
- fs/cifs/dns_resolve.c   |  17 +-
- fs/cifs/export.c        |   2 +-
- fs/cifs/file.c          | 166 ++++++++--------
- fs/cifs/fscache.c       |  58 +++---
- fs/cifs/inode.c         | 109 +++++------
- fs/cifs/ioctl.c         |   6 +-
- fs/cifs/link.c          |  24 +--
- fs/cifs/misc.c          |  78 ++++----
- fs/cifs/netmisc.c       |  16 +-
- fs/cifs/readdir.c       |  77 ++++----
- fs/cifs/sess.c          |  77 ++++----
- fs/cifs/smb1ops.c       |  50 ++---
- fs/cifs/smb2file.c      |   8 +-
- fs/cifs/smb2inode.c     |   2 +-
- fs/cifs/smb2maperror.c  |   2 +-
- fs/cifs/smb2misc.c      |  96 +++++-----
- fs/cifs/smb2ops.c       |  16 +-
- fs/cifs/smb2pdu.c       | 161 ++++++++--------
- fs/cifs/smb2transport.c |  26 +--
- fs/cifs/smbencrypt.c    |  17 +-
- fs/cifs/transport.c     |  84 +++++----
- fs/cifs/xattr.c         |  54 +++---
- 36 files changed, 1261 insertions(+), 1304 deletions(-)
+Regards,
 
---
-Thanks,
-
-Steve
+Alexander Holler
