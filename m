@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab3EFUqX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59093 "EHLO
+	id S1758840Ab3EFVI5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:08:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59109 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757533Ab3EFUqU (ORCPT
+	with ESMTP id S1757572Ab3EFUqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:20 -0400
+	Mon, 6 May 2013 16:46:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mika Kuoppala <mika.kuoppala@intel.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 039/115] fbcon: when font is freed, clear also vc_font.data
-Date: Mon,  6 May 2013 13:44:35 -0700
-Message-Id: <20130506203059.581126045@linuxfoundation.org>
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 043/115] tracing: Fix off-by-one on allocating stat->pages
+Date: Mon,  6 May 2013 13:44:39 -0700
+Message-Id: <20130506203059.985960365@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,39 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Kuoppala <mika.kuoppala@linux.intel.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-commit e6637d5427d2af9f3f33b95447bfc5347e5ccd85 upstream.
+commit 39e30cd1537937d3c00ef87e865324e981434e5b upstream.
 
-commit ae1287865f5361fa138d4d3b1b6277908b54eac9
-Author: Dave Airlie <airlied@redhat.com>
-Date:   Thu Jan 24 16:12:41 2013 +1000
+The first page was allocated separately, so no need to start from 0.
 
-    fbcon: don't lose the console font across generic->chip driver switch
+Link: http://lkml.kernel.org/r/1364820385-32027-2-git-send-email-namhyung@kernel.org
 
-uses a pointer in vc->vc_font.data to load font into the new driver.
-However if the font is actually freed, we need to clear the data
-so that we don't reload font from dangling pointer.
-
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=892340
-Signed-off-by: Mika Kuoppala <mika.kuoppala@intel.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/console/fbcon.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/trace/ftrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -1228,6 +1228,8 @@ static void fbcon_deinit(struct vc_data
- finished:
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -676,7 +676,7 @@ int ftrace_profile_pages_init(struct ftr
  
- 	fbcon_free_font(p, free_font);
-+	if (free_font)
-+		vc->vc_font.data = NULL;
+ 	pages = DIV_ROUND_UP(functions, PROFILES_PER_PAGE);
  
- 	if (!con_is_bound(&fb_con))
- 		fbcon_exit();
+-	for (i = 0; i < pages; i++) {
++	for (i = 1; i < pages; i++) {
+ 		pg->next = (void *)get_zeroed_page(GFP_KERNEL);
+ 		if (!pg->next)
+ 			goto out_free;
 
 
