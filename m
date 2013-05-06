@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933622Ab3EFX2Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:28:16 -0400
-Received: from mail-da0-f53.google.com ([209.85.210.53]:44412 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933604Ab3EFX2K (ORCPT
+	id S933584Ab3EFX14 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:27:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36809 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760575Ab3EFXNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:28:10 -0400
-Message-ID: <51883C87.7010501@gmail.com>
-Date: Mon, 06 May 2013 16:28:07 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Sanjay Lal <sanjayl@kymasys.com>
-CC: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH] mips/kvm: Fix ABI for compatibility with 64-bit guests.
-References: <1367879980-2440-1-git-send-email-ddaney.cavm@gmail.com> <1069B54B-C9CD-4333-B56F-B0E1D740CADB@kymasys.com>
-In-Reply-To: <1069B54B-C9CD-4333-B56F-B0E1D740CADB@kymasys.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 6 May 2013 19:13:44 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 048/104] PCI / ACPI: Dont query OSC support with all possible controls
+Date: Mon,  6 May 2013 16:12:07 -0700
+Message-Id: <20130506230048.536520190@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
+References: <20130506230043.526528358@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 04:11 PM, Sanjay Lal wrote:
->
-> On May 6, 2013, at 3:39 PM, David Daney wrote:
->
->>
->> /* for KVM_GET_REGS and KVM_SET_REGS */
->> +/*
->> + * If Config[AT] is zero (32-bit CPU), the register contents are
->> + * stored in the lower 32-bits of the struct kvm_regs fields and sign
->> + * extended to 64-bits.
->> + */
->> struct kvm_regs {
->> -	__u32 gprs[32];
->> -	__u32 hi;
->> -	__u32 lo;
->> -	__u32 pc;
->> +	/* out (KVM_GET_REGS) / in (KVM_SET_REGS) */
->> +	__u64 gpr[32];
->> +	__u64 hi, lo;
->> +	__u64 pc;
->> +};
->>
->> -	__u32 cp0reg[N_MIPS_COPROC_REGS][N_MIPS_COPROC_SEL];
->
-> Hi David, I'll try out the diff with QEMU and confirm that it works as expected. Could you just leave the GPR field in kvm_regs as "gprs". Its a minor change but avoids diffs that just replace "gprs" with "gpr".
->
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-Well, there were two changes with respect to 'gprs' vs. 'gpr'.
+------------------
 
-The change you show above only results in a small handful of diff lines.
+From: Yinghai Lu <yinghai@kernel.org>
 
-My argument for the change is that it will be part of a public ABI, and 
-should be short and concise, so I changed it to 'gpr'.
+commit 545d6e189a41c94c11f55045a771118eccc9d9eb upstream.
 
-I also changed the field with the same name in struct kvm_vcpu_arch to 
-match, which causes the changes in asm-offsets.c and quite a few other 
-places as well.  One could argue that this one was gratuitous, but I 
-thought it would be nice for them to match.  Since it is an internal 
-implementation detail, it is not that important, so I could revert this 
-part if there are strong objections.
+Found problem on system that firmware that could handle pci aer.
+Firmware get error reporting after pci injecting error, before os boots.
+But after os boots, firmware can not get report anymore, even pci=noaer
+is passed.
 
-David Daney
+Root cause: BIOS _OSC has problem with query bit checking.
+It turns out that BIOS vendor is copying example code from ACPI Spec.
+In ACPI Spec 5.0, page 290:
+
+	If (Not(And(CDW1,1))) // Query flag clear?
+	{	// Disable GPEs for features granted native control.
+		If (And(CTRL,0x01)) // Hot plug control granted?
+		{
+			Store(0,HPCE) // clear the hot plug SCI enable bit
+			Store(1,HPCS) // clear the hot plug SCI status bit
+		}
+	...
+	}
+
+When Query flag is set, And(CDW1,1) will be 1, Not(1) will return 0xfffffffe.
+So it will get into code path that should be for control set only.
+BIOS acpi code should be changed to "If (LEqual(And(CDW1,1), 0)))"
+
+Current kernel code is using _OSC query to notify firmware about support
+from OS and then use _OSC to set control bits.
+During query support, current code is using all possible controls.
+So will execute code that should be only for control set stage.
+
+That will have problem when pci=noaer or aer firmware_first is used.
+As firmware have that control set for os aer already in query support stage,
+but later will not os aer handling.
+
+We should avoid passing all possible controls, just use osc_control_set
+instead.
+That should workaround BIOS bugs with affected systems on the field
+as more bios vendors are copying sample code from ACPI spec.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/acpi/pci_root.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -240,8 +240,8 @@ static acpi_status acpi_pci_query_osc(st
+ 		*control &= OSC_PCI_CONTROL_MASKS;
+ 		capbuf[OSC_CONTROL_TYPE] = *control | root->osc_control_set;
+ 	} else {
+-		/* Run _OSC query for all possible controls. */
+-		capbuf[OSC_CONTROL_TYPE] = OSC_PCI_CONTROL_MASKS;
++		/* Run _OSC query only with existing controls. */
++		capbuf[OSC_CONTROL_TYPE] = root->osc_control_set;
+ 	}
+ 
+ 	status = acpi_pci_run_osc(root->device->handle, capbuf, &result);
+
 
