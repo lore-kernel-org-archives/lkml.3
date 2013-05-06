@@ -1,47 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab3EFPY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 11:24:26 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:51007 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652Ab3EFPYY (ORCPT
+	id S1754769Ab3EFPZJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 11:25:09 -0400
+Received: from mail-ia0-f169.google.com ([209.85.210.169]:37843 "EHLO
+	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab3EFPZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 11:24:24 -0400
-Message-ID: <1367853859.8434.11.camel@jlt4.sipsolutions.net>
-Subject: Re: Bisected 3.9 regression for iwl4965 connection problem to
- 1672c0e3
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Jake Edge <jake@lwn.net>
-Cc: linux-wireless@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Date: Mon, 06 May 2013 17:24:19 +0200
-In-Reply-To: <20130506092143.58a7713f@chukar.edge2.net>
-References: <20130505143803.7e46e4c6@chukar.edge2.net>
-	 <1367853112.8434.6.camel@jlt4.sipsolutions.net>
-	 <20130506092143.58a7713f@chukar.edge2.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 6 May 2013 11:25:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <km8de1$mel$1@pye-srv-01.telemetry.co.uk>
+References: <CAPweEDym3TSEKWB1PsRWZ77irkTPF-Qdm9nRGfRBrv72CQ8zJA@mail.gmail.com>
+	<km8de1$mel$1@pye-srv-01.telemetry.co.uk>
+Date: Mon, 6 May 2013 16:25:07 +0100
+X-Google-Sender-Auth: fGlc9p87P55zbNvOuywiDLIht1c
+Message-ID: <CAPweEDxJGExW0JWTnqxV_-HHO_d-6C75AzDrmawGEdEuWu_1Xw@mail.gmail.com>
+Subject: Re: device tree not the answer in the ARM world
+From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+To: Mark Morgan Lloyd <markMLl.debian-arm@telemetry.co.uk>
+Cc: debian-arm@lists.debian.org,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-06 at 09:21 -0600, Jake Edge wrote:
+mark, thank for this.  i'm bringing lkml back in [my decision] but
+just this once as i believe the point's now been made.  i'm also
+leaving it below [top-post style] as it's background, as well as
+standing on its own merit.
 
-> > Thanks for the report. Is the AP on a passive channel by any chance (5
-> > GHz, or channels 12/13)?
-> 
-> No, from what I can see on my router, it is using channel 36 (5.180
-> GHz) for the SSID in question
+i was under the impression that device tree had been declared
+successful on power-pc [and wasn't aware of SPARC], so a reality check
+is much appreciated.  in effect what you're saying is that the
+standardisation through things *other* than device tree - i.e. there
+wasn't so much of a problem of diversity in the first place [*1], and
+this in turn means that device tree could be declared "more"
+successful.
 
-So yes, that is a passive channel for the 4965 device :-)
+in other words, once again, the link between the original purpose for
+which device tree was invented [solve the ARM hardware diversity /
+proliferation problem] and its actual success in achieving that
+purpose is demonstrated to be at best an assumption and at worst a
+failure [in the ARM world].
 
-> but Stanislaw seems to have pinpointed the issue.
+that there are *other* successes - incidental to its genesis - that
+device tree has solved is fantastic, but completely beside the point.
 
-Yeah that was a workaround, but I'm not sure we'd really want to do
-that. I'd rather see what really caused this issue. I have a feeling
-it's the passive-no-RX workaround, or lack thereof maybe? I need to look
-a bit closer.
+so the question becomes - unless someone can demonstrate that device
+tree has or can solve the [ARM hardware diversification] problem and
+nobody has so far - what *can* solve the problem of massive hardware
+diversity [both SoCs and peripherals] in the face of pathological
+corporate behaviour that i've outlined over the course of the past few
+messages?
 
-johannes
+l.
 
+[*1] for many reasons - not least but most obviously as mark clearly
+points out: there aren't that many peripherals to support!!!
+
+
+On Mon, May 6, 2013 at 3:06 PM, Mark Morgan Lloyd
+<markMLl.debian-arm@telemetry.co.uk> wrote:
+
+> [Grimace] DeviceTree works up to a point on SPARC and PPC Macs, where there
+> is a limited number of peripheral device types and (in general) they're
+> described by published data. Part of that success though is because these
+> machines also expose a standardised UI (OpenPROM or whatever you want to
+> call it) which developers can use for manual enumeration and debugging and
+> which the kernel can use provided that it gets the calling convention right
+> (I've seen a firmware change on SPARC break the kernel).
+>
+> Leaving aside the more esoteric peripherals (sending morse using a camera
+> flash LED or whatever :-) there are at least t^Hfour problems:
+>
+> i)   There's no standardised interface to get at the configuration.
+>
+> ii)  It's not self-describing, particularly in the case of GPIO-attached
+> peripherals.
+>
+> iii) It's no replacement for enumerating PCI-attached peripherals.
+>
+> iv)  It's no replacement for enumerating chips on a JTAG loop.
+>
+> Put another way, Cory Doctorow's "InstallParty" software isn't even science
+> fiction: it's pure fantasy, and is likely to stay that way.
+>
+> --
+> Mark Morgan Lloyd
+> markMLl .AT. telemetry.co .DOT. uk
+>
+> [Opinions above are the author's, not those of his employers or colleagues]
+>
+>
+> --
+> To UNSUBSCRIBE, email to debian-arm-REQUEST@lists.debian.org
+> with a subject of "unsubscribe". Trouble? Contact
+> listmaster@lists.debian.org
+> Archive: http://lists.debian.org/km8de1$mel$1@pye-srv-01.telemetry.co.uk
+>
