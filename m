@@ -1,133 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933601Ab3EFX16 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:27:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36806 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757514Ab3EFXNn (ORCPT
+	id S933622Ab3EFX2Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:28:16 -0400
+Received: from mail-da0-f53.google.com ([209.85.210.53]:44412 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933604Ab3EFX2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:43 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 056/104] ALSA: emu10k1: Fix dock firmware loading
-Date: Mon,  6 May 2013 16:12:15 -0700
-Message-Id: <20130506230049.365561001@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
-References: <20130506230043.526528358@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 6 May 2013 19:28:10 -0400
+Message-ID: <51883C87.7010501@gmail.com>
+Date: Mon, 06 May 2013 16:28:07 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Sanjay Lal <sanjayl@kymasys.com>
+CC: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH] mips/kvm: Fix ABI for compatibility with 64-bit guests.
+References: <1367879980-2440-1-git-send-email-ddaney.cavm@gmail.com> <1069B54B-C9CD-4333-B56F-B0E1D740CADB@kymasys.com>
+In-Reply-To: <1069B54B-C9CD-4333-B56F-B0E1D740CADB@kymasys.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On 05/06/2013 04:11 PM, Sanjay Lal wrote:
+>
+> On May 6, 2013, at 3:39 PM, David Daney wrote:
+>
+>>
+>> /* for KVM_GET_REGS and KVM_SET_REGS */
+>> +/*
+>> + * If Config[AT] is zero (32-bit CPU), the register contents are
+>> + * stored in the lower 32-bits of the struct kvm_regs fields and sign
+>> + * extended to 64-bits.
+>> + */
+>> struct kvm_regs {
+>> -	__u32 gprs[32];
+>> -	__u32 hi;
+>> -	__u32 lo;
+>> -	__u32 pc;
+>> +	/* out (KVM_GET_REGS) / in (KVM_SET_REGS) */
+>> +	__u64 gpr[32];
+>> +	__u64 hi, lo;
+>> +	__u64 pc;
+>> +};
+>>
+>> -	__u32 cp0reg[N_MIPS_COPROC_REGS][N_MIPS_COPROC_SEL];
+>
+> Hi David, I'll try out the diff with QEMU and confirm that it works as expected. Could you just leave the GPR field in kvm_regs as "gprs". Its a minor change but avoids diffs that just replace "gprs" with "gpr".
+>
 
-------------------
+Well, there were two changes with respect to 'gprs' vs. 'gpr'.
 
-From: Takashi Iwai <tiwai@suse.de>
+The change you show above only results in a small handful of diff lines.
 
-commit e08b34e86dfdb72a62196ce0f03d33f48958d8b9 upstream.
+My argument for the change is that it will be part of a public ABI, and 
+should be short and concise, so I changed it to 'gpr'.
 
-The commit [b209c4df: ALSA: emu10k1: cache emu1010 firmware] broke the
-firmware loading of the dock, just (mistakenly) ignoring a different
-firmware for docks on some models.  This patch revives them again.
+I also changed the field with the same name in struct kvm_vcpu_arch to 
+match, which causes the changes in asm-offsets.c and quite a few other 
+places as well.  One could argue that this one was gratuitous, but I 
+thought it would be nice for them to match.  Since it is an internal 
+implementation detail, it is not that important, so I could revert this 
+part if there are strong objections.
 
-Bugzilla: https://bugs.archlinux.org/task/34865
-Reported-and-tested-by: Tobias Powalowski <tobias.powalowski@googlemail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/sound/emu10k1.h          |    1 +
- sound/pci/emu10k1/emu10k1_main.c |   39 +++++++++++++++++++++++++++++++++------
- 2 files changed, 34 insertions(+), 6 deletions(-)
-
---- a/include/sound/emu10k1.h
-+++ b/include/sound/emu10k1.h
-@@ -1787,6 +1787,7 @@ struct snd_emu10k1 {
- 	unsigned int next_free_voice;
- 
- 	const struct firmware *firmware;
-+	const struct firmware *dock_fw;
- 
- #ifdef CONFIG_PM_SLEEP
- 	unsigned int *saved_ptr;
---- a/sound/pci/emu10k1/emu10k1_main.c
-+++ b/sound/pci/emu10k1/emu10k1_main.c
-@@ -657,14 +657,14 @@ static int snd_emu10k1_cardbus_init(stru
- 	return 0;
- }
- 
--static int snd_emu1010_load_firmware(struct snd_emu10k1 *emu)
-+static int snd_emu1010_load_firmware(struct snd_emu10k1 *emu,
-+				     const struct firmware *fw_entry)
- {
- 	int n, i;
- 	int reg;
- 	int value;
- 	unsigned int write_post;
- 	unsigned long flags;
--	const struct firmware *fw_entry = emu->firmware;
- 
- 	if (!fw_entry)
- 		return -EIO;
-@@ -725,9 +725,34 @@ static int emu1010_firmware_thread(void
- 			/* Return to Audio Dock programming mode */
- 			snd_printk(KERN_INFO "emu1010: Loading Audio Dock Firmware\n");
- 			snd_emu1010_fpga_write(emu, EMU_HANA_FPGA_CONFIG, EMU_HANA_FPGA_CONFIG_AUDIODOCK);
--			err = snd_emu1010_load_firmware(emu);
--			if (err != 0)
--				continue;
-+
-+			if (!emu->dock_fw) {
-+				const char *filename = NULL;
-+				switch (emu->card_capabilities->emu_model) {
-+				case EMU_MODEL_EMU1010:
-+					filename = DOCK_FILENAME;
-+					break;
-+				case EMU_MODEL_EMU1010B:
-+					filename = MICRO_DOCK_FILENAME;
-+					break;
-+				case EMU_MODEL_EMU1616:
-+					filename = MICRO_DOCK_FILENAME;
-+					break;
-+				}
-+				if (filename) {
-+					err = request_firmware(&emu->dock_fw,
-+							       filename,
-+							       &emu->pci->dev);
-+					if (err)
-+						continue;
-+				}
-+			}
-+
-+			if (emu->dock_fw) {
-+				err = snd_emu1010_load_firmware(emu, emu->dock_fw);
-+				if (err)
-+					continue;
-+			}
- 
- 			snd_emu1010_fpga_write(emu, EMU_HANA_FPGA_CONFIG, 0);
- 			snd_emu1010_fpga_read(emu, EMU_HANA_IRQ_STATUS, &reg);
-@@ -862,7 +887,7 @@ static int snd_emu10k1_emu1010_init(stru
- 			   filename, emu->firmware->size);
- 	}
- 
--	err = snd_emu1010_load_firmware(emu);
-+	err = snd_emu1010_load_firmware(emu, emu->firmware);
- 	if (err != 0) {
- 		snd_printk(KERN_INFO "emu1010: Loading Firmware failed\n");
- 		return err;
-@@ -1253,6 +1278,8 @@ static int snd_emu10k1_free(struct snd_e
- 		kthread_stop(emu->emu1010.firmware_thread);
- 	if (emu->firmware)
- 		release_firmware(emu->firmware);
-+	if (emu->dock_fw)
-+		release_firmware(emu->dock_fw);
- 	if (emu->irq >= 0)
- 		free_irq(emu->irq, emu);
- 	/* remove reserved page */
-
+David Daney
 
