@@ -1,52 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab3EFNpa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 09:45:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:53127 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab3EFNp3 (ORCPT
+	id S1753780Ab3EFNqu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 09:46:50 -0400
+Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:57708 "EHLO
+	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753431Ab3EFNqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 09:45:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Pavel Machek <pavel@denx.de>
-Subject: Re: dw_apb_timer_of.c: remove parts that were picoxcell-specific
-Date: Mon, 6 May 2013 15:45:22 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Jamie Iles <jamie@jamieiles.com>, dinguyen@altera.com, wd@denx.de,
-        linux-arm-kernel@lists.infradead.org, olof@lixom.net,
-        johnstul@us.ibm.com, tglx@linutronix.de,
-        kernel list <linux-kernel@vger.kernel.org>
-References: <20130426121433.GA16249@amd.pavel.ucw.cz> <20130426214313.GB24891@amd.pavel.ucw.cz> <20130506124814.GA28259@amd.pavel.ucw.cz>
-In-Reply-To: <20130506124814.GA28259@amd.pavel.ucw.cz>
+	Mon, 6 May 2013 09:46:49 -0400
+Date: Mon, 6 May 2013 13:46:39 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+In-Reply-To: <201305040915.AID02071.FHVQJtOFOMOLSF@I-love.SAKURA.ne.jp>
+Message-ID: <0000013e7a18153d-4b59eaf6-0fcd-4eec-b357-31d3d40baa7d-000000@email.amazonses.com>
+References: <0000013e6705da99-094923c6-e239-43d2-8f0c-5e661656a27c-000000@email.amazonses.com><201305031726.BJG78631.tQSOVOLHJFMFFO@I-love.SAKURA.ne.jp><0000013e6b90e65e-e0e184d9-7da5-4873-9572-3b40958552e2-000000@email.amazonses.com><201305040348.CIF81716.OStQOHFJMFLOVF@I-love.SAKURA.ne.jp><0000013e6bd7a766-8473586c-7937-4129-bad1-a4198acdddcf-000000@email.amazonses.com>
+ <201305040915.AID02071.FHVQJtOFOMOLSF@I-love.SAKURA.ne.jp>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201305061545.22587.arnd@arndb.de>
-X-Provags-ID: V02:K0:r/2u+xCtT28siBGYUu99ktP1gzPgIATwVjfEgjPhL8c
- mbM1bzol05DbBulAeftrqysKWEE1KqMaXU7uXNYASj9FCQhmMs
- VNQlAwzOy5w7bkFluD7nYwwOC6fpnMKLP0baj7UPwE+h2uP2r2
- NUGwkCjuLXZaLNm0iunto4yaR16HXOl06dyiRVDSJuyHbe/nZK
- xwfKxQ+nREcmQPjUYuQu9EhY3dEtRKMw725Qh9ly9mDsNyiVNP
- WyDS0uoLyOeO7Jmgb2QrtdwTpP3gS66nHGOVuQuIXMal20A5gx
- kW4KcXsK5S8Ce+6Wa7Tcasc45X4mjraDGTWWY6n1Sl0gp2MksZ
- FyFpnj9n3sLabzCHOIwY=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.05.06-54.240.9.42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 06 May 2013, Pavel Machek wrote:
-> 
-> Hi!
-> 
-> Ping? Previous version was tested by Dinh, and this one is based on
-> Jamie's updates, so I assume it is acceptable for him, too.
-> 
-> It brings two platforms closer together, and makes time actually work
-> on socfpga. It would be good to get it applied.
+On Sat, 4 May 2013, Tetsuo Handa wrote:
 
-Who should apply it? I guess it needs to go through arm-soc with all the
-other clocksource changes already queued up there. Can we have an Ack
-from Jamie and from the clocksource maintainers?
+> Christoph Lameter wrote:
+> > Ok could I see the kernel logs with the warnings?
+> Sure.
 
-	Arnd
+These are exclusively from the module load. So the kernel seems to be
+clean of large kmalloc's ?
+
+
