@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab3EFBqa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 21:46:30 -0400
+	id S1752842Ab3EFBqg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 21:46:36 -0400
 Received: from mga02.intel.com ([134.134.136.20]:64038 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752528Ab3EFBq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 21:46:27 -0400
+	id S1752528Ab3EFBqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 May 2013 21:46:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,618,1363158000"; 
-   d="scan'208";a="308658645"
+   d="scan'208";a="308658691"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
@@ -17,9 +17,9 @@ Cc: vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
         viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
         alex.shi@intel.com, mgorman@suse.de, riel@redhat.com,
         wangyun@linux.vnet.ibm.com
-Subject: [PATCH v5 5/7] sched: compute runnable load avg in cpu_load and cpu_avg_load_per_task
-Date: Mon,  6 May 2013 09:45:09 +0800
-Message-Id: <1367804711-30308-6-git-send-email-alex.shi@intel.com>
+Subject: [PATCH v5 7/7] sched: consider runnable load average in effective_load
+Date: Mon,  6 May 2013 09:45:11 +0800
+Message-Id: <1367804711-30308-8-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
 References: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
@@ -27,60 +27,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are the base values in load balance, update them with rq runnable
-load average, then the load balance will consider runnable load avg
-naturally.
+effective_load calculates the load change as seen from the
+root_task_group. It needs to engage the runnable average
+of changed task.
+
+Thanks for Morten Rasmussen and PeterZ's reminder of this.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/core.c | 4 ++--
- kernel/sched/fair.c | 4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ kernel/sched/fair.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 33bcebf..2f51636 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2536,7 +2536,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
- void update_idle_cpu_load(struct rq *this_rq)
- {
- 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
--	unsigned long load = this_rq->load.weight;
-+	unsigned long load = (unsigned long)this_rq->cfs.runnable_load_avg;
- 	unsigned long pending_updates;
- 
- 	/*
-@@ -2586,7 +2586,7 @@ static void update_cpu_load_active(struct rq *this_rq)
- 	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
- 	 */
- 	this_rq->last_load_update_tick = jiffies;
--	__update_cpu_load(this_rq, this_rq->load.weight, 1);
-+	__update_cpu_load(this_rq, this_rq->cfs.runnable_load_avg, 1);
- 
- 	calc_load_account_active(this_rq);
- }
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 2881d42..0bf88e8 100644
+index 790e23d..6f4f14b 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -2900,7 +2900,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- /* Used instead of source_load when we know the type == 0 */
- static unsigned long weighted_cpuload(const int cpu)
- {
--	return cpu_rq(cpu)->load.weight;
-+	return (unsigned long)cpu_rq(cpu)->cfs.runnable_load_avg;
- }
+@@ -2976,15 +2976,15 @@ static void task_waking_fair(struct task_struct *p)
  
+ #ifdef CONFIG_FAIR_GROUP_SCHED
  /*
-@@ -2947,7 +2947,7 @@ static unsigned long cpu_avg_load_per_task(int cpu)
- 	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
+- * effective_load() calculates the load change as seen from the root_task_group
++ * effective_load() calculates load avg change as seen from the root_task_group
+  *
+  * Adding load to a group doesn't make a group heavier, but can cause movement
+  * of group shares between cpus. Assuming the shares were perfectly aligned one
+  * can calculate the shift in shares.
+  *
+- * Calculate the effective load difference if @wl is added (subtracted) to @tg
+- * on this @cpu and results in a total addition (subtraction) of @wg to the
+- * total group weight.
++ * Calculate the effective load avg difference if @wl is added (subtracted) to
++ * @tg on this @cpu and results in a total addition (subtraction) of @wg to the
++ * total group load avg.
+  *
+  * Given a runqueue weight distribution (rw_i) we can compute a shares
+  * distribution (s_i) using:
+@@ -2998,7 +2998,7 @@ static void task_waking_fair(struct task_struct *p)
+  *   rw_i = {   2,   4,   1,   0 }
+  *   s_i  = { 2/7, 4/7, 1/7,   0 }
+  *
+- * As per wake_affine() we're interested in the load of two CPUs (the CPU the
++ * As per wake_affine() we're interested in load avg of two CPUs (the CPU the
+  * task used to run on and the CPU the waker is running on), we need to
+  * compute the effect of waking a task on either CPU and, in case of a sync
+  * wakeup, compute the effect of the current task going to sleep.
+@@ -3008,20 +3008,20 @@ static void task_waking_fair(struct task_struct *p)
+  *
+  *   s'_i = (rw_i + @wl) / (@wg + \Sum rw_j)				(2)
+  *
+- * Suppose we're interested in CPUs 0 and 1, and want to compute the load
++ * Suppose we're interested in CPUs 0 and 1, and want to compute the load avg
+  * differences in waking a task to CPU 0. The additional task changes the
+  * weight and shares distributions like:
+  *
+  *   rw'_i = {   3,   4,   1,   0 }
+  *   s'_i  = { 3/8, 4/8, 1/8,   0 }
+  *
+- * We can then compute the difference in effective weight by using:
++ * We can then compute the difference in effective load avg by using:
+  *
+  *   dw_i = S * (s'_i - s_i)						(3)
+  *
+  * Where 'S' is the group weight as seen by its parent.
+  *
+- * Therefore the effective change in loads on CPU 0 would be 5/56 (3/8 - 2/7)
++ * Therefore the effective change in load avg on CPU 0 would be 5/56 (3/8 - 2/7)
+  * times the weight of the group. The effect on CPU 1 would be -4/56 (4/8 -
+  * 4/7) times the weight of the group.
+  */
+@@ -3045,7 +3045,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
+ 		/*
+ 		 * w = rw_i + @wl
+ 		 */
+-		w = se->my_q->load.weight + wl;
++		w = se->my_q->tg_load_contrib + wl;
  
- 	if (nr_running)
--		return rq->load.weight / nr_running;
-+		return (unsigned long)rq->cfs.runnable_load_avg / nr_running;
+ 		/*
+ 		 * wl = S * s'_i; see (2)
+@@ -3066,7 +3066,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
+ 		/*
+ 		 * wl = dw_i = S * (s'_i - s_i); see (3)
+ 		 */
+-		wl -= se->load.weight;
++		wl -= se->avg.load_avg_contrib;
  
- 	return 0;
- }
+ 		/*
+ 		 * Recursively apply this logic to all parent groups to compute
+@@ -3112,14 +3112,14 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 	 */
+ 	if (sync) {
+ 		tg = task_group(current);
+-		weight = current->se.load.weight;
++		weight = current->se.avg.load_avg_contrib;
+ 
+ 		this_load += effective_load(tg, this_cpu, -weight, -weight);
+ 		load += effective_load(tg, prev_cpu, 0, -weight);
+ 	}
+ 
+ 	tg = task_group(p);
+-	weight = p->se.load.weight;
++	weight = p->se.avg.load_avg_contrib;
+ 
+ 	/*
+ 	 * In low-load situations, where prev_cpu is idle and this_cpu is idle
 -- 
 1.7.12
 
