@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab3EFQ2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 12:28:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23172 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754386Ab3EFQ2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 12:28:06 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>, Borislav Petkov <bp@alien8.de>
-Subject: [PATCH 0/2] perf: Fix/factor auxiliary events
-Date: Mon,  6 May 2013 18:27:16 +0200
-Message-Id: <1367857638-27631-1-git-send-email-jolsa@redhat.com>
+	id S1754585Ab3EFQcJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 12:32:09 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:63935 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab3EFQcH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 12:32:07 -0400
+Message-ID: <5187DB0C.2060605@gmail.com>
+Date: Mon, 06 May 2013 18:32:12 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Subject: Re: regmap: Question about devices with unequal register sizes
+References: <511FBBF7.2020103@gmail.com> <20130217162337.GB1583@opensource.wolfsonmicro.com>
+In-Reply-To: <20130217162337.GB1583@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-sending fix for issue caused by using smp_processor_id()
-in preemptible path discussed in here:
-http://marc.info/?l=linux-kernel&m=136733569907888&w=2
+On 17.02.2013 17:23, Mark Brown wrote:
+> On Sat, Feb 16, 2013 at 06:03:51PM +0100, Daniel Mack wrote:
+> 
+>> The register layout is described on page 26, and they call their
+>> registers 'subaddresses'. Up to sub-address 0x1c, I see no problem
+>> mapping that to a simple 8-bit regmap layout, but above that, access
+>> gets trickier because registers change their sizes, which breaks the cache.
+> 
+> The regmap I/O code isn't making any effort to support such devices, the
+> hardware is just too crazy to worry about.  The best you can do is use
+> the no-bus support and open code your physical I/O so you can still use
+> the cache.
 
-I also noticed there's a space for some code factoring
-saving some .text size and centralizing auxiliary
-events notification.
+So it turns out I need to write these registers now on the TAS5086
+codec, which has such a strange layout. I wonder how I can possibly open
+code the physical I/O with registers that are up to 20 bytes in size,
+while the reg_write callback in struct regmap_config assumes an unsigned
+int suffices for the data? Any example you can point me to?
 
-Changes could be reached in here:
-git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-perf/aux4
 
-thanks,
-jirka
+Thanks,
+Daniel
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Borislav Petkov <bp@alien8.de>
----
-Jiri Olsa (2):
-      perf: Fix EXIT event notification
-      perf: Factor auxiliary events notification
-
- kernel/events/core.c | 240 +++++++++++++++++++++++++++++++++++++++++---------------------------------------------------------------------
- 1 file changed, 89 insertions(+), 151 deletions(-)
