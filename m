@@ -1,110 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab3EFUNZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:13:25 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:34821 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755892Ab3EFUNW (ORCPT
+	id S1756304Ab3EFURV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:17:21 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34732 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755971Ab3EFURU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:13:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130506200656.GA26927@linux.vnet.ibm.com>
-References: <CAE9FiQUTV_e9De-6zCPs6OQrVAUJV2VLZDBmxFpJtnjNO3rKfw@mail.gmail.com>
-	<20130506190611.GE3501@linux.vnet.ibm.com>
-	<20130506200656.GA26927@linux.vnet.ibm.com>
-Date: Mon, 6 May 2013 13:13:22 -0700
-X-Google-Sender-Auth: NfjJ6FLlY3nTthM2o_Jm2HzB_es
-Message-ID: <CAE9FiQWb2OrPaX=GizGXbzZKrALJn26D_-4PgR8of_fGSz5mFg@mail.gmail.com>
-Subject: Re: RCU init call bootmem allocation after slub us ready.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 May 2013 16:17:20 -0400
+Date: Mon, 06 May 2013 16:17:17 -0400 (EDT)
+Message-Id: <20130506.161717.2223438084197918495.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: gregkh@linuxfoundation.org, oliver@neukum.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        nic_swsd@realtek.com
+Subject: Re: [PATCH v3 net-next] net/usb: new driver for RTL8152
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1367546485-1619-1-git-send-email-hayeswang@realtek.com>
+References: <1366965948-1805-1-git-send-email-hayeswang@realtek.com>
+	<1367546485-1619-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 06 May 2013 13:17:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 6, 2013 at 1:06 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Mon, May 06, 2013 at 12:06:11PM -0700, Paul E. McKenney wrote:
->> On Mon, May 06, 2013 at 11:53:56AM -0700, Yinghai Lu wrote:
->> > [    0.000000] SLUB: Genslabs=15, HWalign=64, Order=0-3, MinObjects=0,
->> > CPUs=160, Nodes=8
->> > [    0.000000] Hierarchical RCU implementation.
->> > [    0.000000]  RCU restricting CPUs from NR_CPUS=4096 to nr_cpu_ids=160.
->> > [    0.000000] ------------[ cut here ]------------
->> > [    0.000000] WARNING: at mm/nobootmem.c:234
->> > ___alloc_bootmem_nopanic+0x3a/0x7d()
->> > [    0.000000] Modules linked in:
->> > [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted
->> > 3.9.0-yh-10495-gfc7ffbc-dirty #1543
->> > [    0.000000] Hardware name: Oracle Corporation  Sun Fire X4800 M2 /
->> >    , BIOS 15013200    04/19/2012
->> > [    0.000000]  0000000000000009 ffffffff82a01e58 ffffffff8209dc61
->> > ffffffff82a01e98
->> > [    0.000000]  ffffffff8108a9d0 0000000000000000 0000000000000000
->> > 0000000000000200
->> > [    0.000000]  ffffffffffffffff 0000000000000040 0000000000000000
->> > ffffffff82a01ea8
->> > [    0.000000] Call Trace:
->> > [    0.000000]  [<ffffffff8209dc61>] dump_stack+0x19/0x1b
->> > [    0.000000]  [<ffffffff8108a9d0>] warn_slowpath_common+0x70/0xa0
->> > [    0.000000]  [<ffffffff8108aa1a>] warn_slowpath_null+0x1a/0x20
->> > [    0.000000]  [<ffffffff82dd54cd>] ___alloc_bootmem_nopanic+0x3a/0x7d
->> > [    0.000000]  [<ffffffff82dd5695>] __alloc_bootmem+0x12/0x38
->> > [    0.000000]  [<ffffffff82de976a>] alloc_bootmem_cpumask_var+0x1a/0x21
->> > [    0.000000]  [<ffffffff82dce4da>] rcu_init+0x66/0x283
->> > [    0.000000]  [<ffffffff82dd15ed>] ? perf_event_init+0x136/0x15f
->> > [    0.000000]  [<ffffffff82dabf95>] start_kernel+0x24a/0x423
->> > [    0.000000]  [<ffffffff82dababe>] ? repair_env_string+0x5e/0x5e
->> > [    0.000000]  [<ffffffff820936b6>] ? __memblock_reserve+0x81/0x89
->> > [    0.000000]  [<ffffffff82dab5a8>] x86_64_start_reservations+0x2f/0x31
->> > [    0.000000]  [<ffffffff82dab79e>] x86_64_start_kernel+0x1f4/0x1fc
->> > [    0.000000] ---[ end trace 53ae8bb075006d8f ]---
->>
->> Do you have commit fa0f93cd6a (rcu: Don't allocate bootmem from rcu_init())?
->> If not, could you please try applying it?
->
-> As Dave Jones pointed out, this one is not yet in mainline.  Here is the
-> corresponding patch.
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Fri, 3 May 2013 10:01:25 +0800
 
-Yes, found that in you reply to Dave Jones.
+> Add new driver for supporting Realtek RTL8152 Based USB 2.0 Ethernet Adapters
+> 
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 
->
->                                                         Thanx, Paul
->
-> ------------------------------------------------------------------------
->
-> rcu: Don't allocate bootmem from rcu_init()
->
-> When rcu_init() is called we already have slab working, allocating
-> bootmem at that point results in warnings and an allocation from
-> slab.  This commit therefore changes alloc_bootmem_cpumask_var() to
-> alloc_cpumask_var() in rcu_bootup_announce_oddness(), which is called
-> from rcu_init().
->
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
->
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index ca6e39c..44b0998 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -86,7 +86,7 @@ static void __init rcu_bootup_announce_oddness(void)
->  #ifdef CONFIG_RCU_NOCB_CPU
->  #ifndef CONFIG_RCU_NOCB_CPU_NONE
->         if (!have_rcu_nocb_mask) {
-> -               alloc_bootmem_cpumask_var(&rcu_nocb_mask);
-> +               alloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
-
-alloc_bootmem will return zeroed buffer.
-
-so need to use zalloc_cpumask_var instead.
-
-
->                 have_rcu_nocb_mask = true;
->         }
->  #ifdef CONFIG_RCU_NOCB_CPU_ZERO
->
+Applied.
