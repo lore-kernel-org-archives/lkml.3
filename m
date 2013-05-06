@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932827Ab3EFW5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:57:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36121 "EHLO
+	id S1759175Ab3EFX6i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:58:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932739Ab3EFW5H (ORCPT
+	with ESMTP id S932817Ab3EFW5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:07 -0400
+	Mon, 6 May 2013 18:57:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 38/63] ARM: 7702/1: Set the page table freeing ceiling to TASK_SIZE
-Date: Mon,  6 May 2013 15:56:16 -0700
-Message-Id: <20130506225324.212560751@linuxfoundation.org>
+        "Chris J. Benenati" <chris.j.benenati@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: [ 30/63] PCI/PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
+Date: Mon,  6 May 2013 15:56:08 -0700
+Message-Id: <20130506225322.323402714@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -29,54 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 6aaa189f8712471a250bfdf8fc8d08277258b8ab upstream.
+commit 769ba7212f2059ca9fe0c73371e3d415c8c1c529 upstream.
 
-ARM processors with LPAE enabled use 3 levels of page tables, with an
-entry in the top level (pgd) covering 1GB of virtual space. Because of
-the branch relocation limitations on ARM, the loadable modules are
-mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
-between kernel modules and user space.
+Commit b51306c (PCI: Set device power state to PCI_D0 for device
+without native PM support) modified pci_platform_power_transition()
+by adding code causing dev->current_state for devices that don't
+support native PCI PM but are power-manageable by the platform to be
+changed to PCI_D0 regardless of the value returned by the preceding
+platform_pci_set_power_state().  In particular, that also is done
+if the platform_pci_set_power_state() has been successful, which
+causes the correct power state of the device set by
+pci_update_current_state() in that case to be overwritten by PCI_D0.
 
-If free_pgtables() is called with the default ceiling 0,
-free_pgd_range() (and subsequently called functions) also frees the page
-table shared between user space and kernel modules (which is normally
-handled by the ARM-specific pgd_free() function). This patch changes
-defines the ARM USER_PGTABLES_CEILING to TASK_SIZE when CONFIG_ARM_LPAE
-is enabled.
+Fix that mistake by making the fallback to PCI_D0 only happen if
+the platform_pci_set_power_state() has returned an error.
 
-Note that the pgd_free() function already checks the presence of the
-shared pmd page allocated by pgd_alloc() and frees it, though with
-ceiling 0 this wasn't necessary.
-
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[bhelgaas: folded in Yinghai's simplification, added URL & stable info]
+Reference: http://lkml.kernel.org/r/27806FC4E5928A408B78E88BBC67A2306F466BBA@ORSMSX101.amr.corp.intel.com
+Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/pgtable.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/pci/pci.c |   12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -70,6 +70,15 @@ extern void __pgd_error(const char *file
- #endif
- 
- /*
-+ * Use TASK_SIZE as the ceiling argument for free_pgtables() and
-+ * free_pgd_range() to avoid freeing the modules pmd when LPAE is enabled (pmd
-+ * page shared between user and kernel).
-+ */
-+#ifdef CONFIG_ARM_LPAE
-+#define USER_PGTABLES_CEILING	TASK_SIZE
-+#endif
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -673,15 +673,11 @@ static int pci_platform_power_transition
+ 		error = platform_pci_set_power_state(dev, state);
+ 		if (!error)
+ 			pci_update_current_state(dev, state);
+-		/* Fall back to PCI_D0 if native PM is not supported */
+-		if (!dev->pm_cap)
+-			dev->current_state = PCI_D0;
+-	} else {
++	} else
+ 		error = -ENODEV;
+-		/* Fall back to PCI_D0 if native PM is not supported */
+-		if (!dev->pm_cap)
+-			dev->current_state = PCI_D0;
+-	}
 +
-+/*
-  * The pgprot_* and protection_map entries will be fixed up in runtime
-  * to include the cachable and bufferable bits based on memory policy,
-  * as well as any architecture dependent bits like global/ASID and SMP
++	if (error && !dev->pm_cap) /* Fall back to PCI_D0 */
++		dev->current_state = PCI_D0;
+ 
+ 	return error;
+ }
 
 
