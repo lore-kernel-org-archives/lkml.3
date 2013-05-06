@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873Ab3EFEdZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 00:33:25 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:46378 "EHLO
+	id S1752397Ab3EFEhZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 00:37:25 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:47098 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab3EFEdY (ORCPT
+	with ESMTP id S1752233Ab3EFEhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 00:33:24 -0400
-X-AuditID: cbfee690-b7f136d000000fea-fd-518732928085
-From: Jonghwan Choi <jhbird.choi@samsung.com>
-To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, "'Seungwon Jeon'" <tgih.jun@samsung.com>,
-        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
-        "'Chris Ball'" <cjb@laptop.org>
-References: 
-In-reply-to: 
-Subject: [PATCH 3.9-stable] mmc: dw_mmc: fix fifo access for 64-bit
-Date: Mon, 06 May 2013 13:33:22 +0900
-Message-id: <000f01ce4a12$d77ccc30$86766490$%choi@samsung.com>
+	Mon, 6 May 2013 00:37:23 -0400
+X-AuditID: cbfee68f-b7f066d000003683-2c-518733794bf3
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Herbert Xu'" <herbert@gondor.hengli.com.au>
+Cc: linux-kernel@vger.kernel.org, "'Matt Mackall'" <mpm@selenic.com>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH 1/4] hwrng: atmel - remove unnecessary platform_set_drvdata()
+Date: Mon, 06 May 2013 13:37:13 +0900
+Message-id: <004601ce4a13$60fa6620$22ef3260$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYA==
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac5KE0wUUmE8xx7vT3icNOlUsrysBQ==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsVy+t8zQ91JRu2BBtua9S22v97IZnHjVxur
-	xZJmbovLu+awWSzY+IjR4sP9i8wObB6Hrqxl9OjbsorR4/MmuQDmKC6blNSczLLUIn27BK6M
-	XdvuMBbc4qg4Nj2+gXEuexcjJ4eEgInE1+WH2SBsMYkL99aD2UICyxgl1pwMhKk5cv40cxcj
-	F1B8OqPEjjV7mCCcv4wS7e83gXWwCehKHFu/hRXEFhHwljg15RdYB7NAL6PE7WfdQB0cQB3c
-	Equbg0BqOAV4JNb96WQGsYUFnCX27p0BdhGLgKrE/NUnwObwCthJ3Fg8gxHCFpT4MfkeC4jN
-	LKAlsX7ncSYIW15i85q3zCDjJQTUJR791YU4IULi0+arUCUiEvtevGMEOUdC4Bq7RNOVzVC7
-	BCS+TT7EAtErK7HpADPEw5ISB1fcYJnAKDELyeZZSDbPQrJ5FpIVCxhZVjGKphYkFxQnpReZ
-	6BUn5haX5qXrJefnbmKExOaEHYz3DlgfYkwGWj+RWUo0OR8Y23kl8YbGZkYWpiamxkbmlmak
-	CSuJ86q3WAcKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYCy/Mn2b1aI1Rf3ZXz+v10p/ZvlC
-	esZG4aJ3foc+b2FQ3T2r5mWq/KQXxp/ijqaz/gxdkcBZWaYqfTbHdUri58obXK3l8fJZqil7
-	hO/99m3SeHGkiTF2petl5pNq7Zv36nrvd9iT9z41r0tn0lf9k21svZoL3vI1T0pNYWA9Xmeh
-	5um8J/RnpBJLcUaioRZzUXEiAF0157vjAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jQd1JRu2BBsueaFlsf72RzeLGrzZW
-	iyXN3BaXd81hs1iw8RGjxYf7F5kd2DwOXVnL6NG3ZRWjx+dNcgHMUQ2MNhmpiSmpRQqpecn5
-	KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAe5UUyhJzSoFCAYnFxUr6dpgm
-	hIa46VrANEbo+oYEwfUYGaCBhHWMGbu23WEsuMVRcWx6fAPjXPYuRk4OCQETiSPnTzND2GIS
-	F+6tZ+ti5OIQEpjOKLFjzR4mCOcvo0T7+01sIFVsAroSx9ZvYQWxRQS8JU5N+cUMUsQs0Mso
-	cftZN1AHB1AHt8Tq5iCQGk4BHol1fzrBNggLOEvs3TsDbDOLgKrE/NUnwObwCthJ3Fg8gxHC
-	FpT4MfkeC4jNLKAlsX7ncSYIW15i85q3zCDjJQTUJR791YU4IULi0+arUCUiEvtevGOcwCg0
-	C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgmP/mdQOxpUNFocY
-	BTgYlXh4C560BQqxJpYVV+YeYpTgYFYS4fXZCxTiTUmsrEotyo8vKs1JLT7EmAz06ERmKdHk
-	fGBayiuJNzQ2MTOyNDKzMDIxNydNWEmc90CrdaCQQHpiSWp2ampBahHMFiYOTqkGRqbvv+Iz
-	NR/E/54wJed2RxBfy2rWC9/ecq/uPHK2USSiPOmlE3t71qHXzDp2tcuqmxU/htv9UNI/8T/E
-	avsH04XvVSKnfi2ycM51LJ26dGu0f9HulZctvwrpXDoo7b/01Fe1t+cvr5C9XZPxV3iS7Ltz
-	37QYH228dM//cFSxi67p703XrRblpCmxFGckGmoxFxUnAgD68IzrQQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zQ91K4/ZAg9+7ZSy6X8lYXF54idXi
+	8q45bBYLtvUxOrB4bDug6tG3ZRWjR9/LDYwenzfJBbBEcdmkpOZklqUW6dslcGVc3+JUcImt
+	4sft10wNjCdZuxg5OSQETCS+Tb7FDmGLSVy4t54NxBYSWMYoMb+zEqZm1d1TQPVcQPHpjBK/
+	n01ihyj6xSixpT8SxGYTUJP48uUwWFxEQE+ib30jI4jNLJAmsX3jf7ChwgK+EncevAerYRFQ
+	lXh/6jHYEbwClhITN/xngbAFJX5MvscC0aslsX7ncSYIW15i85q3zBAHKUjsOPuaEWbXzK/z
+	2SBqRCT2vXjHCHKohMAqdokFr69ALRMA+vIQ0FAOoISsxKYDUHMkJQ6uuMEygVFsFpLVs5Cs
+	noVk9SwkKxYwsqxiFE0tSC4oTkovMtYrTswtLs1L10vOz93ECImv/h2Mdw9YH2JMBlo/kVlK
+	NDkfGJ95JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgHCgmkJ5akZqemFqQWxReV5qQWH2Jk4uCU
+	amBs2Vkm92aLc72Ici+7g993rThOpt16G5UN+p9Jd/ZvXWstq82ZuULYxWtB6ISj+xXWHQwX
+	OKw/udfhyfIp55vbozy9p8jvO2Te90xU9Z3sChUnnUO/rdvKNzec+yIfudPuxJfZPOVmT12P
+	/RI891br9fOFZT/sn4t3R232f5Jp259Xc850j5ASS3FGoqEWc1FxIgBm/ofgxQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t9jQd1K4/ZAg7ZuSYvuVzIWlxdeYrW4
+	vGsOm8WCbX2MDiwe2w6oevRtWcXo0fdyA6PH501yASxRDYw2GamJKalFCql5yfkpmXnptkre
+	wfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUAblRTKEnNKgUIBicXFSvp2mCaEhrjpWsA0
+	Ruj6hgTB9RgZoIGEdYwZ17c4FVxiq/hx+zVTA+NJ1i5GTg4JAROJVXdPQdliEhfurWfrYuTi
+	EBKYzijx+9kkdpCEkMAvRokt/ZEgNpuAmsSXL4fB4iICehJ96xsZQWxmgTSJ7Rv/s4HYwgK+
+	EncevAerYRFQlXh/6jHYAl4BS4mJG/6zQNiCEj8m32OB6NWSWL/zOBOELS+xec1bZoiDFCR2
+	nH3NCLNr5tf5bBA1IhL7XrxjnMAoMAvJqFlIRs1CMmoWkpYFjCyrGEVTC5ILipPSc430ihNz
+	i0vz0vWS83M3MYLj95n0DsZVDRaHGAU4GJV4eAuetAUKsSaWFVfmHmKU4GBWEuH12QsU4k1J
+	rKxKLcqPLyrNSS0+xJgM9OlEZinR5HxgaskriTc0NjEzsjQyszAyMTcnTVhJnPdgq3WgkEB6
+	YklqdmpqQWoRzBYmDk6pBkaDID193ybzuI/CR2p6+99o6PZd1zm77dCGWzFzfmtd1PJ/0R4z
+	50reA4/JzbnrvjAbVZcxPXNVyHC+p/paYaVT47oTm9Z6b0jq1AtRLPPJ0mlOmLNx7vH191bk
+	Xlw45elDg6vPw+5aHbQ5+SLm6SnRNxcY3coqLA1ezC3xq7PeHXRgpcH6/nolluKMREMt5qLi
+	RABgqlWEIwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,40 +52,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch looks like it should be in the 3.9-stable tree, should we apply
-it?
+The driver core clears the driver data to NULL after device_release
+or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
+(device-core: Ensure drvdata = NULL when no driver is bound).
+Thus, it is not needed to manually clear the device driver data to NULL.
 
-------------------
-
-From: "Seungwon Jeon <tgih.jun@samsung.com>"
-
-commit c09fbd7451b797213b3df8bf077776b9ec33f954 upstream
-
-mci_writew causes a failure of fifo access for 64-bit.
-mci_writeq is correct.
-
-Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mmc/host/dw_mmc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/hw_random/atmel-rng.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 9834221..cc8d8de 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -1353,7 +1353,7 @@ static void dw_mci_push_data64(struct dw_mci *host,
-void *buf, int cnt)
- 		buf += len;
- 		cnt -= len;
- 		if (!sg_next(host->sg) || host->part_buf_count == 8) {
--			mci_writew(host, DATA(host->data_offset),
-+			mci_writeq(host, DATA(host->data_offset),
- 					host->part_buf);
- 			host->part_buf_count = 0;
- 		}
+diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
+index 7c73d4a..bf9fc6b 100644
+--- a/drivers/char/hw_random/atmel-rng.c
++++ b/drivers/char/hw_random/atmel-rng.c
+@@ -108,8 +108,6 @@ static int atmel_trng_remove(struct platform_device *pdev)
+ 	clk_disable(trng->clk);
+ 	clk_put(trng->clk);
+ 
+-	platform_set_drvdata(pdev, NULL);
+-
+ 	return 0;
+ }
+ 
 -- 
-1.7.9.5
+1.7.2.5
+
 
