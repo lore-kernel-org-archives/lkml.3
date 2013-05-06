@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933421Ab3EFXYj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:24:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36868 "EHLO
+	id S933434Ab3EFXYz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:24:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36861 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065Ab3EFXNx (ORCPT
+	with ESMTP id S1760636Ab3EFXNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 19:13:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Lu <aaron.lu@intel.com>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 070/104] libata: acpi: make ata_ap_acpi_handle not block
-Date: Mon,  6 May 2013 16:12:29 -0700
-Message-Id: <20130506230050.826088446@linuxfoundation.org>
+        Derek Basehore <dbasehore@chromium.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 069/104] drivers/rtc/rtc-cmos.c: dont disable hpet emulation on suspend
+Date: Mon,  6 May 2013 16:12:28 -0700
+Message-Id: <20130506230050.722406435@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,130 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: Derek Basehore <dbasehore@chromium.org>
 
-commit d66af4df0837f21bf267305dc5ccab2d29e24d86 upstream.
+commit e005715efaf674660ae59af83b13822567e3a758 upstream.
 
-Since commit 30dcf76acc, ata_ap_acpi_handle will always do a namespace
-walk, which requires acquiring an acpi namespace mutex. This made it
-impossible to be used when calling path has held a spinlock.
+There's a bug where rtc alarms are ignored after the rtc cmos suspends
+but before the system finishes suspend.  Since hpet emulation is
+disabled and it still handles the interrupts, a wake event is never
+registered which is done from the rtc layer.
 
-For example, it can occur in the following code path for pata_acpi:
-ata_scsi_queuecmd (ap->lock is acquired)
-  __ata_scsi_queuecmd
-    ata_scsi_translate
-      ata_qc_issue
-        pacpi_qc_issue
-          ata_acpi_stm
-            ata_ap_acpi_handle
-              acpi_get_child
-                acpi_walk_namespace
-                  acpi_ut_acquire_mutex (acquire mutex while holding lock)
-This caused scheduling while atomic bug, as reported in bug #56781.
+This patch reverts commit d1b2efa83fbf ("rtc: disable hpet emulation on
+suspend") which disabled hpet emulation.  To fix the problem mentioned
+in that commit, hpet_rtc_timer_init() is called directly on resume.
 
-Actually, ata_ap_acpi_handle doesn't have to walk the namespace every
-time it is called, it can simply return the bound acpi handle on the
-corresponding SCSI host. The reason previously it is not done this way
-is, ata_ap_acpi_handle is used in the binding function
-ata_acpi_bind_host by ata_acpi_gtm when the handle is not bound to the
-SCSI host yet. Since we already have the ATA port's handle in its
-binding function, we can simply use it instead of calling
-ata_ap_acpi_handle there. So introduce a new function __ata_acpi_gtm,
-where it will receive an acpi handle param in addition to the ATA port
-which is solely used for debug statement. With this change, we can make
-ata_ap_acpi_handle simply return the bound handle for SCSI host instead
-of walking the acpi namespace now.
-
-Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=56781
-Reported-and-tested-by: <kenzopl@o2.pl>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Derek Basehore <dbasehore@chromium.org>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-acpi.c |   45 +++++++++++++++++++++++++++------------------
- 1 file changed, 27 insertions(+), 18 deletions(-)
+ drivers/rtc/rtc-cmos.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/ata/libata-acpi.c
-+++ b/drivers/ata/libata-acpi.c
-@@ -60,7 +60,8 @@ acpi_handle ata_ap_acpi_handle(struct at
- 	if (ap->flags & ATA_FLAG_ACPI_SATA)
- 		return NULL;
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -805,9 +805,8 @@ static int cmos_suspend(struct device *d
+ 			mask = RTC_IRQMASK;
+ 		tmp &= ~mask;
+ 		CMOS_WRITE(tmp, RTC_CONTROL);
++		hpet_mask_rtc_irq_bit(mask);
  
--	return acpi_get_child(DEVICE_ACPI_HANDLE(ap->host->dev), ap->port_no);
-+	return ap->scsi_host ?
-+		DEVICE_ACPI_HANDLE(&ap->scsi_host->shost_gendev) : NULL;
- }
- EXPORT_SYMBOL(ata_ap_acpi_handle);
- 
-@@ -239,28 +240,15 @@ void ata_acpi_dissociate(struct ata_host
+-		/* shut down hpet emulation - we don't need it for alarm */
+-		hpet_mask_rtc_irq_bit(RTC_PIE|RTC_AIE|RTC_UIE);
+ 		cmos_checkintr(cmos, tmp);
  	}
- }
- 
--/**
-- * ata_acpi_gtm - execute _GTM
-- * @ap: target ATA port
-- * @gtm: out parameter for _GTM result
-- *
-- * Evaluate _GTM and store the result in @gtm.
-- *
-- * LOCKING:
-- * EH context.
-- *
-- * RETURNS:
-- * 0 on success, -ENOENT if _GTM doesn't exist, -errno on failure.
-- */
--int ata_acpi_gtm(struct ata_port *ap, struct ata_acpi_gtm *gtm)
-+static int __ata_acpi_gtm(struct ata_port *ap, acpi_handle handle,
-+			  struct ata_acpi_gtm *gtm)
- {
- 	struct acpi_buffer output = { .length = ACPI_ALLOCATE_BUFFER };
- 	union acpi_object *out_obj;
- 	acpi_status status;
- 	int rc = 0;
- 
--	status = acpi_evaluate_object(ata_ap_acpi_handle(ap), "_GTM", NULL,
--				      &output);
-+	status = acpi_evaluate_object(handle, "_GTM", NULL, &output);
- 
- 	rc = -ENOENT;
- 	if (status == AE_NOT_FOUND)
-@@ -294,6 +282,27 @@ int ata_acpi_gtm(struct ata_port *ap, st
- 	return rc;
- }
- 
-+/**
-+ * ata_acpi_gtm - execute _GTM
-+ * @ap: target ATA port
-+ * @gtm: out parameter for _GTM result
-+ *
-+ * Evaluate _GTM and store the result in @gtm.
-+ *
-+ * LOCKING:
-+ * EH context.
-+ *
-+ * RETURNS:
-+ * 0 on success, -ENOENT if _GTM doesn't exist, -errno on failure.
-+ */
-+int ata_acpi_gtm(struct ata_port *ap, struct ata_acpi_gtm *gtm)
-+{
-+	if (ata_ap_acpi_handle(ap))
-+		return __ata_acpi_gtm(ap, ata_ap_acpi_handle(ap), gtm);
-+	else
-+		return -EINVAL;
-+}
-+
- EXPORT_SYMBOL_GPL(ata_acpi_gtm);
- 
- /**
-@@ -1095,7 +1104,7 @@ static int ata_acpi_bind_host(struct ata
- 	if (!*handle)
- 		return -ENODEV;
- 
--	if (ata_acpi_gtm(ap, &ap->__acpi_init_gtm) == 0)
-+	if (__ata_acpi_gtm(ap, *handle, &ap->__acpi_init_gtm) == 0)
- 		ap->pflags |= ATA_PFLAG_INIT_GTM_VALID;
- 
- 	return 0;
+ 	spin_unlock_irq(&rtc_lock);
+@@ -872,6 +871,7 @@ static int cmos_resume(struct device *de
+ 			rtc_update_irq(cmos->rtc, 1, mask);
+ 			tmp &= ~RTC_AIE;
+ 			hpet_mask_rtc_irq_bit(RTC_AIE);
++			hpet_rtc_timer_init();
+ 		} while (mask & RTC_AIE);
+ 		spin_unlock_irq(&rtc_lock);
+ 	}
 
 
