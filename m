@@ -1,149 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab3EFJkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 05:40:32 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:58815 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463Ab3EFJka (ORCPT
+	id S1753042Ab3EFJl7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 05:41:59 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:64705 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab3EFJl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 05:40:30 -0400
+	Mon, 6 May 2013 05:41:58 -0400
+Date: Mon, 6 May 2013 11:41:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Alessandro Rubini <rubini@gnudd.com>, hpa@zytor.com, ciminaghi@gnudd.com,
+        jaswinder.singh@linaro.org, will.deacon@arm.com,
+        linux@arm.linux.org.uk, tglx@linutronix.de, mingo@redhat.com,
+        djbw@fb.com, vinod.koul@intel.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, wim@iguana.be, cjb@laptop.org,
+        davidb@codeaurora.org, nico@fluxnic.net, ben-linux@fluff.org,
+        viresh.linux@gmail.com, rajeev-dlh.kumar@st.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        giancarlo.asnaghi@st.com
+Subject: Re: [PATCH v4 0/7] enable support for AMBA drivers under x86
+Message-ID: <20130506094154.GA9464@gmail.com>
+References: <20130505123633.GA14095@pd.tnic>
+ <50C93A83.8040106@zytor.com>
+ <1355146956-6009-1-git-send-email-ciminaghi@gnudd.com>
+ <50C93718.2090706@zytor.com>
+ <20121213181449.GA15966@mail.gnudd.com>
+ <20130505202422.GA13758@mail.gnudd.com>
+ <20130505203932.GA12742@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <87ip2wr8tp.fsf@rustcorp.com.au>
-References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org>
-	<BA2076A6-0688-4E5C-85F9-A9CA8FD75782@suse.de>
-	<87obcyc9sh.fsf@rustcorp.com.au>
-	<336C59AA-D5D7-472E-A8DA-EEB413DD6C68@suse.de>
-	<CAAHg+Hj0tySbzUGnoFE9ybVYP291B-i8-Ck1EkwD57t8yG5wwg@mail.gmail.com>
-	<C52CCDD4-D8FB-4AD6-B83D-3B5251A7A0F5@suse.de>
-	<87sj27xxjr.fsf@rustcorp.com.au>
-	<CAFEAcA9h8iSYfTBtf6n+Vk5sDtBR2yB2oafRxikHoWbKt0VRUw@mail.gmail.com>
-	<87ip2wr8tp.fsf@rustcorp.com.au>
-Date: Mon, 6 May 2013 15:10:29 +0530
-Message-ID: <CAAHg+HhAgD=-YVOf_nmXv0MnX-3pp+yhNAwxXAfKr4Xp5XyP4w@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
-From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Peter Maydell <peter.maydell@linaro.org>, Alexander Graf <agraf@suse.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        Amit Shah <amit.shah@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130505203932.GA12742@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rusty,
 
-On 6 May 2013 10:41, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Peter Maydell <peter.maydell@linaro.org> writes:
->> On 1 May 2013 03:07, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>> An emergency output is a reasonable idea, and this is a reasonable
->>> implementation.  The question is practical: will it be used?  Because we
->>> don't implement reasonable ideas which aren't going to be used.
->>
->> If you think it fits reasonably into the virtio spec (ie doesn't
->> implement things at the wrong level of the transport/backend
->> abstraction) then we can implement it in QEMU, and I think it
->> makes more sense to do this than to throw in a random extra
->> serial port.
->>
->> To be actually useful we need to also specify something in
->> the device tree to say "here is where you will find your
->> emergency output and what it is".
->
-> Hmm, I'm not sure that's true.  It looks like it needs:
->
-> 1) An enhancment to the vdev->set_config callback to pass through (at
->    least) an offset, probably offset and length.
->
-> 2) An emerg_write() function ptr which can be called at any time, set by
->    virtio_console.c's class_init:
->
-> static void emerg_write(VirtIOSerialPort *port, char c)
-> {
->     VirtConsole *vcon = DO_UPCAST(VirtConsole, port, port);
->
->     if (vcon->chr)
->         qemu_chr_fe_write(vcon->chr, &c, 1);
-> }
->
-> 3) A routine to find an emerg-write-capable console in
->    virtio_serial_bus.c (or just assume port 0?):
->
-> static VirtIOSerialPort *find_emerg_write_port(VirtIOSerial *vser)
-> {
->     VirtIOSerialPort *port;
->
->     QTAILQ_FOREACH(port, &vser->ports, next) {
->         VirtIOSerialPortClass *vsc;
->         vsc = VIRTIO_SERIAL_PORT_GET_CLASS(port);
->
->         if (vsc->emerg_write) {
->             return port;
->         }
->     }
->     return NULL;
-> }
->
-> 4) set_config in virtio_serial_bus.c to notice emergency writes:
->
->     if (offset == offsetof(struct virtio_console_config, emerg_w) {
->         VirtIOSerial *vser;
->         vser = DO_UPCAST(VirtIOSerial, vdev, vdev);
->         VirtIOSerialPort *port;
->
->         port = find_emerg_write_port(vser);
->         if (port) {
->             vsc->emerg_write(port, config.emerg_w);
->         }
->     }
->
-> Amit might have more clue... Amit?
->
-> Thanks,
-> Rusty.
->
-> From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-> Subject: virtio: console: Add early writeonly register to config space
->
-> This patch adds a emerg_wr register (writeonly) in config space of virtio console device which can be used for debugging.
->
-> Signed-off-by: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-> Signed-off-by: Anup Patel <anup.patel@linaro.org>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> ---
->  include/uapi/linux/virtio_console.h | 3 +++
->  1 file changed, 3 insertions(+)
->
-> diff --git a/include/uapi/linux/virtio_console.h b/include/uapi/linux/virtio_console.h
-> index ee13ab6..586678d 100644
-> --- a/include/uapi/linux/virtio_console.h
-> +++ b/include/uapi/linux/virtio_console.h
-> @@ -38,6 +38,7 @@
->  /* Feature bits */
->  #define VIRTIO_CONSOLE_F_SIZE  0       /* Does host provide console size? */
->  #define VIRTIO_CONSOLE_F_MULTIPORT 1   /* Does host provide multiple ports? */
-> +#define VIRTIO_CONSOLE_F_EMERG_WRITE 2 /* Does host support emergency write? */
->
->  #define VIRTIO_CONSOLE_BAD_ID          (~(u32)0)
->
-> @@ -48,6 +49,8 @@ struct virtio_console_config {
->         __u16 rows;
->         /* max. number of ports this device can hold */
->         __u32 max_nr_ports;
-> +       /* emergency write register */
-> +       __u32 emerg_wr;
->  } __attribute__((packed));
->
->  /*
+* Borislav Petkov <bp@alien8.de> wrote:
 
-I will send above patch with V2 tagged with the addition of
-documentation change and also separate arm64 early printk
-implementation for the same.
+> On Sun, May 05, 2013 at 10:24:22PM +0200, Alessandro Rubini wrote:
+> > > Did this got fixed in some tree in the meantime? Because I still see it on
+> > > current Linus + tip/master:
+> > > 
+> > > arch/x86/pci/sta2x11-fixup.c:186:2: warning: initialization from incompatible pointer type [enabled by default]
+> > > arch/x86/pci/sta2x11-fixup.c:186:2: warning: (near initialization for ??????sta2x11_dma_ops.free??????) [enabled by default]
+> > 
+> > Last time I sent the patch was on Feb 22nd:
+> > 
+> >    The .free field of struct dma_map_ops features a prototype that is
+> >    different from what lib/swiotlb.c offers. The new "attrs" argument in
+> >    dma_ops.free is missing from the generic implementation.
+> > 
+> >    This removes the build warning by providing a function that just calls
+> >    swiotlb_free_coherent() without passing "attrs", like others do.
+> > 
+> > I got no reply.
+> 
+> It probably fell through the cracks...
+> 
+> > This is the link:
+> > 
+> >     http://lkml.org/lkml/2013/2/22/111
+> > 
+> > It is in patchwork here:
+> > 
+> >     https://patchwork.kernel.org/patch/2175551/
+> 
+> Ingo, hpa, can you guys pick it up?
+
+A lot happened meanwhile - patches got acked, applied - so I expected a 
+resend of the patches that are still pending, with all acks in place in 
+the patches (not in the cover letter), and against Linus's latest tree.
 
 Thanks,
-Pranav
+
+	Ingo
