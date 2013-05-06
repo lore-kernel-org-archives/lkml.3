@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468Ab3EFXZn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:25:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36849 "EHLO
+	id S933484Ab3EFX0A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:26:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36845 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759000Ab3EFXNv (ORCPT
+	with ESMTP id S1760620Ab3EFXNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 19:13:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 057/104] ALSA: snd-usb: try harder to find USB_DT_CS_ENDPOINT
-Date: Mon,  6 May 2013 16:12:16 -0700
-Message-Id: <20130506230049.458326857@linuxfoundation.org>
+        Rik van Riel <riel@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [ 066/104] hrtimer: Add expiry time overflow check in hrtimer_interrupt
+Date: Mon,  6 May 2013 16:12:25 -0700
+Message-Id: <20130506230050.411524014@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,52 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Prarit Bhargava <prarit@redhat.com>
 
-commit ebfc594c02148b6a85c2f178cf167a44a3c3ce10 upstream.
+commit 8f294b5a139ee4b75e890ad5b443c93d1e558a8b upstream.
 
-The USB_DT_CS_ENDPOINT class-specific endpoint descriptor is usually
-stuffed directly after the standard USB endpoint descriptor, and this is
-where the driver currently expects it to be.
+The settimeofday01 test in the LTP testsuite effectively does
 
-There are, however, devices in the wild that have it the other way
-around in their descriptor sets, so the USB_DT_CS_ENDPOINT comes
-*before* the standard enpoint. Devices known to implement it that way
-are "Sennheiser BTD-500" and Plantronics USB headsets.
+        gettimeofday(current time);
+        settimeofday(Jan 1, 1970 + 100 seconds);
+        settimeofday(current time);
 
-When the driver can't find the USB_DT_CS_ENDPOINT, it won't be able to
-change sample rates, as the bitmask for the validity of this command is
-storen in bmAttributes of that descriptor.
+This test causes a stack trace to be displayed on the console during the
+setting of timeofday to Jan 1, 1970 + 100 seconds:
 
-Fix this by searching the entire interface instead of just the extra
-bytes of the first endpoint, in case the latter fails.
+[  131.066751] ------------[ cut here ]------------
+[  131.096448] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x135/0x140()
+[  131.104935] Hardware name: Dinar
+[  131.108150] Modules linked in: sg nfsv3 nfs_acl nfsv4 auth_rpcgss nfs dns_resolver fscache lockd sunrpc nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter ip_tables kvm_amd kvm sp5100_tco bnx2 i2c_piix4 crc32c_intel k10temp fam15h_power ghash_clmulni_intel amd64_edac_mod pcspkr serio_raw edac_mce_amd edac_core microcode xfs libcrc32c sr_mod sd_mod cdrom ata_generic crc_t10dif pata_acpi radeon i2c_algo_bit drm_kms_helper ttm drm ahci pata_atiixp libahci libata usb_storage i2c_core dm_mirror dm_region_hash dm_log dm_mod
+[  131.176784] Pid: 0, comm: swapper/28 Not tainted 3.8.0+ #6
+[  131.182248] Call Trace:
+[  131.184684]  <IRQ>  [<ffffffff810612af>] warn_slowpath_common+0x7f/0xc0
+[  131.191312]  [<ffffffff8106130a>] warn_slowpath_null+0x1a/0x20
+[  131.197131]  [<ffffffff810b9fd5>] clockevents_program_event+0x135/0x140
+[  131.203721]  [<ffffffff810bb584>] tick_program_event+0x24/0x30
+[  131.209534]  [<ffffffff81089ab1>] hrtimer_interrupt+0x131/0x230
+[  131.215437]  [<ffffffff814b9600>] ? cpufreq_p4_target+0x130/0x130
+[  131.221509]  [<ffffffff81619119>] smp_apic_timer_interrupt+0x69/0x99
+[  131.227839]  [<ffffffff8161805d>] apic_timer_interrupt+0x6d/0x80
+[  131.233816]  <EOI>  [<ffffffff81099745>] ? sched_clock_cpu+0xc5/0x120
+[  131.240267]  [<ffffffff814b9ff0>] ? cpuidle_wrap_enter+0x50/0xa0
+[  131.246252]  [<ffffffff814b9fe9>] ? cpuidle_wrap_enter+0x49/0xa0
+[  131.252238]  [<ffffffff814ba050>] cpuidle_enter_tk+0x10/0x20
+[  131.257877]  [<ffffffff814b9c89>] cpuidle_idle_call+0xa9/0x260
+[  131.263692]  [<ffffffff8101c42f>] cpu_idle+0xaf/0x120
+[  131.268727]  [<ffffffff815f8971>] start_secondary+0x255/0x257
+[  131.274449] ---[ end trace 1151a50552231615 ]---
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-and-tested-by: Torstein Hegge <hegge@resisty.net>
-Reported-and-tested-by: Yves G <alsa-user@vivigatt.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+When we change the system time to a low value like this, the value of
+timekeeper->offs_real will be a negative value.
+
+It seems that the WARN occurs because an hrtimer has been started in the time
+between the releasing of the timekeeper lock and the IPI call (via a call to
+on_each_cpu) in clock_was_set() in the do_settimeofday() code.  The end result
+is that a REALTIME_CLOCK timer has been added with softexpires = expires =
+KTIME_MAX.  The hrtimer_interrupt() fires/is called and the loop at
+kernel/hrtimer.c:1289 is executed.  In this loop the code subtracts the
+clock base's offset (which was set to timekeeper->offs_real in
+do_settimeofday()) from the current hrtimer_cpu_base->expiry value (which
+was KTIME_MAX):
+
+	KTIME_MAX - (a negative value) = overflow
+
+A simple check for an overflow can resolve this problem.  Using KTIME_MAX
+instead of the overflow value will result in the hrtimer function being run,
+and the reprogramming of the timer after that.
+
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+[jstultz: Tweaked commit subject]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/stream.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ kernel/hrtimer.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/usb/stream.c
-+++ b/sound/usb/stream.c
-@@ -396,6 +396,14 @@ static int parse_uac_endpoint_attributes
- 	if (!csep && altsd->bNumEndpoints >= 2)
- 		csep = snd_usb_find_desc(alts->endpoint[1].extra, alts->endpoint[1].extralen, NULL, USB_DT_CS_ENDPOINT);
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1312,6 +1312,8 @@ retry:
  
-+	/*
-+	 * If we can't locate the USB_DT_CS_ENDPOINT descriptor in the extra
-+	 * bytes after the first endpoint, go search the entire interface.
-+	 * Some devices have it directly *before* the standard endpoint.
-+	 */
-+	if (!csep)
-+		csep = snd_usb_find_desc(alts->extra, alts->extralen, NULL, USB_DT_CS_ENDPOINT);
-+
- 	if (!csep || csep->bLength < 7 ||
- 	    csep->bDescriptorSubtype != UAC_EP_GENERAL) {
- 		snd_printk(KERN_WARNING "%d:%u:%d : no or invalid"
+ 				expires = ktime_sub(hrtimer_get_expires(timer),
+ 						    base->offset);
++				if (expires.tv64 < 0)
++					expires.tv64 = KTIME_MAX;
+ 				if (expires.tv64 < expires_next.tv64)
+ 					expires_next = expires;
+ 				break;
 
 
