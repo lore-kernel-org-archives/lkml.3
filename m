@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab3EFBqX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 21:46:23 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64038 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752528Ab3EFBqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 21:46:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,618,1363158000"; 
-   d="scan'208";a="308658613"
-From: Alex Shi <alex.shi@intel.com>
-To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com
-Cc: vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        alex.shi@intel.com, mgorman@suse.de, riel@redhat.com,
-        wangyun@linux.vnet.ibm.com
-Subject: [PATCH v5 3/7] sched: set initial value of runnable avg for new forked task
-Date: Mon,  6 May 2013 09:45:07 +0800
-Message-Id: <1367804711-30308-4-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
+	id S1752167Ab3EFBwu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 21:52:50 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:55275 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab3EFBwt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 May 2013 21:52:49 -0400
+X-AuditID: 9c93016f-b7b72ae00000104b-6e-51870cee49cd
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 12/14] perf ftrace: Use pager for displaying result
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+	<1366705872-12132-13-git-send-email-namhyung@kernel.org>
+	<20130424141724.GH971@krava.brq.redhat.com>
+	<877gjr9k8q.fsf@sejong.aot.lge.com>
+	<20130426084023.GB1054@krava.brq.redhat.com>
+Date: Mon, 06 May 2013 10:52:46 +0900
+In-Reply-To: <20130426084023.GB1054@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Fri, 26 Apr 2013 10:40:23 +0200")
+Message-ID: <87ip2w98nl.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need initialize the se.avg.{decay_count, load_avg_contrib} for a
-new forked task.
-Otherwise random values of above variables cause mess when do new task
-enqueue:
-    enqueue_task_fair
-        enqueue_entity
-            enqueue_entity_load_avg
+On Fri, 26 Apr 2013 10:40:23 +0200, Jiri Olsa wrote:
+> On Thu, Apr 25, 2013 at 03:50:45PM +0900, Namhyung Kim wrote:
+>> On Wed, 24 Apr 2013 16:17:24 +0200, Jiri Olsa wrote:
+>> > On Tue, Apr 23, 2013 at 05:31:10PM +0900, Namhyung Kim wrote:
+>> >> From: Namhyung Kim <namhyung.kim@lge.com>
+>> >> 
+>> >> It's convenient to use pager when seeing many lines of result.
+>> >> 
+>> > for some reason I'm able to get any output for 'live' command only
+>> > when using --no-pager option. I dont get any data for:
+>> >
+>> >   # ./perf ftrace live ls
+>> >
+>> >   not even ls output
+>
+> ok, now with your patch I get allways ls output correctly in pager
 
-and make forking balancing imbalance since incorrect load_avg_contrib.
+"ls output" only?  What about the ftrace outputs?
 
-set avg.decay_count = 0, and avg.load_avg_contrib = se->load.weight to
-resolve such issues.
+>
+>> >
+>> > But sometime I dont even get ftrace output for:
+>> >
+>> >   # ./perf --no-pager ftrace live ls
+>> >
+>> >   just ls output
+>
+> this one still persists
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- kernel/sched/core.c | 6 ++++++
- kernel/sched/fair.c | 4 ++++
- 2 files changed, 10 insertions(+)
+Hmm.. still hard to reproduce.. :(
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c8db984..ecec7f1 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1566,6 +1566,7 @@ static void __sched_fork(struct task_struct *p)
- #ifdef CONFIG_SMP
- 	p->se.avg.runnable_avg_period = 0;
- 	p->se.avg.runnable_avg_sum = 0;
-+	p->se.avg.decay_count = 0;
- #endif
- #ifdef CONFIG_SCHEDSTATS
- 	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
-@@ -1653,6 +1654,11 @@ void sched_fork(struct task_struct *p)
- 		p->sched_reset_on_fork = 0;
- 	}
- 
-+	/* New forked task assumed with full utilization */
-+#if defined(CONFIG_SMP)
-+	p->se.avg.load_avg_contrib = p->se.load.weight;
-+#endif
-+
- 	if (!rt_prio(p->prio))
- 		p->sched_class = &fair_sched_class;
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9c2f726..2881d42 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1508,6 +1508,10 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
- 	 * We track migrations using entity decay_count <= 0, on a wake-up
- 	 * migration we use a negative decay count to track the remote decays
- 	 * accumulated while sleeping.
-+	 *
-+	 * When enqueue a new forked task, the se->avg.decay_count == 0, so
-+	 * we bypass update_entity_load_avg(), use avg.load_avg_contrib initial
-+	 * value: se->load.weight.
- 	 */
- 	if (unlikely(se->avg.decay_count <= 0)) {
- 		se->avg.last_runnable_update = rq_of(cfs_rq)->clock_task;
--- 
-1.7.12
+As it's --no-pager mode, so that it can be reproduced for you without
+this patch, right?
 
+Thanks,
+Namhyung
