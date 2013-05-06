@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761365Ab3EFXml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:42:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36602 "EHLO
+	id S1761417Ab3EFXnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:43:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36562 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760234Ab3EFXNJ (ORCPT
+	with ESMTP id S1760240Ab3EFXNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:09 -0400
+	Mon, 6 May 2013 19:13:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [ 006/104] ARM: at91/at91sam9260.dtsi: fix u(s)art pinctrl encoding
-Date: Mon,  6 May 2013 16:11:25 -0700
-Message-Id: <20130506230044.232271992@linuxfoundation.org>
+        Filippo Turato <nnj7585@gmail.com>
+Subject: [ 001/104] USB: serial: option: Added support Olivetti Olicard 145
+Date: Mon,  6 May 2013 16:11:20 -0700
+Message-Id: <20130506230043.711186148@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -27,65 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Douglas Gilbert <dgilbert@interlog.com>
+From: Filippo Turato <nnj7585@gmail.com>
 
-commit f10491fff07dcced77f8ab1b3bc1f8e18715bfb9 upstream.
+commit d19bf5cedfd7d53854a3bd699c98b467b139833b upstream.
 
-Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
-[nicolas.ferre@atmel.com: fix rts/cts for usart3]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+This adds PID for Olivetti Olicard 145 in option.c
+
+Signed-off-by: Filippo Turato <nnj7585@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/at91sam9260.dtsi |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/arm/boot/dts/at91sam9260.dtsi
-+++ b/arch/arm/boot/dts/at91sam9260.dtsi
-@@ -158,8 +158,8 @@
- 				usart1 {
- 					pinctrl_usart1: usart1-0 {
- 						atmel,pins =
--							<2 6 0x1 0x1	/* PB6 periph A with pullup */
--							 2 7 0x1 0x0>;	/* PB7 periph A */
-+							<1 6 0x1 0x1	/* PB6 periph A with pullup */
-+							 1 7 0x1 0x0>;	/* PB7 periph A */
- 					};
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -347,6 +347,7 @@ static void option_instat_callback(struc
+ /* Olivetti products */
+ #define OLIVETTI_VENDOR_ID			0x0b3c
+ #define OLIVETTI_PRODUCT_OLICARD100		0xc000
++#define OLIVETTI_PRODUCT_OLICARD145		0xc003
  
- 					pinctrl_usart1_rts: usart1_rts-0 {
-@@ -194,18 +194,18 @@
- 				usart3 {
- 					pinctrl_usart3: usart3-0 {
- 						atmel,pins =
--							<2 10 0x1 0x1	/* PB10 periph A with pullup */
--							 2 11 0x1 0x0>;	/* PB11 periph A */
-+							<1 10 0x1 0x1	/* PB10 periph A with pullup */
-+							 1 11 0x1 0x0>;	/* PB11 periph A */
- 					};
+ /* Celot products */
+ #define CELOT_VENDOR_ID				0x211f
+@@ -1273,6 +1274,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
  
- 					pinctrl_usart3_rts: usart3_rts-0 {
- 						atmel,pins =
--							<3 8 0x2 0x0>;	/* PB8 periph B */
-+							<2 8 0x2 0x0>;	/* PC8 periph B */
- 					};
- 
- 					pinctrl_usart3_cts: usart3_cts-0 {
- 						atmel,pins =
--							<3 10 0x2 0x0>;	/* PB10 periph B */
-+							<2 10 0x2 0x0>;	/* PC10 periph B */
- 					};
- 				};
- 
-@@ -220,8 +220,8 @@
- 				uart1 {
- 					pinctrl_uart1: uart1-0 {
- 						atmel,pins =
--							<2 12 0x1 0x1	/* PB12 periph A with pullup */
--							 2 13 0x1 0x0>;	/* PB13 periph A */
-+							<1 12 0x1 0x1	/* PB12 periph A with pullup */
-+							 1 13 0x1 0x0>;	/* PB13 periph A */
- 					};
- 				};
- 
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
++	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD145) },
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
 
 
