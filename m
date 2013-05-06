@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933096Ab3EFXyF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:54:05 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:39368 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932425Ab3EFXua (ORCPT
+	id S933180Ab3EFXys (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:54:48 -0400
+Received: from mail-ve0-f202.google.com ([209.85.128.202]:51190 "EHLO
+	mail-ve0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932372Ab3EFXu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:50:30 -0400
+	Mon, 6 May 2013 19:50:29 -0400
 From: Colin Cross <ccross@android.com>
 To: linux-kernel@vger.kernel.org
 Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
@@ -16,10 +16,10 @@ Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Colin Cross <ccross@android.com>, Oleg Nesterov <oleg@redhat.com>,
         linux-nfs@vger.kernel.org, linux-pm@vger.kernel.org,
         netdev@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Len Brown <len.brown@intel.com>
-Subject: [PATCH v3 08/16] freezer: convert freezable helpers to static inline where possible
-Date: Mon,  6 May 2013 16:50:13 -0700
-Message-Id: <1367884221-20462-9-git-send-email-ccross@android.com>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH v3 06/16] freezer: skip waking up tasks with PF_FREEZER_SKIP set
+Date: Mon,  6 May 2013 16:50:11 -0700
+Message-Id: <1367884221-20462-7-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367884221-20462-1-git-send-email-ccross@android.com>
 References: <1367884221-20462-1-git-send-email-ccross@android.com>
@@ -27,96 +27,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of the freezable helpers have to be macros because their
-condition argument needs to get evaluated every time through
-the wait loop.  Convert the others to static inline to make
-future changes easier.
+Android goes through suspend/resume very often (every few seconds when
+on a busy wifi network with the screen off), and a significant portion
+of the energy used to go in and out of suspend is spent in the
+freezer.  If a task has called freezer_do_not_count(), don't bother
+waking it up.  If it happens to wake up later it will call
+freezer_count() and immediately enter the refrigerator.
 
+Combined with patches to convert freezable helpers to use
+freezer_do_not_count() and convert common sites where idle userspace
+tasks are blocked to use the freezable helpers, this reduces the
+time and energy required to suspend and resume.
+
+Acked-by: Tejun Heo <tj@kernel.org>
+Acked-by: Pavel Machek <pavel@ucw.cz>
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- include/linux/freezer.h | 58 ++++++++++++++++++++++++-------------------------
- 1 file changed, 29 insertions(+), 29 deletions(-)
+v2:  move check to freeze_task()
 
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index c71337af..8430d4c5 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -159,46 +159,46 @@ static inline bool freezer_should_skip(struct task_struct *p)
- }
+ kernel/freezer.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/kernel/freezer.c b/kernel/freezer.c
+index c38893b..8b2afc1 100644
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -110,6 +110,18 @@ bool freeze_task(struct task_struct *p)
+ {
+ 	unsigned long flags;
  
- /*
-- * These macros are intended to be used whenever you want allow a sleeping
-+ * These functions are intended to be used whenever you want allow a sleeping
-  * task to be frozen. Note that neither return any clear indication of
-  * whether a freeze event happened while in this function.
-  */
- 
- /* Like schedule(), but should not block the freezer. */
--#define freezable_schedule()						\
--({									\
--	freezer_do_not_count();						\
--	schedule();							\
--	freezer_count();						\
--})
-+static inline void freezable_schedule(void)
-+{
-+	freezer_do_not_count();
-+	schedule();
-+	freezer_count();
-+}
- 
- /* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
--#define freezable_schedule_unsafe()					\
--({									\
--	freezer_do_not_count();						\
--	schedule();							\
--	freezer_count_unsafe();						\
--})
-+static inline void freezable_schedule_unsafe(void)
-+{
-+	freezer_do_not_count();
-+	schedule();
-+	freezer_count_unsafe();
-+}
- 
- /* Like schedule_timeout_killable(), but should not block the freezer. */
--#define freezable_schedule_timeout_killable(timeout)			\
--({									\
--	long __retval;							\
--	freezer_do_not_count();						\
--	__retval = schedule_timeout_killable(timeout);			\
--	freezer_count();						\
--	__retval;							\
--})
-+static inline long freezable_schedule_timeout_killable(long timeout)
-+{
-+	long __retval;
-+	freezer_do_not_count();
-+	__retval = schedule_timeout_killable(timeout);
-+	freezer_count();
-+	return __retval;
-+}
- 
- /* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
--#define freezable_schedule_timeout_killable_unsafe(timeout)		\
--({									\
--	long __retval;							\
--	freezer_do_not_count();						\
--	__retval = schedule_timeout_killable(timeout);			\
--	freezer_count_unsafe();						\
--	__retval;							\
--})
-+static inline long freezable_schedule_timeout_killable_unsafe(long timeout)
-+{
-+	long __retval;
-+	freezer_do_not_count();
-+	__retval = schedule_timeout_killable(timeout);
-+	freezer_count_unsafe();
-+	return __retval;
-+}
- 
- /*
-  * Freezer-friendly wrappers around wait_event_interruptible(),
++	/*
++	 * This check can race with freezer_do_not_count, but worst case that
++	 * will result in an extra wakeup being sent to the task.  It does not
++	 * race with freezer_count(), the barriers in freezer_count() and
++	 * freezer_should_skip() ensure that either freezer_count() sees
++	 * freezing == true in try_to_freeze() and freezes, or
++	 * freezer_should_skip() sees !PF_FREEZE_SKIP and freezes the task
++	 * normally.
++	 */
++	if (freezer_should_skip(p))
++		return false;
++
+ 	spin_lock_irqsave(&freezer_lock, flags);
+ 	if (!freezing(p) || frozen(p)) {
+ 		spin_unlock_irqrestore(&freezer_lock, flags);
 -- 
 1.8.2.1
 
