@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755203Ab3EFPjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 11:39:25 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:41581 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754210Ab3EFPjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 11:39:23 -0400
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Vincent=20Stehl=C3=A9?= <v-stehle@ti.com>,
-        trivial@kernel.org
-Subject: [PATCH] ARM: omap2: gpmc: fix compilation warning
-Date: Mon,  6 May 2013 17:38:49 +0200
-Message-Id: <1367854729-11416-1-git-send-email-vincent.stehle@laposte.net>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755285Ab3EFPoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 11:44:16 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:51060 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820Ab3EFPoP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 11:44:15 -0400
+Message-ID: <1367855046.8434.16.camel@jlt4.sipsolutions.net>
+Subject: Re: Bisected 3.9 regression for iwl4965 connection problem to
+ 1672c0e3
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Jake Edge <jake@lwn.net>, linux-wireless@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Date: Mon, 06 May 2013 17:44:06 +0200
+In-Reply-To: <1367854279.8434.13.camel@jlt4.sipsolutions.net> (sfid-20130506_173141_669857_04689481)
+References: <20130505143803.7e46e4c6@chukar.edge2.net>
+	 <20130506123805.GA1602@redhat.com>
+	 <20130506083759.556dac76@chukar.edge2.net>
+	 <20130506153044.GB1602@redhat.com>
+	 <1367854279.8434.13.camel@jlt4.sipsolutions.net>
+	 (sfid-20130506_173141_669857_04689481)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vincent Stehlé <v-stehle@ti.com>
+On Mon, 2013-05-06 at 17:31 +0200, Johannes Berg wrote:
 
-Fix the following compilation warning:
+> > But if so, I would also see
+> > the breakage on my setup, but I don't - it works quite well here. 
+> 
+> Are you testing on a passive channel? Try with a large beacon interval.
 
-  arch/arm/mach-omap2/gpmc.c: In function 'gpmc_probe_generic_child':
-  arch/arm/mach-omap2/gpmc.c:1477:4: warning: format '%x' expects argument of type 'unsigned int', but argument 4 has type 'resource_size_t' [-Wformat]
+I think most likely what happens is that it's on a passive channel, and
+the firmware drops the TX packet with a bad status. Before the patch,
+we'd just wait sitting on the channel for HZ/5 (200ms) before trying
+again, with the patch we immediately retransmit the packet, which will
+fail again and again until the firmware received a beacon.
 
-Signed-off-by: Vincent Stehlé <v-stehle@ti.com>
-Cc: trivial@kernel.org
----
+If you look at iwlwifi/dvm/, it has some passive_no_rx workaround for
+this, which I don't see in iwlegacy.
 
-(This is a resend.)
+I think the best way to solve this would be to do such a thing in
+iwlegacy as well, but until then and for stable maybe we should
+introduce another HW flag to restore the previous mac80211 behaviour?
 
- arch/arm/mach-omap2/gpmc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
-index ed946df..3cd7074 100644
---- a/arch/arm/mach-omap2/gpmc.c
-+++ b/arch/arm/mach-omap2/gpmc.c
-@@ -1474,7 +1474,7 @@ static int gpmc_probe_generic_child(struct platform_device *pdev,
- 	ret = gpmc_cs_remap(cs, res.start);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "cannot remap GPMC CS %d to 0x%x\n",
--			cs, res.start);
-+			cs, (unsigned)res.start);
- 		goto err;
- 	}
- 
--- 
-1.7.10.4
+johannes
 
