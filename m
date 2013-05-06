@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab3EFTGU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 15:06:20 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:32848 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755543Ab3EFTGT (ORCPT
+	id S1755830Ab3EFTI4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 15:08:56 -0400
+Received: from c650-1.bendbroadband.com ([216.228.160.146]:50376 "EHLO
+	c650-1.noc.bendbroadband.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754882Ab3EFTIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 15:06:19 -0400
-Date: Mon, 6 May 2013 12:06:11 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: RCU init call bootmem allocation after slub us ready.
-Message-ID: <20130506190611.GE3501@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAE9FiQUTV_e9De-6zCPs6OQrVAUJV2VLZDBmxFpJtnjNO3rKfw@mail.gmail.com>
+	Mon, 6 May 2013 15:08:54 -0400
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 May 2013 15:08:54 EDT
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=+miZ3K0x5IWRXMdXz1Zx9XU0uKPCgznJQOk7ApsRCTw= c=1 sm=1
+ a=pMJGwfJMXSAA:10 a=U9oWVh5b3egA:10 a=kj9zAlcOel0A:10
+ a=gy+tFEciwXsrluHyBXYVpg==:17 a=vjIIBuJnmhzrs0HpV2AA:9 a=CjuIK1q_8ugA:10
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArkWAI79h1FbbfXxkWdsb2JhbABQD4FgBAGNX65WhAkEAxpqFg4BAQEBCQsSFIJCJSEeGUQ0ORiIIKEUny6TCwOdRYN/BIltAjk7
+X-IronPort-AV: E=Sophos;i="4.87,623,1363158000"; 
+   d="scan'208";a="145325241"
+From: <mfeis@bendbroadband.com>
+Reply-To: fanjiang@dgoh.org
+Message-ID: <f828906c46e2.51880ca7@bendbroadband.com>
+Date: Mon, 06 May 2013 20:03:51 +0100
+X-Mailer: Sun Java(tm) System Messenger Express 6.2-7.04 (built Aug 17
+ 2006)
 MIME-Version: 1.0
+Content-Language: en
+Subject: Project:
+X-Accept-Language: en
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQUTV_e9De-6zCPs6OQrVAUJV2VLZDBmxFpJtnjNO3rKfw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050619-3620-0000-0000-0000025B05B8
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 11:53:56AM -0700, Yinghai Lu wrote:
-> [    0.000000] SLUB: Genslabs=15, HWalign=64, Order=0-3, MinObjects=0,
-> CPUs=160, Nodes=8
-> [    0.000000] Hierarchical RCU implementation.
-> [    0.000000]  RCU restricting CPUs from NR_CPUS=4096 to nr_cpu_ids=160.
-> [    0.000000] ------------[ cut here ]------------
-> [    0.000000] WARNING: at mm/nobootmem.c:234
-> ___alloc_bootmem_nopanic+0x3a/0x7d()
-> [    0.000000] Modules linked in:
-> [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted
-> 3.9.0-yh-10495-gfc7ffbc-dirty #1543
-> [    0.000000] Hardware name: Oracle Corporation  Sun Fire X4800 M2 /
->    , BIOS 15013200    04/19/2012
-> [    0.000000]  0000000000000009 ffffffff82a01e58 ffffffff8209dc61
-> ffffffff82a01e98
-> [    0.000000]  ffffffff8108a9d0 0000000000000000 0000000000000000
-> 0000000000000200
-> [    0.000000]  ffffffffffffffff 0000000000000040 0000000000000000
-> ffffffff82a01ea8
-> [    0.000000] Call Trace:
-> [    0.000000]  [<ffffffff8209dc61>] dump_stack+0x19/0x1b
-> [    0.000000]  [<ffffffff8108a9d0>] warn_slowpath_common+0x70/0xa0
-> [    0.000000]  [<ffffffff8108aa1a>] warn_slowpath_null+0x1a/0x20
-> [    0.000000]  [<ffffffff82dd54cd>] ___alloc_bootmem_nopanic+0x3a/0x7d
-> [    0.000000]  [<ffffffff82dd5695>] __alloc_bootmem+0x12/0x38
-> [    0.000000]  [<ffffffff82de976a>] alloc_bootmem_cpumask_var+0x1a/0x21
-> [    0.000000]  [<ffffffff82dce4da>] rcu_init+0x66/0x283
-> [    0.000000]  [<ffffffff82dd15ed>] ? perf_event_init+0x136/0x15f
-> [    0.000000]  [<ffffffff82dabf95>] start_kernel+0x24a/0x423
-> [    0.000000]  [<ffffffff82dababe>] ? repair_env_string+0x5e/0x5e
-> [    0.000000]  [<ffffffff820936b6>] ? __memblock_reserve+0x81/0x89
-> [    0.000000]  [<ffffffff82dab5a8>] x86_64_start_reservations+0x2f/0x31
-> [    0.000000]  [<ffffffff82dab79e>] x86_64_start_kernel+0x1f4/0x1fc
-> [    0.000000] ---[ end trace 53ae8bb075006d8f ]---
 
-Do you have commit fa0f93cd6a (rcu: Don't allocate bootmem from rcu_init())?
-If not, could you please try applying it?
 
-							Thanx, Paul
-
+I need your partnership in a business transaction
+ 
+Regard
+ 
+Meng
