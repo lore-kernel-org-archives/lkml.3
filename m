@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab3EFO1e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 10:27:34 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:32852 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752298Ab3EFO1d (ORCPT
+	id S1753532Ab3EFOaK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 10:30:10 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:42045 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab3EFOaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 10:27:33 -0400
+	Mon, 6 May 2013 10:30:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <1367527692-25809-1-git-send-email-ddaney.cavm@gmail.com>
-References: <CA+55aFwDGyHOzu=Qh7SJOBK6QvAwAh7pMDL6LfMUE=AW_kapAw@mail.gmail.com>
- <1367527692-25809-1-git-send-email-ddaney.cavm@gmail.com>
-From: Manuel Lauss <manuel.lauss@gmail.com>
-Date: Mon, 6 May 2013 16:26:52 +0200
-Message-ID: <CAOLZvyFo8OWD4qXDCQwJOWn0Hgs35XEF2pDppSbPt3Fnb3j9GQ@mail.gmail.com>
-Subject: Re: [PATCH] MIPS: Enable interrupts before WAIT instruction.
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: Linux-MIPS <linux-mips@linux-mips.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Jonas Gorski <jogo@openwrt.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAMuHMdXBk0oZUufY3KoFaZiawRHdm9juMqHPMTftqcjQDXnUgw@mail.gmail.com>
+References: <CAMuHMdXBk0oZUufY3KoFaZiawRHdm9juMqHPMTftqcjQDXnUgw@mail.gmail.com>
+Date: Mon, 6 May 2013 07:30:08 -0700
+X-Google-Sender-Auth: de1Yl6kV7XMYbso9r37msofVJDk
+Message-ID: <CA+55aFziLL++0XPHaZJiReoDUh+GQ0LTaaQFLBo4BEV7_fWrYA@mail.gmail.com>
+Subject: Re: h8300 SYMBOL_NAME() breakage
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Al Viro <viro@zeniv.linux.org.uk>,
+        James Hogan <james.hogan@imgtec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-
-On Thu, May 2, 2013 at 10:48 PM, David Daney <ddaney.cavm@gmail.com> wrote:
-> From: David Daney <david.daney@cavium.com>
+On Mon, May 6, 2013 at 5:31 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 >
-> As noted by Thomas Gleixner:
->
->    commit cdbedc61c8 (mips: Use generic idle loop) broke MIPS as I did
->    not realize that MIPS wants to invoke the wait instructions with
->    interrupts enabled.
->
-> Instead of enabling interrupts in arch_cpu_idle() as Thomas' initial
-> patch does, we follow Linus' suggestion of doing it in the assembly
-> code to prevent the compiler from rearranging things.
->
-> Signed-off-by: David Daney <david.daney@cavium.com>
-> Reported-by: EunBong Song <eunb.song@samsung.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Jonas Gorski <jogo@openwrt.org>
-> ---
->
-> This is only very lightly tested, we need more testing before
-> declaring it the definitive fix.
->
->  arch/mips/kernel/genex.S | 7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
+> How should this be fixed?
+>   - Re-add SYMBOL_NAME() to arch/h8300/include/asm/linkage.h?
 
-Unfortunately this patch doesn't work for me, system just hangs at
-certain points
-during kernel startup.  Reverting the patch above fixes it, but with
-this warning:
+No. The whole point was to *not* have these random private definitions.
 
-ehci-platform ehci-platform.0: irq 98, io mem 0x14020000
-------------[ cut here ]------------
-WARNING: at /home/mano/db1200/kernel/linux/kernel/cpu/idle.c:96
-cpu_startup_entry+0x138/0x184()
-CPU: 0 PID: 0 Comm: swapper Not tainted 3.9.0-db1235-10522-g6295a89 #2
-Stack : 00000000 00000000 809b4462 00000046 80929c20 00000000 808c6504 00000000
-          808c3428 80929b27 80929dc8 00000000 809b3c04 00000000
-00000000 00000000
-          80093348 807d1000 2cb41780 8011f458 00000000 00000000
-808c4a28 8091fe24
-          00000000 00000000 00000000 00000000 00000000 00000000
-00000000 00000000
-          00000000 00000000 00000000 00000000 00000000 00000000
-00000000 8091fdb0
-          ...
-Call Trace:
-[<8010a1fc>] show_stack+0x64/0x7c
-[<8011f614>] warn_slowpath_common+0x70/0xa0
-[<8011f700>] warn_slowpath_null+0x18/0x28
-[<80150464>] cpu_startup_entry+0x138/0x184
-[<809658f0>] start_kernel+0x360/0x378
+I guess you could use VMLINUX_SYMBOL() and include <linux/export.h>
+and then use VMLINUX_SYMBOL(). Although..
 
----[ end trace 19427144468f733d ]---
-ehci-platform ehci-platform.0: USB 2.0 started, EHCI 1.00
-hub 1-0:1.0: USB hub found
+>   - Kill SYMBOL_NAME() and SYMBOL_NAME_LABEL(), and hardcode the
+> underscores in the h8300 asm sources?
 
+.. I think this is what everybody else does. Although sometimes that
+underscore depends on what the linkage format is (ie historically
+a.out vs elf etc). We pretty much expect ELF these days, but maybe
+other conditional reasons exist - so there may be a reason you don't
+want to do the hardcoding (although on h8300 it seems to be
+unconditional at least for now).
 
-Thanks,
-      Manuel
+                 Linus
