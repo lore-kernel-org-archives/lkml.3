@@ -1,61 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab3EFIt5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 04:49:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21591 "EHLO mga02.intel.com"
+	id S1753408Ab3EFIvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 04:51:25 -0400
+Received: from 8bytes.org ([85.214.48.195]:40887 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752279Ab3EFIt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 04:49:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,620,1363158000"; 
-   d="scan'208";a="308831333"
-Message-ID: <51876E92.3010300@intel.com>
-Date: Mon, 06 May 2013 16:49:22 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1752228Ab3EFIvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 04:51:24 -0400
+Date: Mon, 6 May 2013 10:51:21 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: [git pull] IOMMU Updates for v3.10
+Message-ID: <20130506085120.GA2973@8bytes.org>
 MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>
-Subject: Re: [PATCH v5 1/7] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
- dependency for load-tracking"
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-2-git-send-email-alex.shi@intel.com> <CAPM31R+4Ar5FFGSgfts76qNiQ5GMpPk7wkuj1fwsFrugVwnLfQ@mail.gmail.com>
-In-Reply-To: <CAPM31R+4Ar5FFGSgfts76qNiQ5GMpPk7wkuj1fwsFrugVwnLfQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon May  6 10:51:22 2013
+X-DSPAM-Confidence: 0.9990
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51876f0a23671334620052
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 04:24 PM, Paul Turner wrote:
->> >         /*
->> >          * CFS Load tracking
->> >          * Under CFS, load is tracked on a per-entity basis and aggregated up.
->> > @@ -242,8 +236,7 @@ struct cfs_rq {
->> >         u64 runnable_load_avg, blocked_load_avg;
->> >         atomic64_t decay_counter, removed_load;
->> >         u64 last_decay;
->> > -#endif /* CONFIG_FAIR_GROUP_SCHED */
->> > -/* These always depend on CONFIG_FAIR_GROUP_SCHED */
-> We should perhaps replace this with a comment that these are only
-> needed to aggregate the point-wise representation in the
-> FAIR_GROUP_SCHED case.
-> 
 
-Is the comments ok? :)
+--3MwIy2ne0vdjdPXF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-/* runnable related variables only used in FAIR_GROUP_SCHED */
+Hi Linus,
 
--- 
-Thanks
-    Alex
+The following changes since commit c1be5a5b1b355d40e6cf79cc979eb66dafa24ad1:
+
+  Linux 3.9 (2013-04-28 17:36:01 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-updates-v3.10
+
+for you to fetch changes up to 0c4513be3d01a854867446ee793748409cc0ebdf:
+
+  Merge branches 'iommu/fixes', 'x86/vt-d', 'x86/amd', 'ppc/pamu', 'core' and 'arm/tegra' into next (2013-05-02 12:10:19 +0200)
+
+----------------------------------------------------------------
+
+IOMMU Updates for Linux v3.10
+
+The updates are mostly about the x86 IOMMUs this time. Exceptions are
+the groundwork for the PAMU IOMMU from Freescale (for a PPC platform)
+and an extension to the IOMMU group interface. On the x86 side this
+includes a workaround for VT-d to disable interrupt remapping on broken
+chipsets. On the AMD-Vi side the most important new feature is a kernel
+command-line interface to override broken information in IVRS ACPI
+tables and get interrupt remapping working this way. Besides that there
+are small fixes all over the place.
+
+----------------------------------------------------------------
+Alexey Kardashevskiy (1):
+      iommu: Add a function to find an iommu group by id
+
+Joerg Roedel (12):
+      iommu/amd: Remove map_sg_no_iommu()
+      iommu/amd: Use AMD specific data structure for irq remapping
+      iommu/amd: Properly initialize irq-table lock
+      iommu: Fix compile warnings with forward declarations
+      iommu/amd: Move add_special_device() to __init
+      iommu/amd: Extend IVRS special device data structure
+      iommu/amd: Add early maps for ioapic and hpet
+      iommu/amd: Add ioapic and hpet ivrs override
+      iommu/amd: Don't report firmware bugs with cmd-line ivrs overrides
+      iommu/amd: Document ivrs_ioapic and ivrs_hpet parameters
+      iommu/amd: Workaround for ERBT1312
+      Merge branches 'iommu/fixes', 'x86/vt-d', 'x86/amd', 'ppc/pamu', 'core' and 'arm/tegra' into next
+
+Li, Zhen-Hua (1):
+      iommu/vt-d: dmar_fault should only clear PPF/PFO field.
+
+Linn Crosetto (1):
+      iommu/vt-d: Remove warning for HPET scope type
+
+Neil Horman (1):
+      iommu/vt-d: add quirk for broken interrupt remapping on 55XX chipsets
+
+Suravee Suthikulpanit (2):
+      iommu/amd: Re-enable IOMMU event log interrupt after handling.
+      iommu/AMD: Per-thread IOMMU Interrupt Handling
+
+Takao Indoh (1):
+      iommu/vt-d: Disable translation if already enabled
+
+Varun Sethi (4):
+      iommu/fsl: Make iova dma_addr_t in the iommu_iova_to_phys API.
+      iommu/fsl: Add the window permission flag as a parameter to iommu_window_enable API.
+      iommu: Move swap_pci_ref function to drivers/iommu/pci.h.
+      iommu/tegra: Fix printk formats for dma_addr_t
+
+Wang YanQing (1):
+      iommu: Include linux/err.h
+
+Wei Yongjun (1):
+      iommu/amd: fix error return code in early_amd_iommu_init()
+
+ Documentation/kernel-parameters.txt  |   14 ++++
+ arch/x86/include/asm/irq_remapping.h |    9 ++
+ arch/x86/kernel/early-quirks.c       |   20 +++++
+ drivers/iommu/amd_iommu.c            |  145 ++++++++++++++------------------
+ drivers/iommu/amd_iommu_init.c       |  154 ++++++++++++++++++++++++++++++----
+ drivers/iommu/amd_iommu_types.h      |    2 +
+ drivers/iommu/dmar.c                 |   26 ++++--
+ drivers/iommu/exynos-iommu.c         |    2 +-
+ drivers/iommu/intel-iommu.c          |   24 ++++--
+ drivers/iommu/intel_irq_remapping.c  |   10 +++
+ drivers/iommu/iommu.c                |   37 +++++++-
+ drivers/iommu/irq_remapping.c        |    6 ++
+ drivers/iommu/irq_remapping.h        |    2 +
+ drivers/iommu/msm_iommu.c            |    2 +-
+ drivers/iommu/omap-iommu.c           |    2 +-
+ drivers/iommu/pci.h                  |   29 +++++++
+ drivers/iommu/shmobile-iommu.c       |    2 +-
+ drivers/iommu/tegra-gart.c           |    5 +-
+ drivers/iommu/tegra-smmu.c           |    5 +-
+ include/linux/iommu.h                |   18 ++--
+ 20 files changed, 382 insertions(+), 132 deletions(-)
+ create mode 100644 drivers/iommu/pci.h
+
+Please pull.
+
+Thanks,
+
+	Joerg
+
+
+--3MwIy2ne0vdjdPXF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRh28IAAoJECvwRC2XARrjD9cP/AzFh5128wZGVYDAr4AVBKGt
+PAmvQmd+QKZt/TDvuYPh5QOXdqF48R/cPCevAvNK5sn33xc8Ac4YvFqkAqAFmW26
+ZpBwLsKjiMsJiHO17mvHzFPB+7dGhupoIwsChS5mcukrzbFreUmFQF7RR70eu5QI
+ZaZlTkf06iKxxj4i+xkUcfIDEwMkqyd5QR+ij9Zo6kDP7jiahxz6yHjs8DKJTQLZ
+V+7oAKlaIAaF5KU2pH5g7iXmSKtIL/Jpn5a7XGJfQD68gSCftzs3xV3qaFwC29/k
+eXBZEzEOmUie4LyldQs0Da7BTDy4JDNhL4KF7Cg2607dcPsPJtSgBHYNqM5Rz9o/
+L+4LSR/+TefizpudM6jk7ImDn8KenU+Mg8XXbzQyPAZ0beTcI0pxwC5GqCN+4I25
+pjlLgMq/Vf3rf9DY6EOdc2ouTszYn1xQZPxTOVMDmBz2Bub41+ga1D0B9eJj/OfN
+7I+opPupNpiV+PaUanLpTLE/rwebKc0h8NiwERgmndTmDha16k30wi9mYu/AT4MS
+MoZJBWzhO63pdjRTCH/hAwtQJev2LOMHIDR7vOvmMR+vOZvzlSCvWghqWv2AGE+l
+XEZvVGnSdOV38W5VogflIfAPmcV8MZPDVm16+3ROM0o1D+6Su+CXaWNBQUIKBgK+
+I5TMcS8GI6IyuZFakiTG
+=98Wk
+-----END PGP SIGNATURE-----
+
+--3MwIy2ne0vdjdPXF--
+
+
