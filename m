@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758392Ab3EFUwv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:52:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59347 "EHLO
+	id S1758441Ab3EFUxO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:53:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59343 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758062Ab3EFUq7 (ORCPT
+	with ESMTP id S1758039Ab3EFUq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:59 -0400
+	Mon, 6 May 2013 16:46:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 104/115] ext4: fix big-endian bug in metadata checksum calculations
-Date: Mon,  6 May 2013 13:45:40 -0700
-Message-Id: <20130506203106.248894738@linuxfoundation.org>
+Subject: [ 103/115] ext4: unregister es_shrinker if mount failed
+Date: Mon,  6 May 2013 13:45:39 -0700
+Message-Id: <20130506203106.148797168@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -28,55 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit 171a7f21a76a0958c225b97c00a97a10390d40ee upstream.
+commit a75ae78f087f933ab3432e98bb4dbbf2196cf6d5 upstream.
+
+Otherwise destroyed ext_sb_info will be part of global shinker list
+and result in the following OOPS:
+
+JBD2: corrupted journal superblock
+JBD2: recovery failed
+EXT4-fs (dm-2): error loading journal
+general protection fault: 0000 [#1] SMP
+Modules linked in: fuse acpi_cpufreq freq_table mperf coretemp kvm_intel kvm crc32c_intel microcode sg button sd_mod crc_t10dif ahci libahci pata_acpi ata_generic dm_mirror dm_region_hash dm_log dm_\
+mod
+CPU 1
+Pid: 2758, comm: mount Not tainted 3.8.0-rc3+ #136                  /DH55TC
+RIP: 0010:[<ffffffff811bfb2d>]  [<ffffffff811bfb2d>] unregister_shrinker+0xad/0xe0
+RSP: 0000:ffff88011d5cbcd8  EFLAGS: 00010207
+RAX: 6b6b6b6b6b6b6b6b RBX: 6b6b6b6b6b6b6b53 RCX: 0000000000000006
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000246
+RBP: ffff88011d5cbce8 R08: 0000000000000002 R09: 0000000000000001
+R10: 0000000000000001 R11: 0000000000000000 R12: ffff88011cd3f848
+R13: ffff88011cd3f830 R14: ffff88011cd3f000 R15: 0000000000000000
+FS:  00007f7b721dd7e0(0000) GS:ffff880121a00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007fffa6f75038 CR3: 000000011bc1c000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process mount (pid: 2758, threadinfo ffff88011d5ca000, task ffff880116aacb80)
+Stack:
+ffff88011cd3f000 ffffffff8209b6c0 ffff88011d5cbd18 ffffffff812482f1
+00000000000003f3 00000000ffffffea ffff880115f4c200 0000000000000000
+ffff88011d5cbda8 ffffffff81249381 ffff8801219d8bf8 ffffffff00000000
+Call Trace:
+[<ffffffff812482f1>] deactivate_locked_super+0x91/0xb0
+[<ffffffff81249381>] mount_bdev+0x331/0x340
+[<ffffffff81376730>] ? ext4_alloc_flex_bg_array+0x180/0x180
+[<ffffffff81362035>] ext4_mount+0x15/0x20
+[<ffffffff8124869a>] mount_fs+0x9a/0x2e0
+[<ffffffff81277e25>] vfs_kern_mount+0xc5/0x170
+[<ffffffff81279c02>] do_new_mount+0x172/0x2e0
+[<ffffffff8127aa56>] do_mount+0x376/0x380
+[<ffffffff8127ab98>] sys_mount+0x138/0x150
+[<ffffffff818ffed9>] system_call_fastpath+0x16/0x1b
+Code: 8b 05 88 04 eb 00 48 3d 90 ff 06 82 48 8d 58 e8 75 19 4c 89 e7 e8 e4 d7 2c 00 48 c7 c7 00 ff 06 82 e8 58 5f ef ff 5b 41 5c c9 c3 <48> 8b 4b 18 48 8b 73 20 48 89 da 31 c0 48 c7 c7 c5 a0 e4 81 e\
+8
+RIP  [<ffffffff811bfb2d>] unregister_shrinker+0xad/0xe0
+RSP <ffff88011d5cbcd8>
 
 Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |    8 ++++----
- fs/ext4/mmp.c   |    2 +-
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ fs/ext4/super.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -55,21 +55,21 @@ static __u32 ext4_inode_csum(struct inod
- 	__u16 csum_hi = 0;
- 	__u32 csum;
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3701,6 +3701,9 @@ static int ext4_fill_super(struct super_
+ 	sbi->s_err_report.function = print_daily_error_info;
+ 	sbi->s_err_report.data = (unsigned long) sb;
  
--	csum_lo = raw->i_checksum_lo;
-+	csum_lo = le16_to_cpu(raw->i_checksum_lo);
- 	raw->i_checksum_lo = 0;
- 	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
- 	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi)) {
--		csum_hi = raw->i_checksum_hi;
-+		csum_hi = le16_to_cpu(raw->i_checksum_hi);
- 		raw->i_checksum_hi = 0;
++	/* Register extent status tree shrinker */
++	ext4_es_register_shrinker(sb);
++
+ 	err = percpu_counter_init(&sbi->s_freeclusters_counter,
+ 			ext4_count_free_clusters(sb));
+ 	if (!err) {
+@@ -3726,9 +3729,6 @@ static int ext4_fill_super(struct super_
+ 	sbi->s_max_writeback_mb_bump = 128;
+ 	sbi->s_extent_max_zeroout_kb = 32;
+ 
+-	/* Register extent status tree shrinker */
+-	ext4_es_register_shrinker(sb);
+-
+ 	/*
+ 	 * set up enough so that it can read an inode
+ 	 */
+@@ -4013,6 +4013,7 @@ failed_mount_wq:
+ 		sbi->s_journal = NULL;
  	}
- 
- 	csum = ext4_chksum(sbi, ei->i_csum_seed, (__u8 *)raw,
- 			   EXT4_INODE_SIZE(inode->i_sb));
- 
--	raw->i_checksum_lo = csum_lo;
-+	raw->i_checksum_lo = cpu_to_le16(csum_lo);
- 	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
- 	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
--		raw->i_checksum_hi = csum_hi;
-+		raw->i_checksum_hi = cpu_to_le16(csum_hi);
- 
- 	return csum;
- }
---- a/fs/ext4/mmp.c
-+++ b/fs/ext4/mmp.c
-@@ -7,7 +7,7 @@
- #include "ext4.h"
- 
- /* Checksumming functions */
--static __u32 ext4_mmp_csum(struct super_block *sb, struct mmp_struct *mmp)
-+static __le32 ext4_mmp_csum(struct super_block *sb, struct mmp_struct *mmp)
- {
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
- 	int offset = offsetof(struct mmp_struct, mmp_checksum);
+ failed_mount3:
++	ext4_es_unregister_shrinker(sb);
+ 	del_timer(&sbi->s_err_report);
+ 	if (sbi->s_flex_groups)
+ 		ext4_kvfree(sbi->s_flex_groups);
 
 
