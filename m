@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933967Ab3EFX4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:56:20 -0400
-Received: from mail-ve0-f202.google.com ([209.85.128.202]:48754 "EHLO
-	mail-ve0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932305Ab3EFXu0 (ORCPT
+	id S1759501Ab3EFX4k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:56:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36174 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932848Ab3EFW5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:50:26 -0400
-From: Colin Cross <ccross@android.com>
+	Mon, 6 May 2013 18:57:17 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Colin Cross <ccross@android.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-nfs@vger.kernel.org, linux-pm@vger.kernel.org,
-        netdev@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Len Brown <len.brown@intel.com>
-Subject: [PATCH v3 02/16] freezer: add unsafe versions of freezable helpers for CIFS
-Date: Mon,  6 May 2013 16:50:07 -0700
-Message-Id: <1367884221-20462-3-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1367884221-20462-1-git-send-email-ccross@android.com>
-References: <1367884221-20462-1-git-send-email-ccross@android.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 37/63] ALSA: usb-audio: Fix autopm error during probing
+Date: Mon,  6 May 2013 15:56:15 -0700
+Message-Id: <20130506225324.001592396@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
+References: <20130506225314.802167948@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CIFS calls wait_event_freezekillable_unsafe with a VFS lock held,
-which is unsafe and will cause lockdep warnings when 6aa9707
-"lockdep: check that no locks held at freeze time" is reapplied
-(it was reverted in dbf520a).  CIFS shouldn't be doing this, but
-it has long-running syscalls that must hold a lock but also
-shouldn't block suspend.  Until CIFS freeze handling is rewritten
-to use a signal to exit out of the critical section, add a new
-wait_event_freezekillable_unsafe helper that will not run the
-lockdep test when 6aa9707 is reapplied, and call it from CIFS.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-In practice the likley result of holding the lock while freezing
-is that a second task blocked on the lock will never freeze,
-aborting suspend, but it is possible to manufacture a case using
-the cgroup freezer, the lock, and the suspend freezer to create
-a deadlock.  Silencing the lockdep warning here will allow
-problems to be found in other drivers that may have a more
-serious deadlock risk, and prevent new problems from being added.
+------------------
 
-Signed-off-by: Colin Cross <ccross@android.com>
+From: Takashi Iwai <tiwai@suse.de>
+
+commit 60af3d037eb8c670dcce31401501d1271e7c5d95 upstream.
+
+We've got strange errors in get_ctl_value() in mixer.c during
+probing, e.g. on Hercules RMX2 DJ Controller:
+
+  ALSA mixer.c:352 cannot get ctl value: req = 0x83, wValue = 0x201, wIndex = 0xa00, type = 4
+  ALSA mixer.c:352 cannot get ctl value: req = 0x83, wValue = 0x200, wIndex = 0xa00, type = 4
+  ....
+
+It turned out that the culprit is autopm: snd_usb_autoresume() returns
+-ENODEV when called during card->probing = 1.
+
+Since the call itself during card->probing = 1 is valid, let's fix the
+return value of snd_usb_autoresume() as success.
+
+Reported-and-tested-by: Daniel Schürmann <daschuer@mixxx.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- include/linux/freezer.h | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ sound/usb/card.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 5b31e21c..d3c038e 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -212,6 +212,16 @@ static inline bool freezer_should_skip(struct task_struct *p)
- 	__retval;							\
- })
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -611,7 +611,9 @@ int snd_usb_autoresume(struct snd_usb_au
+ 	int err = -ENODEV;
  
-+/* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
-+#define wait_event_freezekillable_unsafe(wq, condition)			\
-+({									\
-+	int __retval;							\
-+	freezer_do_not_count();						\
-+	__retval = wait_event_killable(wq, (condition));		\
-+	freezer_count_unsafe();						\
-+	__retval;							\
-+})
-+
- #define wait_event_freezable(wq, condition)				\
- ({									\
- 	int __retval;							\
-@@ -277,6 +287,9 @@ static inline void set_freezable(void) {}
- #define wait_event_freezekillable(wq, condition)		\
- 		wait_event_killable(wq, condition)
+ 	down_read(&chip->shutdown_rwsem);
+-	if (!chip->shutdown && !chip->probing)
++	if (chip->probing)
++		err = 0;
++	else if (!chip->shutdown)
+ 		err = usb_autopm_get_interface(chip->pm_intf);
+ 	up_read(&chip->shutdown_rwsem);
  
-+#define wait_event_freezekillable_unsafe(wq, condition)			\
-+		wait_event_killable(wq, condition)
-+
- #endif /* !CONFIG_FREEZER */
- 
- #endif	/* FREEZER_H_INCLUDED */
--- 
-1.8.2.1
+
 
