@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759934Ab3EFXH7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:07:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36386 "EHLO
+	id S1759955Ab3EFXIV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:08:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36382 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933055Ab3EFW7I (ORCPT
+	with ESMTP id S933048Ab3EFW7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:08 -0400
+	Mon, 6 May 2013 18:59:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 15/46] tracing: Use stack of calling function for stack tracer
-Date: Mon,  6 May 2013 15:58:21 -0700
-Message-Id: <20130506225822.289462554@linuxfoundation.org>
+        Mika Kuoppala <mika.kuoppala@intel.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 14/46] fbcon: when font is freed, clear also vc_font.data
+Date: Mon,  6 May 2013 15:58:20 -0700
+Message-Id: <20130506225822.190147853@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -26,75 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Mika Kuoppala <mika.kuoppala@linux.intel.com>
 
-commit 87889501d0adfae10e3b0f0e6f2d7536eed9ae84 upstream.
+commit e6637d5427d2af9f3f33b95447bfc5347e5ccd85 upstream.
 
-Use the stack of stack_trace_call() instead of check_stack() as
-the test pointer for max stack size. It makes it a bit cleaner
-and a little more accurate.
+commit ae1287865f5361fa138d4d3b1b6277908b54eac9
+Author: Dave Airlie <airlied@redhat.com>
+Date:   Thu Jan 24 16:12:41 2013 +1000
 
-Adding stable, as a later fix depends on this patch.
+    fbcon: don't lose the console font across generic->chip driver switch
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+uses a pointer in vc->vc_font.data to load font into the new driver.
+However if the font is actually freed, we need to clear the data
+so that we don't reload font from dangling pointer.
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=892340
+Signed-off-by: Mika Kuoppala <mika.kuoppala@intel.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_stack.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/video/console/fbcon.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -37,20 +37,21 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
- int stack_tracer_enabled;
- static int last_stack_tracer_enabled;
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -1229,6 +1229,8 @@ static void fbcon_deinit(struct vc_data
+ finished:
  
--static inline void check_stack(void)
-+static inline void
-+check_stack(unsigned long *stack)
- {
- 	unsigned long this_size, flags;
- 	unsigned long *p, *top, *start;
- 	int i;
+ 	fbcon_free_font(p, free_font);
++	if (free_font)
++		vc->vc_font.data = NULL;
  
--	this_size = ((unsigned long)&this_size) & (THREAD_SIZE-1);
-+	this_size = ((unsigned long)stack) & (THREAD_SIZE-1);
- 	this_size = THREAD_SIZE - this_size;
- 
- 	if (this_size <= max_stack_size)
- 		return;
- 
- 	/* we do not handle interrupt stacks yet */
--	if (!object_is_on_stack(&this_size))
-+	if (!object_is_on_stack(stack))
- 		return;
- 
- 	local_irq_save(flags);
-@@ -71,7 +72,7 @@ static inline void check_stack(void)
- 	 * Now find where in the stack these are.
- 	 */
- 	i = 0;
--	start = &this_size;
-+	start = stack;
- 	top = (unsigned long *)
- 		(((unsigned long)start & ~(THREAD_SIZE-1)) + THREAD_SIZE);
- 
-@@ -110,6 +111,7 @@ static inline void check_stack(void)
- static void
- stack_trace_call(unsigned long ip, unsigned long parent_ip)
- {
-+	unsigned long stack;
- 	int cpu;
- 
- 	if (unlikely(!ftrace_enabled || stack_trace_disabled))
-@@ -122,7 +124,7 @@ stack_trace_call(unsigned long ip, unsig
- 	if (per_cpu(trace_active, cpu)++ != 0)
- 		goto out;
- 
--	check_stack();
-+	check_stack(&stack);
- 
-  out:
- 	per_cpu(trace_active, cpu)--;
+ 	if (!con_is_bound(&fb_con))
+ 		fbcon_exit();
 
 
