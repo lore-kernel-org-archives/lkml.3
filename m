@@ -1,155 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758593Ab3EFU4p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:56:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59280 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757915Ab3EFUqt (ORCPT
+	id S1758608Ab3EFU5A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:57:00 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:52423 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757272Ab3EFU46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:49 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Lu <aaron.lu@intel.com>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 075/115] libata: acpi: make ata_ap_acpi_handle not block
-Date: Mon,  6 May 2013 13:45:11 -0700
-Message-Id: <20130506203103.251906939@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
-References: <20130506203055.537199268@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 6 May 2013 16:56:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130506203118.GK28282@csclub.uwaterloo.ca>
+References: <CAPweEDwZrXQ4Wqw6_-YvmR7uNxWWNvE_c0-8UMuEhFzYW-BZWQ@mail.gmail.com>
+	<1367870518.18069.211@driftwood>
+	<20130506203118.GK28282@csclub.uwaterloo.ca>
+Date: Mon, 6 May 2013 21:56:57 +0100
+X-Google-Sender-Auth: -n3OJdsR13lImobxShHubTOBnx8
+Message-ID: <CAPweEDwrnb2vt2ef5WZqOdVTyp384nCVJW-Qp4JiDXbpXFB=sg@mail.gmail.com>
+Subject: Re: device tree not the answer in the ARM world [was: Re: running
+ Debian on a Cubieboard]
+From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+Cc: Rob Landley <rob@landley.net>,
+        James Courtier-Dutton <james.dutton@gmail.com>,
+        Robert Hancock <hancockrwd@gmail.com>,
+        David Goodenough <david.goodenough@btconnect.com>,
+        debian-arm@lists.debian.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On Mon, May 6, 2013 at 9:31 PM, Lennart Sorensen
+<lsorense@csclub.uwaterloo.ca> wrote:
 
-------------------
+>> And neither is the same as the quality or sustainability of the
+>> resulting software. But if the product line will be be discontinued
+>> three months after its introduction, who cares about being able to
+>> maintain anything?
+>
+> Sounds good to me.  Those that think devicetree will never work can go
+> do whatever they want with the hardware they have from the makers of
+> cheap junk with no expected lifetime in the market.  The rest of us can
+> go focus on making something efficient and usable long term.
 
-From: Aaron Lu <aaron.lu@intel.com>
+ ahh, lennart, it's a pity we were writing at the same time.  i'd be
+interested to hear your honest thoughts and opinions on my reply to
+rob.
 
-commit d66af4df0837f21bf267305dc5ccab2d29e24d86 upstream.
-
-Since commit 30dcf76acc, ata_ap_acpi_handle will always do a namespace
-walk, which requires acquiring an acpi namespace mutex. This made it
-impossible to be used when calling path has held a spinlock.
-
-For example, it can occur in the following code path for pata_acpi:
-ata_scsi_queuecmd (ap->lock is acquired)
-  __ata_scsi_queuecmd
-    ata_scsi_translate
-      ata_qc_issue
-        pacpi_qc_issue
-          ata_acpi_stm
-            ata_ap_acpi_handle
-              acpi_get_child
-                acpi_walk_namespace
-                  acpi_ut_acquire_mutex (acquire mutex while holding lock)
-This caused scheduling while atomic bug, as reported in bug #56781.
-
-Actually, ata_ap_acpi_handle doesn't have to walk the namespace every
-time it is called, it can simply return the bound acpi handle on the
-corresponding SCSI host. The reason previously it is not done this way
-is, ata_ap_acpi_handle is used in the binding function
-ata_acpi_bind_host by ata_acpi_gtm when the handle is not bound to the
-SCSI host yet. Since we already have the ATA port's handle in its
-binding function, we can simply use it instead of calling
-ata_ap_acpi_handle there. So introduce a new function __ata_acpi_gtm,
-where it will receive an acpi handle param in addition to the ATA port
-which is solely used for debug statement. With this change, we can make
-ata_ap_acpi_handle simply return the bound handle for SCSI host instead
-of walking the acpi namespace now.
-
-Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=56781
-Reported-and-tested-by: <kenzopl@o2.pl>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/ata/libata-acpi.c |   45 +++++++++++++++++++++++++++------------------
- 1 file changed, 27 insertions(+), 18 deletions(-)
-
---- a/drivers/ata/libata-acpi.c
-+++ b/drivers/ata/libata-acpi.c
-@@ -61,7 +61,8 @@ acpi_handle ata_ap_acpi_handle(struct at
- 	if (ap->flags & ATA_FLAG_ACPI_SATA)
- 		return NULL;
- 
--	return acpi_get_child(DEVICE_ACPI_HANDLE(ap->host->dev), ap->port_no);
-+	return ap->scsi_host ?
-+		DEVICE_ACPI_HANDLE(&ap->scsi_host->shost_gendev) : NULL;
- }
- EXPORT_SYMBOL(ata_ap_acpi_handle);
- 
-@@ -240,28 +241,15 @@ void ata_acpi_dissociate(struct ata_host
- 	}
- }
- 
--/**
-- * ata_acpi_gtm - execute _GTM
-- * @ap: target ATA port
-- * @gtm: out parameter for _GTM result
-- *
-- * Evaluate _GTM and store the result in @gtm.
-- *
-- * LOCKING:
-- * EH context.
-- *
-- * RETURNS:
-- * 0 on success, -ENOENT if _GTM doesn't exist, -errno on failure.
-- */
--int ata_acpi_gtm(struct ata_port *ap, struct ata_acpi_gtm *gtm)
-+static int __ata_acpi_gtm(struct ata_port *ap, acpi_handle handle,
-+			  struct ata_acpi_gtm *gtm)
- {
- 	struct acpi_buffer output = { .length = ACPI_ALLOCATE_BUFFER };
- 	union acpi_object *out_obj;
- 	acpi_status status;
- 	int rc = 0;
- 
--	status = acpi_evaluate_object(ata_ap_acpi_handle(ap), "_GTM", NULL,
--				      &output);
-+	status = acpi_evaluate_object(handle, "_GTM", NULL, &output);
- 
- 	rc = -ENOENT;
- 	if (status == AE_NOT_FOUND)
-@@ -295,6 +283,27 @@ int ata_acpi_gtm(struct ata_port *ap, st
- 	return rc;
- }
- 
-+/**
-+ * ata_acpi_gtm - execute _GTM
-+ * @ap: target ATA port
-+ * @gtm: out parameter for _GTM result
-+ *
-+ * Evaluate _GTM and store the result in @gtm.
-+ *
-+ * LOCKING:
-+ * EH context.
-+ *
-+ * RETURNS:
-+ * 0 on success, -ENOENT if _GTM doesn't exist, -errno on failure.
-+ */
-+int ata_acpi_gtm(struct ata_port *ap, struct ata_acpi_gtm *gtm)
-+{
-+	if (ata_ap_acpi_handle(ap))
-+		return __ata_acpi_gtm(ap, ata_ap_acpi_handle(ap), gtm);
-+	else
-+		return -EINVAL;
-+}
-+
- EXPORT_SYMBOL_GPL(ata_acpi_gtm);
- 
- /**
-@@ -1080,7 +1089,7 @@ static int ata_acpi_bind_host(struct ata
- 	if (!*handle)
- 		return -ENODEV;
- 
--	if (ata_acpi_gtm(ap, &ap->__acpi_init_gtm) == 0)
-+	if (__ata_acpi_gtm(ap, *handle, &ap->__acpi_init_gtm) == 0)
- 		ap->pflags |= ATA_PFLAG_INIT_GTM_VALID;
- 
- 	return 0;
-
-
+ l.
