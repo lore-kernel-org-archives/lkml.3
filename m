@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871Ab3EFUqp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59214 "EHLO
+	id S1757211Ab3EFU6c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:58:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59244 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757762Ab3EFUqk (ORCPT
+	with ESMTP id S1756525Ab3EFUqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:40 -0400
+	Mon, 6 May 2013 16:46:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 067/115] ARM: 7702/1: Set the page table freeing ceiling to TASK_SIZE
-Date: Mon,  6 May 2013 13:45:03 -0700
-Message-Id: <20130506203102.410919957@linuxfoundation.org>
+        David Engraf <david.engraf@sysgo.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [ 069/115] hrtimer: Fix ktime_add_ns() overflow on 32bit architectures
+Date: Mon,  6 May 2013 13:45:05 -0700
+Message-Id: <20130506203102.622003727@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -29,54 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: David Engraf <david.engraf@sysgo.com>
 
-commit 6aaa189f8712471a250bfdf8fc8d08277258b8ab upstream.
+commit 51fd36f3fad8447c487137ae26b9d0b3ce77bb25 upstream.
 
-ARM processors with LPAE enabled use 3 levels of page tables, with an
-entry in the top level (pgd) covering 1GB of virtual space. Because of
-the branch relocation limitations on ARM, the loadable modules are
-mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
-between kernel modules and user space.
+One can trigger an overflow when using ktime_add_ns() on a 32bit
+architecture not supporting CONFIG_KTIME_SCALAR.
 
-If free_pgtables() is called with the default ceiling 0,
-free_pgd_range() (and subsequently called functions) also frees the page
-table shared between user space and kernel modules (which is normally
-handled by the ARM-specific pgd_free() function). This patch changes
-defines the ARM USER_PGTABLES_CEILING to TASK_SIZE when CONFIG_ARM_LPAE
-is enabled.
+When passing a very high value for u64 nsec, e.g. 7881299347898368000
+the do_div() function converts this value to seconds (7881299347) which
+is still to high to pass to the ktime_set() function as long. The result
+in is a negative value.
 
-Note that the pgd_free() function already checks the presence of the
-shared pmd page allocated by pgd_alloc() and frees it, though with
-ceiling 0 this wasn't necessary.
+The problem on my system occurs in the tick-sched.c,
+tick_nohz_stop_sched_tick() when time_delta is set to
+timekeeping_max_deferment(). The check for time_delta < KTIME_MAX is
+valid, thus ktime_add_ns() is called with a too large value resulting in
+a negative expire value. This leads to an endless loop in the ticker code:
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+time_delta: 7881299347898368000
+expires = ktime_add_ns(last_update, time_delta)
+expires: negative value
+
+This fix caps the value to KTIME_MAX.
+
+This error doesn't occurs on 64bit or architectures supporting
+CONFIG_KTIME_SCALAR (e.g. ARM, x86-32).
+
+Signed-off-by: David Engraf <david.engraf@sysgo.com>
+[jstultz: Minor tweaks to commit message & header]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/pgtable.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ kernel/hrtimer.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -70,6 +70,15 @@ extern void __pgd_error(const char *file
- #endif
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -276,6 +276,10 @@ ktime_t ktime_add_ns(const ktime_t kt, u
+ 	} else {
+ 		unsigned long rem = do_div(nsec, NSEC_PER_SEC);
  
- /*
-+ * Use TASK_SIZE as the ceiling argument for free_pgtables() and
-+ * free_pgd_range() to avoid freeing the modules pmd when LPAE is enabled (pmd
-+ * page shared between user and kernel).
-+ */
-+#ifdef CONFIG_ARM_LPAE
-+#define USER_PGTABLES_CEILING	TASK_SIZE
-+#endif
++		/* Make sure nsec fits into long */
++		if (unlikely(nsec > KTIME_SEC_MAX))
++			return (ktime_t){ .tv64 = KTIME_MAX };
 +
-+/*
-  * The pgprot_* and protection_map entries will be fixed up in runtime
-  * to include the cachable and bufferable bits based on memory policy,
-  * as well as any architecture dependent bits like global/ASID and SMP
+ 		tmp = ktime_set((long)nsec, rem);
+ 	}
+ 
 
 
