@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932781Ab3EFXOd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:14:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37019 "EHLO
+	id S933199Ab3EFXOu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:14:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37016 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933014Ab3EFXOS (ORCPT
+	with ESMTP id S932503Ab3EFXOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:18 -0400
+	Mon, 6 May 2013 19:14:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [ 104/104] mfd: adp5520: Restore mode bits on resume
-Date: Mon,  6 May 2013 16:13:03 -0700
-Message-Id: <20130506230054.293808825@linuxfoundation.org>
+        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 094/104] ext4: fix big-endian bug in metadata checksum calculations
+Date: Mon,  6 May 2013 16:12:53 -0700
+Message-Id: <20130506230053.291089521@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -28,53 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit c6cc25fda58da8685ecef3f179adc7b99c8253b2 upstream.
+commit 171a7f21a76a0958c225b97c00a97a10390d40ee upstream.
 
-The adp5520 unfortunately also clears the BL_EN bit when the nSTNDBY bit is
-cleared. So we need to make sure to restore it during resume if it was set
-before suspend.
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/adp5520.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/ext4/inode.c |    8 ++++----
+ fs/ext4/mmp.c   |    2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/mfd/adp5520.c
-+++ b/drivers/mfd/adp5520.c
-@@ -36,6 +36,7 @@ struct adp5520_chip {
- 	struct blocking_notifier_head notifier_list;
- 	int irq;
- 	unsigned long id;
-+	uint8_t mode;
- };
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -55,21 +55,21 @@ static __u32 ext4_inode_csum(struct inod
+ 	__u16 csum_hi = 0;
+ 	__u32 csum;
  
- static int __adp5520_read(struct i2c_client *client,
-@@ -326,7 +327,10 @@ static int adp5520_suspend(struct device
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
+-	csum_lo = raw->i_checksum_lo;
++	csum_lo = le16_to_cpu(raw->i_checksum_lo);
+ 	raw->i_checksum_lo = 0;
+ 	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
+ 	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi)) {
+-		csum_hi = raw->i_checksum_hi;
++		csum_hi = le16_to_cpu(raw->i_checksum_hi);
+ 		raw->i_checksum_hi = 0;
+ 	}
  
--	adp5520_clr_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
-+	adp5520_read(chip->dev, ADP5520_MODE_STATUS, &chip->mode);
-+	/* All other bits are W1C */
-+	chip->mode &= ADP5520_BL_EN | ADP5520_DIM_EN | ADP5520_nSTNBY;
-+	adp5520_write(chip->dev, ADP5520_MODE_STATUS, 0);
- 	return 0;
+ 	csum = ext4_chksum(sbi, ei->i_csum_seed, (__u8 *)raw,
+ 			   EXT4_INODE_SIZE(inode->i_sb));
+ 
+-	raw->i_checksum_lo = csum_lo;
++	raw->i_checksum_lo = cpu_to_le16(csum_lo);
+ 	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
+ 	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
+-		raw->i_checksum_hi = csum_hi;
++		raw->i_checksum_hi = cpu_to_le16(csum_hi);
+ 
+ 	return csum;
  }
+--- a/fs/ext4/mmp.c
++++ b/fs/ext4/mmp.c
+@@ -7,7 +7,7 @@
+ #include "ext4.h"
  
-@@ -335,7 +339,7 @@ static int adp5520_resume(struct device
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
- 
--	adp5520_set_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
-+	adp5520_write(chip->dev, ADP5520_MODE_STATUS, chip->mode);
- 	return 0;
- }
- #endif
+ /* Checksumming functions */
+-static __u32 ext4_mmp_csum(struct super_block *sb, struct mmp_struct *mmp)
++static __le32 ext4_mmp_csum(struct super_block *sb, struct mmp_struct *mmp)
+ {
+ 	struct ext4_sb_info *sbi = EXT4_SB(sb);
+ 	int offset = offsetof(struct mmp_struct, mmp_checksum);
 
 
