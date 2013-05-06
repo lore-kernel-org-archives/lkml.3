@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761624Ab3EFXr2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:47:28 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:64865 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761560Ab3EFXrX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:47:23 -0400
-Date: Tue, 7 May 2013 01:47:19 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: kosaki.motohiro@gmail.com
-Cc: linux-kernel@vger.kernel.org, Olivier Langlois <olivier@trillion01.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 1/7] posix-cpu-timers: don't account cpu timer after
- stopped thread runtime accounting
-Message-ID: <20130506234717.GA1703@somewhere>
-References: <1367556468-4021-1-git-send-email-kosaki.motohiro@gmail.com>
- <1367556468-4021-3-git-send-email-kosaki.motohiro@gmail.com>
+	id S1761646Ab3EFXrr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:47:47 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:35135 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761627Ab3EFXrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 19:47:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Parag Warudkar <parag.lkml@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: Immediate wakeup after suspend
+Date: Tue, 07 May 2013 01:56:08 +0200
+Message-ID: <1612326.XDA8n1le4S@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAOULuObQq+WPf97LdsD5kN6cq=E9TvaHzqGzdKSWRme-Nk+WQQ@mail.gmail.com>
+References: <CAOULuObQq+WPf97LdsD5kN6cq=E9TvaHzqGzdKSWRme-Nk+WQQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367556468-4021-3-git-send-email-kosaki.motohiro@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 12:47:42AM -0400, kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> When tsk->signal->cputimer->running is 1, signal->cputimer and
-> tsk->sum_sched_runtime increase at the same pace because update_curr()
-> increases both accounting.
-> 
-> However, there is one exception. When thread exiting, __exit_signal() turns
-> over task's sum_shced_runtime to sig->sum_sched_runtime, but it doesn't stop
-> signal->cputimer accounting.
-> 
-> This inconsistency makes POSIX timer wake up too early. This patch fixes it.
-> 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Acked-by: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: Olivier Langlois <olivier@trillion01.com>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  kernel/sched/stats.h |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/sched/stats.h b/kernel/sched/stats.h
-> index 2ef90a5..5a0cfc4 100644
-> --- a/kernel/sched/stats.h
-> +++ b/kernel/sched/stats.h
-> @@ -225,6 +225,13 @@ static inline void account_group_exec_runtime(struct task_struct *tsk,
->  	if (!cputimer->running)
->  		return;
->  
-> +	/*
-> +	 * After turning over se.sum_exec_runtime to sig->sum_sched_runtime
-> +	 * in __exit_signal(), we must not account exec_runtime for consistency.
-> +	 */
-> +	if (unlikely(!tsk->sighand))
-> +		return;
+On Monday, May 06, 2013 06:22:47 PM Parag Warudkar wrote:
+> Sometime after 3.9 my iMac has started to resume almost immediately
+> after suspend.  Even with 3.9 it was all working as expected.
 
-Ok, if we want the clock and timer to be consistent, do we also want the same check in
-account_group_user_time() and account_group_system_time()? The task can still account
-a tick after autoreaping itself between release_task() and the final schedule().
+It'd be good to know something more precise, like for example which merge
+introduced the problem.  I'm not aware of anything that might result is this
+kind of breakage.
 
-> +
->  	raw_spin_lock(&cputimer->lock);
->  	cputimer->cputime.sum_exec_runtime += ns;
->  	raw_spin_unlock(&cputimer->lock);
-> -- 
-> 1.7.1
+> Relevant dmesg output below. Any way to find out the source of the wakeup?
+
+Not really.
+
+You can play with the wakeup settings of various devices.
+
+Can you send the contents of /proc/acpi/wakeup from the machine?
+
+Rafael
+
+
+> Linux parag-iMac 3.9.0+ #5 SMP PREEMPT Mon May 6 17:01:19 EDT 2013
+> x86_64 x86_64 x86_64 GNU/Linux
 > 
+> [ 3631.441257] PM: Entering mem sleep
+> [ 3631.441274] Suspending console(s) (use no_console_suspend to debug)
+> [ 3631.441825] sd 0:0:0:0: [sda] Synchronizing SCSI cache
+> [ 3631.442003] sd 0:0:0:0: [sda] Stopping disk
+> [ 3631.755076] PM: suspend of devices complete after 313.257 msecs
+> [ 3631.755219] PM: late suspend of devices complete after 0.134 msecs
+> [ 3631.795185] PM: noirq suspend of devices complete after 39.904 msecs
+> [ 3631.821922] pcieport 0000:00:1c.1: power state changed by ACPI to D0
+> [ 3631.915378] PM: noirq resume of devices complete after 119.999 msecs
+> [ 3631.915459] PM: early resume of devices complete after 0.062 msecs
+> [ 3631.915525] ahci 0000:00:1f.2: setting latency timer to 64
+> [ 3631.915609] ehci-pci 0000:00:1a.7: setting latency timer to 64
+> [ 3631.915654] uhci_hcd 0000:00:1a.0: setting latency timer to 64
+> [ 3631.915690] usb usb1: root hub lost power or was reset
+> [ 3631.915709] snd_hda_intel 0000:00:1b.0: irq 46 for MSI/MSI-X
+> [ 3631.915770] uhci_hcd 0000:00:1d.0: setting latency timer to 64
+> [ 3631.915792] usb usb2: root hub lost power or was reset
+> [ 3631.915804] ehci-pci 0000:00:1d.7: setting latency timer to 64
+> [ 3631.915821] snd_hda_intel 0000:01:00.1: irq 48 for MSI/MSI-X
+> [ 3631.918662] [drm] probing gen 2 caps for device 8086:101 = 2212d02/0
+> [ 3631.918665] [drm] PCIE gen 2 link speeds already enabled
+> [ 3631.921479] [drm] PCIE GART of 512M enabled (table at 0x0000000000040000).
+> [ 3631.921584] radeon 0000:01:00.0: WB enabled
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
