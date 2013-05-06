@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761729Ab3EFXtL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:49:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36174 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932859Ab3EFW5S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932856Ab3EFW5S (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 May 2013 18:57:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36154 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932739Ab3EFW5N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 18:57:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>,
-        Jan Kara <jack@suse.cz>
-Subject: [ 55/63] ext4: fix journal callback list traversal
-Date: Mon,  6 May 2013 15:56:33 -0700
-Message-Id: <20130506225328.082852928@linuxfoundation.org>
+        Stephan Schreiber <info@fs-driver.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [ 32/63] Wrong asm register contraints in the kvm implementation
+Date: Mon,  6 May 2013 15:56:10 -0700
+Message-Id: <20130506225322.837979453@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -27,127 +27,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Stephan Schreiber <info@fs-driver.org>
 
-commit 5d3ee20855e28169d711b394857ee608a5023094 upstream.
+commit de53e9caa4c6149ef4a78c2f83d7f5b655848767 upstream.
 
-It is incorrect to use list_for_each_entry_safe() for journal callback
-traversial because ->next may be removed by other task:
-->ext4_mb_free_metadata()
-  ->ext4_mb_free_metadata()
-    ->ext4_journal_callback_del()
+The Linux Kernel contains some inline assembly source code which has
+wrong asm register constraints in arch/ia64/kvm/vtlb.c.
 
-This results in the following issue:
+I observed this on Kernel 3.2.35 but it is also true on the most
+recent Kernel 3.9-rc1.
 
-WARNING: at lib/list_debug.c:62 __list_del_entry+0x1c0/0x250()
-Hardware name:
-list_del corruption. prev->next should be ffff88019a4ec198, but was 6b6b6b6b6b6b6b6b
-Modules linked in: cpufreq_ondemand acpi_cpufreq freq_table mperf coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode sg xhci_hcd button sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw aes_x86_64 xts gf128mul ahci libahci pata_acpi ata_generic dm_mirror dm_region_hash dm_log dm_mod
-Pid: 16400, comm: jbd2/dm-1-8 Tainted: G        W    3.8.0-rc3+ #107
-Call Trace:
- [<ffffffff8106fb0d>] warn_slowpath_common+0xad/0xf0
- [<ffffffff8106fc06>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff813637e9>] ? ext4_journal_commit_callback+0x99/0xc0
- [<ffffffff8148cae0>] __list_del_entry+0x1c0/0x250
- [<ffffffff813637bf>] ext4_journal_commit_callback+0x6f/0xc0
- [<ffffffff813ca336>] jbd2_journal_commit_transaction+0x23a6/0x2570
- [<ffffffff8108aa42>] ? try_to_del_timer_sync+0x82/0xa0
- [<ffffffff8108b491>] ? del_timer_sync+0x91/0x1e0
- [<ffffffff813d3ecf>] kjournald2+0x19f/0x6a0
- [<ffffffff810ad630>] ? wake_up_bit+0x40/0x40
- [<ffffffff813d3d30>] ? bit_spin_lock+0x80/0x80
- [<ffffffff810ac6be>] kthread+0x10e/0x120
- [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
- [<ffffffff818ff6ac>] ret_from_fork+0x7c/0xb0
- [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
+File arch/ia64/kvm/vtlb.c:
 
-This patch fix the issue as follows:
-- ext4_journal_commit_callback() make list truly traversial safe
-  simply by always starting from list_head
-- fix race between two ext4_journal_callback_del() and
-  ext4_journal_callback_try_del()
+u64 guest_vhpt_lookup(u64 iha, u64 *pte)
+{
+	u64 ret;
+	struct thash_data *data;
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
+	data = __vtr_lookup(current_vcpu, iha, D_TLB);
+	if (data != NULL)
+		thash_vhpt_insert(current_vcpu, data->page_flags,
+			data->itir, iha, D_TLB);
+
+	asm volatile (
+			"rsm psr.ic|psr.i;;"
+			"srlz.d;;"
+			"ld8.s r9=[%1];;"
+			"tnat.nz p6,p7=r9;;"
+			"(p6) mov %0=1;"
+			"(p6) mov r9=r0;"
+			"(p7) extr.u r9=r9,0,53;;"
+			"(p7) mov %0=r0;"
+			"(p7) st8 [%2]=r9;;"
+			"ssm psr.ic;;"
+			"srlz.d;;"
+			"ssm psr.i;;"
+			"srlz.d;;"
+			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
+
+	return ret;
+}
+
+The list of output registers is
+			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
+The constraint "=r" means that the GCC has to maintain that these vars
+are in registers and contain valid info when the program flow leaves
+the assembly block (output registers).
+But "=r" also means that GCC can put them in registers that are used
+as input registers. Input registers are iha, pte on the example.
+If the predicate p7 is true, the 8th assembly instruction
+			"(p7) mov %0=r0;"
+is the first one which writes to a register which is maintained by the
+register constraints; it sets %0. %0 means the first register operand;
+it is ret here.
+This instruction might overwrite the %2 register (pte) which is needed
+by the next instruction:
+			"(p7) st8 [%2]=r9;;"
+Whether it really happens depends on how GCC decides what registers it
+uses and how it optimizes the code.
+
+The attached patch  fixes the register operand constraints in
+arch/ia64/kvm/vtlb.c.
+The register constraints should be
+			: "=&r"(ret) : "r"(iha), "r"(pte):"memory");
+The & means that GCC must not use any of the input registers to place
+this output register in.
+
+This is Debian bug#702639
+(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=702639).
+
+The patch is applicable on Kernel 3.9-rc1, 3.2.35 and many other versions.
+
+Signed-off-by: Stephan Schreiber <info@fs-driver.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ext4_jbd2.h |    6 +++++-
- fs/ext4/mballoc.c   |    8 ++++----
- fs/ext4/super.c     |    7 +++++--
- 3 files changed, 14 insertions(+), 7 deletions(-)
+ arch/ia64/kvm/vtlb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/ext4_jbd2.h
-+++ b/fs/ext4/ext4_jbd2.h
-@@ -164,16 +164,20 @@ static inline void ext4_journal_callback
-  * ext4_journal_callback_del: delete a registered callback
-  * @handle: active journal transaction handle on which callback was registered
-  * @jce: registered journal callback entry to unregister
-+ * Return true if object was sucessfully removed
-  */
--static inline void ext4_journal_callback_del(handle_t *handle,
-+static inline bool ext4_journal_callback_try_del(handle_t *handle,
- 					     struct ext4_journal_cb_entry *jce)
- {
-+	bool deleted;
- 	struct ext4_sb_info *sbi =
- 			EXT4_SB(handle->h_transaction->t_journal->j_private);
+--- a/arch/ia64/kvm/vtlb.c
++++ b/arch/ia64/kvm/vtlb.c
+@@ -256,7 +256,7 @@ u64 guest_vhpt_lookup(u64 iha, u64 *pte)
+ 			"srlz.d;;"
+ 			"ssm psr.i;;"
+ 			"srlz.d;;"
+-			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
++			: "=&r"(ret) : "r"(iha), "r"(pte) : "memory");
  
- 	spin_lock(&sbi->s_md_lock);
-+	deleted = !list_empty(&jce->jce_list);
- 	list_del_init(&jce->jce_list);
- 	spin_unlock(&sbi->s_md_lock);
-+	return deleted;
+ 	return ret;
  }
- 
- int
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4436,11 +4436,11 @@ ext4_mb_free_metadata(handle_t *handle,
- 	node = rb_prev(new_node);
- 	if (node) {
- 		entry = rb_entry(node, struct ext4_free_data, efd_node);
--		if (can_merge(entry, new_entry)) {
-+		if (can_merge(entry, new_entry) &&
-+		    ext4_journal_callback_try_del(handle, &entry->efd_jce)) {
- 			new_entry->efd_start_cluster = entry->efd_start_cluster;
- 			new_entry->efd_count += entry->efd_count;
- 			rb_erase(node, &(db->bb_free_root));
--			ext4_journal_callback_del(handle, &entry->efd_jce);
- 			kmem_cache_free(ext4_free_data_cachep, entry);
- 		}
- 	}
-@@ -4448,10 +4448,10 @@ ext4_mb_free_metadata(handle_t *handle,
- 	node = rb_next(new_node);
- 	if (node) {
- 		entry = rb_entry(node, struct ext4_free_data, efd_node);
--		if (can_merge(new_entry, entry)) {
-+		if (can_merge(new_entry, entry) &&
-+		    ext4_journal_callback_try_del(handle, &entry->efd_jce)) {
- 			new_entry->efd_count += entry->efd_count;
- 			rb_erase(node, &(db->bb_free_root));
--			ext4_journal_callback_del(handle, &entry->efd_jce);
- 			kmem_cache_free(ext4_free_data_cachep, entry);
- 		}
- 	}
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -437,10 +437,13 @@ static void ext4_journal_commit_callback
- 	struct super_block		*sb = journal->j_private;
- 	struct ext4_sb_info		*sbi = EXT4_SB(sb);
- 	int				error = is_journal_aborted(journal);
--	struct ext4_journal_cb_entry	*jce, *tmp;
-+	struct ext4_journal_cb_entry	*jce;
- 
-+	BUG_ON(txn->t_state == T_FINISHED);
- 	spin_lock(&sbi->s_md_lock);
--	list_for_each_entry_safe(jce, tmp, &txn->t_private_list, jce_list) {
-+	while (!list_empty(&txn->t_private_list)) {
-+		jce = list_entry(txn->t_private_list.next,
-+				 struct ext4_journal_cb_entry, jce_list);
- 		list_del_init(&jce->jce_list);
- 		spin_unlock(&sbi->s_md_lock);
- 		jce->jce_func(sb, jce, error);
 
 
