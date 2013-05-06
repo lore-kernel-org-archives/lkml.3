@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401Ab3EFXOH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:14:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36943 "EHLO
+	id S933310Ab3EFXT4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:19:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36954 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760658Ab3EFXOE (ORCPT
+	with ESMTP id S932363Ab3EFXOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:04 -0400
+	Mon, 6 May 2013 19:14:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        fanchaoting <fanchaoting@cn.fujitsu.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 086/104] nfsd: dont run get_file if nfs4_preprocess_stateid_op return error
-Date: Mon,  6 May 2013 16:12:45 -0700
-Message-Id: <20130506230052.484970773@linuxfoundation.org>
+        Robin Holt <holt@sgi.com>, Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 089/104] ipc: sysv shared memory limited to 8TiB
+Date: Mon,  6 May 2013 16:12:48 -0700
+Message-Id: <20130506230052.777826715@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -27,41 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: fanchaoting <fanchaoting@cn.fujitsu.com>
+From: Robin Holt <holt@sgi.com>
 
-commit b022032e195ffca83d7002d6b84297d796ed443b upstream.
+commit d69f3bad4675ac519d41ca2b11e1c00ca115cecd upstream.
 
-we should return error status directly when nfs4_preprocess_stateid_op
-return error.
+Trying to run an application which was trying to put data into half of
+memory using shmget(), we found that having a shmall value below 8EiB-8TiB
+would prevent us from using anything more than 8TiB.  By setting
+kernel.shmall greater than 8EiB-8TiB would make the job work.
 
-Signed-off-by: fanchaoting <fanchaoting@cn.fujitsu.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
+
+ipc/shm.c:
+ 458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ 459 {
+...
+ 465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
+...
+ 474         if (ns->shm_tot + numpages > ns->shm_ctlall)
+ 475                 return -ENOSPC;
+
+[akpm@linux-foundation.org: make ipc/shm.c:newseg()'s numpages size_t, not int]
+Signed-off-by: Robin Holt <holt@sgi.com>
+Reported-by: Alex Thorlton <athorlton@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4proc.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ include/linux/ipc_namespace.h |    2 +-
+ ipc/shm.c                     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -931,14 +931,14 @@ nfsd4_write(struct svc_rqst *rqstp, stru
- 	nfs4_lock_state();
- 	status = nfs4_preprocess_stateid_op(SVC_NET(rqstp),
- 					cstate, stateid, WR_STATE, &filp);
--	if (filp)
--		get_file(filp);
--	nfs4_unlock_state();
--
- 	if (status) {
-+		nfs4_unlock_state();
- 		dprintk("NFSD: nfsd4_write: couldn't process stateid!\n");
- 		return status;
- 	}
-+	if (filp)
-+		get_file(filp);
-+	nfs4_unlock_state();
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -43,8 +43,8 @@ struct ipc_namespace {
  
- 	cnt = write->wr_buflen;
- 	write->wr_how_written = write->wr_stable_how;
+ 	size_t		shm_ctlmax;
+ 	size_t		shm_ctlall;
++	unsigned long	shm_tot;
+ 	int		shm_ctlmni;
+-	int		shm_tot;
+ 	/*
+ 	 * Defines whether IPC_RMID is forced for _all_ shm segments regardless
+ 	 * of shmctl()
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -462,7 +462,7 @@ static int newseg(struct ipc_namespace *
+ 	size_t size = params->u.size;
+ 	int error;
+ 	struct shmid_kernel *shp;
+-	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
++	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	struct file * file;
+ 	char name[13];
+ 	int id;
 
 
