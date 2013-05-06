@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab3EFUyb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:54:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59313 "EHLO
+	id S1758527Ab3EFUya (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:54:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59324 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757993Ab3EFUqy (ORCPT
+	with ESMTP id S1756753Ab3EFUqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:54 -0400
+	Mon, 6 May 2013 16:46:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Greg Thelen <gthelen@google.com>, Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 084/115] fs/dcache.c: add cond_resched() to shrink_dcache_parent()
-Date: Mon,  6 May 2013 13:45:20 -0700
-Message-Id: <20130506203104.240056132@linuxfoundation.org>
+        Marc Eshel <eshel@us.ibm.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 086/115] LOCKD: Ensure that nlmclnt_block resets block->b_status after a server reboot
+Date: Mon,  6 May 2013 13:45:22 -0700
+Message-Id: <20130506203104.432400899@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -28,112 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Thelen <gthelen@google.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 421348f1ca0bf17769dee0aed4d991845ae0536d upstream.
+commit 1dfd89af8697a299e7982ae740d4695ecd917eef upstream.
 
-Call cond_resched() in shrink_dcache_parent() to maintain interactivity.
+After a server reboot, the reclaimer thread will recover all the existing
+locks. For locks that are blocked, however, it will change the value
+of block->b_status to nlm_lck_denied_grace_period in order to signal that
+they need to wake up and resend the original blocking lock request.
 
-Before this patch:
+Due to a bug, however, the block->b_status never gets reset after the
+blocked locks have been woken up, and so the process goes into an
+infinite loop of resends until the blocked lock is satisfied.
 
-	void shrink_dcache_parent(struct dentry * parent)
-	{
-		while ((found = select_parent(parent, &dispose)) != 0)
-			shrink_dentry_list(&dispose);
-	}
-
-select_parent() populates the dispose list with dentries which
-shrink_dentry_list() then deletes.  select_parent() carefully uses
-need_resched() to avoid doing too much work at once.  But neither
-shrink_dcache_parent() nor its called functions call cond_resched().  So
-once need_resched() is set select_parent() will return single dentry
-dispose list which is then deleted by shrink_dentry_list().  This is
-inefficient when there are a lot of dentry to process.  This can cause
-softlockup and hurts interactivity on non preemptable kernels.
-
-This change adds cond_resched() in shrink_dcache_parent().  The benefit
-of this is that need_resched() is quickly cleared so that future calls
-to select_parent() are able to efficiently return a big batch of dentry.
-
-These additional cond_resched() do not seem to impact performance, at
-least for the workload below.
-
-Here is a program which can cause soft lockup if other system activity
-sets need_resched().
-
-	int main()
-	{
-	        struct rlimit rlim;
-	        int i;
-	        int f[100000];
-	        char buf[20];
-	        struct timeval t1, t2;
-	        double diff;
-
-	        /* cleanup past run */
-	        system("rm -rf x");
-
-	        /* boost nfile rlimit */
-	        rlim.rlim_cur = 200000;
-	        rlim.rlim_max = 200000;
-	        if (setrlimit(RLIMIT_NOFILE, &rlim))
-	                err(1, "setrlimit");
-
-	        /* make directory for files */
-	        if (mkdir("x", 0700))
-	                err(1, "mkdir");
-
-	        if (gettimeofday(&t1, NULL))
-	                err(1, "gettimeofday");
-
-	        /* populate directory with open files */
-	        for (i = 0; i < 100000; i++) {
-	                snprintf(buf, sizeof(buf), "x/%d", i);
-	                f[i] = open(buf, O_CREAT);
-	                if (f[i] == -1)
-	                        err(1, "open");
-	        }
-
-	        /* close some of the files */
-	        for (i = 0; i < 85000; i++)
-	                close(f[i]);
-
-	        /* unlink all files, even open ones */
-	        system("rm -rf x");
-
-	        if (gettimeofday(&t2, NULL))
-	                err(1, "gettimeofday");
-
-	        diff = (((double)t2.tv_sec * 1000000 + t2.tv_usec) -
-	                ((double)t1.tv_sec * 1000000 + t1.tv_usec));
-
-	        printf("done: %g elapsed\n", diff/1e6);
-	        return 0;
-	}
-
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Marc Eshel <eshel@us.ibm.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcache.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/lockd/clntlock.c |    3 +++
+ fs/lockd/clntproc.c |    3 ---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1230,8 +1230,10 @@ void shrink_dcache_parent(struct dentry
- 	LIST_HEAD(dispose);
- 	int found;
- 
--	while ((found = select_parent(parent, &dispose)) != 0)
-+	while ((found = select_parent(parent, &dispose)) != 0) {
- 		shrink_dentry_list(&dispose);
-+		cond_resched();
-+	}
+--- a/fs/lockd/clntlock.c
++++ b/fs/lockd/clntlock.c
+@@ -144,6 +144,9 @@ int nlmclnt_block(struct nlm_wait *block
+ 			timeout);
+ 	if (ret < 0)
+ 		return -ERESTARTSYS;
++	/* Reset the lock status after a server reboot so we resend */
++	if (block->b_status == nlm_lck_denied_grace_period)
++		block->b_status = nlm_lck_blocked;
+ 	req->a_res.status = block->b_status;
+ 	return 0;
  }
- EXPORT_SYMBOL(shrink_dcache_parent);
- 
+--- a/fs/lockd/clntproc.c
++++ b/fs/lockd/clntproc.c
+@@ -550,9 +550,6 @@ again:
+ 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
+ 		if (status < 0)
+ 			break;
+-		/* Resend the blocking lock request after a server reboot */
+-		if (resp->status ==  nlm_lck_denied_grace_period)
+-			continue;
+ 		if (resp->status != nlm_lck_blocked)
+ 			break;
+ 	}
 
 
