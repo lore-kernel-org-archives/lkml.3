@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933719Ab3EFXaj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:30:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36769 "EHLO
+	id S933736Ab3EFXay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:30:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36767 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760530Ab3EFXNj (ORCPT
+	with ESMTP id S1760520Ab3EFXNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:39 -0400
+	Mon, 6 May 2013 19:13:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Chris J. Benenati" <chris.j.benenati@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: [ 049/104] PCI/PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
-Date: Mon,  6 May 2013 16:12:08 -0700
-Message-Id: <20130506230048.638629635@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 038/104] tracing: Use stack of calling function for stack tracer
+Date: Mon,  6 May 2013 16:11:57 -0700
+Message-Id: <20130506230047.518992178@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -28,56 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 769ba7212f2059ca9fe0c73371e3d415c8c1c529 upstream.
+commit 87889501d0adfae10e3b0f0e6f2d7536eed9ae84 upstream.
 
-Commit b51306c (PCI: Set device power state to PCI_D0 for device
-without native PM support) modified pci_platform_power_transition()
-by adding code causing dev->current_state for devices that don't
-support native PCI PM but are power-manageable by the platform to be
-changed to PCI_D0 regardless of the value returned by the preceding
-platform_pci_set_power_state().  In particular, that also is done
-if the platform_pci_set_power_state() has been successful, which
-causes the correct power state of the device set by
-pci_update_current_state() in that case to be overwritten by PCI_D0.
+Use the stack of stack_trace_call() instead of check_stack() as
+the test pointer for max stack size. It makes it a bit cleaner
+and a little more accurate.
 
-Fix that mistake by making the fallback to PCI_D0 only happen if
-the platform_pci_set_power_state() has returned an error.
+Adding stable, as a later fix depends on this patch.
 
-[bhelgaas: folded in Yinghai's simplification, added URL & stable info]
-Reference: http://lkml.kernel.org/r/27806FC4E5928A408B78E88BBC67A2306F466BBA@ORSMSX101.amr.corp.intel.com
-Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ kernel/trace/trace_stack.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -651,15 +651,11 @@ static int pci_platform_power_transition
- 		error = platform_pci_set_power_state(dev, state);
- 		if (!error)
- 			pci_update_current_state(dev, state);
--		/* Fall back to PCI_D0 if native PM is not supported */
--		if (!dev->pm_cap)
--			dev->current_state = PCI_D0;
--	} else {
-+	} else
- 		error = -ENODEV;
--		/* Fall back to PCI_D0 if native PM is not supported */
--		if (!dev->pm_cap)
--			dev->current_state = PCI_D0;
--	}
-+
-+	if (error && !dev->pm_cap) /* Fall back to PCI_D0 */
-+		dev->current_state = PCI_D0;
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -39,20 +39,21 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
+ int stack_tracer_enabled;
+ static int last_stack_tracer_enabled;
  
- 	return error;
- }
+-static inline void check_stack(void)
++static inline void
++check_stack(unsigned long *stack)
+ {
+ 	unsigned long this_size, flags;
+ 	unsigned long *p, *top, *start;
+ 	int i;
+ 
+-	this_size = ((unsigned long)&this_size) & (THREAD_SIZE-1);
++	this_size = ((unsigned long)stack) & (THREAD_SIZE-1);
+ 	this_size = THREAD_SIZE - this_size;
+ 
+ 	if (this_size <= max_stack_size)
+ 		return;
+ 
+ 	/* we do not handle interrupt stacks yet */
+-	if (!object_is_on_stack(&this_size))
++	if (!object_is_on_stack(stack))
+ 		return;
+ 
+ 	local_irq_save(flags);
+@@ -73,7 +74,7 @@ static inline void check_stack(void)
+ 	 * Now find where in the stack these are.
+ 	 */
+ 	i = 0;
+-	start = &this_size;
++	start = stack;
+ 	top = (unsigned long *)
+ 		(((unsigned long)start & ~(THREAD_SIZE-1)) + THREAD_SIZE);
+ 
+@@ -113,6 +114,7 @@ static void
+ stack_trace_call(unsigned long ip, unsigned long parent_ip,
+ 		 struct ftrace_ops *op, struct pt_regs *pt_regs)
+ {
++	unsigned long stack;
+ 	int cpu;
+ 
+ 	preempt_disable_notrace();
+@@ -122,7 +124,7 @@ stack_trace_call(unsigned long ip, unsig
+ 	if (per_cpu(trace_active, cpu)++ != 0)
+ 		goto out;
+ 
+-	check_stack();
++	check_stack(&stack);
+ 
+  out:
+ 	per_cpu(trace_active, cpu)--;
 
 
