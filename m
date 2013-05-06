@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760533Ab3EFXNj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:13:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36755 "EHLO
+	id S933719Ab3EFXaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:30:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36769 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760504Ab3EFXNg (ORCPT
+	with ESMTP id S1760530Ab3EFXNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:36 -0400
+	Mon, 6 May 2013 19:13:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sandy Wu <sandyw@twitter.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 045/104] crypto: crc32-pclmul - Use gas macro for pclmulqdq
-Date: Mon,  6 May 2013 16:12:04 -0700
-Message-Id: <20130506230048.234898529@linuxfoundation.org>
+        "Chris J. Benenati" <chris.j.benenati@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: [ 049/104] PCI/PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
+Date: Mon,  6 May 2013 16:12:08 -0700
+Message-Id: <20130506230048.638629635@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -27,45 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sandy Wu <sandyw@twitter.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 57ae1b0532977b30184aaba04b6cafe0a284c21f upstream.
+commit 769ba7212f2059ca9fe0c73371e3d415c8c1c529 upstream.
 
-Occurs when CONFIG_CRYPTO_CRC32C_INTEL=y and CONFIG_CRYPTO_CRC32C_INTEL=y.
-Older versions of bintuils do not support the pclmulqdq instruction. The
-PCLMULQDQ gas macro is used instead.
+Commit b51306c (PCI: Set device power state to PCI_D0 for device
+without native PM support) modified pci_platform_power_transition()
+by adding code causing dev->current_state for devices that don't
+support native PCI PM but are power-manageable by the platform to be
+changed to PCI_D0 regardless of the value returned by the preceding
+platform_pci_set_power_state().  In particular, that also is done
+if the platform_pci_set_power_state() has been successful, which
+causes the correct power state of the device set by
+pci_update_current_state() in that case to be overwritten by PCI_D0.
 
-Signed-off-by: Sandy Wu <sandyw@twitter.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Fix that mistake by making the fallback to PCI_D0 only happen if
+the platform_pci_set_power_state() has returned an error.
+
+[bhelgaas: folded in Yinghai's simplification, added URL & stable info]
+Reference: http://lkml.kernel.org/r/27806FC4E5928A408B78E88BBC67A2306F466BBA@ORSMSX101.amr.corp.intel.com
+Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/crypto/crc32c-pcl-intel-asm_64.S |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/pci/pci.c |   12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
---- a/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
-+++ b/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
-@@ -42,6 +42,8 @@
-  * SOFTWARE.
-  */
- 
-+#include <asm/inst.h>
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -651,15 +651,11 @@ static int pci_platform_power_transition
+ 		error = platform_pci_set_power_state(dev, state);
+ 		if (!error)
+ 			pci_update_current_state(dev, state);
+-		/* Fall back to PCI_D0 if native PM is not supported */
+-		if (!dev->pm_cap)
+-			dev->current_state = PCI_D0;
+-	} else {
++	} else
+ 		error = -ENODEV;
+-		/* Fall back to PCI_D0 if native PM is not supported */
+-		if (!dev->pm_cap)
+-			dev->current_state = PCI_D0;
+-	}
 +
- ## ISCSI CRC 32 Implementation with crc32 and pclmulqdq Instruction
++	if (error && !dev->pm_cap) /* Fall back to PCI_D0 */
++		dev->current_state = PCI_D0;
  
- .macro LABEL prefix n
-@@ -224,10 +226,10 @@ LABEL crc_ %i
- 	movdqa  (bufp), %xmm0			# 2 consts: K1:K2
- 
- 	movq    crc_init, %xmm1			# CRC for block 1
--	pclmulqdq $0x00,%xmm0,%xmm1		# Multiply by K2
-+	PCLMULQDQ 0x00,%xmm0,%xmm1		# Multiply by K2
- 
- 	movq    crc1, %xmm2			# CRC for block 2
--	pclmulqdq $0x10, %xmm0, %xmm2		# Multiply by K1
-+	PCLMULQDQ 0x10, %xmm0, %xmm2		# Multiply by K1
- 
- 	pxor    %xmm2,%xmm1
- 	movq    %xmm1, %rax
+ 	return error;
+ }
 
 
