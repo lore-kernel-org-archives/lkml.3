@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342Ab3EFEGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 00:06:35 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:42068 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab3EFEGd (ORCPT
+	id S1752469Ab3EFEIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 00:08:12 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:29855 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab3EFEIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 00:06:33 -0400
-X-AuditID: cbfee691-b7fe56d000004b96-9b-51872c480651
+	Mon, 6 May 2013 00:08:10 -0400
+X-AuditID: cbfee68d-b7f016d000007930-5d-51872ca90c00
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
-        "'Peter Ujfalusi'" <peter.ujfalusi@ti.com>
-Subject: [PATCH 3/8] mfd: twl4030-audio: remove unnecessary
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        "'J Keerthy'" <j-keerthy@ti.com>
+Subject: [PATCH 4/8] mfd: twl4030-madc: remove unnecessary
  platform_set_drvdata()
-Date: Mon, 06 May 2013 13:06:31 +0900
-Message-id: <003001ce4a0f$1771ec70$4655c550$@samsung.com>
+Date: Mon, 06 May 2013 13:08:08 +0900
+Message-id: <003101ce4a0f$513696e0$f3a3c4a0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5KDwE+PfMUFsFkRBuYxbg/+ATdnQ==
+Thread-index: Ac5KDyeeSZNGDmMmQLqF+Was+hDcaQ==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zfV0PnfZAg7NXhS0uL7zEanF51xw2
-	i1kff7BanO5mdWDxmHcy0KNvyypGj+M3tjN5fN4kF8ASxWWTkpqTWZZapG+XwJXx6+9r1oLH
-	HBXHr8xib2Cczd7FyMkhIWAicXX7bxYIW0ziwr31bF2MXBxCAssYJb519sIV/V/RCZVYxCjx
-	/lEvK4Tzi1Hi65GdbCBVbAJqEl++HAbrEBHQkug+dh4sziyQJ7F66iymLkYODmGBEIlrawJA
-	wiwCqhIrf94D28wrYCmx4dcbKFtQ4sdkiDgz0Jj1O48zQdjyEpvXvGWGOEhBYsfZ14wQq/Qk
-	jq1rZYeoEZHY9+IdI8htEgKr2CUentrNDrFMQOLb5EMsIDdICMhKbDoANUdS4uCKGywTGMVm
-	IVk9C8nqWUhWz0KyYgEjyypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MkBibuIPx/gHrQ4zJ
-	QOsnMkuJJucDYzSvJN7Q2MzIwtTE1NjI3NKMNGElcV71FutAIYH0xJLU7NTUgtSi+KLSnNTi
-	Q4xMHJxSDYwLkwytOLl8Vz9gs6p613n/4BefD6EZTLyK+vrr1mpv5HzTYFj8Ysbt2Uu1vTOF
-	GdKsTlSevx68guPFrrMJe0Qi5jr1PbpQmLeHhXnlV8GghkldsydUWh6Sea3Hy3HhCvs6szlC
-	JTpunGG/lBXPhV+uN66tdfwl+u7xu8T8+dXCzD+9zKoT3iuxFGckGmoxFxUnAgABPPq3xwIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAV0PnfZAg8aJAhaXF15itbi8aw6b
-	xayPP1gtTnezOrB4zDsZ6NG3ZRWjx/Eb25k8Pm+SC2CJamC0yUhNTEktUkjNS85PycxLt1Xy
-	Do53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAHaqKRQlphTChQKSCwuVtK3wzQhNMRN1wKm
-	MULXNyQIrsfIAA0krGPM+PX3NWvBY46K41dmsTcwzmbvYuTkkBAwkfi/opMNwhaTuHBvPZDN
-	xSEksIhR4v2jXlYI5xejxNcjO8Gq2ATUJL58OQzWLSKgJdF97DxYnFkgT2L11FlMXYwcHMIC
-	IRLX1gSAhFkEVCVW/rzHAmLzClhKbPj1BsoWlPgxGSLODDRm/c7jTBC2vMTmNW+ZIQ5SkNhx
-	9jUjxCo9iWPrWtkhakQk9r14xziBUWAWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca6RUn
-	5haX5qXrJefnbmIER/Az6R2MqxosDjEKcDAq8fAWPGkLFGJNLCuuzD3EKMHBrCTC67MXKMSb
-	klhZlVqUH19UmpNafIgxGejTicxSosn5wOSSVxJvaGxiZmRpZGZhZGJuTpqwkjjvwVbrQCGB
-	9MSS1OzU1ILUIpgtTBycUg2MQZyO5mlHGAVn5Cuf31ocd+6+RUGHybwcpdyM8ut8aeU7au0S
-	G48xPut67VQqXeVl4Tw/5k5DS/a5SH6ZBIUdJx/OmndkdsWHhFU1r4tCtvKYRqz/VznrD0ej
-	pPasUrbupe8Zkp/f2a01u34Td+LiDCYj9+MbimNeSL01CxE8enavS0Y4m4gSS3FGoqEWc1Fx
-	IgDIdEp3JAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t8zI92VOu2BBquPMVuc2t7EZHF54SVW
+	i8u75rBZzPr4g9XidDerA6vHvJOBHn1bVjF6HL+xncnj8ya5AJYoLpuU1JzMstQifbsErowN
+	f7YyFdziqnj7oY21gfEnRxcjB4eEgInEnH85XYycQKaYxIV769m6GLk4hASWMUpcmz+DESIB
+	VNPTwgqRmM4oce/qUnYI5xejxOof39lBqtgE1CS+fDkMZosIaEl0HzsPNopZoIdRYtOy+2wg
+	CWGBYImTJ8+C2SwCqhJrZ2xnArF5BSwlWp/ehbIFJX5MvscCYjMDDVq/8zgThC0vsXnNW2aI
+	kxQkdpx9zQixTE/i4L2nzBA1IhL7XryDOnsbu0TrihKIXQIS3yYfYoF4WVZi0wGoMZISB1fc
+	YJnAKDYLyeZZSDbPQrJ5FpINCxhZVjGKphYkFxQnpRcZ6hUn5haX5qXrJefnbmKERFvvDsbb
+	B6wPMSYDrZ/ILCWanA+M1rySeENjMyMLUxNTYyNzSzPShJXEedVarAOFBNITS1KzU1MLUovi
+	i0pzUosPMTJxcEo1MM7xF3I/Ymg0Q9xw/4tFqlOvPC1lEP/3pvPgJ+Hj+yuuhYiw5xRYnTJu
+	fezt19M2i1WgQvnnjtvvZ6rydoo9FJ84J0X7nLXShs2yFZG353/fNSeLZ8WuwNCij5UH3A5p
+	ChRsTX735OzDn48eL286wvbxa+iW9Nj+uzMWnvgarG9z6E3v0zXblvYpsRRnJBpqMRcVJwIA
+	Bh20gMwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jQd0VOu2BBk2vbCxObW9isri88BKr
+	xeVdc9gsZn38wWpxupvVgdVj3slAj74tqxg9jt/YzuTxeZNcAEtUA6NNRmpiSmqRQmpecn5K
+	Zl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBaJYWyxJxSoFBAYnGxkr4dpgmh
+	IW66FjCNEbq+IUFwPUYGaCBhHWPGhj9bmQpucVW8/dDG2sD4k6OLkZNDQsBEYk5PCyuELSZx
+	4d56ti5GLg4hgemMEveuLmWHcH4xSqz+8Z0dpIpNQE3iy5fDYLaIgJZE97HzYB3MAj2MEpuW
+	3WcDSQgLBEucPHkWzGYRUJVYO2M7E4jNK2Ap0fr0LpQtKPFj8j0WEJsZaND6nceZIGx5ic1r
+	3jJDnKQgsePsa0aIZXoSB+89ZYaoEZHY9+Id4wRGgVlIRs1CMmoWklGzkLQsYGRZxSiaWpBc
+	UJyUnmuoV5yYW1yal66XnJ+7iREcz8+kdjCubLA4xCjAwajEw1vwpC1QiDWxrLgy9xCjBAez
+	kgivz16gEG9KYmVValF+fFFpTmrxIcZkoE8nMkuJJucDU01eSbyhsYmZkaWRmYWRibk5acJK
+	4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTAeTZ143/KA5KNP26433rptV1p/8TurxlMFl/XV
+	yzPe7tQQOR/17YX0cgtGmQPT53wzdzTMmMQ2YfmmdjP5ZKeEj7eDpvOJa/L+PNR2eM22C4Xu
+	k0u87LRTZwXd0QnmvjeX/0guh6aZ7E83s9ZFvYF86QKbm3c2PDROPju9qiM+yT2FQ+bSPnsl
+	luKMREMt5qLiRACH3+SBKwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,33 +62,35 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/twl4030-audio.c |    5 +----
+ drivers/mfd/twl4030-madc.c |    5 +----
  1 files changed, 1 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/twl4030-audio.c b/drivers/mfd/twl4030-audio.c
-index d2ab222..a31fba9 100644
---- a/drivers/mfd/twl4030-audio.c
-+++ b/drivers/mfd/twl4030-audio.c
-@@ -261,10 +261,8 @@ static int twl4030_audio_probe(struct platform_device *pdev)
- 		ret = -ENODEV;
+diff --git a/drivers/mfd/twl4030-madc.c b/drivers/mfd/twl4030-madc.c
+index 42bd3ea..1ea54d4 100644
+--- a/drivers/mfd/twl4030-madc.c
++++ b/drivers/mfd/twl4030-madc.c
+@@ -775,12 +775,10 @@ static int twl4030_madc_probe(struct platform_device *pdev)
+ 				   IRQF_TRIGGER_RISING, "twl4030_madc", madc);
+ 	if (ret) {
+ 		dev_dbg(&pdev->dev, "could not request irq\n");
+-		goto err_irq;
++		goto err_i2c;
  	}
- 
--	if (ret) {
--		platform_set_drvdata(pdev, NULL);
-+	if (ret)
- 		twl4030_audio_dev = NULL;
--	}
- 
- 	return ret;
- }
-@@ -272,7 +270,6 @@ static int twl4030_audio_probe(struct platform_device *pdev)
- static int twl4030_audio_remove(struct platform_device *pdev)
- {
- 	mfd_remove_devices(&pdev->dev);
--	platform_set_drvdata(pdev, NULL);
- 	twl4030_audio_dev = NULL;
- 
+ 	twl4030_madc = madc;
  	return 0;
+-err_irq:
+-	platform_set_drvdata(pdev, NULL);
+ err_i2c:
+ 	twl4030_madc_set_current_generator(madc, 0, 0);
+ err_current_generator:
+@@ -796,7 +794,6 @@ static int twl4030_madc_remove(struct platform_device *pdev)
+ 	struct twl4030_madc_data *madc = platform_get_drvdata(pdev);
+ 
+ 	free_irq(platform_get_irq(pdev, 0), madc);
+-	platform_set_drvdata(pdev, NULL);
+ 	twl4030_madc_set_current_generator(madc, 0, 0);
+ 	twl4030_madc_set_power(madc, 0);
+ 	kfree(madc);
 -- 
 1.7.2.5
 
