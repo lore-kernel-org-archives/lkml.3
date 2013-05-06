@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932290Ab3EFWrL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:47:11 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:44867 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932136Ab3EFWrB (ORCPT
+	id S932504Ab3EFWtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:49:11 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:63491 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932272Ab3EFWrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:47:01 -0400
+	Mon, 6 May 2013 18:47:10 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         vgoyal@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 22/33] blk-throttle: set REQ_THROTTLED from throtl_charge_bio() and gate stats update with it
-Date: Mon,  6 May 2013 15:46:01 -0700
-Message-Id: <1367880372-28312-23-git-send-email-tj@kernel.org>
+Subject: [PATCH 27/33] blk-throttle: make blk_throtl_bio() ready for hierarchy
+Date: Mon,  6 May 2013 15:46:06 -0700
+Message-Id: <1367880372-28312-28-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367880372-28312-1-git-send-email-tj@kernel.org>
 References: <1367880372-28312-1-git-send-email-tj@kernel.org>
@@ -22,91 +22,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With proper hierarchy support, a bio can be dispatched multiple times
-until it reaches the top-level service_queue and we don't want to
-update dispatch stats at each step.  They are local stats and will be
-kept local.  If recursive stats are necessary, they should be
-implemented separately and definitely not by updating counters
-recursively on each dispatch.
+Currently, blk_throtl_bio() issues the passed in bio directly if it's
+within limits of its associated tg (throtl_grp).  This behavior
+becomes incorrect with hierarchy support as the bio should be
+accounted to and throttled by the ancestor throtl_grps too.
 
-This patch moves REQ_THROTTLED setting to throtl_charge_bio() and gate
-stats update with it so that dispatch stats are updated only on the
-first time the bio is charged to a throtl_grp, which will always be
-the throtl_grp the bio was originally queued to.
+This patch makes the direct issue path of blk_throtl_bio() to loop
+until it reaches the top-level service_queue or gets throttled.  If
+the former, the bio can be issued directly; otherwise, it gets queued
+at the first layer it was above limits.
 
-This means that REQ_THROTTLED would be set even for bios which don't
-get throttled.  As we don't want bios to leave blk-throtl with the
-flag set, move REQ_THROTLLED clearing to the end of blk_throtl_bio()
-and clear if the bio is being issued directly.
+As tg->parent_sq is always the top-level service queue currently, this
+patch in itself doesn't make any behavior differences.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/blk-throttle.c | 30 +++++++++++++++++++++++++-----
- 1 file changed, 25 insertions(+), 5 deletions(-)
+ block/blk-throttle.c | 27 ++++++++++++++++++++-------
+ 1 file changed, 20 insertions(+), 7 deletions(-)
 
 diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 2875ff6..420eaa1 100644
+index 8c6e133..52321a4 100644
 --- a/block/blk-throttle.c
 +++ b/block/blk-throttle.c
-@@ -757,7 +757,22 @@ static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
- 	tg->bytes_disp[rw] += bio->bi_size;
- 	tg->io_disp[rw]++;
+@@ -1239,12 +1239,16 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
  
--	throtl_update_dispatch_stats(tg_to_blkg(tg), bio->bi_size, bio->bi_rw);
-+	/*
-+	 * REQ_THROTTLED is used to prevent the same bio to be throttled
-+	 * more than once as a throttled bio will go through blk-throtl the
-+	 * second time when it eventually gets issued.  Set it when a bio
-+	 * is being charged to a tg.
-+	 *
-+	 * Dispatch stats aren't recursive and each @bio should only be
-+	 * accounted by the @tg it was originally associated with.  Let's
-+	 * update the stats when setting REQ_THROTTLED for the first time
-+	 * which is guaranteed to be for the @bio's original tg.
-+	 */
-+	if (!(bio->bi_rw & REQ_THROTTLED)) {
-+		bio->bi_rw |= REQ_THROTTLED;
-+		throtl_update_dispatch_stats(tg_to_blkg(tg), bio->bi_size,
-+					     bio->bi_rw);
-+	}
- }
+ 	sq = &tg->service_queue;
  
- static void throtl_add_bio_tg(struct bio *bio, struct throtl_grp *tg)
-@@ -821,7 +836,6 @@ static void tg_dispatch_one_bio(struct throtl_grp *tg, bool rw)
+-	/* throtl is FIFO - if other bios are already queued, should queue */
+-	if (sq->nr_queued[rw])
+-		goto queue_bio;
++	while (true) {
++		/* throtl is FIFO - if bios are already queued, should queue */
++		if (sq->nr_queued[rw])
++			break;
  
- 	throtl_charge_bio(tg, bio);
- 	bio_list_add(&sq->parent_sq->bio_lists[rw], bio);
--	bio->bi_rw |= REQ_THROTTLED;
+-	/* Bio is with-in rate limit of group */
+-	if (tg_may_dispatch(tg, bio, NULL)) {
++		/* if above limits, break to queue */
++		if (!tg_may_dispatch(tg, bio, NULL))
++			break;
++
++		/* within limits, let's charge and dispatch directly */
+ 		throtl_charge_bio(tg, bio);
  
- 	throtl_trim_slice(tg, rw);
- }
-@@ -1128,10 +1142,9 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 	struct blkcg *blkcg;
- 	bool throttled = false;
+ 		/*
+@@ -1259,10 +1263,19 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+ 		 * So keep on trimming slice even if bio is not queued.
+ 		 */
+ 		throtl_trim_slice(tg, rw);
+-		goto out_unlock;
++
++		/*
++		 * @bio passed through this layer without being throttled.
++		 * Climb up the ladder.  If we''re already at the top, it
++		 * can be executed directly.
++		 */
++		sq = sq->parent_sq;
++		tg = sq_to_tg(sq);
++		if (!tg)
++			goto out_unlock;
+ 	}
  
--	if (bio->bi_rw & REQ_THROTTLED) {
--		bio->bi_rw &= ~REQ_THROTTLED;
-+	/* see throtl_charge_bio() */
-+	if (bio->bi_rw & REQ_THROTTLED)
- 		goto out;
--	}
- 
- 	/*
- 	 * A throtl_grp pointer retrieved under rcu can be used to access
-@@ -1205,6 +1218,13 @@ out_unlock:
- out_unlock_rcu:
- 	rcu_read_unlock();
- out:
-+	/*
-+	 * As multiple blk-throtls may stack in the same issue path, we
-+	 * don't want bios to leave with the flag set.  Clear the flag if
-+	 * being issued.
-+	 */
-+	if (!throttled)
-+		bio->bi_rw &= ~REQ_THROTTLED;
- 	return throttled;
- }
- 
+-queue_bio:
++	/* out-of-limit, queue to @tg */
+ 	throtl_log(sq, "[%c] bio. bdisp=%llu sz=%u bps=%llu iodisp=%u iops=%u queued=%d/%d",
+ 		   rw == READ ? 'R' : 'W',
+ 		   tg->bytes_disp[rw], bio->bi_size, tg->bps[rw],
 -- 
 1.8.1.4
 
