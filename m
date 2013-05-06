@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759505Ab3EFXAo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:00:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36483 "EHLO
+	id S1759520Ab3EFXBA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:01:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36479 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933146Ab3EFW7X (ORCPT
+	with ESMTP id S933141Ab3EFW7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:23 -0400
+	Mon, 6 May 2013 18:59:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dylan Reid <dgreid@chromium.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 29/46] ASoC: max98088: Fix logging of hardware revision.
-Date: Mon,  6 May 2013 15:58:35 -0700
-Message-Id: <20130506225823.726934699@linuxfoundation.org>
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 38/46] nfsd: Decode and send 64bit time values
+Date: Mon,  6 May 2013 15:58:44 -0700
+Message-Id: <20130506225824.659253683@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -27,31 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dylan Reid <dgreid@chromium.org>
+From: Bryan Schumaker <bjschuma@netapp.com>
 
-commit 98682063549bedd6e2d2b6b7222f150c6fbce68c upstream.
+commit bf8d909705e9d9bac31d9b8eac6734d2b51332a7 upstream.
 
-The hardware revision of the codec is based at 0x40.  Subtract that
-before convering to ASCII.  The same as it is done for 98095.
+The seconds field of an nfstime4 structure is 64bit, but we are assuming
+that the first 32bits are zero-filled.  So if the client tries to set
+atime to a value before the epoch (touch -t 196001010101), then the
+server will save the wrong value on disk.
 
-Signed-off-by: Dylan Reid <dgreid@chromium.org>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/max98088.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfsd/nfs4xdr.c |   19 +++++--------------
+ 1 file changed, 5 insertions(+), 14 deletions(-)
 
---- a/sound/soc/codecs/max98088.c
-+++ b/sound/soc/codecs/max98088.c
-@@ -1998,7 +1998,7 @@ static int max98088_probe(struct snd_soc
-                        ret);
-                goto err_access;
-        }
--       dev_info(codec->dev, "revision %c\n", ret + 'A');
-+       dev_info(codec->dev, "revision %c\n", ret - 0x40 + 'A');
- 
-        snd_soc_write(codec, M98088_REG_51_PWR_SYS, M98088_PWRSV);
- 
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -342,10 +342,7 @@ nfsd4_decode_fattr(struct nfsd4_compound
+ 			   all 32 bits of 'nseconds'. */
+ 			READ_BUF(12);
+ 			len += 12;
+-			READ32(dummy32);
+-			if (dummy32)
+-				return nfserr_inval;
+-			READ32(iattr->ia_atime.tv_sec);
++			READ64(iattr->ia_atime.tv_sec);
+ 			READ32(iattr->ia_atime.tv_nsec);
+ 			if (iattr->ia_atime.tv_nsec >= (u32)1000000000)
+ 				return nfserr_inval;
+@@ -368,10 +365,7 @@ nfsd4_decode_fattr(struct nfsd4_compound
+ 			   all 32 bits of 'nseconds'. */
+ 			READ_BUF(12);
+ 			len += 12;
+-			READ32(dummy32);
+-			if (dummy32)
+-				return nfserr_inval;
+-			READ32(iattr->ia_mtime.tv_sec);
++			READ64(iattr->ia_mtime.tv_sec);
+ 			READ32(iattr->ia_mtime.tv_nsec);
+ 			if (iattr->ia_mtime.tv_nsec >= (u32)1000000000)
+ 				return nfserr_inval;
+@@ -2148,8 +2142,7 @@ out_acl:
+ 	if (bmval1 & FATTR4_WORD1_TIME_ACCESS) {
+ 		if ((buflen -= 12) < 0)
+ 			goto out_resource;
+-		WRITE32(0);
+-		WRITE32(stat.atime.tv_sec);
++		WRITE64((s64)stat.atime.tv_sec);
+ 		WRITE32(stat.atime.tv_nsec);
+ 	}
+ 	if (bmval1 & FATTR4_WORD1_TIME_DELTA) {
+@@ -2162,15 +2155,13 @@ out_acl:
+ 	if (bmval1 & FATTR4_WORD1_TIME_METADATA) {
+ 		if ((buflen -= 12) < 0)
+ 			goto out_resource;
+-		WRITE32(0);
+-		WRITE32(stat.ctime.tv_sec);
++		WRITE64((s64)stat.ctime.tv_sec);
+ 		WRITE32(stat.ctime.tv_nsec);
+ 	}
+ 	if (bmval1 & FATTR4_WORD1_TIME_MODIFY) {
+ 		if ((buflen -= 12) < 0)
+ 			goto out_resource;
+-		WRITE32(0);
+-		WRITE32(stat.mtime.tv_sec);
++		WRITE64((s64)stat.mtime.tv_sec);
+ 		WRITE32(stat.mtime.tv_nsec);
+ 	}
+ 	if (bmval1 & FATTR4_WORD1_MOUNTED_ON_FILEID) {
 
 
