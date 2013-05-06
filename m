@@ -1,66 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528Ab3EFODO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 10:03:14 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:52869 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab3EFODN (ORCPT
+	id S1752567Ab3EFOGW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 10:06:22 -0400
+Received: from mail.datasphere.ch ([195.70.3.149]:34893 "EHLO
+	mail.datasphere.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab3EFOGU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 10:03:13 -0400
-Message-ID: <5187B813.8000907@ahsoftware.de>
-Date: Mon, 06 May 2013 16:02:59 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Mon, 6 May 2013 10:06:20 -0400
+X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 May 2013 10:06:20 EDT
+X-Account-Key: account1
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: rtc-linux@googlegroups.com, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: adjusting the monotonic system time (from inside the kernel)
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+FCC: imap://pm@mail.datasphere.ch/Sent
+X-Identity-Key: id1
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+X-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0
+Content-class: urn:content-classes:message
+Subject: [PATCH 1/1] Create megaraid ioctl device node
+Date: Mon, 6 May 2013 15:58:31 +0200
+Message-ID: <AB5E58B87EB73C46A38073D8F459F113D9FBA4@dataspheresrv01>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 1/1] Create megaraid ioctl device node
+Thread-Index: Ac5KYcqbRtpaTN6jRRipemNS+FSTnQ==
+From: "Patrick Monnerat" <Patrick.Monnerat@datasphere.ch>
+To: "Neela Syam Kolli" <megaraidlinux@lsi.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Patrick Monnerat <pm@datasphere.ch>
 
-I'm looking at how to adjust the (monotonic) system time from inside the 
-kernel.
+  Create ioctl device node for megaraid_sas driver. Let this node be
+managed by udev. Fix a typo.
 
-Use case is that I have a hw-clock which (not necessarily) regulary 
-sends a timestamp with millisecond precision which I want to use to 
-adjust the system time.
-
-It seems the usual solution to do such, is to use NTP which uses it's 
-own driver (which usually seems to be based on some serial connection):
-
-hw-clock --serial--> kernel --serial-device--> ntpd -> kernel -> system-time
-
-So one solution would be to emulate such a serial device:
-
-hw-clock --> kernel --emulated-serial-device--> ntpd -> kernel -> 
-system-time
-
-Another solution would be to "invent" a ntp-device and write a driver 
-for ntpd to use it:
-
-hw-clock --> kernel --ntp-device--> ntpd -> kernel -> system-time
-
-But I would prefer the following:
-
-hw-clock --> kernel -> system-time
-
-Problem is that the hw-clock in question doesn't offer something like a 
-tick. It just might send a timestamp with millisecond precision whenever 
-it wants.
-
-Because I don't want to reinvent the wheel and because I think there are 
-some people which already have spend some thoughts on similiar things, 
-I'm asking here before I try to implement something which then never 
-might find it's way into the mainline kernel.
-
-Any hints, suggestions, whatever?
-
-Regards,
-
-Alexander Holler
+Reported-by: pm@datasphere.ch
+To: Neela Syam Kolli <megaraidlinux@lsi.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Patrick Monnerat <pm@datasphere.ch>
+---
+diff -uprN
+linux-3.8.11-200.1pm.fc18.x86_64.orig/drivers/scsi/megaraid/megaraid_sas
+_base.c
+linux-3.8.11-200.1pm.fc18.x86_64.new/drivers/scsi/megaraid/megaraid_sas_
+base.c
+---
+linux-3.8.11-200.1pm.fc18.x86_64.orig/drivers/scsi/megaraid/megaraid_sas
+_base.c	2013-02-19 00:58:34.000000000 +0100
++++
+linux-3.8.11-200.1pm.fc18.x86_64.new/drivers/scsi/megaraid/megaraid_sas_
+base.c	2013-05-06 13:39:27.903234426 +0200
+@@ -49,6 +49,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/mutex.h>
+ #include <linux/poll.h>
++#include <linux/device.h>
+ 
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_cmnd.h>
+@@ -127,6 +128,8 @@ static struct pci_device_id megasas_pci_
+ 
+ MODULE_DEVICE_TABLE(pci, megasas_pci_table);
+ 
++static struct class *megasas_mgmt_class;
++static struct device *megasas_mgmt_device;
+ static int megasas_mgmt_majorno;
+ static struct megasas_mgmt_info megasas_mgmt_info;
+ static struct fasync_struct *megasas_async_queue;
+@@ -5450,7 +5453,7 @@ static int __init megasas_init(void)
+ 	rval = pci_register_driver(&megasas_pci_driver);
+ 
+ 	if (rval) {
+-		printk(KERN_DEBUG "megasas: PCI hotplug regisration
+failed \n");
++		printk(KERN_DEBUG "megasas: PCI hotplug registration
+failed\n");
+ 		goto err_pcidrv;
+ 	}
+ 
+@@ -5477,8 +5480,28 @@ static int __init megasas_init(void)
+ 	if (rval)
+ 		goto err_dcf_support_device_change;
+ 
+-	return rval;
++	/*
++	 * Register as an udev-controlled device.
++	 */
++	megasas_mgmt_class = class_create(THIS_MODULE, "megaraid");
++	rval = PTR_ERR(megasas_mgmt_class);
++	if (IS_ERR(megasas_mgmt_class))
++		goto err_class;
++
++	megasas_mgmt_device = device_create(megasas_mgmt_class, NULL,
++					    MKDEV(megasas_mgmt_majorno,
+0),
++					    NULL, "megaraid_sas_ioctl");
++	rval = PTR_ERR(megasas_mgmt_device);
++	if (IS_ERR(megasas_mgmt_device))
++		goto err_create_device;
+ 
++	return 0;
++
++err_create_device:
++	class_destroy(megasas_mgmt_class);
++err_class:
++	driver_remove_file(&megasas_pci_driver.driver,
++			   &driver_attr_support_device_change);
+ err_dcf_support_device_change:
+ 	driver_remove_file(&megasas_pci_driver.driver,
+ 			   &driver_attr_dbg_lvl);
+@@ -5504,6 +5527,9 @@ err_pcidrv:
+  */
+ static void __exit megasas_exit(void)
+ {
++	device_destroy(megasas_mgmt_class, MKDEV(megasas_mgmt_majorno,
+0));
++	class_destroy(megasas_mgmt_class);
++
+ 	driver_remove_file(&megasas_pci_driver.driver,
+ 			   &driver_attr_dbg_lvl);
+ 	driver_remove_file(&megasas_pci_driver.driver,
