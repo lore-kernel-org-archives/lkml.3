@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933206Ab3EFXPH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:15:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37014 "EHLO
+	id S1760683Ab3EFXPf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:15:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37010 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932672Ab3EFXOQ (ORCPT
+	with ESMTP id S932631Ab3EFXOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 19:14:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 103/104] rcutrace: single_open() leaks
-Date: Mon,  6 May 2013 16:13:02 -0700
-Message-Id: <20130506230054.196912722@linuxfoundation.org>
+        Terry Barnaby <terry@beam.ltd.uk>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Chris Ball <cjb@laptop.org>
+Subject: [ 102/104] mmc: atmel-mci: pio hang on block errors
+Date: Mon,  6 May 2013 16:13:01 -0700
+Message-Id: <20130506230054.099403296@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,54 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Terry Barnaby <terry@beam.ltd.uk>
 
-commit 7ee2b9e56495c56dcaffa2bab19b39451d9fdc8a upstream.
+commit bdbc5d0c60f3e9de3eeccf1c1a18bdc11dca62cc upstream.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+The driver is doing, by default, multi-block reads. When a block error
+occurs, card/block.c instigates a single block read: "mmcblk0: retrying
+using single block read".  It leaves the sg chain intact and just changes
+the length attribute for the first sg entry and the overall sg_len
+parameter.  When atmci_read_data_pio is called to read the single block
+of data it ignores the sg_len and expects to read more than 512 bytes as
+it sees there are multiple items in the sg list. No more data comes as
+the controller has only been commanded to get one block.
+
+Signed-off-by: Terry Barnaby <terry@beam.ltd.uk>
+Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/rcutree_trace.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/mmc/host/atmel-mci.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/kernel/rcutree_trace.c
-+++ b/kernel/rcutree_trace.c
-@@ -97,7 +97,7 @@ static const struct file_operations rcub
- 	.open = rcubarrier_open,
- 	.read = seq_read,
- 	.llseek = no_llseek,
--	.release = seq_release,
-+	.release = single_release,
- };
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -178,6 +178,7 @@ struct atmel_mci {
+ 	void __iomem		*regs;
  
- #ifdef CONFIG_RCU_BOOST
-@@ -208,7 +208,7 @@ static const struct file_operations rcue
- 	.open = rcuexp_open,
- 	.read = seq_read,
- 	.llseek = no_llseek,
--	.release = seq_release,
-+	.release = single_release,
- };
+ 	struct scatterlist	*sg;
++	unsigned int		sg_len;
+ 	unsigned int		pio_offset;
+ 	unsigned int		*buffer;
+ 	unsigned int		buf_size;
+@@ -892,6 +893,7 @@ static u32 atmci_prepare_data(struct atm
+ 	data->error = -EINPROGRESS;
  
- #ifdef CONFIG_RCU_BOOST
-@@ -308,7 +308,7 @@ static const struct file_operations rcuh
- 	.open = rcuhier_open,
- 	.read = seq_read,
- 	.llseek = no_llseek,
--	.release = seq_release,
-+	.release = single_release,
- };
+ 	host->sg = data->sg;
++	host->sg_len = data->sg_len;
+ 	host->data = data;
+ 	host->data_chan = NULL;
  
- static void show_one_rcugp(struct seq_file *m, struct rcu_state *rsp)
-@@ -350,7 +350,7 @@ static const struct file_operations rcug
- 	.open = rcugp_open,
- 	.read = seq_read,
- 	.llseek = no_llseek,
--	.release = seq_release,
-+	.release = single_release,
- };
+@@ -1826,7 +1828,8 @@ static void atmci_read_data_pio(struct a
+ 			if (offset == sg->length) {
+ 				flush_dcache_page(sg_page(sg));
+ 				host->sg = sg = sg_next(sg);
+-				if (!sg)
++				host->sg_len--;
++				if (!sg || !host->sg_len)
+ 					goto done;
  
- static void print_one_rcu_pending(struct seq_file *m, struct rcu_data *rdp)
+ 				offset = 0;
+@@ -1839,7 +1842,8 @@ static void atmci_read_data_pio(struct a
+ 
+ 			flush_dcache_page(sg_page(sg));
+ 			host->sg = sg = sg_next(sg);
+-			if (!sg)
++			host->sg_len--;
++			if (!sg || !host->sg_len)
+ 				goto done;
+ 
+ 			offset = 4 - remaining;
+@@ -1890,7 +1894,8 @@ static void atmci_write_data_pio(struct
+ 			nbytes += 4;
+ 			if (offset == sg->length) {
+ 				host->sg = sg = sg_next(sg);
+-				if (!sg)
++				host->sg_len--;
++				if (!sg || !host->sg_len)
+ 					goto done;
+ 
+ 				offset = 0;
+@@ -1904,7 +1909,8 @@ static void atmci_write_data_pio(struct
+ 			nbytes += remaining;
+ 
+ 			host->sg = sg = sg_next(sg);
+-			if (!sg) {
++			host->sg_len--;
++			if (!sg || !host->sg_len) {
+ 				atmci_writel(host, ATMCI_TDR, value);
+ 				goto done;
+ 			}
 
 
