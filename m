@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab3EFHoU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 03:44:20 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:29783 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752587Ab3EFHoT (ORCPT
+	id S1753664Ab3EFHqe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 03:46:34 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:54178 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587Ab3EFHqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 03:44:19 -0400
-Date: Mon, 6 May 2013 10:43:23 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 4/4] staging: =?utf-8?Q?ste=5Fr?=
- =?utf-8?Q?mi4=3A_Suppress_'ignoring_return_value_of_=E2=80=98regulator=5F?=
- =?utf-8?B?ZW5hYmxlKCkn?= warning
-Message-ID: <20130506074323.GH4635@mwanda>
-References: <1367509690-24022-1-git-send-email-lee.jones@linaro.org>
- <1367509690-24022-5-git-send-email-lee.jones@linaro.org>
- <20130503070713.GA27956@bnru09>
- <20130505141855.GB4686@mwanda>
- <20130506065138.GA31763@bnru10>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130506065138.GA31763@bnru10>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 6 May 2013 03:46:33 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Simon Glass <sjg@chromium.org>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] mfd: ChromeOS EC - Spelling s/ned/need/
+Date: Mon,  6 May 2013 09:46:29 +0200
+Message-Id: <1367826389-6988-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 12:21:39PM +0530, Srinidhi Kasagar wrote:
-> > > > -	regulator_enable(rmi4_data->regulator);
-> > > > +	retval = regulator_enable(rmi4_data->regulator);
-> > > > +	if (retval < 0)
-> > > > +		return retval;
-> > > Does it make sense to add a dev_err?
-> > > 
-> > 
-> > Is that a question?
-> > 
-> > regulator_enable() already prints some warnings.  Probably it's not
-> > going to fail and adding code that is duplicative or will never be
-> > run is pointless.
-> 
-> It has become a habit checking the return value and spit some errors.
-> And BTW, there are many drivers which does this way..Anyway if your
-> intention is to avoid them for the new drivers..I dont mind skipping
-> this..
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/mfd/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-It's not like I'm trying to ban error messages.  There isn't any
-official policy on error messages.
-
-regards,
-dan carpenter
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 0d86b34..3145184 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -53,7 +53,7 @@ config MFD_CROS_EC
+ 	help
+ 	  If you say Y here you get support for the ChromeOS Embedded
+ 	  Controller (EC) providing keyboard, battery and power services.
+-	  You also ned to enable the driver for the bus you are using. The
++	  You also need to enable the driver for the bus you are using. The
+ 	  protocol for talking to the EC is defined by the bus driver.
+ 
+ config MFD_CROS_EC_I2C
+-- 
+1.7.0.4
 
