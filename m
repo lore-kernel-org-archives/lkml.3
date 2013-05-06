@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759345Ab3EFVRs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:17:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58971 "EHLO
+	id S1759368Ab3EFVSP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:18:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58967 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757139Ab3EFUp6 (ORCPT
+	with ESMTP id S1756884Ab3EFUp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:45:58 -0400
+	Mon, 6 May 2013 16:45:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
         Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [ 008/115] ARM: at91: Fix typo in restart code panic message
-Date: Mon,  6 May 2013 13:44:04 -0700
-Message-Id: <20130506203056.442531201@linuxfoundation.org>
+Subject: [ 007/115] ARM: at91: remove partial parameter in bootargs for at91sam9x5ek.dtsi
+Date: Mon,  6 May 2013 13:44:03 -0700
+Message-Id: <20130506203056.346089589@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -28,29 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-commit e7619459d47a673af3433208a42f583af920e9db upstream.
+commit b090e5f68c0353534880b95ea0df56b8c0230b8c upstream.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Remove the malformed "mem=" bootargs parameter in at91sam9x5ek.dtsi
+
 Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-at91/setup.c |    2 +-
+ arch/arm/boot/dts/at91sam9x5ek.dtsi |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -333,7 +333,7 @@ static void at91_dt_rstc(void)
+--- a/arch/arm/boot/dts/at91sam9x5ek.dtsi
++++ b/arch/arm/boot/dts/at91sam9x5ek.dtsi
+@@ -13,7 +13,7 @@
+ 	compatible = "atmel,at91sam9x5ek", "atmel,at91sam9x5", "atmel,at91sam9";
  
- 	of_id = of_match_node(rstc_ids, np);
- 	if (!of_id)
--		panic("AT91: rtsc no restart function availlable\n");
-+		panic("AT91: rtsc no restart function available\n");
+ 	chosen {
+-		bootargs = "128M console=ttyS0,115200 root=/dev/mtdblock1 rw rootfstype=ubifs ubi.mtd=1 root=ubi0:rootfs";
++		bootargs = "console=ttyS0,115200 root=/dev/mtdblock1 rw rootfstype=ubifs ubi.mtd=1 root=ubi0:rootfs";
+ 	};
  
- 	arm_pm_restart = of_id->data;
- 
+ 	ahb {
 
 
