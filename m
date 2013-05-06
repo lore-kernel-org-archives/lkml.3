@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932954Ab3EFXwg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:52:36 -0400
-Received: from mail-ye0-f201.google.com ([209.85.213.201]:43345 "EHLO
-	mail-ye0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932463Ab3EFXub (ORCPT
+	id S932902Ab3EFXwc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:52:32 -0400
+Received: from mail-vb0-f74.google.com ([209.85.212.74]:47553 "EHLO
+	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932495Ab3EFXuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:50:31 -0400
+	Mon, 6 May 2013 19:50:32 -0400
 From: Colin Cross <ccross@android.com>
 To: linux-kernel@vger.kernel.org
 Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
@@ -18,9 +18,9 @@ Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         netdev@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Tejun Heo <tj@kernel.org>, Alexander Viro <viro@zeniv.linux.org.uk>,
         linux-fsdevel@vger.kernel.org
-Subject: [PATCH v3 11/16] epoll: use freezable blocking call
-Date: Mon,  6 May 2013 16:50:16 -0700
-Message-Id: <1367884221-20462-12-git-send-email-ccross@android.com>
+Subject: [PATCH v3 12/16] select: use freezable blocking call
+Date: Mon,  6 May 2013 16:50:17 -0700
+Message-Id: <1367884221-20462-13-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367884221-20462-1-git-send-email-ccross@android.com>
 References: <1367884221-20462-1-git-send-email-ccross@android.com>
@@ -28,7 +28,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid waking up every thread sleeping in an epoll_wait call during
+Avoid waking up every thread sleeping in a select call during
 suspend and resume by calling a freezable blocking call.  Previous
 patches modified the freezer to avoid sending wakeups to threads
 that are blocked in freezable blocking calls.
@@ -42,31 +42,31 @@ blocked.
 Acked-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- fs/eventpoll.c | 4 +++-
+ fs/select.c | 4 +++-
  1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 9fec183..65245e7 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -34,6 +34,7 @@
- #include <linux/mutex.h>
- #include <linux/anon_inodes.h>
- #include <linux/device.h>
+diff --git a/fs/select.c b/fs/select.c
+index 8c1c96c..6b14dc7 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -27,6 +27,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/hrtimer.h>
+ #include <linux/sched/rt.h>
 +#include <linux/freezer.h>
+ 
  #include <asm/uaccess.h>
- #include <asm/io.h>
- #include <asm/mman.h>
-@@ -1543,7 +1544,8 @@ fetch_events:
- 			}
  
- 			spin_unlock_irqrestore(&ep->lock, flags);
--			if (!schedule_hrtimeout_range(to, slack, HRTIMER_MODE_ABS))
-+			if (!freezable_schedule_hrtimeout_range(to, slack,
-+								HRTIMER_MODE_ABS))
- 				timed_out = 1;
+@@ -236,7 +237,8 @@ int poll_schedule_timeout(struct poll_wqueues *pwq, int state,
  
- 			spin_lock_irqsave(&ep->lock, flags);
+ 	set_current_state(state);
+ 	if (!pwq->triggered)
+-		rc = schedule_hrtimeout_range(expires, slack, HRTIMER_MODE_ABS);
++		rc = freezable_schedule_hrtimeout_range(expires, slack,
++							HRTIMER_MODE_ABS);
+ 	__set_current_state(TASK_RUNNING);
+ 
+ 	/*
 -- 
 1.8.2.1
 
