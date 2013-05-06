@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198Ab3EFVCD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:02:03 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46845 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756405Ab3EFVCA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 17:02:00 -0400
+	id S1758572Ab3EFVB4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:01:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48407 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756405Ab3EFVBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 17:01:54 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <tony@atomide.com>
 CC: <linux-omap@vger.kernel.org>, Eduardo Valentin <eduardo.valentin@ti.com>,
@@ -14,9 +13,9 @@ CC: <linux-omap@vger.kernel.org>, Eduardo Valentin <eduardo.valentin@ti.com>,
         Russell King <linux@arm.linux.org.uk>,
         <devicetree-discuss@lists.ozlabs.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [RESEND][PATCH 3/3] arm: add bandgap entry for OMAP4460 devices
-Date: Mon, 6 May 2013 17:00:58 -0400
-Message-ID: <1367874058-2378-4-git-send-email-eduardo.valentin@ti.com>
+Subject: [RESEND][PATCH 2/3] arm: dts: add bandgap entry for OMAP443x devices
+Date: Mon, 6 May 2013 17:00:57 -0400
+Message-ID: <1367874058-2378-3-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1367874058-2378-1-git-send-email-eduardo.valentin@ti.com>
 References: <1367874058-2378-1-git-send-email-eduardo.valentin@ti.com>
@@ -27,7 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include bandgap devices for OMAP4460 devices.
+This patch add the bandgap entry for OMAP4430 devices.
 
 Cc: "Benoît Cousson" <b-cousson@ti.com>
 Cc: Tony Lindgren <tony@atomide.com>
@@ -38,25 +37,20 @@ Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- arch/arm/boot/dts/omap4460.dtsi | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/arm/boot/dts/omap443x.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/arm/boot/dts/omap4460.dtsi b/arch/arm/boot/dts/omap4460.dtsi
-index 7c2c23c..3808b5c 100644
---- a/arch/arm/boot/dts/omap4460.dtsi
-+++ b/arch/arm/boot/dts/omap4460.dtsi
-@@ -29,4 +29,13 @@
- 			     <0 55 0x4>;
- 		ti,hwmods = "debugss";
+diff --git a/arch/arm/boot/dts/omap443x.dtsi b/arch/arm/boot/dts/omap443x.dtsi
+index cccf39a..8d6c968 100644
+--- a/arch/arm/boot/dts/omap443x.dtsi
++++ b/arch/arm/boot/dts/omap443x.dtsi
+@@ -24,4 +24,8 @@
+ 			clock-latency = <300000>; /* From legacy driver */
+ 		};
  	};
-+
 +	bandgap {
-+		reg = <0x4a002260 0x4
-+			0x4a00232C 0x4
-+			0x4a002378 0x18>;
-+		compatible = "ti,omap4460-bandgap";
-+		interrupts = <0 126 4>; /* talert */
-+		ti,tshut-gpio = <86>;
++		reg = <0x4a002260 0x4 0x4a00232C 0x4>;
++		compatible = "ti,omap4430-bandgap";
 +	};
  };
 -- 
