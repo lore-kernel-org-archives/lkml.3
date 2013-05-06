@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab3EFOoj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 10:44:39 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35129
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752718Ab3EFOoh (ORCPT
+	id S1754121Ab3EFOpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 10:45:01 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:64720 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab3EFOo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 10:44:37 -0400
-Date: Mon, 6 May 2013 16:42:48 +0200
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Pavel Machek <pavel@ucw.cz>, Colin Cross <ccross@android.com>,
-        Andrew Morton <akpm@osdl.org>, lkml <linux-kernel@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Ingo Molnar <mingo@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Ben Chan <benchan@chromium.org>
-Subject: Re: [PATCH 2/2] lockdep: check that no locks held at freeze time
-Message-ID: <20130506144248.GB15446@dyad.programming.kicks-ass.net>
-References: <1367615050-3894-1-git-send-email-ccross@android.com>
- <1367615050-3894-2-git-send-email-ccross@android.com>
- <20130504130440.GC13770@amd.pavel.ucw.cz>
- <CAMbhsRScr+3Zk5Bi6390bGRbtE4oh2H-mHrGHS0wew5hdkivUg@mail.gmail.com>
- <20130504225715.GB24276@amd.pavel.ucw.cz>
- <CAMbhsRS_cF7kF-QZ9BMBUS3ytU0ukRCbC3D549HW_XOsQbEZhg@mail.gmail.com>
- <20130505000528.GA25454@amd.pavel.ucw.cz>
- <20130505091844.GC22239@gmail.com>
- <20130506085547.GC13861@dyad.programming.kicks-ass.net>
- <CA+55aFzVNwCJhvp4f0EcHK3Vk1ZVKY0fAeu-6FdjhCFiafTAPQ@mail.gmail.com>
+	Mon, 6 May 2013 10:44:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzVNwCJhvp4f0EcHK3Vk1ZVKY0fAeu-6FdjhCFiafTAPQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130430023146.8F351660923@gitolite.kernel.org>
+References: <20130430023146.8F351660923@gitolite.kernel.org>
+Date: Mon, 6 May 2013 10:44:58 -0400
+Message-ID: <CAB9dFdtwk5MKNmrOQVaV0Zh_ETNJVabeMVd45njnC-AYr0Md6g@mail.gmail.com>
+Subject: Re: workqueue: inline trivial wrappers
+From: Marc Dionne <marc.c.dionne@gmail.com>
+To: Tejun Heo <tj@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 07:33:28AM -0700, Linus Torvalds wrote:
-> On Mon, May 6, 2013 at 1:55 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> >
-> > Doesn't i386 have all the funny per-cpu stuff too? So the only reason it still
-> > does the fugly stack based thing is because nobody could be arsed to do the
-> > work of converting it.
-> 
-> Umm. That "fugly stack-based" thing is better than the per-cpu crap.
-> 
-> The percpu stuff implies a memory load. The stack based thing gets
-> thread_info with pure register accesses. Much better.
-> 
-> For "current()" the per-cpu thing may be better, but if you actually
-> need the thread-info (not the case here, but in other places), the
-> stack masking is superior when it works (ie when you don't have
-> multi-stack issues due to irq's etc)
+On Mon, Apr 29, 2013 at 10:31 PM, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> Gitweb:     http://git.kernel.org/linus/;a=commit;h=8425e3d5bdbe8e741d2c73cf3189ed59b4038b84
+> Commit:     8425e3d5bdbe8e741d2c73cf3189ed59b4038b84
+> Parent:     611c92a0203091bb022edec7e2d8b765fe148622
+> Author:     Tejun Heo <tj@kernel.org>
+> AuthorDate: Wed Mar 13 16:51:36 2013 -0700
+> Committer:  Tejun Heo <tj@kernel.org>
+> CommitDate: Wed Mar 13 16:51:36 2013 -0700
+>
+>     workqueue: inline trivial wrappers
+>
+>     There's no reason to make these trivial wrappers full (exported)
+>     functions.  Inline the followings.
+>
+>      queue_work()
+>      queue_delayed_work()
+>      mod_delayed_work()
+>      schedule_work_on()
+>      schedule_work()
+>      schedule_delayed_work_on()
+>      schedule_delayed_work()
+>      keventd_up()
+>
+>     Signed-off-by: Tejun Heo <tj@kernel.org>
 
-But you can do both right? Use per-cpu for current and stack frobbery for
-current_thread_info().
+Hi Tejun,
 
-That said, ISTR some risky bits where the stack frobbery went awry due to
-irq-stacks which is the source for my feelings towards the stack frobbery.
+This commit has the side effect of making some functions
+EXPORT_SYMBOL_GPL that had been previously exported with EXPORT_SYMBOL
+for a long time, such as schedule_work().  This is used by OpenAFS and
+probably other out of tree modules.  Past exchanges on this list (ex:
+http://marc.info/?l=linux-fsdevel&m=123550631318910) suggest the
+license requirements for existing interfaces shouldn't change, at
+least without providing an alternate means of getting the same
+functionality.  Any thoughts on whether this can be adjusted within
+the current release cycle?
 
-That and of course that i386 and x86-64 behave differently for no apparent
-reason.
+Thanks,
+Marc
