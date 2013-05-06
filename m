@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761293Ab3EFXk6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:40:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36622 "EHLO
+	id S1761274Ab3EFXk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:40:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36626 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760323Ab3EFXNM (ORCPT
+	with ESMTP id S1760188Ab3EFXNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:12 -0400
+	Mon, 6 May 2013 19:13:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [ 007/104] ARM: at91: remove partial parameter in bootargs for at91sam9x5ek.dtsi
-Date: Mon,  6 May 2013 16:11:26 -0700
-Message-Id: <20130506230044.328291548@linuxfoundation.org>
+        Yogesh Ashok Powar <yogeshp@marvell.com>,
+        Amitkumar Karwar <akarwar@marvell.com>,
+        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 017/104] mwifiex: Use pci_release_region() instead of a pci_release_regions()
+Date: Mon,  6 May 2013 16:11:36 -0700
+Message-Id: <20130506230045.361839359@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -27,30 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: Yogesh Ashok Powar <yogeshp@marvell.com>
 
-commit b090e5f68c0353534880b95ea0df56b8c0230b8c upstream.
+commit c380aafb77b7435d010698fe3ca6d3e1cd745fde upstream.
 
-Remove the malformed "mem=" bootargs parameter in at91sam9x5ek.dtsi
+PCI regions are associated with the device using
+pci_request_region() call. Hence use pci_release_region()
+instead of pci_release_regions().
 
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Yogesh Ashok Powar <yogeshp@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/at91sam9x5ek.dtsi |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/mwifiex/pcie.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/boot/dts/at91sam9x5ek.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5ek.dtsi
-@@ -13,7 +13,7 @@
- 	compatible = "atmel,at91sam9x5ek", "atmel,at91sam9x5", "atmel,at91sam9";
- 
- 	chosen {
--		bootargs = "128M console=ttyS0,115200 root=/dev/mtdblock1 rw rootfstype=ubifs ubi.mtd=1 root=ubi0:rootfs";
-+		bootargs = "console=ttyS0,115200 root=/dev/mtdblock1 rw rootfstype=ubifs ubi.mtd=1 root=ubi0:rootfs";
- 	};
- 
- 	ahb {
+--- a/drivers/net/wireless/mwifiex/pcie.c
++++ b/drivers/net/wireless/mwifiex/pcie.c
+@@ -1831,8 +1831,8 @@ static void mwifiex_pcie_cleanup(struct
+ 	if (pdev) {
+ 		pci_iounmap(pdev, card->pci_mmap);
+ 		pci_iounmap(pdev, card->pci_mmap1);
+-
+-		pci_release_regions(pdev);
++		pci_release_region(pdev, 2);
++		pci_release_region(pdev, 0);
+ 		pci_disable_device(pdev);
+ 		pci_set_drvdata(pdev, NULL);
+ 	}
 
 
