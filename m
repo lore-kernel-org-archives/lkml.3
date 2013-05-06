@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab3EFSgk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 14:36:40 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:62912 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab3EFSgj (ORCPT
+	id S1755121Ab3EFSiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 14:38:21 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:57221 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754511Ab3EFSiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 14:36:39 -0400
+	Mon, 6 May 2013 14:38:19 -0400
+Date: Mon, 6 May 2013 11:38:14 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH 21/31] blk-throttle: implement sq_to_tg(), sq_to_td() and
+ throtl_log()
+Message-ID: <20130506183814.GB32173@mtj.dyndns.org>
+References: <1367455189-6957-1-git-send-email-tj@kernel.org>
+ <1367455189-6957-22-git-send-email-tj@kernel.org>
+ <20130506173644.GD11731@redhat.com>
 MIME-Version: 1.0
-Date: Mon, 6 May 2013 11:36:38 -0700
-Message-ID: <CA+8MBb++1CVLAo3zw4fx2O7akWsZcvybRyZpt0ac0sX7M=u5Xw@mail.gmail.com>
-Subject: VFAT complains that my file system may be corrupted
-From: Tony Luck <tony.luck@gmail.com>
-To: Oleksij Rempel <bug-track@fisher-privat.net>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130506173644.GD11731@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Built Linus' tree this morning (HEAD =
-d7ab7302f970a254997687a1cdede421a5635c68) and got this message:
+On Mon, May 06, 2013 at 01:36:44PM -0400, Vivek Goyal wrote:
+> On Wed, May 01, 2013 at 05:39:39PM -0700, Tejun Heo wrote:
+> 
+> [..]
+> > +#define throtl_log(sq, fmt, args...)	do {				\
+> > +	struct throtl_grp *__tg = sq_to_tg((sq));			\
+> > +	struct throtl_data *__td = sq_to_td((sq));			\
+> >  	char __pbuf[128];						\
+> >  									\
+> > -	blkg_path(tg_to_blkg(tg), __pbuf, sizeof(__pbuf));		\
+> > -	blk_add_trace_msg((tg)->td->queue, "throtl %s " fmt, __pbuf, ##args); \
+> > +	__pbuf[0] = ' ';						\
+> > +	__pbuf[1] = '\0';						\
+> > +	if ((__tg))							\
+> > +		blkg_path(tg_to_blkg(__tg), __pbuf + 1, sizeof(__pbuf) - 1); \
+> > +	blk_add_trace_msg(__td->queue, "throtl%s" fmt, __pbuf, ##args); \
+> 						^^
+> 
+> We need one extra space ("throtl%s "), otherwise all the messages
+> start right after cgroup path. We need a space between cgroup path
+> and actual message.
 
-FAT-fs (sda1): Volume was not properly unmounted. Some data may be
-corrupt. Please run fsck.
+Will update.
 
-when booting my ia64 machine.  The message may well be legitimate
-because I did crash the machine, so the filessytem was not unmounted
-cleanly.
+Thanks.
 
-BUT ... If I unmount and run fsck as it suggests, then I see:
-
-# fsck /boot/efi
-fsck from util-linux-ng 2.16
-dosfsck 2.11, 12 Mar 2005, FAT32, LFN
-There are differences between boot sector and its backup.
-Differences: (offset:original/backup)
-  65:01/00
-1) Copy original to backup
-2) Copy backup to original
-3) No action
-
-I tried option 3 - fsck made no other changes, but I still see the
-message. I tried
-option 1 - and I still see the message. So I went for option 2 ... and
-guess what,
-I still see the message when I mount this filesystem.
-
-Note that with either option 1 or 2 "fsck" says:
-
-Leaving file system unchanged.
-/dev/sda1: 20 files, 19865/255496 clusters
-
-This is the first time I've ever seen this message ... but I haven't
-had this system crash for some time, so not really sure when this may
-have started.
-
--Tony
+-- 
+tejun
