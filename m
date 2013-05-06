@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab3EFS7Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 14:59:25 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:43891 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755459Ab3EFS7X (ORCPT
+	id S1755617Ab3EFTBZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 15:01:25 -0400
+Received: from mail-ye0-f178.google.com ([209.85.213.178]:44019 "EHLO
+	mail-ye0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754882Ab3EFTBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 14:59:23 -0400
-Message-ID: <5187FD86.9000005@colorfullife.com>
-Date: Mon, 06 May 2013 20:59:18 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Mon, 6 May 2013 15:01:22 -0400
+X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 May 2013 15:01:22 EDT
+Date: Mon, 6 May 2013 12:01:15 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Colin Cross <ccross@android.com>
+Cc: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
+        linux-pm@vger.kernel.org, netdev@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Chan <benchan@chromium.org>
+Subject: Re: [PATCH 2/2] lockdep: check that no locks held at freeze time
+Message-ID: <20130506190115.GB800@mtj.dyndns.org>
+References: <1367615050-3894-1-git-send-email-ccross@android.com>
+ <1367615050-3894-2-git-send-email-ccross@android.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Steven Rostedt <rostedt@goodmis.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: linux-next: manual merge of the akpm tree with the  tree
-References: <20130506135109.9c0b24ea1e22784fb28ae6b9@canb.auug.org.au>
-In-Reply-To: <20130506135109.9c0b24ea1e22784fb28ae6b9@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367615050-3894-2-git-send-email-ccross@android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, May 03, 2013 at 02:04:10PM -0700, Colin Cross wrote:
+> From: Mandeep Singh Baines <msb@chromium.org>
+> 
+> We shouldn't try_to_freeze if locks are held.  Holding a lock can cause a
+> deadlock if the lock is later acquired in the suspend or hibernate path
+> (e.g.  by dpm).  Holding a lock can also cause a deadlock in the case of
+> cgroup_freezer if a lock is held inside a frozen cgroup that is later
+> acquired by a process outside that group.
+> 
+> History:
+> This patch was originally applied as 6aa9707099c and reverted in
+> dbf520a9d7d4 because NFS was freezing with locks held.  It was
+> deemed better to keep the bad freeze point in NFS to allow laptops
+> to suspend consistently.  The previous patch in this series converts
+> NFS to call _unsafe versions of the freezable helpers so that
+> lockdep doesn't complain about them until a more correct fix
+> can be applied.
 
-On 05/06/2013 05:51 AM, Stephen Rothwell wrote:
-> Hi Andrew,
->
-> Today's linux-next merge of the akpm tree got a conflict in ipc/sem.c
-> between commit 321310ced2d6 ("ipc: move sem_obtain_lock() rcu locking
-> into the only caller") from Linus' tree and commit "ipc/sem.c:
-> alternatives to preempt_disable()" from the akpm tree.
-I would propose that 'ipc/sem.c: alternatives to preempt_disable()' is 
-dropped.
+I don't care about %current change, especially given that it's a debug
+interface but that really should be a separate patch, so please split
+it out if you want it (and I think we want it).
 
-As explained in the commit:
-That patch is for CONFIG_PREEMPT_RT, it should go into their tree.
+Thanks.
 
---
-     Manfred
+-- 
+tejun
