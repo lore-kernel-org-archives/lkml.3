@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933921Ab3EFXzP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:55:15 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:50242 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932368Ab3EFXu3 (ORCPT
+	id S933936Ab3EFXzo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:55:44 -0400
+Received: from mail-qe0-f74.google.com ([209.85.128.74]:54023 "EHLO
+	mail-qe0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932331Ab3EFXu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:50:29 -0400
+	Mon, 6 May 2013 19:50:28 -0400
 From: Colin Cross <ccross@android.com>
 To: linux-kernel@vger.kernel.org
 Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
@@ -16,10 +16,11 @@ Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Colin Cross <ccross@android.com>, Oleg Nesterov <oleg@redhat.com>,
         linux-nfs@vger.kernel.org, linux-pm@vger.kernel.org,
         netdev@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Len Brown <len.brown@intel.com>
-Subject: [PATCH v3 05/16] freezer: shorten freezer sleep time using exponential backoff
-Date: Mon,  6 May 2013 16:50:10 -0700
-Message-Id: <1367884221-20462-6-git-send-email-ccross@android.com>
+        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH v3 04/16] lockdep: check that no locks held at freeze time
+Date: Mon,  6 May 2013 16:50:09 -0700
+Message-Id: <1367884221-20462-5-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367884221-20462-1-git-send-email-ccross@android.com>
 References: <1367884221-20462-1-git-send-email-ccross@android.com>
@@ -27,78 +28,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All tasks can easily be frozen in under 10 ms, switch to using
-an initial 1 ms sleep followed by exponential backoff until
-8 ms.  Also convert the printed time to ms instead of centiseconds.
+From: Mandeep Singh Baines <msb@chromium.org>
 
-Acked-by: Pavel Machek <pavel@ucw.cz>
-Acked-by: Tejun Heo <tj@kernel.org>
+We shouldn't try_to_freeze if locks are held.  Holding a lock can cause a
+deadlock if the lock is later acquired in the suspend or hibernate path
+(e.g.  by dpm).  Holding a lock can also cause a deadlock in the case of
+cgroup_freezer if a lock is held inside a frozen cgroup that is later
+acquired by a process outside that group.
+
+History:
+This patch was originally applied as 6aa9707099c and reverted in
+dbf520a9d7d4 because NFS was freezing with locks held.  It was
+deemed better to keep the bad freeze point in NFS to allow laptops
+to suspend consistently.  The previous patch in this series converts
+NFS to call _unsafe versions of the freezable helpers so that
+lockdep doesn't complain about them until a more correct fix
+can be applied.
+
+[akpm@linux-foundation.org: export debug_check_no_locks_held]
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Cc: Ben Chan <benchan@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ccross@android.com: don't warn if try_to_freeze_unsafe is called]
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- kernel/power/process.c | 26 +++++++++++++++-----------
- 1 file changed, 15 insertions(+), 11 deletions(-)
+ include/linux/freezer.h | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 98088e0..fc0df84 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -30,9 +30,10 @@ static int try_to_freeze_tasks(bool user_only)
- 	unsigned int todo;
- 	bool wq_busy = false;
- 	struct timeval start, end;
--	u64 elapsed_csecs64;
--	unsigned int elapsed_csecs;
-+	u64 elapsed_msecs64;
-+	unsigned int elapsed_msecs;
- 	bool wakeup = false;
-+	int sleep_usecs = USEC_PER_MSEC;
+diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index d3c038e..bcf9e65 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -3,6 +3,7 @@
+ #ifndef FREEZER_H_INCLUDED
+ #define FREEZER_H_INCLUDED
  
- 	do_gettimeofday(&start);
++#include <linux/debug_locks.h>
+ #include <linux/sched.h>
+ #include <linux/wait.h>
+ #include <linux/atomic.h>
+@@ -60,6 +61,8 @@ static inline bool try_to_freeze_unsafe(void)
  
-@@ -68,22 +69,25 @@ static int try_to_freeze_tasks(bool user_only)
+ static inline bool try_to_freeze(void)
+ {
++	if (!(current->flags & PF_NOFREEZE))
++		debug_check_no_locks_held();
+ 	return try_to_freeze_unsafe();
+ }
  
- 		/*
- 		 * We need to retry, but first give the freezing tasks some
--		 * time to enter the refrigerator.
-+		 * time to enter the refrigerator.  Start with an initial
-+		 * 1 ms sleep followed by exponential backoff until 8 ms.
- 		 */
--		msleep(10);
-+		usleep_range(sleep_usecs / 2, sleep_usecs);
-+		if (sleep_usecs < 8 * USEC_PER_MSEC)
-+			sleep_usecs *= 2;
- 	}
- 
- 	do_gettimeofday(&end);
--	elapsed_csecs64 = timeval_to_ns(&end) - timeval_to_ns(&start);
--	do_div(elapsed_csecs64, NSEC_PER_SEC / 100);
--	elapsed_csecs = elapsed_csecs64;
-+	elapsed_msecs64 = timeval_to_ns(&end) - timeval_to_ns(&start);
-+	do_div(elapsed_msecs64, NSEC_PER_MSEC);
-+	elapsed_msecs = elapsed_msecs64;
- 
- 	if (todo) {
- 		printk("\n");
--		printk(KERN_ERR "Freezing of tasks %s after %d.%02d seconds "
-+		printk(KERN_ERR "Freezing of tasks %s after %d.%03d seconds "
- 		       "(%d tasks refusing to freeze, wq_busy=%d):\n",
- 		       wakeup ? "aborted" : "failed",
--		       elapsed_csecs / 100, elapsed_csecs % 100,
-+		       elapsed_msecs / 1000, elapsed_msecs % 1000,
- 		       todo - wq_busy, wq_busy);
- 
- 		if (!wakeup) {
-@@ -96,8 +100,8 @@ static int try_to_freeze_tasks(bool user_only)
- 			read_unlock(&tasklist_lock);
- 		}
- 	} else {
--		printk("(elapsed %d.%02d seconds) ", elapsed_csecs / 100,
--			elapsed_csecs % 100);
-+		printk("(elapsed %d.%03d seconds) ", elapsed_msecs / 1000,
-+			elapsed_msecs % 1000);
- 	}
- 
- 	return todo ? -EBUSY : 0;
 -- 
 1.8.2.1
 
