@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758518Ab3EFUyI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:54:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59330 "EHLO
+	id S1757997Ab3EFUqy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:46:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59284 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758006Ab3EFUq4 (ORCPT
+	with ESMTP id S1757937Ab3EFUqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:56 -0400
+	Mon, 6 May 2013 16:46:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonathan Brassow <jbrassow@redhat.com>, NeilBrown <neilb@suse.de>
-Subject: [ 087/115] md: bad block list should default to disabled.
-Date: Mon,  6 May 2013 13:45:23 -0700
-Message-Id: <20130506203104.529438816@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 090/115] NFSv4: Handle NFS4ERR_DELAY and NFS4ERR_GRACE in nfs4_open_delegation_recall
+Date: Mon,  6 May 2013 13:45:26 -0700
+Message-Id: <20130506203104.829567074@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -26,61 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 486adf72ccc0c235754923d47a2270c5dcb0c98b upstream.
+commit 8b6cc4d6f841d31f72fe7478453759166d366274 upstream.
 
-Maintenance of a bad-block-list currently defaults to 'enabled'
-and is then disabled when it cannot be supported.
-This is backwards and causes problem for dm-raid which didn't know
-to disable it.
+A server shouldn't normally return NFS4ERR_GRACE if the client holds a
+delegation, since no conflicting lock reclaims can be granted, however
+the spec does not require the server to grant the open in this
+instance
 
-So fix the defaults, and only enabled for v1.x metadata which
-explicitly has bad blocks enabled.
-
-The problem with dm-raid has been present since badblock support was
-added in v3.1, so this patch is suitable for any -stable from 3.1
-onwards.
-
-Reported-by: Jonathan Brassow <jbrassow@redhat.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ fs/nfs/nfs4proc.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -1564,8 +1564,8 @@ static int super_1_load(struct md_rdev *
- 					     sector, count, 1) == 0)
- 				return -EINVAL;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1380,6 +1380,12 @@ int nfs4_open_delegation_recall(struct n
+ 			case -ENOMEM:
+ 				err = 0;
+ 				goto out;
++			case -NFS4ERR_DELAY:
++			case -NFS4ERR_GRACE:
++				set_bit(NFS_DELEGATED_STATE, &state->flags);
++				ssleep(1);
++				err = -EAGAIN;
++				goto out;
  		}
--	} else if (sb->bblog_offset == 0)
--		rdev->badblocks.shift = -1;
-+	} else if (sb->bblog_offset != 0)
-+		rdev->badblocks.shift = 0;
- 
- 	if (!refdev) {
- 		ret = 1;
-@@ -3221,7 +3221,7 @@ int md_rdev_init(struct md_rdev *rdev)
- 	 * be used - I wonder if that matters
- 	 */
- 	rdev->badblocks.count = 0;
--	rdev->badblocks.shift = 0;
-+	rdev->badblocks.shift = -1; /* disabled until explicitly enabled */
- 	rdev->badblocks.page = kmalloc(PAGE_SIZE, GFP_KERNEL);
- 	seqlock_init(&rdev->badblocks.lock);
- 	if (rdev->badblocks.page == NULL)
-@@ -3293,9 +3293,6 @@ static struct md_rdev *md_import_device(
- 			goto abort_free;
- 		}
- 	}
--	if (super_format == -1)
--		/* hot-add for 0.90, or non-persistent: so no badblocks */
--		rdev->badblocks.shift = -1;
- 
- 	return rdev;
- 
+ 		set_bit(NFS_DELEGATED_STATE, &state->flags);
+ 		err = nfs4_handle_exception(server, err, &exception);
 
 
