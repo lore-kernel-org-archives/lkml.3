@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759298Ab3EFVQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:16:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59004 "EHLO
+	id S1759308Ab3EFVQn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:16:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59000 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757310Ab3EFUqE (ORCPT
+	with ESMTP id S1757297Ab3EFUqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:04 -0400
+	Mon, 6 May 2013 16:46:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
         Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [ 016/115] iwlwifi: dvm: dont send zeroed LQ cmd
-Date: Mon,  6 May 2013 13:44:12 -0700
-Message-Id: <20130506203057.261417876@linuxfoundation.org>
+Subject: [ 015/115] iwlwifi: fix freeing uninitialized pointer
+Date: Mon,  6 May 2013 13:44:11 -0700
+Message-Id: <20130506203057.156888797@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,46 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 63b77bf489881747c5118476918cc8c29378ee63 upstream.
+commit 3309ccf7fcebceef540ebe90c65d2f94d745a45b upstream.
 
-When the stations are being restored because of unassoc
-RXON, the LQ cmd may not have been initialized because it
-is initialized only after association.
-Sending zeroed LQ_CMD makes the fw unhappy: it raises
-SYSASSERT_2078.
+If on iwl_dump_nic_event_log() error occurs before that function
+initialize buf, we process uninitiated pointer in
+iwl_dbgfs_log_event_read() and can hit "BUG at mm/slub.c:3409"
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-[move zero_lq and make static const]
+Resolves:
+https://bugzilla.redhat.com/show_bug.cgi?id=951241
+
+Reported-by: ian.odette@eprize.com
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/sta.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/dvm/debugfs.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/sta.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/sta.c
-@@ -695,6 +695,7 @@ void iwl_clear_ucode_stations(struct iwl
- void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+--- a/drivers/net/wireless/iwlwifi/dvm/debugfs.c
++++ b/drivers/net/wireless/iwlwifi/dvm/debugfs.c
+@@ -2237,15 +2237,15 @@ static ssize_t iwl_dbgfs_log_event_read(
+ 					 size_t count, loff_t *ppos)
  {
- 	struct iwl_addsta_cmd sta_cmd;
-+	static const struct iwl_link_quality_cmd zero_lq = {};
- 	struct iwl_link_quality_cmd lq;
- 	int i;
- 	bool found = false;
-@@ -733,7 +734,9 @@ void iwl_restore_stations(struct iwl_pri
- 				else
- 					memcpy(&lq, priv->stations[i].lq,
- 					       sizeof(struct iwl_link_quality_cmd));
--				send_lq = true;
-+
-+				if (!memcmp(&lq, &zero_lq, sizeof(lq)))
-+					send_lq = true;
- 			}
- 			spin_unlock_bh(&priv->sta_lock);
- 			ret = iwl_send_add_sta(priv, &sta_cmd, CMD_SYNC);
+ 	struct iwl_priv *priv = file->private_data;
+-	char *buf;
+-	int pos = 0;
+-	ssize_t ret = -ENOMEM;
++	char *buf = NULL;
++	ssize_t ret;
+ 
+-	ret = pos = iwl_dump_nic_event_log(priv, true, &buf, true);
+-	if (buf) {
+-		ret = simple_read_from_buffer(user_buf, count, ppos, buf, pos);
+-		kfree(buf);
+-	}
++	ret = iwl_dump_nic_event_log(priv, true, &buf, true);
++	if (ret < 0)
++		goto err;
++	ret = simple_read_from_buffer(user_buf, count, ppos, buf, ret);
++err:
++	kfree(buf);
+ 	return ret;
+ }
+ 
 
 
