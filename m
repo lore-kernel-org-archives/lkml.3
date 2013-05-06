@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760391Ab3EFXNT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:13:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36644 "EHLO
+	id S933905Ab3EFXia (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:38:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36659 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760351Ab3EFXNQ (ORCPT
+	with ESMTP id S1757238Ab3EFXNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:16 -0400
+	Mon, 6 May 2013 19:13:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 014/104] powerpc/spufs: Initialise inode->i_ino in spufs_new_inode()
-Date: Mon,  6 May 2013 16:11:33 -0700
-Message-Id: <20130506230045.058432474@linuxfoundation.org>
+        Ben Jencks <ben@bjencks.net>
+Subject: [ 020/104] usb/misc/appledisplay: Add 24" LED Cinema display
+Date: Mon,  6 May 2013 16:11:39 -0700
+Message-Id: <20130506230045.673236452@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -27,34 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <michael@ellerman.id.au>
+From: Ben Jencks <ben@bjencks.net>
 
-commit 6747e83235caecd30b186d1282e4eba7679f81b7 upstream.
+commit e7d3b6e22c871ba36d052ca99bc8ceca4d546a60 upstream.
 
-In commit 85fe402 (fs: do not assign default i_ino in new_inode), the
-initialisation of i_ino was removed from new_inode() and pushed down
-into the callers. However spufs_new_inode() was not updated.
+Add the Apple 24" LED Cinema display to the supported devices.
 
-This exhibits as no files appearing in /spu, because all our dirents
-have a zero inode, which readdir() seems to dislike.
-
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Ben Jencks <ben@bjencks.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/cell/spufs/inode.c |    1 +
+ drivers/usb/misc/appledisplay.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/platforms/cell/spufs/inode.c
-+++ b/arch/powerpc/platforms/cell/spufs/inode.c
-@@ -99,6 +99,7 @@ spufs_new_inode(struct super_block *sb,
- 	if (!inode)
- 		goto out;
+--- a/drivers/usb/misc/appledisplay.c
++++ b/drivers/usb/misc/appledisplay.c
+@@ -63,6 +63,7 @@ static const struct usb_device_id appled
+ 	{ APPLEDISPLAY_DEVICE(0x9219) },
+ 	{ APPLEDISPLAY_DEVICE(0x921c) },
+ 	{ APPLEDISPLAY_DEVICE(0x921d) },
++	{ APPLEDISPLAY_DEVICE(0x9236) },
  
-+	inode->i_ino = get_next_ino();
- 	inode->i_mode = mode;
- 	inode->i_uid = current_fsuid();
- 	inode->i_gid = current_fsgid();
+ 	/* Terminating entry */
+ 	{ }
 
 
