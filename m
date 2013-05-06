@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759977Ab3EFXIi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:08:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36379 "EHLO
+	id S1759992Ab3EFXIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:08:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36376 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933016Ab3EFW7G (ORCPT
+	with ESMTP id S933042Ab3EFW7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 18:59:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 28/46] ALSA: usb-audio: Fix autopm error during probing
-Date: Mon,  6 May 2013 15:58:34 -0700
-Message-Id: <20130506225823.622444855@linuxfoundation.org>
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 27/46] ALSA: usb-audio: disable autopm for MIDI devices
+Date: Mon,  6 May 2013 15:58:33 -0700
+Message-Id: <20130506225823.511197895@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,43 +26,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 60af3d037eb8c670dcce31401501d1271e7c5d95 upstream.
+commit cbc200bca4b51a8e2406d4b654d978f8503d430b upstream.
 
-We've got strange errors in get_ctl_value() in mixer.c during
-probing, e.g. on Hercules RMX2 DJ Controller:
+Commit 88a8516a2128 (ALSA: usbaudio: implement USB autosuspend)
+introduced autopm for all USB audio/MIDI devices.  However, many MIDI
+devices, such as synthesizers, do not merely transmit MIDI messages but
+use their MIDI inputs to control other functions.  With autopm, these
+devices would get powered down as soon as the last MIDI port device is
+closed on the host.
 
-  ALSA mixer.c:352 cannot get ctl value: req = 0x83, wValue = 0x201, wIndex = 0xa00, type = 4
-  ALSA mixer.c:352 cannot get ctl value: req = 0x83, wValue = 0x200, wIndex = 0xa00, type = 4
-  ....
+Even some plain MIDI interfaces could get broken: they automatically
+send Active Sensing messages while powered up, but as soon as these
+messages cease, the receiving device would interpret this as an
+accidental disconnection.
 
-It turned out that the culprit is autopm: snd_usb_autoresume() returns
--ENODEV when called during card->probing = 1.
+Commit f5f165418cab (ALSA: usb-audio: Fix missing autopm for MIDI input)
+introduced another regression: some devices (e.g. the Roland GAIA SH-01)
+are self-powered but do a reset whenever the USB interface's power state
+changes.
 
-Since the call itself during card->probing = 1 is valid, let's fix the
-return value of snd_usb_autoresume() as success.
+To work around all this, just disable autopm for all USB MIDI devices.
 
-Reported-and-tested-by: Daniel Schürmann <daschuer@mixxx.org>
+Reported-by: Laurens Holst
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/card.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/usb/midi.c |   13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -610,7 +610,9 @@ int snd_usb_autoresume(struct snd_usb_au
- 	int err = -ENODEV;
+--- a/sound/usb/midi.c
++++ b/sound/usb/midi.c
+@@ -125,7 +125,6 @@ struct snd_usb_midi {
+ 		struct snd_usb_midi_in_endpoint *in;
+ 	} endpoints[MIDI_MAX_ENDPOINTS];
+ 	unsigned long input_triggered;
+-	bool autopm_reference;
+ 	unsigned int opened[2];
+ 	unsigned char disconnected;
+ 	unsigned char input_running;
+@@ -1023,7 +1022,6 @@ static int substream_open(struct snd_raw
+ {
+ 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
+ 	struct snd_kcontrol *ctl;
+-	int err;
  
- 	down_read(&chip->shutdown_rwsem);
--	if (!chip->shutdown && !chip->probing)
-+	if (chip->probing)
-+		err = 0;
-+	else if (!chip->shutdown)
- 		err = usb_autopm_get_interface(chip->pm_intf);
- 	up_read(&chip->shutdown_rwsem);
+ 	down_read(&umidi->disc_rwsem);
+ 	if (umidi->disconnected) {
+@@ -1034,13 +1032,6 @@ static int substream_open(struct snd_raw
+ 	mutex_lock(&umidi->mutex);
+ 	if (open) {
+ 		if (!umidi->opened[0] && !umidi->opened[1]) {
+-			err = usb_autopm_get_interface(umidi->iface);
+-			umidi->autopm_reference = err >= 0;
+-			if (err < 0 && err != -EACCES) {
+-				mutex_unlock(&umidi->mutex);
+-				up_read(&umidi->disc_rwsem);
+-				return -EIO;
+-			}
+ 			if (umidi->roland_load_ctl) {
+ 				ctl = umidi->roland_load_ctl;
+ 				ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+@@ -1063,8 +1054,6 @@ static int substream_open(struct snd_raw
+ 				snd_ctl_notify(umidi->card,
+ 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
+ 			}
+-			if (umidi->autopm_reference)
+-				usb_autopm_put_interface(umidi->iface);
+ 		}
+ 	}
+ 	mutex_unlock(&umidi->mutex);
+@@ -2228,6 +2217,8 @@ int snd_usbmidi_create(struct snd_card *
+ 		return err;
+ 	}
  
++	usb_autopm_get_interface_no_resume(umidi->iface);
++
+ 	list_add_tail(&umidi->list, midi_list);
+ 	return 0;
+ }
 
 
