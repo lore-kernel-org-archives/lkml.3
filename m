@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab3EFVAk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:00:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59222 "EHLO
+	id S932151Ab3EFVBA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:01:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59217 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757787Ab3EFUql (ORCPT
+	with ESMTP id S1757773Ab3EFUqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:41 -0400
+	Mon, 6 May 2013 16:46:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 066/115] ALSA: hda - Add the support for ALC286 codec
-Date: Mon,  6 May 2013 13:45:02 -0700
-Message-Id: <20130506203102.317388266@linuxfoundation.org>
+        Dylan Reid <dgreid@chromium.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 068/115] ASoC: max98088: Fix logging of hardware revision.
+Date: Mon,  6 May 2013 13:45:04 -0700
+Message-Id: <20130506203102.520095226@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -26,55 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Dylan Reid <dgreid@chromium.org>
 
-commit 7fc7d047216aa4923d401c637be2ebc6e3d5bd9b upstream.
+commit 98682063549bedd6e2d2b6b7222f150c6fbce68c upstream.
 
-It's yet another ALC269-variant.
+The hardware revision of the codec is based at 0x40.  Subtract that
+before convering to ASCII.  The same as it is done for 98095.
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ sound/soc/codecs/max98088.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -2515,6 +2515,7 @@ enum {
- 	ALC269_TYPE_ALC280,
- 	ALC269_TYPE_ALC282,
- 	ALC269_TYPE_ALC284,
-+	ALC269_TYPE_ALC286,
- };
+--- a/sound/soc/codecs/max98088.c
++++ b/sound/soc/codecs/max98088.c
+@@ -2006,7 +2006,7 @@ static int max98088_probe(struct snd_soc
+                        ret);
+                goto err_access;
+        }
+-       dev_info(codec->dev, "revision %c\n", ret + 'A');
++       dev_info(codec->dev, "revision %c\n", ret - 0x40 + 'A');
  
- /*
-@@ -2538,6 +2539,7 @@ static int alc269_parse_auto_config(stru
- 	case ALC269_TYPE_ALC269VB:
- 	case ALC269_TYPE_ALC269VD:
- 	case ALC269_TYPE_ALC282:
-+	case ALC269_TYPE_ALC286:
- 		ssids = alc269_ssids;
- 		break;
- 	default:
-@@ -3172,6 +3174,9 @@ static int patch_alc269(struct hda_codec
- 	case 0x10ec0292:
- 		spec->codec_variant = ALC269_TYPE_ALC284;
- 		break;
-+	case 0x10ec0286:
-+		spec->codec_variant = ALC269_TYPE_ALC286;
-+		break;
- 	}
+        snd_soc_write(codec, M98088_REG_51_PWR_SYS, M98088_PWRSV);
  
- 	/* automatic parse from the BIOS config */
-@@ -3878,6 +3883,7 @@ static const struct hda_codec_preset snd
- 	{ .id = 0x10ec0282, .name = "ALC282", .patch = patch_alc269 },
- 	{ .id = 0x10ec0283, .name = "ALC283", .patch = patch_alc269 },
- 	{ .id = 0x10ec0284, .name = "ALC284", .patch = patch_alc269 },
-+	{ .id = 0x10ec0286, .name = "ALC286", .patch = patch_alc269 },
- 	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
- 	{ .id = 0x10ec0292, .name = "ALC292", .patch = patch_alc269 },
- 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
 
 
