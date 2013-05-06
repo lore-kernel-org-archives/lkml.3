@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759665Ab3EFXDl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:03:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36438 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759213Ab3EFW7Q (ORCPT
+	id S1759651Ab3EFXDk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:03:40 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:38834 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759389Ab3EFXDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:16 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu Chuansheng <chuansheng.liu@intel.com>, Li Fei <fei.li@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, tomoki.sekiyama.qu@hitachi.com,
-        joe@perches.com
-Subject: [ 42/46] x86: Eliminate irq_mis_count counted in arch_irq_stat
-Date: Mon,  6 May 2013 15:58:48 -0700
-Message-Id: <20130506225825.074956821@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
-References: <20130506225820.628893970@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 6 May 2013 19:03:37 -0400
+Date: Tue, 7 May 2013 01:03:33 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Olivier Langlois <olivier@trillion01.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/3] posix_timers: Defer per process timer stop after
+ timers processing
+Message-ID: <20130506230332.GA1225@somewhere>
+References: <1366305822-5499-1-git-send-email-fweisbec@gmail.com>
+ <1366305822-5499-3-git-send-email-fweisbec@gmail.com>
+ <1366345802.2855.38.camel@Wailaba2>
+ <CAFTL4hzTbko=jArO+kFF3icDbXmZzamDr1FJL3Vx+11Q54NABg@mail.gmail.com>
+ <1366950479.7911.22.camel@Wailaba2>
+ <20130430125423.GB8272@somewhere>
+ <1367344318.8833.59.camel@Wailaba2>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367344318.8833.59.camel@Wailaba2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Apr 30, 2013 at 01:51:58PM -0400, Olivier Langlois wrote:
+> 
+> > 
+> > > Maybe the condition around the posix_cpu_timer_schedule() block inside
+> > > cpu_timer_fire() could even be a good candidate for 'unlikely'
+> > > qualifier.
+> > 
+> > Well, cpu_timer_fire() is probably not a fast path. So helping branch
+> > prediction there probably won't have much measurable effect in practice.
+> > 
+> Frederic, I'm totally sure that you are right on the measurable effect.
+> When I did propose the 'unlikely' qualifier, please note, that I also
+> had a documentary purpose in mind.
+> 
+> Would you have searched the 'likely' path that does
+> posix_cpu_timer_schedule() when you did modify the code if the
+> 'unlikely' tag would have been present?
 
-------------------
+It's indeed sometimes a good indicator.
 
-From: Li Fei <fei.li@intel.com>
+But here it's in the end of a batch of conditional blocks, so it sort
+of already suggests itself as an unlikely event.
 
-commit f7b0e1055574ce06ab53391263b4e205bf38daf3 upstream.
-
-With the current implementation, kstat_cpu(cpu).irqs_sum is also
-increased in case of irq_mis_count increment.
-
-So there is no need to count irq_mis_count in arch_irq_stat,
-otherwise irq_mis_count will be counted twice in the sum of
-/proc/stat.
-
-Reported-by: Liu Chuansheng <chuansheng.liu@intel.com>
-Signed-off-by: Li Fei <fei.li@intel.com>
-Acked-by: Liu Chuansheng <chuansheng.liu@intel.com>
-Cc: tomoki.sekiyama.qu@hitachi.com
-Cc: joe@perches.com
-Link: http://lkml.kernel.org/r/1366980611.32469.7.camel@fli24-HP-Compaq-8100-Elite-CMT-PC
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/kernel/irq.c |    4 ----
- 1 file changed, 4 deletions(-)
-
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -159,10 +159,6 @@ u64 arch_irq_stat_cpu(unsigned int cpu)
- u64 arch_irq_stat(void)
- {
- 	u64 sum = atomic_read(&irq_err_count);
--
--#ifdef CONFIG_X86_IO_APIC
--	sum += atomic_read(&irq_mis_count);
--#endif
- 	return sum;
- }
- 
+But if you feel the comment can be improved, don't hesitate to send a patch.
 
 
+
+> 
+> Greetings,
+> Olivier
+> 
+> 
+> 
