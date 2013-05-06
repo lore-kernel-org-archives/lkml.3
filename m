@@ -1,36 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab3EFPpt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 11:45:49 -0400
-Received: from muin.pair.com ([209.68.1.55]:56155 "EHLO muin.pair.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753830Ab3EFPps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 11:45:48 -0400
+	id S1755303Ab3EFPxK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 11:53:10 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43106 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820Ab3EFPxJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 11:53:09 -0400
+Date: Mon, 6 May 2013 17:53:04 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jamie Iles <jamie@jamieiles.com>, dinguyen@altera.com, wd@denx.de,
+        linux-arm-kernel@lists.infradead.org, olof@lixom.net,
+        johnstul@us.ibm.com, tglx@linutronix.de,
+        kernel list <linux-kernel@vger.kernel.org>, john.stultz@linaro.org
+Subject: Re: dw_apb_timer_of.c: remove parts that were picoxcell-specific
+Message-ID: <20130506155304.GA6645@amd.pavel.ucw.cz>
+References: <20130426121433.GA16249@amd.pavel.ucw.cz>
+ <20130426214313.GB24891@amd.pavel.ucw.cz>
+ <20130506124814.GA28259@amd.pavel.ucw.cz>
+ <201305061545.22587.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <1367444087-18336-1-git-send-email-mark.langsdorf@calxeda.com>
-References: <1367444087-18336-1-git-send-email-mark.langsdorf@calxeda.com>
-Date: Mon, 6 May 2013 10:45:45 -0500
-Message-ID: <CAOZdJXWBQGjs_eLJ_jdrcp5DYaPgFr50_ZF-eCHzPPMvHYgD-Q@mail.gmail.com>
-Subject: Re: [PATCH] ata: increase retry count but shorten duration for
- Calxeda controller
-From: Timur Tabi <timur@tabi.org>
-To: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201305061545.22587.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 1, 2013 at 4:34 PM, Mark Langsdorf
-<mark.langsdorf@calxeda.com> wrote:
->
-> -       const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
-> +       unsigned long timing[] = { 5, 100, 500};
+On Mon 2013-05-06 15:45:22, Arnd Bergmann wrote:
+> On Monday 06 May 2013, Pavel Machek wrote:
+> > 
+> > Hi!
+> > 
+> > Ping? Previous version was tested by Dinh, and this one is based on
+> > Jamie's updates, so I assume it is acceptable for him, too.
+> > 
+> > It brings two platforms closer together, and makes time actually work
+> > on socfpga. It would be good to get it applied.
+> 
+> Who should apply it? I guess it needs to go through arm-soc with all the
+> other clocksource changes already queued up there. Can we have an Ack
+> from Jamie and from the clocksource maintainers?
 
+Well, changes to arch/arm/mach-picoxcell are single line (and that's a
+cleanup of duplicate include). 
 
-Why are you dropping the 'const'?
+So I guess it should go through the timekeeping tree...?
 
-Assuming it works, this should be more efficient:
-
-static const unsigned long timing[] = {5, 100, 500};
+Thanks,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
