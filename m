@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479Ab3EFCEG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 22:04:06 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64547 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391Ab3EFCD6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 22:03:58 -0400
-X-AuditID: 9c930179-b7bb6ae000001131-b4-51870f8a522c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Stephane Eranian <eranian@google.com>,
-        Sam Ravnborg <sam@ravnborg.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 03/26] perf tools: Move arch check into config/Makefile
-References: <1366796273-4780-1-git-send-email-jolsa@redhat.com>
-	<1366796273-4780-4-git-send-email-jolsa@redhat.com>
-	<87vc7b7yyf.fsf@sejong.aot.lge.com>
-	<20130426113709.GC1054@krava.brq.redhat.com>
-	<20130426161809.GE1054@krava.brq.redhat.com>
-Date: Mon, 06 May 2013 11:03:54 +0900
-In-Reply-To: <20130426161809.GE1054@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Fri, 26 Apr 2013 18:18:09 +0200")
-Message-ID: <87a9o89851.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752364Ab3EFCY5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 22:24:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59026 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751880Ab3EFCYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 May 2013 22:24:55 -0400
+X-IronPort-AV: E=Sophos;i="4.87,618,1363104000"; 
+   d="scan'208";a="7192472"
+Message-ID: <51871520.6020703@cn.fujitsu.com>
+Date: Mon, 06 May 2013 10:27:44 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+CC: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org, laijs@cn.fujitsu.com,
+        davem@davemloft.net, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v2 10/13] x86, acpi, numa, mem-hotplug: Introduce MEMBLK_HOTPLUGGABLE
+ to mark and reserve hotpluggable memory.
+References: <1367313683-10267-1-git-send-email-tangchen@cn.fujitsu.com> <1367313683-10267-11-git-send-email-tangchen@cn.fujitsu.com> <20130503105037.GA4533@dhcp-192-168-178-175.profitbricks.localdomain>
+In-Reply-To: <20130503105037.GA4533@dhcp-192-168-178-175.profitbricks.localdomain>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/06 10:22:59,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/06 10:23:01,
+	Serialize complete at 2013/05/06 10:23:01
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Apr 2013 18:18:09 +0200, Jiri Olsa wrote:
-> Namhyung,
-> if you'd like to check, all changes addressing your comments are in here:
+Hi Vasilis,
+
+Sorry for the delay and thank you for reviewing and testing. :)
+
+On 05/03/2013 06:50 PM, Vasilis Liaskovitis wrote:
 >
-> git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-> perf/core_make
+> Should we skip ranges on nodes that the kernel uses? e.g. with
 >
-> I'll wait a bit for other comments and resend the patchset later
+>          if (memblock_is_kernel_node(nid))
+>              continue;
 
-Sorry, I didn't have a time to check it.
+Yes. I think I forgot to call it in this patch.
+Will update in the next version.
 
-I'll probably have some time later this week so will review it then.
+>
+>
+> - I am getting a "PANIC: early exception" when rebooting with movablecore=acpi
+> after hotplugging memory on node0 or node1 of a 2-node VM. The guest kernel is
+> based on
+> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+> for-x86-mm (e9058baf) + these v2 patches.
+>
+> This happens with or without the above memblock_is_kernel_node(nid) check.
+> Perhaps I am missing something or I need a newer "ACPI, numa: Parse numa info
+> early" patch-set?
 
-Thanks,
-Namhyung
+I didn't test it on a VM. But on my real box, I haven't got a panic
+when rebooting. I think I can help to test it in a VM, but would you 
+please to
+tell me how to setup a environment as yours ?
+
+>
+> A general question: Disabling hot-pluggability/zone-movable eligibility for a
+> whole node sounds a bit inflexible, if the machine only has one node to begin
+> with.  Would it be possible to keep movable information per SRAT entry? I.e
+> if the BIOS presents multiple SRAT entries for one node/PXM (say node 0), and
+> there is no memblock/kernel allocation on one of these SRAT entries, could
+> we still mark this SRAT entry's range as hot-pluggable/movable?  Not sure if
+> many real machine BIOSes would do this, but seabios could.  This implies that
+> SRAT entries are processed for movable-zone eligilibity before they are merged
+> on node/PXM basis entry-granularity (I think numa_cleanup_meminfo currently does
+> this merge).
+
+Yes, this can be done. But in real usage, part of the memory in a node
+is hot-removable makes no sense, I think. We cannot remove the whole node,
+so we cannot remove a real hardware device.
+
+But in virtualization, would you please give a reason why we need this
+entry-granularity ?
+
+
+Another thinking. Assume I didn't understand your question correctly. :)
+
+Now in kernel, we can recognize a node (by PXM in SRAT), but we cannot
+recognize a memory device. Are you saying if we have this 
+entry-granularity,
+we can hotplug a single memory device in a node ? (Perhaps there are more
+than on memory device in a node.)
+
+If so, it makes sense. But I don't the kernel is able to recognize which
+device a memory range belongs to now. And I'm not sure if we can do this.
+
+>
+> Of course the kernel should still have enough memory(i.e. non movable zone) to
+> boot. Can we ensure that at least certain amount of memory is non-movable, and
+> then, given more separate SRAT entries for node0 not used by kernel, treat
+> these rest entries as movable?
+
+I tried this idea before. But as HPA said, it seems no way to calculate 
+how much
+memory the kernel needs.
+https://lkml.org/lkml/2012/11/27/29
+
+
+Thanks. :)
+
