@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab3EFXN6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:13:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36868 "EHLO
+	id S1760909Ab3EFXXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:23:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36871 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932150Ab3EFXNz (ORCPT
+	with ESMTP id S1758996Ab3EFXN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:55 -0400
+	Mon, 6 May 2013 19:13:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, Matthias <morpheusxyz123@yahoo.de>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <syrjala@sci.fi>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 072/104] ACPI / thermal: do not always return THERMAL_TREND_RAISING for active trip points
-Date: Mon,  6 May 2013 16:12:31 -0700
-Message-Id: <20130506230051.040908116@linuxfoundation.org>
+        "Robert P. J. Day" <rpjday@crashcourse.ca>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 075/104] localmodconfig: Process source kconfig files as they are found
+Date: Mon,  6 May 2013 16:12:34 -0700
+Message-Id: <20130506230051.345713121@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,69 +27,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit 94a409319561ec1847fd9bf996a2d5843ad00932 upstream.
+commit ced9cb1af1e3486cc14dca755a1b3fbadf06e90b upstream.
 
-Commit 4ae46be "Thermal: Introduce thermal_zone_trip_update()"
-introduced a regression causing the fan to be always on even when
-the system is idle.
+A bug was reported that caused localmodconfig to not keep all the
+dependencies of ATH9K. This was caused by the kconfig file:
 
-My original idea in that commit is that:
- - when the current temperature is above the trip point,
-   keep the fan on, even if the temperature is dropping.
- - when the current temperature is below the trip point,
-   turn on the fan when the temperature is raising,
-   turn off the fan when the temperature is dropping.
+In drivers/net/wireless/ath/Kconfig:
 
-But this is what the code actually does:
- - when the current temperature is above the trip point,
-   the fan keeps on.
- - when the current temperature is below the trip point,
-   the fan is always on because thermal_get_trend()
-   in driver/acpi/thermal.c returns THERMAL_TREND_RAISING.
-Thus the fan keeps running even if the system is idle.
+---
+if ATH_CARDS
 
-Fix this in drivers/acpi/thermal.c.
+config ATH_DEBUG
+        bool "Atheros wireless debugging"
+        ---help---
+          Say Y, if you want to debug atheros wireless drivers.
+          Right now only ath9k makes use of this.
 
-[rjw: Changelog]
-References: https://bugzilla.kernel.org/show_bug.cgi?id=56591
-References: https://bugzilla.kernel.org/show_bug.cgi?id=56601
-References: https://bugzilla.kernel.org/show_bug.cgi?id=50041#c45
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Tested-by: Matthias <morpheusxyz123@yahoo.de>
-Tested-by: Ville Syrjälä <syrjala@sci.fi>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+source "drivers/net/wireless/ath/ath5k/Kconfig"
+source "drivers/net/wireless/ath/ath9k/Kconfig"
+source "drivers/net/wireless/ath/carl9170/Kconfig"
+source "drivers/net/wireless/ath/ath6kl/Kconfig"
+source "drivers/net/wireless/ath/ar5523/Kconfig"
+source "drivers/net/wireless/ath/wil6210/Kconfig"
+
+endif
+---
+
+The current way kconfig works, it processes new source files after the
+first file is completed. It creates an array of new source config files
+and when the one file is finished, it continues with the next file.
+
+Unfortunately, this means that it loses the fact that the source file is
+within an "if" statement, and this means that each of these source file's
+configs will not have the proper dependencies set.
+
+As ATH9K requires ATH_CARDS set, the localmodconfig did not see that
+dependency, and did not enable ATH_CARDS. When the oldconfig was run, it
+forced ATH9K to be disabled.
+
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1304291022320.9234@oneiric
+
+Reported-by: Robert P. J. Day <rpjday@crashcourse.ca>
+Tested-by: Robert P. J. Day <rpjday@crashcourse.ca>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/thermal.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ scripts/kconfig/streamline_config.pl |   17 +++++++----------
+ 1 file changed, 7 insertions(+), 10 deletions(-)
 
---- a/drivers/acpi/thermal.c
-+++ b/drivers/acpi/thermal.c
-@@ -719,9 +719,19 @@ static int thermal_get_trend(struct ther
- 		return -EINVAL;
+--- a/scripts/kconfig/streamline_config.pl
++++ b/scripts/kconfig/streamline_config.pl
+@@ -156,7 +156,6 @@ sub read_kconfig {
  
- 	if (type == THERMAL_TRIP_ACTIVE) {
--		/* aggressive active cooling */
--		*trend = THERMAL_TREND_RAISING;
--		return 0;
-+		unsigned long trip_temp;
-+		unsigned long temp = KELVIN_TO_MILLICELSIUS(tz->temperature,
-+							tz->kelvin_offset);
-+		if (thermal_get_trip_temp(thermal, trip, &trip_temp))
-+			return -EINVAL;
-+
-+		if (temp > trip_temp) {
-+			*trend = THERMAL_TREND_RAISING;
-+			return 0;
-+		} else {
-+			/* Fall back on default trend */
-+			return -EINVAL;
-+		}
+     my $state = "NONE";
+     my $config;
+-    my @kconfigs;
+ 
+     my $cont = 0;
+     my $line;
+@@ -190,7 +189,13 @@ sub read_kconfig {
+ 
+ 	# collect any Kconfig sources
+ 	if (/^source\s*"(.*)"/) {
+-	    $kconfigs[$#kconfigs+1] = $1;
++	    my $kconfig = $1;
++	    # prevent reading twice.
++	    if (!defined($read_kconfigs{$kconfig})) {
++		$read_kconfigs{$kconfig} = 1;
++		read_kconfig($kconfig);
++	    }
++	    next;
  	}
  
- 	/*
+ 	# configs found
+@@ -250,14 +255,6 @@ sub read_kconfig {
+ 	}
+     }
+     close($kinfile);
+-
+-    # read in any configs that were found.
+-    foreach my $kconfig (@kconfigs) {
+-	if (!defined($read_kconfigs{$kconfig})) {
+-	    $read_kconfigs{$kconfig} = 1;
+-	    read_kconfig($kconfig);
+-	}
+-    }
+ }
+ 
+ if ($kconfig) {
 
 
