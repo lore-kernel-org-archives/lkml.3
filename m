@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab3EFK6P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 06:58:15 -0400
-Received: from mga14.intel.com ([143.182.124.37]:24770 "EHLO mga14.intel.com"
+	id S1754218Ab3EFK7M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 06:59:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37687 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753787Ab3EFK6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 06:58:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,621,1363158000"; 
-   d="scan'208";a="329488784"
-Message-ID: <51878D66.4000502@linux.intel.com>
-Date: Mon, 06 May 2013 14:00:54 +0300
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] gpio: lynxpoint: remove unnecessary platform_set_drvdata()
-References: <001801ce4a09$cbf95800$63ec0800$@samsung.com>
-In-Reply-To: <001801ce4a09$cbf95800$63ec0800$@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753861Ab3EFK7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 06:59:10 -0400
+Date: Mon, 6 May 2013 06:58:42 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
+        linux-pm@vger.kernel.org, netdev@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>
+Subject: Re: [PATCH 1/2] freezer: add unsafe versions of freezable helpers
+Message-ID: <20130506065842.25a018f6@tlielax.poochiereds.net>
+In-Reply-To: <20130506085025.GB13861@dyad.programming.kicks-ass.net>
+References: <1367615050-3894-1-git-send-email-ccross@android.com>
+	<20130506085025.GB13861@dyad.programming.kicks-ass.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 06:28 AM, Jingoo Han wrote:
-> The driver core clears the driver data to NULL after device_release
-> or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
-> (device-core: Ensure drvdata = NULL when no driver is bound).
-> Thus, it is not needed to manually clear the device driver data to NULL.
->
-> Signed-off-by: Jingoo Han<jg1.han@samsung.com>
-> ---
->   drivers/gpio/gpio-lynxpoint.c |    1 -
->   1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/gpio/gpio-lynxpoint.c b/drivers/gpio/gpio-lynxpoint.c
-> index 86c17de..761c470 100644
-> --- a/drivers/gpio/gpio-lynxpoint.c
-> +++ b/drivers/gpio/gpio-lynxpoint.c
-> @@ -447,7 +447,6 @@ static int lp_gpio_remove(struct platform_device *pdev)
->   	err = gpiochip_remove(&lg->chip);
->   	if (err)
->   		dev_warn(&pdev->dev, "failed to remove gpio_chip.\n");
-> -	platform_set_drvdata(pdev, NULL);
->   	return 0;
->   }
->
+On Mon, 6 May 2013 10:50:25 +0200
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-Acked-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+> On Fri, May 03, 2013 at 02:04:09PM -0700, Colin Cross wrote:
+> > NFS calls the freezable helpers with locks held, which is unsafe
+> > and caused lockdep warnings when 6aa9707 "lockdep: check that no
+> > locks held at freeze time" was applied (reverted in dbf520a).
+> > Add new *_unsafe versions of the helpers that will not run the
+> > lockdep test when 6aa9707 is reapplied, and call them from NFS.
+> 
+> Am I the only one that would like a bit more information about why NFS does
+> this and why we need to work around it?
+> 
 
+NFS does this because this is how we initially "fixed" it to not block
+the freezer. It sucks and is prone to deadlocking if you selectively
+freeze processes via the cgroup freezer. It does basically "work" in
+most cases though if the freezer is running to suspend the whole system.
 
+I'm looking at fixing this by instead setting points within the NFS/RPC
+layers that cause these calls to return something like ERESTARTSYS
+instead when a freeze event comes in, depending on whether a call has
+already been transmitted to the server.
+
+That's likely to take a while though, and in the meantime we don't want
+lockdep complaining every time someone fires off a RPC call with locks
+held. So for now, we'd like to "opt out" of these lockdep warnings.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
