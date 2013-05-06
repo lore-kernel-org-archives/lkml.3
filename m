@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933310Ab3EFXT4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:19:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36954 "EHLO
+	id S933323Ab3EFXUX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:20:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36948 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932363Ab3EFXOH (ORCPT
+	with ESMTP id S1760659Ab3EFXOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:07 -0400
+	Mon, 6 May 2013 19:14:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robin Holt <holt@sgi.com>, Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 089/104] ipc: sysv shared memory limited to 8TiB
-Date: Mon,  6 May 2013 16:12:48 -0700
-Message-Id: <20130506230052.777826715@linuxfoundation.org>
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 087/104] nfsd: Decode and send 64bit time values
+Date: Mon,  6 May 2013 16:12:46 -0700
+Message-Id: <20130506230052.583024075@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -28,60 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
+From: Bryan Schumaker <bjschuma@netapp.com>
 
-commit d69f3bad4675ac519d41ca2b11e1c00ca115cecd upstream.
+commit bf8d909705e9d9bac31d9b8eac6734d2b51332a7 upstream.
 
-Trying to run an application which was trying to put data into half of
-memory using shmget(), we found that having a shmall value below 8EiB-8TiB
-would prevent us from using anything more than 8TiB.  By setting
-kernel.shmall greater than 8EiB-8TiB would make the job work.
+The seconds field of an nfstime4 structure is 64bit, but we are assuming
+that the first 32bits are zero-filled.  So if the client tries to set
+atime to a value before the epoch (touch -t 196001010101), then the
+server will save the wrong value on disk.
 
-In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
-
-ipc/shm.c:
- 458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
- 459 {
-...
- 465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
-...
- 474         if (ns->shm_tot + numpages > ns->shm_ctlall)
- 475                 return -ENOSPC;
-
-[akpm@linux-foundation.org: make ipc/shm.c:newseg()'s numpages size_t, not int]
-Signed-off-by: Robin Holt <holt@sgi.com>
-Reported-by: Alex Thorlton <athorlton@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ipc_namespace.h |    2 +-
- ipc/shm.c                     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs4xdr.c |   19 +++++--------------
+ 1 file changed, 5 insertions(+), 14 deletions(-)
 
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -43,8 +43,8 @@ struct ipc_namespace {
- 
- 	size_t		shm_ctlmax;
- 	size_t		shm_ctlall;
-+	unsigned long	shm_tot;
- 	int		shm_ctlmni;
--	int		shm_tot;
- 	/*
- 	 * Defines whether IPC_RMID is forced for _all_ shm segments regardless
- 	 * of shmctl()
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -462,7 +462,7 @@ static int newseg(struct ipc_namespace *
- 	size_t size = params->u.size;
- 	int error;
- 	struct shmid_kernel *shp;
--	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
-+	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	struct file * file;
- 	char name[13];
- 	int id;
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -344,10 +344,7 @@ nfsd4_decode_fattr(struct nfsd4_compound
+ 			   all 32 bits of 'nseconds'. */
+ 			READ_BUF(12);
+ 			len += 12;
+-			READ32(dummy32);
+-			if (dummy32)
+-				return nfserr_inval;
+-			READ32(iattr->ia_atime.tv_sec);
++			READ64(iattr->ia_atime.tv_sec);
+ 			READ32(iattr->ia_atime.tv_nsec);
+ 			if (iattr->ia_atime.tv_nsec >= (u32)1000000000)
+ 				return nfserr_inval;
+@@ -370,10 +367,7 @@ nfsd4_decode_fattr(struct nfsd4_compound
+ 			   all 32 bits of 'nseconds'. */
+ 			READ_BUF(12);
+ 			len += 12;
+-			READ32(dummy32);
+-			if (dummy32)
+-				return nfserr_inval;
+-			READ32(iattr->ia_mtime.tv_sec);
++			READ64(iattr->ia_mtime.tv_sec);
+ 			READ32(iattr->ia_mtime.tv_nsec);
+ 			if (iattr->ia_mtime.tv_nsec >= (u32)1000000000)
+ 				return nfserr_inval;
+@@ -2386,8 +2380,7 @@ out_acl:
+ 	if (bmval1 & FATTR4_WORD1_TIME_ACCESS) {
+ 		if ((buflen -= 12) < 0)
+ 			goto out_resource;
+-		WRITE32(0);
+-		WRITE32(stat.atime.tv_sec);
++		WRITE64((s64)stat.atime.tv_sec);
+ 		WRITE32(stat.atime.tv_nsec);
+ 	}
+ 	if (bmval1 & FATTR4_WORD1_TIME_DELTA) {
+@@ -2400,15 +2393,13 @@ out_acl:
+ 	if (bmval1 & FATTR4_WORD1_TIME_METADATA) {
+ 		if ((buflen -= 12) < 0)
+ 			goto out_resource;
+-		WRITE32(0);
+-		WRITE32(stat.ctime.tv_sec);
++		WRITE64((s64)stat.ctime.tv_sec);
+ 		WRITE32(stat.ctime.tv_nsec);
+ 	}
+ 	if (bmval1 & FATTR4_WORD1_TIME_MODIFY) {
+ 		if ((buflen -= 12) < 0)
+ 			goto out_resource;
+-		WRITE32(0);
+-		WRITE32(stat.mtime.tv_sec);
++		WRITE64((s64)stat.mtime.tv_sec);
+ 		WRITE32(stat.mtime.tv_nsec);
+ 	}
+ 	if (bmval1 & FATTR4_WORD1_MOUNTED_ON_FILEID) {
 
 
