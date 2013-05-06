@@ -1,146 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab3EFSU5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 14:20:57 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:57991 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781Ab3EFSUz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 14:20:55 -0400
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Jean Delvare <jdelvare@suse.de>, Michal Marek <mmarek@suse.cz>,
-        Roland Eggner <edvx1@systemanalysen.net>,
-        Wang YanQing <udknight@gmail.com>
-Subject: [PATCH] kconfig: sort found symbols by relevance
-Date: Mon,  6 May 2013 20:20:47 +0200
-Message-Id: <1367864447-30456-1-git-send-email-yann.morin.1998@free.fr>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1367826629.4494.30.camel@chaos.site>
-References: <1367826629.4494.30.camel@chaos.site>
+	id S1755303Ab3EFSYH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 14:24:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754657Ab3EFSYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 14:24:05 -0400
+Date: Mon, 6 May 2013 14:00:20 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: 3.9+ tty lockdep trace.
+Message-ID: <20130506180020.GB1309@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Jiri Slaby <jslaby@suse.cz>
+References: <20130501154723.GB11841@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130501154723.GB11841@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+On Wed, May 01, 2013 at 11:47:23AM -0400, Dave Jones wrote:
+ > [ 6760.076083] ======================================================
+ > [ 6760.076084] [ INFO: possible circular locking dependency detected ]
+ > [ 6760.076086] 3.9.0+ #16 Not tainted
+ > [ 6760.076086] -------------------------------------------------------
+ > [ 6760.076087] (agetty)/26163 is trying to acquire lock:
+ > [ 6760.076096] blocked:  ((&buf->work)){+.+...}, instance: ffff88011c8b0020, at: [<ffffffff81062065>] flush_work+0x5/0x2e0
+ > [ 6760.076096] 
+ > but task is already holding lock:
+ > [ 6760.076102] blocked:  (console_lock){+.+.+.}, instance: ffffffff81c2fde0, at: [<ffffffff813bc201>] vt_ioctl+0xb61/0x1230
+ > [ 6760.076103] 
+ > which lock already depends on the new lock.
+ > 
+ > [ 6760.076103] 
+ > the existing dependency chain (in reverse order) is:
+ > [ 6760.076106] 
+ > -> #1 (console_lock){+.+.+.}:
+ > [ 6760.076111]        [<ffffffff810b3f74>] lock_acquire+0xa4/0x210
+ > [ 6760.076115]        [<ffffffff810416c7>] console_lock+0x77/0x80
+ > [ 6760.076118]        [<ffffffff813c3dcd>] con_flush_chars+0x2d/0x50
+ > [ 6760.076123]        [<ffffffff813b32b2>] n_tty_receive_buf+0x122/0x14d0
+ > [ 6760.076126]        [<ffffffff813b7709>] flush_to_ldisc+0x119/0x170
+ > [ 6760.076130]        [<ffffffff81064381>] process_one_work+0x211/0x700
+ > [ 6760.076133]        [<ffffffff8106498b>] worker_thread+0x11b/0x3a0
+ > [ 6760.076137]        [<ffffffff8106ce5d>] kthread+0xed/0x100
+ > [ 6760.076141]        [<ffffffff81601cac>] ret_from_fork+0x7c/0xb0
+ > [ 6760.076143] 
+ > -> #0 ((&buf->work)){+.+...}:
+ > [ 6760.076146]        [<ffffffff810b349a>] __lock_acquire+0x193a/0x1c00
+ > [ 6760.076149]        [<ffffffff810b3f74>] lock_acquire+0xa4/0x210
+ > [ 6760.076151]        [<ffffffff810620ae>] flush_work+0x4e/0x2e0
+ > [ 6760.076153]        [<ffffffff81065305>] __cancel_work_timer+0x95/0x130
+ > [ 6760.076155]        [<ffffffff810653b0>] cancel_work_sync+0x10/0x20
+ > [ 6760.076157]        [<ffffffff813b8212>] tty_port_destroy+0x12/0x20
+ > [ 6760.076159]        [<ffffffff813c65e8>] vc_deallocate+0xf8/0x110
+ > [ 6760.076162]        [<ffffffff813bc20c>] vt_ioctl+0xb6c/0x1230
+ > [ 6760.076165]        [<ffffffff813b01a5>] tty_ioctl+0x285/0xd50
+ > [ 6760.076168]        [<ffffffff811ba825>] do_vfs_ioctl+0x305/0x530
+ > [ 6760.076170]        [<ffffffff811baad1>] sys_ioctl+0x81/0xa0
+ > [ 6760.076174]        [<ffffffff81601d59>] system_call_fastpath+0x16/0x1b
+ > [ 6760.076174] 
+ > other info that might help us debug this:
+ > 
+ > [ 6760.076175]  Possible unsafe locking scenario:
+ > 
+ > [ 6760.076175]        CPU0                    CPU1
+ > [ 6760.076176]        ----                    ----
+ > [ 6760.076177]   lock(console_lock);
+ > [ 6760.076179]                                lock((&buf->work));
+ > [ 6760.076180]                                lock(console_lock);
+ > [ 6760.076181]   lock((&buf->work));
+ > [ 6760.076182] 
+ >  *** DEADLOCK ***
+ > 
+ > [ 6760.076183] 1 lock on stack by (agetty)/26163:
+ > [ 6760.076188]  #0: blocked:  (console_lock){+.+.+.}, instance: ffffffff81c2fde0, at: [<ffffffff813bc201>] vt_ioctl+0xb61/0x1230
+ > [ 6760.076188] 
+ > stack backtrace:
+ > [ 6760.076190] Pid: 26163, comm: (agetty) Not tainted 3.9.0+ #16
+ > [ 6760.076191] Call Trace:
+ > [ 6760.076196]  [<ffffffff815edb14>] print_circular_bug+0x200/0x20e
+ > [ 6760.076199]  [<ffffffff810b349a>] __lock_acquire+0x193a/0x1c00
+ > [ 6760.076203]  [<ffffffff8100a269>] ? sched_clock+0x9/0x10
+ > [ 6760.076206]  [<ffffffff8100a269>] ? sched_clock+0x9/0x10
+ > [ 6760.076209]  [<ffffffff8100a200>] ? native_sched_clock+0x20/0x80
+ > [ 6760.076213]  [<ffffffff810b3f74>] lock_acquire+0xa4/0x210
+ > [ 6760.076215]  [<ffffffff81062065>] ? flush_work+0x5/0x2e0
+ > [ 6760.076217]  [<ffffffff810620ae>] flush_work+0x4e/0x2e0
+ > [ 6760.076219]  [<ffffffff81062065>] ? flush_work+0x5/0x2e0
+ > [ 6760.076222]  [<ffffffff810b15db>] ? mark_held_locks+0xbb/0x140
+ > [ 6760.076226]  [<ffffffff8113c8a3>] ? __free_pages_ok.part.57+0x93/0xc0
+ > [ 6760.076229]  [<ffffffff810b15db>] ? mark_held_locks+0xbb/0x140
+ > [ 6760.076231]  [<ffffffff810652f2>] ? __cancel_work_timer+0x82/0x130
+ > [ 6760.076234]  [<ffffffff81065305>] __cancel_work_timer+0x95/0x130
+ > [ 6760.076236]  [<ffffffff810653b0>] cancel_work_sync+0x10/0x20
+ > [ 6760.076238]  [<ffffffff813b8212>] tty_port_destroy+0x12/0x20
+ > [ 6760.076240]  [<ffffffff813c65e8>] vc_deallocate+0xf8/0x110
+ > [ 6760.076243]  [<ffffffff813bc20c>] vt_ioctl+0xb6c/0x1230
+ > [ 6760.076246]  [<ffffffff810aec41>] ? lock_release_holdtime.part.30+0xa1/0x170
+ > [ 6760.076250]  [<ffffffff813b01a5>] tty_ioctl+0x285/0xd50
+ > [ 6760.076254]  [<ffffffff812b00f6>] ? inode_has_perm.isra.46.constprop.61+0x56/0x80
+ > [ 6760.076257]  [<ffffffff811ba825>] do_vfs_ioctl+0x305/0x530
+ > [ 6760.076260]  [<ffffffff812b04db>] ? selinux_file_ioctl+0x5b/0x110
+ > [ 6760.076263]  [<ffffffff811baad1>] sys_ioctl+0x81/0xa0
+ > [ 6760.076266]  [<ffffffff81601d59>] system_call_fastpath+0x16/0x1b
 
-When searching for symbols, return the symbols sorted by relevance.
+Just hit this again, by switching tty's during bootup.
+The previous time was switching from X to console iirc, so that seems to be
+the key to triggering this.
 
-Relevance is the ratio of the length of the matched string and the
-length of the symbol name. Symbols of equal relevance are sorted
-alphabetically.
-
-Reported-by: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Jean Delvare <jdelvare@suse.de>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Roland Eggner <edvx1@systemanalysen.net>
-Cc: Wang YanQing <udknight@gmail.com>
----
- scripts/kconfig/symbol.c | 66 +++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 57 insertions(+), 9 deletions(-)
-
-diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-index ecc5aa5..baba030 100644
---- a/scripts/kconfig/symbol.c
-+++ b/scripts/kconfig/symbol.c
-@@ -943,38 +943,86 @@ const char *sym_escape_string_value(const char *in)
- 	return res;
- }
- 
-+struct sym_match {
-+	struct symbol	*sym;
-+	int 		rel;
-+};
-+
-+/* Compare matched symbols as thus:
-+ * - highest relevance first
-+ * - equal relevance sorted alphabetically
-+ */
-+static int sym_rel_comp( const void *sym1, const void *sym2 )
-+{
-+	struct sym_match **s1 = (struct sym_match **)sym1;
-+	struct sym_match **s2 = (struct sym_match **)sym2;
-+
-+	if ( (*s1)->rel > (*s2)->rel )
-+		return -1;
-+	else if ( (*s1)->rel < (*s2)->rel )
-+		return 1;
-+	else
-+		return strcmp( (*s1)->sym->name, (*s2)->sym->name );
-+}
-+
- struct symbol **sym_re_search(const char *pattern)
- {
- 	struct symbol *sym, **sym_arr = NULL;
-+	struct sym_match **sym_match_arr = NULL;
- 	int i, cnt, size;
- 	regex_t re;
-+	regmatch_t match[1];
- 
- 	cnt = size = 0;
- 	/* Skip if empty */
- 	if (strlen(pattern) == 0)
- 		return NULL;
--	if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB|REG_ICASE))
-+	if (regcomp(&re, pattern, REG_EXTENDED|REG_ICASE))
- 		return NULL;
- 
- 	for_all_symbols(i, sym) {
-+		struct sym_match *tmp_sym_match;
- 		if (sym->flags & SYMBOL_CONST || !sym->name)
- 			continue;
--		if (regexec(&re, sym->name, 0, NULL, 0))
-+		if (regexec(&re, sym->name, 1, match, 0))
- 			continue;
- 		if (cnt + 1 >= size) {
--			void *tmp = sym_arr;
-+			void *tmp;
- 			size += 16;
--			sym_arr = realloc(sym_arr, size * sizeof(struct symbol *));
--			if (!sym_arr) {
--				free(tmp);
--				return NULL;
-+			tmp = realloc(sym_match_arr, size * sizeof(struct sym_match *));
-+			if (!tmp) {
-+				goto sym_re_search_free;
- 			}
-+			sym_match_arr = tmp;
- 		}
- 		sym_calc_value(sym);
--		sym_arr[cnt++] = sym;
-+		tmp_sym_match = (struct sym_match*)malloc(sizeof(struct sym_match));
-+		if (!tmp_sym_match)
-+			goto sym_re_search_free;
-+		tmp_sym_match->sym = sym;
-+		/* As regexec return 0, we know we have a match, so
-+		 * we can use match[0].rm_[se]o without further checks
-+		 */
-+		tmp_sym_match->rel = (100*(match[0].rm_eo-match[0].rm_so))
-+				     /strlen(sym->name);
-+		sym_match_arr[cnt++] = tmp_sym_match;
- 	}
--	if (sym_arr)
-+
-+	if( sym_match_arr ) {
-+		qsort( sym_match_arr, cnt, sizeof(struct sym_match*), sym_rel_comp );
-+		sym_arr = malloc( (cnt+1) * sizeof(struct symbol) );
-+		if (!sym_arr)
-+			goto sym_re_search_free;
-+		for ( i=0; i<cnt; i++ )
-+			sym_arr[i] = sym_match_arr[i]->sym;
- 		sym_arr[cnt] = NULL;
-+	}
-+sym_re_search_free:
-+	if (sym_match_arr) {
-+		for ( i=0; i<cnt; i++ )
-+			free( sym_match_arr[i] );
-+		free( sym_match_arr );
-+	}
- 	regfree(&re);
- 
- 	return sym_arr;
--- 
-1.8.1.2
+	Dave
 
