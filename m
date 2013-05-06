@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759763Ab3EFXF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:05:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36412 "EHLO
+	id S1759779Ab3EFXGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:06:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36408 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933095Ab3EFW7M (ORCPT
+	with ESMTP id S933086Ab3EFW7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:12 -0400
+	Mon, 6 May 2013 18:59:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [ 21/46] i2c: xiic: must always write 16-bit words to TX_FIFO
-Date: Mon,  6 May 2013 15:58:27 -0700
-Message-Id: <20130506225822.882768175@linuxfoundation.org>
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 20/46] tracing: Reset ftrace_graph_filter_enabled if count is zero
+Date: Mon,  6 May 2013 15:58:26 -0700
+Message-Id: <20130506225822.788156539@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -26,42 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven A. Falco" <sfalco@harris.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-commit c39e8e4354ce4daf23336de5daa28a3b01f00aa6 upstream.
+commit 9f50afccfdc15d95d7331acddcb0f7703df089ae upstream.
 
-The TX_FIFO register is 10 bits wide.  The lower 8 bits are the data to be
-written, while the upper two bits are flags to indicate stop/start.
+The ftrace_graph_count can be decreased with a "!" pattern, so that
+the enabled flag should be updated too.
 
-The driver apparently attempted to optimize write access, by only writing a
-byte in those cases where the stop/start bits are zero.  However, we have
-seen cases where the lower byte is duplicated onto the upper byte by the
-hardware, which causes inadvertent stop/starts.
+Link: http://lkml.kernel.org/r/1365663698-2413-1-git-send-email-namhyung@kernel.org
 
-This patch changes the write access to the transmit FIFO to always be 16 bits
-wide.
-
-Signed off by: Steven A. Falco <sfalco@harris.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-xiic.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ kernel/trace/ftrace.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/i2c/busses/i2c-xiic.c
-+++ b/drivers/i2c/busses/i2c-xiic.c
-@@ -311,10 +311,8 @@ static void xiic_fill_tx_fifo(struct xii
- 			/* last message in transfer -> STOP */
- 			data |= XIIC_TX_DYN_STOP_MASK;
- 			dev_dbg(i2c->adap.dev.parent, "%s TX STOP\n", __func__);
--
--			xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
--		} else
--			xiic_setreg8(i2c, XIIC_DTR_REG_OFFSET, data);
-+		}
-+		xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
- 	}
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3287,7 +3287,8 @@ out:
+ 	if (fail)
+ 		return -EINVAL;
+ 
+-	ftrace_graph_filter_enabled = 1;
++	ftrace_graph_filter_enabled = !!(*idx);
++
+ 	return 0;
  }
  
 
