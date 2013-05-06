@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933772Ab3EFXeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:34:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36712 "EHLO
+	id S933793Ab3EFXee (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:34:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36707 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760460Ab3EFXN3 (ORCPT
+	with ESMTP id S1760415Ab3EFXN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:29 -0400
+	Mon, 6 May 2013 19:13:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Cochran <richardcochran@gmail.com>,
-        Chris LaRocque <clarocq@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 035/104] gianfar: do not advertise any alarm capability.
-Date: Mon,  6 May 2013 16:11:54 -0700
-Message-Id: <20130506230047.219048504@linuxfoundation.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 034/104] arm: set the page table freeing ceiling to TASK_SIZE
+Date: Mon,  6 May 2013 16:11:53 -0700
+Message-Id: <20130506230047.119717923@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -28,44 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Cochran <richardcochran@gmail.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit cd4baaaa04b4aaa3b0ec4d13a6f3d203b92eadbd upstream.
+commit 104ad3b32d7a71941c8ab2dee78eea38e8a23309 upstream.
 
-An early draft of the PHC patch series included an alarm in the
-gianfar driver. During the review process, the alarm code was dropped,
-but the capability removal was overlooked. This patch fixes the issue
-by advertising zero alarms.
+ARM processors with LPAE enabled use 3 levels of page tables, with an
+entry in the top level (pgd) covering 1GB of virtual space.  Because of
+the branch relocation limitations on ARM, the loadable modules are
+mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
+between kernel modules and user space.
 
-This patch should be applied to every 3.x stable kernel.
+If free_pgtables() is called with the default ceiling 0,
+free_pgd_range() (and subsequently called functions) also frees the page
+table shared between user space and kernel modules (which is normally
+handled by the ARM-specific pgd_free() function).  This patch changes
+defines the ARM USER_PGTABLES_CEILING to TASK_SIZE when CONFIG_ARM_LPAE
+is enabled.
 
-Signed-off-by: Richard Cochran <richardcochran@gmail.com>
-Reported-by: Chris LaRocque <clarocq@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Note that the pgd_free() function already checks the presence of the
+shared pmd page allocated by pgd_alloc() and frees it, though with
+ceiling 0 this wasn't necessary.
+
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/freescale/gianfar_ptp.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/arm/include/asm/pgtable.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/net/ethernet/freescale/gianfar_ptp.c
-+++ b/drivers/net/ethernet/freescale/gianfar_ptp.c
-@@ -127,7 +127,6 @@ struct gianfar_ptp_registers {
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -61,6 +61,15 @@ extern void __pgd_error(const char *file
+ #define FIRST_USER_ADDRESS	PAGE_SIZE
  
- #define DRIVER		"gianfar_ptp"
- #define DEFAULT_CKSEL	1
--#define N_ALARM		1 /* first alarm is used internally to reset fipers */
- #define N_EXT_TS	2
- #define REG_SIZE	sizeof(struct gianfar_ptp_registers)
- 
-@@ -410,7 +409,7 @@ static struct ptp_clock_info ptp_gianfar
- 	.owner		= THIS_MODULE,
- 	.name		= "gianfar clock",
- 	.max_adj	= 512000,
--	.n_alarm	= N_ALARM,
-+	.n_alarm	= 0,
- 	.n_ext_ts	= N_EXT_TS,
- 	.n_per_out	= 0,
- 	.pps		= 1,
+ /*
++ * Use TASK_SIZE as the ceiling argument for free_pgtables() and
++ * free_pgd_range() to avoid freeing the modules pmd when LPAE is enabled (pmd
++ * page shared between user and kernel).
++ */
++#ifdef CONFIG_ARM_LPAE
++#define USER_PGTABLES_CEILING	TASK_SIZE
++#endif
++
++/*
+  * The pgprot_* and protection_map entries will be fixed up in runtime
+  * to include the cachable and bufferable bits based on memory policy,
+  * as well as any architecture dependent bits like global/ASID and SMP
 
 
