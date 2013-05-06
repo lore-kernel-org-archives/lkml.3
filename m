@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab3EFEEn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 00:04:43 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:29003 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab3EFEEl (ORCPT
+	id S1752309Ab3EFEFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 00:05:47 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:46641 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab3EFEFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 00:04:41 -0400
-X-AuditID: cbfee690-b7f136d000000fea-5c-51872bc9610a
+	Mon, 6 May 2013 00:05:45 -0400
+X-AuditID: cbfee691-b7fe56d000004b96-44-51872c17e3c1
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Mika Westerberg'" <mika.westerberg@linux.intel.com>
-Subject: [PATCH 1/8] mfd: intel_msic: remove unnecessary platform_set_drvdata()
-Date: Mon, 06 May 2013 13:04:25 +0900
-Message-id: <002e01ce4a0e$cbe76460$63b62d20$@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 2/8] mfd: jz4740-adc: remove unnecessary platform_set_drvdata()
+Date: Mon, 06 May 2013 13:05:43 +0900
+Message-id: <002f01ce4a0e$faaad3e0$f0007ba0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5KDqyl0+9UQvzRTQyj2xWBJqMXVg==
+Thread-index: Ac5KDtf0EjEBxSG2Rfma0hdQMb/kIA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zQ92T2u2BBqs2CllcXniJ1eLyrjls
-	FlO2H2G3ON3N6sDiMe9koEffllWMHp83yQUwR3HZpKTmZJalFunbJXBl7NrazlJwlK1i3oYF
-	jA2Me1i7GDk5JARMJPYuXMQMYYtJXLi3nq2LkYtDSGAZo8TbX/Pgin7tbmeFSExnlPj99AeU
-	84tR4vrJaUwgVWwCahJfvhxmB7FFBLQkuo+dZwOxmQWqJRo3TgarERbwl3jefo8RxGYRUJVY
-	Nu8ImM0rYCkxqWcbK4QtKPFj8j0WiF4tifU7jzNB2PISm9e8hTpVQWLH2deMELv0JNZ2/WaE
-	qBGR2PfiHSPIcRICy9glWi49ZYFYJiDxbfIhIJsDKCErsekA1BxJiYMrbrBMYBSbhWT1LCSr
-	ZyFZPQvJigWMLKsYRVMLkguKk9KLTPSKE3OLS/PS9ZLzczcxQmJrwg7GewesDzEmA62fyCwl
-	mpwPjM28knhDYzMjC1MTU2Mjc0sz0oSVxHnVW6wDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBK
-	NTBavaoLOLqR6eGJnXbLX99NvtnyS6c7b36mX27E18qEabsYbJU2qV6zfHZ3a/JNI7+Us25n
-	+tkUSs4Ha6TcPvOlweHg6cLl6QpGvVWzYiTzbrtMWpfLmtLNclc8dXNY08tq0Yc3tpslFvpw
-	XY781Hc4/EzUo3ijayJ8n/aunXP/gHCjbPW1ov1KLMUZiYZazEXFiQDIkTUNwwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xoO5J7fZAg8uX+CwuL7zEanF51xw2
-	iynbj7BbnO5mdWDxmHcy0KNvyypGj8+b5AKYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNN
-	zQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAlikplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0J
-	gusxMkADCesYM3ZtbWcpOMpWMW/DAsYGxj2sXYycHBICJhK/drdD2WISF+6tZ+ti5OIQEpjO
-	KPH76Q9WCOcXo8T1k9OYQKrYBNQkvnw5zA5iiwhoSXQfO88GYjMLVEs0bpwMViMs4C/xvP0e
-	I4jNIqAqsWzeETCbV8BSYlLPNlYIW1Dix+R7LBC9WhLrdx5ngrDlJTavecsMcZGCxI6zrxkh
-	dulJrO36zQhRIyKx78U7xgmMArOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddIrzgxt7g0
-	L10vOT93EyM4cp9J72Bc1WBxiFGAg1GJh7fgSVugEGtiWXFl7iFGCQ5mJRFen71AId6UxMqq
-	1KL8+KLSnNTiQ4zJQJ9OZJYSTc4HJpW8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5ak
-	ZqemFqQWwWxh4uCUamBUtT78SoXz5SXGmU+UyhvLf3dp8q0IEJVJW6baLL2X5/P5fSY/sjjY
-	gz6XZ9pbL3l78f3K3R9udPgYP3jSxXNLy1svt+hugLq/q593wNcIrT2XUn3fnX76MFOlbilX
-	qURQYHLQKpnfE/9d+DD9k3VSy0Rjw63iWz9fvZysNSnofcx1OfPbBqlKLMUZiYZazEXFiQB9
-	bEHBIAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zfV1xnfZAg8UNehaXF15itVgyeT6r
+	xeVdc9gsTnezOrB4zDsZ6LHkzSFWj74tqxg9Pm+SC2CJ4rJJSc3JLEst0rdL4Mr4N/kBe8Ei
+	jooP1y4xNjB+Y+ti5OSQEDCR+NW3hgnCFpO4cG89UJyLQ0hgGaNE2+W7jDBFC/bOZoJILGKU
+	2P/9IlTVL0aJ+fubwUaxCahJfPlymB3EFhHQkug+dh4sziyQJXHk60SwFcIC/hJHXzWwdDFy
+	cLAIqEpsmOIIEuYVsJQ4/W8tC4QtKPFj8j0WiFYtifU7jzNB2PISm9e8ZYY4SEFix9nXjBCr
+	9CR+nnrHDFEjIrHvxTtGkNskBNaxS6z8+wKsiEVAQOLb5ENgeyUEZCU2HYCaIylxcMUNlgmM
+	YrOQrJ6FZPUsJKtnIVmxgJFlFaNoakFyQXFSepGpXnFibnFpXrpecn7uJkZIjE3cwXj/gPUh
+	xmSg9ROZpUST84ExmlcSb2hsZmRhamJqbGRuaUaasJI4r3qLdaCQQHpiSWp2ampBalF8UWlO
+	avEhRiYOTqkGRqm3HH9PazxjmNv0cp/Qgv92q3SPWYnM3yuSnL5M2TlmlklA1q5XK/au3uJY
+	/GbCzBlX9l8r8r7z+4ju9m0FekXuvKpV2mfm9B0/KLKxYufNf+o5vtYlZ86Uttt3VP/jX5uU
+	zrzJT3eV4s9DQt6/03edyDgon2i8MuqKxu4deqZPLmw7c+xXqrsSS3FGoqEWc1FxIgDKq7r2
+	xwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAV1xnfZAg9PrtCwuL7zEarFk8nxW
+	i8u75rBZnO5mdWDxmHcy0GPJm0OsHn1bVjF6fN4kF8AS1cBok5GamJJapJCal5yfkpmXbqvk
+	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0UUmhLDGnFCgUkFhcrKRvh2lCaIibrgVM
+	Y4Sub0gQXI+RARpIWMeY8W/yA/aCRRwVH65dYmxg/MbWxcjJISFgIrFg72wmCFtM4sK99UBx
+	Lg4hgUWMEvu/X4RyfjFKzN/fDNbBJqAm8eXLYXYQW0RAS6L72HmwOLNAlsSRrxPBJgkL+Esc
+	fdXA0sXIwcEioCqxYYojSJhXwFLi9L+1LBC2oMSPyfdYIFq1JNbvPM4EYctLbF7zlhniIAWJ
+	HWdfM0Ks0pP4eeodM0SNiMS+F+8YJzAKzEIyahaSUbOQjJqFpGUBI8sqRtHUguSC4qT0XEO9
+	4sTc4tK8dL3k/NxNjOAIfia1g3Flg8UhRgEORiUe3oInbYFCrIllxZW5hxglOJiVRHh99gKF
+	eFMSK6tSi/Lji0pzUosPMSYDPTqRWUo0OR+YXPJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Qah0o
+	JJCeWJKanZpakFoEs4WJg1OqgTFi5w/dpoWVprorPf9vNPrzhOHq8jkC8dvXbzmhcZ7DbJ9H
+	weX+p+cVXu5WvD9vwazEWGeWJZJO216yLFyuEx7XfqVe+2aoxJdlkyace/9qXjpn0qNlm07z
+	VmfKrJTTaThbP8HR/v8z1cDSJMMXaQu5t+9WdCk9HHPj+IHvZSfkF98zVtp+9NsuJZbijERD
+	Leai4kQA6MvRdCQDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,21 +60,31 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/intel_msic.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/mfd/jz4740-adc.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mfd/intel_msic.c b/drivers/mfd/intel_msic.c
-index 5be3b5e..977506e 100644
---- a/drivers/mfd/intel_msic.c
-+++ b/drivers/mfd/intel_msic.c
-@@ -443,7 +443,6 @@ static int intel_msic_remove(struct platform_device *pdev)
- 	struct intel_msic *msic = platform_get_drvdata(pdev);
- 
- 	intel_msic_remove_devices(msic);
+diff --git a/drivers/mfd/jz4740-adc.c b/drivers/mfd/jz4740-adc.c
+index e80587f..01e86ce 100644
+--- a/drivers/mfd/jz4740-adc.c
++++ b/drivers/mfd/jz4740-adc.c
+@@ -294,7 +294,6 @@ static int jz4740_adc_probe(struct platform_device *pdev)
+ err_clk_put:
+ 	clk_put(adc->clk);
+ err_iounmap:
 -	platform_set_drvdata(pdev, NULL);
+ 	iounmap(adc->base);
+ err_release_mem_region:
+ 	release_mem_region(adc->mem->start, resource_size(adc->mem));
+@@ -317,8 +316,6 @@ static int jz4740_adc_remove(struct platform_device *pdev)
  
+ 	clk_put(adc->clk);
+ 
+-	platform_set_drvdata(pdev, NULL);
+-
  	return 0;
  }
+ 
 -- 
 1.7.2.5
+
 
