@@ -1,102 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab3EFPZJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 11:25:09 -0400
-Received: from mail-ia0-f169.google.com ([209.85.210.169]:37843 "EHLO
-	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652Ab3EFPZH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 11:25:07 -0400
+	id S1754616Ab3EFP0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 11:26:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48205 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753874Ab3EFP0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 11:26:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,622,1363158000"; 
+   d="scan'208";a="332583190"
+Message-ID: <5187CB8E.6090303@intel.com>
+Date: Mon, 06 May 2013 23:26:06 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <km8de1$mel$1@pye-srv-01.telemetry.co.uk>
-References: <CAPweEDym3TSEKWB1PsRWZ77irkTPF-Qdm9nRGfRBrv72CQ8zJA@mail.gmail.com>
-	<km8de1$mel$1@pye-srv-01.telemetry.co.uk>
-Date: Mon, 6 May 2013 16:25:07 +0100
-X-Google-Sender-Auth: fGlc9p87P55zbNvOuywiDLIht1c
-Message-ID: <CAPweEDxJGExW0JWTnqxV_-HHO_d-6C75AzDrmawGEdEuWu_1Xw@mail.gmail.com>
-Subject: Re: device tree not the answer in the ARM world
-From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-To: Mark Morgan Lloyd <markMLl.debian-arm@telemetry.co.uk>
-Cc: debian-arm@lists.debian.org,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Paul Turner <pjt@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 3/7] sched: set initial value of runnable avg for new
+ forked task
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-4-git-send-email-alex.shi@intel.com> <CAPM31RJg7t8f1H-dZwzP1c-0HHb_=8twidX74gS2NfyQhHUhCw@mail.gmail.com> <5187760D.8060900@intel.com> <CAPM31RJSi1X4PbK86NKiAJFtiq7q2_3t4Ke=sqgXO5rLjbeh7A@mail.gmail.com>
+In-Reply-To: <CAPM31RJSi1X4PbK86NKiAJFtiq7q2_3t4Ke=sqgXO5rLjbeh7A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mark, thank for this.  i'm bringing lkml back in [my decision] but
-just this once as i believe the point's now been made.  i'm also
-leaving it below [top-post style] as it's background, as well as
-standing on its own merit.
+On 05/06/2013 06:22 PM, Paul Turner wrote:
+>>> >> This is missing a scale_load() right?  Further: Why not put this in
+>>> >> __sched_fork?
+>> >
+>> > scale_load is not working now. Anyway I can add this.
+> I believe someone tracked down a plausible cause for this:
+> A governor was examining the values and making a mess with the scaled
+> ones.  I'm sorry, I don't have the post off hand.
+> 
+> You actually likely ideally want this _on_ for these patches; the
+> available resolution with SCHED_LOAD_SHIFT=10 disappears really
+> quickly and scaling by runnable_avg only further accelerates that.
 
-i was under the impression that device tree had been declared
-successful on power-pc [and wasn't aware of SPARC], so a reality check
-is much appreciated.  in effect what you're saying is that the
-standardisation through things *other* than device tree - i.e. there
-wasn't so much of a problem of diversity in the first place [*1], and
-this in turn means that device tree could be declared "more"
-successful.
+Sorry for can not follow you. Do you mean the scaling by runnable_avg is
+better than scale_load?
 
-in other words, once again, the link between the original purpose for
-which device tree was invented [solve the ARM hardware diversity /
-proliferation problem] and its actual success in achieving that
-purpose is demonstrated to be at best an assumption and at worst a
-failure [in the ARM world].
+In fact, after think twice of scale_load, guess better to figure out a
+good usage for it before enabling blindly.
 
-that there are *other* successes - incidental to its genesis - that
-device tree has solved is fantastic, but completely beside the point.
-
-so the question becomes - unless someone can demonstrate that device
-tree has or can solve the [ARM hardware diversification] problem and
-nobody has so far - what *can* solve the problem of massive hardware
-diversity [both SoCs and peripherals] in the face of pathological
-corporate behaviour that i've outlined over the course of the past few
-messages?
-
-l.
-
-[*1] for many reasons - not least but most obviously as mark clearly
-points out: there aren't that many peripherals to support!!!
-
-
-On Mon, May 6, 2013 at 3:06 PM, Mark Morgan Lloyd
-<markMLl.debian-arm@telemetry.co.uk> wrote:
-
-> [Grimace] DeviceTree works up to a point on SPARC and PPC Macs, where there
-> is a limited number of peripheral device types and (in general) they're
-> described by published data. Part of that success though is because these
-> machines also expose a standardised UI (OpenPROM or whatever you want to
-> call it) which developers can use for manual enumeration and debugging and
-> which the kernel can use provided that it gets the calling convention right
-> (I've seen a firmware change on SPARC break the kernel).
->
-> Leaving aside the more esoteric peripherals (sending morse using a camera
-> flash LED or whatever :-) there are at least t^Hfour problems:
->
-> i)   There's no standardised interface to get at the configuration.
->
-> ii)  It's not self-describing, particularly in the case of GPIO-attached
-> peripherals.
->
-> iii) It's no replacement for enumerating PCI-attached peripherals.
->
-> iv)  It's no replacement for enumerating chips on a JTAG loop.
->
-> Put another way, Cory Doctorow's "InstallParty" software isn't even science
-> fiction: it's pure fantasy, and is likely to stay that way.
->
-> --
-> Mark Morgan Lloyd
-> markMLl .AT. telemetry.co .DOT. uk
->
-> [Opinions above are the author's, not those of his employers or colleagues]
->
->
-> --
-> To UNSUBSCRIBE, email to debian-arm-REQUEST@lists.debian.org
-> with a subject of "unsubscribe". Trouble? Contact
-> listmaster@lists.debian.org
-> Archive: http://lists.debian.org/km8de1$mel$1@pye-srv-01.telemetry.co.uk
->
+> We should try to get this generally turned on by default again.
+>> >
+-- 
+Thanks
+    Alex
