@@ -1,113 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab3EFDc4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 23:32:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46864 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752665Ab3EFDcy (ORCPT
+	id S1753210Ab3EFDfX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 23:35:23 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:25441 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678Ab3EFDfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 23:32:54 -0400
-Message-ID: <1367811168.4131.34.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH firmware 2/2] rtl_nic: add firmware rtl8106e-2
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: dwmw2@infradead.org, romieu@fr.zoreil.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 06 May 2013 04:32:48 +0100
-In-Reply-To: <1366720668-4850-2-git-send-email-hayeswang@realtek.com>
-References: <1366720668-4850-1-git-send-email-hayeswang@realtek.com>
-	 <1366720668-4850-2-git-send-email-hayeswang@realtek.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-M/x+p6MLEXB8rOf6XpDg"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:600a:85ea:7f8d:4642
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 5 May 2013 23:35:22 -0400
+X-AuditID: cbfee68f-b7f066d000003683-56-518724f82b95
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Grant Likely'" <grant.likely@secretlab.ca>
+Cc: "'Linus Walleij'" <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>,
+        "'Dan Carpenter'" <dan.carpenter@oracle.com>
+Subject: [PATCH 6/7] gpio: timberdale: remove unnecessary platform_set_drvdata()
+Date: Mon, 06 May 2013 12:35:19 +0900
+Message-id: <001c01ce4a0a$bb7c58a0$327509e0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac5KClqaV0pAVJq/QLuukkrmdv3xFQ==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zI90fKu2BBlO26lu8/jedxeLVmY1s
+	FpcXXmK1mPJnOZPF5V1z2BxYPe5c28Pm8fHpLRaPvi2rGD1+vtTx+LxJLoA1issmJTUnsyy1
+	SN8ugStjwqk2xoJrbBXf5h1lbmA8w9rFyMkhIWAi8WLWCmYIW0ziwr31bF2MXBxCAssYJY4s
+	ms0IU/So6TsrRGIRo0T/x1lQzi9Gia/HbzGBVLEJqEl8+XKYHcQWEdCTuHGhgxGkiFlgDqPE
+	7RVTWEASwgIBEv1fjgLt4OBgEVCVmPk7DiTMK2Ap0fTsNDOELSjxY/I9sHJmAS2J9TuPM0HY
+	8hKb17yFOlVBYsfZ14wwu/Z1HWOGqBGR2PfiHdheCYFD7BITGg+CDWIREJD4NvkQC8heCQFZ
+	iU0HoOZIShxccYNlAqPYLCSrZyFZPQvJ6llIVixgZFnFKJpakFxQnJReZKxXnJhbXJqXrpec
+	n7uJERJ7/TsY7x6wPsSYDLR+IrOUaHI+MHbzSuINjc2MLExNTI2NzC3NSBNWEudVa7EOFBJI
+	TyxJzU5NLUgtii8qzUktPsTIxMEp1cAYf/nSBT2x5C9bkmVYIlifmIg+a+6c1rv6y/dtu9U2
+	2VnEK3Rlz93truEufFXnZWWmVpqQVJJHSFXntHOrEo9tP18jeGjzzwzL//c8glTqFP/MTXZ+
+	f37jW4k/c3Zfl2fuTFsu9jXu5GtxAftlq9+Fz35w6e7fY3Nr3srPL3/A55sseGT7xfmOSizF
+	GYmGWsxFxYkArIHqLNMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd0fKu2BBr8bpC1e/5vOYvHqzEY2
+	i8sLL7FaTPmznMni8q45bA6sHneu7WHz+Pj0FotH35ZVjB4/X+p4fN4kF8Aa1cBok5GamJJa
+	pJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0XEmhLDGnFCgUkFhc
+	rKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYMeFUG2PBNbaKb/OOMjcwnmHtYuTkkBAwkXjU
+	9B3KFpO4cG89WxcjF4eQwCJGif6Ps1ghnF+MEl+P32ICqWITUJP48uUwO4gtIqAnceNCByNI
+	EbPAHEaJ2yumsIAkhAUCJPq/HAUaxcHBIqAqMfN3HEiYV8BSounZaWYIW1Dix+R7YOXMAloS
+	63ceZ4Kw5SU2r3nLDHGRgsSOs68ZYXbt6zrGDFEjIrHvxTvGCYwCs5CMmoVk1Cwko2YhaVnA
+	yLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIziyn0nvYFzVYHGIUYCDUYmHt+BJW6AQa2JZ
+	cWXuIUYJDmYlEV6fvUAh3pTEyqrUovz4otKc1OJDjMlAj05klhJNzgcmnbySeENjEzMjSyMz
+	CyMTc3PShJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi4JRqYNSPYL+eyq/C52Wgz/Tw4qr6Rw8m
+	qjAcex9gIzs/Nr+pb+8Lp6e87FNvFTy32Fp9yiv0u9ImPR+H09aBc389nS6vMWNq2RXt5R9V
+	fvbVe99V0JJLeVebt+Za/Zv2i03lMy+a6ucef7H+/Ne9+zlXCuh2c23/HXrqxqLvK9s+TN/X
+	cuN2rOfyA1ZKLMUZiYZazEXFiQBKJJ9AMAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The driver core clears the driver data to NULL after device_release
+or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
+(device-core: Ensure drvdata = NULL when no driver is bound).
+Thus, it is not needed to manually clear the device driver data to NULL.
 
---=-M/x+p6MLEXB8rOf6XpDg
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/gpio/gpio-timberdale.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-On Tue, 2013-04-23 at 20:37 +0800, Hayes Wang wrote:
-> File: rtl_nic/rtl8106e-2.fw
-> Version: 0.0.1
->=20
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-> ---
+diff --git a/drivers/gpio/gpio-timberdale.c b/drivers/gpio/gpio-timberdale.c
+index 4377405..4c65f88 100644
+--- a/drivers/gpio/gpio-timberdale.c
++++ b/drivers/gpio/gpio-timberdale.c
+@@ -342,8 +342,6 @@ static int timbgpio_remove(struct platform_device *pdev)
+ 	release_mem_region(iomem->start, resource_size(iomem));
+ 	kfree(tgpio);
+ 
+-	platform_set_drvdata(pdev, NULL);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.7.2.5
 
-Applied, thanks.
 
-Ben.
-
->  WHENCE                |   3 +++
->  rtl_nic/rtl8106e-2.fw | Bin 0 -> 832 bytes
->  2 files changed, 3 insertions(+)
->  create mode 100644 rtl_nic/rtl8106e-2.fw
->=20
-> diff --git a/WHENCE b/WHENCE
-> index 54f6388..fedf031 100644
-> --- a/WHENCE
-> +++ b/WHENCE
-> @@ -1869,6 +1869,9 @@ Version: 0.0.1
->  File: rtl_nic/rtl8106e-1.fw
->  Version: 0.0.1
-> =20
-> +File: rtl_nic/rtl8106e-2.fw
-> +Version: 0.0.1
-> +
->  File: rtl_nic/rtl8168g-1.fw
->  Version: 0.0.3
-> =20
-> diff --git a/rtl_nic/rtl8106e-2.fw b/rtl_nic/rtl8106e-2.fw
-> new file mode 100644
-> index 0000000000000000000000000000000000000000..ac042757e1392c184b5b75313=
-d6b597c1561cc41
-> GIT binary patch
-> literal 832
-> zcmYk(!AcuZ6b9fwaZ;g{I7x011aTgqjT0wG%_?9i2wg~*ZqlGa7HUOYrsY~96r><N
-> zfDLq$M-aN1wNychxa|Y9SlZa7)BoO+Q%rI>neUuAbM74g*xlQFR*M%lp3b-8YFw>F
-> zaeZz+nX4ttxz7sM7p}K>^>QJJlh#gqZ>`hXZEv;K-mGs#wZ%pfH|lkKT*mu}Sqp^x
-> z`d@1OHFk2qcSlViY9ilX2abS3y!3F^zSyr=3Dj2T-!t=3DJrlbr$jeQQp{cpE;Ug44xP}
-> zes2Yzjm>eri;SHf)jeR$CXEe7F+Yl6?1sko4cXT{1CZV_^AzqfM8H(~e<nUx_jBWO
-> zVfxkY#~{0NwI+S;`;?IS{g(W_J?r}-`y@3kH6};m^W{+<mI?N_V9(bd%6_Ilnma_8
-> z9m@T`)Ecyg*o|6&RuKEEwoTg>`=3DQpMb;N$Eb!lC(-)ckJP;97nKsyj~XA`>j1p^G|
-> z1Mx|<8QP3kN$r+)D^^i!)7oN>)sAV$Vnwxp7KlAkyEpfQ+A8Z-rOwTGsk3Kt#^-u{
-> e!nzZw`=3D(Z;6~(U9&S+<1*J?dlPps+RJMa%_vcCZU
->=20
-> literal 0
-> HcmV?d00001
->=20
-
---=20
-Ben Hutchings
-If God had intended Man to program,
-we'd have been born with serial I/O ports.
-
---=-M/x+p6MLEXB8rOf6XpDg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUYckYOe/yOyVhhEJAQpvJA/+JtVrrczRmvHDdvG1e4qtfn+c1z44PTll
-l3hs+ez/6PqbvZBZ+CY1Etk9gycLccOQjaYG4aPVveVgvfdt3PYe+zMOn6pu1Ru0
-CssW7rKPkgle4dhF6A62xhWAjQsDHHX8baa60mTKe+Ihxm1jwyOeW3TwFmbWKZS0
-BD3crnpLNy/22Zaa/UORCBxvJnP5EZhrzbkPqO1GbIms20sQETr05uqCArTm9ugO
-n0le4rH0C+NG4ZK9VLbxPTHinZKNTyWANBl3RC6824woya6fXGP/tHt+mqxhT5vP
-4xayePK1FI3dOJGzdbzNPjATvvV9dS1AHZggbZWc+nNR89j28dT9+AURuQ4pW4FG
-73oKaD8V5S/QSNlwekrktLkoJStDIeloman8QM5EKjuuNWADX2eT1P0e00Gq4YVb
-Ph0vuH/sr1dVMx4ACAVi4oIfmqpaoEx0M3PVENTES1qNJPpiUDzZqvL8abvw+fwq
-q4UE5mrZ/VH+An7TCC//wIdKiE2xJQjy5lOGUTTdutHHKyJjEs33YKsJX4iuYdE2
-BEm995N69NqXIzHltBK7jOBjPVPL3Fz5iqFZCAKJW3+GLRayO03plHG+OwNKXAcr
-f90fyPvK1beZIWQEglwchVcyHx95TuEAvUMjbvHGwlUKezO/QCHN3Lz/KdmZRvTV
-wfYR8Yz1PkM=
-=N/eK
------END PGP SIGNATURE-----
-
---=-M/x+p6MLEXB8rOf6XpDg--
