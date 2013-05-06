@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759135Ab3EFVNk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:13:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59037 "EHLO
+	id S1759164Ab3EFVNz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:13:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59034 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757409Ab3EFUqK (ORCPT
+	with ESMTP id S1757398Ab3EFUqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 16:46:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 034/115] xen/smp/spinlock: Fix leakage of the spinlock interrupt line for every CPU online/offline
-Date: Mon,  6 May 2013 13:44:30 -0700
-Message-Id: <20130506203059.071374615@linuxfoundation.org>
+Subject: [ 033/115] xen/smp: Fix leakage of timer interrupt line for every CPU online/offline.
+Date: Mon,  6 May 2013 13:44:29 -0700
+Message-Id: <20130506203058.970211248@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -28,53 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 66ff0fe9e7bda8aec99985b24daad03652f7304e upstream.
+commit 888b65b4bc5e7fcbbb967023300cd5d44dba1950 upstream.
 
-While we don't use the spinlock interrupt line (see for details
-commit f10cd522c5fbfec9ae3cc01967868c9c2401ed23 -
-xen: disable PV spinlocks on HVM) - we should still do the proper
-init / deinit sequence. We did not do that correctly and for the
-CPU init for PVHVM guest we would allocate an interrupt line - but
-failed to deallocate the old interrupt line.
+In the PVHVM path when we do CPU online/offline path we would
+leak the timer%d IRQ line everytime we do a offline event. The
+online path (xen_hvm_setup_cpu_clockevents via
+x86_cpuinit.setup_percpu_clockev) would allocate a new interrupt
+line for the timer%d.
 
-This resulted in leakage of an irq_desc but more importantly this splat
-as we online an offlined CPU:
+But we would still use the old interrupt line leading to:
 
-genirq: Flags mismatch irq 71. 0002cc20 (spinlock1) vs. 0002cc20 (spinlock1)
-Pid: 2542, comm: init.late Not tainted 3.9.0-rc6upstream #1
-Call Trace:
- [<ffffffff811156de>] __setup_irq+0x23e/0x4a0
- [<ffffffff81194191>] ? kmem_cache_alloc_trace+0x221/0x250
- [<ffffffff811161bb>] request_threaded_irq+0xfb/0x160
- [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
- [<ffffffff813a8423>] bind_ipi_to_irqhandler+0xa3/0x160
- [<ffffffff81303758>] ? kasprintf+0x38/0x40
- [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
- [<ffffffff810cad35>] ? update_max_interval+0x15/0x40
- [<ffffffff816605db>] xen_init_lock_cpu+0x3c/0x78
- [<ffffffff81660029>] xen_hvm_cpu_notify+0x29/0x33
- [<ffffffff81676bdd>] notifier_call_chain+0x4d/0x70
- [<ffffffff810bb2a9>] __raw_notifier_call_chain+0x9/0x10
- [<ffffffff8109402b>] __cpu_notify+0x1b/0x30
- [<ffffffff8166834a>] _cpu_up+0xa0/0x14b
- [<ffffffff816684ce>] cpu_up+0xd9/0xec
- [<ffffffff8165f754>] store_online+0x94/0xd0
- [<ffffffff8141d15b>] dev_attr_store+0x1b/0x20
- [<ffffffff81218f44>] sysfs_write_file+0xf4/0x170
- [<ffffffff811a2864>] vfs_write+0xb4/0x130
- [<ffffffff811a302a>] sys_write+0x5a/0xa0
- [<ffffffff8167ada9>] system_call_fastpath+0x16/0x1b
-cpu 1 spinlock event irq -16
-smpboot: Booting Node 0 Processor 1 APIC 0x2
+kernel BUG at /home/konrad/ssd/konrad/linux/kernel/hrtimer.c:1261!
+invalid opcode: 0000 [#1] SMP
+RIP: 0010:[<ffffffff810b9e21>]  [<ffffffff810b9e21>] hrtimer_interrupt+0x261/0x270
+.. snip..
+ <IRQ>
+ [<ffffffff810445ef>] xen_timer_interrupt+0x2f/0x1b0
+ [<ffffffff81104825>] ? stop_machine_cpu_stop+0xb5/0xf0
+ [<ffffffff8111434c>] handle_irq_event_percpu+0x7c/0x240
+ [<ffffffff811175b9>] handle_percpu_irq+0x49/0x70
+ [<ffffffff813a74a3>] __xen_evtchn_do_upcall+0x1c3/0x2f0
+ [<ffffffff813a760a>] xen_evtchn_do_upcall+0x2a/0x40
+ [<ffffffff8167c26d>] xen_hvm_callback_vector+0x6d/0x80
+ <EOI>
+ [<ffffffff81666d01>] ? start_secondary+0x193/0x1a8
+ [<ffffffff81666cfd>] ? start_secondary+0x18f/0x1a8
 
-And if one looks at the /proc/interrupts right after
-offlining (CPU1):
+There is also the oddity (timer1) in the /proc/interrupts after
+offlining CPU1:
 
-  70:          0          0  xen-percpu-ipi       spinlock0
-  71:          0          0  xen-percpu-ipi       spinlock1
-  77:          0          0  xen-percpu-ipi       spinlock2
+  64:       1121          0  xen-percpu-virq      timer0
+  78:          0          0  xen-percpu-virq      timer1
+  84:          0       2483  xen-percpu-virq      timer2
 
-There is the oddity of the 'spinlock1' still being present.
+This patch fixes it.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -89,9 +76,9 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
  	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
  	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
-+	xen_uninit_lock_cpu(cpu);
- 	xen_teardown_timer(cpu);
++	xen_teardown_timer(cpu);
  	native_cpu_die(cpu);
  }
+ 
 
 
