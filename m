@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757816Ab3EFUqm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59204 "EHLO
+	id S1757885Ab3EFU7f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:59:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59230 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757756Ab3EFUqi (ORCPT
+	with ESMTP id S1757809Ab3EFUqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:38 -0400
+	Mon, 6 May 2013 16:46:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lydia Wang <LydiaWang@viatech.com.cn>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 065/115] ALSA: hda - Fix aamix activation with loopback control on VIA codecs
-Date: Mon,  6 May 2013 13:45:01 -0700
-Message-Id: <20130506203102.203909778@linuxfoundation.org>
+        Zhang Rui <rui.zhang@intel.com>, Matthias <morpheusxyz123@yahoo.de>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <syrjala@sci.fi>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 077/115] ACPI / thermal: do not always return THERMAL_TREND_RAISING for active trip points
+Date: Mon,  6 May 2013 13:45:13 -0700
+Message-Id: <20130506203103.460168038@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,94 +31,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit 65033cc8d5ffd9b754e04da4be9cd1e8b61eeaff upstream.
+commit 94a409319561ec1847fd9bf996a2d5843ad00932 upstream.
 
-When we have a loopback mixer control, this should manage the state
-whether the output paths include the aamix or not.  But the current
-code blindly initializes the output paths with aamix = true, thus the
-aamix is enabled unless the loopback mixer control is changed.
+Commit 4ae46be "Thermal: Introduce thermal_zone_trip_update()"
+introduced a regression causing the fan to be always on even when
+the system is idle.
 
-Also, update_aamix_paths() called by the loopback mixer control put
-callback invokes snd_hda_activate_path() with aamix = true even for
-disabling the mixing.  This leaves the aamix path even though the
-loopback control is turned off.
+My original idea in that commit is that:
+ - when the current temperature is above the trip point,
+   keep the fan on, even if the temperature is dropping.
+ - when the current temperature is below the trip point,
+   turn on the fan when the temperature is raising,
+   turn off the fan when the temperature is dropping.
 
-This patch fixes these issues:
-- Introduced aamix_default() helper to indicate whether with_aamix is
-  true or false as default
-- Fix the argument in update_aamix_paths() for disabling loopback
+But this is what the code actually does:
+ - when the current temperature is above the trip point,
+   the fan keeps on.
+ - when the current temperature is below the trip point,
+   the fan is always on because thermal_get_trend()
+   in driver/acpi/thermal.c returns THERMAL_TREND_RAISING.
+Thus the fan keeps running even if the system is idle.
 
-Reported-by: Lydia Wang <LydiaWang@viatech.com.cn>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fix this in drivers/acpi/thermal.c.
+
+[rjw: Changelog]
+References: https://bugzilla.kernel.org/show_bug.cgi?id=56591
+References: https://bugzilla.kernel.org/show_bug.cgi?id=56601
+References: https://bugzilla.kernel.org/show_bug.cgi?id=50041#c45
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Tested-by: Matthias <morpheusxyz123@yahoo.de>
+Tested-by: Ville Syrjälä <syrjala@sci.fi>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c |   22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ drivers/acpi/thermal.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -2072,6 +2072,14 @@ get_multiio_path(struct hda_codec *codec
+--- a/drivers/acpi/thermal.c
++++ b/drivers/acpi/thermal.c
+@@ -723,9 +723,19 @@ static int thermal_get_trend(struct ther
+ 		return -EINVAL;
  
- static void update_automute_all(struct hda_codec *codec);
- 
-+/* Default value to be passed as aamix argument for snd_hda_activate_path();
-+ * used for output paths
-+ */
-+static bool aamix_default(struct hda_gen_spec *spec)
-+{
-+	return !spec->have_aamix_ctl || spec->aamix_mode;
-+}
+ 	if (type == THERMAL_TRIP_ACTIVE) {
+-		/* aggressive active cooling */
+-		*trend = THERMAL_TREND_RAISING;
+-		return 0;
++		unsigned long trip_temp;
++		unsigned long temp = KELVIN_TO_MILLICELSIUS(tz->temperature,
++							tz->kelvin_offset);
++		if (thermal_get_trip_temp(thermal, trip, &trip_temp))
++			return -EINVAL;
 +
- static int set_multi_io(struct hda_codec *codec, int idx, bool output)
- {
- 	struct hda_gen_spec *spec = codec->spec;
-@@ -2087,11 +2095,11 @@ static int set_multi_io(struct hda_codec
- 
- 	if (output) {
- 		set_pin_target(codec, nid, PIN_OUT, true);
--		snd_hda_activate_path(codec, path, true, true);
-+		snd_hda_activate_path(codec, path, true, aamix_default(spec));
- 		set_pin_eapd(codec, nid, true);
- 	} else {
- 		set_pin_eapd(codec, nid, false);
--		snd_hda_activate_path(codec, path, false, true);
-+		snd_hda_activate_path(codec, path, false, aamix_default(spec));
- 		set_pin_target(codec, nid, spec->multi_io[idx].ctl_in, true);
- 		path_power_down_sync(codec, path);
++		if (temp > trip_temp) {
++			*trend = THERMAL_TREND_RAISING;
++			return 0;
++		} else {
++			/* Fall back on default trend */
++			return -EINVAL;
++		}
  	}
-@@ -2182,8 +2190,8 @@ static void update_aamix_paths(struct hd
- 		snd_hda_activate_path(codec, mix_path, true, true);
- 		path_power_down_sync(codec, nomix_path);
- 	} else {
--		snd_hda_activate_path(codec, mix_path, false, true);
--		snd_hda_activate_path(codec, nomix_path, true, true);
-+		snd_hda_activate_path(codec, mix_path, false, false);
-+		snd_hda_activate_path(codec, nomix_path, true, false);
- 		path_power_down_sync(codec, mix_path);
- 	}
- }
-@@ -4729,7 +4737,8 @@ static void set_output_and_unmute(struct
- 		return;
- 	pin = path->path[path->depth - 1];
- 	restore_pin_ctl(codec, pin);
--	snd_hda_activate_path(codec, path, path->active, true);
-+	snd_hda_activate_path(codec, path, path->active,
-+			      aamix_default(codec->spec));
- 	set_pin_eapd(codec, pin, path->active);
- }
  
-@@ -4779,7 +4788,8 @@ static void init_multi_io(struct hda_cod
- 		if (!spec->multi_io[i].ctl_in)
- 			spec->multi_io[i].ctl_in =
- 				snd_hda_codec_get_pin_target(codec, pin);
--		snd_hda_activate_path(codec, path, path->active, true);
-+		snd_hda_activate_path(codec, path, path->active,
-+				      aamix_default(spec));
- 	}
- }
- 
+ 	/*
 
 
