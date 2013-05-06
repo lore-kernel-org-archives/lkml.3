@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759559Ab3EFXBz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:01:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36467 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933123Ab3EFW7U (ORCPT
+	id S1759574Ab3EFXCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:02:09 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55220 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759417Ab3EFXCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:20 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Eshel <eshel@us.ibm.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 35/46] LOCKD: Ensure that nlmclnt_block resets block->b_status after a server reboot
-Date: Mon,  6 May 2013 15:58:41 -0700
-Message-Id: <20130506225824.358365464@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
-References: <20130506225820.628893970@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 6 May 2013 19:02:05 -0400
+Date: Tue, 7 May 2013 01:01:38 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] timer changes for v3.10
+Message-ID: <20130506230137.GA16801@amd.pavel.ucw.cz>
+References: <20130430074322.GA20110@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130430074322.GA20110@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Hi!
 
-------------------
+>  - suspend/resume enhancements by Feng Tang: on certain new Intel Atom 
+>    processors (Penwell and Cloverview), there is a feature that the TSC 
+>    won't stop in S3 state, so the TSC value won't be reset to 0 after
+>    resume. This can be taken advantage of by the generic via the
+>    CLOCK_SOURCE_SUSPEND_NONSTOP flag: instead of using the RTC to 
+>    recover/approximate sleep time, the main (and precise) clocksource can
+>    be used.
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+Ok, so for system time, we use three different timers:
 
-commit 1dfd89af8697a299e7982ae740d4695ecd917eef upstream.
+1) RTC, while system is off
 
-After a server reboot, the reclaimer thread will recover all the existing
-locks. For locks that are blocked, however, it will change the value
-of block->b_status to nlm_lck_denied_grace_period in order to signal that
-they need to wake up and resend the original blocking lock request.
+2) PIT, while system is running (plus TSC for parts of second)
 
-Due to a bug, however, the block->b_status never gets reset after the
-blocked locks have been woken up, and so the process goes into an
-infinite loop of resends until the blocked lock is satisfied.
+3) TSC, while system is sleeping
 
-Reported-by: Marc Eshel <eshel@us.ibm.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Now. we have ntpd that is trying to compute "speed of clock", and
+adjust accordingly (adjtimex). But will it still do the right thing
+when we switch to different source during sleep?
 
----
- fs/lockd/clntlock.c |    3 +++
- fs/lockd/clntproc.c |    3 ---
- 2 files changed, 3 insertions(+), 3 deletions(-)
+And is the TSC even good enough? According to man page, PIT is not
+precise enough, so we sync from RTC every 11 minutes. I'd imagine TSC
+is even worse than that. Machine can stay is s2ram for weeks (for a
+lot more if it is desktop and you do s2ram for powersaving). Also
+temperature of CPU varies a lot between active and s2ram states. Is
+TSC good enough?
 
---- a/fs/lockd/clntlock.c
-+++ b/fs/lockd/clntlock.c
-@@ -141,6 +141,9 @@ int nlmclnt_block(struct nlm_wait *block
- 			timeout);
- 	if (ret < 0)
- 		return -ERESTARTSYS;
-+	/* Reset the lock status after a server reboot so we resend */
-+	if (block->b_status == nlm_lck_denied_grace_period)
-+		block->b_status = nlm_lck_blocked;
- 	req->a_res.status = block->b_status;
- 	return 0;
- }
---- a/fs/lockd/clntproc.c
-+++ b/fs/lockd/clntproc.c
-@@ -550,9 +550,6 @@ again:
- 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
- 		if (status < 0)
- 			break;
--		/* Resend the blocking lock request after a server reboot */
--		if (resp->status ==  nlm_lck_denied_grace_period)
--			continue;
- 		if (resp->status != nlm_lck_blocked)
- 			break;
- 	}
+								Pavel
 
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
