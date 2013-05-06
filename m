@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932868Ab3EFXvq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:51:46 -0400
-Received: from mail-yh0-f73.google.com ([209.85.213.73]:37752 "EHLO
-	mail-yh0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514Ab3EFXue (ORCPT
+	id S932736Ab3EFXvp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:51:45 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:36982 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932517Ab3EFXue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 19:50:34 -0400
 From: Colin Cross <ccross@android.com>
@@ -16,10 +16,13 @@ Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Colin Cross <ccross@android.com>, Oleg Nesterov <oleg@redhat.com>,
         linux-nfs@vger.kernel.org, linux-pm@vger.kernel.org,
         netdev@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH v3 14/16] nanosleep: use freezable blocking call
-Date: Mon,  6 May 2013 16:50:19 -0700
-Message-Id: <1367884221-20462-15-git-send-email-ccross@android.com>
+        Tejun Heo <tj@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH v3 13/16] futex: use freezable blocking call
+Date: Mon,  6 May 2013 16:50:18 -0700
+Message-Id: <1367884221-20462-14-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367884221-20462-1-git-send-email-ccross@android.com>
 References: <1367884221-20462-1-git-send-email-ccross@android.com>
@@ -27,7 +30,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid waking up every thread sleeping in a nanosleep call during
+Avoid waking up every thread sleeping in a futex_wait call during
 suspend and resume by calling a freezable blocking call.  Previous
 patches modified the freezer to avoid sending wakeups to threads
 that are blocked in freezable blocking calls.
@@ -40,32 +43,33 @@ blocked.
 
 Acked-by: Tejun Heo <tj@kernel.org>
 Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Darren Hart <dvhart@linux.intel.com>
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- kernel/hrtimer.c | 3 ++-
+ kernel/futex.c | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 14be27f..e036276 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -47,6 +47,7 @@
- #include <linux/sched/sysctl.h>
+diff --git a/kernel/futex.c b/kernel/futex.c
+index b26dcfc..d710fae 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -61,6 +61,7 @@
+ #include <linux/nsproxy.h>
+ #include <linux/ptrace.h>
  #include <linux/sched/rt.h>
- #include <linux/timer.h>
 +#include <linux/freezer.h>
  
- #include <asm/uaccess.h>
+ #include <asm/futex.h>
  
-@@ -1525,7 +1526,7 @@ static int __sched do_nanosleep(struct hrtimer_sleeper *t, enum hrtimer_mode mod
- 			t->task = NULL;
- 
- 		if (likely(t->task))
+@@ -1807,7 +1808,7 @@ static void futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q *q,
+ 		 * is no timeout, or if it has yet to expire.
+ 		 */
+ 		if (!timeout || timeout->task)
 -			schedule();
 +			freezable_schedule();
- 
- 		hrtimer_cancel(&t->timer);
- 		mode = HRTIMER_MODE_ABS;
+ 	}
+ 	__set_current_state(TASK_RUNNING);
+ }
 -- 
 1.8.2.1
 
