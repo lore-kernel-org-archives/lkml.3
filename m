@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab3EFPA1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 11:00:27 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:46840 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab3EFPA0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 11:00:26 -0400
-X-IronPort-AV: E=Sophos;i="4.87,622,1363132800"; 
-   d="scan'208";a="22394387"
-Date: Mon, 6 May 2013 16:00:22 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [PATCH 3/4] xen/smp/pvhvm: Don't point per_cpu(xen_vpcu, 33 and
- larger) to shared_info
-In-Reply-To: <1367845498-14290-4-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.02.1305061600140.4756@kaball.uk.xensource.com>
-References: <1367845498-14290-1-git-send-email-konrad.wilk@oracle.com> <1367845498-14290-4-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754882Ab3EFPAy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 11:00:54 -0400
+Received: from mga03.intel.com ([143.182.124.21]:4204 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754243Ab3EFPAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 11:00:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,622,1363158000"; 
+   d="scan'208";a="237519749"
+Message-ID: <5187C59F.1020305@intel.com>
+Date: Mon, 06 May 2013 23:00:47 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Paul Turner <pjt@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 5/7] sched: compute runnable load avg in cpu_load and
+ cpu_avg_load_per_task
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-6-git-send-email-alex.shi@intel.com> <CAPM31RLJe19FH+RYipwm4kwtzmFHoS2xGTx4iZ9+qwDJZ_pf3A@mail.gmail.com>
+In-Reply-To: <CAPM31RLJe19FH+RYipwm4kwtzmFHoS2xGTx4iZ9+qwDJZ_pf3A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 May 2013, Konrad Rzeszutek Wilk wrote:
-> As it will point to some data, but not event channel data (the
-> shared_info has an array limited to 32).
 > 
-> This means that for PVHVM guests with more than 32 VCPUs without
-> the usage of VCPUOP_register_info any interrupts to VCPUs
-> larger than 32 would have gone unnoticed during early bootup.
+> blocked_load_avg is the expected "to wake" contribution from tasks
+> already assigned to this rq.
 > 
-> That is OK, as during early bootup, in smp_init we end up calling
-> the hotplug mechanism (xen_hvm_cpu_notify) which makes the
-> VCPUOP_register_vcpu_info call for all VCPUs and we can receive
-> interrupts on VCPUs 33 and further.
-> 
-> This is just a cleanup.
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> e.g. this could be:
+>   load = this_rq->cfs.runnable_load_avg + this_rq->cfs.blocked_load_avg;
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Current load balance doesn't consider slept task's load which is
+represented by blocked_load_avg. And the slept task is not on_rq, so
+consider it in load balance is a little strange.
 
+But your concern is worth to try. I will change the patchset and give
+the testing results.
 
->  arch/x86/xen/enlighten.c | 3 +++
->  1 file changed, 3 insertions(+)
 > 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 9b34475..18a4009 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1638,6 +1638,9 @@ void __ref xen_hvm_init_shared_info(void)
->  	 * online but xen_hvm_init_shared_info is run at resume time too and
->  	 * in that case multiple vcpus might be online. */
->  	for_each_online_cpu(cpu) {
-> +		/* Leave it to be NULL. */
-> +		if (cpu >= MAX_VIRT_CPUS)
-> +			continue;
->  		per_cpu(xen_vcpu, cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
->  	}
->  }
-> -- 
-> 1.8.1.4
+> Although, in general I have a major concern with the current implementation:
 > 
+> The entire reason for stability with the bottom up averages is that
+> when load migrates between cpus we are able to migrate it between the
+> tracked sums.
+> 
+> Stuffing observed averages of these into the load_idxs loses that
+> mobility; we will have to stall (as we do today for idx > 0) before we
+> can recognize that a cpu's load has truly left it; this is a very
+> similar problem to the need to stably track this for group shares
+> computation.
+> 
+> To that end, I would rather see the load_idx disappear completely:
+>  (a) We can calculate the imbalance purely from delta (runnable_avg +
+> blocked_avg)
+>  (b) It eliminates a bad tunable.
+
+I also show the similar concern of load_idx months ago. seems overlooked. :)
+> 
+>> -       return cpu_rq(cpu)->load.weight;
+>> +       return (unsigned long)cpu_rq(cpu)->cfs.runnable_load_avg;
+> 
+> Isn't this going to truncate on the 32-bit case?
+
+I guess not, the old load.weight is unsigned long, and runnable_load_avg
+is smaller than the load.weight. so it should be fine.
+
+btw, according to above reason, guess move runnable_load_avg to
+'unsigned long' type is ok, do you think so?
+> 
+
+-- 
+Thanks
+    Alex
