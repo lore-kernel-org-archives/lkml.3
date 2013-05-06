@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933752Ab3EFXbT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:31:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36762 "EHLO
+	id S1759009Ab3EFXbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:31:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36742 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760516Ab3EFXNh (ORCPT
+	with ESMTP id S1760496Ab3EFXNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:37 -0400
+	Mon, 6 May 2013 19:13:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fred Hartnett <fred.hartnett@hp.com>, Tony Luck <tony.luck@intel.com>
-Subject: [ 047/104] Fix initialization of CMCI/CMCP interrupts
-Date: Mon,  6 May 2013 16:12:06 -0700
-Message-Id: <20130506230048.442206876@linuxfoundation.org>
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 042/104] tracing: Check return value of tracing_init_dentry()
+Date: Mon,  6 May 2013 16:12:01 -0700
+Message-Id: <20130506230047.951953260@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,128 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-commit d303e9e98fce56cdb3c6f2ac92f626fc2bd51c77 upstream.
+commit ed6f1c996bfe4b6e520cf7a74b51cd6988d84420 upstream.
 
-Back 2010 during a revamp of the irq code some initializations
-were moved from ia64_mca_init() to ia64_mca_late_init() in
+Check return value and bail out if it's NULL.
 
-	commit c75f2aa13f5b268aba369b5dc566088b5194377c
-	Cannot use register_percpu_irq() from ia64_mca_init()
+Link: http://lkml.kernel.org/r/1365553093-10180-2-git-send-email-namhyung@kernel.org
 
-But this was hideously wrong. First of all these initializations
-are now down far too late. Specifically after all the other cpus
-have been brought up and initialized their own CMC vectors from
-smp_callin(). Also ia64_mca_late_init() may be called from any cpu
-so the line:
-	ia64_mca_cmc_vector_setup();       /* Setup vector on BSP */
-is generally not executed on the BSP, and so the CMC vector isn't
-setup at all on that processor.
-
-Make use of the arch_early_irq_init() hook to get this code executed
-at just the right moment: not too early, not too late.
-
-Reported-by: Fred Hartnett <fred.hartnett@hp.com>
-Tested-by: Fred Hartnett <fred.hartnett@hp.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/ia64/include/asm/mca.h |    1 +
- arch/ia64/kernel/irq.c      |    8 ++++++++
- arch/ia64/kernel/mca.c      |   37 ++++++++++++++++++++++++-------------
- 3 files changed, 33 insertions(+), 13 deletions(-)
+ kernel/trace/trace.c       |    2 ++
+ kernel/trace/trace_stack.c |    2 ++
+ kernel/trace/trace_stat.c  |    2 ++
+ 3 files changed, 6 insertions(+)
 
---- a/arch/ia64/include/asm/mca.h
-+++ b/arch/ia64/include/asm/mca.h
-@@ -143,6 +143,7 @@ extern unsigned long __per_cpu_mca[NR_CP
- extern int cpe_vector;
- extern int ia64_cpe_irq;
- extern void ia64_mca_init(void);
-+extern void ia64_mca_irq_init(void);
- extern void ia64_mca_cpu_init(void *);
- extern void ia64_os_mca_dispatch(void);
- extern void ia64_os_mca_dispatch_end(void);
---- a/arch/ia64/kernel/irq.c
-+++ b/arch/ia64/kernel/irq.c
-@@ -23,6 +23,8 @@
- #include <linux/interrupt.h>
- #include <linux/kernel_stat.h>
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4885,6 +4885,8 @@ static __init int tracer_init_debugfs(vo
+ 	trace_access_lock_init();
  
-+#include <asm/mca.h>
-+
- /*
-  * 'what should we do if we get a hw irq event on an illegal vector'.
-  * each architecture has to answer this themselves.
-@@ -83,6 +85,12 @@ bool is_affinity_mask_valid(const struct
- 
- #endif /* CONFIG_SMP */
- 
-+int __init arch_early_irq_init(void)
-+{
-+	ia64_mca_irq_init();
-+	return 0;
-+}
-+
- #ifdef CONFIG_HOTPLUG_CPU
- unsigned int vectors_in_migration[NR_IRQS];
- 
---- a/arch/ia64/kernel/mca.c
-+++ b/arch/ia64/kernel/mca.c
-@@ -2074,22 +2074,16 @@ ia64_mca_init(void)
- 	printk(KERN_INFO "MCA related initialization done\n");
- }
- 
-+
- /*
-- * ia64_mca_late_init
-- *
-- *	Opportunity to setup things that require initialization later
-- *	than ia64_mca_init.  Setup a timer to poll for CPEs if the
-- *	platform doesn't support an interrupt driven mechanism.
-- *
-- *  Inputs  :   None
-- *  Outputs :   Status
-+ * These pieces cannot be done in ia64_mca_init() because it is called before
-+ * early_irq_init() which would wipe out our percpu irq registrations. But we
-+ * cannot leave them until ia64_mca_late_init() because by then all the other
-+ * processors have been brought online and have set their own CMC vectors to
-+ * point at a non-existant action. Called from arch_early_irq_init().
-  */
--static int __init
--ia64_mca_late_init(void)
-+void __init ia64_mca_irq_init(void)
- {
--	if (!mca_init)
--		return 0;
--
- 	/*
- 	 *  Configure the CMCI/P vector and handler. Interrupts for CMC are
- 	 *  per-processor, so AP CMC interrupts are setup in smp_callin() (smpboot.c).
-@@ -2108,6 +2102,23 @@ ia64_mca_late_init(void)
- 	/* Setup the CPEI/P handler */
- 	register_percpu_irq(IA64_CPEP_VECTOR, &mca_cpep_irqaction);
- #endif
-+}
-+
-+/*
-+ * ia64_mca_late_init
-+ *
-+ *	Opportunity to setup things that require initialization later
-+ *	than ia64_mca_init.  Setup a timer to poll for CPEs if the
-+ *	platform doesn't support an interrupt driven mechanism.
-+ *
-+ *  Inputs  :   None
-+ *  Outputs :   Status
-+ */
-+static int __init
-+ia64_mca_late_init(void)
-+{
-+	if (!mca_init)
+ 	d_tracer = tracing_init_dentry();
++	if (!d_tracer)
 +		return 0;
  
- 	register_hotcpu_notifier(&mca_cpu_notifier);
+ 	trace_create_file("trace_options", 0644, d_tracer,
+ 			NULL, &tracing_iter_fops);
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -431,6 +431,8 @@ static __init int stack_trace_init(void)
+ 	struct dentry *d_tracer;
  
+ 	d_tracer = tracing_init_dentry();
++	if (!d_tracer)
++		return 0;
+ 
+ 	trace_create_file("stack_max_size", 0644, d_tracer,
+ 			&max_stack_size, &stack_max_size_fops);
+--- a/kernel/trace/trace_stat.c
++++ b/kernel/trace/trace_stat.c
+@@ -307,6 +307,8 @@ static int tracing_stat_init(void)
+ 	struct dentry *d_tracing;
+ 
+ 	d_tracing = tracing_init_dentry();
++	if (!d_tracing)
++		return 0;
+ 
+ 	stat_dir = debugfs_create_dir("trace_stat", d_tracing);
+ 	if (!stat_dir)
 
 
