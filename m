@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760125Ab3EFXL2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:11:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36336 "EHLO
+	id S1760158Ab3EFXLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:11:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36331 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758936Ab3EFW66 (ORCPT
+	with ESMTP id S1758257Ab3EFW65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:58:58 -0400
+	Mon, 6 May 2013 18:58:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 04/46] USB: option: add a D-Link DWM-156 variant
-Date: Mon,  6 May 2013 15:58:10 -0700
-Message-Id: <20130506225821.111752267@linuxfoundation.org>
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 02/46] powerpc/spufs: Initialise inode->i_ino in spufs_new_inode()
+Date: Mon,  6 May 2013 15:58:08 -0700
+Message-Id: <20130506225820.901533418@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,69 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Michael Ellerman <michael@ellerman.id.au>
 
-commit a2a2d6c7f93e160b52a4ad0164db1f43f743ae0f upstream.
+commit 6747e83235caecd30b186d1282e4eba7679f81b7 upstream.
 
-Adding support for a Mediatek based device labelled as
-D-Link Model: DWM-156, H/W Ver: A7
+In commit 85fe402 (fs: do not assign default i_ino in new_inode), the
+initialisation of i_ino was removed from new_inode() and pushed down
+into the callers. However spufs_new_inode() was not updated.
 
-Also adding two other device IDs found in the Debian(!)
-packages included on the embedded device driver CD.
+This exhibits as no files appearing in /spu, because all our dirents
+have a zero inode, which readdir() seems to dislike.
 
-This is a composite MBIM + serial ports + card reader device:
-
-T:  Bus=04 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#= 14 Spd=480  MxCh= 0
-D:  Ver= 2.00 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=2001 ProdID=7d01 Rev= 3.00
-S:  Manufacturer=D-Link,Inc
-S:  Product=D-Link DWM-156
-C:* #Ifs= 7 Cfg#= 1 Atr=a0 MxPwr=500mA
-A:  FirstIf#= 0 IfCount= 2 Cls=02(comm.) Sub=0e Prot=00
-I:* If#= 0 Alt= 0 #EPs= 1 Cls=02(comm.) Sub=0e Prot=00 Driver=cdc_mbim
-E:  Ad=88(I) Atr=03(Int.) MxPS=  64 Ivl=125us
-I:  If#= 1 Alt= 0 #EPs= 0 Cls=0a(data ) Sub=00 Prot=02 Driver=cdc_mbim
-I:* If#= 1 Alt= 1 #EPs= 2 Cls=0a(data ) Sub=00 Prot=02 Driver=cdc_mbim
-E:  Ad=81(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 2 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=02 Prot=01 Driver=option
-E:  Ad=87(I) Atr=03(Int.) MxPS=  64 Ivl=500us
-E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
-E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 4 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
-E:  Ad=84(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 5 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
-E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 6 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
-E:  Ad=86(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=06(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/powerpc/platforms/cell/spufs/inode.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1352,6 +1352,12 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d01, 0xff, 0x02, 0x01) },	/* D-Link DWM-156 (variant) */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d01, 0xff, 0x00, 0x00) },	/* D-Link DWM-156 (variant) */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d02, 0xff, 0x02, 0x01) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d02, 0xff, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x02, 0x01) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x00, 0x00) },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+--- a/arch/powerpc/platforms/cell/spufs/inode.c
++++ b/arch/powerpc/platforms/cell/spufs/inode.c
+@@ -100,6 +100,7 @@ spufs_new_inode(struct super_block *sb,
+ 	if (!inode)
+ 		goto out;
+ 
++	inode->i_ino = get_next_ino();
+ 	inode->i_mode = mode;
+ 	inode->i_uid = current_fsuid();
+ 	inode->i_gid = current_fsgid();
 
 
