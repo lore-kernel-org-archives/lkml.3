@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758763Ab3EFVGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:06:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59122 "EHLO
+	id S1757624Ab3EFUq0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:46:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59083 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756616Ab3EFUq1 (ORCPT
+	with ESMTP id S1757530Ab3EFUqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:27 -0400
+	Mon, 6 May 2013 16:46:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>, Olaf Hering <olh@suse.de>
-Subject: [ 048/115] Drivers: hv: vmbus: Fix a bug in hv_need_to_signal()
-Date: Mon,  6 May 2013 13:44:44 -0700
-Message-Id: <20130506203100.485848515@linuxfoundation.org>
+        Richard Cochran <richardcochran@gmail.com>,
+        Chris LaRocque <clarocq@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 037/115] gianfar: do not advertise any alarm capability.
+Date: Mon,  6 May 2013 13:44:33 -0700
+Message-Id: <20130506203059.388861393@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,33 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Richard Cochran <richardcochran@gmail.com>
 
-commit 288fa3e022eb85fa151e0f9bcd15caeb81679af6 upstream.
+commit cd4baaaa04b4aaa3b0ec4d13a6f3d203b92eadbd upstream.
 
-As part of updating the vmbus protocol, the function hv_need_to_signal()
-was introduced. This functions helps optimize signalling from guest to
-host. The newly added memory barrier is needed to ensure that we correctly
-decide when to signal the host.
+An early draft of the PHC patch series included an alarm in the
+gianfar driver. During the review process, the alarm code was dropped,
+but the capability removal was overlooked. This patch fixes the issue
+by advertising zero alarms.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reported-by: Olaf Hering <olh@suse.de>
+This patch should be applied to every 3.x stable kernel.
+
+Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+Reported-by: Chris LaRocque <clarocq@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/ring_buffer.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/freescale/gianfar_ptp.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/hv/ring_buffer.c
-+++ b/drivers/hv/ring_buffer.c
-@@ -71,6 +71,7 @@ u32 hv_end_read(struct hv_ring_buffer_in
+--- a/drivers/net/ethernet/freescale/gianfar_ptp.c
++++ b/drivers/net/ethernet/freescale/gianfar_ptp.c
+@@ -127,7 +127,6 @@ struct gianfar_ptp_registers {
  
- static bool hv_need_to_signal(u32 old_write, struct hv_ring_buffer_info *rbi)
- {
-+	smp_mb();
- 	if (rbi->ring_buffer->interrupt_mask)
- 		return false;
+ #define DRIVER		"gianfar_ptp"
+ #define DEFAULT_CKSEL	1
+-#define N_ALARM		1 /* first alarm is used internally to reset fipers */
+ #define N_EXT_TS	2
+ #define REG_SIZE	sizeof(struct gianfar_ptp_registers)
  
+@@ -410,7 +409,7 @@ static struct ptp_clock_info ptp_gianfar
+ 	.owner		= THIS_MODULE,
+ 	.name		= "gianfar clock",
+ 	.max_adj	= 512000,
+-	.n_alarm	= N_ALARM,
++	.n_alarm	= 0,
+ 	.n_ext_ts	= N_EXT_TS,
+ 	.n_per_out	= 0,
+ 	.pps		= 1,
 
 
