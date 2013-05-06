@@ -1,71 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab3EFQt3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 12:49:29 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43480 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753914Ab3EFQt1 (ORCPT
+	id S1754237Ab3EFRUF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 13:20:05 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:48459 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab3EFRUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 12:49:27 -0400
-Message-ID: <1367858965.1868.24.camel@dabdike>
-Subject: Re: linux-next: Tree for May 6 (lpfc)
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, James Smart <james.smart@emulex.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Mon, 06 May 2013 09:49:25 -0700
-In-Reply-To: <5187D6F1.9070103@infradead.org>
-References: <20130506144207.c812a0227d7763d26e5fec80@canb.auug.org.au>
-	 <5187D6F1.9070103@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 6 May 2013 13:20:03 -0400
+X-Auth-Info: FPNL7TgVaYNzYOAKngKM1eFO/hBHJGk/cu81lMBp3kk=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org
+Subject: Re: Build errors caused by modalias generation patch
+References: <20130506160253.GA27181@linux-mips.org>
+X-Yow: The Osmonds!  You are all Osmonds!!  Throwing up on a freeway at dawn!!!
+Date: Mon, 06 May 2013 19:19:53 +0200
+In-Reply-To: <20130506160253.GA27181@linux-mips.org> (Ralf Baechle's message
+	of "Mon, 6 May 2013 18:02:54 +0200")
+Message-ID: <87mws8m3eu.fsf@hase.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-06 at 09:14 -0700, Randy Dunlap wrote:
-> On 05/05/13 21:42, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Please do not add any v3.11 destined work to your linux-next included
-> > branches until after v3.10-rc1 is released.
-> > 
-> > I am receiving a (un)reasonable number of conflicts from there being
-> > multiple copies of some commits in various trees.   Please clean this up
-> > and resist the temptataion to rebase your trees on the way to your
-> > upstream ...
-> > 
-> > Changes since 20130506:
-> > 
-> 
-> on i386:
-> # CONFIG_CRC_T10DIF is not set
-> 
-> 
-> drivers/built-in.o: In function `lpfc_bg_crc':
-> (.text+0x3cb3c9): undefined reference to `crc_t10dif'
+Please try the patch in
+<http://marc.info/?l=linux-kbuild&m=136767800809256&w=2>.
 
-That's the usual minor config cockup, isn't it?  lpfc apparently also
-needs the generic checksum, so the fix would seem to be this.
+Andreas.
 
-James
-
----
-diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
-index db95c54..86af29f 100644
---- a/drivers/scsi/Kconfig
-+++ b/drivers/scsi/Kconfig
-@@ -1353,6 +1353,8 @@ config SCSI_LPFC
- 	tristate "Emulex LightPulse Fibre Channel Support"
- 	depends on PCI && SCSI
- 	select SCSI_FC_ATTRS
-+	select GENERIC_CSUM
-+	select CRC_T10DIF
- 	help
-           This lpfc driver supports the Emulex LightPulse
-           Family of Fibre Channel PCI host adapters.
-
-
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
