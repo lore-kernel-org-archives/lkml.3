@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528Ab3EFEKA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 00:10:00 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:30091 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab3EFEJ6 (ORCPT
+	id S1752561Ab3EFEM1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 00:12:27 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:47736 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab3EFEM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 00:09:58 -0400
-X-AuditID: cbfee68e-b7efa6d000004d12-55-51872d15f66f
+	Mon, 6 May 2013 00:12:26 -0400
+X-AuditID: cbfee68e-b7efa6d000004d12-3d-51872da8560b
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
-        "'Russell King'" <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 5/8] mfd: mcp-sa11x0: remove unnecessary platform_set_drvdata()
-Date: Mon, 06 May 2013 13:09:57 +0900
-Message-id: <003201ce4a0f$91ebd600$b5c38200$@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH 6/8] mfd: t7l66xb: remove unnecessary platform_set_drvdata()
+Date: Mon, 06 May 2013 13:12:24 +0900
+Message-id: <003301ce4a0f$e9a1c120$bce54360$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5KD1+XCVCpFNUJT6KpXnGvJqHe0A==
+Thread-index: Ac5KD5r57CoXUK6gT66oMVn/IV2qPg==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zI11R3fZAg/4H8haXF15itbi8aw6b
-	xeYPL9ksTnezOrB4tDT3sHnMOxno0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBn/fn9jLLjL
-	UbG6R7KBcSF7FyMnh4SAicSsnSuYIGwxiQv31rN1MXJxCAksY5T48PIDC0zRqj+fWCES0xkl
-	Pj3qYgVJCAn8YpS4+ZUTxGYTUJP48uUw2FQRAS2J7mPngSZxcDALFEn0nDYECQsL+Eucvnqc
-	DcRmEVCVaDm9BaycV8BS4lbjfjYIW1Dix+R7YHuZgcas33mcCcKWl9i85i0zxD0KEjvOvmaE
-	WKUnsftSHztEjYjEvhfvGEHulBBYxy5xsOEEE8QyAYlvkw+xgNwjISArsekA1BxJiYMrbrBM
-	YBSbhWT1LCSrZyFZPQvJigWMLKsYRVMLkguKk9KLjPSKE3OLS/PS9ZLzczcxQuKrbwfjzQPW
-	hxiTgdZPZJYSTc4HxmdeSbyhsZmRhamJqbGRuaUZacJK4rxqLdaBQgLpiSWp2ampBalF8UWl
-	OanFhxiZODilGhjn3moscN8o9JijavrVc+kvEtXbLxTM2F6Y/eHnyoU6i1Z+4ci/wzh7yjbj
-	6AvHJFMrr582Fbj649vqP5Z3ilgOzPEKk6l9vPKd9W4NH9a986fpR6wOqZj74bFOvOWrqZcm
-	/5Q1q+YRCLpwf36Yzd+6ij1/rhdI8C6YWZol6s015citC9fC64oFlFiKMxINtZiLihMBbzhr
-	vMUCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+xoK6obnugwa0uGYvLCy+xWlzeNYfN
-	YvOHl2wWp7tZHVg8Wpp72DzmnQz06NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0WyXv
-	4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCNSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAa
-	I3R9Q4LgeowM0EDCOsaMf7+/MRbc5ahY3SPZwLiQvYuRk0NCwERi1Z9PrBC2mMSFe+vZuhi5
-	OIQEpjNKfHrUBZYQEvjFKHHzKyeIzSagJvHly2GwZhEBLYnuY+eBGjg4mAWKJHpOG4KEhQX8
-	JU5fPc4GYrMIqEq0nN4CVs4rYClxq3E/G4QtKPFj8j0WEJsZaMz6nceZIGx5ic1r3jJD3KMg
-	sePsa0aIVXoSuy/1sUPUiEjse/GOcQKjwCwko2YhGTULyahZSFoWMLKsYhRNLUguKE5KzzXU
-	K07MLS7NS9dLzs/dxAiO3mdSOxhXNlgcYhTgYFTi4S140hYoxJpYVlyZe4hRgoNZSYTXZy9Q
-	iDclsbIqtSg/vqg0J7X4EGMy0KcTmaVEk/OBiSWvJN7Q2MTMyNLIzMLIxNycNGElcd4DrdaB
-	QgLpiSWp2ampBalFMFuYODilGhgt10cJr6+9dW9Z9SwVvkwB9RDRNTMq5lXfP2HqNXeuRb7T
-	pRl8Vx1PuYtorj2mGektJ7+hY9/qrVEPP6lPbew9OEWIu9TY91q5a9rdc9z/RF/7pbVO45yt
-	umd+BrPfO8G4Hs+k12slZGIPT+pPrJLm2MzxtsHG3bRJdfa+I53ven5x7zvEeVmJpTgj0VCL
-	uag4EQCxPK8MIgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t8zfd0Vuu2BBtteqVtcXniJ1eLyrjls
+	Fqe7WR2YPeadDPTo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujEO/dzAWHGWrONYyl6WBcQ9r
+	FyMHh4SAiUTrm7guRk4gU0ziwr31bF2MXBxCAssYJeY+fMgMkTCR+LfjIhNEYhGjxKn3y1kh
+	nF+MEnePbGYFqWITUJP48uUwO4gtIqAl0X3sPBuIzSzgJPFzy0wWEFtYwEfizcZdTCA2i4Cq
+	xLwZd8HqeQUsJfYf2soIYQtK/Jh8jwWiV0ti/c7jTBC2vMTmNW+hLlKQ2HH2NSPELj2JafeP
+	s0PUiEjse/GOEeQ4CYF57BKrF/YxQywTkPg2+RALxMuyEpsOQM2RlDi44gbLBEaxWUhWz0Ky
+	ehaS1bOQrFjAyLKKUTS1ILmgOCm9yEivODG3uDQvXS85P3cTIySe+nYw3jxgfYgxGWj9RGYp
+	0eR8YDzmlcQbGpsZWZiamBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNT
+	qoGxn6/ULGqH99WywzYSqUuz1qUZiAeIL74xJd3oWnKH+BLuOZqq2z06kq41tX7dveNY/4aT
+	xxcJLKtYLBxYHLLnQMG9VzNelsr4cWydcOnBVu+1fvKewrzdO+2Dclb4cE40C3/1Sfj2phjb
+	9Ji1d84qlUmk7n62kZXr9vYqryeVledbFZzrIqYpsRRnJBpqMRcVJwIAf9gmP70CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+xgO4K3fZAgylLVSwuL7zEanF51xw2
+	i9PdrA7MHvNOBnr0bVnF6PF5k1wAc1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6h
+	pYW5kkJeYm6qrZKLT4CuW2YO0B4lhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZo
+	IGEdY8ah3zsYC46yVRxrmcvSwLiHtYuRk0NCwETi346LTBC2mMSFe+vZuhi5OIQEFjFKnHq/
+	nBXC+cUocffIZrAONgE1iS9fDrOD2CICWhLdx86zgdjMAk4SP7fMZAGxhQV8JN5s3AU2lUVA
+	VWLejLtg9bwClhL7D21lhLAFJX5MvscC0aslsX7ncSYIW15i85q3zBAXKUjsOPuaEWKXnsS0
+	+8fZIWpEJPa9eMc4gVFgFpJRs5CMmoVk1CwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn
+	525iBMfrM+kdjKsaLA4xCnAwKvHwFjxpCxRiTSwrrsw9xCjBwawkwuuzFyjEm5JYWZValB9f
+	VJqTWnyIMRno04nMUqLJ+cBUklcSb2hsYmZkaWRmYWRibk6asJI478FW60AhgfTEktTs1NSC
+	1CKYLUwcnFINjFx6b2b5PVHkU4v266mX2u4/aRH/nDNXf76J0t1mMfth+unJDOpzJ19/trs1
+	i+vKc7bL0ge0/D0so6w+b3htVLpxqXDNUg5GpotVa9zCjJ92t58PO8R/T/LN+YdCdVL2p0q0
+	YpjjzyS6novdXh1vt7tYZbpg02H/Wz6PRD++/pTJeOiA+DzfWCWW4oxEQy3mouJEAEpOj5cb	AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,30 +57,21 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/mcp-sa11x0.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ drivers/mfd/t7l66xb.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mfd/mcp-sa11x0.c b/drivers/mfd/mcp-sa11x0.c
-index f99d629..13198d9 100644
---- a/drivers/mfd/mcp-sa11x0.c
-+++ b/drivers/mfd/mcp-sa11x0.c
-@@ -225,8 +225,6 @@ static int mcp_sa11x0_probe(struct platform_device *dev)
- 	if (ret == 0)
- 		return 0;
- 
+diff --git a/drivers/mfd/t7l66xb.c b/drivers/mfd/t7l66xb.c
+index b32940e..a21bff2 100644
+--- a/drivers/mfd/t7l66xb.c
++++ b/drivers/mfd/t7l66xb.c
+@@ -422,7 +422,6 @@ static int t7l66xb_remove(struct platform_device *dev)
+ 	iounmap(t7l66xb->scr);
+ 	release_resource(&t7l66xb->rscr);
+ 	mfd_remove_devices(&dev->dev);
 -	platform_set_drvdata(dev, NULL);
--
-  err_ioremap:
- 	iounmap(m->base1);
- 	iounmap(m->base0);
-@@ -252,7 +250,6 @@ static int mcp_sa11x0_remove(struct platform_device *dev)
- 	mem0 = platform_get_resource(dev, IORESOURCE_MEM, 0);
- 	mem1 = platform_get_resource(dev, IORESOURCE_MEM, 1);
+ 	kfree(t7l66xb);
  
--	platform_set_drvdata(dev, NULL);
- 	mcp_host_del(mcp);
- 	iounmap(m->base1);
- 	iounmap(m->base0);
+ 	return ret;
 -- 
 1.7.2.5
 
