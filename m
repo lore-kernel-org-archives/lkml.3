@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759002Ab3EFXNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:13:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36800 "EHLO
+	id S933549Ab3EFX1X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:27:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36809 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760564Ab3EFXNn (ORCPT
+	with ESMTP id S1759059Ab3EFXNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:43 -0400
+	Mon, 6 May 2013 19:13:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Duncan Laurie <dlaurie@chromium.org>,
-        Kent Yoder <key@linux.vnet.ibm.com>, Dirk Hohndel <dirk@hohndel.org>
-Subject: [ 055/104] TPM: Retry SaveState command in suspend path
-Date: Mon,  6 May 2013 16:12:14 -0700
-Message-Id: <20130506230049.263828794@linuxfoundation.org>
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 059/104] ALSA: usb-audio: disable autopm for MIDI devices
+Date: Mon,  6 May 2013 16:12:18 -0700
+Message-Id: <20130506230049.671434684@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -27,140 +26,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Duncan Laurie <dlaurie@chromium.org>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 32d33b29ba077d6b45de35f2181e0a7411b162f4 upstream.
+commit cbc200bca4b51a8e2406d4b654d978f8503d430b upstream.
 
-If the TPM has already been sent a SaveState command before the driver
-is loaded it may have problems sending that same command again later.
+Commit 88a8516a2128 (ALSA: usbaudio: implement USB autosuspend)
+introduced autopm for all USB audio/MIDI devices.  However, many MIDI
+devices, such as synthesizers, do not merely transmit MIDI messages but
+use their MIDI inputs to control other functions.  With autopm, these
+devices would get powered down as soon as the last MIDI port device is
+closed on the host.
 
-This issue is seen with the Chromebook Pixel due to a firmware bug in
-the legacy mode boot path which is sending the SaveState command
-before booting the kernel.  More information is available at
-http://crbug.com/203524
+Even some plain MIDI interfaces could get broken: they automatically
+send Active Sensing messages while powered up, but as soon as these
+messages cease, the receiving device would interpret this as an
+accidental disconnection.
 
-This change introduces a retry of the SaveState command in the suspend
-path in order to work around this issue.  A future firmware update
-should fix this but this is also a trivial workaround in the driver
-that has no effect on systems that do not show this problem.
+Commit f5f165418cab (ALSA: usb-audio: Fix missing autopm for MIDI input)
+introduced another regression: some devices (e.g. the Roland GAIA SH-01)
+are self-powered but do a reset whenever the USB interface's power state
+changes.
 
-When this does happen the TPM responds with a non-fatal TPM_RETRY code
-that is defined in the specification:
+To work around all this, just disable autopm for all USB MIDI devices.
 
-  The TPM is too busy to respond to the command immediately, but the
-  command could be resubmitted at a later time.  The TPM MAY return
-  TPM_RETRY for any command at any time.
-
-It can take several seconds before the TPM will respond again.  I
-measured a typical time between 3 and 4 seconds and the timeout is set
-at a safe 5 seconds.
-
-It is also possible to reproduce this with commands via /dev/tpm0.
-The bug linked above has a python script attached which can be used to
-test for this problem.  I tested a variety of TPMs from Infineon,
-Nuvoton, Atmel, and STMicro but was only able to reproduce this with
-LPC and I2C TPMs from Infineon.
-
-The TPM specification only loosely defines this behavior:
-
-  TPM Main Level 2 Part 3 v1.2 r116, section 3.3. TPM_SaveState:
-  The TPM MAY declare all preserved values invalid in response to any
-  command other than TPM_Init.
-
-  TCG PC Client BIOS Spec 1.21 section 8.3.1.
-  After issuing a TPM_SaveState command, the OS SHOULD NOT issue TPM
-  commands before transitioning to S3 without issuing another
-  TPM_SaveState command.
-
-  TCG PC Client TIS 1.21, section 4. Power Management:
-  The TPM_SaveState command allows a Static OS to indicate to the TPM
-  that the platform may enter a low power state where the TPM will be
-  required to enter into the D3 power state.  The use of the term "may"
-  is significant in that there is no requirement for the platform to
-  actually enter the low power state after sending the TPM_SaveState
-  command.  The software may, in fact, send subsequent commands after
-  sending the TPM_SaveState command.
-
-Change-Id: I52b41e826412688e5b6c8ddd3bb16409939704e9
-Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: Dirk Hohndel <dirk@hohndel.org>
+Reported-by: Laurens Holst
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/tpm/tpm.c |   31 +++++++++++++++++++++++++++----
- drivers/char/tpm/tpm.h |    3 +++
- 2 files changed, 30 insertions(+), 4 deletions(-)
+ sound/usb/midi.c |   13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -1291,7 +1291,7 @@ int tpm_pm_suspend(struct device *dev)
+--- a/sound/usb/midi.c
++++ b/sound/usb/midi.c
+@@ -126,7 +126,6 @@ struct snd_usb_midi {
+ 		struct snd_usb_midi_in_endpoint *in;
+ 	} endpoints[MIDI_MAX_ENDPOINTS];
+ 	unsigned long input_triggered;
+-	bool autopm_reference;
+ 	unsigned int opened[2];
+ 	unsigned char disconnected;
+ 	unsigned char input_running;
+@@ -1040,7 +1039,6 @@ static int substream_open(struct snd_raw
  {
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
- 	struct tpm_cmd_t cmd;
--	int rc;
-+	int rc, try;
+ 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
+ 	struct snd_kcontrol *ctl;
+-	int err;
  
- 	u8 dummy_hash[TPM_DIGEST_SIZE] = { 0 };
- 
-@@ -1309,9 +1309,32 @@ int tpm_pm_suspend(struct device *dev)
+ 	down_read(&umidi->disc_rwsem);
+ 	if (umidi->disconnected) {
+@@ -1051,13 +1049,6 @@ static int substream_open(struct snd_raw
+ 	mutex_lock(&umidi->mutex);
+ 	if (open) {
+ 		if (!umidi->opened[0] && !umidi->opened[1]) {
+-			err = usb_autopm_get_interface(umidi->iface);
+-			umidi->autopm_reference = err >= 0;
+-			if (err < 0 && err != -EACCES) {
+-				mutex_unlock(&umidi->mutex);
+-				up_read(&umidi->disc_rwsem);
+-				return -EIO;
+-			}
+ 			if (umidi->roland_load_ctl) {
+ 				ctl = umidi->roland_load_ctl;
+ 				ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+@@ -1080,8 +1071,6 @@ static int substream_open(struct snd_raw
+ 				snd_ctl_notify(umidi->card,
+ 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
+ 			}
+-			if (umidi->autopm_reference)
+-				usb_autopm_put_interface(umidi->iface);
+ 		}
+ 	}
+ 	mutex_unlock(&umidi->mutex);
+@@ -2256,6 +2245,8 @@ int snd_usbmidi_create(struct snd_card *
+ 		return err;
  	}
  
- 	/* now do the actual savestate */
--	cmd.header.in = savestate_header;
--	rc = transmit_cmd(chip, &cmd, SAVESTATE_RESULT_SIZE,
--			  "sending savestate before suspend");
-+	for (try = 0; try < TPM_RETRY; try++) {
-+		cmd.header.in = savestate_header;
-+		rc = transmit_cmd(chip, &cmd, SAVESTATE_RESULT_SIZE, NULL);
++	usb_autopm_get_interface_no_resume(umidi->iface);
 +
-+		/*
-+		 * If the TPM indicates that it is too busy to respond to
-+		 * this command then retry before giving up.  It can take
-+		 * several seconds for this TPM to be ready.
-+		 *
-+		 * This can happen if the TPM has already been sent the
-+		 * SaveState command before the driver has loaded.  TCG 1.2
-+		 * specification states that any communication after SaveState
-+		 * may cause the TPM to invalidate previously saved state.
-+		 */
-+		if (rc != TPM_WARN_RETRY)
-+			break;
-+		msleep(TPM_TIMEOUT_RETRY);
-+	}
-+
-+	if (rc)
-+		dev_err(chip->dev,
-+			"Error (%d) sending savestate before suspend\n", rc);
-+	else if (try > 0)
-+		dev_warn(chip->dev, "TPM savestate took %dms\n",
-+			 try * TPM_TIMEOUT_RETRY);
-+
- 	return rc;
+ 	list_add_tail(&umidi->list, midi_list);
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(tpm_pm_suspend);
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -32,10 +32,12 @@ enum tpm_const {
- 	TPM_MINOR = 224,	/* officially assigned */
- 	TPM_BUFSIZE = 4096,
- 	TPM_NUM_DEVICES = 256,
-+	TPM_RETRY = 50,		/* 5 seconds */
- };
- 
- enum tpm_timeout {
- 	TPM_TIMEOUT = 5,	/* msecs */
-+	TPM_TIMEOUT_RETRY = 100 /* msecs */
- };
- 
- /* TPM addresses */
-@@ -44,6 +46,7 @@ enum tpm_addr {
- 	TPM_ADDR = 0x4E,
- };
- 
-+#define TPM_WARN_RETRY          0x800
- #define TPM_WARN_DOING_SELFTEST 0x802
- #define TPM_ERR_DEACTIVATED     0x6
- #define TPM_ERR_DISABLED        0x7
 
 
