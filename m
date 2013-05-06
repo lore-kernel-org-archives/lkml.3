@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758022Ab3EFUq4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59319 "EHLO
+	id S1758518Ab3EFUyI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:54:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59330 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757937Ab3EFUqy (ORCPT
+	with ESMTP id S1758006Ab3EFUq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:54 -0400
+	Mon, 6 May 2013 16:46:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 085/115] exec: do not abuse ->cred_guard_mutex in threadgroup_lock()
-Date: Mon,  6 May 2013 13:45:21 -0700
-Message-Id: <20130506203104.329455871@linuxfoundation.org>
+        Jonathan Brassow <jbrassow@redhat.com>, NeilBrown <neilb@suse.de>
+Subject: [ 087/115] md: bad block list should default to disabled.
+Date: Mon,  6 May 2013 13:45:23 -0700
+Message-Id: <20130506203104.529438816@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -29,107 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: NeilBrown <neilb@suse.de>
 
-commit e56fb2874015370e3b7f8d85051f6dce26051df9 upstream.
+commit 486adf72ccc0c235754923d47a2270c5dcb0c98b upstream.
 
-threadgroup_lock() takes signal->cred_guard_mutex to ensure that
-thread_group_leader() is stable.  This doesn't look nice, the scope of
-this lock in do_execve() is huge.
+Maintenance of a bad-block-list currently defaults to 'enabled'
+and is then disabled when it cannot be supported.
+This is backwards and causes problem for dm-raid which didn't know
+to disable it.
 
-And as Dave pointed out this can lead to deadlock, we have the
-following dependencies:
+So fix the defaults, and only enabled for v1.x metadata which
+explicitly has bad blocks enabled.
 
-	do_execve:		cred_guard_mutex -> i_mutex
-	cgroup_mount:		i_mutex -> cgroup_mutex
-	attach_task_by_pid:	cgroup_mutex -> cred_guard_mutex
+The problem with dm-raid has been present since badblock support was
+added in v3.1, so this patch is suitable for any -stable from 3.1
+onwards.
 
-Change de_thread() to take threadgroup_change_begin() around the
-switch-the-leader code and change threadgroup_lock() to avoid
-->cred_guard_mutex.
-
-Note that de_thread() can't sleep with ->group_rwsem held, this can
-obviously deadlock with the exiting leader if the writer is active, so it
-does threadgroup_change_end() before schedule().
-
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Jonathan Brassow <jbrassow@redhat.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/exec.c             |    3 +++
- include/linux/sched.h |   18 ++++--------------
- 2 files changed, 7 insertions(+), 14 deletions(-)
+ drivers/md/md.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -898,11 +898,13 @@ static int de_thread(struct task_struct
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -1564,8 +1564,8 @@ static int super_1_load(struct md_rdev *
+ 					     sector, count, 1) == 0)
+ 				return -EINVAL;
+ 		}
+-	} else if (sb->bblog_offset == 0)
+-		rdev->badblocks.shift = -1;
++	} else if (sb->bblog_offset != 0)
++		rdev->badblocks.shift = 0;
  
- 		sig->notify_count = -1;	/* for exit_notify() */
- 		for (;;) {
-+			threadgroup_change_begin(tsk);
- 			write_lock_irq(&tasklist_lock);
- 			if (likely(leader->exit_state))
- 				break;
- 			__set_current_state(TASK_KILLABLE);
- 			write_unlock_irq(&tasklist_lock);
-+			threadgroup_change_end(tsk);
- 			schedule();
- 			if (unlikely(__fatal_signal_pending(tsk)))
- 				goto killed;
-@@ -960,6 +962,7 @@ static int de_thread(struct task_struct
- 		if (unlikely(leader->ptrace))
- 			__wake_up_parent(leader, leader->parent);
- 		write_unlock_irq(&tasklist_lock);
-+		threadgroup_change_end(tsk);
- 
- 		release_task(leader);
+ 	if (!refdev) {
+ 		ret = 1;
+@@ -3221,7 +3221,7 @@ int md_rdev_init(struct md_rdev *rdev)
+ 	 * be used - I wonder if that matters
+ 	 */
+ 	rdev->badblocks.count = 0;
+-	rdev->badblocks.shift = 0;
++	rdev->badblocks.shift = -1; /* disabled until explicitly enabled */
+ 	rdev->badblocks.page = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 	seqlock_init(&rdev->badblocks.lock);
+ 	if (rdev->badblocks.page == NULL)
+@@ -3293,9 +3293,6 @@ static struct md_rdev *md_import_device(
+ 			goto abort_free;
+ 		}
  	}
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2413,27 +2413,18 @@ static inline void threadgroup_change_en
-  *
-  * Lock the threadgroup @tsk belongs to.  No new task is allowed to enter
-  * and member tasks aren't allowed to exit (as indicated by PF_EXITING) or
-- * perform exec.  This is useful for cases where the threadgroup needs to
-- * stay stable across blockable operations.
-+ * change ->group_leader/pid.  This is useful for cases where the threadgroup
-+ * needs to stay stable across blockable operations.
-  *
-  * fork and exit paths explicitly call threadgroup_change_{begin|end}() for
-  * synchronization.  While held, no new task will be added to threadgroup
-  * and no existing live task will have its PF_EXITING set.
-  *
-- * During exec, a task goes and puts its thread group through unusual
-- * changes.  After de-threading, exclusive access is assumed to resources
-- * which are usually shared by tasks in the same group - e.g. sighand may
-- * be replaced with a new one.  Also, the exec'ing task takes over group
-- * leader role including its pid.  Exclude these changes while locked by
-- * grabbing cred_guard_mutex which is used to synchronize exec path.
-+ * de_thread() does threadgroup_change_{begin|end}() when a non-leader
-+ * sub-thread becomes a new leader.
-  */
- static inline void threadgroup_lock(struct task_struct *tsk)
- {
--	/*
--	 * exec uses exit for de-threading nesting group_rwsem inside
--	 * cred_guard_mutex. Grab cred_guard_mutex first.
--	 */
--	mutex_lock(&tsk->signal->cred_guard_mutex);
- 	down_write(&tsk->signal->group_rwsem);
- }
+-	if (super_format == -1)
+-		/* hot-add for 0.90, or non-persistent: so no badblocks */
+-		rdev->badblocks.shift = -1;
  
-@@ -2446,7 +2437,6 @@ static inline void threadgroup_lock(stru
- static inline void threadgroup_unlock(struct task_struct *tsk)
- {
- 	up_write(&tsk->signal->group_rwsem);
--	mutex_unlock(&tsk->signal->cred_guard_mutex);
- }
- #else
- static inline void threadgroup_change_begin(struct task_struct *tsk) {}
+ 	return rdev;
+ 
 
 
