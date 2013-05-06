@@ -1,196 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270Ab3EFPSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 11:18:11 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:49259 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652Ab3EFPSJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 11:18:09 -0400
-Message-ID: <5187C9AD.3080409@gmail.com>
-Date: Mon, 06 May 2013 10:18:05 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Gerlando Falauto <gerlando.falauto@keymile.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [patch 8/8] irqchip: sun4i: Convert to generic irq chip
-References: <20130503212258.385818955@linutronix.de> <20130506142348.321859745@linutronix.de> <20130506142539.523110430@linutronix.de>
-In-Reply-To: <20130506142539.523110430@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754403Ab3EFPSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 11:18:45 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30555 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753714Ab3EFPSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 11:18:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,622,1363158000"; 
+   d="scan'208";a="308997557"
+Message-ID: <1367853518.2079.65.camel@rzhang1-mobl4>
+Subject: Re: [PATCH V2 03/20] thermal: exynos: Rename exynos_thermal.c to
+ exynos_tmu.c
+From: Zhang Rui <rui.zhang@intel.com>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: linux-pm@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, amit.kachhap@gmail.com,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Date: Mon, 06 May 2013 23:18:38 +0800
+In-Reply-To: <1366972671-9227-4-git-send-email-amit.daniel@samsung.com>
+References: <1366972671-9227-1-git-send-email-amit.daniel@samsung.com>
+	 <1366972671-9227-4-git-send-email-amit.daniel@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 09:30 AM, Thomas Gleixner wrote:
-> Proof of concept patch to demonstrate the new irqdomain support for
-> the generic irq chip. Untested !!
+On Fri, 2013-04-26 at 16:07 +0530, Amit Daniel Kachhap wrote:
+> This patch renames exynos_thermal.c to exynos_tmu.c. This change is needed as
+> this file now just contains exynos tmu driver related codes and thermal zone
+> or cpufreq cooling registration related changes are not there anymore.
 > 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+
+This one looks okay to me.
+
+thanks,
+rui
 > ---
->  drivers/irqchip/irq-sun4i.c |  100 ++++++++++++--------------------------------
->  1 file changed, 29 insertions(+), 71 deletions(-)
+>  drivers/thermal/samsung/Makefile                   |    2 +-
+>  .../samsung/{exynos_thermal.c => exynos_tmu.c}     |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+>  rename drivers/thermal/samsung/{exynos_thermal.c => exynos_tmu.c} (99%)
 > 
-> Index: linux-2.6/drivers/irqchip/irq-sun4i.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/irqchip/irq-sun4i.c
-> +++ linux-2.6/drivers/irqchip/irq-sun4i.c
-> @@ -32,70 +32,43 @@
->  #define SUN4I_IRQ_FIQ_PENDING_REG(x)	(0x20 + 0x4 * x)
->  #define SUN4I_IRQ_ENABLE_REG(x)		(0x40 + 0x4 * x)
->  #define SUN4I_IRQ_MASK_REG(x)		(0x50 + 0x4 * x)
-> +#define SUN4I_NUM_CHIPS			3
-> +#define SUN4I_IRQS_PER_CHIP		32
->  
->  static void __iomem *sun4i_irq_base;
->  static struct irq_domain *sun4i_irq_domain;
->  
->  static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
->  
-> -void sun4i_irq_ack(struct irq_data *irqd)
-> +static int __init sun4i_init_domain_chips(void)
->  {
-> -	unsigned int irq = irqd_to_hwirq(irqd);
-> -	unsigned int irq_off = irq % 32;
-> -	int reg = irq / 32;
-> -	u32 val;
-> -
-> -	val = readl(sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
-> -	writel(val | (1 << irq_off),
-> -	       sun4i_irq_base + SUN4I_IRQ_PENDING_REG(reg));
-> -}
-> -
-> -static void sun4i_irq_mask(struct irq_data *irqd)
-> -{
-> -	unsigned int irq = irqd_to_hwirq(irqd);
-> -	unsigned int irq_off = irq % 32;
-> -	int reg = irq / 32;
-> -	u32 val;
-> -
-> -	val = readl(sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
-> -	writel(val & ~(1 << irq_off),
-> -	       sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
-> -}
-> -
-> -static void sun4i_irq_unmask(struct irq_data *irqd)
-> -{
-> -	unsigned int irq = irqd_to_hwirq(irqd);
-> -	unsigned int irq_off = irq % 32;
-> -	int reg = irq / 32;
-> -	u32 val;
-> -
-> -	val = readl(sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
-> -	writel(val | (1 << irq_off),
-> -	       sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(reg));
-> -}
-> -
-> -static struct irq_chip sun4i_irq_chip = {
-> -	.name		= "sun4i_irq",
-> -	.irq_ack	= sun4i_irq_ack,
-> -	.irq_mask	= sun4i_irq_mask,
-> -	.irq_unmask	= sun4i_irq_unmask,
-> -};
-> -
-> -static int sun4i_irq_map(struct irq_domain *d, unsigned int virq,
-> -			 irq_hw_number_t hw)
-> -{
-> -	irq_set_chip_and_handler(virq, &sun4i_irq_chip,
-> -				 handle_level_irq);
-> -	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
-> -
-> +	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
-> +	struct irq_chip_generic *gc;
-> +	int i, ret, base = 0;
-> +
-> +	ret = irq_alloc_domain_generic_chips(d, SUN4I_IRQS_PER_CHIP, 1,
+> diff --git a/drivers/thermal/samsung/Makefile b/drivers/thermal/samsung/Makefile
+> index fcda5b4..75e1f97 100644
+> --- a/drivers/thermal/samsung/Makefile
+> +++ b/drivers/thermal/samsung/Makefile
+> @@ -2,5 +2,5 @@
+>  # Samsung thermal specific Makefile
+>  #
+>  obj-$(CONFIG_EXYNOS_SOC_THERMAL)		+= exynos_soc_thermal.o
+> -exynos_soc_thermal-y				:= exynos_thermal.o
+> +exynos_soc_thermal-y				:= exynos_tmu.o
+>  exynos_soc_thermal-$(CONFIG_EXYNOS_COMMON)	+= exynos_thermal_common.o
+> diff --git a/drivers/thermal/samsung/exynos_thermal.c b/drivers/thermal/samsung/exynos_tmu.c
+> similarity index 99%
+> rename from drivers/thermal/samsung/exynos_thermal.c
+> rename to drivers/thermal/samsung/exynos_tmu.c
+> index 4c85945..3de3e61 100644
+> --- a/drivers/thermal/samsung/exynos_thermal.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -1,5 +1,5 @@
+>  /*
+> - * exynos_thermal.c - Samsung EXYNOS TMU (Thermal Management Unit)
+> + * exynos_tmu.c - Samsung EXYNOS TMU (Thermal Management Unit)
+>   *
+>   *  Copyright (C) 2011 Samsung Electronics
+>   *  Donggeun Kim <dg77.kim@samsung.com>
 
-1 should be SUN4I_NUM_CHIPS.
-
-> +					     "sun4i_irq", handle_level_irq,
-> +					     clr, 0, IRQ_GC_INIT_MASK_CACHE);
-> +	if (ret)
-> +		return ret;
-> +
-> +	for (i = 0; i < SUN4I_NUM_CHIPS; i++, base += SUN4I_IRQS_PER_CHIP) {
-> +		gc = irq_get_domain_generic_chip(sun4i_irq_domain, base);
-
-Perhaps this could be an iterator macro.
-
-> +		gc->reg_base = sun4i_irq_base;
-> +		gc->chip_types[0].regs.mask = SUN4I_IRQ_ENABLE_REG(i);
-> +		gc->chip_types[0].regs.ack = SUN4I_IRQ_PENDING_REG(i);
-> +		gc->chip_types[0].chip.mask = irq_gc_mask_clr_bit;
-> +		gc->chip_types[0].chip.ack = irq_gc_ack_set_bit;
-> +		gc->chip_types[0].chip.unmask = irq_gc_mask_set_bit;
-> +
-> +		/* Disable, mask and clear all pending interrupts */
-> +		writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(i));
-> +		writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(i));
-> +		writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(i));
-> +	}
->  	return 0;
->  }
->  
-> -static struct irq_domain_ops sun4i_irq_ops = {
-> -	.map = sun4i_irq_map,
-> -	.xlate = irq_domain_xlate_onecell,
-> -};
-> -
->  static int __init sun4i_of_init(struct device_node *node,
->  				struct device_node *parent)
->  {
-> @@ -104,21 +77,6 @@ static int __init sun4i_of_init(struct d
->  		panic("%s: unable to map IC registers\n",
->  			node->full_name);
->  
-> -	/* Disable all interrupts */
-> -	writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(0));
-> -	writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(1));
-> -	writel(0, sun4i_irq_base + SUN4I_IRQ_ENABLE_REG(2));
-> -
-> -	/* Mask all the interrupts */
-> -	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(0));
-> -	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(1));
-> -	writel(0, sun4i_irq_base + SUN4I_IRQ_MASK_REG(2));
-> -
-> -	/* Clear all the pending interrupts */
-> -	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(0));
-> -	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(1));
-> -	writel(0xffffffff, sun4i_irq_base + SUN4I_IRQ_PENDING_REG(2));
-> -
->  	/* Enable protection mode */
->  	writel(0x01, sun4i_irq_base + SUN4I_IRQ_PROTECTION_REG);
->  
-> @@ -126,8 +84,8 @@ static int __init sun4i_of_init(struct d
->  	writel(0x00, sun4i_irq_base + SUN4I_IRQ_NMI_CTRL_REG);
->  
->  	sun4i_irq_domain = irq_domain_add_linear(node, 3 * 32,
-
-s/3 * 32/SUN4I_NUM_CHIPS * SUN4I_IRQS_PER_CHIP/
-
-> -						 &sun4i_irq_ops, NULL);
-> -	if (!sun4i_irq_domain)
-> +						 &irq_generic_chip_ops, NULL);
-> +	if (!sun4i_irq_domain || sun4i_init_domain_chips())
->  		panic("%s: unable to create IRQ domain\n", node->full_name);
->  
->  	set_handle_irq(sun4i_handle_irq);
-> 
-> 
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
 
