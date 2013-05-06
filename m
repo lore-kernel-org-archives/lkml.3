@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758856Ab3EFVJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:09:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59106 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757561Ab3EFUqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757562Ab3EFUqW (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 May 2013 16:46:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59088 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757452Ab3EFUqT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 16:46:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 042/115] tracing: Remove most or all of stack tracer stack size from stack_max_size
-Date: Mon,  6 May 2013 13:44:38 -0700
-Message-Id: <20130506203059.871305620@linuxfoundation.org>
+        Simon Kirby <sim@hostway.ca>, Jiri Slaby <jslaby@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 038/115] tty: fix up atime/mtime mess, take three
+Date: Mon,  6 May 2013 13:44:34 -0700
+Message-Id: <20130506203059.488747562@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -26,176 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 4df297129f622bdc18935c856f42b9ddd18f9f28 upstream.
+commit b0b885657b6c8ef63a46bc9299b2a7715d19acde upstream.
 
-Currently, the depth reported in the stack tracer stack_trace file
-does not match the stack_max_size file. This is because the stack_max_size
-includes the overhead of stack tracer itself while the depth does not.
+We first tried to avoid updating atime/mtime entirely (commit
+b0de59b5733d: "TTY: do not update atime/mtime on read/write"), and then
+limited it to only update it occasionally (commit 37b7f3c76595: "TTY:
+fix atime/mtime regression"), but it turns out that this was both
+insufficient and overkill.
 
-The first time a max is triggered, a calculation is not performed that
-figures out the overhead of the stack tracer and subtracts it from
-the stack_max_size variable. The overhead is stored and is subtracted
-from the reported stack size for comparing for a new max.
+It was insufficient because we let people attach to the shared ptmx node
+to see activity without even reading atime/mtime, and it was overkill
+because the "only once a minute" means that you can't really tell an
+idle person from an active one with 'w'.
 
-Now the stack_max_size corresponds to the reported depth:
+So this tries to fix the problem properly.  It marks the shared ptmx
+node as un-notifiable, and it lowers the "only once a minute" to a few
+seconds instead - still long enough that you can't time individual
+keystrokes, but short enough that you can tell whether somebody is
+active or not.
 
- # cat stack_max_size
-4640
-
- # cat stack_trace
-        Depth    Size   Location    (48 entries)
-        -----    ----   --------
-  0)     4640      32   _raw_spin_lock+0x18/0x24
-  1)     4608     112   ____cache_alloc+0xb7/0x22d
-  2)     4496      80   kmem_cache_alloc+0x63/0x12f
-  3)     4416      16   mempool_alloc_slab+0x15/0x17
-[...]
-
-While testing against and older gcc on x86 that uses mcount instead
-of fentry, I found that pasing in ip + MCOUNT_INSN_SIZE let the
-stack trace show one more function deep which was missing before.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Simon Kirby <sim@hostway.ca>
+Acked-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_stack.c |   75 ++++++++++++++++++++++++++++++++-------------
- 1 file changed, 54 insertions(+), 21 deletions(-)
+ drivers/tty/pty.c    |    3 +++
+ drivers/tty/tty_io.c |    4 ++--
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -20,27 +20,24 @@
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -682,6 +682,9 @@ static int ptmx_open(struct inode *inode
  
- #define STACK_TRACE_ENTRIES 500
+ 	nonseekable_open(inode, filp);
  
--/*
-- * If fentry is used, then the function being traced will
-- * jump to fentry directly before it sets up its stack frame.
-- * We need to ignore that one and record the parent. Since
-- * the stack frame for the traced function wasn't set up yet,
-- * the stack_trace wont see the parent. That needs to be added
-- * manually to stack_dump_trace[] as the first element.
-- */
- #ifdef CC_USING_FENTRY
--# define add_func	1
-+# define fentry		1
- #else
--# define add_func	0
-+# define fentry		0
- #endif
++	/* We refuse fsnotify events on ptmx, since it's a shared resource */
++	filp->f_mode |= FMODE_NONOTIFY;
++
+ 	retval = tty_alloc_file(filp);
+ 	if (retval)
+ 		return retval;
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -941,10 +941,10 @@ void start_tty(struct tty_struct *tty)
  
- static unsigned long stack_dump_trace[STACK_TRACE_ENTRIES+1] =
- 	 { [0 ... (STACK_TRACE_ENTRIES)] = ULONG_MAX };
- static unsigned stack_dump_index[STACK_TRACE_ENTRIES];
+ EXPORT_SYMBOL(start_tty);
  
-+/*
-+ * Reserve one entry for the passed in ip. This will allow
-+ * us to remove most or all of the stack size overhead
-+ * added by the stack tracer itself.
-+ */
- static struct stack_trace max_stack_trace = {
--	.max_entries		= STACK_TRACE_ENTRIES - add_func,
--	.entries		= &stack_dump_trace[add_func],
-+	.max_entries		= STACK_TRACE_ENTRIES - 1,
-+	.entries		= &stack_dump_trace[1],
- };
- 
- static unsigned long max_stack_size;
-@@ -58,10 +55,14 @@ check_stack(unsigned long ip, unsigned l
++/* We limit tty time update visibility to every 8 seconds or so. */
+ static void tty_update_time(struct timespec *time)
  {
- 	unsigned long this_size, flags;
- 	unsigned long *p, *top, *start;
-+	static int tracer_frame;
-+	int frame_size = ACCESS_ONCE(tracer_frame);
- 	int i;
- 
- 	this_size = ((unsigned long)stack) & (THREAD_SIZE-1);
- 	this_size = THREAD_SIZE - this_size;
-+	/* Remove the frame of the tracer */
-+	this_size -= frame_size;
- 
- 	if (this_size <= max_stack_size)
- 		return;
-@@ -73,6 +74,10 @@ check_stack(unsigned long ip, unsigned l
- 	local_irq_save(flags);
- 	arch_spin_lock(&max_stack_lock);
- 
-+	/* In case another CPU set the tracer_frame on us */
-+	if (unlikely(!frame_size))
-+		this_size -= tracer_frame;
-+
- 	/* a race could have already updated it */
- 	if (this_size <= max_stack_size)
- 		goto out;
-@@ -85,15 +90,12 @@ check_stack(unsigned long ip, unsigned l
- 	save_stack_trace(&max_stack_trace);
- 
- 	/*
--	 * When fentry is used, the traced function does not get
--	 * its stack frame set up, and we lose the parent.
--	 * Add that one in manally. We set up save_stack_trace()
--	 * to not touch the first element in this case.
-+	 * Add the passed in ip from the function tracer.
-+	 * Searching for this on the stack will skip over
-+	 * most of the overhead from the stack tracer itself.
- 	 */
--	if (add_func) {
--		stack_dump_trace[0] = ip;
--		max_stack_trace.nr_entries++;
--	}
-+	stack_dump_trace[0] = ip;
-+	max_stack_trace.nr_entries++;
- 
- 	/*
- 	 * Now find where in the stack these are.
-@@ -123,6 +125,18 @@ check_stack(unsigned long ip, unsigned l
- 				found = 1;
- 				/* Start the search from here */
- 				start = p + 1;
-+				/*
-+				 * We do not want to show the overhead
-+				 * of the stack tracer stack in the
-+				 * max stack. If we haven't figured
-+				 * out what that is, then figure it out
-+				 * now.
-+				 */
-+				if (unlikely(!tracer_frame) && i == 1) {
-+					tracer_frame = (p - stack) *
-+						sizeof(unsigned long);
-+					max_stack_size -= tracer_frame;
-+				}
- 			}
- 		}
- 
-@@ -149,7 +163,26 @@ stack_trace_call(unsigned long ip, unsig
- 	if (per_cpu(trace_active, cpu)++ != 0)
- 		goto out;
- 
--	check_stack(parent_ip, &stack);
-+	/*
-+	 * When fentry is used, the traced function does not get
-+	 * its stack frame set up, and we lose the parent.
-+	 * The ip is pretty useless because the function tracer
-+	 * was called before that function set up its stack frame.
-+	 * In this case, we use the parent ip.
-+	 *
-+	 * By adding the return address of either the parent ip
-+	 * or the current ip we can disregard most of the stack usage
-+	 * caused by the stack tracer itself.
-+	 *
-+	 * The function tracer always reports the address of where the
-+	 * mcount call was, but the stack will hold the return address.
-+	 */
-+	if (fentry)
-+		ip = parent_ip;
-+	else
-+		ip += MCOUNT_INSN_SIZE;
-+
-+	check_stack(ip, &stack);
- 
-  out:
- 	per_cpu(trace_active, cpu)--;
+-	unsigned long sec = get_seconds();
+-	sec -= sec % 60;
++	unsigned long sec = get_seconds() & ~7;
+ 	if ((long)(sec - time->tv_sec) > 0)
+ 		time->tv_sec = sec;
+ }
 
 
