@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757855Ab3EFVAT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:00:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59224 "EHLO
+	id S932116Ab3EFVAk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:00:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59222 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756545Ab3EFUqm (ORCPT
+	with ESMTP id S1757787Ab3EFUql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:42 -0400
+	Mon, 6 May 2013 16:46:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wang YanQing <udknight@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 076/115] ACPI: Fix wrong parameter passed to memblock_reserve
-Date: Mon,  6 May 2013 13:45:12 -0700
-Message-Id: <20130506203103.358845922@linuxfoundation.org>
+        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 066/115] ALSA: hda - Add the support for ALC286 codec
+Date: Mon,  6 May 2013 13:45:02 -0700
+Message-Id: <20130506203102.317388266@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,38 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang YanQing <udknight@gmail.com>
+From: Kailang Yang <kailang@realtek.com>
 
-commit a6432ded299726f123b93d0132fead200551535c upstream.
+commit 7fc7d047216aa4923d401c637be2ebc6e3d5bd9b upstream.
 
-Commit 53aac44 (ACPI: Store valid ACPI tables passed via early initrd
-in reserved memblock areas) introduced acpi_initrd_override() that
-passes a wrong value as the second argument to memblock_reserve().
+It's yet another ALC269-variant.
 
-Namely, the second argument of memblock_reserve() is the size of the
-region, not the address of the top of it, so make
-acpi_initrd_override() pass the size in there as appropriate.
-
-[rjw: Changelog]
-Signed-off-by: Wang YanQing <udknight@gmail.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/osl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -641,7 +641,7 @@ void __init acpi_initrd_override(void *d
- 	 * Both memblock_reserve and e820_add_region (via arch_reserve_mem_area)
- 	 * works fine.
- 	 */
--	memblock_reserve(acpi_tables_addr, acpi_tables_addr + all_tables_size);
-+	memblock_reserve(acpi_tables_addr, all_tables_size);
- 	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -2515,6 +2515,7 @@ enum {
+ 	ALC269_TYPE_ALC280,
+ 	ALC269_TYPE_ALC282,
+ 	ALC269_TYPE_ALC284,
++	ALC269_TYPE_ALC286,
+ };
  
- 	p = early_ioremap(acpi_tables_addr, all_tables_size);
+ /*
+@@ -2538,6 +2539,7 @@ static int alc269_parse_auto_config(stru
+ 	case ALC269_TYPE_ALC269VB:
+ 	case ALC269_TYPE_ALC269VD:
+ 	case ALC269_TYPE_ALC282:
++	case ALC269_TYPE_ALC286:
+ 		ssids = alc269_ssids;
+ 		break;
+ 	default:
+@@ -3172,6 +3174,9 @@ static int patch_alc269(struct hda_codec
+ 	case 0x10ec0292:
+ 		spec->codec_variant = ALC269_TYPE_ALC284;
+ 		break;
++	case 0x10ec0286:
++		spec->codec_variant = ALC269_TYPE_ALC286;
++		break;
+ 	}
+ 
+ 	/* automatic parse from the BIOS config */
+@@ -3878,6 +3883,7 @@ static const struct hda_codec_preset snd
+ 	{ .id = 0x10ec0282, .name = "ALC282", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0283, .name = "ALC283", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0284, .name = "ALC284", .patch = patch_alc269 },
++	{ .id = 0x10ec0286, .name = "ALC286", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0292, .name = "ALC292", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
 
 
