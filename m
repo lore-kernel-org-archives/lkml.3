@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758424Ab3EFUwM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:52:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59356 "EHLO
+	id S932082Ab3EFUwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:52:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59350 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758084Ab3EFUrB (ORCPT
+	with ESMTP id S1758068Ab3EFUrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:47:01 -0400
+	Mon, 6 May 2013 16:47:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 094/115] nfsd: Decode and send 64bit time values
-Date: Mon,  6 May 2013 13:45:30 -0700
-Message-Id: <20130506203105.270223001@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 105/115] ext4: fix online resizing for ext3-compat file systems
+Date: Mon,  6 May 2013 13:45:41 -0700
+Message-Id: <20130506203106.344649686@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,76 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan Schumaker <bjschuma@netapp.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit bf8d909705e9d9bac31d9b8eac6734d2b51332a7 upstream.
+commit c5c72d814cf0f650010337c73638b25e6d14d2d4 upstream.
 
-The seconds field of an nfstime4 structure is 64bit, but we are assuming
-that the first 32bits are zero-filled.  So if the client tries to set
-atime to a value before the epoch (touch -t 196001010101), then the
-server will save the wrong value on disk.
+Commit fb0a387dcdc restricts block allocations for indirect-mapped
+files to block groups less than s_blockfile_groups.  However, the
+online resizing code wasn't setting s_blockfile_groups, so the newly
+added block groups were not available for non-extent mapped files.
 
-Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4xdr.c |   19 +++++--------------
- 1 file changed, 5 insertions(+), 14 deletions(-)
+ fs/ext4/resize.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -344,10 +344,7 @@ nfsd4_decode_fattr(struct nfsd4_compound
- 			   all 32 bits of 'nseconds'. */
- 			READ_BUF(12);
- 			len += 12;
--			READ32(dummy32);
--			if (dummy32)
--				return nfserr_inval;
--			READ32(iattr->ia_atime.tv_sec);
-+			READ64(iattr->ia_atime.tv_sec);
- 			READ32(iattr->ia_atime.tv_nsec);
- 			if (iattr->ia_atime.tv_nsec >= (u32)1000000000)
- 				return nfserr_inval;
-@@ -370,10 +367,7 @@ nfsd4_decode_fattr(struct nfsd4_compound
- 			   all 32 bits of 'nseconds'. */
- 			READ_BUF(12);
- 			len += 12;
--			READ32(dummy32);
--			if (dummy32)
--				return nfserr_inval;
--			READ32(iattr->ia_mtime.tv_sec);
-+			READ64(iattr->ia_mtime.tv_sec);
- 			READ32(iattr->ia_mtime.tv_nsec);
- 			if (iattr->ia_mtime.tv_nsec >= (u32)1000000000)
- 				return nfserr_inval;
-@@ -2401,8 +2395,7 @@ out_acl:
- 	if (bmval1 & FATTR4_WORD1_TIME_ACCESS) {
- 		if ((buflen -= 12) < 0)
- 			goto out_resource;
--		WRITE32(0);
--		WRITE32(stat.atime.tv_sec);
-+		WRITE64((s64)stat.atime.tv_sec);
- 		WRITE32(stat.atime.tv_nsec);
- 	}
- 	if (bmval1 & FATTR4_WORD1_TIME_DELTA) {
-@@ -2415,15 +2408,13 @@ out_acl:
- 	if (bmval1 & FATTR4_WORD1_TIME_METADATA) {
- 		if ((buflen -= 12) < 0)
- 			goto out_resource;
--		WRITE32(0);
--		WRITE32(stat.ctime.tv_sec);
-+		WRITE64((s64)stat.ctime.tv_sec);
- 		WRITE32(stat.ctime.tv_nsec);
- 	}
- 	if (bmval1 & FATTR4_WORD1_TIME_MODIFY) {
- 		if ((buflen -= 12) < 0)
- 			goto out_resource;
--		WRITE32(0);
--		WRITE32(stat.mtime.tv_sec);
-+		WRITE64((s64)stat.mtime.tv_sec);
- 		WRITE32(stat.mtime.tv_nsec);
- 	}
- 	if (bmval1 & FATTR4_WORD1_MOUNTED_ON_FILEID) {
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -1341,6 +1341,8 @@ static void ext4_update_super(struct sup
+ 
+ 	/* Update the global fs size fields */
+ 	sbi->s_groups_count += flex_gd->count;
++	sbi->s_blockfile_groups = min_t(ext4_group_t, sbi->s_groups_count,
++			(EXT4_MAX_BLOCK_FILE_PHYS / EXT4_BLOCKS_PER_GROUP(sb)));
+ 
+ 	/* Update the reserved block counts only once the new group is
+ 	 * active. */
 
 
