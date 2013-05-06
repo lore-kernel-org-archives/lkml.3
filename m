@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933434Ab3EFXYz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:24:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36861 "EHLO
+	id S933450Ab3EFXZP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:25:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36854 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760636Ab3EFXNx (ORCPT
+	with ESMTP id S1760591Ab3EFXNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:53 -0400
+	Mon, 6 May 2013 19:13:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Derek Basehore <dbasehore@chromium.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Mel Gorman <mgorman@suse.de>, Jerome Marchand <jmarchan@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 069/104] drivers/rtc/rtc-cmos.c: dont disable hpet emulation on suspend
-Date: Mon,  6 May 2013 16:12:28 -0700
-Message-Id: <20130506230050.722406435@linuxfoundation.org>
+Subject: [ 068/104] mm: swap: mark swap pages writeback before queueing for direct IO
+Date: Mon,  6 May 2013 16:12:27 -0700
+Message-Id: <20130506230050.617255683@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -31,53 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Derek Basehore <dbasehore@chromium.org>
+From: Mel Gorman <mgorman@suse.de>
 
-commit e005715efaf674660ae59af83b13822567e3a758 upstream.
+commit 0cdc444a67ccdbd58bfbcba865cb17a9f17a7691 upstream.
 
-There's a bug where rtc alarms are ignored after the rtc cmos suspends
-but before the system finishes suspend.  Since hpet emulation is
-disabled and it still handles the interrupts, a wake event is never
-registered which is done from the rtc layer.
+As pointed out by Andrew Morton, the swap-over-NFS writeback is not
+setting PageWriteback before it is queued for direct IO.  While swap
+pages do not participate in BDI or process dirty accounting and the IO
+is synchronous, the writeback bit is still required and not setting it
+in this case was an oversight.  swapoff depends on the page writeback to
+synchronoise all pending writes on a swap page before it is reused.
+Swapcache freeing and reuse depend on checking the PageWriteback under
+lock to ensure the page is safe to reuse.
 
-This patch reverts commit d1b2efa83fbf ("rtc: disable hpet emulation on
-suspend") which disabled hpet emulation.  To fix the problem mentioned
-in that commit, hpet_rtc_timer_init() is called directly on resume.
+Direct IO handlers and the direct IO handler for NFS do not deal with
+PageWriteback as they are synchronous writes.  In the case of NFS, it
+schedules pages (or a page in the case of swap) for IO and then waits
+synchronously for IO to complete in nfs_direct_write().  It is
+recognised that this is a slowdown from normal swap handling which is
+asynchronous and uses a completion handler.  Shoving PageWriteback
+handling down into direct IO handlers looks like a bad fit to handle the
+swap case although it may have to be dealt with some day if swap is
+converted to use direct IO in general and bmap is finally done away
+with.  At that point it will be necessary to refit asynchronous direct
+IO with completion handlers onto the swap subsystem.
 
-Signed-off-by: Derek Basehore <dbasehore@chromium.org>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+As swapcache currently depends on PageWriteback to protect against
+races, this patch sets PageWriteback under the page lock before queueing
+it for direct IO.  It is cleared when the direct IO handler returns.  IO
+errors are treated similarly to the direct-to-bio case except PageError
+is not set as in the case of swap-over-NFS, it is likely to be a
+transient error.
+
+It was asked what prevents such a page being reclaimed in parallel.
+With this patch applied, such a page will now be skipped (most of the
+time) or blocked until the writeback completes.  Reclaim checks
+PageWriteback under the page lock before calling try_to_free_swap and
+the page lock should prevent the page being requeued for IO before it is
+freed.
+
+This and Jerome's related patch should considered for -stable as far
+back as 3.6 when swap-over-NFS was introduced.
+
+[akpm@linux-foundation.org: use pr_err_ratelimited()]
+[akpm@linux-foundation.org: remove hopefully-unneeded cast in printk]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Jerome Marchand <jmarchan@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-cmos.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/page_io.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -805,9 +805,8 @@ static int cmos_suspend(struct device *d
- 			mask = RTC_IRQMASK;
- 		tmp &= ~mask;
- 		CMOS_WRITE(tmp, RTC_CONTROL);
-+		hpet_mask_rtc_irq_bit(mask);
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -214,6 +214,7 @@ int swap_writepage(struct page *page, st
+ 		kiocb.ki_left = PAGE_SIZE;
+ 		kiocb.ki_nbytes = PAGE_SIZE;
  
--		/* shut down hpet emulation - we don't need it for alarm */
--		hpet_mask_rtc_irq_bit(RTC_PIE|RTC_AIE|RTC_UIE);
- 		cmos_checkintr(cmos, tmp);
++		set_page_writeback(page);
+ 		unlock_page(page);
+ 		ret = mapping->a_ops->direct_IO(KERNEL_WRITE,
+ 						&kiocb, &iov,
+@@ -223,8 +224,22 @@ int swap_writepage(struct page *page, st
+ 			count_vm_event(PSWPOUT);
+ 			ret = 0;
+ 		} else {
++			/*
++			 * In the case of swap-over-nfs, this can be a
++			 * temporary failure if the system has limited
++			 * memory for allocating transmit buffers.
++			 * Mark the page dirty and avoid
++			 * rotate_reclaimable_page but rate-limit the
++			 * messages but do not flag PageError like
++			 * the normal direct-to-bio case as it could
++			 * be temporary.
++			 */
+ 			set_page_dirty(page);
++			ClearPageReclaim(page);
++			pr_err_ratelimited("Write error on dio swapfile (%Lu)\n",
++				page_file_offset(page));
+ 		}
++		end_page_writeback(page);
+ 		return ret;
  	}
- 	spin_unlock_irq(&rtc_lock);
-@@ -872,6 +871,7 @@ static int cmos_resume(struct device *de
- 			rtc_update_irq(cmos->rtc, 1, mask);
- 			tmp &= ~RTC_AIE;
- 			hpet_mask_rtc_irq_bit(RTC_AIE);
-+			hpet_rtc_timer_init();
- 		} while (mask & RTC_AIE);
- 		spin_unlock_irq(&rtc_lock);
- 	}
+ 
 
 
