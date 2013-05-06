@@ -1,109 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758713Ab3EFVFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:05:42 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:35460 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757683Ab3EFVFj (ORCPT
+	id S1757650Ab3EFUq2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:46:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59077 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757520Ab3EFUqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 17:05:39 -0400
-Date: Mon, 06 May 2013 17:05:37 -0400 (EDT)
-Message-Id: <20130506.170537.2116026617074159336.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 06 May 2013 14:05:38 -0700 (PDT)
+	Mon, 6 May 2013 16:46:18 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 036/115] arm: set the page table freeing ceiling to TASK_SIZE
+Date: Mon,  6 May 2013 13:44:32 -0700
+Message-Id: <20130506203059.287028634@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
+References: <20130506203055.537199268@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
-Just a small pile of fixes:
+------------------
 
-1) Fix race conditions in IP fragmentation LRU list handling,
-   from Konstantin Khlebnikov.
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-2) vfree() is no longer verboten in interrupts, so deferring is
-   pointless, from Al Viro.
+commit 104ad3b32d7a71941c8ab2dee78eea38e8a23309 upstream.
 
-3) Conversion from mutex to semaphore in netpoll left trylock
-   test inverted, caught by Dan Carpenter.
+ARM processors with LPAE enabled use 3 levels of page tables, with an
+entry in the top level (pgd) covering 1GB of virtual space.  Because of
+the branch relocation limitations on ARM, the loadable modules are
+mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
+between kernel modules and user space.
 
-4) 3c59x uses wrong base address when releasing regions, from
-   Sergei Shtylyov.
+If free_pgtables() is called with the default ceiling 0,
+free_pgd_range() (and subsequently called functions) also frees the page
+table shared between user space and kernel modules (which is normally
+handled by the ARM-specific pgd_free() function).  This patch changes
+defines the ARM USER_PGTABLES_CEILING to TASK_SIZE when CONFIG_ARM_LPAE
+is enabled.
 
-5) Bounds checking in TIPC from Dan Carpenter.
+Note that the pgd_free() function already checks the presence of the
+shared pmd page allocated by pgd_alloc() and frees it, though with
+ceiling 0 this wasn't necessary.
 
-6) Fastopen cookies should not be expired as aggressively as other
-   TCP metrics.  From Eric Dumazet.
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-7) Fix retrieval of MAC address in ibmveth, from Ben Herrenschmidt.
+---
+ arch/arm/include/asm/pgtable.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-8) Don't use "u16" in virtio user headers, from Stephen Hemminger.
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -61,6 +61,15 @@ extern void __pgd_error(const char *file
+ #define FIRST_USER_ADDRESS	PAGE_SIZE
+ 
+ /*
++ * Use TASK_SIZE as the ceiling argument for free_pgtables() and
++ * free_pgd_range() to avoid freeing the modules pmd when LPAE is enabled (pmd
++ * page shared between user and kernel).
++ */
++#ifdef CONFIG_ARM_LPAE
++#define USER_PGTABLES_CEILING	TASK_SIZE
++#endif
++
++/*
+  * The pgprot_* and protection_map entries will be fixed up in runtime
+  * to include the cachable and bufferable bits based on memory policy,
+  * as well as any architecture dependent bits like global/ASID and SMP
 
-Please pull, thanks a lot!
 
-The following changes since commit f8ce1faf55955de62e0a12e330c6d9a526071f65:
-
-  Merge tag 'modules-next-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux (2013-05-05 10:58:06 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net master
-
-for you to fetch changes up to 6bf15191f666c5965d212561d7a5c7b78b808dfa:
-
-  tipc: potential divide by zero in tipc_link_recv_fragment() (2013-05-06 16:16:52 -0400)
-
-----------------------------------------------------------------
-Al Viro (2):
-      fib_trie: no need to delay vfree()
-      rps_dev_flow_table_release(): no need to delay vfree()
-
-Benjamin Herrenschmidt (1):
-      net/eth/ibmveth: Fixup retrieval of MAC address
-
-Dan Carpenter (3):
-      netpoll: inverted down_trylock() test
-      tipc: add a bounds check in link_recv_changeover_msg()
-      tipc: potential divide by zero in tipc_link_recv_fragment()
-
-Eric Dumazet (1):
-      tcp: do not expire TCP fastopen cookies
-
-Konstantin Khlebnikov (1):
-      net: frag, fix race conditions in LRU list maintenance
-
-Sergei Shtylyov (1):
-      3c59x: fix freeing nonexistent resource on driver unload
-
-hayeswang (1):
-      net/usb: new driver for RTL8152
-
-stephen hemminger (1):
-      virtio: don't expose u16 in userspace api
-
- drivers/net/ethernet/3com/3c59x.c  |    2 +-
- drivers/net/ethernet/ibm/ibmveth.c |   23 +-
- drivers/net/usb/Kconfig            |   11 +
- drivers/net/usb/Makefile           |    1 +
- drivers/net/usb/cdc_ether.c        |   10 +
- drivers/net/usb/r8152.c            | 1767 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/netdevice.h          |    1 -
- include/net/inet_frag.h            |    5 +-
- include/uapi/linux/virtio_net.h    |    2 +-
- net/core/net-sysfs.c               |   12 +-
- net/core/netpoll.c                 |    2 +-
- net/ipv4/fib_trie.c                |   13 +-
- net/ipv4/inet_fragment.c           |    1 +
- net/ipv4/tcp_metrics.c             |   15 +-
- net/tipc/link.c                    |   11 +-
- 15 files changed, 1826 insertions(+), 50 deletions(-)
- create mode 100644 drivers/net/usb/r8152.c
