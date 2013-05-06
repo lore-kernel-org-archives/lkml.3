@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055Ab3EFXOT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:14:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36998 "EHLO
+	id S932781Ab3EFXOd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:14:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37019 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414Ab3EFXOO (ORCPT
+	with ESMTP id S933014Ab3EFXOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:14 -0400
+	Mon, 6 May 2013 19:14:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu Chuansheng <chuansheng.liu@intel.com>, Li Fei <fei.li@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, tomoki.sekiyama.qu@hitachi.com,
-        joe@perches.com
-Subject: [ 100/104] x86: Eliminate irq_mis_count counted in arch_irq_stat
-Date: Mon,  6 May 2013 16:12:59 -0700
-Message-Id: <20130506230053.902219326@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [ 104/104] mfd: adp5520: Restore mode bits on resume
+Date: Mon,  6 May 2013 16:13:03 -0700
+Message-Id: <20130506230054.293808825@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -28,42 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Fei <fei.li@intel.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit f7b0e1055574ce06ab53391263b4e205bf38daf3 upstream.
+commit c6cc25fda58da8685ecef3f179adc7b99c8253b2 upstream.
 
-With the current implementation, kstat_cpu(cpu).irqs_sum is also
-increased in case of irq_mis_count increment.
+The adp5520 unfortunately also clears the BL_EN bit when the nSTNDBY bit is
+cleared. So we need to make sure to restore it during resume if it was set
+before suspend.
 
-So there is no need to count irq_mis_count in arch_irq_stat,
-otherwise irq_mis_count will be counted twice in the sum of
-/proc/stat.
-
-Reported-by: Liu Chuansheng <chuansheng.liu@intel.com>
-Signed-off-by: Li Fei <fei.li@intel.com>
-Acked-by: Liu Chuansheng <chuansheng.liu@intel.com>
-Cc: tomoki.sekiyama.qu@hitachi.com
-Cc: joe@perches.com
-Link: http://lkml.kernel.org/r/1366980611.32469.7.camel@fli24-HP-Compaq-8100-Elite-CMT-PC
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/irq.c |    4 ----
- 1 file changed, 4 deletions(-)
+ drivers/mfd/adp5520.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -165,10 +165,6 @@ u64 arch_irq_stat_cpu(unsigned int cpu)
- u64 arch_irq_stat(void)
- {
- 	u64 sum = atomic_read(&irq_err_count);
--
--#ifdef CONFIG_X86_IO_APIC
--	sum += atomic_read(&irq_mis_count);
--#endif
- 	return sum;
+--- a/drivers/mfd/adp5520.c
++++ b/drivers/mfd/adp5520.c
+@@ -36,6 +36,7 @@ struct adp5520_chip {
+ 	struct blocking_notifier_head notifier_list;
+ 	int irq;
+ 	unsigned long id;
++	uint8_t mode;
+ };
+ 
+ static int __adp5520_read(struct i2c_client *client,
+@@ -326,7 +327,10 @@ static int adp5520_suspend(struct device
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
+ 
+-	adp5520_clr_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
++	adp5520_read(chip->dev, ADP5520_MODE_STATUS, &chip->mode);
++	/* All other bits are W1C */
++	chip->mode &= ADP5520_BL_EN | ADP5520_DIM_EN | ADP5520_nSTNBY;
++	adp5520_write(chip->dev, ADP5520_MODE_STATUS, 0);
+ 	return 0;
  }
  
+@@ -335,7 +339,7 @@ static int adp5520_resume(struct device
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
+ 
+-	adp5520_set_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
++	adp5520_write(chip->dev, ADP5520_MODE_STATUS, chip->mode);
+ 	return 0;
+ }
+ #endif
 
 
