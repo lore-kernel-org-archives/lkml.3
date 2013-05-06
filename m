@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758283Ab3EFUsm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:48:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59410 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758018Ab3EFUrK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758174Ab3EFUrK (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 May 2013 16:47:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59377 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758018Ab3EFUrF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 16:47:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu Chuansheng <chuansheng.liu@intel.com>, Li Fei <fei.li@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, tomoki.sekiyama.qu@hitachi.com,
-        joe@perches.com
-Subject: [ 111/115] x86: Eliminate irq_mis_count counted in arch_irq_stat
-Date: Mon,  6 May 2013 13:45:47 -0700
-Message-Id: <20130506203106.977729191@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>, Ben Hutchings <ben@decadent.org.uk>,
+        George Barnett <gbarnett@atlassian.com>
+Subject: [ 100/115] ext4/jbd2: dont wait (forever) for stale tid caused by wraparound
+Date: Mon,  6 May 2013 13:45:36 -0700
+Message-Id: <20130506203105.863169067@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -28,42 +27,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Fei <fei.li@intel.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit f7b0e1055574ce06ab53391263b4e205bf38daf3 upstream.
+commit d76a3a77113db020d9bb1e894822869410450bd9 upstream.
 
-With the current implementation, kstat_cpu(cpu).irqs_sum is also
-increased in case of irq_mis_count increment.
+In the case where an inode has a very stale transaction id (tid) in
+i_datasync_tid or i_sync_tid, it's possible that after a very large
+(2**31) number of transactions, that the tid number space might wrap,
+causing tid_geq()'s calculations to fail.
 
-So there is no need to count irq_mis_count in arch_irq_stat,
-otherwise irq_mis_count will be counted twice in the sum of
-/proc/stat.
+Commit deeeaf13 "jbd2: fix fsync() tid wraparound bug", later modified
+by commit e7b04ac0 "jbd2: don't wake kjournald unnecessarily",
+attempted to fix this problem, but it only avoided kjournald spinning
+forever by fixing the logic in jbd2_log_start_commit().
 
-Reported-by: Liu Chuansheng <chuansheng.liu@intel.com>
-Signed-off-by: Li Fei <fei.li@intel.com>
-Acked-by: Liu Chuansheng <chuansheng.liu@intel.com>
-Cc: tomoki.sekiyama.qu@hitachi.com
-Cc: joe@perches.com
-Link: http://lkml.kernel.org/r/1366980611.32469.7.camel@fli24-HP-Compaq-8100-Elite-CMT-PC
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Unfortunately, in the codepaths in fs/ext4/fsync.c and fs/ext4/inode.c
+that might call jbd2_log_start_commit() with a stale tid, those
+functions will subsequently call jbd2_log_wait_commit() with the same
+stale tid, and then wait for a very long time.  To fix this, we
+replace the calls to jbd2_log_start_commit() and
+jbd2_log_wait_commit() with a call to a new function,
+jbd2_complete_transaction(), which will correctly handle stale tid's.
+
+As a bonus, jbd2_complete_transaction() will avoid locking
+j_state_lock for writing unless a commit needs to be started.  This
+should have a small (but probably not measurable) improvement for
+ext4's scalability.
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: George Barnett <gbarnett@atlassian.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/irq.c |    4 ----
- 1 file changed, 4 deletions(-)
+ fs/ext4/fsync.c      |    3 +--
+ fs/ext4/inode.c      |    3 +--
+ fs/jbd2/journal.c    |   31 +++++++++++++++++++++++++++++++
+ include/linux/jbd2.h |    1 +
+ 4 files changed, 34 insertions(+), 4 deletions(-)
 
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -165,10 +165,6 @@ u64 arch_irq_stat_cpu(unsigned int cpu)
- u64 arch_irq_stat(void)
- {
- 	u64 sum = atomic_read(&irq_err_count);
--
--#ifdef CONFIG_X86_IO_APIC
--	sum += atomic_read(&irq_mis_count);
--#endif
- 	return sum;
+--- a/fs/ext4/fsync.c
++++ b/fs/ext4/fsync.c
+@@ -166,8 +166,7 @@ int ext4_sync_file(struct file *file, lo
+ 	if (journal->j_flags & JBD2_BARRIER &&
+ 	    !jbd2_trans_will_send_data_barrier(journal, commit_tid))
+ 		needs_barrier = true;
+-	jbd2_log_start_commit(journal, commit_tid);
+-	ret = jbd2_log_wait_commit(journal, commit_tid);
++	ret = jbd2_complete_transaction(journal, commit_tid);
+ 	if (needs_barrier) {
+ 		err = blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
+ 		if (!ret)
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -210,8 +210,7 @@ void ext4_evict_inode(struct inode *inod
+ 			journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
+ 			tid_t commit_tid = EXT4_I(inode)->i_datasync_tid;
+ 
+-			jbd2_log_start_commit(journal, commit_tid);
+-			jbd2_log_wait_commit(journal, commit_tid);
++			jbd2_complete_transaction(journal, commit_tid);
+ 			filemap_write_and_wait(&inode->i_data);
+ 		}
+ 		truncate_inode_pages(&inode->i_data, 0);
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -710,6 +710,37 @@ int jbd2_log_wait_commit(journal_t *jour
  }
+ 
+ /*
++ * When this function returns the transaction corresponding to tid
++ * will be completed.  If the transaction has currently running, start
++ * committing that transaction before waiting for it to complete.  If
++ * the transaction id is stale, it is by definition already completed,
++ * so just return SUCCESS.
++ */
++int jbd2_complete_transaction(journal_t *journal, tid_t tid)
++{
++	int	need_to_wait = 1;
++
++	read_lock(&journal->j_state_lock);
++	if (journal->j_running_transaction &&
++	    journal->j_running_transaction->t_tid == tid) {
++		if (journal->j_commit_request != tid) {
++			/* transaction not yet started, so request it */
++			read_unlock(&journal->j_state_lock);
++			jbd2_log_start_commit(journal, tid);
++			goto wait_commit;
++		}
++	} else if (!(journal->j_committing_transaction &&
++		     journal->j_committing_transaction->t_tid == tid))
++		need_to_wait = 0;
++	read_unlock(&journal->j_state_lock);
++	if (!need_to_wait)
++		return 0;
++wait_commit:
++	return jbd2_log_wait_commit(journal, tid);
++}
++EXPORT_SYMBOL(jbd2_complete_transaction);
++
++/*
+  * Log buffer allocation routines:
+  */
+ 
+--- a/include/linux/jbd2.h
++++ b/include/linux/jbd2.h
+@@ -1200,6 +1200,7 @@ int __jbd2_log_start_commit(journal_t *j
+ int jbd2_journal_start_commit(journal_t *journal, tid_t *tid);
+ int jbd2_journal_force_commit_nested(journal_t *journal);
+ int jbd2_log_wait_commit(journal_t *journal, tid_t tid);
++int jbd2_complete_transaction(journal_t *journal, tid_t tid);
+ int jbd2_log_do_checkpoint(journal_t *journal);
+ int jbd2_trans_will_send_data_barrier(journal_t *journal, tid_t tid);
  
 
 
