@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759694Ab3EFXEg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:04:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36420 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933102Ab3EFW7N (ORCPT
+	id S1759749Ab3EFXFG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:05:06 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:54063 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757754Ab3EFXFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:13 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Kirby <sim@hostway.ca>, Jiri Slaby <jslaby@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 13/46] tty: fix up atime/mtime mess, take three
-Date: Mon,  6 May 2013 15:58:19 -0700
-Message-Id: <20130506225822.070014222@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
-References: <20130506225820.628893970@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 6 May 2013 19:05:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrVe=JSPB=x79e1fAK=DrMgo7_Liagihib9quJDJ0N670Q@mail.gmail.com>
+References: <cover.1367621038.git.luto@amacapital.net>
+	<d6e5e371e464b7de1115a00f02b5b834315cd986.1367621039.git.luto@amacapital.net>
+	<CALCETrVe=JSPB=x79e1fAK=DrMgo7_Liagihib9quJDJ0N670Q@mail.gmail.com>
+Date: Mon, 6 May 2013 19:04:59 -0400
+Message-ID: <CAH3drwYSZVrM4uWwFAxD+c0n1Q9i-et=Mwbk253E+cd+BtW9yw@mail.gmail.com>
+Subject: Re: [PATCH 3/7] drm: Update drm_addmap and drm_mmap to use PAT WC
+ instead of MTRRs
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-fbdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Mon, May 6, 2013 at 5:22 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, May 3, 2013 at 4:00 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> ---
+>>
+>> This needs careful review.  I don't really know what this code does, nor
+>> do I have the hardware.  (I don't understand AGP and the associated
+>> caching implications.)
+>
+> This patch is wrong (I didn't update the matching mtrr_del), and I'm
+> reworking this whole series.  But I may need some help on this one:
+> why is the mtrr handle of a map (whatever a map is) exported to
+> userspace via the ADD_MAP and GET_MAP ioctls?  What (if anything) is
+> userspace supposed to do with it?  Do I need to return a valid MTRR
+> register number?  Is there any userspace code at all that sets
+> _DRM_WRITE_COMBINING in DRM_IOCTL_ADD_MAP with appropriate alignment
+> and needs the MTRR, for which the drm driver doesn't already add the
+> MTRR?
+>
+> --Andy
 
-------------------
+>From memory, even on pat system we need mtrr for VRAM is PCI BAR. We
+cover it with a write combine MTRR. The whole ioctl is use by some ddx
+or maybe even directly the XServer to do this mtrr mess in userspace.
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+Sorry for the bad news, but that's what i remember on that front
+thought i would need to read all the code again.
 
-commit b0b885657b6c8ef63a46bc9299b2a7715d19acde upstream.
-
-We first tried to avoid updating atime/mtime entirely (commit
-b0de59b5733d: "TTY: do not update atime/mtime on read/write"), and then
-limited it to only update it occasionally (commit 37b7f3c76595: "TTY:
-fix atime/mtime regression"), but it turns out that this was both
-insufficient and overkill.
-
-It was insufficient because we let people attach to the shared ptmx node
-to see activity without even reading atime/mtime, and it was overkill
-because the "only once a minute" means that you can't really tell an
-idle person from an active one with 'w'.
-
-So this tries to fix the problem properly.  It marks the shared ptmx
-node as un-notifiable, and it lowers the "only once a minute" to a few
-seconds instead - still long enough that you can't time individual
-keystrokes, but short enough that you can tell whether somebody is
-active or not.
-
-Reported-by: Simon Kirby <sim@hostway.ca>
-Acked-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/tty/pty.c    |    3 +++
- drivers/tty/tty_io.c |    4 ++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
-
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -669,6 +669,9 @@ static int ptmx_open(struct inode *inode
- 
- 	nonseekable_open(inode, filp);
- 
-+	/* We refuse fsnotify events on ptmx, since it's a shared resource */
-+	filp->f_mode |= FMODE_NONOTIFY;
-+
- 	retval = tty_alloc_file(filp);
- 	if (retval)
- 		return retval;
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -939,10 +939,10 @@ void start_tty(struct tty_struct *tty)
- 
- EXPORT_SYMBOL(start_tty);
- 
-+/* We limit tty time update visibility to every 8 seconds or so. */
- static void tty_update_time(struct timespec *time)
- {
--	unsigned long sec = get_seconds();
--	sec -= sec % 60;
-+	unsigned long sec = get_seconds() & ~7;
- 	if ((long)(sec - time->tv_sec) > 0)
- 		time->tv_sec = sec;
- }
-
-
+Cheers,
+Jerome
