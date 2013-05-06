@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933191Ab3EFW73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:59:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36488 "EHLO
+	id S933178Ab3EFW71 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:59:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36492 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933159Ab3EFW7Y (ORCPT
+	with ESMTP id S1759168Ab3EFW7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:24 -0400
+	Mon, 6 May 2013 18:59:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [ 44/46] mfd: adp5520: Restore mode bits on resume
-Date: Mon,  6 May 2013 15:58:50 -0700
-Message-Id: <20130506225825.320976967@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [ 45/46] s390: move dummy io_remap_pfn_range() to asm/pgtable.h
+Date: Mon,  6 May 2013 15:58:51 -0700
+Message-Id: <20130506225825.429475910@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -28,53 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit c6cc25fda58da8685ecef3f179adc7b99c8253b2 upstream.
+commit 4f2e29031e6c67802e7370292dd050fd62f337ee upstream.
 
-The adp5520 unfortunately also clears the BL_EN bit when the nSTNDBY bit is
-cleared. So we need to make sure to restore it during resume if it was set
-before suspend.
+Commit b4cbb197c7e7 ("vm: add vm_iomap_memory() helper function") added
+a helper function wrapper around io_remap_pfn_range(), and every other
+architecture defined it in <asm/pgtable.h>.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+The s390 choice of <asm/io.h> may make sense, but is not very convenient
+for this case, and gratuitous differences like that cause unexpected errors like this:
+
+   mm/memory.c: In function 'vm_iomap_memory':
+   mm/memory.c:2439:2: error: implicit declaration of function 'io_remap_pfn_range' [-Werror=implicit-function-declaration]
+
+Glory be the kbuild test robot who noticed this, bisected it, and
+reported it to the guilty parties (ie me).
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/adp5520.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/s390/include/asm/pgtable.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/mfd/adp5520.c
-+++ b/drivers/mfd/adp5520.c
-@@ -36,6 +36,7 @@ struct adp5520_chip {
- 	struct blocking_notifier_head notifier_list;
- 	int irq;
- 	unsigned long id;
-+	uint8_t mode;
- };
+--- a/arch/s390/include/asm/pgtable.h
++++ b/arch/s390/include/asm/pgtable.h
+@@ -67,6 +67,10 @@ static inline int is_zero_pfn(unsigned l
  
- static int __adp5520_read(struct i2c_client *client,
-@@ -326,7 +327,10 @@ static int adp5520_suspend(struct device
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
+ #define my_zero_pfn(addr)	page_to_pfn(ZERO_PAGE(addr))
  
--	adp5520_clr_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
-+	adp5520_read(chip->dev, ADP5520_MODE_STATUS, &chip->mode);
-+	/* All other bits are W1C */
-+	chip->mode &= ADP5520_BL_EN | ADP5520_DIM_EN | ADP5520_nSTNBY;
-+	adp5520_write(chip->dev, ADP5520_MODE_STATUS, 0);
- 	return 0;
- }
++/* TODO: s390 cannot support io_remap_pfn_range... */
++#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) 	       \
++	remap_pfn_range(vma, vaddr, pfn, size, prot)
++
+ #endif /* !__ASSEMBLY__ */
  
-@@ -335,7 +339,7 @@ static int adp5520_resume(struct device
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
- 
--	adp5520_set_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
-+	adp5520_write(chip->dev, ADP5520_MODE_STATUS, chip->mode);
- 	return 0;
- }
- #endif
+ /*
 
 
