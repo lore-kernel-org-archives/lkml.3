@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab3EFLMi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 07:12:38 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33925
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754001Ab3EFLMh (ORCPT
+	id S1752905Ab3EFLPv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 07:15:51 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:41243 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab3EFLPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 07:12:37 -0400
-Date: Mon, 6 May 2013 13:10:41 +0200
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+	Mon, 6 May 2013 07:15:50 -0400
+Message-ID: <51877EF8.20504@linux.vnet.ibm.com>
+Date: Mon, 06 May 2013 15:29:20 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Alex Shi <alex.shi@intel.com>
+CC: Paul Turner <pjt@google.com>, Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
         Mike Galbraith <efault@gmx.de>,
         Morten Rasmussen <morten.rasmussen@arm.com>,
         Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
         Viresh Kumar <viresh.kumar@linaro.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>
-Subject: Re: [PATCH v5 5/7] sched: compute runnable load avg in cpu_load and
- cpu_avg_load_per_task
-Message-ID: <20130506111041.GA15446@dyad.programming.kicks-ass.net>
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
- <1367804711-30308-6-git-send-email-alex.shi@intel.com>
- <CAPM31RLJe19FH+RYipwm4kwtzmFHoS2xGTx4iZ9+qwDJZ_pf3A@mail.gmail.com>
- <20130506101936.GE13861@dyad.programming.kicks-ass.net>
- <CAPM31RJg87C0nO_tAaOGLaDCUAB+QmfV4LkNcwnk9j9voNocfg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPM31RJg87C0nO_tAaOGLaDCUAB+QmfV4LkNcwnk9j9voNocfg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v5 7/7] sched: consider runnable load average in effective_load
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-8-git-send-email-alex.shi@intel.com> <518724D1.9040006@linux.vnet.ibm.com> <51874229.8050202@intel.com> <5187609C.5050209@linux.vnet.ibm.com> <518763B0.30200@intel.com> <51876AFE.80906@linux.vnet.ibm.com> <CAPM31RK-N=Cnt3cBo1f6er6TewQJKY+fgdj9QHvKziHe+TxTxw@mail.gmail.com> <51877970.8010303@intel.com>
+In-Reply-To: <51877970.8010303@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050610-0260-0000-0000-000002ED6445
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 03:33:45AM -0700, Paul Turner wrote:
-> Yeah, most of the rationale is super hand-wavy; especially the fairly
-> arbitrary choice of periods (e.g. busy_idx vs newidle).
+On 05/06/2013 03:05 PM, Alex Shi wrote:
+> On 05/06/2013 05:06 PM, Paul Turner wrote:
+>> I don't think this is a good idea:
+>>
+>> The problem with not using the instantaneous weight here is that you
+>> potentially penalize the latency of interactive tasks (similarly,
+>> potentially important background threads -- e.g. garbage collection).
+>>
+>> Counter-intuitively we actually want such tasks on the least loaded
+>> cpus to minimize their latency.  If the load they contribute ever
+>> becomes more substantial we trust that periodic balance will start
+>> taking notice of them.
 > 
-> I think the other rationale is:
->   For smaller indicies (e.g. newidle) we speed up response time by
-> also cutting motion out of the averages.
+> Sounds reasonable. Many thanks for your input, Paul!
 > 
-> The runnable_avgs themselves actually have a fair bit of history in
-> them already (50% is last 32ms); but given that they don't need to be
-> cut-off to respond to load being migrated I'm guessing we could
-> actually potentially get by with just "instaneous" and "use averages"
-> where appropriate?
+> So, will use the seconds try. :)
+>>
+>> [ This is similar to why we have to use the instantaneous weight in
+>> calc_cfs_shares. ]
+>>
+> 
+> 
 
-Sure,. worth a try. If things fall over we can always look at it again.
+Yes thank you very much for the inputs Paul :)
 
-> We always end up having to re-pick/tune them based on a variety of
-> workloads; if we can eliminate them I think it would be a win.
+So Alex, Michael looks like this is what happened.
 
-Agreed, esp. the plethora of weird idx things we currently have. If we need to
-re-introduce something it would likely only be the busy case and for that we
-can immediately link to the balance interval or so.
+1. The effective_load() as it is, uses instantaneous loads to calculate
+the CPU shares before and after a new task can be woken up on the given cpu.
+
+2. With my patch, I modified it to use runnable load average while
+calculating the CPU share *after* a new task could be woken up and
+retained instantaneous load to calculate the CPU share before a new task
+could be woken up.
+
+3. With the first patch of Alex, he has used runnable load average while
+calculating the CPU share both before and after a new task could be
+woken up on the given CPU.
+
+4.The suggestions that Alex gave:
+
+Suggestion1: Would change the CPU share calculation to use runnable load
+average all the time.
+
+Suggestion2: Did opposite of point 2 above,it used runnable load average
+while calculating the CPU share *before* a new task has been woken up
+while it retaining the instantaneous weight to calculate the CPU share
+after a new task could be woken up.
+
+So since there was no uniformity in the calculation of CPU shares in
+approaches 2 and 3, I think it caused a regression. However I still
+don't understand how approach 4-Suggestion2 made that go away although
+there was non-uniformity in the CPU shares calculation.
+
+But as Paul says we could retain the usage of instantaneous loads
+wherever there is calculation of CPU shares for the reason he mentioned
+and leave effective_load() and calc_cfs_shares() untouched.
+
+This also brings forth another question,should we modify wake_affine()
+to pass the runnable load average of the waking up task to effective_load().
+
+What do you think?
 
 
+Thanks
+
+Regards
+Preeti U Murthy
 
