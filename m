@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759822Ab3EGAGm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 20:06:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36044 "EHLO
+	id S1759958Ab3EGAG5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:06:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36043 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759248Ab3EFW4u (ORCPT
+	with ESMTP id S1756899Ab3EFW4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:56:50 -0400
+	Mon, 6 May 2013 18:56:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Jencks <ben@bjencks.net>
-Subject: [ 08/63] usb/misc/appledisplay: Add 24" LED Cinema display
-Date: Mon,  6 May 2013 15:55:46 -0700
-Message-Id: <20130506225316.990192656@linuxfoundation.org>
+        Avinash Patil <patila@marvell.com>,
+        Amitkumar Karwar <akarwar@marvell.com>,
+        Yogesh Ashok Powar <yogeshp@marvell.com>,
+        Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 07/63] mwifiex: Call pci_release_region after calling pci_disable_device
+Date: Mon,  6 May 2013 15:55:45 -0700
+Message-Id: <20130506225316.768539752@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -26,28 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Jencks <ben@bjencks.net>
+From: Yogesh Ashok Powar <yogeshp@marvell.com>
 
-commit e7d3b6e22c871ba36d052ca99bc8ceca4d546a60 upstream.
+commit 5b0d9b218b74042ff72bf4bfda6eeb2e4bf98397 upstream.
 
-Add the Apple 24" LED Cinema display to the supported devices.
+"drivers should call pci_release_region() AFTER
+calling pci_disable_device()"
 
-Signed-off-by: Ben Jencks <ben@bjencks.net>
+Please refer section 3.2 Request MMIO/IOP resources
+in Documentation/PCI/pci.txt
+
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Yogesh Ashok Powar <yogeshp@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/misc/appledisplay.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/mwifiex/pcie.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/misc/appledisplay.c
-+++ b/drivers/usb/misc/appledisplay.c
-@@ -63,6 +63,7 @@ static const struct usb_device_id appled
- 	{ APPLEDISPLAY_DEVICE(0x9219) },
- 	{ APPLEDISPLAY_DEVICE(0x921c) },
- 	{ APPLEDISPLAY_DEVICE(0x921d) },
-+	{ APPLEDISPLAY_DEVICE(0x9236) },
- 
- 	/* Terminating entry */
- 	{ }
+--- a/drivers/net/wireless/mwifiex/pcie.c
++++ b/drivers/net/wireless/mwifiex/pcie.c
+@@ -1828,9 +1828,9 @@ static void mwifiex_pcie_cleanup(struct
+ 	if (pdev) {
+ 		pci_iounmap(pdev, card->pci_mmap);
+ 		pci_iounmap(pdev, card->pci_mmap1);
++		pci_disable_device(pdev);
+ 		pci_release_region(pdev, 2);
+ 		pci_release_region(pdev, 0);
+-		pci_disable_device(pdev);
+ 		pci_set_drvdata(pdev, NULL);
+ 	}
+ }
 
 
