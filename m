@@ -1,129 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161Ab3EFL7B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 07:59:01 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:32800 "EHLO hydra.sisk.pl"
+	id S1753004Ab3EFMEf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 08:04:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11040 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752463Ab3EFL7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 07:59:00 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Shuah Khan <shuah.kh@samsung.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH] PM: Fix dev_pm_put_subsys_data() to not call kfree() while holding device power lock
-Date: Mon, 06 May 2013 14:07:21 +0200
-Message-ID: <1882177.s6zpHZ6crc@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130504125116.GA13770@amd.pavel.ucw.cz>
-References: <1367614010.8452.2.camel@lorien> <20130504125116.GA13770@amd.pavel.ucw.cz>
+	id S1752463Ab3EFMEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 08:04:34 -0400
+Date: Mon, 6 May 2013 14:04:11 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 09/14] perf ftrace: Add 'record' sub-command
+Message-ID: <20130506120411.GA6035@krava.brq.redhat.com>
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+ <1366705872-12132-10-git-send-email-namhyung@kernel.org>
+ <20130424141241.GG971@krava.brq.redhat.com>
+ <87bo939lgt.fsf@sejong.aot.lge.com>
+ <87mws8990n.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87mws8990n.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, May 04, 2013 02:51:16 PM Pavel Machek wrote:
-> Hi!
+On Mon, May 06, 2013 at 10:44:56AM +0900, Namhyung Kim wrote:
+> Hi Jiri,
 > 
-> > dev_pm_put_subsys_data() calls kfree() while holding device power lock, when
-> > the reference count is 0. Fix it to call kfree() after releasing the lock.
-> > 
-> > Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
-> > ---
-> >  drivers/base/power/common.c |    6 +++++-
-> >  1 file changed, 5 insertions(+), 1 deletion(-)
-> > 
-> w> diff --git a/drivers/base/power/common.c b/drivers/base/power/common.c
-> > index 39c3252..da05fe2 100644
-> > --- a/drivers/base/power/common.c
-> > +++ b/drivers/base/power/common.c
-> > @@ -73,13 +73,17 @@ int dev_pm_put_subsys_data(struct device *dev)
-> >  
-> >  	if (--psd->refcount == 0) {
-> >  		dev->power.subsys_data = NULL;
-> > -		kfree(psd);
-> >  		ret = 1;
-> >  	}
-> >  
-> >   out:
-> >  	spin_unlock_irq(&dev->power.lock);
-> >  
-> > +	if (ret == 1) {
-> > +		/* kfree() verifies that its argument is nonzero. */
-> > +		kfree(psd);
-> > +	}
-> > +
-> >  	return ret;
-> >  }
+> Sorry for late reply.  I've been busy these days.
 > 
-> Wow, that function is fragile. It returns 0/1/-EINVAL, while being
-> documented for 0/1...
-
-Oh, it generally should return 1 for !psd.
-
-> Patch does not look obviously wrong, but maybe 
+> On Thu, 25 Apr 2013 15:24:18 +0900, Namhyung Kim wrote:
+> > On Wed, 24 Apr 2013 16:12:41 +0200, Jiri Olsa wrote:
+> >> I got following lockup for record command:
+> >>
+> >>   # ./perf --no-pager ftrace record ls
+> >>   ...
+> >>   hangs
+> >>
+> >>   in other terminal:
+> >>
+> >>   # pstack 14237
+> >>   Thread 2 (Thread 0x7f3f1aa1d700 (LWP 14241)):
+> >>   #0  0x0000003cec20b595 in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/libpthread.so.0
+> >>   #1  0x0000000000446ebe in record_ftrace_raw_buffer (arg=0x21f9ce0) at builtin-ftrace.c:451
+> >>   #2  0x0000003cec207d14 in start_thread () from /lib64/libpthread.so.0
+> >>   #3  0x0000003cebaf168d in clone () from /lib64/libc.so.6
+> >>   Thread 1 (Thread 0x7f3f1ba209c0 (LWP 14237)):
+> >>   #0  0x0000003cec208e60 in pthread_join () from /lib64/libpthread.so.0
+> >>   #1  0x0000000000449c8c in do_ftrace_record (ftrace=ftrace@entry=0x7fff1377d240) at builtin-ftrace.c:682
+> >>   #2  0x000000000044a57b in __cmd_ftrace_record (argv=0x7fff1377d818, argc=<optimized out>, ftrace=0x7fff1377d240) at builtin-ftrace.c:1535
+> >>   #3  cmd_ftrace (argc=2, argv=0x7fff1377d818, prefix=<optimized out>) at builtin-ftrace.c:1655
+> >>   #4  0x000000000041a763 in run_builtin (p=p@entry=0x7d58a0, argc=argc@entry=3, argv=argv@entry=0x7fff1377d818) at perf.c:320
+> >>   #5  0x0000000000419faf in handle_internal_command (argv=0x7fff1377d818, argc=3) at perf.c:377
+> >>   #6  run_argv (argv=0x7fff1377d600, argcp=0x7fff1377d60c) at perf.c:421
+> >>   #7  main (argc=3, argv=0x7fff1377d818) at perf.c:522
+> >>
+> >
+> > How often can you reproduce it?  I can't. :(
+> >
+> > But it looks there's a race between cond_wait() and cond_broatcast().
+> > I'll take a look at that.
 > 
-> @@ -73,13 +73,17 @@ int dev_pm_put_subsys_data(struct device *dev)
->  
->  	if (--psd->refcount == 0) {
->  		dev->power.subsys_data = NULL;
-> +		spin_unlock_irq(&dev->power.lock);
-> -		kfree(psd);
-> - 		ret = 1;
-> +		return 1;
->  	}
+> I think the problem is that a recorder can be blocked if it received a
+> broadcast signal before calling cond_wait().  So I modified the code to
+> place signaling ready_cond and waiting start_cond in the same cs.
 > 
-> Would be cleaner.
+> Does the patch below fix your problem?
 
-What about this:
+yes.. without the patch I get lockup in like 10 minutes
+with the patch the test is now ok for almost an hour..
 
----
- drivers/base/power/common.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-Index: linux-pm/drivers/base/power/common.c
-===================================================================
---- linux-pm.orig/drivers/base/power/common.c
-+++ linux-pm/drivers/base/power/common.c
-@@ -61,24 +61,24 @@ EXPORT_SYMBOL_GPL(dev_pm_get_subsys_data
- int dev_pm_put_subsys_data(struct device *dev)
- {
- 	struct pm_subsys_data *psd;
--	int ret = 0;
-+	int ret = 1;
- 
- 	spin_lock_irq(&dev->power.lock);
- 
- 	psd = dev_to_psd(dev);
--	if (!psd) {
--		ret = -EINVAL;
-+	if (!psd)
- 		goto out;
--	}
- 
- 	if (--psd->refcount == 0) {
- 		dev->power.subsys_data = NULL;
--		kfree(psd);
--		ret = 1;
-+	} else {
-+		psd = NULL;
-+		ret = 0;
- 	}
- 
-  out:
- 	spin_unlock_irq(&dev->power.lock);
-+	kfree(psd);
- 
- 	return ret;
- }
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+jirka
