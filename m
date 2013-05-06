@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759550Ab3EFX47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:56:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36171 "EHLO
+	id S1759590Ab3EFX5W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:57:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36168 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932846Ab3EFW5Q (ORCPT
+	with ESMTP id S932842Ab3EFW5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:16 -0400
+	Mon, 6 May 2013 18:57:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 36/63] ALSA: usb-audio: disable autopm for MIDI devices
-Date: Mon,  6 May 2013 15:56:14 -0700
-Message-Id: <20130506225323.764943244@linuxfoundation.org>
+        Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 35/63] ALSA: snd-usb: try harder to find USB_DT_CS_ENDPOINT
+Date: Mon,  6 May 2013 15:56:13 -0700
+Message-Id: <20130506225323.551540716@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -26,87 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Daniel Mack <zonque@gmail.com>
 
-commit cbc200bca4b51a8e2406d4b654d978f8503d430b upstream.
+commit ebfc594c02148b6a85c2f178cf167a44a3c3ce10 upstream.
 
-Commit 88a8516a2128 (ALSA: usbaudio: implement USB autosuspend)
-introduced autopm for all USB audio/MIDI devices.  However, many MIDI
-devices, such as synthesizers, do not merely transmit MIDI messages but
-use their MIDI inputs to control other functions.  With autopm, these
-devices would get powered down as soon as the last MIDI port device is
-closed on the host.
+The USB_DT_CS_ENDPOINT class-specific endpoint descriptor is usually
+stuffed directly after the standard USB endpoint descriptor, and this is
+where the driver currently expects it to be.
 
-Even some plain MIDI interfaces could get broken: they automatically
-send Active Sensing messages while powered up, but as soon as these
-messages cease, the receiving device would interpret this as an
-accidental disconnection.
+There are, however, devices in the wild that have it the other way
+around in their descriptor sets, so the USB_DT_CS_ENDPOINT comes
+*before* the standard enpoint. Devices known to implement it that way
+are "Sennheiser BTD-500" and Plantronics USB headsets.
 
-Commit f5f165418cab (ALSA: usb-audio: Fix missing autopm for MIDI input)
-introduced another regression: some devices (e.g. the Roland GAIA SH-01)
-are self-powered but do a reset whenever the USB interface's power state
-changes.
+When the driver can't find the USB_DT_CS_ENDPOINT, it won't be able to
+change sample rates, as the bitmask for the validity of this command is
+storen in bmAttributes of that descriptor.
 
-To work around all this, just disable autopm for all USB MIDI devices.
+Fix this by searching the entire interface instead of just the extra
+bytes of the first endpoint, in case the latter fails.
 
-Reported-by: Laurens Holst
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-and-tested-by: Torstein Hegge <hegge@resisty.net>
+Reported-and-tested-by: Yves G <alsa-user@vivigatt.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/midi.c |   13 ++-----------
- 1 file changed, 2 insertions(+), 11 deletions(-)
+ sound/usb/stream.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/sound/usb/midi.c
-+++ b/sound/usb/midi.c
-@@ -126,7 +126,6 @@ struct snd_usb_midi {
- 		struct snd_usb_midi_in_endpoint *in;
- 	} endpoints[MIDI_MAX_ENDPOINTS];
- 	unsigned long input_triggered;
--	bool autopm_reference;
- 	unsigned int opened[2];
- 	unsigned char disconnected;
- 	unsigned char input_running;
-@@ -1040,7 +1039,6 @@ static int substream_open(struct snd_raw
- {
- 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
- 	struct snd_kcontrol *ctl;
--	int err;
+--- a/sound/usb/stream.c
++++ b/sound/usb/stream.c
+@@ -168,6 +168,14 @@ static int parse_uac_endpoint_attributes
+ 	if (!csep && altsd->bNumEndpoints >= 2)
+ 		csep = snd_usb_find_desc(alts->endpoint[1].extra, alts->endpoint[1].extralen, NULL, USB_DT_CS_ENDPOINT);
  
- 	down_read(&umidi->disc_rwsem);
- 	if (umidi->disconnected) {
-@@ -1051,13 +1049,6 @@ static int substream_open(struct snd_raw
- 	mutex_lock(&umidi->mutex);
- 	if (open) {
- 		if (!umidi->opened[0] && !umidi->opened[1]) {
--			err = usb_autopm_get_interface(umidi->iface);
--			umidi->autopm_reference = err >= 0;
--			if (err < 0 && err != -EACCES) {
--				mutex_unlock(&umidi->mutex);
--				up_read(&umidi->disc_rwsem);
--				return -EIO;
--			}
- 			if (umidi->roland_load_ctl) {
- 				ctl = umidi->roland_load_ctl;
- 				ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
-@@ -1080,8 +1071,6 @@ static int substream_open(struct snd_raw
- 				snd_ctl_notify(umidi->card,
- 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
- 			}
--			if (umidi->autopm_reference)
--				usb_autopm_put_interface(umidi->iface);
- 		}
- 	}
- 	mutex_unlock(&umidi->mutex);
-@@ -2256,6 +2245,8 @@ int snd_usbmidi_create(struct snd_card *
- 		return err;
- 	}
- 
-+	usb_autopm_get_interface_no_resume(umidi->iface);
++	/*
++	 * If we can't locate the USB_DT_CS_ENDPOINT descriptor in the extra
++	 * bytes after the first endpoint, go search the entire interface.
++	 * Some devices have it directly *before* the standard endpoint.
++	 */
++	if (!csep)
++		csep = snd_usb_find_desc(alts->extra, alts->extralen, NULL, USB_DT_CS_ENDPOINT);
 +
- 	list_add_tail(&umidi->list, midi_list);
- 	return 0;
- }
+ 	if (!csep || csep->bLength < 7 ||
+ 	    csep->bDescriptorSubtype != UAC_EP_GENERAL) {
+ 		snd_printk(KERN_WARNING "%d:%u:%d : no or invalid"
 
 
