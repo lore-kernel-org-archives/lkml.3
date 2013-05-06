@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab3EFVGi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:06:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59125 "EHLO
+	id S1758781Ab3EFVGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:06:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59128 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757616Ab3EFUq0 (ORCPT
+	with ESMTP id S1757530Ab3EFUq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 16:46:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [ 046/115] i2c: xiic: must always write 16-bit words to TX_FIFO
-Date: Mon,  6 May 2013 13:44:42 -0700
-Message-Id: <20130506203100.290548804@linuxfoundation.org>
+        Sandy Wu <sandyw@twitter.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 047/115] crypto: crc32-pclmul - Use gas macro for pclmulqdq
+Date: Mon,  6 May 2013 13:44:43 -0700
+Message-Id: <20130506203100.390107825@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -26,43 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven A. Falco" <sfalco@harris.com>
+From: Sandy Wu <sandyw@twitter.com>
 
-commit c39e8e4354ce4daf23336de5daa28a3b01f00aa6 upstream.
+commit 57ae1b0532977b30184aaba04b6cafe0a284c21f upstream.
 
-The TX_FIFO register is 10 bits wide.  The lower 8 bits are the data to be
-written, while the upper two bits are flags to indicate stop/start.
+Occurs when CONFIG_CRYPTO_CRC32C_INTEL=y and CONFIG_CRYPTO_CRC32C_INTEL=y.
+Older versions of bintuils do not support the pclmulqdq instruction. The
+PCLMULQDQ gas macro is used instead.
 
-The driver apparently attempted to optimize write access, by only writing a
-byte in those cases where the stop/start bits are zero.  However, we have
-seen cases where the lower byte is duplicated onto the upper byte by the
-hardware, which causes inadvertent stop/starts.
-
-This patch changes the write access to the transmit FIFO to always be 16 bits
-wide.
-
-Signed off by: Steven A. Falco <sfalco@harris.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Sandy Wu <sandyw@twitter.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-xiic.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ arch/x86/crypto/crc32c-pcl-intel-asm_64.S |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/i2c/busses/i2c-xiic.c
-+++ b/drivers/i2c/busses/i2c-xiic.c
-@@ -312,10 +312,8 @@ static void xiic_fill_tx_fifo(struct xii
- 			/* last message in transfer -> STOP */
- 			data |= XIIC_TX_DYN_STOP_MASK;
- 			dev_dbg(i2c->adap.dev.parent, "%s TX STOP\n", __func__);
--
--			xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
--		} else
--			xiic_setreg8(i2c, XIIC_DTR_REG_OFFSET, data);
-+		}
-+		xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
- 	}
- }
+--- a/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
++++ b/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
+@@ -42,6 +42,7 @@
+  * SOFTWARE.
+  */
  
++#include <asm/inst.h>
+ #include <linux/linkage.h>
+ 
+ ## ISCSI CRC 32 Implementation with crc32 and pclmulqdq Instruction
+@@ -225,10 +226,10 @@ LABEL crc_ %i
+ 	movdqa  (bufp), %xmm0			# 2 consts: K1:K2
+ 
+ 	movq    crc_init, %xmm1			# CRC for block 1
+-	pclmulqdq $0x00,%xmm0,%xmm1		# Multiply by K2
++	PCLMULQDQ 0x00,%xmm0,%xmm1		# Multiply by K2
+ 
+ 	movq    crc1, %xmm2			# CRC for block 2
+-	pclmulqdq $0x10, %xmm0, %xmm2		# Multiply by K1
++	PCLMULQDQ 0x10, %xmm0, %xmm2		# Multiply by K1
+ 
+ 	pxor    %xmm2,%xmm1
+ 	movq    %xmm1, %rax
 
 
