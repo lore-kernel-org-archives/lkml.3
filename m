@@ -1,56 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab3EFDWh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 23:22:37 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:38083 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538Ab3EFDWg (ORCPT
+	id S1752598Ab3EFD0T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 23:26:19 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:42125 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab3EFD0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 23:22:36 -0400
-Message-ID: <518721F4.6050603@gmail.com>
-Date: Sun, 05 May 2013 21:22:28 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Sun, 5 May 2013 23:26:18 -0400
+Message-ID: <5187226C.3000509@linux.vnet.ibm.com>
+Date: Mon, 06 May 2013 08:54:28 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 09/14] perf ftrace: Add 'record' sub-command
-References: <1366705872-12132-1-git-send-email-namhyung@kernel.org> <1366705872-12132-10-git-send-email-namhyung@kernel.org> <20130424141241.GG971@krava.brq.redhat.com> <87bo939lgt.fsf@sejong.aot.lge.com> <517A84B2.40209@gmail.com> <87ehdk98g6.fsf@sejong.aot.lge.com>
-In-Reply-To: <87ehdk98g6.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Alex Shi <alex.shi@intel.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
+        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
+        riel@redhat.com
+Subject: Re: [patch v7 02/21] sched: set initial value of runnable avg for
+ new forked task
+References: <1365040862-8390-1-git-send-email-alex.shi@intel.com> <1365040862-8390-3-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1365040862-8390-3-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050603-2000-0000-0000-00000BFC83B7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/5/13 7:57 PM, Namhyung Kim wrote:
-> Hi David,
->
-> On Fri, 26 Apr 2013 07:44:18 -0600, David Ahern wrote:
->> On 4/25/13 12:24 AM, Namhyung Kim wrote:
->>> But it looks there's a race between cond_wait() and cond_broatcast().
->>> I'll take a look at that.
->>
->> Why not use eventfd or a pipe for the signalling instead?
->
-> Thanks for your feedback!
->
-> I didn't have an idea of using eventfd for this case.  Does it helpful
-> to prevent such a deadlock like this?
+Hi Alex,
 
-I have used it to replace pthread_cond_wait / 
-pthread_cond_{signal,broadcast} -- lighter and faster. It was added in 
-2.6.27 I believe, so will be available for any system that supports perf 
-(record side). For people compiling perf against say RHEL5 (e.g. 
-analysis) you will need a check as to whether it exists.
+The below patch looks good to me.
 
-David
+On 04/04/2013 07:30 AM, Alex Shi wrote:
+> We need initialize the se.avg.{decay_count, load_avg_contrib} for a
+> new forked task.
+> Otherwise random values of above variables cause mess when do new task
+> enqueue:
+>     enqueue_task_fair
+>         enqueue_entity
+>             enqueue_entity_load_avg
+> 
+> and make forking balancing imbalance since incorrect load_avg_contrib.
+> 
+> set avg.decay_count = 0, and avg.load_avg_contrib = se->load.weight to
+> resolve such issues.
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/core.c | 6 ++++++
+>  kernel/sched/fair.c | 4 ++++
+>  2 files changed, 10 insertions(+)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 54eaaa2..8843cd3 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1564,6 +1564,7 @@ static void __sched_fork(struct task_struct *p)
+>  #ifdef CONFIG_SMP
+>  	p->se.avg.runnable_avg_period = 0;
+>  	p->se.avg.runnable_avg_sum = 0;
+> +	p->se.avg.decay_count = 0;
+>  #endif
+>  #ifdef CONFIG_SCHEDSTATS
+>  	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
+> @@ -1651,6 +1652,11 @@ void sched_fork(struct task_struct *p)
+>  		p->sched_reset_on_fork = 0;
+>  	}
+> 
+> +	/* New forked task assumed with full utilization */
+> +#if defined(CONFIG_SMP)
+> +	p->se.avg.load_avg_contrib = p->se.load.weight;
+> +#endif
+> +
+>  	if (!rt_prio(p->prio))
+>  		p->sched_class = &fair_sched_class;
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 9c2f726..2881d42 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1508,6 +1508,10 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+>  	 * We track migrations using entity decay_count <= 0, on a wake-up
+>  	 * migration we use a negative decay count to track the remote decays
+>  	 * accumulated while sleeping.
+> +	 *
+> +	 * When enqueue a new forked task, the se->avg.decay_count == 0, so
+> +	 * we bypass update_entity_load_avg(), use avg.load_avg_contrib initial
+> +	 * value: se->load.weight.
+>  	 */
+>  	if (unlikely(se->avg.decay_count <= 0)) {
+>  		se->avg.last_runnable_update = rq_of(cfs_rq)->clock_task;
+> 
+
+Reviewed-by:Preeti U Murthy
+
+Thanks
+
+Regards
+Preeti U Murthy
 
