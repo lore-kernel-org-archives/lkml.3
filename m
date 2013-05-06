@@ -1,110 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759166Ab3EFWzA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:55:00 -0400
-Received: from mail-da0-f49.google.com ([209.85.210.49]:65142 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758757Ab3EFWq0 (ORCPT
+	id S1759196Ab3EFW4p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:56:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36008 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756899Ab3EFW4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:46:26 -0400
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        vgoyal@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 02/33] blkcg: move blkg_for_each_descendant_pre() to block/blk-cgroup.h
-Date: Mon,  6 May 2013 15:45:41 -0700
-Message-Id: <1367880372-28312-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1367880372-28312-1-git-send-email-tj@kernel.org>
-References: <1367880372-28312-1-git-send-email-tj@kernel.org>
+	Mon, 6 May 2013 18:56:43 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Filippo Turato <nnj7585@gmail.com>
+Subject: [ 01/63] USB: serial: option: Added support Olivetti Olicard 145
+Date: Mon,  6 May 2013 15:55:39 -0700
+Message-Id: <20130506225315.180953209@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
+References: <20130506225314.802167948@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blk-throttle hierarchy support will make use of it.  Move
-blkg_for_each_descendant_pre() from block/blk-cgroup.c to
-block/blk-cgroup.h.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-signed-off-by: Tejun Heo <tj@kernel.org>
+------------------
+
+From: Filippo Turato <nnj7585@gmail.com>
+
+commit d19bf5cedfd7d53854a3bd699c98b467b139833b upstream.
+
+This adds PID for Olivetti Olicard 145 in option.c
+
+Signed-off-by: Filippo Turato <nnj7585@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- block/blk-cgroup.c | 24 ++----------------------
- block/blk-cgroup.h | 20 ++++++++++++++++++++
- 2 files changed, 22 insertions(+), 22 deletions(-)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 0ab211a..6b10d5c 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -32,26 +32,6 @@ EXPORT_SYMBOL_GPL(blkcg_root);
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -347,6 +347,7 @@ static void option_instat_callback(struc
+ /* Olivetti products */
+ #define OLIVETTI_VENDOR_ID			0x0b3c
+ #define OLIVETTI_PRODUCT_OLICARD100		0xc000
++#define OLIVETTI_PRODUCT_OLICARD145		0xc003
  
- static struct blkcg_policy *blkcg_policy[BLKCG_MAX_POLS];
+ /* Celot products */
+ #define CELOT_VENDOR_ID				0x211f
+@@ -1273,6 +1274,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
  
--static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
--				      struct request_queue *q, bool update_hint);
--
--/**
-- * blkg_for_each_descendant_pre - pre-order walk of a blkg's descendants
-- * @d_blkg: loop cursor pointing to the current descendant
-- * @pos_cgrp: used for iteration
-- * @p_blkg: target blkg to walk descendants of
-- *
-- * Walk @c_blkg through the descendants of @p_blkg.  Must be used with RCU
-- * read locked.  If called under either blkcg or queue lock, the iteration
-- * is guaranteed to include all and only online blkgs.  The caller may
-- * update @pos_cgrp by calling cgroup_rightmost_descendant() to skip
-- * subtree.
-- */
--#define blkg_for_each_descendant_pre(d_blkg, pos_cgrp, p_blkg)		\
--	cgroup_for_each_descendant_pre((pos_cgrp), (p_blkg)->blkcg->css.cgroup) \
--		if (((d_blkg) = __blkg_lookup(cgroup_to_blkcg(pos_cgrp), \
--					      (p_blkg)->q, false)))
--
- static bool blkcg_policy_enabled(struct request_queue *q,
- 				 const struct blkcg_policy *pol)
- {
-@@ -158,8 +138,8 @@ err_free:
-  * @q's bypass state.  If @update_hint is %true, the caller should be
-  * holding @q->queue_lock and lookup hint is updated on success.
-  */
--static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
--				      struct request_queue *q, bool update_hint)
-+struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg, struct request_queue *q,
-+			       bool update_hint)
- {
- 	struct blkcg_gq *blkg;
- 
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 4e595ee..11f5b92 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -282,6 +282,26 @@ static inline void blkg_put(struct blkcg_gq *blkg)
- 		__blkg_release(blkg);
- }
- 
-+struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg, struct request_queue *q,
-+			       bool update_hint);
-+
-+/**
-+ * blkg_for_each_descendant_pre - pre-order walk of a blkg's descendants
-+ * @d_blkg: loop cursor pointing to the current descendant
-+ * @pos_cgrp: used for iteration
-+ * @p_blkg: target blkg to walk descendants of
-+ *
-+ * Walk @c_blkg through the descendants of @p_blkg.  Must be used with RCU
-+ * read locked.  If called under either blkcg or queue lock, the iteration
-+ * is guaranteed to include all and only online blkgs.  The caller may
-+ * update @pos_cgrp by calling cgroup_rightmost_descendant() to skip
-+ * subtree.
-+ */
-+#define blkg_for_each_descendant_pre(d_blkg, pos_cgrp, p_blkg)		\
-+	cgroup_for_each_descendant_pre((pos_cgrp), (p_blkg)->blkcg->css.cgroup) \
-+		if (((d_blkg) = __blkg_lookup(cgroup_to_blkcg(pos_cgrp), \
-+					      (p_blkg)->q, false)))
-+
- /**
-  * blk_get_rl - get request_list to use
-  * @q: request_queue of interest
--- 
-1.8.1.4
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
++	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD145) },
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
+
 
