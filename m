@@ -1,165 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab3EFKaZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 06:30:25 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:41244 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753539Ab3EFKaX (ORCPT
+	id S1753960Ab3EFKbJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 06:31:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46661 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753767Ab3EFKbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 06:30:23 -0400
-Message-ID: <5187574F.9020009@linux.vnet.ibm.com>
-Date: Mon, 06 May 2013 12:40:07 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Mon, 6 May 2013 06:31:07 -0400
+Date: Mon, 6 May 2013 11:31:05 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        Grant Likely <grant.likely@linaro.org>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        "Yang, Wenyou" <Wenyou.Yang@atmel.com>,
+        Joachim Eastwood <manabian@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "Lin, JM" <JM.Lin@atmel.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after
+ xfer->speed_hz set
+Message-ID: <20130506103105.GB13472@opensource.wolfsonmicro.com>
+References: <1362626715-6549-1-git-send-email-wenyou.yang@atmel.com>
+ <1362626815-6628-1-git-send-email-wenyou.yang@atmel.com>
+ <CAGhQ9VwW18LXY5Jn0FUFCaAzKxP1W3QADG=JBp9JbgaAwo=F2Q@mail.gmail.com>
+ <B256D81BAE5131468A838E5D7A24364154236AB5@penmbx02>
+ <CACQ1gAhZO3stjrwf5SiZf7jOO8T5bAJZiz97M7+7vwFmk2e65g@mail.gmail.com>
+ <5182414F.1000201@atmel.com>
 MIME-Version: 1.0
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: Alex Shi <alex.shi@intel.com>, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        riel@redhat.com
-Subject: Re: [PATCH v5 7/7] sched: consider runnable load average in effective_load
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-8-git-send-email-alex.shi@intel.com> <518724D1.9040006@linux.vnet.ibm.com>
-In-Reply-To: <518724D1.9040006@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050609-3568-0000-0000-0000038D7448
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9zSXsLTf0vkW971A"
+Content-Disposition: inline
+In-Reply-To: <5182414F.1000201@atmel.com>
+X-Cookie: You'll be sorry...
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,Michael,
 
-Can you try out the below patch and check? I have the reason mentioned in the changelog.
-If this also causes performance regression,you probably need to remove changes made in 
-effective_load() as Michael points out. I believe the below patch should not cause 
-performance regression.
+--9zSXsLTf0vkW971A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The below patch is a substitute for patch 7.
+On Thu, May 02, 2013 at 12:34:55PM +0200, Nicolas Ferre wrote:
 
+> Can you tell us if this SPI patch will be merged upstream using one
+> of your paths?
 
--------------------------------------------------------------------------------
+I have no idea what patch this is but if it's not in my tree -next it's
+unlikely to be merged.
 
-sched: Modify effective_load() to use runnable load average
+--9zSXsLTf0vkW971A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-The runqueue weight distribution should update the runnable load average of
-the cfs_rq on which the task will be woken up.
+iQIcBAEBAgAGBQJRh4ZiAAoJELSic+t+oim9RPsP/jxmLHu4wCW8hXusLkEBK8J8
+SqrL4Q5MoDubi0aap6LjoW0U2KgV4+pGNzSg2ri3V/Je5Sy1/SpzhZVA4JwQHnzi
+503ajmxGjy7/NFReEXR/3P1y6XUV8Mwk0eZHQCC0v3djid4PfJaWjBtk1kajdNXB
+qfS0/ONULjFmM6/5BEHE7R4QQHrfuw1VyG/6oMrcX22yMP5DryLBjnvPZOhjCt88
+ssf+y8rUnPJh/GexSEEgLdTfsNxwUWHkgPtlEVZmVSI7kdEFKNNs8f5Rs2va4fIn
+dXHPviIOboP0CJfNVOtjr3iRl/oRTzzoGivvjNt1OruUcrDY09y8ho+M8POgWF5f
+YgwjViRvubU4XkZzDflqT9Z4PPA73ryh9B3dSrStEzQlTO1yQk+6iSvZqU0Ua+9h
+z/leGybASmFlsgMCmkeu+IVVFy5KAcN2jqoqEhKBZvSqaBjV6FJoVeoBLExEEbqm
+oRK5rkdDC16N9eb0hka1MiDKi6BhaUr50pTRu6nRsQ/X/exB+vZNBhrMHxVV6Ln5
+bJtTJb7xR2se6y54MpxhGAIp8G/txAzF75Jx4X4AW4VC380V41Q+/fX+pNOf5zPd
+36LqVXuMfVsiKcHqa5GBiN70RIEbIwGGSlzK/t8RyTCp0ozlD5t+fFSJQmrKW/kT
+4cfAV9DPwNMsbrSAbii9
+=ZNp6
+-----END PGP SIGNATURE-----
 
-However since the computation of se->load.weight takes into consideration
-the runnable load average in update_cfs_shares(),no need to modify this in
-effective_load().
----
- kernel/sched/fair.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 790e23d..5489022 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3045,7 +3045,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
- 		/*
- 		 * w = rw_i + @wl
- 		 */
--		w = se->my_q->load.weight + wl;
-+		w = se->my_q->runnable_load_avg + wl;
- 
- 		/*
- 		 * wl = S * s'_i; see (2)
-@@ -3066,6 +3066,9 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
- 		/*
- 		 * wl = dw_i = S * (s'_i - s_i); see (3)
- 		 */
-+		/* Do not modify the below as it already contains runnable
-+		 * load average in its computation
-+		 */
- 		wl -= se->load.weight;
- 
- 		/*
-@@ -3112,14 +3115,14 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	 */
- 	if (sync) {
- 		tg = task_group(current);
--		weight = current->se.load.weight;
-+		weight = current->se.avg.load_avg_contrib;
- 
- 		this_load += effective_load(tg, this_cpu, -weight, -weight);
- 		load += effective_load(tg, prev_cpu, 0, -weight);
- 	}
- 
- 	tg = task_group(p);
--	weight = p->se.load.weight;
-+	weight = p->se.avg.load_avg_contrib;
- 
- 	/*
- 	 * In low-load situations, where prev_cpu is idle and this_cpu is idle
-
-
-Regards
-Preeti U Murthy
-
-On 05/06/2013 09:04 AM, Michael Wang wrote:
-> Hi, Alex
-> 
-> On 05/06/2013 09:45 AM, Alex Shi wrote:
->> effective_load calculates the load change as seen from the
->> root_task_group. It needs to engage the runnable average
->> of changed task.
-> [snip]
->>   */
->> @@ -3045,7 +3045,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
->>  		/*
->>  		 * w = rw_i + @wl
->>  		 */
->> -		w = se->my_q->load.weight + wl;
->> +		w = se->my_q->tg_load_contrib + wl;
-> 
-> I've tested the patch set, seems like the last patch caused big
-> regression on pgbench:
-> 
-> 			base	patch 1~6	patch 1~7
-> | db_size | clients |  tps  |   |  tps  |	|  tps  |
-> +---------+---------+-------+	+-------+	+-------+
-> | 22 MB   |      32 | 43420 |	| 53387 |	| 41625 |
-> 
-> I guess some magic thing happened in effective_load() while calculating
-> group decay combined with load decay, what's your opinion?
-> 
-> Regards,
-> Michael Wang
-> 
->>
->>  		/*
->>  		 * wl = S * s'_i; see (2)
->> @@ -3066,7 +3066,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
->>  		/*
->>  		 * wl = dw_i = S * (s'_i - s_i); see (3)
->>  		 */
->> -		wl -= se->load.weight;
->> +		wl -= se->avg.load_avg_contrib;
->>
->>  		/*
->>  		 * Recursively apply this logic to all parent groups to compute
->> @@ -3112,14 +3112,14 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
->>  	 */
->>  	if (sync) {
->>  		tg = task_group(current);
->> -		weight = current->se.load.weight;
->> +		weight = current->se.avg.load_avg_contrib;
->>
->>  		this_load += effective_load(tg, this_cpu, -weight, -weight);
->>  		load += effective_load(tg, prev_cpu, 0, -weight);
->>  	}
->>
->>  	tg = task_group(p);
->> -	weight = p->se.load.weight;
->> +	weight = p->se.avg.load_avg_contrib;
->>
->>  	/*
->>  	 * In low-load situations, where prev_cpu is idle and this_cpu is idle
->>
-> 
-
+--9zSXsLTf0vkW971A--
