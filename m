@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab3EFQGW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 12:06:22 -0400
-Received: from mail.datasphere.ch ([195.70.3.149]:35143 "EHLO
-	mail.datasphere.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab3EFQGU (ORCPT
+	id S1754604Ab3EFQOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 12:14:36 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59038 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274Ab3EFQOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 12:06:20 -0400
-X-Greylist: delayed 3127 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 May 2013 12:06:20 EDT
-Message-ID: <5187C8AB.90501@datasphere.ch>
-Date: Mon, 06 May 2013 17:13:47 +0200
-From: Patrick Monnerat <pm@datasphere.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Mon, 6 May 2013 12:14:35 -0400
+Date: Mon, 6 May 2013 10:47:01 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Emmanuel Benisty <benisty.e@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@surriel.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
+        "Low, Jason" <jason.low2@hp.com>,
+        Michel Lespinasse <walken@google.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+Message-ID: <20130506144701.GB24044@logfs.org>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+ <CA+i8gKKK_VxZtyyp1tqHnztd4++XyNXwbEEr-A29-J23PyuCfQ@mail.gmail.com>
+ <CA+55aFzqBEX=cGGZJJsfNWcDwQcUOP7njEog-kZZLRxuDg8Tzg@mail.gmail.com>
+ <CA+i8gK+h+FyPiOL85BPa-Pu8+bDw6LW60-oRoLHgP2AnzMADCA@mail.gmail.com>
+ <20130504155558.GA12870@logfs.org>
+ <20130504181245.GA9711@pd.tnic>
 MIME-Version: 1.0
-To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: Neela Syam Kolli <megaraidlinux@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Create megaraid ioctl device node
-References: <AB5E58B87EB73C46A38073D8F459F113D9FBA4@dataspheresrv01> <87a9o86vbj.fsf@nemi.mork.no>
-In-Reply-To: <87a9o86vbj.fsf@nemi.mork.no>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130504181245.GA9711@pd.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 04:23 PM, Bjørn Mork wrote:
-> "Patrick Monnerat" <Patrick.Monnerat@datasphere.ch> writes:
->>    Create ioctl device node for megaraid_sas driver. Let this node be
->> managed by udev. Fix a typo.
->
-> Or maybe just simplify it all and use a misc device instead?  See how
-> this is done in e.g. drivers/scsi/mpt3sas/mpt3sas_ctl.c or
-> drivers/message/fusion/mptctl.c
+On Sat, 4 May 2013 20:12:45 +0200, Borislav Petkov wrote:
+> On Sat, May 04, 2013 at 11:55:58AM -0400, Jörn Engel wrote:
+> > Blockconsole currently lives here:
+> > https://git.kernel.org/cgit/linux/kernel/git/joern/bcon2.git/
+> 
+> Tja, if only that were upstream...
 
-Yes, could be done that way, But I want to retain compatibility with 
-existing shell scripts doing things like:
+Linus has a pull request.  If he prefers to change code until the
+relevant bits fit into 80x25, that is his choice. ;)
 
-DEVICE=/dev/megaraid_sas_ioctl_node
-DEVICENAME=megaraid_sas_ioctl
-DEVICEPERM=400
-MAJOR=`grep "$DEVICENAME" /proc/devices | awk '{print $1}'`
+Jörn
 
-if [ -n "$MAJOR" -a ! -e "$DEVICE" ]; then
-     mknod "$DEVICE" c "$MAJOR" 0
-     chmod "$DEVICEPERM" "$DEVICE"
-fi
-
-Snippets like this one appear both in open-source projects and Dell scripts.
-
-Patrick
+--
+The only good bug is a dead bug.
+-- Starship Troopers
