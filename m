@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933736Ab3EFXay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:30:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36767 "EHLO
+	id S933763Ab3EFXbU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:31:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36758 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760520Ab3EFXNi (ORCPT
+	with ESMTP id S1760510Ab3EFXNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:38 -0400
+	Mon, 6 May 2013 19:13:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 038/104] tracing: Use stack of calling function for stack tracer
-Date: Mon,  6 May 2013 16:11:57 -0700
-Message-Id: <20130506230047.518992178@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, Ming Lei <ming.lei@canonical.com>
+Subject: [ 046/104] sysfs: fix use after free in case of concurrent read/write and readdir
+Date: Mon,  6 May 2013 16:12:05 -0700
+Message-Id: <20130506230048.350485985@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,75 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Ming Lei <ming.lei@canonical.com>
 
-commit 87889501d0adfae10e3b0f0e6f2d7536eed9ae84 upstream.
+commit f7db5e7660b122142410dcf36ba903c73d473250 upstream.
 
-Use the stack of stack_trace_call() instead of check_stack() as
-the test pointer for max stack size. It makes it a bit cleaner
-and a little more accurate.
+The inode->i_mutex isn't hold when updating filp->f_pos
+in read()/write(), so the filp->f_pos might be read as
+0 or 1 in readdir() when there is concurrent read()/write()
+on this same file, then may cause use after free in readdir().
 
-Adding stable, as a later fix depends on this patch.
+The bug can be reproduced with Li Zefan's test code on the
+link:
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+	https://patchwork.kernel.org/patch/2160771/
+
+This patch fixes the use after free under this situation.
+
+Reported-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_stack.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ fs/sysfs/dir.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -39,20 +39,21 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
- int stack_tracer_enabled;
- static int last_stack_tracer_enabled;
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -1012,6 +1012,7 @@ static int sysfs_readdir(struct file * f
+ 	enum kobj_ns_type type;
+ 	const void *ns;
+ 	ino_t ino;
++	loff_t off;
  
--static inline void check_stack(void)
-+static inline void
-+check_stack(unsigned long *stack)
- {
- 	unsigned long this_size, flags;
- 	unsigned long *p, *top, *start;
- 	int i;
+ 	type = sysfs_ns_type(parent_sd);
+ 	ns = sysfs_info(dentry->d_sb)->ns[type];
+@@ -1034,6 +1035,7 @@ static int sysfs_readdir(struct file * f
+ 			return 0;
+ 	}
+ 	mutex_lock(&sysfs_mutex);
++	off = filp->f_pos;
+ 	for (pos = sysfs_dir_pos(ns, parent_sd, filp->f_pos, pos);
+ 	     pos;
+ 	     pos = sysfs_dir_next_pos(ns, parent_sd, filp->f_pos, pos)) {
+@@ -1045,19 +1047,24 @@ static int sysfs_readdir(struct file * f
+ 		len = strlen(name);
+ 		ino = pos->s_ino;
+ 		type = dt_type(pos);
+-		filp->f_pos = pos->s_hash;
++		off = filp->f_pos = pos->s_hash;
+ 		filp->private_data = sysfs_get(pos);
  
--	this_size = ((unsigned long)&this_size) & (THREAD_SIZE-1);
-+	this_size = ((unsigned long)stack) & (THREAD_SIZE-1);
- 	this_size = THREAD_SIZE - this_size;
- 
- 	if (this_size <= max_stack_size)
- 		return;
- 
- 	/* we do not handle interrupt stacks yet */
--	if (!object_is_on_stack(&this_size))
-+	if (!object_is_on_stack(stack))
- 		return;
- 
- 	local_irq_save(flags);
-@@ -73,7 +74,7 @@ static inline void check_stack(void)
- 	 * Now find where in the stack these are.
- 	 */
- 	i = 0;
--	start = &this_size;
-+	start = stack;
- 	top = (unsigned long *)
- 		(((unsigned long)start & ~(THREAD_SIZE-1)) + THREAD_SIZE);
- 
-@@ -113,6 +114,7 @@ static void
- stack_trace_call(unsigned long ip, unsigned long parent_ip,
- 		 struct ftrace_ops *op, struct pt_regs *pt_regs)
- {
-+	unsigned long stack;
- 	int cpu;
- 
- 	preempt_disable_notrace();
-@@ -122,7 +124,7 @@ stack_trace_call(unsigned long ip, unsig
- 	if (per_cpu(trace_active, cpu)++ != 0)
- 		goto out;
- 
--	check_stack();
-+	check_stack(&stack);
- 
-  out:
- 	per_cpu(trace_active, cpu)--;
+ 		mutex_unlock(&sysfs_mutex);
+-		ret = filldir(dirent, name, len, filp->f_pos, ino, type);
++		ret = filldir(dirent, name, len, off, ino, type);
+ 		mutex_lock(&sysfs_mutex);
+ 		if (ret < 0)
+ 			break;
+ 	}
+ 	mutex_unlock(&sysfs_mutex);
+-	if ((filp->f_pos > 1) && !pos) { /* EOF */
+-		filp->f_pos = INT_MAX;
++
++	/* don't reference last entry if its refcount is dropped */
++	if (!pos) {
+ 		filp->private_data = NULL;
++
++		/* EOF and not changed as 0 or 1 in read/write path */
++		if (off == filp->f_pos && off > 1)
++			filp->f_pos = INT_MAX;
+ 	}
+ 	return 0;
+ }
 
 
