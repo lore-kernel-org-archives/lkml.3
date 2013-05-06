@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932856Ab3EFW5S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:57:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36154 "EHLO
+	id S932160Ab3EFXtq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:49:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36171 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932739Ab3EFW5N (ORCPT
+	with ESMTP id S932852Ab3EFW5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:13 -0400
+	Mon, 6 May 2013 18:57:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephan Schreiber <info@fs-driver.org>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [ 32/63] Wrong asm register contraints in the kvm implementation
-Date: Mon,  6 May 2013 15:56:10 -0700
-Message-Id: <20130506225322.837979453@linuxfoundation.org>
+        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 54/63] jbd2: fix race between jbd2_journal_remove_checkpoint and ->j_commit_callback
+Date: Mon,  6 May 2013 15:56:32 -0700
+Message-Id: <20130506225327.785101494@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -27,95 +26,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephan Schreiber <info@fs-driver.org>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit de53e9caa4c6149ef4a78c2f83d7f5b655848767 upstream.
+commit 794446c6946513c684d448205fbd76fa35f38b72 upstream.
 
-The Linux Kernel contains some inline assembly source code which has
-wrong asm register constraints in arch/ia64/kvm/vtlb.c.
+The following race is possible:
 
-I observed this on Kernel 3.2.35 but it is also true on the most
-recent Kernel 3.9-rc1.
+[kjournald2]                              other_task
+jbd2_journal_commit_transaction()
+  j_state = T_FINISHED;
+  spin_unlock(&journal->j_list_lock);
+                                         ->jbd2_journal_remove_checkpoint()
+					   ->jbd2_journal_free_transaction();
+					     ->kmem_cache_free(transaction)
+  ->j_commit_callback(journal, transaction);
+    -> USE_AFTER_FREE
 
-File arch/ia64/kvm/vtlb.c:
+WARNING: at lib/list_debug.c:62 __list_del_entry+0x1c0/0x250()
+Hardware name:
+list_del corruption. prev->next should be ffff88019a4ec198, but was 6b6b6b6b6b6b6b6b
+Modules linked in: cpufreq_ondemand acpi_cpufreq freq_table mperf coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode sg xhci_hcd button sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw aes_x86_64 xts gf128mul ahci libahci pata_acpi ata_generic dm_mirror dm_region_hash dm_log dm_mod
+Pid: 16400, comm: jbd2/dm-1-8 Tainted: G        W    3.8.0-rc3+ #107
+Call Trace:
+ [<ffffffff8106fb0d>] warn_slowpath_common+0xad/0xf0
+ [<ffffffff8106fc06>] warn_slowpath_fmt+0x46/0x50
+ [<ffffffff813637e9>] ? ext4_journal_commit_callback+0x99/0xc0
+ [<ffffffff8148cae0>] __list_del_entry+0x1c0/0x250
+ [<ffffffff813637bf>] ext4_journal_commit_callback+0x6f/0xc0
+ [<ffffffff813ca336>] jbd2_journal_commit_transaction+0x23a6/0x2570
+ [<ffffffff8108aa42>] ? try_to_del_timer_sync+0x82/0xa0
+ [<ffffffff8108b491>] ? del_timer_sync+0x91/0x1e0
+ [<ffffffff813d3ecf>] kjournald2+0x19f/0x6a0
+ [<ffffffff810ad630>] ? wake_up_bit+0x40/0x40
+ [<ffffffff813d3d30>] ? bit_spin_lock+0x80/0x80
+ [<ffffffff810ac6be>] kthread+0x10e/0x120
+ [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
+ [<ffffffff818ff6ac>] ret_from_fork+0x7c/0xb0
+ [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
 
-u64 guest_vhpt_lookup(u64 iha, u64 *pte)
-{
-	u64 ret;
-	struct thash_data *data;
+In order to demonstrace this issue one should mount ext4 with mount -o
+discard option on SSD disk.  This makes callback longer and race
+window becomes wider.
 
-	data = __vtr_lookup(current_vcpu, iha, D_TLB);
-	if (data != NULL)
-		thash_vhpt_insert(current_vcpu, data->page_flags,
-			data->itir, iha, D_TLB);
+In order to fix this we should mark transaction as finished only after
+callbacks have completed
 
-	asm volatile (
-			"rsm psr.ic|psr.i;;"
-			"srlz.d;;"
-			"ld8.s r9=[%1];;"
-			"tnat.nz p6,p7=r9;;"
-			"(p6) mov %0=1;"
-			"(p6) mov r9=r0;"
-			"(p7) extr.u r9=r9,0,53;;"
-			"(p7) mov %0=r0;"
-			"(p7) st8 [%2]=r9;;"
-			"ssm psr.ic;;"
-			"srlz.d;;"
-			"ssm psr.i;;"
-			"srlz.d;;"
-			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
-
-	return ret;
-}
-
-The list of output registers is
-			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
-The constraint "=r" means that the GCC has to maintain that these vars
-are in registers and contain valid info when the program flow leaves
-the assembly block (output registers).
-But "=r" also means that GCC can put them in registers that are used
-as input registers. Input registers are iha, pte on the example.
-If the predicate p7 is true, the 8th assembly instruction
-			"(p7) mov %0=r0;"
-is the first one which writes to a register which is maintained by the
-register constraints; it sets %0. %0 means the first register operand;
-it is ret here.
-This instruction might overwrite the %2 register (pte) which is needed
-by the next instruction:
-			"(p7) st8 [%2]=r9;;"
-Whether it really happens depends on how GCC decides what registers it
-uses and how it optimizes the code.
-
-The attached patch  fixes the register operand constraints in
-arch/ia64/kvm/vtlb.c.
-The register constraints should be
-			: "=&r"(ret) : "r"(iha), "r"(pte):"memory");
-The & means that GCC must not use any of the input registers to place
-this output register in.
-
-This is Debian bug#702639
-(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=702639).
-
-The patch is applicable on Kernel 3.9-rc1, 3.2.35 and many other versions.
-
-Signed-off-by: Stephan Schreiber <info@fs-driver.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/ia64/kvm/vtlb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/jbd2/commit.c     |   50 ++++++++++++++++++++++++++++----------------------
+ include/linux/jbd2.h |    1 +
+ 2 files changed, 29 insertions(+), 22 deletions(-)
 
---- a/arch/ia64/kvm/vtlb.c
-+++ b/arch/ia64/kvm/vtlb.c
-@@ -256,7 +256,7 @@ u64 guest_vhpt_lookup(u64 iha, u64 *pte)
- 			"srlz.d;;"
- 			"ssm psr.i;;"
- 			"srlz.d;;"
--			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
-+			: "=&r"(ret) : "r"(iha), "r"(pte) : "memory");
+--- a/fs/jbd2/commit.c
++++ b/fs/jbd2/commit.c
+@@ -325,7 +325,7 @@ void jbd2_journal_commit_transaction(jou
+ 	int space_left = 0;
+ 	int first_tag = 0;
+ 	int tag_flag;
+-	int i, to_free = 0;
++	int i;
+ 	int tag_bytes = journal_tag_bytes(journal);
+ 	struct buffer_head *cbh = NULL; /* For transactional checksums */
+ 	__u32 crc32_sum = ~0;
+@@ -1044,7 +1044,7 @@ restart_loop:
+ 	journal->j_stats.run.rs_blocks_logged += stats.run.rs_blocks_logged;
+ 	spin_unlock(&journal->j_history_lock);
  
- 	return ret;
+-	commit_transaction->t_state = T_FINISHED;
++	commit_transaction->t_state = T_COMMIT_CALLBACK;
+ 	J_ASSERT(commit_transaction == journal->j_committing_transaction);
+ 	journal->j_commit_sequence = commit_transaction->t_tid;
+ 	journal->j_committing_transaction = NULL;
+@@ -1059,38 +1059,44 @@ restart_loop:
+ 				journal->j_average_commit_time*3) / 4;
+ 	else
+ 		journal->j_average_commit_time = commit_time;
++
+ 	write_unlock(&journal->j_state_lock);
+ 
+-	if (commit_transaction->t_checkpoint_list == NULL &&
+-	    commit_transaction->t_checkpoint_io_list == NULL) {
+-		__jbd2_journal_drop_transaction(journal, commit_transaction);
+-		to_free = 1;
++	if (journal->j_checkpoint_transactions == NULL) {
++		journal->j_checkpoint_transactions = commit_transaction;
++		commit_transaction->t_cpnext = commit_transaction;
++		commit_transaction->t_cpprev = commit_transaction;
+ 	} else {
+-		if (journal->j_checkpoint_transactions == NULL) {
+-			journal->j_checkpoint_transactions = commit_transaction;
+-			commit_transaction->t_cpnext = commit_transaction;
+-			commit_transaction->t_cpprev = commit_transaction;
+-		} else {
+-			commit_transaction->t_cpnext =
+-				journal->j_checkpoint_transactions;
+-			commit_transaction->t_cpprev =
+-				commit_transaction->t_cpnext->t_cpprev;
+-			commit_transaction->t_cpnext->t_cpprev =
+-				commit_transaction;
+-			commit_transaction->t_cpprev->t_cpnext =
++		commit_transaction->t_cpnext =
++			journal->j_checkpoint_transactions;
++		commit_transaction->t_cpprev =
++			commit_transaction->t_cpnext->t_cpprev;
++		commit_transaction->t_cpnext->t_cpprev =
++			commit_transaction;
++		commit_transaction->t_cpprev->t_cpnext =
+ 				commit_transaction;
+-		}
+ 	}
+ 	spin_unlock(&journal->j_list_lock);
+-
++	/* Drop all spin_locks because commit_callback may be block.
++	 * __journal_remove_checkpoint() can not destroy transaction
++	 * under us because it is not marked as T_FINISHED yet */
+ 	if (journal->j_commit_callback)
+ 		journal->j_commit_callback(journal, commit_transaction);
+ 
+ 	trace_jbd2_end_commit(journal, commit_transaction);
+ 	jbd_debug(1, "JBD2: commit %d complete, head %d\n",
+ 		  journal->j_commit_sequence, journal->j_tail_sequence);
+-	if (to_free)
+-		jbd2_journal_free_transaction(commit_transaction);
+ 
++	write_lock(&journal->j_state_lock);
++	spin_lock(&journal->j_list_lock);
++	commit_transaction->t_state = T_FINISHED;
++	/* Recheck checkpoint lists after j_list_lock was dropped */
++	if (commit_transaction->t_checkpoint_list == NULL &&
++	    commit_transaction->t_checkpoint_io_list == NULL) {
++		__jbd2_journal_drop_transaction(journal, commit_transaction);
++		jbd2_journal_free_transaction(commit_transaction);
++	}
++	spin_unlock(&journal->j_list_lock);
++	write_unlock(&journal->j_state_lock);
+ 	wake_up(&journal->j_wait_done_commit);
  }
+--- a/include/linux/jbd2.h
++++ b/include/linux/jbd2.h
+@@ -470,6 +470,7 @@ struct transaction_s
+ 		T_COMMIT,
+ 		T_COMMIT_DFLUSH,
+ 		T_COMMIT_JFLUSH,
++		T_COMMIT_CALLBACK,
+ 		T_FINISHED
+ 	}			t_state;
+ 
 
 
