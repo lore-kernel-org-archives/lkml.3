@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab3EFXwc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:52:32 -0400
-Received: from mail-vb0-f74.google.com ([209.85.212.74]:47553 "EHLO
-	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932495Ab3EFXuc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:50:32 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Colin Cross <ccross@android.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-nfs@vger.kernel.org, linux-pm@vger.kernel.org,
-        netdev@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH v3 12/16] select: use freezable blocking call
-Date: Mon,  6 May 2013 16:50:17 -0700
-Message-Id: <1367884221-20462-13-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1367884221-20462-1-git-send-email-ccross@android.com>
-References: <1367884221-20462-1-git-send-email-ccross@android.com>
+	id S932980Ab3EFXxZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:53:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48591 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759316Ab3EFXxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 19:53:22 -0400
+Message-ID: <51884263.4020608@zytor.com>
+Date: Mon, 06 May 2013 16:53:07 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: linux-arch <linux-arch@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: The type of bitops
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid waking up every thread sleeping in a select call during
-suspend and resume by calling a freezable blocking call.  Previous
-patches modified the freezer to avoid sending wakeups to threads
-that are blocked in freezable blocking calls.
+The type of bitops is currently "int" on most, if not all, architectures
+except sparc64 where it is "unsigned long".  This already has the
+potential of causing failures on extremely large non-NUMA x86 boxes
+(specifically if any one node contains more than 8 TiB of memory, e.g.
+in an interleaved memory system.)
 
-This call was selected to be converted to a freezable call because
-it doesn't hold any locks or release any resources when interrupted
-that might be needed by another freezing task or a kernel driver
-during suspend, and is a common site where idle userspace tasks are
-blocked.
+x86 has hardware bitmask instructions which are signed, this limits the
+types to either "int" or "long".
 
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Colin Cross <ccross@android.com>
----
- fs/select.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+It seems pretty clear to me at least that x86-64 really should use
+"long".  However, before blindly making that change I wanted to feel
+people out for what this should look like across architectures.
 
-diff --git a/fs/select.c b/fs/select.c
-index 8c1c96c..6b14dc7 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -27,6 +27,7 @@
- #include <linux/rcupdate.h>
- #include <linux/hrtimer.h>
- #include <linux/sched/rt.h>
-+#include <linux/freezer.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -236,7 +237,8 @@ int poll_schedule_timeout(struct poll_wqueues *pwq, int state,
- 
- 	set_current_state(state);
- 	if (!pwq->triggered)
--		rc = schedule_hrtimeout_range(expires, slack, HRTIMER_MODE_ABS);
-+		rc = freezable_schedule_hrtimeout_range(expires, slack,
-+							HRTIMER_MODE_ABS);
- 	__set_current_state(TASK_RUNNING);
- 
- 	/*
--- 
-1.8.2.1
+Moving this forward, I see a couple of possibilities:
 
+1. We simply change the type to "long" on x86, and let this be a fully
+   architecture-specific option.  This is easy, obviously.
+
+2. Same as above, except we also define a typedef for whatever type is
+   the bitops argument type (bitops_t?  bitpos_t?)
+
+3. Change the type to "long" Linux-wide, on the logic that it should be
+   the same as the general machine width across all platforms.
+
+4. Do some macro hacks so the bitops are dependent on the size of the
+   argument.
+
+5. Introduce _long versions of the bitops.
+
+6. Do nothing at all.
+
+
+Are there any 64-bit architectures where a 64-bit argument would be very
+costly?
+
+	-hpa
