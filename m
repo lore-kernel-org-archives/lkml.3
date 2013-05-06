@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152Ab3EFSBZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 14:01:25 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:15672 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754406Ab3EFSBY (ORCPT
+	id S1754954Ab3EFSGh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 14:06:37 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:28863
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754278Ab3EFSGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 14:01:24 -0400
-X-IronPort-AV: E=Sophos;i="4.87,623,1363158000"; 
-   d="scan'208";a="44708309"
-Message-ID: <5187EFF3.6010005@codeaurora.org>
-Date: Mon, 06 May 2013 14:01:23 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 6 May 2013 14:06:35 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 9
+X-BigFish: VS9(z329eqzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bh8275dhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+From: Fabio Estevam <fabio.estevam@freescale.com>
+To: <shawn.guo@linaro.org>
+CC: <kernel@pengutronix.de>, <festevam@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 06/13] pwm: pwm-mxs: Let device core handle pinctrl
+Date: Mon, 6 May 2013 15:05:54 -0300
+Message-ID: <1367863561-11534-6-git-send-email-fabio.estevam@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1367863561-11534-1-git-send-email-fabio.estevam@freescale.com>
+References: <1367863561-11534-1-git-send-email-fabio.estevam@freescale.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: linux-arm-kernel@lists.infradead.org, marc.zyngier@arm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/2] ARM: Remove any correlation between IPC and BogoMips
- value
-References: <1367602547-19322-1-git-send-email-will.deacon@arm.com>
-In-Reply-To: <1367602547-19322-1-git-send-email-will.deacon@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
+we can rely on device core for handling pinctrl.
 
-On 05/03/2013 01:35 PM, Will Deacon wrote:
-> Hi all,
-> 
-> This small patch set may look a little over a month late, but there is a
-> serious reason for posting it.
-> 
-> When I moved the ARM delay loop over to using the architected timers
-> rather than the CPU spinning loop (which has all the problems associated
-> with cpu frequency scaling and what-not) I thought I was doing something
-> useful for the port. However, it turns out that a surprising number of
-> people have complained, and continue to complain, about the drop in
-> their `BogoMIPs score'.
+So remove devm_pinctrl_get_select_default() from the driver. 
 
-Have you considered adding the old code back in, but in a form that's not at
-all referenced by the delay loop code and just calculates CPU-based bogomips?
+Cc: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: <linux-kernel@vger.kernel.org>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/pwm/pwm-mxs.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
-Regards,
-Christopher
-
+diff --git a/drivers/pwm/pwm-mxs.c b/drivers/pwm/pwm-mxs.c
+index a53d309..7dd6544 100644
+--- a/drivers/pwm/pwm-mxs.c
++++ b/drivers/pwm/pwm-mxs.c
+@@ -16,7 +16,6 @@
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+-#include <linux/pinctrl/consumer.h>
+ #include <linux/platform_device.h>
+ #include <linux/pwm.h>
+ #include <linux/slab.h>
+@@ -131,7 +130,6 @@ static int mxs_pwm_probe(struct platform_device *pdev)
+ 	struct device_node *np = pdev->dev.of_node;
+ 	struct mxs_pwm_chip *mxs;
+ 	struct resource *res;
+-	struct pinctrl *pinctrl;
+ 	int ret;
+ 
+ 	mxs = devm_kzalloc(&pdev->dev, sizeof(*mxs), GFP_KERNEL);
+@@ -143,10 +141,6 @@ static int mxs_pwm_probe(struct platform_device *pdev)
+ 	if (IS_ERR(mxs->base))
+ 		return PTR_ERR(mxs->base);
+ 
+-	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+-	if (IS_ERR(pinctrl))
+-		return PTR_ERR(pinctrl);
+-
+ 	mxs->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(mxs->clk))
+ 		return PTR_ERR(mxs->clk);
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+1.7.9.5
+
+
