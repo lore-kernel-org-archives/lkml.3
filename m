@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab3EFJIT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 05:08:19 -0400
-Received: from kamaji.grokhost.net ([87.117.218.43]:42907 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab3EFJIS (ORCPT
+	id S1752701Ab3EFJIf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 05:08:35 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:59645 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825Ab3EFJId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 05:08:18 -0400
-X-Greylist: delayed 548 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 May 2013 05:08:18 EDT
-Message-ID: <518770DC.10608@bootc.net>
-Date: Mon, 06 May 2013 09:59:08 +0100
-From: Chris Boot <bootc@bootc.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Mon, 6 May 2013 05:08:33 -0400
 MIME-Version: 1.0
-To: Lars Ellenberg <lars.ellenberg@linbit.com>,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        linux-kernel@vger.kernel.org
-Subject: drbd: kernels 3.7 => 3.8 broken userspace compatibility
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5187708A.20103@intel.com>
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
+ <1367804711-30308-3-git-send-email-alex.shi@intel.com> <CAPM31R+oBDRF4geM451-ySCtkU1NpqFT_R1mtB95jV-pnLBimQ@mail.gmail.com>
+ <5187708A.20103@intel.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 6 May 2013 02:08:02 -0700
+Message-ID: <CAPM31R+-zeuquH7ozjjZEGX03aWoek1xJ5LgsaVP5j1WnxzzRw@mail.gmail.com>
+Subject: Re: [PATCH v5 2/7] sched: remove SMP cover for runnable variables in cfs_rq
+To: Alex Shi <alex.shi@intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, May 6, 2013 at 1:57 AM, Alex Shi <alex.shi@intel.com> wrote:
+> On 05/06/2013 04:01 PM, Paul Turner wrote:
+>> On Sun, May 5, 2013 at 6:45 PM, Alex Shi <alex.shi@intel.com> wrote:
+>>> The following variables were covered under CONFIG_SMP in struct cfs_rq.
+>>> but similar runnable variables work for UP in struct rq and task_group.
+>>> like rq->avg, task_group->load_avg.
+>>> So move them out, they also can work with UP.
+>>
+>> Is there a proposed use-case for UP?  My apologies if I missed it in
+>> an alternate patch.
+>
+>> It would seem the only possibly useful thing there would the the
+>> per-rq average for p-state selection; but we can get that without the
+>> per-entity values already.
+>
+>
+> Do you mean to move the rq->avg and task_group->load_avg into CONFIG_SMP?
 
-I upgraded from a 3.7.x kernel to a 3.8.x kernel on a test machine
-running DRBD, and found myself unable to bring up my DRBD devices. I'm
-using the 8.3.13 userspace tools as shipped in Debian Wheezy, which work
-fine on the 3.7 kernel, but they appear to hang when using the 3.8
-kernel and cannot set up the device.
+More generally:  Why do we need them in !CONFIG_SMP?
 
-The 3.8 kernel appears to introduce drbd 8.4.2 rather than the 8.3.13
-available in 3.7.
+[ I was suggesting (potentially) using only rq->avg in the !CONFIG_SMP case. ]
 
-The hang seems to be caused by lots of the following:
 
-[pid  7631] socket(PF_NETLINK, SOCK_DGRAM, 11) = 8
-[pid  7631] getpid()                    = 7631
-[pid  7631] bind(8, {sa_family=AF_NETLINK, pid=7631, groups=ffffffff},
-12) = 0
-[pid  7631] sendto(8,
-"4\0\0\0\3\0\0\0\1\0\0\0\317\35\0\0\4\0\0\0\1\0\0\0\1\0\0\0\317\35\0\0"...,
-52, 0, NULL, 0) = 52
-[pid  7631] poll([{fd=8, events=POLLIN}], 1, 120000 <unfinished ...>
-[pid  7630] <... read resumed> 0x7fff6d011a30, 1024) = ? ERESTARTSYS (To
-be restarted)
-[pid  7630] --- SIGALRM (Alarm clock) @ 0 (0) ---
-[pid  7630] rt_sigreturn(0xe)           = -1 EINTR (Interrupted system call)
-[pid  7630] close(8)                    = 0
-[pid  7630] wait4(7631, Process 7630 suspended
-
-I asked for help on the #drbd channel on FreeNode, and the only remark I
-got there was that I should upgrade the userspace tools. Somehow, that
-doesn't feel right to me - can a newer kernel require new userspace
-tools to still be able to use a certain kernel functionality at all?
-Doesn't this fall under not breaking userspace with new kernel versions?
-
-Even if the kernel did require new userspace tools, should there not be
-some better mechanism to notify the user they must upgrade them before
-things will work? At the moment all I see without strace is:
-
-# drbdadm attach r0
-DRBD module version: 8.4.2
-   userland version: 8.3.13
-you should upgrade your drbd tools!
-[hang]
-
-There is nothing in dmesg during this time, either.
-
-Cheers,
-Chris
-
-PS: Please ensure you CC me as I'm no longer an LKML subscriber.
-
--- 
-Chris Boot
-bootc@bootc.net
-
+>
+> --
+> Thanks
+>     Alex
