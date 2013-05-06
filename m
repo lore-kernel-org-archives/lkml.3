@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757969Ab3EFUqw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59286 "EHLO
+	id S1758570Ab3EFU4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:56:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59296 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756917Ab3EFUqu (ORCPT
+	with ESMTP id S1757951Ab3EFUqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:50 -0400
+	Mon, 6 May 2013 16:46:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 091/115] nfsd4: dont close read-write opens too soon
-Date: Mon,  6 May 2013 13:45:27 -0700
-Message-Id: <20130506203104.933421207@linuxfoundation.org>
+        Vitaliy Fillipov <vitalif@yourcmc.ru>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, 700333@bugs.debian.org
+Subject: [ 081/115] clockevents: Set dummy handler on CPU_DEAD shutdown
+Date: Mon,  6 May 2013 13:45:17 -0700
+Message-Id: <20130506203103.887292056@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,40 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 0c7c3e67ab91ec6caa44bdf1fc89a48012ceb0c5 upstream.
+commit 6f7a05d7018de222e40ca003721037a530979974 upstream.
 
-Don't actually close any opens until we don't need them at all.
+Vitaliy reported that a per cpu HPET timer interrupt crashes the
+system during hibernation. What happens is that the per cpu HPET timer
+gets shut down when the nonboot cpus are stopped. When the nonboot
+cpus are onlined again the HPET code sets up the MSI interrupt which
+fires before the clock event device is registered. The event handler
+is still set to hrtimer_interrupt, which then crashes the machine due
+to highres mode not being active.
 
-This means being left with write access when it's not really necessary,
-but that's better than putting a file that might still have posix locks
-held on it, as we have been.
+See http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=700333
 
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+There is no real good way to avoid that in the HPET code. The HPET
+code alrady has a mechanism to detect spurious interrupts when event
+handler == NULL for a similar reason.
+
+We can handle that in the clockevent/tick layer and replace the
+previous functional handler with a dummy handler like we do in
+tick_setup_new_device().
+
+The original clockevents code did this in clockevents_exchange_device(),
+but that got removed by commit 7c1e76897 (clockevents: prevent
+clockevent event_handler ending up handler_noop) which forgot to fix
+it up in tick_shutdown(). Same issue with the broadcast device.
+
+Reported-by: Vitaliy Fillipov <vitalif@yourcmc.ru>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: 700333@bugs.debian.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4state.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ kernel/time/tick-broadcast.c |    4 ++++
+ kernel/time/tick-common.c    |    1 +
+ 2 files changed, 5 insertions(+)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -210,13 +210,7 @@ static void __nfs4_file_put_access(struc
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -67,6 +67,8 @@ static void tick_broadcast_start_periodi
+  */
+ int tick_check_broadcast_device(struct clock_event_device *dev)
  {
- 	if (atomic_dec_and_test(&fp->fi_access[oflag])) {
- 		nfs4_file_put_fd(fp, oflag);
--		/*
--		 * It's also safe to get rid of the RDWR open *if*
--		 * we no longer have need of the other kind of access
--		 * or if we already have the other kind of open:
--		 */
--		if (fp->fi_fds[1-oflag]
--			|| atomic_read(&fp->fi_access[1 - oflag]) == 0)
-+		if (atomic_read(&fp->fi_access[1 - oflag]) == 0)
- 			nfs4_file_put_fd(fp, O_RDWR);
++	struct clock_event_device *cur = tick_broadcast_device.evtdev;
++
+ 	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
+ 	    (tick_broadcast_device.evtdev &&
+ 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
+@@ -74,6 +76,8 @@ int tick_check_broadcast_device(struct c
+ 		return 0;
+ 
+ 	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
++	if (cur)
++		cur->event_handler = clockevents_handle_noop;
+ 	tick_broadcast_device.evtdev = dev;
+ 	if (!cpumask_empty(tick_get_broadcast_mask()))
+ 		tick_broadcast_start_periodic(dev);
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -323,6 +323,7 @@ static void tick_shutdown(unsigned int *
+ 		 */
+ 		dev->mode = CLOCK_EVT_MODE_UNUSED;
+ 		clockevents_exchange_device(dev, NULL);
++		dev->event_handler = clockevents_handle_noop;
+ 		td->evtdev = NULL;
  	}
- }
+ 	raw_spin_unlock_irqrestore(&tick_device_lock, flags);
 
 
