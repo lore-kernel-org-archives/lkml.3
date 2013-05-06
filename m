@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933358Ab3EFXVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:21:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36933 "EHLO
+	id S932332Ab3EFXOB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:14:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36894 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759123Ab3EFXOD (ORCPT
+	with ESMTP id S1759146Ab3EFXN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:03 -0400
+	Mon, 6 May 2013 19:13:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonathan Brassow <jbrassow@redhat.com>, NeilBrown <neilb@suse.de>
-Subject: [ 082/104] md: bad block list should default to disabled.
-Date: Mon,  6 May 2013 16:12:41 -0700
-Message-Id: <20130506230052.091093028@linuxfoundation.org>
+        Jerome Marchand <jmarchan@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 067/104] swap: redirty page if page write fails on swap file
+Date: Mon,  6 May 2013 16:12:26 -0700
+Message-Id: <20130506230050.515895153@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,61 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Jerome Marchand <jmarchan@redhat.com>
 
-commit 486adf72ccc0c235754923d47a2270c5dcb0c98b upstream.
+commit 2d30d31ea3c5be426ce25607b9bd1835acb85e0a upstream.
 
-Maintenance of a bad-block-list currently defaults to 'enabled'
-and is then disabled when it cannot be supported.
-This is backwards and causes problem for dm-raid which didn't know
-to disable it.
+Since commit 62c230bc1790 ("mm: add support for a filesystem to activate
+swap files and use direct_IO for writing swap pages"), swap_writepage()
+calls direct_IO on swap files.  However, in that case the page isn't
+redirtied if I/O fails, and is therefore handled afterwards as if it has
+been successfully written to the swap file, leading to memory corruption
+when the page is eventually swapped back in.
 
-So fix the defaults, and only enabled for v1.x metadata which
-explicitly has bad blocks enabled.
+This patch sets the page dirty when direct_IO() fails.  It fixes a
+memory corruption that happened while using swap-over-NFS.
 
-The problem with dm-raid has been present since badblock support was
-added in v3.1, so this patch is suitable for any -stable from 3.1
-onwards.
-
-Reported-by: Jonathan Brassow <jbrassow@redhat.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ mm/page_io.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -1564,8 +1564,8 @@ static int super_1_load(struct md_rdev *
- 					     sector, count, 1) == 0)
- 				return -EINVAL;
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -222,6 +222,8 @@ int swap_writepage(struct page *page, st
+ 		if (ret == PAGE_SIZE) {
+ 			count_vm_event(PSWPOUT);
+ 			ret = 0;
++		} else {
++			set_page_dirty(page);
  		}
--	} else if (sb->bblog_offset == 0)
--		rdev->badblocks.shift = -1;
-+	} else if (sb->bblog_offset != 0)
-+		rdev->badblocks.shift = 0;
- 
- 	if (!refdev) {
- 		ret = 1;
-@@ -3221,7 +3221,7 @@ int md_rdev_init(struct md_rdev *rdev)
- 	 * be used - I wonder if that matters
- 	 */
- 	rdev->badblocks.count = 0;
--	rdev->badblocks.shift = 0;
-+	rdev->badblocks.shift = -1; /* disabled until explicitly enabled */
- 	rdev->badblocks.page = kmalloc(PAGE_SIZE, GFP_KERNEL);
- 	seqlock_init(&rdev->badblocks.lock);
- 	if (rdev->badblocks.page == NULL)
-@@ -3293,9 +3293,6 @@ static struct md_rdev *md_import_device(
- 			goto abort_free;
- 		}
+ 		return ret;
  	}
--	if (super_format == -1)
--		/* hot-add for 0.90, or non-persistent: so no badblocks */
--		rdev->badblocks.shift = -1;
- 
- 	return rdev;
- 
 
 
