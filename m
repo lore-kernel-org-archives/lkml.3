@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933532Ab3EFX1A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:27:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36832 "EHLO
+	id S1759002Ab3EFXNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:13:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36800 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760596Ab3EFXNs (ORCPT
+	with ESMTP id S1760564Ab3EFXNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:48 -0400
+	Mon, 6 May 2013 19:13:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 063/104] ARM: 7702/1: Set the page table freeing ceiling to TASK_SIZE
-Date: Mon,  6 May 2013 16:12:22 -0700
-Message-Id: <20130506230050.104676514@linuxfoundation.org>
+        Duncan Laurie <dlaurie@chromium.org>,
+        Kent Yoder <key@linux.vnet.ibm.com>, Dirk Hohndel <dirk@hohndel.org>
+Subject: [ 055/104] TPM: Retry SaveState command in suspend path
+Date: Mon,  6 May 2013 16:12:14 -0700
+Message-Id: <20130506230049.263828794@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -29,54 +27,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Duncan Laurie <dlaurie@chromium.org>
 
-commit 6aaa189f8712471a250bfdf8fc8d08277258b8ab upstream.
+commit 32d33b29ba077d6b45de35f2181e0a7411b162f4 upstream.
 
-ARM processors with LPAE enabled use 3 levels of page tables, with an
-entry in the top level (pgd) covering 1GB of virtual space. Because of
-the branch relocation limitations on ARM, the loadable modules are
-mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
-between kernel modules and user space.
+If the TPM has already been sent a SaveState command before the driver
+is loaded it may have problems sending that same command again later.
 
-If free_pgtables() is called with the default ceiling 0,
-free_pgd_range() (and subsequently called functions) also frees the page
-table shared between user space and kernel modules (which is normally
-handled by the ARM-specific pgd_free() function). This patch changes
-defines the ARM USER_PGTABLES_CEILING to TASK_SIZE when CONFIG_ARM_LPAE
-is enabled.
+This issue is seen with the Chromebook Pixel due to a firmware bug in
+the legacy mode boot path which is sending the SaveState command
+before booting the kernel.  More information is available at
+http://crbug.com/203524
 
-Note that the pgd_free() function already checks the presence of the
-shared pmd page allocated by pgd_alloc() and frees it, though with
-ceiling 0 this wasn't necessary.
+This change introduces a retry of the SaveState command in the suspend
+path in order to work around this issue.  A future firmware update
+should fix this but this is also a trivial workaround in the driver
+that has no effect on systems that do not show this problem.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+When this does happen the TPM responds with a non-fatal TPM_RETRY code
+that is defined in the specification:
+
+  The TPM is too busy to respond to the command immediately, but the
+  command could be resubmitted at a later time.  The TPM MAY return
+  TPM_RETRY for any command at any time.
+
+It can take several seconds before the TPM will respond again.  I
+measured a typical time between 3 and 4 seconds and the timeout is set
+at a safe 5 seconds.
+
+It is also possible to reproduce this with commands via /dev/tpm0.
+The bug linked above has a python script attached which can be used to
+test for this problem.  I tested a variety of TPMs from Infineon,
+Nuvoton, Atmel, and STMicro but was only able to reproduce this with
+LPC and I2C TPMs from Infineon.
+
+The TPM specification only loosely defines this behavior:
+
+  TPM Main Level 2 Part 3 v1.2 r116, section 3.3. TPM_SaveState:
+  The TPM MAY declare all preserved values invalid in response to any
+  command other than TPM_Init.
+
+  TCG PC Client BIOS Spec 1.21 section 8.3.1.
+  After issuing a TPM_SaveState command, the OS SHOULD NOT issue TPM
+  commands before transitioning to S3 without issuing another
+  TPM_SaveState command.
+
+  TCG PC Client TIS 1.21, section 4. Power Management:
+  The TPM_SaveState command allows a Static OS to indicate to the TPM
+  that the platform may enter a low power state where the TPM will be
+  required to enter into the D3 power state.  The use of the term "may"
+  is significant in that there is no requirement for the platform to
+  actually enter the low power state after sending the TPM_SaveState
+  command.  The software may, in fact, send subsequent commands after
+  sending the TPM_SaveState command.
+
+Change-Id: I52b41e826412688e5b6c8ddd3bb16409939704e9
+Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+Cc: Dirk Hohndel <dirk@hohndel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/pgtable.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/char/tpm/tpm.c |   31 +++++++++++++++++++++++++++----
+ drivers/char/tpm/tpm.h |    3 +++
+ 2 files changed, 30 insertions(+), 4 deletions(-)
 
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -70,6 +70,15 @@ extern void __pgd_error(const char *file
- #endif
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -1291,7 +1291,7 @@ int tpm_pm_suspend(struct device *dev)
+ {
+ 	struct tpm_chip *chip = dev_get_drvdata(dev);
+ 	struct tpm_cmd_t cmd;
+-	int rc;
++	int rc, try;
  
- /*
-+ * Use TASK_SIZE as the ceiling argument for free_pgtables() and
-+ * free_pgd_range() to avoid freeing the modules pmd when LPAE is enabled (pmd
-+ * page shared between user and kernel).
-+ */
-+#ifdef CONFIG_ARM_LPAE
-+#define USER_PGTABLES_CEILING	TASK_SIZE
-+#endif
+ 	u8 dummy_hash[TPM_DIGEST_SIZE] = { 0 };
+ 
+@@ -1309,9 +1309,32 @@ int tpm_pm_suspend(struct device *dev)
+ 	}
+ 
+ 	/* now do the actual savestate */
+-	cmd.header.in = savestate_header;
+-	rc = transmit_cmd(chip, &cmd, SAVESTATE_RESULT_SIZE,
+-			  "sending savestate before suspend");
++	for (try = 0; try < TPM_RETRY; try++) {
++		cmd.header.in = savestate_header;
++		rc = transmit_cmd(chip, &cmd, SAVESTATE_RESULT_SIZE, NULL);
 +
-+/*
-  * The pgprot_* and protection_map entries will be fixed up in runtime
-  * to include the cachable and bufferable bits based on memory policy,
-  * as well as any architecture dependent bits like global/ASID and SMP
++		/*
++		 * If the TPM indicates that it is too busy to respond to
++		 * this command then retry before giving up.  It can take
++		 * several seconds for this TPM to be ready.
++		 *
++		 * This can happen if the TPM has already been sent the
++		 * SaveState command before the driver has loaded.  TCG 1.2
++		 * specification states that any communication after SaveState
++		 * may cause the TPM to invalidate previously saved state.
++		 */
++		if (rc != TPM_WARN_RETRY)
++			break;
++		msleep(TPM_TIMEOUT_RETRY);
++	}
++
++	if (rc)
++		dev_err(chip->dev,
++			"Error (%d) sending savestate before suspend\n", rc);
++	else if (try > 0)
++		dev_warn(chip->dev, "TPM savestate took %dms\n",
++			 try * TPM_TIMEOUT_RETRY);
++
+ 	return rc;
+ }
+ EXPORT_SYMBOL_GPL(tpm_pm_suspend);
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -32,10 +32,12 @@ enum tpm_const {
+ 	TPM_MINOR = 224,	/* officially assigned */
+ 	TPM_BUFSIZE = 4096,
+ 	TPM_NUM_DEVICES = 256,
++	TPM_RETRY = 50,		/* 5 seconds */
+ };
+ 
+ enum tpm_timeout {
+ 	TPM_TIMEOUT = 5,	/* msecs */
++	TPM_TIMEOUT_RETRY = 100 /* msecs */
+ };
+ 
+ /* TPM addresses */
+@@ -44,6 +46,7 @@ enum tpm_addr {
+ 	TPM_ADDR = 0x4E,
+ };
+ 
++#define TPM_WARN_RETRY          0x800
+ #define TPM_WARN_DOING_SELFTEST 0x802
+ #define TPM_ERR_DEACTIVATED     0x6
+ #define TPM_ERR_DISABLED        0x7
 
 
