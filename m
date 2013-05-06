@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab3EFUq7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59336 "EHLO
+	id S1758392Ab3EFUwv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:52:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59347 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757937Ab3EFUq5 (ORCPT
+	with ESMTP id S1758062Ab3EFUq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:57 -0400
+	Mon, 6 May 2013 16:46:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 089/115] NFSv4: Handle NFS4ERR_DELAY and NFS4ERR_GRACE in nfs4_lock_delegation_recall
-Date: Mon,  6 May 2013 13:45:25 -0700
-Message-Id: <20130506203104.730053565@linuxfoundation.org>
+        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 104/115] ext4: fix big-endian bug in metadata checksum calculations
+Date: Mon,  6 May 2013 13:45:40 -0700
+Message-Id: <20130506203106.248894738@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -26,36 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit dbb21c25a35a71baf413f5176f028ee11b88cfbc upstream.
+commit 171a7f21a76a0958c225b97c00a97a10390d40ee upstream.
 
-A server shouldn't normally return NFS4ERR_GRACE if the client holds a
-delegation, since no conflicting lock reclaims can be granted, however
-the spec does not require the server to grant the lock in this
-instance.
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/ext4/inode.c |    8 ++++----
+ fs/ext4/mmp.c   |    2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -5025,6 +5025,12 @@ int nfs4_lock_delegation_recall(struct n
- 				nfs4_schedule_stateid_recovery(server, state);
- 				err = 0;
- 				goto out;
-+			case -NFS4ERR_DELAY:
-+			case -NFS4ERR_GRACE:
-+				set_bit(NFS_DELEGATED_STATE, &state->flags);
-+				ssleep(1);
-+				err = -EAGAIN;
-+				goto out;
- 			case -ENOMEM:
- 			case -NFS4ERR_DENIED:
- 				/* kill_proc(fl->fl_pid, SIGLOST, 1); */
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -55,21 +55,21 @@ static __u32 ext4_inode_csum(struct inod
+ 	__u16 csum_hi = 0;
+ 	__u32 csum;
+ 
+-	csum_lo = raw->i_checksum_lo;
++	csum_lo = le16_to_cpu(raw->i_checksum_lo);
+ 	raw->i_checksum_lo = 0;
+ 	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
+ 	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi)) {
+-		csum_hi = raw->i_checksum_hi;
++		csum_hi = le16_to_cpu(raw->i_checksum_hi);
+ 		raw->i_checksum_hi = 0;
+ 	}
+ 
+ 	csum = ext4_chksum(sbi, ei->i_csum_seed, (__u8 *)raw,
+ 			   EXT4_INODE_SIZE(inode->i_sb));
+ 
+-	raw->i_checksum_lo = csum_lo;
++	raw->i_checksum_lo = cpu_to_le16(csum_lo);
+ 	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
+ 	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
+-		raw->i_checksum_hi = csum_hi;
++		raw->i_checksum_hi = cpu_to_le16(csum_hi);
+ 
+ 	return csum;
+ }
+--- a/fs/ext4/mmp.c
++++ b/fs/ext4/mmp.c
+@@ -7,7 +7,7 @@
+ #include "ext4.h"
+ 
+ /* Checksumming functions */
+-static __u32 ext4_mmp_csum(struct super_block *sb, struct mmp_struct *mmp)
++static __le32 ext4_mmp_csum(struct super_block *sb, struct mmp_struct *mmp)
+ {
+ 	struct ext4_sb_info *sbi = EXT4_SB(sb);
+ 	int offset = offsetof(struct mmp_struct, mmp_checksum);
 
 
