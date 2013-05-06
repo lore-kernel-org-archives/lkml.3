@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab3EFEV3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 00:21:29 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:49176 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab3EFEV2 (ORCPT
+	id S1752759Ab3EFEWF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 00:22:05 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:32235 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461Ab3EFEWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 00:21:28 -0400
-X-AuditID: cbfee691-b7fe56d000004b96-03-51872fbc96e4
+	Mon, 6 May 2013 00:22:02 -0400
+X-AuditID: cbfee68f-b7f066d000003683-a0-51872fe9c7bb
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Anton Vorontsov'" <anton@enomsg.org>
 Cc: "'David Woodhouse'" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
         Jingoo Han <jg1.han@samsung.com>, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 4/8] bq27x00_battery: remove unnecessary platform_set_drvdata()
-Date: Mon, 06 May 2013 13:21:16 +0900
-Message-id: <003901ce4a11$2691c570$73b55050$@samsung.com>
+Subject: [PATCH 5/8] gpio-charger: remove unnecessary platform_set_drvdata()
+Date: Mon, 06 May 2013 13:22:00 +0900
+Message-id: <003a01ce4a11$41508ae0$c3f1a0a0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5KEQuNUV1mvM3XThW/QM1RRI2NUw==
+Thread-index: Ac5KETDnfpOFAkj1TBGtAnF0JGT/ZA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsVy+t8zA909+u2BBi/bpSwObtW0mLhyMrPF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zQ92X+u2BBsd7RCwObtW0mLhyMrPF
 	5YWXWC2WTJ7PanF51xw2B1aPCf2fGD02r9DyWPLmEKtH35ZVjB6fN8kFsEZx2aSk5mSWpRbp
-	2yVwZUw48p294A97xYzJvUwNjBfYuhg5OSQETCRW7/zFCGGLSVy4tx4sLiSwjFFiW58FTE3P
-	zXmsXYxcQPFFjBJTd7SwQhT9YpTYeS0FxGYTUJP48uUwO4gtIqAh0bZ6CgtIA7PAZEaJ/Q3b
-	wKYKC/hLbFy9EWwbi4CqxLub95lAbF4BS4krz5ewQtiCEj8m32MBsZkFtCTW7zzOBGHLS2xe
-	85YZ4iIFiR1nXwPN4QBapiexbYIwRImIxL4X7xhB9koI7GOX2HxtL9QuAYlvkw+xgNRLCMhK
-	bDoANUZS4uCKGywTGMVmIdk8C8nmWUg2z0KyYgEjyypG0dSC5ILipPQiU73ixNzi0rx0veT8
-	3E2MkKibuIPx/gHrQ4zJQOsnMkuJJucDozavJN7Q2MzIwtTE1NjI3NKMNGElcV71FutAIYH0
-	xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYxsWssPs2/2PLpPwn6GU6ZA2VqOvcsVr51fNLNmbeNN
-	yRvHpjXx/qp51PDDbu1ht1PHuuL+iuk9r5oTVMS/kXmOzps3xgbuF784Lphx1DIze7bMoxeZ
-	D/V3z9DTS/QpPa+Ypv3l3f++5jPM9b5OV7vfrjiSy97Jr5lefeFoYNCWK0sXW0/2NT6mxFKc
-	kWioxVxUnAgA4HcQPNACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jAd09+u2BBvuWiFkc3KppMXHlZGaL
+	2yVwZTSsWcNUsIGtYsHcl0wNjCtYuxg5OSQETCRm/TrODGGLSVy4t54NxBYSWMYocfWIAEzN
+	vz9f2bsYuYDiixglvs64wwzh/GKUmHz7PTtIFZuAmsSXL4fBbBEBDYm21VNYQIqYBSYzSuxv
+	2AY2VljAR+Loze9gq1kEVCXOt08Cs3kFLCW2H3gEZQtK/Jh8jwXEZhbQkli/8zgThC0vsXnN
+	W6hTFSR2nH3NCLFMT+LdjemMEDUiEvtevGMEWSwhsI9d4mvvdiaIZQIS3yYfAhrKAZSQldh0
+	AGqOpMTBFTdYJjCKzUKyehaS1bOQrJ6FZMUCRpZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmb
+	GCGR17+D8e4B60OMyUDrJzJLiSbnAyM3ryTe0NjMyMLUxNTYyNzSjDRhJXFetRbrQCGB9MSS
+	1OzU1ILUovii0pzU4kOMTBycUg2Mspvqz1fdvrjX7V+rjcabN8sttqxqZL91J83jzJZLZ8yD
+	mHeKiR/c9W1lKLuu1UntvMZrCzg+qeb8vTP3zqrrCzaf5pZKnccRtPTvrxvHJkjtnbh6yw5f
+	rdfNB08w58zW3drftiekt/RASZnjzKSrN2ekbPq0/e6PlKibZxbyLv2aNGFH2zrJ7JlKLMUZ
+	iYZazEXFiQD2u0TV0gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd2X+u2BBhvW8lkc3KppMXHlZGaL
 	ywsvsVosmTyf1eLyrjlsDqweE/o/MXpsXqHlseTNIVaPvi2rGD0+b5ILYI1qYLTJSE1MSS1S
 	SM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqtpFCWmFMKFApILC5W
-	0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8yYcOQ7e8Ef9ooZk3uZGhgvsHUxcnJICJhI9Nyc
-	xwphi0lcuLceKM7FISSwiFFi6o4WsISQwC9GiZ3XUkBsNgE1iS9fDrOD2CICGhJtq6ewgDQw
-	C0xmlNjfsA1sqrCAv8TG1RsZQWwWAVWJdzfvM4HYvAKWEleeL2GFsAUlfky+xwJiMwtoSazf
-	eZwJwpaX2LzmLTPERQoSO86+BprDAbRMT2LbBGGIEhGJfS/eMU5gFJiFZNIsJJNmIZk0C0nL
-	AkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBUf1MegfjqgaLQ4wCHIxKPLwFT9oChVgT
-	y4orcw8xSnAwK4nw+uwFCvGmJFZWpRblxxeV5qQWH2JMBnp0IrOUaHI+MOHklcQbGpuYGVka
-	mVkYmZibkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVANj58W6s/m7TI5KTpBT/fZqdUaG
-	glNbhJbnAVavXH7PouxVleZKt5UbD+YoZMxiT1JcVVNvfNKq51rZ5KscjIuSZs/mk/Zi4wsU
-	OOPf9VWT+eeGdmn9yVNXCa25MYNDluuYvHNVfWOw+FJ+lg1sHP9PPWZOb2WZttCyMOOQa46y
-	TX/bghbHaCWW4oxEQy3mouJEAMLcGLAuAwAA
+	0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8xoWLOGqWADW8WCuS+ZGhhXsHYxcnJICJhI/Pvz
+	lR3CFpO4cG89WxcjF4eQwCJGia8z7jBDOL8YJSbffg9WxSagJvHly2EwW0RAQ6Jt9RQWkCJm
+	gcmMEvsbtrGBJIQFfCSO3vwOtoJFQFXifPskMJtXwFJi+4FHULagxI/J91hAbGYBLYn1O48z
+	QdjyEpvXvGWGOElBYsfZ14wQy/Qk3t2YzghRIyKx78U7xgmMArOQjJqFZNQsJKNmIWlZwMiy
+	ilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4sp9J72Bc1WBxiFGAg1GJh7fgSVugEGtiWXFl
+	7iFGCQ5mJRFen71AId6UxMqq1KL8+KLSnNTiQ4zJQJ9OZJYSTc4HJp28knhDYxMzI0sjMwsj
+	E3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamA0WxVwoiowNzT4iNUj7Rz9AzIJzzkb
+	mo3M5774IWJ2yy1pZryIvuCZpa/Plh+MPCL045MEU2/TkZlGWg8eSNtVFXAemt1csEGD82eP
+	9STRJ6o79Ke/tPFlXbe7pPA1z8kvXwXcTee9U/68/GbHEovWk4xz3GXsf9S+3O+y5PDMeTx3
+	lOIyzixQYinOSDTUYi4qTgQAehpg5zADAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,29 +60,22 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/power/bq27x00_battery.c |    2 --
+ drivers/power/gpio-charger.c |    2 --
  1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-index 26037ca..b309713 100644
---- a/drivers/power/bq27x00_battery.c
-+++ b/drivers/power/bq27x00_battery.c
-@@ -966,7 +966,6 @@ static int bq27000_battery_probe(struct platform_device *pdev)
- 	return 0;
+diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
+index e9883ee..4e858a2 100644
+--- a/drivers/power/gpio-charger.c
++++ b/drivers/power/gpio-charger.c
+@@ -155,8 +155,6 @@ static int gpio_charger_remove(struct platform_device *pdev)
  
- err_free:
--	platform_set_drvdata(pdev, NULL);
- 	kfree(di);
- 
- 	return ret;
-@@ -978,7 +977,6 @@ static int bq27000_battery_remove(struct platform_device *pdev)
- 
- 	bq27x00_powersupply_unregister(di);
+ 	gpio_free(gpio_charger->pdata->gpio);
  
 -	platform_set_drvdata(pdev, NULL);
- 	kfree(di);
- 
+-
  	return 0;
+ }
+ 
 -- 
 1.7.2.5
 
