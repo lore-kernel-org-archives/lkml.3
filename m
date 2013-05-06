@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758409Ab3EFX6F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:58:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36166 "EHLO
+	id S932827Ab3EFW5M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:57:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36121 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932836Ab3EFW5P (ORCPT
+	with ESMTP id S932739Ab3EFW5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:15 -0400
+	Mon, 6 May 2013 18:57:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>,
         Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
+        Hugh Dickins <hughd@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 34/63] mm: allow arch code to control the user page table ceiling
-Date: Mon,  6 May 2013 15:56:12 -0700
-Message-Id: <20130506225323.303893972@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 38/63] ARM: 7702/1: Set the page table freeing ceiling to TASK_SIZE
+Date: Mon,  6 May 2013 15:56:16 -0700
+Message-Id: <20130506225324.212560751@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -30,89 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit 6ee8630e02be6dd89926ca0fbc21af68b23dc087 upstream.
+commit 6aaa189f8712471a250bfdf8fc8d08277258b8ab upstream.
 
-On architectures where a pgd entry may be shared between user and kernel
-(e.g.  ARM+LPAE), freeing page tables needs a ceiling other than 0.
-This patch introduces a generic USER_PGTABLES_CEILING that arch code can
-override.  It is the responsibility of the arch code setting the ceiling
-to ensure the complete freeing of the page tables (usually in
-pgd_free()).
+ARM processors with LPAE enabled use 3 levels of page tables, with an
+entry in the top level (pgd) covering 1GB of virtual space. Because of
+the branch relocation limitations on ARM, the loadable modules are
+mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
+between kernel modules and user space.
 
-[catalin.marinas@arm.com: commit log; shift_arg_pages(), asm-generic/pgtables.h changes]
-Signed-off-by: Hugh Dickins <hughd@google.com>
+If free_pgtables() is called with the default ceiling 0,
+free_pgd_range() (and subsequently called functions) also frees the page
+table shared between user space and kernel modules (which is normally
+handled by the ARM-specific pgd_free() function). This patch changes
+defines the ARM USER_PGTABLES_CEILING to TASK_SIZE when CONFIG_ARM_LPAE
+is enabled.
+
+Note that the pgd_free() function already checks the presence of the
+shared pmd page allocated by pgd_alloc() and frees it, though with
+ceiling 0 this wasn't necessary.
+
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/exec.c                     |    4 ++--
- include/asm-generic/pgtable.h |   10 ++++++++++
- mm/mmap.c                     |    4 ++--
- 3 files changed, 14 insertions(+), 4 deletions(-)
+ arch/arm/include/asm/pgtable.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -627,7 +627,7 @@ static int shift_arg_pages(struct vm_are
- 		 * when the old and new regions overlap clear from new_end.
- 		 */
- 		free_pgd_range(&tlb, new_end, old_end, new_end,
--			vma->vm_next ? vma->vm_next->vm_start : 0);
-+			vma->vm_next ? vma->vm_next->vm_start : USER_PGTABLES_CEILING);
- 	} else {
- 		/*
- 		 * otherwise, clean from old_start; this is done to not touch
-@@ -636,7 +636,7 @@ static int shift_arg_pages(struct vm_are
- 		 * for the others its just a little faster.
- 		 */
- 		free_pgd_range(&tlb, old_start, old_end, new_end,
--			vma->vm_next ? vma->vm_next->vm_start : 0);
-+			vma->vm_next ? vma->vm_next->vm_start : USER_PGTABLES_CEILING);
- 	}
- 	tlb_finish_mmu(&tlb, new_end, old_end);
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -70,6 +70,15 @@ extern void __pgd_error(const char *file
+ #endif
  
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -7,6 +7,16 @@
- #include <linux/mm_types.h>
- #include <linux/bug.h>
- 
-+/*
-+ * On almost all architectures and configurations, 0 can be used as the
-+ * upper ceiling to free_pgtables(): on many architectures it has the same
-+ * effect as using TASK_SIZE.  However, there is one configuration which
-+ * must impose a more careful limit, to avoid freeing kernel pgtables.
+ /*
++ * Use TASK_SIZE as the ceiling argument for free_pgtables() and
++ * free_pgd_range() to avoid freeing the modules pmd when LPAE is enabled (pmd
++ * page shared between user and kernel).
 + */
-+#ifndef USER_PGTABLES_CEILING
-+#define USER_PGTABLES_CEILING	0UL
++#ifdef CONFIG_ARM_LPAE
++#define USER_PGTABLES_CEILING	TASK_SIZE
 +#endif
 +
- #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
- extern int ptep_set_access_flags(struct vm_area_struct *vma,
- 				 unsigned long address, pte_t *ptep,
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1920,7 +1920,7 @@ static void unmap_region(struct mm_struc
- 	unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL);
- 	vm_unacct_memory(nr_accounted);
- 	free_pgtables(&tlb, vma, prev ? prev->vm_end : FIRST_USER_ADDRESS,
--				 next ? next->vm_start : 0);
-+				 next ? next->vm_start : USER_PGTABLES_CEILING);
- 	tlb_finish_mmu(&tlb, start, end);
- }
- 
-@@ -2308,7 +2308,7 @@ void exit_mmap(struct mm_struct *mm)
- 	unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL);
- 	vm_unacct_memory(nr_accounted);
- 
--	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, 0);
-+	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, USER_PGTABLES_CEILING);
- 	tlb_finish_mmu(&tlb, 0, -1);
- 
- 	/*
++/*
+  * The pgprot_* and protection_map entries will be fixed up in runtime
+  * to include the cachable and bufferable bits based on memory policy,
+  * as well as any architecture dependent bits like global/ASID and SMP
 
 
