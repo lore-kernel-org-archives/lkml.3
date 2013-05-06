@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492Ab3EFXOL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:14:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36951 "EHLO
+	id S933224Ab3EFXSE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:18:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36979 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758979Ab3EFXOG (ORCPT
+	with ESMTP id S932435Ab3EFXOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:06 -0400
+	Mon, 6 May 2013 19:14:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 088/104] wireless: regulatory: fix channel disabling race condition
-Date: Mon,  6 May 2013 16:12:47 -0700
-Message-Id: <20130506230052.679491087@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 095/104] ext4: fix online resizing for ext3-compat file systems
+Date: Mon,  6 May 2013 16:12:54 -0700
+Message-Id: <20130506230053.390593983@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,39 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 990de49f74e772b6db5208457b7aa712a5f4db86 upstream.
+commit c5c72d814cf0f650010337c73638b25e6d14d2d4 upstream.
 
-When a full scan 2.4 and 5 GHz scan is scheduled, but then the 2.4 GHz
-part of the scan disables a 5.2 GHz channel due to, e.g. receiving
-country or frequency information, that 5.2 GHz channel might already
-be in the list of channels to scan next. Then, when the driver checks
-if it should do a passive scan, that will return false and attempt an
-active scan. This is not only wrong but can also lead to the iwlwifi
-device firmware crashing since it checks regulatory as well.
+Commit fb0a387dcdc restricts block allocations for indirect-mapped
+files to block groups less than s_blockfile_groups.  However, the
+online resizing code wasn't setting s_blockfile_groups, so the newly
+added block groups were not available for non-extent mapped files.
 
-Fix this by not setting the channel flags to just disabled but rather
-OR'ing in the disabled flag. That way, even if the race happens, the
-channel will be scanned passively which is still (mostly) correct.
-
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/reg.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/resize.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -883,7 +883,7 @@ static void handle_channel(struct wiphy
- 			return;
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -1341,6 +1341,8 @@ static void ext4_update_super(struct sup
  
- 		REG_DBG_PRINT("Disabling freq %d MHz\n", chan->center_freq);
--		chan->flags = IEEE80211_CHAN_DISABLED;
-+		chan->flags |= IEEE80211_CHAN_DISABLED;
- 		return;
- 	}
+ 	/* Update the global fs size fields */
+ 	sbi->s_groups_count += flex_gd->count;
++	sbi->s_blockfile_groups = min_t(ext4_group_t, sbi->s_groups_count,
++			(EXT4_MAX_BLOCK_FILE_PHYS / EXT4_BLOCKS_PER_GROUP(sb)));
  
+ 	/* Update the reserved block counts only once the new group is
+ 	 * active. */
 
 
