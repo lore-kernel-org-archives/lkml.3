@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761397Ab3EFXmo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:42:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36564 "EHLO
+	id S1761365Ab3EFXml (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:42:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36602 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760222Ab3EFXNG (ORCPT
+	with ESMTP id S1760234Ab3EFXNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:06 -0400
+	Mon, 6 May 2013 19:13:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 002/104] USB: option: add a D-Link DWM-156 variant
-Date: Mon,  6 May 2013 16:11:21 -0700
-Message-Id: <20130506230043.822976437@linuxfoundation.org>
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [ 006/104] ARM: at91/at91sam9260.dtsi: fix u(s)art pinctrl encoding
+Date: Mon,  6 May 2013 16:11:25 -0700
+Message-Id: <20130506230044.232271992@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,69 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Douglas Gilbert <dgilbert@interlog.com>
 
-commit a2a2d6c7f93e160b52a4ad0164db1f43f743ae0f upstream.
+commit f10491fff07dcced77f8ab1b3bc1f8e18715bfb9 upstream.
 
-Adding support for a Mediatek based device labelled as
-D-Link Model: DWM-156, H/W Ver: A7
-
-Also adding two other device IDs found in the Debian(!)
-packages included on the embedded device driver CD.
-
-This is a composite MBIM + serial ports + card reader device:
-
-T:  Bus=04 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#= 14 Spd=480  MxCh= 0
-D:  Ver= 2.00 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=2001 ProdID=7d01 Rev= 3.00
-S:  Manufacturer=D-Link,Inc
-S:  Product=D-Link DWM-156
-C:* #Ifs= 7 Cfg#= 1 Atr=a0 MxPwr=500mA
-A:  FirstIf#= 0 IfCount= 2 Cls=02(comm.) Sub=0e Prot=00
-I:* If#= 0 Alt= 0 #EPs= 1 Cls=02(comm.) Sub=0e Prot=00 Driver=cdc_mbim
-E:  Ad=88(I) Atr=03(Int.) MxPS=  64 Ivl=125us
-I:  If#= 1 Alt= 0 #EPs= 0 Cls=0a(data ) Sub=00 Prot=02 Driver=cdc_mbim
-I:* If#= 1 Alt= 1 #EPs= 2 Cls=0a(data ) Sub=00 Prot=02 Driver=cdc_mbim
-E:  Ad=81(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 2 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=02 Prot=01 Driver=option
-E:  Ad=87(I) Atr=03(Int.) MxPS=  64 Ivl=500us
-E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
-E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 4 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
-E:  Ad=84(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 5 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
-E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 6 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
-E:  Ad=86(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=06(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
+[nicolas.ferre@atmel.com: fix rts/cts for usart3]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/arm/boot/dts/at91sam9260.dtsi |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1352,6 +1352,12 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d01, 0xff, 0x02, 0x01) },	/* D-Link DWM-156 (variant) */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d01, 0xff, 0x00, 0x00) },	/* D-Link DWM-156 (variant) */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d02, 0xff, 0x02, 0x01) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d02, 0xff, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x02, 0x01) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x00, 0x00) },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+--- a/arch/arm/boot/dts/at91sam9260.dtsi
++++ b/arch/arm/boot/dts/at91sam9260.dtsi
+@@ -158,8 +158,8 @@
+ 				usart1 {
+ 					pinctrl_usart1: usart1-0 {
+ 						atmel,pins =
+-							<2 6 0x1 0x1	/* PB6 periph A with pullup */
+-							 2 7 0x1 0x0>;	/* PB7 periph A */
++							<1 6 0x1 0x1	/* PB6 periph A with pullup */
++							 1 7 0x1 0x0>;	/* PB7 periph A */
+ 					};
+ 
+ 					pinctrl_usart1_rts: usart1_rts-0 {
+@@ -194,18 +194,18 @@
+ 				usart3 {
+ 					pinctrl_usart3: usart3-0 {
+ 						atmel,pins =
+-							<2 10 0x1 0x1	/* PB10 periph A with pullup */
+-							 2 11 0x1 0x0>;	/* PB11 periph A */
++							<1 10 0x1 0x1	/* PB10 periph A with pullup */
++							 1 11 0x1 0x0>;	/* PB11 periph A */
+ 					};
+ 
+ 					pinctrl_usart3_rts: usart3_rts-0 {
+ 						atmel,pins =
+-							<3 8 0x2 0x0>;	/* PB8 periph B */
++							<2 8 0x2 0x0>;	/* PC8 periph B */
+ 					};
+ 
+ 					pinctrl_usart3_cts: usart3_cts-0 {
+ 						atmel,pins =
+-							<3 10 0x2 0x0>;	/* PB10 periph B */
++							<2 10 0x2 0x0>;	/* PC10 periph B */
+ 					};
+ 				};
+ 
+@@ -220,8 +220,8 @@
+ 				uart1 {
+ 					pinctrl_uart1: uart1-0 {
+ 						atmel,pins =
+-							<2 12 0x1 0x1	/* PB12 periph A with pullup */
+-							 2 13 0x1 0x0>;	/* PB13 periph A */
++							<1 12 0x1 0x1	/* PB12 periph A with pullup */
++							 1 13 0x1 0x0>;	/* PB13 periph A */
+ 					};
+ 				};
+ 
 
 
