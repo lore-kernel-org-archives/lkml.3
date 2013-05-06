@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759308Ab3EFVQn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:16:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59000 "EHLO
+	id S1757284Ab3EFUqB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:46:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58978 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757297Ab3EFUqD (ORCPT
+	with ESMTP id S1756888Ab3EFUp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:03 -0400
+	Mon, 6 May 2013 16:45:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 015/115] iwlwifi: fix freeing uninitialized pointer
-Date: Mon,  6 May 2013 13:44:11 -0700
-Message-Id: <20130506203057.156888797@linuxfoundation.org>
+        Joerg Roedel <joro@8bytes.org>, Minchan Kim <minchan@kernel.org>
+Subject: [ 003/115] staging: zsmalloc: Fix link error on ARM
+Date: Mon,  6 May 2013 13:43:59 -0700
+Message-Id: <20130506203055.940256450@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -28,52 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Joerg Roedel <joro@8bytes.org>
 
-commit 3309ccf7fcebceef540ebe90c65d2f94d745a45b upstream.
+commit d95abbbb291bf5bce078148f53603ce9c0aa1d44 upstream.
 
-If on iwl_dump_nic_event_log() error occurs before that function
-initialize buf, we process uninitiated pointer in
-iwl_dbgfs_log_event_read() and can hit "BUG at mm/slub.c:3409"
+Testing the arm chromebook config against the upstream
+kernel produces a linker error for the zsmalloc module from
+staging. The symbol flush_tlb_kernel_range is not available
+there. Fix this by removing the reimplementation of
+unmap_kernel_range in the zsmalloc module and using the
+function directly. The unmap_kernel_range function is not
+usable by modules, so also disallow building the driver as a
+module for now.
 
-Resolves:
-https://bugzilla.redhat.com/show_bug.cgi?id=951241
-
-Reported-by: ian.odette@eprize.com
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Acked-by: Minchan Kim <minchan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/debugfs.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/staging/zsmalloc/Kconfig         |    2 +-
+ drivers/staging/zsmalloc/zsmalloc-main.c |    5 +----
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/debugfs.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/debugfs.c
-@@ -2237,15 +2237,15 @@ static ssize_t iwl_dbgfs_log_event_read(
- 					 size_t count, loff_t *ppos)
+--- a/drivers/staging/zsmalloc/Kconfig
++++ b/drivers/staging/zsmalloc/Kconfig
+@@ -1,5 +1,5 @@
+ config ZSMALLOC
+-	tristate "Memory allocator for compressed pages"
++	bool "Memory allocator for compressed pages"
+ 	default n
+ 	help
+ 	  zsmalloc is a slab-based memory allocator designed to store
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+@@ -656,11 +656,8 @@ static inline void __zs_unmap_object(str
+ 				struct page *pages[2], int off, int size)
  {
- 	struct iwl_priv *priv = file->private_data;
--	char *buf;
--	int pos = 0;
--	ssize_t ret = -ENOMEM;
-+	char *buf = NULL;
-+	ssize_t ret;
+ 	unsigned long addr = (unsigned long)area->vm_addr;
+-	unsigned long end = addr + (PAGE_SIZE * 2);
  
--	ret = pos = iwl_dump_nic_event_log(priv, true, &buf, true);
--	if (buf) {
--		ret = simple_read_from_buffer(user_buf, count, ppos, buf, pos);
--		kfree(buf);
--	}
-+	ret = iwl_dump_nic_event_log(priv, true, &buf, true);
-+	if (ret < 0)
-+		goto err;
-+	ret = simple_read_from_buffer(user_buf, count, ppos, buf, ret);
-+err:
-+	kfree(buf);
- 	return ret;
+-	flush_cache_vunmap(addr, end);
+-	unmap_kernel_range_noflush(addr, PAGE_SIZE * 2);
+-	flush_tlb_kernel_range(addr, end);
++	unmap_kernel_range(addr, PAGE_SIZE * 2);
  }
  
+ #else /* USE_PGTABLE_MAPPING */
 
 
