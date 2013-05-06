@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933254Ab3EFXS7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:18:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36966 "EHLO
+	id S933272Ab3EFXTV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:19:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36961 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760662Ab3EFXOJ (ORCPT
+	with ESMTP id S1759193Ab3EFXOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:09 -0400
+	Mon, 6 May 2013 19:14:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 092/104] jbd2: fix race between jbd2_journal_remove_checkpoint and ->j_commit_callback
-Date: Mon,  6 May 2013 16:12:51 -0700
-Message-Id: <20130506230053.094401484@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>, Ben Hutchings <ben@decadent.org.uk>,
+        George Barnett <gbarnett@atlassian.com>
+Subject: [ 091/104] ext4/jbd2: dont wait (forever) for stale tid caused by wraparound
+Date: Mon,  6 May 2013 16:12:50 -0700
+Message-Id: <20130506230052.964527027@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,154 +27,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 794446c6946513c684d448205fbd76fa35f38b72 upstream.
+commit d76a3a77113db020d9bb1e894822869410450bd9 upstream.
 
-The following race is possible:
+In the case where an inode has a very stale transaction id (tid) in
+i_datasync_tid or i_sync_tid, it's possible that after a very large
+(2**31) number of transactions, that the tid number space might wrap,
+causing tid_geq()'s calculations to fail.
 
-[kjournald2]                              other_task
-jbd2_journal_commit_transaction()
-  j_state = T_FINISHED;
-  spin_unlock(&journal->j_list_lock);
-                                         ->jbd2_journal_remove_checkpoint()
-					   ->jbd2_journal_free_transaction();
-					     ->kmem_cache_free(transaction)
-  ->j_commit_callback(journal, transaction);
-    -> USE_AFTER_FREE
+Commit deeeaf13 "jbd2: fix fsync() tid wraparound bug", later modified
+by commit e7b04ac0 "jbd2: don't wake kjournald unnecessarily",
+attempted to fix this problem, but it only avoided kjournald spinning
+forever by fixing the logic in jbd2_log_start_commit().
 
-WARNING: at lib/list_debug.c:62 __list_del_entry+0x1c0/0x250()
-Hardware name:
-list_del corruption. prev->next should be ffff88019a4ec198, but was 6b6b6b6b6b6b6b6b
-Modules linked in: cpufreq_ondemand acpi_cpufreq freq_table mperf coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode sg xhci_hcd button sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw aes_x86_64 xts gf128mul ahci libahci pata_acpi ata_generic dm_mirror dm_region_hash dm_log dm_mod
-Pid: 16400, comm: jbd2/dm-1-8 Tainted: G        W    3.8.0-rc3+ #107
-Call Trace:
- [<ffffffff8106fb0d>] warn_slowpath_common+0xad/0xf0
- [<ffffffff8106fc06>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff813637e9>] ? ext4_journal_commit_callback+0x99/0xc0
- [<ffffffff8148cae0>] __list_del_entry+0x1c0/0x250
- [<ffffffff813637bf>] ext4_journal_commit_callback+0x6f/0xc0
- [<ffffffff813ca336>] jbd2_journal_commit_transaction+0x23a6/0x2570
- [<ffffffff8108aa42>] ? try_to_del_timer_sync+0x82/0xa0
- [<ffffffff8108b491>] ? del_timer_sync+0x91/0x1e0
- [<ffffffff813d3ecf>] kjournald2+0x19f/0x6a0
- [<ffffffff810ad630>] ? wake_up_bit+0x40/0x40
- [<ffffffff813d3d30>] ? bit_spin_lock+0x80/0x80
- [<ffffffff810ac6be>] kthread+0x10e/0x120
- [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
- [<ffffffff818ff6ac>] ret_from_fork+0x7c/0xb0
- [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
+Unfortunately, in the codepaths in fs/ext4/fsync.c and fs/ext4/inode.c
+that might call jbd2_log_start_commit() with a stale tid, those
+functions will subsequently call jbd2_log_wait_commit() with the same
+stale tid, and then wait for a very long time.  To fix this, we
+replace the calls to jbd2_log_start_commit() and
+jbd2_log_wait_commit() with a call to a new function,
+jbd2_complete_transaction(), which will correctly handle stale tid's.
 
-In order to demonstrace this issue one should mount ext4 with mount -o
-discard option on SSD disk.  This makes callback longer and race
-window becomes wider.
+As a bonus, jbd2_complete_transaction() will avoid locking
+j_state_lock for writing unless a commit needs to be started.  This
+should have a small (but probably not measurable) improvement for
+ext4's scalability.
 
-In order to fix this we should mark transaction as finished only after
-callbacks have completed
-
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: George Barnett <gbarnett@atlassian.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jbd2/commit.c     |   50 ++++++++++++++++++++++++++++----------------------
+ fs/ext4/fsync.c      |    3 +--
+ fs/ext4/inode.c      |    3 +--
+ fs/jbd2/journal.c    |   31 +++++++++++++++++++++++++++++++
  include/linux/jbd2.h |    1 +
- 2 files changed, 29 insertions(+), 22 deletions(-)
+ 4 files changed, 34 insertions(+), 4 deletions(-)
 
---- a/fs/jbd2/commit.c
-+++ b/fs/jbd2/commit.c
-@@ -382,7 +382,7 @@ void jbd2_journal_commit_transaction(jou
- 	int space_left = 0;
- 	int first_tag = 0;
- 	int tag_flag;
--	int i, to_free = 0;
-+	int i;
- 	int tag_bytes = journal_tag_bytes(journal);
- 	struct buffer_head *cbh = NULL; /* For transactional checksums */
- 	__u32 crc32_sum = ~0;
-@@ -1126,7 +1126,7 @@ restart_loop:
- 	journal->j_stats.run.rs_blocks_logged += stats.run.rs_blocks_logged;
- 	spin_unlock(&journal->j_history_lock);
+--- a/fs/ext4/fsync.c
++++ b/fs/ext4/fsync.c
+@@ -166,8 +166,7 @@ int ext4_sync_file(struct file *file, lo
+ 	if (journal->j_flags & JBD2_BARRIER &&
+ 	    !jbd2_trans_will_send_data_barrier(journal, commit_tid))
+ 		needs_barrier = true;
+-	jbd2_log_start_commit(journal, commit_tid);
+-	ret = jbd2_log_wait_commit(journal, commit_tid);
++	ret = jbd2_complete_transaction(journal, commit_tid);
+ 	if (needs_barrier) {
+ 		err = blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
+ 		if (!ret)
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -216,8 +216,7 @@ void ext4_evict_inode(struct inode *inod
+ 			journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
+ 			tid_t commit_tid = EXT4_I(inode)->i_datasync_tid;
  
--	commit_transaction->t_state = T_FINISHED;
-+	commit_transaction->t_state = T_COMMIT_CALLBACK;
- 	J_ASSERT(commit_transaction == journal->j_committing_transaction);
- 	journal->j_commit_sequence = commit_transaction->t_tid;
- 	journal->j_committing_transaction = NULL;
-@@ -1141,38 +1141,44 @@ restart_loop:
- 				journal->j_average_commit_time*3) / 4;
- 	else
- 		journal->j_average_commit_time = commit_time;
-+
- 	write_unlock(&journal->j_state_lock);
- 
--	if (commit_transaction->t_checkpoint_list == NULL &&
--	    commit_transaction->t_checkpoint_io_list == NULL) {
--		__jbd2_journal_drop_transaction(journal, commit_transaction);
--		to_free = 1;
-+	if (journal->j_checkpoint_transactions == NULL) {
-+		journal->j_checkpoint_transactions = commit_transaction;
-+		commit_transaction->t_cpnext = commit_transaction;
-+		commit_transaction->t_cpprev = commit_transaction;
- 	} else {
--		if (journal->j_checkpoint_transactions == NULL) {
--			journal->j_checkpoint_transactions = commit_transaction;
--			commit_transaction->t_cpnext = commit_transaction;
--			commit_transaction->t_cpprev = commit_transaction;
--		} else {
--			commit_transaction->t_cpnext =
--				journal->j_checkpoint_transactions;
--			commit_transaction->t_cpprev =
--				commit_transaction->t_cpnext->t_cpprev;
--			commit_transaction->t_cpnext->t_cpprev =
--				commit_transaction;
--			commit_transaction->t_cpprev->t_cpnext =
-+		commit_transaction->t_cpnext =
-+			journal->j_checkpoint_transactions;
-+		commit_transaction->t_cpprev =
-+			commit_transaction->t_cpnext->t_cpprev;
-+		commit_transaction->t_cpnext->t_cpprev =
-+			commit_transaction;
-+		commit_transaction->t_cpprev->t_cpnext =
- 				commit_transaction;
--		}
- 	}
- 	spin_unlock(&journal->j_list_lock);
--
-+	/* Drop all spin_locks because commit_callback may be block.
-+	 * __journal_remove_checkpoint() can not destroy transaction
-+	 * under us because it is not marked as T_FINISHED yet */
- 	if (journal->j_commit_callback)
- 		journal->j_commit_callback(journal, commit_transaction);
- 
- 	trace_jbd2_end_commit(journal, commit_transaction);
- 	jbd_debug(1, "JBD2: commit %d complete, head %d\n",
- 		  journal->j_commit_sequence, journal->j_tail_sequence);
--	if (to_free)
--		jbd2_journal_free_transaction(commit_transaction);
- 
-+	write_lock(&journal->j_state_lock);
-+	spin_lock(&journal->j_list_lock);
-+	commit_transaction->t_state = T_FINISHED;
-+	/* Recheck checkpoint lists after j_list_lock was dropped */
-+	if (commit_transaction->t_checkpoint_list == NULL &&
-+	    commit_transaction->t_checkpoint_io_list == NULL) {
-+		__jbd2_journal_drop_transaction(journal, commit_transaction);
-+		jbd2_journal_free_transaction(commit_transaction);
-+	}
-+	spin_unlock(&journal->j_list_lock);
-+	write_unlock(&journal->j_state_lock);
- 	wake_up(&journal->j_wait_done_commit);
+-			jbd2_log_start_commit(journal, commit_tid);
+-			jbd2_log_wait_commit(journal, commit_tid);
++			jbd2_complete_transaction(journal, commit_tid);
+ 			filemap_write_and_wait(&inode->i_data);
+ 		}
+ 		truncate_inode_pages(&inode->i_data, 0);
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -698,6 +698,37 @@ int jbd2_log_wait_commit(journal_t *jour
  }
+ 
+ /*
++ * When this function returns the transaction corresponding to tid
++ * will be completed.  If the transaction has currently running, start
++ * committing that transaction before waiting for it to complete.  If
++ * the transaction id is stale, it is by definition already completed,
++ * so just return SUCCESS.
++ */
++int jbd2_complete_transaction(journal_t *journal, tid_t tid)
++{
++	int	need_to_wait = 1;
++
++	read_lock(&journal->j_state_lock);
++	if (journal->j_running_transaction &&
++	    journal->j_running_transaction->t_tid == tid) {
++		if (journal->j_commit_request != tid) {
++			/* transaction not yet started, so request it */
++			read_unlock(&journal->j_state_lock);
++			jbd2_log_start_commit(journal, tid);
++			goto wait_commit;
++		}
++	} else if (!(journal->j_committing_transaction &&
++		     journal->j_committing_transaction->t_tid == tid))
++		need_to_wait = 0;
++	read_unlock(&journal->j_state_lock);
++	if (!need_to_wait)
++		return 0;
++wait_commit:
++	return jbd2_log_wait_commit(journal, tid);
++}
++EXPORT_SYMBOL(jbd2_complete_transaction);
++
++/*
+  * Log buffer allocation routines:
+  */
+ 
 --- a/include/linux/jbd2.h
 +++ b/include/linux/jbd2.h
-@@ -498,6 +498,7 @@ struct transaction_s
- 		T_COMMIT,
- 		T_COMMIT_DFLUSH,
- 		T_COMMIT_JFLUSH,
-+		T_COMMIT_CALLBACK,
- 		T_FINISHED
- 	}			t_state;
+@@ -1210,6 +1210,7 @@ int __jbd2_log_start_commit(journal_t *j
+ int jbd2_journal_start_commit(journal_t *journal, tid_t *tid);
+ int jbd2_journal_force_commit_nested(journal_t *journal);
+ int jbd2_log_wait_commit(journal_t *journal, tid_t tid);
++int jbd2_complete_transaction(journal_t *journal, tid_t tid);
+ int jbd2_log_do_checkpoint(journal_t *journal);
+ int jbd2_trans_will_send_data_barrier(journal_t *journal, tid_t tid);
  
 
 
