@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab3EFUpK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:45:10 -0400
-Received: from mail-ye0-f172.google.com ([209.85.213.172]:41020 "EHLO
-	mail-ye0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756222Ab3EFUpJ (ORCPT
+	id S1757451Ab3EFUqN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:46:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59027 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757294Ab3EFUqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:45:09 -0400
-Date: Mon, 6 May 2013 13:38:27 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH 21/31] blk-throttle: implement sq_to_tg(), sq_to_td() and
- throtl_log()
-Message-ID: <20130506203827.GE800@mtj.dyndns.org>
-References: <1367455189-6957-1-git-send-email-tj@kernel.org>
- <1367455189-6957-22-git-send-email-tj@kernel.org>
- <20130506173644.GD11731@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130506173644.GD11731@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 May 2013 16:46:08 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [ 022/115] USB: add ftdi_sio USB ID for GDM Boost V1.x
+Date: Mon,  6 May 2013 13:44:18 -0700
+Message-Id: <20130506203057.842460807@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
+References: <20130506203055.537199268@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 01:36:44PM -0400, Vivek Goyal wrote:
-> On Wed, May 01, 2013 at 05:39:39PM -0700, Tejun Heo wrote:
-> 
-> [..]
-> > +#define throtl_log(sq, fmt, args...)	do {				\
-> > +	struct throtl_grp *__tg = sq_to_tg((sq));			\
-> > +	struct throtl_data *__td = sq_to_td((sq));			\
-> >  	char __pbuf[128];						\
-> >  									\
-> > -	blkg_path(tg_to_blkg(tg), __pbuf, sizeof(__pbuf));		\
-> > -	blk_add_trace_msg((tg)->td->queue, "throtl %s " fmt, __pbuf, ##args); \
-> > +	__pbuf[0] = ' ';						\
-> > +	__pbuf[1] = '\0';						\
-> > +	if ((__tg))							\
-> > +		blkg_path(tg_to_blkg(__tg), __pbuf + 1, sizeof(__pbuf) - 1); \
-> > +	blk_add_trace_msg(__td->queue, "throtl%s" fmt, __pbuf, ##args); \
-> 
-> We need one extra space ("throtl%s "), otherwise all the messages
-> start right after cgroup path. We need a space between cgroup path
-> and actual message.
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
-Okay, we don't - __pbuf[0] = ' '.  The reason it's doing the above
-instead of "throtl %s " is because when the path is nil, we don't
-wanna print out two consecutive spaces, so AFAICS the code is correct.
+------------------
 
-Thanks.
+From: Stefani Seibold <stefani@seibold.net>
 
--- 
-tejun
+commit 58f8b6c4fa5a13cb2ddb400e26e9e65766d71e38 upstream.
+
+This patch add a missing usb device id for the GDMBoost V1.x device
+
+The patch is against 3.9-rc5
+
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+)
+
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -189,6 +189,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_THROTTLE_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GATEWAY_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_BOOST_PID) },
+ 	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -74,6 +74,7 @@
+ #define FTDI_OPENDCC_THROTTLE_PID	0xBFDA
+ #define FTDI_OPENDCC_GATEWAY_PID	0xBFDB
+ #define FTDI_OPENDCC_GBM_PID	0xBFDC
++#define FTDI_OPENDCC_GBM_BOOST_PID	0xBFDD
+ 
+ /* NZR SEM 16+ USB (http://www.nzr.de) */
+ #define FTDI_NZR_SEM_USB_PID	0xC1E0	/* NZR SEM-LOG16+ */
+
+
