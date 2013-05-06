@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab3EFW5U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:57:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36158 "EHLO
+	id S1761705Ab3EFXsq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:48:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36183 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932831Ab3EFW5O (ORCPT
+	with ESMTP id S932868Ab3EFW5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:14 -0400
+	Mon, 6 May 2013 18:57:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anurup m <anurup.m@huawei.com>, shyju pv <shyju.pv@huawei.com>,
-        Sanil kumar <sanil.kumar@huawei.com>, Nataraj m <nataraj.m@huawei.com>,
-        Li Zefan <lizefan@huawei.com>, David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 33/63] fs/fscache/stats.c: fix memory leak
-Date: Mon,  6 May 2013 15:56:11 -0700
-Message-Id: <20130506225323.070022087@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 57/63] ext4: fix Kconfig documentation for CONFIG_EXT4_DEBUG
+Date: Mon,  6 May 2013 15:56:35 -0700
+Message-Id: <20130506225328.519198978@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -30,41 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anurup m <anurup.m@huawei.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit ec686c9239b4d472052a271c505d04dae84214cc upstream.
+commit 7f3e3c7cfcec148ccca9c0dd2dbfd7b00b7ac10f upstream.
 
-There is a kernel memory leak observed when the proc file
-/proc/fs/fscache/stats is read.
+Fox the Kconfig documentation for CONFIG_EXT4_DEBUG to match the
+change made by commit a0b30c1229: ext4: use module parameters instead
+of debugfs for mballoc_debug
 
-The reason is that in fscache_stats_open, single_open is called and the
-respective release function is not called during release.  Hence fix
-with correct release function - single_release().
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=57101
-
-Signed-off-by: Anurup m <anurup.m@huawei.com>
-Cc: shyju pv <shyju.pv@huawei.com>
-Cc: Sanil kumar <sanil.kumar@huawei.com>
-Cc: Nataraj m <nataraj.m@huawei.com>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fscache/stats.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/Kconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/fscache/stats.c
-+++ b/fs/fscache/stats.c
-@@ -276,5 +276,5 @@ const struct file_operations fscache_sta
- 	.open		= fscache_stats_open,
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
--	.release	= seq_release,
-+	.release        = single_release,
- };
+--- a/fs/ext4/Kconfig
++++ b/fs/ext4/Kconfig
+@@ -82,4 +82,5 @@ config EXT4_DEBUG
+ 	  Enables run-time debugging support for the ext4 filesystem.
+ 
+ 	  If you select Y here, then you will be able to turn on debugging
+-	  with a command such as "echo 1 > /sys/kernel/debug/ext4/mballoc-debug"
++	  with a command such as:
++		echo 1 > /sys/module/ext4/parameters/mballoc_debug
 
 
