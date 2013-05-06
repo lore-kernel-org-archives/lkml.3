@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab3EFUqB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58978 "EHLO
+	id S1759323Ab3EFVRD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:17:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58987 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756888Ab3EFUp7 (ORCPT
+	with ESMTP id S1757238Ab3EFUqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:45:59 -0400
+	Mon, 6 May 2013 16:46:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joerg Roedel <joro@8bytes.org>, Minchan Kim <minchan@kernel.org>
-Subject: [ 003/115] staging: zsmalloc: Fix link error on ARM
-Date: Mon,  6 May 2013 13:43:59 -0700
-Message-Id: <20130506203055.940256450@linuxfoundation.org>
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [ 009/115] ARM: at91/trivial: fix model name for SAM9G15-EK
+Date: Mon,  6 May 2013 13:44:05 -0700
+Message-Id: <20130506203056.544008505@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -26,51 +27,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joro@8bytes.org>
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-commit d95abbbb291bf5bce078148f53603ce9c0aa1d44 upstream.
+commit 88fcb59a06556bf10eac97d7abb913cccea2c830 upstream.
 
-Testing the arm chromebook config against the upstream
-kernel produces a linker error for the zsmalloc module from
-staging. The symbol flush_tlb_kernel_range is not available
-there. Fix this by removing the reimplementation of
-unmap_kernel_range in the zsmalloc module and using the
-function directly. The unmap_kernel_range function is not
-usable by modules, so also disallow building the driver as a
-module for now.
-
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-Acked-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/zsmalloc/Kconfig         |    2 +-
- drivers/staging/zsmalloc/zsmalloc-main.c |    5 +----
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ arch/arm/boot/dts/at91sam9g15ek.dts |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/zsmalloc/Kconfig
-+++ b/drivers/staging/zsmalloc/Kconfig
-@@ -1,5 +1,5 @@
- config ZSMALLOC
--	tristate "Memory allocator for compressed pages"
-+	bool "Memory allocator for compressed pages"
- 	default n
- 	help
- 	  zsmalloc is a slab-based memory allocator designed to store
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -656,11 +656,8 @@ static inline void __zs_unmap_object(str
- 				struct page *pages[2], int off, int size)
- {
- 	unsigned long addr = (unsigned long)area->vm_addr;
--	unsigned long end = addr + (PAGE_SIZE * 2);
+--- a/arch/arm/boot/dts/at91sam9g15ek.dts
++++ b/arch/arm/boot/dts/at91sam9g15ek.dts
+@@ -11,6 +11,6 @@
+ /include/ "at91sam9x5ek.dtsi"
  
--	flush_cache_vunmap(addr, end);
--	unmap_kernel_range_noflush(addr, PAGE_SIZE * 2);
--	flush_tlb_kernel_range(addr, end);
-+	unmap_kernel_range(addr, PAGE_SIZE * 2);
- }
- 
- #else /* USE_PGTABLE_MAPPING */
+ / {
+-	model = "Atmel AT91SAM9G25-EK";
++	model = "Atmel AT91SAM9G15-EK";
+ 	compatible = "atmel,at91sam9g15ek", "atmel,at91sam9x5ek", "atmel,at91sam9x5", "atmel,at91sam9";
+ };
 
 
