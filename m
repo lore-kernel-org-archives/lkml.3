@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933905Ab3EFXia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:38:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36659 "EHLO
+	id S1758468Ab3EFXit (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:38:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36656 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab3EFXNT (ORCPT
+	with ESMTP id S1760343Ab3EFXNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:19 -0400
+	Mon, 6 May 2013 19:13:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Jencks <ben@bjencks.net>
-Subject: [ 020/104] usb/misc/appledisplay: Add 24" LED Cinema display
-Date: Mon,  6 May 2013 16:11:39 -0700
-Message-Id: <20130506230045.673236452@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 019/104] mac80211: fix station entry leak/warning while suspending
+Date: Mon,  6 May 2013 16:11:38 -0700
+Message-Id: <20130506230045.572963835@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,28 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Jencks <ben@bjencks.net>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit e7d3b6e22c871ba36d052ca99bc8ceca4d546a60 upstream.
+commit b20d34c458bc2bbd0a4624f2933581e01e72d875 upstream.
 
-Add the Apple 24" LED Cinema display to the supported devices.
+Since Stanislaw's patches, when suspending while connected,
+cfg80211 will disconnect. This causes the AP station to be
+removed, which uses call_rcu() to clean up. Due to needing
+process context, this queues a work struct on the mac80211
+workqueue. This will warn and fail when already suspended,
+which can happen if the rcu call doesn't happen quickly.
 
-Signed-off-by: Ben Jencks <ben@bjencks.net>
+To fix this, replace the synchronize_net() which is really
+just synchronize_rcu_expedited() with rcu_barrier(), which
+unlike synchronize_rcu() waits until RCU callback have run
+and thus avoids this issue.
+
+In theory, this can even happen without Stanislaw's change
+to disconnect on suspend since userspace might disconnect
+just before suspending, though then it's unlikely that the
+call_rcu() will be delayed long enough.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/misc/appledisplay.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/mac80211/pm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/misc/appledisplay.c
-+++ b/drivers/usb/misc/appledisplay.c
-@@ -63,6 +63,7 @@ static const struct usb_device_id appled
- 	{ APPLEDISPLAY_DEVICE(0x9219) },
- 	{ APPLEDISPLAY_DEVICE(0x921c) },
- 	{ APPLEDISPLAY_DEVICE(0x921d) },
-+	{ APPLEDISPLAY_DEVICE(0x9236) },
+--- a/net/mac80211/pm.c
++++ b/net/mac80211/pm.c
+@@ -52,8 +52,8 @@ int __ieee80211_suspend(struct ieee80211
+ 	ieee80211_stop_queues_by_reason(hw,
+ 			IEEE80211_QUEUE_STOP_REASON_SUSPEND);
  
- 	/* Terminating entry */
- 	{ }
+-	/* flush out all packets */
+-	synchronize_net();
++	/* flush out all packets and station cleanup call_rcu()s */
++	rcu_barrier();
+ 
+ 	drv_flush(local, false);
+ 
 
 
