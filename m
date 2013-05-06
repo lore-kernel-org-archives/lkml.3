@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933157Ab3EFW7Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:59:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36440 "EHLO
+	id S1759490Ab3EFXAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:00:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36497 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759265Ab3EFW7R (ORCPT
+	with ESMTP id S933161Ab3EFW7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:17 -0400
+	Mon, 6 May 2013 18:59:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Engraf <david.engraf@sysgo.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [ 30/46] hrtimer: Fix ktime_add_ns() overflow on 32bit architectures
-Date: Mon,  6 May 2013 15:58:36 -0700
-Message-Id: <20130506225823.836335202@linuxfoundation.org>
+        Jiri Slaby <jslaby@suse.cz>,
+        Christoph Fritz <chf.fritz@googlemail.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 46/46] Revert :can: sja1000: fix handling on dt properties on little endian systems"
+Date: Mon,  6 May 2013 15:58:52 -0700
+Message-Id: <20130506225825.530253799@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -27,54 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Engraf <david.engraf@sysgo.com>
+This reverts commit 55fe10a686c3a8bce7bddc149e4ebb12f5a18c25 which is
+commit 0443de5fbf224abf41f688d8487b0c307dc5a4b4 upstream.
 
-commit 51fd36f3fad8447c487137ae26b9d0b3ce77bb25 upstream.
+This causes a build breakage on 3.0, so we shouldn't apply it to that
+tree.
 
-One can trigger an overflow when using ktime_add_ns() on a 32bit
-architecture not supporting CONFIG_KTIME_SCALAR.
 
-When passing a very high value for u64 nsec, e.g. 7881299347898368000
-the do_div() function converts this value to seconds (7881299347) which
-is still to high to pass to the ktime_set() function as long. The result
-in is a negative value.
-
-The problem on my system occurs in the tick-sched.c,
-tick_nohz_stop_sched_tick() when time_delta is set to
-timekeeping_max_deferment(). The check for time_delta < KTIME_MAX is
-valid, thus ktime_add_ns() is called with a too large value resulting in
-a negative expire value. This leads to an endless loop in the ticker code:
-
-time_delta: 7881299347898368000
-expires = ktime_add_ns(last_update, time_delta)
-expires: negative value
-
-This fix caps the value to KTIME_MAX.
-
-This error doesn't occurs on 64bit or architectures supporting
-CONFIG_KTIME_SCALAR (e.g. ARM, x86-32).
-
-Signed-off-by: David Engraf <david.engraf@sysgo.com>
-[jstultz: Minor tweaks to commit message & header]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Reported-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Christoph Fritz <chf.fritz@googlemail.com>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/hrtimer.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/can/sja1000/sja1000_of_platform.c |   31 +++++++++++++-------------
+ 1 file changed, 16 insertions(+), 15 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -298,6 +298,10 @@ ktime_t ktime_sub_ns(const ktime_t kt, u
- 	} else {
- 		unsigned long rem = do_div(nsec, NSEC_PER_SEC);
+--- a/drivers/net/can/sja1000/sja1000_of_platform.c
++++ b/drivers/net/can/sja1000/sja1000_of_platform.c
+@@ -93,8 +93,8 @@ static int __devinit sja1000_ofp_probe(s
+ 	struct net_device *dev;
+ 	struct sja1000_priv *priv;
+ 	struct resource res;
+-	u32 prop;
+-	int err, irq, res_size;
++	const u32 *prop;
++	int err, irq, res_size, prop_size;
+ 	void __iomem *base;
  
-+		/* Make sure nsec fits into long */
-+		if (unlikely(nsec > KTIME_SEC_MAX))
-+			return (ktime_t){ .tv64 = KTIME_MAX };
-+
- 		tmp = ktime_set((long)nsec, rem);
+ 	err = of_address_to_resource(np, 0, &res);
+@@ -135,27 +135,27 @@ static int __devinit sja1000_ofp_probe(s
+ 	priv->read_reg = sja1000_ofp_read_reg;
+ 	priv->write_reg = sja1000_ofp_write_reg;
+ 
+-	err = of_property_read_u32(np, "nxp,external-clock-frequency", &prop);
+-	if (!err)
+-		priv->can.clock.freq = prop / 2;
++	prop = of_get_property(np, "nxp,external-clock-frequency", &prop_size);
++	if (prop && (prop_size ==  sizeof(u32)))
++		priv->can.clock.freq = *prop / 2;
+ 	else
+ 		priv->can.clock.freq = SJA1000_OFP_CAN_CLOCK; /* default */
+ 
+-	err = of_property_read_u32(np, "nxp,tx-output-mode", &prop);
+-	if (!err)
+-		priv->ocr |= prop & OCR_MODE_MASK;
++	prop = of_get_property(np, "nxp,tx-output-mode", &prop_size);
++	if (prop && (prop_size == sizeof(u32)))
++		priv->ocr |= *prop & OCR_MODE_MASK;
+ 	else
+ 		priv->ocr |= OCR_MODE_NORMAL; /* default */
+ 
+-	err = of_property_read_u32(np, "nxp,tx-output-config", &prop);
+-	if (!err)
+-		priv->ocr |= (prop << OCR_TX_SHIFT) & OCR_TX_MASK;
++	prop = of_get_property(np, "nxp,tx-output-config", &prop_size);
++	if (prop && (prop_size == sizeof(u32)))
++		priv->ocr |= (*prop << OCR_TX_SHIFT) & OCR_TX_MASK;
+ 	else
+ 		priv->ocr |= OCR_TX0_PULLDOWN; /* default */
+ 
+-	err = of_property_read_u32(np, "nxp,clock-out-frequency", &prop);
+-	if (!err && prop) {
+-		u32 divider = priv->can.clock.freq * 2 / prop;
++	prop = of_get_property(np, "nxp,clock-out-frequency", &prop_size);
++	if (prop && (prop_size == sizeof(u32)) && *prop) {
++		u32 divider = priv->can.clock.freq * 2 / *prop;
+ 
+ 		if (divider > 1)
+ 			priv->cdr |= divider / 2 - 1;
+@@ -165,7 +165,8 @@ static int __devinit sja1000_ofp_probe(s
+ 		priv->cdr |= CDR_CLK_OFF; /* default */
  	}
  
+-	if (!of_property_read_bool(np, "nxp,no-comparator-bypass"))
++	prop = of_get_property(np, "nxp,no-comparator-bypass", NULL);
++	if (!prop)
+ 		priv->cdr |= CDR_CBP; /* default */
+ 
+ 	priv->irq_flags = IRQF_SHARED;
 
 
