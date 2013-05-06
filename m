@@ -1,148 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624Ab3EFNod (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 09:44:33 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:8810 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753362Ab3EFNob (ORCPT
+	id S1753652Ab3EFNpa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 09:45:30 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53127 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753417Ab3EFNp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 09:44:31 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH] perf: fix symbol processing bug and greatly improve performance
-Date: Mon,  6 May 2013 09:43:53 -0400
-Message-Id: <1367847833-4932-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung@kernel.org>
+	Mon, 6 May 2013 09:45:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pavel Machek <pavel@denx.de>
+Subject: Re: dw_apb_timer_of.c: remove parts that were picoxcell-specific
+Date: Mon, 6 May 2013 15:45:22 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Jamie Iles <jamie@jamieiles.com>, dinguyen@altera.com, wd@denx.de,
+        linux-arm-kernel@lists.infradead.org, olof@lixom.net,
+        johnstul@us.ibm.com, tglx@linutronix.de,
+        kernel list <linux-kernel@vger.kernel.org>
+References: <20130426121433.GA16249@amd.pavel.ucw.cz> <20130426214313.GB24891@amd.pavel.ucw.cz> <20130506124814.GA28259@amd.pavel.ucw.cz>
+In-Reply-To: <20130506124814.GA28259@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305061545.22587.arnd@arndb.de>
+X-Provags-ID: V02:K0:r/2u+xCtT28siBGYUu99ktP1gzPgIATwVjfEgjPhL8c
+ mbM1bzol05DbBulAeftrqysKWEE1KqMaXU7uXNYASj9FCQhmMs
+ VNQlAwzOy5w7bkFluD7nYwwOC6fpnMKLP0baj7UPwE+h2uP2r2
+ NUGwkCjuLXZaLNm0iunto4yaR16HXOl06dyiRVDSJuyHbe/nZK
+ xwfKxQ+nREcmQPjUYuQu9EhY3dEtRKMw725Qh9ly9mDsNyiVNP
+ WyDS0uoLyOeO7Jmgb2QrtdwTpP3gS66nHGOVuQuIXMal20A5gx
+ kW4KcXsK5S8Ce+6Wa7Tcasc45X4mjraDGTWWY6n1Sl0gp2MksZ
+ FyFpnj9n3sLabzCHOIwY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When "perf record" was used on a large machine with a lot of CPUs,
-the perf post-processing time could take a lot of minutes and even
-hours depending on how large the resulting perf.data file was.
+On Monday 06 May 2013, Pavel Machek wrote:
+> 
+> Hi!
+> 
+> Ping? Previous version was tested by Dinh, and this one is based on
+> Jamie's updates, so I assume it is acceptable for him, too.
+> 
+> It brings two platforms closer together, and makes time actually work
+> on socfpga. It would be good to get it applied.
 
-While running AIM7 1500-user high_systime workload on a 80-core x86-64
-system with a 3.9 kernel, the workload itself took about 2 minutes
-to run and the perf.data file had a size of 1108.746 MB. However,
-the post-processing step took more than 10 minutes.
+Who should apply it? I guess it needs to go through arm-soc with all the
+other clocksource changes already queued up there. Can we have an Ack
+from Jamie and from the clocksource maintainers?
 
-With a gprof-profiled perf binary, the time spent by perf was as
-follows:
-
-  %   cumulative   self              self     total
- time   seconds   seconds    calls   s/call   s/call  name
- 96.90    822.10   822.10   192156     0.00     0.00  dsos__find
-  0.81    828.96     6.86 172089958     0.00     0.00  rb_next
-  0.41    832.44     3.48 48539289     0.00     0.00  rb_erase
-
-So 97% (822 seconds) of the time was spent in a single dsos_find()
-function. After analyzing the call-graph data below:
-
------------------------------------------------
-                0.00  822.12  192156/192156      map__new [6]
-[7]     96.9    0.00  822.12  192156         vdso__dso_findnew [7]
-              822.10    0.00  192156/192156      dsos__find [8]
-                0.01    0.00  192156/192156      dsos__add [62]
-                0.01    0.00  192156/192366      dso__new [61]
-                0.00    0.00       1/45282525     memdup [31]
-                0.00    0.00  192156/192230      dso__set_long_name [91]
------------------------------------------------
-              822.10    0.00  192156/192156      vdso__dso_findnew [7]
-[8]     96.9  822.10    0.00  192156         dsos__find [8]
------------------------------------------------
-
-It was found that the vdso__dso_findnew() function failed to locate
-VDSO__MAP_NAME ("[vdso]") in the dso list and have to insert a new
-entry at the end for 192156 times. This problem is due to the fact that
-there are 2 types of name in the dso entry - short name and long name.
-The initial dso__new() adds "[vdso]" to both the short and long names.
-After that, vdso__dso_findnew() modifies the long name to something
-like /tmp/perf-vdso.so-NoXkDj. The dsos__find() function only compares
-the long name. As a result, the same vdso entry is duplicated many
-time in the dso list. This bug increases memory consumption as well
-as slows the symbol processing time to a crawl.
-
-To resolve this problem, the dsos__find() function interface was
-modified to enable searching either the long name or the short
-name. The vdso__dso_findnew() will now search only the short name
-while the other call sites search for the long name as before.
-
-With this change, the cpu time of perf was reduced from 848.38s to
-15.77s and dsos__find() only accounted for 0.06% of the total time.
-
-  0.06     15.73     0.01   192151     0.00     0.00  dsos__find
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- tools/perf/util/dso.c  |   10 ++++++++--
- tools/perf/util/dso.h  |    2 +-
- tools/perf/util/vdso.c |    2 +-
- 3 files changed, 10 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 6f7d5a9..3d80f92 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -513,10 +513,16 @@ void dsos__add(struct list_head *head, struct dso *dso)
- 	list_add_tail(&dso->node, head);
- }
- 
--struct dso *dsos__find(struct list_head *head, const char *name)
-+struct dso *dsos__find(struct list_head *head, const char *name, bool cmp_short)
- {
- 	struct dso *pos;
- 
-+	if (cmp_short) {
-+		list_for_each_entry(pos, head, node)
-+			if (strcmp(pos->short_name, name) == 0)
-+				return pos;
-+		return NULL;
-+	}
- 	list_for_each_entry(pos, head, node)
- 		if (strcmp(pos->long_name, name) == 0)
- 			return pos;
-@@ -525,7 +531,7 @@ struct dso *dsos__find(struct list_head *head, const char *name)
- 
- struct dso *__dsos__findnew(struct list_head *head, const char *name)
- {
--	struct dso *dso = dsos__find(head, name);
-+	struct dso *dso = dsos__find(head, name, FALSE);
- 
- 	if (!dso) {
- 		dso = dso__new(name);
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index 450199a..44c9fdd 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -133,7 +133,7 @@ struct dso *dso__kernel_findnew(struct machine *machine, const char *name,
- 				const char *short_name, int dso_type);
- 
- void dsos__add(struct list_head *head, struct dso *dso);
--struct dso *dsos__find(struct list_head *head, const char *name);
-+struct dso *dsos__find(struct list_head *head, const char *name, bool cmp_short);
- struct dso *__dsos__findnew(struct list_head *head, const char *name);
- bool __dsos__read_build_ids(struct list_head *head, bool with_hits);
- 
-diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
-index e60951f..a8fd73d 100644
---- a/tools/perf/util/vdso.c
-+++ b/tools/perf/util/vdso.c
-@@ -91,7 +91,7 @@ void vdso__exit(void)
- 
- struct dso *vdso__dso_findnew(struct list_head *head)
- {
--	struct dso *dso = dsos__find(head, VDSO__MAP_NAME);
-+	struct dso *dso = dsos__find(head, VDSO__MAP_NAME, TRUE);
- 
- 	if (!dso) {
- 		char *file;
--- 
-1.7.1
-
+	Arnd
