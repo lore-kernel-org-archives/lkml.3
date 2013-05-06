@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758885Ab3EFWqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:46:39 -0400
-Received: from mail-da0-f44.google.com ([209.85.210.44]:40128 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758808Ab3EFWqe (ORCPT
+	id S932120Ab3EFWqw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:46:52 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:36998 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932077Ab3EFWqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:46:34 -0400
+	Mon, 6 May 2013 18:46:50 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         vgoyal@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/33] blk-throttle: removed deferred config application mechanism
-Date: Mon,  6 May 2013 15:45:46 -0700
-Message-Id: <1367880372-28312-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 16/33] blk-throttle: add throtl_grp->service_queue
+Date: Mon,  6 May 2013 15:45:55 -0700
+Message-Id: <1367880372-28312-17-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367880372-28312-1-git-send-email-tj@kernel.org>
 References: <1367880372-28312-1-git-send-email-tj@kernel.org>
@@ -22,159 +22,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When bps or iops configuration changes, blk-throttle records the new
-configuration and sets a flag indicating that the config has changed.
-The flag is checked in the bio dispatch path and applied.  This
-deferred config application was necessary due to limitations in blkcg
-framework, which haven't existed for quite a while now.
+Currently, there's single service_queue per queue -
+throtl_data->service_queue.  All active throtl_grp's are queued on the
+queue and dispatched according to their limits.  To support hierarchy,
+this will be expanded such that active throtl_grp's form a tree
+anchored at throtl_data->service_queue and chained through each
+intermediate throtl_grp's service_queue.
 
-This patch removes the deferred config application mechanism and
-applies new configurations directly from tg_set_conf(), which is
-simpler.
-
-v2: Dropped unnecessary throtl_schedule_delayed_work() call from
-    tg_set_conf() as suggested by Vivek Goyal.
+This patch adds throtl_grp->service_queue to prepare for hierarchy
+support.  The initialization function - throtl_service_queue_init() -
+is added and replaces the macro initializer.  The newly added
+tg->service_queue isn't used yet.  Following patches will do.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-throttle.c | 74 ++++++++++++++--------------------------------------
- 1 file changed, 20 insertions(+), 54 deletions(-)
+ block/blk-throttle.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
 diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 3960787..7dbd0e69 100644
+index ebaaaa9..7340440 100644
 --- a/block/blk-throttle.c
 +++ b/block/blk-throttle.c
-@@ -85,9 +85,6 @@ struct throtl_grp {
- 	unsigned long slice_start[2];
- 	unsigned long slice_end[2];
- 
--	/* Some throttle limits got updated for the group */
--	int limits_changed;
--
- 	/* Per cpu stats pointer */
- 	struct tg_stats_cpu __percpu *stats_cpu;
- 
-@@ -112,8 +109,6 @@ struct throtl_data
- 
- 	/* Work for dispatching throttled bios */
- 	struct delayed_work throtl_work;
--
--	int limits_changed;
+@@ -33,9 +33,6 @@ struct throtl_service_queue {
+ 	unsigned long		first_pending_disptime;	/* disptime of the first tg */
  };
  
- /* list and work item to allocate percpu group stats */
-@@ -223,7 +218,6 @@ static void throtl_pd_init(struct blkcg_gq *blkg)
- 	RB_CLEAR_NODE(&tg->rb_node);
- 	bio_list_init(&tg->bio_lists[0]);
- 	bio_list_init(&tg->bio_lists[1]);
--	tg->limits_changed = false;
+-#define THROTL_SERVICE_QUEUE_INITIALIZER				\
+-	(struct throtl_service_queue){ .pending_tree = RB_ROOT }
+-
+ enum tg_state_flags {
+ 	THROTL_TG_PENDING	= 1 << 0,	/* on parent's pending tree */
+ };
+@@ -60,6 +57,9 @@ struct throtl_grp {
+ 	/* throtl_data this group belongs to */
+ 	struct throtl_data *td;
  
- 	tg->bps[READ] = -1;
- 	tg->bps[WRITE] = -1;
-@@ -826,45 +820,6 @@ static int throtl_select_dispatch(struct throtl_data *td, struct bio_list *bl)
- 	return nr_disp;
++	/* this group's service queue */
++	struct throtl_service_queue service_queue;
++
+ 	/*
+ 	 * Dispatch time in jiffies. This is the estimated time when group
+ 	 * will unthrottle and is ready to dispatch more bio. It is used as
+@@ -190,11 +190,18 @@ alloc_stats:
+ 		goto alloc_stats;
  }
  
--static void throtl_process_limit_change(struct throtl_data *td)
--{
--	struct request_queue *q = td->queue;
--	struct blkcg_gq *blkg, *n;
--
--	if (!td->limits_changed)
--		return;
--
--	xchg(&td->limits_changed, false);
--
--	throtl_log(td, "limits changed");
--
--	list_for_each_entry_safe(blkg, n, &q->blkg_list, q_node) {
--		struct throtl_grp *tg = blkg_to_tg(blkg);
--
--		if (!tg->limits_changed)
--			continue;
--
--		if (!xchg(&tg->limits_changed, false))
--			continue;
--
--		throtl_log_tg(td, tg, "limit change rbps=%llu wbps=%llu"
--			" riops=%u wiops=%u", tg->bps[READ], tg->bps[WRITE],
--			tg->iops[READ], tg->iops[WRITE]);
--
--		/*
--		 * Restart the slices for both READ and WRITES. It
--		 * might happen that a group's limit are dropped
--		 * suddenly and we don't want to account recently
--		 * dispatched IO with new low rate
--		 */
--		throtl_start_new_slice(td, tg, 0);
--		throtl_start_new_slice(td, tg, 1);
--
--		if (throtl_tg_on_rr(tg))
--			tg_update_disptime(td, tg);
--	}
--}
--
- /* Dispatch throttled bios. Should be called without queue lock held. */
- static int throtl_dispatch(struct request_queue *q)
++/* init a service_queue, assumes the caller zeroed it */
++static void throtl_service_queue_init(struct throtl_service_queue *sq)
++{
++	sq->pending_tree = RB_ROOT;
++}
++
+ static void throtl_pd_init(struct blkcg_gq *blkg)
  {
-@@ -876,8 +831,6 @@ static int throtl_dispatch(struct request_queue *q)
+ 	struct throtl_grp *tg = blkg_to_tg(blkg);
+ 	unsigned long flags;
  
- 	spin_lock_irq(q->queue_lock);
- 
--	throtl_process_limit_change(td);
--
- 	if (!total_nr_queued(td))
- 		goto out;
- 
-@@ -925,8 +878,7 @@ throtl_schedule_delayed_work(struct throtl_data *td, unsigned long delay)
- 
- 	struct delayed_work *dwork = &td->throtl_work;
- 
--	/* schedule work if limits changed even if no bio is queued */
--	if (total_nr_queued(td) || td->limits_changed) {
-+	if (total_nr_queued(td)) {
- 		mod_delayed_work(kthrotld_workqueue, dwork, delay);
- 		throtl_log(td, "schedule work. delay=%lu jiffies=%lu",
- 				delay, jiffies);
-@@ -1023,10 +975,25 @@ static int tg_set_conf(struct cgroup *cgrp, struct cftype *cft, const char *buf,
- 	else
- 		*(unsigned int *)((void *)tg + cft->private) = ctx.v;
- 
--	/* XXX: we don't need the following deferred processing */
--	xchg(&tg->limits_changed, true);
--	xchg(&td->limits_changed, true);
--	throtl_schedule_delayed_work(td, 0);
-+	throtl_log_tg(td, tg, "limit change rbps=%llu wbps=%llu riops=%u wiops=%u",
-+		      tg->bps[READ], tg->bps[WRITE],
-+		      tg->iops[READ], tg->iops[WRITE]);
-+
-+	/*
-+	 * We're already holding queue_lock and know @tg is valid.  Let's
-+	 * apply the new config directly.
-+	 *
-+	 * Restart the slices for both READ and WRITES. It might happen
-+	 * that a group's limit are dropped suddenly and we don't want to
-+	 * account recently dispatched IO with new low rate.
-+	 */
-+	throtl_start_new_slice(td, tg, 0);
-+	throtl_start_new_slice(td, tg, 1);
-+
-+	if (throtl_tg_on_rr(tg)) {
-+		tg_update_disptime(td, tg);
-+		throtl_schedule_next_dispatch(td);
-+	}
- 
- 	blkg_conf_finish(&ctx);
- 	return 0;
-@@ -1239,7 +1206,6 @@ int blk_throtl_init(struct request_queue *q)
++	throtl_service_queue_init(&tg->service_queue);
+ 	RB_CLEAR_NODE(&tg->rb_node);
+ 	tg->td = blkg->q->td;
+ 	bio_list_init(&tg->bio_lists[0]);
+@@ -1168,8 +1175,8 @@ int blk_throtl_init(struct request_queue *q)
+ 	if (!td)
  		return -ENOMEM;
  
- 	td->tg_service_tree = THROTL_RB_ROOT;
--	td->limits_changed = false;
- 	INIT_DELAYED_WORK(&td->throtl_work, blk_throtl_work);
+-	td->service_queue = THROTL_SERVICE_QUEUE_INITIALIZER;
+ 	INIT_DELAYED_WORK(&td->dispatch_work, blk_throtl_dispatch_work_fn);
++	throtl_service_queue_init(&td->service_queue);
  
  	q->td = td;
+ 	td->queue = q;
 -- 
 1.8.1.4
 
