@@ -1,81 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab3EFDcW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 23:32:22 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:41629 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab3EFDcV (ORCPT
+	id S1753083Ab3EFDcr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 23:32:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46860 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752578Ab3EFDcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 23:32:21 -0400
-X-AuditID: cbfee691-b7fe56d000004b96-db-518724440b6e
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Grant Likely'" <grant.likely@secretlab.ca>
-Cc: "'Linus Walleij'" <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>, "'Lee Jones'" <lee.jones@linaro.org>
-Subject: [PATCH 5/7] gpio: tc3589x: remove unnecessary platform_set_drvdata()
-Date: Mon, 06 May 2013 12:32:19 +0900
-Message-id: <001b01ce4a0a$5076bb90$f16432b0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5KCiP2WB7V5Vq3SQ6DMyAoQ9shww==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t8zfV0XlfZAgwUPBS1endnIZnF54SVW
-	i/tfjzJaTPmznMni8q45bA6sHneu7WHz6NuyitHj50sdj8+b5AJYorhsUlJzMstSi/TtErgy
-	9p24wVqwia3i5db7TA2Mq1i7GDk5JARMJHYceMQOYYtJXLi3ng3EFhJYxijx6p8PTE3zzXlA
-	9VxA8emMEnvOvIVyfjFKNN7YzAxSxSagJvHly2GwSSICehI3LnQwgtjMAlMYJf59yQKxhQV8
-	Jb4vWwq2gUVAVeL90lNgV/AKWEpsmdzOAmELSvyYfI8FoldLYv3O40wQtrzE5jVvmSEuUpDY
-	cfY1I8yuPxNeMEPUiEjse/GOEeQ4CYFt7BIT7x1lhFgmIPFt8iGgoRxACVmJTQeg5khKHFxx
-	g2UCo9gsJKtnIVk9C8nqWUhWLGBkWcUomlqQXFCclF5kqlecmFtcmpeul5yfu4kREm8TdzDe
-	P2B9iDEZaP1EZinR5HxgvOaVxBsamxlZmJqYGhuZW5qRJqwkzqveYh0oJJCeWJKanZpakFoU
-	X1Sak1p8iJGJg1OqgVFm2Zqzk2zvarLvF9S+WsiovvnFm2ThqPxbYu5s3lLMM5eYWZ39ZDbl
-	ba+A4BKmtin1f1gt8hof79o0oXx78r975XdXhm/vWO6Y+ybv3pW1aon524us5QS/Vu0IZzsl
-	MWXppJOZ915WdK6Lzth3roFrrQ7PnGfVb5zaP7XH8qzXD+w1ODfZ8YgSS3FGoqEWc1FxIgAd
-	FbDezQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jQV0XlfZAg88/eS1endnIZnF54SVW
-	i/tfjzJaTPmznMni8q45bA6sHneu7WHz6NuyitHj50sdj8+b5AJYohoYbTJSE1NSixRS85Lz
-	UzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA9ioplCXmlAKFAhKLi5X07TBN
-	CA1x07WAaYzQ9Q0JgusxMkADCesYM/aduMFasImt4uXW+0wNjKtYuxg5OSQETCSab86DssUk
-	Ltxbz9bFyMUhJDCdUWLPmbesEM4vRonGG5uZQarYBNQkvnw5zA5iiwjoSdy40MEIYjMLTGGU
-	+PclC8QWFvCV+L5sKRuIzSKgKvF+6SmwDbwClhJbJrezQNiCEj8m32OB6NWSWL/zOBOELS+x
-	ec1bZoiLFCR2nH3NCLPrz4QXzBA1IhL7XrxjnMAoMAvJqFlIRs1CMmoWkpYFjCyrGEVTC5IL
-	ipPScw31ihNzi0vz0vWS83M3MYLj+ZnUDsaVDRaHGAU4GJV4eAuetAUKsSaWFVfmHmKU4GBW
-	EuH12QsU4k1JrKxKLcqPLyrNSS0+xJgM9OlEZinR5HxgqskriTc0NjEzsjQyszAyMTcnTVhJ
-	nPdAq3WgkEB6YklqdmpqQWoRzBYmDk6pBsbEUF25ygJ22foTG3c1rRKasIb3lEXSltc7G2P9
-	c4zmRnP1u6Wvat71RkfpgQ1/aNOyNq41W7av+mC+J0buMKcO5/TVLwPlns7ZkXj8r56U0r1C
-	04LbjP6K3gFs3L17L4md63uYW5R447X5lLfyMX9DjaPfzY/pPHonfnZk9O2uzQ+Xnt+9V0qJ
-	pTgj0VCLuag4EQAerEMyKwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 5 May 2013 23:32:46 -0400
+Message-ID: <1367811150.4131.33.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH firmware 1/2] rtl_nic: Add firmware rtl8168g-3
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: dwmw2@infradead.org, romieu@fr.zoreil.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 06 May 2013 04:32:30 +0100
+In-Reply-To: <1366720668-4850-1-git-send-email-hayeswang@realtek.com>
+References: <1366720668-4850-1-git-send-email-hayeswang@realtek.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-1w6adacnKpbpqUM71spB"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:600a:85ea:7f8d:4642
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver core clears the driver data to NULL after device_release
-or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
-(device-core: Ensure drvdata = NULL when no driver is bound).
-Thus, it is not needed to manually clear the device driver data to NULL.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/gpio/gpio-tc3589x.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+--=-1w6adacnKpbpqUM71spB
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/gpio/gpio-tc3589x.c b/drivers/gpio/gpio-tc3589x.c
-index d34d80d..4a5de27 100644
---- a/drivers/gpio/gpio-tc3589x.c
-+++ b/drivers/gpio/gpio-tc3589x.c
-@@ -407,7 +407,6 @@ static int tc3589x_gpio_remove(struct platform_device *pdev)
- 
- 	free_irq(irq, tc3589x_gpio);
- 
--	platform_set_drvdata(pdev, NULL);
- 	kfree(tc3589x_gpio);
- 
- 	return 0;
--- 
-1.7.2.5
+On Tue, 2013-04-23 at 20:37 +0800, Hayes Wang wrote:
+> File: rtl_nic/rtl8168g-3.fw
+> Version: 0.0.1
+>=20
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> ---
 
+Applied, thanks.
 
+Ben.
+
+>  WHENCE                |   5 ++++-
+>  rtl_nic/rtl8168g-3.fw | Bin 0 -> 832 bytes
+>  2 files changed, 4 insertions(+), 1 deletion(-)
+>  create mode 100644 rtl_nic/rtl8168g-3.fw
+>=20
+> diff --git a/WHENCE b/WHENCE
+> index 013f810..54f6388 100644
+> --- a/WHENCE
+> +++ b/WHENCE
+> @@ -1875,8 +1875,11 @@ Version: 0.0.3
+>  File: rtl_nic/rtl8168g-2.fw
+>  Version: 0.0.1
+> =20
+> +File: rtl_nic/rtl8168g-3.fw
+> +Version: 0.0.1
+> +
+>  Licence:
+> - * Copyright =C2=A9 2011, Realtek Semiconductor Corporation
+> + * Copyright =C2=A9 2011-2013, Realtek Semiconductor Corporation
+>   *
+>   * Permission is hereby granted for the distribution of this firmware
+>   * data in hexadecimal or equivalent format, provided this copyright
+> diff --git a/rtl_nic/rtl8168g-3.fw b/rtl_nic/rtl8168g-3.fw
+> new file mode 100644
+> index 0000000000000000000000000000000000000000..0c97d7ea1437ba515c1dbdabe=
+8aa285e79585786
+> GIT binary patch
+> literal 832
+> zcmYk(!AcuZ6b9fwaZ*7`oFrF-f;bOQ<D^r9W))Bhg)T~$ZqlHoS+pvWWsqx0KoCKE
+> z04sFkBM5G0Ep4Hc(rq80MX|9<r~kbtM@(`#neUuAbM74g*zUettkoCa&L^$78dqyk
+> z{B+?-vQSHybDx)7=3DUiR9dQnf}q_x%Vu60`5?f0#<&Gk1?ZK;vOjU>Urb9|Vbvp~qN
+> z|E1PnV=3DD*za?}K(Ch{liz#&kGmnY`zv)zitn6cHfip{}TXA%D&=3D8Y|%Fh?_t!DC~`
+> z@2%jIu{o}t$k<1tx(AHel(E4m=3D0_2Xz0ml+A^W;#0Mc7#p22N~2$)IlX5w>oKbJli
+> zrl0+O46<8SYtj|pr-an+x8(2bTi+MiN2zhCF*y>SFOTxDOt8mS_I$lp_A~v}+&;o=3D
+> zU+%wBYtR~EmudxCLF}K}25m#^w_1nR5&NUoqxHnD)rPd8*idai8;H5H3ElgG0Z!?s
+> z;!|p~v{|u|+70bStfJPYwZ*2@j%Y_>MYVtyh&@!hH}|C4D(hCI&dvBuXV2t}zv%Tb
+> e>yD-FyIPS}6#JoeLAwz9sn)0U#hU)T1OEYQX1@Ud
+>=20
+> literal 0
+> HcmV?d00001
+>=20
+
+--=20
+Ben Hutchings
+If God had intended Man to program,
+we'd have been born with serial I/O ports.
+
+--=-1w6adacnKpbpqUM71spB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUYckTue/yOyVhhEJAQq7+hAA0c2Z0Yuj4LztxHO+AGDRPlkFxVbEkA/k
+Ao4y+rTxoL/UmwWLEQOCe0ywDcthlFzmaNZkh7dU6lhmbBnBSVr+R/YOQZBaw2wd
+Mp+JvbLc27NJzmwjnJHEQ7m3ASpjGKeXjBNb+0t1v9ObAaDTnhDzcdXwXJFvxrw9
+vOwaD127QgOeRqWtoM1vlFxaUyF+s5srebFPZuOge9uWeavcq7UU/r7Y9EySsgUf
+nquDUBjIEElGtjWfFsWDvev05rc+hmQLPO+RtlA49vllC5voB8hePtvvmp8NjfT1
+C/0Y5TGAeF/U94r+fC6xow+Pej4Rf/K6KtGJsjKOZ/X+tCzPnJji0rfYxgD70+ks
+nfiMTxy3bhixsQMJ85QPRBDTKieKm/rDJ5rsCSWovZsyNxLmdq7nlTWB6wFd8qGl
+4rYcpsec13mlqI3pC5kaHdbDz96ke2KiH115H366IwrnZvUnWnFfms0D+x72Djb6
+U1+NU0XpjGPT+70GaoQfa/MjXKcahGyXMJSlc1Pv2YF8Q9jyAE6s8+YyxS+4+UA2
+Jtc3GC8DAo9D0eipH6X3X7MQrKaZDA/nvpFD23rOnCpwayE3TJyRoBNu2/m8BRiw
+K7wcihQWRJhfciyB/1Ehf0eJk/lceFNjsWtYwVkn9CQx3Rmq348tSfNtB7l+of2l
+ZsqpGiTzgSY=
+=EBzN
+-----END PGP SIGNATURE-----
+
+--=-1w6adacnKpbpqUM71spB--
