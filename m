@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457Ab3EFU0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:26:35 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52077 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756158Ab3EFU0e (ORCPT
+	id S1756375Ab3EFUdc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:33:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58377 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755971Ab3EFUdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:26:34 -0400
-Date: Mon, 6 May 2013 21:26:28 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-Subject: Re: [PATCH] alpha: spinlock: don't perform memory access in locked
- critical section
-Message-ID: <20130506202628.GN25399@ZenIV.linux.org.uk>
-References: <1367870465-23948-1-git-send-email-will.deacon@arm.com>
+	Mon, 6 May 2013 16:33:31 -0400
+Date: Mon, 6 May 2013 13:33:30 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Shuah Khan <shuah.kh@samsung.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH v2] PM: Fix dev_pm_put_subsys_data() to not call kfree()
+ while holding device power lock
+Message-ID: <20130506203330.GA11756@kroah.com>
+References: <1367614010.8452.2.camel@lorien>
+ <1367867093.2953.49.camel@lorien>
+ <20130506194119.GA15886@kroah.com>
+ <455957427.Z7qXDbUWjg@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1367870465-23948-1-git-send-email-will.deacon@arm.com>
+In-Reply-To: <455957427.Z7qXDbUWjg@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 09:01:05PM +0100, Will Deacon wrote:
-> The Alpha Architecture Reference Manual states that any memory access
-> performed between an LD_xL and a STx_C instruction may cause the
-> store-conditional to fail unconditionally and, as such, `no useful
-> program should do this'.
+On Mon, May 06, 2013 at 09:56:56PM +0200, Rafael J. Wysocki wrote:
+> On Monday, May 06, 2013 12:41:19 PM gregkh@linuxfoundation.org wrote:
+> > On Mon, May 06, 2013 at 07:04:53PM +0000, Shuah Khan wrote:
+> > > dev_pm_put_subsys_data() calls kfree() while holding device power lock, when
+> > > the reference count is 0. Fix it to call kfree() after releasing the lock.
+> > > 
+> > > Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> > > Reviewed-by: Pavel Machek <pavel@ucw.cz>
+> > > Reviewed-by: Rafael Wysocki <rafael.j.wysocki@intel.com>
+> > > ---
+> > >  drivers/base/power/common.c |    8 +++++---
+> > >  1 file changed, 5 insertions(+), 3 deletions(-)
+> > 
+> > Is this causing a problem now, and it should go into 3.10 and earlier
+> > kernels (if so, which ones?), or can it just wait until 3.11 as it's
+> > just a cleanup fix?
 > 
-> Linux is a useful program, so fix up the Alpha spinlock implementation
-> to use logical operations rather than load-address instructions for
-> generating immediates.
+> I think it's OK to push the fix for 3.10, but I'll take care of this (I have
+> a bunch of fixes for 3.10 anyway, but I'll send a pull request after -rc1,
+> because people are sending me fixes pretty much continuously ATM).
 
-Huh?  Relevant quote is "If any other memory access (ECB, LDx, LDQ_U,
-STx_C, STQ_U, WH64x) is executed on the given processor between the
-LDx_L and the STx_C, the sequence above may always fail on some
-implementations; hence, no no useful programs should do this".  Where
-do you see LDA in that list and why would it possibly be there?  And
-no, LDx does *not* cover it - the same reference manual gives
-LD{Q,L,WU,BU} as expansion for LDx, using LDAx for LD{A,AH}; it's
-a separate group of instructions and it does *NOT* do any kind of
-memory access.
+Ok, feel free to add:
+
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
