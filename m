@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934018Ab3EGACG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 20:02:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36098 "EHLO
+	id S934034Ab3EGAC1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:02:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36088 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759478Ab3EFW47 (ORCPT
+	with ESMTP id S1759468Ab3EFW46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:56:59 -0400
+	Mon, 6 May 2013 18:56:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Kirby <sim@hostway.ca>, Jiri Slaby <jslaby@suse.cz>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 18/63] tty: fix up atime/mtime mess, take three
-Date: Mon,  6 May 2013 15:55:56 -0700
-Message-Id: <20130506225319.385016629@linuxfoundation.org>
+Subject: [ 16/63] arm: set the page table freeing ceiling to TASK_SIZE
+Date: Mon,  6 May 2013 15:55:54 -0700
+Message-Id: <20130506225318.736987978@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -27,63 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit b0b885657b6c8ef63a46bc9299b2a7715d19acde upstream.
+commit 104ad3b32d7a71941c8ab2dee78eea38e8a23309 upstream.
 
-We first tried to avoid updating atime/mtime entirely (commit
-b0de59b5733d: "TTY: do not update atime/mtime on read/write"), and then
-limited it to only update it occasionally (commit 37b7f3c76595: "TTY:
-fix atime/mtime regression"), but it turns out that this was both
-insufficient and overkill.
+ARM processors with LPAE enabled use 3 levels of page tables, with an
+entry in the top level (pgd) covering 1GB of virtual space.  Because of
+the branch relocation limitations on ARM, the loadable modules are
+mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
+between kernel modules and user space.
 
-It was insufficient because we let people attach to the shared ptmx node
-to see activity without even reading atime/mtime, and it was overkill
-because the "only once a minute" means that you can't really tell an
-idle person from an active one with 'w'.
+If free_pgtables() is called with the default ceiling 0,
+free_pgd_range() (and subsequently called functions) also frees the page
+table shared between user space and kernel modules (which is normally
+handled by the ARM-specific pgd_free() function).  This patch changes
+defines the ARM USER_PGTABLES_CEILING to TASK_SIZE when CONFIG_ARM_LPAE
+is enabled.
 
-So this tries to fix the problem properly.  It marks the shared ptmx
-node as un-notifiable, and it lowers the "only once a minute" to a few
-seconds instead - still long enough that you can't time individual
-keystrokes, but short enough that you can tell whether somebody is
-active or not.
+Note that the pgd_free() function already checks the presence of the
+shared pmd page allocated by pgd_alloc() and frees it, though with
+ceiling 0 this wasn't necessary.
 
-Reported-by: Simon Kirby <sim@hostway.ca>
-Acked-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/pty.c    |    3 +++
- drivers/tty/tty_io.c |    4 ++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ arch/arm/include/asm/pgtable.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -607,6 +607,9 @@ static int ptmx_open(struct inode *inode
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -61,6 +61,15 @@ extern void __pgd_error(const char *file
+ #define FIRST_USER_ADDRESS	PAGE_SIZE
  
- 	nonseekable_open(inode, filp);
- 
-+	/* We refuse fsnotify events on ptmx, since it's a shared resource */
-+	filp->f_mode |= FMODE_NONOTIFY;
+ /*
++ * Use TASK_SIZE as the ceiling argument for free_pgtables() and
++ * free_pgd_range() to avoid freeing the modules pmd when LPAE is enabled (pmd
++ * page shared between user and kernel).
++ */
++#ifdef CONFIG_ARM_LPAE
++#define USER_PGTABLES_CEILING	TASK_SIZE
++#endif
 +
- 	retval = tty_alloc_file(filp);
- 	if (retval)
- 		return retval;
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -938,10 +938,10 @@ void start_tty(struct tty_struct *tty)
- 
- EXPORT_SYMBOL(start_tty);
- 
-+/* We limit tty time update visibility to every 8 seconds or so. */
- static void tty_update_time(struct timespec *time)
- {
--	unsigned long sec = get_seconds();
--	sec -= sec % 60;
-+	unsigned long sec = get_seconds() & ~7;
- 	if ((long)(sec - time->tv_sec) > 0)
- 		time->tv_sec = sec;
- }
++/*
+  * The pgprot_* and protection_map entries will be fixed up in runtime
+  * to include the cachable and bufferable bits based on memory policy,
+  * as well as any architecture dependent bits like global/ASID and SMP
 
 
