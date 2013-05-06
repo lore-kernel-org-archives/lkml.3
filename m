@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932990Ab3EFW5g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:57:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36222 "EHLO
+	id S933007Ab3EFW5j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:57:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36219 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932938Ab3EFW52 (ORCPT
+	with ESMTP id S932931Ab3EFW52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 18:57:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Elad Yi <elad.yi@gmail.com>, Philip Rakity <prakity@yahoo.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 61/63] mmc: core: Fix bit width test failing on old eMMC cards
-Date: Mon,  6 May 2013 15:56:39 -0700
-Message-Id: <20130506225329.308924139@linuxfoundation.org>
+        Vitaliy Fillipov <vitalif@yourcmc.ru>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, 700333@bugs.debian.org
+Subject: [ 44/63] clockevents: Set dummy handler on CPU_DEAD shutdown
+Date: Mon,  6 May 2013 15:56:22 -0700
+Message-Id: <20130506225325.499699191@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -27,42 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philip Rakity <prakity@yahoo.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 836dc2fe89c968c10cada87e0dfae6626f8f9da3 upstream.
+commit 6f7a05d7018de222e40ca003721037a530979974 upstream.
 
-PARTITION_SUPPORT needs to be set before doing the compare on version
-number so the bit width test does not get invalid data.  Before this
-patch, a Sandisk iNAND eMMC card would detect 1-bit width although
-the hardware supports 4-bit.
+Vitaliy reported that a per cpu HPET timer interrupt crashes the
+system during hibernation. What happens is that the per cpu HPET timer
+gets shut down when the nonboot cpus are stopped. When the nonboot
+cpus are onlined again the HPET code sets up the MSI interrupt which
+fires before the clock event device is registered. The event handler
+is still set to hrtimer_interrupt, which then crashes the machine due
+to highres mode not being active.
 
-Only affects old emmc devices - pre 4.4 devices.
+See http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=700333
 
-Reported-by: Elad Yi <elad.yi@gmail.com>
-Signed-off-by: Philip Rakity <prakity@yahoo.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+There is no real good way to avoid that in the HPET code. The HPET
+code alrady has a mechanism to detect spurious interrupts when event
+handler == NULL for a similar reason.
+
+We can handle that in the clockevent/tick layer and replace the
+previous functional handler with a dummy handler like we do in
+tick_setup_new_device().
+
+The original clockevents code did this in clockevents_exchange_device(),
+but that got removed by commit 7c1e76897 (clockevents: prevent
+clockevent event_handler ending up handler_noop) which forgot to fix
+it up in tick_shutdown(). Same issue with the broadcast device.
+
+Reported-by: Vitaliy Fillipov <vitalif@yourcmc.ru>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: 700333@bugs.debian.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/core/mmc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/time/tick-broadcast.c |    4 ++++
+ kernel/time/tick-common.c    |    1 +
+ 2 files changed, 5 insertions(+)
 
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -385,13 +385,13 @@ static int mmc_read_ext_csd(struct mmc_c
- 		ext_csd[EXT_CSD_SEC_FEATURE_SUPPORT];
- 	card->ext_csd.raw_trim_mult =
- 		ext_csd[EXT_CSD_TRIM_MULT];
-+	card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
- 	if (card->ext_csd.rev >= 4) {
- 		/*
- 		 * Enhanced area feature support -- check whether the eMMC
- 		 * card has the Enhanced area enabled.  If so, export enhanced
- 		 * area offset and size to user by adding sysfs interface.
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -66,6 +66,8 @@ static void tick_broadcast_start_periodi
+  */
+ int tick_check_broadcast_device(struct clock_event_device *dev)
+ {
++	struct clock_event_device *cur = tick_broadcast_device.evtdev;
++
+ 	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
+ 	    (tick_broadcast_device.evtdev &&
+ 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
+@@ -73,6 +75,8 @@ int tick_check_broadcast_device(struct c
+ 		return 0;
+ 
+ 	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
++	if (cur)
++		cur->event_handler = clockevents_handle_noop;
+ 	tick_broadcast_device.evtdev = dev;
+ 	if (!cpumask_empty(tick_get_broadcast_mask()))
+ 		tick_broadcast_start_periodic(dev);
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -323,6 +323,7 @@ static void tick_shutdown(unsigned int *
  		 */
--		card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
- 		if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
- 		    (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
- 			hc_erase_grp_sz =
+ 		dev->mode = CLOCK_EVT_MODE_UNUSED;
+ 		clockevents_exchange_device(dev, NULL);
++		dev->event_handler = clockevents_handle_noop;
+ 		td->evtdev = NULL;
+ 	}
+ 	raw_spin_unlock_irqrestore(&tick_device_lock, flags);
 
 
