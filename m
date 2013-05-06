@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933936Ab3EFXzo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:55:44 -0400
-Received: from mail-qe0-f74.google.com ([209.85.128.74]:54023 "EHLO
-	mail-qe0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932331Ab3EFXu2 (ORCPT
+	id S933953Ab3EFX4C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:56:02 -0400
+Received: from mail-ye0-f202.google.com ([209.85.213.202]:62278 "EHLO
+	mail-ye0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932274Ab3EFXu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:50:28 -0400
+	Mon, 6 May 2013 19:50:27 -0400
 From: Colin Cross <ccross@android.com>
 To: linux-kernel@vger.kernel.org
 Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
@@ -16,11 +16,13 @@ Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Colin Cross <ccross@android.com>, Oleg Nesterov <oleg@redhat.com>,
         linux-nfs@vger.kernel.org, linux-pm@vger.kernel.org,
         netdev@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH v3 04/16] lockdep: check that no locks held at freeze time
-Date: Mon,  6 May 2013 16:50:09 -0700
-Message-Id: <1367884221-20462-5-git-send-email-ccross@android.com>
+        Tejun Heo <tj@kernel.org>, Paul Walmsley <paul@pwsan.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Howells <dhowells@redhat.com>
+Subject: [PATCH v3 03/16] lockdep: remove task argument from debug_check_no_locks_held
+Date: Mon,  6 May 2013 16:50:08 -0700
+Message-Id: <1367884221-20462-4-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367884221-20462-1-git-send-email-ccross@android.com>
 References: <1367884221-20462-1-git-send-email-ccross@android.com>
@@ -28,59 +30,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mandeep Singh Baines <msb@chromium.org>
+The only existing caller to debug_check_no_locks_held calls it
+with 'current' as the task, and the freezer needs to call
+debug_check_no_locks_held but doesn't already have a current
+task pointer, so remove the argument.  It is already assuming
+that the current task is relevant by dumping the current stack
+trace as part of the warning.
 
-We shouldn't try_to_freeze if locks are held.  Holding a lock can cause a
-deadlock if the lock is later acquired in the suspend or hibernate path
-(e.g.  by dpm).  Holding a lock can also cause a deadlock in the case of
-cgroup_freezer if a lock is held inside a frozen cgroup that is later
-acquired by a process outside that group.
+This was originally part of 6aa9707099c (lockdep: check that
+no locks held at freeze time) which was reverted in
+dbf520a9d7d4.
 
-History:
-This patch was originally applied as 6aa9707099c and reverted in
-dbf520a9d7d4 because NFS was freezing with locks held.  It was
-deemed better to keep the bad freeze point in NFS to allow laptops
-to suspend consistently.  The previous patch in this series converts
-NFS to call _unsafe versions of the freezable helpers so that
-lockdep doesn't complain about them until a more correct fix
-can be applied.
-
-[akpm@linux-foundation.org: export debug_check_no_locks_held]
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Cc: Ben Chan <benchan@chromium.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ccross@android.com: don't warn if try_to_freeze_unsafe is called]
+Original-author: Mandeep Singh Baines <msb@chromium.org>
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- include/linux/freezer.h | 3 +++
- 1 file changed, 3 insertions(+)
+ include/linux/debug_locks.h |  4 ++--
+ kernel/exit.c               |  2 +-
+ kernel/lockdep.c            | 17 ++++++++---------
+ 3 files changed, 11 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index d3c038e..bcf9e65 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -3,6 +3,7 @@
- #ifndef FREEZER_H_INCLUDED
- #define FREEZER_H_INCLUDED
- 
-+#include <linux/debug_locks.h>
- #include <linux/sched.h>
- #include <linux/wait.h>
- #include <linux/atomic.h>
-@@ -60,6 +61,8 @@ static inline bool try_to_freeze_unsafe(void)
- 
- static inline bool try_to_freeze(void)
+diff --git a/include/linux/debug_locks.h b/include/linux/debug_locks.h
+index 3bd46f7..a975de1 100644
+--- a/include/linux/debug_locks.h
++++ b/include/linux/debug_locks.h
+@@ -51,7 +51,7 @@ struct task_struct;
+ extern void debug_show_all_locks(void);
+ extern void debug_show_held_locks(struct task_struct *task);
+ extern void debug_check_no_locks_freed(const void *from, unsigned long len);
+-extern void debug_check_no_locks_held(struct task_struct *task);
++extern void debug_check_no_locks_held(void);
+ #else
+ static inline void debug_show_all_locks(void)
  {
-+	if (!(current->flags & PF_NOFREEZE))
-+		debug_check_no_locks_held();
- 	return try_to_freeze_unsafe();
+@@ -67,7 +67,7 @@ debug_check_no_locks_freed(const void *from, unsigned long len)
  }
  
+ static inline void
+-debug_check_no_locks_held(struct task_struct *task)
++debug_check_no_locks_held(void)
+ {
+ }
+ #endif
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 60bc027..51e485c 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -835,7 +835,7 @@ void do_exit(long code)
+ 	/*
+ 	 * Make sure we are holding no locks:
+ 	 */
+-	debug_check_no_locks_held(tsk);
++	debug_check_no_locks_held();
+ 	/*
+ 	 * We can do this unlocked here. The futex code uses this flag
+ 	 * just to verify whether the pi state cleanup has been done
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 8a0efac..259db20 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -4088,7 +4088,7 @@ void debug_check_no_locks_freed(const void *mem_from, unsigned long mem_len)
+ }
+ EXPORT_SYMBOL_GPL(debug_check_no_locks_freed);
+ 
+-static void print_held_locks_bug(struct task_struct *curr)
++static void print_held_locks_bug(void)
+ {
+ 	if (!debug_locks_off())
+ 		return;
+@@ -4097,22 +4097,21 @@ static void print_held_locks_bug(struct task_struct *curr)
+ 
+ 	printk("\n");
+ 	printk("=====================================\n");
+-	printk("[ BUG: lock held at task exit time! ]\n");
++	printk("[ BUG: %s/%d still has locks held! ]\n",
++	       current->comm, task_pid_nr(current));
+ 	print_kernel_ident();
+ 	printk("-------------------------------------\n");
+-	printk("%s/%d is exiting with locks still held!\n",
+-		curr->comm, task_pid_nr(curr));
+-	lockdep_print_held_locks(curr);
+-
++	lockdep_print_held_locks(current);
+ 	printk("\nstack backtrace:\n");
+ 	dump_stack();
+ }
+ 
+-void debug_check_no_locks_held(struct task_struct *task)
++void debug_check_no_locks_held(void)
+ {
+-	if (unlikely(task->lockdep_depth > 0))
+-		print_held_locks_bug(task);
++	if (unlikely(current->lockdep_depth > 0))
++		print_held_locks_bug();
+ }
++EXPORT_SYMBOL_GPL(debug_check_no_locks_held);
+ 
+ void debug_show_all_locks(void)
+ {
 -- 
 1.8.2.1
 
