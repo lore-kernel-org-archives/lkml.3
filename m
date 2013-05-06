@@ -1,100 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab3EFMVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 08:21:07 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:56503 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab3EFMVD (ORCPT
+	id S1753032Ab3EFMbI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 08:31:08 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:33383 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752280Ab3EFMbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 08:21:03 -0400
-From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: kvmarm@lists.cs.columbia.edu, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, anup.patel@linaro.org, amit.shah@redhat.com,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Subject: [PATCH V2 3/3] arm64: earlyprintk support for virtio-mmio console.
-Date: Mon,  6 May 2013 17:49:51 +0530
-Message-Id: <1367842791-30285-4-git-send-email-pranavkumar@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1367842791-30285-1-git-send-email-pranavkumar@linaro.org>
-References: <1367842791-30285-1-git-send-email-pranavkumar@linaro.org>
+	Mon, 6 May 2013 08:31:06 -0400
+MIME-Version: 1.0
+Date: Mon, 6 May 2013 14:31:06 +0200
+X-Google-Sender-Auth: A5adz8HDooEiumB1FeAijAZsNnw
+Message-ID: <CAMuHMdXBk0oZUufY3KoFaZiawRHdm9juMqHPMTftqcjQDXnUgw@mail.gmail.com>
+Subject: h8300 SYMBOL_NAME() breakage
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Rusty Russell <rusty@rustcorp.com.au>, Al Viro <viro@zeniv.linux.org.uk>,
+        James Hogan <james.hogan@imgtec.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements earlyprintk based on virtio console
-using emerg_wr config register.
+http://kisskb.ellerman.id.au/kisskb/buildresult/8674258/
 
-Kernel args for using this will be:
-earlyprintk=virtio-console,<phys_address>
+arch/h8300/kernel/syscalls.S:6: Error: junk at end of line, first
+unrecognized character is `('
+arch/h8300/kernel/syscalls.S:17: Error: junk at end of line, first
+unrecognized character is `('
+arch/h8300/kernel/syscalls.S:18: Error: junk at end of line, first
+unrecognized character is `('
 
-Signed-off-by: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Signed-off-by: Anup Patel <anup.patel@linaro.org>
----
- arch/arm64/kernel/early_printk.c |   35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+Commit e1b5bb6d1236d4ad2084c53aa83dde7cdf6f8eea ("consolidate cond_syscall
+and SYSCALL_ALIAS declarations") broke the h8300 build because it removed
+the duplicate SYMBOL_NAME from arch/h8300/include/asm/linkage.h, and all
+the h8300 asm files include <asm/linkage.h> instead of <linux/linkage.h>.
+(yes, this was in -next).
 
-diff --git a/arch/arm64/kernel/early_printk.c b/arch/arm64/kernel/early_printk.c
-index ac974f4..ea3d2f5 100644
---- a/arch/arm64/kernel/early_printk.c
-+++ b/arch/arm64/kernel/early_printk.c
-@@ -25,6 +25,9 @@
- 
- #include <linux/amba/serial.h>
- #include <linux/serial_reg.h>
-+#include <linux/virtio_ids.h>
-+#include <linux/virtio_mmio.h>
-+#include <linux/virtio_console.h>
- 
- static void __iomem *early_base;
- static void (*printch)(char ch);
-@@ -53,6 +56,37 @@ static void smh_printch(char ch)
- }
- 
- /*
-+ * VIRTIO MMIO console single character Tx.
-+ */
-+static void virtio_console_printch(char ch)
-+{
-+	u32 tmp;
-+	static u32 init_done;
-+	static u32 can_write;
-+	struct virtio_console_config *p = early_base + VIRTIO_MMIO_CONFIG;
-+
-+	if (!init_done) {
-+		tmp = readl_relaxed(early_base + VIRTIO_MMIO_DEVICE_ID);
-+		if (tmp != VIRTIO_ID_CONSOLE) {
-+			init_done = 1;
-+			return;
-+		}
-+
-+		tmp = readl_relaxed(early_base + VIRTIO_MMIO_HOST_FEATURES);
-+		if (!(tmp & (1 << VIRTIO_CONSOLE_F_EMERG_WRITE))) {
-+			init_done = 1;
-+			return;
-+		}
-+
-+		init_done = 1;
-+		can_write = 1;
-+	}
-+
-+	if (can_write)
-+		writeb_relaxed(ch, &p->emerg_wr);
-+}
-+
-+/*
-  * 8250/16550 (8-bit aligned registers) single character TX.
-  */
- static void uart8250_8bit_printch(char ch)
-@@ -82,6 +116,7 @@ static const struct earlycon_match earlycon_match[] __initconst = {
- 	{ .name = "smh", .printch = smh_printch, },
- 	{ .name = "uart8250-8bit", .printch = uart8250_8bit_printch, },
- 	{ .name = "uart8250-32bit", .printch = uart8250_32bit_printch, },
-+	{ .name = "virtio-console", .printch = virtio_console_printch, },
- 	{}
- };
- 
--- 
-1.7.9.5
+Commit 126de6b20bfb82cc19012d5048f11f339ae5a021 ("linkage.h: fix build
+breakage due to symbol prefix handling") broke it even more, by removing
+SYMBOL_NAME() and replacing it by __SYMBOL_NAME().
 
+Commit f8ce1faf55955de62e0a12e330c6d9a526071f65 ("Merge tag
+'modules-next-for-linus' of
+git://git.kernel.org/pub/scm/linuxkernel/git/rusty/linux")
+also removed __SYMBOL_NAME(). hidden in a merge conflict resolution.
+
+Interestingly, commit b92021b09df70c1609e3547f3d6128dd560be97f
+("CONFIG_SYMBOL_PREFIX: cleanup.") mentions
+"arch/h8300/include/asm/linkage.h defines SYMBOL_NAME(), too", so (some)
+people should have been aware of the issue?
+
+BTW, arch/h8300/include/asm/linkage.h still has
+
+    #undef SYMBOL_NAME_LABEL
+    #define SYMBOL_NAME_LABEL(_name_) _##_name_##:
+    #endif
+
+How should this be fixed?
+  - Re-add SYMBOL_NAME() to arch/h8300/include/asm/linkage.h?
+  - Kill SYMBOL_NAME() and SYMBOL_NAME_LABEL(), and hardcode the
+underscores in the h8300 asm sources?
+  - Anything else?
+I didn't follow the whole symbol prefix discussion that closely.
+
+Thaks for your suggestions?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
