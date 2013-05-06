@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756384Ab3EFT5X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 15:57:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15071 "EHLO mx1.redhat.com"
+	id S1756426Ab3EFT5Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 15:57:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18946 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756228Ab3EFT5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755631Ab3EFT5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 15:57:20 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: qemu-devel@nongnu.org, linux-kernel@vger.kernel.org
@@ -14,128 +14,312 @@ Cc: Isaku Yamahata <yamahata@valinux.co.jp>,
         Paolo Bonzini <pbonzini@redhat.com>,
         Anthony Liguori <aliguori@us.ibm.com>, Rik van Riel <riel@redhat.com>,
         Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 2/4] mm: rmap preparation for remap_anon_pages
-Date: Mon,  6 May 2013 21:56:59 +0200
-Message-Id: <1367870221-12676-3-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 1/4] mm: madvise MADV_USERFAULT
+Date: Mon,  6 May 2013 21:56:58 +0200
+Message-Id: <1367870221-12676-2-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1367870221-12676-1-git-send-email-aarcange@redhat.com>
 References: <1367870221-12676-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remap_anon_pages (unlike remap_file_pages) tries to be non intrusive
-in the rmap code.
+MADV_USERFAULT is a new madvise flag that will set VM_USERFAULT in the
+vma flags. Whenever VM_USERFAULT is set in an anonymous vma, if
+userland touches a still unmapped virtual address, a sigbus signal is
+sent instead of allocating a new page. The sigbus signal handler will
+then resolve the page fault in userland by calling the remap_anon_pages
+syscall.
 
-As far as the rmap code is concerned, rmap_anon_pages only alters the
-page->mapping and page->index. It does it while holding the page
-lock. However there are a few places that in presence of anon pages
-are allowed to do rmap walks without the page lock (split_huge_page
-and page_referenced_anon). Those places that are doing rmap walks
-without taking the page lock first, must be updated to re-check that
-the page->mapping didn't change after they obtained the anon_vma
-lock. remap_anon_pages takes the anon_vma lock for writing before
-altering the page->mapping, so if the page->mapping is still the same
-after obtaining the anon_vma lock (without the page lock), the rmap
-walks can go ahead safely (and remap_anon_pages will wait them to
-complete before proceeding).
+This functionality is needed to reliably implement postcopy live
+migration in KVM (without having to use a special chardevice that
+would disable all advanced Linux VM features, like swapping, KSM, THP,
+automatic NUMA balancing, etc...).
 
-remap_anon_pages serializes against itself with the page lock.
+MADV_USERFAULT could also be used to offload parts of anonymous memory
+regions to remote nodes or to implement network distributed shared
+memory.
 
-All other places taking the anon_vma lock while holding the mmap_sem
-for writing, don't need to check if the page->mapping has changed
-after taking the anon_vma lock, regardless of the page lock, because
-remap_anon_pages holds the mmap_sem for reading.
-
-Overall this looks a fairly small change to the rmap code, notably
-less intrusive than the nonlinear vmas created by remap_file_pages.
-
-There's one constraint enforced to allow this simplification: the
-source pages passed to remap_anon_pages must be mapped only in one
-vma, but this is not a limitation when used to handle userland page
-faults with MADV_USERFAULT. The source addresses passed to
-remap_anon_pages should be set as VM_DONTCOPY with MADV_DONTFORK to
-avoid any risk of the mapcount of the pages increasing, if fork runs
-in parallel in another thread, before or while remap_anon_pages runs.
+Here I enlarged the vm_flags to 64bit as we run out of bits (noop on
+64bit kernels). An alternative is to find some combination of flags
+that are mutually exclusive if set.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- mm/huge_memory.c | 24 ++++++++++++++++++++----
- mm/rmap.c        |  9 +++++++++
- 2 files changed, 29 insertions(+), 4 deletions(-)
+ arch/alpha/include/uapi/asm/mman.h     |  3 +++
+ arch/mips/include/uapi/asm/mman.h      |  3 +++
+ arch/parisc/include/uapi/asm/mman.h    |  3 +++
+ arch/xtensa/include/uapi/asm/mman.h    |  3 +++
+ include/linux/mm.h                     |  1 +
+ include/linux/mm_types.h               |  2 +-
+ include/uapi/asm-generic/mman-common.h |  3 +++
+ mm/huge_memory.c                       | 34 ++++++++++++++++++++++++----------
+ mm/madvise.c                           | 16 ++++++++++++++++
+ mm/memory.c                            | 10 ++++++++++
+ 10 files changed, 67 insertions(+), 11 deletions(-)
 
+diff --git a/arch/alpha/include/uapi/asm/mman.h b/arch/alpha/include/uapi/asm/mman.h
+index 0086b47..a10313c 100644
+--- a/arch/alpha/include/uapi/asm/mman.h
++++ b/arch/alpha/include/uapi/asm/mman.h
+@@ -60,6 +60,9 @@
+ 					   overrides the coredump filter bits */
+ #define MADV_DODUMP	17		/* Clear the MADV_NODUMP flag */
+ 
++#define MADV_USERFAULT	18		/* Trigger user faults if not mapped */
++#define MADV_NOUSERFAULT 19		/* Don't trigger user faults */
++
+ /* compatibility flags */
+ #define MAP_FILE	0
+ 
+diff --git a/arch/mips/include/uapi/asm/mman.h b/arch/mips/include/uapi/asm/mman.h
+index cfcb876..d9d11a4 100644
+--- a/arch/mips/include/uapi/asm/mman.h
++++ b/arch/mips/include/uapi/asm/mman.h
+@@ -84,6 +84,9 @@
+ 					   overrides the coredump filter bits */
+ #define MADV_DODUMP	17		/* Clear the MADV_NODUMP flag */
+ 
++#define MADV_USERFAULT	18		/* Trigger user faults if not mapped */
++#define MADV_NOUSERFAULT 19		/* Don't trigger user faults */
++
+ /* compatibility flags */
+ #define MAP_FILE	0
+ 
+diff --git a/arch/parisc/include/uapi/asm/mman.h b/arch/parisc/include/uapi/asm/mman.h
+index 294d251..7bc7b7b 100644
+--- a/arch/parisc/include/uapi/asm/mman.h
++++ b/arch/parisc/include/uapi/asm/mman.h
+@@ -66,6 +66,9 @@
+ 					   overrides the coredump filter bits */
+ #define MADV_DODUMP	70		/* Clear the MADV_NODUMP flag */
+ 
++#define MADV_USERFAULT	71		/* Trigger user faults if not mapped */
++#define MADV_NOUSERFAULT 72		/* Don't trigger user faults */
++
+ /* compatibility flags */
+ #define MAP_FILE	0
+ #define MAP_VARIABLE	0
+diff --git a/arch/xtensa/include/uapi/asm/mman.h b/arch/xtensa/include/uapi/asm/mman.h
+index 00eed67..5448d88 100644
+--- a/arch/xtensa/include/uapi/asm/mman.h
++++ b/arch/xtensa/include/uapi/asm/mman.h
+@@ -90,6 +90,9 @@
+ 					   overrides the coredump filter bits */
+ #define MADV_DODUMP	17		/* Clear the MADV_NODUMP flag */
+ 
++#define MADV_USERFAULT	18		/* Trigger user faults if not mapped */
++#define MADV_NOUSERFAULT 19		/* Don't trigger user faults */
++
+ /* compatibility flags */
+ #define MAP_FILE	0
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index c05d7cf..f5a410e 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -110,6 +110,7 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_HUGEPAGE	0x20000000	/* MADV_HUGEPAGE marked this vma */
+ #define VM_NOHUGEPAGE	0x40000000	/* MADV_NOHUGEPAGE marked this vma */
+ #define VM_MERGEABLE	0x80000000	/* KSM may merge identical pages */
++#define VM_USERFAULT	0x100000000	/* Trigger user faults if not mapped */
+ 
+ #if defined(CONFIG_X86)
+ # define VM_PAT		VM_ARCH_1	/* PAT reserves whole VMA at once (x86) */
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index ace9a5f..bed1c7c 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -198,7 +198,7 @@ struct page_frag {
+ #endif
+ };
+ 
+-typedef unsigned long __nocast vm_flags_t;
++typedef unsigned long long __nocast vm_flags_t;
+ 
+ /*
+  * A region containing a mapping of a non-memory backed file under NOMMU
+diff --git a/include/uapi/asm-generic/mman-common.h b/include/uapi/asm-generic/mman-common.h
+index 4164529..43f36c0 100644
+--- a/include/uapi/asm-generic/mman-common.h
++++ b/include/uapi/asm-generic/mman-common.h
+@@ -52,6 +52,9 @@
+ 					   overrides the coredump filter bits */
+ #define MADV_DODUMP	17		/* Clear the MADV_NODUMP flag */
+ 
++#define MADV_USERFAULT	18		/* Trigger user faults if not mapped */
++#define MADV_NOUSERFAULT 19		/* Don't trigger user faults */
++
+ /* compatibility flags */
+ #define MAP_FILE	0
+ 
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index f46aad1..9a2e235 100644
+index 03a89a2..f46aad1 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -1824,6 +1824,7 @@ int split_huge_page_to_list(struct page *page, struct list_head *list)
- {
- 	struct anon_vma *anon_vma;
- 	int ret = 1;
-+	struct address_space *mapping;
- 
- 	BUG_ON(is_huge_zero_page(page));
- 	BUG_ON(!PageAnon(page));
-@@ -1835,10 +1836,24 @@ int split_huge_page_to_list(struct page *page, struct list_head *list)
- 	 * page_lock_anon_vma_read except the write lock is taken to serialise
- 	 * against parallel split or collapse operations.
- 	 */
--	anon_vma = page_get_anon_vma(page);
--	if (!anon_vma)
--		goto out;
--	anon_vma_lock_write(anon_vma);
-+	for (;;) {
-+		mapping = ACCESS_ONCE(page->mapping);
-+		anon_vma = page_get_anon_vma(page);
-+		if (!anon_vma)
-+			goto out;
-+		anon_vma_lock_write(anon_vma);
-+		/*
-+		 * We don't hold the page lock here so
-+		 * remap_anon_pages_huge_pmd can change the anon_vma
-+		 * from under us until we obtain the anon_vma
-+		 * lock. Verify that we obtained the anon_vma lock
-+		 * before remap_anon_pages did.
-+		 */
-+		if (likely(mapping == ACCESS_ONCE(page->mapping)))
-+			break;
-+		anon_vma_unlock_write(anon_vma);
-+		put_anon_vma(anon_vma);
-+	}
- 
- 	ret = 0;
- 	if (!PageCompound(page))
-@@ -2294,6 +2309,7 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	 * Prevent all access to pagetables with the exception of
- 	 * gup_fast later hanlded by the ptep_clear_flush and the VM
- 	 * handled by the anon_vma lock + PG_lock.
-+	 * remap_anon_pages is prevented to race as well by the mmap_sem.
- 	 */
- 	down_write(&mm->mmap_sem);
- 	if (unlikely(khugepaged_test_exit(mm)))
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 6280da8..86d007d 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -448,6 +448,7 @@ struct anon_vma *page_lock_anon_vma_read(struct page *page)
- 	struct anon_vma *root_anon_vma;
- 	unsigned long anon_mapping;
- 
-+repeat:
- 	rcu_read_lock();
- 	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
- 	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
-@@ -486,6 +487,14 @@ struct anon_vma *page_lock_anon_vma_read(struct page *page)
- 	rcu_read_unlock();
- 	anon_vma_lock_read(anon_vma);
- 
-+	/* check if remap_anon_pages changed the anon_vma */
-+	if (unlikely((unsigned long) ACCESS_ONCE(page->mapping) != anon_mapping)) {
-+		anon_vma_unlock_read(anon_vma);
-+		put_anon_vma(anon_vma);
-+		anon_vma = NULL;
-+		goto repeat;
-+	}
+@@ -727,6 +727,11 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 		pte_free(mm, pgtable);
+ 	} else {
+ 		pmd_t entry;
 +
- 	if (atomic_dec_and_test(&anon_vma->refcount)) {
++		/* Deliver the page fault to userland */
++		if (vma->vm_flags & VM_USERFAULT)
++			goto do_sigbus;
++
+ 		entry = mk_huge_pmd(page, vma);
+ 		page_add_new_anon_rmap(page, vma, haddr);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+@@ -737,6 +742,9 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 	}
+ 
+ 	return 0;
++do_sigbus:
++	spin_unlock(&mm->page_table_lock);
++	return VM_FAULT_SIGBUS;
+ }
+ 
+ static inline gfp_t alloc_hugepage_gfpmask(int defrag, gfp_t extra_gfp)
+@@ -761,20 +769,17 @@ static inline struct page *alloc_hugepage(int defrag)
+ }
+ #endif
+ 
+-static bool set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
++static void set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
+ 		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd,
+ 		struct page *zero_page)
+ {
+ 	pmd_t entry;
+-	if (!pmd_none(*pmd))
+-		return false;
+ 	entry = mk_pmd(zero_page, vma->vm_page_prot);
+ 	entry = pmd_wrprotect(entry);
+ 	entry = pmd_mkhuge(entry);
+ 	set_pmd_at(mm, haddr, pmd, entry);
+ 	pgtable_trans_huge_deposit(mm, pgtable);
+ 	mm->nr_ptes++;
+-	return true;
+ }
+ 
+ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+@@ -794,6 +799,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 				transparent_hugepage_use_zero_page()) {
+ 			pgtable_t pgtable;
+ 			struct page *zero_page;
++			int ret;
+ 			bool set;
+ 			pgtable = pte_alloc_one(mm, haddr);
+ 			if (unlikely(!pgtable))
+@@ -805,14 +811,24 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 				goto out;
+ 			}
+ 			spin_lock(&mm->page_table_lock);
+-			set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
+-					zero_page);
++			ret = 0;
++			set = false;
++			if (pmd_none(*pmd)) {
++				if (vma->vm_flags & VM_USERFAULT)
++					ret = VM_FAULT_SIGBUS;
++				else {
++					set_huge_zero_page(pgtable, mm, vma,
++							   haddr, pmd,
++							   zero_page);
++					set = true;
++				}
++			}
+ 			spin_unlock(&mm->page_table_lock);
+ 			if (!set) {
+ 				pte_free(mm, pgtable);
+ 				put_huge_zero_page();
+ 			}
+-			return 0;
++			return ret;
+ 		}
+ 		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+ 					  vma, haddr, numa_node_id(), 0);
+@@ -886,16 +902,14 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 	 */
+ 	if (is_huge_zero_pmd(pmd)) {
+ 		struct page *zero_page;
+-		bool set;
  		/*
- 		 * Oops, we held the last refcount, release the lock
+ 		 * get_huge_zero_page() will never allocate a new page here,
+ 		 * since we already have a zero page to copy. It just takes a
+ 		 * reference.
+ 		 */
+ 		zero_page = get_huge_zero_page();
+-		set = set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd,
++		set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd,
+ 				zero_page);
+-		BUG_ON(!set); /* unexpected !pmd_none(dst_pmd) */
+ 		ret = 0;
+ 		goto out_unlock;
+ 	}
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 7055883..2ecab73 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -93,6 +93,21 @@ static long madvise_behavior(struct vm_area_struct * vma,
+ 		if (error)
+ 			goto out;
+ 		break;
++	case MADV_USERFAULT:
++		if (vma->vm_ops) {
++			error = -EINVAL;
++			goto out;
++		}
++		new_flags |= VM_USERFAULT;
++		break;
++	case MADV_NOUSERFAULT:
++		if (vma->vm_ops) {
++			WARN_ON(new_flags & VM_USERFAULT);
++			error = -EINVAL;
++			goto out;
++		}
++		new_flags &= ~VM_USERFAULT;
++		break;
+ 	}
+ 
+ 	if (new_flags == vma->vm_flags) {
+@@ -405,6 +420,7 @@ madvise_behavior_valid(int behavior)
+ 	case MADV_HUGEPAGE:
+ 	case MADV_NOHUGEPAGE:
+ #endif
++	case MADV_USERFAULT:
+ 	case MADV_DONTDUMP:
+ 	case MADV_DODUMP:
+ 		return 1;
+diff --git a/mm/memory.c b/mm/memory.c
+index f7a1fba..044a57c 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3235,6 +3235,9 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
+ 		if (!pte_none(*page_table))
+ 			goto unlock;
++		/* Deliver the page fault to userland, check inside PT lock */
++		if (vma->vm_flags & VM_USERFAULT)
++			goto sigbus;
+ 		goto setpte;
+ 	}
+ 
+@@ -3262,6 +3265,10 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (!pte_none(*page_table))
+ 		goto release;
+ 
++	/* Deliver the page fault to userland, check inside PT lock */
++	if (vma->vm_flags & VM_USERFAULT)
++		goto sigbus;
++
+ 	inc_mm_counter_fast(mm, MM_ANONPAGES);
+ 	page_add_new_anon_rmap(page, vma, address);
+ setpte:
+@@ -3280,6 +3287,9 @@ oom_free_page:
+ 	page_cache_release(page);
+ oom:
+ 	return VM_FAULT_OOM;
++sigbus:
++	pte_unmap_unlock(page_table, ptl);
++	return VM_FAULT_SIGBUS;
+ }
+ 
+ /*
