@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759473Ab3EFW46 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:56:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36080 "EHLO
+	id S934018Ab3EGACG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:02:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36098 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759301Ab3EFW44 (ORCPT
+	with ESMTP id S1759478Ab3EFW47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:56:56 -0400
+	Mon, 6 May 2013 18:56:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 14/63] xen/time: Fix kasprintf splat when allocating timer%d IRQ line.
-Date: Mon,  6 May 2013 15:55:52 -0700
-Message-Id: <20130506225318.276375066@linuxfoundation.org>
+        Simon Kirby <sim@hostway.ca>, Jiri Slaby <jslaby@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 18/63] tty: fix up atime/mtime mess, take three
+Date: Mon,  6 May 2013 15:55:56 -0700
+Message-Id: <20130506225319.385016629@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -26,73 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 7918c92ae9638eb8a6ec18e2b4a0de84557cccc8 upstream.
+commit b0b885657b6c8ef63a46bc9299b2a7715d19acde upstream.
 
-When we online the CPU, we get this splat:
+We first tried to avoid updating atime/mtime entirely (commit
+b0de59b5733d: "TTY: do not update atime/mtime on read/write"), and then
+limited it to only update it occasionally (commit 37b7f3c76595: "TTY:
+fix atime/mtime regression"), but it turns out that this was both
+insufficient and overkill.
 
-smpboot: Booting Node 0 Processor 1 APIC 0x2
-installing Xen timer for CPU 1
-BUG: sleeping function called from invalid context at /home/konrad/ssd/konrad/linux/mm/slab.c:3179
-in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper/1
-Pid: 0, comm: swapper/1 Not tainted 3.9.0-rc6upstream-00001-g3884fad #1
-Call Trace:
- [<ffffffff810c1fea>] __might_sleep+0xda/0x100
- [<ffffffff81194617>] __kmalloc_track_caller+0x1e7/0x2c0
- [<ffffffff81303758>] ? kasprintf+0x38/0x40
- [<ffffffff813036eb>] kvasprintf+0x5b/0x90
- [<ffffffff81303758>] kasprintf+0x38/0x40
- [<ffffffff81044510>] xen_setup_timer+0x30/0xb0
- [<ffffffff810445af>] xen_hvm_setup_cpu_clockevents+0x1f/0x30
- [<ffffffff81666d0a>] start_secondary+0x19c/0x1a8
+It was insufficient because we let people attach to the shared ptmx node
+to see activity without even reading atime/mtime, and it was overkill
+because the "only once a minute" means that you can't really tell an
+idle person from an active one with 'w'.
 
-The solution to that is use kasprintf in the CPU hotplug path
-that 'online's the CPU. That is, do it in in xen_hvm_cpu_notify,
-and remove the call to in xen_hvm_setup_cpu_clockevents.
+So this tries to fix the problem properly.  It marks the shared ptmx
+node as un-notifiable, and it lowers the "only once a minute" to a few
+seconds instead - still long enough that you can't time individual
+keystrokes, but short enough that you can tell whether somebody is
+active or not.
 
-Unfortunatly the later is not a good idea as the bootup path
-does not use xen_hvm_cpu_notify so we would end up never allocating
-timer%d interrupt lines when booting. As such add the check for
-atomic() to continue.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-by: Simon Kirby <sim@hostway.ca>
+Acked-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/enlighten.c |    5 ++++-
- arch/x86/xen/time.c      |    6 +++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/tty/pty.c    |    3 +++
+ drivers/tty/tty_io.c |    4 ++--
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1515,8 +1515,11 @@ static int __cpuinit xen_hvm_cpu_notify(
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 		xen_vcpu_setup(cpu);
--		if (xen_have_vector_callback)
-+		if (xen_have_vector_callback) {
- 			xen_init_lock_cpu(cpu);
-+			if (xen_feature(XENFEAT_hvm_safe_pvclock))
-+				xen_setup_timer(cpu);
-+		}
- 		break;
- 	default:
- 		break;
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -497,7 +497,11 @@ static void xen_hvm_setup_cpu_clockevent
- {
- 	int cpu = smp_processor_id();
- 	xen_setup_runstate_info(cpu);
--	xen_setup_timer(cpu);
-+	/*
-+	 * xen_setup_timer(cpu) - snprintf is bad in atomic context. Hence
-+	 * doing it xen_hvm_cpu_notify (which gets called by smp_init during
-+	 * early bootup and also during CPU hotplug events).
-+	 */
- 	xen_setup_cpu_clockevents();
- }
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -607,6 +607,9 @@ static int ptmx_open(struct inode *inode
  
+ 	nonseekable_open(inode, filp);
+ 
++	/* We refuse fsnotify events on ptmx, since it's a shared resource */
++	filp->f_mode |= FMODE_NONOTIFY;
++
+ 	retval = tty_alloc_file(filp);
+ 	if (retval)
+ 		return retval;
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -938,10 +938,10 @@ void start_tty(struct tty_struct *tty)
+ 
+ EXPORT_SYMBOL(start_tty);
+ 
++/* We limit tty time update visibility to every 8 seconds or so. */
+ static void tty_update_time(struct timespec *time)
+ {
+-	unsigned long sec = get_seconds();
+-	sec -= sec % 60;
++	unsigned long sec = get_seconds() & ~7;
+ 	if ((long)(sec - time->tv_sec) > 0)
+ 		time->tv_sec = sec;
+ }
 
 
