@@ -1,133 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628Ab3EFVDX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:03:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59182 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757712Ab3EFUqe (ORCPT
+	id S1758638Ab3EFVDc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:03:32 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:51727 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758597Ab3EFVDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:34 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 059/115] ALSA: emu10k1: Fix dock firmware loading
-Date: Mon,  6 May 2013 13:44:55 -0700
-Message-Id: <20130506203101.601210703@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
-References: <20130506203055.537199268@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 6 May 2013 17:03:22 -0400
+Date: Mon, 6 May 2013 14:02:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: rcu_init allocation failure trace on bootup
+Message-ID: <20130506210249.GJ3501@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130506175647.GA1309@redhat.com>
+ <20130506190522.GD3501@linux.vnet.ibm.com>
+ <20130506192653.GA16819@redhat.com>
+ <20130506194351.GH3501@linux.vnet.ibm.com>
+ <20130506202413.GA1261@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130506202413.GA1261@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050621-7606-0000-0000-00000B2184E8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On Mon, May 06, 2013 at 04:24:13PM -0400, Dave Jones wrote:
+> On Mon, May 06, 2013 at 12:43:51PM -0700, Paul E. McKenney wrote:
+>  > On Mon, May 06, 2013 at 03:26:53PM -0400, Dave Jones wrote:
+>  > > On Mon, May 06, 2013 at 12:05:22PM -0700, Paul E. McKenney wrote:
+>  > >  > On Mon, May 06, 2013 at 01:56:47PM -0400, Dave Jones wrote:
+>  > >  > > [    0.000000]  RCU debugfs-based tracing is enabled.
+>  > >  > > [    0.000000]  RCU lockdep checking is enabled.
+>  > >  > > [    0.000000] ------------[ cut here ]------------
+>  > >  > > [    0.000000] WARNING: at mm/nobootmem.c:215 ___alloc_bootmem_nopanic+0x3a/0x7d()
+>  > >  > > [    0.000000] Modules linked in:
+>  > >  > > [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.9.0+ #128
+>  > >  > > [    0.000000] Hardware name:                  /D975XBX, BIOS BX97510J.86A.1209.2006.0601.1340 06/01/2006
+>  > >  > > [    0.000000]  ffffffff819f4246 ffffffff81c01e68 ffffffff816a0db2 ffffffff81c01ea8
+>  > >  > > [    0.000000]  ffffffff8104b1a0 ffffffff819e1078 0000000000000000 0000000000000008
+>  > >  > > [    0.000000]  ffffffffffffffff 0000000000000040 0000000000000000 ffffffff81c01eb8
+>  > >  > > [    0.000000] Call Trace:
+>  > >  > > [    0.000000]  [<ffffffff816a0db2>] dump_stack+0x19/0x1b
+>  > >  > > [    0.000000]  [<ffffffff8104b1a0>] warn_slowpath_common+0x70/0xa0
+>  > >  > > [    0.000000]  [<ffffffff8104b1ea>] warn_slowpath_null+0x1a/0x20
+>  > >  > > [    0.000000]  [<ffffffff81ef8914>] ___alloc_bootmem_nopanic+0x3a/0x7d
+>  > >  > > [    0.000000]  [<ffffffff81ef8b87>] __alloc_bootmem+0x13/0x39
+>  > >  > > [    0.000000]  [<ffffffff81f090ad>] alloc_bootmem_cpumask_var+0x1a/0x21
+>  > >  > > [    0.000000]  [<ffffffff81ef1f5a>] rcu_init+0x7f/0x261
+>  > >  > > [    0.000000]  [<ffffffff81ef4acb>] ? perf_event_init+0x178/0x181
+>  > >  > > [    0.000000]  [<ffffffff81ed6c79>] start_kernel+0x232/0x3d3
+>  > >  > > [    0.000000]  [<ffffffff81ed6846>] ? repair_env_string+0x5e/0x5e
+>  > >  > > [    0.000000]  [<ffffffff81ed6577>] x86_64_start_reservations+0x2a/0x2c
+>  > >  > > [    0.000000]  [<ffffffff81ed6646>] x86_64_start_kernel+0xcd/0xd1
+>  > >  > > [    0.000000] ---[ end trace 0acfc82c197165dd ]---
+>  > >  > > [    0.000000]  Experimental no-CBs for all CPUs
+>  > >  > > [    0.000000]  Experimental no-CBs CPUs: 0-1.
+>  > >  > > [    0.000000] NO_HZ: Full dynticks CPUs: 1.
+>  > >  > 
+>  > >  > Do you have commit fa0f93cd6a (rcu: Don't allocate bootmem from rcu_init())?
+>  > >  > If not, could you please try applying it?
+>  > > 
+>  > > That commit isn't in Linus tree.
+>  > 
+>  > You are quite right, I am getting ahead of myself.  Please see below
+>  > for the patch.
+> 
+> Doesn't fix it for me.
+> 
+> Is it this one instead perhaps ?
+> 
+>   89 #ifndef CONFIG_RCU_NOCB_CPU_NONE
+>   90         if (!have_rcu_nocb_mask) {
+>   91                 alloc_bootmem_cpumask_var(&rcu_nocb_mask);
+>   92                 have_rcu_nocb_mask = true;
+>   93         }
 
-------------------
+Hmmm...  That was in fact the one that the patch was intended to change.
+Just out of curiosity, where did the patch apply instead?
 
-From: Takashi Iwai <tiwai@suse.de>
-
-commit e08b34e86dfdb72a62196ce0f03d33f48958d8b9 upstream.
-
-The commit [b209c4df: ALSA: emu10k1: cache emu1010 firmware] broke the
-firmware loading of the dock, just (mistakenly) ignoring a different
-firmware for docks on some models.  This patch revives them again.
-
-Bugzilla: https://bugs.archlinux.org/task/34865
-Reported-and-tested-by: Tobias Powalowski <tobias.powalowski@googlemail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/sound/emu10k1.h          |    1 +
- sound/pci/emu10k1/emu10k1_main.c |   39 +++++++++++++++++++++++++++++++++------
- 2 files changed, 34 insertions(+), 6 deletions(-)
-
---- a/include/sound/emu10k1.h
-+++ b/include/sound/emu10k1.h
-@@ -1787,6 +1787,7 @@ struct snd_emu10k1 {
- 	unsigned int next_free_voice;
- 
- 	const struct firmware *firmware;
-+	const struct firmware *dock_fw;
- 
- #ifdef CONFIG_PM_SLEEP
- 	unsigned int *saved_ptr;
---- a/sound/pci/emu10k1/emu10k1_main.c
-+++ b/sound/pci/emu10k1/emu10k1_main.c
-@@ -657,14 +657,14 @@ static int snd_emu10k1_cardbus_init(stru
- 	return 0;
- }
- 
--static int snd_emu1010_load_firmware(struct snd_emu10k1 *emu)
-+static int snd_emu1010_load_firmware(struct snd_emu10k1 *emu,
-+				     const struct firmware *fw_entry)
- {
- 	int n, i;
- 	int reg;
- 	int value;
- 	unsigned int write_post;
- 	unsigned long flags;
--	const struct firmware *fw_entry = emu->firmware;
- 
- 	if (!fw_entry)
- 		return -EIO;
-@@ -725,9 +725,34 @@ static int emu1010_firmware_thread(void
- 			/* Return to Audio Dock programming mode */
- 			snd_printk(KERN_INFO "emu1010: Loading Audio Dock Firmware\n");
- 			snd_emu1010_fpga_write(emu, EMU_HANA_FPGA_CONFIG, EMU_HANA_FPGA_CONFIG_AUDIODOCK);
--			err = snd_emu1010_load_firmware(emu);
--			if (err != 0)
--				continue;
-+
-+			if (!emu->dock_fw) {
-+				const char *filename = NULL;
-+				switch (emu->card_capabilities->emu_model) {
-+				case EMU_MODEL_EMU1010:
-+					filename = DOCK_FILENAME;
-+					break;
-+				case EMU_MODEL_EMU1010B:
-+					filename = MICRO_DOCK_FILENAME;
-+					break;
-+				case EMU_MODEL_EMU1616:
-+					filename = MICRO_DOCK_FILENAME;
-+					break;
-+				}
-+				if (filename) {
-+					err = request_firmware(&emu->dock_fw,
-+							       filename,
-+							       &emu->pci->dev);
-+					if (err)
-+						continue;
-+				}
-+			}
-+
-+			if (emu->dock_fw) {
-+				err = snd_emu1010_load_firmware(emu, emu->dock_fw);
-+				if (err)
-+					continue;
-+			}
- 
- 			snd_emu1010_fpga_write(emu, EMU_HANA_FPGA_CONFIG, 0);
- 			snd_emu1010_fpga_read(emu, EMU_HANA_IRQ_STATUS, &reg);
-@@ -862,7 +887,7 @@ static int snd_emu10k1_emu1010_init(stru
- 			   filename, emu->firmware->size);
- 	}
- 
--	err = snd_emu1010_load_firmware(emu);
-+	err = snd_emu1010_load_firmware(emu, emu->firmware);
- 	if (err != 0) {
- 		snd_printk(KERN_INFO "emu1010: Loading Firmware failed\n");
- 		return err;
-@@ -1253,6 +1278,8 @@ static int snd_emu10k1_free(struct snd_e
- 		kthread_stop(emu->emu1010.firmware_thread);
- 	if (emu->firmware)
- 		release_firmware(emu->firmware);
-+	if (emu->dock_fw)
-+		release_firmware(emu->dock_fw);
- 	if (emu->irq >= 0)
- 		free_irq(emu->irq, emu);
- 	/* remove reserved page */
-
+							Thanx, Paul
 
