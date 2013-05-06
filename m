@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760675Ab3EFXOJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:14:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36940 "EHLO
+	id S933241Ab3EFXS0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:18:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36966 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760655Ab3EFXOE (ORCPT
+	with ESMTP id S1760670Ab3EFXOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:04 -0400
+	Mon, 6 May 2013 19:14:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 084/104] NFSv4: Handle NFS4ERR_DELAY and NFS4ERR_GRACE in nfs4_open_delegation_recall
-Date: Mon,  6 May 2013 16:12:43 -0700
-Message-Id: <20130506230052.303820146@linuxfoundation.org>
+        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>,
+        Jan Kara <jack@suse.cz>
+Subject: [ 093/104] ext4: fix journal callback list traversal
+Date: Mon,  6 May 2013 16:12:52 -0700
+Message-Id: <20130506230053.196089701@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,36 +27,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit 8b6cc4d6f841d31f72fe7478453759166d366274 upstream.
+commit 5d3ee20855e28169d711b394857ee608a5023094 upstream.
 
-A server shouldn't normally return NFS4ERR_GRACE if the client holds a
-delegation, since no conflicting lock reclaims can be granted, however
-the spec does not require the server to grant the open in this
-instance
+It is incorrect to use list_for_each_entry_safe() for journal callback
+traversial because ->next may be removed by other task:
+->ext4_mb_free_metadata()
+  ->ext4_mb_free_metadata()
+    ->ext4_journal_callback_del()
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+This results in the following issue:
+
+WARNING: at lib/list_debug.c:62 __list_del_entry+0x1c0/0x250()
+Hardware name:
+list_del corruption. prev->next should be ffff88019a4ec198, but was 6b6b6b6b6b6b6b6b
+Modules linked in: cpufreq_ondemand acpi_cpufreq freq_table mperf coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode sg xhci_hcd button sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw aes_x86_64 xts gf128mul ahci libahci pata_acpi ata_generic dm_mirror dm_region_hash dm_log dm_mod
+Pid: 16400, comm: jbd2/dm-1-8 Tainted: G        W    3.8.0-rc3+ #107
+Call Trace:
+ [<ffffffff8106fb0d>] warn_slowpath_common+0xad/0xf0
+ [<ffffffff8106fc06>] warn_slowpath_fmt+0x46/0x50
+ [<ffffffff813637e9>] ? ext4_journal_commit_callback+0x99/0xc0
+ [<ffffffff8148cae0>] __list_del_entry+0x1c0/0x250
+ [<ffffffff813637bf>] ext4_journal_commit_callback+0x6f/0xc0
+ [<ffffffff813ca336>] jbd2_journal_commit_transaction+0x23a6/0x2570
+ [<ffffffff8108aa42>] ? try_to_del_timer_sync+0x82/0xa0
+ [<ffffffff8108b491>] ? del_timer_sync+0x91/0x1e0
+ [<ffffffff813d3ecf>] kjournald2+0x19f/0x6a0
+ [<ffffffff810ad630>] ? wake_up_bit+0x40/0x40
+ [<ffffffff813d3d30>] ? bit_spin_lock+0x80/0x80
+ [<ffffffff810ac6be>] kthread+0x10e/0x120
+ [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
+ [<ffffffff818ff6ac>] ret_from_fork+0x7c/0xb0
+ [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
+
+This patch fix the issue as follows:
+- ext4_journal_commit_callback() make list truly traversial safe
+  simply by always starting from list_head
+- fix race between two ext4_journal_callback_del() and
+  ext4_journal_callback_try_del()
+
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/ext4/ext4_jbd2.h |    6 +++++-
+ fs/ext4/mballoc.c   |    8 ++++----
+ fs/ext4/super.c     |    7 +++++--
+ 3 files changed, 14 insertions(+), 7 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1374,6 +1374,12 @@ int nfs4_open_delegation_recall(struct n
- 			case -ENOMEM:
- 				err = 0;
- 				goto out;
-+			case -NFS4ERR_DELAY:
-+			case -NFS4ERR_GRACE:
-+				set_bit(NFS_DELEGATED_STATE, &state->flags);
-+				ssleep(1);
-+				err = -EAGAIN;
-+				goto out;
+--- a/fs/ext4/ext4_jbd2.h
++++ b/fs/ext4/ext4_jbd2.h
+@@ -170,16 +170,20 @@ static inline void ext4_journal_callback
+  * ext4_journal_callback_del: delete a registered callback
+  * @handle: active journal transaction handle on which callback was registered
+  * @jce: registered journal callback entry to unregister
++ * Return true if object was sucessfully removed
+  */
+-static inline void ext4_journal_callback_del(handle_t *handle,
++static inline bool ext4_journal_callback_try_del(handle_t *handle,
+ 					     struct ext4_journal_cb_entry *jce)
+ {
++	bool deleted;
+ 	struct ext4_sb_info *sbi =
+ 			EXT4_SB(handle->h_transaction->t_journal->j_private);
+ 
+ 	spin_lock(&sbi->s_md_lock);
++	deleted = !list_empty(&jce->jce_list);
+ 	list_del_init(&jce->jce_list);
+ 	spin_unlock(&sbi->s_md_lock);
++	return deleted;
+ }
+ 
+ int
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4449,11 +4449,11 @@ ext4_mb_free_metadata(handle_t *handle,
+ 	node = rb_prev(new_node);
+ 	if (node) {
+ 		entry = rb_entry(node, struct ext4_free_data, efd_node);
+-		if (can_merge(entry, new_entry)) {
++		if (can_merge(entry, new_entry) &&
++		    ext4_journal_callback_try_del(handle, &entry->efd_jce)) {
+ 			new_entry->efd_start_cluster = entry->efd_start_cluster;
+ 			new_entry->efd_count += entry->efd_count;
+ 			rb_erase(node, &(db->bb_free_root));
+-			ext4_journal_callback_del(handle, &entry->efd_jce);
+ 			kmem_cache_free(ext4_free_data_cachep, entry);
  		}
- 		err = nfs4_handle_exception(server, err, &exception);
- 	} while (exception.retry);
+ 	}
+@@ -4461,10 +4461,10 @@ ext4_mb_free_metadata(handle_t *handle,
+ 	node = rb_next(new_node);
+ 	if (node) {
+ 		entry = rb_entry(node, struct ext4_free_data, efd_node);
+-		if (can_merge(new_entry, entry)) {
++		if (can_merge(new_entry, entry) &&
++		    ext4_journal_callback_try_del(handle, &entry->efd_jce)) {
+ 			new_entry->efd_count += entry->efd_count;
+ 			rb_erase(node, &(db->bb_free_root));
+-			ext4_journal_callback_del(handle, &entry->efd_jce);
+ 			kmem_cache_free(ext4_free_data_cachep, entry);
+ 		}
+ 	}
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -452,10 +452,13 @@ static void ext4_journal_commit_callback
+ 	struct super_block		*sb = journal->j_private;
+ 	struct ext4_sb_info		*sbi = EXT4_SB(sb);
+ 	int				error = is_journal_aborted(journal);
+-	struct ext4_journal_cb_entry	*jce, *tmp;
++	struct ext4_journal_cb_entry	*jce;
+ 
++	BUG_ON(txn->t_state == T_FINISHED);
+ 	spin_lock(&sbi->s_md_lock);
+-	list_for_each_entry_safe(jce, tmp, &txn->t_private_list, jce_list) {
++	while (!list_empty(&txn->t_private_list)) {
++		jce = list_entry(txn->t_private_list.next,
++				 struct ext4_journal_cb_entry, jce_list);
+ 		list_del_init(&jce->jce_list);
+ 		spin_unlock(&sbi->s_md_lock);
+ 		jce->jce_func(sb, jce, error);
 
 
