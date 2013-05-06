@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759999Ab3EGAHS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 20:07:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36036 "EHLO
+	id S1760021Ab3EGAHv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:07:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36032 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759230Ab3EFW4t (ORCPT
+	with ESMTP id S1759214Ab3EFW4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:56:49 -0400
+	Mon, 6 May 2013 18:56:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yogesh Ashok Powar <yogeshp@marvell.com>,
-        Amitkumar Karwar <akarwar@marvell.com>,
-        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 06/63] mwifiex: Use pci_release_region() instead of a pci_release_regions()
-Date: Mon,  6 May 2013 15:55:44 -0700
-Message-Id: <20130506225316.551681557@linuxfoundation.org>
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 05/63] powerpc/spufs: Initialise inode->i_ino in spufs_new_inode()
+Date: Mon,  6 May 2013 15:55:43 -0700
+Message-Id: <20130506225316.209929280@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -29,37 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yogesh Ashok Powar <yogeshp@marvell.com>
+From: Michael Ellerman <michael@ellerman.id.au>
 
-commit c380aafb77b7435d010698fe3ca6d3e1cd745fde upstream.
+commit 6747e83235caecd30b186d1282e4eba7679f81b7 upstream.
 
-PCI regions are associated with the device using
-pci_request_region() call. Hence use pci_release_region()
-instead of pci_release_regions().
+In commit 85fe402 (fs: do not assign default i_ino in new_inode), the
+initialisation of i_ino was removed from new_inode() and pushed down
+into the callers. However spufs_new_inode() was not updated.
 
-Signed-off-by: Yogesh Ashok Powar <yogeshp@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This exhibits as no files appearing in /spu, because all our dirents
+have a zero inode, which readdir() seems to dislike.
+
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/pcie.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/platforms/cell/spufs/inode.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/mwifiex/pcie.c
-+++ b/drivers/net/wireless/mwifiex/pcie.c
-@@ -1828,8 +1828,8 @@ static void mwifiex_pcie_cleanup(struct
- 	if (pdev) {
- 		pci_iounmap(pdev, card->pci_mmap);
- 		pci_iounmap(pdev, card->pci_mmap1);
--
--		pci_release_regions(pdev);
-+		pci_release_region(pdev, 2);
-+		pci_release_region(pdev, 0);
- 		pci_disable_device(pdev);
- 		pci_set_drvdata(pdev, NULL);
- 	}
+--- a/arch/powerpc/platforms/cell/spufs/inode.c
++++ b/arch/powerpc/platforms/cell/spufs/inode.c
+@@ -99,6 +99,7 @@ spufs_new_inode(struct super_block *sb,
+ 	if (!inode)
+ 		goto out;
+ 
++	inode->i_ino = get_next_ino();
+ 	inode->i_mode = mode;
+ 	inode->i_uid = current_fsuid();
+ 	inode->i_gid = current_fsgid();
 
 
