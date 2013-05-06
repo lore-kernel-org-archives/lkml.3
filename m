@@ -1,102 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab3EFJYk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 05:24:40 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:34515 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516Ab3EFJYj (ORCPT
+	id S1753262Ab3EFJZm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 05:25:42 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:63605 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516Ab3EFJZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 05:24:39 -0400
-Message-ID: <518749A9.8000605@linux.vnet.ibm.com>
-Date: Mon, 06 May 2013 14:11:53 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 6 May 2013 05:25:41 -0400
+Date: Mon, 6 May 2013 11:25:37 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL, RFC] Full dynticks, CONFIG_NO_HZ_FULL feature
+Message-ID: <20130506092537.GA8879@gmail.com>
+References: <20130505110351.GA4768@gmail.com>
+ <CA+55aFzPHkCH7CVZ4tkaF91+=GLZAxxncTq0J9d6AKpSPqovZw@mail.gmail.com>
+ <20130505212511.GC3659@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        riel@redhat.com
-Subject: Re: [PATCH v5 7/7] sched: consider runnable load average in effective_load
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-8-git-send-email-alex.shi@intel.com> <518724D1.9040006@linux.vnet.ibm.com> <51874229.8050202@intel.com>
-In-Reply-To: <51874229.8050202@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050608-3568-0000-0000-0000038D6026
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130505212511.GC3659@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 01:39 PM, Alex Shi wrote:
-> On 05/06/2013 11:34 AM, Michael Wang wrote:
->>>> @@ -3045,7 +3045,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
->>>>  		/*
->>>>  		 * w = rw_i + @wl
->>>>  		 */
->>>> -		w = se->my_q->load.weight + wl;
->>>> +		w = se->my_q->tg_load_contrib + wl;
->> I've tested the patch set, seems like the last patch caused big
->> regression on pgbench:
->>
->> 			base	patch 1~6	patch 1~7
->> | db_size | clients |  tps  |   |  tps  |	|  tps  |
->> +---------+---------+-------+	+-------+	+-------+
->> | 22 MB   |      32 | 43420 |	| 53387 |	| 41625 |
->>
->> I guess some magic thing happened in effective_load() while calculating
->> group decay combined with load decay, what's your opinion?
-> 
-> 
-> thanks for testing, Michael!
-> 
-> Maybe 2 fix worth to try.
-> 
-> 1, change back the tg_weight in calc_tg_weight() to use tg_load_contrib not direct load.
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 6f4f14b..c770f8d 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1037,8 +1037,8 @@ static inline long calc_tg_weight(struct task_group *tg, struct cfs_rq *cfs_rq)
->  	 * update_cfs_rq_load_contribution().
->  	 */
->  	tg_weight = atomic64_read(&tg->load_avg);
-> -	tg_weight -= cfs_rq->tg_load_contrib;
-> -	tg_weight += cfs_rq->load.weight;
-> +	//tg_weight -= cfs_rq->tg_load_contrib;
-> +	//tg_weight += cfs_rq->load.weight;
-> 
->  	return tg_weight;
->  }
-> 
-> 2, another try is follow the current calc_tg_weight, so remove the follow change.
-> 
->>>> @@ -3045,7 +3045,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
->>>>  		/*
->>>>  		 * w = rw_i + @wl
->>>>  		 */
->>>> -		w = se->my_q->load.weight + wl;
->>>> +		w = se->my_q->tg_load_contrib + wl;
-> 
-> Would you like to try them?
 
-Sure, I will take a try on both :)
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-But actually I'm wondering whether it is necessary to change
-effective_load()?
-
-It is only severed for wake-affine and the whole stuff is still in the
-dark, if patch 1~6 already show good results, why don't we leave it there?
-
-So how about the situation on your box without the last patch? is the
-benefit still there?
-
-Regards,
-Michael Wang
-
+> On Sun, May 05, 2013 at 01:33:45PM -0700, Linus Torvalds wrote:
+> > On Sun, May 5, 2013 at 4:03 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> > >
+> > > Please consider pulling the latest timers-nohz-for-linus git tree from:
+> > 
+> > Ok, it seems to work for me, so pulled.
+> > 
+> > However, by "work for me" I mean "doesn't actually seem to make any
+> > difference for me". Maybe I'm odd, but the most common situation is
+> > either a fairly idle machine (in which case the old NOHZ did fine) or
+> > a fairly over-crowded one when I'm running something sufficiently
+> > threaded (in which case the new NOHZ_FULL doesn't do anything either).
+> > 
+> > So I really hope the "cpu has more than one running thread" case is
+> > getting a lot of attention. Not for 3.10, but right now it seems to
+> > still result in the same old 1kHz timer interrupts..
+> > 
+> > So I haven't actually found a real load where any of this makes a
+> > noticeable *difference*.
 > 
-> 
+> The workloads where we expect the most noticeable differences are HPC 
+> workloads with short iterations and a HPC-style barrier between each 
+> interation on the one hand and real-time workloads on the other. My 
+> guess is that you aren't doing too much of either.
 
+I think Linus might have referred to my 'future plans' entry:
+
+| Future plans:
+|
+| - there's ongoing work to reduce 1Hz to 0Hz, to essentially shut
+|   off the periodic tick altogether when there's a single busy task on a
+|   CPU. We'd first like 1 Hz to be exposed more widely before we go for
+|   the 0 Hz target though.
+|
+| - once we reach 0 Hz we can and remove the periodic tick assumption from
+|   nr_running>=2 as well, by essentially interrupting busy tasks only as
+|   frequently as the sched_latency constraints require us to do - once
+|   every 4-40 msecs, depending on nr_running.
+
+and indicated that in practice desktop and developer workload will see the 
+full win from reduced HZ only once we implement those two points and 
+extend the scope of dynticks even more and make HZ truly variable 
+regardless of rq->nr_running.
+
+> We do have some measurements taken on an early prototype of this patchset,
+> which are on slides 5 and 6 of:
+> 
+> http://linuxplumbersconf.org/2009/slides/Josh-Triplett-painless-kernel.pdf
+> 
+> This is for an HPC workload with a 100-microsecond iteration time.
+
+Interesting that HZ=1000 caused 8% overhead there. On a regular x86 server 
+PC I've measured the HZ=1000 overhead to pure user-space execution to be 
+around 1% (sometimes a bit less, sometimes a bit more).
+
+But even 1% is worth it.
+
+Thanks,
+
+	Ingo
