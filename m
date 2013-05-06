@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086Ab3EFP3U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 11:29:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32299 "EHLO mx1.redhat.com"
+	id S1755181Ab3EFP3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 11:29:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60802 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754977Ab3EFP3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 11:29:17 -0400
-Date: Mon, 6 May 2013 17:30:45 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Jake Edge <jake@lwn.net>
-Cc: linux-wireless@vger.kernel.org, Johannes Berg <johannes.berg@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: Bisected 3.9 regression for iwl4965 connection problem to
- 1672c0e3
-Message-ID: <20130506153044.GB1602@redhat.com>
-References: <20130505143803.7e46e4c6@chukar.edge2.net>
- <20130506123805.GA1602@redhat.com>
- <20130506083759.556dac76@chukar.edge2.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130506083759.556dac76@chukar.edge2.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754465Ab3EFP3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 11:29:38 -0400
+Subject: Re: [PATCH] kconfig: sort found symbols by relevance
+From: Jean Delvare <jdelvare@suse.de>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>,
+        Roland Eggner <edvx1@systemanalysen.net>,
+        Wang YanQing <udknight@gmail.com>
+In-Reply-To: <1367845365-13316-1-git-send-email-yann.morin.1998@free.fr>
+References: <1367826629.4494.30.camel@chaos.site>
+	 <1367845365-13316-1-git-send-email-yann.morin.1998@free.fr>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Mon, 06 May 2013 17:28:32 +0200
+Message-ID: <1367854112.4569.137.camel@chaos.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 08:37:59AM -0600, Jake Edge wrote:
-> On Mon, 6 May 2013 14:38:06 +0200 Stanislaw Gruszka wrote:
+Le Monday 06 May 2013 à 15:02 +0200, Yann E. MORIN a écrit :
+> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 > 
-> > > I bisected the problem to:
-> > > 
-> > > commit 1672c0e31917f49d31d30d79067103432bc20cc7
+> When searching for symbols, return the symbols sorted by relevance.
 > 
-> > > What more information is needed from me?  I may still mess around
-> > > with trying to revert that patch just to nail it down for sure, but
-> > > two separate bisection exercises ended up at the same place.
-> > 
-> > Below patch should restore old mac80211 behaviour, by stop
-> > telling mac that 4965 supports TX ACK status. Does it help?
+> Relevance is the ratio of the length of the matched string and the
+> length of the symbol name. Symbols of equal relevance are sorted
+> alphabetically.
 > 
-> Yup, that fixed the problem, thanks.  So did reverting Johannes's
-> commit above, fwiw, but just turning off that flag in 3.9 as your patch
-> does fixes it.
-> 
-> seems like that needs to head to Linus and the stable folks ...
+> Reported-by: Jean Delvare <jdelvare@suse.de>
+> Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+> Cc: Jean Delvare <jdelvare@suse.de>
+> Cc: Michal Marek <mmarek@suse.cz>
+> Cc: Roland Eggner <edvx1@systemanalysen.net>
+> Cc: Wang YanQing <udknight@gmail.com>
+> ---
+>  scripts/kconfig/symbol.c | 66 +++++++++++++++++++++++++++++++++++++++++-------
+>  1 file changed, 57 insertions(+), 9 deletions(-)
 
-We can fix the problem that way, but I'm not sure if that is the best
-way. IEEE80211_HW_REPORTS_TX_ACK_STATUS is nice to have as long hardware
-really supports that feature.
+I did not look at the code, only tested it, and it does what I asked for
+originally: exact match is listed first. So thank you :)
 
-I thought this happen because 4965 firmware does not mark tx status
-ack for PROBE_REQUEST frame, because it is not acked by standard 
-ACK frame, but by PROBE_RESPONSE frame. But if so, I would also see
-the breakage on my setup, but I don't - it works quite well here. So
-perhaps something different is broken on commit
-1672c0e31917f49d31d30d79067103432bc20cc7 , that make we can not
-associate with some APs.
+However I am not sure if your implementation is what we want. Your
+definition of "relevance" is somewhat arbitrary and may not be
+immediately to others. For example, my own definition of "relevance" was
+that symbols which start with the subject string are more relevant than
+the symbols which have the string in the middle. Others would possibly
+have other definitions.
 
-Let me think a bit longer about this issue. Also maybe Johannes will
-have some thoughts.
+So in the end you have somewhat complex code for a sort order which may
+surprise or confuse the user. It may put close to each other options
+which are completely unrelated, and suboptions very far from their
+parent.
 
-Stanislaw 
+I am wondering if it might not be better to go for a more simple
+strategy: exact match on top and then sort alphabetically. Or even just
+sort alphabetically - now that I know regexps are supported, it is easy
+to get the exact match when I need it.
+
+Just my two cents, maybe others have a diverging opinion.
+
+Thanks for your work anyway,
+-- 
+Jean Delvare
+Suse L3
+
