@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab3EFDkT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 23:40:19 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:37556 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433Ab3EFDkQ (ORCPT
+	id S1753336Ab3EFDmQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 23:42:16 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:25737 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab3EFDmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 23:40:16 -0400
-X-AuditID: cbfee68d-b7f016d000007930-eb-5187261fabf0
+	Sun, 5 May 2013 23:42:15 -0400
+X-AuditID: cbfee68e-b7efa6d000004d12-5a-518726965a1d
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Linus Walleij'" <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/4] pinctrl: coh901: remove unnecessary platform_set_drvdata()
-Date: Mon, 06 May 2013 12:40:14 +0900
-Message-id: <001e01ce4a0b$6b8e32e0$42aa98a0$@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        "'Fabio Estevam'" <fabio.estevam@freescale.com>,
+        "'Shawn Guo'" <shawn.guo@linaro.org>
+Subject: [PATCH 2/4] pinctrl: mxs: remove unnecessary platform_set_drvdata()
+Date: Mon, 06 May 2013 12:42:13 +0900
+Message-id: <001f01ce4a0b$b21c5520$1654ff60$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5KCzQpoPcMdb4hSrmmUwyL6vpzhQ==
+Thread-index: Ac5KC3v/TTJMmRjGR4mF1kBtvDL9jw==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t8zfV15tfZAg5mTRS0uL7zEajHlz3Im
-	i8u75rA5MHvcubaHzaNvyypGj8+b5AKYo7hsUlJzMstSi/TtErgyWj6JFtxjq+h53c3SwHiV
-	tYuRk0NCwETiweMb7BC2mMSFe+vZuhi5OIQEljFKTG99zART9OpcDyNEYjqjxIePO5ghnF+M
-	EhPO/wUbxSagJvHly2GwUSICehJvvrYA2RwczAIuEkeniYCEhQX8JVYd6WcDsVkEVCUWXVjD
-	DGLzClhK7H69jxHCFpT4MfkeC4jNLKAlsX7ncSYIW15i85q3zBAHKUjsOPuaEWbV0VOP2SBq
-	RCT2vXgHdqiEwCJ2idO/DjNDLBOQ+Db5EAvIPRICshKbDkDNkZQ4uOIGywRGsVlIVs9CsnoW
-	ktWzkKxYwMiyilE0tSC5oDgpvchQrzgxt7g0L10vOT93EyMkonp3MN4+YH2IMRlo/URmKdHk
-	fGBE5pXEGxqbGVmYmpgaG5lbmpEmrCTOq9ZiHSgkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB
-	Uer4pp8bpY75nSvVu5a8xfP4S46HKu4/OaP3dyRGx3PYvJ5eneAXkz2/Uk/+2rl8E40lf286
-	37HzTDpYN3XOoZQkyxQz9Y1ec+/MOHTinN2JS9cDBXk+xp4Rf3yxxjutafrWSdJOS1Lu/z0/
-	0aRq0901f/4oz7IKWjyrM+rQYWnT0iC92ZYvpyixFGckGmoxFxUnAgD4W4OSvgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+xoK68WnugwZJzghaXF15itZjyZzmT
-	xeVdc9gcmD3uXNvD5tG3ZRWjx+dNcgHMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaG
-	uoaWFuZKCnmJuam2Si4+AbpumTlAm5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUY
-	GaCBhHWMGS2fRAvusVX0vO5maWC8ytrFyMkhIWAi8epcDyOELSZx4d56ti5GLg4hgemMEh8+
-	7mCGcH4xSkw4/xesg01ATeLLl8PsILaIgJ7Em68tQDYHB7OAi8TRaSIgYWEBf4lVR/rZQGwW
-	AVWJRRfWMIPYvAKWErtf72OEsAUlfky+xwJiMwtoSazfeZwJwpaX2LzmLTPEQQoSO86+ZoRZ
-	dfTUYzaIGhGJfS/eMU5gFJiFZNQsJKNmIRk1C0nLAkaWVYyiqQXJBcVJ6bmGesWJucWleel6
-	yfm5mxjB8fpMagfjygaLQ4wCHIxKPLwFT9oChVgTy4orcw8xSnAwK4nw+uwFCvGmJFZWpRbl
-	xxeV5qQWH2JMBvp0IrOUaHI+MJXklcQbGpuYGVkamVkYmZibkyasJM57oNU6UEggPbEkNTs1
-	tSC1CGYLEwenVANj5qbXGr93sbs87lAW8P62zTXTM/TT3VRJ+Wu3c/nN9+3dkdB/dptfee2v
-	R8w5v3xOvZ2Vm8eZJbAjdr5fUVH1Xrb6L7kHZj7anyQ/tVpyncObaJUFdqpFooJPbyf8m//w
-	jOO6LQ3X6p/kpjUzz2Kp/aNwY7ZF0sGt7NH3a9M8v/w5L2xygJFLiaU4I9FQi7moOBEABA2c
-	9RsDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t8zA91pau2BBrt/cFjM6tK1uLzwEqvF
+	lD/LmSwu75rDZvF03RJmB1aPf4f7mTzuXNvD5tG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
+	W3+0Mxb0c1Tse76eqYHxEVsXIyeHhICJxLc/M6BsMYkL99YD2VwcQgLLGCWuntvBClP0aN4V
+	RojEIkaJc5cOsUI4vxgl3my+ywxSxSagJvHly2F2EFtEQE/izdcWdpAiZoGZjBJtdw+zgCSE
+	BXwkJu1pBdvHIqAq8fLKdyYQm1fAUuLCjmdQtqDEj8n3wOqZBbQk1u88zgRhy0tsXvOWGeIk
+	BYkdZ18DncQBtmz/pkSIEhGJfS/egV0qIbCNXeL88/PsELsEJL5NPsQCUi8hICux6QDUGEmJ
+	gytusExgFJuFZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT0ouM9IoTc4tL89L1kvNzNzFCIq5v
+	B+PNA9aHGJOB1k9klhJNzgdGbF5JvKGxmZGFqYmpsZG5pRlpwkrivGot1oFCAumJJanZqakF
+	qUXxRaU5qcWHGJk4OKUaGJkv+U7zEwuf050QW+14x6Rtr6n91ruit7satjTF7+uoz90RMyF/
+	m2nvkn/OiaYHs12lne4keW5IWcI2s8pFOm6ewOnuOSLSDbfL/l00vaS8TOqCwvKl/F6/P126
+	K9w5dYbz7Rsra1Qf/5rnJsT+XPiV7Pd/Gp8tHH/G8h0tOSjSWN5gqPJgmhJLcUaioRZzUXEi
+	AC3i09HOAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jAd2pau2BBu96FS1mdelaXF54idVi
+	yp/lTBaXd81hs3i6bgmzA6vHv8P9TB53ru1h8+jbsorR4/MmuQCWqAZGm4zUxJTUIoXUvOT8
+	lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygvUoKZYk5pUChgMTiYiV9O0wT
+	QkPcdC1gGiN0fUOC4HqMDNBAwjrGjK0/2hkL+jkq9j1fz9TA+Iiti5GTQ0LAROLRvCuMELaY
+	xIV764HiXBxCAosYJc5dOsQK4fxilHiz+S4zSBWbgJrEly+H2UFsEQE9iTdfW9hBipgFZjJK
+	tN09zAKSEBbwkZi0pxVsBYuAqsTLK9+ZQGxeAUuJCzueQdmCEj8m3wOrZxbQkli/8zgThC0v
+	sXnNW2aIkxQkdpx9DXQeB9iy/ZsSIUpEJPa9eMc4gVFgFpJJs5BMmoVk0iwkLQsYWVYxiqYW
+	JBcUJ6XnGukVJ+YWl+al6yXn525iBMfzM+kdjKsaLA4xCnAwKvHwFjxpCxRiTSwrrsw9xCjB
+	wawkwuuzFyjEm5JYWZValB9fVJqTWnyIMRno0YnMUqLJ+cBUk1cSb2hsYmZkaWRmYWRibk6a
+	sJI478FW60AhgfTEktTs1NSC1CKYLUwcnFINjDp1GZvLpznnCje0X9wU8viR37XJk9X9K6Sy
+	Co+n5C287SblHT+pk+HA2vrnbM3mJgI++z9zO3NEMt9c1PnTKuab3JqfofrbFkw/lhJuyG72
+	Q3H7xKzE9/bpTzq/fN37U5E9xu6VQT+/2PdtS2aaNGSZ3gqwErzotDXlpNHPWbPP1ceYXt4T
+	rMRSnJFoqMVcVJwIAANFPWUrAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,20 +61,28 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/pinctrl/pinctrl-coh901.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/pinctrl/pinctrl-mxs.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pinctrl/pinctrl-coh901.c b/drivers/pinctrl/pinctrl-coh901.c
-index edde3ac..f12546b 100644
---- a/drivers/pinctrl/pinctrl-coh901.c
-+++ b/drivers/pinctrl/pinctrl-coh901.c
-@@ -860,7 +860,6 @@ static int __exit u300_gpio_remove(struct platform_device *pdev)
- 	}
- 	u300_gpio_free_ports(gpio);
- 	clk_disable_unprepare(gpio->clk);
--	platform_set_drvdata(pdev, NULL);
+diff --git a/drivers/pinctrl/pinctrl-mxs.c b/drivers/pinctrl/pinctrl-mxs.c
+index b45c4eb..f5d5643 100644
+--- a/drivers/pinctrl/pinctrl-mxs.c
++++ b/drivers/pinctrl/pinctrl-mxs.c
+@@ -515,7 +515,6 @@ int mxs_pinctrl_probe(struct platform_device *pdev,
  	return 0;
+ 
+ err:
+-	platform_set_drvdata(pdev, NULL);
+ 	iounmap(d->base);
+ 	return ret;
  }
+@@ -525,7 +524,6 @@ int mxs_pinctrl_remove(struct platform_device *pdev)
+ {
+ 	struct mxs_pinctrl_data *d = platform_get_drvdata(pdev);
+ 
+-	platform_set_drvdata(pdev, NULL);
+ 	pinctrl_unregister(d->pctl);
+ 	iounmap(d->base);
  
 -- 
 1.7.2.5
