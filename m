@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933126Ab3EFXyH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:54:07 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:57079 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932418Ab3EFXua (ORCPT
+	id S933096Ab3EFXyF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:54:05 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:39368 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932425Ab3EFXua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 19:50:30 -0400
 From: Colin Cross <ccross@android.com>
@@ -17,9 +17,9 @@ Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         linux-nfs@vger.kernel.org, linux-pm@vger.kernel.org,
         netdev@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Tejun Heo <tj@kernel.org>, Len Brown <len.brown@intel.com>
-Subject: [PATCH v3 07/16] freezer: convert freezable helpers to freezer_do_not_count()
-Date: Mon,  6 May 2013 16:50:12 -0700
-Message-Id: <1367884221-20462-8-git-send-email-ccross@android.com>
+Subject: [PATCH v3 08/16] freezer: convert freezable helpers to static inline where possible
+Date: Mon,  6 May 2013 16:50:13 -0700
+Message-Id: <1367884221-20462-9-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367884221-20462-1-git-send-email-ccross@android.com>
 References: <1367884221-20462-1-git-send-email-ccross@android.com>
@@ -27,71 +27,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Freezing tasks will wake up almost every userspace task from
-where it is blocking and force it to run until it hits a
-call to try_to_sleep(), generally on the exit path from the syscall
-it is blocking in.  On resume each task will run again, usually
-restarting the syscall and running until it hits the same
-blocking call as it was originally blocked in.
-
-Convert the existing wait_event_freezable* wrappers to use
-freezer_do_not_count().  Combined with a previous patch,
-these tasks will not run during suspend or resume unless they wake
-up for another reason, in which case they will run until they hit
-the try_to_freeze() in freezer_count(), and then continue processing
-the wakeup after tasks are thawed.
-
-This results in a small change in behavior, previously a race
-between freezing and a normal wakeup would be won by the wakeup,
-now the task will freeze and then handle the wakeup after thawing.
+Some of the freezable helpers have to be macros because their
+condition argument needs to get evaluated every time through
+the wait loop.  Convert the others to static inline to make
+future changes easier.
 
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
-v3:
-   split this out of the patch that adds new freezable helpers
-
- include/linux/freezer.h | 22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
+ include/linux/freezer.h | 58 ++++++++++++++++++++++++-------------------------
+ 1 file changed, 29 insertions(+), 29 deletions(-)
 
 diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index bcf9e65..c71337af 100644
+index c71337af..8430d4c5 100644
 --- a/include/linux/freezer.h
 +++ b/include/linux/freezer.h
-@@ -228,27 +228,19 @@ static inline bool freezer_should_skip(struct task_struct *p)
- #define wait_event_freezable(wq, condition)				\
- ({									\
- 	int __retval;							\
--	for (;;) {							\
--		__retval = wait_event_interruptible(wq, 		\
--				(condition) || freezing(current));	\
--		if (__retval || (condition))				\
--			break;						\
--		try_to_freeze();					\
--	}								\
-+	freezer_do_not_count();						\
-+	__retval = wait_event_interruptible(wq, (condition));		\
-+	freezer_count();						\
- 	__retval;							\
- })
+@@ -159,46 +159,46 @@ static inline bool freezer_should_skip(struct task_struct *p)
+ }
  
- #define wait_event_freezable_timeout(wq, condition, timeout)		\
- ({									\
- 	long __retval = timeout;					\
--	for (;;) {							\
--		__retval = wait_event_interruptible_timeout(wq,		\
--				(condition) || freezing(current),	\
--				__retval); 				\
--		if (__retval <= 0 || (condition))			\
--			break;						\
--		try_to_freeze();					\
--	}								\
-+	freezer_do_not_count();						\
-+	__retval = wait_event_interruptible_timeout(wq,	(condition),	\
-+				__retval);				\
-+	freezer_count();						\
- 	__retval;							\
- })
+ /*
+- * These macros are intended to be used whenever you want allow a sleeping
++ * These functions are intended to be used whenever you want allow a sleeping
+  * task to be frozen. Note that neither return any clear indication of
+  * whether a freeze event happened while in this function.
+  */
  
+ /* Like schedule(), but should not block the freezer. */
+-#define freezable_schedule()						\
+-({									\
+-	freezer_do_not_count();						\
+-	schedule();							\
+-	freezer_count();						\
+-})
++static inline void freezable_schedule(void)
++{
++	freezer_do_not_count();
++	schedule();
++	freezer_count();
++}
+ 
+ /* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
+-#define freezable_schedule_unsafe()					\
+-({									\
+-	freezer_do_not_count();						\
+-	schedule();							\
+-	freezer_count_unsafe();						\
+-})
++static inline void freezable_schedule_unsafe(void)
++{
++	freezer_do_not_count();
++	schedule();
++	freezer_count_unsafe();
++}
+ 
+ /* Like schedule_timeout_killable(), but should not block the freezer. */
+-#define freezable_schedule_timeout_killable(timeout)			\
+-({									\
+-	long __retval;							\
+-	freezer_do_not_count();						\
+-	__retval = schedule_timeout_killable(timeout);			\
+-	freezer_count();						\
+-	__retval;							\
+-})
++static inline long freezable_schedule_timeout_killable(long timeout)
++{
++	long __retval;
++	freezer_do_not_count();
++	__retval = schedule_timeout_killable(timeout);
++	freezer_count();
++	return __retval;
++}
+ 
+ /* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
+-#define freezable_schedule_timeout_killable_unsafe(timeout)		\
+-({									\
+-	long __retval;							\
+-	freezer_do_not_count();						\
+-	__retval = schedule_timeout_killable(timeout);			\
+-	freezer_count_unsafe();						\
+-	__retval;							\
+-})
++static inline long freezable_schedule_timeout_killable_unsafe(long timeout)
++{
++	long __retval;
++	freezer_do_not_count();
++	__retval = schedule_timeout_killable(timeout);
++	freezer_count_unsafe();
++	return __retval;
++}
+ 
+ /*
+  * Freezer-friendly wrappers around wait_event_interruptible(),
 -- 
 1.8.2.1
 
