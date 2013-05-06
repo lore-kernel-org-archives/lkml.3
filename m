@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab3EFToM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 15:44:12 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:44554 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755516Ab3EFToL (ORCPT
+	id S1756361Ab3EFTqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 15:46:22 -0400
+Received: from sisa.samsung.com ([63.166.156.250]:45097 "EHLO
+	mx2.sisa.samsung.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1755971Ab3EFTqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 15:44:11 -0400
-Date: Mon, 6 May 2013 12:43:51 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_init allocation failure trace on bootup
-Message-ID: <20130506194351.GH3501@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130506175647.GA1309@redhat.com>
- <20130506190522.GD3501@linux.vnet.ibm.com>
- <20130506192653.GA16819@redhat.com>
+	Mon, 6 May 2013 15:46:20 -0400
+X-ASG-Debug-ID: 1367869579-051129071a0dbd0001-xx1T2L
+X-Barracuda-Envelope-From: shuah.kh@samsung.com
+X-Barracuda-Apparent-Source-IP: 105.144.21.115
+X-ASG-Whitelist: Client
+From: Shuah Khan <shuah.kh@samsung.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "len.brown@intel.com" <len.brown@intel.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH v2] PM: Fix dev_pm_put_subsys_data() to not call kfree()
+ while holding device power lock
+Thread-Topic: [PATCH v2] PM: Fix dev_pm_put_subsys_data() to not call
+ kfree() while holding device power lock
+X-ASG-Orig-Subj: Re: [PATCH v2] PM: Fix dev_pm_put_subsys_data() to not call kfree()
+ while holding device power lock
+Thread-Index: AQHOSoyXedE0CiKV/Ee/GdKhNFCEcJj5A5uAgAABZAA=
+Date: Mon, 6 May 2013 19:46:18 +0000
+Message-ID: <1367869578.2953.57.camel@lorien>
+References: <1367614010.8452.2.camel@lorien>
+	 <20130504125116.GA13770@amd.pavel.ucw.cz>
+	 <1882177.s6zpHZ6crc@vostro.rjw.lan>
+	 <20130506120925.GA25542@amd.pavel.ucw.cz> <1367867093.2953.49.camel@lorien>
+	 <20130506194119.GA15886@kroah.com>
+In-Reply-To: <20130506194119.GA15886@kroah.com>
+Reply-To: Shuah Khan <shuah.kh@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [105.144.34.5]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <349E5979C21582448C8BEF3AEEBE23A5@sisa.samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130506192653.GA16819@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050619-4834-0000-0000-0000069BCB2B
+X-Barracuda-Connect: UNKNOWN[105.144.21.115]
+X-Barracuda-Start-Time: 1367869579
+X-Barracuda-URL: http://192.168.0.102:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r46JkRIr025753
 
-On Mon, May 06, 2013 at 03:26:53PM -0400, Dave Jones wrote:
-> On Mon, May 06, 2013 at 12:05:22PM -0700, Paul E. McKenney wrote:
->  > On Mon, May 06, 2013 at 01:56:47PM -0400, Dave Jones wrote:
->  > > [    0.000000]  RCU debugfs-based tracing is enabled.
->  > > [    0.000000]  RCU lockdep checking is enabled.
->  > > [    0.000000] ------------[ cut here ]------------
->  > > [    0.000000] WARNING: at mm/nobootmem.c:215 ___alloc_bootmem_nopanic+0x3a/0x7d()
->  > > [    0.000000] Modules linked in:
->  > > [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.9.0+ #128
->  > > [    0.000000] Hardware name:                  /D975XBX, BIOS BX97510J.86A.1209.2006.0601.1340 06/01/2006
->  > > [    0.000000]  ffffffff819f4246 ffffffff81c01e68 ffffffff816a0db2 ffffffff81c01ea8
->  > > [    0.000000]  ffffffff8104b1a0 ffffffff819e1078 0000000000000000 0000000000000008
->  > > [    0.000000]  ffffffffffffffff 0000000000000040 0000000000000000 ffffffff81c01eb8
->  > > [    0.000000] Call Trace:
->  > > [    0.000000]  [<ffffffff816a0db2>] dump_stack+0x19/0x1b
->  > > [    0.000000]  [<ffffffff8104b1a0>] warn_slowpath_common+0x70/0xa0
->  > > [    0.000000]  [<ffffffff8104b1ea>] warn_slowpath_null+0x1a/0x20
->  > > [    0.000000]  [<ffffffff81ef8914>] ___alloc_bootmem_nopanic+0x3a/0x7d
->  > > [    0.000000]  [<ffffffff81ef8b87>] __alloc_bootmem+0x13/0x39
->  > > [    0.000000]  [<ffffffff81f090ad>] alloc_bootmem_cpumask_var+0x1a/0x21
->  > > [    0.000000]  [<ffffffff81ef1f5a>] rcu_init+0x7f/0x261
->  > > [    0.000000]  [<ffffffff81ef4acb>] ? perf_event_init+0x178/0x181
->  > > [    0.000000]  [<ffffffff81ed6c79>] start_kernel+0x232/0x3d3
->  > > [    0.000000]  [<ffffffff81ed6846>] ? repair_env_string+0x5e/0x5e
->  > > [    0.000000]  [<ffffffff81ed6577>] x86_64_start_reservations+0x2a/0x2c
->  > > [    0.000000]  [<ffffffff81ed6646>] x86_64_start_kernel+0xcd/0xd1
->  > > [    0.000000] ---[ end trace 0acfc82c197165dd ]---
->  > > [    0.000000]  Experimental no-CBs for all CPUs
->  > > [    0.000000]  Experimental no-CBs CPUs: 0-1.
->  > > [    0.000000] NO_HZ: Full dynticks CPUs: 1.
->  > 
->  > Do you have commit fa0f93cd6a (rcu: Don't allocate bootmem from rcu_init())?
->  > If not, could you please try applying it?
+On Mon, 2013-05-06 at 12:41 -0700, gregkh@linuxfoundation.org wrote:
+> On Mon, May 06, 2013 at 07:04:53PM +0000, Shuah Khan wrote:
+> > dev_pm_put_subsys_data() calls kfree() while holding device power lock, when
+> > the reference count is 0. Fix it to call kfree() after releasing the lock.
+> > 
+> > Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> > Reviewed-by: Pavel Machek <pavel@ucw.cz>
+> > Reviewed-by: Rafael Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  drivers/base/power/common.c |    8 +++++---
+> >  1 file changed, 5 insertions(+), 3 deletions(-)
 > 
-> That commit isn't in Linus tree.
+> Is this causing a problem now, and it should go into 3.10 and earlier
+> kernels (if so, which ones?), or can it just wait until 3.11 as it's
+> just a cleanup fix?
 
-You are quite right, I am getting ahead of myself.  Please see below
-for the patch.
+It can wait until 3.11. At this point I don't have any evidence that
+this is actually causing problems. So please treat this as a cleanup fix
+found during code review.
 
-							Thanx, Paul
+thanks,
+-- Shuah
 
-------------------------------------------------------------------------
-
-rcu: Don't allocate bootmem from rcu_init()
-
-When rcu_init() is called we already have slab working, allocating
-bootmem at that point results in warnings and an allocation from
-slab.  This commit therefore changes alloc_bootmem_cpumask_var() to
-alloc_cpumask_var() in rcu_bootup_announce_oddness(), which is called
-from rcu_init().
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index ca6e39c..44b0998 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -86,7 +86,7 @@ static void __init rcu_bootup_announce_oddness(void)
- #ifdef CONFIG_RCU_NOCB_CPU
- #ifndef CONFIG_RCU_NOCB_CPU_NONE
- 	if (!have_rcu_nocb_mask) {
--		alloc_bootmem_cpumask_var(&rcu_nocb_mask);
-+		alloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
- 		have_rcu_nocb_mask = true;
- 	}
- #ifdef CONFIG_RCU_NOCB_CPU_ZERO
-
+-- 
+Shuah Khan Lead Kernel Developer - Open Source Group 
+Samsung Research America (Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
