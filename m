@@ -1,145 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab3EFKl7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 06:41:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57505 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787Ab3EFKl6 (ORCPT
+	id S1753937Ab3EFKm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 06:42:57 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:46421 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016Ab3EFKmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 06:41:58 -0400
-Date: Mon, 6 May 2013 12:41:52 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] pwm: Changes for v3.10-rc1
-Message-ID: <20130506104152.GA9776@avionic-0098.adnet.avionic-design.de>
+	Mon, 6 May 2013 06:42:55 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZPt4rx8FFjLCG7dd"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:EU0R8B3Pwk2Nxaj+t2QgJvHmrDRYwlRVYYKEVAxZBjG
- ntazduXT8rnB6gamvJZ1Sce5KNL5UE/et47eA3XrhiA48XO2dJ
- +mahMUkLl7wwMIWIosH7EMPI0ZejFNawtNF33jLIaQB/IYF3KL
- FvEaa93U+hsy63gjXPn0LewsJaVWzvRwdXZi6q8Cqwp6M8UZOE
- uVvwk4c6dM6E9e8M024nS78FbrWCznwiKifYA3fWfFNNbTE/5v
- x1MRj4RIYFyx7XSQosQPrNMzleTF8uUKdISVJ8d/vnPQWOQzU9
- crrzYIi6Lx6XbHq9GsmkcodN2Se8EFe8Vp0r6wHaLDKIoMymdl
- ENn9CEhUrVtTkCaSqe7GQlB2+esV2ikU2Gninsf068expd4BdO
- c4qOL2fak9n17Gdq/nQi9PXeC0gNWCkr8w=
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 6 May 2013 11:42:34 +0100
+X-Google-Sender-Auth: 7DHuzdmM81Oe3Uh6dMali9FwA7c
+Message-ID: <CACxGe6vX0s_y1O9qBPceji1BxQbPMoRs15gy_XG71aQ9vUQeZw@mail.gmail.com>
+Subject: [git-pull] v2 gpio changes for v3.10
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---ZPt4rx8FFjLCG7dd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
 Hi Linus,
 
-The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
+Regardless of you being pissed at me for the last pull request and not
+wanting to take anything from me this cycle, I'm sending this anyway.
+It's been build tested on several architectures and all of these
+commits were in linux-next before the merge window opened. I pealed
+off the top two commits to get rid of the incorrectly applied UCB1400 patch
+that broke allmodconfig. I have *not* rebased.
 
-  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
+g.
+
+
+The following changes since commit e97f9b5277afeabb54892ebc6f68500098467ba1:
+
+  gpio/gpio-ich: fix ichx_gpio_check_available() return what callers
+expect (2013-03-02 13:20:21 +0000)
 
 are available in the git repository at:
 
-  git://gitorious.org/linux-pwm/linux-pwm.git tags/for-3.10-rc1
+  git://git.secretlab.ca/git/linux tags/gpio-for-linus
 
-for you to fetch changes up to affb923df96d6c927f9a3dfb0e6f4be940b185cd:
+for you to fetch changes up to 08ffb2229fafc2c3a696b325a74bf4198d6b91d7:
 
-  pwm: lpc32xx: Don't change PWM_ENABLE bit in lpc32xx_pwm_config (2013-04-23 10:58:47 +0200)
-
-Thanks,
-Thierry
+  gpio: grgpio: Add irq support (2013-04-26 08:52:38 +0200)
 
 ----------------------------------------------------------------
-pwm: Changes for v3.10-rc1
+GPIO changes for Linux 3.10
 
-Nothing very exciting this time around. A couple of bug fixes and a lot
-of cleanup across the board. The DaVinci 8xx family of SoCs now use the
-same driver as the AM33xx family.
-
-Many thanks to Axel Lin and Jingoo Han who have done a great job fixing
-various bugs and inconsistencies.
+The usual selection of bug fixes and driver updates for GPIO. Nothing
+really stands out except the addition of the GRGPIO driver and some
+enhacements to ACPI support
 
 ----------------------------------------------------------------
-Axel Lin (17):
-      pwm: ab8500: Fix trivial typo in dev_err message
-      pwm: tiecap: Staticize non-exported symbols
-      pwm: tiehrpwm: Staticize non-exported symbols
-      pwm: spear: Fix checking return value of clk_enable() and clk_prepare()
-      pwm: ab8500: Add .owner to struct pwm_ops
-      pwm: atmel-tcb: Add .owner to struct pwm_ops
-      pwm: twl-led: Add .owner to struct pwm_ops
-      pwm: twl: Add .owner to struct pwm_ops
-      pwm: imx: Remove enabled field from struct imx_chip
-      pwm: pxa: Remove clk_enabled field from struct pxa_pwm_chip
-      pwm: twl: Return proper error if twl6030_pwm_enable() fails
-      pwm: mxs: Remove unused *dev from struct mxs_pwm_chip
-      pwm: spear: Remove unused *dev from struct spear_pwm_chip
-      pwm: pxa: Remove PWM_ID_BASE macro
-      pwm: puv3: Remove unused enabled filed from struct puv3_pwm_chip
-      pwm: lpc32xx: Properly set PWM_ENABLE bit in lpc32xx_pwm_[enable|disable]
-      pwm: lpc32xx: Don't change PWM_ENABLE bit in lpc32xx_pwm_config
+Alexander Shiyan (1):
+      GPIO: gpio-generic: remove kfree() from bgpio_remove call
 
-Jingoo Han (6):
-      pwm_backlight: remove unnecessary ifdefs
-      pwm: ab8500: use devm_kzalloc()
-      pwm: samsung: convert s3c_pwm to dev_pm_ops
-      pwm: pwm-tiecap: add CONFIG_PM_SLEEP to suspend/resume functions
-      pwm: pwm-tipwmss: add CONFIG_PM_SLEEP to suspend/resume functions
-      pwm: pwm-tiehrpwm: add CONFIG_PM_SLEEP to suspend/resume functions
+Andreas Larsson (3):
+      gpio: gpio-generic: Add 16 and 32 bit big endian byte order support
+      gpio: grgpio: Add device driver for GRGPIO cores
+      gpio: grgpio: Add irq support
 
-Philip Avinash (3):
-      pwm: davinci: Add Kconfig support for ECAP & EHRPWM devices
-      pwm: pwm-tiecap: Update device-tree binding document
-      pwm: pwm-tiehrpwm: Update device-tree binding document
+Axel Lin (3):
+      gpio: viperboard: Remove duplicate code to set gpio->gpiob_val
+      gpio: samsung: Add terminating entry for exynos_pinctrl_ids
+      gpio: lpc32xx: Fix off-by-one valid range checking for bank
 
-Thierry Reding (1):
-      pwm: Constify OF match tables
+Christophe Leroy (1):
+      MAX7301 GPIO: Do not force SPI speed when using OF Platform
 
- .../devicetree/bindings/pwm/pwm-tiecap.txt         | 12 ++++++++--
- .../devicetree/bindings/pwm/pwm-tiehrpwm.txt       | 12 ++++++++--
- drivers/pwm/Kconfig                                |  8 +++----
- drivers/pwm/pwm-ab8500.c                           | 10 ++++----
- drivers/pwm/pwm-atmel-tcb.c                        |  1 +
- drivers/pwm/pwm-imx.c                              |  6 +----
- drivers/pwm/pwm-lpc32xx.c                          | 27 ++++++++++++++++++----
- drivers/pwm/pwm-mxs.c                              |  4 +---
- drivers/pwm/pwm-puv3.c                             |  1 -
- drivers/pwm/pwm-pxa.c                              | 23 ++++--------------
- drivers/pwm/pwm-samsung.c                          | 20 ++++++++--------
- drivers/pwm/pwm-spear.c                            | 11 ++++-----
- drivers/pwm/pwm-tegra.c                            |  2 +-
- drivers/pwm/pwm-tiecap.c                           |  6 +++--
- drivers/pwm/pwm-tiehrpwm.c                         |  6 +++--
- drivers/pwm/pwm-tipwmss.c                          |  2 ++
- drivers/pwm/pwm-tipwmss.h                          |  2 +-
- drivers/pwm/pwm-twl-led.c                          |  4 +++-
- drivers/pwm/pwm-twl.c                              |  6 +++--
- drivers/video/backlight/pwm_bl.c                   |  7 ++----
- 20 files changed, 91 insertions(+), 79 deletions(-)
+Darren Hart (1):
+      gpio-sch: Allow for more than 8 lines in the resume well
 
---ZPt4rx8FFjLCG7dd
-Content-Type: application/pgp-signature
+Jean Delvare (1):
+      gpio-ich: Check for pin availability at request time
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Jingoo Han (9):
+      gpio: adp5520: use devm_kzalloc()
+      gpio: max7300: use devm_kzalloc()
+      gpio: max7301: use devm_kzalloc()
+      gpio: max732x: use devm_kzalloc()
+      gpio: mc33880: use devm_kzalloc()
+      gpio: pcf857x: use devm_kzalloc()
+      gpio: mc33880: use dev_err() instead of printk()
+      gpio: 74x164: use spi_get_drvdata() and spi_set_drvdata()
+      gpio: mc33880: use spi_get_drvdata() and spi_set_drvdata()
 
-iQIcBAEBAgAGBQJRh4jwAAoJEN0jrNd/PrOh1/wP/37jP2nwjXXmJ8fF1Va3j0a0
-DgCIVu9q3rRzmqJduIdwOB4EjpbSaggHiIXQczEnsqAKfdpFZ2oZ51bqggWiT5Bp
-0HBz7biU3qxcOihQPqUmF3W+QIZSJ/eoJxRsMaA5jRgj6NOZQpOFjypJrL2rRcP3
-y9cqsx9hDPSqLEPnVLzJha8eMVC/HLoycSBBR5addKIjeyVsknIoSNOqPLxjn6aG
-3k2iaJYycBJO5ihccIX0nREjBoLTzSYpU/K8ZT6w3chORU4eqrmdQUH47ZKz3JCu
-lyOnHd3uyB2cd4my66pD9LARyTs/QBOAOG72CqLP7GSJKrFmwIeOznZwI+nRD6Af
-vyZoSjSSHEn8eR1Dvn8DbmxMSZQnFF4LqeSHsBPmRfwrOtlfNSieOvNMifa9qJuh
-PV6Vbt2tnolzm7pGhe922tfh2lYgsx+72bGbCiCkrlKQkMra5tSIe2rfKmrXcZZO
-x8LbpoDJFt4ejbkcPRWjGb4jSEzOOSYhdfZgIDp/OZjTnjqfbJXBuX9FFKf/EyWu
-07fUT0EN1JRqSB5DaRHUmqY/j5ujZs3x0IHIdZkR6JZUYKRo20bpHacyjX/z4YuQ
-Xjsl90jjmANaUcvK8N5JlXc4sEVkHK0t9gcr9hAEFg7qoV762m+4QFDVvE11mKSw
-OsVi9t/HlBSgA+jx0rNq
-=n5Me
------END PGP SIGNATURE-----
+Jon Hunter (5):
+      gpio/omap: convert gpio irq domain to linear mapping
+      gpio/omap: warn if bank is not enabled on setting irq type
+      gpio/omap: free irq domain in probe() failure paths
+      gpio/omap: optimise interrupt service routine
+      gpio/omap: force restore if context loss is not detectable
 
---ZPt4rx8FFjLCG7dd--
+Lars Poeschel (1):
+      gpio: mcp23s08: convert driver to DT
+
+Laurent Navet (10):
+      gpio: gpiolib-of.c: fix checkpatch error
+      gpio: gpio-mvebu.c: fix checkpatch errors
+      gpio: gpio-omap.c: fix checkpatch error
+      gpio: gpio-pca953x.c: fix checkpatch error
+      gpio: gpio-pxa.c: fix checkpatch errors
+      gpio: gpio-sch.c: fix checkpatch error
+      gpio: gpio-stp-xway.c: fix checkpatch error
+      gpio: gpio-tc3589x.c: fix checkpatch errors
+      gpio: gpio-timberdale.c: fix checkpatch error
+      gpio: gpio-tps65910.c: fix checkpatch error
+
+Magnus Damm (2):
+      gpio/em: Add Device Tree support
+      gpio: em: Make use of devm functions
+
+Mathias Nyman (1):
+      gpio-lynxpoint: Add X86 dependency and io-port handling header.
+
+Mika Westerberg (2):
+      gpio/gpio-ich: make ichx_gpio_check_available() return a pure
+boolean value
+      gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
+
+Nikolay Balandin (1):
+      Add TI TCA9554 to supported devices table
+
+Rafael J. Wysocki (1):
+      gpio / ACPI: Handle ACPI events in accordance with the spec
+
+Sachin Kamat (1):
+      gpio/vt8500: Convert to devm_ioremap_resource()
+
+Simon Guinot (1):
+      gpio: mvebu: add dbg_show function
+
+Stephen Warren (1):
+      gpio/tegra: assume CONFIG_OF
+
+Tarun Kanti DebBarma (1):
+      gpio/omap: remove extra context restores in *_runtime_resume()
+
+ Documentation/acpi/enumeration.txt                 |  32 +-
+ .../devicetree/bindings/gpio/gpio-grgpio.txt       |  26 ++
+ .../devicetree/bindings/gpio/gpio-mcp23s08.txt     |  47 ++
+ .../devicetree/bindings/gpio/gpio-omap.txt         |   7 +-
+ drivers/gpio/Kconfig                               |  11 +-
+ drivers/gpio/Makefile                              |   1 +
+ drivers/gpio/gpio-74x164.c                         |   8 +-
+ drivers/gpio/gpio-adp5520.c                        |   4 +-
+ drivers/gpio/gpio-em.c                             |  94 ++--
+ drivers/gpio/gpio-generic.c                        |  62 ++-
+ drivers/gpio/gpio-grgpio.c                         | 505 +++++++++++++++++++++
+ drivers/gpio/gpio-ich.c                            |  17 +-
+ drivers/gpio/gpio-lpc32xx.c                        |   2 +-
+ drivers/gpio/gpio-lynxpoint.c                      |   1 +
+ drivers/gpio/gpio-max7300.c                        |   4 +-
+ drivers/gpio/gpio-max7301.c                        |   7 +-
+ drivers/gpio/gpio-max732x.c                        |   5 +-
+ drivers/gpio/gpio-mc33880.c                        |  19 +-
+ drivers/gpio/gpio-mcp23s08.c                       | 137 ++++--
+ drivers/gpio/gpio-mvebu.c                          |  85 +++-
+ drivers/gpio/gpio-omap.c                           | 116 ++---
+ drivers/gpio/gpio-pca953x.c                        |   3 +-
+ drivers/gpio/gpio-pcf857x.c                        |   8 +-
+ drivers/gpio/gpio-pxa.c                            |   4 +-
+ drivers/gpio/gpio-samsung.c                        |   1 +
+ drivers/gpio/gpio-sch.c                            | 111 +++--
+ drivers/gpio/gpio-stp-xway.c                       |   2 +-
+ drivers/gpio/gpio-tc3589x.c                        |   8 +-
+ drivers/gpio/gpio-tegra.c                          |  11 +-
+ drivers/gpio/gpio-timberdale.c                     |   3 +-
+ drivers/gpio/gpio-tps65910.c                       |   2 +-
+ drivers/gpio/gpio-viperboard.c                     |   4 -
+ drivers/gpio/gpio-vt8500.c                         |   8 +-
+ drivers/gpio/gpiolib-acpi.c                        | 217 ++++++++-
+ drivers/gpio/gpiolib-of.c                          |   2 +-
+ include/linux/acpi_gpio.h                          |  19 +
+ include/linux/basic_mmio_gpio.h                    |   1 +
+ 37 files changed, 1296 insertions(+), 298 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-grgpio.txt
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+ create mode 100644 drivers/gpio/gpio-grgpio.c
+
+
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
