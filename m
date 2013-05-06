@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933288Ab3EFXTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:19:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36958 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932392Ab3EFXOH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932401Ab3EFXOH (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 May 2013 19:14:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36943 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760658Ab3EFXOE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 19:14:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jacob Keller <jacob.e.keller@intel.com>,
-        Phil Schmitt <phillip.j.schmitt@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [ 090/104] ixgbe: fix EICR write in ixgbe_msix_other
-Date: Mon,  6 May 2013 16:12:49 -0700
-Message-Id: <20130506230052.870876653@linuxfoundation.org>
+        fanchaoting <fanchaoting@cn.fujitsu.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 086/104] nfsd: dont run get_file if nfs4_preprocess_stateid_op return error
+Date: Mon,  6 May 2013 16:12:45 -0700
+Message-Id: <20130506230052.484970773@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -28,46 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jacob Keller <jacob.e.keller@intel.com>
+From: fanchaoting <fanchaoting@cn.fujitsu.com>
 
-commit d87d830720a1446403ed38bfc2da268be0d356d1 upstream.
+commit b022032e195ffca83d7002d6b84297d796ed443b upstream.
 
-Previously, the ixgbe_msix_other was writing the full 32bits of the set
-interrupts, instead of only the ones which the ixgbe_msix_other is
-handling. This resulted in a loss of performance when the X540's PPS feature is
-enabled due to sometimes clearing queue interrupts which resulted in the driver
-not getting the interrupt for cleaning the q_vector rings often enough. The fix
-is to simply mask the lower 16bits off so that this handler does not write them
-in the EICR, which causes them to remain high and be properly handled by the
-clean_rings interrupt routine as normal.
+we should return error status directly when nfs4_preprocess_stateid_op
+return error.
 
-Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: fanchaoting <fanchaoting@cn.fujitsu.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ fs/nfsd/nfs4proc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -2407,6 +2407,16 @@ static irqreturn_t ixgbe_msix_other(int
- 	 * with the write to EICR.
- 	 */
- 	eicr = IXGBE_READ_REG(hw, IXGBE_EICS);
-+
-+	/* The lower 16bits of the EICR register are for the queue interrupts
-+	 * which should be masked here in order to not accidently clear them if
-+	 * the bits are high when ixgbe_msix_other is called. There is a race
-+	 * condition otherwise which results in possible performance loss
-+	 * especially if the ixgbe_msix_other interrupt is triggering
-+	 * consistently (as it would when PPS is turned on for the X540 device)
-+	 */
-+	eicr &= 0xFFFF0000;
-+
- 	IXGBE_WRITE_REG(hw, IXGBE_EICR, eicr);
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -931,14 +931,14 @@ nfsd4_write(struct svc_rqst *rqstp, stru
+ 	nfs4_lock_state();
+ 	status = nfs4_preprocess_stateid_op(SVC_NET(rqstp),
+ 					cstate, stateid, WR_STATE, &filp);
+-	if (filp)
+-		get_file(filp);
+-	nfs4_unlock_state();
+-
+ 	if (status) {
++		nfs4_unlock_state();
+ 		dprintk("NFSD: nfsd4_write: couldn't process stateid!\n");
+ 		return status;
+ 	}
++	if (filp)
++		get_file(filp);
++	nfs4_unlock_state();
  
- 	if (eicr & IXGBE_EICR_LSC)
+ 	cnt = write->wr_buflen;
+ 	write->wr_how_written = write->wr_stable_how;
 
 
