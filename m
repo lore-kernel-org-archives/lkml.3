@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab3EFD2k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 May 2013 23:28:40 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:24371 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577Ab3EFD2j (ORCPT
+	id S1752836Ab3EFD2r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 May 2013 23:28:47 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:59294 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab3EFD2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 May 2013 23:28:39 -0400
-X-AuditID: cbfee68d-b7f016d000007930-ca-518723653b5c
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Grant Likely'" <grant.likely@secretlab.ca>
-Cc: "'Linus Walleij'" <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>,
-        "'Mathias Nyman'" <mathias.nyman@linux.intel.com>
-Subject: [PATCH 2/7] gpio: lynxpoint: remove unnecessary platform_set_drvdata()
-Date: Mon, 06 May 2013 12:28:37 +0900
-Message-id: <001801ce4a09$cbf95800$63ec0800$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5KCa4zYzX7FlaBQSKxYIN1Fu7xrA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zfd005fZAgwdsFq/ObGSzuLzwEqvF
-	lD/LmSwu75rDZvH6QxOLA6vHnWt72DzmnQz06NuyitHj50sdj8+b5AJYo7hsUlJzMstSi/Tt
-	ErgyLjesZS54yVax7c0/9gbGm6xdjBwcEgImEr+brbsYOYFMMYkL99azdTFycQgJLGOU+H5q
-	JztEwkTi0bQ7TBCJ6YwSr1qPskM4vxgl5uxuZgSpYhNQk/jy5TBYh4iAnsSNCx2MIEXMAosZ
-	Je4e3cwGkhAW8Jfo3bcdrIFFQFXixqVXYDavgKXE/72fmCFsQYkfk++xgNjMAloS63ceZ4Kw
-	5SU2r3nLDHGSgsSOs68ZYZZda1zMBlEjIrHvxTuwxRIC+9glmp7tgFomIPFt8iEWiJ9lJTYd
-	gJojKXFwxQ2WCYxis5CsnoVk9Swkq2chWbGAkWUVo2hqQXJBcVJ6kaFecWJucWleul5yfu4m
-	Rkjc9e5gvH3A+hBjMtD6icxSosn5wLjNK4k3NDYzsjA1MTU2Mrc0I01YSZxXrcU6UEggPbEk
-	NTs1tSC1KL6oNCe1+BAjEwenVAOjWpHQr6dvhEImXuP9dTJUUTTnbhfTNh4xwYA327ivGv5Y
-	vs7BXHndZJ1/HMs2955ytvv5fMaHewneEzL2vrbtXT713zILk5pFMwqlMpcu3F+q/EfY1MPi
-	QdtCrxrWHF0N3ruXlly59uz2frb6x5zz44QXSxYlNypOmG3Ef0NPoKBwSun9RXt/KbEUZyQa
-	ajEXFScCAHzCF23RAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jQd1U5fZAg/2LLS1endnIZnF54SVW
-	iyl/ljNZXN41h83i9YcmFgdWjzvX9rB5zDsZ6NG3ZRWjx8+XOh6fN8kFsEY1MNpkpCampBYp
-	pOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAO1WUihLzCkFCgUkFhcr
-	6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMWZcbljLXPCSrWLbm3/sDYw3WbsYOTkkBEwkHk27
-	wwRhi0lcuLeerYuRi0NIYDqjxKvWo+wQzi9GiTm7mxlBqtgE1CS+fDnMDmKLCOhJ3LjQwQhS
-	xCywmFHi7tHNbCAJYQF/id5928EaWARUJW5cegVm8wpYSvzf+4kZwhaU+DH5HguIzSygJbF+
-	53EmCFteYvOat8wQJylI7Dj7mhFm2bXGxWwQNSIS+168Y5zAKDALyahZSEbNQjJqFpKWBYws
-	qxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCI/uZ9A7GVQ0WhxgFOBiVeHgLnrQFCrEmlhVX
-	5h5ilOBgVhLh9dkLFOJNSaysSi3Kjy8qzUktPsSYDPTpRGYp0eR8YNLJK4k3NDYxM7I0MrMw
-	MjE3J01YSZz3YKt1oJBAemJJanZqakFqEcwWJg5OqQbG6PN3rinuMluzWbuC9/6u+/mrQ9PV
-	2Bi901ZtuPrKz8ns0Z0Hjp78Ce+3lv3p7v0t7fDu0P+df57Jnoy5toCHO3HFxvdCDA42ohdm
-	/2Z7mHnmvtAso/Vsz5/u+Hp4Qe3mjCnewn7hj665B8Yfkl/2uV72zHRl9q+ZOw623NwtfTrQ
-	6oTI8X1rvJRYijMSDbWYi4oTAdlFteAwAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 5 May 2013 23:28:44 -0400
+Message-ID: <51872300.9000801@linux.vnet.ibm.com>
+Date: Mon, 06 May 2013 08:56:56 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Alex Shi <alex.shi@intel.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
+        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
+        riel@redhat.com
+Subject: Re: [patch v7 16/21] sched: no balance for prefer_sibling in power
+ scheduling
+References: <1365040862-8390-1-git-send-email-alex.shi@intel.com> <1365040862-8390-17-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1365040862-8390-17-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050603-4790-0000-0000-0000082B0797
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver core clears the driver data to NULL after device_release
-or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
-(device-core: Ensure drvdata = NULL when no driver is bound).
-Thus, it is not needed to manually clear the device driver data to NULL.
+Hi Alex,
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/gpio/gpio-lynxpoint.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+You can add my Reviewed-by for the below patch.
 
-diff --git a/drivers/gpio/gpio-lynxpoint.c b/drivers/gpio/gpio-lynxpoint.c
-index 86c17de..761c470 100644
---- a/drivers/gpio/gpio-lynxpoint.c
-+++ b/drivers/gpio/gpio-lynxpoint.c
-@@ -447,7 +447,6 @@ static int lp_gpio_remove(struct platform_device *pdev)
- 	err = gpiochip_remove(&lg->chip);
- 	if (err)
- 		dev_warn(&pdev->dev, "failed to remove gpio_chip.\n");
--	platform_set_drvdata(pdev, NULL);
- 	return 0;
- }
- 
--- 
-1.7.2.5
+Thanks
 
+Regards
+Preeti U Murthy
+
+On 04/04/2013 07:30 AM, Alex Shi wrote:
+> In power aware scheduling, we don't want to balance 'prefer_sibling'
+> groups just because local group has capacity.
+> If the local group has no tasks at the time, that is the power
+> balance hope so.
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 0dd29f4..86221e7 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4762,8 +4762,12 @@ static inline void update_sd_lb_stats(struct lb_env *env,
+>  		 * extra check prevents the case where you always pull from the
+>  		 * heaviest group when it is already under-utilized (possible
+>  		 * with a large weight task outweighs the tasks on the system).
+> +		 *
+> +		 * In power aware scheduling, we don't care load weight and
+> +		 * want not to pull tasks just because local group has capacity.
+>  		 */
+> -		if (prefer_sibling && !local_group && sds->this_has_capacity)
+> +		if (prefer_sibling && !local_group && sds->this_has_capacity
+> +				&& env->flags & LBF_PERF_BAL)
+>  			sgs.group_capacity = min(sgs.group_capacity, 1UL);
+> 
+>  		if (local_group) {
+> 
 
