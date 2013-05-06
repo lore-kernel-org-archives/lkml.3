@@ -1,82 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759624Ab3EFX5d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:57:33 -0400
-Received: from mail-qe0-f73.google.com ([209.85.128.73]:63083 "EHLO
-	mail-qe0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758140Ab3EFX5V (ORCPT
+	id S1758409Ab3EFX6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:58:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36166 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932836Ab3EFW5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:57:21 -0400
-From: Colin Cross <ccross@android.com>
+	Mon, 6 May 2013 18:57:15 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Colin Cross <ccross@android.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-nfs@vger.kernel.org, linux-pm@vger.kernel.org,
-        netdev@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, devel@driverdev.osuosl.org
-Subject: [PATCH v3 10/16] binder: use freezable blocking calls
-Date: Mon,  6 May 2013 16:50:15 -0700
-Message-Id: <1367884221-20462-11-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1367884221-20462-1-git-send-email-ccross@android.com>
-References: <1367884221-20462-1-git-send-email-ccross@android.com>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 34/63] mm: allow arch code to control the user page table ceiling
+Date: Mon,  6 May 2013 15:56:12 -0700
+Message-Id: <20130506225323.303893972@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
+References: <20130506225314.802167948@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid waking up every thread sleeping in a binder call during
-suspend and resume by calling a freezable blocking call.  Previous
-patches modified the freezer to avoid sending wakeups to threads
-that are blocked in freezable blocking calls.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-This call was selected to be converted to a freezable call because
-it doesn't hold any locks or release any resources when interrupted
-that might be needed by another freezing task or a kernel driver
-during suspend, and is a common site where idle userspace tasks are
-blocked.
+------------------
 
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Colin Cross <ccross@android.com>
+From: Hugh Dickins <hughd@google.com>
+
+commit 6ee8630e02be6dd89926ca0fbc21af68b23dc087 upstream.
+
+On architectures where a pgd entry may be shared between user and kernel
+(e.g.  ARM+LPAE), freeing page tables needs a ceiling other than 0.
+This patch introduces a generic USER_PGTABLES_CEILING that arch code can
+override.  It is the responsibility of the arch code setting the ceiling
+to ensure the complete freeing of the page tables (usually in
+pgd_free()).
+
+[catalin.marinas@arm.com: commit log; shift_arg_pages(), asm-generic/pgtables.h changes]
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/staging/android/binder.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/exec.c                     |    4 ++--
+ include/asm-generic/pgtable.h |   10 ++++++++++
+ mm/mmap.c                     |    4 ++--
+ 3 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 24456a0..af8fba4 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -20,6 +20,7 @@
- #include <asm/cacheflush.h>
- #include <linux/fdtable.h>
- #include <linux/file.h>
-+#include <linux/freezer.h>
- #include <linux/fs.h>
- #include <linux/list.h>
- #include <linux/miscdevice.h>
-@@ -2140,13 +2141,13 @@ retry:
- 			if (!binder_has_proc_work(proc, thread))
- 				ret = -EAGAIN;
- 		} else
--			ret = wait_event_interruptible_exclusive(proc->wait, binder_has_proc_work(proc, thread));
-+			ret = wait_event_freezable_exclusive(proc->wait, binder_has_proc_work(proc, thread));
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -627,7 +627,7 @@ static int shift_arg_pages(struct vm_are
+ 		 * when the old and new regions overlap clear from new_end.
+ 		 */
+ 		free_pgd_range(&tlb, new_end, old_end, new_end,
+-			vma->vm_next ? vma->vm_next->vm_start : 0);
++			vma->vm_next ? vma->vm_next->vm_start : USER_PGTABLES_CEILING);
  	} else {
- 		if (non_block) {
- 			if (!binder_has_thread_work(thread))
- 				ret = -EAGAIN;
- 		} else
--			ret = wait_event_interruptible(thread->wait, binder_has_thread_work(thread));
-+			ret = wait_event_freezable(thread->wait, binder_has_thread_work(thread));
+ 		/*
+ 		 * otherwise, clean from old_start; this is done to not touch
+@@ -636,7 +636,7 @@ static int shift_arg_pages(struct vm_are
+ 		 * for the others its just a little faster.
+ 		 */
+ 		free_pgd_range(&tlb, old_start, old_end, new_end,
+-			vma->vm_next ? vma->vm_next->vm_start : 0);
++			vma->vm_next ? vma->vm_next->vm_start : USER_PGTABLES_CEILING);
  	}
+ 	tlb_finish_mmu(&tlb, new_end, old_end);
  
- 	binder_lock(__func__);
--- 
-1.8.2.1
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -7,6 +7,16 @@
+ #include <linux/mm_types.h>
+ #include <linux/bug.h>
+ 
++/*
++ * On almost all architectures and configurations, 0 can be used as the
++ * upper ceiling to free_pgtables(): on many architectures it has the same
++ * effect as using TASK_SIZE.  However, there is one configuration which
++ * must impose a more careful limit, to avoid freeing kernel pgtables.
++ */
++#ifndef USER_PGTABLES_CEILING
++#define USER_PGTABLES_CEILING	0UL
++#endif
++
+ #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
+ extern int ptep_set_access_flags(struct vm_area_struct *vma,
+ 				 unsigned long address, pte_t *ptep,
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1920,7 +1920,7 @@ static void unmap_region(struct mm_struc
+ 	unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL);
+ 	vm_unacct_memory(nr_accounted);
+ 	free_pgtables(&tlb, vma, prev ? prev->vm_end : FIRST_USER_ADDRESS,
+-				 next ? next->vm_start : 0);
++				 next ? next->vm_start : USER_PGTABLES_CEILING);
+ 	tlb_finish_mmu(&tlb, start, end);
+ }
+ 
+@@ -2308,7 +2308,7 @@ void exit_mmap(struct mm_struct *mm)
+ 	unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL);
+ 	vm_unacct_memory(nr_accounted);
+ 
+-	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, 0);
++	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, USER_PGTABLES_CEILING);
+ 	tlb_finish_mmu(&tlb, 0, -1);
+ 
+ 	/*
+
 
