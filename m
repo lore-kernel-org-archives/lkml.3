@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759490Ab3EFXAO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:00:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36497 "EHLO
+	id S1759505Ab3EFXAo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:00:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36483 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933161Ab3EFW7Z (ORCPT
+	with ESMTP id S933146Ab3EFW7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:25 -0400
+	Mon, 6 May 2013 18:59:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>,
-        Christoph Fritz <chf.fritz@googlemail.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 46/46] Revert :can: sja1000: fix handling on dt properties on little endian systems"
-Date: Mon,  6 May 2013 15:58:52 -0700
-Message-Id: <20130506225825.530253799@linuxfoundation.org>
+        Dylan Reid <dgreid@chromium.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 29/46] ASoC: max98088: Fix logging of hardware revision.
+Date: Mon,  6 May 2013 15:58:35 -0700
+Message-Id: <20130506225823.726934699@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -28,84 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-This reverts commit 55fe10a686c3a8bce7bddc149e4ebb12f5a18c25 which is
-commit 0443de5fbf224abf41f688d8487b0c307dc5a4b4 upstream.
+From: Dylan Reid <dgreid@chromium.org>
 
-This causes a build breakage on 3.0, so we shouldn't apply it to that
-tree.
+commit 98682063549bedd6e2d2b6b7222f150c6fbce68c upstream.
 
+The hardware revision of the codec is based at 0x40.  Subtract that
+before convering to ASCII.  The same as it is done for 98095.
 
-Reported-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Christoph Fritz <chf.fritz@googlemail.com>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/sja1000/sja1000_of_platform.c |   31 +++++++++++++-------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+ sound/soc/codecs/max98088.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/can/sja1000/sja1000_of_platform.c
-+++ b/drivers/net/can/sja1000/sja1000_of_platform.c
-@@ -93,8 +93,8 @@ static int __devinit sja1000_ofp_probe(s
- 	struct net_device *dev;
- 	struct sja1000_priv *priv;
- 	struct resource res;
--	u32 prop;
--	int err, irq, res_size;
-+	const u32 *prop;
-+	int err, irq, res_size, prop_size;
- 	void __iomem *base;
+--- a/sound/soc/codecs/max98088.c
++++ b/sound/soc/codecs/max98088.c
+@@ -1998,7 +1998,7 @@ static int max98088_probe(struct snd_soc
+                        ret);
+                goto err_access;
+        }
+-       dev_info(codec->dev, "revision %c\n", ret + 'A');
++       dev_info(codec->dev, "revision %c\n", ret - 0x40 + 'A');
  
- 	err = of_address_to_resource(np, 0, &res);
-@@ -135,27 +135,27 @@ static int __devinit sja1000_ofp_probe(s
- 	priv->read_reg = sja1000_ofp_read_reg;
- 	priv->write_reg = sja1000_ofp_write_reg;
+        snd_soc_write(codec, M98088_REG_51_PWR_SYS, M98088_PWRSV);
  
--	err = of_property_read_u32(np, "nxp,external-clock-frequency", &prop);
--	if (!err)
--		priv->can.clock.freq = prop / 2;
-+	prop = of_get_property(np, "nxp,external-clock-frequency", &prop_size);
-+	if (prop && (prop_size ==  sizeof(u32)))
-+		priv->can.clock.freq = *prop / 2;
- 	else
- 		priv->can.clock.freq = SJA1000_OFP_CAN_CLOCK; /* default */
- 
--	err = of_property_read_u32(np, "nxp,tx-output-mode", &prop);
--	if (!err)
--		priv->ocr |= prop & OCR_MODE_MASK;
-+	prop = of_get_property(np, "nxp,tx-output-mode", &prop_size);
-+	if (prop && (prop_size == sizeof(u32)))
-+		priv->ocr |= *prop & OCR_MODE_MASK;
- 	else
- 		priv->ocr |= OCR_MODE_NORMAL; /* default */
- 
--	err = of_property_read_u32(np, "nxp,tx-output-config", &prop);
--	if (!err)
--		priv->ocr |= (prop << OCR_TX_SHIFT) & OCR_TX_MASK;
-+	prop = of_get_property(np, "nxp,tx-output-config", &prop_size);
-+	if (prop && (prop_size == sizeof(u32)))
-+		priv->ocr |= (*prop << OCR_TX_SHIFT) & OCR_TX_MASK;
- 	else
- 		priv->ocr |= OCR_TX0_PULLDOWN; /* default */
- 
--	err = of_property_read_u32(np, "nxp,clock-out-frequency", &prop);
--	if (!err && prop) {
--		u32 divider = priv->can.clock.freq * 2 / prop;
-+	prop = of_get_property(np, "nxp,clock-out-frequency", &prop_size);
-+	if (prop && (prop_size == sizeof(u32)) && *prop) {
-+		u32 divider = priv->can.clock.freq * 2 / *prop;
- 
- 		if (divider > 1)
- 			priv->cdr |= divider / 2 - 1;
-@@ -165,7 +165,8 @@ static int __devinit sja1000_ofp_probe(s
- 		priv->cdr |= CDR_CLK_OFF; /* default */
- 	}
- 
--	if (!of_property_read_bool(np, "nxp,no-comparator-bypass"))
-+	prop = of_get_property(np, "nxp,no-comparator-bypass", NULL);
-+	if (!prop)
- 		priv->cdr |= CDR_CBP; /* default */
- 
- 	priv->irq_flags = IRQF_SHARED;
 
 
