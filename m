@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab3EFQOg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 12:14:36 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59038 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274Ab3EFQOf (ORCPT
+	id S1754997Ab3EFQPF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 12:15:05 -0400
+Received: from smtp-vbr19.xs4all.nl ([194.109.24.39]:2786 "EHLO
+	smtp-vbr19.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754341Ab3EFQPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 12:14:35 -0400
-Date: Mon, 6 May 2013 10:47:01 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Emmanuel Benisty <benisty.e@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@surriel.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hhuang@redhat.com,
-        "Low, Jason" <jason.low2@hp.com>,
-        Michel Lespinasse <walken@google.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>
-Subject: Re: ipc,sem: sysv semaphore scalability
-Message-ID: <20130506144701.GB24044@logfs.org>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
- <CA+i8gKKK_VxZtyyp1tqHnztd4++XyNXwbEEr-A29-J23PyuCfQ@mail.gmail.com>
- <CA+55aFzqBEX=cGGZJJsfNWcDwQcUOP7njEog-kZZLRxuDg8Tzg@mail.gmail.com>
- <CA+i8gK+h+FyPiOL85BPa-Pu8+bDw6LW60-oRoLHgP2AnzMADCA@mail.gmail.com>
- <20130504155558.GA12870@logfs.org>
- <20130504181245.GA9711@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130504181245.GA9711@pd.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 6 May 2013 12:15:03 -0400
+X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 May 2013 12:15:02 EDT
+From: Maarten ter Huurne <maarten@treewalker.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Maarten ter Huurne <maarten@treewalker.org>
+Subject: [PATCH] ext4: Fixed corruption when online resizing a fs with 1K block size
+Date: Mon,  6 May 2013 18:06:07 +0200
+Message-Id: <1367856367-15924-1-git-send-email-maarten@treewalker.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 4 May 2013 20:12:45 +0200, Borislav Petkov wrote:
-> On Sat, May 04, 2013 at 11:55:58AM -0400, Jörn Engel wrote:
-> > Blockconsole currently lives here:
-> > https://git.kernel.org/cgit/linux/kernel/git/joern/bcon2.git/
-> 
-> Tja, if only that were upstream...
+Subtracting the number of the first data block places the superblock
+backups one block too early, corrupting the file system. When the block
+size is larger than 1K, the first data block is 0, so the subtraction
+has no effect and no corruption occurs.
 
-Linus has a pull request.  If he prefers to change code until the
-relevant bits fit into 80x25, that is his choice. ;)
+Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
+---
+ fs/ext4/resize.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-Jörn
+diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
+index c169477..116c80d 100644
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -1654,12 +1654,10 @@ errout:
+ 		err = err2;
+ 
+ 	if (!err) {
+-		ext4_fsblk_t first_block;
+-		first_block = ext4_group_first_block_no(sb, 0);
+ 		if (test_opt(sb, DEBUG))
+ 			printk(KERN_DEBUG "EXT4-fs: extended group to %llu "
+ 			       "blocks\n", ext4_blocks_count(es));
+-		update_backups(sb, EXT4_SB(sb)->s_sbh->b_blocknr - first_block,
++		update_backups(sb, EXT4_SB(sb)->s_sbh->b_blocknr,
+ 			       (char *)es, sizeof(struct ext4_super_block), 0);
+ 	}
+ 	return err;
+-- 
+1.7.10.4
 
---
-The only good bug is a dead bug.
--- Starship Troopers
