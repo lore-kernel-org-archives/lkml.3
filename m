@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760484Ab3EFXNc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:13:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36673 "EHLO
+	id S1760994Ab3EFXcs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:32:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36728 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760413Ab3EFXNW (ORCPT
+	with ESMTP id S1758810Ab3EFXNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:22 -0400
+	Mon, 6 May 2013 19:13:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Stikkolorum <d.r.stikkolorum@hhs.nl>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 024/104] usbfs: Always allow ctrl requests with USB_RECIP_ENDPOINT on the ctrl ep
-Date: Mon,  6 May 2013 16:11:43 -0700
-Message-Id: <20130506230046.060336717@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 039/104] tracing: Fix stack tracer with fentry use
+Date: Mon,  6 May 2013 16:11:58 -0700
+Message-Id: <20130506230047.626961022@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -28,46 +26,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 1361bf4b9f9ef45e628a5b89e0fd9bedfdcb7104 upstream.
+commit d4ecbfc49b4b1d4b597fb5ba9e4fa25d62f105c5 upstream.
 
-When usbfs receives a ctrl-request from userspace it calls check_ctrlrecip,
-which for a request with USB_RECIP_ENDPOINT tries to map this to an interface
-to see if this interface is claimed, except for ctrl-requests with a type of
-USB_TYPE_VENDOR.
+When gcc 4.6 on x86 is used, the function tracer will use the new
+option -mfentry which does a call to "fentry" at every function
+instead of "mcount". The significance of this is that fentry is
+called as the first operation of the function instead of the mcount
+usage of being called after the stack.
 
-When trying to use this device: http://www.akaipro.com/eiepro
-redirected to a Windows vm running on qemu on top of Linux.
+This causes the stack tracer to show some bogus results for the size
+of the last function traced, as well as showing "ftrace_call" instead
+of the function. This is due to the stack frame not being set up
+by the function that is about to be traced.
 
-The windows driver makes a ctrl-req with USB_TYPE_CLASS and
-USB_RECIP_ENDPOINT with index 0, and the mapping of the endpoint (0) to
-the interface fails since ep 0 is the ctrl endpoint and thus never is
-part of an interface.
+ # cat stack_trace
+        Depth    Size   Location    (48 entries)
+        -----    ----   --------
+  0)     4824     216   ftrace_call+0x5/0x2f
+  1)     4608     112   ____cache_alloc+0xb7/0x22d
+  2)     4496      80   kmem_cache_alloc+0x63/0x12f
 
-This patch fixes this ctrl-req failing by skipping the checkintf call for
-USB_RECIP_ENDPOINT ctrl-reqs on the ctrl endpoint.
+The 216 size for ftrace_call includes both the ftrace_call stack
+(which includes the saving of registers it does), as well as the
+stack size of the parent.
 
-Reported-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
-Tested-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+To fix this, if CC_USING_FENTRY is defined, then the stack_tracer
+will reserve the first item in stack_dump_trace[] array when
+calling save_stack_trace(), and it will fill it in with the parent ip.
+Then the code will look for the parent pointer on the stack and
+give the real size of the parent's stack pointer:
+
+ # cat stack_trace
+        Depth    Size   Location    (14 entries)
+        -----    ----   --------
+  0)     2640      48   update_group_power+0x26/0x187
+  1)     2592     224   update_sd_lb_stats+0x2a5/0x4ac
+  2)     2368     160   find_busiest_group+0x31/0x1f1
+  3)     2208     256   load_balance+0xd9/0x662
+
+I'm Cc'ing stable, although it's not urgent, as it only shows bogus
+size for item #0, the rest of the trace is legit. It should still be
+corrected in previous stable releases.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/devio.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/trace/trace_stack.c |   33 +++++++++++++++++++++++++++++----
+ 1 file changed, 29 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -738,6 +738,8 @@ static int check_ctrlrecip(struct dev_st
- 	index &= 0xff;
- 	switch (requesttype & USB_RECIP_MASK) {
- 	case USB_RECIP_ENDPOINT:
-+		if ((index & ~USB_DIR_IN) == 0)
-+			return 0;
- 		ret = findintfep(ps->dev, index);
- 		if (ret >= 0)
- 			ret = checkintf(ps, ret);
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -20,13 +20,27 @@
+ 
+ #define STACK_TRACE_ENTRIES 500
+ 
++/*
++ * If fentry is used, then the function being traced will
++ * jump to fentry directly before it sets up its stack frame.
++ * We need to ignore that one and record the parent. Since
++ * the stack frame for the traced function wasn't set up yet,
++ * the stack_trace wont see the parent. That needs to be added
++ * manually to stack_dump_trace[] as the first element.
++ */
++#ifdef CC_USING_FENTRY
++# define add_func	1
++#else
++# define add_func	0
++#endif
++
+ static unsigned long stack_dump_trace[STACK_TRACE_ENTRIES+1] =
+ 	 { [0 ... (STACK_TRACE_ENTRIES)] = ULONG_MAX };
+ static unsigned stack_dump_index[STACK_TRACE_ENTRIES];
+ 
+ static struct stack_trace max_stack_trace = {
+-	.max_entries		= STACK_TRACE_ENTRIES,
+-	.entries		= stack_dump_trace,
++	.max_entries		= STACK_TRACE_ENTRIES - add_func,
++	.entries		= &stack_dump_trace[add_func],
+ };
+ 
+ static unsigned long max_stack_size;
+@@ -40,7 +54,7 @@ int stack_tracer_enabled;
+ static int last_stack_tracer_enabled;
+ 
+ static inline void
+-check_stack(unsigned long *stack)
++check_stack(unsigned long ip, unsigned long *stack)
+ {
+ 	unsigned long this_size, flags;
+ 	unsigned long *p, *top, *start;
+@@ -71,6 +85,17 @@ check_stack(unsigned long *stack)
+ 	save_stack_trace(&max_stack_trace);
+ 
+ 	/*
++	 * When fentry is used, the traced function does not get
++	 * its stack frame set up, and we lose the parent.
++	 * Add that one in manally. We set up save_stack_trace()
++	 * to not touch the first element in this case.
++	 */
++	if (add_func) {
++		stack_dump_trace[0] = ip;
++		max_stack_trace.nr_entries++;
++	}
++
++	/*
+ 	 * Now find where in the stack these are.
+ 	 */
+ 	i = 0;
+@@ -124,7 +149,7 @@ stack_trace_call(unsigned long ip, unsig
+ 	if (per_cpu(trace_active, cpu)++ != 0)
+ 		goto out;
+ 
+-	check_stack(&stack);
++	check_stack(parent_ip, &stack);
+ 
+  out:
+ 	per_cpu(trace_active, cpu)--;
 
 
