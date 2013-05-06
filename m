@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757697Ab3EFUqd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59145 "EHLO
+	id S1758670Ab3EFVER (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:04:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59172 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521Ab3EFUq3 (ORCPT
+	with ESMTP id S1757695Ab3EFUqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:29 -0400
+	Mon, 6 May 2013 16:46:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 051/115] PCI / ACPI: Dont query OSC support with all possible controls
-Date: Mon,  6 May 2013 13:44:47 -0700
-Message-Id: <20130506203100.794557775@linuxfoundation.org>
+        Hugh Dickins <hughd@google.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 057/115] mm: allow arch code to control the user page table ceiling
+Date: Mon,  6 May 2013 13:44:53 -0700
+Message-Id: <20130506203101.407144443@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,67 +30,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Hugh Dickins <hughd@google.com>
 
-commit 545d6e189a41c94c11f55045a771118eccc9d9eb upstream.
+commit 6ee8630e02be6dd89926ca0fbc21af68b23dc087 upstream.
 
-Found problem on system that firmware that could handle pci aer.
-Firmware get error reporting after pci injecting error, before os boots.
-But after os boots, firmware can not get report anymore, even pci=noaer
-is passed.
+On architectures where a pgd entry may be shared between user and kernel
+(e.g.  ARM+LPAE), freeing page tables needs a ceiling other than 0.
+This patch introduces a generic USER_PGTABLES_CEILING that arch code can
+override.  It is the responsibility of the arch code setting the ceiling
+to ensure the complete freeing of the page tables (usually in
+pgd_free()).
 
-Root cause: BIOS _OSC has problem with query bit checking.
-It turns out that BIOS vendor is copying example code from ACPI Spec.
-In ACPI Spec 5.0, page 290:
-
-	If (Not(And(CDW1,1))) // Query flag clear?
-	{	// Disable GPEs for features granted native control.
-		If (And(CTRL,0x01)) // Hot plug control granted?
-		{
-			Store(0,HPCE) // clear the hot plug SCI enable bit
-			Store(1,HPCS) // clear the hot plug SCI status bit
-		}
-	...
-	}
-
-When Query flag is set, And(CDW1,1) will be 1, Not(1) will return 0xfffffffe.
-So it will get into code path that should be for control set only.
-BIOS acpi code should be changed to "If (LEqual(And(CDW1,1), 0)))"
-
-Current kernel code is using _OSC query to notify firmware about support
-from OS and then use _OSC to set control bits.
-During query support, current code is using all possible controls.
-So will execute code that should be only for control set stage.
-
-That will have problem when pci=noaer or aer firmware_first is used.
-As firmware have that control set for os aer already in query support stage,
-but later will not os aer handling.
-
-We should avoid passing all possible controls, just use osc_control_set
-instead.
-That should workaround BIOS bugs with affected systems on the field
-as more bios vendors are copying sample code from ACPI spec.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[catalin.marinas@arm.com: commit log; shift_arg_pages(), asm-generic/pgtables.h changes]
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/pci_root.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/exec.c                     |    4 ++--
+ include/asm-generic/pgtable.h |   10 ++++++++++
+ mm/mmap.c                     |    4 ++--
+ 3 files changed, 14 insertions(+), 4 deletions(-)
 
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -201,8 +201,8 @@ static acpi_status acpi_pci_query_osc(st
- 		*control &= OSC_PCI_CONTROL_MASKS;
- 		capbuf[OSC_CONTROL_TYPE] = *control | root->osc_control_set;
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -613,7 +613,7 @@ static int shift_arg_pages(struct vm_are
+ 		 * when the old and new regions overlap clear from new_end.
+ 		 */
+ 		free_pgd_range(&tlb, new_end, old_end, new_end,
+-			vma->vm_next ? vma->vm_next->vm_start : 0);
++			vma->vm_next ? vma->vm_next->vm_start : USER_PGTABLES_CEILING);
  	} else {
--		/* Run _OSC query for all possible controls. */
--		capbuf[OSC_CONTROL_TYPE] = OSC_PCI_CONTROL_MASKS;
-+		/* Run _OSC query only with existing controls. */
-+		capbuf[OSC_CONTROL_TYPE] = root->osc_control_set;
+ 		/*
+ 		 * otherwise, clean from old_start; this is done to not touch
+@@ -622,7 +622,7 @@ static int shift_arg_pages(struct vm_are
+ 		 * for the others its just a little faster.
+ 		 */
+ 		free_pgd_range(&tlb, old_start, old_end, new_end,
+-			vma->vm_next ? vma->vm_next->vm_start : 0);
++			vma->vm_next ? vma->vm_next->vm_start : USER_PGTABLES_CEILING);
  	}
+ 	tlb_finish_mmu(&tlb, new_end, old_end);
  
- 	status = acpi_pci_run_osc(root->device->handle, capbuf, &result);
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -7,6 +7,16 @@
+ #include <linux/mm_types.h>
+ #include <linux/bug.h>
+ 
++/*
++ * On almost all architectures and configurations, 0 can be used as the
++ * upper ceiling to free_pgtables(): on many architectures it has the same
++ * effect as using TASK_SIZE.  However, there is one configuration which
++ * must impose a more careful limit, to avoid freeing kernel pgtables.
++ */
++#ifndef USER_PGTABLES_CEILING
++#define USER_PGTABLES_CEILING	0UL
++#endif
++
+ #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
+ extern int ptep_set_access_flags(struct vm_area_struct *vma,
+ 				 unsigned long address, pte_t *ptep,
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2305,7 +2305,7 @@ static void unmap_region(struct mm_struc
+ 	update_hiwater_rss(mm);
+ 	unmap_vmas(&tlb, vma, start, end);
+ 	free_pgtables(&tlb, vma, prev ? prev->vm_end : FIRST_USER_ADDRESS,
+-				 next ? next->vm_start : 0);
++				 next ? next->vm_start : USER_PGTABLES_CEILING);
+ 	tlb_finish_mmu(&tlb, start, end);
+ }
+ 
+@@ -2685,7 +2685,7 @@ void exit_mmap(struct mm_struct *mm)
+ 	/* Use -1 here to ensure all VMAs in the mm are unmapped */
+ 	unmap_vmas(&tlb, vma, 0, -1);
+ 
+-	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, 0);
++	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, USER_PGTABLES_CEILING);
+ 	tlb_finish_mmu(&tlb, 0, -1);
+ 
+ 	/*
 
 
