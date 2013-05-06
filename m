@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab3EFKbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 06:31:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46661 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753767Ab3EFKbH (ORCPT
+	id S1753995Ab3EFKeT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 06:34:19 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:41641 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767Ab3EFKeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 06:31:07 -0400
-Date: Mon, 6 May 2013 11:31:05 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        Grant Likely <grant.likely@linaro.org>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        "Yang, Wenyou" <Wenyou.Yang@atmel.com>,
-        Joachim Eastwood <manabian@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "Lin, JM" <JM.Lin@atmel.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after
- xfer->speed_hz set
-Message-ID: <20130506103105.GB13472@opensource.wolfsonmicro.com>
-References: <1362626715-6549-1-git-send-email-wenyou.yang@atmel.com>
- <1362626815-6628-1-git-send-email-wenyou.yang@atmel.com>
- <CAGhQ9VwW18LXY5Jn0FUFCaAzKxP1W3QADG=JBp9JbgaAwo=F2Q@mail.gmail.com>
- <B256D81BAE5131468A838E5D7A24364154236AB5@penmbx02>
- <CACQ1gAhZO3stjrwf5SiZf7jOO8T5bAJZiz97M7+7vwFmk2e65g@mail.gmail.com>
- <5182414F.1000201@atmel.com>
+	Mon, 6 May 2013 06:34:17 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9zSXsLTf0vkW971A"
-Content-Disposition: inline
-In-Reply-To: <5182414F.1000201@atmel.com>
-X-Cookie: You'll be sorry...
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130506101936.GE13861@dyad.programming.kicks-ass.net>
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com>
+ <1367804711-30308-6-git-send-email-alex.shi@intel.com> <CAPM31RLJe19FH+RYipwm4kwtzmFHoS2xGTx4iZ9+qwDJZ_pf3A@mail.gmail.com>
+ <20130506101936.GE13861@dyad.programming.kicks-ass.net>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 6 May 2013 03:33:45 -0700
+Message-ID: <CAPM31RJg87C0nO_tAaOGLaDCUAB+QmfV4LkNcwnk9j9voNocfg@mail.gmail.com>
+Subject: Re: [PATCH v5 5/7] sched: compute runnable load avg in cpu_load and cpu_avg_load_per_task
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 6, 2013 at 3:19 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Mon, May 06, 2013 at 01:46:19AM -0700, Paul Turner wrote:
+>> On Sun, May 5, 2013 at 6:45 PM, Alex Shi <alex.shi@intel.com> wrote:
+>> > @@ -2536,7 +2536,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+>> >  void update_idle_cpu_load(struct rq *this_rq)
+>> >  {
+>> >         unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+>> > -       unsigned long load = this_rq->load.weight;
+>> > +       unsigned long load = (unsigned long)this_rq->cfs.runnable_load_avg;
+>>
+>> We should be minimizing:
+>>   Variance[ for all i ]{ cfs_rq[i]->runnable_load_avg +
+>> cfs_rq[i]->blocked_load_avg }
+>>
+>> blocked_load_avg is the expected "to wake" contribution from tasks
+>> already assigned to this rq.
+>>
+>> e.g. this could be:
+>>   load = this_rq->cfs.runnable_load_avg + this_rq->cfs.blocked_load_avg;
+>>
+>> Although, in general I have a major concern with the current implementation:
+>>
+>> The entire reason for stability with the bottom up averages is that
+>> when load migrates between cpus we are able to migrate it between the
+>> tracked sums.
+>>
+>> Stuffing observed averages of these into the load_idxs loses that
+>> mobility; we will have to stall (as we do today for idx > 0) before we
+>> can recognize that a cpu's load has truly left it; this is a very
+>> similar problem to the need to stably track this for group shares
+>> computation.
+>
+> Ah indeed. I overlooked that.
+>
+>> To that end, I would rather see the load_idx disappear completely:
+>>  (a) We can calculate the imbalance purely from delta (runnable_avg +
+>> blocked_avg)
+>>  (b) It eliminates a bad tunable.
+>
+> So I suspect (haven't gone back in history to verify) that load_idx mostly
+> comes from the fact that our balance passes happen more and more slowly the
+> bigger the domains get.
+>
+> In that respect it makes sense to equate load_idx to sched_domain::level;
+> higher domains balance slower and would thus want a longer-term average to base
+> decisions on.
+>
+> So what we would want is means to get sane longer term averages.
 
---9zSXsLTf0vkW971A
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yeah, most of the rationale is super hand-wavy; especially the fairly
+arbitrary choice of periods (e.g. busy_idx vs newidle).
 
-On Thu, May 02, 2013 at 12:34:55PM +0200, Nicolas Ferre wrote:
+I think the other rationale is:
+  For smaller indicies (e.g. newidle) we speed up response time by
+also cutting motion out of the averages.
 
-> Can you tell us if this SPI patch will be merged upstream using one
-> of your paths?
+The runnable_avgs themselves actually have a fair bit of history in
+them already (50% is last 32ms); but given that they don't need to be
+cut-off to respond to load being migrated I'm guessing we could
+actually potentially get by with just "instaneous" and "use averages"
+where appropriate?
 
-I have no idea what patch this is but if it's not in my tree -next it's
-unlikely to be merged.
-
---9zSXsLTf0vkW971A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRh4ZiAAoJELSic+t+oim9RPsP/jxmLHu4wCW8hXusLkEBK8J8
-SqrL4Q5MoDubi0aap6LjoW0U2KgV4+pGNzSg2ri3V/Je5Sy1/SpzhZVA4JwQHnzi
-503ajmxGjy7/NFReEXR/3P1y6XUV8Mwk0eZHQCC0v3djid4PfJaWjBtk1kajdNXB
-qfS0/ONULjFmM6/5BEHE7R4QQHrfuw1VyG/6oMrcX22yMP5DryLBjnvPZOhjCt88
-ssf+y8rUnPJh/GexSEEgLdTfsNxwUWHkgPtlEVZmVSI7kdEFKNNs8f5Rs2va4fIn
-dXHPviIOboP0CJfNVOtjr3iRl/oRTzzoGivvjNt1OruUcrDY09y8ho+M8POgWF5f
-YgwjViRvubU4XkZzDflqT9Z4PPA73ryh9B3dSrStEzQlTO1yQk+6iSvZqU0Ua+9h
-z/leGybASmFlsgMCmkeu+IVVFy5KAcN2jqoqEhKBZvSqaBjV6FJoVeoBLExEEbqm
-oRK5rkdDC16N9eb0hka1MiDKi6BhaUr50pTRu6nRsQ/X/exB+vZNBhrMHxVV6Ln5
-bJtTJb7xR2se6y54MpxhGAIp8G/txAzF75Jx4X4AW4VC380V41Q+/fX+pNOf5zPd
-36LqVXuMfVsiKcHqa5GBiN70RIEbIwGGSlzK/t8RyTCp0ozlD5t+fFSJQmrKW/kT
-4cfAV9DPwNMsbrSAbii9
-=ZNp6
------END PGP SIGNATURE-----
-
---9zSXsLTf0vkW971A--
+We always end up having to re-pick/tune them based on a variety of
+workloads; if we can eliminate them I think it would be a win.
