@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759196Ab3EFW4p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:56:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36008 "EHLO
+	id S932773Ab3EFW5D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:57:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36107 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756899Ab3EFW4n (ORCPT
+	with ESMTP id S932739Ab3EFW5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:56:43 -0400
+	Mon, 6 May 2013 18:57:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Filippo Turato <nnj7585@gmail.com>
-Subject: [ 01/63] USB: serial: option: Added support Olivetti Olicard 145
-Date: Mon,  6 May 2013 15:55:39 -0700
-Message-Id: <20130506225315.180953209@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 20/63] tracing: Use stack of calling function for stack tracer
+Date: Mon,  6 May 2013 15:55:58 -0700
+Message-Id: <20130506225319.936185611@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -26,36 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Filippo Turato <nnj7585@gmail.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit d19bf5cedfd7d53854a3bd699c98b467b139833b upstream.
+commit 87889501d0adfae10e3b0f0e6f2d7536eed9ae84 upstream.
 
-This adds PID for Olivetti Olicard 145 in option.c
+Use the stack of stack_trace_call() instead of check_stack() as
+the test pointer for max stack size. It makes it a bit cleaner
+and a little more accurate.
 
-Signed-off-by: Filippo Turato <nnj7585@gmail.com>
+Adding stable, as a later fix depends on this patch.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/trace/trace_stack.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -347,6 +347,7 @@ static void option_instat_callback(struc
- /* Olivetti products */
- #define OLIVETTI_VENDOR_ID			0x0b3c
- #define OLIVETTI_PRODUCT_OLICARD100		0xc000
-+#define OLIVETTI_PRODUCT_OLICARD145		0xc003
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -40,20 +40,21 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
+ int stack_tracer_enabled;
+ static int last_stack_tracer_enabled;
  
- /* Celot products */
- #define CELOT_VENDOR_ID				0x211f
-@@ -1273,6 +1274,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
+-static inline void check_stack(void)
++static inline void
++check_stack(unsigned long *stack)
+ {
+ 	unsigned long this_size, flags;
+ 	unsigned long *p, *top, *start;
+ 	int i;
  
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
-+	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD145) },
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
- 	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
+-	this_size = ((unsigned long)&this_size) & (THREAD_SIZE-1);
++	this_size = ((unsigned long)stack) & (THREAD_SIZE-1);
+ 	this_size = THREAD_SIZE - this_size;
+ 
+ 	if (this_size <= max_stack_size)
+ 		return;
+ 
+ 	/* we do not handle interrupt stacks yet */
+-	if (!object_is_on_stack(&this_size))
++	if (!object_is_on_stack(stack))
+ 		return;
+ 
+ 	local_irq_save(flags);
+@@ -74,7 +75,7 @@ static inline void check_stack(void)
+ 	 * Now find where in the stack these are.
+ 	 */
+ 	i = 0;
+-	start = &this_size;
++	start = stack;
+ 	top = (unsigned long *)
+ 		(((unsigned long)start & ~(THREAD_SIZE-1)) + THREAD_SIZE);
+ 
+@@ -113,6 +114,7 @@ static inline void check_stack(void)
+ static void
+ stack_trace_call(unsigned long ip, unsigned long parent_ip)
+ {
++	unsigned long stack;
+ 	int cpu;
+ 
+ 	if (unlikely(!ftrace_enabled || stack_trace_disabled))
+@@ -125,7 +127,7 @@ stack_trace_call(unsigned long ip, unsig
+ 	if (per_cpu(trace_active, cpu)++ != 0)
+ 		goto out;
+ 
+-	check_stack();
++	check_stack(&stack);
+ 
+  out:
+ 	per_cpu(trace_active, cpu)--;
 
 
