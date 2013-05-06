@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759383Ab3EFW4y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:56:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36028 "EHLO
+	id S933517Ab3EGAEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:04:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36070 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759204Ab3EFW4r (ORCPT
+	with ESMTP id S1759348Ab3EFW4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:56:47 -0400
+	Mon, 6 May 2013 18:56:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 04/63] powerpc: Add isync to copy_and_flush
-Date: Mon,  6 May 2013 15:55:42 -0700
-Message-Id: <20130506225315.948759648@linuxfoundation.org>
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 25/63] tracing: Reset ftrace_graph_filter_enabled if count is zero
+Date: Mon,  6 May 2013 15:56:03 -0700
+Message-Id: <20130506225321.262322275@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -27,43 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <michael.neuling@au1.ibm.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-commit 29ce3c5073057991217916abc25628e906911757 upstream.
+commit 9f50afccfdc15d95d7331acddcb0f7703df089ae upstream.
 
-In __after_prom_start we copy the kernel down to zero in two calls to
-copy_and_flush.  After the first call (copy from 0 to copy_to_here:)
-we jump to the newly copied code soon after.
+The ftrace_graph_count can be decreased with a "!" pattern, so that
+the enabled flag should be updated too.
 
-Unfortunately there's no isync between the copy of this code and the
-jump to it.  Hence it's possible that stale instructions could still be
-in the icache or pipeline before we branch to it.
+Link: http://lkml.kernel.org/r/1365663698-2413-1-git-send-email-namhyung@kernel.org
 
-We've seen this on real machines and it's results in no console output
-after:
-  calling quiesce...
-  returning from prom_init
-
-The below adds an isync to ensure that the copy and flushing has
-completed before any branching to the new instructions occurs.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/head_64.S |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/trace/ftrace.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/head_64.S
-+++ b/arch/powerpc/kernel/head_64.S
-@@ -489,6 +489,7 @@ _GLOBAL(copy_and_flush)
- 	sync
- 	addi	r5,r5,8
- 	addi	r6,r6,8
-+	isync
- 	blr
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3611,7 +3611,8 @@ out:
+ 	if (fail)
+ 		return -EINVAL;
  
- .align 8
+-	ftrace_graph_filter_enabled = 1;
++	ftrace_graph_filter_enabled = !!(*idx);
++
+ 	return 0;
+ }
+ 
 
 
