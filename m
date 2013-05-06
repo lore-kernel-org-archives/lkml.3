@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805Ab3EGAEN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 20:04:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36072 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759394Ab3EFW4y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759383Ab3EFW4y (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 May 2013 18:56:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36028 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759204Ab3EFW4r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 18:56:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [ 26/63] i2c: xiic: must always write 16-bit words to TX_FIFO
-Date: Mon,  6 May 2013 15:56:04 -0700
-Message-Id: <20130506225321.449655248@linuxfoundation.org>
+        Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 04/63] powerpc: Add isync to copy_and_flush
+Date: Mon,  6 May 2013 15:55:42 -0700
+Message-Id: <20130506225315.948759648@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -26,43 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven A. Falco" <sfalco@harris.com>
+From: Michael Neuling <michael.neuling@au1.ibm.com>
 
-commit c39e8e4354ce4daf23336de5daa28a3b01f00aa6 upstream.
+commit 29ce3c5073057991217916abc25628e906911757 upstream.
 
-The TX_FIFO register is 10 bits wide.  The lower 8 bits are the data to be
-written, while the upper two bits are flags to indicate stop/start.
+In __after_prom_start we copy the kernel down to zero in two calls to
+copy_and_flush.  After the first call (copy from 0 to copy_to_here:)
+we jump to the newly copied code soon after.
 
-The driver apparently attempted to optimize write access, by only writing a
-byte in those cases where the stop/start bits are zero.  However, we have
-seen cases where the lower byte is duplicated onto the upper byte by the
-hardware, which causes inadvertent stop/starts.
+Unfortunately there's no isync between the copy of this code and the
+jump to it.  Hence it's possible that stale instructions could still be
+in the icache or pipeline before we branch to it.
 
-This patch changes the write access to the transmit FIFO to always be 16 bits
-wide.
+We've seen this on real machines and it's results in no console output
+after:
+  calling quiesce...
+  returning from prom_init
 
-Signed off by: Steven A. Falco <sfalco@harris.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+The below adds an isync to ensure that the copy and flushing has
+completed before any branching to the new instructions occurs.
+
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-xiic.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ arch/powerpc/kernel/head_64.S |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/i2c/busses/i2c-xiic.c
-+++ b/drivers/i2c/busses/i2c-xiic.c
-@@ -311,10 +311,8 @@ static void xiic_fill_tx_fifo(struct xii
- 			/* last message in transfer -> STOP */
- 			data |= XIIC_TX_DYN_STOP_MASK;
- 			dev_dbg(i2c->adap.dev.parent, "%s TX STOP\n", __func__);
--
--			xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
--		} else
--			xiic_setreg8(i2c, XIIC_DTR_REG_OFFSET, data);
-+		}
-+		xiic_setreg16(i2c, XIIC_DTR_REG_OFFSET, data);
- 	}
- }
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -489,6 +489,7 @@ _GLOBAL(copy_and_flush)
+ 	sync
+ 	addi	r5,r5,8
+ 	addi	r6,r6,8
++	isync
+ 	blr
  
+ .align 8
 
 
