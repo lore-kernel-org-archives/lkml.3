@@ -1,126 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab3EFNFO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 09:05:14 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:23874 "EHLO
+	id S1753734Ab3EFNFN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 09:05:13 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:23870 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277Ab3EFNFH (ORCPT
+	with ESMTP id S1753090Ab3EFNFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 09:05:07 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         stefano.stabellini@eu.citrix.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@vger.kernel.org
-Subject: [PATCH 1/4] xen/vcpu/pvhvm: Fix vcpu hotplugging hanging.
-Date: Mon,  6 May 2013 09:04:55 -0400
-Message-Id: <1367845498-14290-2-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/4] xen/vcpu: Document the xen_vcpu_info and xen_vcpu
+Date: Mon,  6 May 2013 09:04:56 -0400
+Message-Id: <1367845498-14290-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367845498-14290-1-git-send-email-konrad.wilk@oracle.com>
 References: <1367845498-14290-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a user did:
+They are important structures and it is not clear at first
+look what they are for.
 
-	echo 0 > /sys/devices/system/cpu/cpu1/online
-	echo 1 > /sys/devices/system/cpu/cpu1/online
+The xen_vcpu is a pointer. By default it points to the shared_info
+structure (at the CPU offset location). However if the
+VCPUOP_register_vcpu_info hypercall is implemented we can make the
+xen_vcpu pointer point to a per-CPU location.
 
-we would (this a build with DEBUG enabled) get to:
-smpboot: ++++++++++++++++++++=_---CPU UP  1
-.. snip..
-smpboot: Stack at about ffff880074c0ff44
-smpboot: CPU1: has booted.
-
-and hang. The RCU mechanism would kick in an try to IPI the CPU1
-but the IPIs (and all other interrupts) would never arrive at the
-CPU1. At first glance at least. A bit digging in the hypervisor
-trace shows that (using xenanalyze):
-
-[vla] d4v1 vec 243 injecting
-   0.043163027 --|x d4v1 intr_window vec 243 src 5(vector) intr f3
-]  0.043163639 --|x d4v1 vmentry cycles 1468
-]  0.043164913 --|x d4v1 vmexit exit_reason PENDING_INTERRUPT eip ffffffff81673254
-   0.043164913 --|x d4v1 inj_virq vec 243  real
-  [vla] d4v1 vec 243 injecting
-   0.043164913 --|x d4v1 intr_window vec 243 src 5(vector) intr f3
-]  0.043165526 --|x d4v1 vmentry cycles 1472
-]  0.043166800 --|x d4v1 vmexit exit_reason PENDING_INTERRUPT eip ffffffff81673254
-   0.043166800 --|x d4v1 inj_virq vec 243  real
-  [vla] d4v1 vec 243 injecting
-
-there is a pending event (subsequent debugging shows it is the IPI
-from the VCPU0 when smpboot.c on VCPU1 has done
-"set_cpu_online(smp_processor_id(), true)") and the guest VCPU1 is
-interrupted with the callback IPI (0xf3 aka 243) which ends up calling
-__xen_evtchn_do_upcall.
-
-The __xen_evtchn_do_upcall seems to do *something* but not acknowledge
-the pending events. And the moment the guest does a 'cli' (that is the
-ffffffff81673254 in the log above) the hypervisor is invoked again to
-inject the IPI (0xf3) to tell the guest it has pending interrupts.
-This repeats itself forever.
-
-The culprit was the per_cpu(xen_vcpu, cpu) pointer. At the bootup
-we set each per_cpu(xen_vcpu, cpu) to point to the
-shared_info->vcpu_info[vcpu] but later on use the VCPUOP_register_vcpu_info
-to register per-CPU  structures (xen_vcpu_setup).
-This is used to allow events for more than 32 VCPUs and for performance
-optimizations reasons.
-
-When the user performs the VCPU hotplug we end up calling the
-the xen_vcpu_setup once more. We make the hypercall which returns
--EINVAL as it does not allow multiple registration calls (and
-already has re-assigned where the events are being set). We pick
-the fallback case and set per_cpu(xen_vcpu, cpu) to point to the
-shared_info->vcpu_info[vcpu] (which is a good fallback during bootup).
-However the hypervisor is still setting events in the register
-per-cpu structure (per_cpu(xen_vcpu_info, cpu)).
-
-As such when the events are set by the hypervisor (such as timer one),
-and when we iterate in __xen_evtchn_do_upcall we end up reading stale
-events from the shared_info->vcpu_info[vcpu] instead of the
-per_cpu(xen_vcpu_info, cpu) structures. Hence we never acknowledge the
-events that the hypervisor has set and the hypervisor keeps on reminding
-us to ack the events which we never do.
-
-The fix is simple. Don't on the second time when xen_vcpu_setup is
-called over-write the per_cpu(xen_vcpu, cpu) if it points to
-per_cpu(xen_vcpu_info).
-
-CC: stable@vger.kernel.org
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/enlighten.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ arch/x86/xen/enlighten.c | 21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index ddbd54a..94a81f4 100644
+index 94a81f4..9b34475 100644
 --- a/arch/x86/xen/enlighten.c
 +++ b/arch/x86/xen/enlighten.c
-@@ -157,6 +157,21 @@ static void xen_vcpu_setup(int cpu)
+@@ -85,7 +85,21 @@
  
- 	BUG_ON(HYPERVISOR_shared_info == &xen_dummy_shared_info);
+ EXPORT_SYMBOL_GPL(hypercall_page);
  
-+	/*
-+	 * This path is called twice on PVHVM - first during bootup via
-+	 * smp_init -> xen_hvm_cpu_notify, and then if the VCPU is being
-+	 * hotplugged: cpu_up -> xen_hvm_cpu_notify.
-+	 * As we can only do the VCPUOP_register_vcpu_info once lets
-+	 * not over-write its result.
-+	 *
-+	 * For PV it is called during restore (xen_vcpu_restore) and bootup
-+	 * (xen_setup_vcpu_info_placement). The hotplug mechanism does not
-+	 * use this function.
++/*
++ * Pointer to the xen_vcpu_info structure or
++ * &HYPERVISOR_shared_info->vcpu_info[cpu]. See xen_hvm_init_shared_info
++ * and xen_vcpu_setup for details. By default it points to share_info->vcpu_info
++ * but if the hypervisor supports VCPUOP_register_vcpu_info then it can point
++ * to xen_vcpu_info. The pointer is used in __xen_evtchn_do_upcall to
++ * acknowledge pending events.
++ */
+ DEFINE_PER_CPU(struct vcpu_info *, xen_vcpu);
++
++/*
++ * Per CPU pages used if hypervisor supports VCPUOP_register_vcpu_info
++ * hypercall. This can be used both in PV and PVHVM mode. The structure
++ * overrides the default per_cpu(xen_vcpu, cpu) value.
++ */
+ DEFINE_PER_CPU(struct vcpu_info, xen_vcpu_info);
+ 
+ enum xen_domain_type xen_domain_type = XEN_NATIVE;
+@@ -187,7 +201,12 @@ static void xen_vcpu_setup(int cpu)
+ 
+ 	/* Check to see if the hypervisor will put the vcpu_info
+ 	   structure where we want it, which allows direct access via
+-	   a percpu-variable. */
++	   a percpu-variable.
++	   N.B. This hypercall can _only_ be called once per CPU. Subsequent
++	   calls will error out with -EINVAL. This is due to the fact that
++	   hypervisor has no unregister variant and this hypercall does not
++	   allow to over-write info.mfn and info.offset.
 +	 */
-+	if (xen_hvm_domain()) {
-+		if (per_cpu(xen_vcpu, cpu) == &per_cpu(xen_vcpu_info, cpu))
-+			return;
-+	}
- 	if (cpu < MAX_VIRT_CPUS)
- 		per_cpu(xen_vcpu,cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
+ 	err = HYPERVISOR_vcpu_op(VCPUOP_register_vcpu_info, cpu, &info);
  
+ 	if (err) {
 -- 
 1.8.1.4
 
