@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759714Ab3EFXEh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:04:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36414 "EHLO
+	id S1759694Ab3EFXEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:04:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36420 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933020Ab3EFW7N (ORCPT
+	with ESMTP id S933102Ab3EFW7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 18:59:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fred Hartnett <fred.hartnett@hp.com>, Tony Luck <tony.luck@intel.com>
-Subject: [ 22/46] Fix initialization of CMCI/CMCP interrupts
-Date: Mon,  6 May 2013 15:58:28 -0700
-Message-Id: <20130506225822.977554422@linuxfoundation.org>
+        Simon Kirby <sim@hostway.ca>, Jiri Slaby <jslaby@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 13/46] tty: fix up atime/mtime mess, take three
+Date: Mon,  6 May 2013 15:58:19 -0700
+Message-Id: <20130506225822.070014222@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -26,128 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit d303e9e98fce56cdb3c6f2ac92f626fc2bd51c77 upstream.
+commit b0b885657b6c8ef63a46bc9299b2a7715d19acde upstream.
 
-Back 2010 during a revamp of the irq code some initializations
-were moved from ia64_mca_init() to ia64_mca_late_init() in
+We first tried to avoid updating atime/mtime entirely (commit
+b0de59b5733d: "TTY: do not update atime/mtime on read/write"), and then
+limited it to only update it occasionally (commit 37b7f3c76595: "TTY:
+fix atime/mtime regression"), but it turns out that this was both
+insufficient and overkill.
 
-	commit c75f2aa13f5b268aba369b5dc566088b5194377c
-	Cannot use register_percpu_irq() from ia64_mca_init()
+It was insufficient because we let people attach to the shared ptmx node
+to see activity without even reading atime/mtime, and it was overkill
+because the "only once a minute" means that you can't really tell an
+idle person from an active one with 'w'.
 
-But this was hideously wrong. First of all these initializations
-are now down far too late. Specifically after all the other cpus
-have been brought up and initialized their own CMC vectors from
-smp_callin(). Also ia64_mca_late_init() may be called from any cpu
-so the line:
-	ia64_mca_cmc_vector_setup();       /* Setup vector on BSP */
-is generally not executed on the BSP, and so the CMC vector isn't
-setup at all on that processor.
+So this tries to fix the problem properly.  It marks the shared ptmx
+node as un-notifiable, and it lowers the "only once a minute" to a few
+seconds instead - still long enough that you can't time individual
+keystrokes, but short enough that you can tell whether somebody is
+active or not.
 
-Make use of the arch_early_irq_init() hook to get this code executed
-at just the right moment: not too early, not too late.
-
-Reported-by: Fred Hartnett <fred.hartnett@hp.com>
-Tested-by: Fred Hartnett <fred.hartnett@hp.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Reported-by: Simon Kirby <sim@hostway.ca>
+Acked-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/ia64/include/asm/mca.h |    1 +
- arch/ia64/kernel/irq.c      |    8 ++++++++
- arch/ia64/kernel/mca.c      |   37 ++++++++++++++++++++++++-------------
- 3 files changed, 33 insertions(+), 13 deletions(-)
+ drivers/tty/pty.c    |    3 +++
+ drivers/tty/tty_io.c |    4 ++--
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/ia64/include/asm/mca.h
-+++ b/arch/ia64/include/asm/mca.h
-@@ -143,6 +143,7 @@ extern unsigned long __per_cpu_mca[NR_CP
- extern int cpe_vector;
- extern int ia64_cpe_irq;
- extern void ia64_mca_init(void);
-+extern void ia64_mca_irq_init(void);
- extern void ia64_mca_cpu_init(void *);
- extern void ia64_os_mca_dispatch(void);
- extern void ia64_os_mca_dispatch_end(void);
---- a/arch/ia64/kernel/irq.c
-+++ b/arch/ia64/kernel/irq.c
-@@ -23,6 +23,8 @@
- #include <linux/interrupt.h>
- #include <linux/kernel_stat.h>
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -669,6 +669,9 @@ static int ptmx_open(struct inode *inode
  
-+#include <asm/mca.h>
+ 	nonseekable_open(inode, filp);
+ 
++	/* We refuse fsnotify events on ptmx, since it's a shared resource */
++	filp->f_mode |= FMODE_NONOTIFY;
 +
- /*
-  * 'what should we do if we get a hw irq event on an illegal vector'.
-  * each architecture has to answer this themselves.
-@@ -83,6 +85,12 @@ bool is_affinity_mask_valid(const struct
+ 	retval = tty_alloc_file(filp);
+ 	if (retval)
+ 		return retval;
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -939,10 +939,10 @@ void start_tty(struct tty_struct *tty)
  
- #endif /* CONFIG_SMP */
+ EXPORT_SYMBOL(start_tty);
  
-+int __init arch_early_irq_init(void)
-+{
-+	ia64_mca_irq_init();
-+	return 0;
-+}
-+
- #ifdef CONFIG_HOTPLUG_CPU
- unsigned int vectors_in_migration[NR_IRQS];
- 
---- a/arch/ia64/kernel/mca.c
-+++ b/arch/ia64/kernel/mca.c
-@@ -2071,22 +2071,16 @@ ia64_mca_init(void)
- 	printk(KERN_INFO "MCA related initialization done\n");
- }
- 
-+
- /*
-- * ia64_mca_late_init
-- *
-- *	Opportunity to setup things that require initialization later
-- *	than ia64_mca_init.  Setup a timer to poll for CPEs if the
-- *	platform doesn't support an interrupt driven mechanism.
-- *
-- *  Inputs  :   None
-- *  Outputs :   Status
-+ * These pieces cannot be done in ia64_mca_init() because it is called before
-+ * early_irq_init() which would wipe out our percpu irq registrations. But we
-+ * cannot leave them until ia64_mca_late_init() because by then all the other
-+ * processors have been brought online and have set their own CMC vectors to
-+ * point at a non-existant action. Called from arch_early_irq_init().
-  */
--static int __init
--ia64_mca_late_init(void)
-+void __init ia64_mca_irq_init(void)
++/* We limit tty time update visibility to every 8 seconds or so. */
+ static void tty_update_time(struct timespec *time)
  {
--	if (!mca_init)
--		return 0;
--
- 	/*
- 	 *  Configure the CMCI/P vector and handler. Interrupts for CMC are
- 	 *  per-processor, so AP CMC interrupts are setup in smp_callin() (smpboot.c).
-@@ -2105,6 +2099,23 @@ ia64_mca_late_init(void)
- 	/* Setup the CPEI/P handler */
- 	register_percpu_irq(IA64_CPEP_VECTOR, &mca_cpep_irqaction);
- #endif
-+}
-+
-+/*
-+ * ia64_mca_late_init
-+ *
-+ *	Opportunity to setup things that require initialization later
-+ *	than ia64_mca_init.  Setup a timer to poll for CPEs if the
-+ *	platform doesn't support an interrupt driven mechanism.
-+ *
-+ *  Inputs  :   None
-+ *  Outputs :   Status
-+ */
-+static int __init
-+ia64_mca_late_init(void)
-+{
-+	if (!mca_init)
-+		return 0;
- 
- 	register_hotcpu_notifier(&mca_cpu_notifier);
- 
+-	unsigned long sec = get_seconds();
+-	sec -= sec % 60;
++	unsigned long sec = get_seconds() & ~7;
+ 	if ((long)(sec - time->tv_sec) > 0)
+ 		time->tv_sec = sec;
+ }
 
 
