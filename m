@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759590Ab3EFX5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:57:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36168 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932842Ab3EFW5P (ORCPT
+	id S1759624Ab3EFX5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:57:33 -0400
+Received: from mail-qe0-f73.google.com ([209.85.128.73]:63083 "EHLO
+	mail-qe0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758140Ab3EFX5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:15 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Mon, 6 May 2013 19:57:21 -0400
+From: Colin Cross <ccross@android.com>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 35/63] ALSA: snd-usb: try harder to find USB_DT_CS_ENDPOINT
-Date: Mon,  6 May 2013 15:56:13 -0700
-Message-Id: <20130506225323.551540716@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
-References: <20130506225314.802167948@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Colin Cross <ccross@android.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-nfs@vger.kernel.org, linux-pm@vger.kernel.org,
+        netdev@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, devel@driverdev.osuosl.org
+Subject: [PATCH v3 10/16] binder: use freezable blocking calls
+Date: Mon,  6 May 2013 16:50:15 -0700
+Message-Id: <1367884221-20462-11-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1367884221-20462-1-git-send-email-ccross@android.com>
+References: <1367884221-20462-1-git-send-email-ccross@android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Avoid waking up every thread sleeping in a binder call during
+suspend and resume by calling a freezable blocking call.  Previous
+patches modified the freezer to avoid sending wakeups to threads
+that are blocked in freezable blocking calls.
 
-------------------
+This call was selected to be converted to a freezable call because
+it doesn't hold any locks or release any resources when interrupted
+that might be needed by another freezing task or a kernel driver
+during suspend, and is a common site where idle userspace tasks are
+blocked.
 
-From: Daniel Mack <zonque@gmail.com>
-
-commit ebfc594c02148b6a85c2f178cf167a44a3c3ce10 upstream.
-
-The USB_DT_CS_ENDPOINT class-specific endpoint descriptor is usually
-stuffed directly after the standard USB endpoint descriptor, and this is
-where the driver currently expects it to be.
-
-There are, however, devices in the wild that have it the other way
-around in their descriptor sets, so the USB_DT_CS_ENDPOINT comes
-*before* the standard enpoint. Devices known to implement it that way
-are "Sennheiser BTD-500" and Plantronics USB headsets.
-
-When the driver can't find the USB_DT_CS_ENDPOINT, it won't be able to
-change sample rates, as the bitmask for the validity of this command is
-storen in bmAttributes of that descriptor.
-
-Fix this by searching the entire interface instead of just the extra
-bytes of the first endpoint, in case the latter fails.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-and-tested-by: Torstein Hegge <hegge@resisty.net>
-Reported-and-tested-by: Yves G <alsa-user@vivigatt.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Colin Cross <ccross@android.com>
 ---
- sound/usb/stream.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/staging/android/binder.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/sound/usb/stream.c
-+++ b/sound/usb/stream.c
-@@ -168,6 +168,14 @@ static int parse_uac_endpoint_attributes
- 	if (!csep && altsd->bNumEndpoints >= 2)
- 		csep = snd_usb_find_desc(alts->endpoint[1].extra, alts->endpoint[1].extralen, NULL, USB_DT_CS_ENDPOINT);
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 24456a0..af8fba4 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -20,6 +20,7 @@
+ #include <asm/cacheflush.h>
+ #include <linux/fdtable.h>
+ #include <linux/file.h>
++#include <linux/freezer.h>
+ #include <linux/fs.h>
+ #include <linux/list.h>
+ #include <linux/miscdevice.h>
+@@ -2140,13 +2141,13 @@ retry:
+ 			if (!binder_has_proc_work(proc, thread))
+ 				ret = -EAGAIN;
+ 		} else
+-			ret = wait_event_interruptible_exclusive(proc->wait, binder_has_proc_work(proc, thread));
++			ret = wait_event_freezable_exclusive(proc->wait, binder_has_proc_work(proc, thread));
+ 	} else {
+ 		if (non_block) {
+ 			if (!binder_has_thread_work(thread))
+ 				ret = -EAGAIN;
+ 		} else
+-			ret = wait_event_interruptible(thread->wait, binder_has_thread_work(thread));
++			ret = wait_event_freezable(thread->wait, binder_has_thread_work(thread));
+ 	}
  
-+	/*
-+	 * If we can't locate the USB_DT_CS_ENDPOINT descriptor in the extra
-+	 * bytes after the first endpoint, go search the entire interface.
-+	 * Some devices have it directly *before* the standard endpoint.
-+	 */
-+	if (!csep)
-+		csep = snd_usb_find_desc(alts->extra, alts->extralen, NULL, USB_DT_CS_ENDPOINT);
-+
- 	if (!csep || csep->bLength < 7 ||
- 	    csep->bDescriptorSubtype != UAC_EP_GENERAL) {
- 		snd_printk(KERN_WARNING "%d:%u:%d : no or invalid"
-
+ 	binder_lock(__func__);
+-- 
+1.8.2.1
 
