@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933450Ab3EFXZP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:25:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36854 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760591Ab3EFXNw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760630Ab3EFXNw (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 May 2013 19:13:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36824 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760591Ab3EFXNr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 19:13:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Jerome Marchand <jmarchan@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 068/104] mm: swap: mark swap pages writeback before queueing for direct IO
-Date: Mon,  6 May 2013 16:12:27 -0700
-Message-Id: <20130506230050.617255683@linuxfoundation.org>
+        Joe Rayhawk <jrayhawk@fairlystable.org>,
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 061/104] ALSA: USB: adjust for changed 3.8 USB API
+Date: Mon,  6 May 2013 16:12:20 -0700
+Message-Id: <20130506230049.878783105@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -29,93 +27,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 0cdc444a67ccdbd58bfbcba865cb17a9f17a7691 upstream.
+commit c75c5ab575af7db707689cdbb5a5c458e9a034bb upstream.
 
-As pointed out by Andrew Morton, the swap-over-NFS writeback is not
-setting PageWriteback before it is queued for direct IO.  While swap
-pages do not participate in BDI or process dirty accounting and the IO
-is synchronous, the writeback bit is still required and not setting it
-in this case was an oversight.  swapoff depends on the page writeback to
-synchronoise all pending writes on a swap page before it is reused.
-Swapcache freeing and reuse depend on checking the PageWriteback under
-lock to ensure the page is safe to reuse.
+The recent changes in the USB API ("implement new semantics for
+URB_ISO_ASAP") made the former meaning of the URB_ISO_ASAP flag the
+default, and changed this flag to mean that URBs can be delayed.
+This is not the behaviour wanted by any of the audio drivers because
+it leads to discontinuous playback with very small period sizes.
+Therefore, our URBs need to be submitted without this flag.
 
-Direct IO handlers and the direct IO handler for NFS do not deal with
-PageWriteback as they are synchronous writes.  In the case of NFS, it
-schedules pages (or a page in the case of swap) for IO and then waits
-synchronously for IO to complete in nfs_direct_write().  It is
-recognised that this is a slowdown from normal swap handling which is
-asynchronous and uses a completion handler.  Shoving PageWriteback
-handling down into direct IO handlers looks like a bad fit to handle the
-swap case although it may have to be dealt with some day if swap is
-converted to use direct IO in general and bmap is finally done away
-with.  At that point it will be necessary to refit asynchronous direct
-IO with completion handlers onto the swap subsystem.
-
-As swapcache currently depends on PageWriteback to protect against
-races, this patch sets PageWriteback under the page lock before queueing
-it for direct IO.  It is cleared when the direct IO handler returns.  IO
-errors are treated similarly to the direct-to-bio case except PageError
-is not set as in the case of swap-over-NFS, it is likely to be a
-transient error.
-
-It was asked what prevents such a page being reclaimed in parallel.
-With this patch applied, such a page will now be skipped (most of the
-time) or blocked until the writeback completes.  Reclaim checks
-PageWriteback under the page lock before calling try_to_free_swap and
-the page lock should prevent the page being requeued for IO before it is
-freed.
-
-This and Jerome's related patch should considered for -stable as far
-back as 3.6 when swap-over-NFS was introduced.
-
-[akpm@linux-foundation.org: use pr_err_ratelimited()]
-[akpm@linux-foundation.org: remove hopefully-unneeded cast in printk]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Cc: Jerome Marchand <jmarchan@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Joe Rayhawk <jrayhawk@fairlystable.org>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_io.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ sound/usb/6fire/pcm.c           |    1 -
+ sound/usb/caiaq/audio.c         |    3 ---
+ sound/usb/endpoint.c            |    5 ++---
+ sound/usb/misc/ua101.c          |    3 +--
+ sound/usb/usx2y/usb_stream.c    |    1 -
+ sound/usb/usx2y/usbusx2yaudio.c |    1 -
+ sound/usb/usx2y/usx2yhwdeppcm.c |    1 -
+ 7 files changed, 3 insertions(+), 12 deletions(-)
 
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -214,6 +214,7 @@ int swap_writepage(struct page *page, st
- 		kiocb.ki_left = PAGE_SIZE;
- 		kiocb.ki_nbytes = PAGE_SIZE;
+--- a/sound/usb/6fire/pcm.c
++++ b/sound/usb/6fire/pcm.c
+@@ -575,7 +575,6 @@ static void usb6fire_pcm_init_urb(struct
+ 	urb->instance.pipe = in ? usb_rcvisocpipe(chip->dev, ep)
+ 			: usb_sndisocpipe(chip->dev, ep);
+ 	urb->instance.interval = 1;
+-	urb->instance.transfer_flags = URB_ISO_ASAP;
+ 	urb->instance.complete = handler;
+ 	urb->instance.context = urb;
+ 	urb->instance.number_of_packets = PCM_N_PACKETS_PER_URB;
+--- a/sound/usb/caiaq/audio.c
++++ b/sound/usb/caiaq/audio.c
+@@ -670,7 +670,6 @@ static void read_completed(struct urb *u
  
-+		set_page_writeback(page);
- 		unlock_page(page);
- 		ret = mapping->a_ops->direct_IO(KERNEL_WRITE,
- 						&kiocb, &iov,
-@@ -223,8 +224,22 @@ int swap_writepage(struct page *page, st
- 			count_vm_event(PSWPOUT);
- 			ret = 0;
- 		} else {
-+			/*
-+			 * In the case of swap-over-nfs, this can be a
-+			 * temporary failure if the system has limited
-+			 * memory for allocating transmit buffers.
-+			 * Mark the page dirty and avoid
-+			 * rotate_reclaimable_page but rate-limit the
-+			 * messages but do not flag PageError like
-+			 * the normal direct-to-bio case as it could
-+			 * be temporary.
-+			 */
- 			set_page_dirty(page);
-+			ClearPageReclaim(page);
-+			pr_err_ratelimited("Write error on dio swapfile (%Lu)\n",
-+				page_file_offset(page));
- 		}
-+		end_page_writeback(page);
- 		return ret;
+ 	if (send_it) {
+ 		out->number_of_packets = outframe;
+-		out->transfer_flags = URB_ISO_ASAP;
+ 		usb_submit_urb(out, GFP_ATOMIC);
+ 	} else {
+ 		struct snd_usb_caiaq_cb_info *oinfo = out->context;
+@@ -686,7 +685,6 @@ requeue:
  	}
  
+ 	urb->number_of_packets = FRAMES_PER_URB;
+-	urb->transfer_flags = URB_ISO_ASAP;
+ 	usb_submit_urb(urb, GFP_ATOMIC);
+ }
+ 
+@@ -751,7 +749,6 @@ static struct urb **alloc_urbs(struct sn
+ 						* BYTES_PER_FRAME;
+ 		urbs[i]->context = &dev->data_cb_info[i];
+ 		urbs[i]->interval = 1;
+-		urbs[i]->transfer_flags = URB_ISO_ASAP;
+ 		urbs[i]->number_of_packets = FRAMES_PER_URB;
+ 		urbs[i]->complete = (dir == SNDRV_PCM_STREAM_CAPTURE) ?
+ 					read_completed : write_completed;
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -677,7 +677,7 @@ static int data_ep_set_params(struct snd
+ 		if (!u->urb->transfer_buffer)
+ 			goto out_of_memory;
+ 		u->urb->pipe = ep->pipe;
+-		u->urb->transfer_flags = URB_ISO_ASAP | URB_NO_TRANSFER_DMA_MAP;
++		u->urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
+ 		u->urb->interval = 1 << ep->datainterval;
+ 		u->urb->context = u;
+ 		u->urb->complete = snd_complete_urb;
+@@ -716,8 +716,7 @@ static int sync_ep_set_params(struct snd
+ 		u->urb->transfer_dma = ep->sync_dma + i * 4;
+ 		u->urb->transfer_buffer_length = 4;
+ 		u->urb->pipe = ep->pipe;
+-		u->urb->transfer_flags = URB_ISO_ASAP |
+-					 URB_NO_TRANSFER_DMA_MAP;
++		u->urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
+ 		u->urb->number_of_packets = 1;
+ 		u->urb->interval = 1 << ep->syncinterval;
+ 		u->urb->context = u;
+--- a/sound/usb/misc/ua101.c
++++ b/sound/usb/misc/ua101.c
+@@ -1120,8 +1120,7 @@ static int alloc_stream_urbs(struct ua10
+ 			usb_init_urb(&urb->urb);
+ 			urb->urb.dev = ua->dev;
+ 			urb->urb.pipe = stream->usb_pipe;
+-			urb->urb.transfer_flags = URB_ISO_ASAP |
+-					URB_NO_TRANSFER_DMA_MAP;
++			urb->urb.transfer_flags = URB_NO_TRANSFER_DMA_MAP;
+ 			urb->urb.transfer_buffer = addr;
+ 			urb->urb.transfer_dma = dma;
+ 			urb->urb.transfer_buffer_length = max_packet_size;
+--- a/sound/usb/usx2y/usb_stream.c
++++ b/sound/usb/usx2y/usb_stream.c
+@@ -69,7 +69,6 @@ static void init_pipe_urbs(struct usb_st
+ 	     ++u, transfer += transfer_length) {
+ 		struct urb *urb = urbs[u];
+ 		struct usb_iso_packet_descriptor *desc;
+-		urb->transfer_flags = URB_ISO_ASAP;
+ 		urb->transfer_buffer = transfer;
+ 		urb->dev = dev;
+ 		urb->pipe = pipe;
+--- a/sound/usb/usx2y/usbusx2yaudio.c
++++ b/sound/usb/usx2y/usbusx2yaudio.c
+@@ -503,7 +503,6 @@ static int usX2Y_urbs_start(struct snd_u
+ 			if (0 == i)
+ 				atomic_set(&subs->state, state_STARTING3);
+ 			urb->dev = usX2Y->dev;
+-			urb->transfer_flags = URB_ISO_ASAP;
+ 			for (pack = 0; pack < nr_of_packs(); pack++) {
+ 				urb->iso_frame_desc[pack].offset = subs->maxpacksize * pack;
+ 				urb->iso_frame_desc[pack].length = subs->maxpacksize;
+--- a/sound/usb/usx2y/usx2yhwdeppcm.c
++++ b/sound/usb/usx2y/usx2yhwdeppcm.c
+@@ -443,7 +443,6 @@ static int usX2Y_usbpcm_urbs_start(struc
+ 					if (0 == u)
+ 						atomic_set(&subs->state, state_STARTING3);
+ 					urb->dev = usX2Y->dev;
+-					urb->transfer_flags = URB_ISO_ASAP;
+ 					for (pack = 0; pack < nr_of_packs(); pack++) {
+ 						urb->iso_frame_desc[pack].offset = subs->maxpacksize * (pack + u * nr_of_packs());
+ 						urb->iso_frame_desc[pack].length = subs->maxpacksize;
 
 
