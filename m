@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab3EFVJn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:09:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59103 "EHLO
+	id S1757524Ab3EFUqS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:46:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59050 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757543Ab3EFUqV (ORCPT
+	with ESMTP id S1757452Ab3EFUqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:21 -0400
+	Mon, 6 May 2013 16:46:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 041/115] tracing: Fix stack tracer with fentry use
-Date: Mon,  6 May 2013 13:44:37 -0700
-Message-Id: <20130506203059.776100989@linuxfoundation.org>
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Felipe Balbi <balbi@ti.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [ 027/115] usb: chipidea: udc: fix memory access of shared memory on armv5 machines
+Date: Mon,  6 May 2013 13:44:23 -0700
+Message-Id: <20130506203058.365460009@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -26,124 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-commit d4ecbfc49b4b1d4b597fb5ba9e4fa25d62f105c5 upstream.
+commit a9c174302b1590ef3ead485d804a303c5f89174b upstream.
 
-When gcc 4.6 on x86 is used, the function tracer will use the new
-option -mfentry which does a call to "fentry" at every function
-instead of "mcount". The significance of this is that fentry is
-called as the first operation of the function instead of the mcount
-usage of being called after the stack.
+The udc uses an shared dma memory space between hard and software. This
+memory layout is described in ci13xxx_qh and ci13xxx_td which are marked
+with the attribute ((packed)).
 
-This causes the stack tracer to show some bogus results for the size
-of the last function traced, as well as showing "ftrace_call" instead
-of the function. This is due to the stack frame not being set up
-by the function that is about to be traced.
+The compiler currently does not know about the alignment of the memory
+layout, and will create strb and ldrb operations.
 
- # cat stack_trace
-        Depth    Size   Location    (48 entries)
-        -----    ----   --------
-  0)     4824     216   ftrace_call+0x5/0x2f
-  1)     4608     112   ____cache_alloc+0xb7/0x22d
-  2)     4496      80   kmem_cache_alloc+0x63/0x12f
+The Datasheet of the synopsys core describes, that some operations on
+the mapped memory need to be atomic double word operations. I.e. the
+next pointer addressing in the qhead, as otherwise the hardware will
+read wrong data and totally stuck.
 
-The 216 size for ftrace_call includes both the ftrace_call stack
-(which includes the saving of registers it does), as well as the
-stack size of the parent.
+This is also possible while working with the current active td queue,
+and preparing the td->ptr.next in software while the hardware is still
+working with the current active td which is supposed to be changed:
 
-To fix this, if CC_USING_FENTRY is defined, then the stack_tracer
-will reserve the first item in stack_dump_trace[] array when
-calling save_stack_trace(), and it will fill it in with the parent ip.
-Then the code will look for the parent pointer on the stack and
-give the real size of the parent's stack pointer:
+writeb(0xde, &td->ptr.next + 0x0); /* strb */
+writeb(0xad, &td->ptr.next + 0x1); /* strb */
 
- # cat stack_trace
-        Depth    Size   Location    (14 entries)
-        -----    ----   --------
-  0)     2640      48   update_group_power+0x26/0x187
-  1)     2592     224   update_sd_lb_stats+0x2a5/0x4ac
-  2)     2368     160   find_busiest_group+0x31/0x1f1
-  3)     2208     256   load_balance+0xd9/0x662
+<----- hardware reads value of td->ptr.next and get stuck!
 
-I'm Cc'ing stable, although it's not urgent, as it only shows bogus
-size for item #0, the rest of the trace is legit. It should still be
-corrected in previous stable releases.
+writeb(0xbe, &td->ptr.next + 0x2); /* strb */
+writeb(0xef, &td->ptr.next + 0x3); /* strb */
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+This appeares on armv5 machines where the hardware does not support
+unaligned 32bit operations.
+
+This patch adds the attribute ((aligned(4))) to the structures to tell
+the compiler to use 32bit operations. It also adds an wmb() for the
+prepared TD data before it gets enqueued into the qhead.
+
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_stack.c |   33 +++++++++++++++++++++++++++++----
- 1 file changed, 29 insertions(+), 4 deletions(-)
+ drivers/usb/chipidea/udc.c |    2 ++
+ drivers/usb/chipidea/udc.h |    4 ++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -20,13 +20,27 @@
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -461,6 +461,8 @@ static int _hardware_enqueue(struct ci13
+ 		mReq->ptr->page[i] =
+ 			(mReq->req.dma + i * CI13XXX_PAGE_SIZE) & ~TD_RESERVED_MASK;
  
- #define STACK_TRACE_ENTRIES 500
- 
-+/*
-+ * If fentry is used, then the function being traced will
-+ * jump to fentry directly before it sets up its stack frame.
-+ * We need to ignore that one and record the parent. Since
-+ * the stack frame for the traced function wasn't set up yet,
-+ * the stack_trace wont see the parent. That needs to be added
-+ * manually to stack_dump_trace[] as the first element.
-+ */
-+#ifdef CC_USING_FENTRY
-+# define add_func	1
-+#else
-+# define add_func	0
-+#endif
++	wmb();
 +
- static unsigned long stack_dump_trace[STACK_TRACE_ENTRIES+1] =
- 	 { [0 ... (STACK_TRACE_ENTRIES)] = ULONG_MAX };
- static unsigned stack_dump_index[STACK_TRACE_ENTRIES];
+ 	if (!list_empty(&mEp->qh.queue)) {
+ 		struct ci13xxx_req *mReqPrev;
+ 		int n = hw_ep_bit(mEp->num, mEp->dir);
+--- a/drivers/usb/chipidea/udc.h
++++ b/drivers/usb/chipidea/udc.h
+@@ -40,7 +40,7 @@ struct ci13xxx_td {
+ #define TD_CURR_OFFSET        (0x0FFFUL <<  0)
+ #define TD_FRAME_NUM          (0x07FFUL <<  0)
+ #define TD_RESERVED_MASK      (0x0FFFUL <<  0)
+-} __attribute__ ((packed));
++} __attribute__ ((packed, aligned(4)));
  
- static struct stack_trace max_stack_trace = {
--	.max_entries		= STACK_TRACE_ENTRIES,
--	.entries		= stack_dump_trace,
-+	.max_entries		= STACK_TRACE_ENTRIES - add_func,
-+	.entries		= &stack_dump_trace[add_func],
- };
+ /* DMA layout of queue heads */
+ struct ci13xxx_qh {
+@@ -57,7 +57,7 @@ struct ci13xxx_qh {
+ 	/* 9 */
+ 	u32 RESERVED;
+ 	struct usb_ctrlrequest   setup;
+-} __attribute__ ((packed));
++} __attribute__ ((packed, aligned(4)));
  
- static unsigned long max_stack_size;
-@@ -40,7 +54,7 @@ int stack_tracer_enabled;
- static int last_stack_tracer_enabled;
- 
- static inline void
--check_stack(unsigned long *stack)
-+check_stack(unsigned long ip, unsigned long *stack)
- {
- 	unsigned long this_size, flags;
- 	unsigned long *p, *top, *start;
-@@ -71,6 +85,17 @@ check_stack(unsigned long *stack)
- 	save_stack_trace(&max_stack_trace);
- 
- 	/*
-+	 * When fentry is used, the traced function does not get
-+	 * its stack frame set up, and we lose the parent.
-+	 * Add that one in manally. We set up save_stack_trace()
-+	 * to not touch the first element in this case.
-+	 */
-+	if (add_func) {
-+		stack_dump_trace[0] = ip;
-+		max_stack_trace.nr_entries++;
-+	}
-+
-+	/*
- 	 * Now find where in the stack these are.
- 	 */
- 	i = 0;
-@@ -124,7 +149,7 @@ stack_trace_call(unsigned long ip, unsig
- 	if (per_cpu(trace_active, cpu)++ != 0)
- 		goto out;
- 
--	check_stack(&stack);
-+	check_stack(parent_ip, &stack);
- 
-  out:
- 	per_cpu(trace_active, cpu)--;
+ /**
+  * struct ci13xxx_req - usb request representation
 
 
