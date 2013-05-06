@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759295Ab3EFW7y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:59:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36502 "EHLO
+	id S933157Ab3EFW7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:59:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36440 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933165Ab3EFW70 (ORCPT
+	with ESMTP id S1759265Ab3EFW7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:26 -0400
+	Mon, 6 May 2013 18:59:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Elad Yi <elad.yi@gmail.com>, Philip Rakity <prakity@yahoo.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 43/46] mmc: core: Fix bit width test failing on old eMMC cards
-Date: Mon,  6 May 2013 15:58:49 -0700
-Message-Id: <20130506225825.192879092@linuxfoundation.org>
+        David Engraf <david.engraf@sysgo.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [ 30/46] hrtimer: Fix ktime_add_ns() overflow on 32bit architectures
+Date: Mon,  6 May 2013 15:58:36 -0700
+Message-Id: <20130506225823.836335202@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -27,42 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philip Rakity <prakity@yahoo.com>
+From: David Engraf <david.engraf@sysgo.com>
 
-commit 836dc2fe89c968c10cada87e0dfae6626f8f9da3 upstream.
+commit 51fd36f3fad8447c487137ae26b9d0b3ce77bb25 upstream.
 
-PARTITION_SUPPORT needs to be set before doing the compare on version
-number so the bit width test does not get invalid data.  Before this
-patch, a Sandisk iNAND eMMC card would detect 1-bit width although
-the hardware supports 4-bit.
+One can trigger an overflow when using ktime_add_ns() on a 32bit
+architecture not supporting CONFIG_KTIME_SCALAR.
 
-Only affects old emmc devices - pre 4.4 devices.
+When passing a very high value for u64 nsec, e.g. 7881299347898368000
+the do_div() function converts this value to seconds (7881299347) which
+is still to high to pass to the ktime_set() function as long. The result
+in is a negative value.
 
-Reported-by: Elad Yi <elad.yi@gmail.com>
-Signed-off-by: Philip Rakity <prakity@yahoo.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+The problem on my system occurs in the tick-sched.c,
+tick_nohz_stop_sched_tick() when time_delta is set to
+timekeeping_max_deferment(). The check for time_delta < KTIME_MAX is
+valid, thus ktime_add_ns() is called with a too large value resulting in
+a negative expire value. This leads to an endless loop in the ticker code:
+
+time_delta: 7881299347898368000
+expires = ktime_add_ns(last_update, time_delta)
+expires: negative value
+
+This fix caps the value to KTIME_MAX.
+
+This error doesn't occurs on 64bit or architectures supporting
+CONFIG_KTIME_SCALAR (e.g. ARM, x86-32).
+
+Signed-off-by: David Engraf <david.engraf@sysgo.com>
+[jstultz: Minor tweaks to commit message & header]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/core/mmc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/hrtimer.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -353,13 +353,13 @@ static int mmc_read_ext_csd(struct mmc_c
- 		ext_csd[EXT_CSD_SEC_FEATURE_SUPPORT];
- 	card->ext_csd.raw_trim_mult =
- 		ext_csd[EXT_CSD_TRIM_MULT];
-+	card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
- 	if (card->ext_csd.rev >= 4) {
- 		/*
- 		 * Enhanced area feature support -- check whether the eMMC
- 		 * card has the Enhanced area enabled.  If so, export enhanced
- 		 * area offset and size to user by adding sysfs interface.
- 		 */
--		card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
- 		if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
- 		    (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
- 			u8 hc_erase_grp_sz =
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -298,6 +298,10 @@ ktime_t ktime_sub_ns(const ktime_t kt, u
+ 	} else {
+ 		unsigned long rem = do_div(nsec, NSEC_PER_SEC);
+ 
++		/* Make sure nsec fits into long */
++		if (unlikely(nsec > KTIME_SEC_MAX))
++			return (ktime_t){ .tv64 = KTIME_MAX };
++
+ 		tmp = ktime_set((long)nsec, rem);
+ 	}
+ 
 
 
