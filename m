@@ -1,119 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758880Ab3EFVJp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:09:45 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:58145 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758752Ab3EFVJn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756074Ab3EFVJn (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 May 2013 17:09:43 -0400
-Date: Mon, 6 May 2013 14:09:36 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_init allocation failure trace on bootup
-Message-ID: <20130506210936.GK3501@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130506175647.GA1309@redhat.com>
- <20130506190522.GD3501@linux.vnet.ibm.com>
- <20130506192653.GA16819@redhat.com>
- <20130506194351.GH3501@linux.vnet.ibm.com>
- <CAE9FiQU6+eQ-e=mX9A8AG5cUn0DWPS9sg3DS=B+jH3ZbXq+1Cg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQU6+eQ-e=mX9A8AG5cUn0DWPS9sg3DS=B+jH3ZbXq+1Cg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050621-7606-0000-0000-00000B21918D
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59103 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757543Ab3EFUqV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 16:46:21 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 041/115] tracing: Fix stack tracer with fentry use
+Date: Mon,  6 May 2013 13:44:37 -0700
+Message-Id: <20130506203059.776100989@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
+References: <20130506203055.537199268@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 01:09:22PM -0700, Yinghai Lu wrote:
-> On Mon, May 6, 2013 at 12:43 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Mon, May 06, 2013 at 03:26:53PM -0400, Dave Jones wrote:
-> >> On Mon, May 06, 2013 at 12:05:22PM -0700, Paul E. McKenney wrote:
-> >>  > On Mon, May 06, 2013 at 01:56:47PM -0400, Dave Jones wrote:
-> >>  > > [    0.000000]  RCU debugfs-based tracing is enabled.
-> >>  > > [    0.000000]  RCU lockdep checking is enabled.
-> >>  > > [    0.000000] ------------[ cut here ]------------
-> >>  > > [    0.000000] WARNING: at mm/nobootmem.c:215 ___alloc_bootmem_nopanic+0x3a/0x7d()
-> >>  > > [    0.000000] Modules linked in:
-> >>  > > [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.9.0+ #128
-> >>  > > [    0.000000] Hardware name:                  /D975XBX, BIOS BX97510J.86A.1209.2006.0601.1340 06/01/2006
-> >>  > > [    0.000000]  ffffffff819f4246 ffffffff81c01e68 ffffffff816a0db2 ffffffff81c01ea8
-> >>  > > [    0.000000]  ffffffff8104b1a0 ffffffff819e1078 0000000000000000 0000000000000008
-> >>  > > [    0.000000]  ffffffffffffffff 0000000000000040 0000000000000000 ffffffff81c01eb8
-> >>  > > [    0.000000] Call Trace:
-> >>  > > [    0.000000]  [<ffffffff816a0db2>] dump_stack+0x19/0x1b
-> >>  > > [    0.000000]  [<ffffffff8104b1a0>] warn_slowpath_common+0x70/0xa0
-> >>  > > [    0.000000]  [<ffffffff8104b1ea>] warn_slowpath_null+0x1a/0x20
-> >>  > > [    0.000000]  [<ffffffff81ef8914>] ___alloc_bootmem_nopanic+0x3a/0x7d
-> >>  > > [    0.000000]  [<ffffffff81ef8b87>] __alloc_bootmem+0x13/0x39
-> >>  > > [    0.000000]  [<ffffffff81f090ad>] alloc_bootmem_cpumask_var+0x1a/0x21
-> >>  > > [    0.000000]  [<ffffffff81ef1f5a>] rcu_init+0x7f/0x261
-> >>  > > [    0.000000]  [<ffffffff81ef4acb>] ? perf_event_init+0x178/0x181
-> >>  > > [    0.000000]  [<ffffffff81ed6c79>] start_kernel+0x232/0x3d3
-> >>  > > [    0.000000]  [<ffffffff81ed6846>] ? repair_env_string+0x5e/0x5e
-> >>  > > [    0.000000]  [<ffffffff81ed6577>] x86_64_start_reservations+0x2a/0x2c
-> >>  > > [    0.000000]  [<ffffffff81ed6646>] x86_64_start_kernel+0xcd/0xd1
-> >>  > > [    0.000000] ---[ end trace 0acfc82c197165dd ]---
-> >>  > > [    0.000000]  Experimental no-CBs for all CPUs
-> >>  > > [    0.000000]  Experimental no-CBs CPUs: 0-1.
-> >>  > > [    0.000000] NO_HZ: Full dynticks CPUs: 1.
-> >>  >
-> >>  > Do you have commit fa0f93cd6a (rcu: Don't allocate bootmem from rcu_init())?
-> >>  > If not, could you please try applying it?
-> >>
-> >> That commit isn't in Linus tree.
-> >
-> > You are quite right, I am getting ahead of myself.  Please see below
-> > for the patch.
-> >
-> >                                                         Thanx, Paul
-> >
-> > ------------------------------------------------------------------------
-> >
-> > rcu: Don't allocate bootmem from rcu_init()
-> >
-> > When rcu_init() is called we already have slab working, allocating
-> > bootmem at that point results in warnings and an allocation from
-> > slab.  This commit therefore changes alloc_bootmem_cpumask_var() to
-> > alloc_cpumask_var() in rcu_bootup_announce_oddness(), which is called
-> > from rcu_init().
-> >
-> > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> >
-> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> > index ca6e39c..44b0998 100644
-> > --- a/kernel/rcutree_plugin.h
-> > +++ b/kernel/rcutree_plugin.h
-> > @@ -86,7 +86,7 @@ static void __init rcu_bootup_announce_oddness(void)
-> >  #ifdef CONFIG_RCU_NOCB_CPU
-> >  #ifndef CONFIG_RCU_NOCB_CPU_NONE
-> >         if (!have_rcu_nocb_mask) {
-> > -               alloc_bootmem_cpumask_var(&rcu_nocb_mask);
-> > +               alloc_cpumask_var(&rcu_nocb_mask, GFP_KERNEL);
-> 
-> Do you need to use zalloc_cpumask_var instead?
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
-Good point!  I have queued up a fix for this.
+------------------
 
-							Thanx, Paul
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-> >                 have_rcu_nocb_mask = true;
-> >         }
-> >  #ifdef CONFIG_RCU_NOCB_CPU_ZERO
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
+commit d4ecbfc49b4b1d4b597fb5ba9e4fa25d62f105c5 upstream.
+
+When gcc 4.6 on x86 is used, the function tracer will use the new
+option -mfentry which does a call to "fentry" at every function
+instead of "mcount". The significance of this is that fentry is
+called as the first operation of the function instead of the mcount
+usage of being called after the stack.
+
+This causes the stack tracer to show some bogus results for the size
+of the last function traced, as well as showing "ftrace_call" instead
+of the function. This is due to the stack frame not being set up
+by the function that is about to be traced.
+
+ # cat stack_trace
+        Depth    Size   Location    (48 entries)
+        -----    ----   --------
+  0)     4824     216   ftrace_call+0x5/0x2f
+  1)     4608     112   ____cache_alloc+0xb7/0x22d
+  2)     4496      80   kmem_cache_alloc+0x63/0x12f
+
+The 216 size for ftrace_call includes both the ftrace_call stack
+(which includes the saving of registers it does), as well as the
+stack size of the parent.
+
+To fix this, if CC_USING_FENTRY is defined, then the stack_tracer
+will reserve the first item in stack_dump_trace[] array when
+calling save_stack_trace(), and it will fill it in with the parent ip.
+Then the code will look for the parent pointer on the stack and
+give the real size of the parent's stack pointer:
+
+ # cat stack_trace
+        Depth    Size   Location    (14 entries)
+        -----    ----   --------
+  0)     2640      48   update_group_power+0x26/0x187
+  1)     2592     224   update_sd_lb_stats+0x2a5/0x4ac
+  2)     2368     160   find_busiest_group+0x31/0x1f1
+  3)     2208     256   load_balance+0xd9/0x662
+
+I'm Cc'ing stable, although it's not urgent, as it only shows bogus
+size for item #0, the rest of the trace is legit. It should still be
+corrected in previous stable releases.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/trace/trace_stack.c |   33 +++++++++++++++++++++++++++++----
+ 1 file changed, 29 insertions(+), 4 deletions(-)
+
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -20,13 +20,27 @@
+ 
+ #define STACK_TRACE_ENTRIES 500
+ 
++/*
++ * If fentry is used, then the function being traced will
++ * jump to fentry directly before it sets up its stack frame.
++ * We need to ignore that one and record the parent. Since
++ * the stack frame for the traced function wasn't set up yet,
++ * the stack_trace wont see the parent. That needs to be added
++ * manually to stack_dump_trace[] as the first element.
++ */
++#ifdef CC_USING_FENTRY
++# define add_func	1
++#else
++# define add_func	0
++#endif
++
+ static unsigned long stack_dump_trace[STACK_TRACE_ENTRIES+1] =
+ 	 { [0 ... (STACK_TRACE_ENTRIES)] = ULONG_MAX };
+ static unsigned stack_dump_index[STACK_TRACE_ENTRIES];
+ 
+ static struct stack_trace max_stack_trace = {
+-	.max_entries		= STACK_TRACE_ENTRIES,
+-	.entries		= stack_dump_trace,
++	.max_entries		= STACK_TRACE_ENTRIES - add_func,
++	.entries		= &stack_dump_trace[add_func],
+ };
+ 
+ static unsigned long max_stack_size;
+@@ -40,7 +54,7 @@ int stack_tracer_enabled;
+ static int last_stack_tracer_enabled;
+ 
+ static inline void
+-check_stack(unsigned long *stack)
++check_stack(unsigned long ip, unsigned long *stack)
+ {
+ 	unsigned long this_size, flags;
+ 	unsigned long *p, *top, *start;
+@@ -71,6 +85,17 @@ check_stack(unsigned long *stack)
+ 	save_stack_trace(&max_stack_trace);
+ 
+ 	/*
++	 * When fentry is used, the traced function does not get
++	 * its stack frame set up, and we lose the parent.
++	 * Add that one in manally. We set up save_stack_trace()
++	 * to not touch the first element in this case.
++	 */
++	if (add_func) {
++		stack_dump_trace[0] = ip;
++		max_stack_trace.nr_entries++;
++	}
++
++	/*
+ 	 * Now find where in the stack these are.
+ 	 */
+ 	i = 0;
+@@ -124,7 +149,7 @@ stack_trace_call(unsigned long ip, unsig
+ 	if (per_cpu(trace_active, cpu)++ != 0)
+ 		goto out;
+ 
+-	check_stack(&stack);
++	check_stack(parent_ip, &stack);
+ 
+  out:
+ 	per_cpu(trace_active, cpu)--;
+
 
