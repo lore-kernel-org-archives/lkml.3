@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab3EFNMD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 09:12:03 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:46637 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754130Ab3EFNL7 (ORCPT
+	id S1754206Ab3EFNMX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 09:12:23 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:17843 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753642Ab3EFNMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 09:11:59 -0400
-Date: Mon, 6 May 2013 10:11:52 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Ezequiel =?utf-8?Q?Garc=C3=ADa?= <elezegarcia@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        linux-media <linux-media@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: Splitting stk1160-ac97 as a module (Re: linux-next: Tree for May
- 1 (media/usb/stk1160))
-Message-ID: <20130506131150.GB18007@localhost>
-References: <20130501183734.7ad1efca2d06e75432edabbd@canb.auug.org.au>
- <518157EB.3010700@infradead.org>
- <51827DB1.7000304@redhat.com>
- <20130504172142.GA21656@localhost>
- <20130504195950.GA3254@free.fr>
+	Mon, 6 May 2013 09:12:19 -0400
+Message-ID: <5187ABF6.4000907@huawei.com>
+Date: Mon, 6 May 2013 21:11:18 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130504195950.GA3254@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <wsa@the-dreams.de>
+CC: <uclinux-dist-devel@blackfin.uclinux.org>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 1/2] i2c: i2c-bfin-twi: don`t free peripheral before it`s
+ init successful
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 04, 2013 at 09:59:50PM +0200, Yann E. MORIN wrote:
-> Ezequiel, All,
-> 
-> On Sat, May 04, 2013 at 02:21:44PM -0300, Ezequiel Garcia wrote:
-> > I'm trying to split the ac97 support into a separate module.
-> > So far I've managed to do this with two different approaches,
-> > but both of them are broken in some way :-(
-> > 
-> > Couple questions:
-> > 
-> > 1. Is it possible to force two symbols to be both built-in (=y) or both
-> > modules (=m)? This would make one of my solutions work.
-> 
-> If they are always the same value, there is no need to have two symbols
-> in the first place.
-> 
-> However, given the original problem from this thread, if what you meant
-> was to have the second symbol either 'n' or the same as the first symbol,
-> ie. the following table:
-> 
->     A:  n   m   m   y   y
->     B:  n   n   m   n   y
-> 
-> Then the closest I came up with is:
-> 
->     config MODULES
->         bool "Modules"
->     
->     config A
->         tristate "A"
->     
->     config B_dummy
->         bool "B"
->         depends on A
->     
->     config B
->         tristate
->         default m if A=m && B_dummy
->         default y if A=y && B_dummy
-> 
-> where B_dummy is not used outside of Kconfig, and only A and B are the
-> symbols of interest (eg. to build the drivers).
-> 
 
-That worked like a charm!
+down out_error_no_irq. When platform_get_irq fail, no need to free peripheral
 
-Thanks a lot,
+Signed-off-by: Libo Chen <libo.chen@huawei.com>
+---
+ drivers/i2c/busses/i2c-bfin-twi.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
+index 05080c4..d38e05a 100644
+--- a/drivers/i2c/busses/i2c-bfin-twi.c
++++ b/drivers/i2c/busses/i2c-bfin-twi.c
+@@ -709,8 +709,8 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
+ out_error_add_adapter:
+ 	free_irq(iface->irq, iface);
+ out_error_req_irq:
+-out_error_no_irq:
+ 	peripheral_free_list((unsigned short *)pdev->dev.platform_data);
++out_error_no_irq:
+ out_error_pin_mux:
+ 	iounmap(iface->regs_base);
+ out_error_ioremap:
 -- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+1.7.1
+
+
