@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758781Ab3EFVGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:06:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59128 "EHLO
+	id S1758763Ab3EFVGf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:06:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59122 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757530Ab3EFUq0 (ORCPT
+	with ESMTP id S1756616Ab3EFUq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:26 -0400
+	Mon, 6 May 2013 16:46:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sandy Wu <sandyw@twitter.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 047/115] crypto: crc32-pclmul - Use gas macro for pclmulqdq
-Date: Mon,  6 May 2013 13:44:43 -0700
-Message-Id: <20130506203100.390107825@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>, Olaf Hering <olh@suse.de>
+Subject: [ 048/115] Drivers: hv: vmbus: Fix a bug in hv_need_to_signal()
+Date: Mon,  6 May 2013 13:44:44 -0700
+Message-Id: <20130506203100.485848515@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,44 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sandy Wu <sandyw@twitter.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 57ae1b0532977b30184aaba04b6cafe0a284c21f upstream.
+commit 288fa3e022eb85fa151e0f9bcd15caeb81679af6 upstream.
 
-Occurs when CONFIG_CRYPTO_CRC32C_INTEL=y and CONFIG_CRYPTO_CRC32C_INTEL=y.
-Older versions of bintuils do not support the pclmulqdq instruction. The
-PCLMULQDQ gas macro is used instead.
+As part of updating the vmbus protocol, the function hv_need_to_signal()
+was introduced. This functions helps optimize signalling from guest to
+host. The newly added memory barrier is needed to ensure that we correctly
+decide when to signal the host.
 
-Signed-off-by: Sandy Wu <sandyw@twitter.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reported-by: Olaf Hering <olh@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/crypto/crc32c-pcl-intel-asm_64.S |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/hv/ring_buffer.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
-+++ b/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
-@@ -42,6 +42,7 @@
-  * SOFTWARE.
-  */
+--- a/drivers/hv/ring_buffer.c
++++ b/drivers/hv/ring_buffer.c
+@@ -71,6 +71,7 @@ u32 hv_end_read(struct hv_ring_buffer_in
  
-+#include <asm/inst.h>
- #include <linux/linkage.h>
+ static bool hv_need_to_signal(u32 old_write, struct hv_ring_buffer_info *rbi)
+ {
++	smp_mb();
+ 	if (rbi->ring_buffer->interrupt_mask)
+ 		return false;
  
- ## ISCSI CRC 32 Implementation with crc32 and pclmulqdq Instruction
-@@ -225,10 +226,10 @@ LABEL crc_ %i
- 	movdqa  (bufp), %xmm0			# 2 consts: K1:K2
- 
- 	movq    crc_init, %xmm1			# CRC for block 1
--	pclmulqdq $0x00,%xmm0,%xmm1		# Multiply by K2
-+	PCLMULQDQ 0x00,%xmm0,%xmm1		# Multiply by K2
- 
- 	movq    crc1, %xmm2			# CRC for block 2
--	pclmulqdq $0x10, %xmm0, %xmm2		# Multiply by K1
-+	PCLMULQDQ 0x10, %xmm0, %xmm2		# Multiply by K1
- 
- 	pxor    %xmm2,%xmm1
- 	movq    %xmm1, %rax
 
 
