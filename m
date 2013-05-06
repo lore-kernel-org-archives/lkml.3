@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759672Ab3EFXEP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:04:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36423 "EHLO
+	id S933097Ab3EFW7M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:59:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36356 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758369Ab3EFW7O (ORCPT
+	with ESMTP id S933020Ab3EFW7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:14 -0400
+	Mon, 6 May 2013 18:59:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 39/46] wireless: regulatory: fix channel disabling race condition
-Date: Mon,  6 May 2013 15:58:45 -0700
-Message-Id: <20130506225824.760313478@linuxfoundation.org>
+        Federico Vaga <federico.vaga@gmail.com>
+Subject: [ 12/46] serial_core.c: add put_device() after device_find_child()
+Date: Mon,  6 May 2013 15:58:18 -0700
+Message-Id: <20130506225821.964848365@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -26,39 +26,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Federico Vaga <federico.vaga@gmail.com>
 
-commit 990de49f74e772b6db5208457b7aa712a5f4db86 upstream.
+commit 5a65dcc04cda41f4122aacc37a5a348454645399 upstream.
 
-When a full scan 2.4 and 5 GHz scan is scheduled, but then the 2.4 GHz
-part of the scan disables a 5.2 GHz channel due to, e.g. receiving
-country or frequency information, that 5.2 GHz channel might already
-be in the list of channels to scan next. Then, when the driver checks
-if it should do a passive scan, that will return false and attempt an
-active scan. This is not only wrong but can also lead to the iwlwifi
-device firmware crashing since it checks regulatory as well.
+The serial core uses device_find_child() but does not drop the reference to
+the retrieved child after using it. This patch add the missing put_device().
 
-Fix this by not setting the channel flags to just disabled but rather
-OR'ing in the disabled flag. That way, even if the race happens, the
-channel will be scanned passively which is still (mostly) correct.
+What I have done to test this issue.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+I used a machine with an AMBA PL011 serial driver. I tested the patch on
+next-20120408 because the last branch [next-20120415] does not boot on this
+board.
+
+For test purpose, I added some pr_info() messages to print the refcount
+after device_find_child() (lines: 1937,2009), and after put_device()
+(lines: 1947, 2021).
+
+Boot the machine *without* put_device(). Then:
+
+echo reboot > /sys/power/disk
+echo disk > /sys/power/state
+[   87.058575] uart_suspend_port:1937 refcount 4
+[   87.058582] uart_suspend_port:1947 refcount 4
+[   87.098083] uart_resume_port:2009refcount 5
+[   87.098088] uart_resume_port:2021 refcount 5
+
+echo disk > /sys/power/state
+[  103.055574] uart_suspend_port:1937 refcount 6
+[  103.055580] uart_suspend_port:1947 refcount 6
+[  103.095322] uart_resume_port:2009 refcount 7
+[  103.095327] uart_resume_port:2021 refcount 7
+
+echo disk > /sys/power/state
+[  252.459580] uart_suspend_port:1937 refcount 8
+[  252.459586] uart_suspend_port:1947 refcount 8
+[  252.499611] uart_resume_port:2009 refcount 9
+[  252.499616] uart_resume_port:2021 refcount 9
+
+The refcount continuously increased.
+
+Boot the machine *with* this patch. Then:
+
+echo reboot > /sys/power/disk
+echo disk > /sys/power/state
+[  159.333559] uart_suspend_port:1937 refcount 4
+[  159.333566] uart_suspend_port:1947 refcount 3
+[  159.372751] uart_resume_port:2009 refcount 4
+[  159.372755] uart_resume_port:2021 refcount 3
+
+echo disk > /sys/power/state
+[  185.713614] uart_suspend_port:1937 refcount 4
+[  185.713621] uart_suspend_port:1947 refcount 3
+[  185.752935] uart_resume_port:2009 refcount 4
+[  185.752940] uart_resume_port:2021 refcount 3
+
+echo disk > /sys/power/state
+[  207.458584] uart_suspend_port:1937 refcount 4
+[  207.458591] uart_suspend_port:1947 refcount 3
+[  207.498598] uart_resume_port:2009 refcount 4
+[  207.498605] uart_resume_port:2021 refcount 3
+
+The refcount correctly handled.
+
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/reg.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/serial_core.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -852,7 +852,7 @@ static void handle_channel(struct wiphy
- 			return;
- 
- 		REG_DBG_PRINT("Disabling freq %d MHz\n", chan->center_freq);
--		chan->flags = IEEE80211_CHAN_DISABLED;
-+		chan->flags |= IEEE80211_CHAN_DISABLED;
- 		return;
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -1917,6 +1917,8 @@ int uart_suspend_port(struct uart_driver
+ 		mutex_unlock(&port->mutex);
+ 		return 0;
  	}
++	put_device(tty_dev);
++
+ 	if (console_suspend_enabled || !uart_console(uport))
+ 		uport->suspended = 1;
  
+@@ -1982,9 +1984,11 @@ int uart_resume_port(struct uart_driver
+ 			disable_irq_wake(uport->irq);
+ 			uport->irq_wake = 0;
+ 		}
++		put_device(tty_dev);
+ 		mutex_unlock(&port->mutex);
+ 		return 0;
+ 	}
++	put_device(tty_dev);
+ 	uport->suspended = 0;
+ 
+ 	/*
 
 
