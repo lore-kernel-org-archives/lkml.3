@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab3EFEQc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 00:16:32 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:48344 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab3EFEQb (ORCPT
+	id S1752715Ab3EFER0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 00:17:26 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:31429 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517Ab3EFERZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 00:16:31 -0400
-X-AuditID: cbfee68d-b7f016d000007930-34-51872e9e58ef
+	Mon, 6 May 2013 00:17:25 -0400
+X-AuditID: cbfee690-b7f136d000000fea-7b-51872ed48b46
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Anton Vorontsov'" <anton@enomsg.org>
 Cc: "'David Woodhouse'" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Jett.Zhou'" <jtzhou@marvell.com>
-Subject: [PATCH 1/8] 88pm860x_battery: remove unnecessary platform_set_drvdata()
-Date: Mon, 06 May 2013 13:16:30 +0900
-Message-id: <003601ce4a10$7c1adaf0$745090d0$@samsung.com>
+        "Jett.Zhou" <jtzhou@marvell.com>
+Subject: [PATCH 2/8] 88pm860x_charger: remove unnecessary platform_set_drvdata()
+Date: Mon, 06 May 2013 13:17:24 +0900
+Message-id: <003701ce4a10$9c4a72e0$d4df58a0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5KEFHBi5jT+Ri3RBuFL8q1DtHQRQ==
+Thread-index: Ac5KEIjZw7ixEiUvTlaErnVXeU/qFg==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zfd15eu2BBu2/FSwObtW0mLhyMrPF
-	5YWXWC2W/XkIZO2aw+bA6jGh/xOjx+YVWh6TF15k9ujbsorR4/MmuQDWKC6blNSczLLUIn27
-	BK6MF7M+sRQ0s1csn/iSrYHxJ2sXIyeHhICJxN0tr9kgbDGJC/fWA9lcHEICyxgl3l09ztzF
-	yAFW9OeiCkR8OqPEroYPLBDOL0aJTbdfMYN0swmoSXz5cpgdxBYR0JBoWz0FrIhZYDKjxP/G
-	VWArhAUCJKbcWQLWwCKgKvHm/lMmEJtXwFLixsJJ7BC2oMSPyfdYQGxmAS2J9TuPM0HY8hKb
-	17xlhjhVQWLH2deMEMv0JDoe72eDqBGR2PfiHSNEzSF2iQMfEyF2CUh8m3yIBeIbWYlNB6DG
-	SEocXHGDZQKj2Cwkm2ch2TwLyeZZSDYsYGRZxSiaWpBcUJyUXmSoV5yYW1yal66XnJ+7iRES
-	d707GG8fsD7EmAy0fiKzlGhyPjBu80riDY3NjCxMTUyNjcwtzUgTVhLnVWuxDhQSSE8sSc1O
-	TS1ILYovKs1JLT7EyMTBKdXAeJnR1DBl6fUDwcEPLHJTHNauVXkmYruQ70F3N1fvMuWnftde
-	6znI288vNtp05ezNO/KRnTybJbYtl486P8fmTMeXpNmxUzeISWpEqO4Pb9GRiVaV3u5x9dTy
-	7f58ZhfCv5nfvj8hYKW/lXnPColo/jWHIv5rtOW0+L41vvvsJsejmQV9nEaTlFiKMxINtZiL
-	ihMBeprEGtECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jQd15eu2BBrMWyVoc3KppMXHlZGaL
-	ywsvsVos+/MQyNo1h82B1WNC/ydGj80rtDwmL7zI7NG3ZRWjx+dNcgGsUQ2MNhmpiSmpRQqp
-	ecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAu5UUyhJzSoFCAYnFxUr6
-	dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGS9mfWIpaGavWD7xJVsD40/WLkYODgkBE4k/F1W6
-	GDmBTDGJC/fWs3UxcnEICUxnlNjV8IEFwvnFKLHp9itmkCo2ATWJL18Os4PYIgIaEm2rp4AV
-	MQtMZpT437iKDSQhLBAgMeXOErAGFgFViTf3nzKB2LwClhI3Fk5ih7AFJX5MvscCYjMLaEms
-	33mcCcKWl9i85i0zxEkKEjvOvmaEWKYn0fF4PxtEjYjEvhfvGCcwCsxCMmoWklGzkIyahaRl
-	ASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzguH4mvYNxVYPFIUYBDkYlHt6CJ22BQqyJ
-	ZcWVuYcYJTiYlUR4ffYChXhTEiurUovy44tKc1KLDzEmA306kVlKNDkfmHLySuINjU3MjCyN
-	zCyMTMzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoFxbt5s23VBbZJrvmUzq/w42st2
-	66bwi6PrTrT2hykdct0vcKoj7bJK9cml3Vd+iolunO0rNJHnjA3Pd0OFPnWf0pInXxlccpfe
-	ZZdwnbIr5db6lPmBnncr9xw5ES6+9InK9rWfnv2p6lU0mvTF55iR7JrXrH9frGS+sdD+6daM
-	3MTdGTsZLuVGKrEUZyQaajEXFScCALVp19IvAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zI90reu2BBqe/iFsc3KppMXHlZGaL
+	ZX8eMltc3jWHzYHFY0L/J0aPzSu0PCYvvMjs8XmTXABLFJdNSmpOZllqkb5dAlfGwc6nrAX7
+	2StOnX/J2MC4iq2LkZNDQsBEovv0FlYIW0ziwr31QHEuDiGBZYwSfR97mboYOcCKbn8pgohP
+	Z5SY93gzVNEvRom511eBdbMJqEl8+XKYHcQWEdCQaFs9hQXEZhbIlTi75hkTiC0sECBxcddh
+	MJtFQFXi2v1ZYL28ApYSx49vZIOwBSV+TL4H1aslsX7ncSYIW15i85q3zBCXKkjsOPuaEWKX
+	nsSZky9ZIWpEJPa9eMcIcpyEwDp2iY0TH0ItE5D4NvkQC8Q3shKbDkDNkZQ4uOIGywRGsVlI
+	Vs9CsnoWktWzkKxYwMiyilE0tSC5oDgpvchErzgxt7g0L10vOT93EyMkxibsYLx3wPoQYzLQ
+	+onMUqLJ+cAYzSuJNzQ2M7IwNTE1NjK3NCNNWEmcV73FOlBIID2xJDU7NbUgtSi+qDQntfgQ
+	IxMHp1QDIyeryNfwzqcPSrdELmkJedUj73ulrzS5Jpoz6IbJ4wm3vRLk2pZPTWTWXHqvrZD5
+	hX/NT3mTO/PeT/qaezRfIybnBrfbsbdSn9JZ3u2zWfNq89bos7+PnXRc89ubZ5HqsQNP3xkJ
+	3HqStPdPgWG9/T6z6OIZ1S+fzbeLX6Hs5D8h3DbwnnSaqxJLcUaioRZzUXEiAO//d2LHAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jQd0reu2BBtunilgc3KppMXHlZGaL
+	ZX8eMltc3jWHzYHFY0L/J0aPzSu0PCYvvMjs8XmTXABLVAOjTUZqYkpqkUJqXnJ+SmZeuq2S
+	d3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QRiWFssScUqBQQGJxsZK+HaYJoSFuuhYw
+	jRG6viFBcD1GBmggYR1jxsHOp6wF+9krTp1/ydjAuIqti5GDQ0LAROL2l6IuRk4gU0ziwr31
+	QGEuDiGB6YwS8x5vhnJ+MUrMvb6KFaSKTUBN4suXw+wgtoiAhkTb6iksIDazQK7E2TXPmEBs
+	YYEAiYu7DoPZLAKqEtfuzwLr5RWwlDh+fCMbhC0o8WPyPaheLYn1O48zQdjyEpvXvGWGuEhB
+	YsfZ14wQu/Qkzpx8yQpRIyKx78U7xgmMArOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddI
+	rzgxt7g0L10vOT93EyM4gp9J72Bc1WBxiFGAg1GJh7fgSVugEGtiWXFl7iFGCQ5mJRFen71A
+	Id6UxMqq1KL8+KLSnNTiQ4zJQJ9OZJYSTc4HJpe8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloH
+	CgmkJ5akZqemFqQWwWxh4uCUamBs3Bu0IXoO286Tv37sTzrmoGzj3s2W5zt7qnayqZC61QmP
+	6FIb/mumFuKnY64nMaz4FHhSel/gT/db1t6X4p+9zFBzvTevyOzqgujUHdmzWLfr2mwwYnVK
+	3f+tI67gaJuGy5lM9wUVp49HsKjGthx5eLPQO1X79/L8vb/n89qft10dvHyKR7cSS3FGoqEW
+	c1FxIgDls3luJAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,21 +59,21 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/power/88pm860x_battery.c |    1 -
+ drivers/power/88pm860x_charger.c |    1 -
  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/power/88pm860x_battery.c b/drivers/power/88pm860x_battery.c
-index d338c1c..dfcda3a 100644
---- a/drivers/power/88pm860x_battery.c
-+++ b/drivers/power/88pm860x_battery.c
-@@ -992,7 +992,6 @@ static int pm860x_battery_remove(struct platform_device *pdev)
- 	free_irq(info->irq_batt, info);
- 	free_irq(info->irq_cc, info);
- 	power_supply_unregister(&info->battery);
--	platform_set_drvdata(pdev, NULL);
- 	return 0;
- }
+diff --git a/drivers/power/88pm860x_charger.c b/drivers/power/88pm860x_charger.c
+index 36fb4b5..ffff66b 100644
+--- a/drivers/power/88pm860x_charger.c
++++ b/drivers/power/88pm860x_charger.c
+@@ -722,7 +722,6 @@ static int pm860x_charger_remove(struct platform_device *pdev)
+ 	struct pm860x_charger_info *info = platform_get_drvdata(pdev);
+ 	int i;
  
+-	platform_set_drvdata(pdev, NULL);
+ 	power_supply_unregister(&info->usb);
+ 	free_irq(info->irq[0], info);
+ 	for (i = 0; i < info->irq_nums; i++)
 -- 
 1.7.2.5
 
