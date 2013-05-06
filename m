@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761599Ab3EFXrB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:47:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36191 "EHLO
+	id S1761581Ab3EFXrA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:47:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36199 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932889Ab3EFW5V (ORCPT
+	with ESMTP id S932828Ab3EFW5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:21 -0400
+	Mon, 6 May 2013 18:57:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Greg Thelen <gthelen@google.com>, Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 45/63] fs/dcache.c: add cond_resched() to shrink_dcache_parent()
-Date: Mon,  6 May 2013 15:56:23 -0700
-Message-Id: <20130506225325.732944542@linuxfoundation.org>
+        Jonathan Brassow <jbrassow@redhat.com>, NeilBrown <neilb@suse.de>
+Subject: [ 47/63] md: bad block list should default to disabled.
+Date: Mon,  6 May 2013 15:56:25 -0700
+Message-Id: <20130506225326.227359635@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -28,112 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Thelen <gthelen@google.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 421348f1ca0bf17769dee0aed4d991845ae0536d upstream.
+commit 486adf72ccc0c235754923d47a2270c5dcb0c98b upstream.
 
-Call cond_resched() in shrink_dcache_parent() to maintain interactivity.
+Maintenance of a bad-block-list currently defaults to 'enabled'
+and is then disabled when it cannot be supported.
+This is backwards and causes problem for dm-raid which didn't know
+to disable it.
 
-Before this patch:
+So fix the defaults, and only enabled for v1.x metadata which
+explicitly has bad blocks enabled.
 
-	void shrink_dcache_parent(struct dentry * parent)
-	{
-		while ((found = select_parent(parent, &dispose)) != 0)
-			shrink_dentry_list(&dispose);
-	}
+The problem with dm-raid has been present since badblock support was
+added in v3.1, so this patch is suitable for any -stable from 3.1
+onwards.
 
-select_parent() populates the dispose list with dentries which
-shrink_dentry_list() then deletes.  select_parent() carefully uses
-need_resched() to avoid doing too much work at once.  But neither
-shrink_dcache_parent() nor its called functions call cond_resched().  So
-once need_resched() is set select_parent() will return single dentry
-dispose list which is then deleted by shrink_dentry_list().  This is
-inefficient when there are a lot of dentry to process.  This can cause
-softlockup and hurts interactivity on non preemptable kernels.
-
-This change adds cond_resched() in shrink_dcache_parent().  The benefit
-of this is that need_resched() is quickly cleared so that future calls
-to select_parent() are able to efficiently return a big batch of dentry.
-
-These additional cond_resched() do not seem to impact performance, at
-least for the workload below.
-
-Here is a program which can cause soft lockup if other system activity
-sets need_resched().
-
-	int main()
-	{
-	        struct rlimit rlim;
-	        int i;
-	        int f[100000];
-	        char buf[20];
-	        struct timeval t1, t2;
-	        double diff;
-
-	        /* cleanup past run */
-	        system("rm -rf x");
-
-	        /* boost nfile rlimit */
-	        rlim.rlim_cur = 200000;
-	        rlim.rlim_max = 200000;
-	        if (setrlimit(RLIMIT_NOFILE, &rlim))
-	                err(1, "setrlimit");
-
-	        /* make directory for files */
-	        if (mkdir("x", 0700))
-	                err(1, "mkdir");
-
-	        if (gettimeofday(&t1, NULL))
-	                err(1, "gettimeofday");
-
-	        /* populate directory with open files */
-	        for (i = 0; i < 100000; i++) {
-	                snprintf(buf, sizeof(buf), "x/%d", i);
-	                f[i] = open(buf, O_CREAT);
-	                if (f[i] == -1)
-	                        err(1, "open");
-	        }
-
-	        /* close some of the files */
-	        for (i = 0; i < 85000; i++)
-	                close(f[i]);
-
-	        /* unlink all files, even open ones */
-	        system("rm -rf x");
-
-	        if (gettimeofday(&t2, NULL))
-	                err(1, "gettimeofday");
-
-	        diff = (((double)t2.tv_sec * 1000000 + t2.tv_usec) -
-	                ((double)t1.tv_sec * 1000000 + t1.tv_usec));
-
-	        printf("done: %g elapsed\n", diff/1e6);
-	        return 0;
-	}
-
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Jonathan Brassow <jbrassow@redhat.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcache.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/md/md.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1238,8 +1238,10 @@ void shrink_dcache_parent(struct dentry
- 	LIST_HEAD(dispose);
- 	int found;
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -1587,8 +1587,8 @@ static int super_1_load(struct md_rdev *
+ 					     sector, count, 1) == 0)
+ 				return -EINVAL;
+ 		}
+-	} else if (sb->bblog_offset == 0)
+-		rdev->badblocks.shift = -1;
++	} else if (sb->bblog_offset != 0)
++		rdev->badblocks.shift = 0;
  
--	while ((found = select_parent(parent, &dispose)) != 0)
-+	while ((found = select_parent(parent, &dispose)) != 0) {
- 		shrink_dentry_list(&dispose);
-+		cond_resched();
-+	}
- }
- EXPORT_SYMBOL(shrink_dcache_parent);
+ 	if (!refdev) {
+ 		ret = 1;
+@@ -3107,7 +3107,7 @@ int md_rdev_init(struct md_rdev *rdev)
+ 	 * be used - I wonder if that matters
+ 	 */
+ 	rdev->badblocks.count = 0;
+-	rdev->badblocks.shift = 0;
++	rdev->badblocks.shift = -1; /* disabled until explicitly enabled */
+ 	rdev->badblocks.page = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 	seqlock_init(&rdev->badblocks.lock);
+ 	if (rdev->badblocks.page == NULL)
+@@ -3179,9 +3179,6 @@ static struct md_rdev *md_import_device(
+ 			goto abort_free;
+ 		}
+ 	}
+-	if (super_format == -1)
+-		/* hot-add for 0.90, or non-persistent: so no badblocks */
+-		rdev->badblocks.shift = -1;
+ 
+ 	return rdev;
  
 
 
