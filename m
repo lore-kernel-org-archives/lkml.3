@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab3EFOwG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 10:52:06 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:14561 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754073Ab3EFOv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 10:51:28 -0400
-X-IronPort-AV: E=Sophos;i="4.87,622,1363132800"; 
-   d="scan'208";a="23502642"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <marc.zyngier@arm.com>,
-        <will.deacon@arm.com>, <Stefano.Stabellini@eu.citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH RFC v2 4/4] xen/arm: account for stolen ticks
-Date: Mon, 6 May 2013 15:51:18 +0100
-Message-ID: <1367851878-21629-4-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1305061532310.4756@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305061532310.4756@kaball.uk.xensource.com>
+	id S1754527Ab3EFOzm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 10:55:42 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:43807 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753865Ab3EFOzl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 10:55:41 -0400
+X-IronPort-AV: E=Sophos;i="4.87,622,1363158000"; 
+   d="scan'208";a="44491540"
+Message-ID: <5187C46B.5070309@codeaurora.org>
+Date: Mon, 06 May 2013 10:55:39 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Marc Zyngier <marc.zyngier@arm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Ian Campbell <Ian.Campbell@citrix.com>, Arnd Bergmann <arnd@arndb.de>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 1/3] arm_arch_timer: introduce arch_timer_stolen_ticks
+References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com> <1367436460-10183-1-git-send-email-stefano.stabellini@eu.citrix.com> <51817CBE.4050003@codeaurora.org> <1367482772.21869.26.camel@zakaz.uk.xensource.com> <5182DBA9.9080609@codeaurora.org> <alpine.DEB.2.02.1305031130210.5398@kaball.uk.xensource.com> <5183976A.6000703@arm.com> <alpine.DEB.2.02.1305051745390.4756@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1305051745390.4756@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register the runstate_memory_area with the hypervisor.
-Use pv_time_ops.steal_clock to account for stolen ticks.
+On 05/05/2013 12:47 PM, Stefano Stabellini wrote:
+> On Fri, 3 May 2013, Marc Zyngier wrote:
+>> On 03/05/13 11:43, Stefano Stabellini wrote:
+>>> On Thu, 2 May 2013, Christopher Covington wrote:
+>>>>> So the virtual timer should appear to have been running even while time
+>>>>> is being stolen and therefore stolen time needs to be accounted via some
+>>>>> other means.
+>>>>
+>>>> Something that's not currently obvious to me is that given that the stolen
+>>>> cycle accounting should be done, what makes the architected timer interrupt
+>>>> handler the ideal place to do it?
+>>>
+>>> That is a good question and I would appreciate suggestions to improve
+>>> the patch.
+>>>
+>>> Given that Xen x86 and ia64 does stolen time accounting from the timer
+>>> interrupt handler:
+>>>
+>>> arch/x86/xen/time.c:xen_timer_interrupt
+>>> arch/ia64/kernel/time.c:timer_interrupt
+>>>
+>>> and given that the arch_timer is the only timer used by Xen on ARM and
+>>> that it includes a virt_timer that is made on purpose to be used by
+>>> virtual machines, I thought that it might be a good place for it.
+>>>
+>>> I also thought that doing it this way, KVM should be able to reuse the
+>>> same hook.
+>>
+>> Indeed. I just need to understand how time stealing works there ;-).
+>>
+>> Now, KVM is not necessarily limited to arch_timers, and we've run KVM
+>> using a QEMU-provided timer in the past. Can you think of a more generic
+>> location for this hook? Possibly something that would satisfy the
+>> requirements of other architectures while we're at it?
+> 
+> Probably the best option would be to reuse
+> 
+> kernel/sched/cputime.c:steal_account_process_tick
+> 
+> but that also means introducing CONFIG_PARAVIRT on arm.
+> I am up for that, what do you think?
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/arm/xen/enlighten.c |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
+That sounds like a good move to me.
 
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index ee86bfa..2a5cc82 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -14,7 +14,10 @@
- #include <xen/xen-ops.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
-+#include <asm/arch_timer.h>
- #include <asm/system_misc.h>
-+#include <asm/paravirt.h>
-+#include <linux/jump_label.h>
- #include <linux/interrupt.h>
- #include <linux/irqreturn.h>
- #include <linux/module.h>
-@@ -152,6 +155,20 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
- }
- EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
- 
-+unsigned long long xen_stolen_accounting(int cpu)
-+{
-+	struct vcpu_runstate_info state;
-+
-+	if (cpu != get_cpu())
-+		BUG();
-+
-+	xen_get_runstate_snapshot(&state);
-+
-+	WARN_ON(state.state != RUNSTATE_running);
-+
-+	return state.time[RUNSTATE_runnable] + state.time[RUNSTATE_offline];
-+}
-+
- static void __init xen_percpu_init(void *unused)
- {
- 	struct vcpu_register_vcpu_info info;
-@@ -170,6 +187,8 @@ static void __init xen_percpu_init(void *unused)
- 		BUG();
- 	per_cpu(xen_vcpu, cpu) = vcpup;
- 
-+	xen_setup_runstate_info(cpu);
-+
- 	enable_percpu_irq(xen_events_irq, 0);
- }
- 
-@@ -301,6 +320,10 @@ static int __init xen_init_events(void)
- 
- 	on_each_cpu(xen_percpu_init, NULL, 0);
- 
-+	pv_time_ops.steal_clock = xen_stolen_accounting;
-+	static_key_slow_inc(&paravirt_steal_enabled);
-+	static_key_slow_inc(&paravirt_steal_rq_enabled);
-+
- 	return 0;
- }
- postcore_initcall(xen_init_events);
+Christopher
+
 -- 
-1.7.2.5
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
