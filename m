@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760772Ab3EFXVL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:21:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36922 "EHLO
+	id S933374Ab3EFXVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:21:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36928 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361Ab3EFXOB (ORCPT
+	with ESMTP id S1760640Ab3EFXOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:01 -0400
+	Mon, 6 May 2013 19:14:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 080/104] exec: do not abuse ->cred_guard_mutex in threadgroup_lock()
-Date: Mon,  6 May 2013 16:12:39 -0700
-Message-Id: <20130506230051.885926472@linuxfoundation.org>
+        Marc Eshel <eshel@us.ibm.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 081/104] LOCKD: Ensure that nlmclnt_block resets block->b_status after a server reboot
+Date: Mon,  6 May 2013 16:12:40 -0700
+Message-Id: <20130506230051.977733753@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -29,107 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit e56fb2874015370e3b7f8d85051f6dce26051df9 upstream.
+commit 1dfd89af8697a299e7982ae740d4695ecd917eef upstream.
 
-threadgroup_lock() takes signal->cred_guard_mutex to ensure that
-thread_group_leader() is stable.  This doesn't look nice, the scope of
-this lock in do_execve() is huge.
+After a server reboot, the reclaimer thread will recover all the existing
+locks. For locks that are blocked, however, it will change the value
+of block->b_status to nlm_lck_denied_grace_period in order to signal that
+they need to wake up and resend the original blocking lock request.
 
-And as Dave pointed out this can lead to deadlock, we have the
-following dependencies:
+Due to a bug, however, the block->b_status never gets reset after the
+blocked locks have been woken up, and so the process goes into an
+infinite loop of resends until the blocked lock is satisfied.
 
-	do_execve:		cred_guard_mutex -> i_mutex
-	cgroup_mount:		i_mutex -> cgroup_mutex
-	attach_task_by_pid:	cgroup_mutex -> cred_guard_mutex
-
-Change de_thread() to take threadgroup_change_begin() around the
-switch-the-leader code and change threadgroup_lock() to avoid
-->cred_guard_mutex.
-
-Note that de_thread() can't sleep with ->group_rwsem held, this can
-obviously deadlock with the exiting leader if the writer is active, so it
-does threadgroup_change_end() before schedule().
-
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Marc Eshel <eshel@us.ibm.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/exec.c             |    3 +++
- include/linux/sched.h |   18 ++++--------------
- 2 files changed, 7 insertions(+), 14 deletions(-)
+ fs/lockd/clntlock.c |    3 +++
+ fs/lockd/clntproc.c |    3 ---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -898,11 +898,13 @@ static int de_thread(struct task_struct
- 
- 		sig->notify_count = -1;	/* for exit_notify() */
- 		for (;;) {
-+			threadgroup_change_begin(tsk);
- 			write_lock_irq(&tasklist_lock);
- 			if (likely(leader->exit_state))
- 				break;
- 			__set_current_state(TASK_KILLABLE);
- 			write_unlock_irq(&tasklist_lock);
-+			threadgroup_change_end(tsk);
- 			schedule();
- 			if (unlikely(__fatal_signal_pending(tsk)))
- 				goto killed;
-@@ -960,6 +962,7 @@ static int de_thread(struct task_struct
- 		if (unlikely(leader->ptrace))
- 			__wake_up_parent(leader, leader->parent);
- 		write_unlock_irq(&tasklist_lock);
-+		threadgroup_change_end(tsk);
- 
- 		release_task(leader);
+--- a/fs/lockd/clntlock.c
++++ b/fs/lockd/clntlock.c
+@@ -144,6 +144,9 @@ int nlmclnt_block(struct nlm_wait *block
+ 			timeout);
+ 	if (ret < 0)
+ 		return -ERESTARTSYS;
++	/* Reset the lock status after a server reboot so we resend */
++	if (block->b_status == nlm_lck_denied_grace_period)
++		block->b_status = nlm_lck_blocked;
+ 	req->a_res.status = block->b_status;
+ 	return 0;
+ }
+--- a/fs/lockd/clntproc.c
++++ b/fs/lockd/clntproc.c
+@@ -550,9 +550,6 @@ again:
+ 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
+ 		if (status < 0)
+ 			break;
+-		/* Resend the blocking lock request after a server reboot */
+-		if (resp->status ==  nlm_lck_denied_grace_period)
+-			continue;
+ 		if (resp->status != nlm_lck_blocked)
+ 			break;
  	}
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2486,27 +2486,18 @@ static inline void threadgroup_change_en
-  *
-  * Lock the threadgroup @tsk belongs to.  No new task is allowed to enter
-  * and member tasks aren't allowed to exit (as indicated by PF_EXITING) or
-- * perform exec.  This is useful for cases where the threadgroup needs to
-- * stay stable across blockable operations.
-+ * change ->group_leader/pid.  This is useful for cases where the threadgroup
-+ * needs to stay stable across blockable operations.
-  *
-  * fork and exit paths explicitly call threadgroup_change_{begin|end}() for
-  * synchronization.  While held, no new task will be added to threadgroup
-  * and no existing live task will have its PF_EXITING set.
-  *
-- * During exec, a task goes and puts its thread group through unusual
-- * changes.  After de-threading, exclusive access is assumed to resources
-- * which are usually shared by tasks in the same group - e.g. sighand may
-- * be replaced with a new one.  Also, the exec'ing task takes over group
-- * leader role including its pid.  Exclude these changes while locked by
-- * grabbing cred_guard_mutex which is used to synchronize exec path.
-+ * de_thread() does threadgroup_change_{begin|end}() when a non-leader
-+ * sub-thread becomes a new leader.
-  */
- static inline void threadgroup_lock(struct task_struct *tsk)
- {
--	/*
--	 * exec uses exit for de-threading nesting group_rwsem inside
--	 * cred_guard_mutex. Grab cred_guard_mutex first.
--	 */
--	mutex_lock(&tsk->signal->cred_guard_mutex);
- 	down_write(&tsk->signal->group_rwsem);
- }
- 
-@@ -2519,7 +2510,6 @@ static inline void threadgroup_lock(stru
- static inline void threadgroup_unlock(struct task_struct *tsk)
- {
- 	up_write(&tsk->signal->group_rwsem);
--	mutex_unlock(&tsk->signal->cred_guard_mutex);
- }
- #else
- static inline void threadgroup_change_begin(struct task_struct *tsk) {}
 
 
