@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab3EFRUr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 13:20:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56870 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753525Ab3EFRUp (ORCPT
+	id S1754196Ab3EFRV2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 13:21:28 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:37793 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754055Ab3EFRV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 13:20:45 -0400
-Date: Mon, 6 May 2013 10:20:44 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 2/2 v2, RFC] Driver core: Introduce offline/online
- callbacks for memory blocks
-Message-ID: <20130506172044.GA13974@kroah.com>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
- <1583356.7oqZ7gBy2q@vostro.rjw.lan>
- <2376818.CRj1BTLk0Y@vostro.rjw.lan>
- <19540491.PRsM4lKIYM@vostro.rjw.lan>
+	Mon, 6 May 2013 13:21:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <19540491.PRsM4lKIYM@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFziLL++0XPHaZJiReoDUh+GQ0LTaaQFLBo4BEV7_fWrYA@mail.gmail.com>
+References: <CAMuHMdXBk0oZUufY3KoFaZiawRHdm9juMqHPMTftqcjQDXnUgw@mail.gmail.com>
+	<CA+55aFziLL++0XPHaZJiReoDUh+GQ0LTaaQFLBo4BEV7_fWrYA@mail.gmail.com>
+Date: Mon, 6 May 2013 19:21:26 +0200
+X-Google-Sender-Auth: ItXZpoaYc0hIKk7UNBVE38IcWOs
+Message-ID: <CAMuHMdUNqxTE7uKm+F66wVP0SLuDiLJifZKjy5jigWKxzr49tQ@mail.gmail.com>
+Subject: Re: h8300 SYMBOL_NAME() breakage
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Al Viro <viro@zeniv.linux.org.uk>,
+        James Hogan <james.hogan@imgtec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 04, 2013 at 01:21:16PM +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Introduce .offline() and .online() callbacks for memory_subsys
-> that will allow the generic device_offline() and device_online()
-> to be used with device objects representing memory blocks.  That,
-> in turn, allows the ACPI subsystem to use device_offline() to put
-> removable memory blocks offline, if possible, before removing
-> memory modules holding them.
-> 
-> The 'online' sysfs attribute of memory block devices will attempt to
-> put them offline if 0 is written to it and will attempt to apply the
-> previously used online type when onlining them (i.e. when 1 is
-> written to it).
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/base/memory.c  |  105 +++++++++++++++++++++++++++++++++++++------------
->  include/linux/memory.h |    1 
->  2 files changed, 81 insertions(+), 25 deletions(-)
+On Mon, May 6, 2013 at 4:30 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, May 6, 2013 at 5:31 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>
+>> How should this be fixed?
+>>   - Re-add SYMBOL_NAME() to arch/h8300/include/asm/linkage.h?
+>
+> No. The whole point was to *not* have these random private definitions.
+>
+> I guess you could use VMLINUX_SYMBOL() and include <linux/export.h>
+> and then use VMLINUX_SYMBOL(). Although..
+>
+>>   - Kill SYMBOL_NAME() and SYMBOL_NAME_LABEL(), and hardcode the
+>> underscores in the h8300 asm sources?
+>
+> .. I think this is what everybody else does. Although sometimes that
+> underscore depends on what the linkage format is (ie historically
+> a.out vs elf etc). We pretty much expect ELF these days, but maybe
+> other conditional reasons exist - so there may be a reason you don't
+> want to do the hardcoding (although on h8300 it seems to be
+> unconditional at least for now).
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Thx, will fix.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
