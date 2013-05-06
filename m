@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773Ab3EFW5D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:57:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36107 "EHLO
+	id S932893Ab3EFW5W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:57:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36152 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932739Ab3EFW5A (ORCPT
+	with ESMTP id S932828Ab3EFW5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:00 -0400
+	Mon, 6 May 2013 18:57:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 20/63] tracing: Use stack of calling function for stack tracer
-Date: Mon,  6 May 2013 15:55:58 -0700
-Message-Id: <20130506225319.936185611@linuxfoundation.org>
+        Stephan Schreiber <info@fs-driver.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [ 31/63] Wrong asm register contraints in the futex implementation
+Date: Mon,  6 May 2013 15:56:09 -0700
+Message-Id: <20130506225322.592890602@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -26,75 +27,292 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Stephan Schreiber <info@fs-driver.org>
 
-commit 87889501d0adfae10e3b0f0e6f2d7536eed9ae84 upstream.
+commit 136f39ddc53db3bcee2befbe323a56d4fbf06da8 upstream.
 
-Use the stack of stack_trace_call() instead of check_stack() as
-the test pointer for max stack size. It makes it a bit cleaner
-and a little more accurate.
+The Linux Kernel contains some inline assembly source code which has
+wrong asm register constraints in arch/ia64/include/asm/futex.h.
 
-Adding stable, as a later fix depends on this patch.
+I observed this on Kernel 3.2.23 but it is also true on the most
+recent Kernel 3.9-rc1.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+File arch/ia64/include/asm/futex.h:
+
+static inline int
+futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
+			      u32 oldval, u32 newval)
+{
+	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
+		return -EFAULT;
+
+	{
+		register unsigned long r8 __asm ("r8");
+		unsigned long prev;
+		__asm__ __volatile__(
+			"	mf;;					\n"
+			"	mov %0=r0				\n"
+			"	mov ar.ccv=%4;;				\n"
+			"[1:]	cmpxchg4.acq %1=[%2],%3,ar.ccv		\n"
+			"	.xdata4 \"__ex_table\", 1b-., 2f-.	\n"
+			"[2:]"
+			: "=r" (r8), "=r" (prev)
+			: "r" (uaddr), "r" (newval),
+			  "rO" ((long) (unsigned) oldval)
+			: "memory");
+		*uval = prev;
+		return r8;
+	}
+}
+
+The list of output registers is
+			: "=r" (r8), "=r" (prev)
+The constraint "=r" means that the GCC has to maintain that these vars
+are in registers and contain valid info when the program flow leaves
+the assembly block (output registers).
+But "=r" also means that GCC can put them in registers that are used
+as input registers. Input registers are uaddr, newval, oldval on the
+example.
+The second assembly instruction
+			"	mov %0=r0				\n"
+is the first one which writes to a register; it sets %0 to 0. %0 means
+the first register operand; it is r8 here. (The r0 is read-only and
+always 0 on the Itanium; it can be used if an immediate zero value is
+needed.)
+This instruction might overwrite one of the other registers which are
+still needed.
+Whether it really happens depends on how GCC decides what registers it
+uses and how it optimizes the code.
+
+The objdump utility can give us disassembly.
+The futex_atomic_cmpxchg_inatomic() function is inline, so we have to
+look for a module that uses the funtion. This is the
+cmpxchg_futex_value_locked() function in
+kernel/futex.c:
+
+static int cmpxchg_futex_value_locked(u32 *curval, u32 __user *uaddr,
+				      u32 uval, u32 newval)
+{
+	int ret;
+
+	pagefault_disable();
+	ret = futex_atomic_cmpxchg_inatomic(curval, uaddr, uval, newval);
+	pagefault_enable();
+
+	return ret;
+}
+
+Now the disassembly. At first from the Kernel package 3.2.23 which has
+been compiled with GCC 4.4, remeber this Kernel seemed to work:
+objdump -d linux-3.2.23/debian/build/build_ia64_none_mckinley/kernel/futex.o
+
+0000000000000230 <cmpxchg_futex_value_locked>:
+      230:	0b 18 80 1b 18 21 	[MMI]       adds r3=3168,r13;;
+      236:	80 40 0d 00 42 00 	            adds r8=40,r3
+      23c:	00 00 04 00       	            nop.i 0x0;;
+      240:	0b 50 00 10 10 10 	[MMI]       ld4 r10=[r8];;
+      246:	90 08 28 00 42 00 	            adds r9=1,r10
+      24c:	00 00 04 00       	            nop.i 0x0;;
+      250:	09 00 00 00 01 00 	[MMI]       nop.m 0x0
+      256:	00 48 20 20 23 00 	            st4 [r8]=r9
+      25c:	00 00 04 00       	            nop.i 0x0;;
+      260:	08 10 80 06 00 21 	[MMI]       adds r2=32,r3
+      266:	00 00 00 02 00 00 	            nop.m 0x0
+      26c:	02 08 f1 52       	            extr.u r16=r33,0,61
+      270:	05 40 88 00 08 e0 	[MLX]       addp4 r8=r34,r0
+      276:	ff ff 0f 00 00 e0 	            movl r15=0xfffffffbfff;;
+      27c:	f1 f7 ff 65
+      280:	09 70 00 04 18 10 	[MMI]       ld8 r14=[r2]
+      286:	00 00 00 02 00 c0 	            nop.m 0x0
+      28c:	f0 80 1c d0       	            cmp.ltu p6,p7=r15,r16;;
+      290:	08 40 fc 1d 09 3b 	[MMI]       cmp.eq p8,p9=-1,r14
+      296:	00 00 00 02 00 40 	            nop.m 0x0
+      29c:	e1 08 2d d0       	            cmp.ltu p10,p11=r14,r33
+      2a0:	56 01 10 00 40 10 	[BBB] (p10) br.cond.spnt.few 2e0
+<cmpxchg_futex_value_locked+0xb0>
+      2a6:	02 08 00 80 21 03 	      (p08) br.cond.dpnt.few 2b0
+<cmpxchg_futex_value_locked+0x80>
+      2ac:	40 00 00 41       	      (p06) br.cond.spnt.few 2e0
+<cmpxchg_futex_value_locked+0xb0>
+      2b0:	0a 00 00 00 22 00 	[MMI]       mf;;
+      2b6:	80 00 00 00 42 00 	            mov r8=r0
+      2bc:	00 00 04 00       	            nop.i 0x0
+      2c0:	0b 00 20 40 2a 04 	[MMI]       mov.m ar.ccv=r8;;
+      2c6:	10 1a 85 22 20 00 	            cmpxchg4.acq r33=[r33],r35,ar.ccv
+      2cc:	00 00 04 00       	            nop.i 0x0;;
+      2d0:	10 00 84 40 90 11 	[MIB]       st4 [r32]=r33
+      2d6:	00 00 00 02 00 00 	            nop.i 0x0
+      2dc:	20 00 00 40       	            br.few 2f0
+<cmpxchg_futex_value_locked+0xc0>
+      2e0:	09 40 c8 f9 ff 27 	[MMI]       mov r8=-14
+      2e6:	00 00 00 02 00 00 	            nop.m 0x0
+      2ec:	00 00 04 00       	            nop.i 0x0;;
+      2f0:	0b 58 20 1a 19 21 	[MMI]       adds r11=3208,r13;;
+      2f6:	20 01 2c 20 20 00 	            ld4 r18=[r11]
+      2fc:	00 00 04 00       	            nop.i 0x0;;
+      300:	0b 88 fc 25 3f 23 	[MMI]       adds r17=-1,r18;;
+      306:	00 88 2c 20 23 00 	            st4 [r11]=r17
+      30c:	00 00 04 00       	            nop.i 0x0;;
+      310:	11 00 00 00 01 00 	[MIB]       nop.m 0x0
+      316:	00 00 00 02 00 80 	            nop.i 0x0
+      31c:	08 00 84 00       	            br.ret.sptk.many b0;;
+
+The lines
+      2b0:	0a 00 00 00 22 00 	[MMI]       mf;;
+      2b6:	80 00 00 00 42 00 	            mov r8=r0
+      2bc:	00 00 04 00       	            nop.i 0x0
+      2c0:	0b 00 20 40 2a 04 	[MMI]       mov.m ar.ccv=r8;;
+      2c6:	10 1a 85 22 20 00 	            cmpxchg4.acq r33=[r33],r35,ar.ccv
+      2cc:	00 00 04 00       	            nop.i 0x0;;
+are the instructions of the assembly block.
+The line
+      2b6:	80 00 00 00 42 00 	            mov r8=r0
+sets the r8 register to 0 and after that
+      2c0:	0b 00 20 40 2a 04 	[MMI]       mov.m ar.ccv=r8;;
+prepares the 'oldvalue' for the cmpxchg but it takes it from r8. This
+is wrong.
+What happened here is what I explained above: An input register is
+overwritten which is still needed.
+The register operand constraints in futex.h are wrong.
+
+(The problem doesn't occur when the Kernel is compiled with GCC 4.6.)
+
+The attached patch fixes the register operand constraints in futex.h.
+The code after patching of it:
+
+static inline int
+futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
+			      u32 oldval, u32 newval)
+{
+	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
+		return -EFAULT;
+
+	{
+		register unsigned long r8 __asm ("r8") = 0;
+		unsigned long prev;
+		__asm__ __volatile__(
+			"	mf;;					\n"
+			"	mov ar.ccv=%4;;				\n"
+			"[1:]	cmpxchg4.acq %1=[%2],%3,ar.ccv		\n"
+			"	.xdata4 \"__ex_table\", 1b-., 2f-.	\n"
+			"[2:]"
+			: "+r" (r8), "=&r" (prev)
+			: "r" (uaddr), "r" (newval),
+			  "rO" ((long) (unsigned) oldval)
+			: "memory");
+		*uval = prev;
+		return r8;
+	}
+}
+
+I also initialized the 'r8' var with the C programming language.
+The _asm qualifier on the definition of the 'r8' var forces GCC to use
+the r8 processor register for it.
+I don't believe that we should use inline assembly for zeroing out a
+local variable.
+The constraint is
+"+r" (r8)
+what means that it is both an input register and an output register.
+Note that the page fault handler will modify the r8 register which
+will be the return value of the function.
+The real fix is
+"=&r" (prev)
+The & means that GCC must not use any of the input registers to place
+this output register in.
+
+Patched the Kernel 3.2.23 and compiled it with GCC4.4:
+
+0000000000000230 <cmpxchg_futex_value_locked>:
+      230:	0b 18 80 1b 18 21 	[MMI]       adds r3=3168,r13;;
+      236:	80 40 0d 00 42 00 	            adds r8=40,r3
+      23c:	00 00 04 00       	            nop.i 0x0;;
+      240:	0b 50 00 10 10 10 	[MMI]       ld4 r10=[r8];;
+      246:	90 08 28 00 42 00 	            adds r9=1,r10
+      24c:	00 00 04 00       	            nop.i 0x0;;
+      250:	09 00 00 00 01 00 	[MMI]       nop.m 0x0
+      256:	00 48 20 20 23 00 	            st4 [r8]=r9
+      25c:	00 00 04 00       	            nop.i 0x0;;
+      260:	08 10 80 06 00 21 	[MMI]       adds r2=32,r3
+      266:	20 12 01 10 40 00 	            addp4 r34=r34,r0
+      26c:	02 08 f1 52       	            extr.u r16=r33,0,61
+      270:	05 40 00 00 00 e1 	[MLX]       mov r8=r0
+      276:	ff ff 0f 00 00 e0 	            movl r15=0xfffffffbfff;;
+      27c:	f1 f7 ff 65
+      280:	09 70 00 04 18 10 	[MMI]       ld8 r14=[r2]
+      286:	00 00 00 02 00 c0 	            nop.m 0x0
+      28c:	f0 80 1c d0       	            cmp.ltu p6,p7=r15,r16;;
+      290:	08 40 fc 1d 09 3b 	[MMI]       cmp.eq p8,p9=-1,r14
+      296:	00 00 00 02 00 40 	            nop.m 0x0
+      29c:	e1 08 2d d0       	            cmp.ltu p10,p11=r14,r33
+      2a0:	56 01 10 00 40 10 	[BBB] (p10) br.cond.spnt.few 2e0
+<cmpxchg_futex_value_locked+0xb0>
+      2a6:	02 08 00 80 21 03 	      (p08) br.cond.dpnt.few 2b0
+<cmpxchg_futex_value_locked+0x80>
+      2ac:	40 00 00 41       	      (p06) br.cond.spnt.few 2e0
+<cmpxchg_futex_value_locked+0xb0>
+      2b0:	0b 00 00 00 22 00 	[MMI]       mf;;
+      2b6:	00 10 81 54 08 00 	            mov.m ar.ccv=r34
+      2bc:	00 00 04 00       	            nop.i 0x0;;
+      2c0:	09 58 8c 42 11 10 	[MMI]       cmpxchg4.acq r11=[r33],r35,ar.ccv
+      2c6:	00 00 00 02 00 00 	            nop.m 0x0
+      2cc:	00 00 04 00       	            nop.i 0x0;;
+      2d0:	10 00 2c 40 90 11 	[MIB]       st4 [r32]=r11
+      2d6:	00 00 00 02 00 00 	            nop.i 0x0
+      2dc:	20 00 00 40       	            br.few 2f0
+<cmpxchg_futex_value_locked+0xc0>
+      2e0:	09 40 c8 f9 ff 27 	[MMI]       mov r8=-14
+      2e6:	00 00 00 02 00 00 	            nop.m 0x0
+      2ec:	00 00 04 00       	            nop.i 0x0;;
+      2f0:	0b 88 20 1a 19 21 	[MMI]       adds r17=3208,r13;;
+      2f6:	30 01 44 20 20 00 	            ld4 r19=[r17]
+      2fc:	00 00 04 00       	            nop.i 0x0;;
+      300:	0b 90 fc 27 3f 23 	[MMI]       adds r18=-1,r19;;
+      306:	00 90 44 20 23 00 	            st4 [r17]=r18
+      30c:	00 00 04 00       	            nop.i 0x0;;
+      310:	11 00 00 00 01 00 	[MIB]       nop.m 0x0
+      316:	00 00 00 02 00 80 	            nop.i 0x0
+      31c:	08 00 84 00       	            br.ret.sptk.many b0;;
+
+Much better.
+There is a
+      270:	05 40 00 00 00 e1 	[MLX]       mov r8=r0
+which was generated by C code r8 = 0. Below
+      2b6:	00 10 81 54 08 00 	            mov.m ar.ccv=r34
+what means that oldval is no longer overwritten.
+
+This is Debian bug#702641
+(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=702641).
+
+The patch is applicable on Kernel 3.9-rc1, 3.2.23 and many other versions.
+
+Signed-off-by: Stephan Schreiber <info@fs-driver.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_stack.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ arch/ia64/include/asm/futex.h |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -40,20 +40,21 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
- int stack_tracer_enabled;
- static int last_stack_tracer_enabled;
+--- a/arch/ia64/include/asm/futex.h
++++ b/arch/ia64/include/asm/futex.h
+@@ -106,16 +106,15 @@ futex_atomic_cmpxchg_inatomic(u32 *uval,
+ 		return -EFAULT;
  
--static inline void check_stack(void)
-+static inline void
-+check_stack(unsigned long *stack)
- {
- 	unsigned long this_size, flags;
- 	unsigned long *p, *top, *start;
- 	int i;
- 
--	this_size = ((unsigned long)&this_size) & (THREAD_SIZE-1);
-+	this_size = ((unsigned long)stack) & (THREAD_SIZE-1);
- 	this_size = THREAD_SIZE - this_size;
- 
- 	if (this_size <= max_stack_size)
- 		return;
- 
- 	/* we do not handle interrupt stacks yet */
--	if (!object_is_on_stack(&this_size))
-+	if (!object_is_on_stack(stack))
- 		return;
- 
- 	local_irq_save(flags);
-@@ -74,7 +75,7 @@ static inline void check_stack(void)
- 	 * Now find where in the stack these are.
- 	 */
- 	i = 0;
--	start = &this_size;
-+	start = stack;
- 	top = (unsigned long *)
- 		(((unsigned long)start & ~(THREAD_SIZE-1)) + THREAD_SIZE);
- 
-@@ -113,6 +114,7 @@ static inline void check_stack(void)
- static void
- stack_trace_call(unsigned long ip, unsigned long parent_ip)
- {
-+	unsigned long stack;
- 	int cpu;
- 
- 	if (unlikely(!ftrace_enabled || stack_trace_disabled))
-@@ -125,7 +127,7 @@ stack_trace_call(unsigned long ip, unsig
- 	if (per_cpu(trace_active, cpu)++ != 0)
- 		goto out;
- 
--	check_stack();
-+	check_stack(&stack);
- 
-  out:
- 	per_cpu(trace_active, cpu)--;
+ 	{
+-		register unsigned long r8 __asm ("r8");
++		register unsigned long r8 __asm ("r8") = 0;
+ 		unsigned long prev;
+ 		__asm__ __volatile__(
+ 			"	mf;;					\n"
+-			"	mov %0=r0				\n"
+ 			"	mov ar.ccv=%4;;				\n"
+ 			"[1:]	cmpxchg4.acq %1=[%2],%3,ar.ccv		\n"
+ 			"	.xdata4 \"__ex_table\", 1b-., 2f-.	\n"
+ 			"[2:]"
+-			: "=r" (r8), "=r" (prev)
++			: "+r" (r8), "=&r" (prev)
+ 			: "r" (uaddr), "r" (newval),
+ 			  "rO" ((long) (unsigned) oldval)
+ 			: "memory");
 
 
