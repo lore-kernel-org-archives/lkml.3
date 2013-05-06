@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119Ab3EFW7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:59:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36426 "EHLO
+	id S1759603Ab3EFXCo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:02:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36456 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759060Ab3EFW7P (ORCPT
+	with ESMTP id S933120Ab3EFW7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:15 -0400
+	Mon, 6 May 2013 18:59:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robin Holt <holt@sgi.com>, Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 40/46] ipc: sysv shared memory limited to 8TiB
-Date: Mon,  6 May 2013 15:58:46 -0700
-Message-Id: <20130506225824.874776761@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 33/46] cgroup: fix an off-by-one bug which may trigger BUG_ON()
+Date: Mon,  6 May 2013 15:58:39 -0700
+Message-Id: <20130506225824.144630895@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -28,60 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit d69f3bad4675ac519d41ca2b11e1c00ca115cecd upstream.
+commit 3ac1707a13a3da9cfc8f242a15b2fae6df2c5f88 upstream.
 
-Trying to run an application which was trying to put data into half of
-memory using shmget(), we found that having a shmall value below 8EiB-8TiB
-would prevent us from using anything more than 8TiB.  By setting
-kernel.shmall greater than 8EiB-8TiB would make the job work.
+The 3rd parameter of flex_array_prealloc() is the number of elements,
+not the index of the last element.
 
-In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
+The effect of the bug is, when opening cgroup.procs, a flex array will
+be allocated and all elements of the array is allocated with
+GFP_KERNEL flag, but the last one is GFP_ATOMIC, and if we fail to
+allocate memory for it, it'll trigger a BUG_ON().
 
-ipc/shm.c:
- 458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
- 459 {
-...
- 465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
-...
- 474         if (ns->shm_tot + numpages > ns->shm_ctlall)
- 475                 return -ENOSPC;
-
-[akpm@linux-foundation.org: make ipc/shm.c:newseg()'s numpages size_t, not int]
-Signed-off-by: Robin Holt <holt@sgi.com>
-Reported-by: Alex Thorlton <athorlton@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ipc_namespace.h |    2 +-
- ipc/shm.c                     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/cgroup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -42,8 +42,8 @@ struct ipc_namespace {
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2026,7 +2026,7 @@ int cgroup_attach_proc(struct cgroup *cg
+ 	if (!group)
+ 		return -ENOMEM;
+ 	/* pre-allocate to guarantee space while iterating in rcu read-side. */
+-	retval = flex_array_prealloc(group, 0, group_size - 1, GFP_KERNEL);
++	retval = flex_array_prealloc(group, 0, group_size, GFP_KERNEL);
+ 	if (retval)
+ 		goto out_free_group_list;
  
- 	size_t		shm_ctlmax;
- 	size_t		shm_ctlall;
-+	unsigned long	shm_tot;
- 	int		shm_ctlmni;
--	int		shm_tot;
- 
- 	struct notifier_block ipcns_nb;
- 
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -343,7 +343,7 @@ static int newseg(struct ipc_namespace *
- 	size_t size = params->u.size;
- 	int error;
- 	struct shmid_kernel *shp;
--	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
-+	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	struct file * file;
- 	char name[13];
- 	int id;
 
 
