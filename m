@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759328Ab3EFW4x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:56:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36016 "EHLO
+	id S1758962Ab3EGAFg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:05:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36049 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759194Ab3EFW4p (ORCPT
+	with ESMTP id S1759270Ab3EFW4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:56:45 -0400
+	Mon, 6 May 2013 18:56:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Stikkolorum <d.r.stikkolorum@hhs.nl>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 11/63] usbfs: Always allow ctrl requests with USB_RECIP_ENDPOINT on the ctrl ep
-Date: Mon,  6 May 2013 15:55:49 -0700
-Message-Id: <20130506225317.575064191@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 22/63] tracing: Remove most or all of stack tracer stack size from stack_max_size
+Date: Mon,  6 May 2013 15:56:00 -0700
+Message-Id: <20130506225320.514028603@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -28,46 +26,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 1361bf4b9f9ef45e628a5b89e0fd9bedfdcb7104 upstream.
+commit 4df297129f622bdc18935c856f42b9ddd18f9f28 upstream.
 
-When usbfs receives a ctrl-request from userspace it calls check_ctrlrecip,
-which for a request with USB_RECIP_ENDPOINT tries to map this to an interface
-to see if this interface is claimed, except for ctrl-requests with a type of
-USB_TYPE_VENDOR.
+Currently, the depth reported in the stack tracer stack_trace file
+does not match the stack_max_size file. This is because the stack_max_size
+includes the overhead of stack tracer itself while the depth does not.
 
-When trying to use this device: http://www.akaipro.com/eiepro
-redirected to a Windows vm running on qemu on top of Linux.
+The first time a max is triggered, a calculation is not performed that
+figures out the overhead of the stack tracer and subtracts it from
+the stack_max_size variable. The overhead is stored and is subtracted
+from the reported stack size for comparing for a new max.
 
-The windows driver makes a ctrl-req with USB_TYPE_CLASS and
-USB_RECIP_ENDPOINT with index 0, and the mapping of the endpoint (0) to
-the interface fails since ep 0 is the ctrl endpoint and thus never is
-part of an interface.
+Now the stack_max_size corresponds to the reported depth:
 
-This patch fixes this ctrl-req failing by skipping the checkintf call for
-USB_RECIP_ENDPOINT ctrl-reqs on the ctrl endpoint.
+ # cat stack_max_size
+4640
 
-Reported-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
-Tested-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+ # cat stack_trace
+        Depth    Size   Location    (48 entries)
+        -----    ----   --------
+  0)     4640      32   _raw_spin_lock+0x18/0x24
+  1)     4608     112   ____cache_alloc+0xb7/0x22d
+  2)     4496      80   kmem_cache_alloc+0x63/0x12f
+  3)     4416      16   mempool_alloc_slab+0x15/0x17
+[...]
+
+While testing against and older gcc on x86 that uses mcount instead
+of fentry, I found that pasing in ip + MCOUNT_INSN_SIZE let the
+stack trace show one more function deep which was missing before.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/devio.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/trace/trace_stack.c |   75 ++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 54 insertions(+), 21 deletions(-)
 
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -681,6 +681,8 @@ static int check_ctrlrecip(struct dev_st
- 	index &= 0xff;
- 	switch (requesttype & USB_RECIP_MASK) {
- 	case USB_RECIP_ENDPOINT:
-+		if ((index & ~USB_DIR_IN) == 0)
-+			return 0;
- 		ret = findintfep(ps->dev, index);
- 		if (ret >= 0)
- 			ret = checkintf(ps, ret);
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -20,27 +20,24 @@
+ 
+ #define STACK_TRACE_ENTRIES 500
+ 
+-/*
+- * If fentry is used, then the function being traced will
+- * jump to fentry directly before it sets up its stack frame.
+- * We need to ignore that one and record the parent. Since
+- * the stack frame for the traced function wasn't set up yet,
+- * the stack_trace wont see the parent. That needs to be added
+- * manually to stack_dump_trace[] as the first element.
+- */
+ #ifdef CC_USING_FENTRY
+-# define add_func	1
++# define fentry		1
+ #else
+-# define add_func	0
++# define fentry		0
+ #endif
+ 
+ static unsigned long stack_dump_trace[STACK_TRACE_ENTRIES+1] =
+ 	 { [0 ... (STACK_TRACE_ENTRIES)] = ULONG_MAX };
+ static unsigned stack_dump_index[STACK_TRACE_ENTRIES];
+ 
++/*
++ * Reserve one entry for the passed in ip. This will allow
++ * us to remove most or all of the stack size overhead
++ * added by the stack tracer itself.
++ */
+ static struct stack_trace max_stack_trace = {
+-	.max_entries		= STACK_TRACE_ENTRIES - add_func,
+-	.entries		= &stack_dump_trace[add_func],
++	.max_entries		= STACK_TRACE_ENTRIES - 1,
++	.entries		= &stack_dump_trace[1],
+ };
+ 
+ static unsigned long max_stack_size;
+@@ -59,10 +56,14 @@ check_stack(unsigned long ip, unsigned l
+ {
+ 	unsigned long this_size, flags;
+ 	unsigned long *p, *top, *start;
++	static int tracer_frame;
++	int frame_size = ACCESS_ONCE(tracer_frame);
+ 	int i;
+ 
+ 	this_size = ((unsigned long)stack) & (THREAD_SIZE-1);
+ 	this_size = THREAD_SIZE - this_size;
++	/* Remove the frame of the tracer */
++	this_size -= frame_size;
+ 
+ 	if (this_size <= max_stack_size)
+ 		return;
+@@ -74,6 +75,10 @@ check_stack(unsigned long ip, unsigned l
+ 	local_irq_save(flags);
+ 	arch_spin_lock(&max_stack_lock);
+ 
++	/* In case another CPU set the tracer_frame on us */
++	if (unlikely(!frame_size))
++		this_size -= tracer_frame;
++
+ 	/* a race could have already updated it */
+ 	if (this_size <= max_stack_size)
+ 		goto out;
+@@ -86,15 +91,12 @@ check_stack(unsigned long ip, unsigned l
+ 	save_stack_trace(&max_stack_trace);
+ 
+ 	/*
+-	 * When fentry is used, the traced function does not get
+-	 * its stack frame set up, and we lose the parent.
+-	 * Add that one in manally. We set up save_stack_trace()
+-	 * to not touch the first element in this case.
++	 * Add the passed in ip from the function tracer.
++	 * Searching for this on the stack will skip over
++	 * most of the overhead from the stack tracer itself.
+ 	 */
+-	if (add_func) {
+-		stack_dump_trace[0] = ip;
+-		max_stack_trace.nr_entries++;
+-	}
++	stack_dump_trace[0] = ip;
++	max_stack_trace.nr_entries++;
+ 
+ 	/*
+ 	 * Now find where in the stack these are.
+@@ -124,6 +126,18 @@ check_stack(unsigned long ip, unsigned l
+ 				found = 1;
+ 				/* Start the search from here */
+ 				start = p + 1;
++				/*
++				 * We do not want to show the overhead
++				 * of the stack tracer stack in the
++				 * max stack. If we haven't figured
++				 * out what that is, then figure it out
++				 * now.
++				 */
++				if (unlikely(!tracer_frame) && i == 1) {
++					tracer_frame = (p - stack) *
++						sizeof(unsigned long);
++					max_stack_size -= tracer_frame;
++				}
+ 			}
+ 		}
+ 
+@@ -152,7 +166,26 @@ stack_trace_call(unsigned long ip, unsig
+ 	if (per_cpu(trace_active, cpu)++ != 0)
+ 		goto out;
+ 
+-	check_stack(parent_ip, &stack);
++	/*
++	 * When fentry is used, the traced function does not get
++	 * its stack frame set up, and we lose the parent.
++	 * The ip is pretty useless because the function tracer
++	 * was called before that function set up its stack frame.
++	 * In this case, we use the parent ip.
++	 *
++	 * By adding the return address of either the parent ip
++	 * or the current ip we can disregard most of the stack usage
++	 * caused by the stack tracer itself.
++	 *
++	 * The function tracer always reports the address of where the
++	 * mcount call was, but the stack will hold the return address.
++	 */
++	if (fentry)
++		ip = parent_ip;
++	else
++		ip += MCOUNT_INSN_SIZE;
++
++	check_stack(ip, &stack);
+ 
+  out:
+ 	per_cpu(trace_active, cpu)--;
 
 
