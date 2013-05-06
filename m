@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758114Ab3EFUrE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:47:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59359 "EHLO
+	id S1758352Ab3EFUvL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:51:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59375 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758018Ab3EFUrB (ORCPT
+	with ESMTP id S1758110Ab3EFUrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:47:01 -0400
+	Mon, 6 May 2013 16:47:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 095/115] wireless: regulatory: fix channel disabling race condition
-Date: Mon,  6 May 2013 13:45:31 -0700
-Message-Id: <20130506203105.365323585@linuxfoundation.org>
+        =?UTF-8?q?Fernando=20Luis=20V=C3=A1zquez=20Cao?= 
+	<fernando@oss.ntt.co.jp>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 099/115] x86-64, init: Do not set NX bits on non-NX capable hardware
+Date: Mon,  6 May 2013 13:45:35 -0700
+Message-Id: <20130506203105.770869908@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,39 +31,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 990de49f74e772b6db5208457b7aa712a5f4db86 upstream.
+commit 78d77df71510a96e042de7ba6dbd7998103642cb upstream.
 
-When a full scan 2.4 and 5 GHz scan is scheduled, but then the 2.4 GHz
-part of the scan disables a 5.2 GHz channel due to, e.g. receiving
-country or frequency information, that 5.2 GHz channel might already
-be in the list of channels to scan next. Then, when the driver checks
-if it should do a passive scan, that will return false and attempt an
-active scan. This is not only wrong but can also lead to the iwlwifi
-device firmware crashing since it checks regulatory as well.
+During early init, we would incorrectly set the NX bit even if the NX
+feature was not supported.  Instead, only set this bit if NX is
+actually available and enabled.  We already do very early detection of
+the NX bit to enable it in EFER, this simply extends this detection to
+the early page table mask.
 
-Fix this by not setting the channel flags to just disabled but rather
-OR'ing in the disabled flag. That way, even if the race happens, the
-channel will be scanned passively which is still (mostly) correct.
-
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Fernando Luis Vázquez Cao <fernando@oss.ntt.co.jp>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1367476850.5660.2.camel@nexus
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/reg.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/head64.c  |    3 ++-
+ arch/x86/kernel/head_64.S |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -855,7 +855,7 @@ static void handle_channel(struct wiphy
- 			return;
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -34,6 +34,7 @@
+ extern pgd_t early_level4_pgt[PTRS_PER_PGD];
+ extern pmd_t early_dynamic_pgts[EARLY_DYNAMIC_PAGE_TABLES][PTRS_PER_PMD];
+ static unsigned int __initdata next_early_pgt = 2;
++pmdval_t __initdata early_pmd_flags = __PAGE_KERNEL_LARGE & ~(_PAGE_GLOBAL | _PAGE_NX);
  
- 		REG_DBG_PRINT("Disabling freq %d MHz\n", chan->center_freq);
--		chan->flags = IEEE80211_CHAN_DISABLED;
-+		chan->flags |= IEEE80211_CHAN_DISABLED;
- 		return;
+ /* Wipe all early page tables except for the kernel symbol map */
+ static void __init reset_early_page_tables(void)
+@@ -99,7 +100,7 @@ again:
+ 			pmd_p[i] = 0;
+ 		*pud_p = (pudval_t)pmd_p - __START_KERNEL_map + phys_base + _KERNPG_TABLE;
  	}
+-	pmd = (physaddr & PMD_MASK) + (__PAGE_KERNEL_LARGE & ~_PAGE_GLOBAL);
++	pmd = (physaddr & PMD_MASK) + early_pmd_flags;
+ 	pmd_p[pmd_index(address)] = pmd;
  
+ 	return 0;
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -200,6 +200,7 @@ ENTRY(secondary_startup_64)
+ 	btl	$20,%edi		/* No Execute supported? */
+ 	jnc     1f
+ 	btsl	$_EFER_NX, %eax
++	btsq	$_PAGE_BIT_NX,early_pmd_flags(%rip)
+ 1:	wrmsr				/* Make changes effective */
+ 
+ 	/* Setup cr0 */
 
 
