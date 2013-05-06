@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758348Ab3EFXiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:38:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36663 "EHLO
+	id S1760391Ab3EFXNT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:13:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36644 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760351Ab3EFXNU (ORCPT
+	with ESMTP id S1760351Ab3EFXNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:20 -0400
+	Mon, 6 May 2013 19:13:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [ 021/104] USB: add ftdi_sio USB ID for GDM Boost V1.x
-Date: Mon,  6 May 2013 16:11:40 -0700
-Message-Id: <20130506230045.772526107@linuxfoundation.org>
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 014/104] powerpc/spufs: Initialise inode->i_ino in spufs_new_inode()
+Date: Mon,  6 May 2013 16:11:33 -0700
+Message-Id: <20130506230045.058432474@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,41 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefani Seibold <stefani@seibold.net>
+From: Michael Ellerman <michael@ellerman.id.au>
 
-commit 58f8b6c4fa5a13cb2ddb400e26e9e65766d71e38 upstream.
+commit 6747e83235caecd30b186d1282e4eba7679f81b7 upstream.
 
-This patch add a missing usb device id for the GDMBoost V1.x device
+In commit 85fe402 (fs: do not assign default i_ino in new_inode), the
+initialisation of i_ino was removed from new_inode() and pushed down
+into the callers. However spufs_new_inode() was not updated.
 
-The patch is against 3.9-rc5
+This exhibits as no files appearing in /spu, because all our dirents
+have a zero inode, which readdir() seems to dislike.
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    1 +
- 2 files changed, 2 insertions(+)
+ arch/powerpc/platforms/cell/spufs/inode.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -189,6 +189,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_THROTTLE_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GATEWAY_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_BOOST_PID) },
- 	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -74,6 +74,7 @@
- #define FTDI_OPENDCC_THROTTLE_PID	0xBFDA
- #define FTDI_OPENDCC_GATEWAY_PID	0xBFDB
- #define FTDI_OPENDCC_GBM_PID	0xBFDC
-+#define FTDI_OPENDCC_GBM_BOOST_PID	0xBFDD
+--- a/arch/powerpc/platforms/cell/spufs/inode.c
++++ b/arch/powerpc/platforms/cell/spufs/inode.c
+@@ -99,6 +99,7 @@ spufs_new_inode(struct super_block *sb,
+ 	if (!inode)
+ 		goto out;
  
- /* NZR SEM 16+ USB (http://www.nzr.de) */
- #define FTDI_NZR_SEM_USB_PID	0xC1E0	/* NZR SEM-LOG16+ */
++	inode->i_ino = get_next_ino();
+ 	inode->i_mode = mode;
+ 	inode->i_uid = current_fsuid();
+ 	inode->i_gid = current_fsgid();
 
 
