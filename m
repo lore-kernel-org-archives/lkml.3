@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582Ab3EFXOO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:14:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36975 "EHLO
+	id S933219Ab3EFXRQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:17:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414Ab3EFXOK (ORCPT
+	with ESMTP id S932554Ab3EFXON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:14:10 -0400
+	Mon, 6 May 2013 19:14:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 085/104] nfsd4: dont close read-write opens too soon
-Date: Mon,  6 May 2013 16:12:44 -0700
-Message-Id: <20130506230052.392834329@linuxfoundation.org>
+        Dros Adamson <Weston.Adamson@netapp.com>,
+        David Howells <dhowells@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 098/104] Give the OID registry file module info to avoid kernel tainting
+Date: Mon,  6 May 2013 16:12:57 -0700
+Message-Id: <20130506230053.705895175@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,40 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: David Howells <dhowells@redhat.com>
 
-commit 0c7c3e67ab91ec6caa44bdf1fc89a48012ceb0c5 upstream.
+commit 9e6879460c8edb0cd3c24c09b83d06541b5af0dc upstream.
 
-Don't actually close any opens until we don't need them at all.
+Give the OID registry file module information so that it doesn't taint the
+kernel when compiled as a module and loaded.
 
-This means being left with write access when it's not really necessary,
-but that's better than putting a file that might still have posix locks
-held on it, as we have been.
-
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-by: Dros Adamson <Weston.Adamson@netapp.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4state.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ lib/oid_registry.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -210,13 +210,7 @@ static void __nfs4_file_put_access(struc
- {
- 	if (atomic_dec_and_test(&fp->fi_access[oflag])) {
- 		nfs4_file_put_fd(fp, oflag);
--		/*
--		 * It's also safe to get rid of the RDWR open *if*
--		 * we no longer have need of the other kind of access
--		 * or if we already have the other kind of open:
--		 */
--		if (fp->fi_fds[1-oflag]
--			|| atomic_read(&fp->fi_access[1 - oflag]) == 0)
-+		if (atomic_read(&fp->fi_access[1 - oflag]) == 0)
- 			nfs4_file_put_fd(fp, O_RDWR);
- 	}
- }
+--- a/lib/oid_registry.c
++++ b/lib/oid_registry.c
+@@ -9,6 +9,7 @@
+  * 2 of the Licence, or (at your option) any later version.
+  */
+ 
++#include <linux/module.h>
+ #include <linux/export.h>
+ #include <linux/oid_registry.h>
+ #include <linux/kernel.h>
+@@ -16,6 +17,10 @@
+ #include <linux/bug.h>
+ #include "oid_registry_data.c"
+ 
++MODULE_DESCRIPTION("OID Registry");
++MODULE_AUTHOR("Red Hat, Inc.");
++MODULE_LICENSE("GPL");
++
+ /**
+  * look_up_OID - Find an OID registration for the specified data
+  * @data: Binary representation of the OID
 
 
