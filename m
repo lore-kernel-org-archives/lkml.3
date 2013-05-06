@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759648Ab3EFXDY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:03:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36445 "EHLO
+	id S1759144Ab3EFW7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:59:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36359 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933105Ab3EFW7R (ORCPT
+	with ESMTP id S933023Ab3EFW7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:59:17 -0400
+	Mon, 6 May 2013 18:59:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [ 31/46] hrtimer: Add expiry time overflow check in hrtimer_interrupt
-Date: Mon,  6 May 2013 15:58:37 -0700
-Message-Id: <20130506225823.943279698@linuxfoundation.org>
+        Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 23/46] PCI / ACPI: Dont query OSC support with all possible controls
+Date: Mon,  6 May 2013 15:58:29 -0700
+Message-Id: <20130506225823.085263466@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225820.628893970@linuxfoundation.org>
 References: <20130506225820.628893970@linuxfoundation.org>
@@ -28,82 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Prarit Bhargava <prarit@redhat.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit 8f294b5a139ee4b75e890ad5b443c93d1e558a8b upstream.
+commit 545d6e189a41c94c11f55045a771118eccc9d9eb upstream.
 
-The settimeofday01 test in the LTP testsuite effectively does
+Found problem on system that firmware that could handle pci aer.
+Firmware get error reporting after pci injecting error, before os boots.
+But after os boots, firmware can not get report anymore, even pci=noaer
+is passed.
 
-        gettimeofday(current time);
-        settimeofday(Jan 1, 1970 + 100 seconds);
-        settimeofday(current time);
+Root cause: BIOS _OSC has problem with query bit checking.
+It turns out that BIOS vendor is copying example code from ACPI Spec.
+In ACPI Spec 5.0, page 290:
 
-This test causes a stack trace to be displayed on the console during the
-setting of timeofday to Jan 1, 1970 + 100 seconds:
+	If (Not(And(CDW1,1))) // Query flag clear?
+	{	// Disable GPEs for features granted native control.
+		If (And(CTRL,0x01)) // Hot plug control granted?
+		{
+			Store(0,HPCE) // clear the hot plug SCI enable bit
+			Store(1,HPCS) // clear the hot plug SCI status bit
+		}
+	...
+	}
 
-[  131.066751] ------------[ cut here ]------------
-[  131.096448] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x135/0x140()
-[  131.104935] Hardware name: Dinar
-[  131.108150] Modules linked in: sg nfsv3 nfs_acl nfsv4 auth_rpcgss nfs dns_resolver fscache lockd sunrpc nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter ip_tables kvm_amd kvm sp5100_tco bnx2 i2c_piix4 crc32c_intel k10temp fam15h_power ghash_clmulni_intel amd64_edac_mod pcspkr serio_raw edac_mce_amd edac_core microcode xfs libcrc32c sr_mod sd_mod cdrom ata_generic crc_t10dif pata_acpi radeon i2c_algo_bit drm_kms_helper ttm drm ahci pata_atiixp libahci libata usb_storage i2c_core dm_mirror dm_region_hash dm_log dm_mod
-[  131.176784] Pid: 0, comm: swapper/28 Not tainted 3.8.0+ #6
-[  131.182248] Call Trace:
-[  131.184684]  <IRQ>  [<ffffffff810612af>] warn_slowpath_common+0x7f/0xc0
-[  131.191312]  [<ffffffff8106130a>] warn_slowpath_null+0x1a/0x20
-[  131.197131]  [<ffffffff810b9fd5>] clockevents_program_event+0x135/0x140
-[  131.203721]  [<ffffffff810bb584>] tick_program_event+0x24/0x30
-[  131.209534]  [<ffffffff81089ab1>] hrtimer_interrupt+0x131/0x230
-[  131.215437]  [<ffffffff814b9600>] ? cpufreq_p4_target+0x130/0x130
-[  131.221509]  [<ffffffff81619119>] smp_apic_timer_interrupt+0x69/0x99
-[  131.227839]  [<ffffffff8161805d>] apic_timer_interrupt+0x6d/0x80
-[  131.233816]  <EOI>  [<ffffffff81099745>] ? sched_clock_cpu+0xc5/0x120
-[  131.240267]  [<ffffffff814b9ff0>] ? cpuidle_wrap_enter+0x50/0xa0
-[  131.246252]  [<ffffffff814b9fe9>] ? cpuidle_wrap_enter+0x49/0xa0
-[  131.252238]  [<ffffffff814ba050>] cpuidle_enter_tk+0x10/0x20
-[  131.257877]  [<ffffffff814b9c89>] cpuidle_idle_call+0xa9/0x260
-[  131.263692]  [<ffffffff8101c42f>] cpu_idle+0xaf/0x120
-[  131.268727]  [<ffffffff815f8971>] start_secondary+0x255/0x257
-[  131.274449] ---[ end trace 1151a50552231615 ]---
+When Query flag is set, And(CDW1,1) will be 1, Not(1) will return 0xfffffffe.
+So it will get into code path that should be for control set only.
+BIOS acpi code should be changed to "If (LEqual(And(CDW1,1), 0)))"
 
-When we change the system time to a low value like this, the value of
-timekeeper->offs_real will be a negative value.
+Current kernel code is using _OSC query to notify firmware about support
+from OS and then use _OSC to set control bits.
+During query support, current code is using all possible controls.
+So will execute code that should be only for control set stage.
 
-It seems that the WARN occurs because an hrtimer has been started in the time
-between the releasing of the timekeeper lock and the IPI call (via a call to
-on_each_cpu) in clock_was_set() in the do_settimeofday() code.  The end result
-is that a REALTIME_CLOCK timer has been added with softexpires = expires =
-KTIME_MAX.  The hrtimer_interrupt() fires/is called and the loop at
-kernel/hrtimer.c:1289 is executed.  In this loop the code subtracts the
-clock base's offset (which was set to timekeeper->offs_real in
-do_settimeofday()) from the current hrtimer_cpu_base->expiry value (which
-was KTIME_MAX):
+That will have problem when pci=noaer or aer firmware_first is used.
+As firmware have that control set for os aer already in query support stage,
+but later will not os aer handling.
 
-	KTIME_MAX - (a negative value) = overflow
+We should avoid passing all possible controls, just use osc_control_set
+instead.
+That should workaround BIOS bugs with affected systems on the field
+as more bios vendors are copying sample code from ACPI spec.
 
-A simple check for an overflow can resolve this problem.  Using KTIME_MAX
-instead of the overflow value will result in the hrtimer function being run,
-and the reprogramming of the timer after that.
-
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-[jstultz: Tweaked commit subject]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/hrtimer.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/acpi/pci_root.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1312,6 +1312,8 @@ retry:
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -247,8 +247,8 @@ static acpi_status acpi_pci_query_osc(st
+ 		*control &= OSC_PCI_CONTROL_MASKS;
+ 		capbuf[OSC_CONTROL_TYPE] = *control | root->osc_control_set;
+ 	} else {
+-		/* Run _OSC query for all possible controls. */
+-		capbuf[OSC_CONTROL_TYPE] = OSC_PCI_CONTROL_MASKS;
++		/* Run _OSC query only with existing controls. */
++		capbuf[OSC_CONTROL_TYPE] = root->osc_control_set;
+ 	}
  
- 				expires = ktime_sub(hrtimer_get_expires(timer),
- 						    base->offset);
-+				if (expires.tv64 < 0)
-+					expires.tv64 = KTIME_MAX;
- 				if (expires.tv64 < expires_next.tv64)
- 					expires_next = expires;
- 				break;
+ 	status = acpi_pci_run_osc(root->device->handle, capbuf, &result);
 
 
