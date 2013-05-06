@@ -1,62 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab3EFP1M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 11:27:12 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:17773 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753874Ab3EFP1K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 11:27:10 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18PsXeUvW5yOocCr84uEZXO
-Date: Mon, 6 May 2013 08:27:06 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: mach-omap2/timer.c: Bug introduced while merging patch -
- ff931c82
-Message-ID: <20130506152706.GD28721@atomide.com>
-References: <79CD15C6BA57404B839C016229A409A83EC7C45D@DBDE04.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <79CD15C6BA57404B839C016229A409A83EC7C45D@DBDE04.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754845Ab3EFP2n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 11:28:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56140 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753874Ab3EFP2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 11:28:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,622,1363158000"; 
+   d="scan'208";a="332584285"
+Message-ID: <1367854116.2079.67.camel@rzhang1-mobl4>
+Subject: Re: [PATCH V2 05/20] thermal: exynos: Bifurcate exynos tmu driver
+ and configuration data
+From: Zhang Rui <rui.zhang@intel.com>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: linux-pm@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, amit.kachhap@gmail.com,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Date: Mon, 06 May 2013 23:28:36 +0800
+In-Reply-To: <1366972671-9227-6-git-send-email-amit.daniel@samsung.com>
+References: <1366972671-9227-1-git-send-email-amit.daniel@samsung.com>
+	 <1366972671-9227-6-git-send-email-amit.daniel@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Hiremath, Vaibhav <hvaibhav@ti.com> [130506 00:12]:
-> Hi,
+On Fri, 2013-04-26 at 16:07 +0530, Amit Daniel Kachhap wrote:
+> This code splits the exynos tmu driver code into SOC specific data parts.
+> This will simplify adding new SOC specific data to the same TMU controller.
 > 
-> Not sure whether this got discussed and fixed already, but Google didn't give me anything :)
-> 
-> The below commit got merged wrongly to Mainline (Changes from timer.c got missed), and 
-> due to this none of omap boards will boot.
-> 
-> 
-> From ff931c821bab6713a52b768b0cd7ee7e90713b36 Mon Sep 17 00:00:00 2001
-> From: Rajendra Nayak <rnayak@ti.com>
-> Date: Thu, 21 Mar 2013 11:04:52 +0000
-> Subject: ARM: OMAP: clocks: Delay clk inits atleast until slab is initialized
-> 
-> 
-> It seems Linux-omap tree has the fix patch for this, and it should get pushed ASAP. 
-> Below are links for Linus's mainline commit [1], the actual patch submitted to the list [2] and
-> Commit  present in Linux-omap [3].
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
-Can you please provide a proper patch for the regression since sounds
-like you already figured out what happened?
+I'm okay with all the rest patches in this patch series.
 
-Regards,
+thanks,
+rui
+> ---
+>  drivers/thermal/samsung/Makefile                |    1 +
+>  drivers/thermal/samsung/exynos_thermal_common.h |    2 +-
+>  drivers/thermal/samsung/exynos_tmu.c            |   67 +------------------
+>  drivers/thermal/samsung/exynos_tmu_data.c       |   78 +++++++++++++++++++++++
+>  drivers/thermal/samsung/exynos_tmu_data.h       |   40 ++++++++++++
+>  5 files changed, 124 insertions(+), 64 deletions(-)
+>  create mode 100644 drivers/thermal/samsung/exynos_tmu_data.c
+>  create mode 100644 drivers/thermal/samsung/exynos_tmu_data.h
+> 
+> diff --git a/drivers/thermal/samsung/Makefile b/drivers/thermal/samsung/Makefile
+> index 75e1f97..b133255 100644
+> --- a/drivers/thermal/samsung/Makefile
+> +++ b/drivers/thermal/samsung/Makefile
+> @@ -3,4 +3,5 @@
+>  #
+>  obj-$(CONFIG_EXYNOS_SOC_THERMAL)		+= exynos_soc_thermal.o
+>  exynos_soc_thermal-y				:= exynos_tmu.o
+> +exynos_soc_thermal-y				+= exynos_tmu_data.o
+>  exynos_soc_thermal-$(CONFIG_EXYNOS_COMMON)	+= exynos_thermal_common.o
+> diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
+> index 985b848..6ed9bd9 100644
+> --- a/drivers/thermal/samsung/exynos_thermal_common.h
+> +++ b/drivers/thermal/samsung/exynos_thermal_common.h
+> @@ -62,7 +62,7 @@ struct freq_clip_table {
+>  struct	thermal_trip_point_conf {
+>  	int trip_val[MAX_TRIP_COUNT];
+>  	int trip_count;
+> -	u8 trigger_falling;
+> +	unsigned char trigger_falling;
+>  };
+>  
+>  struct	thermal_cooling_conf {
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> index a02f2c9..05b5068 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -34,6 +34,7 @@
+>  #include <linux/workqueue.h>
+>  #include "exynos_thermal_common.h"
+>  #include "exynos_tmu.h"
+> +#include "exynos_tmu_data.h"
+>  
+>  /* Exynos generic registers */
+>  #define EXYNOS_TMU_REG_TRIMINFO		0x0
+> @@ -385,66 +386,6 @@ static struct thermal_sensor_conf exynos_sensor_conf = {
+>  	.write_emul_temp	= exynos_tmu_set_emulation,
+>  };
+>  
+> -#if defined(CONFIG_CPU_EXYNOS4210)
+> -static struct exynos_tmu_platform_data const exynos4210_default_tmu_data = {
+> -	.threshold = 80,
+> -	.trigger_levels[0] = 5,
+> -	.trigger_levels[1] = 20,
+> -	.trigger_levels[2] = 30,
+> -	.trigger_level0_en = 1,
+> -	.trigger_level1_en = 1,
+> -	.trigger_level2_en = 1,
+> -	.trigger_level3_en = 0,
+> -	.gain = 15,
+> -	.reference_voltage = 7,
+> -	.cal_type = TYPE_ONE_POINT_TRIMMING,
+> -	.freq_tab[0] = {
+> -		.freq_clip_max = 800 * 1000,
+> -		.temp_level = 85,
+> -	},
+> -	.freq_tab[1] = {
+> -		.freq_clip_max = 200 * 1000,
+> -		.temp_level = 100,
+> -	},
+> -	.freq_tab_count = 2,
+> -	.type = SOC_ARCH_EXYNOS4210,
+> -};
+> -#define EXYNOS4210_TMU_DRV_DATA (&exynos4210_default_tmu_data)
+> -#else
+> -#define EXYNOS4210_TMU_DRV_DATA (NULL)
+> -#endif
+> -
+> -#if defined(CONFIG_SOC_EXYNOS5250) || defined(CONFIG_SOC_EXYNOS4412)
+> -static struct exynos_tmu_platform_data const exynos_default_tmu_data = {
+> -	.threshold_falling = 10,
+> -	.trigger_levels[0] = 85,
+> -	.trigger_levels[1] = 103,
+> -	.trigger_levels[2] = 110,
+> -	.trigger_level0_en = 1,
+> -	.trigger_level1_en = 1,
+> -	.trigger_level2_en = 1,
+> -	.trigger_level3_en = 0,
+> -	.gain = 8,
+> -	.reference_voltage = 16,
+> -	.noise_cancel_mode = 4,
+> -	.cal_type = TYPE_ONE_POINT_TRIMMING,
+> -	.efuse_value = 55,
+> -	.freq_tab[0] = {
+> -		.freq_clip_max = 800 * 1000,
+> -		.temp_level = 85,
+> -	},
+> -	.freq_tab[1] = {
+> -		.freq_clip_max = 200 * 1000,
+> -		.temp_level = 103,
+> -	},
+> -	.freq_tab_count = 2,
+> -	.type = SOC_ARCH_EXYNOS,
+> -};
+> -#define EXYNOS_TMU_DRV_DATA (&exynos_default_tmu_data)
+> -#else
+> -#define EXYNOS_TMU_DRV_DATA (NULL)
+> -#endif
+> -
+>  #ifdef CONFIG_OF
+>  static const struct of_device_id exynos_tmu_match[] = {
+>  	{
+> @@ -453,11 +394,11 @@ static const struct of_device_id exynos_tmu_match[] = {
+>  	},
+>  	{
+>  		.compatible = "samsung,exynos4412-tmu",
+> -		.data = (void *)EXYNOS_TMU_DRV_DATA,
+> +		.data = (void *)EXYNOS5250_TMU_DRV_DATA,
+>  	},
+>  	{
+>  		.compatible = "samsung,exynos5250-tmu",
+> -		.data = (void *)EXYNOS_TMU_DRV_DATA,
+> +		.data = (void *)EXYNOS5250_TMU_DRV_DATA,
+>  	},
+>  	{},
+>  };
+> @@ -471,7 +412,7 @@ static struct platform_device_id exynos_tmu_driver_ids[] = {
+>  	},
+>  	{
+>  		.name		= "exynos5250-tmu",
+> -		.driver_data    = (kernel_ulong_t)EXYNOS_TMU_DRV_DATA,
+> +		.driver_data    = (kernel_ulong_t)EXYNOS5250_TMU_DRV_DATA,
+>  	},
+>  	{ },
+>  };
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+> new file mode 100644
+> index 0000000..13a60ca
+> --- /dev/null
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+> @@ -0,0 +1,78 @@
+> +/*
+> + * exynos_tmu_data.c - Samsung EXYNOS tmu data file
+> + *
+> + *  Copyright (C) 2013 Samsung Electronics
+> + *  Amit Daniel Kachhap <amit.daniel@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + *
+> + */
+> +
+> +#include "exynos_thermal_common.h"
+> +#include "exynos_tmu.h"
+> +
+> +#if defined(CONFIG_CPU_EXYNOS4210)
+> +struct exynos_tmu_platform_data const exynos4210_default_tmu_data = {
+> +	.threshold = 80,
+> +	.trigger_levels[0] = 5,
+> +	.trigger_levels[1] = 20,
+> +	.trigger_levels[2] = 30,
+> +	.trigger_level0_en = 1,
+> +	.trigger_level1_en = 1,
+> +	.trigger_level2_en = 1,
+> +	.trigger_level3_en = 0,
+> +	.gain = 15,
+> +	.reference_voltage = 7,
+> +	.cal_type = TYPE_ONE_POINT_TRIMMING,
+> +	.freq_tab[0] = {
+> +		.freq_clip_max = 800 * 1000,
+> +		.temp_level = 85,
+> +	},
+> +	.freq_tab[1] = {
+> +		.freq_clip_max = 200 * 1000,
+> +		.temp_level = 100,
+> +	},
+> +	.freq_tab_count = 2,
+> +	.type = SOC_ARCH_EXYNOS4210,
+> +};
+> +#endif
+> +
+> +#if defined(CONFIG_SOC_EXYNOS5250) || defined(CONFIG_SOC_EXYNOS4412)
+> +struct exynos_tmu_platform_data const exynos5250_default_tmu_data = {
+> +	.threshold_falling = 10,
+> +	.trigger_levels[0] = 85,
+> +	.trigger_levels[1] = 103,
+> +	.trigger_levels[2] = 110,
+> +	.trigger_level0_en = 1,
+> +	.trigger_level1_en = 1,
+> +	.trigger_level2_en = 1,
+> +	.trigger_level3_en = 0,
+> +	.gain = 8,
+> +	.reference_voltage = 16,
+> +	.noise_cancel_mode = 4,
+> +	.cal_type = TYPE_ONE_POINT_TRIMMING,
+> +	.efuse_value = 55,
+> +	.freq_tab[0] = {
+> +		.freq_clip_max = 800 * 1000,
+> +		.temp_level = 85,
+> +	},
+> +	.freq_tab[1] = {
+> +		.freq_clip_max = 200 * 1000,
+> +		.temp_level = 103,
+> +	},
+> +	.freq_tab_count = 2,
+> +	.type = SOC_ARCH_EXYNOS,
+> +};
+> +#endif
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+> new file mode 100644
+> index 0000000..c8b0501
+> --- /dev/null
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
+> @@ -0,0 +1,40 @@
+> +/*
+> + * exynos_tmu_data.h - Samsung EXYNOS tmu data header file
+> + *
+> + *  Copyright (C) 2013 Samsung Electronics
+> + *  Amit Daniel Kachhap <amit.daniel@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + *
+> + */
+> +
+> +#ifndef _LINUX_EXYNOS_TMU_DATA_H
+> +#define _LINUX_EXYNOS_TMU_DATA_H
+> +
+> +#if defined(CONFIG_CPU_EXYNOS4210)
+> +extern struct exynos_tmu_platform_data const exynos4210_default_tmu_data;
+> +#define EXYNOS4210_TMU_DRV_DATA (&exynos4210_default_tmu_data)
+> +#else
+> +#define EXYNOS4210_TMU_DRV_DATA (NULL)
+> +#endif
+> +
+> +#if defined(CONFIG_SOC_EXYNOS5250) || defined(CONFIG_SOC_EXYNOS4412)
+> +extern struct exynos_tmu_platform_data const exynos5250_default_tmu_data;
+> +#define EXYNOS5250_TMU_DRV_DATA (&exynos5250_default_tmu_data)
+> +#else
+> +#define EXYNOS5250_TMU_DRV_DATA (NULL)
+> +#endif
+> +
+> +#endif /*_LINUX_EXYNOS_TMU_DATA_H*/
 
-Tony 
- 
-> [1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/arch/arm/mach-omap2/io.c?id=ff931c821bab6713a52b768b0cd7ee7e90713b36
-> [2] https://patchwork.kernel.org/patch/2300071/
-> [3] http://git.kernel.org/cgit/linux/kernel/git/tmlind/linux-omap.git/commit/arch/arm/mach-omap2/timer.c?id=ff931c821bab6713a52b768b0cd7ee7e90713b36
+
