@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757932Ab3EFUqt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:46:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59249 "EHLO
+	id S1758593Ab3EFU4p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:56:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59280 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757867Ab3EFUqp (ORCPT
+	with ESMTP id S1757915Ab3EFUqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:45 -0400
+	Mon, 6 May 2013 16:46:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [ 070/115] hrtimer: Add expiry time overflow check in hrtimer_interrupt
-Date: Mon,  6 May 2013 13:45:06 -0700
-Message-Id: <20130506203102.741433971@linuxfoundation.org>
+        Aaron Lu <aaron.lu@intel.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 075/115] libata: acpi: make ata_ap_acpi_handle not block
+Date: Mon,  6 May 2013 13:45:11 -0700
+Message-Id: <20130506203103.251906939@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -28,82 +26,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Prarit Bhargava <prarit@redhat.com>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit 8f294b5a139ee4b75e890ad5b443c93d1e558a8b upstream.
+commit d66af4df0837f21bf267305dc5ccab2d29e24d86 upstream.
 
-The settimeofday01 test in the LTP testsuite effectively does
+Since commit 30dcf76acc, ata_ap_acpi_handle will always do a namespace
+walk, which requires acquiring an acpi namespace mutex. This made it
+impossible to be used when calling path has held a spinlock.
 
-        gettimeofday(current time);
-        settimeofday(Jan 1, 1970 + 100 seconds);
-        settimeofday(current time);
+For example, it can occur in the following code path for pata_acpi:
+ata_scsi_queuecmd (ap->lock is acquired)
+  __ata_scsi_queuecmd
+    ata_scsi_translate
+      ata_qc_issue
+        pacpi_qc_issue
+          ata_acpi_stm
+            ata_ap_acpi_handle
+              acpi_get_child
+                acpi_walk_namespace
+                  acpi_ut_acquire_mutex (acquire mutex while holding lock)
+This caused scheduling while atomic bug, as reported in bug #56781.
 
-This test causes a stack trace to be displayed on the console during the
-setting of timeofday to Jan 1, 1970 + 100 seconds:
+Actually, ata_ap_acpi_handle doesn't have to walk the namespace every
+time it is called, it can simply return the bound acpi handle on the
+corresponding SCSI host. The reason previously it is not done this way
+is, ata_ap_acpi_handle is used in the binding function
+ata_acpi_bind_host by ata_acpi_gtm when the handle is not bound to the
+SCSI host yet. Since we already have the ATA port's handle in its
+binding function, we can simply use it instead of calling
+ata_ap_acpi_handle there. So introduce a new function __ata_acpi_gtm,
+where it will receive an acpi handle param in addition to the ATA port
+which is solely used for debug statement. With this change, we can make
+ata_ap_acpi_handle simply return the bound handle for SCSI host instead
+of walking the acpi namespace now.
 
-[  131.066751] ------------[ cut here ]------------
-[  131.096448] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x135/0x140()
-[  131.104935] Hardware name: Dinar
-[  131.108150] Modules linked in: sg nfsv3 nfs_acl nfsv4 auth_rpcgss nfs dns_resolver fscache lockd sunrpc nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter ip_tables kvm_amd kvm sp5100_tco bnx2 i2c_piix4 crc32c_intel k10temp fam15h_power ghash_clmulni_intel amd64_edac_mod pcspkr serio_raw edac_mce_amd edac_core microcode xfs libcrc32c sr_mod sd_mod cdrom ata_generic crc_t10dif pata_acpi radeon i2c_algo_bit drm_kms_helper ttm drm ahci pata_atiixp libahci libata usb_storage i2c_core dm_mirror dm_region_hash dm_log dm_mod
-[  131.176784] Pid: 0, comm: swapper/28 Not tainted 3.8.0+ #6
-[  131.182248] Call Trace:
-[  131.184684]  <IRQ>  [<ffffffff810612af>] warn_slowpath_common+0x7f/0xc0
-[  131.191312]  [<ffffffff8106130a>] warn_slowpath_null+0x1a/0x20
-[  131.197131]  [<ffffffff810b9fd5>] clockevents_program_event+0x135/0x140
-[  131.203721]  [<ffffffff810bb584>] tick_program_event+0x24/0x30
-[  131.209534]  [<ffffffff81089ab1>] hrtimer_interrupt+0x131/0x230
-[  131.215437]  [<ffffffff814b9600>] ? cpufreq_p4_target+0x130/0x130
-[  131.221509]  [<ffffffff81619119>] smp_apic_timer_interrupt+0x69/0x99
-[  131.227839]  [<ffffffff8161805d>] apic_timer_interrupt+0x6d/0x80
-[  131.233816]  <EOI>  [<ffffffff81099745>] ? sched_clock_cpu+0xc5/0x120
-[  131.240267]  [<ffffffff814b9ff0>] ? cpuidle_wrap_enter+0x50/0xa0
-[  131.246252]  [<ffffffff814b9fe9>] ? cpuidle_wrap_enter+0x49/0xa0
-[  131.252238]  [<ffffffff814ba050>] cpuidle_enter_tk+0x10/0x20
-[  131.257877]  [<ffffffff814b9c89>] cpuidle_idle_call+0xa9/0x260
-[  131.263692]  [<ffffffff8101c42f>] cpu_idle+0xaf/0x120
-[  131.268727]  [<ffffffff815f8971>] start_secondary+0x255/0x257
-[  131.274449] ---[ end trace 1151a50552231615 ]---
-
-When we change the system time to a low value like this, the value of
-timekeeper->offs_real will be a negative value.
-
-It seems that the WARN occurs because an hrtimer has been started in the time
-between the releasing of the timekeeper lock and the IPI call (via a call to
-on_each_cpu) in clock_was_set() in the do_settimeofday() code.  The end result
-is that a REALTIME_CLOCK timer has been added with softexpires = expires =
-KTIME_MAX.  The hrtimer_interrupt() fires/is called and the loop at
-kernel/hrtimer.c:1289 is executed.  In this loop the code subtracts the
-clock base's offset (which was set to timekeeper->offs_real in
-do_settimeofday()) from the current hrtimer_cpu_base->expiry value (which
-was KTIME_MAX):
-
-	KTIME_MAX - (a negative value) = overflow
-
-A simple check for an overflow can resolve this problem.  Using KTIME_MAX
-instead of the overflow value will result in the hrtimer function being run,
-and the reprogramming of the timer after that.
-
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-[jstultz: Tweaked commit subject]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=56781
+Reported-and-tested-by: <kenzopl@o2.pl>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/hrtimer.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/ata/libata-acpi.c |   45 +++++++++++++++++++++++++++------------------
+ 1 file changed, 27 insertions(+), 18 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1314,6 +1314,8 @@ retry:
+--- a/drivers/ata/libata-acpi.c
++++ b/drivers/ata/libata-acpi.c
+@@ -61,7 +61,8 @@ acpi_handle ata_ap_acpi_handle(struct at
+ 	if (ap->flags & ATA_FLAG_ACPI_SATA)
+ 		return NULL;
  
- 				expires = ktime_sub(hrtimer_get_expires(timer),
- 						    base->offset);
-+				if (expires.tv64 < 0)
-+					expires.tv64 = KTIME_MAX;
- 				if (expires.tv64 < expires_next.tv64)
- 					expires_next = expires;
- 				break;
+-	return acpi_get_child(DEVICE_ACPI_HANDLE(ap->host->dev), ap->port_no);
++	return ap->scsi_host ?
++		DEVICE_ACPI_HANDLE(&ap->scsi_host->shost_gendev) : NULL;
+ }
+ EXPORT_SYMBOL(ata_ap_acpi_handle);
+ 
+@@ -240,28 +241,15 @@ void ata_acpi_dissociate(struct ata_host
+ 	}
+ }
+ 
+-/**
+- * ata_acpi_gtm - execute _GTM
+- * @ap: target ATA port
+- * @gtm: out parameter for _GTM result
+- *
+- * Evaluate _GTM and store the result in @gtm.
+- *
+- * LOCKING:
+- * EH context.
+- *
+- * RETURNS:
+- * 0 on success, -ENOENT if _GTM doesn't exist, -errno on failure.
+- */
+-int ata_acpi_gtm(struct ata_port *ap, struct ata_acpi_gtm *gtm)
++static int __ata_acpi_gtm(struct ata_port *ap, acpi_handle handle,
++			  struct ata_acpi_gtm *gtm)
+ {
+ 	struct acpi_buffer output = { .length = ACPI_ALLOCATE_BUFFER };
+ 	union acpi_object *out_obj;
+ 	acpi_status status;
+ 	int rc = 0;
+ 
+-	status = acpi_evaluate_object(ata_ap_acpi_handle(ap), "_GTM", NULL,
+-				      &output);
++	status = acpi_evaluate_object(handle, "_GTM", NULL, &output);
+ 
+ 	rc = -ENOENT;
+ 	if (status == AE_NOT_FOUND)
+@@ -295,6 +283,27 @@ int ata_acpi_gtm(struct ata_port *ap, st
+ 	return rc;
+ }
+ 
++/**
++ * ata_acpi_gtm - execute _GTM
++ * @ap: target ATA port
++ * @gtm: out parameter for _GTM result
++ *
++ * Evaluate _GTM and store the result in @gtm.
++ *
++ * LOCKING:
++ * EH context.
++ *
++ * RETURNS:
++ * 0 on success, -ENOENT if _GTM doesn't exist, -errno on failure.
++ */
++int ata_acpi_gtm(struct ata_port *ap, struct ata_acpi_gtm *gtm)
++{
++	if (ata_ap_acpi_handle(ap))
++		return __ata_acpi_gtm(ap, ata_ap_acpi_handle(ap), gtm);
++	else
++		return -EINVAL;
++}
++
+ EXPORT_SYMBOL_GPL(ata_acpi_gtm);
+ 
+ /**
+@@ -1080,7 +1089,7 @@ static int ata_acpi_bind_host(struct ata
+ 	if (!*handle)
+ 		return -ENODEV;
+ 
+-	if (ata_acpi_gtm(ap, &ap->__acpi_init_gtm) == 0)
++	if (__ata_acpi_gtm(ap, *handle, &ap->__acpi_init_gtm) == 0)
+ 		ap->pflags |= ATA_PFLAG_INIT_GTM_VALID;
+ 
+ 	return 0;
 
 
