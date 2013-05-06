@@ -1,148 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab3EFOcV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 10:32:21 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17025 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab3EFOcS (ORCPT
+	id S1753714Ab3EFOde (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 10:33:34 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:50888 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab3EFOdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 10:32:18 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 06 May 2013 07:32:03 -0700
-Message-ID: <5187BDAF.2040303@nvidia.com>
-Date: Mon, 6 May 2013 19:56:55 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 6 May 2013 10:33:31 -0400
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "cw00.choi@samsung.com" <cw00.choi@samsung.com>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "ruchika@ti.com" <ruchika@ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH v4] extcon: Palmas Extcon Driver
-References: <1362662506-14823-4-git-send-email-kishon@ti.com> <1367846225-15685-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1367846225-15685-1-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130506085547.GC13861@dyad.programming.kicks-ass.net>
+References: <1367615050-3894-1-git-send-email-ccross@android.com>
+	<1367615050-3894-2-git-send-email-ccross@android.com>
+	<20130504130440.GC13770@amd.pavel.ucw.cz>
+	<CAMbhsRScr+3Zk5Bi6390bGRbtE4oh2H-mHrGHS0wew5hdkivUg@mail.gmail.com>
+	<20130504225715.GB24276@amd.pavel.ucw.cz>
+	<CAMbhsRS_cF7kF-QZ9BMBUS3ytU0ukRCbC3D549HW_XOsQbEZhg@mail.gmail.com>
+	<20130505000528.GA25454@amd.pavel.ucw.cz>
+	<20130505091844.GC22239@gmail.com>
+	<20130506085547.GC13861@dyad.programming.kicks-ass.net>
+Date: Mon, 6 May 2013 07:33:28 -0700
+X-Google-Sender-Auth: 87jDWLB4NWHEiAFE8jZbat1GZIY
+Message-ID: <CA+55aFzVNwCJhvp4f0EcHK3Vk1ZVKY0fAeu-6FdjhCFiafTAPQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] lockdep: check that no locks held at freeze time
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        Colin Cross <ccross@android.com>, Andrew Morton <akpm@osdl.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ingo Molnar <mingo@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Ben Chan <benchan@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 06 May 2013 06:47 PM, Kishon Vijay Abraham I wrote:
-> +
-> +static irqreturn_t palmas_vbus_wakeup_irq(int irq, void *_palmas_usb)
-
-Can we name the function to palams_vbus_irq_handler() for better 
-understanding? Reserve the wakeup word for the suspend-wakeups.
-
-
-> +
-> +
-> +static irqreturn_t palmas_id_wakeup_irq(int irq, void *_palmas_usb)
-
-Same here for better name.
-
-
-> +
-> +static void palmas_set_vbus_work(struct work_struct *data)
-> +{
-> +       int ret;
-> +       struct palmas_usb *palmas_usb = container_of(data, struct palmas_usb,
-> +                                                               set_vbus_work);
-> +
-> +       if (IS_ERR_OR_NULL(palmas_usb->vbus_reg)) {
-> +               dev_err(palmas_usb->dev, "invalid regulator\n");
-> +               return;
-> +       }
-
-This error will keep coming if the vbus is not require as workqueue get 
-scheduled always. I think we should remove it.
-
-
-> +
-
-> +static void palmas_dt_to_pdata(struct device_node *node,
-> +               struct palmas_usb_platform_data *pdata)
-> +{
-> +       pdata->no_control_vbus = of_property_read_bool(node,
-> +                                       "ti,no_control_vbus");
-
-
-Can we change the variable names to enable_control_bus and logic 
-accordingly as it looks more appropriate and easy to understand?
-
-
-> +
-> +       palmas_usb->irq1 = regmap_irq_get_virq(palmas->irq_data,
-> +                                               PALMAS_ID_OTG_IRQ);
-> +       palmas_usb->irq2 = regmap_irq_get_virq(palmas->irq_data,
-> +                                               PALMAS_ID_IRQ);
-> +       palmas_usb->irq3 = regmap_irq_get_virq(palmas->irq_data,
-> +                                               PALMAS_VBUS_OTG_IRQ);
-> +       palmas_usb->irq4 = regmap_irq_get_virq(palmas->irq_data,
-> +                                               PALMAS_VBUS_IRQ);
-> +
-
-Better to name irq1, irq2 in more logical names for easy understanding.
-
-
-> +
-> +       if (device_create_file(&pdev->dev, &dev_attr_vbus))
-> +               dev_warn(&pdev->dev, "could not create sysfs file\n");
-> +
-> +       palmas_usb->edev.name = "palmas_usb";
-> +       palmas_usb->edev.supported_cable = palmas_extcon_cable;
-> +       palmas_usb->edev.mutually_exclusive = mutually_exclusive;
-> +
-> +       ret = extcon_dev_register(&palmas_usb->edev, palmas_usb->dev);
-> +       if (ret) {
-> +               dev_err(&pdev->dev, "failed to register extcon device\n");
-> +               return ret;
-
-It need to destroy sysfs also.
-
-> +       }
-> +
-> +       /* init spinlock for workqueue */
-> +       spin_lock_init(&palmas_usb->lock);
-
-It is already done above.
-
-> +
-> +       INIT_WORK(&palmas_usb->set_vbus_work, palmas_set_vbus_work);
-
-Better to create the workqueu when control_vbus is require.
-
-
-> +
-> +
-> diff --git a/include/linux/extcon/extcon_palmas.h b/include/linux/extcon/extcon_palmas.h
-> new file mode 100644
-> index 0000000..a5119c9
-> --- /dev/null
-> +++ b/include/linux/extcon/extcon_palmas.h
-
-I think it can be use palama.h only. No need to have one more header for 
-this.
-
-> @@ -0,0 +1,26 @@
+On Mon, May 6, 2013 at 1:55 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 >
->
-> -       u8 linkstat;
-> +       int mailboxstat;
-Do we really require mailboxstat?
+> Doesn't i386 have all the funny per-cpu stuff too? So the only reason it still
+> does the fugly stack based thing is because nobody could be arsed to do the
+> work of converting it.
 
+Umm. That "fugly stack-based" thing is better than the per-cpu crap.
 
+The percpu stuff implies a memory load. The stack based thing gets
+thread_info with pure register accesses. Much better.
 
+For "current()" the per-cpu thing may be better, but if you actually
+need the thread-info (not the case here, but in other places), the
+stack masking is superior when it works (ie when you don't have
+multi-stack issues due to irq's etc)
+
+                Linus
