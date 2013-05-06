@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab3EFGXi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 02:23:38 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:45298 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387Ab3EFGXh (ORCPT
+	id S1752833Ab3EFGcw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 02:32:52 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:57236 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117Ab3EFGcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 02:23:37 -0400
-Message-ID: <51872D7F.30909@linux.vnet.ibm.com>
-Date: Mon, 06 May 2013 09:41:43 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Mon, 6 May 2013 02:32:51 -0400
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
-        wangyun@linux.vnet.ibm.com
-Subject: Re: [PATCH v5 2/7] sched: remove SMP cover for runnable variables
- in cfs_rq
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-3-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1367804711-30308-3-git-send-email-alex.shi@intel.com>
+In-Reply-To: <0000013e6b90e65e-e0e184d9-7da5-4873-9572-3b40958552e2-000000@email.amazonses.com>
+References: <0000013e5b56d067-7982dfa6-08a2-4c48-ad77-6888b5114c5f-000000@email.amazonses.com>
+	<201305010101.CGB86424.JFQOtSFOVOLFHM@I-love.SAKURA.ne.jp>
+	<0000013e5bfc7c4d-54fa9464-dccd-4157-b4a5-22594261eaf3-000000@email.amazonses.com>
+	<201305012114.AED78178.tFSHFQOOJLMOFV@I-love.SAKURA.ne.jp>
+	<0000013e6705da99-094923c6-e239-43d2-8f0c-5e661656a27c-000000@email.amazonses.com>
+	<201305031726.BJG78631.tQSOVOLHJFMFFO@I-love.SAKURA.ne.jp>
+	<0000013e6b90e65e-e0e184d9-7da5-4873-9572-3b40958552e2-000000@email.amazonses.com>
+Date: Mon, 6 May 2013 09:32:50 +0300
+X-Google-Sender-Auth: TEM39bcay__uVD45MVBy2tLVSvE
+Message-ID: <CAOJsxLF2ND+x0Du=d7jUKZv+ggYJpbRZaZTbLazfW5qagGTFQA@mail.gmail.com>
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+From: Pekka Enberg <penberg@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Glauber Costa <glommer@parallels.com>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050606-6102-0000-0000-000003740A4D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+On Fri, May 3, 2013 at 9:04 PM, Christoph Lameter <cl@linux.com> wrote:
+> Enabling various debugging options increases the size of structures and
+> the subslab handling in SLABs kmem_cache_create will start to fail.
+>
+>
+> Here is a fix for that:
+>
+> Subject: Fix bootstrap creation of kmalloc caches
+>
+> For SLAB the kmalloc caches must be created in ascending sizes
+> in order for the OFF_SLAB sub-slab cache to work properly.
+>
+> Create the non power of two caches immediately after the prior power
+> of two kmalloc cache. Do not create the non power of two caches
+> before all other caches.
+>
+> Signed-off-by: Christoph Lamete <cl@linux.com>
 
-You might want to do the below for struct sched_entity also?
-AFAIK,struct sched_entity has struct sched_avg under CONFIG_SMP.
+This doesn't seem to apply against slab/next branch. What tree did you
+use to generate the patch?
 
-Regards
-Preeti U Murthy
-
-On 05/06/2013 07:15 AM, Alex Shi wrote:
-> The following variables were covered under CONFIG_SMP in struct cfs_rq.
-> but similar runnable variables work for UP in struct rq and task_group.
-> like rq->avg, task_group->load_avg.
-> So move them out, they also can work with UP.
-> 
->          u64 runnable_load_avg, blocked_load_avg;
->          atomic64_t decay_counter, removed_load;
->          u64 last_decay;
-> 
->          u32 tg_runnable_contrib;
->          u64 tg_load_contrib;
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/sched.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 7f36024f..1a02b90 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -226,7 +226,6 @@ struct cfs_rq {
->  	unsigned int nr_spread_over;
->  #endif
-> 
-> -#ifdef CONFIG_SMP
->  	/*
->  	 * CFS Load tracking
->  	 * Under CFS, load is tracked on a per-entity basis and aggregated up.
-> @@ -242,6 +241,7 @@ struct cfs_rq {
->  	u64 tg_load_contrib;
->  #endif /* CONFIG_FAIR_GROUP_SCHED */
-> 
-> +#ifdef CONFIG_SMP
->  	/*
->  	 *   h_load = weight * f(tg)
->  	 *
-> 
-
+                        Pekka
