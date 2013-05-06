@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759263Ab3EFW4v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:56:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36023 "EHLO
+	id S1759822Ab3EGAGm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:06:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36044 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759200Ab3EFW4r (ORCPT
+	with ESMTP id S1759248Ab3EFW4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:56:47 -0400
+	Mon, 6 May 2013 18:56:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [ 03/63] ARM: at91: Fix typo in restart code panic message
-Date: Mon,  6 May 2013 15:55:41 -0700
-Message-Id: <20130506225315.635701413@linuxfoundation.org>
+        Ben Jencks <ben@bjencks.net>
+Subject: [ 08/63] usb/misc/appledisplay: Add 24" LED Cinema display
+Date: Mon,  6 May 2013 15:55:46 -0700
+Message-Id: <20130506225316.990192656@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -28,29 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+From: Ben Jencks <ben@bjencks.net>
 
-commit e7619459d47a673af3433208a42f583af920e9db upstream.
+commit e7d3b6e22c871ba36d052ca99bc8ceca4d546a60 upstream.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Add the Apple 24" LED Cinema display to the supported devices.
+
+Signed-off-by: Ben Jencks <ben@bjencks.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-at91/setup.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/misc/appledisplay.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -326,7 +326,7 @@ static void at91_dt_rstc(void)
+--- a/drivers/usb/misc/appledisplay.c
++++ b/drivers/usb/misc/appledisplay.c
+@@ -63,6 +63,7 @@ static const struct usb_device_id appled
+ 	{ APPLEDISPLAY_DEVICE(0x9219) },
+ 	{ APPLEDISPLAY_DEVICE(0x921c) },
+ 	{ APPLEDISPLAY_DEVICE(0x921d) },
++	{ APPLEDISPLAY_DEVICE(0x9236) },
  
- 	of_id = of_match_node(rstc_ids, np);
- 	if (!of_id)
--		panic("AT91: rtsc no restart function availlable\n");
-+		panic("AT91: rtsc no restart function available\n");
- 
- 	arm_pm_restart = of_id->data;
- 
+ 	/* Terminating entry */
+ 	{ }
 
 
