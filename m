@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab3EFTaW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 15:30:22 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:46030 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754882Ab3EFTaU (ORCPT
+	id S1756062Ab3EFTdA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 15:33:00 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:33781 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755232Ab3EFTc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 15:30:20 -0400
+	Mon, 6 May 2013 15:32:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130506190115.GB800@mtj.dyndns.org>
-References: <1367615050-3894-1-git-send-email-ccross@android.com>
-	<1367615050-3894-2-git-send-email-ccross@android.com>
-	<20130506190115.GB800@mtj.dyndns.org>
-Date: Mon, 6 May 2013 12:30:19 -0700
-X-Google-Sender-Auth: wkfC4fOc8q0WCqZCQTIixu44dB0
-Message-ID: <CAMbhsRRcfpXBGAPThjrmB_judgn85TioR_6A6qwh_fBQCent7A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] lockdep: check that no locks held at freeze time
-From: Colin Cross <ccross@android.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Chan <benchan@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130506153517.GA3501@linux.vnet.ibm.com>
+References: <20130505110351.GA4768@gmail.com>
+	<CA+55aFzPHkCH7CVZ4tkaF91+=GLZAxxncTq0J9d6AKpSPqovZw@mail.gmail.com>
+	<20130505212511.GC3659@linux.vnet.ibm.com>
+	<20130506092537.GA8879@gmail.com>
+	<20130506153517.GA3501@linux.vnet.ibm.com>
+Date: Mon, 6 May 2013 12:32:58 -0700
+X-Google-Sender-Auth: da_ERBeZvM-JjzJsYfdkrbdxvc4
+Message-ID: <CA+55aFxYRDZvisB7iZ5a-bcp5_2pkvcC9Opk6=yJtjfK57EWTw@mail.gmail.com>
+Subject: Re: [GIT PULL, RFC] Full dynticks, CONFIG_NO_HZ_FULL feature
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Fr?d?ric Weisbecker" <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 6, 2013 at 12:01 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Fri, May 03, 2013 at 02:04:10PM -0700, Colin Cross wrote:
->> From: Mandeep Singh Baines <msb@chromium.org>
+On Mon, May 6, 2013 at 8:35 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
 >>
->> We shouldn't try_to_freeze if locks are held.  Holding a lock can cause a
->> deadlock if the lock is later acquired in the suspend or hibernate path
->> (e.g.  by dpm).  Holding a lock can also cause a deadlock in the case of
->> cgroup_freezer if a lock is held inside a frozen cgroup that is later
->> acquired by a process outside that group.
->>
->> History:
->> This patch was originally applied as 6aa9707099c and reverted in
->> dbf520a9d7d4 because NFS was freezing with locks held.  It was
->> deemed better to keep the bad freeze point in NFS to allow laptops
->> to suspend consistently.  The previous patch in this series converts
->> NFS to call _unsafe versions of the freezable helpers so that
->> lockdep doesn't complain about them until a more correct fix
->> can be applied.
->
-> I don't care about %current change, especially given that it's a debug
-> interface but that really should be a separate patch, so please split
-> it out if you want it (and I think we want it).
+>> I think Linus might have referred to my 'future plans' entry:
 
-The current change was requested by akpm and was part of the original
-patch.  Is it really worth confusing the history of this patch even
-more, applying it the first time, reverting it, and then applying it
-again in two parts?
+Indeed. I feel that HPC is entirely irrelevant to anybody,
+*especially* HPC benchmarks. In real life, even HPC doesn't tend to
+have the nice behavior their much-touted benchmarks have.
+
+So as long as the NOHZ is for HPC-style loads, then quite frankly, I
+don't feel it is worth it. The _only_ thing that makes it worth it is
+that "future plans" part where it would actually help real loads.
+
+>>
+>> Interesting that HZ=1000 caused 8% overhead there. On a regular x86 server
+>> PC I've measured the HZ=1000 overhead to pure user-space execution to be
+>> around 1% (sometimes a bit less, sometimes a bit more).
+>>
+>> But even 1% is worth it.
+>
+> I believe that the difference is tick skew
+
+Quite possibly it is also virtualization.
+
+The VM people are the one who complain the loudest about how certain
+things make their performance go down the toilet. And interrupts tend
+to be high on that list, and unless you have hardware support for
+virtual timer interrupts I can easily see a factor of four cost or
+more.
+
+And the VM people then flail around wildly to always blame everybody
+else. *Anybody* else than the VM overhead itself.
+
+It also depends a lot on architecture. The ia64 people had much bigger
+problems with the timer interrupt than x86 ever did. Again, they saw
+this mainly on the HPC benchmarks, because the benchmarks were
+carefully tuned to have huge-page support and were doing largely
+irrelevant things like big LINPACK runs, and the timer irq ended up
+blowing their carefully tuned caches and TLB's out.
+
+Never mind that nobody sane ever *cared*. Afaik, no real HPC load has
+anything like that behavior, much less anything else. But they had
+numbers to prove how bad it was, and it was a load with very stable
+numbers.
+
+Combine the two (bad HPC benchmarks and VM), and you can make an
+argument for just about anything. And people have.
+
+I am personally less than impressed with some of the benchmarks I've
+seen, if it wasn't clear.
+
+            Linus
