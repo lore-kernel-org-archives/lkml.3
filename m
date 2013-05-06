@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab3EFPo1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 11:44:27 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57455 "EHLO mail.skyhub.de"
+	id S1755459Ab3EFPpt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 11:45:49 -0400
+Received: from muin.pair.com ([209.68.1.55]:56155 "EHLO muin.pair.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755188Ab3EFPo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 11:44:26 -0400
-Date: Mon, 6 May 2013 17:49:03 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Wengmeiling <wengmeiling.weng@huawei.com>
-Cc: Libo Chen <libo.chen@huawei.com>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: bcdedcc1afd6 breaks search in menuconfig
-Message-ID: <20130506154903.GD22041@pd.tnic>
+	id S1753830Ab3EFPps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 11:45:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1367444087-18336-1-git-send-email-mark.langsdorf@calxeda.com>
+References: <1367444087-18336-1-git-send-email-mark.langsdorf@calxeda.com>
+Date: Mon, 6 May 2013 10:45:45 -0500
+Message-ID: <CAOZdJXWBQGjs_eLJ_jdrcp5DYaPgFr50_ZF-eCHzPPMvHYgD-Q@mail.gmail.com>
+Subject: Re: [PATCH] ata: increase retry count but shorten duration for
+ Calxeda controller
+From: Timur Tabi <timur@tabi.org>
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I do
+On Wed, May 1, 2013 at 4:34 PM, Mark Langsdorf
+<mark.langsdorf@calxeda.com> wrote:
+>
+> -       const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
+> +       unsigned long timing[] = { 5, 100, 500};
 
-make menuconfig
 
-then press '/' in order to search for a symbol, and I type 'EFI', for
-example, and press enter, I get:
+Why are you dropping the 'const'?
 
- │  Enter CONFIG_ (sub)string to search for (with or without "CONFIG_")    │  
- │ ┌─────────────────────────────────────────────────────────────────────┐ │  
- │ │EFImake[1]: *** [menuconfig] Segmentation fault                      │ │  
- │ └───────────────────────────────────────────────make: *** [menuconfig] Error 2
+Assuming it works, this should be more efficient:
 
-and the terminal is left in an inconsistent state which I need to
-'reset'. But, more importantly, the search is b0rked now.
-
-Reverting the above commit fixes the issue.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+static const unsigned long timing[] = {5, 100, 500};
