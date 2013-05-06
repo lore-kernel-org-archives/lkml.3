@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab3EFOzm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 10:55:42 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:43807 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865Ab3EFOzl (ORCPT
+	id S1754582Ab3EFO6G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 10:58:06 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:49789 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567Ab3EFO6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 10:55:41 -0400
-X-IronPort-AV: E=Sophos;i="4.87,622,1363158000"; 
-   d="scan'208";a="44491540"
-Message-ID: <5187C46B.5070309@codeaurora.org>
-Date: Mon, 06 May 2013 10:55:39 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Marc Zyngier <marc.zyngier@arm.com>,
+	Mon, 6 May 2013 10:58:05 -0400
+X-IronPort-AV: E=Sophos;i="4.87,622,1363132800"; 
+   d="scan'208";a="22393948"
+Date: Mon, 6 May 2013 15:57:53 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Ian Campbell <Ian.Campbell@citrix.com>, Arnd Bergmann <arnd@arndb.de>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH 1/3] arm_arch_timer: introduce arch_timer_stolen_ticks
-References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com> <1367436460-10183-1-git-send-email-stefano.stabellini@eu.citrix.com> <51817CBE.4050003@codeaurora.org> <1367482772.21869.26.camel@zakaz.uk.xensource.com> <5182DBA9.9080609@codeaurora.org> <alpine.DEB.2.02.1305031130210.5398@kaball.uk.xensource.com> <5183976A.6000703@arm.com> <alpine.DEB.2.02.1305051745390.4756@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1305051745390.4756@kaball.uk.xensource.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [PATCH 4/4] xen/spinlock: Fix check from greater than to be also
+ be greater or equal to.
+In-Reply-To: <1367845498-14290-5-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1305061557440.4756@kaball.uk.xensource.com>
+References: <1367845498-14290-1-git-send-email-konrad.wilk@oracle.com> <1367845498-14290-5-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2013 12:47 PM, Stefano Stabellini wrote:
-> On Fri, 3 May 2013, Marc Zyngier wrote:
->> On 03/05/13 11:43, Stefano Stabellini wrote:
->>> On Thu, 2 May 2013, Christopher Covington wrote:
->>>>> So the virtual timer should appear to have been running even while time
->>>>> is being stolen and therefore stolen time needs to be accounted via some
->>>>> other means.
->>>>
->>>> Something that's not currently obvious to me is that given that the stolen
->>>> cycle accounting should be done, what makes the architected timer interrupt
->>>> handler the ideal place to do it?
->>>
->>> That is a good question and I would appreciate suggestions to improve
->>> the patch.
->>>
->>> Given that Xen x86 and ia64 does stolen time accounting from the timer
->>> interrupt handler:
->>>
->>> arch/x86/xen/time.c:xen_timer_interrupt
->>> arch/ia64/kernel/time.c:timer_interrupt
->>>
->>> and given that the arch_timer is the only timer used by Xen on ARM and
->>> that it includes a virt_timer that is made on purpose to be used by
->>> virtual machines, I thought that it might be a good place for it.
->>>
->>> I also thought that doing it this way, KVM should be able to reuse the
->>> same hook.
->>
->> Indeed. I just need to understand how time stealing works there ;-).
->>
->> Now, KVM is not necessarily limited to arch_timers, and we've run KVM
->> using a QEMU-provided timer in the past. Can you think of a more generic
->> location for this hook? Possibly something that would satisfy the
->> requirements of other architectures while we're at it?
+On Mon, 6 May 2013, Konrad Rzeszutek Wilk wrote:
+> During review of git commit cb9c6f15f318aa3aeb62fe525aa5c6dcf6eee159
+> ("xen/spinlock:  Check against default value of -1 for IRQ line.")
+> Stefano pointed out a bug in the patch. Unfortunatly due to vacation
+> timing the fix was not applied and this patch fixes it up.
 > 
-> Probably the best option would be to reuse
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+
+>  arch/x86/xen/spinlock.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> kernel/sched/cputime.c:steal_account_process_tick
+> diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+> index 8b54603..3002ec1 100644
+> --- a/arch/x86/xen/spinlock.c
+> +++ b/arch/x86/xen/spinlock.c
+> @@ -364,7 +364,7 @@ void __cpuinit xen_init_lock_cpu(int cpu)
+>  	int irq;
+>  	const char *name;
+>  
+> -	WARN(per_cpu(lock_kicker_irq, cpu) > 0, "spinlock on CPU%d exists on IRQ%d!\n",
+> +	WARN(per_cpu(lock_kicker_irq, cpu) >= 0, "spinlock on CPU%d exists on IRQ%d!\n",
+>  	     cpu, per_cpu(lock_kicker_irq, cpu));
+>  
+>  	/*
+> -- 
+> 1.8.1.4
 > 
-> but that also means introducing CONFIG_PARAVIRT on arm.
-> I am up for that, what do you think?
-
-That sounds like a good move to me.
-
-Christopher
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
