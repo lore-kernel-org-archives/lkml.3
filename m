@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757568Ab3EFXNe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:13:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36668 "EHLO
+	id S933055Ab3EFXOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:14:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36998 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760407Ab3EFXNV (ORCPT
+	with ESMTP id S932414Ab3EFXOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:21 -0400
+	Mon, 6 May 2013 19:14:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adrian Thomasset <adrian.thomasset@st.com>
-Subject: [ 023/104] USB: ftdi_sio: enable two UART ports on ST Microconnect Lite
-Date: Mon,  6 May 2013 16:11:42 -0700
-Message-Id: <20130506230045.963645374@linuxfoundation.org>
+        Liu Chuansheng <chuansheng.liu@intel.com>, Li Fei <fei.li@intel.com>,
+        Ingo Molnar <mingo@kernel.org>, tomoki.sekiyama.qu@hitachi.com,
+        joe@perches.com
+Subject: [ 100/104] x86: Eliminate irq_mis_count counted in arch_irq_stat
+Date: Mon,  6 May 2013 16:12:59 -0700
+Message-Id: <20130506230053.902219326@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,56 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adrian Thomasset <adrian.thomasset@st.com>
+From: Li Fei <fei.li@intel.com>
 
-commit 71d9a2b95fc9c9474d46d764336efd7a5a805555 upstream.
+commit f7b0e1055574ce06ab53391263b4e205bf38daf3 upstream.
 
-The FT4232H used in the ST Micro Connect Lite has four hi-speed UART ports.
-The first two ports are reserved for the JTAG interface.
+With the current implementation, kstat_cpu(cpu).irqs_sum is also
+increased in case of irq_mis_count increment.
 
-We enable by default ports 2 and 3 as UARTs (where port 2 is a
-conventional RS-232 UART)
+So there is no need to count irq_mis_count in arch_irq_stat,
+otherwise irq_mis_count will be counted twice in the sum of
+/proc/stat.
 
-Signed-off-by: Adrian Thomasset <adrian.thomasset@st.com>
+Reported-by: Liu Chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Li Fei <fei.li@intel.com>
+Acked-by: Liu Chuansheng <chuansheng.liu@intel.com>
+Cc: tomoki.sekiyama.qu@hitachi.com
+Cc: joe@perches.com
+Link: http://lkml.kernel.org/r/1366980611.32469.7.camel@fli24-HP-Compaq-8100-Elite-CMT-PC
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c |   18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ arch/x86/kernel/irq.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1795,20 +1795,24 @@ static int ftdi_8u2232c_probe(struct usb
- }
- 
- /*
-- * First and second port on STMCLiteadaptors is reserved for JTAG interface
-- * and the forth port for pio
-+ * First two ports on JTAG adaptors using an FT4232 such as STMicroelectronics's
-+ * ST Micro Connect Lite are reserved for JTAG or other non-UART interfaces and
-+ * can be accessed from userspace.
-+ * The next two ports are enabled as UARTs by default, where port 2 is
-+ * a conventional RS-232 UART.
-  */
- static int ftdi_stmclite_probe(struct usb_serial *serial)
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -165,10 +165,6 @@ u64 arch_irq_stat_cpu(unsigned int cpu)
+ u64 arch_irq_stat(void)
  {
- 	struct usb_device *udev = serial->dev;
- 	struct usb_interface *interface = serial->interface;
- 
--	if (interface == udev->actconfig->interface[2])
--		return 0;
-+	if (interface == udev->actconfig->interface[0] ||
-+	    interface == udev->actconfig->interface[1]) {
-+		dev_info(&udev->dev, "Ignoring serial port reserved for JTAG\n");
-+		return -ENODEV;
-+	}
- 
--	dev_info(&udev->dev, "Ignoring serial port reserved for JTAG\n");
+ 	u64 sum = atomic_read(&irq_err_count);
 -
--	return -ENODEV;
-+	return 0;
+-#ifdef CONFIG_X86_IO_APIC
+-	sum += atomic_read(&irq_mis_count);
+-#endif
+ 	return sum;
  }
  
- /*
 
 
