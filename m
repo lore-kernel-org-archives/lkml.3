@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758884Ab3EFVXB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:23:01 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:40721 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757792Ab3EFVW6 (ORCPT
+	id S1758098Ab3EFVYw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:24:52 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59865 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756536Ab3EFVYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 17:22:58 -0400
+	Mon, 6 May 2013 17:24:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pavel Machek <pavel@denx.de>, tglx@linutronix.de
+Subject: Re: dw_apb_timer_of.c: remove parts that were picoxcell-specific
+Date: Mon, 6 May 2013 23:24:16 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Jamie Iles <jamie@jamieiles.com>, dinguyen@altera.com, wd@denx.de,
+        linux-arm-kernel@lists.infradead.org, olof@lixom.net,
+        kernel list <linux-kernel@vger.kernel.org>, john.stultz@linaro.org
+References: <20130426121433.GA16249@amd.pavel.ucw.cz> <201305061545.22587.arnd@arndb.de> <20130506155304.GA6645@amd.pavel.ucw.cz>
+In-Reply-To: <20130506155304.GA6645@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-In-Reply-To: <d6e5e371e464b7de1115a00f02b5b834315cd986.1367621039.git.luto@amacapital.net>
-References: <cover.1367621038.git.luto@amacapital.net> <d6e5e371e464b7de1115a00f02b5b834315cd986.1367621039.git.luto@amacapital.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 6 May 2013 14:22:37 -0700
-Message-ID: <CALCETrVe=JSPB=x79e1fAK=DrMgo7_Liagihib9quJDJ0N670Q@mail.gmail.com>
-Subject: Re: [PATCH 3/7] drm: Update drm_addmap and drm_mmap to use PAT WC
- instead of MTRRs
-To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-fbdev@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305062324.17080.arnd@arndb.de>
+X-Provags-ID: V02:K0:A1H+Le555DIjks/htytO+qdpbfiuzvVCu0r3uVMOTnE
+ Rd2yLoDk9t63XIk3u6JtFC0EIy6s4mVH+hLJ0Z3IFGD1DrdHaN
+ HxZ0vdPwXvttuHceH1HSFlrE8ITp/yYVrzfuEfN+sYN/3YgQdX
+ K8JMMIUXrHa2+eR26RwHKm9i2FD+0lrlwEjHe9wm+E8XwEiwpr
+ S618QuzhJri4GvHmlEd2TVKNNDcQhH4f0CTEsLKozbrwMTvfgr
+ uE0oIMinXjtf27HqWt6Sv1enJDfSlY6MtBCeM0Fn6mGKFspk4S
+ 2xhsyh6y74hu2CBQ/bK0ek2r2Nn5x4nVe8KN4MIGLIjMLZV76j
+ 4706RwwAYR1r7P3/zrmA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 3, 2013 at 4:00 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->
-> This needs careful review.  I don't really know what this code does, nor
-> do I have the hardware.  (I don't understand AGP and the associated
-> caching implications.)
+On Monday 06 May 2013, Pavel Machek wrote:
+> On Mon 2013-05-06 15:45:22, Arnd Bergmann wrote:
+> > On Monday 06 May 2013, Pavel Machek wrote:
+> > > 
+> > > Hi!
+> > > 
+> > > Ping? Previous version was tested by Dinh, and this one is based on
+> > > Jamie's updates, so I assume it is acceptable for him, too.
+> > > 
+> > > It brings two platforms closer together, and makes time actually work
+> > > on socfpga. It would be good to get it applied.
+> > 
+> > Who should apply it? I guess it needs to go through arm-soc with all the
+> > other clocksource changes already queued up there. Can we have an Ack
+> > from Jamie and from the clocksource maintainers?
+> 
+> Well, changes to arch/arm/mach-picoxcell are single line (and that's a
+> cleanup of duplicate include). 
 
-This patch is wrong (I didn't update the matching mtrr_del), and I'm
-reworking this whole series.  But I may need some help on this one:
-why is the mtrr handle of a map (whatever a map is) exported to
-userspace via the ADD_MAP and GET_MAP ioctls?  What (if anything) is
-userspace supposed to do with it?  Do I need to return a valid MTRR
-register number?  Is there any userspace code at all that sets
-_DRM_WRITE_COMBINING in DRM_IOCTL_ADD_MAP with appropriate alignment
-and needs the MTRR, for which the drm driver doesn't already add the
-MTRR?
+The point is that Jamie had comments on the earlier version, so it would
+be good to see his Ack on the current one.
 
---Andy
+> So I guess it should go through the timekeeping tree...?
+
+I would prefer that, but we can also take it through arm-soc, it doesn't
+really matter.
+
+	Arnd
