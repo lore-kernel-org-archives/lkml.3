@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758490Ab3EFUxr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:53:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59340 "EHLO
+	id S1758022Ab3EFUq4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:46:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59319 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758031Ab3EFUq6 (ORCPT
+	with ESMTP id S1757937Ab3EFUqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:58 -0400
+	Mon, 6 May 2013 16:46:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Robert P. J. Day" <rpjday@crashcourse.ca>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 080/115] localmodconfig: Process source kconfig files as they are found
-Date: Mon,  6 May 2013 13:45:16 -0700
-Message-Id: <20130506203103.770919811@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 085/115] exec: do not abuse ->cred_guard_mutex in threadgroup_lock()
+Date: Mon,  6 May 2013 13:45:21 -0700
+Message-Id: <20130506203104.329455871@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -27,96 +29,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit ced9cb1af1e3486cc14dca755a1b3fbadf06e90b upstream.
+commit e56fb2874015370e3b7f8d85051f6dce26051df9 upstream.
 
-A bug was reported that caused localmodconfig to not keep all the
-dependencies of ATH9K. This was caused by the kconfig file:
+threadgroup_lock() takes signal->cred_guard_mutex to ensure that
+thread_group_leader() is stable.  This doesn't look nice, the scope of
+this lock in do_execve() is huge.
 
-In drivers/net/wireless/ath/Kconfig:
+And as Dave pointed out this can lead to deadlock, we have the
+following dependencies:
 
----
-if ATH_CARDS
+	do_execve:		cred_guard_mutex -> i_mutex
+	cgroup_mount:		i_mutex -> cgroup_mutex
+	attach_task_by_pid:	cgroup_mutex -> cred_guard_mutex
 
-config ATH_DEBUG
-        bool "Atheros wireless debugging"
-        ---help---
-          Say Y, if you want to debug atheros wireless drivers.
-          Right now only ath9k makes use of this.
+Change de_thread() to take threadgroup_change_begin() around the
+switch-the-leader code and change threadgroup_lock() to avoid
+->cred_guard_mutex.
 
-source "drivers/net/wireless/ath/ath5k/Kconfig"
-source "drivers/net/wireless/ath/ath9k/Kconfig"
-source "drivers/net/wireless/ath/carl9170/Kconfig"
-source "drivers/net/wireless/ath/ath6kl/Kconfig"
-source "drivers/net/wireless/ath/ar5523/Kconfig"
-source "drivers/net/wireless/ath/wil6210/Kconfig"
+Note that de_thread() can't sleep with ->group_rwsem held, this can
+obviously deadlock with the exiting leader if the writer is active, so it
+does threadgroup_change_end() before schedule().
 
-endif
----
-
-The current way kconfig works, it processes new source files after the
-first file is completed. It creates an array of new source config files
-and when the one file is finished, it continues with the next file.
-
-Unfortunately, this means that it loses the fact that the source file is
-within an "if" statement, and this means that each of these source file's
-configs will not have the proper dependencies set.
-
-As ATH9K requires ATH_CARDS set, the localmodconfig did not see that
-dependency, and did not enable ATH_CARDS. When the oldconfig was run, it
-forced ATH9K to be disabled.
-
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1304291022320.9234@oneiric
-
-Reported-by: Robert P. J. Day <rpjday@crashcourse.ca>
-Tested-by: Robert P. J. Day <rpjday@crashcourse.ca>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Acked-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/kconfig/streamline_config.pl |   17 +++++++----------
- 1 file changed, 7 insertions(+), 10 deletions(-)
+ fs/exec.c             |    3 +++
+ include/linux/sched.h |   18 ++++--------------
+ 2 files changed, 7 insertions(+), 14 deletions(-)
 
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -156,7 +156,6 @@ sub read_kconfig {
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -898,11 +898,13 @@ static int de_thread(struct task_struct
  
-     my $state = "NONE";
-     my $config;
--    my @kconfigs;
+ 		sig->notify_count = -1;	/* for exit_notify() */
+ 		for (;;) {
++			threadgroup_change_begin(tsk);
+ 			write_lock_irq(&tasklist_lock);
+ 			if (likely(leader->exit_state))
+ 				break;
+ 			__set_current_state(TASK_KILLABLE);
+ 			write_unlock_irq(&tasklist_lock);
++			threadgroup_change_end(tsk);
+ 			schedule();
+ 			if (unlikely(__fatal_signal_pending(tsk)))
+ 				goto killed;
+@@ -960,6 +962,7 @@ static int de_thread(struct task_struct
+ 		if (unlikely(leader->ptrace))
+ 			__wake_up_parent(leader, leader->parent);
+ 		write_unlock_irq(&tasklist_lock);
++		threadgroup_change_end(tsk);
  
-     my $cont = 0;
-     my $line;
-@@ -190,7 +189,13 @@ sub read_kconfig {
- 
- 	# collect any Kconfig sources
- 	if (/^source\s*"(.*)"/) {
--	    $kconfigs[$#kconfigs+1] = $1;
-+	    my $kconfig = $1;
-+	    # prevent reading twice.
-+	    if (!defined($read_kconfigs{$kconfig})) {
-+		$read_kconfigs{$kconfig} = 1;
-+		read_kconfig($kconfig);
-+	    }
-+	    next;
+ 		release_task(leader);
  	}
- 
- 	# configs found
-@@ -250,14 +255,6 @@ sub read_kconfig {
- 	}
-     }
-     close($kinfile);
--
--    # read in any configs that were found.
--    foreach my $kconfig (@kconfigs) {
--	if (!defined($read_kconfigs{$kconfig})) {
--	    $read_kconfigs{$kconfig} = 1;
--	    read_kconfig($kconfig);
--	}
--    }
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2413,27 +2413,18 @@ static inline void threadgroup_change_en
+  *
+  * Lock the threadgroup @tsk belongs to.  No new task is allowed to enter
+  * and member tasks aren't allowed to exit (as indicated by PF_EXITING) or
+- * perform exec.  This is useful for cases where the threadgroup needs to
+- * stay stable across blockable operations.
++ * change ->group_leader/pid.  This is useful for cases where the threadgroup
++ * needs to stay stable across blockable operations.
+  *
+  * fork and exit paths explicitly call threadgroup_change_{begin|end}() for
+  * synchronization.  While held, no new task will be added to threadgroup
+  * and no existing live task will have its PF_EXITING set.
+  *
+- * During exec, a task goes and puts its thread group through unusual
+- * changes.  After de-threading, exclusive access is assumed to resources
+- * which are usually shared by tasks in the same group - e.g. sighand may
+- * be replaced with a new one.  Also, the exec'ing task takes over group
+- * leader role including its pid.  Exclude these changes while locked by
+- * grabbing cred_guard_mutex which is used to synchronize exec path.
++ * de_thread() does threadgroup_change_{begin|end}() when a non-leader
++ * sub-thread becomes a new leader.
+  */
+ static inline void threadgroup_lock(struct task_struct *tsk)
+ {
+-	/*
+-	 * exec uses exit for de-threading nesting group_rwsem inside
+-	 * cred_guard_mutex. Grab cred_guard_mutex first.
+-	 */
+-	mutex_lock(&tsk->signal->cred_guard_mutex);
+ 	down_write(&tsk->signal->group_rwsem);
  }
  
- if ($kconfig) {
+@@ -2446,7 +2437,6 @@ static inline void threadgroup_lock(stru
+ static inline void threadgroup_unlock(struct task_struct *tsk)
+ {
+ 	up_write(&tsk->signal->group_rwsem);
+-	mutex_unlock(&tsk->signal->cred_guard_mutex);
+ }
+ #else
+ static inline void threadgroup_change_begin(struct task_struct *tsk) {}
 
 
