@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab3EFNZo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 09:25:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51962 "EHLO
+	id S1753710Ab3EFNcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 09:32:13 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51992 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121Ab3EFNZn (ORCPT
+	with ESMTP id S1753355Ab3EFNcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 09:25:43 -0400
-Date: Mon, 6 May 2013 15:25:18 +0200 (CEST)
+	Mon, 6 May 2013 09:32:12 -0400
+Date: Mon, 6 May 2013 15:31:58 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
@@ -25,11 +25,11 @@ cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC patch 7/8] fixup 1/2: genirq: generic chip: Add linear irq
+Subject: Re: [RFC patch 7/8] fixup 2/2: genirq: generic chip: Add linear irq
  domain support
-In-Reply-To: <1367843533-7117-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Message-ID: <alpine.LFD.2.02.1305061524520.3095@ionos>
-References: <20130503214629.810207749@linutronix.de> <1367843533-7117-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1367843533-7117-2-git-send-email-sebastian.hesselbarth@gmail.com>
+Message-ID: <alpine.LFD.2.02.1305061525420.3095@ionos>
+References: <20130503214629.810207749@linutronix.de> <1367843533-7117-1-git-send-email-sebastian.hesselbarth@gmail.com> <1367843533-7117-2-git-send-email-sebastian.hesselbarth@gmail.com>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -42,10 +42,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 6 May 2013, Sebastian Hesselbarth wrote:
 
-> irq_domain_chip_generic is allocating and indexing irq_chip_generic
-> itself. However, the size of irq_chip_generic varies with number of
-> irq_chip_types. This fixup moves irq_chip_generic helt by
-> irq_domain_chip_generic to array of ptr and fixes the pointer arith
-> used by irq_alloc_domain_generic_chip.
+> mask_cache pointer also needs to be initialized for domain generic
+> chips.
 
-Thanks. I folded it in.
+It's not only the mask cache pointer. We also need to initialize the
+mask cache itself. I solved it by spitting out that code from
+irq_setup_generic_chip().
+
+Thanks,
+
+	tglx
+
+
