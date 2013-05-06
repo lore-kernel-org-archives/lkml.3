@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933810Ab3EFXet (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:34:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36703 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760448Ab3EFXN1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760443Ab3EFXN1 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 May 2013 19:13:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36676 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760414Ab3EFXNX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 19:13:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Federico Vaga <federico.vaga@gmail.com>
-Subject: [ 033/104] serial_core.c: add put_device() after device_find_child()
-Date: Mon,  6 May 2013 16:11:52 -0700
-Message-Id: <20130506230047.020578249@linuxfoundation.org>
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Felipe Balbi <balbi@ti.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [ 025/104] usb: chipidea: udc: fix memory access of shared memory on armv5 machines
+Date: Mon,  6 May 2013 16:11:44 -0700
+Message-Id: <20130506230046.158080499@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -26,98 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Federico Vaga <federico.vaga@gmail.com>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-commit 5a65dcc04cda41f4122aacc37a5a348454645399 upstream.
+commit a9c174302b1590ef3ead485d804a303c5f89174b upstream.
 
-The serial core uses device_find_child() but does not drop the reference to
-the retrieved child after using it. This patch add the missing put_device().
+The udc uses an shared dma memory space between hard and software. This
+memory layout is described in ci13xxx_qh and ci13xxx_td which are marked
+with the attribute ((packed)).
 
-What I have done to test this issue.
+The compiler currently does not know about the alignment of the memory
+layout, and will create strb and ldrb operations.
 
-I used a machine with an AMBA PL011 serial driver. I tested the patch on
-next-20120408 because the last branch [next-20120415] does not boot on this
-board.
+The Datasheet of the synopsys core describes, that some operations on
+the mapped memory need to be atomic double word operations. I.e. the
+next pointer addressing in the qhead, as otherwise the hardware will
+read wrong data and totally stuck.
 
-For test purpose, I added some pr_info() messages to print the refcount
-after device_find_child() (lines: 1937,2009), and after put_device()
-(lines: 1947, 2021).
+This is also possible while working with the current active td queue,
+and preparing the td->ptr.next in software while the hardware is still
+working with the current active td which is supposed to be changed:
 
-Boot the machine *without* put_device(). Then:
+writeb(0xde, &td->ptr.next + 0x0); /* strb */
+writeb(0xad, &td->ptr.next + 0x1); /* strb */
 
-echo reboot > /sys/power/disk
-echo disk > /sys/power/state
-[   87.058575] uart_suspend_port:1937 refcount 4
-[   87.058582] uart_suspend_port:1947 refcount 4
-[   87.098083] uart_resume_port:2009refcount 5
-[   87.098088] uart_resume_port:2021 refcount 5
+<----- hardware reads value of td->ptr.next and get stuck!
 
-echo disk > /sys/power/state
-[  103.055574] uart_suspend_port:1937 refcount 6
-[  103.055580] uart_suspend_port:1947 refcount 6
-[  103.095322] uart_resume_port:2009 refcount 7
-[  103.095327] uart_resume_port:2021 refcount 7
+writeb(0xbe, &td->ptr.next + 0x2); /* strb */
+writeb(0xef, &td->ptr.next + 0x3); /* strb */
 
-echo disk > /sys/power/state
-[  252.459580] uart_suspend_port:1937 refcount 8
-[  252.459586] uart_suspend_port:1947 refcount 8
-[  252.499611] uart_resume_port:2009 refcount 9
-[  252.499616] uart_resume_port:2021 refcount 9
+This appeares on armv5 machines where the hardware does not support
+unaligned 32bit operations.
 
-The refcount continuously increased.
+This patch adds the attribute ((aligned(4))) to the structures to tell
+the compiler to use 32bit operations. It also adds an wmb() for the
+prepared TD data before it gets enqueued into the qhead.
 
-Boot the machine *with* this patch. Then:
-
-echo reboot > /sys/power/disk
-echo disk > /sys/power/state
-[  159.333559] uart_suspend_port:1937 refcount 4
-[  159.333566] uart_suspend_port:1947 refcount 3
-[  159.372751] uart_resume_port:2009 refcount 4
-[  159.372755] uart_resume_port:2021 refcount 3
-
-echo disk > /sys/power/state
-[  185.713614] uart_suspend_port:1937 refcount 4
-[  185.713621] uart_suspend_port:1947 refcount 3
-[  185.752935] uart_resume_port:2009 refcount 4
-[  185.752940] uart_resume_port:2021 refcount 3
-
-echo disk > /sys/power/state
-[  207.458584] uart_suspend_port:1937 refcount 4
-[  207.458591] uart_suspend_port:1947 refcount 3
-[  207.498598] uart_resume_port:2009 refcount 4
-[  207.498605] uart_resume_port:2021 refcount 3
-
-The refcount correctly handled.
-
-Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/serial_core.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/chipidea/udc.c |    2 ++
+ drivers/usb/chipidea/udc.h |    4 ++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -1940,6 +1940,8 @@ int uart_suspend_port(struct uart_driver
- 		mutex_unlock(&port->mutex);
- 		return 0;
- 	}
-+	put_device(tty_dev);
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -461,6 +461,8 @@ static int _hardware_enqueue(struct ci13
+ 		mReq->ptr->page[i] =
+ 			(mReq->req.dma + i * CI13XXX_PAGE_SIZE) & ~TD_RESERVED_MASK;
+ 
++	wmb();
 +
- 	if (console_suspend_enabled || !uart_console(uport))
- 		uport->suspended = 1;
+ 	if (!list_empty(&mEp->qh.queue)) {
+ 		struct ci13xxx_req *mReqPrev;
+ 		int n = hw_ep_bit(mEp->num, mEp->dir);
+--- a/drivers/usb/chipidea/udc.h
++++ b/drivers/usb/chipidea/udc.h
+@@ -40,7 +40,7 @@ struct ci13xxx_td {
+ #define TD_CURR_OFFSET        (0x0FFFUL <<  0)
+ #define TD_FRAME_NUM          (0x07FFUL <<  0)
+ #define TD_RESERVED_MASK      (0x0FFFUL <<  0)
+-} __attribute__ ((packed));
++} __attribute__ ((packed, aligned(4)));
  
-@@ -2005,9 +2007,11 @@ int uart_resume_port(struct uart_driver
- 			disable_irq_wake(uport->irq);
- 			uport->irq_wake = 0;
- 		}
-+		put_device(tty_dev);
- 		mutex_unlock(&port->mutex);
- 		return 0;
- 	}
-+	put_device(tty_dev);
- 	uport->suspended = 0;
+ /* DMA layout of queue heads */
+ struct ci13xxx_qh {
+@@ -57,7 +57,7 @@ struct ci13xxx_qh {
+ 	/* 9 */
+ 	u32 RESERVED;
+ 	struct usb_ctrlrequest   setup;
+-} __attribute__ ((packed));
++} __attribute__ ((packed, aligned(4)));
  
- 	/*
+ /**
+  * struct ci13xxx_req - usb request representation
 
 
