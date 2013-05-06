@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933050Ab3EGAAJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 20:00:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36128 "EHLO
+	id S933081Ab3EGAAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:00:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36115 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932777Ab3EFW5I (ORCPT
+	with ESMTP id S932749Ab3EFW5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:57:08 -0400
+	Mon, 6 May 2013 18:57:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Engraf <david.engraf@sysgo.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [ 40/63] hrtimer: Fix ktime_add_ns() overflow on 32bit architectures
-Date: Mon,  6 May 2013 15:56:18 -0700
-Message-Id: <20130506225324.682022841@linuxfoundation.org>
+        Fred Hartnett <fred.hartnett@hp.com>, Tony Luck <tony.luck@intel.com>
+Subject: [ 28/63] Fix initialization of CMCI/CMCP interrupts
+Date: Mon,  6 May 2013 15:56:06 -0700
+Message-Id: <20130506225321.893896874@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
 References: <20130506225314.802167948@linuxfoundation.org>
@@ -27,54 +26,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Engraf <david.engraf@sysgo.com>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 51fd36f3fad8447c487137ae26b9d0b3ce77bb25 upstream.
+commit d303e9e98fce56cdb3c6f2ac92f626fc2bd51c77 upstream.
 
-One can trigger an overflow when using ktime_add_ns() on a 32bit
-architecture not supporting CONFIG_KTIME_SCALAR.
+Back 2010 during a revamp of the irq code some initializations
+were moved from ia64_mca_init() to ia64_mca_late_init() in
 
-When passing a very high value for u64 nsec, e.g. 7881299347898368000
-the do_div() function converts this value to seconds (7881299347) which
-is still to high to pass to the ktime_set() function as long. The result
-in is a negative value.
+	commit c75f2aa13f5b268aba369b5dc566088b5194377c
+	Cannot use register_percpu_irq() from ia64_mca_init()
 
-The problem on my system occurs in the tick-sched.c,
-tick_nohz_stop_sched_tick() when time_delta is set to
-timekeeping_max_deferment(). The check for time_delta < KTIME_MAX is
-valid, thus ktime_add_ns() is called with a too large value resulting in
-a negative expire value. This leads to an endless loop in the ticker code:
+But this was hideously wrong. First of all these initializations
+are now down far too late. Specifically after all the other cpus
+have been brought up and initialized their own CMC vectors from
+smp_callin(). Also ia64_mca_late_init() may be called from any cpu
+so the line:
+	ia64_mca_cmc_vector_setup();       /* Setup vector on BSP */
+is generally not executed on the BSP, and so the CMC vector isn't
+setup at all on that processor.
 
-time_delta: 7881299347898368000
-expires = ktime_add_ns(last_update, time_delta)
-expires: negative value
+Make use of the arch_early_irq_init() hook to get this code executed
+at just the right moment: not too early, not too late.
 
-This fix caps the value to KTIME_MAX.
-
-This error doesn't occurs on 64bit or architectures supporting
-CONFIG_KTIME_SCALAR (e.g. ARM, x86-32).
-
-Signed-off-by: David Engraf <david.engraf@sysgo.com>
-[jstultz: Minor tweaks to commit message & header]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Reported-by: Fred Hartnett <fred.hartnett@hp.com>
+Tested-by: Fred Hartnett <fred.hartnett@hp.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/hrtimer.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/ia64/include/asm/mca.h |    1 +
+ arch/ia64/kernel/irq.c      |    8 ++++++++
+ arch/ia64/kernel/mca.c      |   37 ++++++++++++++++++++++++-------------
+ 3 files changed, 33 insertions(+), 13 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -298,6 +298,10 @@ ktime_t ktime_sub_ns(const ktime_t kt, u
- 	} else {
- 		unsigned long rem = do_div(nsec, NSEC_PER_SEC);
+--- a/arch/ia64/include/asm/mca.h
++++ b/arch/ia64/include/asm/mca.h
+@@ -143,6 +143,7 @@ extern unsigned long __per_cpu_mca[NR_CP
+ extern int cpe_vector;
+ extern int ia64_cpe_irq;
+ extern void ia64_mca_init(void);
++extern void ia64_mca_irq_init(void);
+ extern void ia64_mca_cpu_init(void *);
+ extern void ia64_os_mca_dispatch(void);
+ extern void ia64_os_mca_dispatch_end(void);
+--- a/arch/ia64/kernel/irq.c
++++ b/arch/ia64/kernel/irq.c
+@@ -23,6 +23,8 @@
+ #include <linux/interrupt.h>
+ #include <linux/kernel_stat.h>
  
-+		/* Make sure nsec fits into long */
-+		if (unlikely(nsec > KTIME_SEC_MAX))
-+			return (ktime_t){ .tv64 = KTIME_MAX };
++#include <asm/mca.h>
 +
- 		tmp = ktime_set((long)nsec, rem);
- 	}
+ /*
+  * 'what should we do if we get a hw irq event on an illegal vector'.
+  * each architecture has to answer this themselves.
+@@ -83,6 +85,12 @@ bool is_affinity_mask_valid(const struct
+ 
+ #endif /* CONFIG_SMP */
+ 
++int __init arch_early_irq_init(void)
++{
++	ia64_mca_irq_init();
++	return 0;
++}
++
+ #ifdef CONFIG_HOTPLUG_CPU
+ unsigned int vectors_in_migration[NR_IRQS];
+ 
+--- a/arch/ia64/kernel/mca.c
++++ b/arch/ia64/kernel/mca.c
+@@ -2074,22 +2074,16 @@ ia64_mca_init(void)
+ 	printk(KERN_INFO "MCA related initialization done\n");
+ }
+ 
++
+ /*
+- * ia64_mca_late_init
+- *
+- *	Opportunity to setup things that require initialization later
+- *	than ia64_mca_init.  Setup a timer to poll for CPEs if the
+- *	platform doesn't support an interrupt driven mechanism.
+- *
+- *  Inputs  :   None
+- *  Outputs :   Status
++ * These pieces cannot be done in ia64_mca_init() because it is called before
++ * early_irq_init() which would wipe out our percpu irq registrations. But we
++ * cannot leave them until ia64_mca_late_init() because by then all the other
++ * processors have been brought online and have set their own CMC vectors to
++ * point at a non-existant action. Called from arch_early_irq_init().
+  */
+-static int __init
+-ia64_mca_late_init(void)
++void __init ia64_mca_irq_init(void)
+ {
+-	if (!mca_init)
+-		return 0;
+-
+ 	/*
+ 	 *  Configure the CMCI/P vector and handler. Interrupts for CMC are
+ 	 *  per-processor, so AP CMC interrupts are setup in smp_callin() (smpboot.c).
+@@ -2108,6 +2102,23 @@ ia64_mca_late_init(void)
+ 	/* Setup the CPEI/P handler */
+ 	register_percpu_irq(IA64_CPEP_VECTOR, &mca_cpep_irqaction);
+ #endif
++}
++
++/*
++ * ia64_mca_late_init
++ *
++ *	Opportunity to setup things that require initialization later
++ *	than ia64_mca_init.  Setup a timer to poll for CPEs if the
++ *	platform doesn't support an interrupt driven mechanism.
++ *
++ *  Inputs  :   None
++ *  Outputs :   Status
++ */
++static int __init
++ia64_mca_late_init(void)
++{
++	if (!mca_init)
++		return 0;
+ 
+ 	register_hotcpu_notifier(&mca_cpu_notifier);
  
 
 
