@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab3EFP3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 11:29:13 -0400
-Received: from tex.lwn.net ([70.33.254.29]:46500 "EHLO vena.lwn.net"
+	id S1755086Ab3EFP3U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 11:29:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32299 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754515Ab3EFP3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 11:29:12 -0400
-Date: Mon, 6 May 2013 09:29:10 -0600
-From: Jake Edge <jake@lwn.net>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: linux-wireless@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
+	id S1754977Ab3EFP3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 11:29:17 -0400
+Date: Mon, 6 May 2013 17:30:45 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Jake Edge <jake@lwn.net>
+Cc: linux-wireless@vger.kernel.org, Johannes Berg <johannes.berg@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Johannes Berg <johannes@sipsolutions.net>
 Subject: Re: Bisected 3.9 regression for iwl4965 connection problem to
  1672c0e3
-Message-ID: <20130506092910.080f96cd@chukar.edge2.net>
-In-Reply-To: <1367853859.8434.11.camel@jlt4.sipsolutions.net>
+Message-ID: <20130506153044.GB1602@redhat.com>
 References: <20130505143803.7e46e4c6@chukar.edge2.net>
-	<1367853112.8434.6.camel@jlt4.sipsolutions.net>
-	<20130506092143.58a7713f@chukar.edge2.net>
-	<1367853859.8434.11.camel@jlt4.sipsolutions.net>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.16; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+ <20130506123805.GA1602@redhat.com>
+ <20130506083759.556dac76@chukar.edge2.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130506083759.556dac76@chukar.edge2.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 06 May 2013 17:24:19 +0200 Johannes Berg wrote:
-> On Mon, 2013-05-06 at 09:21 -0600, Jake Edge wrote:
+On Mon, May 06, 2013 at 08:37:59AM -0600, Jake Edge wrote:
+> On Mon, 6 May 2013 14:38:06 +0200 Stanislaw Gruszka wrote:
 > 
-> > > Thanks for the report. Is the AP on a passive channel by any
-> > > chance (5 GHz, or channels 12/13)?
+> > > I bisected the problem to:
+> > > 
+> > > commit 1672c0e31917f49d31d30d79067103432bc20cc7
+> 
+> > > What more information is needed from me?  I may still mess around
+> > > with trying to revert that patch just to nail it down for sure, but
+> > > two separate bisection exercises ended up at the same place.
 > > 
-> > No, from what I can see on my router, it is using channel 36 (5.180
-> > GHz) for the SSID in question
+> > Below patch should restore old mac80211 behaviour, by stop
+> > telling mac that 4965 supports TX ACK status. Does it help?
 > 
-> So yes, that is a passive channel for the 4965 device :-)
-
-oops, sorry :)  (obviously I don't know what a passive channel is :)
-
-> > but Stanislaw seems to have pinpointed the issue.
+> Yup, that fixed the problem, thanks.  So did reverting Johannes's
+> commit above, fwiw, but just turning off that flag in 3.9 as your patch
+> does fixes it.
 > 
-> Yeah that was a workaround, but I'm not sure we'd really want to do
-> that. I'd rather see what really caused this issue. I have a feeling
-> it's the passive-no-RX workaround, or lack thereof maybe? I need to
-> look a bit closer.
+> seems like that needs to head to Linus and the stable folks ...
 
-Ok, I'm happy to test things out at this end ... change channels on the
-router, build new kernels, etc.
+We can fix the problem that way, but I'm not sure if that is the best
+way. IEEE80211_HW_REPORTS_TX_ACK_STATUS is nice to have as long hardware
+really supports that feature.
 
-thanks,
+I thought this happen because 4965 firmware does not mark tx status
+ack for PROBE_REQUEST frame, because it is not acked by standard 
+ACK frame, but by PROBE_RESPONSE frame. But if so, I would also see
+the breakage on my setup, but I don't - it works quite well here. So
+perhaps something different is broken on commit
+1672c0e31917f49d31d30d79067103432bc20cc7 , that make we can not
+associate with some APs.
 
-jake
+Let me think a bit longer about this issue. Also maybe Johannes will
+have some thoughts.
 
--- 
-Jake Edge - LWN - jake@lwn.net - http://lwn.net
+Stanislaw 
