@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760374Ab3EFXNS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:13:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36636 "EHLO
+	id S1758860Ab3EFXjb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:39:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36650 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760343Ab3EFXNO (ORCPT
+	with ESMTP id S1760362Ab3EFXNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:14 -0400
+	Mon, 6 May 2013 19:13:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 012/104] powerpc: Fix hardware IRQs with MMU on exceptions when HV=0
-Date: Mon,  6 May 2013 16:11:31 -0700
-Message-Id: <20130506230044.868937148@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 016/104] iwlwifi: dvm: dont send zeroed LQ cmd
+Date: Mon,  6 May 2013 16:11:35 -0700
+Message-Id: <20130506230045.263949285@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
 References: <20130506230043.526528358@linuxfoundation.org>
@@ -27,43 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 3e96ca7f007ddb06b82a74a68585d1dbafa85ff1 upstream.
+commit 63b77bf489881747c5118476918cc8c29378ee63 upstream.
 
-POWER8 allows us to take interrupts with the MMU on.  This gives us a
-second set of vectors offset at 0x4000.
+When the stations are being restored because of unassoc
+RXON, the LQ cmd may not have been initialized because it
+is initialized only after association.
+Sending zeroed LQ_CMD makes the fw unhappy: it raises
+SYSASSERT_2078.
 
-Unfortunately when coping these vectors we missed checking for MSR HV
-for hardware interrupts (0x500).  This results in us trying to use
-HSRR0/1 when HV=0, rather than SRR0/1 on HW IRQs
-
-The below fixes this to check CPU_FTR_HVMODE when patching the code at
-0x4500.
-
-Also we remove the check for CPU_FTR_ARCH_206 since relocation on IRQs
-are only available in arch 2.07 and beyond.
-
-Thanks to benh for helping find this.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+[move zero_lq and make static const]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/exceptions-64s.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/dvm/sta.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/exceptions-64s.S
-+++ b/arch/powerpc/kernel/exceptions-64s.S
-@@ -740,7 +740,7 @@ hardware_interrupt_relon_hv:
- 		_MASKABLE_RELON_EXCEPTION_PSERIES(0x502, hardware_interrupt, EXC_HV, SOFTEN_TEST_HV)
- 	FTR_SECTION_ELSE
- 		_MASKABLE_RELON_EXCEPTION_PSERIES(0x500, hardware_interrupt, EXC_STD, SOFTEN_TEST_PR)
--	ALT_FTR_SECTION_END_IFSET(CPU_FTR_ARCH_206)
-+	ALT_FTR_SECTION_END_IFSET(CPU_FTR_HVMODE)
- 	STD_RELON_EXCEPTION_PSERIES(0x4600, 0x600, alignment)
- 	STD_RELON_EXCEPTION_PSERIES(0x4700, 0x700, program_check)
- 	STD_RELON_EXCEPTION_PSERIES(0x4800, 0x800, fp_unavailable)
+--- a/drivers/net/wireless/iwlwifi/dvm/sta.c
++++ b/drivers/net/wireless/iwlwifi/dvm/sta.c
+@@ -707,6 +707,7 @@ void iwl_clear_ucode_stations(struct iwl
+ void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+ {
+ 	struct iwl_addsta_cmd sta_cmd;
++	static const struct iwl_link_quality_cmd zero_lq = {};
+ 	struct iwl_link_quality_cmd lq;
+ 	int i;
+ 	bool found = false;
+@@ -745,7 +746,9 @@ void iwl_restore_stations(struct iwl_pri
+ 				else
+ 					memcpy(&lq, priv->stations[i].lq,
+ 					       sizeof(struct iwl_link_quality_cmd));
+-				send_lq = true;
++
++				if (!memcmp(&lq, &zero_lq, sizeof(lq)))
++					send_lq = true;
+ 			}
+ 			spin_unlock_bh(&priv->sta_lock);
+ 			ret = iwl_send_add_sta(priv, &sta_cmd, CMD_SYNC);
 
 
