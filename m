@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758371Ab3EFUvl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 16:51:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59369 "EHLO
+	id S1758396Ab3EFUvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 16:51:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59366 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758095Ab3EFUrD (ORCPT
+	with ESMTP id S1758089Ab3EFUrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 16:47:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Cochran <richardcochran@gmail.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
+        Jacob Keller <jacob.e.keller@intel.com>,
+        Phil Schmitt <phillip.j.schmitt@intel.com>,
         Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [ 098/115] e1000e: fix numeric overflow in phc settime method
-Date: Mon,  6 May 2013 13:45:34 -0700
-Message-Id: <20130506203105.658820364@linuxfoundation.org>
+Subject: [ 097/115] ixgbe: fix EICR write in ixgbe_msix_other
+Date: Mon,  6 May 2013 13:45:33 -0700
+Message-Id: <20130506203105.556278038@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -28,36 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Cochran <richardcochran@gmail.com>
+From: Jacob Keller <jacob.e.keller@intel.com>
 
-commit 73e3dd6b45c4c870fc2641eb04c24e3f12dab1e0 upstream.
+commit d87d830720a1446403ed38bfc2da268be0d356d1 upstream.
 
-The PTP Hardware Clock settime function in the e1000e driver
-computes nanoseconds from a struct timespec. The code converts the
-seconds field .tv_sec by multiplying it with NSEC_PER_SEC. However,
-both operands are of type long, resulting in an unintended overflow.
-The patch fixes the issue by using the helper function from time.h.
+Previously, the ixgbe_msix_other was writing the full 32bits of the set
+interrupts, instead of only the ones which the ixgbe_msix_other is
+handling. This resulted in a loss of performance when the X540's PPS feature is
+enabled due to sometimes clearing queue interrupts which resulted in the driver
+not getting the interrupt for cleaning the q_vector rings often enough. The fix
+is to simply mask the lower 16bits off so that this handler does not write them
+in the EICR, which causes them to remain high and be properly handled by the
+clean_rings interrupt routine as normal.
 
-Signed-off-by: Richard Cochran <richardcochran@gmail.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
 Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/e1000e/ptp.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/net/ethernet/intel/e1000e/ptp.c
-+++ b/drivers/net/ethernet/intel/e1000e/ptp.c
-@@ -145,8 +145,7 @@ static int e1000e_phc_settime(struct ptp
- 	unsigned long flags;
- 	u64 ns;
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -2405,6 +2405,16 @@ static irqreturn_t ixgbe_msix_other(int
+ 	 * with the write to EICR.
+ 	 */
+ 	eicr = IXGBE_READ_REG(hw, IXGBE_EICS);
++
++	/* The lower 16bits of the EICR register are for the queue interrupts
++	 * which should be masked here in order to not accidently clear them if
++	 * the bits are high when ixgbe_msix_other is called. There is a race
++	 * condition otherwise which results in possible performance loss
++	 * especially if the ixgbe_msix_other interrupt is triggering
++	 * consistently (as it would when PPS is turned on for the X540 device)
++	 */
++	eicr &= 0xFFFF0000;
++
+ 	IXGBE_WRITE_REG(hw, IXGBE_EICR, eicr);
  
--	ns = ts->tv_sec * NSEC_PER_SEC;
--	ns += ts->tv_nsec;
-+	ns = timespec_to_ns(ts);
- 
- 	/* reset the timecounter */
- 	spin_lock_irqsave(&adapter->systim_lock, flags);
+ 	if (eicr & IXGBE_EICR_LSC)
 
 
