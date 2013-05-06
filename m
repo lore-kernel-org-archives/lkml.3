@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab3EFVBv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:01:51 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50697 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756405Ab3EFVBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 17:01:48 -0400
+	id S932198Ab3EFVCD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:02:03 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46845 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756405Ab3EFVCA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 17:02:00 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <tony@atomide.com>
 CC: <linux-omap@vger.kernel.org>, Eduardo Valentin <eduardo.valentin@ti.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
         Russell King <linux@arm.linux.org.uk>,
+        <devicetree-discuss@lists.ozlabs.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [RESEND][PATCH 1/3] arm: dts: introduce config HAS_BANDGAP
-Date: Mon, 6 May 2013 17:00:56 -0400
-Message-ID: <1367874058-2378-2-git-send-email-eduardo.valentin@ti.com>
+Subject: [RESEND][PATCH 3/3] arm: add bandgap entry for OMAP4460 devices
+Date: Mon, 6 May 2013 17:00:58 -0400
+Message-ID: <1367874058-2378-4-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1367874058-2378-1-git-send-email-eduardo.valentin@ti.com>
 References: <1367874058-2378-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce HAS_BANDGAP config entry. This config is a
-boolean value so that arch code can flag is they
-feature a bandgap device.
+Include bandgap devices for OMAP4460 devices.
 
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: "Benoît Cousson" <b-cousson@ti.com>
 Cc: Tony Lindgren <tony@atomide.com>
-Cc: linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>
 Cc: linux-omap@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- arch/arm/Kconfig            | 3 +++
- arch/arm/mach-omap2/Kconfig | 1 +
- 2 files changed, 4 insertions(+)
+ arch/arm/boot/dts/omap4460.dtsi | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index f95674a..39fc561 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -176,6 +176,9 @@ config ARCH_HAS_CPUFREQ
- 	  and that the relevant menu configurations are displayed for
- 	  it.
- 
-+config ARCH_HAS_BANDGAP
-+	bool
+diff --git a/arch/arm/boot/dts/omap4460.dtsi b/arch/arm/boot/dts/omap4460.dtsi
+index 7c2c23c..3808b5c 100644
+--- a/arch/arm/boot/dts/omap4460.dtsi
++++ b/arch/arm/boot/dts/omap4460.dtsi
+@@ -29,4 +29,13 @@
+ 			     <0 55 0x4>;
+ 		ti,hwmods = "debugss";
+ 	};
 +
- config GENERIC_HWEIGHT
- 	bool
- 	default y
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index f49cd51..8620ab5 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -4,6 +4,7 @@ config ARCH_OMAP
- config ARCH_OMAP2PLUS
- 	bool "TI OMAP2/3/4/5 SoCs with device tree support" if (ARCH_MULTI_V6 || ARCH_MULTI_V7)
- 	select ARCH_HAS_CPUFREQ
-+	select ARCH_HAS_BANDGAP
- 	select ARCH_HAS_HOLES_MEMORYMODEL
- 	select ARCH_OMAP
- 	select ARCH_REQUIRE_GPIOLIB
++	bandgap {
++		reg = <0x4a002260 0x4
++			0x4a00232C 0x4
++			0x4a002378 0x18>;
++		compatible = "ti,omap4460-bandgap";
++		interrupts = <0 126 4>; /* talert */
++		ti,tshut-gpio = <86>;
++	};
+ };
 -- 
 1.8.2.1.342.gfa7285d
 
