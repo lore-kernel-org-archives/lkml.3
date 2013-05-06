@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311Ab3EFWrO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 18:47:14 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:58645 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932265Ab3EFWrI (ORCPT
+	id S932480Ab3EFWsv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 18:48:51 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:41306 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932289Ab3EFWrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:47:08 -0400
+	Mon, 6 May 2013 18:47:12 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         vgoyal@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 26/33] blk-throttle: make blk_throtl_drain() ready for hierarchy
-Date: Mon,  6 May 2013 15:46:05 -0700
-Message-Id: <1367880372-28312-27-git-send-email-tj@kernel.org>
+Subject: [PATCH 28/33] blk-throttle: make tg_dispatch_one_bio() ready for hierarchy
+Date: Mon,  6 May 2013 15:46:07 -0700
+Message-Id: <1367880372-28312-29-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367880372-28312-1-git-send-email-tj@kernel.org>
 References: <1367880372-28312-1-git-send-email-tj@kernel.org>
@@ -22,99 +22,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current blk_throtl_drain() assumes that all active throtl_grps are
-queued on throtl_data->service_queue, which won't be true once
-hierarchy support is implemented.
+tg_dispatch_one_bio() currently assumes that the parent_sq is the top
+level one and the bio being dispatched is ready to be issued; however,
+this assumption will be wrong with proper hierarchy support.  This
+patch makes the following changes to make tg_dispatch_on_bio() ready
+for hiearchy.
 
-This patch makes blk_throtl_drain() perform post-order walk of the
-blkg hierarchy draining each associated throtl_grp, which guarantees
-that all bios will eventually be pushed to the top-level service_queue
-in throtl_data.
+* throtl_data->nr_queued[] is incremented in blk_throtl_bio() instead
+  of throtl_add_bio_tg() so that throtl_add_bio_tg() can be used to
+  transfer a bio from a child tg to its parent.
+
+* tg_dispatch_one_bio() is updated to distinguish whether its parent
+  is another throtl_grp or the throtl_data.  If former, the bio is
+  transferred to the parent throtl_grp using throtl_add_bio_tg().  If
+  latter, the bio is ready to be issued and put on the top-level
+  service_queue's bio_lists[] and throtl_data->nr_queued is
+  decremented.
+
+As all throtl_grps currently have the top level service_queue as their
+->parent_sq, this patch in itself doesn't make any behavior
+difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/blk-throttle.c | 51 ++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 40 insertions(+), 11 deletions(-)
+ block/blk-throttle.c | 28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
 
 diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 918d222..8c6e133 100644
+index 52321a4..0420261 100644
 --- a/block/blk-throttle.c
 +++ b/block/blk-throttle.c
-@@ -1299,6 +1299,28 @@ out:
- 	return throttled;
+@@ -824,7 +824,6 @@ static void throtl_add_bio_tg(struct bio *bio, struct throtl_grp *tg)
+ 	/* Take a bio reference on tg */
+ 	blkg_get(tg_to_blkg(tg));
+ 	sq->nr_queued[rw]++;
+-	tg->td->nr_queued[rw]++;
+ 	throtl_enqueue_tg(tg);
  }
  
-+/*
-+ * Dispatch all bios from all children tg's queued on @parent_sq.  On
-+ * return, @parent_sq is guaranteed to not have any active children tg's
-+ * and all bios from previously active tg's are on @parent_sq->bio_lists[].
-+ */
-+static void tg_drain_bios(struct throtl_service_queue *parent_sq)
-+{
-+	struct throtl_grp *tg;
-+
-+	while ((tg = throtl_rb_first(parent_sq))) {
-+		struct throtl_service_queue *sq = &tg->service_queue;
-+		struct bio *bio;
-+
-+		throtl_dequeue_tg(tg);
-+
-+		while ((bio = bio_list_peek(&sq->bio_lists[READ])))
-+			tg_dispatch_one_bio(tg, bio_data_dir(bio));
-+		while ((bio = bio_list_peek(&sq->bio_lists[WRITE])))
-+			tg_dispatch_one_bio(tg, bio_data_dir(bio));
-+	}
-+}
-+
- /**
-  * blk_throtl_drain - drain throttled bios
-  * @q: request_queue to drain throttled bios for
-@@ -1309,27 +1331,34 @@ void blk_throtl_drain(struct request_queue *q)
- 	__releases(q->queue_lock) __acquires(q->queue_lock)
+@@ -855,20 +854,34 @@ static void tg_update_disptime(struct throtl_grp *tg)
+ static void tg_dispatch_one_bio(struct throtl_grp *tg, bool rw)
  {
- 	struct throtl_data *td = q->td;
--	struct throtl_service_queue *parent_sq = &td->service_queue;
--	struct throtl_grp *tg;
-+	struct blkcg_gq *blkg;
-+	struct cgroup *pos_cgrp;
+ 	struct throtl_service_queue *sq = &tg->service_queue;
++	struct throtl_service_queue *parent_sq = sq->parent_sq;
++	struct throtl_grp *parent_tg = sq_to_tg(parent_sq);
  	struct bio *bio;
- 	int rw;
  
- 	queue_lockdep_assert_held(q);
-+	rcu_read_lock();
+ 	bio = bio_list_pop(&sq->bio_lists[rw]);
+ 	sq->nr_queued[rw]--;
+-	/* Drop bio reference on blkg */
+-	blkg_put(tg_to_blkg(tg));
+-
+-	BUG_ON(tg->td->nr_queued[rw] <= 0);
+-	tg->td->nr_queued[rw]--;
  
--	while ((tg = throtl_rb_first(parent_sq))) {
--		struct throtl_service_queue *sq = &tg->service_queue;
-+	/*
-+	 * Drain each tg while doing post-order walk on the blkg tree, so
-+	 * that all bios are propagated to td->service_queue.  It'd be
-+	 * better to walk service_queue tree directly but blkg walk is
-+	 * easier.
-+	 */
-+	blkg_for_each_descendant_post(blkg, pos_cgrp, td->queue->root_blkg)
-+		tg_drain_bios(&blkg_to_tg(blkg)->service_queue);
- 
--		throtl_dequeue_tg(tg);
-+	tg_drain_bios(&td_root_tg(td)->service_queue);
- 
--		while ((bio = bio_list_peek(&sq->bio_lists[READ])))
--			tg_dispatch_one_bio(tg, bio_data_dir(bio));
--		while ((bio = bio_list_peek(&sq->bio_lists[WRITE])))
--			tg_dispatch_one_bio(tg, bio_data_dir(bio));
--	}
-+	/* finally, transfer bios from top-level tg's into the td */
-+	tg_drain_bios(&td->service_queue);
+ 	throtl_charge_bio(tg, bio);
+-	bio_list_add(&sq->parent_sq->bio_lists[rw], bio);
 +
-+	rcu_read_unlock();
- 	spin_unlock_irq(q->queue_lock);
++	/*
++	 * If our parent is another tg, we just need to transfer @bio to
++	 * the parent using throtl_add_bio_tg().  If our parent is
++	 * @td->service_queue, @bio is ready to be issued.  Put it on its
++	 * bio_lists[] and decrease total number queued.  The caller is
++	 * responsible for issuing these bios.
++	 */
++	if (parent_tg) {
++		throtl_add_bio_tg(bio, parent_tg);
++	} else {
++		bio_list_add(&parent_sq->bio_lists[rw], bio);
++		BUG_ON(tg->td->nr_queued[rw] <= 0);
++		tg->td->nr_queued[rw]--;
++	}
  
-+	/* all bios now should be in td->service_queue, issue them */
- 	for (rw = READ; rw <= WRITE; rw++)
--		while ((bio = bio_list_pop(&parent_sq->bio_lists[rw])))
-+		while ((bio = bio_list_pop(&td->service_queue.bio_lists[rw])))
- 			generic_make_request(bio);
+ 	throtl_trim_slice(tg, rw);
++
++	/* @bio is transferred to parent, drop its blkg reference */
++	blkg_put(tg_to_blkg(tg));
+ }
  
- 	spin_lock_irq(q->queue_lock);
+ static int throtl_dispatch_tg(struct throtl_grp *tg)
+@@ -1283,6 +1296,7 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+ 		   sq->nr_queued[READ], sq->nr_queued[WRITE]);
+ 
+ 	bio_associate_current(bio);
++	tg->td->nr_queued[rw]++;
+ 	throtl_add_bio_tg(bio, tg);
+ 	throttled = true;
+ 
 -- 
 1.8.1.4
 
