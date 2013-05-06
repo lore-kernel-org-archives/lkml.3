@@ -1,137 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab3EFSSC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 14:18:02 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:56446 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242Ab3EFSSA (ORCPT
+	id S1754694Ab3EFSU5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 14:20:57 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:57991 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781Ab3EFSUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 14:18:00 -0400
-Date: Mon, 6 May 2013 20:17:54 +0200
+	Mon, 6 May 2013 14:20:55 -0400
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>,
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Jean Delvare <jdelvare@suse.de>, Michal Marek <mmarek@suse.cz>,
         Roland Eggner <edvx1@systemanalysen.net>,
         Wang YanQing <udknight@gmail.com>
-Subject: Re: [PATCH] kconfig: sort found symbols by relevance
-Message-ID: <20130506181754.GE3958@free.fr>
+Subject: [PATCH] kconfig: sort found symbols by relevance
+Date: Mon,  6 May 2013 20:20:47 +0200
+Message-Id: <1367864447-30456-1-git-send-email-yann.morin.1998@free.fr>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1367826629.4494.30.camel@chaos.site>
 References: <1367826629.4494.30.camel@chaos.site>
- <1367845365-13316-1-git-send-email-yann.morin.1998@free.fr>
- <1367854112.4569.137.camel@chaos.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1367854112.4569.137.camel@chaos.site>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean, All,
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-On Mon, May 06, 2013 at 05:28:32PM +0200, Jean Delvare wrote:
-> Le Monday 06 May 2013 à 15:02 +0200, Yann E. MORIN a écrit :
-> > From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> > 
-> > When searching for symbols, return the symbols sorted by relevance.
-> > 
-> > Relevance is the ratio of the length of the matched string and the
-> > length of the symbol name. Symbols of equal relevance are sorted
-> > alphabetically.
-> > 
-> > Reported-by: Jean Delvare <jdelvare@suse.de>
-> > Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> > Cc: Jean Delvare <jdelvare@suse.de>
-> > Cc: Michal Marek <mmarek@suse.cz>
-> > Cc: Roland Eggner <edvx1@systemanalysen.net>
-> > Cc: Wang YanQing <udknight@gmail.com>
-> > ---
-> >  scripts/kconfig/symbol.c | 66 +++++++++++++++++++++++++++++++++++++++++-------
-> >  1 file changed, 57 insertions(+), 9 deletions(-)
-> 
-> I did not look at the code, only tested it, and it does what I asked for
-> originally: exact match is listed first. So thank you :)
-> 
-> However I am not sure if your implementation is what we want. Your
-> definition of "relevance" is somewhat arbitrary and may not be
-> immediately to others. For example, my own definition of "relevance" was
-> that symbols which start with the subject string are more relevant than
-> the symbols which have the string in the middle. Others would possibly
-> have other definitions.
+When searching for symbols, return the symbols sorted by relevance.
 
-Yes, I understand. That was mostly a proposal. I'm open for discussion! :-)
+Relevance is the ratio of the length of the matched string and the
+length of the symbol name. Symbols of equal relevance are sorted
+alphabetically.
 
-> So in the end you have somewhat complex code for a sort order which may
-> surprise or confuse the user. It may put close to each other options
-> which are completely unrelated, and suboptions very far from their
-> parent.
+Reported-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Jean Delvare <jdelvare@suse.de>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Roland Eggner <edvx1@systemanalysen.net>
+Cc: Wang YanQing <udknight@gmail.com>
+---
+ scripts/kconfig/symbol.c | 66 +++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 57 insertions(+), 9 deletions(-)
 
-The notion of "sub-options" is very fuzzy: as symbols are stored in an
-hash-based array, it is not possible to now how they relate to each other
-order-wise, once the parsing of the Kconfig is done. So we can't expect
-the search results to reflect the 'proximity' of symbol declarations.
-
-> I am wondering if it might not be better to go for a more simple
-> strategy: exact match on top and then sort alphabetically. Or even just
-> sort alphabetically - now that I know regexps are supported, it is easy
-> to get the exact match when I need it.
-
-Also, to prefer exact match requires we check how much of the symbol
-name was matched (hence my initial 'relevance' heuristic).
-
-However, here is a proposal for another heuristic that seems to work
-relatively well for me (but is a very little bit more complex, I'm
-afraid), that tries hard to get the most relevant symbols first:
-
-Compare matched symbols as thus:
-  - first, symbols with a prompt,   [1]
-  - then, smallest offset,          [2]
-  - then, shortest match,           [3]
-  - then, highest relevance,        [4]
-  - finally, alphabetical sort      [5]
-
-When searching for 'P.*CI' :
-
-[1] Symbols of interest are probably those with a prompt, as they can be
-    changed, while symbols with no prompt are only for info. Thus:
-        PCIEASPM comes before PCI_ATS
-
-[2] Symbols that match earlier in the name are to be preferred over
-    symbols which match later. Thus:
-        PCI_MSI comes before WDTPCI
-
-[3] The shortest match is (IMHO) more interesting than a longer one.
-    Thus:
-        PCI comes before PCMCIA
-
-[4] The relevance is the ratio of the length of the match against the
-    length of the symbol. The more of a symbol name we match, the more
-    instersting that symbol is. Thus:
-        PCIEAER comes before PCIEASPM
-
-[5] As fallback, sort symbols alphabetically (no example, it's explicit
-    enough, I guess :-) )
-
-Of course 'P.*CI' is really a torture-test search, real searches will
-probably be more precise in the first place. This heuristic seems to
-also work well with real searches. YMMV, of course...
-
-What do you (and others!) think about this? I'll post the patch shortly
-for testing.
-
-> Thanks for your work anyway,
-
-Cheers! :-)
-
-Regards,
-Yann E. MORIN.
-
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index ecc5aa5..baba030 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -943,38 +943,86 @@ const char *sym_escape_string_value(const char *in)
+ 	return res;
+ }
+ 
++struct sym_match {
++	struct symbol	*sym;
++	int 		rel;
++};
++
++/* Compare matched symbols as thus:
++ * - highest relevance first
++ * - equal relevance sorted alphabetically
++ */
++static int sym_rel_comp( const void *sym1, const void *sym2 )
++{
++	struct sym_match **s1 = (struct sym_match **)sym1;
++	struct sym_match **s2 = (struct sym_match **)sym2;
++
++	if ( (*s1)->rel > (*s2)->rel )
++		return -1;
++	else if ( (*s1)->rel < (*s2)->rel )
++		return 1;
++	else
++		return strcmp( (*s1)->sym->name, (*s2)->sym->name );
++}
++
+ struct symbol **sym_re_search(const char *pattern)
+ {
+ 	struct symbol *sym, **sym_arr = NULL;
++	struct sym_match **sym_match_arr = NULL;
+ 	int i, cnt, size;
+ 	regex_t re;
++	regmatch_t match[1];
+ 
+ 	cnt = size = 0;
+ 	/* Skip if empty */
+ 	if (strlen(pattern) == 0)
+ 		return NULL;
+-	if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB|REG_ICASE))
++	if (regcomp(&re, pattern, REG_EXTENDED|REG_ICASE))
+ 		return NULL;
+ 
+ 	for_all_symbols(i, sym) {
++		struct sym_match *tmp_sym_match;
+ 		if (sym->flags & SYMBOL_CONST || !sym->name)
+ 			continue;
+-		if (regexec(&re, sym->name, 0, NULL, 0))
++		if (regexec(&re, sym->name, 1, match, 0))
+ 			continue;
+ 		if (cnt + 1 >= size) {
+-			void *tmp = sym_arr;
++			void *tmp;
+ 			size += 16;
+-			sym_arr = realloc(sym_arr, size * sizeof(struct symbol *));
+-			if (!sym_arr) {
+-				free(tmp);
+-				return NULL;
++			tmp = realloc(sym_match_arr, size * sizeof(struct sym_match *));
++			if (!tmp) {
++				goto sym_re_search_free;
+ 			}
++			sym_match_arr = tmp;
+ 		}
+ 		sym_calc_value(sym);
+-		sym_arr[cnt++] = sym;
++		tmp_sym_match = (struct sym_match*)malloc(sizeof(struct sym_match));
++		if (!tmp_sym_match)
++			goto sym_re_search_free;
++		tmp_sym_match->sym = sym;
++		/* As regexec return 0, we know we have a match, so
++		 * we can use match[0].rm_[se]o without further checks
++		 */
++		tmp_sym_match->rel = (100*(match[0].rm_eo-match[0].rm_so))
++				     /strlen(sym->name);
++		sym_match_arr[cnt++] = tmp_sym_match;
+ 	}
+-	if (sym_arr)
++
++	if( sym_match_arr ) {
++		qsort( sym_match_arr, cnt, sizeof(struct sym_match*), sym_rel_comp );
++		sym_arr = malloc( (cnt+1) * sizeof(struct symbol) );
++		if (!sym_arr)
++			goto sym_re_search_free;
++		for ( i=0; i<cnt; i++ )
++			sym_arr[i] = sym_match_arr[i]->sym;
+ 		sym_arr[cnt] = NULL;
++	}
++sym_re_search_free:
++	if (sym_match_arr) {
++		for ( i=0; i<cnt; i++ )
++			free( sym_match_arr[i] );
++		free( sym_match_arr );
++	}
+ 	regfree(&re);
+ 
+ 	return sym_arr;
 -- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+1.8.1.2
+
