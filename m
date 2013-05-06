@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758938Ab3EFVL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 17:11:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59068 "EHLO
+	id S1758950Ab3EFVLs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 17:11:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59064 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757487Ab3EFUqQ (ORCPT
+	with ESMTP id S1757466Ab3EFUqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 16:46:16 -0400
+	Mon, 6 May 2013 16:46:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 031/115] s390/memory hotplug: prevent offline of active memory increments
-Date: Mon,  6 May 2013 13:44:27 -0700
-Message-Id: <20130506203058.757372287@linuxfoundation.org>
+        Tormod Volden <debian.tormod@gmail.com>
+Subject: [ 030/115] usb-storage: CY7C68300A chips do not support Cypress ATACB
+Date: Mon,  6 May 2013 13:44:26 -0700
+Message-Id: <20130506203058.647218928@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130506203055.537199268@linuxfoundation.org>
 References: <20130506203055.537199268@linuxfoundation.org>
@@ -28,58 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Tormod Volden <debian.tormod@gmail.com>
 
-commit 94c163663fc1dcfc067a5fb3cc1446b9469975ce upstream.
+commit 671b4b2ba9266cbcfe7210a704e9ea487dcaa988 upstream.
 
-In case a machine supports memory hotplug all active memory increments
-present at IPL time have been initialized with a "usecount" of 1.
-This is wrong if the memory increment size is larger than the memory
-section size of the memory hotplug code. If that is the case the
-usecount must be initialized with the number of memory sections that
-fit into one memory increment.
-Otherwise it is possible to put a memory increment into standby state
-even if there are still active sections.
-Afterwards addressing exceptions might happen which cause the kernel
-to panic.
-However even worse, if a memory increment was put into standby state
-and afterwards into active state again, it's contents would have been
-zeroed, leading to memory corruption.
+Many cards based on CY7C68300A/B/C use the USB ID 04b4:6830 but only the
+B and C variants (EZ-USB AT2LP) support the ATA Command Block
+functionality, according to the data sheets. The A variant (EZ-USB AT2)
+locks up if ATACB is attempted, until a typical 30 seconds timeout runs
+out and a USB reset is performed.
 
-This was only an issue for machines that support standby memory and
-have at least 256GB memory.
+https://bugs.launchpad.net/bugs/428469
 
-This is broken since commit fdb1bb15 "[S390] sclp/memory hotplug: fix
-initial usecount of increments".
+It seems that one way to spot a CY7C68300A (at least where the card
+manufacturer left Cypress' EEPROM default vaules, against Cypress'
+recommendations) is to look at the USB string descriptor indices.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Reviewed-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+A http://media.digikey.com/pdf/Data%20Sheets/Cypress%20PDFs/CY7C68300A.pdf
+B http://www.farnell.com/datasheets/43456.pdf
+C http://www.cypress.com/?rID=14189
+
+Note that a CY7C68300B/C chip appears as CY7C68300A if it is running
+in Backward Compatibility Mode, and if ATACB would be supported in this
+case there is anyway no way to tell which chip it really is.
+
+For 5 years my external USB drive has been locking up for half a minute
+when plugged in and ata_id is run by udev, or anytime hdparm or similar
+is run on it.
+
+Finally looking at the /correct/ datasheet I think I found the reason. I
+am aware the quirk in this patch is a bit hacky, but the hardware
+manufacturers haven't made it easy for us.
+
+Signed-off-by: Tormod Volden <debian.tormod@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/char/sclp_cmd.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/storage/cypress_atacb.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/drivers/s390/char/sclp_cmd.c
-+++ b/drivers/s390/char/sclp_cmd.c
-@@ -561,6 +561,8 @@ static void __init sclp_add_standby_memo
- 	add_memory_merged(0);
- }
- 
-+#define MEM_SCT_SIZE (1UL << SECTION_SIZE_BITS)
-+
- static void __init insert_increment(u16 rn, int standby, int assigned)
+--- a/drivers/usb/storage/cypress_atacb.c
++++ b/drivers/usb/storage/cypress_atacb.c
+@@ -248,14 +248,26 @@ static int cypress_probe(struct usb_inte
  {
- 	struct memory_increment *incr, *new_incr;
-@@ -573,7 +575,7 @@ static void __init insert_increment(u16
- 	new_incr->rn = rn;
- 	new_incr->standby = standby;
- 	if (!standby)
--		new_incr->usecount = 1;
-+		new_incr->usecount = rzm > MEM_SCT_SIZE ? rzm/MEM_SCT_SIZE : 1;
- 	last_rn = 0;
- 	prev = &sclp_mem_list;
- 	list_for_each_entry(incr, &sclp_mem_list, list) {
+ 	struct us_data *us;
+ 	int result;
++	struct usb_device *device;
+ 
+ 	result = usb_stor_probe1(&us, intf, id,
+ 			(id - cypress_usb_ids) + cypress_unusual_dev_list);
+ 	if (result)
+ 		return result;
+ 
+-	us->protocol_name = "Transparent SCSI with Cypress ATACB";
+-	us->proto_handler = cypress_atacb_passthrough;
++	/* Among CY7C68300 chips, the A revision does not support Cypress ATACB
++	 * Filter out this revision from EEPROM default descriptor values
++	 */
++	device = interface_to_usbdev(intf);
++	if (device->descriptor.iManufacturer != 0x38 ||
++	    device->descriptor.iProduct != 0x4e ||
++	    device->descriptor.iSerialNumber != 0x64) {
++		us->protocol_name = "Transparent SCSI with Cypress ATACB";
++		us->proto_handler = cypress_atacb_passthrough;
++	} else {
++		us->protocol_name = "Transparent SCSI";
++		us->proto_handler = usb_stor_transparent_scsi_command;
++	}
+ 
+ 	result = usb_stor_probe2(us);
+ 	return result;
 
 
