@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab3EFIwN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 04:52:13 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43994 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267Ab3EFIwL (ORCPT
+	id S1753827Ab3EFIyS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 04:54:18 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:63661 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745Ab3EFIyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 04:52:11 -0400
-Date: Mon, 6 May 2013 10:50:25 +0200
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Paul Walmsley <paul@pwsan.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
-        linux-pm@vger.kernel.org, netdev@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>
-Subject: Re: [PATCH 1/2] freezer: add unsafe versions of freezable helpers
-Message-ID: <20130506085025.GB13861@dyad.programming.kicks-ass.net>
-References: <1367615050-3894-1-git-send-email-ccross@android.com>
+	Mon, 6 May 2013 04:54:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367615050-3894-1-git-send-email-ccross@android.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1367804711-30308-7-git-send-email-alex.shi@intel.com>
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-7-git-send-email-alex.shi@intel.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 6 May 2013 01:53:44 -0700
+Message-ID: <CAPM31RK71tBPdnXzLmr1o6nmFhbhU9+b_DqX9zNSbDc4EhC8FQ@mail.gmail.com>
+Subject: Re: [PATCH v5 6/7] sched: consider runnable load average in move_tasks
+To: Alex Shi <alex.shi@intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 02:04:09PM -0700, Colin Cross wrote:
-> NFS calls the freezable helpers with locks held, which is unsafe
-> and caused lockdep warnings when 6aa9707 "lockdep: check that no
-> locks held at freeze time" was applied (reverted in dbf520a).
-> Add new *_unsafe versions of the helpers that will not run the
-> lockdep test when 6aa9707 is reapplied, and call them from NFS.
+On Sun, May 5, 2013 at 6:45 PM, Alex Shi <alex.shi@intel.com> wrote:
+> Except using runnable load average in background, move_tasks is also
+> the key functions in load balance. We need consider the runnable load
+> average in it in order to the apple to apple load comparison.
+>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 0bf88e8..790e23d 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3966,6 +3966,12 @@ static unsigned long task_h_load(struct task_struct *p);
+>
+>  static const unsigned int sched_nr_migrate_break = 32;
+>
+> +static unsigned long task_h_load_avg(struct task_struct *p)
+> +{
+> +       return div_u64(task_h_load(p) * (u64)p->se.avg.runnable_avg_sum,
+> +                       p->se.avg.runnable_avg_period + 1);
 
-Am I the only one that would like a bit more information about why NFS does
-this and why we need to work around it?
+Similarly, I think you also want to at least include blocked_load_avg here.
 
->From replies in this thread I surmise its got something to do with hard NFS
-mounts. And I suppose I could go apply google to lkml and try and find the
-previous discussion, but really this should be in the Changelog.
+More fundamentally:
+I suspect the instability from comparing these to an average taken on
+them will not give a representative imbalance weight.  While we should
+be no worse off than the present situation; we could be doing much
+better.
+
+Consider that by not consuming {runnable, blocked}_load_avg directly
+you are "hiding" the movement from one load-balancer to the next.
+> +}
+> +
+>  /*
+>   * move_tasks tries to move up to imbalance weighted load from busiest to
+>   * this_rq, as part of a balancing operation within domain "sd".
+> @@ -4001,7 +4007,7 @@ static int move_tasks(struct lb_env *env)
+>                 if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
+>                         goto next;
+>
+> -               load = task_h_load(p);
+> +               load = task_h_load_avg(p);
+>
+>                 if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
+>                         goto next;
+> --
+> 1.7.12
+>
