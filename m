@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933790Ab3EGOJu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:09:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42279 "EHLO
+	id S933754Ab3EGOJt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:09:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42284 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932909Ab3EGNlN (ORCPT
+	with ESMTP id S932878Ab3EGNlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:41:13 -0400
+	Tue, 7 May 2013 09:41:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: Nikolay Aleksandrov <nikolay@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 045/118] atl1e: limit gso segment size to prevent generation of wrong ip length fields
-Date: Tue,  7 May 2013 14:38:11 +0100
-Message-Id: <1367933964-1564-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 047/118] bonding: IFF_BONDING is not stripped on enslave failure
+Date: Tue,  7 May 2013 14:38:13 +0100
+Message-Id: <1367933964-1564-48-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -30,48 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: "nikolay@redhat.com" <nikolay@redhat.com>
 
-commit 31d1670e73f4911fe401273a8f576edc9c2b5fea upstream.
+commit b6a5a7b9a528a8b4c8bec940b607c5dd9102b8cc upstream.
 
-The limit of 0x3c00 is taken from the windows driver.
+While enslaving a new device and after IFF_BONDING flag is set, in case
+of failure it is not stripped from the device's priv_flags while
+cleaning up, which could lead to other problems.
+Cleaning at err_close because the flag is set after dev_open().
 
-Suggested-by: Huang, Xiong <xiong@qca.qualcomm.com>
-Cc: Huang, Xiong <xiong@qca.qualcomm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+v2: no change
+
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/atheros/atl1e/atl1e.h      | 2 +-
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c | 1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/bonding/bond_main.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e.h b/drivers/net/ethernet/atheros/atl1e/atl1e.h
-index edfdf6b..b5fd934 100644
---- a/drivers/net/ethernet/atheros/atl1e/atl1e.h
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e.h
-@@ -186,7 +186,7 @@ struct atl1e_tpd_desc {
- /* how about 0x2000 */
- #define MAX_TX_BUF_LEN      0x2000
- #define MAX_TX_BUF_SHIFT    13
--/*#define MAX_TX_BUF_LEN  0x3000 */
-+#define MAX_TSO_SEG_SIZE    0x3c00
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 5fc31a1..1e1ae64 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1897,6 +1897,7 @@ err_detach:
+ 	write_unlock_bh(&bond->lock);
  
- /* rrs word 1 bit 0:31 */
- #define RRS_RX_CSUM_MASK	0xFFFF
-diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-index 38f7093..56b04c4 100644
---- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-@@ -2352,6 +2352,7 @@ static int __devinit atl1e_probe(struct pci_dev *pdev,
+ err_close:
++	slave_dev->priv_flags &= ~IFF_BONDING;
+ 	dev_close(slave_dev);
  
- 	INIT_WORK(&adapter->reset_task, atl1e_reset_task);
- 	INIT_WORK(&adapter->link_chg_task, atl1e_link_chg_task);
-+	netif_set_gso_max_size(netdev, MAX_TSO_SEG_SIZE);
- 	err = register_netdev(netdev);
- 	if (err) {
- 		netdev_err(netdev, "register netdevice failed\n");
+ err_unset_master:
 -- 
 1.8.1.2
 
