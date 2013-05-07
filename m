@@ -1,58 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757518Ab3EGSKT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 14:10:19 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:44589 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752628Ab3EGSKP (ORCPT
+	id S1757657Ab3EGSLX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 14:11:23 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:52935 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756846Ab3EGSLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 14:10:15 -0400
-Message-ID: <5189441E.6020606@metafoo.de>
-Date: Tue, 07 May 2013 20:12:46 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
-        linux-iio@vger.kernel.org
-Subject: Re: linux-next: Tree for May 7 (iio)
-References: <20130507134922.981483ab1e5cb09e5543a6cc@canb.auug.org.au> <51893523.9000105@infradead.org>
-In-Reply-To: <51893523.9000105@infradead.org>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 7 May 2013 14:11:20 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org
+Cc: Jiang Liu <liuj97@gmail.com>, eunb.song@samsung.com,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH v2] MIPS: Make virt_to_phys() work for all unmapped addresses.
+Date: Tue,  7 May 2013 11:11:16 -0700
+Message-Id: <1367950276-7455-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2013 07:08 PM, Randy Dunlap wrote:
-> On 05/06/13 20:49, Stephen Rothwell wrote:
->> Hi all,
->>
->> Please do not add any v3.11 destined work to your linux-next included
->> branches until after v3.10-rc1 is released.
->>
->> I am receiving a (un)reasonable number of conflicts from there being
->> multiple copies of some commits in various trees.   Please clean this up
->> and resist the temptataion to rebase your trees on the way to your
->> upstream ...
->>
->> Changes since 20130506:
->>
-> 
-> on x86_64:
-> 
-> when CONFIG_AD5446=y and CONFIG_I2C=m:
-> 
-> drivers/built-in.o: In function `ad5622_write':
-> ad5446.c:(.text+0xae0b5): undefined reference to `i2c_master_send'
-> drivers/built-in.o: In function `ad5446_init':
-> ad5446.c:(.init.text+0x4f28): undefined reference to `i2c_register_driver'
-> drivers/built-in.o: In function `ad5446_i2c_unregister_driver':
-> ad5446.c:(.exit.text+0xc73): undefined reference to `i2c_del_driver'
-> 
+From: David Daney <david.daney@cavium.com>
 
-My fault, will fix it. Thanks for reporting.
+As reported:
+  This problem was discovered when doing BGP traffic with the TCP MD5 option
+  activated, where the following call chain caused a crash:
 
-- Lars
+   * tcp_v4_rcv
+   *  tcp_v4_timewait_ack
+   *   tcp_v4_send_ack -> follow stack variable rep.th
+   *    tcp_v4_md5_hash_hdr
+   *     tcp_md5_hash_header
+   *      sg_init_one
+   *       sg_set_buf
+   *        virt_to_page
+
+  I noticed that tcp_v4_send_reset uses a similar stack variable and
+  also calls tcp_v4_md5_hash_hdr, so it has the same problem.
+
+The networking core can indirectly call virt_to_phys() on stack
+addresses, if this is done from PID 0, the stack will usually be in
+CKSEG0, so virt_to_phys() needs to work there as well
+
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+
+This one appears to build against Linus' tree.
+
+This could also fix problems noted by Eunbong Song with the
+free_initmem_default() call.
+
+ arch/mips/include/asm/io.h   | 2 +-
+ arch/mips/include/asm/page.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/mips/include/asm/io.h b/arch/mips/include/asm/io.h
+index 1be1372..b7e5985 100644
+--- a/arch/mips/include/asm/io.h
++++ b/arch/mips/include/asm/io.h
+@@ -118,7 +118,7 @@ static inline void set_io_port_base(unsigned long base)
+  */
+ static inline unsigned long virt_to_phys(volatile const void *address)
+ {
+-	return (unsigned long)address - PAGE_OFFSET + PHYS_OFFSET;
++	return __pa(address);
+ }
+ 
+ /*
+diff --git a/arch/mips/include/asm/page.h b/arch/mips/include/asm/page.h
+index eab99e5..ec1ca53 100644
+--- a/arch/mips/include/asm/page.h
++++ b/arch/mips/include/asm/page.h
+@@ -46,7 +46,6 @@
+ #endif /* CONFIG_MIPS_HUGE_TLB_SUPPORT */
+ 
+ #include <linux/pfn.h>
+-#include <asm/io.h>
+ 
+ extern void build_clear_page(void);
+ extern void build_copy_page(void);
+@@ -151,6 +150,7 @@ typedef struct { unsigned long pgprot; } pgprot_t;
+     ((unsigned long)(x) - PAGE_OFFSET + PHYS_OFFSET)
+ #endif
+ #define __va(x)		((void *)((unsigned long)(x) + PAGE_OFFSET - PHYS_OFFSET))
++#include <asm/io.h>
+ 
+ /*
+  * RELOC_HIDE was originally added by 6007b903dfe5f1d13e0c711ac2894bdd4a61b1ad
+-- 
+1.7.11.7
+
