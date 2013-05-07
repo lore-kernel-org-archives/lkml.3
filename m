@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934469Ab3EGCdz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 22:33:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59645 "EHLO song.cn.fujitsu.com"
+	id S934450Ab3EGCdy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 22:33:54 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:43453 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759945Ab3EGCT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760008Ab3EGCT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 22:19:26 -0400
 X-IronPort-AV: E=Sophos;i="4.87,625,1363104000"; 
-   d="scan'208";a="7201753"
+   d="scan'208";a="7201754"
 From: Gao feng <gaofeng@cn.fujitsu.com>
 To: viro@zeniv.linux.org.uk, eparis@redhat.com, ebiederm@xmission.com,
         sgrubb@redhat.com, akpm@linux-foundation.org, serge.hallyn@ubuntu.com,
@@ -15,14 +15,14 @@ To: viro@zeniv.linux.org.uk, eparis@redhat.com, ebiederm@xmission.com,
 Cc: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org, linux-audit@redhat.com,
         Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH RFC 07/48] Audit: make audit_pid per user namespace
-Date: Tue, 7 May 2013 10:20:28 +0800
-Message-Id: <1367893269-9308-8-git-send-email-gaofeng@cn.fujitsu.com>
+Subject: [PATCH RFC 11/48] Audit: make audit_ever_enabled per user namespace
+Date: Tue, 7 May 2013 10:20:32 +0800
+Message-Id: <1367893269-9308-12-git-send-email-gaofeng@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
 References: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/07 10:18:25,
+ 2013/05/07 10:18:26,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/05/07 10:18:27,
 	Serialize complete at 2013/05/07 10:18:27
@@ -30,185 +30,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After this patch, audit_pid is per user namespace.
-Since we havn't prepared to enable audit for uninit
-user namespace now, use the audit_pid of init_user_ns
-instead of the audit_pid of per user namespace.
+We set audit_ever_enabled true after we enabled audit once.
+and if audit_ever_enabled is true, we will allocate audit
+context for task.
+
+We should decide if to allocate audit context for tasks based on
+if the audit is enabled once in the user namespace which the
+task belongs to.
+
+So audit_ever_enabled should be per user namespace too.
 
 Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 ---
- include/linux/audit.h          |  1 +
- include/linux/user_namespace.h |  1 +
- kernel/audit.c                 | 22 +++++++++++-----------
- kernel/audit.h                 |  5 ++---
- kernel/auditsc.c               |  6 +++---
- 5 files changed, 18 insertions(+), 17 deletions(-)
+ include/linux/user_namespace.h | 1 +
+ kernel/audit.c                 | 7 +++----
+ kernel/auditsc.c               | 5 ++++-
+ 3 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 78f51ae..684599b 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -26,6 +26,7 @@
- #include <linux/sched.h>
- #include <linux/ptrace.h>
- #include <uapi/linux/audit.h>
-+#include <linux/user_namespace.h>
- 
- struct audit_sig_info {
- 	uid_t		uid;
 diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-index 24f7c2f..a6c6174 100644
+index 3b2ed90..d5a22b2 100644
 --- a/include/linux/user_namespace.h
 +++ b/include/linux/user_namespace.h
-@@ -21,6 +21,7 @@ struct uid_gid_map {	/* 64 bytes -- 1 cache line */
- #ifdef CONFIG_AUDIT
- struct audit_ctrl {
- 	struct sock		*sock;
-+	int			pid;
+@@ -27,6 +27,7 @@ struct audit_ctrl {
  	struct sk_buff_head	queue;
  	struct sk_buff_head	hold_queue;
  	struct task_struct	*kauditd_task;
++	bool			ever_enabled;
+ };
+ #endif
+ 
 diff --git a/kernel/audit.c b/kernel/audit.c
-index 839c4c0..2ce7a21 100644
+index 1138ff5..9ea5b27 100644
 --- a/kernel/audit.c
 +++ b/kernel/audit.c
-@@ -92,7 +92,6 @@ static int	audit_failure = AUDIT_FAIL_PRINTK;
-  * contains the pid of the auditd process and audit_nlk_portid contains
-  * the portid to use to send netlink messages to that process.
-  */
--int		audit_pid;
- static int	audit_nlk_portid;
+@@ -76,7 +76,6 @@ static int	audit_initialized;
+ #define AUDIT_OFF	0
+ #define AUDIT_ON	1
+ #define AUDIT_LOCKED	2
+-bool		audit_ever_enabled;
  
- /* If audit_rate_limit is non-zero, limit the rate of sending audit records
-@@ -181,7 +180,7 @@ void audit_panic(const char *message)
- 		break;
- 	case AUDIT_FAIL_PANIC:
- 		/* test audit_pid since printk is always losey, why bother? */
--		if (audit_pid)
-+		if (&init_user_ns.audit.pid)
- 			panic("audit: %s\n", message);
- 		break;
- 	}
-@@ -404,9 +403,10 @@ static void kauditd_send_skb(struct sk_buff *skb)
- 			      audit_nlk_portid, 0);
- 	if (err < 0) {
- 		BUG_ON(err != -ECONNREFUSED); /* Shouldn't happen */
--		printk(KERN_ERR "audit: *NO* daemon at audit_pid=%d\n", audit_pid);
-+		printk(KERN_ERR "audit: *NO* daemon at audit_pid=%d\n",
-+		       init_user_ns.audit.pid);
- 		audit_log_lost("auditd disappeared\n");
--		audit_pid = 0;
-+		init_user_ns.audit.pid = 0;
- 		/* we might get lucky and get this in the next auditd */
- 		audit_hold_skb(skb);
- 	} else
-@@ -436,10 +436,10 @@ static int kauditd_thread(void *dummy)
- 		 * in 5 years when I want to play with this again I'll see this
- 		 * note and still have no friggin idea what i'm thinking today.
- 		 */
--		if (audit_default && audit_pid) {
-+		if (audit_default && ns->audit.pid) {
- 			skb = skb_dequeue(hold_queue);
- 			if (unlikely(skb)) {
--				while (skb && audit_pid) {
-+				while (skb && ns->audit.pid) {
- 					kauditd_send_skb(skb);
- 					skb = skb_dequeue(hold_queue);
- 				}
-@@ -449,7 +449,7 @@ static int kauditd_thread(void *dummy)
- 		skb = skb_dequeue(queue);
- 		wake_up(&audit_backlog_wait);
- 		if (skb) {
--			if (audit_pid)
-+			if (ns->audit.pid)
- 				kauditd_send_skb(skb);
- 			else
- 				audit_printk_skb(skb);
-@@ -683,7 +683,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	case AUDIT_GET:
- 		status_set.enabled	 = audit_enabled;
- 		status_set.failure	 = audit_failure;
--		status_set.pid		 = audit_pid;
-+		status_set.pid		 = ns->audit.pid;
- 		status_set.rate_limit	 = audit_rate_limit;
- 		status_set.backlog_limit = audit_backlog_limit;
- 		status_set.lost		 = atomic_read(&audit_lost);
-@@ -713,10 +713,10 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ /* Default state when kernel boots without any parameters. */
+ static int	audit_default;
+@@ -331,7 +330,7 @@ static int audit_set_enabled(struct user_namespace *ns, int state,
+ 				     state, loginuid, sessionid, sid);
  
- 			if (audit_enabled != AUDIT_OFF)
- 				audit_log_config_change("audit_pid", new_pid,
--							audit_pid, loginuid,
-+							ns->audit.pid, loginuid,
- 							sessionid, sid, 1);
+ 	if (!rc)
+-		audit_ever_enabled |= !!state;
++		ns->audit.ever_enabled |= !!state;
  
--			audit_pid = new_pid;
-+			ns->audit.pid = new_pid;
- 			audit_nlk_portid = NETLINK_CB(skb).portid;
- 		}
- 		if (status_get->mask & AUDIT_STATUS_RATE_LIMIT) {
-@@ -1530,7 +1530,7 @@ void audit_log_end(struct audit_buffer *ab)
- 		struct nlmsghdr *nlh = nlmsg_hdr(ab->skb);
- 		nlh->nlmsg_len = ab->skb->len - NLMSG_HDRLEN;
+ 	return rc;
+ }
+@@ -994,7 +993,6 @@ static int __init audit_init(void)
  
--		if (audit_pid) {
-+		if (init_user_ns.audit.pid) {
- 			skb_queue_tail(&init_user_ns.audit.queue,
- 				       ab->skb);
- 			wake_up_interruptible(&kauditd_wait);
-diff --git a/kernel/audit.h b/kernel/audit.h
-index 11468d9..ced93fe 100644
---- a/kernel/audit.h
-+++ b/kernel/audit.h
-@@ -61,8 +61,6 @@ struct audit_entry {
+ 	audit_set_user_ns(&init_user_ns);
+ 	audit_initialized = AUDIT_INITIALIZED;
+-	audit_ever_enabled |= !!audit_default;
  
- extern int audit_ever_enabled;
+ 	audit_log(NULL, GFP_KERNEL, AUDIT_KERNEL, "initialized");
  
--extern int audit_pid;
--
- #define AUDIT_INODE_BUCKETS	32
- extern struct list_head audit_inode_hash[AUDIT_INODE_BUCKETS];
+@@ -1016,7 +1014,7 @@ static int __init audit_enable(char *str)
  
-@@ -153,7 +151,8 @@ extern u32 audit_sig_sid;
- extern int __audit_signal_info(int sig, struct task_struct *t);
- static inline int audit_signal_info(int sig, struct task_struct *t)
- {
--	if (unlikely((audit_pid && t->tgid == audit_pid) ||
-+	if (unlikely((init_user_ns.audit.pid &&
-+		      t->tgid == init_user_ns.audit.pid) ||
- 		     (audit_signals && !audit_dummy_context())))
- 		return __audit_signal_info(sig, t);
- 	return 0;
+ 	if (audit_initialized == AUDIT_INITIALIZED) {
+ 		init_user_ns.audit.enabled = audit_default;
+-		audit_ever_enabled |= !!audit_default;
++		init_user_ns.audit.ever_enabled |= !!audit_default;
+ 	} else if (audit_initialized == AUDIT_UNINITIALIZED) {
+ 		printk(" (after initialization)");
+ 	} else {
+@@ -1594,6 +1592,7 @@ void audit_set_user_ns(struct user_namespace *ns)
+ 	skb_queue_head_init(&ns->audit.queue);
+ 	skb_queue_head_init(&ns->audit.hold_queue);
+ 	ns->audit.enabled = audit_default;
++	ns->audit.ever_enabled |= !!audit_default;
+ }
+ 
+ void audit_free_user_ns(struct user_namespace *ns)
 diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index c682294..6c97f36 100644
+index 6c97f36..290cce6 100644
 --- a/kernel/auditsc.c
 +++ b/kernel/auditsc.c
-@@ -871,7 +871,7 @@ static enum audit_state audit_filter_syscall(struct task_struct *tsk,
- 	struct audit_entry *e;
- 	enum audit_state state;
+@@ -1062,8 +1062,11 @@ int audit_alloc(struct task_struct *tsk)
+ 	struct audit_context *context;
+ 	enum audit_state     state;
+ 	char *key = NULL;
++	struct user_namespace *ns = current_user_ns();
++	/* Use current_user_ns, since this new task may run
++	 * in new user namespace */
  
--	if (audit_pid && tsk->tgid == audit_pid)
-+	if (init_user_ns.audit.pid && tsk->tgid == init_user_ns.audit.pid)
- 		return AUDIT_DISABLED;
+-	if (likely(!audit_ever_enabled))
++	if (likely(!ns->audit.ever_enabled))
+ 		return 0; /* Return if not auditing. */
  
- 	rcu_read_lock();
-@@ -932,7 +932,7 @@ void audit_filter_inodes(struct task_struct *tsk, struct audit_context *ctx)
- {
- 	struct audit_names *n;
- 
--	if (audit_pid && tsk->tgid == audit_pid)
-+	if (init_user_ns.audit.pid && tsk->tgid == init_user_ns.audit.pid)
- 		return;
- 
- 	rcu_read_lock();
-@@ -2547,7 +2547,7 @@ int __audit_signal_info(int sig, struct task_struct *t)
- 	struct audit_context *ctx = tsk->audit_context;
- 	kuid_t uid = current_uid(), t_uid = task_uid(t);
- 
--	if (audit_pid && t->tgid == audit_pid) {
-+	if (init_user_ns.audit.pid && t->tgid == init_user_ns.audit.pid) {
- 		if (sig == SIGTERM || sig == SIGHUP || sig == SIGUSR1 || sig == SIGUSR2) {
- 			audit_sig_pid = tsk->pid;
- 			if (uid_valid(tsk->loginuid))
+ 	state = audit_filter_task(tsk, &key);
 -- 
 1.8.1.4
 
