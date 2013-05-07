@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932708Ab3EGNk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:40:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42157 "EHLO
+	id S1752147Ab3EGOPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:15:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42174 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384Ab3EGNkv (ORCPT
+	with ESMTP id S932598Ab3EGNky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:40:51 -0400
+	Tue, 7 May 2013 09:40:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 028/118] TTY: fix atime/mtime regression
-Date: Tue,  7 May 2013 14:37:54 +0100
-Message-Id: <1367933964-1564-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 030/118] ax25: fix info leak via msg_name in ax25_recvmsg()
+Date: Tue,  7 May 2013 14:37:56 +0100
+Message-Id: <1367933964-1564-31-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -29,71 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 37b7f3c76595e23257f61bd80b223de8658617ee upstream.
+commit ef3313e84acbf349caecae942ab3ab731471f1a1 upstream.
 
-In commit b0de59b5733d ("TTY: do not update atime/mtime on read/write")
-we removed timestamps from tty inodes to fix a security issue and waited
-if something breaks.  Well, 'w', the utility to find out logged users
-and their inactivity time broke.  It shows that users are inactive since
-the time they logged in.
+When msg_namelen is non-zero the sockaddr info gets filled out, as
+requested, but the code fails to initialize the padding bytes of struct
+sockaddr_ax25 inserted by the compiler for alignment. Additionally the
+msg_namelen value is updated to sizeof(struct full_sockaddr_ax25) but is
+not always filled up to this size.
 
-To revert to the old behaviour while still preventing attackers to
-guess the password length, we update the timestamps in one-minute
-intervals by this patch.
+Both issues lead to the fact that the code will leak uninitialized
+kernel stack bytes in net/socket.c.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backport to 3.5: don't use file_inode() ]
+Fix both issues by initializing the memory with memset(0).
+
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/tty_io.c | 16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ net/ax25/af_ax25.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index e0767b7..95a37fa 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -939,6 +939,14 @@ void start_tty(struct tty_struct *tty)
+diff --git a/net/ax25/af_ax25.c b/net/ax25/af_ax25.c
+index 779095d..d53a123 100644
+--- a/net/ax25/af_ax25.c
++++ b/net/ax25/af_ax25.c
+@@ -1647,6 +1647,7 @@ static int ax25_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		ax25_address src;
+ 		const unsigned char *mac = skb_mac_header(skb);
  
- EXPORT_SYMBOL(start_tty);
- 
-+static void tty_update_time(struct timespec *time)
-+{
-+	unsigned long sec = get_seconds();
-+	sec -= sec % 60;
-+	if ((long)(sec - time->tv_sec) > 0)
-+		time->tv_sec = sec;
-+}
-+
- /**
-  *	tty_read	-	read method for tty device files
-  *	@file: pointer to tty file
-@@ -976,6 +984,9 @@ static ssize_t tty_read(struct file *file, char __user *buf, size_t count,
- 		i = -EIO;
- 	tty_ldisc_deref(ld);
- 
-+	if (i > 0)
-+		tty_update_time(&inode->i_atime);
-+
- 	return i;
- }
- 
-@@ -1076,8 +1087,11 @@ static inline ssize_t do_tty_write(
- 			break;
- 		cond_resched();
- 	}
--	if (written)
-+	if (written) {
-+		struct inode *inode = file->f_path.dentry->d_inode;
-+		tty_update_time(&inode->i_mtime);
- 		ret = written;
-+	}
- out:
- 	tty_write_unlock(tty);
- 	return ret;
++		memset(sax, 0, sizeof(struct full_sockaddr_ax25));
+ 		ax25_addr_parse(mac + 1, skb->data - mac - 1, &src, NULL,
+ 				&digi, NULL, NULL);
+ 		sax->sax25_family = AF_AX25;
 -- 
 1.8.1.2
 
