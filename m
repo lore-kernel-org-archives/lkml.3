@@ -1,78 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758412Ab3EGIA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 04:00:56 -0400
-Received: from mga14.intel.com ([143.182.124.37]:54710 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757441Ab3EGIAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 04:00:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,627,1363158000"; 
-   d="scan'208";a="237916280"
-Date: Tue, 7 May 2013 11:04:55 +0300
-From: "Westerberg, Mika" <mika.westerberg@intel.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 0/3] mmc: sdhci: support runtime PM for BYT SD cards
-Message-ID: <20130507080455.GF20562@intel.com>
-References: <1367831854-31952-1-git-send-email-adrian.hunter@intel.com>
- <CACRpkdYsMwAZSw9McHQE4VSsS7wUWLm+mtR1yLzdPCaQzDUo3A@mail.gmail.com>
- <5188A6A0.3040603@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5188A6A0.3040603@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758134Ab3EGIM4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 04:12:56 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42317 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757811Ab3EGIMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 04:12:51 -0400
+X-AuditID: 9c93016f-b7ba0ae000004cc2-af-5188b77ebd2d
+From: Chanho Min <chanho.min@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kyungsik Lee <kyungsik.lee@lge.com>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        Richard Weinberger <richard@nod.at>,
+        Geert Uytterhoeven <geert.uytterhoeven@gmail.com>,
+        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-m68k@vger.kernel.org, linux-next@vger.kernel.org,
+        Chanho Min <chanho.min@lge.com>
+Subject: [PATCH RESEND] lib: add weak clz/ctz functions
+Date: Tue,  7 May 2013 17:12:37 +0900
+Message-Id: <1367914357-1876-1-git-send-email-chanho.min@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 10:00:48AM +0300, Adrian Hunter wrote:
-> On 06/05/13 22:27, Linus Walleij wrote:
-> > On Mon, May 6, 2013 at 11:17 AM, Adrian Hunter <adrian.hunter@intel.com> wrote:
-> > 
-> >> Here are 3 patches to support runtime PM for BYT SD cards
-> >>
-> >> Please note that these patches are dependent upon 2 gpio patches
-> >> that are in linux-next and linux-gpio but not the mmc tree.
-> >> Those patches are:
-> >>
-> >>         author  Mika Westerberg <mika.westerberg@linux.intel.com>       2013-04-03 10:56:54 (GMT)
-> >>         committer       Linus Walleij <linus.walleij@linaro.org>        2013-04-11 22:31:18 (GMT)
-> >>         commit  12028d2d216220618f76284af5f8ed510b11da55 (patch)
-> >>         gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
-> >>
-> >>         author  Rafael J. Wysocki <rafael.j.wysocki@intel.com>  2013-04-09 13:57:25 (GMT)
-> >>         committer       Linus Walleij <linus.walleij@linaro.org>        2013-04-10 21:41:17 (GMT)
-> >>         commit  7fc7acb9a0b0ff3ffdf21818fe0735ebaf4fecb8 (patch)
-> >>         gpio / ACPI: Handle ACPI events in accordance with the spec
-> >>
-> >> I think those patches are queued for 3.10.
-> >>
-> >> cc: Linus Walleij <linus.walleij@linaro.org>
-> > 
-> > No they are currently not, and will as it looks right now *not* be in v3.10 due
-> > to a screwup from my side, and that screwup walking the ladder to
-> > Torvalds where it exploded. So he's not pulling the GPIO tree this merge
-> > window.
-> > 
-> > So just sit back and synchronize this for v3.11 (surely they can be taken
-> > through the GPIO tree if Chris gives his ACK on them).
-> 
-> 3.11 is fine, but one of the patches:
-> 
-> 	 [PATCH 1/3] mmc: sdhci: add ability to stay runtime-resumed if the card is powered up
-> 
-> really should be in the mmc tree.
-> 
-> It would be simpler if the above 2 ACPI GPIO patches made it to 3.10 or went via the mmc tree.
-> Adding Rafael in case he can still take them for 3.10.
+Some architectures need __c[lt]z[sd]i2() for __builtin_c[lt]z[ll] and
+It causes build failure. They can be implemented using the fls()/__ffs() and
+overridden by linking arch-specific versions may not be implemented yet.
 
-Looks like Linus pulled GPIO changes already. So they should be available
-for 3.10.
+Reference: https://lkml.org/lkml/2013/4/18/603
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Chanho Min <chanho.min@lge.com>
+---
+ lib/Makefile  |    2 +-
+ lib/clz_ctz.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+), 1 deletion(-)
+ create mode 100644 lib/clz_ctz.c
+
+diff --git a/lib/Makefile b/lib/Makefile
+index af79e8c..3eacb2c 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -23,7 +23,7 @@ lib-y	+= kobject.o klist.o
+ 
+ obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+ 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+-	 gcd.o lcm.o list_sort.o uuid.o flex_array.o \
++	 gcd.o lcm.o list_sort.o uuid.o flex_array.o clz_ctz.o\
+ 	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o
+ obj-y += string_helpers.o
+ obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
+diff --git a/lib/clz_ctz.c b/lib/clz_ctz.c
+new file mode 100644
+index 0000000..a8f8379
+--- /dev/null
++++ b/lib/clz_ctz.c
+@@ -0,0 +1,58 @@
++/*
++ * lib/clz_ctz.c
++ *
++ * Copyright (C) 2013 Chanho Min <chanho.min@lge.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * __c[lt]z[sd]i2 can be overridden by linking arch-specific versions.
++ */
++
++#include <linux/export.h>
++#include <linux/kernel.h>
++
++int __weak __ctzsi2(int val)
++{
++	return __ffs(val);
++}
++EXPORT_SYMBOL(__ctzsi2);
++
++int __weak __clzsi2(int val)
++{
++	return 32 - fls(val);
++}
++EXPORT_SYMBOL(__clzsi2);
++
++#if BITS_PER_LONG == 32
++
++int __weak __clzdi2(long val)
++{
++	return 32 - fls((int)val);
++}
++EXPORT_SYMBOL(__clzdi2);
++
++int __weak __ctzdi2(long val)
++{
++	return __ffs((u32)val);
++}
++EXPORT_SYMBOL(__ctzdi2);
++
++#elif BITS_PER_LONG == 64
++
++int __weak __clzdi2(long val)
++{
++	return 64 - fls64((u64)val);
++}
++EXPORT_SYMBOL(__clzdi2);
++
++int __weak __ctzdi2(long val)
++{
++	return __ffs64((u64)val);
++}
++EXPORT_SYMBOL(__ctzdi2);
++
++#else
++#error BITS_PER_LONG not 32 or 64
++#endif
+-- 
+1.7.9.5
+
