@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933616Ab3EGN4V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:56:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42514 "EHLO
+	id S933669Ab3EGN4l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:56:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42513 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933306Ab3EGNmH (ORCPT
+	with ESMTP id S933302Ab3EGNmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:07 -0400
+	Tue, 7 May 2013 09:42:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 091/118] iwlwifi: fix freeing uninitialized pointer
-Date: Tue,  7 May 2013 14:38:57 +0100
-Message-Id: <1367933964-1564-92-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 092/118] iwlwifi: dvm: don't send zeroed LQ cmd
+Date: Tue,  7 May 2013 14:38:58 +0100
+Message-Id: <1367933964-1564-93-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,56 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 3309ccf7fcebceef540ebe90c65d2f94d745a45b upstream.
+commit 63b77bf489881747c5118476918cc8c29378ee63 upstream.
 
-If on iwl_dump_nic_event_log() error occurs before that function
-initialize buf, we process uninitiated pointer in
-iwl_dbgfs_log_event_read() and can hit "BUG at mm/slub.c:3409"
+When the stations are being restored because of unassoc
+RXON, the LQ cmd may not have been initialized because it
+is initialized only after association.
+Sending zeroed LQ_CMD makes the fw unhappy: it raises
+SYSASSERT_2078.
 
-Resolves:
-https://bugzilla.redhat.com/show_bug.cgi?id=951241
-
-Reported-by: ian.odette@eprize.com
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+[move zero_lq and make static const]
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 [ luis: backport to 3.5:
-  - file rename: dvm/debugfs.c -> iwl-debugfs.c ]
+  - file rename: dvm/sta.c -> iwl-agn-sta.c ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/iwl-debugfs.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-agn-sta.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-debugfs.c b/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-index 5000690..ba376ec 100644
---- a/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-@@ -2248,15 +2248,15 @@ static ssize_t iwl_dbgfs_log_event_read(struct file *file,
- 					 size_t count, loff_t *ppos)
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-sta.c b/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
+index 287fdd0..b4f0661 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
+@@ -723,6 +723,7 @@ void iwl_clear_ucode_stations(struct iwl_priv *priv,
+ void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
  {
- 	struct iwl_priv *priv = file->private_data;
--	char *buf;
--	int pos = 0;
--	ssize_t ret = -ENOMEM;
-+	char *buf = NULL;
-+	ssize_t ret;
- 
--	ret = pos = iwl_dump_nic_event_log(priv, true, &buf, true);
--	if (buf) {
--		ret = simple_read_from_buffer(user_buf, count, ppos, buf, pos);
--		kfree(buf);
--	}
-+	ret = iwl_dump_nic_event_log(priv, true, &buf, true);
-+	if (ret < 0)
-+		goto err;
-+	ret = simple_read_from_buffer(user_buf, count, ppos, buf, ret);
-+err:
-+	kfree(buf);
- 	return ret;
- }
- 
+ 	struct iwl_addsta_cmd sta_cmd;
++	static const struct iwl_link_quality_cmd zero_lq = {};
+ 	struct iwl_link_quality_cmd lq;
+ 	int i;
+ 	bool found = false;
+@@ -761,7 +762,9 @@ void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+ 				else
+ 					memcpy(&lq, priv->stations[i].lq,
+ 					       sizeof(struct iwl_link_quality_cmd));
+-				send_lq = true;
++
++				if (!memcmp(&lq, &zero_lq, sizeof(lq)))
++					send_lq = true;
+ 			}
+ 			spin_unlock_bh(&priv->sta_lock);
+ 			ret = iwl_send_add_sta(priv, &sta_cmd, CMD_SYNC);
 -- 
 1.8.1.2
 
