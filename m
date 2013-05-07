@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821Ab3EGBzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 21:55:22 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:45180 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759352Ab3EGBzU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 21:55:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo6iwM2r8b-aoiBPjQpkdpcfgLiO+WkpiM1wFsDhxuSXPg@mail.gmail.com>
-References: <5153620E.4010608@gmail.com> <CAErSpo6w+tTbwJ7Qinpd0Vx20q5cm2gMvqzE1Do+2=G3b8rcHA@mail.gmail.com>
- <CAErSpo6iwM2r8b-aoiBPjQpkdpcfgLiO+WkpiM1wFsDhxuSXPg@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 6 May 2013 18:54:59 -0700
-Message-ID: <CAErSpo68AWCGWQHKgoKuD-QFA0b+jbCRf7T_PzzKoUsVwdZHOg@mail.gmail.com>
-Subject: Re: 3.8.4 kernel
-To: "Joseph A. Millikan" <josephamillikan@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        Cloud Ren <cjren@qca.qualcomm.com>, netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932878Ab3EGBz6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 21:55:58 -0400
+Received: from mga14.intel.com ([143.182.124.37]:20011 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757107Ab3EGBz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 21:55:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,624,1363158000"; 
+   d="scan'208";a="237793479"
+From: Jon Mason <jon.mason@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dave Jiang <dave.jiang@intel.com>
+Subject: [PATCH 01/10] NTB: variable dereferenced before check
+Date: Mon,  6 May 2013 18:55:20 -0700
+Message-Id: <1367891729-11738-2-git-send-email-jon.mason@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1367891729-11738-1-git-send-email-jon.mason@intel.com>
+References: <1367891729-11738-1-git-send-email-jon.mason@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Xiong, Cloud, netdev since this looks like an atl1c issue]
+Correct instances of variable dereferencing before checking its value on
+the functions exported to the client drivers.  Also, add sanity checks
+for all exported functions.
 
-On Fri, Apr 26, 2013 at 3:33 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Wed, Mar 27, 2013 at 3:46 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Wed, Mar 27, 2013 at 3:18 PM, Joseph A. Millikan
->> <josephamillikan@gmail.com> wrote:
->>>
->>> We use Mint 11 32-bit and we've noticed with any kernel beyond 3.6.11, the
->>> Ethernet port stops responding to pings after 15 minutes and samba clients
->>> cease to receive data in realtime.  I hope this is the correct place to
->>> report this as we received a nasty, sullen response when posted with the
->>> Ubuntu folks (which we will NEVER do again.)
->>>
->>> If you aren't the proper party to whom we should direct this report, please
->>> disregard.  We were just trying to help developers if there is an
->>> undiscovered issue with Ethernet ports on Lenovo G770 laptops which our
->>> court uses with Mint 11.
->>
->> What specific kernels have you tried?  It'd be surprising if such an
->> egregious issue went unnoticed for long, but if recent kernels like
->> 3.8 or 3.9-rc are still broken, there's likely something we need to
->> fix.  Can you collect complete dmesg logs from 3.6.11 and the oldest
->> broken kernel you've found?  You might also run "watch cat
->> /proc/interrupts" in a window off to the side and see if the NIC
->> interrupt count stops increasing after 15 minutes.
->
-> Did this ever get resolved?
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Jon Mason <jon.mason@intel.com>
+---
+ drivers/ntb/ntb_transport.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-I opened https://bugzilla.kernel.org/show_bug.cgi?id=57681 to keep
-track of this and attached the dmesg logs you collected.  If you have
-a chance, could you also collect and attach the output of "lspci -vv"
-(any kernel is fine for this).
+diff --git a/drivers/ntb/ntb_transport.c b/drivers/ntb/ntb_transport.c
+index e0bdfd7..74c5812 100644
+--- a/drivers/ntb/ntb_transport.c
++++ b/drivers/ntb/ntb_transport.c
+@@ -1210,12 +1210,14 @@ EXPORT_SYMBOL_GPL(ntb_transport_create_queue);
+  */
+ void ntb_transport_free_queue(struct ntb_transport_qp *qp)
+ {
+-	struct pci_dev *pdev = ntb_query_pdev(qp->ndev);
++	struct pci_dev *pdev;
+ 	struct ntb_queue_entry *entry;
+ 
+ 	if (!qp)
+ 		return;
+ 
++	pdev = ntb_query_pdev(qp->ndev);
++
+ 	cancel_delayed_work_sync(&qp->link_work);
+ 
+ 	ntb_unregister_db_callback(qp->ndev, qp->qp_num);
+@@ -1371,12 +1373,13 @@ EXPORT_SYMBOL_GPL(ntb_transport_link_up);
+  */
+ void ntb_transport_link_down(struct ntb_transport_qp *qp)
+ {
+-	struct pci_dev *pdev = ntb_query_pdev(qp->ndev);
++	struct pci_dev *pdev;
+ 	int rc, val;
+ 
+ 	if (!qp)
+ 		return;
+ 
++	pdev = ntb_query_pdev(qp->ndev);
+ 	qp->client_ready = NTB_LINK_DOWN;
+ 
+ 	rc = ntb_read_local_spad(qp->ndev, QP_LINKS, &val);
+@@ -1408,6 +1411,9 @@ EXPORT_SYMBOL_GPL(ntb_transport_link_down);
+  */
+ bool ntb_transport_link_query(struct ntb_transport_qp *qp)
+ {
++	if (!qp)
++		return false;
++
+ 	return qp->qp_link == NTB_LINK_UP;
+ }
+ EXPORT_SYMBOL_GPL(ntb_transport_link_query);
+@@ -1422,6 +1428,9 @@ EXPORT_SYMBOL_GPL(ntb_transport_link_query);
+  */
+ unsigned char ntb_transport_qp_num(struct ntb_transport_qp *qp)
+ {
++	if (!qp)
++		return 0;
++
+ 	return qp->qp_num;
+ }
+ EXPORT_SYMBOL_GPL(ntb_transport_qp_num);
+@@ -1436,6 +1445,9 @@ EXPORT_SYMBOL_GPL(ntb_transport_qp_num);
+  */
+ unsigned int ntb_transport_max_size(struct ntb_transport_qp *qp)
+ {
++	if (!qp)
++		return 0;
++
+ 	return qp->tx_max_frame - sizeof(struct ntb_payload_header);
+ }
+ EXPORT_SYMBOL_GPL(ntb_transport_max_size);
+-- 
+1.7.9.5
 
-I don't see anything obvious wrong, at least from the PCI side.  Maybe
-the atl1c guys will have some ideas.
-
-Bjorn
