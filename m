@@ -1,153 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab3EGKBL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 06:01:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15259 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754354Ab3EGKBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 06:01:09 -0400
-Date: Tue, 7 May 2013 13:00:51 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, avi.kivity@gmail.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        takuya.yoshikawa@gmail.com
-Subject: Re: [PATCH v4 4/6] KVM: MMU: fast invalid all shadow pages
-Message-ID: <20130507100051.GK12349@redhat.com>
-References: <20130503155302.GB3362@amt.cnet>
- <5183EAFA.4050500@linux.vnet.ibm.com>
- <20130504005201.GA11823@amt.cnet>
- <518725DF.5090503@linux.vnet.ibm.com>
- <20130506123625.GB12349@redhat.com>
- <5187ABB3.7020403@linux.vnet.ibm.com>
- <20130506172455.GB18963@redhat.com>
- <5187EC50.4030308@linux.vnet.ibm.com>
- <20130507085848.GI12349@redhat.com>
- <5188CC4F.3070306@linux.vnet.ibm.com>
+	id S1755592Ab3EGKDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 06:03:38 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:46247 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021Ab3EGKDh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 06:03:37 -0400
+Message-ID: <5188D174.90400@gmail.com>
+Date: Tue, 07 May 2013 12:03:32 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5188CC4F.3070306@linux.vnet.ibm.com>
+To: Marek Belisko <marek.belisko@gmail.com>
+CC: mturquette@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, daniel@zonque.org,
+        Marek Belisko <marek.belisko@streamunlimited.com>
+Subject: Re: [PATCH 1/2] clk: si5351: Fix msynth_recalc_rate return value
+ when fOUT is 0.
+References: <1367914491-17445-1-git-send-email-marek.belisko@streamunlimited.com>
+In-Reply-To: <1367914491-17445-1-git-send-email-marek.belisko@streamunlimited.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 05:41:35PM +0800, Xiao Guangrong wrote:
-> On 05/07/2013 04:58 PM, Gleb Natapov wrote:
-> > On Tue, May 07, 2013 at 01:45:52AM +0800, Xiao Guangrong wrote:
-> >> On 05/07/2013 01:24 AM, Gleb Natapov wrote:
-> >>> On Mon, May 06, 2013 at 09:10:11PM +0800, Xiao Guangrong wrote:
-> >>>> On 05/06/2013 08:36 PM, Gleb Natapov wrote:
-> >>>>
-> >>>>>>> Step 1) Fix kvm_mmu_zap_all's behaviour: introduce lockbreak via
-> >>>>>>> spin_needbreak. Use generation numbers so that in case kvm_mmu_zap_all 
-> >>>>>>> releases mmu_lock and reacquires it again, only shadow pages 
-> >>>>>>> from the generation with which kvm_mmu_zap_all started are zapped (this
-> >>>>>>> guarantees forward progress and eventual termination).
-> >>>>>>>
-> >>>>>>> kvm_mmu_zap_generation()
-> >>>>>>> 	spin_lock(mmu_lock)
-> >>>>>>> 	int generation = kvm->arch.mmu_generation;
-> >>>>>>>
-> >>>>>>> 	for_each_shadow_page(sp) {
-> >>>>>>> 		if (sp->generation == kvm->arch.mmu_generation)
-> >>>>>>> 			zap_page(sp)
-> >>>>>>> 		if (spin_needbreak(mmu_lock)) {
-> >>>>>>> 			kvm->arch.mmu_generation++;
-> >>>>>>> 			cond_resched_lock(mmu_lock);
-> >>>>>>> 		}
-> >>>>>>> 	}
-> >>>>>>>
-> >>>>>>> kvm_mmu_zap_all()
-> >>>>>>> 	spin_lock(mmu_lock)
-> >>>>>>> 	for_each_shadow_page(sp) {
-> >>>>>>> 		if (spin_needbreak(mmu_lock)) {
-> >>>>>>> 			cond_resched_lock(mmu_lock);
-> >>>>>>> 		}
-> >>>>>>> 	}
-> >>>>>>>
-> >>>>>>> Use kvm_mmu_zap_generation for kvm_arch_flush_shadow_memslot.
-> >>>>>>> Use kvm_mmu_zap_all for kvm_mmu_notifier_release,kvm_destroy_vm.
-> >>>>>>>
-> >>>>>>> This addresses the main problem: excessively long hold times 
-> >>>>>>> of kvm_mmu_zap_all with very large guests.
-> >>>>>>>
-> >>>>>>> Do you see any problem with this logic? This was what i was thinking 
-> >>>>>>> we agreed.
-> >>>>>>
-> >>>>>> No. I understand it and it can work.
-> >>>>>>
-> >>>>>> Actually, it is similar with Gleb's idea that "zapping stale shadow pages
-> >>>>>> (and uses lock break technique)", after some discussion, we thought "only zap
-> >>>>>> shadow pages that are reachable from the slot's rmap" is better, that is this
-> >>>>>> patchset does.
-> >>>>>> (https://lkml.org/lkml/2013/4/23/73)
-> >>>>>>
-> >>>>> But this is not what the patch is doing. Close, but not the same :)
-> >>>>
-> >>>> Okay. :)
-> >>>>
-> >>>>> Instead of zapping shadow pages reachable from slot's rmap the patch
-> >>>>> does kvm_unmap_rmapp() which drop all spte without zapping shadow pages.
-> >>>>> That is why you need special code to re-init lpage_info. What I proposed
-> >>>>> was to call zap_page() on all shadow pages reachable from rmap. This
-> >>>>> will take care of lpage_info counters. Does this make sense?
-> >>>>
-> >>>> Unfortunately, no! We still need to care lpage_info. lpage_info is used
-> >>>> to count the number of guest page tables in the memslot.
-> >>>>
-> >>>> For example, there is a memslot:
-> >>>> memslot[0].based_gfn = 0, memslot[0].npages = 100,
-> >>>>
-> >>>> and there is a shadow page:
-> >>>> sp->role.direct =0, sp->role.level = 4, sp->gfn = 10.
-> >>>>
-> >>>> this sp is counted in the memslot[0] but it can not be found by walking
-> >>>> memslot[0]->rmap since there is no last mapping in this shadow page.
-> >>>>
-> >>> Right, so what about walking mmu_page_hash for each gfn belonging to the
-> >>> slot that is in process to be removed to find those?
-> >>
-> >> That will cost lots of time. The size of hashtable is 1 << 10. If the
-> >> memslot has 4M memory, it will walk all the entries, the cost is the same
-> >> as walking active_list (maybe litter more). And a memslot has 4M memory is
-> >> the normal case i think.
-> >>
-> > Memslots will be much bigger with memory hotplug. Lock break should be
-> > used while walking mmu_page_hash obviously, but still iterating over
-> > entire memslot gfn space to find a few gfn that may be there is
-> > suboptimal. We can keep a list of them in the memslot itself.
-> 
-> It sounds good to me.
-> 
-> BTW, this approach looks more complex and use more memory (new list_head
-> added into every shadow page) used, why you dislike clearing lpage_info? ;)
-> 
-Looks a little bit hackish, but now that I see we do not have easy way
-to find all shadow pages counted in lpage_info I am not entirely against
-it. If you convince Marcelo that clearing lpage_info like that is a good
-idea I may reconsider. I think, regardless of tracking lpage_info,
-having a way to find all shadow pages that reference a memslot is a good
-thing though.
+On 05/07/2013 10:14 AM, Marek Belisko wrote:
+> When p3 is eual to 0 then result for fOUT is 0. In that case we should
+> return 0 not parent_rate;
+>
+> This issue was causing deadlock in si5351 chip when user set_rate for
+> ms0->clk0 and then set_rate for ms1->clk1 (both ms sourced from plla).
+> After that clk1 was 0 and it wasn't possible to enable it again (try also
+> manually with i2cset commands). Only power cycle helps.
 
-> > 
-> >> Another point is that lpage_info stops mmu to use large page. If we
-> >> do not reset lpage_info, mmu is using 4K page until the invalid-sp is
-> >> zapped.
-> >>
-> > I do not think this is a big issue. If lpage_info prevented the use of
-> > large pages for some memory ranges before we zapped entire shadow pages
-> > it was probably for a reason, so new shadow page will prevent large
-> > pages from been created for the same memory ranges.
-> 
-> Still worried, but I will try it if Marcelo does not have objects.
-> Thanks a lot for your valuable suggestion, Gleb!
-> 
-> Now, i am trying my best to catch Marcelo's idea of "zapping root
-> pages", but......
-> 
-Yes, I am missing what Marcelo means there too. We cannot free memslot
-until we unmap its rmap one way or the other.
+Marek,
 
---
-			Gleb.
+does the fix below also affect the behavior above, i.e. not causing
+si5351 to hang?
+
+Anyway, your fix looks very sane to me and you get my
+
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+
+> Signed-off-by: Marek Belisko<marek.belisko@streamunlimited.com>
+> ---
+>   drivers/clk/clk-si5351.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
+> index fc215ce..a8fc0f4 100644
+> --- a/drivers/clk/clk-si5351.c
+> +++ b/drivers/clk/clk-si5351.c
+> @@ -607,7 +607,7 @@ static unsigned long si5351_msynth_recalc_rate(struct clk_hw *hw,
+>   		si5351_read_parameters(hwdata->drvdata, reg,&hwdata->params);
+>
+>   	if (hwdata->params.p3 == 0)
+> -		return parent_rate;
+> +		return 0;
+>
+>   	/*
+>   	 * multisync0-5: fOUT = (128 * P3 * fIN) / (P1*P3 + P2 + 512*P3)
+
