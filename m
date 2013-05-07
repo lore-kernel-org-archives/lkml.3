@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757083Ab3EGPUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 11:20:52 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:58715 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756829Ab3EGPUt (ORCPT
+	id S1757729Ab3EGPWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 11:22:14 -0400
+Received: from mail-da0-f51.google.com ([209.85.210.51]:63954 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755138Ab3EGPUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 11:20:49 -0400
+	Tue, 7 May 2013 11:20:51 -0400
 From: dirk.brandewie@gmail.com
 To: rjw@sisk.pl, linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
 Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>, stable@vger.kernel.org
-Subject: [PATCH 1/6] cpufreq/intel_pstate: remove idle time and duration from sample and calculations
-Date: Tue,  7 May 2013 08:20:25 -0700
-Message-Id: <1367940030-19311-2-git-send-email-dirk.j.brandewie@gmail.com>
+Subject: [PATCH 2/6] cpufreq/intel_pstate: use lowest requested max performance
+Date: Tue,  7 May 2013 08:20:26 -0700
+Message-Id: <1367940030-19311-3-git-send-email-dirk.j.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1367940030-19311-1-git-send-email-dirk.j.brandewie@gmail.com>
 References: <1367940030-19311-1-git-send-email-dirk.j.brandewie@gmail.com>
@@ -22,105 +22,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-Idle time is taken into account in the APERF/MPERF ratio calculation
-there is no reason for the driver to track it seperately.  This
-reduces the work in the driver and makes the code more readable.
+There are two ways that the maximum p-state can be clamped, via a
+policy change and via the sysfs file.
 
-Removal of the tracking of sample duration removes the possibility of
-the divide by zero exception when the duration is sub 1us
+The acpi-thermal driver adjusts the p-state policy in response to
+thermal events.  These changes override the users settings ATM.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=56691
+Use the lowest of the two requested values this ensures that we will
+not exceed the requested pstate from either mechanism.
 
-Reported-by: Mike Lothian <mike@fireburn.co.uk>
+Reported-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 Cc: stable@vger.kernel.org
 Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
 ---
- drivers/cpufreq/intel_pstate.c |   45 +++++++--------------------------------
- 1 files changed, 8 insertions(+), 37 deletions(-)
+ drivers/cpufreq/intel_pstate.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 4d6b988..5370b8d 100644
+index 5370b8d..c0c98c2 100644
 --- a/drivers/cpufreq/intel_pstate.c
 +++ b/drivers/cpufreq/intel_pstate.c
-@@ -48,12 +48,7 @@ static inline int32_t div_fp(int32_t x, int32_t y)
+@@ -117,6 +117,8 @@ struct perf_limits {
+ 	int min_perf_pct;
+ 	int32_t max_perf;
+ 	int32_t min_perf;
++	int max_policy_pct;
++	int max_sysfs_pct;
+ };
+ 
+ static struct perf_limits limits = {
+@@ -125,6 +127,8 @@ static struct perf_limits limits = {
+ 	.max_perf = int_tofp(1),
+ 	.min_perf_pct = 0,
+ 	.min_perf = 0,
++	.max_policy_pct = 100,
++	.max_sysfs_pct = 100,
+ };
+ 
+ static inline void pid_reset(struct _pid *pid, int setpoint, int busy,
+@@ -295,7 +299,8 @@ static ssize_t store_max_perf_pct(struct kobject *a, struct attribute *b,
+ 	if (ret != 1)
+ 		return -EINVAL;
+ 
+-	limits.max_perf_pct = clamp_t(int, input, 0 , 100);
++	limits.max_sysfs_pct = clamp_t(int, input, 0 , 100);
++	limits.max_perf_pct = min(limits.max_policy_pct, limits.max_sysfs_pct);
+ 	limits.max_perf = div_fp(int_tofp(limits.max_perf_pct), int_tofp(100));
+ 	return count;
  }
+@@ -642,8 +647,9 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
+ 	limits.min_perf_pct = clamp_t(int, limits.min_perf_pct, 0 , 100);
+ 	limits.min_perf = div_fp(int_tofp(limits.min_perf_pct), int_tofp(100));
  
- struct sample {
--	ktime_t start_time;
--	ktime_t end_time;
- 	int core_pct_busy;
--	int pstate_pct_busy;
--	u64 duration_us;
--	u64 idletime_us;
- 	u64 aperf;
- 	u64 mperf;
- 	int freq;
-@@ -91,8 +86,6 @@ struct cpudata {
- 	int min_pstate_count;
- 	int idle_mode;
+-	limits.max_perf_pct = policy->max * 100 / policy->cpuinfo.max_freq;
+-	limits.max_perf_pct = clamp_t(int, limits.max_perf_pct, 0 , 100);
++	limits.max_policy_pct = policy->max * 100 / policy->cpuinfo.max_freq;
++	limits.max_policy_pct = clamp_t(int, limits.max_policy_pct, 0 , 100);
++	limits.max_perf_pct = min(limits.max_policy_pct, limits.max_sysfs_pct);
+ 	limits.max_perf = div_fp(int_tofp(limits.max_perf_pct), int_tofp(100));
  
--	ktime_t prev_sample;
--	u64	prev_idle_time_us;
- 	u64	prev_aperf;
- 	u64	prev_mperf;
- 	int	sample_ptr;
-@@ -450,48 +443,26 @@ static inline void intel_pstate_calc_busy(struct cpudata *cpu,
- 					struct sample *sample)
- {
- 	u64 core_pct;
--	sample->pstate_pct_busy = 100 - div64_u64(
--					sample->idletime_us * 100,
--					sample->duration_us);
- 	core_pct = div64_u64(sample->aperf * 100, sample->mperf);
- 	sample->freq = cpu->pstate.max_pstate * core_pct * 1000;
- 
--	sample->core_pct_busy = div_s64((sample->pstate_pct_busy * core_pct),
--					100);
-+	sample->core_pct_busy = core_pct;
- }
- 
- static inline void intel_pstate_sample(struct cpudata *cpu)
- {
--	ktime_t now;
--	u64 idle_time_us;
- 	u64 aperf, mperf;
- 
--	now = ktime_get();
--	idle_time_us = get_cpu_idle_time_us(cpu->cpu, NULL);
--
- 	rdmsrl(MSR_IA32_APERF, aperf);
- 	rdmsrl(MSR_IA32_MPERF, mperf);
--	/* for the first sample, don't actually record a sample, just
--	 * set the baseline */
--	if (cpu->prev_idle_time_us > 0) {
--		cpu->sample_ptr = (cpu->sample_ptr + 1) % SAMPLE_COUNT;
--		cpu->samples[cpu->sample_ptr].start_time = cpu->prev_sample;
--		cpu->samples[cpu->sample_ptr].end_time = now;
--		cpu->samples[cpu->sample_ptr].duration_us =
--			ktime_us_delta(now, cpu->prev_sample);
--		cpu->samples[cpu->sample_ptr].idletime_us =
--			idle_time_us - cpu->prev_idle_time_us;
--
--		cpu->samples[cpu->sample_ptr].aperf = aperf;
--		cpu->samples[cpu->sample_ptr].mperf = mperf;
--		cpu->samples[cpu->sample_ptr].aperf -= cpu->prev_aperf;
--		cpu->samples[cpu->sample_ptr].mperf -= cpu->prev_mperf;
--
--		intel_pstate_calc_busy(cpu, &cpu->samples[cpu->sample_ptr]);
--	}
-+	cpu->sample_ptr = (cpu->sample_ptr + 1) % SAMPLE_COUNT;
-+	cpu->samples[cpu->sample_ptr].aperf = aperf;
-+	cpu->samples[cpu->sample_ptr].mperf = mperf;
-+	cpu->samples[cpu->sample_ptr].aperf -= cpu->prev_aperf;
-+	cpu->samples[cpu->sample_ptr].mperf -= cpu->prev_mperf;
-+
-+	intel_pstate_calc_busy(cpu, &cpu->samples[cpu->sample_ptr]);
- 
--	cpu->prev_sample = now;
--	cpu->prev_idle_time_us = idle_time_us;
- 	cpu->prev_aperf = aperf;
- 	cpu->prev_mperf = mperf;
- }
+ 	if (policy->policy == CPUFREQ_POLICY_PERFORMANCE) {
 -- 
 1.7.7.6
 
