@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933335Ab3EGNmY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:42:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42573 "EHLO
+	id S933373Ab3EGNvU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:51:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42584 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759364Ab3EGNmV (ORCPT
+	with ESMTP id S933040Ab3EGNmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:21 -0400
+	Tue, 7 May 2013 09:42:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Hutchings <ben@decadent.org.uk>, 700333@bugs.debian.org,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Avinash Patil <patila@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
+        Yogesh Ashok Powar <yogeshp@marvell.com>,
+        Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 102/118] clockevents: Set dummy handler on CPU_DEAD shutdown
-Date: Tue,  7 May 2013 14:39:08 +0100
-Message-Id: <1367933964-1564-103-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 105/118] mwifiex: Call pci_release_region after calling pci_disable_device
+Date: Tue,  7 May 2013 14:39:11 +0100
+Message-Id: <1367933964-1564-106-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,78 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Yogesh Ashok Powar <yogeshp@marvell.com>
 
-commit 6f7a05d7018de222e40ca003721037a530979974 upstream.
+commit 5b0d9b218b74042ff72bf4bfda6eeb2e4bf98397 upstream.
 
-Vitaliy reported that a per cpu HPET timer interrupt crashes the
-system during hibernation. What happens is that the per cpu HPET timer
-gets shut down when the nonboot cpus are stopped. When the nonboot
-cpus are onlined again the HPET code sets up the MSI interrupt which
-fires before the clock event device is registered. The event handler
-is still set to hrtimer_interrupt, which then crashes the machine due
-to highres mode not being active.
+"drivers should call pci_release_region() AFTER
+calling pci_disable_device()"
 
-See http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=700333
+Please refer section 3.2 Request MMIO/IOP resources
+in Documentation/PCI/pci.txt
 
-There is no real good way to avoid that in the HPET code. The HPET
-code alrady has a mechanism to detect spurious interrupts when event
-handler == NULL for a similar reason.
-
-We can handle that in the clockevent/tick layer and replace the
-previous functional handler with a dummy handler like we do in
-tick_setup_new_device().
-
-The original clockevents code did this in clockevents_exchange_device(),
-but that got removed by commit 7c1e76897 (clockevents: prevent
-clockevent event_handler ending up handler_noop) which forgot to fix
-it up in tick_shutdown(). Same issue with the broadcast device.
-
-Reported-by: Vitaliy Fillipov <vitalif@yourcmc.ru>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: 700333@bugs.debian.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[ luis: adjust context ]
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Yogesh Ashok Powar <yogeshp@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/time/tick-broadcast.c | 4 ++++
- kernel/time/tick-common.c    | 1 +
- 2 files changed, 5 insertions(+)
+ drivers/net/wireless/mwifiex/pcie.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index a13987a..239a323 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -66,6 +66,8 @@ static void tick_broadcast_start_periodic(struct clock_event_device *bc)
-  */
- int tick_check_broadcast_device(struct clock_event_device *dev)
- {
-+	struct clock_event_device *cur = tick_broadcast_device.evtdev;
-+
- 	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
- 	    (tick_broadcast_device.evtdev &&
- 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
-@@ -73,6 +75,8 @@ int tick_check_broadcast_device(struct clock_event_device *dev)
- 		return 0;
- 
- 	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
-+	if (cur)
-+		cur->event_handler = clockevents_handle_noop;
- 	tick_broadcast_device.evtdev = dev;
- 	if (!cpumask_empty(tick_get_broadcast_mask()))
- 		tick_broadcast_start_periodic(dev);
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index da6c9ec..ead79bc 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -323,6 +323,7 @@ static void tick_shutdown(unsigned int *cpup)
- 		 */
- 		dev->mode = CLOCK_EVT_MODE_UNUSED;
- 		clockevents_exchange_device(dev, NULL);
-+		dev->event_handler = clockevents_handle_noop;
- 		td->evtdev = NULL;
+diff --git a/drivers/net/wireless/mwifiex/pcie.c b/drivers/net/wireless/mwifiex/pcie.c
+index ce2c101..b7a5387 100644
+--- a/drivers/net/wireless/mwifiex/pcie.c
++++ b/drivers/net/wireless/mwifiex/pcie.c
+@@ -1831,9 +1831,9 @@ static void mwifiex_pcie_cleanup(struct mwifiex_adapter *adapter)
+ 	if (pdev) {
+ 		pci_iounmap(pdev, card->pci_mmap);
+ 		pci_iounmap(pdev, card->pci_mmap1);
++		pci_disable_device(pdev);
+ 		pci_release_region(pdev, 2);
+ 		pci_release_region(pdev, 0);
+-		pci_disable_device(pdev);
+ 		pci_set_drvdata(pdev, NULL);
  	}
- 	raw_spin_unlock_irqrestore(&tick_device_lock, flags);
+ }
 -- 
 1.8.1.2
 
