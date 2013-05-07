@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759517Ab3EGUwe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 16:52:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54893 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757187Ab3EGUwc (ORCPT
+	id S1759559Ab3EGU4X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 16:56:23 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:54423 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758876Ab3EGU4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 16:52:32 -0400
-Date: Tue, 7 May 2013 13:52:30 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Robert Love <rlove@google.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Shankar Brahadeeswaran <shankoo77@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Bringert <bringert@google.com>,
-        devel <devel@driverdev.osuosl.org>, Hugh Dickins <hughd@google.com>,
-        Anjana V Kumar <anjanavk12@gmail.com>,
-        linux-next <linux-next@vger.kernel.org>
-Subject: Re: [PATCH -next] ashmem: Fix ashmem_shrink deadlock.
-Message-Id: <20130507135230.ba90c299a79be635ef768a2a@linux-foundation.org>
-In-Reply-To: <1367416573-5430-1-git-send-email-rlove@google.com>
-References: <1367416573-5430-1-git-send-email-rlove@google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 7 May 2013 16:56:22 -0400
+Message-ID: <51896A71.8010007@gmail.com>
+Date: Tue, 07 May 2013 14:56:17 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH] perf record: handle death by SIGTERM
+References: <1367864663-1309-1-git-send-email-dsahern@gmail.com> <CABPqkBTj6Jt82mvVJKJxXaGnbD5GbW5mo4L71StOZuA=8MwDdw@mail.gmail.com> <20130507062947.GB17705@gmail.com>
+In-Reply-To: <20130507062947.GB17705@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  1 May 2013 09:56:13 -0400 Robert Love <rlove@google.com> wrote:
+On 5/7/13 12:29 AM, Ingo Molnar wrote:
+>
+> * Stephane Eranian <eranian@google.com> wrote:
+>
+>> This is a good fix. I have run into this infinite loop in perf report
+>> many times.
+>
+> Hm, perf record should really not assume much about the perf.data and
+> should avoid infinite loops ...
+>
+> So while making perf.data more consistent on SIGTERM is a nice fix, perf
+> report should be fixed as well to detect loops and such.
+>
+> Thanks,
+>
+> 	Ingo
+>
 
-> Don't acquire ashmem_mutex in ashmem_shrink if we've somehow recursed into the
-> shrinker code from within ashmem. Just bail out, avoiding a deadlock. This is
-> fine, as ashmem cache pruning is advisory anyhow.
-> 
+This seems to do the trick:
 
-Sorry, but I don't think "somehow" is an adequate description of a
-kernel bug.  The deadlock should be described with specificity, so that
-others can understand and review the fix and perhaps suggest
-alternative implementations.
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 326068a..e82646f 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2802,6 +2802,17 @@ int perf_session__read_header(struct perf_session 
+*session, int fd)
+     if (perf_file_header__read(&f_header, header, fd) < 0)
+         return -EINVAL;
 
-Presumably someone is performing a memory allocation while holding
-ashmem_mutex.  A more idiomatic way of avoiding a call to direct
-reclaim in these circumstances would be for the task to set its
-PF_MEMALLOC flag, or to use GFP_ATOMIC.  But without any details that's
-as far as I can go.
++   /*
++    * sanity check that perf.data was written cleanly: data size
++    * is initialized to 0 and updated only if the on_exit function
++    * is run. If data size is still 0 then the file cannot be
++    * processed.
++    */
++   if (f_header.data.size == 0) {
++       pr_err("data size is 0. Was record properly terminated?\n");
++       return -1;
++   }
++
+     nr_attrs = f_header.attrs.size / f_header.attr_size;
+     lseek(fd, f_header.attrs.offset, SEEK_SET);
 
-> --- a/drivers/staging/android/ashmem.c
-> +++ b/drivers/staging/android/ashmem.c
-> @@ -363,7 +363,11 @@ static int ashmem_shrink(struct shrinker *s, struct shrink_control *sc)
->  	if (!sc->nr_to_scan)
->  		return lru_count;
->  
-> -	mutex_lock(&ashmem_mutex);
-> +	/* avoid recursing into this code from within ashmem itself */
-> +	if (!mutex_trylock(&ashmem_mutex)) {
-> +		return -1;
-> +	}
-
-This is rather hacky.  It consumes more CPU than the above approaches,
-and more stack.
-
-Worst of all, it obviously hasn't met checkpatch.pl ;)
