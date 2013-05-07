@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757670Ab3EGEGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:06:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4049 "EHLO
+	id S1758879Ab3EGEHA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:07:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28906 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760174Ab3EGD6w (ORCPT
+	with ESMTP id S933013Ab3EGD6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 23:58:52 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=6al00s3m2sIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=5TYjbGW-CAkA:10 a=AxE2Au23AAAA:8 a=VwQbUJbxAAAA:8 a=FNyBlpCuAAAA:8 a=07RQwra97pehUm3UO-YA:9 a=jgOP9pWWim0A:10 a=jeBq3FmKZ4MA:10 a=n0CUu2D80XzH9k-B:21 a=l7MiMG2MFag3m6R9:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 6 May 2013 23:58:49 -0400
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=oOatHhGTwy0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=vfaDjNAdsaAA:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=1XWaLZrsAAAA:8 a=Y6XfvEXCWxnrHKSuoGMA:9 a=dGJ0OcVc7YAA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035845.577192493@goodmis.org>
+Message-Id: <20130507035843.606433436@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:57:40 -0400
+Date: Mon, 06 May 2013 23:57:28 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [028/126] crypto: gcm - fix assumption that assoc has one segment
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [016/126] PCI/PM: Disable runtime PM of PCIe ports
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0028-crypto-gcm-fix-assumption-that-assoc-has-one-segment.patch
+Content-Disposition: inline; filename=0016-PCI-PM-Disable-runtime-PM-of-PCIe-ports.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,60 +30,69 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-[ Upstream commit d3dde52209ab571e4e2ec26c66f85ad1355f7475 ]
+[ Upstream commit de7d5f729c72638f41d7c17487bccb1c570ff144 ]
 
-rfc4543(gcm(*)) code for GMAC assumes that assoc scatterlist always contains
-only one segment and only makes use of this first segment. However ipsec passes
-assoc with three segments when using 'extended sequence number' thus in this
-case rfc4543(gcm(*)) fails to function correctly. Patch fixes this issue.
+The runtime PM of PCIe ports turns out to be quite fragile, as in
+some cases things work while in some other cases they don't and we
+don't seem to have a good way to determine whether or not they are
+going to work in advance.
 
-Reported-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
-Tested-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+For this reason, avoid enabling runtime PM for PCIe ports by
+keeping their runtime PM reference counters always above 0 for the
+time being.
+
+When a PCIe port is suspended, it can no longer report events like
+hotplug, so hotplug below the port may not work, as in the bug
+report below.
+
+[bhelgaas: changelog, stable]
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=53811
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: stable@vger.kernel.org	# v3.6+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- crypto/gcm.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ drivers/pci/pcie/portdrv_pci.c |   13 -------------
+ 1 file changed, 13 deletions(-)
 
-diff --git a/crypto/gcm.c b/crypto/gcm.c
-index 1a25263..b97b186 100644
---- a/crypto/gcm.c
-+++ b/crypto/gcm.c
-@@ -44,6 +44,7 @@ struct crypto_rfc4543_ctx {
+diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
+index e76b447..8bae295 100644
+--- a/drivers/pci/pcie/portdrv_pci.c
++++ b/drivers/pci/pcie/portdrv_pci.c
+@@ -174,14 +174,6 @@ static const struct dev_pm_ops pcie_portdrv_pm_ops = {
+ #endif /* !PM */
  
- struct crypto_rfc4543_req_ctx {
- 	u8 auth_tag[16];
-+	u8 assocbuf[32];
- 	struct scatterlist cipher[1];
- 	struct scatterlist payload[2];
- 	struct scatterlist assoc[2];
-@@ -1142,9 +1143,19 @@ static struct aead_request *crypto_rfc4543_crypt(struct aead_request *req,
- 	scatterwalk_crypto_chain(payload, dst, vdst == req->iv + 8, 2);
- 	assoclen += 8 + req->cryptlen - (enc ? 0 : authsize);
+ /*
+- * PCIe port runtime suspend is broken for some chipsets, so use a
+- * black list to disable runtime PM for these chipsets.
+- */
+-static const struct pci_device_id port_runtime_pm_black_list[] = {
+-	{ /* end: all zeroes */ }
+-};
+-
+-/*
+  * pcie_portdrv_probe - Probe PCI-Express port devices
+  * @dev: PCI-Express port device being probed
+  *
+@@ -214,16 +206,11 @@ static int __devinit pcie_portdrv_probe(struct pci_dev *dev,
+ 	 * it by default.
+ 	 */
+ 	dev->d3cold_allowed = false;
+-	if (!pci_match_id(port_runtime_pm_black_list, dev))
+-		pm_runtime_put_noidle(&dev->dev);
+-
+ 	return 0;
+ }
  
--	sg_init_table(assoc, 2);
--	sg_set_page(assoc, sg_page(req->assoc), req->assoc->length,
--		    req->assoc->offset);
-+	if (req->assoc->length == req->assoclen) {
-+		sg_init_table(assoc, 2);
-+		sg_set_page(assoc, sg_page(req->assoc), req->assoc->length,
-+			    req->assoc->offset);
-+	} else {
-+		BUG_ON(req->assoclen > sizeof(rctx->assocbuf));
-+
-+		scatterwalk_map_and_copy(rctx->assocbuf, req->assoc, 0,
-+					 req->assoclen, 0);
-+
-+		sg_init_table(assoc, 2);
-+		sg_set_buf(assoc, rctx->assocbuf, req->assoclen);
-+	}
- 	scatterwalk_crypto_chain(assoc, payload, 0, 2);
- 
- 	aead_request_set_tfm(subreq, ctx->child);
+ static void pcie_portdrv_remove(struct pci_dev *dev)
+ {
+-	if (!pci_match_id(port_runtime_pm_black_list, dev))
+-		pm_runtime_get_noresume(&dev->dev);
+ 	pcie_port_device_remove(dev);
+ 	pci_disable_device(dev);
+ }
 -- 
 1.7.10.4
 
