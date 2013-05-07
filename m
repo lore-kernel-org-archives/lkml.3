@@ -1,72 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759559Ab3EGU4X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 16:56:23 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:54423 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758876Ab3EGU4W (ORCPT
+	id S1759464Ab3EGVDz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 17:03:55 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:38406 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758153Ab3EGVDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 16:56:22 -0400
-Message-ID: <51896A71.8010007@gmail.com>
-Date: Tue, 07 May 2013 14:56:17 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH] perf record: handle death by SIGTERM
-References: <1367864663-1309-1-git-send-email-dsahern@gmail.com> <CABPqkBTj6Jt82mvVJKJxXaGnbD5GbW5mo4L71StOZuA=8MwDdw@mail.gmail.com> <20130507062947.GB17705@gmail.com>
-In-Reply-To: <20130507062947.GB17705@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 7 May 2013 17:03:53 -0400
+Message-ID: <1367960629.30363.21.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/2 v2, RFC] Driver core: Introduce offline/online
+ callbacks for memory blocks
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
+        Len Brown <lenb@kernel.org>, linux-mm@kvack.org, wency@cn.fujitsu.com
+Date: Tue, 07 May 2013 15:03:49 -0600
+In-Reply-To: <7132174.AKkXX1jln2@vostro.rjw.lan>
+References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
+	 <1809544.1r1JBXrr0i@vostro.rjw.lan>
+	 <20130507105945.GA4354@dhcp-192-168-178-175.profitbricks.localdomain>
+	 <7132174.AKkXX1jln2@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/7/13 12:29 AM, Ingo Molnar wrote:
->
-> * Stephane Eranian <eranian@google.com> wrote:
->
->> This is a good fix. I have run into this infinite loop in perf report
->> many times.
->
-> Hm, perf record should really not assume much about the perf.data and
-> should avoid infinite loops ...
->
-> So while making perf.data more consistent on SIGTERM is a nice fix, perf
-> report should be fixed as well to detect loops and such.
->
-> Thanks,
->
-> 	Ingo
->
+On Tue, 2013-05-07 at 14:11 +0200, Rafael J. Wysocki wrote:
+> On Tuesday, May 07, 2013 12:59:45 PM Vasilis Liaskovitis wrote:
 
-This seems to do the trick:
+ :
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 326068a..e82646f 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2802,6 +2802,17 @@ int perf_session__read_header(struct perf_session 
-*session, int fd)
-     if (perf_file_header__read(&f_header, header, fd) < 0)
-         return -EINVAL;
+> Updated patch is appended for completness.
 
-+   /*
-+    * sanity check that perf.data was written cleanly: data size
-+    * is initialized to 0 and updated only if the on_exit function
-+    * is run. If data size is still 0 then the file cannot be
-+    * processed.
-+    */
-+   if (f_header.data.size == 0) {
-+       pr_err("data size is 0. Was record properly terminated?\n");
-+       return -1;
-+   }
-+
-     nr_attrs = f_header.attrs.size / f_header.attr_size;
-     lseek(fd, f_header.attrs.offset, SEEK_SET);
+Yes, this updated patch solved the locking issue.
+
+> > > > A more general issue is that there are now two memory offlining efforts:
+> > > > 
+> > > > 1) from acpi_bus_offline_companions during device offline
+> > > > 2) from mm: remove_memory during device detach (offline_memory_block_cb)
+> > > > 
+> > > > The 2nd is only called if the device offline operation was already succesful, so
+> > > > it seems ineffective or redundant now, at least for x86_64/acpi_memhotplug machine
+> > > > (unless the blocks were re-onlined in between).
+> > > 
+> > > Sure, and that should be OK for now.  Changing the detach behavior is not
+> > > essential from the patch [2/2] perspective, we can do it later.
+> > 
+> > yes, ok.
+> > 
+> > > 
+> > > > On the other hand, the 2nd effort has some more intelligence in offlining, as it
+> > > > tries to offline twice in the precense of memcg, see commits df3e1b91 or
+> > > > reworked 0baeab16. Maybe we need to consolidate the logic.
+> > > 
+> > > Hmm.  Perhaps it would make sense to implement that logic in
+> > > memory_subsys_offline(), then?
+> > 
+> > the logic tries to offline the memory blocks of the device twice, because the
+> > first memory block might be storing information for the subsequent memblocks.
+> > 
+> > memory_subsys_offline operates on one memory block at a time. Perhaps we can get
+> > the same effect if we do an acpi_walk of acpi_bus_offline_companions twice in
+> > acpi_scan_hot_remove but it's probably not a good idea, since that would
+> > affect non-memory devices as well. 
+> > 
+> > I am not sure how important this intelligence is in practice (I am not using
+> > mem cgroups in my guest kernel tests yet).  Maybe Wen (original author) has
+> > more details on 2-pass offlining effectiveness.
+> 
+> OK
+> 
+> It may be added in a separate patch in any case.
+
+I had the same comment as Vasilis.  And, I agree with you that we can
+enhance it in separate patches.
+
+ :
+
+> +static int memory_subsys_offline(struct device *dev)
+> +{
+> +	struct memory_block *mem = container_of(dev, struct memory_block, dev);
+> +	int ret;
+> +
+> +	mutex_lock(&mem->state_mutex);
+> +	ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
+
+This function needs to check mem->state just like
+offline_memory_block().  That is:
+
+	int ret = 0;
+		:
+	if (mem->state != MEM_OFFLINE)
+		ret = __memory_block_change_state(...);
+
+Otherwise, memory hot-delete to an off-lined memory fails in
+__memory_block_change_state() since mem->state is already set to
+MEM_OFFLINE.
+
+With that change, for the series:
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+
+Thanks,
+-Toshi
+
+> +	mutex_unlock(&mem->state_mutex);
+> +	return ret;
+> +}
+> +
+
+
 
