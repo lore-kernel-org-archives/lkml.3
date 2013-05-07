@@ -1,136 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758978Ab3EGIr7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 04:47:59 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53003 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758804Ab3EGIrz (ORCPT
+	id S1759031Ab3EGItk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 04:49:40 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:39907
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758886Ab3EGIth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 04:47:55 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <5188BFA6.5070606@jp.fujitsu.com>
-Date: Tue, 07 May 2013 17:47:34 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Tue, 7 May 2013 04:49:37 -0400
+Date: Tue, 7 May 2013 10:48:03 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>, Andi Kleen <andi@firstfloor.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/2] perf, x86: Don't allow unusual PEBS raw flags
+Message-ID: <20130507084803.GD9688@dyad.programming.kicks-ass.net>
+References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
+ <1366844694-2770-2-git-send-email-andi@firstfloor.org>
+ <20130502073720.GH7521@dyad.programming.kicks-ass.net>
+ <CABPqkBQb23aJJXhrnYOOG+RWZgfVfyAFS+ksAKxczVOqjtricQ@mail.gmail.com>
+ <20130506185226.GA17723@dyad.programming.kicks-ass.net>
+ <CABPqkBREmUfuPBvCvBF+4YNvzfuqgDffVvfUFE5_w6Yx88mBZQ@mail.gmail.com>
+ <20130507064804.GE17705@gmail.com>
 MIME-Version: 1.0
-To: Cliff Wickman <cpw@sgi.com>
-CC: kexec@lists.infradead.org, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
-        ebiederm@xmission.com, kumagai-atsushi@mxc.nes.nec.co.jp,
-        lisa.mitchell@hp.com, jingbai.ma@hp.com
-Subject: Re: makedumpfile mmap() benchmark
-References: <E1UYLNS-0003H3-NC@eag09.americas.sgi.com>
-In-Reply-To: <E1UYLNS-0003H3-NC@eag09.americas.sgi.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130507064804.GE17705@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/05/04 4:10), Cliff Wickman wrote:
-> 
->> Jingbai Ma wote on 27 Mar 2013:
->> I have tested the makedumpfile mmap patch on a machine with 2TB memory,
->> here is testing results:
->> Test environment:
->> Machine: HP ProLiant DL980 G7 with 2TB RAM.
->> CPU: Intel(R) Xeon(R) CPU E7- 2860  @ 2.27GHz (8 sockets, 10 cores)
->> (Only 1 cpu was enabled the 2nd kernel)
->> Kernel: 3.9.0-rc3+ with mmap kernel patch v3
->> vmcore size: 2.0TB
->> Dump file size: 3.6GB
->> makedumpfile mmap branch with parameters: -c --message-level 23 -d 31
->> --map-size <map-size>
->> All measured time from debug message of makedumpfile.
->>
->> As a comparison, I also have tested with original kernel and original
->> makedumpfile 1.5.1 and 1.5.3.
->> I added all [Excluding unnecessary pages] and [Excluding free pages]
->> time together as "Filter Pages", and [Copyying Data] as "Copy data" here.
->>
->> makedumjpfile	Kernel	map-size (KB)	Filter pages (s)	Copy data (s)	Total (s)
->> 1.5.1	 3.7.0-0.36.el7.x86_64	N/A	940.28	1269.25	2209.53
->> 1.5.3	 3.7.0-0.36.el7.x86_64	N/A	380.09	992.77	1372.86
->> 1.5.3	v3.9-rc3	N/A	197.77	892.27	1090.04
->> 1.5.3+mmap	v3.9-rc3+mmap	0	164.87	606.06	770.93
->> 1.5.3+mmap	v3.9-rc3+mmap	4	88.62	576.07	664.69
->> 1.5.3+mmap	v3.9-rc3+mmap	1024	83.66	477.23	560.89
->> 1.5.3+mmap	v3.9-rc3+mmap	2048	83.44	477.21	560.65
->> 1.5.3+mmap	v3.9-rc3+mmap	10240	83.84	476.56	560.4
-> 
-> I have also tested the makedumpfile mmap patch on a machine with 2TB memory,
-> here are the results:
-> Test environment:
-> Machine: SGI UV1000 with 2TB RAM.
-> CPU: Intel(R) Xeon(R) CPU E7- 8837  @ 2.67GHz
-> (only 1 cpu was enabled in the 2nd kernel)
-> Kernel: 3.0.13 with mmap kernel patch v3 (I had to tweak the patch a bit)
-> vmcore size: 2.0TB
-> Dump file size: 3.6GB
-> makedumpfile mmap branch with parameters: -c --message-level 23 -d 31
->     --map-size <map-size>
-> All measured times are actual clock times.
-> All tests are noncyclic.   Crash kernel memory: crashkernel=512M
-> 
-> As did Jingbai Ma, I also tested with an unpatched kernel and
-> makedumpfile 1.5.1 and 1.5.3.  But they do 2 filtering scans: unnecessary
-> pages and free pages; here added together as filter pages time.
-> 
->                                        Filter    Copy
-> makedumpfile Kernel	 map-size(KB) pages(s)	data(s) Total(s)
-> 1.5.1	     3.0.13	   N/A	      671   	511    1182
-> 1.5.3	     3.0.13	   N/A	      294       535     829
-> 1.5.3+mmap   3.0.13+mmap     0	       54    	506   	560
-> 1.5.3+mmap   3.0.13+mmap  4096	       40    	416	456
-> 1.5.3+mmap   3.0.13+mmap 10240	       37	424	461
-> 
-> Using mmap for the copy data as well as for filtering pages did little:
-> 1.5.3+mmap   3.0.13+mmap  4096	       37    	414	451
-> 
-> My results are quite similar to Jingbai Ma's.
-> The mmap patch to the kernel greatly speeds the filtering of pages, so
-> we at SGI would very much like to see this patch in the 3.10 kernel.
->    http://marc.info/?l=linux-kernel&m=136627770125345&w=2
-> 
-> What puzzles me is that the patch greatly speeds the read's of /proc/vmcore
-> (where map-size is 0) as well as providing the mmap ability.  I can now
-> seek/read page structures almost as fast as mmap'ing and copying them.
-> (versus Jingbai Ma's results where mmap almost doubled the speed of reads)
-> I have put counters in to verify, and we are doing several million
-> seek/read's vs. a few thousand mmap's.  Yet the performance is similar
-> (54sec vs. 37sec, above). I can't rationalize that much improvement.
+On Tue, May 07, 2013 at 08:48:05AM +0200, Ingo Molnar wrote:
+> Also, this code only runs when the event is set up, so a bit of sanity 
+> checking can only help, right?
 
-The change between 1.5.3+mmap between 1.5.3 that might be affecting the
-result I guess is the below only.
+Nah, its all very circumspect. In fact; while what Andi states is 'true':
 
-commit ba1fd638ac024d01f70b5d7e16f0978cff978c22
-Author: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Date:   Wed Feb 20 20:13:07 2013 +0900
+> documentation in the Intel SDM 18.6.1.1 states:
+>
+> """
+> PEBS events are only valid when the following fields of IA32_PERFEVTSELx are all
+> zero: AnyThread, Edge, Invert, CMask.
+> """
 
-    [PATCH] Clean up readmem() by removing its recursive call.
+It is also true that Intel themselves gave us events that contradict this; look
+at the intel_pebs_aliases*() functions.
 
-In addition to your and Ma's results, my result also showed similar
-result: 100 secs for read() and 70 secs for mmap() with 4KB map. See:
-https://lkml.org/lkml/2013/3/26/914
+This patch would make it impossible to manually create those events.
 
-So I think:
-
-- the performance degradation not only had come from many
-ioremap/iounmap calls but also from the way makedumpfile was implemented.
-
-- The changes of makedumpfile that impacted performance gain are the
-below two:
-  - Implement 8-entry cache for readmem() by Petr Tesarik, and
-  - The above clean up patch that removes unnecessary recursive call of
-readmem().
-
-- Even by these changes only, we can get enough performance gain.
-Further, using mmap allows us to get the performance close to
-kernel-side processing; this might be unnecessary in practice but might
-be meaningful in kdump's design that uses user-space tools as a part of
-framework.
-
--- 
-Thanks.
-HATAYAMA, Daisuke
-
+Further, there's something entirely different behind this.
