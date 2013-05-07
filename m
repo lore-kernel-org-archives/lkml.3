@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933549Ab3EGN7E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:59:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42451 "EHLO
+	id S933322Ab3EGN7A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:59:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42455 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932830Ab3EGNlx (ORCPT
+	with ESMTP id S933185Ab3EGNly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:41:53 -0400
+	Tue, 7 May 2013 09:41:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Engraf <david.engraf@sysgo.com>,
-        John Stultz <john.stultz@linaro.org>,
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 080/118] hrtimer: Fix ktime_add_ns() overflow on 32bit architectures
-Date: Tue,  7 May 2013 14:38:46 +0100
-Message-Id: <1367933964-1564-81-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 081/118] ARM: omap3: cpuidle: enable time keeping
+Date: Tue,  7 May 2013 14:38:47 +0100
+Message-Id: <1367933964-1564-82-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,56 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Engraf <david.engraf@sysgo.com>
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-commit 51fd36f3fad8447c487137ae26b9d0b3ce77bb25 upstream.
+commit 0d97558901c446a989de202a5d9ae94ec53644e5 upstream.
 
-One can trigger an overflow when using ktime_add_ns() on a 32bit
-architecture not supporting CONFIG_KTIME_SCALAR.
+The TIME_VALID flag is specified for the different states but
+the time residency computation is not done, no tk flag, no time
+computation in the idle function.
 
-When passing a very high value for u64 nsec, e.g. 7881299347898368000
-the do_div() function converts this value to seconds (7881299347) which
-is still to high to pass to the ktime_set() function as long. The result
-in is a negative value.
+Set the en_core_tk_irqen flag to activate it.
 
-The problem on my system occurs in the tick-sched.c,
-tick_nohz_stop_sched_tick() when time_delta is set to
-timekeeping_max_deferment(). The check for time_delta < KTIME_MAX is
-valid, thus ktime_add_ns() is called with a too large value resulting in
-a negative expire value. This leads to an endless loop in the ticker code:
-
-time_delta: 7881299347898368000
-expires = ktime_add_ns(last_update, time_delta)
-expires: negative value
-
-This fix caps the value to KTIME_MAX.
-
-This error doesn't occurs on 64bit or architectures supporting
-CONFIG_KTIME_SCALAR (e.g. ARM, x86-32).
-
-Signed-off-by: David Engraf <david.engraf@sysgo.com>
-[jstultz: Minor tweaks to commit message & header]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/hrtimer.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/mach-omap2/cpuidle34xx.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 97d3742..60f7e32 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -298,6 +298,10 @@ ktime_t ktime_sub_ns(const ktime_t kt, u64 nsec)
- 	} else {
- 		unsigned long rem = do_div(nsec, NSEC_PER_SEC);
+diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
+index 207bc1c..36f65a8 100644
+--- a/arch/arm/mach-omap2/cpuidle34xx.c
++++ b/arch/arm/mach-omap2/cpuidle34xx.c
+@@ -284,8 +284,9 @@ select_state:
+ DEFINE_PER_CPU(struct cpuidle_device, omap3_idle_dev);
  
-+		/* Make sure nsec fits into long */
-+		if (unlikely(nsec > KTIME_SEC_MAX))
-+			return (ktime_t){ .tv64 = KTIME_MAX };
-+
- 		tmp = ktime_set((long)nsec, rem);
- 	}
- 
+ struct cpuidle_driver omap3_idle_driver = {
+-	.name = 	"omap3_idle",
+-	.owner = 	THIS_MODULE,
++	.name             = "omap3_idle",
++	.owner            = THIS_MODULE,
++	.en_core_tk_irqen = 1,
+ 	.states = {
+ 		{
+ 			.enter		  = omap3_enter_idle,
 -- 
 1.8.1.2
 
