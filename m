@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab3EGOw4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:52:56 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:19780 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab3EGOwz (ORCPT
+	id S1755941Ab3EGOzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:55:43 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:47511 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466Ab3EGOzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 10:52:55 -0400
-Message-ID: <5189152C.4010703@hp.com>
-Date: Tue, 07 May 2013 10:52:28 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
+	Tue, 7 May 2013 10:55:42 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] perf: fix symbol processing bug and greatly improve performance
-References: <1367847833-4932-1-git-send-email-Waiman.Long@hp.com> <20130507070127.GA17830@gmail.com> <51890D71.9080600@hp.com>
-In-Reply-To: <51890D71.9080600@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAPgLHd8Xu8+d7fxtnC0sdQnTDtrZo8jhB8JJ4b2Lp4SYqcjG4A@mail.gmail.com>
+References: <CAPgLHd8Xu8+d7fxtnC0sdQnTDtrZo8jhB8JJ4b2Lp4SYqcjG4A@mail.gmail.com>
+Date: Tue, 7 May 2013 20:25:41 +0530
+Message-ID: <CAK9yfHxvF4vnfrWrkt9mr=XGriPg6DVetWyH87sXzDFoxvFRHg@mail.gmail.com>
+Subject: Re: [PATCH] drm/exynos: fix error return code in exynos_drm_ipp_set_property()
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: inki.dae@samsung.com, jy0922.shim@samsung.com, sw0312.kim@samsung.com,
+        kyungmin.park@samsung.com, airlied@linux.ie,
+        yongjun_wei@trendmicro.com.cn, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2013 10:19 AM, Waiman Long wrote:
-> The slowdown that I was trying to fix was in the "perf record" part of 
-> the profiling process, not the "perf report" part. I didn't try 
-> perf-record on perf-record as the performance counters are limited 
-> resources and I don't want resource conflicts to affect the results. 
-> As the slow-down was entirely in the user space, I decided to use 
-> gprof to do the profiling.
+Hi Wei Yongjun,
 
-Just to clarify that the post-processing time that I referred to in the 
-patch is the time spent after the workload finishes in the perf-record 
-session and the perf command itself quits. I could take a really long 
-time for perf to quit without the patch.
+On 7 May 2013 18:54, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> Fix to return a negative error code from the error handling
+> case instead of 0, as done elsewhere in this function.
+> ipp_create_cmd_work() return ERR_PTR() on error and never return
+> NULL, so use IS_ERR() instead of IS_ERR_OR_NULL().
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
 
-Regards,
-Longman
+I have submitted a patch [1] to use IS_ERR instead of IS_ERR_OR_NULL()
+for all incorrect instances in this driver.
+Please base your patch fixing the return code on top of my patch.
 
+[1] http://lists.freedesktop.org/archives/dri-devel/2013-April/038059.html
+
+-- 
+With warm regards,
+Sachin
