@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab3EGOVK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:21:10 -0400
-Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:59333 "EHLO
+	id S1753444Ab3EGOVe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:21:34 -0400
+Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:59339 "EHLO
 	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752662Ab3EGOSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 10:18:04 -0400
+	id S1752697Ab3EGOSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 10:18:03 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: jirislaby@gmail.com
 Cc: linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        reiserfs-devel@vger.kernel.org
-Subject: [PATCH 08/15] reiserfs: fix deadlock with nfs racing on create/lookup
-Date: Tue,  7 May 2013 16:18:16 +0200
-Message-Id: <1367936303-13386-8-git-send-email-jslaby@suse.cz>
+        Patrick Koppen <isdn4linux@koppen.de>, Jiri Slaby <jslaby@suse.cz>,
+        Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 02/15] mISDN: Add support for group membership check
+Date: Tue,  7 May 2013 16:18:10 +0200
+Message-Id: <1367936303-13386-2-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367936303-13386-1-git-send-email-jslaby@suse.cz>
 References: <1367936303-13386-1-git-send-email-jslaby@suse.cz>
@@ -24,59 +24,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeff Mahoney <jeffm@suse.com>
 
-Reiserfs is currently able to be deadlocked by having two NFS clients
-where one has removed and recreated a file and another is accessing the
-file with an open file handle.
+This patch adds a module parameter to allow a group access to the
+mISDN devices. Otherwise, unpriviledged users on systems with ISDN
+hardware have the ability to dial out, potentially causing expensive
+bills.
 
-If one client deletes and recreates a file with timing such that the
-recreated file obtains the same [dirid, objectid] pair as the original
-file while another client accesses the file via file handle, the create
-and lookup can race and deadlock if the lookup manages to create the
-in-memory inode first.
+Based on a different implementation by Patrick Koppen <isdn4linux@koppen.de>
 
-The create thread, in insert_inode_locked4, will hold the write lock
-while waiting on the other inode to be unlocked. The lookup thread,
-anywhere in the iget path, will release and reacquire the write lock while
-it schedules. If it needs to reacquire the lock while the create thread
-has it, it will never be able to make forward progress because it needs
-to reacquire the lock before ultimately unlocking the inode.
+We (at suse) have this patch in our trees at least since 2009 and want
+to push it upstream now.
 
-This patch drops the write lock across the insert_inode_locked4 call so
-that the ordering of inode_wait -> write lock is retained. Since this
-would have been the case before the BKL push-down, this is safe.
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Acked-by: Jeff Mahoney <jeffm@suse.com>
+Cc: Patrick Koppen <isdn4linux@koppen.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: reiserfs-devel@vger.kernel.org
+Cc: Karsten Keil <isdn@linux-pingi.de>
+Cc: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
- fs/reiserfs/inode.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/isdn/mISDN/core.c   | 3 +++
+ drivers/isdn/mISDN/core.h   | 1 +
+ drivers/isdn/mISDN/socket.c | 8 ++++++++
+ 3 files changed, 12 insertions(+)
 
-diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
-index 77d6d47..f844533 100644
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -1811,11 +1811,16 @@ int reiserfs_new_inode(struct reiserfs_transaction_handle *th,
- 				  TYPE_STAT_DATA, SD_SIZE, MAX_US_INT);
- 	memcpy(INODE_PKEY(inode), &(ih.ih_key), KEY_SIZE);
- 	args.dirid = le32_to_cpu(ih.ih_key.k_dir_id);
--	if (insert_inode_locked4(inode, args.objectid,
--			     reiserfs_find_actor, &args) < 0) {
+diff --git a/drivers/isdn/mISDN/core.c b/drivers/isdn/mISDN/core.c
+index da30c5c..a7050c3 100644
+--- a/drivers/isdn/mISDN/core.c
++++ b/drivers/isdn/mISDN/core.c
+@@ -21,10 +21,13 @@
+ #include "core.h"
+ 
+ static u_int debug;
++u_int misdn_permitted_gid;
+ 
+ MODULE_AUTHOR("Karsten Keil");
+ MODULE_LICENSE("GPL");
+ module_param(debug, uint, S_IRUGO | S_IWUSR);
++module_param_named(gid, misdn_permitted_gid, uint, 0);
++MODULE_PARM_DESC(gid, "Unix group for accessing misdn socket (default 0)");
+ 
+ static u64		device_ids;
+ #define MAX_DEVICE_ID	63
+diff --git a/drivers/isdn/mISDN/core.h b/drivers/isdn/mISDN/core.h
+index 52695bb..6ea673f 100644
+--- a/drivers/isdn/mISDN/core.h
++++ b/drivers/isdn/mISDN/core.h
+@@ -17,6 +17,7 @@
+ 
+ extern struct mISDNdevice	*get_mdevice(u_int);
+ extern int			get_mdevice_count(void);
++extern u_int misdn_permitted_gid;
+ 
+ /* stack status flag */
+ #define mISDN_STACK_ACTION_MASK		0x0000ffff
+diff --git a/drivers/isdn/mISDN/socket.c b/drivers/isdn/mISDN/socket.c
+index e47dcb9..71f4986 100644
+--- a/drivers/isdn/mISDN/socket.c
++++ b/drivers/isdn/mISDN/socket.c
+@@ -612,6 +612,10 @@ data_sock_create(struct net *net, struct socket *sock, int protocol)
+ {
+ 	struct sock *sk;
+ 
++	if(!capable(CAP_SYS_ADMIN) && (misdn_permitted_gid != current_gid())
++		&& (!in_group_p(misdn_permitted_gid)))
++			return -EPERM;
 +
-+	reiserfs_write_unlock(inode->i_sb);
-+	err = insert_inode_locked4(inode, args.objectid,
-+			     reiserfs_find_actor, &args);
-+	reiserfs_write_lock(inode->i_sb);
-+	if (err) {
- 		err = -EINVAL;
- 		goto out_bad_inode;
- 	}
-+
- 	if (old_format_only(sb))
- 		/* not a perfect generation count, as object ids can be reused, but
- 		 ** this is as good as reiserfs can do right now.
+ 	if (sock->type != SOCK_DGRAM)
+ 		return -ESOCKTNOSUPPORT;
+ 
+@@ -694,6 +698,10 @@ base_sock_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
+ 	case IMSETDEVNAME:
+ 	{
+ 		struct mISDN_devrename dn;
++		if(!capable(CAP_SYS_ADMIN)
++			&& (misdn_permitted_gid != current_gid())
++			&& (!in_group_p(misdn_permitted_gid)))
++				return -EPERM;
+ 		if (copy_from_user(&dn, (void __user *)arg,
+ 				   sizeof(dn))) {
+ 			err = -EFAULT;
 -- 
 1.8.2.1
 
