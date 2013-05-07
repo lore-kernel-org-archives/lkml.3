@@ -1,97 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab3EGOa2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:30:28 -0400
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:61210 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab3EGOa1 (ORCPT
+	id S1754206Ab3EGOcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:32:33 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:37550 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745Ab3EGOcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 10:30:27 -0400
-From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-To: zbr@ioremap.net
-Cc: linux-kernel@vger.kernel.org,
-        Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-Subject: [PATCH V2] w1: ds2408: add magic sequence to disable P0 test mode
-Date: Tue,  7 May 2013 10:00:48 -0400
-Message-Id: <1367935248-12118-1-git-send-email-jeff.dagenais@gmail.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1367930422-25972-2-git-send-email-jeff.dagenais@gmail.com>
-References: <1367930422-25972-2-git-send-email-jeff.dagenais@gmail.com>
+	Tue, 7 May 2013 10:32:31 -0400
+Message-ID: <51891095.4070008@suse.cz>
+Date: Tue, 07 May 2013 16:32:53 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+MIME-Version: 1.0
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Jiri Slaby <jirislaby@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        NeilBrown <neilb@suse.de>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
+Subject: Re: [PATCH 09/15] Make selection of 'readdir-plus' adapt to usage
+ patterns.
+References: <1367936303-13386-1-git-send-email-jslaby@suse.cz>  <1367936303-13386-9-git-send-email-jslaby@suse.cz> <1367936852.3580.6.camel@leira.trondhjem.org>
+In-Reply-To: <1367936852.3580.6.camel@leira.trondhjem.org>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V2: use the new bus_mutex
+On 05/07/2013 04:27 PM, Myklebust, Trond wrote:
+> On Tue, 2013-05-07 at 16:18 +0200, Jiri Slaby wrote:
+>> From: NeilBrown <neilb@suse.de>
+>>
+>> While the use of READDIRPLUS is significantly more efficient than
+>> READDIR followed by many GETATTR calls, it is still less efficient
+>> than just READDIR if the attributes are not required.
+>>
+>> We can get a hint as to whether the application requires attr information
+>> by looking at whether any ->getattr calls are made between
+>> ->readdir calls.
+>> If there are any, then getting the attributes seems to be worth while.
+>>
+>> This patch tracks whether there have been recent getattr calls on
+>> children of a directory and uses that information to selectively
+>> disable READDIRPLUS on that directory.
+>>
+>> The first 'readdir' call is always served using READDIRPLUS.
+>> Subsequent calls only use READDIRPLUS if there was a getattr on a child
+>> in the mean time.
+>>
+>> The locking of ->d_parent access needs to be reviewed.
+>> As the bit is simply a hint, it isn't critical that it is set
+>> on the "correct" parent if a rename is happening, but it is
+>> critical that the 'set' doesn't set a bit in something that
+>> isn't even an inode any more.
+>>
+>> Acked-by: NeilBrown <neilb@suse.de>
+>> Signed-off-by: Neil Brown <neilb@suse.de>
+>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+>> Cc: linux-nfs@vger.kernel.org
+>> ---
+> 
+> Why am I being Cced on this?
 
-extract from http://datasheets.maximintegrated.com/en/ds/DS2408.pdf:
+Because we have the patch still in _3.9_. Dropped now in favor of the
+commit below.
 
-Power-up timing
-The DS2408 is sensitive to the power-on slew rate and can inadvertently
-power up with a test mode feature enabled. When this occurs, the P0 port
-does not respond to the Channel Access Write command.
-For most reliable operation, it is recommended to disable the test mode
-after every power-on reset using the Disable Test Mode sequence shown
-below. The 64-bit ROM code must be transmitted in the same bit sequence
-as with the Match ROM command, i.e., least significant bit first. This
-precaution is recommended in parasite power mode (VCC pin connected to
-GND) as well as with VCC power.
+> You have looked at commit d69ee9b85541a69a1092f5da675bd23256dc62af (NFS:
+> Adapt readdirplus to application usage patterns) which was upstreamed in
+> Linux 3.5, right?
 
-Disable Test Mode:
-RST,PD,96h,<64-bit DS2408 ROM Code>,3Ch,RST,PD
+Thanks for letting me know.
 
-Signed-off-by: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
----
- drivers/w1/slaves/w1_ds2408.c | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
-
-diff --git a/drivers/w1/slaves/w1_ds2408.c b/drivers/w1/slaves/w1_ds2408.c
-index e45eca1..3fc1b38 100644
---- a/drivers/w1/slaves/w1_ds2408.c
-+++ b/drivers/w1/slaves/w1_ds2408.c
-@@ -301,7 +301,32 @@ error:
- 	return -EIO;
- }
- 
-+/**
-+ * This is a special sequence we must do to ensure the P0 output is not stuck
-+ * in test mode. This is described in rev 2 of the ds2408's datasheet
-+ * (http://datasheets.maximintegrated.com/en/ds/DS2408.pdf) under
-+ * "APPLICATION INFORMATION/Power-up timing".
-+ */
-+static int w1_f29_disable_test_mode(struct w1_slave *sl)
-+{
-+	int res;
-+	u8 magic[10] = {0x96, };
-+	u64 rn = le64_to_cpu(*((u64*)&sl->reg_num));
-+	memcpy(&magic[1], &rn, 8);
-+	magic[9] = 0x3C;
-+
-+	mutex_lock(&sl->master->bus_mutex);
- 
-+	res = w1_reset_bus(sl->master);
-+	if (res)
-+		goto out;
-+	w1_write_block(sl->master, magic, ARRAY_SIZE(magic));
-+
-+	res = w1_reset_bus(sl->master);
-+out:
-+	mutex_unlock(&sl->master->bus_mutex);
-+	return res;
-+}
- 
- static struct bin_attribute w1_f29_sysfs_bin_files[] = {
- 	{
-@@ -362,6 +387,10 @@ static int w1_f29_add_slave(struct w1_slave *sl)
- 	int err = 0;
- 	int i;
- 
-+	err = w1_f29_disable_test_mode(sl);
-+	if (err)
-+		return err;
-+
- 	for (i = 0; i < ARRAY_SIZE(w1_f29_sysfs_bin_files) && !err; ++i)
- 		err = sysfs_create_bin_file(
- 			&sl->dev.kobj,
 -- 
-1.8.2.2
-
+js
+suse labs
