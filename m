@@ -1,91 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab3EGRUN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 13:20:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53083 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816Ab3EGRUM (ORCPT
+	id S1753947Ab3EGRU2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 13:20:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60705 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720Ab3EGRU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 13:20:12 -0400
-Date: Tue, 7 May 2013 10:20:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Michael D. Setzer II" <msetzerii@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Kernel Firmware Support
-Message-ID: <20130507172010.GA30610@kroah.com>
-References: <51885C8A.28146.10AA3F@msetzerii.gmail.com>
- <20130507024750.GA26639@kroah.com>
- <5188897D.15662.1AD368@msetzerii.gmail.com>
+	Tue, 7 May 2013 13:20:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL] ARM: Third batch of arm-soc changes for 3.10
+Date: Tue, 7 May 2013 19:19:53 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: ARM SoC <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <1367942534-2934003-1-git-send-email-arnd@arndb.de> <CA+55aFwMXmJ9V+3o62ELm-0NT1DaUCTvidmAhJSXzQcTMfJygA@mail.gmail.com>
+In-Reply-To: <CA+55aFwMXmJ9V+3o62ELm-0NT1DaUCTvidmAhJSXzQcTMfJygA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5188897D.15662.1AD368@msetzerii.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305071919.53353.arnd@arndb.de>
+X-Provags-ID: V02:K0:xzLyGrZA1Fnw/XDMrOxhrz/4dSfODVt2+5m/YQp4/ah
+ JvMBevuBngmJj6V/MW7X41IZm4l3FwnrDo3bCFTHDOgwAAQRTU
+ fZDC+JzSKrZls/j22Yy0ghmQK1JQy+DjafJWaWFkDwSBUsWUJo
+ DJB1PexyNsK5G4iJM/mn9A62VyzPKwRl5TOcDDvrpcIN4xPMjb
+ 0S/HeVhE/n3pwZBuwXjQfWIxkDkzCh5JC5+ioBpeFn6I9nf/6i
+ 1FD7iqEWD/m5eKJ9ZfGgIpQGORQcFnEEm5VJHvZbLzFwOtGrwM
+ H/8aSzGh+mLU9uVkf6i3uM0ruvp4SLh9ZSqDpoGhh9t5A/gr+D
+ nGXaQvWVupNK4cjGBeAc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 02:56:29PM +1000, Michael D. Setzer II wrote:
-> On 6 May 2013 at 19:47, Greg KH wrote:
+On Tuesday 07 May 2013, Linus Torvalds wrote:
+> On Tue, May 7, 2013 at 9:02 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >
+> > I used a new script to create the pull requests this time, hope
+> > I got it right now.
 > 
-> Date sent:      	Mon, 6 May 2013 19:47:50 -0700
-> From:           	Greg KH <gregkh@linuxfoundation.org>
-> To:             	"Michael D. Setzer II" <msetzerii@gmail.com>
-> Copies to:      	linux-kernel@vger.kernel.org
-> Subject:        	Re: Kernel Firmware Support
-> 
-> > On Tue, May 07, 2013 at 11:44:42AM +1000, Michael D. Setzer II wrote:
-> > > Looking for method to best support users firmware needs within 
-> > > the kernel. 
-> > > 
-> > > Have a disk-image project that users kernel.org kernels, and have 
-> > > had users that require firmware that is not included in the 
-> > > kernel.org source. I've been able to find it in linux-firmware.git and 
-> > > then manually adding it to the kernel.org firmware directory and 
-> > > then modifying the Makefile.
-> > 
-> > Use the linux-firmware package, all of the distros package it up for you
-> > automatically, and install it in the correct place, so it should "just
-> > work".
-> > 
-> > What is failing for you when you use the firmware package?
-> > 
-> 
-> First, Thanks for the quick reply. The problem is this isn't using a 
-> distro build. My project (G4L) uses a number of kernels from 
-> kernel.org and I try to include as many of the nic and other 
-> devices in the kernel to make it support hardware that is outside 
-> my control. I've had users with bnx2x hardware that requires 
-> firmware that is not part of the kernel.org source code, and have 
-> manuaully added it by putting the .fw file in the subdirectory of 
-> firmware and modifying the Makefile. Then building the kernel 
-> includes that additional firmware in the about 8M kernel file that 
-> the user selects from the CD boot process. 
-> 
-> The ideal is to be able to boot from the cd, or load the kernel with 
-> its filesystem to be able to do partition or disk image backups, but 
-> it must be able to use the hardware to access the disks and in 
-> most cases the nic. Without the firmware these bnx2x nics don't 
-> work.
-> 
-> For awhile I've been manually adding these two firmwares
-> ./bnx2x/bnx2x-e2-7.2.51.0.fw
-> ./bnx2/bnx2-mips-09-6.2.1b.fw
-> 
-> But yesterday, I got a message from a different user with screen 
-> captures that showed  failure of loading the firmware below. 
-> Actually, one screen shot with the 7.0.23.0 and another with the 
-> 7.0.29.0. Wasn't sure, so I had added all three of th 7.0.x group to 
-> a test build of my kernels. Is only the latest needed?
-> 
-> ./bnx2x/bnx2x-e1h-7.0.23.0.fw
-> ./bnx2x/bnx2x-e1h-7.0.29.0.fw
-> ./bnx2x/bnx2x-e1h-7.0.20.0.fw
+> So you seem to have blasted this series out with that automated
+> script, so they all got sent basically at the same timestamp, and they
+> are in the wrong order in my mailbox because email isn't that ordered.
 
-If you are supporting multiple versions of the kernel, that need
-different versions of the firmware package, then you need to include all
-of these to handle that properly.
+Yep, I'm very sorry about that. The old script I used had been a bit
+fragile so I stopped using it for the last few merge windows
+but tried something simpler this time. I had the sequence numbers
+in the script but forgot to actually write them out in the subject.
 
-Best of luck,
+> Of course, when there aren't any dependencies between pull requests,
+> and the ordering doesn't matter, this isn't an issue. And *most* of
+> the time you either have sent out emails by hand (and there's been
+> that human delay and they arrived in the right order) or I've just
+> been lucky.
 
-greg k-h
+I think it's the first time I made /this/ mistake, they were always
+numbered in the past, and usually also had distinct time stamps.
+ 
+> Quite frankly, I'm not going to bother guessing after the first one I
+> took was clearly not the right one and gave the wrong diffstat etc, so
+> they are all thrown down the toilet.
+> 
+> Nothing pulled.
+
+Yes, of course. It was an obvious mistake and I would have rejected
+it the same way coming from my downstream maintainers. Sorry about
+bothering you with this and your lenghty reply. I hope you don't
+mind the contents, and I'll follow up with the same pull requests
+again, using sequence numbers.
+
+	Arnd
+
