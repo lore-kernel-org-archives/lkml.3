@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758625Ab3EGMky (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 08:40:54 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:49073 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758070Ab3EGMkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 08:40:51 -0400
-From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-To: zbr@ioremap.net
-Cc: linux-kernel@vger.kernel.org,
-        Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-Subject: [PATCH] w1: ds2408: add magic sequence to disable P0 test mode
-Date: Tue,  7 May 2013 08:40:22 -0400
-Message-Id: <1367930422-25972-2-git-send-email-jeff.dagenais@gmail.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1367930422-25972-1-git-send-email-jeff.dagenais@gmail.com>
-References: <1367930422-25972-1-git-send-email-jeff.dagenais@gmail.com>
+	id S1758757Ab3EGMmt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 08:42:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36575 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757650Ab3EGMms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 08:42:48 -0400
+Date: Tue, 7 May 2013 14:42:46 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: antonynpavlov@gmail.com, rob@landley.net, schwab@linux-m68k.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild changes for v3.10-rc1
+Message-ID: <20130507124246.GA12891@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-extract from http://datasheets.maximintegrated.com/en/ds/DS2408.pdf:
+Hi Linus,
 
-Power-up timing
-The DS2408 is sensitive to the power-on slew rate and can inadvertently
-power up with a test mode feature enabled. When this occurs, the P0 port
-does not respond to the Channel Access Write command.
-For most reliable operation, it is recommended to disable the test mode
-after every power-on reset using the Disable Test Mode sequence shown
-below. The 64-bit ROM code must be transmitted in the same bit sequence
-as with the Match ROM command, i.e., least significant bit first. This
-precaution is recommended in parasite power mode (VCC pin connected to
-GND) as well as with VCC power.
+please pull these kbuild commits for v3.10-rc1:
 
-Disable Test Mode:
-RST,PD,96h,<64-bit DS2408 ROM Code>,3Ch,RST,PD
+* Fix make mrproper after mod/file2alias rework
+* Fix ld-option Makefile function
+* Rewrite headers_install to shell to drop Perl dependency.
 
-Signed-off-by: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
----
- drivers/w1/slaves/w1_ds2408.c | 34 +++++++++++++++++++++++++++++++++-
- 1 file changed, 33 insertions(+), 1 deletion(-)
+There are some more patches I have to look at, so I might send another
+pull request later. Or just queue them for 3.11.
 
-diff --git a/drivers/w1/slaves/w1_ds2408.c b/drivers/w1/slaves/w1_ds2408.c
-index e45eca1..49664b1 100644
---- a/drivers/w1/slaves/w1_ds2408.c
-+++ b/drivers/w1/slaves/w1_ds2408.c
-@@ -301,7 +301,35 @@ error:
- 	return -EIO;
- }
- 
--
-+/**
-+ * This is a special sequence we must do to ensure the P0 output is not stuck
-+ * in test mode. This is described in rev 2 of the ds2408's datasheet
-+ * (http://datasheets.maximintegrated.com/en/ds/DS2408.pdf) under
-+ * "APPLICATION INFORMATION/Power-up timing".
-+ */
-+static int w1_f29_disable_test_mode(struct w1_slave *sl)
-+{
-+	int res;
-+	u8 magic[10] = {0x96, };
-+	u64 rn = le64_to_cpu(*((u64*)&sl->reg_num));
-+	bool lock_needed = sl->master->mutex.owner != current;
-+	memcpy(&magic[1], &rn, 8);
-+	magic[9] = 0x3C;
-+
-+	if (lock_needed)
-+		mutex_lock(&sl->master->mutex);
-+
-+	res = w1_reset_bus(sl->master);
-+	if (res)
-+		goto out;
-+	w1_write_block(sl->master, magic, ARRAY_SIZE(magic));
-+
-+	res = w1_reset_bus(sl->master);
-+out:
-+	if (lock_needed)
-+		mutex_unlock(&sl->master->mutex);
-+	return res;
-+}
- 
- static struct bin_attribute w1_f29_sysfs_bin_files[] = {
- 	{
-@@ -362,6 +390,10 @@ static int w1_f29_add_slave(struct w1_slave *sl)
- 	int err = 0;
- 	int i;
- 
-+	err = w1_f29_disable_test_mode(sl);
-+	if (err)
-+		return err;
-+
- 	for (i = 0; i < ARRAY_SIZE(w1_f29_sysfs_bin_files) && !err; ++i)
- 		err = sysfs_create_bin_file(
- 			&sl->dev.kobj,
--- 
-1.8.2.2
+The following changes since commit a937536b868b8369b98967929045f1df54234323:
 
+  Linux 3.9-rc3 (2013-03-17 15:59:32 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kbuild
+
+Andreas Schwab (1):
+      Fix cleaning in scripts/mod
+
+Antony Pavlov (1):
+      kbuild: fix ld-option function
+
+Rob Landley (1):
+      headers_install.pl: convert to headers_install.sh
+
+ Documentation/kbuild/makefiles.txt |    2 +-
+ scripts/Kbuild.include             |    2 +-
+ scripts/Makefile.headersinst       |    4 +-
+ scripts/headers_install.pl         |   63 ------------------------------------
+ scripts/headers_install.sh         |   43 ++++++++++++++++++++++++
+ scripts/mod/Makefile               |    2 +
+ 6 files changed, 49 insertions(+), 67 deletions(-)
+ delete mode 100644 scripts/headers_install.pl
+ create mode 100644 scripts/headers_install.sh
