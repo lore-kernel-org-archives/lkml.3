@@ -1,62 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751034Ab3ENEAR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 00:00:17 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:53315 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab3ENEAP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 00:00:15 -0400
+	id S1751137Ab3ENECL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 00:02:11 -0400
+Received: from [14.128.12.14] ([14.128.12.14]:36268 "HELO majestix.enet.com.np"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with SMTP
+	id S1750819Ab3ENECK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 00:02:10 -0400
+X-Greylist: delayed 61343 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 May 2013 00:02:09 EDT
+Date: Tue, 7 May 2013 21:13:30 +0620
+To: undisclosed-recipients:;
+From: Delivery Agent <allen.dimatteo@yahoo.it>
+Reply-to: Delivery Agent <allen.dimatteo@yahoo.it>
+Subject: Reminder
+Message-ID: <1fcd813b5b25d6878f042c97c5276b88@41.58.71.218>
+X-Priority: 3
+X-Mailer: UebiMiau [PHPMailer version 1.70]
 MIME-Version: 1.0
-In-Reply-To: <CAPgLHd_DjX-Bfdf9p6k2t_fy+SjgQanuJjX_WxA1tqewwRe1HA@mail.gmail.com>
-References: <CAPgLHd_DjX-Bfdf9p6k2t_fy+SjgQanuJjX_WxA1tqewwRe1HA@mail.gmail.com>
-Date: Tue, 14 May 2013 09:30:14 +0530
-Message-ID: <CAKohponqCJ_FvAM-FKEnKP6E8hVr-pGOm1AKZWrrF7n=aOoYww@mail.gmail.com>
-Subject: Re: [PATCH v2] mtd: fsmc_nand: fix error return code in fsmc_nand_probe()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: dwmw2@infradead.org, grant.likely@linaro.org, rob.herring@calxeda.com,
-        artem.bityutskiy@linux.intel.com, linus.walleij@linaro.org,
-        vipin.kumar@st.com, yongjun_wei@trendmicro.com.cn,
-        linux-mtd@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 May 2013 08:00, Wei Yongjun <weiyj.lk@gmail.com> wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Fix to return -ENODEV in the dma channel request error handling
-> case instead of 0, as done elsewhere in this function.
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
-> v1 -> v2: set ret for error cases only
-> ---
->  drivers/mtd/nand/fsmc_nand.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/mtd/nand/fsmc_nand.c b/drivers/mtd/nand/fsmc_nand.c
-> index 0e5a1d9..95e1768 100644
-> --- a/drivers/mtd/nand/fsmc_nand.c
-> +++ b/drivers/mtd/nand/fsmc_nand.c
-> @@ -1035,12 +1035,14 @@ static int __init fsmc_nand_probe(struct platform_device *pdev)
->                 host->read_dma_chan = dma_request_channel(mask, filter,
->                                 pdata->read_dma_priv);
->                 if (!host->read_dma_chan) {
-> +                       ret = -ENODEV;
->                         dev_err(&pdev->dev, "Unable to get read dma channel\n");
->                         goto err_req_read_chnl;
->                 }
->                 host->write_dma_chan = dma_request_channel(mask, filter,
->                                 pdata->write_dma_priv);
->                 if (!host->write_dma_chan) {
-> +                       ret = -ENODEV;
->                         dev_err(&pdev->dev, "Unable to get write dma channel\n");
->                         goto err_req_write_chnl;
->                 }
->
+This is a reminder that Your packet is already on the transit point (Italy)
+It has been onhold awaiting pickup since 2013.email:allen.dimatteo@yahoo.it
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+________________________________________________
+Message sent using enet Mail 1.0.0
+
+
