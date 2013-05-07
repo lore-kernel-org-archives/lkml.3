@@ -1,118 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759464Ab3EGVDz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 17:03:55 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:38406 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758153Ab3EGVDx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 17:03:53 -0400
-Message-ID: <1367960629.30363.21.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 2/2 v2, RFC] Driver core: Introduce offline/online
- callbacks for memory blocks
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        Len Brown <lenb@kernel.org>, linux-mm@kvack.org, wency@cn.fujitsu.com
-Date: Tue, 07 May 2013 15:03:49 -0600
-In-Reply-To: <7132174.AKkXX1jln2@vostro.rjw.lan>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
-	 <1809544.1r1JBXrr0i@vostro.rjw.lan>
-	 <20130507105945.GA4354@dhcp-192-168-178-175.profitbricks.localdomain>
-	 <7132174.AKkXX1jln2@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759383Ab3EGVFG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 17:05:06 -0400
+Received: from fieldses.org ([174.143.236.118]:33419 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753119Ab3EGVFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 17:05:03 -0400
+Date: Tue, 7 May 2013 17:05:00 -0400
+To: Zhao Hongjiang <zhaohongjiang@huawei.com>
+Cc: bfields@redhat.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nfsd: get rid of the unused functions in vfs
+Message-ID: <20130507210500.GG32743@fieldses.org>
+References: <51838C98.2090205@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51838C98.2090205@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-07 at 14:11 +0200, Rafael J. Wysocki wrote:
-> On Tuesday, May 07, 2013 12:59:45 PM Vasilis Liaskovitis wrote:
+Thanks, applying for 3.11.
 
- :
+--b.
 
-> Updated patch is appended for completness.
-
-Yes, this updated patch solved the locking issue.
-
-> > > > A more general issue is that there are now two memory offlining efforts:
-> > > > 
-> > > > 1) from acpi_bus_offline_companions during device offline
-> > > > 2) from mm: remove_memory during device detach (offline_memory_block_cb)
-> > > > 
-> > > > The 2nd is only called if the device offline operation was already succesful, so
-> > > > it seems ineffective or redundant now, at least for x86_64/acpi_memhotplug machine
-> > > > (unless the blocks were re-onlined in between).
-> > > 
-> > > Sure, and that should be OK for now.  Changing the detach behavior is not
-> > > essential from the patch [2/2] perspective, we can do it later.
-> > 
-> > yes, ok.
-> > 
-> > > 
-> > > > On the other hand, the 2nd effort has some more intelligence in offlining, as it
-> > > > tries to offline twice in the precense of memcg, see commits df3e1b91 or
-> > > > reworked 0baeab16. Maybe we need to consolidate the logic.
-> > > 
-> > > Hmm.  Perhaps it would make sense to implement that logic in
-> > > memory_subsys_offline(), then?
-> > 
-> > the logic tries to offline the memory blocks of the device twice, because the
-> > first memory block might be storing information for the subsequent memblocks.
-> > 
-> > memory_subsys_offline operates on one memory block at a time. Perhaps we can get
-> > the same effect if we do an acpi_walk of acpi_bus_offline_companions twice in
-> > acpi_scan_hot_remove but it's probably not a good idea, since that would
-> > affect non-memory devices as well. 
-> > 
-> > I am not sure how important this intelligence is in practice (I am not using
-> > mem cgroups in my guest kernel tests yet).  Maybe Wen (original author) has
-> > more details on 2-pass offlining effectiveness.
+On Fri, May 03, 2013 at 06:08:24PM +0800, Zhao Hongjiang wrote:
+> The fh_lock_parent(), nfsd_truncate(), nfsd_notify_change() and nfsd_sync_dir()
+> fuctions were never implement and used, just remove them.
 > 
-> OK
+> Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+> ---
+>  fs/nfsd/vfs.h |    5 -----
+>  1 files changed, 0 insertions(+), 5 deletions(-)
 > 
-> It may be added in a separate patch in any case.
-
-I had the same comment as Vasilis.  And, I agree with you that we can
-enhance it in separate patches.
-
- :
-
-> +static int memory_subsys_offline(struct device *dev)
-> +{
-> +	struct memory_block *mem = container_of(dev, struct memory_block, dev);
-> +	int ret;
-> +
-> +	mutex_lock(&mem->state_mutex);
-> +	ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
-
-This function needs to check mem->state just like
-offline_memory_block().  That is:
-
-	int ret = 0;
-		:
-	if (mem->state != MEM_OFFLINE)
-		ret = __memory_block_change_state(...);
-
-Otherwise, memory hot-delete to an off-lined memory fails in
-__memory_block_change_state() since mem->state is already set to
-MEM_OFFLINE.
-
-With that change, for the series:
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-
-Thanks,
--Toshi
-
-> +	mutex_unlock(&mem->state_mutex);
-> +	return ret;
-> +}
-> +
-
-
-
+> diff --git a/fs/nfsd/vfs.h b/fs/nfsd/vfs.h
+> index 5b58941..8d2b40d 100644
+> --- a/fs/nfsd/vfs.h
+> +++ b/fs/nfsd/vfs.h
+> @@ -39,7 +39,6 @@
+>  typedef int (*nfsd_dirop_t)(struct inode *, struct dentry *, int, int);
+>  
+>  /* nfsd/vfs.c */
+> -int		fh_lock_parent(struct svc_fh *, struct dentry *);
+>  int		nfsd_racache_init(int);
+>  void		nfsd_racache_shutdown(void);
+>  int		nfsd_cross_mnt(struct svc_rqst *rqstp, struct dentry **dpp,
+> @@ -92,17 +91,13 @@ __be32		nfsd_remove(struct svc_rqst *,
+>  				struct svc_fh *, char *, int);
+>  __be32		nfsd_unlink(struct svc_rqst *, struct svc_fh *, int type,
+>  				char *name, int len);
+> -int		nfsd_truncate(struct svc_rqst *, struct svc_fh *,
+> -				unsigned long size);
+>  __be32		nfsd_readdir(struct svc_rqst *, struct svc_fh *,
+>  			     loff_t *, struct readdir_cd *, filldir_t);
+>  __be32		nfsd_statfs(struct svc_rqst *, struct svc_fh *,
+>  				struct kstatfs *, int access);
+>  
+> -int		nfsd_notify_change(struct inode *, struct iattr *);
+>  __be32		nfsd_permission(struct svc_rqst *, struct svc_export *,
+>  				struct dentry *, int);
+> -int		nfsd_sync_dir(struct dentry *dp);
+>  
+>  #if defined(CONFIG_NFSD_V2_ACL) || defined(CONFIG_NFSD_V3_ACL)
+>  struct posix_acl *nfsd_get_posix_acl(struct svc_fh *, int);
+> -- 
+> 1.7.1
+> 
