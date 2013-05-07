@@ -1,64 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759177Ab3EGTGm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 15:06:42 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:36591 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab3EGTGj (ORCPT
+	id S1757503Ab3EGTMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 15:12:20 -0400
+Received: from mx2.sisa.samsung.com ([63.166.156.250]:53228 "EHLO
+	mx2.sisa.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab3EGTMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 15:06:39 -0400
-Date: Tue, 7 May 2013 22:06:28 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>, tony@atomide.com,
-        linux-omap@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: Re: [RESEND][PATCH 1/3] arm: dts: introduce config HAS_BANDGAP
-Message-ID: <20130507190628.GI5634@blackmetal.musicnaut.iki.fi>
-References: <1367874058-2378-1-git-send-email-eduardo.valentin@ti.com>
- <1367874058-2378-2-git-send-email-eduardo.valentin@ti.com>
- <20130506213413.GH5634@blackmetal.musicnaut.iki.fi>
- <20130506223653.GA12089@obsidianresearch.com>
- <51884971.9050508@ti.com>
- <20130507003651.GA26035@obsidianresearch.com>
- <5188FE54.6050200@ti.com>
- <20130507182711.GB28628@obsidianresearch.com>
+	Tue, 7 May 2013 15:12:17 -0400
+X-ASG-Debug-ID: 1367953936-051129072313c20001-xx1T2L
+X-Barracuda-Envelope-From: shuah.kh@samsung.com
+X-Barracuda-Apparent-Source-IP: 105.144.21.115
+X-ASG-Whitelist: Client
+From: Shuah Khan <shuah.kh@samsung.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: Fwd: [ 000/115] 3.9.1-stable review
+Thread-Topic: Fwd: [ 000/115] 3.9.1-stable review
+X-ASG-Orig-Subj: Re: Fwd: [ 000/115] 3.9.1-stable review
+Thread-Index: AQHOSqldE/xfW3WxDEGayiv4Z3ywQpj6jV6A
+Date: Tue, 7 May 2013 19:11:27 +0000
+Message-ID: <1367953887.7469.7.camel@lorien>
+References: <20130506203055.537199268@linuxfoundation.org>
+	 <CAKocOOOcpAeLo=K5usRnk2w5S4tXx2Y4rXe9bff=2ba=ZWdDJA@mail.gmail.com>
+In-Reply-To: <CAKocOOOcpAeLo=K5usRnk2w5S4tXx2Y4rXe9bff=2ba=ZWdDJA@mail.gmail.com>
+Reply-To: Shuah Khan <shuah.kh@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [105.144.34.6]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <E5DBAD998CD70E4291E173ACA7B517BE@sisa.samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130507182711.GB28628@obsidianresearch.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Barracuda-Connect: UNKNOWN[105.144.21.115]
+X-Barracuda-Start-Time: 1367953936
+X-Barracuda-URL: http://192.168.0.102:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r47JCRue004923
 
-On Tue, May 07, 2013 at 12:27:11PM -0600, Jason Gunthorpe wrote:
-> On Tue, May 07, 2013 at 09:15:00AM -0400, Eduardo Valentin wrote:
-> > > But broadly the direction seems that drivers should have minimal
-> > > dependencies so, eg, the thermal maintainer compiling for x86 should
-> > > be able to compile test/static analyze your driver..
+
+> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Date: Mon, May 6, 2013 at 2:43 PM
+> Subject: [ 000/115] 3.9.1-stable review
+> To: linux-kernel@vger.kernel.org
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+> torvalds@linux-foundation.org, akpm@linux-foundation.org,
+> stable@vger.kernel.org
 > 
-> > Well, I do not see much of this attempt actually. Do you have some link
-> > / evidene that shows someone who actually cares about compiling drivers
-> > for targets that they are not used for? On this specific driver, I
-> > actually have  had exactly the opposite advice [1]. I am not convinced
-> > people actually want to do that.
 > 
-> There was a discussion a bit ago, but I can't find a link.. The
-> context was subsystem maintainers are being asked to look after more
-> code with the DT transition moving things out of arch/arm and at least
-> one complained they couldn't even compile test on x86... But again, I
-> can't find a link and you are right, there are lots and lots of
-> 'depends ARCH..' style things in kConfig already.
+> NOTE: I have NOT applied all of the submitted -stable patches to this
+> release, specifically I've skipped all of the drm patches for now.  This
+> release was big enough that I didn't want to double the size of it.  I
+> should be all caught up after a release or two, so if you have sent me
+> stable patches that are not in here, please be patient.
 > 
-> Lets just call it something to think about.
+> This is the start of the stable review cycle for the 3.9.1 release.
+> There are 115 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Wed May  8 20:28:24 UTC 2013.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.1-rc1.gz
+> and the diffstat can be found below.
+> 
+> thanks,
+> 
+> greg k-h
 
-Tomi started a thread related to this recently:
+Patches applied cleanly to 3.0.76, 3.4.43, 3.8.11, and 3.9.0 
 
-	http://marc.info/?l=linux-kernel&m=136731558332265&w=2
+Compiled and booted on the following systems:
 
-I think there's some good reasons listed there, but I guess up to the
-subsystem maintainers to decide what they prefer.
+Samsung Series 9 Intel Corei5:
+    (3.4.44-rc1, 3.8.12-rc1, and 3.9.1-rc1)
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
+    (3.0.77-rc1, 3.4.44-rc1, 3.8.12-rc1, and 3.9.1-rc)
+HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
+    (cross-compile testing: 3.0.77-rc1, 3.4.44-rc1, 3.8.12-rc1, and 3.9.1-rc1)
 
-A.
+dmesgs for all releases look good. No regressions compared to the previous
+dmesgs for each of these releases.
+
+Cross-compile tests results:
+
+alpha: defconfig passed on all
+arm: defconfig passed on all
+arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.8.y
+c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, and 3.8.y.
+mips: defconfig passed on all
+mipsel: defconfig passed on all
+powerpc: wii_defconfig passed on all
+sh: defconfig passed on all 
+sparc: defconfig passed on all
+tile: tilegx_defconfig passed on all
+
+-- thanks
+Shuah
+-- 
+Shuah Khan Linux Kernel Developer - Open Source Group 
+Samsung Research America (Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
