@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab3EGXFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 19:05:03 -0400
-Received: from mail-ve0-f202.google.com ([209.85.128.202]:54116 "EHLO
-	mail-ve0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601Ab3EGXFB (ORCPT
+	id S1754312Ab3EGXHr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 19:07:47 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:53766 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab3EGXHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 19:05:01 -0400
-X-Greylist: delayed 1629 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 May 2013 19:05:01 EDT
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Anatol Pomozov <anatol.pomozov@gmail.com>
-Subject: [PATCH] kref: minor cleanup
-Date: Tue,  7 May 2013 15:37:48 -0700
-Message-Id: <1367966268-18826-1-git-send-email-anatol.pomozov@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
+	Tue, 7 May 2013 19:07:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <1367967607-vpfj91fc-mutt-n-horiguchi@ah.jp.nec.com>
+References: <1367959554-3218-1-git-send-email-j.glisse@gmail.com>
+	<1367963581-fsskl9vz-mutt-n-horiguchi@ah.jp.nec.com>
+	<CAH3drwbQ91tb=C2D+fNkdPapK75db0yAaWsUrU2A41Rigsuxfg@mail.gmail.com>
+	<1367967607-vpfj91fc-mutt-n-horiguchi@ah.jp.nec.com>
+Date: Tue, 7 May 2013 19:07:45 -0400
+Message-ID: <CAH3drwZ3pNwr3gB5FVXZcDHkQ5iBWqnga0eU1-fHvkZChSq6Hg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mm: honor FOLL_GET flag in follow_hugetlb_page
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Jerome Glisse <jglisse@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* make warning smp-safe
-* result of atomic _unless_zero functions should be checked by caller
-    to avoid use-after-free error
-* minor stylistic fixes
+On Tue, May 7, 2013 at 7:00 PM, Naoya Horiguchi
+<n-horiguchi@ah.jp.nec.com> wrote:
+> On Tue, May 07, 2013 at 06:28:18PM -0400, Jerome Glisse wrote:
+>> On Tue, May 7, 2013 at 5:53 PM, Naoya Horiguchi
+>> <n-horiguchi@ah.jp.nec.com> wrote:
+>> > On Tue, May 07, 2013 at 04:45:54PM -0400, j.glisse@gmail.com wrote:
+>> >> From: Jerome Glisse <jglisse@redhat.com>
+>> >>
+>> >> Do not increase page count if FOLL_GET is not set.
+>> >>
+>> >> Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+>> >> ---
+>> >>  mm/hugetlb.c | 4 +++-
+>> >>  1 file changed, 3 insertions(+), 1 deletion(-)
+>> >>
+>> >> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+>> >> index 1a12f5b..5d1e46b 100644
+>> >> --- a/mm/hugetlb.c
+>> >> +++ b/mm/hugetlb.c
+>> >> @@ -2991,7 +2991,9 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>> >>  same_page:
+>> >>               if (pages) {
+>> >>                       pages[i] = mem_map_offset(page, pfn_offset);
+>> >> -                     get_page(pages[i]);
+>> >> +                     if (flags & FOLL_GET) {
+>> >> +                             get_page_foll(pages[i]);
+>> >> +                     }
+>> >>               }
+>> >>
+>> >>               if (vmas)
+>> >> --
+>> >
+>> > Hi Jerome,
+>> >
+>> > I think that we need to be careful in handling tail pages, because
+>> > __get_page_tail_foll() uses page->_mapcount as refcount.
+>> > When you get refcount on a tail page and free the hugepage without
+>> > putting the *mapcount*, you will hit BUG_ON() in free_huge_page().
+>> > Yes, this is a very tricky workaround for thp, so to avoid making
+>> > things too complicated, I think either of the following is better:
+>> >  - to get refcount only for head pages, or
+>> >  - to introduce a hugetlbfs variant of get_page_foll().
+>>
+>> Maybe a simpler variant is to just not take any refcount, ie like
+>> current code if FOLL_GET is set then take refcount on all page wether
+>> they are head/tail or not. I will resend with that.
+>
+> Hmm, I think that FOLL_GET flag means "do get_page on page", so
+> the "not take any refcount" variant seems to make no sense for me.
+> Would it be better just call without FOLL_GET?
+>
+>> > BTW, who do you expect is the caller of follow_hugetlb_page()
+>> > with FOLL_GET (I can't find your subsequent patches 2/3 or 3/3)?
+>> > I'm interested in this change because in my project it's necessary
+>> > to implement this for hugepage migration
+>> > (see https://lkml.org/lkml/2013/3/22/553).
+>>
+>> I can not talk about the patchset yet (and it's not fully cook) but i
+>> need to be able to get the page without taking reference so without
+>> the FOLL_GET flag set but i need splitting, well no real splitting, i
+>> need pfn for each fake sub page of huge page (interested in physical
+>> address not in the page struct).
+>
+> If the caller knows the vma is backed by hugetlbfs, we can get pfn of
+> the tail page by adding page offset (which can be calcurated by the virtual
+> address with proper huge page mask) to the head page's pfn.
 
-Link: https://lkml.org/lkml/2013/4/12/391
+Yes, i am just lazy in my code on that front. But i probably should do that
+anyway, it will save me some temporary allocation.
 
-Tested: compile x86, boot machine and run xfstests
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
----
- include/linux/kref.h | 9 ++++++---
- lib/kobject.c        | 3 ++-
- 2 files changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 4972e6e..817d7f1 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -39,8 +39,11 @@ static inline void kref_init(struct kref *kref)
-  */
- static inline void kref_get(struct kref *kref)
- {
--	WARN_ON(!atomic_read(&kref->refcount));
--	atomic_inc(&kref->refcount);
-+	/* If refcount was 0 before incrementing then we have a race
-+	 * condition when this kref is freeing by some other thread right now.
-+	 * In this case one should use kref_get_unless_zero()
-+	 */
-+	WARN_ON(atomic_inc_return(&kref->refcount) < 2);
- }
- 
- /**
-@@ -100,7 +103,7 @@ static inline int kref_put_mutex(struct kref *kref,
- 				 struct mutex *lock)
- {
- 	WARN_ON(release == NULL);
--        if (unlikely(!atomic_add_unless(&kref->refcount, -1, 1))) {
-+	if (unlikely(!atomic_add_unless(&kref->refcount, -1, 1))) {
- 		mutex_lock(lock);
- 		if (unlikely(!atomic_dec_and_test(&kref->refcount))) {
- 			mutex_unlock(lock);
-diff --git a/lib/kobject.c b/lib/kobject.c
-index a654866..7b13611 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -529,7 +529,8 @@ struct kobject *kobject_get(struct kobject *kobj)
- 	return kobj;
- }
- 
--static struct kobject *kobject_get_unless_zero(struct kobject *kobj)
-+static struct kobject * __must_check kobject_get_unless_zero(
-+	struct kobject *kobj)
- {
- 	if (!kref_get_unless_zero(&kobj->kref))
- 		kobj = NULL;
--- 
-1.8.2.1
-
+Cheers,
+Jerome
