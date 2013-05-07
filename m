@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757584Ab3EGKre (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 06:47:34 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:9512 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755728Ab3EGKrd (ORCPT
+	id S1757728Ab3EGKrq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 06:47:46 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:40562 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756114Ab3EGKro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 06:47:33 -0400
-X-Spam-Score: -100.8
-Message-ID: <5188DB93.2080504@asianux.com>
-Date: Tue, 07 May 2013 18:46:43 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 7 May 2013 06:47:44 -0400
 MIME-Version: 1.0
-To: tj@kernel.org, Li Zefan <lizefan@huawei.com>
-CC: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [Suggestion] kernel/cgroup.c: about kfree after 'get_new_cssid'
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [188.6.195.195]
+Date: Tue, 7 May 2013 12:47:42 +0200
+Message-ID: <CAJfpegvJmf3FkLmOzr9YOf-n5QBfo5gFZJrzocxFOEdzU60NFg@mail.gmail.com>
+Subject: [GIT PULL] fuse updates for 3.10
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Maxim Patlasov <mpatlasov@parallels.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
+Hi Linus,
 
-After call get_new_cssid(), I can not find the related free function
-(it seems free_css_id() is for that, but not used).
+Please pull the following fuse updates:
 
-The memory location is:
-  get_new_cssid() --> kzalloc() for 'struct css_id'
-  get_new_cssid() --> idr_alloc() for 'ss->idr'
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
 
-One work flow:
-  cgroup_load_subsys() --> cgroup_init_idr() --> get_new_cssid()
-  when get_new_cssid() fails, it will:
-  cgroup_load_subsys() --> cgroup_unload_subsys() --> idr_destroy(),
-  and also:
-  cgroup_load_subsys() --> cgroup_unload_subsys() --> ss->css_free();
-    ('css_free' may 'debug_css_free', or 'freezer_css_free' ...)
+This contains two patchsets from Maxim Patlasov.  The first reworks
+the request throttling so that only async requests are throttled.
+Wakeup of waiting async requests is also optimized.   The second
+series add support for async processing of direct IO which optimizes
+direct IO and enables the use of the AIO userspace interface.
 
-It seems the work flow above is not 'kfree' 'struct css_id', is it true?
+Thanks,
+Miklos
 
-BTW: I also guess, for cgroup_init_idr() in cgroup_init(), need check
-the return value.
+----
+Maxim Patlasov (10):
+      fuse: make request allocations for background processing explicit
+      fuse: add flag fc->initialized
+      fuse: skip blocking on allocations of synchronous requests
+      fuse: implement exclusive wakeup for blocked_waitq
+      fuse: move fuse_release_user_pages() up
+      fuse: add support of async IO
+      fuse: make fuse_direct_io() aware about AIO
+      fuse: enable asynchronous processing direct IO
+      fuse: optimize short direct reads
+      fuse: truncate file if async dio failed
 
-Please help check.
+Miklos Szeredi (2):
+      fuse: optimize wake_up
+      fuse: add flag to turn on async direct IO
 
-
-Thanks.
-
---
- Chen Gang
-
- Asianux Corporation
+---
+ fs/fuse/cuse.c            |   10 +-
+ fs/fuse/dev.c             |   80 ++++++++++---
+ fs/fuse/dir.c             |   17 +--
+ fs/fuse/file.c            |  272 ++++++++++++++++++++++++++++++++++++++-------
+ fs/fuse/fuse_i.h          |   36 +++++-
+ fs/fuse/inode.c           |   12 +-
+ include/uapi/linux/fuse.h |    7 +-
+ 7 files changed, 362 insertions(+), 72 deletions(-)
