@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148Ab3EGAup (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 20:50:45 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36246 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758122Ab3EGAun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 20:50:43 -0400
-Message-ID: <1367887826.4484.2.camel@pasglop>
-Subject: Re: [PATCH 1/2] PCI: Split pci_assign_unassigned_resources to per
- root bus
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 07 May 2013 10:50:26 +1000
-In-Reply-To: <1367882130-19452-1-git-send-email-yinghai@kernel.org>
-References: <1367882130-19452-1-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759288Ab3EGAvd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:51:33 -0400
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:56286 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757423Ab3EGAvb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 20:51:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <51884263.4020608@zytor.com>
+References: <51884263.4020608@zytor.com>
+Date: Mon, 6 May 2013 17:51:30 -0700
+X-Google-Sender-Auth: YD66qDS1hpY_cB6F2BnZ3gbT23Y
+Message-ID: <CA+55aFzwjQ03ZA71rgKMhCqh_+1fcMbPJUK3upcOacX2F8+Z9A@mail.gmail.com>
+Subject: Re: The type of bitops
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-arch <linux-arch@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-06 at 16:15 -0700, Yinghai Lu wrote:
-> BenH reported that there is some assign unassigned resource problem
-> in powerpc.
-> 
-> It turns out after
-> | commit 0c5be0cb0edfe3b5c4b62eac68aa2aa15ec681af
-> | Date:   Thu Feb 23 19:23:29 2012 -0800
-> |
-> |    PCI: Retry on IORESOURCE_IO type allocations
-> 
-> even the root bus does not have io port range, it will keep retrying
-> to realloc with mmio.
-> 
-> Current retry logic is : try with must+optional at first, and if
-> it fails will try must then try to extend must with optional.
-> That will fail as mmio-non-pref and mmio-pref for bridge will
-> be next to each other. So we have no chance to extend mmio-non-pref.
+On Mon, May 6, 2013 at 4:53 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> The type of bitops is currently "int" on most, if not all, architectures
+> except sparc64 where it is "unsigned long".
 
-Shouldn't you do completely separate passes for IO and MMIO through the
-whole lot instead since they are completely separate address spaces ?
+By "type of bitops" I assume you mean the actual bit offset.
 
-IE. Even a legit setup with IOs, in case of failures on the IO side
-(resource exhaustion, FW bugs, ...) we shouldn't retry the memory side
-and vice-versa.
+> It seems pretty clear to me at least that x86-64 really should use
+> "long".  However, before blindly making that change I wanted to feel
+> people out for what this should look like across architectures.
+>
+> Moving this forward, I see a couple of possibilities:
+>
+> 1. We simply change the type to "long" on x86, and let this be a fully
+>    architecture-specific option.  This is easy, obviously.
 
-Note that I'm a bit worried by how invasive your proposed patch is. I
-will let Gavin test it and if it works I'm happy but keep in mind that I
-really need that fixed in 3.10 ... (especially since there are noises
-around about a certain enterprise distro using that version...)
+Just do this. There's no reason to overthink it, I think
 
-Cheers,
-Ben.
+> 2. Same as above, except we also define a typedef for whatever type is
+>    the bitops argument type (bitops_t?  bitpos_t?)
 
+Who would ever use it? In particular, a lot of users will use bitops
+for small arrays and will have fundamentally smaller indexes. For
+them, "int" or "u32" or whatever may well make sense, and the fact
+that that bitops _can_ take larger bit indexes is immaterial.
 
+> 3. Change the type to "long" Linux-wide, on the logic that it should be
+>    the same as the general machine width across all platforms.
+
+I don't think it's worth it, but I don't think anybody will care/notice.
+
+> 4. Do some macro hacks so the bitops are dependent on the size of the
+>    argument.
+
+That sounds insane. Just *how* could the size of the argument even
+matter? Seriously, there's no *difference* between a 32-bit or a
+64-bit index. The code is the same, there's no possible reason to make
+it be different.
+
+The only place where the actual size of the data matters is in the
+underlying bitop bitmap itse;f, and that has always been defined to be
+an array of "unsigned long", and we long logn since made sure people
+aren't confused about that. But the index? It's just a number, there's
+no structure associated with it. Somebody might use an "unsigned char"
+as the index into a bitmap, and the operations fundamentally wouldn't
+care - casting the bit index it to an "int" (or a "long") doesn't
+change the operation.
+
+               Linus
