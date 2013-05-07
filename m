@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766Ab3EGRV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 13:21:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59313 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841Ab3EGRV5 (ORCPT
+	id S1754049Ab3EGRXH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 13:23:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53085 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470Ab3EGRXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 13:21:57 -0400
-Message-ID: <51893811.8080102@infradead.org>
-Date: Tue, 07 May 2013 10:21:21 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 7 May 2013 13:23:05 -0400
+Date: Tue, 7 May 2013 10:23:04 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [ 067/115] ARM: 7702/1: Set the page table freeing ceiling to
+ TASK_SIZE
+Message-ID: <20130507172304.GA30765@kroah.com>
+References: <20130506203055.537199268@linuxfoundation.org>
+ <20130506203102.410919957@linuxfoundation.org>
+ <alpine.LNX.2.00.1305061628480.4387@eggly.anvils>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anton Vorontsov <cbou@mail.ru>, Rodolfo Giometti <giometti@linux.it>
-Subject: Re: linux-next: Tree for May 7 (bq27x00_battery)
-References: <20130507134922.981483ab1e5cb09e5543a6cc@canb.auug.org.au>
-In-Reply-To: <20130507134922.981483ab1e5cb09e5543a6cc@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1305061628480.4387@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/13 20:49, Stephen Rothwell wrote:
-> Hi all,
+On Mon, May 06, 2013 at 05:00:39PM -0700, Hugh Dickins wrote:
+> On Mon, 6 May 2013, Greg Kroah-Hartman wrote:
 > 
-> Please do not add any v3.11 destined work to your linux-next included
-> branches until after v3.10-rc1 is released.
+> > 3.9-stable review patch.  If anyone has any objections, please let me know.
 > 
-> I am receiving a (un)reasonable number of conflicts from there being
-> multiple copies of some commits in various trees.   Please clean this up
-> and resist the temptataion to rebase your trees on the way to your
-> upstream ...
+> NAK to 067/115 for 3.9, 063/104 for 3.8 and 38/63 for 3.4: they duplicate
+>        036/115 for 3.9, 034/104 for 3.8 and 16/63 for 3.4.
 > 
-> Changes since 20130506:
-> 
+> Commit 6aaa189f8712471a250bfdf8fc8d08277258b8ab upstream is a duplicate of
+> commit 104ad3b32d7a71941c8ab2dee78eea38e8a23309 upstream; but whereas git
+> resolves the duplication in Linus's tree, they show up as a repeated
+> definition block in patch-3.9.1-rc1.
 
-on x86_64:
+Ah, good catch, thanks, I'll go drop this patch from those trees, thanks
+for letting me know.
 
-drivers/built-in.o: In function `bq27x00_read_i2c':
-bq27x00_battery.c:(.text+0x169e20): undefined reference to `i2c_transfer'
-bq27x00_battery.c:(.text+0x169e44): undefined reference to `i2c_transfer'
-drivers/built-in.o: In function `bq27x00_battery_init':
-bq27x00_battery.c:(.init.text+0x82af): undefined reference to `i2c_register_driver'
-drivers/built-in.o: In function `bq27x00_battery_exit':
-bq27x00_battery.c:(.exit.text+0xd8f): undefined reference to `i2c_del_driver'
-
-
-when CONFIG_I2C=m and CONFIG_BATTERY_BQ27X00_I2C=y.
-
-
--- 
-~Randy
+greg k-h
