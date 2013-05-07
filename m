@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933209Ab3EGNlx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:41:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42431 "EHLO
+	id S933241Ab3EGN7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:59:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42439 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933185Ab3EGNlu (ORCPT
+	with ESMTP id S933189Ab3EGNlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:41:50 -0400
+	Tue, 7 May 2013 09:41:51 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 076/118] NFSv4: Handle NFS4ERR_DELAY and NFS4ERR_GRACE in nfs4_open_delegation_recall
-Date: Tue,  7 May 2013 14:38:42 +0100
-Message-Id: <1367933964-1564-77-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 077/118] usb: chipidea: udc: fix memory leak in _ep_nuke
+Date: Tue,  7 May 2013 14:38:43 +0100
+Message-Id: <1367933964-1564-78-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-commit 8b6cc4d6f841d31f72fe7478453759166d366274 upstream.
+commit 7ca2cd291fd84ae499390f227a255ccba2780a81 upstream.
 
-A server shouldn't normally return NFS4ERR_GRACE if the client holds a
-delegation, since no conflicting lock reclaims can be granted, however
-the spec does not require the server to grant the open in this
-instance
+In hardware_enqueue code adds one extra td with dma_pool_alloc if
+mReq->req.zero is true. When _ep_nuke will be called for that endpoint,
+dma_pool_free will not be called to free that memory again. That patch
+fixes this.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[ luis: adjust context ]
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/nfs4proc.c | 6 ++++++
+ drivers/usb/chipidea/udc.c | 6 ++++++
  1 file changed, 6 insertions(+)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index b96aa12..480918e 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1381,6 +1381,12 @@ int nfs4_open_delegation_recall(struct nfs_open_context *ctx, struct nfs4_state
- 			case -ENOMEM:
- 				err = 0;
- 				goto out;
-+			case -NFS4ERR_DELAY:
-+			case -NFS4ERR_GRACE:
-+				set_bit(NFS_DELEGATED_STATE, &state->flags);
-+				ssleep(1);
-+				err = -EAGAIN;
-+				goto out;
- 		}
- 		err = nfs4_handle_exception(server, err, &exception);
- 	} while (exception.retry);
+diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
+index 60bcf1c..113b4f1 100644
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -541,6 +541,12 @@ __acquires(mEp->lock)
+ 		struct ci13xxx_req *mReq = \
+ 			list_entry(mEp->qh.queue.next,
+ 				   struct ci13xxx_req, queue);
++
++		if (mReq->zptr) {
++			dma_pool_free(mEp->td_pool, mReq->zptr, mReq->zdma);
++			mReq->zptr = NULL;
++		}
++
+ 		list_del_init(&mReq->queue);
+ 		mReq->req.status = -ESHUTDOWN;
+ 
 -- 
 1.8.1.2
 
