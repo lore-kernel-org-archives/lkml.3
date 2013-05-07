@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933738Ab3EGN6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:58:00 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49126 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933252Ab3EGN54 (ORCPT
+	id S933725Ab3EGN57 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:57:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42465 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933244Ab3EGNl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:57:56 -0400
-Date: Tue, 7 May 2013 15:57:52 +0200
-From: Pavel Machek <pavel@denx.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: tglx@linutronix.de, Jamie Iles <jamie@jamieiles.com>, dinguyen@altera.com,
-        wd@denx.de, linux-arm-kernel@lists.infradead.org, olof@lixom.net,
-        kernel list <linux-kernel@vger.kernel.org>, john.stultz@linaro.org
-Subject: Re: dw_apb_timer_of.c: remove parts that were picoxcell-specific
-Message-ID: <20130507135752.GA3500@amd.pavel.ucw.cz>
-References: <20130426121433.GA16249@amd.pavel.ucw.cz>
- <201305061545.22587.arnd@arndb.de>
- <20130506155304.GA6645@amd.pavel.ucw.cz>
- <201305062324.17080.arnd@arndb.de>
+	Tue, 7 May 2013 09:41:57 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 083/118] USB: option: add a D-Link DWM-156 variant
+Date: Tue,  7 May 2013 14:38:49 +0100
+Message-Id: <1367933964-1564-84-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
+References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201305062324.17080.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2013-05-06 23:24:16, Arnd Bergmann wrote:
-> On Monday 06 May 2013, Pavel Machek wrote:
-> > On Mon 2013-05-06 15:45:22, Arnd Bergmann wrote:
-> > > On Monday 06 May 2013, Pavel Machek wrote:
-> > > > 
-> > > > Hi!
-> > > > 
-> > > > Ping? Previous version was tested by Dinh, and this one is based on
-> > > > Jamie's updates, so I assume it is acceptable for him, too.
-> > > > 
-> > > > It brings two platforms closer together, and makes time actually work
-> > > > on socfpga. It would be good to get it applied.
-> > > 
-> > > Who should apply it? I guess it needs to go through arm-soc with all the
-> > > other clocksource changes already queued up there. Can we have an Ack
-> > > from Jamie and from the clocksource maintainers?
-> > 
-> > Well, changes to arch/arm/mach-picoxcell are single line (and that's a
-> > cleanup of duplicate include). 
-> 
-> The point is that Jamie had comments on the earlier version, so it would
-> be good to see his Ack on the current one.
+3.5.7.12 -stable review patch.  If anyone has any objections, please let me know.
 
-He sent his Ack this morning.
+------------------
 
-> > So I guess it should go through the timekeeping tree...?
-> 
-> I would prefer that, but we can also take it through arm-soc, it doesn't
-> really matter.
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-I see no response from timekeeping people... so if you could take it,
-that would be great.
+commit a2a2d6c7f93e160b52a4ad0164db1f43f743ae0f upstream.
 
-Thanks,
-									Pavel
+Adding support for a Mediatek based device labelled as
+D-Link Model: DWM-156, H/W Ver: A7
+
+Also adding two other device IDs found in the Debian(!)
+packages included on the embedded device driver CD.
+
+This is a composite MBIM + serial ports + card reader device:
+
+T:  Bus=04 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#= 14 Spd=480  MxCh= 0
+D:  Ver= 2.00 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=2001 ProdID=7d01 Rev= 3.00
+S:  Manufacturer=D-Link,Inc
+S:  Product=D-Link DWM-156
+C:* #Ifs= 7 Cfg#= 1 Atr=a0 MxPwr=500mA
+A:  FirstIf#= 0 IfCount= 2 Cls=02(comm.) Sub=0e Prot=00
+I:* If#= 0 Alt= 0 #EPs= 1 Cls=02(comm.) Sub=0e Prot=00 Driver=cdc_mbim
+E:  Ad=88(I) Atr=03(Int.) MxPS=  64 Ivl=125us
+I:  If#= 1 Alt= 0 #EPs= 0 Cls=0a(data ) Sub=00 Prot=02 Driver=cdc_mbim
+I:* If#= 1 Alt= 1 #EPs= 2 Cls=0a(data ) Sub=00 Prot=02 Driver=cdc_mbim
+E:  Ad=81(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+I:* If#= 2 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=02 Prot=01 Driver=option
+E:  Ad=87(I) Atr=03(Int.) MxPS=  64 Ivl=500us
+E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+I:* If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
+E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+I:* If#= 4 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
+E:  Ad=84(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+I:* If#= 5 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
+E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+I:* If#= 6 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
+E:  Ad=86(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=06(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/serial/option.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index dd442c0..3038ba9 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1350,6 +1350,12 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d01, 0xff, 0x02, 0x01) },	/* D-Link DWM-156 (variant) */
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d01, 0xff, 0x00, 0x00) },	/* D-Link DWM-156 (variant) */
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d02, 0xff, 0x02, 0x01) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d02, 0xff, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x02, 0x01) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x00, 0x00) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.1.2
+
