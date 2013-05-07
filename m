@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933524Ab3EGNnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:43:40 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:50758 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758245Ab3EGNnf (ORCPT
+	id S933476Ab3EGNnh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:43:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42661 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933439Ab3EGNmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:43:35 -0400
-MIME-Version: 1.0
-Date: Tue, 7 May 2013 21:43:33 +0800
-Message-ID: <CAPgLHd9K0+A5dOOT2bj+fB1owkECMpSGBaqrq-Zs6b-t_G-_7A@mail.gmail.com>
-Subject: [PATCH] drm/exynos: fix error return code in exynos_drm_load()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: inki.dae@samsung.com, jy0922.shim@samsung.com, sw0312.kim@samsung.com,
-        kyungmin.park@samsung.com, airlied@linux.ie
-Cc: yongjun_wei@trendmicro.com.cn, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 May 2013 09:42:37 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Jonghwan Choi <jhbird.choi@samsung.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 118/118] ARM: 7699/1: sched_clock: Add more notrace to prevent recursion
+Date: Tue,  7 May 2013 14:39:24 +0100
+Message-Id: <1367933964-1564-119-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
+References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+3.5.7.12 -stable review patch.  If anyone has any objections, please let me know.
 
-Fix to return -ENOMEM in the exynos_plane_init() error handling
-case instead of 0, as done elsewhere in this function.
+------------------
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Stephen Boyd <sboyd@codeaurora.org>
+
+commit cea15092f098b7018e89f64a5a14bb71955965d5 upstream.
+
+cyc_to_sched_clock() is called by sched_clock() and cyc_to_ns()
+is called by cyc_to_sched_clock(). I suspect that some compilers
+inline both of these functions into sched_clock() and so we've
+been getting away without having a notrace marking. It seems that
+my compiler isn't inlining cyc_to_sched_clock() though, so I'm
+hitting a recursion bug when I enable the function graph tracer,
+causing my system to crash. Marking these functions notrace fixes
+it. Technically cyc_to_ns() doesn't need the notrace because it's
+already marked inline, but let's just add it so that if we ever
+remove inline from that function it doesn't blow up.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_drv.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/arm/kernel/sched_clock.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-index ba6d995..3a10373 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-@@ -91,8 +91,10 @@ static int exynos_drm_load(struct drm_device *dev, unsigned long flags)
- 		unsigned int possible_crtcs = (1 << MAX_CRTC) - 1;
+diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+index 6bbf936..926c98f 100644
+--- a/arch/arm/kernel/sched_clock.c
++++ b/arch/arm/kernel/sched_clock.c
+@@ -39,12 +39,12 @@ static u32 notrace jiffy_sched_clock_read(void)
  
- 		plane = exynos_plane_init(dev, possible_crtcs, false);
--		if (!plane)
-+		if (!plane) {
-+			ret = -ENOMEM;
- 			goto err_release_iommu_mapping;
-+		}
- 	}
+ static u32 __read_mostly (*read_sched_clock)(void) = jiffy_sched_clock_read;
  
- 	ret = drm_vblank_init(dev, MAX_CRTC);
+-static inline u64 cyc_to_ns(u64 cyc, u32 mult, u32 shift)
++static inline u64 notrace cyc_to_ns(u64 cyc, u32 mult, u32 shift)
+ {
+ 	return (cyc * mult) >> shift;
+ }
+ 
+-static unsigned long long cyc_to_sched_clock(u32 cyc, u32 mask)
++static unsigned long long notrace cyc_to_sched_clock(u32 cyc, u32 mask)
+ {
+ 	u64 epoch_ns;
+ 	u32 epoch_cyc;
+-- 
+1.8.1.2
 
