@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933082Ab3EGNlf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:41:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42356 "EHLO
+	id S933257Ab3EGNl6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:41:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42449 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933059Ab3EGNla (ORCPT
+	with ESMTP id S933199Ab3EGNlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:41:30 -0400
+	Tue, 7 May 2013 09:41:53 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, Prarit Bhargava <prarit@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 061/118] tracing: Use stack of calling function for stack tracer
-Date: Tue,  7 May 2013 14:38:27 +0100
-Message-Id: <1367933964-1564-62-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 079/118] hrtimer: Add expiry time overflow check in hrtimer_interrupt
+Date: Tue,  7 May 2013 14:38:45 +0100
+Message-Id: <1367933964-1564-80-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -27,78 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Prarit Bhargava <prarit@redhat.com>
 
-commit 87889501d0adfae10e3b0f0e6f2d7536eed9ae84 upstream.
+commit 8f294b5a139ee4b75e890ad5b443c93d1e558a8b upstream.
 
-Use the stack of stack_trace_call() instead of check_stack() as
-the test pointer for max stack size. It makes it a bit cleaner
-and a little more accurate.
+The settimeofday01 test in the LTP testsuite effectively does
 
-Adding stable, as a later fix depends on this patch.
+        gettimeofday(current time);
+        settimeofday(Jan 1, 1970 + 100 seconds);
+        settimeofday(current time);
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[ luis: adjust context ]
+This test causes a stack trace to be displayed on the console during the
+setting of timeofday to Jan 1, 1970 + 100 seconds:
+
+[  131.066751] ------------[ cut here ]------------
+[  131.096448] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x135/0x140()
+[  131.104935] Hardware name: Dinar
+[  131.108150] Modules linked in: sg nfsv3 nfs_acl nfsv4 auth_rpcgss nfs dns_resolver fscache lockd sunrpc nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter ip_tables kvm_amd kvm sp5100_tco bnx2 i2c_piix4 crc32c_intel k10temp fam15h_power ghash_clmulni_intel amd64_edac_mod pcspkr serio_raw edac_mce_amd edac_core microcode xfs libcrc32c sr_mod sd_mod cdrom ata_generic crc_t10dif pata_acpi radeon i2c_algo_bit drm_kms_helper ttm drm ahci pata_atiixp libahci libata usb_storage i2c_core dm_mirror dm_region_hash dm_log dm_mod
+[  131.176784] Pid: 0, comm: swapper/28 Not tainted 3.8.0+ #6
+[  131.182248] Call Trace:
+[  131.184684]  <IRQ>  [<ffffffff810612af>] warn_slowpath_common+0x7f/0xc0
+[  131.191312]  [<ffffffff8106130a>] warn_slowpath_null+0x1a/0x20
+[  131.197131]  [<ffffffff810b9fd5>] clockevents_program_event+0x135/0x140
+[  131.203721]  [<ffffffff810bb584>] tick_program_event+0x24/0x30
+[  131.209534]  [<ffffffff81089ab1>] hrtimer_interrupt+0x131/0x230
+[  131.215437]  [<ffffffff814b9600>] ? cpufreq_p4_target+0x130/0x130
+[  131.221509]  [<ffffffff81619119>] smp_apic_timer_interrupt+0x69/0x99
+[  131.227839]  [<ffffffff8161805d>] apic_timer_interrupt+0x6d/0x80
+[  131.233816]  <EOI>  [<ffffffff81099745>] ? sched_clock_cpu+0xc5/0x120
+[  131.240267]  [<ffffffff814b9ff0>] ? cpuidle_wrap_enter+0x50/0xa0
+[  131.246252]  [<ffffffff814b9fe9>] ? cpuidle_wrap_enter+0x49/0xa0
+[  131.252238]  [<ffffffff814ba050>] cpuidle_enter_tk+0x10/0x20
+[  131.257877]  [<ffffffff814b9c89>] cpuidle_idle_call+0xa9/0x260
+[  131.263692]  [<ffffffff8101c42f>] cpu_idle+0xaf/0x120
+[  131.268727]  [<ffffffff815f8971>] start_secondary+0x255/0x257
+[  131.274449] ---[ end trace 1151a50552231615 ]---
+
+When we change the system time to a low value like this, the value of
+timekeeper->offs_real will be a negative value.
+
+It seems that the WARN occurs because an hrtimer has been started in the time
+between the releasing of the timekeeper lock and the IPI call (via a call to
+on_each_cpu) in clock_was_set() in the do_settimeofday() code.  The end result
+is that a REALTIME_CLOCK timer has been added with softexpires = expires =
+KTIME_MAX.  The hrtimer_interrupt() fires/is called and the loop at
+kernel/hrtimer.c:1289 is executed.  In this loop the code subtracts the
+clock base's offset (which was set to timekeeper->offs_real in
+do_settimeofday()) from the current hrtimer_cpu_base->expiry value (which
+was KTIME_MAX):
+
+	KTIME_MAX - (a negative value) = overflow
+
+A simple check for an overflow can resolve this problem.  Using KTIME_MAX
+instead of the overflow value will result in the hrtimer function being run,
+and the reprogramming of the timer after that.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+[jstultz: Tweaked commit subject]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/trace_stack.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ kernel/hrtimer.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index aa4270a..6ee97e5 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -40,20 +40,21 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
- int stack_tracer_enabled;
- static int last_stack_tracer_enabled;
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index e4cee8d..97d3742 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1308,6 +1308,8 @@ retry:
  
--static inline void check_stack(void)
-+static inline void
-+check_stack(unsigned long *stack)
- {
- 	unsigned long this_size, flags;
- 	unsigned long *p, *top, *start;
- 	int i;
- 
--	this_size = ((unsigned long)&this_size) & (THREAD_SIZE-1);
-+	this_size = ((unsigned long)stack) & (THREAD_SIZE-1);
- 	this_size = THREAD_SIZE - this_size;
- 
- 	if (this_size <= max_stack_size)
- 		return;
- 
- 	/* we do not handle interrupt stacks yet */
--	if (!object_is_on_stack(&this_size))
-+	if (!object_is_on_stack(stack))
- 		return;
- 
- 	local_irq_save(flags);
-@@ -74,7 +75,7 @@ static inline void check_stack(void)
- 	 * Now find where in the stack these are.
- 	 */
- 	i = 0;
--	start = &this_size;
-+	start = stack;
- 	top = (unsigned long *)
- 		(((unsigned long)start & ~(THREAD_SIZE-1)) + THREAD_SIZE);
- 
-@@ -113,6 +114,7 @@ static inline void check_stack(void)
- static void
- stack_trace_call(unsigned long ip, unsigned long parent_ip)
- {
-+	unsigned long stack;
- 	int cpu;
- 
- 	if (unlikely(!ftrace_enabled || stack_trace_disabled))
-@@ -125,7 +127,7 @@ stack_trace_call(unsigned long ip, unsigned long parent_ip)
- 	if (per_cpu(trace_active, cpu)++ != 0)
- 		goto out;
- 
--	check_stack();
-+	check_stack(&stack);
- 
-  out:
- 	per_cpu(trace_active, cpu)--;
+ 				expires = ktime_sub(hrtimer_get_expires(timer),
+ 						    base->offset);
++				if (expires.tv64 < 0)
++					expires.tv64 = KTIME_MAX;
+ 				if (expires.tv64 < expires_next.tv64)
+ 					expires_next = expires;
+ 				break;
 -- 
 1.8.1.2
 
