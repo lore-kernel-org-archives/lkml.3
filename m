@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758089Ab3EGPcs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 11:32:48 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:57148 "EHLO
+	id S1757403Ab3EGPc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 11:32:28 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:57080 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757507Ab3EGPc3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752781Ab3EGPc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 11:32:29 -0400
+	Tue, 7 May 2013 11:32:26 -0400
 From: Andrew Murray <Andrew.Murray@arm.com>
 To: robherring2@gmail.com
 Cc: benh@kernel.crashing.org, linux-mips@linux-mips.org,
@@ -21,124 +21,210 @@ Cc: benh@kernel.crashing.org, linux-mips@linux-mips.org,
         thierry.reding@avionic-design.de, thomas.abraham@linaro.org,
         arnd@arndb.de, linus.walleij@linaro.org, juhosg@openwrt.org,
         grant.likely@linaro.org, Andrew Murray <Andrew.Murray@arm.com>
-Subject: [PATCH v9 0/3] of/pci: Provide common support for PCI DT parsing
-Date: Tue,  7 May 2013 16:31:11 +0100
-Message-Id: <1367940674-11987-1-git-send-email-Andrew.Murray@arm.com>
+Subject: [PATCH v9 1/3] of/pci: Provide support for parsing PCI DT ranges property
+Date: Tue,  7 May 2013 16:31:12 +0100
+Message-Id: <1367940674-11987-2-git-send-email-Andrew.Murray@arm.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1367940674-11987-1-git-send-email-Andrew.Murray@arm.com>
+References: <1367940674-11987-1-git-send-email-Andrew.Murray@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset factors out duplicated code associated with parsing PCI
-DT "ranges" properties across the architectures and introduces a
-"ranges" parser. This parser "of_pci_range_parser" can be used directly
-by ARM host bridge drivers enabling them to obtain ranges from device
-trees.
+This patch factors out common implementation patterns to reduce overall kernel
+code and provide a means for host bridge drivers to directly obtain struct
+resources from the DT's ranges property without relying on architecture specific
+DT handling. This will make it easier to write archiecture independent host bridge
+drivers and mitigate against further duplication of DT parsing code.
 
-I've included the Reviewed-by, Tested-by and Acked-by's received from
-v5/v6/v7/v8 in this patchset, earlier versions of this patchset (v3) have been
-tested-by:
+This patch can be used in the following way:
 
-Thierry Reding <thierry.reding@avionic-design.de>
-Jingoo Han <jg1.han@samsung.com>
+	struct of_pci_range_parser parser;
+	struct of_pci_range range;
 
-I've tested that this patchset builds and runs on ARM and that it builds on
-PowerPC, x86_64, MIPS and Microblaze.
+	if (of_pci_range_parser_init(&parser, np))
+		; //no ranges property
 
-Compared to the v8 sent by Andrew Murray, the following changes have been made
-(please note that the MIPS patch is unchanged from v8):
+	for_each_of_pci_range(&parser, &range) {
 
- * Remove the unification of pci_process_bridge_OF_ranges between PowerPC and
-   Microblaze. Feedback from Bjorn and Benjamin (along with a NAK) suggested
-   that this goes against their future direction (using more of struct
-   pci_host_bridge and less of arch specific struct pci_controller).
+		/*
+			directly access properties of the address range, e.g.:
+			range.pci_space, range.pci_addr, range.cpu_addr,
+			range.size, range.flags
 
-Compared to the v7 sent by Andrew Murray, the following changes have been made
-(please note that the first patch is unchanged from v7):
+			alternatively obtain a struct resource, e.g.:
+			struct resource res;
+			of_pci_range_to_resource(&range, np, &res);
+		*/
+	}
 
- * Rename of_pci_range_parser to of_pci_range_parser_init and
-   of_pci_process_ranges to of_pci_range_parser_one as suggested by Grant
-   Likely.
+Additionally the implementation takes care of adjacent ranges and merges them
+into a single range (as was the case with powerpc and microblaze).
 
- * Reverted back to using a switch statement instead of if/else in
-   pci_process_bridge_OF_ranges. Grant Likely highlighted this change from
-   the original code which was unnecessary.
+Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Reviewed-by: Rob Herring <rob.herring@calxeda.com>
+Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Tested-by: Linus Walleij <linus.walleij@linaro.org>
+Tested-by: Jingoo Han <jg1.han@samsung.com>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+---
+ drivers/of/address.c       |   67 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/of_address.h |   48 +++++++++++++++++++++++++++++++
+ 2 files changed, 115 insertions(+), 0 deletions(-)
 
- * Squashed in a patch provided by Gabor Juhos which fixes build errors on
-   MIPS found in the last patchset.
-
-Compared to the v6 sent by Andrew Murray, the following changes have
-been made in response to build errors/warnings:
-
- * Inclusion of linux/of_address.h in of_pci.c as suggested by Michal
-   Simek to prevent compilation failures on Microblaze (and others) and his
-   ack.
-
- * Use of externs, static inlines and a typo in linux/of_address.h in response
-   to linker errors (multiple defination) on x86_64 as spotted by a kbuild test
-   robot on (jcooper/linux.git mvebu/drivers)
-
- * Add EXPORT_SYMBOL_GPL to of_pci_range_parser function to be consistent
-   with of_pci_process_ranges function
-
-Compared to the v5 sent by Andrew Murray, the following changes have
-been made:
-
- * Use of CONFIG_64BIT instead of CONFIG_[a32bitarch] as suggested by
-   Rob Herring in drivers/of/of_pci.c
-
- * Added forward declaration of struct pci_controller in linux/of_pci.h
-   to prevent compiler warning as suggested by Thomas Petazzoni
-
- * Improved error checking (!range check), removal of unnecessary be32_to_cpup
-   call, improved formatting of struct of_pci_range_parser layout and
-   replacement of macro with a static inline. All suggested by Rob Herring.
-
-Compared to the v4 (incorrectly labelled v3) sent by Andrew Murray,
-the following changes have been made:
-
- * Split the patch as suggested by Rob Herring
-
-Compared to the v3 sent by Andrew Murray, the following changes have
-been made:
-
- * Unify and move duplicate pci_process_bridge_OF_ranges functions to
-   drivers/of/of_pci.c as suggested by Rob Herring
-
- * Fix potential build errors with Microblaze/MIPS
-
-Compared to "[PATCH v5 01/17] of/pci: Provide support for parsing PCI DT
-ranges property", the following changes have been made:
-
- * Correct use of IORESOURCE_* as suggested by Russell King
-
- * Improved interface and naming as suggested by Thierry Reding
-
-Compared to the v2 sent by Andrew Murray, Thomas Petazzoni did:
-
- * Add a memset() on the struct of_pci_range_iter when starting the
-   for loop in for_each_pci_range(). Otherwise, with an uninitialized
-   of_pci_range_iter, of_pci_process_ranges() may crash.
-
- * Add parenthesis around 'res', 'np' and 'iter' in the
-   for_each_of_pci_range macro definitions. Otherwise, passing
-   something like &foobar as 'res' didn't work.
-
- * Rebased on top of 3.9-rc2, which required fixing a few conflicts in
-   the Microblaze code.
-
-v2:
-  This follows on from suggestions made by Grant Likely
-  (marc.info/?l=linux-kernel&m=136079602806328)
-
-Andrew Murray (3):
-  of/pci: Provide support for parsing PCI DT ranges property
-  of/pci: mips: convert to common of_pci_range_parser
-  of/pci: microblaze: convert to common of_pci_range_parser
-
- arch/microblaze/pci/pci-common.c |  106 ++++++++++++++------------------------
- arch/mips/pci/pci.c              |   50 ++++++-----------
- drivers/of/address.c             |   67 ++++++++++++++++++++++++
- include/linux/of_address.h       |   48 +++++++++++++++++
- 4 files changed, 171 insertions(+), 100 deletions(-)
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index 04da786..fdd0636 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -227,6 +227,73 @@ int of_pci_address_to_resource(struct device_node *dev, int bar,
+ 	return __of_address_to_resource(dev, addrp, size, flags, NULL, r);
+ }
+ EXPORT_SYMBOL_GPL(of_pci_address_to_resource);
++
++int of_pci_range_parser_init(struct of_pci_range_parser *parser,
++				struct device_node *node)
++{
++	const int na = 3, ns = 2;
++	int rlen;
++
++	parser->node = node;
++	parser->pna = of_n_addr_cells(node);
++	parser->np = parser->pna + na + ns;
++
++	parser->range = of_get_property(node, "ranges", &rlen);
++	if (parser->range == NULL)
++		return -ENOENT;
++
++	parser->end = parser->range + rlen / sizeof(__be32);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(of_pci_range_parser_init);
++
++struct of_pci_range *of_pci_range_parser_one(struct of_pci_range_parser *parser,
++						struct of_pci_range *range)
++{
++	const int na = 3, ns = 2;
++
++	if (!range)
++		return NULL;
++
++	if (!parser->range || parser->range + parser->np > parser->end)
++		return NULL;
++
++	range->pci_space = parser->range[0];
++	range->flags = of_bus_pci_get_flags(parser->range);
++	range->pci_addr = of_read_number(parser->range + 1, ns);
++	range->cpu_addr = of_translate_address(parser->node,
++				parser->range + na);
++	range->size = of_read_number(parser->range + parser->pna + na, ns);
++
++	parser->range += parser->np;
++
++	/* Now consume following elements while they are contiguous */
++	while (parser->range + parser->np <= parser->end) {
++		u32 flags, pci_space;
++		u64 pci_addr, cpu_addr, size;
++
++		pci_space = be32_to_cpup(parser->range);
++		flags = of_bus_pci_get_flags(parser->range);
++		pci_addr = of_read_number(parser->range + 1, ns);
++		cpu_addr = of_translate_address(parser->node,
++				parser->range + na);
++		size = of_read_number(parser->range + parser->pna + na, ns);
++
++		if (flags != range->flags)
++			break;
++		if (pci_addr != range->pci_addr + range->size ||
++		    cpu_addr != range->cpu_addr + range->size)
++			break;
++
++		range->size += size;
++		parser->range += parser->np;
++	}
++
++	return range;
++}
++EXPORT_SYMBOL_GPL(of_pci_range_parser_one);
++
+ #endif /* CONFIG_PCI */
+ 
+ /*
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index 0506eb5..4c2e6f2 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -4,6 +4,36 @@
+ #include <linux/errno.h>
+ #include <linux/of.h>
+ 
++struct of_pci_range_parser {
++	struct device_node *node;
++	const __be32 *range;
++	const __be32 *end;
++	int np;
++	int pna;
++};
++
++struct of_pci_range {
++	u32 pci_space;
++	u64 pci_addr;
++	u64 cpu_addr;
++	u64 size;
++	u32 flags;
++};
++
++#define for_each_of_pci_range(parser, range) \
++	for (; of_pci_range_parser_one(parser, range);)
++
++static inline void of_pci_range_to_resource(struct of_pci_range *range,
++					    struct device_node *np,
++					    struct resource *res)
++{
++	res->flags = range->flags;
++	res->start = range->cpu_addr;
++	res->end = range->cpu_addr + range->size - 1;
++	res->parent = res->child = res->sibling = NULL;
++	res->name = np->full_name;
++}
++
+ #ifdef CONFIG_OF_ADDRESS
+ extern u64 of_translate_address(struct device_node *np, const __be32 *addr);
+ extern bool of_can_translate_address(struct device_node *dev);
+@@ -27,6 +57,11 @@ static inline unsigned long pci_address_to_pio(phys_addr_t addr) { return -1; }
+ #define pci_address_to_pio pci_address_to_pio
+ #endif
+ 
++extern int of_pci_range_parser_init(struct of_pci_range_parser *parser,
++			struct device_node *node);
++extern struct of_pci_range *of_pci_range_parser_one(
++					struct of_pci_range_parser *parser,
++					struct of_pci_range *range);
+ #else /* CONFIG_OF_ADDRESS */
+ #ifndef of_address_to_resource
+ static inline int of_address_to_resource(struct device_node *dev, int index,
+@@ -53,6 +88,19 @@ static inline const __be32 *of_get_address(struct device_node *dev, int index,
+ {
+ 	return NULL;
+ }
++
++static inline int of_pci_range_parser_init(struct of_pci_range_parser *parser,
++			struct device_node *node)
++{
++	return -1;
++}
++
++static inline struct of_pci_range *of_pci_range_parser_one(
++					struct of_pci_range_parser *parser,
++					struct of_pci_range *range)
++{
++	return NULL;
++}
+ #endif /* CONFIG_OF_ADDRESS */
+ 
+ 
+-- 
+1.7.0.4
 
