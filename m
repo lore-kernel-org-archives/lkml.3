@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933506Ab3EGNmp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:42:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42645 "EHLO
+	id S933489Ab3EGNmm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:42:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42631 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933421Ab3EGNmf (ORCPT
+	with ESMTP id S933418Ab3EGNmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:35 -0400
+	Tue, 7 May 2013 09:42:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 116/118] ipc: sysv shared memory limited to 8TiB
-Date: Tue,  7 May 2013 14:39:22 +0100
-Message-Id: <1367933964-1564-117-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 114/118] exec: do not abuse ->cred_guard_mutex in threadgroup_lock()
+Date: Tue,  7 May 2013 14:39:20 +0100
+Message-Id: <1367933964-1564-115-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,64 +28,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit d69f3bad4675ac519d41ca2b11e1c00ca115cecd upstream.
+commit e56fb2874015370e3b7f8d85051f6dce26051df9 upstream.
 
-Trying to run an application which was trying to put data into half of
-memory using shmget(), we found that having a shmall value below 8EiB-8TiB
-would prevent us from using anything more than 8TiB.  By setting
-kernel.shmall greater than 8EiB-8TiB would make the job work.
+threadgroup_lock() takes signal->cred_guard_mutex to ensure that
+thread_group_leader() is stable.  This doesn't look nice, the scope of
+this lock in do_execve() is huge.
 
-In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
+And as Dave pointed out this can lead to deadlock, we have the
+following dependencies:
 
-ipc/shm.c:
- 458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
- 459 {
-...
- 465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
-...
- 474         if (ns->shm_tot + numpages > ns->shm_ctlall)
- 475                 return -ENOSPC;
+	do_execve:		cred_guard_mutex -> i_mutex
+	cgroup_mount:		i_mutex -> cgroup_mutex
+	attach_task_by_pid:	cgroup_mutex -> cred_guard_mutex
 
-[akpm@linux-foundation.org: make ipc/shm.c:newseg()'s numpages size_t, not int]
-Signed-off-by: Robin Holt <holt@sgi.com>
-Reported-by: Alex Thorlton <athorlton@sgi.com>
+Change de_thread() to take threadgroup_change_begin() around the
+switch-the-leader code and change threadgroup_lock() to avoid
+->cred_guard_mutex.
+
+Note that de_thread() can't sleep with ->group_rwsem held, this can
+obviously deadlock with the exiting leader if the writer is active, so it
+does threadgroup_change_end() before schedule().
+
+Reported-by: Dave Jones <davej@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Acked-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/ipc_namespace.h | 2 +-
- ipc/shm.c                     | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/exec.c             |  3 +++
+ include/linux/sched.h | 18 ++++--------------
+ 2 files changed, 7 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-index 5499c92..c731973 100644
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -42,8 +42,8 @@ struct ipc_namespace {
+diff --git a/fs/exec.c b/fs/exec.c
+index 2013724..5a76464 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -905,11 +905,13 @@ static int de_thread(struct task_struct *tsk)
  
- 	size_t		shm_ctlmax;
- 	size_t		shm_ctlall;
-+	unsigned long	shm_tot;
- 	int		shm_ctlmni;
--	int		shm_tot;
- 	/*
- 	 * Defines whether IPC_RMID is forced for _all_ shm segments regardless
- 	 * of shmctl()
-diff --git a/ipc/shm.c b/ipc/shm.c
-index 41c1285..f5ba6ac 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -462,7 +462,7 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
- 	size_t size = params->u.size;
- 	int error;
- 	struct shmid_kernel *shp;
--	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
-+	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	struct file * file;
- 	char name[13];
- 	int id;
+ 		sig->notify_count = -1;	/* for exit_notify() */
+ 		for (;;) {
++			threadgroup_change_begin(tsk);
+ 			write_lock_irq(&tasklist_lock);
+ 			if (likely(leader->exit_state))
+ 				break;
+ 			__set_current_state(TASK_UNINTERRUPTIBLE);
+ 			write_unlock_irq(&tasklist_lock);
++			threadgroup_change_end(tsk);
+ 			schedule();
+ 		}
+ 
+@@ -965,6 +967,7 @@ static int de_thread(struct task_struct *tsk)
+ 		if (unlikely(leader->ptrace))
+ 			__wake_up_parent(leader, leader->parent);
+ 		write_unlock_irq(&tasklist_lock);
++		threadgroup_change_end(tsk);
+ 
+ 		release_task(leader);
+ 	}
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 3a9e314..ebd15f9 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2445,27 +2445,18 @@ static inline void threadgroup_change_end(struct task_struct *tsk)
+  *
+  * Lock the threadgroup @tsk belongs to.  No new task is allowed to enter
+  * and member tasks aren't allowed to exit (as indicated by PF_EXITING) or
+- * perform exec.  This is useful for cases where the threadgroup needs to
+- * stay stable across blockable operations.
++ * change ->group_leader/pid.  This is useful for cases where the threadgroup
++ * needs to stay stable across blockable operations.
+  *
+  * fork and exit paths explicitly call threadgroup_change_{begin|end}() for
+  * synchronization.  While held, no new task will be added to threadgroup
+  * and no existing live task will have its PF_EXITING set.
+  *
+- * During exec, a task goes and puts its thread group through unusual
+- * changes.  After de-threading, exclusive access is assumed to resources
+- * which are usually shared by tasks in the same group - e.g. sighand may
+- * be replaced with a new one.  Also, the exec'ing task takes over group
+- * leader role including its pid.  Exclude these changes while locked by
+- * grabbing cred_guard_mutex which is used to synchronize exec path.
++ * de_thread() does threadgroup_change_{begin|end}() when a non-leader
++ * sub-thread becomes a new leader.
+  */
+ static inline void threadgroup_lock(struct task_struct *tsk)
+ {
+-	/*
+-	 * exec uses exit for de-threading nesting group_rwsem inside
+-	 * cred_guard_mutex. Grab cred_guard_mutex first.
+-	 */
+-	mutex_lock(&tsk->signal->cred_guard_mutex);
+ 	down_write(&tsk->signal->group_rwsem);
+ }
+ 
+@@ -2478,7 +2469,6 @@ static inline void threadgroup_lock(struct task_struct *tsk)
+ static inline void threadgroup_unlock(struct task_struct *tsk)
+ {
+ 	up_write(&tsk->signal->group_rwsem);
+-	mutex_unlock(&tsk->signal->cred_guard_mutex);
+ }
+ #else
+ static inline void threadgroup_change_begin(struct task_struct *tsk) {}
 -- 
 1.8.1.2
 
