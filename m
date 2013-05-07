@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759628Ab3EGBot (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 21:44:49 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:35507 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756580Ab3EGBos (ORCPT
+	id S932647Ab3EGBsu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 21:48:50 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:34537 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932440Ab3EGBst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 21:44:48 -0400
-From: "Michael D. Setzer II" <msetzerii@gmail.com>
-To: linux-kernel@vger.kernel.org
-Date: Tue, 07 May 2013 11:44:42 +1000
+	Mon, 6 May 2013 21:48:49 -0400
 MIME-Version: 1.0
-Subject: Kernel Firmware Support
-Message-ID: <51885C8A.28146.10AA3F@msetzerii.gmail.com>
-X-mailer: Pegasus Mail for Windows (4.63)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
+In-Reply-To: <1367889447-15619-3-git-send-email-chao.xie@marvell.com>
+References: <1367889447-15619-1-git-send-email-chao.xie@marvell.com>
+	<1367889447-15619-3-git-send-email-chao.xie@marvell.com>
+Date: Tue, 7 May 2013 09:48:47 +0800
+Message-ID: <CAN1soZxQQTQG1CdNGYmCDfddLHWA5HVZ+SWjFhcfidsdGazprw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] rtc: pxa: add pxa95x rtc support
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Chao Xie <chao.xie@marvell.com>
+Cc: xie chao <xiechao.mail@gmail.com>, Linux Russell <linux@arm.linux.org.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Leo Song <liangs@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looking for method to best support users firmware needs within 
-the kernel. 
+On Tue, May 7, 2013 at 9:17 AM, Chao Xie <chao.xie@marvell.com> wrote:
+> the pxa95x rtc need access PBSR register before write to RTTR, RCNR, RDCR, and RYCR registers.
+>
+> Signed-off-by: Chao Xie <chao.xie@marvell.com>
+> ---
 
-Have a disk-image project that users kernel.org kernels, and have 
-had users that require firmware that is not included in the 
-kernel.org source. I've been able to find it in linux-firmware.git and 
-then manually adding it to the kernel.org firmware directory and 
-then modifying the Makefile.
+Do we really need this for other SoC? PXA95x is removed already since
+it's a block on supporting
+multi-platform & not used widely.
 
-Had seen something that was suppose to be working on getting 
-firmware out of the kernel, but that process seems to have been 
-dormant for some time. 
-
-
-+----------------------------------------------------------+
-  Michael D. Setzer II -  Computer Science Instructor      
-  Guam Community College  Computer Center                  
-  mailto:mikes@kuentos.guam.net                            
-  mailto:msetzerii@gmail.com
-  http://www.guam.net/home/mikes
-  Guam - Where America's Day Begins                        
-  G4L Disk Imaging Project maintainer 
-  http://sourceforge.net/projects/g4l/
-+----------------------------------------------------------+
-
-http://setiathome.berkeley.edu (Original)
-Number of Seti Units Returned:  19,471
-Processing time:  32 years, 290 days, 12 hours, 58 minutes
-(Total Hours: 287,489)
-
-BOINC@HOME CREDITS
-SETI        14672667.574611   |   EINSTEIN    11160884.209852
-ROSETTA      7189167.439443   |   ABC         15954188.106838
-
+Regards
+Haojian
