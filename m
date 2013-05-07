@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933461Ab3EGNqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:46:15 -0400
-Received: from mail-da0-f53.google.com ([209.85.210.53]:55035 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933350Ab3EGNqK (ORCPT
+	id S1759001Ab3EGNta (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:49:30 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:44509 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933440Ab3EGNqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:46:10 -0400
+	Tue, 7 May 2013 09:46:14 -0400
 From: Michel Lespinasse <walken@google.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         David Howells <dhowells@redhat.com>,
@@ -17,9 +17,9 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
 Cc: Alex Shi <alex.shi@intel.com>, Yuanhan Liu <yuanhan.liu@linux.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 02/14] rwsem: shorter spinlocked section in rwsem_down_failed_common()
-Date: Tue,  7 May 2013 06:45:50 -0700
-Message-Id: <1367934362-10433-3-git-send-email-walken@google.com>
+Subject: [PATCH v3 04/14] rwsem: simplify rwsem_down_read_failed
+Date: Tue,  7 May 2013 06:45:52 -0700
+Message-Id: <1367934362-10433-5-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367934362-10433-1-git-send-email-walken@google.com>
 References: <1367934362-10433-1-git-send-email-walken@google.com>
@@ -27,62 +27,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change reduces the size of the spinlocked and TASK_UNINTERRUPTIBLE
-sections in rwsem_down_failed_common():
+When trying to acquire a read lock, the RWSEM_ACTIVE_READ_BIAS adjustment
+doesn't cause other readers to block, so we never have to worry about waking
+them back after canceling this adjustment in rwsem_down_read_failed().
 
-- We only need the sem->wait_lock to insert ourselves on the wait_list;
-  the waiter node can be prepared outside of the wait_lock.
-
-- The task state only needs to be set to TASK_UNINTERRUPTIBLE immediately
-  before checking if we actually need to sleep; it doesn't need to protect
-  the entire function.
+We also never want to steal the lock in rwsem_down_read_failed(), so we
+don't have to grab the wait_lock either.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 Reviewed-by: Rik van Riel <riel@redhat.com>
 Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
 Acked-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 ---
- lib/rwsem.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ lib/rwsem.c | 22 ++--------------------
+ 1 file changed, 2 insertions(+), 20 deletions(-)
 
 diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 672eb33218ac..40636454cf3c 100644
+index fb658af1c12c..66f307e90761 100644
 --- a/lib/rwsem.c
 +++ b/lib/rwsem.c
-@@ -188,14 +188,12 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+@@ -182,7 +182,6 @@ try_again_write:
+  */
+ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
+ {
+-	enum rwsem_waiter_type type = RWSEM_WAITING_FOR_READ;
+ 	signed long adjustment = -RWSEM_ACTIVE_READ_BIAS;
+ 	struct rwsem_waiter waiter;
  	struct task_struct *tsk = current;
- 	signed long count;
+@@ -190,7 +189,7 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
  
--	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
--
  	/* set up my own style of waitqueue */
--	raw_spin_lock_irq(&sem->wait_lock);
  	waiter.task = tsk;
- 	waiter.type = type;
+-	waiter.type = type;
++	waiter.type = RWSEM_WAITING_FOR_READ;
  	get_task_struct(tsk);
  
-+	raw_spin_lock_irq(&sem->wait_lock);
- 	if (list_empty(&sem->wait_list))
- 		adjustment += RWSEM_WAITING_BIAS;
- 	list_add_tail(&waiter.list, &sem->wait_list);
-@@ -218,7 +216,8 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 	raw_spin_lock_irq(&sem->wait_lock);
+@@ -201,17 +200,9 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
+ 	/* we're now waiting on the lock, but no longer actively locking */
+ 	count = rwsem_atomic_update(adjustment, sem);
+ 
+-	/* If there are no active locks, wake the front queued process(es) up.
+-	 *
+-	 * Alternatively, if we're called from a failed down_write(), there
+-	 * were already threads queued before us and there are no active
+-	 * writers, the lock must be read owned; so we try to wake any read
+-	 * locks that were queued ahead of us. */
++	/* If there are no active locks, wake the front queued process(es). */
+ 	if (count == RWSEM_WAITING_BIAS)
+ 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_NO_ACTIVE);
+-	else if (count > RWSEM_WAITING_BIAS &&
+-		 adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
+-		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
+ 
  	raw_spin_unlock_irq(&sem->wait_lock);
  
- 	/* wait to be given the lock */
--	for (;;) {
-+	while (true) {
-+		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+@@ -220,15 +211,6 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
+ 		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
  		if (!waiter.task)
  			break;
- 
-@@ -231,7 +230,6 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
- 			}
- 		raw_spin_unlock_irq(&sem->wait_lock);
+-
+-		raw_spin_lock_irq(&sem->wait_lock);
+-		/* Try to get the writer sem, may steal from the head writer: */
+-		if (type == RWSEM_WAITING_FOR_WRITE)
+-			if (try_get_writer_sem(sem, &waiter)) {
+-				raw_spin_unlock_irq(&sem->wait_lock);
+-				return sem;
+-			}
+-		raw_spin_unlock_irq(&sem->wait_lock);
  		schedule();
--		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
  	}
  
- 	tsk->state = TASK_RUNNING;
 -- 
 1.8.2.1
 
