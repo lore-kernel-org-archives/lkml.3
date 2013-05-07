@@ -1,168 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759248Ab3EGQuZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 12:50:25 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:47392 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab3EGQuY (ORCPT
+	id S1752366Ab3EGQ4L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 12:56:11 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:47292 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab3EGQ4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 12:50:24 -0400
-Date: Tue, 7 May 2013 09:50:18 -0700
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        vgoyal@redhat.com
-Subject: [PATCH v2 33/33] blk-throttle: implement proper hierarchy support
-Message-ID: <20130507165018.GA5531@mtj.dyndns.org>
-References: <1367880372-28312-1-git-send-email-tj@kernel.org>
- <1367880372-28312-34-git-send-email-tj@kernel.org>
+	Tue, 7 May 2013 12:56:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367880372-28312-34-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51885FC4.7000401@gmail.com>
+References: <1367824946-6160-1-git-send-email-jaswinder.singh@linaro.org>
+	<1367825063-6263-1-git-send-email-jaswinder.singh@linaro.org>
+	<51885FC4.7000401@gmail.com>
+Date: Tue, 7 May 2013 22:26:07 +0530
+Message-ID: <CAJe_ZheEut1fbifGeWfiZmar0zm_ZgdzygeaAYTOitSR_tqbiA@mail.gmail.com>
+Subject: Re: [PATCHv2 3/4] mailbox: pl320: Introduce common API driver
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>, "Anna, Suman" <s-anna@ti.com>,
+        "Loic PALLARDY (loic.pallardy@st.com)" <loic.pallardy@st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the recent updates, blk-throttle is finally ready for proper
-hierarchy support.  Dispatching now honors service_queue->parent_sq
-and propagates correctly.  The only thing missing is setting
-->parent_sq correctly so that throtl_grp hierarchy matches the cgroup
-hierarchy.
+On 7 May 2013 07:28, Rob Herring <robherring2@gmail.com> wrote:
+> On 05/06/2013 02:24 AM, Jassi Brar wrote:
+>> Convert the PL320 controller driver to work with the common
+>> mailbox API. Also convert the only user of PL320, highbank-cpufreq.c
+>> to work with thee API. Drop the obsoleted driver pl320-ipc.c
+>>
+>> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+>> ---
+>>  drivers/cpufreq/highbank-cpufreq.c |   22 +++-
+>>  drivers/mailbox/Makefile           |    2 +-
+>>  drivers/mailbox/pl320-ipc.c        |  198 ---------------------------------
+>>  drivers/mailbox/pl320.c            |  212 ++++++++++++++++++++++++++++++++++++
+>
+> Can you resend this using git format-patch -M option.
+>
+IIRC I already did that. Anyways I just checked -M doesn't produce
+anything different for the patch. Except for headers, defines and
+module init rituals, everything else is from scratch.
 
-This patch updates throtl_pd_init() such that service_queues form the
-same hierarchy as the cgroup hierarchy if sane_behavior is enabled.
-As this concludes proper hierarchy support for blkcg, the shameful
-.broken_hierarchy tag is removed from blkio_subsys.
-
-v2: Updated blkio-controller.txt as suggested by Vivek.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Cc: Li Zefan <lizefan@huawei.com>
----
-Updated the doc as suggested.  Will push out once -rc1 drops.
-
-Thanks!
-
- Documentation/cgroups/blkio-controller.txt |   29 +++++++++++++++--------------
- block/blk-cgroup.c                         |    8 --------
- block/blk-throttle.c                       |   22 +++++++++++++++++++++-
- include/linux/cgroup.h                     |    2 ++
- 4 files changed, 38 insertions(+), 23 deletions(-)
-
---- a/Documentation/cgroups/blkio-controller.txt
-+++ b/Documentation/cgroups/blkio-controller.txt
-@@ -94,11 +94,13 @@ Throttling/Upper Limit policy
- 
- Hierarchical Cgroups
- ====================
--- Currently only CFQ supports hierarchical groups. For throttling,
--  cgroup interface does allow creation of hierarchical cgroups and
--  internally it treats them as flat hierarchy.
- 
--  If somebody created a hierarchy like as follows.
-+Both CFQ and throttling implement hierarchy support; however,
-+throttling's hierarchy support is enabled iff "sane_behavior" is
-+enabled from cgroup side, which currently is a development option and
-+not publicly available.
-+
-+If somebody created a hierarchy like as follows.
- 
- 			root
- 			/  \
-@@ -106,21 +108,20 @@ Hierarchical Cgroups
- 			|
- 		     test3
- 
--  CFQ will handle the hierarchy correctly but and throttling will
--  practically treat all groups at same level. For details on CFQ
--  hierarchy support, refer to Documentation/block/cfq-iosched.txt.
--  Throttling will treat the hierarchy as if it looks like the
--  following.
-+CFQ by default and throttling with "sane_behavior" will handle the
-+hierarchy correctly.  For details on CFQ hierarchy support, refer to
-+Documentation/block/cfq-iosched.txt.  For throttling, all limits apply
-+to the whole subtree while all statistics are local to the IOs
-+directly generated by tasks in that cgroup.
-+
-+Throttling without "sane_behavior" enabled from cgroup side will
-+practically treat all groups at same level as if it looks like the
-+following.
- 
- 				pivot
- 			     /  /   \  \
- 			root  test1 test2  test3
- 
--  Nesting cgroups, while allowed, isn't officially supported and blkio
--  genereates warning when cgroups nest. Once throttling implements
--  hierarchy support, hierarchy will be supported and the warning will
--  be removed.
--
- Various user visible config options
- ===================================
- CONFIG_BLK_CGROUP
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -911,14 +911,6 @@ struct cgroup_subsys blkio_subsys = {
- 	.subsys_id = blkio_subsys_id,
- 	.base_cftypes = blkcg_files,
- 	.module = THIS_MODULE,
--
--	/*
--	 * blkio subsystem is utterly broken in terms of hierarchy support.
--	 * It treats all cgroups equally regardless of where they're
--	 * located in the hierarchy - all cgroups are treated as if they're
--	 * right below the root.  Fix it and remove the following.
--	 */
--	.broken_hierarchy = true,
- };
- EXPORT_SYMBOL_GPL(blkio_subsys);
- 
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -397,10 +397,30 @@ static void throtl_pd_init(struct blkcg_
- {
- 	struct throtl_grp *tg = blkg_to_tg(blkg);
- 	struct throtl_data *td = blkg->q->td;
-+	struct throtl_service_queue *parent_sq;
- 	unsigned long flags;
- 	int rw;
- 
--	throtl_service_queue_init(&tg->service_queue, &td->service_queue);
-+	/*
-+	 * If sane_hierarchy is enabled, we switch to properly hierarchical
-+	 * behavior where limits on a given throtl_grp are applied to the
-+	 * whole subtree rather than just the group itself.  e.g. If 16M
-+	 * read_bps limit is set on the root group, the whole system can't
-+	 * exceed 16M for the device.
-+	 *
-+	 * If sane_hierarchy is not enabled, the broken flat hierarchy
-+	 * behavior is retained where all throtl_grps are treated as if
-+	 * they're all separate root groups right below throtl_data.
-+	 * Limits of a group don't interact with limits of other groups
-+	 * regardless of the position of the group in the hierarchy.
-+	 */
-+	parent_sq = &td->service_queue;
-+
-+	if (cgroup_sane_behavior(blkg->blkcg->css.cgroup) && blkg->parent)
-+		parent_sq = &blkg_to_tg(blkg->parent)->service_queue;
-+
-+	throtl_service_queue_init(&tg->service_queue, parent_sq);
-+
- 	for (rw = READ; rw <= WRITE; rw++) {
- 		throtl_qnode_init(&tg->qnode_on_self[rw], tg);
- 		throtl_qnode_init(&tg->qnode_on_parent[rw], tg);
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -272,6 +272,8 @@ enum {
- 	 * - memcg: use_hierarchy is on by default and the cgroup file for
- 	 *   the flag is not created.
- 	 *
-+	 * - blkcg: blk-throttle becomes properly hierarchical.
-+	 *
- 	 * The followings are planned changes.
- 	 *
- 	 * - release_agent will be disallowed once replacement notification
+-Jassi
