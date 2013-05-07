@@ -1,88 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758568Ab3EGTRL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 15:17:11 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54893 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190Ab3EGTRK (ORCPT
+	id S1759275Ab3EGTR0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 15:17:26 -0400
+Received: from mx1.sisa.samsung.com ([63.166.156.249]:52738 "EHLO
+	mx1.sisa.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757522Ab3EGTRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 15:17:10 -0400
-Date: Tue, 7 May 2013 20:17:08 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] more vfs.git stuff
-Message-ID: <20130507191708.GQ25399@ZenIV.linux.org.uk>
+	Tue, 7 May 2013 15:17:22 -0400
+X-ASG-Debug-ID: 1367954241-05c03262a7107d0001-xx1T2L
+X-Barracuda-Envelope-From: shuah.kh@samsung.com
+X-Barracuda-Apparent-Source-IP: 105.144.21.115
+X-ASG-Whitelist: Client
+From: Shuah Khan <shuah.kh@samsung.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+Subject: Re: [ 000/104] 3.8.12-stable review
+Thread-Topic: [ 000/104] 3.8.12-stable review
+X-ASG-Orig-Subj: Re: [ 000/104] 3.8.12-stable review
+Thread-Index: AQHOSzO1JoWJnR2G9keboXnAqCmH8pj6jbMA
+Date: Tue, 7 May 2013 19:16:30 +0000
+Message-ID: <1367954190.7469.12.camel@lorien>
+References: <20130506230043.526528358@linuxfoundation.org>
+	 <CAKocOOPJ=hsX6zY=2tgE=VBNLruqg7Asmym2ia0ye4FZiS5fSw@mail.gmail.com>
+In-Reply-To: <CAKocOOPJ=hsX6zY=2tgE=VBNLruqg7Asmym2ia0ye4FZiS5fSw@mail.gmail.com>
+Reply-To: Shuah Khan <shuah.kh@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [105.144.34.6]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <E655936CDEC9F0439EE855C85D0150A2@sisa.samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Barracuda-Connect: UNKNOWN[105.144.21.115]
+X-Barracuda-Start-Time: 1367954241
+X-Barracuda-URL: http://192.168.0.101:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r47JHXYt004949
 
-A couple of fixes + getting rid of __blkdev_put() return value.
-Please, pull from
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
-Shortlog:
-Al Viro (4):
-      hfs: SMP race on directory close()
-      mtd_blktrans_ops->release() should return void
-      block_device_operations->release() should return void
-      make blkdev_put() return void
 
-Geert Uytterhoeven (1):
-      proc: Use PDE attribute setting accessor functions
+> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Date: Mon, May 6, 2013 at 5:11 PM
+> Subject: [ 000/104] 3.8.12-stable review
+> To: linux-kernel@vger.kernel.org
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+> torvalds@linux-foundation.org, akpm@linux-foundation.org,
+> stable@vger.kernel.org
+> 
+> 
+> This is the start of the stable review cycle for the 3.8.12 release.
+> There are 104 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Wed May  8 22:58:30 UTC 2013.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.8.12-rc1.gz
+> and the diffstat can be found below.
+> 
+> thanks,
+> 
+> greg k-h
 
-Diffstat:
- arch/arm/mach-msm/last_radio_log.c  |    2 +-
- arch/cris/kernel/profile.c          |    2 +-
- arch/um/drivers/ubd_kern.c          |    5 ++---
- arch/xtensa/platforms/iss/simdisk.c |    3 +--
- drivers/block/amiflop.c             |    3 +--
- drivers/block/aoe/aoeblk.c          |    6 ++----
- drivers/block/ataflop.c             |    5 ++---
- drivers/block/cciss.c               |    5 ++---
- drivers/block/cpqarray.c            |    6 ++----
- drivers/block/drbd/drbd_main.c      |    5 ++---
- drivers/block/floppy.c              |    4 +---
- drivers/block/loop.c                |    6 ++----
- drivers/block/paride/pcd.c          |    3 +--
- drivers/block/paride/pd.c           |    4 +---
- drivers/block/paride/pf.c           |    9 ++++-----
- drivers/block/pktcdvd.c             |    4 +---
- drivers/block/rbd.c                 |    4 +---
- drivers/block/swim.c                |    4 +---
- drivers/block/swim3.c               |    5 ++---
- drivers/block/xen-blkfront.c        |    3 +--
- drivers/block/xsysace.c             |    3 +--
- drivers/block/z2ram.c               |    6 ++----
- drivers/cdrom/gdrom.c               |    3 +--
- drivers/ide/ide-cd.c                |    4 +---
- drivers/ide/ide-gd.c                |    4 +---
- drivers/ide/ide-tape.c              |    4 +---
- drivers/md/dm.c                     |    4 +---
- drivers/md/md.c                     |    4 +---
- drivers/memstick/core/mspro_block.c |    8 +++-----
- drivers/message/i2o/i2o_block.c     |    8 ++------
- drivers/mmc/card/block.c            |    3 +--
- drivers/mtd/mtd_blkdevs.c           |    9 ++++-----
- drivers/mtd/mtdblock.c              |    4 +---
- drivers/mtd/sm_ftl.c                |    3 +--
- drivers/s390/block/dasd.c           |   18 +++++++-----------
- drivers/s390/block/dcssblk.c        |   12 ++++--------
- drivers/s390/block/scm_blk.c        |    3 +--
- drivers/scsi/sd.c                   |    3 +--
- drivers/scsi/sr.c                   |    3 +--
- fs/block_dev.c                      |   16 +++++++---------
- fs/ext3/super.c                     |   11 ++++-------
- fs/ext4/super.c                     |   11 ++++-------
- fs/hfs/dir.c                        |    2 ++
- fs/nfs/blocklayout/blocklayout.h    |    2 +-
- fs/nfs/blocklayout/blocklayoutdev.c |    4 ++--
- fs/nfs/blocklayout/blocklayoutdm.c  |    8 +-------
- fs/reiserfs/journal.c               |   16 +++-------------
- include/linux/blkdev.h              |    2 +-
- include/linux/fs.h                  |    2 +-
- include/linux/mtd/blktrans.h        |    2 +-
- 50 files changed, 93 insertions(+), 177 deletions(-)
+Patches applied cleanly to 3.0.76, 3.4.43, 3.8.11, and 3.9.0 
+
+Compiled and booted on the following systems:
+
+Samsung Series 9 Intel Corei5:
+    (3.4.44-rc1, 3.8.12-rc1, and 3.9.1-rc1)
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
+    (3.0.77-rc1, 3.4.44-rc1, 3.8.12-rc1, and 3.9.1-rc)
+HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
+    (cross-compile testing: 3.0.77-rc1, 3.4.44-rc1, 3.8.12-rc1, and
+3.9.1-rc1)
+
+dmesgs for all releases look good. No regressions compared to the
+previous dmesgs for each of these releases.
+
+Cross-compile tests results:
+
+alpha: defconfig passed on all
+arm: defconfig passed on all
+arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.8.y
+c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, and 3.8.y.
+mips: defconfig passed on all
+mipsel: defconfig passed on all
+powerpc: wii_defconfig passed on all
+sh: defconfig passed on all 
+sparc: defconfig passed on all
+tile: tilegx_defconfig passed on all
+
+thanks,
+-- Shuah
+Shuah Khan Linux Kernel Developer - Open Source Group 
+Samsung Research America (Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
