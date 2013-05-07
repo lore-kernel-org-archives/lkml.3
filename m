@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758775Ab3EGNYc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:24:32 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:59842 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758062Ab3EGNYb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:24:31 -0400
+	id S1758869Ab3EGN2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:28:23 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60857 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758062Ab3EGN2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 09:28:22 -0400
+Date: Tue, 7 May 2013 15:28:29 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: CAI Qian <caiqian@redhat.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, mchehab@redhat.com,
+        Greg KH <gregkh@linuxfoundation.org>, balbi@ti.com
+Subject: Re: 3.9.0: WARNING: at drivers/base/core.c:575
+Message-ID: <20130507132829.GD7633@pd.tnic>
+References: <1732336275.8141054.1367911558572.JavaMail.root@redhat.com>
+ <1066765392.8155999.1367913293110.JavaMail.root@redhat.com>
+ <5188B9DE.5030009@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Date: Tue, 7 May 2013 21:24:30 +0800
-Message-ID: <CAPgLHd8Xu8+d7fxtnC0sdQnTDtrZo8jhB8JJ4b2Lp4SYqcjG4A@mail.gmail.com>
-Subject: [PATCH] drm/exynos: fix error return code in exynos_drm_ipp_set_property()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: inki.dae@samsung.com, jy0922.shim@samsung.com, sw0312.kim@samsung.com,
-        kyungmin.park@samsung.com, airlied@linux.ie
-Cc: yongjun_wei@trendmicro.com.cn, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5188B9DE.5030009@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Tue, May 07, 2013 at 01:52:54PM +0530, Srivatsa S. Bhat wrote:
+> For the x86-64 case, does the patch posted here fix the issue?
+> http://marc.info/?l=linux-edac&m=136731542432210&w=2
 
-Fix to return a negative error code from the error handling
-case instead of 0, as done elsewhere in this function.
-ipp_create_cmd_work() return ERR_PTR() on error and never return
-NULL, so use IS_ERR() instead of IS_ERR_OR_NULL().
+CAI, can I have your Tested-by before I pick it up?
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/gpu/drm/exynos/exynos_drm_ipp.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+Thanks.
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-index 29d2ad3..b0d6431 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-@@ -521,20 +521,23 @@ int exynos_drm_ipp_set_property(struct drm_device *drm_dev, void *data,
- 	c_node->state = IPP_STATE_IDLE;
- 
- 	c_node->start_work = ipp_create_cmd_work();
--	if (IS_ERR_OR_NULL(c_node->start_work)) {
-+	if (IS_ERR(c_node->start_work)) {
- 		DRM_ERROR("failed to create start work.\n");
-+		ret = PTR_ERR(c_node->start_work);
- 		goto err_clear;
- 	}
- 
- 	c_node->stop_work = ipp_create_cmd_work();
--	if (IS_ERR_OR_NULL(c_node->stop_work)) {
-+	if (IS_ERR(c_node->stop_work)) {
- 		DRM_ERROR("failed to create stop work.\n");
-+		ret = PTR_ERR(c_node->stop_work);
- 		goto err_free_start;
- 	}
- 
- 	c_node->event_work = ipp_create_event_work();
--	if (IS_ERR_OR_NULL(c_node->event_work)) {
-+	if (IS_ERR(c_node->event_work)) {
- 		DRM_ERROR("failed to create event work.\n");
-+		ret = PTR_ERR(c_node->event_work);
- 		goto err_free_stop;
- 	}
- 
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
