@@ -1,270 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759278Ab3EGR0U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 13:26:20 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52203 "EHLO
+	id S1759339Ab3EGR03 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 13:26:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63133 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759177Ab3EGR0Q (ORCPT
+	with ESMTP id S1759218Ab3EGR0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 13:26:16 -0400
+	Tue, 7 May 2013 13:26:25 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: torvalds@linux-foundation.org
 Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [GIT PULL 2/5] ARM: arm-soc platform updates for 3.10, part 3
-Date: Tue,  7 May 2013 19:26:11 +0200
-Message-Id: <1367947574-2934383-3-git-send-email-arnd@arndb.de>
+Subject: [GIT PULL 4/5] ARM: arm-soc: late cleanups
+Date: Tue,  7 May 2013 19:26:13 +0200
+Message-Id: <1367947574-2934383-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367947574-2934383-1-git-send-email-arnd@arndb.de>
 References: <1367947574-2934383-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:BM84PhmsmY6iabXJZgkqLS5Mfdrr7Q3ntv3xBRGPdH2
- 3xMppglXDwhh2aN+jL8i/JnKVREeCee4l5utR2eyz0Q1+Oabt0
- e6Le/WWaT0SvtYx21P4C9Pst/ks5QOVAu3PZelWun/zWkZmtc4
- QVMi2NIKTF6USiyWwnxlkWowkmKa9n70FhnB2VSZZtz1gTv6B5
- ez6/jt/P0pO8GNBliDYF4/HzX5kTraZtnB43+PG80lQFB26VwV
- zdszlqj1/okX9UBZbvehGub15mj2QEEhqHjkw/oVRcK1Jmpu95
- rSZMak23fdzwfMCQx41bHk4+dYzw8zrShh/hISvV8wofsX+X+l
- 3kIsoKVXAZXZ0gKLxyoAb6xzy3rZ8Zmq82o9gBqzO
+X-Provags-ID: V02:K0:Z+tKd/FXC10JULela1Gi5EZVgvANSKHfePgRypvX4SB
+ xIb35MHpwH6iNqh9y5EV8hKebbAxcDh4XyESrVecNxn+LRfHsm
+ IZLYebpvccaeBWrJjYS9R7n5/8rwqAQZgNOpmAlUEey/9c+YK5
+ FtpaOnpabWqAg0ENFiWNGGOiCd/ibNmorVR26Js6fM8Clmq4Z4
+ 6oHyMwqh9w6Oja1J/YMI7tradeKTaTri2cL/R3zKoBK0kgo7oJ
+ ZpYBukkUx5N36Ou9hEOnECIowMM4hMoWzPmb2E5jKpEkng//Ee
+ 2LAGoyPPvyWoN4VmtA98uUczndqMz/bx7oZWVBJ3pBzrzE021d
+ n0WzjrKOu+Ei4TSHRt8dpmEVbcbxdwLr0ZF0FVhDI
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the third and smallest of the SoC specific updates.
-Changes include:
+These are cleanups and smaller changes that either depend on earlier
+feature branches or came in late during the development cycle.
+We normally try to get all cleanups early, so these are the exceptions:
 
-* SMP support for the Xilinx zynq platform
-* Smaller imx changes
-* LPAE support for mvebu
-* Moving the orion5x, kirkwood, dove and mvebu platforms
-  to a common "mbus" driver for their internal devices.
+- A follow-up on the clocksource reworks, hopefully the last time
+  we need to merge clocksource subsystem changes through arm-soc.
+  A first set of patches was part of the original 3.10 arm-soc cleanup
+  series because of interdependencies with timer drivers now moved out
+  of arch/arm.
 
-It would be good to get feedback on the location of the "mbus"
-driver. Since this is used on multiple platforms may potentially
-get shared with other architectures (powerpc and arm64), it
-was moved to drivers/bus/. We expect other similar drivers to
-get moved to the same place in order to avoid creating more
-top-level directories under drivers/ or cluttering up the
-messy drivers/misc/ even more.
+- Migrating the SPEAr13xx platform away from using auxdata for DMA
+  channel descriptions towards using information in device tree,
+  based on the earlier SPEAr multiplatform series
 
-Conflicts:
- - drivers/gpio/gpio-pl061.c had a trivial add/add conflict that
-   got resolved in two different ways, both of which are ok.
+- A few follow-ups on the Atmel SAMA5 support and other changes
+  for Atmel at91 based on the larger at91 reworks.
+
+- Moving the armada irqchip implementation to drivers/irqchip
+
+- Several OMAP cleanups following up on the larger series already
+  merged in 3.10.
+
+There are a few more conflicts that we would like now:
+
+Simple conflicts between unrelated add or del hunks:
+- arch/arm/Kconfig
+- arch/arm/mach-mvebu/Makefile
+- arch/arm/mach-mvebu/armada-370-xp.c
+- arch/arm/mach-spear/spear13xx.c
+- drivers/irqchip/Makefile
+
+And non-obvious ones:
+- remove/modify conflict in arch/arm/mach-exynos/mach-exynos5-dt.c:
+  keep the modified line
+- multiple changes to arch/arm/mach-vexpress/v2m.c:
+  keep of_clk_init(NULL), clocksource_of_init() and
+  versatile_sched_clock_init() calls
 
 
 -------------------------------------------------------------
 
 The following changes since commit
 
-   48f934c Merge tag 'soc-for-linus-2' into for-next
+   763e6b9 Merge tag 'dt-for-linus-2' into for-next
 
 are available in the git repository at
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/soc-for-linus-3
+   git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/cleanup-for-linus-2
 
 you to fetch changes up to
 
-   5c5f042 ARM: imx: reset_controller may be disabled
+   0592c21 Merge tag 'omap-for-v3.10/fixes-for-merge-window' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap into late/cleanup
+
 
 -------------------------------------------------------------
 
-Anson Huang (3):
-      ARM: imx: enable anatop suspend/resume
-      ARM: imx: enable periphery well bias for suspend
-      ARM: imx: enable RBC to support anatop LPM mode
+Archit Taneja (13):
+      arm: omap: board-2430: use generic dpi panel's gpio handling
+      arm: omap: board-devkit8000: use generic dpi panel's gpio handling
+      arm: omap: board-am3517: use generic dpi panel's gpio handling
+      arm: omap: board-ldp: use generic dpi panel's gpio handling
+      arm: omap: board-overo: use lb035q02 dpi panel's gpio handling
+      arm: omap: board-omap3evm: use sharp panel's gpio handling
+      arm: omap: board-sdp3430: use sharp panel's gpio handling
+      arm: omap: board-rx-51: use acx565akm panel's gpio handling
+      arm: omap: board-zoom: use NEC panel's gpio handling
+      arm: omap: board-omap3pandora: use tpo panel's gpio handling
+      arm: omap: dss-common: use picodlp panel's gpio handling
+      arm: omap boards: Remove unnecessary platform_enable/disable callbacks for VENC devices
+      arm: dss-common: don't use reset_gpio from omap4_panda_dvi_device
 
-Arnd Bergmann (6):
-      Merge branch 'zynq/core-smp' of git://git.xilinx.com/linux-xlnx into next/soc2
-      Merge branch 'gic/cleanup' into next/soc2
-      Merge tag 'renesas-soc-r8a7779-for-v3.10' of git://git.kernel.org/.../horms/renesas into next/soc2
-      Merge tag 'renesas-soc-r8a7778-for-v3.10' of git://git.kernel.org/.../horms/renesas into next/soc2
-      ARM: imx: reset_controller may be disabled
-      Merge tag 'soc-for-linus-3' into for-next
+Arnd Bergmann (16):
+      spi: pl022: use generic DMA slave configuration if possible
+      serial: pl011: use generic DMA slave configuration if possible
+      Merge branch 'spear/multiplatform' into spear/dma
+      ARM: SPEAr13xx: Pass generic DW DMAC platform data from DT
+      ARM: make machine_desc->init_time default to clocksource_of_init
+      ARM: at91: suspend both memory controllers on at91sam9263
+      ata: arasan: remove the need for platform_data
+      Merge branch 'spear/multiplatform' into late/cleanup
+      Merge branch 'spear/dwdma' into late/cleanup
+      serial: amba-pl011: fix !CONFIG_DMA_ENGINE case
+      ARM: OMAP: remove unused variable
+      Merge tag 'at91-soc' of git://github.com/at91linux/linux-at91 into late/cleanup
+      ARM: SPEAr: conditionalize SMP code
+      Merge branch 'late/clksrc' into late/cleanup
+      Merge tag 'omap-for-v3.10/fixes-for-merge-window' of git://git.kernel.org/.../tmlind/linux-omap into late/cleanup
+      Merge tag 'cleanup-for-linus-2' into for-next
 
-Fabio Estevam (3):
-      ARM: mach-imx: anatop: Include "common.h"
-      ARM: imx_v6_v7_defconfig: Select CONFIG_PERF_EVENTS
-      ARM: imx_v4_v5_defconfig: Add CONFIG_GPIO_SYSFS
+Haojian Zhuang (1):
+      devtree: add binding documentation for sp804
 
-Gregory CLEMENT (1):
-      ARM: mvebu: Limit the DMA zone when LPAE is selected
+Kishon Vijay Abraham I (1):
+      ARM: OMAP4: change the device names in usb_bind_phy
 
-Gwenhael Goavec-Merou (1):
-      ARM: imx1: mm: add call to mxc_device_init
+Ludovic Desroches (3):
+      ARM: at91: dts: set #dma-cells to the correct value
+      ARM: at91: dts: add i2c dma support
+      ARM: at91: dts: add MCI DMA support
 
-Jason Cooper (2):
-      Merge tag 'tags/cleanup_for_v3.10' into mvebu/soc
-      Merge tag 'tags/drivers_for_v3.10' into mvebu/soc
+Nicolas Ferre (2):
+      ARM: at91: change "Unknown" qualifier SoC subtype handling
+      ARM: at91/sama5d34ek.dts: remove not needed compatibility string
 
-Kuninori Morimoto (2):
-      ARM: shmobile: r8a7779: add each clocks ratio on comment area
-      sh-pfc: r8a7779: tidyup intc_irq3_b typo
+Olof Johansson (7):
+      Merge tag 'clksrc-cleanup-for-3.10-part2' of git://sources.calxeda.com/kernel/linux into late/clksrc
+      Merge tag 'irqchip-3.10' of git://git.infradead.org/users/jcooper/linux into late/cleanup
+      Merge branch 'omap/fixes-non-critical' into late/cleanup
+      Merge branch 'omap/boards' into late/cleanup
+      Merge tag 'omap-for-v3.10/dss-signed' of git://git.kernel.org/.../tmlind/linux-omap into late/cleanup
+      Merge branch 'at91/soc' into late/cleanup
+      Merge tag 'at91-soc' of git://github.com/at91linux/linux-at91 into late/cleanup
 
-Lior Amsalem (1):
-      ARM: mvebu: Align the internal registers virtual base to support LPAE
+Peter Ujfalusi (1):
+      ARM: OMAP: zoom: Use pwm stack for lcd and keyboard backlight
 
-Markus Pargmann (1):
-      ARM: imx27, imx5: Add kconfig selects for cpufreq-cpu0
+Rob Herring (13):
+      ARM: sched_clock: allow changing to higher frequency counter
+      ARM: make sched_clock just call a function pointer
+      ARM: arch_timer: use full 64-bit counter for sched_clock
+      ARM: convert arm/arm64 arch timer to use CLKSRC_OF init
+      OF: add empty of_device_is_available for !OF
+      ARM: timer-sp: convert to use CLKSRC_OF init
+      ARM: highbank: use OF init for sp804 timer
+      ARM: vexpress: remove sp804 OF init
+      ARM: dts: vexpress: disable CA9 core tile sp804 timer
+      ARM: vexpress: remove extra timer-sp control register clearing
+      ARM: versatile: add versatile dtbs to dtbs target
+      ARM: versatile: use OF init for sp804 timer
+      ARM: integrator-cp: convert use CLKSRC_OF for timer init
 
-Martin Fuzzey (1):
-      ARM: i.MX53 Add the cko1, cko2 clock outputs.
+Stephen Boyd (1):
+      ARM: arch_timer: Silence debug preempt warnings
 
-Michal Simek (7):
-      arm: zynq: Load scu baseaddress at run time
-      arm: zynq: Move slcr initialization to separate file
-      arm: zynq: Add support for system reset
-      arm: zynq: Get rid of xilinx function prefix
-      arm: zynq: Add smp_twd timer
-      arm: zynq: Add smp support
-      arm: zynq: Add hotplug support
+Thomas Petazzoni (4):
+      ARM: mvebu: move L2 cache initialization in init_early()
+      irqchip: move IRQ driver for Armada 370/XP
+      irqchip: armada-370-xp: move IRQ handler to avoid forward declaration
+      irqchip: armada-370-xp: slightly cleanup irq controller driver
 
-Neil Greatorex (1):
-      bus: mvebu-mbus: Restore checking for coherency fabric hardware
+Tomi Valkeinen (1):
+      arm: omap: board-cm-t35: use generic dpi panel's gpio handling
 
-Olof Johansson (6):
-      Merge tag 'renesas-soc2-for-v3.10' of git://git.kernel.org/.../horms/renesas into next/soc2
-      Merge tag 'renesas-pinmux2-for-v3.10' of git://git.kernel.org/.../horms/renesas into next/soc2
-      Merge tag 'renesas-pinmux-fixes-for-v3.10' of git://git.kernel.org/.../horms/renesas into next/soc2
-      Merge tag 'renesas-soc-r8a7790-for-v3.10' of git://git.kernel.org/.../horms/renesas into next/soc2
-      Merge tag 'imx-soc-3.10' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/soc2
-      Merge tag 'soc_for_v3.10' of git://git.infradead.org/users/jcooper/linux into next/soc2
+Tony Lindgren (1):
+      Merge branch '3.10-lo/board-cleanup' of git://gitorious.org/linux-omap-dss2/linux into omap-for-v3.10/dss
 
-Philipp Zabel (14):
-      ARM i.MX53: Add GPU clocks to clock tree
-      ARM i.MX6q: export imx6q_revision
-      ARM i.MX: Add imx_clk_divider_flags and imx_clk_mux_flags
-      ARM i.MX53: fix ldb di divider and selector clocks
-      ARM i.MX6q: fix ldb di divider and selector clocks
-      ARM i.MX6q: Add audio/video PLL post dividers for i.MX6q rev 1.1
-      ARM i.MX6q: set the LDB serial clock parent to the video PLL
-      ARM i.MX6q: Add GPU, VPU, IPU, and OpenVG resets to System Reset Controller (SRC)
-      staging: drm/imx: Use SRC to reset IPU
-      ARM i.MX5: Remove tve_sel clock from i.MX53 clock tree
-      ARM i.MX53: Remove unused tve_gate clkdev entry
-      ARM i.MX53: make tve_ext_sel propagate rate change to PLL
-      ARM i.MX53: tve_di clock is not part of the CCM, but of TVE
-      ARM i.MX53: set CLK_SET_RATE_PARENT flag on the tve_ext_sel clock
+Vaibhav Hiremath (1):
+      ARM: OMAP2+: Fix mismerge for timer.c between ff931c82 and da4a686a
 
-Sascha Hauer (1):
-      ARM: i.MX5: Add PATA and SRTC clocks
-
-Sergei Shtylyov (1):
-      ARM: shmobile: R8A7779: add Ether support
-
-Shawn Guo (6):
-      Merge tag 'imx-fixes-3.9-5' into imx/soc
-      Merge tag 'imx-cleanup-3.10' into imx/soc
-      Merge remote-tracking branch 'pza/reset/for_v3.10' into imx/soc
-      ARM: imx: do not use regmap_read for ANADIG_DIGPROG
-      ARM: imx: add initial imx6dl support
-      ARM: imx: do not bring up unavailable cores
-
-Simon Guinot (1):
-      ARM: Orion: add dbg_show function to gpio-orion driver
-
-Thomas Petazzoni (8):
-      bus: introduce an Marvell EBU MBus driver
-      bus: mvebu: fix mistake in PCIe window target attribute for Kirkwood
-      arm: mach-mvebu: convert to use mvebu-mbus driver
-      arm: mach-kirkwood: convert to use mvebu-mbus driver
-      arm: mach-dove: convert to use mvebu-mbus driver
-      arm: mach-orion5x: convert to use mvebu-mbus driver
-      arm: mach-mv78xx0: convert to use the mvebu-mbus driver
-      arm: plat-orion: remove addr-map code
-
- .../devicetree/bindings/clock/imx5-clock.txt       |  14 +-
- .../devicetree/bindings/clock/imx6q-clock.txt      |   3 +
- .../devicetree/bindings/reset/fsl,imx-src.txt      |  49 ++
- .../bindings/staging/imx-drm/fsl-imx-drm.txt       |   3 +
- arch/arm/Kconfig                                   |   4 +
- arch/arm/Kconfig.debug                             |   4 +-
- arch/arm/boot/dts/armada-370-xp.dtsi               |   5 -
- arch/arm/boot/dts/zynq-7000.dtsi                   |   7 +
- arch/arm/configs/imx_v4_v5_defconfig               |   1 +
- arch/arm/configs/imx_v6_v7_defconfig               |   1 +
- arch/arm/include/debug/mvebu.S                     |   2 +-
- arch/arm/mach-dove/Makefile                        |   2 +-
- arch/arm/mach-dove/addr-map.c                      | 125 ---
- arch/arm/mach-dove/board-dt.c                      |   2 +-
- arch/arm/mach-dove/common.c                        |  39 +-
- arch/arm/mach-dove/common.h                        |   2 +-
- arch/arm/mach-dove/include/mach/dove.h             |   5 +
- arch/arm/mach-imx/Kconfig                          |  10 +-
- arch/arm/mach-imx/Makefile                         |   1 +
- arch/arm/mach-imx/anatop.c                         | 103 +++
- arch/arm/mach-imx/clk-imx51-imx53.c                |  75 +-
- arch/arm/mach-imx/clk-imx6q.c                      | 126 ++-
- arch/arm/mach-imx/clk.h                            |  17 +
- arch/arm/mach-imx/common.h                         |  10 +-
- arch/arm/mach-imx/gpc.c                            |  23 +-
- arch/arm/mach-imx/mach-imx6q.c                     |  74 +-
- arch/arm/mach-imx/mm-imx1.c                        |   2 +
- arch/arm/mach-imx/mxc.h                            |  11 +
- arch/arm/mach-imx/platsmp.c                        |   4 +-
- arch/arm/mach-imx/pm-imx6q.c                       |   4 +-
- arch/arm/mach-imx/src.c                            |  66 ++
- arch/arm/mach-kirkwood/Makefile                    |   2 +-
- arch/arm/mach-kirkwood/addr-map.c                  |  91 ---
- arch/arm/mach-kirkwood/board-dt.c                  |   2 +-
- arch/arm/mach-kirkwood/common.c                    |  38 +-
- arch/arm/mach-kirkwood/common.h                    |   2 +-
- arch/arm/mach-kirkwood/include/mach/kirkwood.h     |   7 +-
- arch/arm/mach-kirkwood/pcie.c                      |   1 -
- arch/arm/mach-mv78xx0/Makefile                     |   2 +-
- arch/arm/mach-mv78xx0/addr-map.c                   |  93 ---
- arch/arm/mach-mv78xx0/common.c                     |  10 +-
- arch/arm/mach-mv78xx0/include/mach/mv78xx0.h       |   9 +-
- arch/arm/mach-mv78xx0/pcie.c                       |  21 +-
- arch/arm/mach-mvebu/Kconfig                        |   2 +
+ .../devicetree/bindings/arm/primecell.txt          |  19 ++-
+ .../devicetree/bindings/ata/pata-arasan.txt        |  22 ++++
+ Documentation/devicetree/bindings/serial/pl011.txt |  17 +++
+ .../devicetree/bindings/spi/spi_pl022.txt          |  36 ++++++
+ .../devicetree/bindings/timer/arm,sp804.txt        |  29 +++++
+ arch/arm/Kconfig                                   |   1 +
+ arch/arm/boot/dts/Makefile                         |   2 +
+ arch/arm/boot/dts/at91sam9g45.dtsi                 |   5 +
+ arch/arm/boot/dts/at91sam9n12.dtsi                 |   9 ++
+ arch/arm/boot/dts/at91sam9x5.dtsi                  |  15 +++
+ arch/arm/boot/dts/integratorcp.dts                 |   6 +-
+ arch/arm/boot/dts/sama5d3.dtsi                     |  19 ++-
+ arch/arm/boot/dts/sama5d34ek.dts                   |   2 +-
+ arch/arm/boot/dts/spear1340.dtsi                   |   3 +
+ arch/arm/boot/dts/spear13xx.dtsi                   |  25 +++-
+ arch/arm/boot/dts/versatile-ab.dts                 |  12 ++
+ arch/arm/boot/dts/vexpress-v2p-ca9.dts             |   1 +
+ arch/arm/common/timer-sp.c                         | 140 ++++++++++++++++++---
+ arch/arm/include/asm/arch_timer.h                  |  13 +-
+ arch/arm/include/asm/hardware/timer-sp.h           |  16 ++-
+ arch/arm/include/asm/sched_clock.h                 |   2 +
+ arch/arm/kernel/arch_timer.c                       |  29 ++---
+ arch/arm/kernel/sched_clock.c                      |  15 ++-
+ arch/arm/kernel/time.c                             |   7 +-
+ arch/arm/mach-at91/cpuidle.c                       |   2 +
+ arch/arm/mach-at91/include/mach/cpu.h              |   9 +-
+ arch/arm/mach-at91/pm.c                            |   2 +
+ arch/arm/mach-at91/pm.h                            |  30 ++++-
+ arch/arm/mach-at91/setup.c                         |  22 ++--
+ arch/arm/mach-highbank/highbank.c                  |  24 +---
+ arch/arm/mach-integrator/integrator_cp.c           |  34 -----
  arch/arm/mach-mvebu/Makefile                       |   2 +-
- arch/arm/mach-mvebu/addr-map.c                     | 137 ----
- arch/arm/mach-mvebu/armada-370-xp.c                |  18 +
- arch/arm/mach-mvebu/armada-370-xp.h                |   8 +-
- arch/arm/mach-mvebu/platsmp.c                      |   2 +
- arch/arm/mach-orion5x/Makefile                     |   2 +-
- arch/arm/mach-orion5x/addr-map.c                   | 155 ----
- arch/arm/mach-orion5x/board-dt.c                   |   2 +-
- arch/arm/mach-orion5x/common.c                     |  49 +-
- arch/arm/mach-orion5x/common.h                     |  13 +-
- arch/arm/mach-orion5x/d2net-setup.c                |   4 +-
- arch/arm/mach-orion5x/db88f5281-setup.c            |  13 +-
- arch/arm/mach-orion5x/dns323-setup.c               |   3 +-
- arch/arm/mach-orion5x/edmini_v2-setup.c            |   4 +-
- arch/arm/mach-orion5x/include/mach/orion5x.h       |   6 +-
- arch/arm/mach-orion5x/kurobox_pro-setup.c          |   8 +-
- arch/arm/mach-orion5x/ls-chl-setup.c               |   4 +-
- arch/arm/mach-orion5x/ls_hgl-setup.c               |   4 +-
- arch/arm/mach-orion5x/lsmini-setup.c               |   4 +-
- arch/arm/mach-orion5x/mss2-setup.c                 |   3 +-
- arch/arm/mach-orion5x/mv2120-setup.c               |   3 +-
- arch/arm/mach-orion5x/net2big-setup.c              |   4 +-
- arch/arm/mach-orion5x/pci.c                        |   7 +-
- arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c       |   4 +-
- arch/arm/mach-orion5x/rd88f5181l-ge-setup.c        |   4 +-
- arch/arm/mach-orion5x/rd88f5182-setup.c            |   7 +-
- arch/arm/mach-orion5x/terastation_pro2-setup.c     |   4 +-
- arch/arm/mach-orion5x/ts209-setup.c                |   4 +-
- arch/arm/mach-orion5x/ts409-setup.c                |   4 +-
- arch/arm/mach-orion5x/wnr854t-setup.c              |   4 +-
- arch/arm/mach-orion5x/wrt350n-v2-setup.c           |   4 +-
- arch/arm/mach-shmobile/clock-r8a7779.c             |  23 +-
- arch/arm/mach-shmobile/include/mach/r8a7779.h      |   2 +
- arch/arm/mach-shmobile/setup-r8a7779.c             |  23 +-
- arch/arm/mach-zynq/Kconfig                         |   1 +
- arch/arm/mach-zynq/Makefile                        |   6 +-
- arch/arm/mach-zynq/common.c                        |  67 +-
- arch/arm/mach-zynq/common.h                        |  20 +
- arch/arm/mach-zynq/headsmp.S                       |  24 +
- arch/arm/mach-zynq/hotplug.c                       | 104 +++
- arch/arm/mach-zynq/platsmp.c                       | 136 ++++
- arch/arm/mach-zynq/slcr.c                          | 125 +++
- arch/arm/plat-orion/Makefile                       |   6 -
- arch/arm/plat-orion/addr-map.c                     | 178 -----
- arch/arm/plat-orion/gpio.c                         |  59 ++
- drivers/bus/Kconfig                                |   7 +
- drivers/bus/Makefile                               |   1 +
- drivers/bus/mvebu-mbus.c                           | 870 +++++++++++++++++++++
- drivers/gpio/gpio-pl061.c                          |   2 +-
- drivers/pinctrl/sh-pfc/pfc-r8a7779.c               |   2 +-
- drivers/staging/imx-drm/ipu-v3/ipu-common.c        |  12 +-
- include/linux/mbus.h                               |  27 +-
- 96 files changed, 2257 insertions(+), 1002 deletions(-)
+ arch/arm/mach-mvebu/armada-370-xp.c                |   9 +-
+ arch/arm/mach-omap2/board-2430sdp.c                |  43 +------
+ arch/arm/mach-omap2/board-3430sdp.c                |  53 +++-----
+ arch/arm/mach-omap2/board-4430sdp.c                |   2 +-
+ arch/arm/mach-omap2/board-am3517evm.c              |  74 +----------
+ arch/arm/mach-omap2/board-cm-t35.c                 |  60 ++-------
+ arch/arm/mach-omap2/board-devkit8000.c             |  27 +---
+ arch/arm/mach-omap2/board-ldp.c                    |  61 ++-------
+ arch/arm/mach-omap2/board-omap3evm.c               |  70 +++--------
+ arch/arm/mach-omap2/board-omap3pandora.c           |   7 +-
+ arch/arm/mach-omap2/board-omap3stalker.c           |  11 --
+ arch/arm/mach-omap2/board-omap4panda.c             |   2 +-
+ arch/arm/mach-omap2/board-overo.c                  |  58 +++------
+ arch/arm/mach-omap2/board-rx51-video.c             |  26 ++--
+ arch/arm/mach-omap2/board-zoom-display.c           |  38 ++----
+ arch/arm/mach-omap2/dss-common.c                   |  54 +++-----
+ arch/arm/mach-omap2/timer.c                        |   7 +-
+ arch/arm/mach-shmobile/board-kzm9d.c               |   1 -
+ arch/arm/mach-shmobile/setup-emev2.c               |   1 -
+ arch/arm/mach-shmobile/setup-r8a7740.c             |   1 -
+ arch/arm/mach-shmobile/setup-sh7372.c              |   1 -
+ arch/arm/mach-shmobile/setup-sh73a0.c              |   1 -
+ arch/arm/mach-shmobile/timer.c                     |   7 +-
+ arch/arm/mach-spear/Makefile                       |   6 +-
+ arch/arm/mach-spear/generic.h                      |   5 -
+ arch/arm/mach-spear/include/mach/spear.h           |   2 -
+ arch/arm/mach-spear/spear1310.c                    |  30 +----
+ arch/arm/mach-spear/spear1340.c                    |  32 +----
+ arch/arm/mach-spear/spear13xx-dma.h                | 128 -------------------
+ arch/arm/mach-spear/spear13xx.c                    |  60 +--------
+ arch/arm/mach-versatile/core.c                     |  26 ++--
+ arch/arm/mach-versatile/versatile_dt.c             |   1 -
+ arch/arm/mach-vexpress/v2m.c                       |  25 +---
+ arch/arm/mach-virt/virt.c                          |   9 --
+ arch/arm64/include/asm/arch_timer.h                |   5 +
+ arch/arm64/kernel/time.c                           |   6 +-
+ drivers/ata/pata_arasan_cf.c                       |  37 +++---
+ drivers/clocksource/Kconfig                        |   1 +
+ drivers/clocksource/arm_arch_timer.c               |  33 +++--
+ drivers/clocksource/exynos_mct.c                   |   1 -
+ drivers/irqchip/Makefile                           |   1 +
+ .../irqchip}/irq-armada-370-xp.c                   | 106 ++++++++--------
+ drivers/spi/spi-pl022.c                            |  43 ++++++-
+ drivers/tty/serial/amba-pl011.c                    |  64 ++++++----
+ include/clocksource/arm_arch_timer.h               |   6 -
+ include/linux/of.h                                 |   5 +
+ include/linux/pata_arasan_cf_data.h                |   2 -
+ 79 files changed, 777 insertions(+), 1041 deletions(-)
