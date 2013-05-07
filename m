@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759428Ab3EGNmR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:42:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42496 "EHLO
+	id S1759368Ab3EGNmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:42:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42500 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933286Ab3EGNmD (ORCPT
+	with ESMTP id S933288Ab3EGNmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 May 2013 09:42:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 088/118] PCI/PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
-Date: Tue,  7 May 2013 14:38:54 +0100
-Message-Id: <1367933964-1564-89-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 089/118] wireless: regulatory: fix channel disabling race condition
+Date: Tue,  7 May 2013 14:38:55 +0100
+Message-Id: <1367933964-1564-90-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,58 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 769ba7212f2059ca9fe0c73371e3d415c8c1c529 upstream.
+commit 990de49f74e772b6db5208457b7aa712a5f4db86 upstream.
 
-Commit b51306c (PCI: Set device power state to PCI_D0 for device
-without native PM support) modified pci_platform_power_transition()
-by adding code causing dev->current_state for devices that don't
-support native PCI PM but are power-manageable by the platform to be
-changed to PCI_D0 regardless of the value returned by the preceding
-platform_pci_set_power_state().  In particular, that also is done
-if the platform_pci_set_power_state() has been successful, which
-causes the correct power state of the device set by
-pci_update_current_state() in that case to be overwritten by PCI_D0.
+When a full scan 2.4 and 5 GHz scan is scheduled, but then the 2.4 GHz
+part of the scan disables a 5.2 GHz channel due to, e.g. receiving
+country or frequency information, that 5.2 GHz channel might already
+be in the list of channels to scan next. Then, when the driver checks
+if it should do a passive scan, that will return false and attempt an
+active scan. This is not only wrong but can also lead to the iwlwifi
+device firmware crashing since it checks regulatory as well.
 
-Fix that mistake by making the fallback to PCI_D0 only happen if
-the platform_pci_set_power_state() has returned an error.
+Fix this by not setting the channel flags to just disabled but rather
+OR'ing in the disabled flag. That way, even if the race happens, the
+channel will be scanned passively which is still (mostly) correct.
 
-[bhelgaas: folded in Yinghai's simplification, added URL & stable info]
-Reference: http://lkml.kernel.org/r/27806FC4E5928A408B78E88BBC67A2306F466BBA@ORSMSX101.amr.corp.intel.com
-Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pci/pci.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ net/wireless/reg.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 447e834..fa7c0f0 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -674,15 +674,11 @@ static int pci_platform_power_transition(struct pci_dev *dev, pci_power_t state)
- 		error = platform_pci_set_power_state(dev, state);
- 		if (!error)
- 			pci_update_current_state(dev, state);
--		/* Fall back to PCI_D0 if native PM is not supported */
--		if (!dev->pm_cap)
--			dev->current_state = PCI_D0;
--	} else {
-+	} else
- 		error = -ENODEV;
--		/* Fall back to PCI_D0 if native PM is not supported */
--		if (!dev->pm_cap)
--			dev->current_state = PCI_D0;
--	}
-+
-+	if (error && !dev->pm_cap) /* Fall back to PCI_D0 */
-+		dev->current_state = PCI_D0;
+diff --git a/net/wireless/reg.c b/net/wireless/reg.c
+index 4dc8347..796a0ee 100644
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -862,7 +862,7 @@ static void handle_channel(struct wiphy *wiphy,
+ 			return;
  
- 	return error;
- }
+ 		REG_DBG_PRINT("Disabling freq %d MHz\n", chan->center_freq);
+-		chan->flags = IEEE80211_CHAN_DISABLED;
++		chan->flags |= IEEE80211_CHAN_DISABLED;
+ 		return;
+ 	}
+ 
 -- 
 1.8.1.2
 
