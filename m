@@ -1,155 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab3EGFHV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 01:07:21 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38363 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755380Ab3EGFHT (ORCPT
+	id S1758351Ab3EGFHr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 01:07:47 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:53857 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757967Ab3EGFHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 01:07:19 -0400
-Message-ID: <51888BE4.8090502@ti.com>
-Date: Tue, 7 May 2013 10:36:44 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "cw00.choi@samsung.com" <cw00.choi@samsung.com>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "ruchika@ti.com" <ruchika@ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH v4] extcon: Palmas Extcon Driver
-References: <1362662506-14823-4-git-send-email-kishon@ti.com> <1367846225-15685-1-git-send-email-kishon@ti.com> <5187BDAF.2040303@nvidia.com>
-In-Reply-To: <5187BDAF.2040303@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 7 May 2013 01:07:45 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v2] media: davinci: vpbe: fix layer availability for NV12 format
+Date: Tue,  7 May 2013 10:37:25 +0530
+Message-Id: <1367903245-4494-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-On Monday 06 May 2013 07:56 PM, Laxman Dewangan wrote:
-> On Monday 06 May 2013 06:47 PM, Kishon Vijay Abraham I wrote:
->> +
->> +static irqreturn_t palmas_vbus_wakeup_irq(int irq, void *_palmas_usb)
->
-> Can we name the function to palams_vbus_irq_handler() for better
-> understanding? Reserve the wakeup word for the suspend-wakeups.
->
->
->> +
->> +
->> +static irqreturn_t palmas_id_wakeup_irq(int irq, void *_palmas_usb)
->
-> Same here for better name.
->
->
->> +
->> +static void palmas_set_vbus_work(struct work_struct *data)
->> +{
->> +       int ret;
->> +       struct palmas_usb *palmas_usb = container_of(data, struct
->> palmas_usb,
->> +
->> set_vbus_work);
->> +
->> +       if (IS_ERR_OR_NULL(palmas_usb->vbus_reg)) {
->> +               dev_err(palmas_usb->dev, "invalid regulator\n");
->> +               return;
->> +       }
->
-> This error will keep coming if the vbus is not require as workqueue get
-> scheduled always. I think we should remove it.
->
->
->> +
->
->> +static void palmas_dt_to_pdata(struct device_node *node,
->> +               struct palmas_usb_platform_data *pdata)
->> +{
->> +       pdata->no_control_vbus = of_property_read_bool(node,
->> +                                       "ti,no_control_vbus");
->
->
-> Can we change the variable names to enable_control_bus and logic
-> accordingly as it looks more appropriate and easy to understand?
->
->
->> +
->> +       palmas_usb->irq1 = regmap_irq_get_virq(palmas->irq_data,
->> +                                               PALMAS_ID_OTG_IRQ);
->> +       palmas_usb->irq2 = regmap_irq_get_virq(palmas->irq_data,
->> +                                               PALMAS_ID_IRQ);
->> +       palmas_usb->irq3 = regmap_irq_get_virq(palmas->irq_data,
->> +                                               PALMAS_VBUS_OTG_IRQ);
->> +       palmas_usb->irq4 = regmap_irq_get_virq(palmas->irq_data,
->> +                                               PALMAS_VBUS_IRQ);
->> +
->
-> Better to name irq1, irq2 in more logical names for easy understanding.
->
->
->> +
->> +       if (device_create_file(&pdev->dev, &dev_attr_vbus))
->> +               dev_warn(&pdev->dev, "could not create sysfs file\n");
->> +
->> +       palmas_usb->edev.name = "palmas_usb";
->> +       palmas_usb->edev.supported_cable = palmas_extcon_cable;
->> +       palmas_usb->edev.mutually_exclusive = mutually_exclusive;
->> +
->> +       ret = extcon_dev_register(&palmas_usb->edev, palmas_usb->dev);
->> +       if (ret) {
->> +               dev_err(&pdev->dev, "failed to register extcon
->> device\n");
->> +               return ret;
->
-> It need to destroy sysfs also.
->
->> +       }
->> +
->> +       /* init spinlock for workqueue */
->> +       spin_lock_init(&palmas_usb->lock);
->
-> It is already done above.
->
->> +
->> +       INIT_WORK(&palmas_usb->set_vbus_work, palmas_set_vbus_work);
->
-> Better to create the workqueu when control_vbus is require.
->
->
->> +
->> +
->> diff --git a/include/linux/extcon/extcon_palmas.h
->> b/include/linux/extcon/extcon_palmas.h
->> new file mode 100644
->> index 0000000..a5119c9
->> --- /dev/null
->> +++ b/include/linux/extcon/extcon_palmas.h
->
-> I think it can be use palama.h only. No need to have one more header for
-> this.
->
->> @@ -0,0 +1,26 @@
->>
->>
->> -       u8 linkstat;
->> +       int mailboxstat;
-> Do we really require mailboxstat?
+For NV12 format, even if display data is single image,
+both VIDWIN0 and VIDWIN1 parameters must be used. The start
+address of Y data plane and C data plane is configured in
+VIDEOWIN0ADH/L and VIDEOWIN1ADH/L respectively.
+cuurently only one layer was requested, which is suffice
+for yuv422, but for yuv420(NV12) two layers are required and
+fix the same by requesting for other layer if pix fmt is NV12
+during set_fmt.
 
-Will fix your comments.
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ Changes for v2:
+ 1: Dropped cpu_is_*() check in driver as, any way driver would fail to set
+    NV12 if the device doesnt support it.
 
-Thanks
-Kishon
+ drivers/media/platform/davinci/vpbe_display.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/media/platform/davinci/vpbe_display.c b/drivers/media/platform/davinci/vpbe_display.c
+index 0341dcc..4ceee3a 100644
+--- a/drivers/media/platform/davinci/vpbe_display.c
++++ b/drivers/media/platform/davinci/vpbe_display.c
+@@ -922,6 +922,21 @@ static int vpbe_display_s_fmt(struct file *file, void *priv,
+ 	other video window */
+ 
+ 	layer->pix_fmt = *pixfmt;
++	if (pixfmt->pixelformat == V4L2_PIX_FMT_NV12) {
++		struct vpbe_layer *otherlayer;
++
++		otherlayer = _vpbe_display_get_other_win_layer(disp_dev, layer);
++		/* if other layer is available, only
++		 * claim it, do not configure it
++		 */
++		ret = osd_device->ops.request_layer(osd_device,
++						    otherlayer->layer_info.id);
++		if (ret < 0) {
++			v4l2_err(&vpbe_dev->v4l2_dev,
++				 "Display Manager failed to allocate layer\n");
++			return -EBUSY;
++		}
++	}
+ 
+ 	/* Get osd layer config */
+ 	osd_device->ops.get_layer_config(osd_device,
+-- 
+1.7.4.1
+
