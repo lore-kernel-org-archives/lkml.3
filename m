@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab3EGOWq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:22:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42114 "EHLO
+	id S1753358Ab3EGOWs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:22:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42109 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932368Ab3EGNkn (ORCPT
+	with ESMTP id S932470Ab3EGNkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:40:43 -0400
+	Tue, 7 May 2013 09:40:42 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>,
+Cc: Stephane Eranian <eranian@google.com>, peterz@infradead.org,
+        jolsa@redhat.com, gregkh@linuxfoundation.org, security@kernel.org,
+        ak@linux.intel.com, Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 020/118] regulator: fixed regulator_bulk_enable unwinding code
-Date: Tue,  7 May 2013 14:37:46 +0100
-Message-Id: <1367933964-1564-21-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 014/118] perf/x86: Fix offcore_rsp valid mask for SNB/IVB
+Date: Tue,  7 May 2013 14:37:40 +0100
+Message-Id: <1367933964-1564-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -30,43 +29,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrzej Hajda <a.hajda@samsung.com>
+From: Stephane Eranian <eranian@google.com>
 
-commit fbe31057fafebdc2811a7101b8b4a0460f5417d1 upstream.
+commit f1923820c447e986a9da0fc6bf60c1dccdf0408e upstream.
 
-Unwinding code disables all successfully enabled regulators.
-Error is logged for every failed regulator.
+The valid mask for both offcore_response_0 and
+offcore_response_1 was wrong for SNB/SNB-EP,
+IVB/IVB-EP. It was possible to write to
+reserved bit and cause a GP fault crashing
+the kernel.
 
-Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+This patch fixes the problem by correctly marking the
+reserved bits in the valid mask for all the processors
+mentioned above.
+
+A distinction between desktop and server parts is introduced
+because bits 24-30 are only available on the server parts.
+
+This version of the  patch is just a rebase to perf/urgent tree
+and should apply to older kernels as well.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: jolsa@redhat.com
+Cc: gregkh@linuxfoundation.org
+Cc: security@kernel.org
+Cc: ak@linux.intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[ luis: backport to 3.5: dropped IvyBridge changes ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/regulator/core.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 8b4b382..4a4d12e 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -2769,9 +2769,13 @@ int regulator_bulk_enable(int num_consumers,
- 	return 0;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 187c294..54082f7 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -126,8 +126,14 @@ static struct event_constraint intel_gen_event_constraints[] __read_mostly =
+ };
  
- err:
--	pr_err("Failed to enable %s: %d\n", consumers[i].supply, ret);
--	while (--i >= 0)
--		regulator_disable(consumers[i].consumer);
-+	for (i = 0; i < num_consumers; i++) {
-+		if (consumers[i].ret < 0)
-+			pr_err("Failed to enable %s: %d\n", consumers[i].supply,
-+			       consumers[i].ret);
+ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
+-	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffffffffull, RSP_0),
+-	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffffffffull, RSP_1),
++	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3f807f8fffull, RSP_0),
++	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3f807f8fffull, RSP_1),
++	EVENT_EXTRA_END
++};
++
++static struct extra_reg intel_snbep_extra_regs[] __read_mostly = {
++	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffff8fffull, RSP_0),
++	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffff8fffull, RSP_1),
+ 	EVENT_EXTRA_END
+ };
+ 
+@@ -1920,7 +1926,10 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.event_constraints = intel_snb_event_constraints;
+ 		x86_pmu.pebs_constraints = intel_snb_pebs_event_constraints;
+ 		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
+-		x86_pmu.extra_regs = intel_snb_extra_regs;
++		if (boot_cpu_data.x86_model == 45)
++			x86_pmu.extra_regs = intel_snbep_extra_regs;
 +		else
-+			regulator_disable(consumers[i].consumer);
-+	}
- 
- 	return ret;
- }
++			x86_pmu.extra_regs = intel_snb_extra_regs;
+ 		/* all extra regs are per-cpu when HT is on */
+ 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
+ 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
 -- 
 1.8.1.2
 
