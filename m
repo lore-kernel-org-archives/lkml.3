@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932942Ab3EGNlP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:41:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42260 "EHLO
+	id S933719Ab3EGOI7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:08:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42286 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932825Ab3EGNlK (ORCPT
+	with ESMTP id S932925Ab3EGNlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:41:10 -0400
+	Tue, 7 May 2013 09:41:15 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jon Maloy <jon.maloy@ericsson.com>,
-        Allan Stephens <allan.stephens@windriver.com>,
-        Mathias Krause <minipli@googlemail.com>,
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 041/118] tipc: fix info leaks via msg_name in recv_msg/recv_stream
-Date: Tue,  7 May 2013 14:38:07 +0100
-Message-Id: <1367933964-1564-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 048/118] af_unix: If we don't care about credentials coallesce all messages
+Date: Tue,  7 May 2013 14:38:14 +0100
+Message-Id: <1367933964-1564-49-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -30,66 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 60085c3d009b0df252547adb336d1ccca5ce52ec upstream.
+commit 0e82e7f6dfeec1013339612f74abc2cdd29d43d2 upstream.
 
-The code in set_orig_addr() does not initialize all of the members of
-struct sockaddr_tipc when filling the sockaddr info -- namely the union
-is only partly filled. This will make recv_msg() and recv_stream() --
-the only users of this function -- leak kernel stack memory as the
-msg_name member is a local variable in net/socket.c.
+It was reported that the following LSB test case failed
+https://lsbbugs.linuxfoundation.org/attachment.cgi?id=2144 because we
+were not coallescing unix stream messages when the application was
+expecting us to.
 
-Additionally to that both recv_msg() and recv_stream() fail to update
-the msg_namelen member to 0 while otherwise returning with 0, i.e.
-"success". This is the case for, e.g., non-blocking sockets. This will
-lead to a 128 byte kernel stack leak in net/socket.c.
+The problem was that the first send was before the socket was accepted
+and thus sock->sk_socket was NULL in maybe_add_creds, and the second
+send after the socket was accepted had a non-NULL value for sk->socket
+and thus we could tell the credentials were not needed so we did not
+bother.
 
-Fix the first issue by initializing the memory of the union with
-memset(0). Fix the second one by setting msg_namelen to 0 early as it
-will be updated later if we're going to fill the msg_name member.
+The unnecessary credentials on the first message cause
+unix_stream_recvmsg to start verifying that all messages had the same
+credentials before coallescing and then the coallescing failed because
+the second message had no credentials.
 
-Cc: Jon Maloy <jon.maloy@ericsson.com>
-Cc: Allan Stephens <allan.stephens@windriver.com>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Ignoring credentials when we don't care in unix_stream_recvmsg fixes a
+long standing pessimization which would fail to coallesce messages when
+reading from a unix stream socket if the senders were different even if
+we did not care about their credentials.
+
+I have tested this and verified that the in the LSB test case mentioned
+above that the messages do coallesce now, while the were failing to
+coallesce without this change.
+
+Reported-by: Karel Srot <ksrot@redhat.com>
+Reported-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/tipc/socket.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ net/unix/af_unix.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/tipc/socket.c b/net/tipc/socket.c
-index 5577a44..91fd130 100644
---- a/net/tipc/socket.c
-+++ b/net/tipc/socket.c
-@@ -802,6 +802,7 @@ static void set_orig_addr(struct msghdr *m, struct tipc_msg *msg)
- 	if (addr) {
- 		addr->family = AF_TIPC;
- 		addr->addrtype = TIPC_ADDR_ID;
-+		memset(&addr->addr, 0, sizeof(addr->addr));
- 		addr->addr.id.ref = msg_origport(msg);
- 		addr->addr.id.node = msg_orignode(msg);
- 		addr->addr.name.domain = 0;	/* could leave uninitialized */
-@@ -916,6 +917,9 @@ static int recv_msg(struct kiocb *iocb, struct socket *sock,
- 		goto exit;
- 	}
- 
-+	/* will be updated in set_orig_addr() if needed */
-+	m->msg_namelen = 0;
-+
- 	timeout = sock_rcvtimeo(sk, flags & MSG_DONTWAIT);
- restart:
- 
-@@ -1032,6 +1036,9 @@ static int recv_stream(struct kiocb *iocb, struct socket *sock,
- 		goto exit;
- 	}
- 
-+	/* will be updated in set_orig_addr() if needed */
-+	m->msg_namelen = 0;
-+
- 	target = sock_rcvlowat(sk, flags & MSG_WAITALL, buf_len);
- 	timeout = sock_rcvtimeo(sk, flags & MSG_DONTWAIT);
- 
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 023db69..ce7db4b 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1996,7 +1996,7 @@ again:
+ 			if ((UNIXCB(skb).pid  != siocb->scm->pid) ||
+ 			    (UNIXCB(skb).cred != siocb->scm->cred))
+ 				break;
+-		} else {
++		} else if (test_bit(SOCK_PASSCRED, &sock->flags)) {
+ 			/* Copy credentials */
+ 			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
+ 			check_creds = 1;
 -- 
 1.8.1.2
 
