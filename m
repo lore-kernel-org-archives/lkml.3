@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881Ab3EGRJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 13:09:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55812 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab3EGRJ3 (ORCPT
+	id S1753112Ab3EGRMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 13:12:00 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:50995 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab3EGRL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 13:09:29 -0400
-Message-ID: <51893523.9000105@infradead.org>
-Date: Tue, 07 May 2013 10:08:51 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org
-Subject: Re: linux-next: Tree for May 7 (iio)
-References: <20130507134922.981483ab1e5cb09e5543a6cc@canb.auug.org.au>
-In-Reply-To: <20130507134922.981483ab1e5cb09e5543a6cc@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 May 2013 13:11:59 -0400
+Message-ID: <1367946716.13473.9.camel@edumazet-glaptop>
+Subject: Re: 3.8.4 kernel
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Arend van Spriel <arend@broadcom.com>
+Cc: "Huang, Xiong" <xiong@qca.qualcomm.com>,
+        "Joseph A. Millikan" <josephamillikan@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ren, Cloud" <cjren@qca.qualcomm.com>, netdev <netdev@vger.kernel.org>,
+        Eric Dumazet <edumazet@google.com>
+Date: Tue, 07 May 2013 10:11:56 -0700
+In-Reply-To: <CAErSpo44-f4UdXxO5MdwVg09LFABwFQ320gG8v8jHcYh=5gqvA@mail.gmail.com>
+References: <5153620E.4010608@gmail.com>
+	 <CAErSpo6w+tTbwJ7Qinpd0Vx20q5cm2gMvqzE1Do+2=G3b8rcHA@mail.gmail.com>
+	 <CAErSpo6iwM2r8b-aoiBPjQpkdpcfgLiO+WkpiM1wFsDhxuSXPg@mail.gmail.com>
+	 <CAErSpo68AWCGWQHKgoKuD-QFA0b+jbCRf7T_PzzKoUsVwdZHOg@mail.gmail.com>
+	 <157393863283F442885425D2C45428564F219B3B@nasanexd02f.na.qualcomm.com>
+	 <CAErSpo44-f4UdXxO5MdwVg09LFABwFQ320gG8v8jHcYh=5gqvA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/13 20:49, Stephen Rothwell wrote:
-> Hi all,
+On Tue, 2013-05-07 at 09:20 -0700, Bjorn Helgaas wrote:
+> [+cc Eric because he made a change (69b08f62e17) that apparently
+> exposes driver bugs]
 > 
-> Please do not add any v3.11 destined work to your linux-next included
-> branches until after v3.10-rc1 is released.
+> On Mon, May 6, 2013 at 7:51 PM, Huang, Xiong <xiong@qca.qualcomm.com> wrote:
+> >> >
+> >> > Did this ever get resolved?
+> >>
+> >> I opened https://bugzilla.kernel.org/show_bug.cgi?id=57681 to keep track of
+> >> this and attached the dmesg logs you collected.  If you have a chance, could you
+> >> also collect and attach the output of "lspci -vv"
+> >> (any kernel is fine for this).
+> >>
+> >> I don't see anything obvious wrong, at least from the PCI side.  Maybe the atl1c
+> >> guys will have some ideas.
+> >>
+> >
+> > Hi Bjorn and All
+> >      This issue should be same as bug https://bugzilla.kernel.org/show_bug.cgi?id=54021
+> >      I didn't find any abnormal info from the log and the PHY link is stable as well :(
+> >      Is it related to the network manager ?
 > 
-> I am receiving a (un)reasonable number of conflicts from there being
-> multiple copies of some commits in various trees.   Please clean this up
-> and resist the temptataion to rebase your trees on the way to your
-> upstream ...
+> I looked at bug #54021 and it does look similar.  It doesn't look like
+> it has been resolved.
 > 
-> Changes since 20130506:
+> http://forums.gentoo.org/viewtopic-t-949168-highlight-.html is another
+> report that looks very similar.  BigE there has a Lenovo G570 that has
+> both wireless and wired networking.  If BigE disables wireless with a
+> hardware switch before booting, it seems to avoid the atl1c wired
+> networking issue.  That's not a fix, of course, but it might be a clue
+> and a temporary workaround until we have a real solution.
 > 
+> Joseph, if there's no hardware switch for the wireless on your G770,
+> you can probably still take wireless out of the picture by removing or
+> renaming the bcma module (look in
+> /lib/modules/.../kernel/drivers/bcma/), then rebooting.
+> 
+> Xiong, do you have a specific network manager-related test that Joseph
+> could perform?  I don't want to burden Joseph with a lot of debugging
+> because he's currently happy with 3.6.11 and testing is pretty
+> disruptive in his environment.
 
-on x86_64:
+drivers/net/wireless/brcm80211/brcmsmac/dma.c contains this suspect code
+in dma64_getnextrxp() :
 
-when CONFIG_AD5446=y and CONFIG_I2C=m:
-
-drivers/built-in.o: In function `ad5622_write':
-ad5446.c:(.text+0xae0b5): undefined reference to `i2c_master_send'
-drivers/built-in.o: In function `ad5446_init':
-ad5446.c:(.init.text+0x4f28): undefined reference to `i2c_register_driver'
-drivers/built-in.o: In function `ad5446_i2c_unregister_driver':
-ad5446.c:(.exit.text+0xc73): undefined reference to `i2c_del_driver'
+dma_addr_t pa;
+...
+pa = le32_to_cpu(di->rxd64[i].addrlow) - di->dataoffsetlow;
+/* clear this packet from the descriptor ring */
+dma_unmap_single(di->dmadev, pa, di->rxbufsize, DMA_FROM_DEVICE);
 
 
+How can it possibly work, I honestly have no idea.
 
--- 
-~Randy
+I suggest enabling CONFIG_DMA_API_DEBUG ?
+
+
+
