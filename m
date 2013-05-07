@@ -1,106 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933170Ab3EGOCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:02:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42397 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933109Ab3EGNll (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:41:41 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 070/118] sysfs: fix use after free in case of concurrent read/write and readdir
-Date: Tue,  7 May 2013 14:38:36 +0100
-Message-Id: <1367933964-1564-71-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
-References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S933594Ab3EGOCn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:02:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2615 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933126Ab3EGOCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 10:02:39 -0400
+Date: Tue, 7 May 2013 10:02:03 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Re: [PATCHSET v2] blk-throttle: implement proper hierarchy support
+Message-ID: <20130507140202.GB7082@redhat.com>
+References: <1367880372-28312-1-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367880372-28312-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.12 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, May 06, 2013 at 03:45:39PM -0700, Tejun Heo wrote:
+> Changes since the last take[L] are
+> 
+> * Unnecessary throtl_schedule_delayed_work() call dropped from 0007.
+> 
+> * throtl_log() implement in 0021 forgot to print space after blkg
+>   path.  Fixed.
+> 
+> * 0030-blk-throttle-add-throtl_qnode-for-dispatch-fairness.patch added
+>   to address dispatch fairness.
+> 
+> * 0031-blk-throttle-Account-for-child-group-s-start-time-in.patch
+>   added to address unwarranted penalty of nested limit enforcement due
+>   to staggered delays of slice start times at multiple levels.
+> 
+> The original patchset description follows.
+> 
 
-------------------
+This patch series looks good to me.
 
-From: Ming Lei <ming.lei@canonical.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-commit f7db5e7660b122142410dcf36ba903c73d473250 upstream.
+Vivek
 
-The inode->i_mutex isn't hold when updating filp->f_pos
-in read()/write(), so the filp->f_pos might be read as
-0 or 1 in readdir() when there is concurrent read()/write()
-on this same file, then may cause use after free in readdir().
-
-The bug can be reproduced with Li Zefan's test code on the
-link:
-
-	https://patchwork.kernel.org/patch/2160771/
-
-This patch fixes the use after free under this situation.
-
-Reported-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/sysfs/dir.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
-
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 8777436..1a32e0f 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -1013,6 +1013,7 @@ static int sysfs_readdir(struct file * filp, void * dirent, filldir_t filldir)
- 	enum kobj_ns_type type;
- 	const void *ns;
- 	ino_t ino;
-+	loff_t off;
- 
- 	type = sysfs_ns_type(parent_sd);
- 	ns = sysfs_info(dentry->d_sb)->ns[type];
-@@ -1035,6 +1036,7 @@ static int sysfs_readdir(struct file * filp, void * dirent, filldir_t filldir)
- 			return 0;
- 	}
- 	mutex_lock(&sysfs_mutex);
-+	off = filp->f_pos;
- 	for (pos = sysfs_dir_pos(ns, parent_sd, filp->f_pos, pos);
- 	     pos;
- 	     pos = sysfs_dir_next_pos(ns, parent_sd, filp->f_pos, pos)) {
-@@ -1046,19 +1048,24 @@ static int sysfs_readdir(struct file * filp, void * dirent, filldir_t filldir)
- 		len = strlen(name);
- 		ino = pos->s_ino;
- 		type = dt_type(pos);
--		filp->f_pos = pos->s_hash;
-+		off = filp->f_pos = pos->s_hash;
- 		filp->private_data = sysfs_get(pos);
- 
- 		mutex_unlock(&sysfs_mutex);
--		ret = filldir(dirent, name, len, filp->f_pos, ino, type);
-+		ret = filldir(dirent, name, len, off, ino, type);
- 		mutex_lock(&sysfs_mutex);
- 		if (ret < 0)
- 			break;
- 	}
- 	mutex_unlock(&sysfs_mutex);
--	if ((filp->f_pos > 1) && !pos) { /* EOF */
--		filp->f_pos = INT_MAX;
-+
-+	/* don't reference last entry if its refcount is dropped */
-+	if (!pos) {
- 		filp->private_data = NULL;
-+
-+		/* EOF and not changed as 0 or 1 in read/write path */
-+		if (off == filp->f_pos && off > 1)
-+			filp->f_pos = INT_MAX;
- 	}
- 	return 0;
- }
--- 
-1.8.1.2
-
+> blk-throttle is the last controller with broken hierarchy support
+> making blkcg the last one tagged with .broken_hierarchy.  This
+> patchset implements hierarchy support for blk-throttle.  The semantics
+> is pretty simple - limits on an intermediate node applies to the whole
+> subtree and the statistics remain local.
+> 
+> As this changes the meaning of the knobs in an incompatible manner -
+> e.g. configuring limits on root cgroup now means setting the limit for
+> the whole system - the hierarchy mode is enabled by "sane_behavior"
+> cgroup mount flag.  If the flag is not specified, the original broken
+> flat hierarchy behavior is retained.
+> 
+> While this patchset contains many patches, the implementation is
+> pretty straight-forward.  throtl_grp's form a tree anchored at
+> throtl_data and bios climb the tree as they get dispatched at each
+> level.  The bios which reach the top of the tree - throl_data - are
+> issued.  The scheduling algorithm remains unchanged at each level and
+> blk-throttle should behave the same for flat hierarchy after the
+> changes.  The same algorithm is repeated until bios clear all limits
+> to the top of the tree.
+> 
+> This patchset contains the following 33 patches.
+> 
+>  0001-blkcg-fix-error-return-path-in-blkg_create.patch
+>  0002-blkcg-move-blkg_for_each_descendant_pre-to-block-blk.patch
+>  0003-blkcg-implement-blkg_for_each_descendant_post.patch
+>  0004-blkcg-invoke-blkcg_policy-pd_init-after-parent-is-li.patch
+>  0005-blkcg-move-bulk-of-blkcg_gq-release-operations-to-th.patch
+>  0006-blk-throttle-remove-spurious-throtl_enqueue_tg-call-.patch
+>  0007-blk-throttle-removed-deferred-config-application-mec.patch
+>  0008-blk-throttle-collapse-throtl_dispatch-into-the-work-.patch
+>  0009-blk-throttle-relocate-throtl_schedule_delayed_work.patch
+>  0010-blk-throttle-remove-pointless-throtl_nr_queued-optim.patch
+>  0011-blk-throttle-rename-throtl_rb_root-to-throtl_service.patch
+>  0012-blk-throttle-simplify-throtl_grp-flag-handling.patch
+>  0013-blk-throttle-add-backlink-pointer-from-throtl_grp-to.patch
+>  0014-blk-throttle-pass-around-throtl_service_queue-instea.patch
+>  0015-blk-throttle-reorganize-throtl_service_queue-passed-.patch
+>  0016-blk-throttle-add-throtl_grp-service_queue.patch
+>  0017-blk-throttle-move-bio_lists-and-friends-to-throtl_se.patch
+>  0018-blk-throttle-dispatch-to-throtl_data-service_queue.b.patch
+>  0019-blk-throttle-generalize-update_disptime-optimization.patch
+>  0020-blk-throttle-add-throtl_service_queue-parent_sq.patch
+>  0021-blk-throttle-implement-sq_to_tg-sq_to_td-and-throtl_.patch
+>  0022-blk-throttle-set-REQ_THROTTLED-from-throtl_charge_bi.patch
+>  0023-blk-throttle-separate-out-throtl_service_queue-pendi.patch
+>  0024-blk-throttle-implement-dispatch-looping.patch
+>  0025-blk-throttle-dispatch-from-throtl_pending_timer_fn.patch
+>  0026-blk-throttle-make-blk_throtl_drain-ready-for-hierarc.patch
+>  0027-blk-throttle-make-blk_throtl_bio-ready-for-hierarchy.patch
+>  0028-blk-throttle-make-tg_dispatch_one_bio-ready-for-hier.patch
+>  0029-blk-throttle-make-throtl_pending_timer_fn-ready-for-.patch
+>  0030-blk-throttle-add-throtl_qnode-for-dispatch-fairness.patch
+>  0031-blk-throttle-Account-for-child-group-s-start-time-in.patch
+>  0032-blk-throttle-implement-throtl_grp-has_rules.patch
+>  0033-blk-throttle-implement-proper-hierarchy-support.patch
+> 
+> 0001-0005 prepare blkcg so that hierarchy operations are easier.
+> 
+> 0006-0016 reorganize code piece-by-piece so that hierarchy support can
+> be added.  These don't change behaviors.
+> 
+> 0017-0025 prepare for hierarchy support.  Moves fields which are used
+> in hierarchy to throtl_service_queue and define parent-child
+> relationship.
+> 
+> 0026-0032 make queueing, dispatching and configuration changes
+> propagate through the hierarchy.
+> 
+> 0033 implemenats hierarchy support.
+> 
+> As we're in the middle of a merge window, this patchset is currently
+> based on cgroup/for-3.10.  Once 3.10-rc1 drops, I'll rebase the tree
+> and send pull request to Jens so that it can be routed with other
+> block changes.  The patches are also available on the following git
+> branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-throtl-hierarchy
+> 
+> diffstat follows.  Thanks.
+> 
+>  block/blk-cgroup.c     |  105 +---
+>  block/blk-cgroup.h     |   38 +
+>  block/blk-throttle.c   | 1064 ++++++++++++++++++++++++++++++++++---------------
+>  include/linux/cgroup.h |    2 
+>  4 files changed, 822 insertions(+), 387 deletions(-)
+> 
+> --
+> tejun
+> 
+> [L] http://thread.gmane.org/gmane.linux.kernel.containers/25845
