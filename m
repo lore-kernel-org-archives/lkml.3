@@ -1,67 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab3EGONa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:13:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42208 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932781Ab3EGNk7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:40:59 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Samuel Ortiz <samuel@sortiz.org>, Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 034/118] irda: Fix missing msg_namelen update in irda_recvmsg_dgram()
-Date: Tue,  7 May 2013 14:38:00 +0100
-Message-Id: <1367933964-1564-35-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
-References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1751978Ab3EGONp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:13:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42769 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932394Ab3EGON3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 10:13:29 -0400
+Message-ID: <51890BFC.3020001@suse.cz>
+Date: Tue, 07 May 2013 16:13:16 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Weng Meiling <wengmeiling.weng@huawei.com>,
+        Libo Chen <clbchenlibo.chen@huawei.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH] menuconfig: fix NULL pointer dereference when searching
+ a symbol
+References: <518869BB.2020808@huawei.com> <20130507132159.GA15137@free.fr> <518905E6.5050502@suse.cz> <20130507140639.GB15137@free.fr>
+In-Reply-To: <20130507140639.GB15137@free.fr>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.12 -stable review patch.  If anyone has any objections, please let me know.
+Dne 7.5.2013 16:06, Yann E. MORIN napsal(a):
+> It's strange that a kconfig-related change did not land in your tree
+> before getting mainline...
 
-------------------
+It's quite simple. I wanted to look at the patch, but Andrew beat me to
+it. I am not saying that I would have spotted the null pointer deref
+myself :-).
 
-From: Mathias Krause <minipli@googlemail.com>
-
-commit 5ae94c0d2f0bed41d6718be743985d61b7f5c47d upstream.
-
-The current code does not fill the msg_name member in case it is set.
-It also does not set the msg_namelen member to 0 and therefore makes
-net/socket.c leak the local, uninitialized sockaddr_storage variable
-to userland -- 128 bytes of kernel stack memory.
-
-Fix that by simply setting msg_namelen to 0 as obviously nobody cared
-about irda_recvmsg_dgram() not filling the msg_name in case it was
-set.
-
-Cc: Samuel Ortiz <samuel@sortiz.org>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/irda/af_irda.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/net/irda/af_irda.c b/net/irda/af_irda.c
-index d6c291c..bd25678 100644
---- a/net/irda/af_irda.c
-+++ b/net/irda/af_irda.c
-@@ -1386,6 +1386,8 @@ static int irda_recvmsg_dgram(struct kiocb *iocb, struct socket *sock,
- 
- 	IRDA_DEBUG(4, "%s()\n", __func__);
- 
-+	msg->msg_namelen = 0;
-+
- 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
- 				flags & MSG_DONTWAIT, &err);
- 	if (!skb)
--- 
-1.8.1.2
-
+Michal
