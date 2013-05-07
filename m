@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab3EGOZD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:25:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42074 "EHLO
+	id S1753911Ab3EGOZF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:25:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42072 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932295Ab3EGNke (ORCPT
+	with ESMTP id S932292Ab3EGNke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 May 2013 09:40:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
+Cc: Mathias Krause <minipli@googlemail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 011/118] sched: Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s
-Date: Tue,  7 May 2013 14:37:37 +0100
-Message-Id: <1367933964-1564-12-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 012/118] crypto: algif - suppress sending source address information in recvmsg
+Date: Tue,  7 May 2013 14:37:38 +0100
+Message-Id: <1367933964-1564-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,47 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 383efcd00053ec40023010ce5034bd702e7ab373 upstream.
+commit 72a763d805a48ac8c0bf48fdb510e84c12de51fe upstream.
 
-try_to_wake_up_local() should only be invoked to wake up another
-task in the same runqueue and BUG_ON()s are used to enforce the
-rule. Missing try_to_wake_up_local() can stall workqueue
-execution but such stalls are likely to be finite either by
-another work item being queued or the one blocked getting
-unblocked.  There's no reason to trigger BUG while holding rq
-lock crashing the whole system.
+The current code does not set the msg_namelen member to 0 and therefore
+makes net/socket.c leak the local sockaddr_storage variable to userland
+-- 128 bytes of kernel stack memory. Fix that.
 
-Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20130318192234.GD3042@htj.dyndns.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/sched/core.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ crypto/algif_hash.c     | 2 ++
+ crypto/algif_skcipher.c | 1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3231df8..473cac3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1651,8 +1651,10 @@ static void try_to_wake_up_local(struct task_struct *p)
- {
- 	struct rq *rq = task_rq(p);
+diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
+index ef5356c..0262210 100644
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -161,6 +161,8 @@ static int hash_recvmsg(struct kiocb *unused, struct socket *sock,
+ 	else if (len < ds)
+ 		msg->msg_flags |= MSG_TRUNC;
  
--	BUG_ON(rq != this_rq());
--	BUG_ON(p == current);
-+	if (WARN_ON_ONCE(rq != this_rq()) ||
-+	    WARN_ON_ONCE(p == current))
-+		return;
++	msg->msg_namelen = 0;
 +
- 	lockdep_assert_held(&rq->lock);
+ 	lock_sock(sk);
+ 	if (ctx->more) {
+ 		ctx->more = 0;
+diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
+index 6a6dfc0..a1c4f0a 100644
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -432,6 +432,7 @@ static int skcipher_recvmsg(struct kiocb *unused, struct socket *sock,
+ 	long copied = 0;
  
- 	if (!raw_spin_trylock(&p->pi_lock)) {
+ 	lock_sock(sk);
++	msg->msg_namelen = 0;
+ 	for (iov = msg->msg_iov, iovlen = msg->msg_iovlen; iovlen > 0;
+ 	     iovlen--, iov++) {
+ 		unsigned long seglen = iov->iov_len;
 -- 
 1.8.1.2
 
