@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933489Ab3EGNmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:42:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42631 "EHLO
+	id S933215Ab3EGNml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:42:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42638 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933418Ab3EGNmc (ORCPT
+	with ESMTP id S933419Ab3EGNmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:32 -0400
+	Tue, 7 May 2013 09:42:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+Cc: Zhao Hongjiang <zhaohongjiang@huawei.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Eric Paris <eparis@parisplace.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 114/118] exec: do not abuse ->cred_guard_mutex in threadgroup_lock()
-Date: Tue,  7 May 2013 14:39:20 +0100
-Message-Id: <1367933964-1564-115-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 112/118] inotify: invalid mask should return a error number but not set it
+Date: Tue,  7 May 2013 14:39:18 +0100
+Message-Id: <1367933964-1564-113-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,112 +32,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Zhao Hongjiang <zhaohongjiang@huawei.com>
 
-commit e56fb2874015370e3b7f8d85051f6dce26051df9 upstream.
+commit 04df32fa10ab9a6f0643db2949d42efc966bc844 upstream.
 
-threadgroup_lock() takes signal->cred_guard_mutex to ensure that
-thread_group_leader() is stable.  This doesn't look nice, the scope of
-this lock in do_execve() is huge.
+When we run the crackerjack testsuite, the inotify_add_watch test is
+stalled.
 
-And as Dave pointed out this can lead to deadlock, we have the
-following dependencies:
+This is caused by the invalid mask 0 - the task is waiting for the event
+but it never comes.  inotify_add_watch() should return -EINVAL as it did
+before commit 676a0675cf92 ("inotify: remove broken mask checks causing
+unmount to be EINVAL").  That commit removes the invalid mask check, but
+that check is needed.
 
-	do_execve:		cred_guard_mutex -> i_mutex
-	cgroup_mount:		i_mutex -> cgroup_mutex
-	attach_task_by_pid:	cgroup_mutex -> cred_guard_mutex
+Check the mask's ALL_INOTIFY_BITS before the inotify_arg_to_mask() call.
+If none are set, just return -EINVAL.
 
-Change de_thread() to take threadgroup_change_begin() around the
-switch-the-leader code and change threadgroup_lock() to avoid
-->cred_guard_mutex.
+Because IN_UNMOUNT is in ALL_INOTIFY_BITS, this change will not trigger
+the problem that above commit fixed.
 
-Note that de_thread() can't sleep with ->group_rwsem held, this can
-obviously deadlock with the exiting leader if the writer is active, so it
-does threadgroup_change_end() before schedule().
-
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+[akpm@linux-foundation.org: fix build]
+Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+Acked-by: Jim Somerville <Jim.Somerville@windriver.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>
+Cc: Eric Paris <eparis@parisplace.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 [ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/exec.c             |  3 +++
- include/linux/sched.h | 18 ++++--------------
- 2 files changed, 7 insertions(+), 14 deletions(-)
+ fs/notify/inotify/inotify_user.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 2013724..5a76464 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -905,11 +905,13 @@ static int de_thread(struct task_struct *tsk)
+diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
+index 6f292dd..f255d37 100644
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -577,7 +577,6 @@ static int inotify_update_existing_watch(struct fsnotify_group *group,
+ 	int add = (arg & IN_MASK_ADD);
+ 	int ret;
  
- 		sig->notify_count = -1;	/* for exit_notify() */
- 		for (;;) {
-+			threadgroup_change_begin(tsk);
- 			write_lock_irq(&tasklist_lock);
- 			if (likely(leader->exit_state))
- 				break;
- 			__set_current_state(TASK_UNINTERRUPTIBLE);
- 			write_unlock_irq(&tasklist_lock);
-+			threadgroup_change_end(tsk);
- 			schedule();
- 		}
+-	/* don't allow invalid bits: we don't want flags set */
+ 	mask = inotify_arg_to_mask(arg);
  
-@@ -965,6 +967,7 @@ static int de_thread(struct task_struct *tsk)
- 		if (unlikely(leader->ptrace))
- 			__wake_up_parent(leader, leader->parent);
- 		write_unlock_irq(&tasklist_lock);
-+		threadgroup_change_end(tsk);
+ 	fsn_mark = fsnotify_find_inode_mark(group, inode);
+@@ -628,7 +627,6 @@ static int inotify_new_watch(struct fsnotify_group *group,
+ 	struct idr *idr = &group->inotify_data.idr;
+ 	spinlock_t *idr_lock = &group->inotify_data.idr_lock;
  
- 		release_task(leader);
- 	}
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 3a9e314..ebd15f9 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2445,27 +2445,18 @@ static inline void threadgroup_change_end(struct task_struct *tsk)
-  *
-  * Lock the threadgroup @tsk belongs to.  No new task is allowed to enter
-  * and member tasks aren't allowed to exit (as indicated by PF_EXITING) or
-- * perform exec.  This is useful for cases where the threadgroup needs to
-- * stay stable across blockable operations.
-+ * change ->group_leader/pid.  This is useful for cases where the threadgroup
-+ * needs to stay stable across blockable operations.
-  *
-  * fork and exit paths explicitly call threadgroup_change_{begin|end}() for
-  * synchronization.  While held, no new task will be added to threadgroup
-  * and no existing live task will have its PF_EXITING set.
-  *
-- * During exec, a task goes and puts its thread group through unusual
-- * changes.  After de-threading, exclusive access is assumed to resources
-- * which are usually shared by tasks in the same group - e.g. sighand may
-- * be replaced with a new one.  Also, the exec'ing task takes over group
-- * leader role including its pid.  Exclude these changes while locked by
-- * grabbing cred_guard_mutex which is used to synchronize exec path.
-+ * de_thread() does threadgroup_change_{begin|end}() when a non-leader
-+ * sub-thread becomes a new leader.
-  */
- static inline void threadgroup_lock(struct task_struct *tsk)
- {
--	/*
--	 * exec uses exit for de-threading nesting group_rwsem inside
--	 * cred_guard_mutex. Grab cred_guard_mutex first.
--	 */
--	mutex_lock(&tsk->signal->cred_guard_mutex);
- 	down_write(&tsk->signal->group_rwsem);
- }
+-	/* don't allow invalid bits: we don't want flags set */
+ 	mask = inotify_arg_to_mask(arg);
  
-@@ -2478,7 +2469,6 @@ static inline void threadgroup_lock(struct task_struct *tsk)
- static inline void threadgroup_unlock(struct task_struct *tsk)
- {
- 	up_write(&tsk->signal->group_rwsem);
--	mutex_unlock(&tsk->signal->cred_guard_mutex);
- }
- #else
- static inline void threadgroup_change_begin(struct task_struct *tsk) {}
+ 	tmp_i_mark = kmem_cache_alloc(inotify_inode_mark_cachep, GFP_KERNEL);
+@@ -757,6 +755,10 @@ SYSCALL_DEFINE3(inotify_add_watch, int, fd, const char __user *, pathname,
+ 	int ret, fput_needed;
+ 	unsigned flags = 0;
+ 
++	/* don't allow invalid bits: we don't want flags set */
++	if (unlikely(!(mask & ALL_INOTIFY_BITS)))
++		return -EINVAL;
++
+ 	filp = fget_light(fd, &fput_needed);
+ 	if (unlikely(!filp))
+ 		return -EBADF;
 -- 
 1.8.1.2
 
