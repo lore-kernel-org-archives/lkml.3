@@ -1,81 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178Ab3EGKEJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 06:04:09 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:40842
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754719Ab3EGKEH (ORCPT
+	id S1756025Ab3EGKFM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 06:05:12 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:41929 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754509Ab3EGKFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 06:04:07 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bh8275dh8275chz2dh2a8h668h839he5bhf0ah107ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14afh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-From: Liu Ying <Ying.Liu@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <davem@davemloft.net>, <dborkman@redhat.com>, <tglx@linutronix.de>,
-        <john.stultz@linaro.org>, <liu.y.victor@gmail.com>,
-        Liu Ying <Ying.Liu@freescale.com>
-Subject: [PATCH v2] ktime: Use macro NSEC_PER_USEC where appropriate
-Date: Tue, 7 May 2013 16:38:40 +0800
-Message-ID: <1367915920-13485-1-git-send-email-Ying.Liu@freescale.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 7 May 2013 06:05:10 -0400
+Date: Tue, 7 May 2013 12:04:47 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-arch@vger.kernel.org
+Subject: Re: Build errors caused by modalias generation patch
+Message-ID: <20130507100447.GA15044@linux-mips.org>
+References: <20130506160253.GA27181@linux-mips.org>
+ <87mws8m3eu.fsf@hase.home>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.net
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87mws8m3eu.fsf@hase.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've got the macro NSEC_PER_USEC defined in header file
-include/linux/time.h. To make the code decent, this patch
-replaces the immediate number 1000 to convert bewteen a
-time value in microseconds and one in nanoseconds with the
-macro NSEC_PER_USEC.
+On Mon, May 06, 2013 at 07:19:53PM +0200, Andreas Schwab wrote:
 
-Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Daniel Borkmann <dborkman@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
----
-Changes for v2:
-1. Update commit head and message to be more appropriate.
-2. Avoid an unnecessary cast in the function
-   timeval_to_ktime().
----
- include/linux/ktime.h |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+> Please try the patch in
+> <http://marc.info/?l=linux-kbuild&m=136767800809256&w=2>.
 
-diff --git a/include/linux/ktime.h b/include/linux/ktime.h
-index bbca128..608728a 100644
---- a/include/linux/ktime.h
-+++ b/include/linux/ktime.h
-@@ -229,7 +229,8 @@ static inline ktime_t timespec_to_ktime(const struct timespec ts)
- static inline ktime_t timeval_to_ktime(const struct timeval tv)
- {
- 	return (ktime_t) { .tv = { .sec = (s32)tv.tv_sec,
--				   .nsec = (s32)tv.tv_usec * 1000 } };
-+				   .nsec = (s32)(tv.tv_usec *
-+						 NSEC_PER_USEC) } };
- }
- 
- /**
-@@ -320,12 +321,12 @@ static inline s64 ktime_us_delta(const ktime_t later, const ktime_t earlier)
- 
- static inline ktime_t ktime_add_us(const ktime_t kt, const u64 usec)
- {
--	return ktime_add_ns(kt, usec * 1000);
-+	return ktime_add_ns(kt, usec * NSEC_PER_USEC);
- }
- 
- static inline ktime_t ktime_sub_us(const ktime_t kt, const u64 usec)
- {
--	return ktime_sub_ns(kt, usec * 1000);
-+	return ktime_sub_ns(kt, usec * NSEC_PER_USEC);
- }
- 
- extern ktime_t ktime_add_safe(const ktime_t lhs, const ktime_t rhs);
--- 
-1.7.1
+No change in observed behaviour.  I did all my builds in empty object
+directories so I don't see why this patch would make any difference.
 
-
+  Ralf
