@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab3EGORf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:17:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42140 "EHLO
+	id S932542Ab3EGNkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:40:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42097 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932551Ab3EGNks (ORCPT
+	with ESMTP id S932384Ab3EGNkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:40:48 -0400
+	Tue, 7 May 2013 09:40:39 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+Cc: Tommi Rantala <tt.rantala@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, davej@redhat.com,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 025/118] s390/memory hotplug: prevent offline of active memory increments
-Date: Tue,  7 May 2013 14:37:51 +0100
-Message-Id: <1367933964-1564-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 013/118] perf: Treat attr.config as u64 in perf_swevent_init()
+Date: Tue,  7 May 2013 14:37:39 +0100
+Message-Id: <1367933964-1564-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,60 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Tommi Rantala <tt.rantala@gmail.com>
 
-commit 94c163663fc1dcfc067a5fb3cc1446b9469975ce upstream.
+commit 8176cced706b5e5d15887584150764894e94e02f upstream.
 
-In case a machine supports memory hotplug all active memory increments
-present at IPL time have been initialized with a "usecount" of 1.
-This is wrong if the memory increment size is larger than the memory
-section size of the memory hotplug code. If that is the case the
-usecount must be initialized with the number of memory sections that
-fit into one memory increment.
-Otherwise it is possible to put a memory increment into standby state
-even if there are still active sections.
-Afterwards addressing exceptions might happen which cause the kernel
-to panic.
-However even worse, if a memory increment was put into standby state
-and afterwards into active state again, it's contents would have been
-zeroed, leading to memory corruption.
+Trinity discovered that we fail to check all 64 bits of
+attr.config passed by user space, resulting to out-of-bounds
+access of the perf_swevent_enabled array in
+sw_perf_event_destroy().
 
-This was only an issue for machines that support standby memory and
-have at least 256GB memory.
+Introduced in commit b0a873ebb ("perf: Register PMU
+implementations").
 
-This is broken since commit fdb1bb15 "[S390] sclp/memory hotplug: fix
-initial usecount of increments".
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Reviewed-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Tommi Rantala <tt.rantala@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: davej@redhat.com
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Link: http://lkml.kernel.org/r/1365882554-30259-1-git-send-email-tt.rantala@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/s390/char/sclp_cmd.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/events/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/s390/char/sclp_cmd.c b/drivers/s390/char/sclp_cmd.c
-index 766cb7b..1845ab5 100644
---- a/drivers/s390/char/sclp_cmd.c
-+++ b/drivers/s390/char/sclp_cmd.c
-@@ -529,6 +529,8 @@ static void __init sclp_add_standby_memory(void)
- 	add_memory_merged(0);
- }
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 11409af..0181cbd 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5129,7 +5129,7 @@ static void sw_perf_event_destroy(struct perf_event *event)
  
-+#define MEM_SCT_SIZE (1UL << SECTION_SIZE_BITS)
-+
- static void __init insert_increment(u16 rn, int standby, int assigned)
+ static int perf_swevent_init(struct perf_event *event)
  {
- 	struct memory_increment *incr, *new_incr;
-@@ -541,7 +543,7 @@ static void __init insert_increment(u16 rn, int standby, int assigned)
- 	new_incr->rn = rn;
- 	new_incr->standby = standby;
- 	if (!standby)
--		new_incr->usecount = 1;
-+		new_incr->usecount = rzm > MEM_SCT_SIZE ? rzm/MEM_SCT_SIZE : 1;
- 	last_rn = 0;
- 	prev = &sclp_mem_list;
- 	list_for_each_entry(incr, &sclp_mem_list, list) {
+-	int event_id = event->attr.config;
++	u64 event_id = event->attr.config;
+ 
+ 	if (event->attr.type != PERF_TYPE_SOFTWARE)
+ 		return -ENOENT;
 -- 
 1.8.1.2
 
