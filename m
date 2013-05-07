@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932447Ab3EGNC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:02:28 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:53966 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932393Ab3EGNCX (ORCPT
+	id S932557Ab3EGNCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:02:41 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:43395 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932393Ab3EGNCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:02:23 -0400
+	Tue, 7 May 2013 09:02:38 -0400
 From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 To: linux-pm@vger.kernel.org
 Cc: Zhang Rui <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org, amit.kachhap@gmail.com,
         Kukjin Kim <kgene.kim@samsung.com>,
         Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH V3 10/21] thermal: exynos: Fix to clear only the generated interrupts
-Date: Tue,  7 May 2013 18:31:00 +0530
-Message-Id: <1367931671-3906-11-git-send-email-amit.daniel@samsung.com>
+Subject: [PATCH V3 13/21] thermal: exynos: Return success even if no cooling data supplied
+Date: Tue,  7 May 2013 18:31:03 +0530
+Message-Id: <1367931671-3906-14-git-send-email-amit.daniel@samsung.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1367931671-3906-1-git-send-email-amit.daniel@samsung.com>
 References: <1367931671-3906-1-git-send-email-amit.daniel@samsung.com>
@@ -23,62 +23,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses the TMU status register to know the generated interrupts
-and only clear them in the interrupt handler.
+This patch removes the error return in the bind/unbind routine
+as the platform may not register any cpufreq cooling data.
 
 Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- drivers/thermal/samsung/exynos_tmu.c      |   10 ++++------
- drivers/thermal/samsung/exynos_tmu_data.c |    2 ++
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/thermal/samsung/exynos_thermal_common.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 97b87aa..082d5a2 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -325,17 +325,15 @@ static void exynos_tmu_work(struct work_struct *work)
- 			struct exynos_tmu_data, irq_work);
- 	struct exynos_tmu_platform_data *pdata = data->pdata;
- 	struct exynos_tmu_registers *reg = pdata->registers;
-+	unsigned int val_irq;
+diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
+index c0e4bdb..b7ca8a4 100644
+--- a/drivers/thermal/samsung/exynos_thermal_common.c
++++ b/drivers/thermal/samsung/exynos_thermal_common.c
+@@ -136,7 +136,7 @@ static int exynos_bind(struct thermal_zone_device *thermal,
+ 	tab_size = data->cooling_data.freq_clip_count;
  
- 	exynos_report_trigger();
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
+ 	if (tab_ptr == NULL || tab_size == 0)
+-		return -EINVAL;
++		return 0;
  
--	if (data->soc == SOC_ARCH_EXYNOS)
--		writel((reg->inten_rise_mask << reg->inten_rise_shift) |
--			(reg->inten_fall_mask << reg->inten_fall_shift),
--				data->base + reg->tmu_intclear);
--	else
--		writel(reg->inten_rise_mask, data->base + reg->tmu_intclear);
-+	val_irq = readl(data->base + reg->tmu_intstat);
-+	/* clear the interrupts */
-+	writel(val_irq, data->base + reg->tmu_intclear);
+ 	/* find the cooling device registered*/
+ 	for (i = 0; i < th_zone->cool_dev_size; i++)
+@@ -185,7 +185,7 @@ static int exynos_unbind(struct thermal_zone_device *thermal,
+ 	tab_size = data->cooling_data.freq_clip_count;
  
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index 3a1ded1..7322597 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.c
-+++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -45,6 +45,7 @@ static struct exynos_tmu_registers exynos4210_tmu_registers = {
- 	.inten_rise1_shift = EXYNOS_TMU_INTEN_RISE1_SHIFT,
- 	.inten_rise2_shift = EXYNOS_TMU_INTEN_RISE2_SHIFT,
- 	.inten_rise3_shift = EXYNOS_TMU_INTEN_RISE3_SHIFT,
-+	.tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
- 	.tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
- };
- struct exynos_tmu_platform_data const exynos4210_default_tmu_data = {
-@@ -111,6 +112,7 @@ static struct exynos_tmu_registers exynos5250_tmu_registers = {
- 	.inten_rise2_shift = EXYNOS_TMU_INTEN_RISE2_SHIFT,
- 	.inten_rise3_shift = EXYNOS_TMU_INTEN_RISE3_SHIFT,
- 	.inten_fall0_shift = EXYNOS_TMU_INTEN_FALL0_SHIFT,
-+	.tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
- 	.tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
- 	.emul_con = EXYNOS_EMUL_CON,
- 	.emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
+ 	if (tab_size == 0)
+-		return -EINVAL;
++		return 0;
+ 
+ 	/* find the cooling device registered*/
+ 	for (i = 0; i < th_zone->cool_dev_size; i++)
 -- 
 1.7.1
 
