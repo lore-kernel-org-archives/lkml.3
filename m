@@ -1,54 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758478Ab3EGAhE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 20:37:04 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:40800 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756525Ab3EGAhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 20:37:02 -0400
-Date: Mon, 6 May 2013 18:36:51 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, tony@atomide.com,
-        linux-omap@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RESEND][PATCH 1/3] arm: dts: introduce config HAS_BANDGAP
-Message-ID: <20130507003651.GA26035@obsidianresearch.com>
-References: <1367874058-2378-1-git-send-email-eduardo.valentin@ti.com>
- <1367874058-2378-2-git-send-email-eduardo.valentin@ti.com>
- <20130506213413.GH5634@blackmetal.musicnaut.iki.fi>
- <20130506223653.GA12089@obsidianresearch.com>
- <51884971.9050508@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51884971.9050508@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.195
+	id S1753821Ab3EGAnO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:43:14 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:50201 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab3EGAnM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 20:43:12 -0400
+X-AuditID: cbfee691-b7fe56d000004b96-68-51884e1eaf5a
+From: "myungjoo.ham" <myungjoo.ham@samsung.com>
+To: "'Kishon Vijay Abraham I'" <kishon@ti.com>, cw00.choi@samsung.com,
+        balbi@ti.com, ldewangan@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
+        gg@slimlogic.co.uk, ruchika@ti.com, tony@atomide.com,
+        sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com
+References: <1362662506-14823-4-git-send-email-kishon@ti.com>
+ <1367846225-15685-1-git-send-email-kishon@ti.com>
+In-reply-to: <1367846225-15685-1-git-send-email-kishon@ti.com>
+Subject: RE: [PATCH v4] extcon: Palmas Extcon Driver
+Date: Tue, 07 May 2013 09:43:10 +0900
+Message-id: <005c01ce4abb$d956fea0$8c04fbe0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQFNk8EEfLkZOISNIoZ4wWkIx2HqpQIZv2ommemCIDA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNKsWRmVeSWpSXmKPExsWyRsSkRFfOryPQYHqfmsXB+/UW/2afYrO4
+	/uU5q8WB2Q9ZLfq3uFgc+LOD0eLC0x42i6X7VrNYLGxbwmJxedccNovDKw4wWax7OZ3F4u3C
+	2ywWp7tZLfZf8XLg9/j2dRKLx4LPV9g9Xq2eyepx59oeNo95JwM9zs9YyOjR2/yOzePlxN9s
+	Hn1bVjF6TJ3yl9Hj+I3tTB6fN8kF8ERx2aSk5mSWpRbp2yVwZey//4a94Jtpxbxbp1gbGB9q
+	dzFyckgImEhMXfeDDcIWk7hwbz2QzcUhJLCUUeLbhV5WmKJ/3WsZIRKLGCUO7LvJDOH8ZpSY
+	+mUVC0gVm4C+xJ5rv8CqRAROMkp86nsFNotZYDejxKyOq0wgVUIChRJdq3awg9icAnYSL590
+	gu0QBtrR+60JbBKLgKrEv/n7weK8ApYSNx5tZ4OwBSV+TL4HVsMsoCWxfudxJghbXmLzmrfM
+	ELcqSOw4+5oRxBYRsJI4+xViF7OAiMS+F+/ArpMQuMEh0bjiAjPEMgGJb5MPAQ3lAErISmw6
+	ADVHUuLgihssE4BOR7J6FpLVs5CsnoVkxQJGllWMoqkFyQXFSelFpnrFibnFpXnpesn5uZsY
+	gQnl9L9nE3cw3j9gfYgxGWj9RGYp0eR8YELKK4k3NDYzsjA1MTU2Mrc0I01YSZxXvcU6UEgg
+	PbEkNTs1tSC1KL6oNCe1+BAjEwenVAPjLo2Lf0VXXgnNUDjzde6B8mf87CV3LWs553V8cnha
+	LHS9r/7ume3py9rU/G7ZHo9I9m0V7p8pq8M3QcXT4oi2zKXPr60mTnk3eVla3MOznpu693pe
+	kbGpuLPyfu1nk8p75jddroh45P54v+S0WUlKf9EFV+OXFe83uk3i8JDkTSpufW+0abebEktx
+	RqKhFnNRcSIA7sq6vT4DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgk+LIzCtJLcpLzFFi42I5/e+xgK6cX0egwfZT0hYH79db/Jt9is3i
+	+pfnrBYHZj9ktejf4mJx4M8ORosLT3vYLJbuW81isbBtCYvF5V1z2CwOrzjAZLHu5XQWi7cL
+	b7NYnO5mtdh/xcuB3+Pb10ksHgs+X2H3eLV6JqvHnWt72DzmnQz0OD9jIaNHb/M7No+XE3+z
+	efRtWcXoMXXKX0aP4ze2M3l83iQXwBPVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhr
+	aGlhrqSQl5ibaqvk4hOg65aZA/SNkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMD
+	NJCwhjFj//037AXfTCvm3TrF2sD4ULuLkZNDQsBE4l/3WkYIW0ziwr31bF2MXBxCAosYJQ7s
+	u8kM4fxmlJj6ZRULSBWbgL7Enmu/GEESIgInGSU+9b0Ca2EW2M0oMavjKhNIlZBAoUTXqh3s
+	IDangJ3EyyedrCC2MNC+3m9NYJNYBFQl/s3fDxbnFbCUuPFoOxuELSjxY/I9sBpmAS2J9TuP
+	M0HY8hKb17xlhrhVQWLH2ddgd4sIWEmc/Qqxi1lARGLfi3eMExiFZiEZNQvJqFlIRs1C0rKA
+	kWUVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnC6eia1g3Flg8UhRgEORiUeXoVT7YFCrIll
+	xZW5hxglOJiVRHiltTsChXhTEiurUovy44tKc1KLDzEmA306kVlKNDkfmErzSuINjU3MjCyN
+	zA0tjIzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoHR4USf0/mFQj9ZNStKO5NmMnas
+	iD4esdTYg/OGju5tXYlXObxbz4u/UninIepb/u/7t2XNBtXX1BgmmjVMdvdKmdzFdTJdZsvk
+	3an1Xk763zzMzaONFec2sl5+yuDVV/c7fOn/NUa3p3icDP7RlMehE/FMbIaR/YVuuX9/jBg4
+	9yy2fuR5mVGJpTgj0VCLuag4EQDgkw/QmwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 08:23:13PM -0400, Eduardo Valentin wrote:
+> From: Graeme Gregory <gg@slimlogic.co.uk>
+> 
+> This is the driver for the USB comparator built into the palmas chip. It
+> handles the various USB OTG events that can be generated by cable
+> insertion/removal.
+> 
+> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> Signed-off-by: Moiz Sonasath <m-sonasath@ti.com>
+> Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> [kishon@ti.com: adapted palmas usb driver to use the extcon framework]
+> Signed-off-by: Sebastien Guiriec <s-guiriec@ti.com>
 
-> > I get the impression it is desired to minimize driver kconfig
-> > dependencies to the minimum required to compile to increase build
-> > testing coverage, so maybe it would be appropriate to drop this
-> > entirely?
+Here goes some comments in the code:
 
-> Well, it is also desired to compile things to the correct target
-> right?
+[]
 
-There is some of that too..
+> diff --git a/drivers/extcon/extcon-palmas.c
+b/drivers/extcon/extcon-palmas.c
+> new file mode 100644
+> index 0000000..3ef042f
+> --- /dev/null
+> +++ b/drivers/extcon/extcon-palmas.c
+> @@ -0,0 +1,389 @@
+> +/*
+> + * Palmas USB transceiver driver
+> + *
+> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * Author: Graeme Gregory <gg@...mlogic.co.uk>
+> + * Author: Kishon Vijay Abraham I <kishon@...com>
+> + *
+> + * Based on twl6030_usb.c
+> + *
+> + * Author: Hema HK <hemahk@...com>
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
 
-But broadly the direction seems that drivers should have minimal
-dependencies so, eg, the thermal maintainer compiling for x86 should
-be able to compile test/static analyze your driver..
+Why the email addresses are masked in the source code?
+(I'm just curious as this is the first time to see such in kernel source)
 
-> Thats the idea behind this config option. It follows the same design as
-> CONFIG_ARCH_HAS_CPUFREQ, for instance.
+> +
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/io.h>
+> +#include <linux/usb/phy_companion.h>
+> +#include <linux/regulator/consumer.h>
+> +#include <linux/err.h>
+> +#include <linux/notifier.h>
+> +#include <linux/slab.h>
+> +#include <linux/delay.h>
+> +#include <linux/mfd/palmas.h>
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/extcon/extcon_palmas.h>
+> +
+> +static const char *palmas_extcon_cable[] = {
+> +	[0] = "USB",
+> +	[1] = "USB-HOST",
 
-That is entirely contained inside arch/arm and doesn't involve
-drivers.
+	[1] = "USB-Host",
 
-Jason
+> +	NULL,
+> +};
+> +
+> +static const int mutually_exclusive[] = {0x3, 0x0};
+> +
+> +static void palmas_usb_wakeup(struct palmas *palmas, int enable)
+> +{
+> +	if (enable)
+> +		palmas_write(palmas, PALMAS_USB_OTG_BASE, PALMAS_USB_WAKEUP,
+> +			PALMAS_USB_WAKEUP_ID_WK_UP_COMP);
+> +	else
+> +		palmas_write(palmas, PALMAS_USB_OTG_BASE, PALMAS_USB_WAKEUP,
+0);
+> +}
+> +
+> +static ssize_t palmas_usb_vbus_show(struct device *dev,
+> +			struct device_attribute *attr, char *buf)
+> +{
+> +	unsigned long		flags;
+> +	int			ret = -EINVAL;
+> +	struct palmas_usb	*palmas_usb = dev_get_drvdata(dev);
+> +
+> +	spin_lock_irqsave(&palmas_usb->lock, flags);
+
+This spinlock is used in this sysfs-show function only.
+Is this really needed?
+The only protected value here is "linkstat", which is "readonly"
+in this protected context.
+Thus, removing the spin_lock and updating like the following should
+be the same with less overhead:
+
+	int linkstat = palmas_usb->linkstat;
+	switch(linkstat) {
+
+
+> +
+> +	switch (palmas_usb->linkstat) {
+> +	case PALMAS_USB_STATE_VBUS:
+> +	       ret = snprintf(buf, PAGE_SIZE, "vbus\n");
+> +	       break;
+> +	case PALMAS_USB_STATE_ID:
+> +	       ret = snprintf(buf, PAGE_SIZE, "id\n");
+> +	       break;
+> +	case PALMAS_USB_STATE_DISCONNECT:
+> +	       ret = snprintf(buf, PAGE_SIZE, "none\n");
+> +	       break;
+> +	default:
+> +	       ret = snprintf(buf, PAGE_SIZE, "UNKNOWN\n");
+> +	}
+> +	spin_unlock_irqrestore(&palmas_usb->lock, flags);
+> +
+> +	return ret;
+> +}
+> +static DEVICE_ATTR(vbus, 0444, palmas_usb_vbus_show, NULL);
+> +
+
+[]
+
+> +
+> +static void palmas_set_vbus_work(struct work_struct *data)
+> +{
+> +	int ret;
+> +	struct palmas_usb *palmas_usb = container_of(data, struct
+palmas_usb,
+> +
+set_vbus_work);
+> +
+> +	if (IS_ERR_OR_NULL(palmas_usb->vbus_reg)) {
+> +		dev_err(palmas_usb->dev, "invalid regulator\n");
+> +		return;
+> +	}
+> +
+> +	/*
+> +	 * Start driving VBUS. Set OPA_MODE bit in CHARGERUSB_CTRL1
+> +	 * register. This enables boost mode.
+> +	 */
+> +
+> +	if (palmas_usb->vbus_enable) {
+> +		ret = regulator_enable(palmas_usb->vbus_reg);
+> +		if (ret)
+> +			dev_dbg(palmas_usb->dev, "regulator enable
+failed\n");
+> +	} else {
+> +		regulator_disable(palmas_usb->vbus_reg);
+> +	}
+> +}
+> +
+> +static int palmas_set_vbus(struct phy_companion *comparator, bool
+enabled)
+> +{
+> +	struct palmas_usb *palmas_usb = comparator_to_palmas(comparator);
+> +
+> +	palmas_usb->vbus_enable = enabled;
+> +	schedule_work(&palmas_usb->set_vbus_work);
+> +
+> +	return 0;
+> +}
+> +
+> +static int palmas_start_srp(struct phy_companion *comparator)
+> +{
+> +	struct palmas_usb *palmas_usb = comparator_to_palmas(comparator);
+> +
+> +	palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
+> +		PALMAS_USB_VBUS_CTRL_SET,
+PALMAS_USB_VBUS_CTRL_SET_VBUS_DISCHRG
+> +		| PALMAS_USB_VBUS_CTRL_SET_VBUS_IADP_SINK);
+> +	palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
+> +		PALMAS_USB_VBUS_CTRL_SET,
+> +		PALMAS_USB_VBUS_CTRL_SET_VBUS_CHRG_VSYS |
+> +		PALMAS_USB_VBUS_CTRL_SET_VBUS_IADP_SINK);
+> +
+> +	mdelay(100);
+
+Why not msleep()? It's long enough to consider sleep.
+Is this in an atomic context? (if so, 100msec seems even more awful)
+
+> +
+> +	palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
+> +		PALMAS_USB_VBUS_CTRL_CLR,
+> +		PALMAS_USB_VBUS_CTRL_SET_VBUS_CHRG_VSYS |
+> +		PALMAS_USB_VBUS_CTRL_SET_VBUS_CHRG_VSYS);
+> +
+> +	return 0;
+> +}
+> +
+> +static void palmas_dt_to_pdata(struct device_node *node,
+> +		struct palmas_usb_platform_data *pdata)
+> +{
+> +	pdata->no_control_vbus = of_property_read_bool(node,
+> +					"ti,no_control_vbus");
+> +	pdata->wakeup = of_property_read_bool(node, "ti,wakeup");
+> +}
+> +
+> +static int palmas_usb_probe(struct platform_device *pdev)
+> +{
+
+[]
+
+> +	/* init spinlock for workqueue */
+> +	spin_lock_init(&palmas_usb->lock);
+
+[]
+
+> +	/* init spinlock for workqueue */
+> +	spin_lock_init(&palmas_usb->lock);
+
+Why this lock is initialized again?
+
+> +
+> +	INIT_WORK(&palmas_usb->set_vbus_work, palmas_set_vbus_work);
+> +
+
+[]
+
+> +
+> +module_platform_driver(palmas_usb_driver);
+> +
+> +MODULE_ALIAS("platform:palmas-usb");
+> +MODULE_AUTHOR("Graeme Gregory <gg@...mlogic.co.uk>");
+
+Is this intentional?
+
+> +MODULE_DESCRIPTION("Palmas USB transceiver driver");
+> +MODULE_LICENSE("GPL");
+> +MODULE_DEVICE_TABLE(of, of_palmas_match_tbl);
+>
+
+
+Cheers,
+MyungJoo
+
+
