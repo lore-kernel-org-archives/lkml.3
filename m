@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab3EGJnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 05:43:12 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:45661 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754500Ab3EGJnL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 05:43:11 -0400
-Date: Tue, 7 May 2013 15:12:06 +0530
-From: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 54/63] ARM: ux500: Replace ST-E's home-brew DMA
- direction definition with the generic one
-Message-ID: <20130507094205.GA32548@bnru10>
-References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
- <1367591569-32197-55-git-send-email-lee.jones@linaro.org>
- <20130506071355.GA5552@bnru10>
- <20130507073921.GT24153@gmail.com>
+	id S1756330Ab3EGJro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 05:47:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34667 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756001Ab3EGJrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 05:47:42 -0400
+Message-ID: <5188CD9C.6010602@ti.com>
+Date: Tue, 7 May 2013 15:17:08 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130507073921.GT24153@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Brown <broonie@kernel.org>, <gg@slimlogic.co.uk>
+CC: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>, <balbi@ti.com>,
+        <ldewangan@nvidia.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <ruchika@ti.com>, <tony@atomide.com>,
+        <sameo@linux.intel.com>
+Subject: Re: [PATCH v4] extcon: Palmas Extcon Driver
+References: <1362662506-14823-4-git-send-email-kishon@ti.com> <1367846225-15685-1-git-send-email-kishon@ti.com> <20130506144010.GF13472@opensource.wolfsonmicro.com> <51888D55.3090907@ti.com> <20130507075824.GM7478@sirena.org.uk>
+In-Reply-To: <20130507075824.GM7478@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 09:39:21 +0200, Lee Jones wrote:
-> On Mon, 06 May 2013, Srinidhi Kasagar wrote:
-> 
-> > On Fri, May 03, 2013 at 16:32:40 +0200, Lee Jones wrote:
-> > > STEDMA40_*_TO_* direction definitions are identical in all but name to
-> > > the pre-defined generic DMA_*_TO_* ones. Let's make things easy by not
-> > > duplicating such things.
-> > > 
-> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > > ---
-> > >  arch/arm/mach-ux500/board-mop500-audio.c |   12 ++++++------
-> > >  arch/arm/mach-ux500/board-mop500-sdi.c   |   16 ++++++++--------
-> > >  arch/arm/mach-ux500/board-mop500.c       |   22 +++++++++++-----------
-> > >  arch/arm/mach-ux500/usb.c                |    4 ++--
-> > >  4 files changed, 27 insertions(+), 27 deletions(-)
-> > 
-> > Hope you have taken care for all other files, because, I see
-> > few more instances in my tree apart from the above files.
-> 
-> Would you be kind enough to paste those files please?
+Hi,
 
-arch/arm/mach-ux500/board-mop500-audio.c:       .dir = STEDMA40_MEM_TO_PERIPH,
-arch/arm/mach-ux500/board-mop500-audio.c:       .dir = STEDMA40_MEM_TO_PERIPH,
-arch/arm/mach-ux500/board-mop500-audio.c:       .dir = STEDMA40_MEM_TO_PERIPH,
-arch/arm/mach-ux500/board-mop500-sdi.c: .dir = STEDMA40_MEM_TO_PERIPH,
-arch/arm/mach-ux500/board-mop500-sdi.c: .dir = STEDMA40_MEM_TO_PERIPH,
-arch/arm/mach-ux500/board-mop500-sdi.c: .dir = STEDMA40_MEM_TO_PERIPH,
-arch/arm/mach-ux500/board-mop500-sdi.c: .dir = STEDMA40_MEM_TO_PERIPH,
-arch/arm/mach-ux500/board-mop500.c:                             .dir = STEDMA40_MEM_TO_PERIPH,
-arch/arm/mach-ux500/board-mop500.c:             .dir = STEDMA40_MEM_TO_PERIPH,
-arch/arm/mach-ux500/board-mop500.c:     .dir = STEDMA40_MEM_TO_PERIPH,
-arch/arm/mach-ux500/board-mop500.c:     .dir = STEDMA40_MEM_TO_PERIPH,
-arch/arm/mach-ux500/board-mop500.c:     .dir = STEDMA40_MEM_TO_PERIPH,
-arch/arm/mach-ux500/board-mop500.c:     .dir = STEDMA40_MEM_TO_PERIPH,
-arch/arm/mach-ux500/devices-db8500.c:   .dir = STEDMA40_MEM_TO_MEM,
-arch/arm/mach-ux500/devices-db8500.c:   .dir = STEDMA40_MEM_TO_MEM,
-arch/arm/mach-ux500/usb.c:              .dir = STEDMA40_MEM_TO_PERIPH, \
+On Tuesday 07 May 2013 01:28 PM, Mark Brown wrote:
+> On Tue, May 07, 2013 at 10:42:53AM +0530, Kishon Vijay Abraham I wrote:
+>> On Monday 06 May 2013 08:10 PM, Mark Brown wrote:
+>>> On Mon, May 06, 2013 at 06:47:04PM +0530, Kishon Vijay Abraham I wrote:
+>>>
+>>>> +		if (palmas_usb->linkstat != PALMAS_USB_STATE_VBUS) {
+>>>> +			if (palmas_usb->vbus_reg) {
+>>>> +				ret = regulator_enable(palmas_usb->vbus_reg);
+>>>> +				if (ret) {
+>>>> +					dev_dbg(palmas_usb->dev,
+>>>> +						"regulator enable failed\n");
+>>>> +					goto ret0;
+>
+>>> This is very bad karma, why is the regulator optional?
+>
+>> The platform can provide it's own vbus control in which case this is
+>> not needed.
+>
+> So why is there no interaction with this external VBUS control and how
+> does the driver distinguish between that and an error getting the
+> regulator?
 
-regards,
-srinidhi
+The platform specifies if it provides its own VBUS control by the dt 
+property ti,no_control_vbus. So the driver will give an error only when 
+*ti,no_control_vbus* is not set. Graeme?
+
+Thanks
+Kishon
