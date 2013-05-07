@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934299Ab3EGCav (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 22:30:51 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:15985 "EHLO song.cn.fujitsu.com"
+	id S1758417Ab3EGCau (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 22:30:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16239 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1760080Ab3EGCT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760082Ab3EGCT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 22:19:28 -0400
 X-IronPort-AV: E=Sophos;i="4.87,625,1363104000"; 
-   d="scan'208";a="7201762"
+   d="scan'208";a="7201767"
 From: Gao feng <gaofeng@cn.fujitsu.com>
 To: viro@zeniv.linux.org.uk, eparis@redhat.com, ebiederm@xmission.com,
         sgrubb@redhat.com, akpm@linux-foundation.org, serge.hallyn@ubuntu.com,
@@ -15,99 +15,145 @@ To: viro@zeniv.linux.org.uk, eparis@redhat.com, ebiederm@xmission.com,
 Cc: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org, linux-audit@redhat.com,
         Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH RFC 18/48] Audit: make audit_backlog_wait per user namespace
-Date: Tue, 7 May 2013 10:20:39 +0800
-Message-Id: <1367893269-9308-19-git-send-email-gaofeng@cn.fujitsu.com>
+Subject: [PATCH RFC 21/48] Audit: pass proper user namespace to audit_log_common_recv_msg
+Date: Tue, 7 May 2013 10:20:42 +0800
+Message-Id: <1367893269-9308-22-git-send-email-gaofeng@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
 References: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/05/07 10:18:27,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/07 10:18:28,
-	Serialize complete at 2013/05/07 10:18:28
+ 2013/05/07 10:18:29,
+	Serialize complete at 2013/05/07 10:18:29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tasks are added to audit_backlog_wait when the
-audit_skb_queue of user namespace is full, so
-audit_backlog_wait should be per user namespace too.
+The audit log that generated in user namespace should be
+received by the auditd running in this user namespace.
 
 Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 ---
- include/linux/user_namespace.h |  1 +
- kernel/audit.c                 | 11 +++++------
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ kernel/audit.c | 31 ++++++++++++++++---------------
+ 1 file changed, 16 insertions(+), 15 deletions(-)
 
-diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-index 7c2c65c..5a778f8 100644
---- a/include/linux/user_namespace.h
-+++ b/include/linux/user_namespace.h
-@@ -29,6 +29,7 @@ struct audit_ctrl {
- 	struct sk_buff_head	hold_queue;
- 	struct task_struct	*kauditd_task;
- 	wait_queue_head_t	kauditd_wait;
-+	wait_queue_head_t	backlog_wait;
- 	bool			ever_enabled;
- };
- #endif
 diff --git a/kernel/audit.c b/kernel/audit.c
-index ad03f4f..62f244b 100644
+index 594e4e1..c8329ce 100644
 --- a/kernel/audit.c
 +++ b/kernel/audit.c
-@@ -117,8 +117,6 @@ static DEFINE_SPINLOCK(audit_freelist_lock);
- static int	   audit_freelist_count;
- static LIST_HEAD(audit_freelist);
- 
--static DECLARE_WAIT_QUEUE_HEAD(audit_backlog_wait);
--
- /* Serialize requests from userspace. */
- DEFINE_MUTEX(audit_cmd_mutex);
- 
-@@ -444,7 +442,7 @@ static int kauditd_thread(void *dummy)
- 		}
- 
- 		skb = skb_dequeue(queue);
--		wake_up(&audit_backlog_wait);
-+		wake_up(&ns->audit.backlog_wait);
- 		if (skb) {
- 			if (ns->audit.pid)
- 				kauditd_send_skb(ns, skb);
-@@ -1146,14 +1144,14 @@ static void wait_for_auditd(unsigned long sleep_time)
- 	const struct sk_buff_head *queue = &init_user_ns.audit.queue;
- 	DECLARE_WAITQUEUE(wait, current);
- 	set_current_state(TASK_INTERRUPTIBLE);
--	add_wait_queue(&audit_backlog_wait, &wait);
-+	add_wait_queue(&init_user_ns.audit.backlog_wait, &wait);
- 
- 	if (audit_backlog_limit &&
- 	    skb_queue_len(queue) > audit_backlog_limit)
- 		schedule_timeout(sleep_time);
- 
- 	__set_current_state(TASK_RUNNING);
--	remove_wait_queue(&audit_backlog_wait, &wait);
-+	remove_wait_queue(&init_user_ns.audit.backlog_wait, &wait);
+@@ -604,25 +604,26 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
+ 	return err;
  }
  
- /* Obtain an audit buffer.  This routine does locking to obtain the
-@@ -1219,7 +1217,7 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
- 			       audit_backlog_limit);
- 		audit_log_lost("backlog limit exceeded");
- 		audit_backlog_wait_time = audit_backlog_wait_overflow;
--		wake_up(&audit_backlog_wait);
-+		wake_up(&init_user_ns.audit.backlog_wait);
- 		return NULL;
+-static int audit_log_common_recv_msg(struct audit_buffer **ab, u16 msg_type,
++static int audit_log_common_recv_msg(struct user_namespace *ns,
++				     struct audit_buffer **ab, u16 msg_type,
+ 				     kuid_t auid, u32 ses, u32 sid)
+ {
+ 	int rc = 0;
+ 	char *ctx = NULL;
+ 	u32 len;
+ 
+-	if (!init_user_ns.audit.enabled) {
++	if (!ns->audit.enabled) {
+ 		*ab = NULL;
+ 		return rc;
  	}
  
-@@ -1599,6 +1597,7 @@ void audit_set_user_ns(struct user_namespace *ns)
- 	ns->audit.enabled = audit_default;
- 	ns->audit.ever_enabled |= !!audit_default;
- 	init_waitqueue_head(&ns->audit.kauditd_wait);
-+	init_waitqueue_head(&ns->audit.backlog_wait);
+-	*ab = audit_log_start(NULL, GFP_KERNEL, msg_type);
++	*ab = audit_log_start_ns(ns, NULL, GFP_KERNEL, msg_type);
+ 	if (unlikely(!*ab))
+ 		return rc;
+ 	audit_log_format(*ab, "pid=%d uid=%u auid=%u ses=%u",
+ 			 task_tgid_vnr(current),
+-			 from_kuid(&init_user_ns, current_uid()),
+-			 from_kuid(&init_user_ns, auid), ses);
++			 from_kuid(ns, current_uid()),
++			 from_kuid(ns, auid), ses);
+ 	if (sid) {
+ 		rc = security_secid_to_secctx(sid, &ctx, &len);
+ 		if (rc)
+@@ -739,7 +740,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 				if (err)
+ 					break;
+ 			}
+-			audit_log_common_recv_msg(&ab, msg_type,
++			audit_log_common_recv_msg(ns, &ab, msg_type,
+ 						  loginuid, sessionid, sid);
  
- 	ns->audit.initialized = AUDIT_INITIALIZED;
- }
+ 			if (msg_type != AUDIT_USER_TTY)
+@@ -756,7 +757,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 				audit_log_n_untrustedstring(ab, data, size);
+ 			}
+ 			audit_set_pid(ab, NETLINK_CB(skb).portid);
+-			audit_log_end(ab);
++			audit_log_end_ns(ns, ab);
+ 		}
+ 		break;
+ 	case AUDIT_ADD:
+@@ -764,12 +765,12 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 		if (nlmsg_len(nlh) < sizeof(struct audit_rule))
+ 			return -EINVAL;
+ 		if (ns->audit.enabled == AUDIT_LOCKED) {
+-			audit_log_common_recv_msg(&ab, AUDIT_CONFIG_CHANGE,
++			audit_log_common_recv_msg(ns, &ab, AUDIT_CONFIG_CHANGE,
+ 						  loginuid, sessionid, sid);
+ 
+ 			audit_log_format(ab, " audit_enabled=%d res=0",
+ 					 ns->audit.enabled);
+-			audit_log_end(ab);
++			audit_log_end_ns(ns, ab);
+ 			return -EPERM;
+ 		}
+ 		/* fallthrough */
+@@ -783,12 +784,12 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 		if (nlmsg_len(nlh) < sizeof(struct audit_rule_data))
+ 			return -EINVAL;
+ 		if (ns->audit.enabled == AUDIT_LOCKED) {
+-			audit_log_common_recv_msg(&ab, AUDIT_CONFIG_CHANGE,
++			audit_log_common_recv_msg(ns, &ab, AUDIT_CONFIG_CHANGE,
+ 						  loginuid, sessionid, sid);
+ 
+ 			audit_log_format(ab, " audit_enabled=%d res=0",
+ 					 ns->audit.enabled);
+-			audit_log_end(ab);
++			audit_log_end_ns(ns, ab);
+ 			return -EPERM;
+ 		}
+ 		/* fallthrough */
+@@ -800,11 +801,11 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 	case AUDIT_TRIM:
+ 		audit_trim_trees();
+ 
+-		audit_log_common_recv_msg(&ab, AUDIT_CONFIG_CHANGE,
++		audit_log_common_recv_msg(ns, &ab, AUDIT_CONFIG_CHANGE,
+ 					  loginuid, sessionid, sid);
+ 
+ 		audit_log_format(ab, " op=trim res=1");
+-		audit_log_end(ab);
++		audit_log_end_ns(ns, ab);
+ 		break;
+ 	case AUDIT_MAKE_EQUIV: {
+ 		void *bufp = data;
+@@ -832,7 +833,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 		/* OK, here comes... */
+ 		err = audit_tag_tree(old, new);
+ 
+-		audit_log_common_recv_msg(&ab, AUDIT_CONFIG_CHANGE,
++		audit_log_common_recv_msg(ns, &ab, AUDIT_CONFIG_CHANGE,
+ 					  loginuid, sessionid, sid);
+ 
+ 		audit_log_format(ab, " op=make_equiv old=");
+@@ -840,7 +841,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 		audit_log_format(ab, " new=");
+ 		audit_log_untrustedstring(ab, new);
+ 		audit_log_format(ab, " res=%d", !err);
+-		audit_log_end(ab);
++		audit_log_end_ns(ns, ab);
+ 		kfree(old);
+ 		kfree(new);
+ 		break;
 -- 
 1.8.1.4
 
