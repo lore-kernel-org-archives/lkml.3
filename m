@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758879Ab3EGEHA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:07:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28906 "EHLO
+	id S932239Ab3EGEG6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:06:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23027 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933013Ab3EGD6t (ORCPT
+	with ESMTP id S933057Ab3EGD6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 23:58:49 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=oOatHhGTwy0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=vfaDjNAdsaAA:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=1XWaLZrsAAAA:8 a=Y6XfvEXCWxnrHKSuoGMA:9 a=dGJ0OcVc7YAA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=XejxuXeKI0UA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=uNamD4sBjgAA:10 a=6zZ5Uxn1AAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=UOpjjlpZozkG-P3uORQA:9 a=QwnTS9JGZEsA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035843.606433436@goodmis.org>
+Message-Id: <20130507035845.735964216@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:57:28 -0400
+Date: Mon, 06 May 2013 23:57:41 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [016/126] PCI/PM: Disable runtime PM of PCIe ports
+Cc: Christopher Harvey <charvey@matrox.com>, Dave Airlie <airlied@redhat.com>
+Subject: [029/126] drm/mgag200: Index 24 in extended CRTC registers is 24 in hex, not
+ decimal.
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0016-PCI-PM-Disable-runtime-PM-of-PCIe-ports.patch
+Content-Disposition: inline; filename=0029-drm-mgag200-Index-24-in-extended-CRTC-registers-is-2.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,69 +30,74 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Christopher Harvey <charvey@matrox.com>
 
-[ Upstream commit de7d5f729c72638f41d7c17487bccb1c570ff144 ]
+[ Upstream commit 1812a3db0874be1d1524086da9e84397b800f546 ]
 
-The runtime PM of PCIe ports turns out to be quite fragile, as in
-some cases things work while in some other cases they don't and we
-don't seem to have a good way to determine whether or not they are
-going to work in advance.
+This change properly enables the "requester" in G200ER cards that is
+responsible for getting pixels out of memory and clocking them out to
+the screen.
 
-For this reason, avoid enabling runtime PM for PCIe ports by
-keeping their runtime PM reference counters always above 0 for the
-time being.
-
-When a PCIe port is suspended, it can no longer report events like
-hotplug, so hotplug below the port may not work, as in the bug
-report below.
-
-[bhelgaas: changelog, stable]
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=53811
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: stable@vger.kernel.org	# v3.6+
+Signed-off-by: Christopher Harvey <charvey@matrox.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/pci/pcie/portdrv_pci.c |   13 -------------
- 1 file changed, 13 deletions(-)
+ drivers/gpu/drm/mgag200/mgag200_mode.c |   13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
-index e76b447..8bae295 100644
---- a/drivers/pci/pcie/portdrv_pci.c
-+++ b/drivers/pci/pcie/portdrv_pci.c
-@@ -174,14 +174,6 @@ static const struct dev_pm_ops pcie_portdrv_pm_ops = {
- #endif /* !PM */
+diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
+index 0a5daaa..fa82ead 100644
+--- a/drivers/gpu/drm/mgag200/mgag200_mode.c
++++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
+@@ -752,8 +752,6 @@ static int mga_crtc_mode_set(struct drm_crtc *crtc,
+ 	int i;
+ 	unsigned char misc = 0;
+ 	unsigned char ext_vga[6];
+-	unsigned char ext_vga_index24;
+-	unsigned char dac_index90 = 0;
+ 	u8 bppshift;
  
- /*
-- * PCIe port runtime suspend is broken for some chipsets, so use a
-- * black list to disable runtime PM for these chipsets.
-- */
--static const struct pci_device_id port_runtime_pm_black_list[] = {
--	{ /* end: all zeroes */ }
--};
--
--/*
-  * pcie_portdrv_probe - Probe PCI-Express port devices
-  * @dev: PCI-Express port device being probed
-  *
-@@ -214,16 +206,11 @@ static int __devinit pcie_portdrv_probe(struct pci_dev *dev,
- 	 * it by default.
- 	 */
- 	dev->d3cold_allowed = false;
--	if (!pci_match_id(port_runtime_pm_black_list, dev))
--		pm_runtime_put_noidle(&dev->dev);
--
- 	return 0;
- }
+ 	static unsigned char dacvalue[] = {
+@@ -804,7 +802,6 @@ static int mga_crtc_mode_set(struct drm_crtc *crtc,
+ 		option2 = 0x0000b000;
+ 		break;
+ 	case G200_ER:
+-		dac_index90 = 0;
+ 		break;
+ 	}
  
- static void pcie_portdrv_remove(struct pci_dev *dev)
- {
--	if (!pci_match_id(port_runtime_pm_black_list, dev))
--		pm_runtime_get_noresume(&dev->dev);
- 	pcie_port_device_remove(dev);
- 	pci_disable_device(dev);
- }
+@@ -853,10 +850,8 @@ static int mga_crtc_mode_set(struct drm_crtc *crtc,
+ 		WREG_DAC(i, dacvalue[i]);
+ 	}
+ 
+-	if (mdev->type == G200_ER) {
+-		WREG_DAC(0x90, dac_index90);
+-	}
+-
++	if (mdev->type == G200_ER)
++		WREG_DAC(0x90, 0);
+ 
+ 	if (option)
+ 		pci_write_config_dword(dev->pdev, PCI_MGA_OPTION, option);
+@@ -953,8 +948,6 @@ static int mga_crtc_mode_set(struct drm_crtc *crtc,
+ 	if (mdev->type == G200_WB)
+ 		ext_vga[1] |= 0x88;
+ 
+-	ext_vga_index24 = 0x05;
+-
+ 	/* Set pixel clocks */
+ 	misc = 0x2d;
+ 	WREG8(MGA_MISC_OUT, misc);
+@@ -966,7 +959,7 @@ static int mga_crtc_mode_set(struct drm_crtc *crtc,
+ 	}
+ 
+ 	if (mdev->type == G200_ER)
+-		WREG_ECRT(24, ext_vga_index24);
++		WREG_ECRT(0x24, 0x5);
+ 
+ 	if (mdev->type == G200_EV) {
+ 		WREG_ECRT(6, 0);
 -- 
 1.7.10.4
 
