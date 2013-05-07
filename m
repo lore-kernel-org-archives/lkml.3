@@ -1,196 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759740Ab3EGVVq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 17:21:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55589 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759416Ab3EGVT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 17:19:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,629,1363158000"; 
-   d="scan'208";a="333403561"
-Subject: [RFC][PATCH 2/7] make 'struct page' and swp_entry_t variants of swapcache_free().
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mgorman@suse.de,
-        tim.c.chen@linux.intel.com, Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Tue, 07 May 2013 14:19:57 -0700
-References: <20130507211954.9815F9D1@viggo.jf.intel.com>
-In-Reply-To: <20130507211954.9815F9D1@viggo.jf.intel.com>
-Message-Id: <20130507211957.603799B2@viggo.jf.intel.com>
+	id S1759497Ab3EGVYt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 17:24:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55028 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759119Ab3EGVYs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 17:24:48 -0400
+Date: Tue, 7 May 2013 14:24:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Simon Jeons <simon.jeons@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 00/11] mm: fixup changers of per cpu pageset's ->high
+ and ->batch
+Message-Id: <20130507142446.52214bb184bed45635febeb3@linux-foundation.org>
+In-Reply-To: <5181AB06.5080805@linux.vnet.ibm.com>
+References: <1365618219-17154-1-git-send-email-cody@linux.vnet.ibm.com>
+	<20130410142354.6044338fd68ff2ad165b1bc8@linux-foundation.org>
+	<5165D8DE.5090801@linux.vnet.ibm.com>
+	<5181AB06.5080805@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 01 May 2013 16:53:42 -0700 Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+> >> There hasn't been a ton of review activity for this patchset :(
+> >>
+> >> I'm inclined to duck it until after 3.9.  Do the patches fix any
+> >> noticeably bad userspace behavior?
+> >
+> > No, all the bugs are theoretical. Waiting should be fine.
+> >
+> 
+> Andrew, do you want me to resend this patch set in the hope of obtaining 
+> more review?
 
-swapcache_free() takes two arguments:
+Yes please.  Resending is basically always the thing to do - if the
+patches aren't resent, nobody has anything to look at or think about.
 
-	void swapcache_free(swp_entry_t entry, struct page *page)
+> If so, when?
 
-Most of its callers (5/7) are from error handling paths haven't even
-instantiated a page, so they pass page=NULL.  Both of the callers
-that call in with a 'struct page' create and pass in a temporary
-swp_entry_t.
-
-Now that we are deferring clearing page_private() until after
-swapcache_free() has been called, we can just create a variant
-that takes a 'struct page' and does the temporary variable in
-the helper.
-
-That leaves all the other callers doing
-
-	swapcache_free(entry, NULL)
-
-so create another helper for them that makes it clear that they
-need only pass in a swp_entry_t.
-
-One downside here is that delete_from_swap_cache() now does
-an extra swap_address_space() call.  But, those are pretty
-cheap (just some array index arithmetic).
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- linux.git-davehans/drivers/staging/zcache/zcache-main.c |    2 +-
- linux.git-davehans/include/linux/swap.h                 |    3 ++-
- linux.git-davehans/mm/shmem.c                           |    2 +-
- linux.git-davehans/mm/swap_state.c                      |   13 +++++--------
- linux.git-davehans/mm/swapfile.c                        |   13 ++++++++++++-
- linux.git-davehans/mm/vmscan.c                          |    3 +--
- 6 files changed, 22 insertions(+), 14 deletions(-)
-
-diff -puN drivers/staging/zcache/zcache-main.c~make-page-and-swp_entry_t-variants drivers/staging/zcache/zcache-main.c
---- linux.git/drivers/staging/zcache/zcache-main.c~make-page-and-swp_entry_t-variants	2013-05-07 13:48:13.963056205 -0700
-+++ linux.git-davehans/drivers/staging/zcache/zcache-main.c	2013-05-07 13:48:13.975056737 -0700
-@@ -961,7 +961,7 @@ static int zcache_get_swap_cache_page(in
- 		 * add_to_swap_cache() doesn't return -EEXIST, so we can safely
- 		 * clear SWAP_HAS_CACHE flag.
- 		 */
--		swapcache_free(entry, NULL);
-+		swapcache_free_entry(entry);
- 		/* FIXME: is it possible to get here without err==-ENOMEM?
- 		 * If not, we can dispense with the do loop, use goto retry */
- 	} while (err != -ENOMEM);
-diff -puN include/linux/swap.h~make-page-and-swp_entry_t-variants include/linux/swap.h
---- linux.git/include/linux/swap.h~make-page-and-swp_entry_t-variants	2013-05-07 13:48:13.964056249 -0700
-+++ linux.git-davehans/include/linux/swap.h	2013-05-07 13:48:13.975056737 -0700
-@@ -382,7 +382,8 @@ extern void swap_shmem_alloc(swp_entry_t
- extern int swap_duplicate(swp_entry_t);
- extern int swapcache_prepare(swp_entry_t);
- extern void swap_free(swp_entry_t);
--extern void swapcache_free(swp_entry_t, struct page *page);
-+extern void swapcache_free_entry(swp_entry_t entry);
-+extern void swapcache_free_page_entry(struct page *page);
- extern int free_swap_and_cache(swp_entry_t);
- extern int swap_type_of(dev_t, sector_t, struct block_device **);
- extern unsigned int count_swap_pages(int, int);
-diff -puN mm/shmem.c~make-page-and-swp_entry_t-variants mm/shmem.c
---- linux.git/mm/shmem.c~make-page-and-swp_entry_t-variants	2013-05-07 13:48:13.966056339 -0700
-+++ linux.git-davehans/mm/shmem.c	2013-05-07 13:48:13.976056781 -0700
-@@ -871,7 +871,7 @@ static int shmem_writepage(struct page *
- 	}
- 
- 	mutex_unlock(&shmem_swaplist_mutex);
--	swapcache_free(swap, NULL);
-+	swapcache_free_entry(swap);
- redirty:
- 	set_page_dirty(page);
- 	if (wbc->for_reclaim)
-diff -puN mm/swapfile.c~make-page-and-swp_entry_t-variants mm/swapfile.c
---- linux.git/mm/swapfile.c~make-page-and-swp_entry_t-variants	2013-05-07 13:48:13.968056427 -0700
-+++ linux.git-davehans/mm/swapfile.c	2013-05-07 13:48:13.977056825 -0700
-@@ -637,7 +637,7 @@ void swap_free(swp_entry_t entry)
- /*
-  * Called after dropping swapcache to decrease refcnt to swap entries.
-  */
--void swapcache_free(swp_entry_t entry, struct page *page)
-+static void __swapcache_free(swp_entry_t entry, struct page *page)
- {
- 	struct swap_info_struct *p;
- 	unsigned char count;
-@@ -651,6 +651,17 @@ void swapcache_free(swp_entry_t entry, s
- 	}
- }
- 
-+void swapcache_free_entry(swp_entry_t entry)
-+{
-+	__swapcache_free(entry, NULL);
-+}
-+
-+void swapcache_free_page_entry(struct page *page)
-+{
-+	swp_entry_t entry = { .val = page_private(page) };
-+	__swapcache_free(entry, page);
-+}
-+
- /*
-  * How many references to page are currently swapped out?
-  * This does not give an exact answer when swap count is continued,
-diff -puN mm/swap_state.c~make-page-and-swp_entry_t-variants mm/swap_state.c
---- linux.git/mm/swap_state.c~make-page-and-swp_entry_t-variants	2013-05-07 13:48:13.969056471 -0700
-+++ linux.git-davehans/mm/swap_state.c	2013-05-07 13:48:13.978056869 -0700
-@@ -172,7 +172,7 @@ int add_to_swap(struct page *page, struc
- 
- 	if (unlikely(PageTransHuge(page)))
- 		if (unlikely(split_huge_page_to_list(page, list))) {
--			swapcache_free(entry, NULL);
-+			swapcache_free_entry(entry);
- 			return 0;
- 		}
- 
-@@ -198,7 +198,7 @@ int add_to_swap(struct page *page, struc
- 		 * add_to_swap_cache() doesn't return -EEXIST, so we can safely
- 		 * clear SWAP_HAS_CACHE flag.
- 		 */
--		swapcache_free(entry, NULL);
-+		swapcache_free_entry(entry);
- 		return 0;
- 	}
- }
-@@ -211,17 +211,14 @@ int add_to_swap(struct page *page, struc
-  */
- void delete_from_swap_cache(struct page *page)
- {
--	swp_entry_t entry;
- 	struct address_space *address_space;
- 
--	entry.val = page_private(page);
--
--	address_space = swap_address_space(entry);
-+	address_space = page_mapping(page);
- 	spin_lock_irq(&address_space->tree_lock);
- 	__delete_from_swap_cache(page);
- 	spin_unlock_irq(&address_space->tree_lock);
- 
--	swapcache_free(entry, page);
-+	swapcache_free_page_entry(page);
- 	set_page_private(page, 0);
- 	ClearPageSwapCache(page);
- 	page_cache_release(page);
-@@ -365,7 +362,7 @@ struct page *read_swap_cache_async(swp_e
- 		 * add_to_swap_cache() doesn't return -EEXIST, so we can safely
- 		 * clear SWAP_HAS_CACHE flag.
- 		 */
--		swapcache_free(entry, NULL);
-+		swapcache_free_entry(entry);
- 	} while (err != -ENOMEM);
- 
- 	if (new_page)
-diff -puN mm/vmscan.c~make-page-and-swp_entry_t-variants mm/vmscan.c
---- linux.git/mm/vmscan.c~make-page-and-swp_entry_t-variants	2013-05-07 13:48:13.971056559 -0700
-+++ linux.git-davehans/mm/vmscan.c	2013-05-07 13:48:13.979056913 -0700
-@@ -490,10 +490,9 @@ static int __remove_mapping(struct addre
- 	}
- 
- 	if (PageSwapCache(page)) {
--		swp_entry_t swap = { .val = page_private(page) };
- 		__delete_from_swap_cache(page);
- 		spin_unlock_irq(&mapping->tree_lock);
--		swapcache_free(swap, page);
-+		swapcache_free_page_entry(page);
- 		set_page_private(page, 0);
- 		ClearPageSwapCache(page);
- 	} else {
-_
+After -rc1?
