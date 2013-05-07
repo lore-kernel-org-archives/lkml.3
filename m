@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab3EGOko (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:40:44 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:55194 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753622Ab3EGOki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 10:40:38 -0400
-From: Robin Holt <holt@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russ Anderson <rja@sgi.com>, Russell King <linux@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH -v8 03/11] Remove -stable friendly PF_THREAD_BOUND define
-Date: Tue,  7 May 2013 09:39:47 -0500
-Message-Id: <1367937595-32241-4-git-send-email-holt@sgi.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1367937595-32241-1-git-send-email-holt@sgi.com>
-References: <1367937595-32241-1-git-send-email-holt@sgi.com>
+	id S1755832Ab3EGOkw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:40:52 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:17711 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755652Ab3EGOkq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 10:40:46 -0400
+Message-ID: <51891256.2040402@hp.com>
+Date: Tue, 07 May 2013 10:40:22 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH] perf: fix symbol processing bug and greatly improve performance
+References: <1367847833-4932-1-git-send-email-Waiman.Long@hp.com> <20130507093031.GA1076@krava.brq.redhat.com>
+In-Reply-To: <20130507093031.GA1076@krava.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the prior patch's #define for easier backporting to the stable
-releases.
+On 05/07/2013 05:30 AM, Jiri Olsa wrote:
+> On Mon, May 06, 2013 at 09:43:53AM -0400, Waiman Long wrote:
+>> When "perf record" was used on a large machine with a lot of CPUs,
+>> the perf post-processing time could take a lot of minutes and even
+>> hours depending on how large the resulting perf.data file was.
+>>
+>> While running AIM7 1500-user high_systime workload on a 80-core x86-64
+>> system with a 3.9 kernel, the workload itself took about 2 minutes
+>> to run and the perf.data file had a size of 1108.746 MB. However,
+>> the post-processing step took more than 10 minutes.
+>>
+>> With a gprof-profiled perf binary, the time spent by perf was as
+>> follows:
+>>
+>>    %   cumulative   self              self     total
+>>   time   seconds   seconds    calls   s/call   s/call  name
+>>   96.90    822.10   822.10   192156     0.00     0.00  dsos__find
+>>    0.81    828.96     6.86 172089958     0.00     0.00  rb_next
+>>    0.41    832.44     3.48 48539289     0.00     0.00  rb_erase
+>>
+>> So 97% (822 seconds) of the time was spent in a single dsos_find()
+>> function. After analyzing the call-graph data below:
+>>
+>> -----------------------------------------------
+>>                  0.00  822.12  192156/192156      map__new [6]
+>> [7]     96.9    0.00  822.12  192156         vdso__dso_findnew [7]
+>>                822.10    0.00  192156/192156      dsos__find [8]
+>>                  0.01    0.00  192156/192156      dsos__add [62]
+>>                  0.01    0.00  192156/192366      dso__new [61]
+>>                  0.00    0.00       1/45282525     memdup [31]
+>>                  0.00    0.00  192156/192230      dso__set_long_name [91]
+>> -----------------------------------------------
+>>                822.10    0.00  192156/192156      vdso__dso_findnew [7]
+>> [8]     96.9  822.10    0.00  192156         dsos__find [8]
+>> -----------------------------------------------
+>>
+>> It was found that the vdso__dso_findnew() function failed to locate
+>> VDSO__MAP_NAME ("[vdso]") in the dso list and have to insert a new
+>> entry at the end for 192156 times. This problem is due to the fact that
+>> there are 2 types of name in the dso entry - short name and long name.
+>> The initial dso__new() adds "[vdso]" to both the short and long names.
+>> After that, vdso__dso_findnew() modifies the long name to something
+>> like /tmp/perf-vdso.so-NoXkDj. The dsos__find() function only compares
+>> the long name. As a result, the same vdso entry is duplicated many
+>> time in the dso list. This bug increases memory consumption as well
+>> as slows the symbol processing time to a crawl.
+> hi,
+> the issue is there and fix looks ok, thanks!
+>
+> though I'm not able to get vdso callchains to pop out
+> even by investigating report with vdso heavy workload.
+>
+> I'll have a closer look..
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Russ Anderson <rja@sgi.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: the arch/x86 maintainers <x86@kernel.org>
-Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
----
- kernel/sys.c | 5 -----
- 1 file changed, 5 deletions(-)
+The test machine that I used have RHEL 6.4 installed in it with a 
+upstream 3.9 kernel layered on top. The kernel config is based on the 
+6.4 configuration file with modification to enable the X2APIC option 
+needed by the machine. Other than that, I didn't make too much 
+modification to the base configuration. I used the "-a -s" option when 
+running perf-record.
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 14640d7..91d2d4e 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -362,11 +362,6 @@ int unregister_reboot_notifier(struct notifier_block *nb)
- }
- EXPORT_SYMBOL(unregister_reboot_notifier);
- 
--/* Add backwards compatibility for stable trees. */
--#ifndef PF_NO_SETAFFINITY
--#define PF_NO_SETAFFINITY		PF_THREAD_BOUND
--#endif
--
- static void migrate_to_reboot_cpu(void)
- {
- 	/* The boot cpu is always logical cpu 0 */
--- 
-1.8.2.1
+I don't think the vdso callchains were major part of the workload that I 
+tested. I think it is the high number of CPU cores plus the high number 
+of users (1500) that cause the performance bottleneck to surface. In a 
+smaller machine, those bottlenecks may be much less noticeable. The vdso 
+call-chain dominates the post-processsing time because of the need to 
+search through the while DSO list for the vdso library which can grow to 
+2M+ in my test case.
 
+Regards,
+Longman
