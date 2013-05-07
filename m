@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab3EGW2W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 18:28:22 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:48475 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab3EGW2T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 18:28:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <1367963581-fsskl9vz-mutt-n-horiguchi@ah.jp.nec.com>
-References: <1367959554-3218-1-git-send-email-j.glisse@gmail.com>
-	<1367963581-fsskl9vz-mutt-n-horiguchi@ah.jp.nec.com>
-Date: Tue, 7 May 2013 18:28:18 -0400
-Message-ID: <CAH3drwbQ91tb=C2D+fNkdPapK75db0yAaWsUrU2A41Rigsuxfg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mm: honor FOLL_GET flag in follow_hugetlb_page
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Jerome Glisse <jglisse@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753482Ab3EGW2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 18:28:18 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57885 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751297Ab3EGW2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 18:28:16 -0400
+Message-ID: <1367965682.25488.26.camel@pasglop>
+Subject: Re: [PATCH v3 3/5] PCI: Skip IORESOURCE_MMIO allocation for root
+ bus without MMIO range
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 08 May 2013 08:28:02 +1000
+In-Reply-To: <1367965054-9013-4-git-send-email-yinghai@kernel.org>
+References: <1367965054-9013-1-git-send-email-yinghai@kernel.org>
+	 <1367965054-9013-4-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 7, 2013 at 5:53 PM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
-> On Tue, May 07, 2013 at 04:45:54PM -0400, j.glisse@gmail.com wrote:
->> From: Jerome Glisse <jglisse@redhat.com>
->>
->> Do not increase page count if FOLL_GET is not set.
->>
->> Signed-off-by: Jerome Glisse <jglisse@redhat.com>
->> ---
->>  mm/hugetlb.c | 4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
->> index 1a12f5b..5d1e46b 100644
->> --- a/mm/hugetlb.c
->> +++ b/mm/hugetlb.c
->> @@ -2991,7 +2991,9 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
->>  same_page:
->>               if (pages) {
->>                       pages[i] = mem_map_offset(page, pfn_offset);
->> -                     get_page(pages[i]);
->> +                     if (flags & FOLL_GET) {
->> +                             get_page_foll(pages[i]);
->> +                     }
->>               }
->>
->>               if (vmas)
->> --
->
-> Hi Jerome,
->
-> I think that we need to be careful in handling tail pages, because
-> __get_page_tail_foll() uses page->_mapcount as refcount.
-> When you get refcount on a tail page and free the hugepage without
-> putting the *mapcount*, you will hit BUG_ON() in free_huge_page().
-> Yes, this is a very tricky workaround for thp, so to avoid making
-> things too complicated, I think either of the following is better:
->  - to get refcount only for head pages, or
->  - to introduce a hugetlbfs variant of get_page_foll().
+On Tue, 2013-05-07 at 15:17 -0700, Yinghai Lu wrote:
+> For x86 8 sockets or 32 sockets system that will have one root bus per socket,
+> They may have some root buses do not have mmio non-pref range.
 
-Maybe a simpler variant is to just not take any refcount, ie like
-current code if FOLL_GET is set then take refcount on all page wether
-they are head/tail or not. I will resend with that.
+That seems very odd. Most device registers are non-prefetchable. I know
+of no adapter today that would work in a prefetchable-only environment.
 
-> BTW, who do you expect is the caller of follow_hugetlb_page()
-> with FOLL_GET (I can't find your subsequent patches 2/3 or 3/3)?
-> I'm interested in this change because in my project it's necessary
-> to implement this for hugepage migration
-> (see https://lkml.org/lkml/2013/3/22/553).
+Are you sure that isn't the other way around ?
 
-I can not talk about the patchset yet (and it's not fully cook) but i
-need to be able to get the page without taking reference so without
-the FOLL_GET flag set but i need splitting, well no real splitting, i
-need pfn for each fake sub page of huge page (interested in physical
-address not in the page struct).
+Regarding your 3.10 patches, me and Gavin will test your v3 later today
+(ASAP) and will give you an Ack if they work, in which case they should
+hit Linus as soon as Bjorn is comfortable with :-)
 
 Cheers,
-Jerome
+Ben.
+
+> We should not fall into retry in this case, as root bus does
+> not mmio non-pref range.
+> 
+> We check if the root bus has mmio-nonpref range, and set bus_res_type_mask,
+> and pass it to assign_resources and don't add mmio-nonpref res to failed list
+> for root bus that does not have mmio-nonpref range.
+> So even BIOS set wrong value to pci devices and bridges will still
+> get cleared.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  drivers/pci/setup-bus.c |   32 ++++++++++++++++++++++++++------
+>  1 file changed, 26 insertions(+), 6 deletions(-)
+> 
+> Index: linux-2.6/drivers/pci/setup-bus.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/setup-bus.c
+> +++ linux-2.6/drivers/pci/setup-bus.c
+> @@ -299,9 +299,17 @@ static void assign_requested_resources_s
+>  				bool is_ioport_res_without_bus_support =
+>  					 (!(bus_res_type_mask & IORESOURCE_IO)) &&
+>  					 (res->flags & IORESOURCE_IO);
+> +				/*
+> +				 * if the failed res is mmio, but bus does
+> +				 * not have io port support, don't add it
+> +				 */
+> +				bool is_mmio_nonpref_res_without_bus_support =
+> +					 (!(bus_res_type_mask & IORESOURCE_MEM)) &&
+> +					 ((res->flags & (IORESOURCE_MEM | IORESOURCE_PREFETCH)) == IORESOURCE_MEM);
+>  
+>  				if (!is_rom_res_not_enabled &&
+> -				    !is_ioport_res_without_bus_support)
+> +				    !is_ioport_res_without_bus_support &&
+> +				    !is_mmio_nonpref_res_without_bus_support)
+>  					add_to_list(fail_head,
+>  						    dev_res->dev, res,
+>  						    0 /* dont care */,
+> @@ -1407,12 +1415,24 @@ static unsigned long pci_bus_res_type_ma
+>  	int i;
+>  	struct resource *r;
+>  	unsigned long mask = 0;
+> -	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
+> -				  IORESOURCE_PREFETCH;
+>  
+> -	pci_bus_for_each_resource(bus, r, i)
+> -		if (r)
+> -			mask |= r->flags & type_mask;
+> +	pci_bus_for_each_resource(bus, r, i) {
+> +		if (!r)
+> +			continue;
+> +
+> +		if (r->flags & IORESOURCE_IO) {
+> +			mask |= IORESOURCE_IO;
+> +			continue;
+> +		}
+> +		if (r->flags & IORESOURCE_PREFETCH) {
+> +			mask |= IORESOURCE_PREFETCH;
+> +			continue;
+> +		}
+> +		if ((r->flags & (IORESOURCE_MEM | IORESOURCE_PREFETCH)) == IORESOURCE_MEM) {
+> +			mask |= IORESOURCE_MEM; /* nonpref only */
+> +			continue;
+> +		}
+> +	}
+>  
+>  	return mask;
+>  }
+
+
