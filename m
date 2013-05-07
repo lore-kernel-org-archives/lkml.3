@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681Ab3EGGCP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 02:02:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26457 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751258Ab3EGGCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 02:02:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,625,1363158000"; 
-   d="asc'?scan'208";a="332983387"
-Message-ID: <1367906521.16445.29.camel@jtkirshe-mobl>
-Subject: Re: [GIT] Networking
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bruce.w.allan@intel.com
-Date: Mon, 06 May 2013 23:02:01 -0700
-In-Reply-To: <20130506.221041.791311536256132344.davem@davemloft.net>
-References: <CA+55aFzQ8MzrmPQNPfLFA3nVQVDR3HL+RwcGrAwanJCKRxL2=A@mail.gmail.com>
-	 <20130506.190922.168696209163637134.davem@davemloft.net>
-	 <1367883166.16445.13.camel@jtkirshe-mobl>
-	 <20130506.221041.791311536256132344.davem@davemloft.net>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-9I5jyFiPMNusYhCBLUfw"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1757182Ab3EGGEY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 02:04:24 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:39697 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024Ab3EGGEX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 02:04:23 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH] of/base: fix typos
+Date: Tue,  7 May 2013 11:34:11 +0530
+Message-Id: <1367906651-5058-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
---=-9I5jyFiPMNusYhCBLUfw
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+the function of_property_read_u8/16/32_array() has a parameter
+out_values, but the description mentioned it as out_value. This
+patch fixes this typo.
 
-On Mon, 2013-05-06 at 22:10 -0400, David Miller wrote:
-> From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> Date: Mon, 06 May 2013 16:32:46 -0700
->=20
-> > On Mon, 2013-05-06 at 19:09 -0400, David Miller wrote:
-> >> From: Linus Torvalds <torvalds@linux-foundation.org>
-> >> Date: Mon, 6 May 2013 15:57:15 -0700
-> >>=20
-> >> > On Mon, May 6, 2013 at 2:05 PM, David Miller <davem@davemloft.net> w=
-rote:
-> >> >>
-> >> >> Just a small pile of fixes:
-> >> >=20
-> >> > Ok, apparently the e1000e problem didn't get fixed yet. Should I jus=
-t
-> >> > revert ce43a2168c59 for now, or do we have a fix for that forthcomin=
-g
-> >> > shortly?
-> >>=20
-> >> It is coming very shortly.
-> >=20
-> > I am preparing the patch now to send upstream...
->=20
-> Jeff, I have an early plane to catch so I have to get to bed now.
->=20
-> Please just send Linus the fix directly, thanks.
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ drivers/of/base.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Done.
-
---=-9I5jyFiPMNusYhCBLUfw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAABCgAGBQJRiJjZAAoJEOVv75VaS+3OK7IQAKUbyCWxLbbDKu5VK5uwG3Yp
-DTr7tyv/QwKJ+kCd53qdwpP52KARlzGMqBLpOzMnyT6XUYylXYmFZNUn8x7V6TcA
-uPt3d8wQEQ2qGuCyku7gTr7IOLr1MBeOqkHAFcX/BCU/5x8AAsUKWeer81Fd2svH
-zgz8X7iKMhB0iSMoslMLNxGPei8QT8IS3+RsmPoh/BPGnpNCINiYzUSKn83VNqes
-AbQiqnVRj2DDshoFDvTk+kZiuOTuDyMXGNNmR69jRUvFZx1f7K/eDbamcWMqSd4O
-M+DM0h7Izhmz8pOR94ugQVLTN8u252RfuZT5wIdpzEBREBxdM7yvDTmDadR+EaN0
-z1uksGZ3Trl4Yl4fzDLULybtcc6oxysn7Kqu0A+i5fmbyaUjEmaYE+avr4eFC5as
-H3vTyrSTxvksIEL16jbfXBUJrII2FpZOWIfsxTGzfH8JYpqzWcvHUAXPeoatN5C/
-7BZP9j5+t80UsubxQz9eCwnGK64fEcMuFFzGJx9zclNNAV0OWlb30NbjajQdfZqD
-Z44c1t1WIVSexnZEEUvF9DhbwiVPrz90YOGiA9FiXzM3xnsmN2ofmeeQz3Elumyj
-aWTiR/PacAuPhHOBnlekIRvDFjz4BQ/8p3lWme5OaiSIYxn9qlkM1JyLZdZqO27k
-lKw97zQNjJIB6tOEbYsT
-=Ynhi
------END PGP SIGNATURE-----
-
---=-9I5jyFiPMNusYhCBLUfw--
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index 321d3ef..418985f 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -750,7 +750,7 @@ EXPORT_SYMBOL(of_find_node_by_phandle);
+  *
+  * @np:		device node from which the property value is to be read.
+  * @propname:	name of the property to be searched.
+- * @out_value:	pointer to return value, modified only if return value is 0.
++ * @out_values:	pointer to return value, modified only if return value is 0.
+  * @sz:		number of array elements to read
+  *
+  * Search for a property in a device node and read 8-bit value(s) from
+@@ -761,7 +761,7 @@ EXPORT_SYMBOL(of_find_node_by_phandle);
+  * dts entry of array should be like:
+  *	property = /bits/ 8 <0x50 0x60 0x70>;
+  *
+- * The out_value is modified only if a valid u8 value can be decoded.
++ * The out_values is modified only if a valid u8 value can be decoded.
+  */
+ int of_property_read_u8_array(const struct device_node *np,
+ 			const char *propname, u8 *out_values, size_t sz)
+@@ -788,7 +788,7 @@ EXPORT_SYMBOL_GPL(of_property_read_u8_array);
+  *
+  * @np:		device node from which the property value is to be read.
+  * @propname:	name of the property to be searched.
+- * @out_value:	pointer to return value, modified only if return value is 0.
++ * @out_values:	pointer to return value, modified only if return value is 0.
+  * @sz:		number of array elements to read
+  *
+  * Search for a property in a device node and read 16-bit value(s) from
+@@ -799,7 +799,7 @@ EXPORT_SYMBOL_GPL(of_property_read_u8_array);
+  * dts entry of array should be like:
+  *	property = /bits/ 16 <0x5000 0x6000 0x7000>;
+  *
+- * The out_value is modified only if a valid u16 value can be decoded.
++ * The out_values is modified only if a valid u16 value can be decoded.
+  */
+ int of_property_read_u16_array(const struct device_node *np,
+ 			const char *propname, u16 *out_values, size_t sz)
+@@ -827,7 +827,7 @@ EXPORT_SYMBOL_GPL(of_property_read_u16_array);
+  *
+  * @np:		device node from which the property value is to be read.
+  * @propname:	name of the property to be searched.
+- * @out_value:	pointer to return value, modified only if return value is 0.
++ * @out_values:	pointer to return value, modified only if return value is 0.
+  * @sz:		number of array elements to read
+  *
+  * Search for a property in a device node and read 32-bit value(s) from
+@@ -835,7 +835,7 @@ EXPORT_SYMBOL_GPL(of_property_read_u16_array);
+  * -ENODATA if property does not have a value, and -EOVERFLOW if the
+  * property data isn't large enough.
+  *
+- * The out_value is modified only if a valid u32 value can be decoded.
++ * The out_values is modified only if a valid u32 value can be decoded.
+  */
+ int of_property_read_u32_array(const struct device_node *np,
+ 			       const char *propname, u32 *out_values,
+-- 
+1.7.4.1
 
