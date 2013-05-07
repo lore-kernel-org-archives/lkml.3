@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab3EGPs3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 11:48:29 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:49451 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758031Ab3EGPs2 (ORCPT
+	id S1757559Ab3EGPws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 11:52:48 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:16978 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754771Ab3EGPwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 11:48:28 -0400
+	Tue, 7 May 2013 11:52:47 -0400
 X-IronPort-AV: E=Sophos;i="4.87,629,1363158000"; 
-   d="scan'208";a="44896342"
-Message-ID: <5189224A.70501@codeaurora.org>
-Date: Tue, 07 May 2013 11:48:26 -0400
+   d="scan'208";a="45030447"
+Message-ID: <5189234D.3040208@codeaurora.org>
+Date: Tue, 07 May 2013 11:52:45 -0400
 From: Christopher Covington <cov@codeaurora.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
+To: Peter Maydell <peter.maydell@linaro.org>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Alexander Graf <agraf@suse.de>, Amit Shah <amit.shah@redhat.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/2] ARM: Remove any correlation between IPC and BogoMips
- value
-References: <1367602547-19322-1-git-send-email-will.deacon@arm.com> <5187EFF3.6010005@codeaurora.org> <20130507090849.GC25387@mudshark.cambridge.arm.com>
-In-Reply-To: <20130507090849.GC25387@mudshark.cambridge.arm.com>
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
+References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org> <BA2076A6-0688-4E5C-85F9-A9CA8FD75782@suse.de> <87obcyc9sh.fsf@rustcorp.com.au> <336C59AA-D5D7-472E-A8DA-EEB413DD6C68@suse.de> <CAAHg+Hj0tySbzUGnoFE9ybVYP291B-i8-Ck1EkwD57t8yG5wwg@mail.gmail.com> <C52CCDD4-D8FB-4AD6-B83D-3B5251A7A0F5@suse.de> <87sj27xxjr.fsf@rustcorp.com.au> <CAFEAcA9h8iSYfTBtf6n+Vk5sDtBR2yB2oafRxikHoWbKt0VRUw@mail.gmail.com> <87ip2wr8tp.fsf@rustcorp.com.au> <CAFEAcA_=BTXVdkN0WmajxVSjbDrmxc5z65hCbxr=7TqJVsE9EA@mail.gmail.com> <87txmfo0rl.fsf@rustcorp.com.au> <CAFEAcA9jBSpN2p9ZaU+_gX41Ke3nvpSKVrWV8Rioy_ioadKCgg@mail.gmail.com>
+In-Reply-To: <CAFEAcA9jBSpN2p9ZaU+_gX41Ke3nvpSKVrWV8Rioy_ioadKCgg@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2013 05:08 AM, Will Deacon wrote:
-> On Mon, May 06, 2013 at 07:01:23PM +0100, Christopher Covington wrote:
->> Hi Will,
+On 05/07/2013 08:19 AM, Peter Maydell wrote:
+> On 7 May 2013 05:46, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> Peter Maydell <peter.maydell@linaro.org> writes:
+>>> That all looks like sensible QEMU implementation possibilities
+>>> but it seems to be a bit of a non-sequitur from "how do we
+>>> tell the kernel to actually use this?"
 >>
->> On 05/03/2013 01:35 PM, Will Deacon wrote:
->>> Hi all,
->>>
->>> This small patch set may look a little over a month late, but there is a
->>> serious reason for posting it.
->>>
->>> When I moved the ARM delay loop over to using the architected timers
->>> rather than the CPU spinning loop (which has all the problems associated
->>> with cpu frequency scaling and what-not) I thought I was doing something
->>> useful for the port. However, it turns out that a surprising number of
->>> people have complained, and continue to complain, about the drop in
->>> their `BogoMIPs score'.
->>
->> Have you considered adding the old code back in, but in a form that's not at
->> all referenced by the delay loop code and just calculates CPU-based bogomips?
+>> You enable the feature in the virtio console device, and a kernel
+>> compiled with EARLY_PRINTK will use it?
 > 
-> That seems like a lot of effort in order to preserve something that isn't
-> even meaningful. We might be better just zeroing the value, but then we'll
-> inevitably get bug reports of it being `wrong'.
+> Well, at the moment EARLY_PRINTK is hardcoded to
+> "use some specific UART or equivalent selected at
+> compile time". So the equivalent presumably would
+> be to hard-compile "use virtio-console", but then
+> how does that code know where the virtio-console
+> is in the address space?
 
-If I were in to filing bug reports about bogomips values, I would be just as
-likely to do it for 1, 10000, 99999, and get_random_bytes(...) as for 0.
-
-> Plus, the calibration during boot introduces a brief delay when onlining
-> each core whereas this can be skipped when using a constant timer.
-
-If it were configurable, that might give people a reason to weigh whether they
-really cared about knowing bogomips at the cost of boot time.
+arm64 uses a kernel argument.
 
 Christopher
 
