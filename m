@@ -1,160 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab3EGOeb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:34:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25415 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751657Ab3EGOea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 10:34:30 -0400
-Date: Tue, 7 May 2013 11:33:29 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        takuya.yoshikawa@gmail.com
-Subject: Re: [PATCH v4 4/6] KVM: MMU: fast invalid all shadow pages
-Message-ID: <20130507143329.GB6408@amt.cnet>
-References: <5183EAFA.4050500@linux.vnet.ibm.com>
- <20130504005201.GA11823@amt.cnet>
- <518725DF.5090503@linux.vnet.ibm.com>
- <20130506123625.GB12349@redhat.com>
- <5187ABB3.7020403@linux.vnet.ibm.com>
- <20130506172455.GB18963@redhat.com>
- <5187EC50.4030308@linux.vnet.ibm.com>
- <20130507085848.GI12349@redhat.com>
- <5188CC4F.3070306@linux.vnet.ibm.com>
- <20130507100051.GK12349@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130507100051.GK12349@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752863Ab3EGOgj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:36:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11477 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab3EGOgh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 10:36:37 -0400
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=eIhxMilvRf8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=n_5YJPCd7rDiexmtH5QA:9 a=QEXdDO2ut3YA:10 a=XDWOtBIySrCZf81z:21 a=93bYX899mKXhzaoG:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1367937395.7373.51.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.6.11.2-rt34
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Date: Tue, 07 May 2013 10:36:35 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 01:00:51PM +0300, Gleb Natapov wrote:
-> On Tue, May 07, 2013 at 05:41:35PM +0800, Xiao Guangrong wrote:
-> > On 05/07/2013 04:58 PM, Gleb Natapov wrote:
-> > > On Tue, May 07, 2013 at 01:45:52AM +0800, Xiao Guangrong wrote:
-> > >> On 05/07/2013 01:24 AM, Gleb Natapov wrote:
-> > >>> On Mon, May 06, 2013 at 09:10:11PM +0800, Xiao Guangrong wrote:
-> > >>>> On 05/06/2013 08:36 PM, Gleb Natapov wrote:
-> > >>>>
-> > >>>>>>> Step 1) Fix kvm_mmu_zap_all's behaviour: introduce lockbreak via
-> > >>>>>>> spin_needbreak. Use generation numbers so that in case kvm_mmu_zap_all 
-> > >>>>>>> releases mmu_lock and reacquires it again, only shadow pages 
-> > >>>>>>> from the generation with which kvm_mmu_zap_all started are zapped (this
-> > >>>>>>> guarantees forward progress and eventual termination).
-> > >>>>>>>
-> > >>>>>>> kvm_mmu_zap_generation()
-> > >>>>>>> 	spin_lock(mmu_lock)
-> > >>>>>>> 	int generation = kvm->arch.mmu_generation;
-> > >>>>>>>
-> > >>>>>>> 	for_each_shadow_page(sp) {
-> > >>>>>>> 		if (sp->generation == kvm->arch.mmu_generation)
-> > >>>>>>> 			zap_page(sp)
-> > >>>>>>> 		if (spin_needbreak(mmu_lock)) {
-> > >>>>>>> 			kvm->arch.mmu_generation++;
-> > >>>>>>> 			cond_resched_lock(mmu_lock);
-> > >>>>>>> 		}
-> > >>>>>>> 	}
-> > >>>>>>>
-> > >>>>>>> kvm_mmu_zap_all()
-> > >>>>>>> 	spin_lock(mmu_lock)
-> > >>>>>>> 	for_each_shadow_page(sp) {
-> > >>>>>>> 		if (spin_needbreak(mmu_lock)) {
-> > >>>>>>> 			cond_resched_lock(mmu_lock);
-> > >>>>>>> 		}
-> > >>>>>>> 	}
-> > >>>>>>>
-> > >>>>>>> Use kvm_mmu_zap_generation for kvm_arch_flush_shadow_memslot.
-> > >>>>>>> Use kvm_mmu_zap_all for kvm_mmu_notifier_release,kvm_destroy_vm.
-> > >>>>>>>
-> > >>>>>>> This addresses the main problem: excessively long hold times 
-> > >>>>>>> of kvm_mmu_zap_all with very large guests.
-> > >>>>>>>
-> > >>>>>>> Do you see any problem with this logic? This was what i was thinking 
-> > >>>>>>> we agreed.
-> > >>>>>>
-> > >>>>>> No. I understand it and it can work.
-> > >>>>>>
-> > >>>>>> Actually, it is similar with Gleb's idea that "zapping stale shadow pages
-> > >>>>>> (and uses lock break technique)", after some discussion, we thought "only zap
-> > >>>>>> shadow pages that are reachable from the slot's rmap" is better, that is this
-> > >>>>>> patchset does.
-> > >>>>>> (https://lkml.org/lkml/2013/4/23/73)
-> > >>>>>>
-> > >>>>> But this is not what the patch is doing. Close, but not the same :)
-> > >>>>
-> > >>>> Okay. :)
-> > >>>>
-> > >>>>> Instead of zapping shadow pages reachable from slot's rmap the patch
-> > >>>>> does kvm_unmap_rmapp() which drop all spte without zapping shadow pages.
-> > >>>>> That is why you need special code to re-init lpage_info. What I proposed
-> > >>>>> was to call zap_page() on all shadow pages reachable from rmap. This
-> > >>>>> will take care of lpage_info counters. Does this make sense?
-> > >>>>
-> > >>>> Unfortunately, no! We still need to care lpage_info. lpage_info is used
-> > >>>> to count the number of guest page tables in the memslot.
-> > >>>>
-> > >>>> For example, there is a memslot:
-> > >>>> memslot[0].based_gfn = 0, memslot[0].npages = 100,
-> > >>>>
-> > >>>> and there is a shadow page:
-> > >>>> sp->role.direct =0, sp->role.level = 4, sp->gfn = 10.
-> > >>>>
-> > >>>> this sp is counted in the memslot[0] but it can not be found by walking
-> > >>>> memslot[0]->rmap since there is no last mapping in this shadow page.
-> > >>>>
-> > >>> Right, so what about walking mmu_page_hash for each gfn belonging to the
-> > >>> slot that is in process to be removed to find those?
-> > >>
-> > >> That will cost lots of time. The size of hashtable is 1 << 10. If the
-> > >> memslot has 4M memory, it will walk all the entries, the cost is the same
-> > >> as walking active_list (maybe litter more). And a memslot has 4M memory is
-> > >> the normal case i think.
-> > >>
-> > > Memslots will be much bigger with memory hotplug. Lock break should be
-> > > used while walking mmu_page_hash obviously, but still iterating over
-> > > entire memslot gfn space to find a few gfn that may be there is
-> > > suboptimal. We can keep a list of them in the memslot itself.
-> > 
-> > It sounds good to me.
-> > 
-> > BTW, this approach looks more complex and use more memory (new list_head
-> > added into every shadow page) used, why you dislike clearing lpage_info? ;)
-> > 
-> Looks a little bit hackish, but now that I see we do not have easy way
-> to find all shadow pages counted in lpage_info I am not entirely against
-> it. If you convince Marcelo that clearing lpage_info like that is a good
-> idea I may reconsider. I think, regardless of tracking lpage_info,
-> having a way to find all shadow pages that reference a memslot is a good
-> thing though.
-> 
-> > > 
-> > >> Another point is that lpage_info stops mmu to use large page. If we
-> > >> do not reset lpage_info, mmu is using 4K page until the invalid-sp is
-> > >> zapped.
-> > >>
-> > > I do not think this is a big issue. If lpage_info prevented the use of
-> > > large pages for some memory ranges before we zapped entire shadow pages
-> > > it was probably for a reason, so new shadow page will prevent large
-> > > pages from been created for the same memory ranges.
-> > 
-> > Still worried, but I will try it if Marcelo does not have objects.
-> > Thanks a lot for your valuable suggestion, Gleb!
-> > 
-> > Now, i am trying my best to catch Marcelo's idea of "zapping root
-> > pages", but......
-> > 
-> Yes, I am missing what Marcelo means there too. We cannot free memslot
-> until we unmap its rmap one way or the other.
 
-I do not understand what are you optimizing for, given the four possible
-cases we discussed at
+Dear RT Folks,
 
-https://lkml.org/lkml/2013/4/18/280
+I'm pleased to announce the 3.6.11.2-rt34 stable release.
 
-That is, why a simple for_each_all_shadow_page(zap_page) is not sufficient.
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.6-rt
+  Head SHA1: e49c8e8225d5135380b53e07d331441e55bdb0c4
+
+
+Or to build 3.6.11.2-rt34 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.6.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.6.11.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/stable/patch-3.6.11.2.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.11.2-rt34.patch.xz
+
+
+
+You can also build from 3.6.11.2-rt33 by applying the incremental patch:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/incr/patch-3.6.11.2-rt33-rt34.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+Changes from v3.6.11.2-rt33:
+
+---
+
+Eric Dumazet (1):
+      tcp: force a dst refcount when prequeue packet
+
+Priyanka Jain (1):
+      powerpc/64bit,PREEMPT_RT: Check preempt_count before preempting
+
+Steven Rostedt (2):
+      x86/mce: Defer mce wakeups to threads for PREEMPT_RT
+      swap: Use unique local lock name for swap_lock
+
+Steven Rostedt (Red Hat) (1):
+      Linux 3.6.11.2-rt34
+
+----
+ arch/powerpc/kernel/entry_64.S   |    2 +
+ arch/x86/kernel/cpu/mcheck/mce.c |   78 +++++++++++++++++++++++++++++---------
+ include/net/tcp.h                |    1 +
+ localversion-rt                  |    2 +-
+ mm/swap.c                        |   20 +++++-----
+ 5 files changed, 75 insertions(+), 28 deletions(-)
+---------------------------
+diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
+index a9b98cc..7af1ea7 100644
+--- a/arch/powerpc/kernel/entry_64.S
++++ b/arch/powerpc/kernel/entry_64.S
+@@ -596,6 +596,8 @@ resume_kernel:
+ #ifdef CONFIG_PREEMPT
+ 	/* Check if we need to preempt */
+ 	lwz	r8,TI_PREEMPT(r9)
++	cmpwi	0,r8,0		/* if non-zero, just restore regs and return */
++	bne	restore
+ 	andi.	r0,r4,_TIF_NEED_RESCHED
+ 	bne+	1f
+ 
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index e8d8ad0..e31ea90 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -18,6 +18,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/kobject.h>
+ #include <linux/uaccess.h>
++#include <linux/kthread.h>
+ #include <linux/kdebug.h>
+ #include <linux/kernel.h>
+ #include <linux/percpu.h>
+@@ -1308,6 +1309,63 @@ static void mce_do_trigger(struct work_struct *work)
+ 
+ static DECLARE_WORK(mce_trigger_work, mce_do_trigger);
+ 
++static void __mce_notify_work(void)
++{
++	/* Not more than two messages every minute */
++	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
++
++	/* wake processes polling /dev/mcelog */
++	wake_up_interruptible(&mce_chrdev_wait);
++
++	/*
++	 * There is no risk of missing notifications because
++	 * work_pending is always cleared before the function is
++	 * executed.
++	 */
++	if (mce_helper[0] && !work_pending(&mce_trigger_work))
++		schedule_work(&mce_trigger_work);
++
++	if (__ratelimit(&ratelimit))
++		pr_info(HW_ERR "Machine check events logged\n");
++}
++
++#ifdef CONFIG_PREEMPT_RT_FULL
++struct task_struct *mce_notify_helper;
++
++static int mce_notify_helper_thread(void *unused)
++{
++	while (1) {
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule();
++		if (kthread_should_stop())
++			break;
++		__mce_notify_work();
++	}
++	return 0;
++}
++
++static int mce_notify_work_init(void)
++{
++	mce_notify_helper = kthread_run(mce_notify_helper_thread, NULL,
++					   "mce-notify");
++	if (!mce_notify_helper)
++		return -ENOMEM;
++
++	return 0;
++}
++
++static void mce_notify_work(void)
++{
++	wake_up_process(mce_notify_helper);
++}
++#else
++static void mce_notify_work(void)
++{
++	__mce_notify_work();
++}
++static inline int mce_notify_work_init(void) { return 0; }
++#endif
++
+ /*
+  * Notify the user(s) about new machine check events.
+  * Can be called from interrupt context, but not from machine check/NMI
+@@ -1315,24 +1373,8 @@ static DECLARE_WORK(mce_trigger_work, mce_do_trigger);
+  */
+ int mce_notify_irq(void)
+ {
+-	/* Not more than two messages every minute */
+-	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
+-
+ 	if (test_and_clear_bit(0, &mce_need_notify)) {
+-		/* wake processes polling /dev/mcelog */
+-		wake_up_interruptible(&mce_chrdev_wait);
+-
+-		/*
+-		 * There is no risk of missing notifications because
+-		 * work_pending is always cleared before the function is
+-		 * executed.
+-		 */
+-		if (mce_helper[0] && !work_pending(&mce_trigger_work))
+-			schedule_work(&mce_trigger_work);
+-
+-		if (__ratelimit(&ratelimit))
+-			pr_info(HW_ERR "Machine check events logged\n");
+-
++		mce_notify_work();
+ 		return 1;
+ 	}
+ 	return 0;
+@@ -2375,6 +2417,8 @@ static __init int mcheck_init_device(void)
+ 	/* register character device /dev/mcelog */
+ 	misc_register(&mce_chrdev_device);
+ 
++	err = mce_notify_work_init();
++
+ 	return err;
+ }
+ device_initcall_sync(mcheck_init_device);
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 1f000ff..9297897 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -1015,6 +1015,7 @@ static inline bool tcp_prequeue(struct sock *sk, struct sk_buff *skb)
+ 	if (sysctl_tcp_low_latency || !tp->ucopy.task)
+ 		return false;
+ 
++	skb_dst_force(skb);
+ 	__skb_queue_tail(&tp->ucopy.prequeue, skb);
+ 	tp->ucopy.memory += skb->truesize;
+ 	if (tp->ucopy.memory > sk->sk_rcvbuf) {
+diff --git a/localversion-rt b/localversion-rt
+index e1d8362..21988f9 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt33
++-rt34
+diff --git a/mm/swap.c b/mm/swap.c
+index 8ef0e84..0f9ad9d 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -42,7 +42,7 @@ static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
+ static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
+ 
+ static DEFINE_LOCAL_IRQ_LOCK(rotate_lock);
+-static DEFINE_LOCAL_IRQ_LOCK(swap_lock);
++static DEFINE_LOCAL_IRQ_LOCK(swapvec_lock);
+ 
+ /*
+  * This path almost never happens for VM activity - pages are normally
+@@ -407,13 +407,13 @@ static void activate_page_drain(int cpu)
+ void activate_page(struct page *page)
+ {
+ 	if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
+-		struct pagevec *pvec = &get_locked_var(swap_lock,
++		struct pagevec *pvec = &get_locked_var(swapvec_lock,
+ 						       activate_page_pvecs);
+ 
+ 		page_cache_get(page);
+ 		if (!pagevec_add(pvec, page))
+ 			pagevec_lru_move_fn(pvec, __activate_page, NULL);
+-		put_locked_var(swap_lock, activate_page_pvecs);
++		put_locked_var(swapvec_lock, activate_page_pvecs);
+ 	}
+ }
+ 
+@@ -453,12 +453,12 @@ EXPORT_SYMBOL(mark_page_accessed);
+ 
+ void __lru_cache_add(struct page *page, enum lru_list lru)
+ {
+-	struct pagevec *pvec = &get_locked_var(swap_lock, lru_add_pvecs)[lru];
++	struct pagevec *pvec = &get_locked_var(swapvec_lock, lru_add_pvecs)[lru];
+ 
+ 	page_cache_get(page);
+ 	if (!pagevec_add(pvec, page))
+ 		__pagevec_lru_add(pvec, lru);
+-	put_locked_var(swap_lock, lru_add_pvecs);
++	put_locked_var(swapvec_lock, lru_add_pvecs);
+ }
+ EXPORT_SYMBOL(__lru_cache_add);
+ 
+@@ -623,19 +623,19 @@ void deactivate_page(struct page *page)
+ 		return;
+ 
+ 	if (likely(get_page_unless_zero(page))) {
+-		struct pagevec *pvec = &get_locked_var(swap_lock,
++		struct pagevec *pvec = &get_locked_var(swapvec_lock,
+ 						       lru_deactivate_pvecs);
+ 
+ 		if (!pagevec_add(pvec, page))
+ 			pagevec_lru_move_fn(pvec, lru_deactivate_fn, NULL);
+-		put_locked_var(swap_lock, lru_deactivate_pvecs);
++		put_locked_var(swapvec_lock, lru_deactivate_pvecs);
+ 	}
+ }
+ 
+ void lru_add_drain(void)
+ {
+-	lru_add_drain_cpu(local_lock_cpu(swap_lock));
+-	local_unlock_cpu(swap_lock);
++	lru_add_drain_cpu(local_lock_cpu(swapvec_lock));
++	local_unlock_cpu(swapvec_lock);
+ }
+ 
+ static void lru_add_drain_per_cpu(struct work_struct *dummy)
+@@ -850,7 +850,7 @@ EXPORT_SYMBOL(pagevec_lookup_tag);
+ static int __init swap_init_locks(void)
+ {
+ 	local_irq_lock_init(rotate_lock);
+-	local_irq_lock_init(swap_lock);
++	local_irq_lock_init(swapvec_lock);
+ 	return 1;
+ }
+ early_initcall(swap_init_locks);
+
 
