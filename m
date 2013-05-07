@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496Ab3EGTdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 15:33:25 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:45679 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752628Ab3EGTdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 15:33:24 -0400
-Date: Tue, 7 May 2013 12:32:38 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Kees Cook <keescook@chromium.org>, linux-mtd@lists.infradead.org
-Subject: [PATCH] mtd: refactor call to request_module
-Message-ID: <20130507193238.GA2235@www.outflux.net>
+	id S1755483Ab3EGT7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 15:59:37 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:41252 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752700Ab3EGT7e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 15:59:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F82E5C8E3@DQHE06.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F82E5C8E3@DQHE06.ent.ti.com>
+Date: Tue, 7 May 2013 21:59:34 +0200
+Message-ID: <CACRpkdb3cEhCtc=zdq6cHMnh9Hc4ELb3jDXqyhV5kzzKJ-Nxiw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] leds: lp55xx: support dynamic channel settings in the
+ device tree structure
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Bryan Wu <cooloney@gmail.com>,
+        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reduces the size of the stack frame when calling request_module().
-Performing the sprintf before the call is not needed.
+On Tue, May 7, 2013 at 9:14 AM, Kim, Milo <Milo.Kim@ti.com> wrote:
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- drivers/mtd/chips/gen_probe.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+> Currently, the LP55xx DT structure supports max 3 channels.
+> However, LP5523 has max 9 channels and LP5562 has 4 channels.
+> To enhance this constraint, the DT structure has been changed.
+>
+>  (a) Use the child node for various channel settings instead of fixed array
+>  (b) Remove 'num_channel' property.
+>      This value can be retrieved by counting the children node.
+>  (c) 'chan-name' property supported
+>  (d) Documentation updates for LP5521 and LP5523
+>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 
-diff --git a/drivers/mtd/chips/gen_probe.c b/drivers/mtd/chips/gen_probe.c
-index 74dbb6b..ffb36ba 100644
---- a/drivers/mtd/chips/gen_probe.c
-+++ b/drivers/mtd/chips/gen_probe.c
-@@ -211,9 +211,7 @@ static inline struct mtd_info *cfi_cmdset_unknown(struct map_info *map,
- 
- 	probe_function = __symbol_get(probename);
- 	if (!probe_function) {
--		char modname[sizeof("cfi_cmdset_%4.4X")];
--		sprintf(modname, "cfi_cmdset_%4.4X", type);
--		request_module(modname);
-+		request_module("cfi_cmdset_%4.4X", type);
- 		probe_function = __symbol_get(probename);
- 	}
- 
--- 
-1.7.9.5
+This is looking very good to me.
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
-
--- 
-Kees Cook
-Chrome OS Security
+Yours,
+Linus Walleij
