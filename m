@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751154Ab3EGVvy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 17:51:54 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58877 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab3EGVvx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 17:51:53 -0400
-Date: Tue, 7 May 2013 23:51:51 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Feng Tang <feng.tang@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Fwd: [GIT PULL] timer changes for v3.10
-Message-ID: <20130507215151.GB10061@amd.pavel.ucw.cz>
-References: <20130430074322.GA20110@gmail.com>
- <20130506230137.GA16801@amd.pavel.ucw.cz>
- <CA++bM2scosWgBpC3_LzcKYOjG4EQQzN5Vf4rZFds-5qRVRwvDQ@mail.gmail.com>
- <20130507023853.GA2945@feng-snb>
- <20130507065348.GF17705@gmail.com>
- <51892560.7090202@linaro.org>
- <20130507213142.GA10061@amd.pavel.ucw.cz>
- <51897497.7040806@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752312Ab3EGVxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 17:53:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36569 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752033Ab3EGVxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 17:53:07 -0400
+Date: Tue, 07 May 2013 17:53:01 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: j.glisse@gmail.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Jerome Glisse <jglisse@redhat.com>
+Message-ID: <1367963581-fsskl9vz-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1367959554-3218-1-git-send-email-j.glisse@gmail.com>
+References: <1367959554-3218-1-git-send-email-j.glisse@gmail.com>
+Subject: Re: [PATCH 1/3] mm: honor FOLL_GET flag in follow_hugetlb_page
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <51897497.7040806@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mutt-References: <1367959554-3218-1-git-send-email-j.glisse@gmail.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tue, May 07, 2013 at 04:45:54PM -0400, j.glisse@gmail.com wrote:
+> From: Jerome Glisse <jglisse@redhat.com>
+> 
+> Do not increase page count if FOLL_GET is not set.
+> 
+> Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+> ---
+>  mm/hugetlb.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 1a12f5b..5d1e46b 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2991,7 +2991,9 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  same_page:
+>  		if (pages) {
+>  			pages[i] = mem_map_offset(page, pfn_offset);
+> -			get_page(pages[i]);
+> +			if (flags & FOLL_GET) {
+> +				get_page_foll(pages[i]);
+> +			}
+>  		}
+>  
+>  		if (vmas)
+> -- 
 
-> >>>>>is even worse than that. Machine can stay is s2ram for weeks (for a
-> >>>>>lot more if it is desktop and you do s2ram for powersaving). Also
-> >>>>>temperature of CPU varies a lot between active and s2ram states. Is
-> >>>>>TSC good enough?
-> >>>>Yes, I think it is relatively precise. Per our test, system time backed
-> >>>>by the S3 non stop TSC only has 1 second drift after 4 days running
-> >>>>(with mixed running and S3 states). And before using this feature, we've
-> >>>>seen many time drift problems due to the RTC HW or system FW with our
-> >>>>platforms.
-> >>>Nice result ...
-> >>>
-> >>>Is that with NTP running?
-> >>>
-> >>>Without NTP, the TSC fast-calibration on bootup is not (expected to be)
-> >>>nearly as precise as the 1:345600 precision you've measured.
-> >>We also do refined calibration now on the TSC asynchronously over a
-> >>period of seconds at boot up that gives us much better accuracy then
-> >>the fast calibration. This helps provide much more consistent
-> >>boot-to-boot TSC frequencies.
-> >On android (and this is targetted at android, right?) system is going
-> >to suspend basically as soon as it boots. Will refined calibration
-> >have enough time to do its job?
-> I don't *think* this is a concern. The refined calibration only
-> takes a few seconds while the system is booting and has always
-> completed before userspace starts on the systems I have. Even so, I
-> don't believe on boot Android will trigger the autosleep code until
-> its userland is up and running, which takes more then a few seconds
-> on the devices I've seen.
+Hi Jerome,
 
-Userspace has to be running, right. It should boot in 10 seconds or
-so.
+I think that we need to be careful in handling tail pages, because
+__get_page_tail_foll() uses page->_mapcount as refcount.
+When you get refcount on a tail page and free the hugepage without
+putting the *mapcount*, you will hit BUG_ON() in free_huge_page().
+Yes, this is a very tricky workaround for thp, so to avoid making
+things too complicated, I think either of the following is better:
+ - to get refcount only for head pages, or
+ - to introduce a hugetlbfs variant of get_page_foll().
 
-> >And... reason for all this is that RTC has one second granularity when
-> >accessed naively. But surely we could poll RTC X times a second,
-> >getting error down by factor of X?
-> Well, we can poll the RTC trying to get closer to the second edge,
-> but that's somewhat expensive, and for suspend/resume would delay
-> things more then whats acceptable.
+BTW, who do you expect is the caller of follow_hugetlb_page()
+with FOLL_GET (I can't find your subsequent patches 2/3 or 3/3)?
+I'm interested in this change because in my project it's necessary
+to implement this for hugepage migration
+(see https://lkml.org/lkml/2013/3/22/553).
 
-Well, if 
-
-> Sorry. You seem to not like the merged change, but I guess I'm not
-> quite sure what exactly your objection is here.
-
-I'm not exactly sure what my objections are.
-
-TSC was not designed for long-term precise timekeeping. I guess it
-may work ok for short naps, but some people suspend their machines for
-longer than that. Plus I wonder how it will interfere with
-/etc/adjtime.
-
-									Pavel 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks,
+Naoya Horiguchi
