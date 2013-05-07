@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759428Ab3EGBf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 21:35:29 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:49096 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757670Ab3EGBf1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 21:35:27 -0400
-Date: Tue, 7 May 2013 09:35:11 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Roland Eggner <edvx1@systemanalysen.net>
-Subject: Re: [PATCH] kconfig: sort found symbols by relevance
-Message-ID: <20130507013511.GA4769@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	Jean Delvare <jdelvare@suse.de>,
-	"Yann E. MORIN" <yann.morin.1998@free.fr>,
-	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Michal Marek <mmarek@suse.cz>,
-	Roland Eggner <edvx1@systemanalysen.net>
-References: <1367826629.4494.30.camel@chaos.site>
- <1367845365-13316-1-git-send-email-yann.morin.1998@free.fr>
- <1367854112.4569.137.camel@chaos.site>
+	id S1759465Ab3EGBfd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 21:35:33 -0400
+Received: from ozlabs.org ([203.10.76.45]:43437 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757670Ab3EGBfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 21:35:30 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@google.com
+cc: Linux PPC dev <linuxppc-dev@ozlabs.org>, linux-kernel@vger.kernel.org,
+        michael@ellerman.id.au,
+        Anshuman Khandual <anshuman.khandual@in.ibm.com>
+X-GPG-Fingerprint: 9B25 DC2A C58D 2C8D 47C2  457E 0887 E86F 32E6 BE16
+X-GPG-Fingerprint: 9365 87D7 A7EF 4721 420B  91D9 CD5B 874B EAC1 B3F5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1367854112.4569.137.camel@chaos.site>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Invalid perf_branch_entry.to entries question
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Tue, 07 May 2013 11:35:28 +1000
+Message-ID: <25394.1367890528@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 05:28:32PM +0200, Jean Delvare wrote:
-> Le Monday 06 May 2013 à 15:02 +0200, Yann E. MORIN a écrit :
-> > From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> > 
-> > When searching for symbols, return the symbols sorted by relevance.
-> > 
-> > Relevance is the ratio of the length of the matched string and the
-> > length of the symbol name. Symbols of equal relevance are sorted
-> > alphabetically.
-> I did not look at the code, only tested it, and it does what I asked for
-> originally: exact match is listed first. So thank you :)
-> 
-> However I am not sure if your implementation is what we want. Your
-> definition of "relevance" is somewhat arbitrary and may not be
-> immediately to others. For example, my own definition of "relevance" was
-> that symbols which start with the subject string are more relevant than
-> the symbols which have the string in the middle. Others would possibly
-> have other definitions.
+Peter & Stephane,
 
-But no matter what the definition of relevance in text search, 
-in the middle or start or end, the searcher always want the "results" 
-look like what they input literal.
+We are plumbing the POWER8 Branch History Rolling Buffer (BHRB) into
+struct perf_branch_entry.
 
-I think Yann's definition make sense. It is just a pattern matching ratio question.
+Sometimes on POWER8 we may not be able to fill out the "to" address.  We
+initially thought of just making this 0, but it's feasible that this
+could be a valid address to branch to. 
 
-If you want in start, just use ^PCI(reguar search), then with the help of 
-this patch, will make people life easier.
+The other logical value to indicate an invalid entry would be all 1s
+which is not possible (on POWER at least).
 
-This patch is not to replace the regular search, you can just use them together.
+Do you guys have a preference as to what we should use as an invalid
+entry?  This would have some consequences for the userspace tool also.
 
-BTW, I haven't read the code right now, maybe I will read it tonight.
-I test it, it works well, and I find it is useful to use it with regular search.
+The alternative would be to add a flag alongside mispred/predicted to
+indicate the validity of the "to" address.
 
-Thanks.
+Mikey
+
+
