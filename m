@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab3EGRen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 13:34:43 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:33707 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490Ab3EGRel (ORCPT
+	id S1756631Ab3EGRfk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 13:35:40 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:50599 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753857Ab3EGRfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 13:34:41 -0400
-Message-ID: <51893B2F.6070602@cogentembedded.com>
-Date: Tue, 07 May 2013 21:34:39 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 7 May 2013 13:35:39 -0400
+Message-ID: <51893B68.1010907@hurleysoftware.com>
+Date: Tue, 07 May 2013 13:35:36 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeff Garzik <jgarzik@pobox.com>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: [GIT PULL] libata maintainership update
-References: <20130507171921.GB5531@mtj.dyndns.org>
-In-Reply-To: <20130507171921.GB5531@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Dave Jones <davej@redhat.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: 3.9+ tty lockdep trace.
+References: <20130501154723.GB11841@redhat.com> <20130506180020.GB1309@redhat.com> <20130506184059.GA22897@kroah.com> <51890C31.3000203@hurleysoftware.com> <20130507150423.GA13062@redhat.com>
+In-Reply-To: <20130507150423.GA13062@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 07-05-2013 21:19, Tejun Heo wrote:
-
-> As discussed earlier, Jeff is leaving for something more fun and I'm
-> inheriting the maintainership of libata.  Please pull from the
-> following branch to receive MAINTAINERS update.
-
->    git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.10
-
-> I'll manage it similarly to other trees I'm maintaining.  When X-rc1
-> drops, for-X-fixes and for-X+1 are created on top of it and for-next
-> will be pulling in both branches.
-
-> Thanks!
-
-> --
-> tejun
-
-> ----------------------------------------------------------------
-> Tejun Heo (1):
->        libata: change maintainer
-
->   MAINTAINERS | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
-
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index e1f5fac..c5ed056 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -7140,7 +7140,7 @@ F:	drivers/misc/phantom.c
->   F:	include/uapi/linux/phantom.h
+On 05/07/2013 11:04 AM, Dave Jones wrote:
+> On Tue, May 07, 2013 at 10:14:09AM -0400, Peter Hurley wrote:
 >
->   SERIAL ATA (SATA) SUBSYSTEM
-> -M:	Jeff Garzik <jgarzik@pobox.com>
-> +M:	Tejun Heo <tj@kernel.org>
->   L:	linux-ide@vger.kernel.org
->   T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev.git
+>   > >> Just hit this again, by switching tty's during bootup.
+>   > >> The previous time was switching from X to console iirc, so that seems to be
+>   > >> the key to triggering this.
+>   > >
+>   > > Sorry for not getting back to this sooner, merge window fun...
+>   > >
+>   > > Anyway, Peter, could this be something that your ldisc patches are
+>   > > triggering?
+>   >
+>   > Yes, although early analysis also suggests the lockdep splat is possible
+>   > regardless, just much less likely.
+>   >
+>   > I looked at this over the weekend, but I wasn't able to determine (in
+>   > the limited time I had available) if the splat was valid; ie., if the
+>   > cpu states could actually be concurrent and result in deadlock.
+>   >
+>   > I need to study the VT_DISALLOCATE ioctl in more detail which I plan
+>   > to do this week.
+>
+> I don't know if it proves/disproves anything, but shortly before the dump
+> gets printed, everything is kind of locked up. I can switch tty's, but
+> the gettys on them are dead to the world until after the dump.
+>
+> ISTR a pause for a while when I hit this switching from X too.
 
-    I think you've forgotten to update the git tree to yours.
+It would help to know the steps to reproduce. For example, you mention
+unresponsive gettys but the VT_DISALLOCATE ioctl doesn't work (and isn't
+designed to) on open ttys.
 
-MBR, Sergei
+Regards,
+Peter Hurley
 
