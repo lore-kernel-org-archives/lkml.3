@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933388Ab3EGNm3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:42:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42592 "EHLO
+	id S933410Ab3EGNpZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:45:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42612 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933338Ab3EGNmY (ORCPT
+	with ESMTP id S933366Ab3EGNm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:24 -0400
+	Tue, 7 May 2013 09:42:27 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anurup m <anurup.m@huawei.com>, shyju pv <shyju.pv@huawei.com>,
-        Sanil kumar <sanil.kumar@huawei.com>, Nataraj m <nataraj.m@huawei.com>,
-        Li Zefan <lizefan@huawei.com>, David Howells <dhowells@redhat.com>,
+Cc: Johan Hovold <jhovold@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 106/118] fs/fscache/stats.c: fix memory leak
-Date: Tue,  7 May 2013 14:39:12 +0100
-Message-Id: <1367933964-1564-107-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 110/118] drivers/rtc/rtc-at91rm9200.c: fix missing iounmap
+Date: Tue,  7 May 2013 14:39:16 +0100
+Message-Id: <1367933964-1564-111-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -31,43 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anurup m <anurup.m@huawei.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit ec686c9239b4d472052a271c505d04dae84214cc upstream.
+commit 3427de92ac70a064098ff843c72ac76c420bb1cb upstream.
 
-There is a kernel memory leak observed when the proc file
-/proc/fs/fscache/stats is read.
+Add missing iounmap to probe error path and remove.
 
-The reason is that in fscache_stats_open, single_open is called and the
-respective release function is not called during release.  Hence fix
-with correct release function - single_release().
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=57101
-
-Signed-off-by: Anurup m <anurup.m@huawei.com>
-Cc: shyju pv <shyju.pv@huawei.com>
-Cc: Sanil kumar <sanil.kumar@huawei.com>
-Cc: Nataraj m <nataraj.m@huawei.com>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/fscache/stats.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/rtc/rtc-at91rm9200.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/fs/fscache/stats.c b/fs/fscache/stats.c
-index 4765190..73c0bd7 100644
---- a/fs/fscache/stats.c
-+++ b/fs/fscache/stats.c
-@@ -276,5 +276,5 @@ const struct file_operations fscache_stats_fops = {
- 	.open		= fscache_stats_open,
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
--	.release	= seq_release,
-+	.release        = single_release,
- };
+diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
+index dc474bc..9f2762c 100644
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -297,7 +297,7 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
+ 	if (ret) {
+ 		printk(KERN_ERR "at91_rtc: IRQ %d already in use.\n",
+ 				irq);
+-		return ret;
++		goto err_unmap;
+ 	}
+ 
+ 	/* cpu init code should really have flagged this device as
+@@ -309,13 +309,20 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
+ 	rtc = rtc_device_register(pdev->name, &pdev->dev,
+ 				&at91_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(rtc)) {
+-		free_irq(irq, pdev);
+-		return PTR_ERR(rtc);
++		ret = PTR_ERR(rtc);
++		goto err_free_irq;
+ 	}
+ 	platform_set_drvdata(pdev, rtc);
+ 
+ 	printk(KERN_INFO "AT91 Real Time Clock driver.\n");
+ 	return 0;
++
++err_free_irq:
++	free_irq(irq, pdev);
++err_unmap:
++	iounmap(at91_rtc_regs);
++
++	return ret;
+ }
+ 
+ /*
+@@ -332,6 +339,7 @@ static int __exit at91_rtc_remove(struct platform_device *pdev)
+ 	free_irq(irq, pdev);
+ 
+ 	rtc_device_unregister(rtc);
++	iounmap(at91_rtc_regs);
+ 	platform_set_drvdata(pdev, NULL);
+ 
+ 	return 0;
 -- 
 1.8.1.2
 
