@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758946Ab3EGNwH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:52:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42560 "EHLO
+	id S1759428Ab3EGNmR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:42:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42496 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759435Ab3EGNmS (ORCPT
+	with ESMTP id S933286Ab3EGNmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:18 -0400
+	Tue, 7 May 2013 09:42:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 101/118] gianfar: do not advertise any alarm capability.
-Date: Tue,  7 May 2013 14:39:07 +0100
-Message-Id: <1367933964-1564-102-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 088/118] PCI/PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
+Date: Tue,  7 May 2013 14:38:54 +0100
+Message-Id: <1367933964-1564-89-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,46 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Cochran <richardcochran@gmail.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit cd4baaaa04b4aaa3b0ec4d13a6f3d203b92eadbd upstream.
+commit 769ba7212f2059ca9fe0c73371e3d415c8c1c529 upstream.
 
-An early draft of the PHC patch series included an alarm in the
-gianfar driver. During the review process, the alarm code was dropped,
-but the capability removal was overlooked. This patch fixes the issue
-by advertising zero alarms.
+Commit b51306c (PCI: Set device power state to PCI_D0 for device
+without native PM support) modified pci_platform_power_transition()
+by adding code causing dev->current_state for devices that don't
+support native PCI PM but are power-manageable by the platform to be
+changed to PCI_D0 regardless of the value returned by the preceding
+platform_pci_set_power_state().  In particular, that also is done
+if the platform_pci_set_power_state() has been successful, which
+causes the correct power state of the device set by
+pci_update_current_state() in that case to be overwritten by PCI_D0.
 
-This patch should be applied to every 3.x stable kernel.
+Fix that mistake by making the fallback to PCI_D0 only happen if
+the platform_pci_set_power_state() has returned an error.
 
-Signed-off-by: Richard Cochran <richardcochran@gmail.com>
-Reported-by: Chris LaRocque <clarocq@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[bhelgaas: folded in Yinghai's simplification, added URL & stable info]
+Reference: http://lkml.kernel.org/r/27806FC4E5928A408B78E88BBC67A2306F466BBA@ORSMSX101.amr.corp.intel.com
+Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/freescale/gianfar_ptp.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/pci/pci.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/ethernet/freescale/gianfar_ptp.c b/drivers/net/ethernet/freescale/gianfar_ptp.c
-index 0daa66b..d81c7af 100644
---- a/drivers/net/ethernet/freescale/gianfar_ptp.c
-+++ b/drivers/net/ethernet/freescale/gianfar_ptp.c
-@@ -127,7 +127,6 @@ struct gianfar_ptp_registers {
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 447e834..fa7c0f0 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -674,15 +674,11 @@ static int pci_platform_power_transition(struct pci_dev *dev, pci_power_t state)
+ 		error = platform_pci_set_power_state(dev, state);
+ 		if (!error)
+ 			pci_update_current_state(dev, state);
+-		/* Fall back to PCI_D0 if native PM is not supported */
+-		if (!dev->pm_cap)
+-			dev->current_state = PCI_D0;
+-	} else {
++	} else
+ 		error = -ENODEV;
+-		/* Fall back to PCI_D0 if native PM is not supported */
+-		if (!dev->pm_cap)
+-			dev->current_state = PCI_D0;
+-	}
++
++	if (error && !dev->pm_cap) /* Fall back to PCI_D0 */
++		dev->current_state = PCI_D0;
  
- #define DRIVER		"gianfar_ptp"
- #define DEFAULT_CKSEL	1
--#define N_ALARM		1 /* first alarm is used internally to reset fipers */
- #define N_EXT_TS	2
- #define REG_SIZE	sizeof(struct gianfar_ptp_registers)
- 
-@@ -410,7 +409,7 @@ static struct ptp_clock_info ptp_gianfar_caps = {
- 	.owner		= THIS_MODULE,
- 	.name		= "gianfar clock",
- 	.max_adj	= 512000,
--	.n_alarm	= N_ALARM,
-+	.n_alarm	= 0,
- 	.n_ext_ts	= N_EXT_TS,
- 	.n_per_out	= 0,
- 	.pps		= 1,
+ 	return error;
+ }
 -- 
 1.8.1.2
 
