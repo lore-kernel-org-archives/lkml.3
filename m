@@ -1,55 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760183Ab3EGCUR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 22:20:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28465 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757839Ab3EGCUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 22:20:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,625,1363158000"; 
-   d="scan'208";a="309281237"
-Message-ID: <518864C3.7080504@intel.com>
-Date: Tue, 07 May 2013 10:19:47 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        riel@redhat.com, wangyun@linux.vnet.ibm.com
-Subject: Re: [PATCH v5 3/7] sched: set initial value of runnable avg for new
- forked task
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-4-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1367804711-30308-4-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933427Ab3EGCTh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 22:19:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63100 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1760074Ab3EGCT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 22:19:27 -0400
+X-IronPort-AV: E=Sophos;i="4.87,625,1363104000"; 
+   d="scan'208";a="7201761"
+From: Gao feng <gaofeng@cn.fujitsu.com>
+To: viro@zeniv.linux.org.uk, eparis@redhat.com, ebiederm@xmission.com,
+        sgrubb@redhat.com, akpm@linux-foundation.org, serge.hallyn@ubuntu.com,
+        davem@davemloft.net
+Cc: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: [PATCH RFC 15/48] Audit: allow to send netlink message to auditd in uninit user namespace
+Date: Tue, 7 May 2013 10:20:36 +0800
+Message-Id: <1367893269-9308-16-git-send-email-gaofeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
+References: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/07 10:18:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/07 10:18:28,
+	Serialize complete at 2013/05/07 10:18:28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 09:45 AM, Alex Shi wrote:
-> We need initialize the se.avg.{decay_count, load_avg_contrib} for a
-> new forked task.
-> Otherwise random values of above variables cause mess when do new task
-> enqueue:
->     enqueue_task_fair
->         enqueue_entity
->             enqueue_entity_load_avg
-> 
-> and make forking balancing imbalance since incorrect load_avg_contrib.
-> 
-> set avg.decay_count = 0, and avg.load_avg_contrib = se->load.weight to
-> resolve such issues.
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
+We can allow audit kernel side netlink sock of uninit
+user namespace to send message to the right auditd.
 
-Sorry for forget this:
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+---
+ kernel/audit.c | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 18cf5ce..d39296b 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -361,9 +361,9 @@ static int audit_set_failure(int state, kuid_t loginuid, u32 sessionid, u32 sid)
+  * This only holds messages is audit_default is set, aka booting with audit=1
+  * or building your kernel that way.
+  */
+-static void audit_hold_skb(struct sk_buff *skb)
++static void audit_hold_skb(struct user_namespace *ns, struct sk_buff *skb)
+ {
+-	struct sk_buff_head *list = &init_user_ns.audit.hold_queue;
++	struct sk_buff_head *list = &ns->audit.hold_queue;
+ 
+ 	if (audit_default &&
+ 	    skb_queue_len(list) < audit_backlog_limit)
+@@ -376,7 +376,7 @@ static void audit_hold_skb(struct sk_buff *skb)
+  * For one reason or another this nlh isn't getting delivered to the userspace
+  * audit daemon, just send it to printk.
+  */
+-static void audit_printk_skb(struct sk_buff *skb)
++static void audit_printk_skb(struct user_namespace *ns, struct sk_buff *skb)
+ {
+ 	struct nlmsghdr *nlh = nlmsg_hdr(skb);
+ 	char *data = nlmsg_data(nlh);
+@@ -388,24 +388,24 @@ static void audit_printk_skb(struct sk_buff *skb)
+ 			audit_log_lost("printk limit exceeded\n");
+ 	}
+ 
+-	audit_hold_skb(skb);
++	audit_hold_skb(ns, skb);
+ }
+ 
+-static void kauditd_send_skb(struct sk_buff *skb)
++static void kauditd_send_skb(struct user_namespace *ns, struct sk_buff *skb)
+ {
+ 	int err;
+ 	/* take a reference in case we can't send it and we want to hold it */
+ 	skb_get(skb);
+-	err = netlink_unicast(init_user_ns.audit.sock, skb,
+-			      init_user_ns.audit.portid, 0);
++	err = netlink_unicast(ns->audit.sock, skb,
++			      ns->audit.portid, 0);
+ 	if (err < 0) {
+ 		BUG_ON(err != -ECONNREFUSED); /* Shouldn't happen */
+ 		printk(KERN_ERR "audit: *NO* daemon at audit_pid=%d\n",
+-		       init_user_ns.audit.pid);
++		       ns->audit.pid);
+ 		audit_log_lost("auditd disappeared\n");
+-		init_user_ns.audit.pid = 0;
++		ns->audit.pid = 0;
+ 		/* we might get lucky and get this in the next auditd */
+-		audit_hold_skb(skb);
++		audit_hold_skb(ns, skb);
+ 	} else
+ 		/* drop the extra reference if sent ok */
+ 		consume_skb(skb);
+@@ -437,7 +437,7 @@ static int kauditd_thread(void *dummy)
+ 			skb = skb_dequeue(hold_queue);
+ 			if (unlikely(skb)) {
+ 				while (skb && ns->audit.pid) {
+-					kauditd_send_skb(skb);
++					kauditd_send_skb(ns, skb);
+ 					skb = skb_dequeue(hold_queue);
+ 				}
+ 			}
+@@ -447,9 +447,9 @@ static int kauditd_thread(void *dummy)
+ 		wake_up(&audit_backlog_wait);
+ 		if (skb) {
+ 			if (ns->audit.pid)
+-				kauditd_send_skb(skb);
++				kauditd_send_skb(ns, skb);
+ 			else
+-				audit_printk_skb(skb);
++				audit_printk_skb(ns, skb);
+ 		} else {
+ 			DECLARE_WAITQUEUE(wait, current);
+ 			set_current_state(TASK_INTERRUPTIBLE);
+@@ -1529,7 +1529,7 @@ void audit_log_end(struct audit_buffer *ab)
+ 				       ab->skb);
+ 			wake_up_interruptible(&kauditd_wait);
+ 		} else {
+-			audit_printk_skb(ab->skb);
++			audit_printk_skb(&init_user_ns, ab->skb);
+ 		}
+ 		ab->skb = NULL;
+ 	}
 -- 
-Thanks
-    Alex
+1.8.1.4
+
