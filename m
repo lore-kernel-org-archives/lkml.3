@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759908Ab3EGEdy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:33:54 -0400
+	id S1759986Ab3EGEeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:34:37 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27877 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932560Ab3EGEZx (ORCPT
+	with ESMTP id S1759556Ab3EGEZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 00:25:53 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Y8mbiK2kssUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=nIBoYseWPxQA:10 a=jdP34snFAAAA:8 a=VwQbUJbxAAAA:8 a=vmLDa1wCAAAA:8 a=ph7TQQQmLnIvo-Ghm-YA:9 a=9mtjllxcxZAA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 7 May 2013 00:25:52 -0400
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=igOWK8tfzcwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=AF-GGBz9fJIA:10 a=mK_AVkanAAAA:8 a=VwQbUJbxAAAA:8 a=FNyBlpCuAAAA:8 a=sWb2hJHYLsZzdZvheagA:9 a=9xyTavCNlvEA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035853.932675574@goodmis.org>
+Message-Id: <20130507035854.492831548@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:58:30 -0400
+Date: Mon, 06 May 2013 23:58:33 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [078/126] ath9k_hw: change AR9580 initvals to fix a stability issue
+Cc: Mathias Krause <minipli@googlemail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [081/126] crypto: algif - suppress sending source address information in
+ recvmsg
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0078-ath9k_hw-change-AR9580-initvals-to-fix-a-stability-i.patch
+Content-Disposition: inline; filename=0081-crypto-algif-suppress-sending-source-address-informa.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,36 +31,48 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit f09a878511997c25a76bf111a32f6b8345a701a5 ]
+[ Upstream commit 72a763d805a48ac8c0bf48fdb510e84c12de51fe ]
 
-The hardware parsing of Control Wrapper Frames needs to be disabled, as
-it has been causing spurious decryption error reports. The initvals for
-other chips have been updated to disable it, but AR9580 was left out for
-some reason.
+The current code does not set the msg_namelen member to 0 and therefore
+makes net/socket.c leak the local sockaddr_storage variable to userland
+-- 128 bytes of kernel stack memory. Fix that.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: <stable@vger.kernel.org> # 2.6.38
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ crypto/algif_hash.c     |    2 ++
+ crypto/algif_skcipher.c |    1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h b/drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h
-index 6e1915a..c00c13a 100644
---- a/drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9580_1p0_initvals.h
-@@ -519,7 +519,7 @@ static const u32 ar9580_1p0_mac_core[][2] = {
- 	{0x00008258, 0x00000000},
- 	{0x0000825c, 0x40000000},
- 	{0x00008260, 0x00080922},
--	{0x00008264, 0x9bc00010},
-+	{0x00008264, 0x9d400010},
- 	{0x00008268, 0xffffffff},
- 	{0x0000826c, 0x0000ffff},
- 	{0x00008270, 0x00000000},
+diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
+index ef5356c..0262210 100644
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -161,6 +161,8 @@ static int hash_recvmsg(struct kiocb *unused, struct socket *sock,
+ 	else if (len < ds)
+ 		msg->msg_flags |= MSG_TRUNC;
+ 
++	msg->msg_namelen = 0;
++
+ 	lock_sock(sk);
+ 	if (ctx->more) {
+ 		ctx->more = 0;
+diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
+index 6a6dfc0..a1c4f0a 100644
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -432,6 +432,7 @@ static int skcipher_recvmsg(struct kiocb *unused, struct socket *sock,
+ 	long copied = 0;
+ 
+ 	lock_sock(sk);
++	msg->msg_namelen = 0;
+ 	for (iov = msg->msg_iov, iovlen = msg->msg_iovlen; iovlen > 0;
+ 	     iovlen--, iov++) {
+ 		unsigned long seglen = iov->iov_len;
 -- 
 1.7.10.4
 
