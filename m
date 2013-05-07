@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758847Ab3EGTFF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 15:05:05 -0400
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:64227 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753721Ab3EGTFB (ORCPT
+	id S1759177Ab3EGTGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 15:06:42 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:36591 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab3EGTGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 15:05:01 -0400
+	Tue, 7 May 2013 15:06:39 -0400
+Date: Tue, 7 May 2013 22:06:28 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>, tony@atomide.com,
+        linux-omap@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: Re: [RESEND][PATCH 1/3] arm: dts: introduce config HAS_BANDGAP
+Message-ID: <20130507190628.GI5634@blackmetal.musicnaut.iki.fi>
+References: <1367874058-2378-1-git-send-email-eduardo.valentin@ti.com>
+ <1367874058-2378-2-git-send-email-eduardo.valentin@ti.com>
+ <20130506213413.GH5634@blackmetal.musicnaut.iki.fi>
+ <20130506223653.GA12089@obsidianresearch.com>
+ <51884971.9050508@ti.com>
+ <20130507003651.GA26035@obsidianresearch.com>
+ <5188FE54.6050200@ti.com>
+ <20130507182711.GB28628@obsidianresearch.com>
 MIME-Version: 1.0
-In-Reply-To: <384171828.66802.1367942365492.JavaMail.mail@webmail05>
-References: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
-	<Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
-	<CAErSpo7NZoOQZyW76HEoOTVgdqL2CgbVScAeF6HGLAVaNCq0=w@mail.gmail.com>
-	<337833384.57445.1361860509194.JavaMail.mail@webmail08>
-	<CAErSpo6CbO5KYXiErv6J_Dnm1u694C5fQPP2_cZL8VKDEnZa9A@mail.gmail.com>
-	<569718148.80620.1361906088301.JavaMail.mail@webmail13>
-	<CAErSpo6UkVhSf+nFW4zwJLBQw_0RQ5H9Bv-UuQRb6zdwsFPw4g@mail.gmail.com>
-	<CAErSpo4X+XXKvWDfqh2CKZAtJ9WMQk91OcsWwdxwYv2MfEM_zQ@mail.gmail.com>
-	<771333906.75854.1367057440028.JavaMail.mail@webmail08>
-	<CAErSpo4B4sRco-nuqgXiYtGQxBcbEB6ArQjHD0A9cj4TRE+qQw@mail.gmail.com>
-	<518097B8.4020402@gmail.com>
-	<CAErSpo7KWPRVEnw+n068pUZz+=WSTwno6m6t7N6dunuhnFC8EA@mail.gmail.com>
-	<384171828.66802.1367942365492.JavaMail.mail@webmail05>
-Date: Tue, 7 May 2013 13:05:00 -0600
-Message-ID: <CADLC3L3bdTP8-X3ftMq1qxnL=LVDf7d5gbu2ZMH0pXg2AU8xjw@mail.gmail.com>
-Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
-From: Robert Hancock <hancockrwd@gmail.com>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, psusi@ubuntu.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130507182711.GB28628@obsidianresearch.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 7, 2013 at 9:59 AM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
-> May 7, 2013 09:25:40 PM,        Bjorn Helgaas  wrote:
->> [+cc Phillip]
->>
->>> I would suspect that Windows' complaint about the BIOS mucking up the MTRRs
->>> is likely the best hint. Likely Windows is detecting the problem and fixing
->>> it up on resume, thus it only complains about "reduced resume performance".
->>> If the MTRRs are messed up, then quite likely parts of RAM have become
->>> uncacheable, causing performance to get randomly slaughtered in various
->>> ways.
->>>
->>> From looking at the code it's not clear if we are checking/restoring the
->>> MTRR contents after resume. If not, maybe we should be.
->>
->>I agree; the MTRR warning is a good hint.  Artem?
->>
->>Phillip, I cc'd you because you have similar hardware and your
->>https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1131468 report is
->>slightly similar.  Have you seen anything like this "reduced
->>performance after resume" issue?  If so, can you collect /proc/mtrr
->>contents before and after suspending?
->>
->
-> Like Robert Hancock correctly noted the Linux kernel lacks the code to check
-> for MTTR changes after resume - I'm not a kernel hacker to write such a code ;-)
->
-> Likewise there's no code to see if RAM pages have become uncacheable - i.e
-> I've no idea how to check it either.
->
-> According to /proc/mttr nothing changes on resume - only Windows detects
-> the discrepancy between MTTR regions on resume. dmesg contains no warnings
-> or errors (aside from usual ACPI SATA warnings - but they happen right on
-> boot - so I highly doubt the ACPI or SATA layers can be the culprit, since USB
-> exhibits a similar performance degradation).
+On Tue, May 07, 2013 at 12:27:11PM -0600, Jason Gunthorpe wrote:
+> On Tue, May 07, 2013 at 09:15:00AM -0400, Eduardo Valentin wrote:
+> > > But broadly the direction seems that drivers should have minimal
+> > > dependencies so, eg, the thermal maintainer compiling for x86 should
+> > > be able to compile test/static analyze your driver..
+> 
+> > Well, I do not see much of this attempt actually. Do you have some link
+> > / evidene that shows someone who actually cares about compiling drivers
+> > for targets that they are not used for? On this specific driver, I
+> > actually have  had exactly the opposite advice [1]. I am not convinced
+> > people actually want to do that.
+> 
+> There was a discussion a bit ago, but I can't find a link.. The
+> context was subsystem maintainers are being asked to look after more
+> code with the DT transition moving things out of arch/arm and at least
+> one complained they couldn't even compile test on x86... But again, I
+> can't find a link and you are right, there are lots and lots of
+> 'depends ARCH..' style things in kConfig already.
+> 
+> Lets just call it something to think about.
 
-I'm not sure if reading /proc/mtrr actually reads the registers out of
-the CPU each time, or whether we just return the cached values we read
-out during initial boot-up. If the latter, then this output isn't
-really useful as there's no guarantee the values are still intact.
+Tomi started a thread related to this recently:
 
->
-> In short, there's little to nothing that I can check.
->
-> That bug report has nothing to do with my problem - my PC suspends and
-> resumes more or less correctly - everything works (albeit some parts don't
-> work as they should). That person also has a very outdated BIOS -  1904 from
-> 08/15/2011. I wouldn't be surprised if BIOS update solved his problem.
->
-> Best regards,
->
-> Artem
+	http://marc.info/?l=linux-kernel&m=136731558332265&w=2
+
+I think there's some good reasons listed there, but I guess up to the
+subsystem maintainers to decide what they prefer.
+
+A.
