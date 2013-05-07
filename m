@@ -1,107 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759611Ab3EGRwY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 13:52:24 -0400
-Received: from mail-ye0-f201.google.com ([209.85.213.201]:54725 "EHLO
-	mail-ye0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759568Ab3EGRwV (ORCPT
+	id S1759624Ab3EGRzu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 13:55:50 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:33601 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225Ab3EGRzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 13:52:21 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Colin Cross <ccross@android.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-nfs@vger.kernel.org, linux-pm@vger.kernel.org,
-        netdev@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Steve French <sfrench@samba.org>,
-        Len Brown <len.brown@intel.com>, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org
-Subject: Re: [PATCH v4 02/16] freezer: add unsafe versions of freezable helpers for CIFS
-Date: Tue,  7 May 2013 10:52:05 -0700
-Message-Id: <1367949125-21809-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <CAMbhsRQ1i_dFctwjkqjg3=GJdEc8ReEDk=NnEFEXj8u3MaEqDA@mail.gmail.com>
-References: <CAMbhsRQ1i_dFctwjkqjg3=GJdEc8ReEDk=NnEFEXj8u3MaEqDA@mail.gmail.com>
+	Tue, 7 May 2013 13:55:47 -0400
+Message-ID: <51894021.1070900@cogentembedded.com>
+Date: Tue, 07 May 2013 21:55:45 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        David Miller <davem@davemloft.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] net: of_mdio: fix behavior on missing phy device
+References: <1367920171-20264-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1367920171-20264-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CIFS calls wait_event_freezekillable_unsafe with a VFS lock held,
-which is unsafe and will cause lockdep warnings when 6aa9707
-"lockdep: check that no locks held at freeze time" is reapplied
-(it was reverted in dbf520a).  CIFS shouldn't be doing this, but
-it has long-running syscalls that must hold a lock but also
-shouldn't block suspend.  Until CIFS freeze handling is rewritten
-to use a signal to exit out of the critical section, add a new
-wait_event_freezekillable_unsafe helper that will not run the
-lockdep test when 6aa9707 is reapplied, and call it from CIFS.
+Hello.
 
-In practice the likley result of holding the lock while freezing
-is that a second task blocked on the lock will never freeze,
-aborting suspend, but it is possible to manufacture a case using
-the cgroup freezer, the lock, and the suspend freezer to create
-a deadlock.  Silencing the lockdep warning here will allow
-problems to be found in other drivers that may have a more
-serious deadlock risk, and prevent new problems from being added.
+On 07-05-2013 13:49, Sebastian Hesselbarth wrote:
 
-Acked-by: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Colin Cross <ccross@android.com>
----
-v4:
-  Corrected to include CIFS wait_for_response hunk.
-  The rest of this series is still at v3.
+> of_mdiobus_register creates a phy_device even if get_phy_device failed
+> to create it previously. This causes indefinite polling on non-existent
+> PHYs. This fix makes of_mdio_register rely on get_phy_device to
+> properly create the device or fail otherwise.
 
- fs/cifs/transport.c     |  2 +-
- include/linux/freezer.h | 13 +++++++++++++
- 2 files changed, 14 insertions(+), 1 deletion(-)
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: David Miller <davem@davemloft.net>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: netdev@vger.kernel.org
+> ---
+>   drivers/of/of_mdio.c |   11 ++++-------
+>   1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/fs/cifs/transport.c b/fs/cifs/transport.c
-index 1a52868..e7f22f8 100644
---- a/fs/cifs/transport.c
-+++ b/fs/cifs/transport.c
-@@ -452,7 +452,7 @@ wait_for_response(struct TCP_Server_Info *server, struct mid_q_entry *midQ)
- {
- 	int error;
- 
--	error = wait_event_freezekillable(server->response_q,
-+	error = wait_event_freezekillable_unsafe(server->response_q,
- 				    midQ->mid_state != MID_REQUEST_SUBMITTED);
- 	if (error < 0)
- 		return -ERESTARTSYS;
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 5b31e21c..d3c038e 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -212,6 +212,16 @@ static inline bool freezer_should_skip(struct task_struct *p)
- 	__retval;							\
- })
- 
-+/* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
-+#define wait_event_freezekillable_unsafe(wq, condition)			\
-+({									\
-+	int __retval;							\
-+	freezer_do_not_count();						\
-+	__retval = wait_event_killable(wq, (condition));		\
-+	freezer_count_unsafe();						\
-+	__retval;							\
-+})
-+
- #define wait_event_freezable(wq, condition)				\
- ({									\
- 	int __retval;							\
-@@ -277,6 +287,9 @@ static inline void set_freezable(void) {}
- #define wait_event_freezekillable(wq, condition)		\
- 		wait_event_killable(wq, condition)
- 
-+#define wait_event_freezekillable_unsafe(wq, condition)			\
-+		wait_event_killable(wq, condition)
-+
- #endif /* !CONFIG_FREEZER */
- 
- #endif	/* FREEZER_H_INCLUDED */
--- 
-1.8.2.1
+> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+> index 23049ae..d5a57a9 100644
+> --- a/drivers/of/of_mdio.c
+> +++ b/drivers/of/of_mdio.c
+> @@ -84,13 +84,10 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+>   		phy = get_phy_device(mdio, addr, is_c45);
+>
+
+    This empty line is not needed -- would be good to drop it, while at 
+this.
+
+>   		if (!phy || IS_ERR(phy)) {
+> -			phy = phy_device_create(mdio, addr, 0, false, NULL);
+> -			if (!phy || IS_ERR(phy)) {
+> -				dev_err(&mdio->dev,
+> -					"error creating PHY at address %i\n",
+> -					addr);
+> -				continue;
+> -			}
+> +			dev_err(&mdio->dev,
+> +				"cannot get PHY at address %i\n",
+> +				addr);
+> +			continue;
+>   		}
+>
+>   		/* Associate the OF node with the device structure so it
+>
 
