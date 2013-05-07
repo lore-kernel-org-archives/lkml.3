@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759253Ab3EGNkZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:40:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42015 "EHLO
+	id S1753754Ab3EGO02 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:26:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42025 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758464Ab3EGNkW (ORCPT
+	with ESMTP id S1759217Ab3EGNkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:40:22 -0400
+	Tue, 7 May 2013 09:40:24 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Christoph Fritz <chf.fritz@googlemail.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 002/118] ssb: implement spurious tone avoidance
-Date: Tue,  7 May 2013 14:37:28 +0100
-Message-Id: <1367933964-1564-3-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 004/118] can: sja1000: fix handling on dt properties on little endian systems
+Date: Tue,  7 May 2013 14:37:30 +0100
+Message-Id: <1367933964-1564-5-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,96 +28,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
+From: Christoph Fritz <chf.fritz@googlemail.com>
 
-commit 46fc4c909339f5a84d1679045297d9d2fb596987 upstream.
+commit 0443de5fbf224abf41f688d8487b0c307dc5a4b4 upstream.
 
-And make use of it in b43. This fixes a regression introduced with
-49d55cef5b1925a5c1efb6aaddaa40fc7c693335
-b43: N-PHY: implement spurious tone avoidance
-This commit made BCM4322 use only MCS 0 on channel 13, which of course
-resulted in performance drop (down to 0.7Mb/s).
+To get correct endianes on little endian cpus (like arm) while reading device
+tree properties, this patch replaces of_get_property() with
+of_property_read_u32(). While there use of_property_read_bool() for the
+handling of the boolean "nxp,no-comparator-bypass" property.
 
-Reported-by: Stefan Brüns <stefan.bruens@rwth-aachen.de>
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/b43/phy_n.c          |  3 ++-
- drivers/ssb/driver_chipcommon_pmu.c       | 29 +++++++++++++++++++++++++++++
- include/linux/ssb/ssb_driver_chipcommon.h |  2 ++
- 3 files changed, 33 insertions(+), 1 deletion(-)
+ drivers/net/can/sja1000/sja1000_of_platform.c | 31 +++++++++++++--------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/net/wireless/b43/phy_n.c b/drivers/net/wireless/b43/phy_n.c
-index 6be2f73..4ce3e1f 100644
---- a/drivers/net/wireless/b43/phy_n.c
-+++ b/drivers/net/wireless/b43/phy_n.c
-@@ -4582,7 +4582,8 @@ static void b43_nphy_pmu_spur_avoid(struct b43_wldev *dev, bool avoid)
- #endif
- #ifdef CONFIG_B43_SSB
- 	case B43_BUS_SSB:
--		/* FIXME */
-+		ssb_pmu_spuravoid_pllupdate(&dev->dev->sdev->bus->chipco,
-+					    avoid);
- 		break;
- #endif
- 	}
-diff --git a/drivers/ssb/driver_chipcommon_pmu.c b/drivers/ssb/driver_chipcommon_pmu.c
-index b58fef7..1fb9b22 100644
---- a/drivers/ssb/driver_chipcommon_pmu.c
-+++ b/drivers/ssb/driver_chipcommon_pmu.c
-@@ -645,3 +645,32 @@ u32 ssb_pmu_get_controlclock(struct ssb_chipcommon *cc)
- 		return 0;
- 	}
- }
-+
-+void ssb_pmu_spuravoid_pllupdate(struct ssb_chipcommon *cc, int spuravoid)
-+{
-+	u32 pmu_ctl = 0;
-+
-+	switch (cc->dev->bus->chip_id) {
-+	case 0x4322:
-+		ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL0, 0x11100070);
-+		ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL1, 0x1014140a);
-+		ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL5, 0x88888854);
-+		if (spuravoid == 1)
-+			ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL2, 0x05201828);
-+		else
-+			ssb_chipco_pll_write(cc, SSB_PMU1_PLLCTL2, 0x05001828);
-+		pmu_ctl = SSB_CHIPCO_PMU_CTL_PLL_UPD;
-+		break;
-+	case 43222:
-+		/* TODO: BCM43222 requires updating PLLs too */
-+		return;
-+	default:
-+		ssb_printk(KERN_ERR PFX
-+			   "Unknown spuravoidance settings for chip 0x%04X, not changing PLL\n",
-+			   cc->dev->bus->chip_id);
-+		return;
-+	}
-+
-+	chipco_set32(cc, SSB_CHIPCO_PMU_CTL, pmu_ctl);
-+}
-+EXPORT_SYMBOL_GPL(ssb_pmu_spuravoid_pllupdate);
-diff --git a/include/linux/ssb/ssb_driver_chipcommon.h b/include/linux/ssb/ssb_driver_chipcommon.h
-index 1a6b004..29ce7e4 100644
---- a/include/linux/ssb/ssb_driver_chipcommon.h
-+++ b/include/linux/ssb/ssb_driver_chipcommon.h
-@@ -219,6 +219,7 @@
- #define SSB_CHIPCO_PMU_CTL			0x0600 /* PMU control */
- #define  SSB_CHIPCO_PMU_CTL_ILP_DIV		0xFFFF0000 /* ILP div mask */
- #define  SSB_CHIPCO_PMU_CTL_ILP_DIV_SHIFT	16
-+#define  SSB_CHIPCO_PMU_CTL_PLL_UPD		0x00000400
- #define  SSB_CHIPCO_PMU_CTL_NOILPONW		0x00000200 /* No ILP on wait */
- #define  SSB_CHIPCO_PMU_CTL_HTREQEN		0x00000100 /* HT req enable */
- #define  SSB_CHIPCO_PMU_CTL_ALPREQEN		0x00000080 /* ALP req enable */
-@@ -661,5 +662,6 @@ enum ssb_pmu_ldo_volt_id {
- void ssb_pmu_set_ldo_voltage(struct ssb_chipcommon *cc,
- 			     enum ssb_pmu_ldo_volt_id id, u32 voltage);
- void ssb_pmu_set_ldo_paref(struct ssb_chipcommon *cc, bool on);
-+void ssb_pmu_spuravoid_pllupdate(struct ssb_chipcommon *cc, int spuravoid);
+diff --git a/drivers/net/can/sja1000/sja1000_of_platform.c b/drivers/net/can/sja1000/sja1000_of_platform.c
+index f2683eb..c505b55 100644
+--- a/drivers/net/can/sja1000/sja1000_of_platform.c
++++ b/drivers/net/can/sja1000/sja1000_of_platform.c
+@@ -94,8 +94,8 @@ static int __devinit sja1000_ofp_probe(struct platform_device *ofdev)
+ 	struct net_device *dev;
+ 	struct sja1000_priv *priv;
+ 	struct resource res;
+-	const u32 *prop;
+-	int err, irq, res_size, prop_size;
++	u32 prop;
++	int err, irq, res_size;
+ 	void __iomem *base;
  
- #endif /* LINUX_SSB_CHIPCO_H_ */
+ 	err = of_address_to_resource(np, 0, &res);
+@@ -136,27 +136,27 @@ static int __devinit sja1000_ofp_probe(struct platform_device *ofdev)
+ 	priv->read_reg = sja1000_ofp_read_reg;
+ 	priv->write_reg = sja1000_ofp_write_reg;
+ 
+-	prop = of_get_property(np, "nxp,external-clock-frequency", &prop_size);
+-	if (prop && (prop_size ==  sizeof(u32)))
+-		priv->can.clock.freq = *prop / 2;
++	err = of_property_read_u32(np, "nxp,external-clock-frequency", &prop);
++	if (!err)
++		priv->can.clock.freq = prop / 2;
+ 	else
+ 		priv->can.clock.freq = SJA1000_OFP_CAN_CLOCK; /* default */
+ 
+-	prop = of_get_property(np, "nxp,tx-output-mode", &prop_size);
+-	if (prop && (prop_size == sizeof(u32)))
+-		priv->ocr |= *prop & OCR_MODE_MASK;
++	err = of_property_read_u32(np, "nxp,tx-output-mode", &prop);
++	if (!err)
++		priv->ocr |= prop & OCR_MODE_MASK;
+ 	else
+ 		priv->ocr |= OCR_MODE_NORMAL; /* default */
+ 
+-	prop = of_get_property(np, "nxp,tx-output-config", &prop_size);
+-	if (prop && (prop_size == sizeof(u32)))
+-		priv->ocr |= (*prop << OCR_TX_SHIFT) & OCR_TX_MASK;
++	err = of_property_read_u32(np, "nxp,tx-output-config", &prop);
++	if (!err)
++		priv->ocr |= (prop << OCR_TX_SHIFT) & OCR_TX_MASK;
+ 	else
+ 		priv->ocr |= OCR_TX0_PULLDOWN; /* default */
+ 
+-	prop = of_get_property(np, "nxp,clock-out-frequency", &prop_size);
+-	if (prop && (prop_size == sizeof(u32)) && *prop) {
+-		u32 divider = priv->can.clock.freq * 2 / *prop;
++	err = of_property_read_u32(np, "nxp,clock-out-frequency", &prop);
++	if (!err && prop) {
++		u32 divider = priv->can.clock.freq * 2 / prop;
+ 
+ 		if (divider > 1)
+ 			priv->cdr |= divider / 2 - 1;
+@@ -166,8 +166,7 @@ static int __devinit sja1000_ofp_probe(struct platform_device *ofdev)
+ 		priv->cdr |= CDR_CLK_OFF; /* default */
+ 	}
+ 
+-	prop = of_get_property(np, "nxp,no-comparator-bypass", NULL);
+-	if (!prop)
++	if (!of_property_read_bool(np, "nxp,no-comparator-bypass"))
+ 		priv->cdr |= CDR_CBP; /* default */
+ 
+ 	priv->irq_flags = IRQF_SHARED;
 -- 
 1.8.1.2
 
