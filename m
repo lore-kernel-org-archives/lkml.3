@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758837Ab3EGEGz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:06:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22102 "EHLO
+	id S1758734Ab3EGEGy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:06:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3816 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758892Ab3EGD6t (ORCPT
+	with ESMTP id S1760088Ab3EGD6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 23:58:49 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=YNrnxm9wvQkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=RqxSJzTtC18A:10 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=rOUgymgbAAAA:8 a=Y8YdqA6ryhf90p4iqFQA:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 6 May 2013 23:58:50 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=U_DIjI_h8TMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=TKL5J2pauvUA:10 a=sozttTNsAAAA:8 a=VwQbUJbxAAAA:8 a=2LjLHKtCAAAA:8 a=FaKLYAJVeHm0sZ5W9RoA:9 a=x2szoZtqnggA:10 a=C3PaYh0q9tsA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035844.074522326@goodmis.org>
+Message-Id: <20130507035845.085077595@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:57:31 -0400
+Date: Mon, 06 May 2013 23:57:37 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Michael Wolf <mjw@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [019/126] powerpc: pSeries_lpar_hpte_remove fails from Adjunct partition being
- performed before the ANDCOND test
+Cc: Robert Tivy <rtivy@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [025/126] remoteproc: fix FW_CONFIG typo
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0019-powerpc-pSeries_lpar_hpte_remove-fails-from-Adjunct-.patch
+Content-Disposition: inline; filename=0025-remoteproc-fix-FW_CONFIG-typo.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,45 +29,35 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Michael Wolf <mjw@linux.vnet.ibm.com>
+From: Robert Tivy <rtivy@ti.com>
 
-[ Upstream commit 9fb2640159f9d4f5a2a9d60e490482d4cbecafdb ]
+[ Upstream commit c7426bce5933d16b492a34e42ae77e26fceddff6 ]
 
-Some versions of pHyp will perform the adjunct partition test before the
-ANDCOND test.  The result of this is that H_RESOURCE can be returned and
-cause the BUG_ON condition to occur. The HPTE is not removed.  So add a
-check for H_RESOURCE, it is ok if this HPTE is not removed as
-pSeries_lpar_hpte_remove is looking for an HPTE to remove and not a
-specific HPTE to remove.  So it is ok to just move on to the next slot
-and try again.
+Fix obvious typo introduced in commit e121aefa7d9f10eee5cf26ed47129237a05d940b
+("remoteproc: fix missing CONFIG_FW_LOADER configurations").
 
 Cc: stable@vger.kernel.org
-Signed-off-by: Michael Wolf <mjw@linux.vnet.ibm.com>
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Robert Tivy <rtivy@ti.com>
+[cc stable, slight subject change]
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/powerpc/platforms/pseries/lpar.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/remoteproc/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/platforms/pseries/lpar.c b/arch/powerpc/platforms/pseries/lpar.c
-index 5f3ef87..9cfdcc9 100644
---- a/arch/powerpc/platforms/pseries/lpar.c
-+++ b/arch/powerpc/platforms/pseries/lpar.c
-@@ -187,7 +187,13 @@ static long pSeries_lpar_hpte_remove(unsigned long hpte_group)
- 					   (0x1UL << 4), &dummy1, &dummy2);
- 		if (lpar_rc == H_SUCCESS)
- 			return i;
--		BUG_ON(lpar_rc != H_NOT_FOUND);
-+
-+		/*
-+		 * The test for adjunct partition is performed before the
-+		 * ANDCOND test.  H_RESOURCE may be returned, so we need to
-+		 * check for that as well.
-+		 */
-+		BUG_ON(lpar_rc != H_NOT_FOUND && lpar_rc != H_RESOURCE);
+diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
+index 811ff72..324d84e 100644
+--- a/drivers/remoteproc/Kconfig
++++ b/drivers/remoteproc/Kconfig
+@@ -4,7 +4,7 @@ menu "Remoteproc drivers (EXPERIMENTAL)"
+ config REMOTEPROC
+ 	tristate
+ 	depends on EXPERIMENTAL
+-	select FW_CONFIG
++	select FW_LOADER
+ 	select VIRTIO
  
- 		slot_offset++;
- 		slot_offset &= 0x7;
+ config OMAP_REMOTEPROC
 -- 
 1.7.10.4
 
