@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933449Ab3EGNmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:42:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42639 "EHLO
+	id S933506Ab3EGNmp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:42:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42645 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933420Ab3EGNmd (ORCPT
+	with ESMTP id S933421Ab3EGNmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:33 -0400
+	Tue, 7 May 2013 09:42:35 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 115/118] tty: fix up atime/mtime mess, take three
-Date: Tue,  7 May 2013 14:39:21 +0100
-Message-Id: <1367933964-1564-116-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 116/118] ipc: sysv shared memory limited to 8TiB
+Date: Tue,  7 May 2013 14:39:22 +0100
+Message-Id: <1367933964-1564-117-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,68 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Robin Holt <holt@sgi.com>
 
-commit b0b885657b6c8ef63a46bc9299b2a7715d19acde upstream.
+commit d69f3bad4675ac519d41ca2b11e1c00ca115cecd upstream.
 
-We first tried to avoid updating atime/mtime entirely (commit
-b0de59b5733d: "TTY: do not update atime/mtime on read/write"), and then
-limited it to only update it occasionally (commit 37b7f3c76595: "TTY:
-fix atime/mtime regression"), but it turns out that this was both
-insufficient and overkill.
+Trying to run an application which was trying to put data into half of
+memory using shmget(), we found that having a shmall value below 8EiB-8TiB
+would prevent us from using anything more than 8TiB.  By setting
+kernel.shmall greater than 8EiB-8TiB would make the job work.
 
-It was insufficient because we let people attach to the shared ptmx node
-to see activity without even reading atime/mtime, and it was overkill
-because the "only once a minute" means that you can't really tell an
-idle person from an active one with 'w'.
+In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
 
-So this tries to fix the problem properly.  It marks the shared ptmx
-node as un-notifiable, and it lowers the "only once a minute" to a few
-seconds instead - still long enough that you can't time individual
-keystrokes, but short enough that you can tell whether somebody is
-active or not.
+ipc/shm.c:
+ 458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ 459 {
+...
+ 465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
+...
+ 474         if (ns->shm_tot + numpages > ns->shm_ctlall)
+ 475                 return -ENOSPC;
 
-Reported-by: Simon Kirby <sim@hostway.ca>
-Acked-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[akpm@linux-foundation.org: make ipc/shm.c:newseg()'s numpages size_t, not int]
+Signed-off-by: Robin Holt <holt@sgi.com>
+Reported-by: Alex Thorlton <athorlton@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/pty.c    | 3 +++
- drivers/tty/tty_io.c | 4 ++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ include/linux/ipc_namespace.h | 2 +-
+ ipc/shm.c                     | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index ce53594..33b1526 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -616,6 +616,9 @@ static int ptmx_open(struct inode *inode, struct file *filp)
+diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
+index 5499c92..c731973 100644
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -42,8 +42,8 @@ struct ipc_namespace {
  
- 	nonseekable_open(inode, filp);
- 
-+	/* We refuse fsnotify events on ptmx, since it's a shared resource */
-+	filp->f_mode |= FMODE_NONOTIFY;
-+
- 	retval = tty_alloc_file(filp);
- 	if (retval)
- 		return retval;
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 95a37fa..67ea9cf 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -939,10 +939,10 @@ void start_tty(struct tty_struct *tty)
- 
- EXPORT_SYMBOL(start_tty);
- 
-+/* We limit tty time update visibility to every 8 seconds or so. */
- static void tty_update_time(struct timespec *time)
- {
--	unsigned long sec = get_seconds();
--	sec -= sec % 60;
-+	unsigned long sec = get_seconds() & ~7;
- 	if ((long)(sec - time->tv_sec) > 0)
- 		time->tv_sec = sec;
- }
+ 	size_t		shm_ctlmax;
+ 	size_t		shm_ctlall;
++	unsigned long	shm_tot;
+ 	int		shm_ctlmni;
+-	int		shm_tot;
+ 	/*
+ 	 * Defines whether IPC_RMID is forced for _all_ shm segments regardless
+ 	 * of shmctl()
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 41c1285..f5ba6ac 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -462,7 +462,7 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ 	size_t size = params->u.size;
+ 	int error;
+ 	struct shmid_kernel *shp;
+-	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
++	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	struct file * file;
+ 	char name[13];
+ 	int id;
 -- 
 1.8.1.2
 
