@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab3EGXyB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 19:54:01 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37720 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753375Ab3EGXyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 19:54:00 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>, Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
-        linux-pm@vger.kernel.org, netdev@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v2 00/10] optimize freezing tasks by reducing task wakeups
-Date: Wed, 08 May 2013 02:02:24 +0200
-Message-ID: <8514381.qPm240gC5h@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130507181237.GE5531@mtj.dyndns.org>
-References: <1367884221-20462-1-git-send-email-ccross@android.com> <20130507181237.GE5531@mtj.dyndns.org>
+	id S1756621Ab3EGXyR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 19:54:17 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:36718 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756468Ab3EGXyO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 19:54:14 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 7 May 2013 16:53:52 -0700
+X-Google-Sender-Auth: 2NYlf9mx3cJLDDgmvn3HNpjj4SU
+Message-ID: <CAB=NE6Wy0dp51wDxKzo74Kz=2F-MQjOnARS1r-z3v+LrOwhn-Q@mail.gmail.com>
+Subject: Dropping non supported kernels for kernel backports ?
+To: "backports@vger.kernel.org" <backports@vger.kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 07, 2013 11:12:37 AM Tejun Heo wrote:
-> Hello,
-> 
-> On Mon, May 06, 2013 at 04:50:05PM -0700, Colin Cross wrote:
-> > On slow cpus the large number of task wakeups and context switches
-> > triggered by freezing and thawing tasks can take a significant amount
-> > of cpu time.  This patch series reduces the amount of work done during
-> > freezing tasks by avoiding waking up tasks that are already in a freezable
-> > state.
-> 
-> For the whole series,
-> 
->  Acked-by: Tejun Heo <tj@kernel.org>
-> 
-> Thanks a lot!
+Today the backports project provides support to backport down to
+2.6.24 for some subsystems. While this is good for users in practice
+for development and maintenance this is quite a bit of overhead. Apart
+from older kernels there are also gaps in between stable releases that
+are not supported. For example 3.8 and 3.4 are supported but anything
+in between is not (3.5, 3.6, 3.7), but we still do support them on the
+backports project. At times this may mean a stable fix may get
+propagated onto a the linux-3.4.y branch but obviously not the the
+linux-3.5.y branch. If backporting expressing this becomes a bit
+complex and we have dealt with it. In short, its a pain.
 
-All 16 patches queued up as v3.11 material.
+I'd like to see what folks thought if we went ahead and *only*
+supported kernels listed on kernel.org as supported. This would help
+with the Linux kernel maintainer effort by also persuading users to
+upgrade to stable releases as well as educating around this.
 
-Many thanks to everyone involved,
-Rafael
+If v3.10 backported releases are too soon to do this I propose we
+seriously consider it for v3.11 releases. Any thoughts?
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+  Luis
