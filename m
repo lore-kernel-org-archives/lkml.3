@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759704Ab3EGEcq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:32:46 -0400
+	id S932598Ab3EGEZy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:25:54 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25931 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932602Ab3EGEZy (ORCPT
+	with ESMTP id S1759415Ab3EGEZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 00:25:54 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=KFk0wb-63oAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=h79IpjeT3TgA:10 a=VwQbUJbxAAAA:8 a=JfrnYn6hAAAA:8 a=76lol7B0AAAA:8 a=1OPJJPltxralJJD8QtwA:9 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=3Rfx1nUSh_UA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 7 May 2013 00:25:44 -0400
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=fEm7r0F1DdkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=iI492zOF3K0A:10 a=mK_AVkanAAAA:8 a=ls8vHrqWAAAA:8 a=QyXUC8HyAAAA:8 a=J1Y8HTJGAAAA:8 a=fC4T7qsy4_4xvlMS5R0A:9 a=9xyTavCNlvEA:10 a=KZ3pOzVjQMkA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035853.299653350@goodmis.org>
+Message-Id: <20130507035858.752928220@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:58:26 -0400
+Date: Mon, 06 May 2013 23:58:58 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [074/126] sched: Convert BUG_ON()s in try_to_wake_up_local() to
- WARN_ON_ONCE()s
+Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [106/126] NFC: llcp: fix info leaks via msg_name in llcp_sock_recvmsg()
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0074-sched-Convert-BUG_ON-s-in-try_to_wake_up_local-to-WA.patch
+Content-Disposition: inline; filename=0106-NFC-llcp-fix-info-leaks-via-msg_name-in-llcp_sock_re.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,47 +33,51 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 383efcd00053ec40023010ce5034bd702e7ab373 ]
+[ Upstream commit d26d6504f23e803824e8ebd14e52d4fc0a0b09cb ]
 
-try_to_wake_up_local() should only be invoked to wake up another
-task in the same runqueue and BUG_ON()s are used to enforce the
-rule. Missing try_to_wake_up_local() can stall workqueue
-execution but such stalls are likely to be finite either by
-another work item being queued or the one blocked getting
-unblocked.  There's no reason to trigger BUG while holding rq
-lock crashing the whole system.
+The code in llcp_sock_recvmsg() does not initialize all the members of
+struct sockaddr_nfc_llcp when filling the sockaddr info. Nor does it
+initialize the padding bytes of the structure inserted by the compiler
+for alignment.
 
-Convert BUG_ON()s in try_to_wake_up_local() to WARN_ON_ONCE()s.
+Also, if the socket is in state LLCP_CLOSED or is shutting down during
+receive the msg_namelen member is not updated to 0 while otherwise
+returning with 0, i.e. "success". The msg_namelen update is also
+missing for stream and seqpacket sockets which don't fill the sockaddr
+info.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20130318192234.GD3042@htj.dyndns.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Both issues lead to the fact that the code will leak uninitialized
+kernel stack bytes in net/socket.c.
+
+Fix the first issue by initializing the memory used for sockaddr info
+with memset(0). Fix the second one by setting msg_namelen to 0 early.
+It will be updated later if we're going to fill the msg_name member.
+
+Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
+Cc: Aloisio Almeida Jr <aloisio.almeida@openbossa.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/sched/core.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/nfc/llcp/sock.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 1a48cdb..2f88246 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1651,8 +1651,10 @@ static void try_to_wake_up_local(struct task_struct *p)
- {
- 	struct rq *rq = task_rq(p);
+diff --git a/net/nfc/llcp/sock.c b/net/nfc/llcp/sock.c
+index ddeb9aa..6832022 100644
+--- a/net/nfc/llcp/sock.c
++++ b/net/nfc/llcp/sock.c
+@@ -579,6 +579,8 @@ static int llcp_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
  
--	BUG_ON(rq != this_rq());
--	BUG_ON(p == current);
-+	if (WARN_ON_ONCE(rq != this_rq()) ||
-+	    WARN_ON_ONCE(p == current))
-+		return;
+ 	pr_debug("%p %zu\n", sk, len);
+ 
++	msg->msg_namelen = 0;
 +
- 	lockdep_assert_held(&rq->lock);
+ 	lock_sock(sk);
  
- 	if (!raw_spin_trylock(&p->pi_lock)) {
+ 	if (sk->sk_state == LLCP_CLOSED &&
 -- 
 1.7.10.4
 
