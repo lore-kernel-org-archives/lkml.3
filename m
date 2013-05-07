@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757559Ab3EGPws (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 11:52:48 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:16978 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754771Ab3EGPwr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 11:52:47 -0400
-X-IronPort-AV: E=Sophos;i="4.87,629,1363158000"; 
-   d="scan'208";a="45030447"
-Message-ID: <5189234D.3040208@codeaurora.org>
-Date: Tue, 07 May 2013 11:52:45 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1757756Ab3EGPyS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 11:54:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48261 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753413Ab3EGPyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 11:54:17 -0400
+Date: Tue, 7 May 2013 16:54:11 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Zhang Yi <wetpzy@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Peter Zijlstra'" <peterz@infradead.org>,
+        "'Darren Hart'" <dvhart@linux.intel.com>,
+        "'Ingo Molnar'" <mingo@kernel.org>,
+        "'Dave Hansen'" <dave.hansen@linux.intel.com>, zhang.yi20@zte.com.cn,
+        wetpzy@163.com
+Subject: Re: [PATCH] futex: bugfix for futex-key conflict when futex use
+ hugepage
+Message-ID: <20130507155411.GO11497@suse.de>
+References: <000101ce4277$69df5af0$3d9e10d0$@com>
+ <alpine.LFD.2.02.1304261951300.21884@ionos>
+ <000101ce4b1d$bddec0b0$399c4210$@com>
+ <20130507152007.GA3405@suse.de>
+ <alpine.LFD.2.02.1305071724190.2863@ionos>
 MIME-Version: 1.0
-To: Peter Maydell <peter.maydell@linaro.org>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Alexander Graf <agraf@suse.de>, Amit Shah <amit.shah@redhat.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
-References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org> <BA2076A6-0688-4E5C-85F9-A9CA8FD75782@suse.de> <87obcyc9sh.fsf@rustcorp.com.au> <336C59AA-D5D7-472E-A8DA-EEB413DD6C68@suse.de> <CAAHg+Hj0tySbzUGnoFE9ybVYP291B-i8-Ck1EkwD57t8yG5wwg@mail.gmail.com> <C52CCDD4-D8FB-4AD6-B83D-3B5251A7A0F5@suse.de> <87sj27xxjr.fsf@rustcorp.com.au> <CAFEAcA9h8iSYfTBtf6n+Vk5sDtBR2yB2oafRxikHoWbKt0VRUw@mail.gmail.com> <87ip2wr8tp.fsf@rustcorp.com.au> <CAFEAcA_=BTXVdkN0WmajxVSjbDrmxc5z65hCbxr=7TqJVsE9EA@mail.gmail.com> <87txmfo0rl.fsf@rustcorp.com.au> <CAFEAcA9jBSpN2p9ZaU+_gX41Ke3nvpSKVrWV8Rioy_ioadKCgg@mail.gmail.com>
-In-Reply-To: <CAFEAcA9jBSpN2p9ZaU+_gX41Ke3nvpSKVrWV8Rioy_ioadKCgg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1305071724190.2863@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2013 08:19 AM, Peter Maydell wrote:
-> On 7 May 2013 05:46, Rusty Russell <rusty@rustcorp.com.au> wrote:
->> Peter Maydell <peter.maydell@linaro.org> writes:
->>> That all looks like sensible QEMU implementation possibilities
->>> but it seems to be a bit of a non-sequitur from "how do we
->>> tell the kernel to actually use this?"
->>
->> You enable the feature in the virtio console device, and a kernel
->> compiled with EARLY_PRINTK will use it?
+On Tue, May 07, 2013 at 05:24:57PM +0200, Thomas Gleixner wrote:
 > 
-> Well, at the moment EARLY_PRINTK is hardcoded to
-> "use some specific UART or equivalent selected at
-> compile time". So the equivalent presumably would
-> be to hard-compile "use virtio-console", but then
-> how does that code know where the virtio-console
-> is in the address space?
+> 
+> On Tue, 7 May 2013, Mel Gorman wrote:
+> 
+> > On Tue, May 07, 2013 at 08:23:48PM +0800, Zhang Yi wrote:
+> > > diff -uprN linux3.9-orig/kernel/futex.c linux3.9/kernel/futex.c
+> > > --- linux3.9-orig/kernel/futex.c	2013-04-15 00:45:16.000000000 +0000
+> > > +++ linux3.9/kernel/futex.c	2013-05-06 16:24:40.403525000 +0000
+> > > @@ -215,6 +215,22 @@ static void drop_futex_key_refs(union fu
+> > >  	}
+> > >  }
+> > > 
+> > > +/*
+> > > +* Get subpage index in compound page, and add it into futex_key.
+> > > +*/
+> > > +static void key_add_compound_idx(union futex_key *key,
+> > > +				 struct page *head_page, struct page *page)
+> > > +{
+> > > +	int compound_idx;
+> > > +
+> > > +	if (compound_order(head_page) >= MAX_ORDER)
+> > > +		compound_idx = page_to_pfn(page) - page_to_pfn(head_page);
+> > > +	else
+> > > +		compound_idx = page - head_page;
+> > > +
+> > > +	key->both.offset |= compound_idx << PAGE_SHIFT;
+> > > +}
+> > > +
+> > 
+> > This implicitely assumies it is dealing with a hugetlbfs page. Today, it
+> > is the case that an inode-based futex with PageCompound is a hugetlbfs
+> > page but that could change in the future if THP ever backs files. This
+> > would then break again except it would be harder to fix because THP pages
+> > can be collapsed underneath you after the futex key has been generated.
+> > 
+> > As this problem is hugetlbfs-specific should the fix be firmly in hugetlbfs
+> > land? Something like the following untested and only partial diff? Is the
+> > use of PageCompound in the futex path like this going to be problematic?
+> 
+> Why should it ?
+>  
 
-arm64 uses a kernel argument.
+The comment for it states that it is "generally not used in hot code
+paths" but it's a light-weight check that the cache lines should already
+be fetched for. I doubt that the overhead of this check versus
+page_head == page is noticable.
 
-Christopher
+> > @@ -365,7 +366,7 @@ again:
+> >  	} else {
+> >  		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
+> >  		key->shared.inode = page_head->mapping->host;
+> > -		key->shared.pgoff = page_head->index;
+> > +		key->shared.pgoff = basepage_index(page_head);
+> 
+>   That want's to be  basepage_index(page), right ?
+> 
+
+BAH, yes.
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+Mel Gorman
+SUSE Labs
