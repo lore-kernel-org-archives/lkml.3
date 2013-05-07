@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab3EGO2x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:28:53 -0400
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:51007 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752908Ab3EGO2v (ORCPT
+	id S1754406Ab3EGO27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:28:59 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57092 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754111Ab3EGO2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 10:28:51 -0400
-Date: Tue, 7 May 2013 14:28:49 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [linux-next-20130422] Bug in SLAB?
-In-Reply-To: <201305071938.DAC81273.HOSJOFFOQLtMFV@I-love.SAKURA.ne.jp>
-Message-ID: <0000013e7f651028-9a57bc30-4148-4aba-a0e6-737b83bf2458-000000@email.amazonses.com>
-References: <0000013e6b90e65e-e0e184d9-7da5-4873-9572-3b40958552e2-000000@email.amazonses.com> <201305040348.CIF81716.OStQOHFJMFLOVF@I-love.SAKURA.ne.jp> <0000013e6bd7a766-8473586c-7937-4129-bad1-a4198acdddcf-000000@email.amazonses.com>
- <201305040915.AID02071.FHVQJtOFOMOLSF@I-love.SAKURA.ne.jp> <0000013e7a18153d-4b59eaf6-0fcd-4eec-b357-31d3d40baa7d-000000@email.amazonses.com> <201305071938.DAC81273.HOSJOFFOQLtMFV@I-love.SAKURA.ne.jp>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 7 May 2013 10:28:54 -0400
+Date: Tue, 7 May 2013 15:28:51 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Message-ID: <20130507142851.GU7478@sirena.org.uk>
+References: <1367932297-27926-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.05.07-54.240.9.70
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DFFMAMYvrfM3lt66"
+Content-Disposition: inline
+In-Reply-To: <1367932297-27926-1-git-send-email-srinivas.kandagatla@st.com>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC] regmap: debugfs: Fix start_reg calculation
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 May 2013, Tetsuo Handa wrote:
 
-> > These are exclusively from the module load. So the kernel seems to be
-> > clean of large kmalloc's ?
-> >
-> There are modules (e.g. TOMOYO) which do not check for KMALLOC_MAX_SIZE limit
-> and expect kmalloc() larger than KMALLOC_MAX_SIZE bytes to return NULL.
+--DFFMAMYvrfM3lt66
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Dont do that. Please fix these things. The slab allocators are for small
-allocations not large ones like these. There are page allocator functions
-that allow higher order allocations if contiguous memory is needed and
-there is vmalloc that makes it safe. We  recently added a CMA allocator
-specifically for these large contiguous physical allocations.
+On Tue, May 07, 2013 at 02:11:37PM +0100, Srinivas KANDAGATLA wrote:
 
-> As far as I know, such modules sequentially double the buffer size. Therefore,
-> as long as request for KMALLOC_MAX_SIZE * 2 bytes returns NULL, they won't
-> trigger oops by requesting for KMALLOC_MAX_SIZE * 8 bytes.
+> regmap_debugfs_get_dump_start returns register number, not the actual
+> offset into the map. So we use the return value as start to dump the=20
 
-Please use vmalloc for these large allocs.
+No, it doesn't - it returns the register it should start reading from.
+It's just that the code isn't paying attention to stride and should.
+Fix the function, not the callers.
 
+--DFFMAMYvrfM3lt66
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRiQ+gAAoJELSic+t+oim94mEQAIFo5ZPqqSr0uwbpQZn8LudC
+sQIBAklLEkf1JWnIxiQacYYyjB/okfJ81CQUhoebDZkltihslsfmh1pWwzQWZEj9
+OXxvg/YoTOfhH6O68en1JmE60SeSFtrsWsC/t5XrXawMREkMwlsheNvqB5oOr1lI
+2bTP9jfBoOFymXEqF0VD85ejYWbgKHLbK5q6dM6mnQlpJ1bERVWWc3KLH3zr2ctS
+JZMwr/WU86RkFAmWKRM5Jmstowf1PmRwvfXLXqJNbCq+03b+jTAhIs6WdA62sMRW
+5zT+HF4m4BD5yYXrfi+aHk4v3xlFQ3dZEhpJSZKtzXQDcK8vI0GNMOn5vg0Fbvwp
+TrNFB7mUNw3CN9/2t3K21k0pK5qP5ml9Dt2gB26HqRVclj0SoGiJ31qoIWFS16sN
+AzRQcxXQ9NJUWDk77QImcilXpbB2W+GqmeHzN/i8WQG3Hi+WiVHiM53aL7katjZZ
+CqcJqxaYdiN9Rsf76qLYCujqn5nXuoFSYX3f/fNW4J89aJ4vf8cXSgZN6ivGc8Tx
+2PpMzfftKUVGZaUZ58fd7RuoOic/+4hTHRu/Tf7o43w/tWMPdZ8b6VCVr24aryCG
+Hg+RCeeoIETpSDWyAddRnsLgawYkwJgw6B8jDnYHwfoEdN/CNYNIlFEUBnQhSwPX
+gX83QljQ1zzvUQ7nZe59
+=Nr3Y
+-----END PGP SIGNATURE-----
+
+--DFFMAMYvrfM3lt66--
