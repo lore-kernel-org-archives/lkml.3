@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab3EGOQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:16:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42136 "EHLO
+	id S1752546Ab3EGOQt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:16:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42142 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932550Ab3EGNks (ORCPT
+	with ESMTP id S932560Ab3EGNks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 May 2013 09:40:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emese Revfy <re.emese@gmail.com>, Kees Cook <keescook@chromium.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>, a.p.zijlstra@chello.nl,
+        paulus@samba.org, acme@ghostprotocols.net,
+        Ingo Molnar <mingo@kernel.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 009/118] kernel/signal.c: stop info leak via the tkill and the tgkill syscalls
-Date: Tue,  7 May 2013 14:37:35 +0100
-Message-Id: <1367933964-1564-10-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 021/118] perf: Fix error return code
+Date: Tue,  7 May 2013 14:37:47 +0100
+Message-Id: <1367933964-1564-22-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -32,52 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emese Revfy <re.emese@gmail.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit b9e146d8eb3b9ecae5086d373b50fa0c1f3e7f0f upstream.
+commit c481420248c6730246d2a1b1773d5d7007ae0835 upstream.
 
-This fixes a kernel memory contents leak via the tkill and tgkill syscalls
-for compat processes.
+Fix to return -ENOMEM in the allocation error case instead of 0
+(if pmu_bus_running == 1), as done elsewhere in this function.
 
-This is visible in the siginfo_t->_sifields._rt.si_sigval.sival_ptr field
-when handling signals delivered from tkill.
-
-The place of the infoleak:
-
-int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
-{
-        ...
-        put_user_ex(ptr_to_compat(from->si_ptr), &to->si_ptr);
-        ...
-}
-
-Signed-off-by: Emese Revfy <re.emese@gmail.com>
-Reviewed-by: PaX Team <pageexec@freemail.hu>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Cc: a.p.zijlstra@chello.nl
+Cc: paulus@samba.org
+Cc: acme@ghostprotocols.net
+Link: http://lkml.kernel.org/r/CAPgLHd8j_fWcgqe%3DKLWjpBj%2B%3Do0Pw6Z-SEq%3DNTPU08c2w1tngQ@mail.gmail.com
+[ Tweaked the error code setting placement and the changelog. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/signal.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/events/core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 0e9b729..c0356f9 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -2885,7 +2885,7 @@ do_send_specific(pid_t tgid, pid_t pid, int sig, struct siginfo *info)
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 0181cbd..1a6deb7 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5763,6 +5763,7 @@ skip_type:
+ 	if (pmu->pmu_cpu_context)
+ 		goto got_cpu_context;
  
- static int do_tkill(pid_t tgid, pid_t pid, int sig)
- {
--	struct siginfo info;
-+	struct siginfo info = {};
- 
- 	info.si_signo = sig;
- 	info.si_errno = 0;
++	ret = -ENOMEM;
+ 	pmu->pmu_cpu_context = alloc_percpu(struct perf_cpu_context);
+ 	if (!pmu->pmu_cpu_context)
+ 		goto free_dev;
 -- 
 1.8.1.2
 
