@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933475Ab3EGNxQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:53:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42544 "EHLO
+	id S1759311Ab3EGNmN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:42:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42493 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759322Ab3EGNmO (ORCPT
+	with ESMTP id S933281Ab3EGNmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:14 -0400
+	Tue, 7 May 2013 09:42:02 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Filippo Turato <nnj7585@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 098/118] USB: serial: option: Added support Olivetti Olicard 145
-Date: Tue,  7 May 2013 14:39:04 +0100
-Message-Id: <1367933964-1564-99-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 086/118] tracing: Check return value of tracing_init_dentry()
+Date: Tue,  7 May 2013 14:38:52 +0100
+Message-Id: <1367933964-1564-87-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,39 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Filippo Turato <nnj7585@gmail.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-commit d19bf5cedfd7d53854a3bd699c98b467b139833b upstream.
+commit ed6f1c996bfe4b6e520cf7a74b51cd6988d84420 upstream.
 
-This adds PID for Olivetti Olicard 145 in option.c
+Check return value and bail out if it's NULL.
 
-Signed-off-by: Filippo Turato <nnj7585@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Link: http://lkml.kernel.org/r/1365553093-10180-2-git-send-email-namhyung@kernel.org
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/option.c | 2 ++
- 1 file changed, 2 insertions(+)
+ kernel/trace/trace.c       | 2 ++
+ kernel/trace/trace_stack.c | 2 ++
+ kernel/trace/trace_stat.c  | 2 ++
+ 3 files changed, 6 insertions(+)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 3038ba9..c5a50c9 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -347,6 +347,7 @@ static void option_instat_callback(struct urb *urb);
- /* Olivetti products */
- #define OLIVETTI_VENDOR_ID			0x0b3c
- #define OLIVETTI_PRODUCT_OLICARD100		0xc000
-+#define OLIVETTI_PRODUCT_OLICARD145		0xc003
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 28e2b14..0ae8b32 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4832,6 +4832,8 @@ static __init int tracer_init_debugfs(void)
+ 	trace_access_lock_init();
  
- /* Celot products */
- #define CELOT_VENDOR_ID				0x211f
-@@ -1273,6 +1274,7 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
+ 	d_tracer = tracing_init_dentry();
++	if (!d_tracer)
++		return 0;
  
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
-+	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD145) },
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
- 	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
+ 	trace_create_file("tracing_enabled", 0644, d_tracer,
+ 			&global_trace, &tracing_ctrl_fops);
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index 0cdcba3..8298997 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -433,6 +433,8 @@ static __init int stack_trace_init(void)
+ 	struct dentry *d_tracer;
+ 
+ 	d_tracer = tracing_init_dentry();
++	if (!d_tracer)
++		return 0;
+ 
+ 	trace_create_file("stack_max_size", 0644, d_tracer,
+ 			&max_stack_size, &stack_max_size_fops);
+diff --git a/kernel/trace/trace_stat.c b/kernel/trace/trace_stat.c
+index 96cffb2..847f88a 100644
+--- a/kernel/trace/trace_stat.c
++++ b/kernel/trace/trace_stat.c
+@@ -307,6 +307,8 @@ static int tracing_stat_init(void)
+ 	struct dentry *d_tracing;
+ 
+ 	d_tracing = tracing_init_dentry();
++	if (!d_tracing)
++		return 0;
+ 
+ 	stat_dir = debugfs_create_dir("trace_stat", d_tracing);
+ 	if (!stat_dir)
 -- 
 1.8.1.2
 
