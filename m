@@ -1,47 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab3EGO25 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:28:57 -0400
-Received: from a9-54.smtp-out.amazonses.com ([54.240.9.54]:46846 "EHLO
-	a9-54.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754108Ab3EGO2z (ORCPT
+	id S1754150Ab3EGOa2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:30:28 -0400
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:61210 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab3EGOa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 10:28:55 -0400
-X-Greylist: delayed 329 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 May 2013 10:28:55 EDT
-Date: Tue, 7 May 2013 14:23:23 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Pekka Enberg <penberg@kernel.org>
-cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Glauber Costa <glommer@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-next-20130422] Bug in SLAB?
-In-Reply-To: <CAOJsxLGvbJ+FNq8J3j1FHz9gjo7vGgfTyWQT1vvy0D3Ykq8SyA@mail.gmail.com>
-Message-ID: <0000013e7f60169e-47b0bd92-a757-41da-8b30-fa78511fe298-000000@email.amazonses.com>
-References: <0000013e5b56d067-7982dfa6-08a2-4c48-ad77-6888b5114c5f-000000@email.amazonses.com> <201305010101.CGB86424.JFQOtSFOVOLFHM@I-love.SAKURA.ne.jp> <0000013e5bfc7c4d-54fa9464-dccd-4157-b4a5-22594261eaf3-000000@email.amazonses.com>
- <201305012114.AED78178.tFSHFQOOJLMOFV@I-love.SAKURA.ne.jp> <0000013e6705da99-094923c6-e239-43d2-8f0c-5e661656a27c-000000@email.amazonses.com> <201305031726.BJG78631.tQSOVOLHJFMFFO@I-love.SAKURA.ne.jp> <0000013e6b90e65e-e0e184d9-7da5-4873-9572-3b40958552e2-000000@email.amazonses.com>
- <CAOJsxLGvbJ+FNq8J3j1FHz9gjo7vGgfTyWQT1vvy0D3Ykq8SyA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.05.07-54.240.9.54
+	Tue, 7 May 2013 10:30:27 -0400
+From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+To: zbr@ioremap.net
+Cc: linux-kernel@vger.kernel.org,
+        Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+Subject: [PATCH V2] w1: ds2408: add magic sequence to disable P0 test mode
+Date: Tue,  7 May 2013 10:00:48 -0400
+Message-Id: <1367935248-12118-1-git-send-email-jeff.dagenais@gmail.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1367930422-25972-2-git-send-email-jeff.dagenais@gmail.com>
+References: <1367930422-25972-2-git-send-email-jeff.dagenais@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 May 2013, Pekka Enberg wrote:
+V2: use the new bus_mutex
 
-> On Fri, May 3, 2013 at 9:04 PM, Christoph Lameter <cl@linux.com> wrote:
-> > -       for (i = KMALLOC_SHIFT_LOW; i < KMALLOC_SHIFT_HIGH; i++)
->
-> This didn't match what I had in my tree. I fixed it by hand but please
-> verify the end result:
->
-> https://git.kernel.org/cgit/linux/kernel/git/penberg/linux.git/commit/?h=slab/next&id=8a965b3baa89ffedc73c0fbc750006c631012ced
->
-Well this is because you did not take the patch that changed the way
-KMALLOC_SHIFT_HIGH is treated.
+extract from http://datasheets.maximintegrated.com/en/ds/DS2408.pdf:
 
-The patch above looks fine though.
+Power-up timing
+The DS2408 is sensitive to the power-on slew rate and can inadvertently
+power up with a test mode feature enabled. When this occurs, the P0 port
+does not respond to the Channel Access Write command.
+For most reliable operation, it is recommended to disable the test mode
+after every power-on reset using the Disable Test Mode sequence shown
+below. The 64-bit ROM code must be transmitted in the same bit sequence
+as with the Match ROM command, i.e., least significant bit first. This
+precaution is recommended in parasite power mode (VCC pin connected to
+GND) as well as with VCC power.
 
+Disable Test Mode:
+RST,PD,96h,<64-bit DS2408 ROM Code>,3Ch,RST,PD
+
+Signed-off-by: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+---
+ drivers/w1/slaves/w1_ds2408.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+
+diff --git a/drivers/w1/slaves/w1_ds2408.c b/drivers/w1/slaves/w1_ds2408.c
+index e45eca1..3fc1b38 100644
+--- a/drivers/w1/slaves/w1_ds2408.c
++++ b/drivers/w1/slaves/w1_ds2408.c
+@@ -301,7 +301,32 @@ error:
+ 	return -EIO;
+ }
+ 
++/**
++ * This is a special sequence we must do to ensure the P0 output is not stuck
++ * in test mode. This is described in rev 2 of the ds2408's datasheet
++ * (http://datasheets.maximintegrated.com/en/ds/DS2408.pdf) under
++ * "APPLICATION INFORMATION/Power-up timing".
++ */
++static int w1_f29_disable_test_mode(struct w1_slave *sl)
++{
++	int res;
++	u8 magic[10] = {0x96, };
++	u64 rn = le64_to_cpu(*((u64*)&sl->reg_num));
++	memcpy(&magic[1], &rn, 8);
++	magic[9] = 0x3C;
++
++	mutex_lock(&sl->master->bus_mutex);
+ 
++	res = w1_reset_bus(sl->master);
++	if (res)
++		goto out;
++	w1_write_block(sl->master, magic, ARRAY_SIZE(magic));
++
++	res = w1_reset_bus(sl->master);
++out:
++	mutex_unlock(&sl->master->bus_mutex);
++	return res;
++}
+ 
+ static struct bin_attribute w1_f29_sysfs_bin_files[] = {
+ 	{
+@@ -362,6 +387,10 @@ static int w1_f29_add_slave(struct w1_slave *sl)
+ 	int err = 0;
+ 	int i;
+ 
++	err = w1_f29_disable_test_mode(sl);
++	if (err)
++		return err;
++
+ 	for (i = 0; i < ARRAY_SIZE(w1_f29_sysfs_bin_files) && !err; ++i)
+ 		err = sysfs_create_bin_file(
+ 			&sl->dev.kobj,
+-- 
+1.8.2.2
 
