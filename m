@@ -1,160 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab3EGPZF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 11:25:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57573 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756820Ab3EGPZD (ORCPT
+	id S1754236Ab3EGPZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 11:25:26 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:42887 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756226Ab3EGPZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 11:25:03 -0400
-Date: Tue, 7 May 2013 17:24:57 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mel Gorman <mgorman@suse.de>
-cc: Zhang Yi <wetpzy@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'Darren Hart'" <dvhart@linux.intel.com>,
-        "'Ingo Molnar'" <mingo@kernel.org>,
-        "'Dave Hansen'" <dave.hansen@linux.intel.com>, zhang.yi20@zte.com.cn,
-        wetpzy@163.com
-Subject: Re: [PATCH] futex: bugfix for futex-key conflict when futex use
- hugepage
-In-Reply-To: <20130507152007.GA3405@suse.de>
-Message-ID: <alpine.LFD.2.02.1305071724190.2863@ionos>
-References: <000101ce4277$69df5af0$3d9e10d0$@com> <alpine.LFD.2.02.1304261951300.21884@ionos> <000101ce4b1d$bddec0b0$399c4210$@com> <20130507152007.GA3405@suse.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 7 May 2013 11:25:22 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <518097B8.4020402@gmail.com>
+References: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
+ <Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
+ <CAErSpo7NZoOQZyW76HEoOTVgdqL2CgbVScAeF6HGLAVaNCq0=w@mail.gmail.com>
+ <337833384.57445.1361860509194.JavaMail.mail@webmail08> <CAErSpo6CbO5KYXiErv6J_Dnm1u694C5fQPP2_cZL8VKDEnZa9A@mail.gmail.com>
+ <569718148.80620.1361906088301.JavaMail.mail@webmail13> <CAErSpo6UkVhSf+nFW4zwJLBQw_0RQ5H9Bv-UuQRb6zdwsFPw4g@mail.gmail.com>
+ <CAErSpo4X+XXKvWDfqh2CKZAtJ9WMQk91OcsWwdxwYv2MfEM_zQ@mail.gmail.com>
+ <771333906.75854.1367057440028.JavaMail.mail@webmail08> <CAErSpo4B4sRco-nuqgXiYtGQxBcbEB6ArQjHD0A9cj4TRE+qQw@mail.gmail.com>
+ <518097B8.4020402@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 7 May 2013 08:25:01 -0700
+Message-ID: <CAErSpo7KWPRVEnw+n068pUZz+=WSTwno6m6t7N6dunuhnFC8EA@mail.gmail.com>
+Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: "Artem S. Tashkinov" <t.artem@lycos.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Phillip Susi <psusi@ubuntu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[+cc Phillip]
 
+On Tue, Apr 30, 2013 at 9:19 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
+> On 04/29/2013 10:47 PM, Bjorn Helgaas wrote:
+>>
+>> On Sat, Apr 27, 2013 at 4:10 AM, Artem S. Tashkinov <t.artem@lycos.com>
+>> wrote:
+>>>>
+>>>>
+>>>> Did this problem ever get resolved?
+>>>>
+>>>
+>>> Hello,
+>>>
+>>> Unfortunately, no. Out of curiosity I've tried booting kernel
+>>> 3.9-rc8 in EUFI mode but it exhibits the same problem.
+>>>
+>>> Right after the boot:
+>>>
+>>> [root@localhost ~]# dd if=/dev/zero of=test bs=64M count=3
+>>> 3+0 records in
+>>> 3+0 records out
+>>> 201326592 bytes (201 MB) copied, 1.08544 s, 185 MB/s
+>>>
+>>> After suspend/resume:
+>>>
+>>> # dd if=/dev/zero of=test bs=64M count=3
+>>> 3+0 records in
+>>> 3+0 records out
+>>> 201326592 bytes (201 MB) copied, 66.5392 s, 3.0 MB/s
+>>>
+>>> That's for my primary SATA-3 HDD.
+>>>
+>>> Forgive me my impudence but I believe debugging the USB stack is
+>>> tangential to this problem. Something far deeper than USB support
+>>> breaks, but so far no one has come even with the slightest clue of
+>>> what that might be.
+>>
+>>
+>> I tend to agree that it sounds like something deeper than USB is
+>> broken.  I admit I'm just grasping at straws because I don't have any
+>> good ideas yet.
+>>
+>> Here are three easy things you can try:
+>>
+>> 1) Collect "lspci -vvv -xxxx" output before and after the
+>> suspend/resume to investigate the XHCI Unsupported Request errors.
+>>
+>> 2) Collect the contents of /proc/mtrr before and after the suspend/resume.
+>>
+>> 3) After the suspend/resume, try the "setpci" to set the MSI address
+>> back to the original value to see if it makes a difference (see my Feb
+>> 12 message).
+>
+>
+> I would suspect that Windows' complaint about the BIOS mucking up the MTRRs
+> is likely the best hint. Likely Windows is detecting the problem and fixing
+> it up on resume, thus it only complains about "reduced resume performance".
+> If the MTRRs are messed up, then quite likely parts of RAM have become
+> uncacheable, causing performance to get randomly slaughtered in various
+> ways.
+>
+> From looking at the code it's not clear if we are checking/restoring the
+> MTRR contents after resume. If not, maybe we should be.
 
-On Tue, 7 May 2013, Mel Gorman wrote:
+I agree; the MTRR warning is a good hint.  Artem?
 
-> On Tue, May 07, 2013 at 08:23:48PM +0800, Zhang Yi wrote:
-> > diff -uprN linux3.9-orig/kernel/futex.c linux3.9/kernel/futex.c
-> > --- linux3.9-orig/kernel/futex.c	2013-04-15 00:45:16.000000000 +0000
-> > +++ linux3.9/kernel/futex.c	2013-05-06 16:24:40.403525000 +0000
-> > @@ -215,6 +215,22 @@ static void drop_futex_key_refs(union fu
-> >  	}
-> >  }
-> > 
-> > +/*
-> > +* Get subpage index in compound page, and add it into futex_key.
-> > +*/
-> > +static void key_add_compound_idx(union futex_key *key,
-> > +				 struct page *head_page, struct page *page)
-> > +{
-> > +	int compound_idx;
-> > +
-> > +	if (compound_order(head_page) >= MAX_ORDER)
-> > +		compound_idx = page_to_pfn(page) - page_to_pfn(head_page);
-> > +	else
-> > +		compound_idx = page - head_page;
-> > +
-> > +	key->both.offset |= compound_idx << PAGE_SHIFT;
-> > +}
-> > +
-> 
-> This implicitely assumies it is dealing with a hugetlbfs page. Today, it
-> is the case that an inode-based futex with PageCompound is a hugetlbfs
-> page but that could change in the future if THP ever backs files. This
-> would then break again except it would be harder to fix because THP pages
-> can be collapsed underneath you after the futex key has been generated.
-> 
-> As this problem is hugetlbfs-specific should the fix be firmly in hugetlbfs
-> land? Something like the following untested and only partial diff? Is the
-> use of PageCompound in the futex path like this going to be problematic?
+Phillip, I cc'd you because you have similar hardware and your
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1131468 report is
+slightly similar.  Have you seen anything like this "reduced
+performance after resume" issue?  If so, can you collect /proc/mtrr
+contents before and after suspending?
 
-Why should it ?
- 
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 16e4e9a..f9c33d3 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -348,6 +348,17 @@ static inline int hstate_index(struct hstate *h)
->  	return h - hstates;
->  }
->  
-> +pgoff_t __basepage_index(struct page *page);
-> +
-> +/* Return page->index in PAGE_SIZE units */
-> +static inline pgoff_t basepage_index(struct page *page)
-> +{
-> +	if (!PageCompound(page))
-> +		return page->index;
-> +
-> +	return __basepage_index(page);
-> +}
-> +
->  #else
->  struct hstate {};
->  #define alloc_huge_page_node(h, nid) NULL
-> @@ -365,6 +376,10 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
->  {
->  	return 1;
->  }
-> +static inline pgoff_t basepage_index(struct page *page)
-> +{
-> +	return page->index;
-> +}
->  #define hstate_index_to_shift(index) 0
->  #define hstate_index(h) 0
->  #endif
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index b26dcfc..97beb5d 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -61,6 +61,7 @@
->  #include <linux/nsproxy.h>
->  #include <linux/ptrace.h>
->  #include <linux/sched/rt.h>
-> +#include <linux/hugetlb.h>
->  
->  #include <asm/futex.h>
->  
-> @@ -365,7 +366,7 @@ again:
->  	} else {
->  		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
->  		key->shared.inode = page_head->mapping->host;
-> -		key->shared.pgoff = page_head->index;
-> +		key->shared.pgoff = basepage_index(page_head);
-
-  That want's to be  basepage_index(page), right ?
-
->  	}
->  
->  	get_futex_key_refs(key);
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 1a12f5b..ddbad35 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -690,6 +690,23 @@ int PageHuge(struct page *page)
->  }
->  EXPORT_SYMBOL_GPL(PageHuge);
->  
-> +pgoff_t __basepage_index(struct page *page)
-> +{
-> +	struct page *page_head = compound_head(page);
-> +	pgoff_t index = page_index(page_head);
-> +	int compound_idx;
-> +
-> +	if (!PageHuge(page_head))
-> +		return page_index(page);
-> +
-> +	if (compound_order(page_head) >= MAX_ORDER)
-> +		compound_idx = page_to_pfn(page) - page_to_pfn(page_head);
-> +	else
-> +		compound_idx = page - head_page;
-> +
-> +	return (index << page_hstate(page_head)->order) + compound_idx;
-> +}
-> +
->  static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
->  {
->  	struct page *page;
-> 
+Bjorn
