@@ -1,143 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759486Ab3EGJZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 05:25:10 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43339 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759277Ab3EGJZJ (ORCPT
+	id S1759517Ab3EGJaw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 05:30:52 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:20646 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759277Ab3EGJau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 05:25:09 -0400
-Date: Tue, 7 May 2013 11:24:28 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Robin Holt <holt@sgi.com>
-Cc: Qing Xu <qingx@marvell.com>, Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: How does commit 47ec340c not introduce a bug?
-Message-ID: <20130507092428.GK23285@pengutronix.de>
-References: <20130507091734.GM3658@sgi.com>
+	Tue, 7 May 2013 05:30:50 -0400
+X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
+   d="scan'208";a="4290601"
+Message-ID: <1367919047.26321.47.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 2/4] xen/vcpu: Document the xen_vcpu_info
+ and xen_vcpu
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Date: Tue, 7 May 2013 10:30:47 +0100
+In-Reply-To: <1367845498-14290-3-git-send-email-konrad.wilk@oracle.com>
+References: <1367845498-14290-1-git-send-email-konrad.wilk@oracle.com>
+	 <1367845498-14290-3-git-send-email-konrad.wilk@oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130507091734.GM3658@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tue, May 07, 2013 at 04:17:34AM -0500, Robin Holt wrote:
-> I noticed a warning while cross-compiling all arm defconfigs.
+On Mon, 2013-05-06 at 14:04 +0100, Konrad Rzeszutek Wilk wrote:
+> They are important structures and it is not clear at first
+> look what they are for.
 > 
-> The mmp2_defconfig gave this warning:
+> The xen_vcpu is a pointer. By default it points to the shared_info
+> structure (at the CPU offset location). However if the
+> VCPUOP_register_vcpu_info hypercall is implemented we can make the
+> xen_vcpu pointer point to a per-CPU location.
 > 
-> drivers/video/backlight/max8925_bl.c: In function 'max8925_backlight_probe':
-> drivers/video/backlight/max8925_bl.c:177:3: warning: statement with no effect [-Wunused-value]
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/enlighten.c | 21 ++++++++++++++++++++-
+>  1 file changed, 20 insertions(+), 1 deletion(-)
 > 
-> This appears to have been introduced by the above commit when !CONFIG_OF
-> 
-> Looking at this more closely, I am not sure how this was ever intended
-> to be handled or how the errors returned in the CONFIG_OF case were
-> intended to be handled as the return from max8925_backlight_dt_init is
-> always ignored.
-> 
-> I think this needs some more attention, but do not feel like I know
-> enough about it or have any means to test it to weigh in.
-> 
-> Thanks,
-> Robin
-> 
-> 
-> commit 47ec340cb8e232671e7c4a4689ff32c3bdf329da
-> Author: Qing Xu <qingx@marvell.com>
-> Date:   Mon Feb 4 23:40:45 2013 +0800
-> 
->     mfd: max8925: Support dt for backlight
->     
->     Add device tree support in max8925 backlight.
->     
->     Signed-off-by: Qing Xu <qingx@marvell.com>
->     Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
->     Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-> 
-> diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
-> index 2c9bce0..5ca11b0 100644
-> --- a/drivers/video/backlight/max8925_bl.c
-> +++ b/drivers/video/backlight/max8925_bl.c
-> @@ -101,6 +101,29 @@ static const struct backlight_ops max8925_backlight_ops = {
->  	.get_brightness	= max8925_backlight_get_brightness,
->  };
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 94a81f4..9b34475 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -85,7 +85,21 @@
 >  
-> +#ifdef CONFIG_OF
-> +static int max8925_backlight_dt_init(struct platform_device *pdev,
-> +			      struct max8925_backlight_pdata *pdata)
-> +{
-> +	struct device_node *nproot = pdev->dev.parent->of_node, *np;
-> +	int dual_string;
-> +
-> +	if (!nproot)
-> +		return -ENODEV;
-> +	np = of_find_node_by_name(nproot, "backlight");
-> +	if (!np) {
-> +		dev_err(&pdev->dev, "failed to find backlight node\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	of_property_read_u32(np, "maxim,max8925-dual-string", &dual_string);
-> +	pdata->dual_string = dual_string;
-> +	return 0;
-> +}
-> +#else
-> +#define max8925_backlight_dt_init(x, y)	(-1)
-It's probably best to make this:
-
-static inline max8925_backlight_dt_init(struct platform_device *pdev,
-				struct max8925_backlight_pdata *pdata)
-{
-	return -ENODEV;
-}
-
-> +#endif
-> +
->  static int max8925_backlight_probe(struct platform_device *pdev)
->  {
->  	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
-> @@ -147,6 +170,13 @@ static int max8925_backlight_probe(struct platform_device *pdev)
->  	platform_set_drvdata(pdev, bl);
+>  EXPORT_SYMBOL_GPL(hypercall_page);
 >  
->  	value = 0;
-> +	if (pdev->dev.parent->of_node && !pdata) {
-> +		pdata = devm_kzalloc(&pdev->dev,
-> +				     sizeof(struct max8925_backlight_pdata),
-> +				     GFP_KERNEL);
-> +		max8925_backlight_dt_init(pdev, pdata);
-> +	}
-> +
->  	if (pdata) {
->  		if (pdata->lxw_scl)
->  			value |= (1 << 7);
-> @@ -158,7 +188,6 @@ static int max8925_backlight_probe(struct platform_device *pdev)
->  	ret = max8925_set_bits(chip->i2c, data->reg_mode_cntl, 0xfe, value);
->  	if (ret < 0)
->  		goto out_brt;
-> -
->  	backlight_update_status(bl);
->  	return 0;
->  out_brt:
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+> +/*
+> + * Pointer to the xen_vcpu_info structure or
+> + * &HYPERVISOR_shared_info->vcpu_info[cpu]. See xen_hvm_init_shared_info
+> + * and xen_vcpu_setup for details. By default it points to share_info->vcpu_info
+> + * but if the hypervisor supports VCPUOP_register_vcpu_info then it can point
+> + * to xen_vcpu_info. The pointer is used in __xen_evtchn_do_upcall to
+> + * acknowledge pending events.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Also more subtly it is used by the patched version of irq enable/disable
+e.g. xen_irq_enable_direct and xen_iret.
+
+The desire to be able to do those mask/unmask operations as a single
+instruction by using the per-cpu offset held in %gs is the real reason
+vcpu info is in a per-cpu pointer and for the whole register_vcpu_info
+thing IIRC.
+
+> + */
+>  DEFINE_PER_CPU(struct vcpu_info *, xen_vcpu);
+> +
+> +/*
+> + * Per CPU pages used if hypervisor supports VCPUOP_register_vcpu_info
+> + * hypercall. This can be used both in PV and PVHVM mode. The structure
+> + * overrides the default per_cpu(xen_vcpu, cpu) value.
+> + */
+>  DEFINE_PER_CPU(struct vcpu_info, xen_vcpu_info);
+>  
+>  enum xen_domain_type xen_domain_type = XEN_NATIVE;
+> @@ -187,7 +201,12 @@ static void xen_vcpu_setup(int cpu)
+>  
+>  	/* Check to see if the hypervisor will put the vcpu_info
+>  	   structure where we want it, which allows direct access via
+> -	   a percpu-variable. */
+> +	   a percpu-variable.
+> +	   N.B. This hypercall can _only_ be called once per CPU. Subsequent
+> +	   calls will error out with -EINVAL. This is due to the fact that
+> +	   hypervisor has no unregister variant and this hypercall does not
+> +	   allow to over-write info.mfn and info.offset.
+> +	 */
+>  	err = HYPERVISOR_vcpu_op(VCPUOP_register_vcpu_info, cpu, &info);
+>  
+>  	if (err) {
+
+
