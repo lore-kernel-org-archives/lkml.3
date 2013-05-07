@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933728Ab3EGODL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:03:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42392 "EHLO
+	id S933698Ab3EGODK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:03:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42393 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933094Ab3EGNlk (ORCPT
+	with ESMTP id S933095Ab3EGNlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 May 2013 09:41:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Tony Luck <tony.luck@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 068/118] PCI / ACPI: Don't query OSC support with all possible controls
-Date: Tue,  7 May 2013 14:38:34 +0100
-Message-Id: <1367933964-1564-69-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 069/118] Fix initialization of CMCI/CMCP interrupts
+Date: Tue,  7 May 2013 14:38:35 +0100
+Message-Id: <1367933964-1564-70-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,69 +27,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 545d6e189a41c94c11f55045a771118eccc9d9eb upstream.
+commit d303e9e98fce56cdb3c6f2ac92f626fc2bd51c77 upstream.
 
-Found problem on system that firmware that could handle pci aer.
-Firmware get error reporting after pci injecting error, before os boots.
-But after os boots, firmware can not get report anymore, even pci=noaer
-is passed.
+Back 2010 during a revamp of the irq code some initializations
+were moved from ia64_mca_init() to ia64_mca_late_init() in
 
-Root cause: BIOS _OSC has problem with query bit checking.
-It turns out that BIOS vendor is copying example code from ACPI Spec.
-In ACPI Spec 5.0, page 290:
+	commit c75f2aa13f5b268aba369b5dc566088b5194377c
+	Cannot use register_percpu_irq() from ia64_mca_init()
 
-	If (Not(And(CDW1,1))) // Query flag clear?
-	{	// Disable GPEs for features granted native control.
-		If (And(CTRL,0x01)) // Hot plug control granted?
-		{
-			Store(0,HPCE) // clear the hot plug SCI enable bit
-			Store(1,HPCS) // clear the hot plug SCI status bit
-		}
-	...
-	}
+But this was hideously wrong. First of all these initializations
+are now down far too late. Specifically after all the other cpus
+have been brought up and initialized their own CMC vectors from
+smp_callin(). Also ia64_mca_late_init() may be called from any cpu
+so the line:
+	ia64_mca_cmc_vector_setup();       /* Setup vector on BSP */
+is generally not executed on the BSP, and so the CMC vector isn't
+setup at all on that processor.
 
-When Query flag is set, And(CDW1,1) will be 1, Not(1) will return 0xfffffffe.
-So it will get into code path that should be for control set only.
-BIOS acpi code should be changed to "If (LEqual(And(CDW1,1), 0)))"
+Make use of the arch_early_irq_init() hook to get this code executed
+at just the right moment: not too early, not too late.
 
-Current kernel code is using _OSC query to notify firmware about support
-from OS and then use _OSC to set control bits.
-During query support, current code is using all possible controls.
-So will execute code that should be only for control set stage.
-
-That will have problem when pci=noaer or aer firmware_first is used.
-As firmware have that control set for os aer already in query support stage,
-but later will not os aer handling.
-
-We should avoid passing all possible controls, just use osc_control_set
-instead.
-That should workaround BIOS bugs with affected systems on the field
-as more bios vendors are copying sample code from ACPI spec.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reported-by: Fred Hartnett <fred.hartnett@hp.com>
+Tested-by: Fred Hartnett <fred.hartnett@hp.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/pci_root.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/ia64/include/asm/mca.h |  1 +
+ arch/ia64/kernel/irq.c      |  8 ++++++++
+ arch/ia64/kernel/mca.c      | 37 ++++++++++++++++++++++++-------------
+ 3 files changed, 33 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-index 7aff631..5b0f075 100644
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -247,8 +247,8 @@ static acpi_status acpi_pci_query_osc(struct acpi_pci_root *root,
- 		*control &= OSC_PCI_CONTROL_MASKS;
- 		capbuf[OSC_CONTROL_TYPE] = *control | root->osc_control_set;
- 	} else {
--		/* Run _OSC query for all possible controls. */
--		capbuf[OSC_CONTROL_TYPE] = OSC_PCI_CONTROL_MASKS;
-+		/* Run _OSC query only with existing controls. */
-+		capbuf[OSC_CONTROL_TYPE] = root->osc_control_set;
- 	}
+diff --git a/arch/ia64/include/asm/mca.h b/arch/ia64/include/asm/mca.h
+index 43f96ab..8c70961 100644
+--- a/arch/ia64/include/asm/mca.h
++++ b/arch/ia64/include/asm/mca.h
+@@ -143,6 +143,7 @@ extern unsigned long __per_cpu_mca[NR_CPUS];
+ extern int cpe_vector;
+ extern int ia64_cpe_irq;
+ extern void ia64_mca_init(void);
++extern void ia64_mca_irq_init(void);
+ extern void ia64_mca_cpu_init(void *);
+ extern void ia64_os_mca_dispatch(void);
+ extern void ia64_os_mca_dispatch_end(void);
+diff --git a/arch/ia64/kernel/irq.c b/arch/ia64/kernel/irq.c
+index ad69606..f2c41828 100644
+--- a/arch/ia64/kernel/irq.c
++++ b/arch/ia64/kernel/irq.c
+@@ -23,6 +23,8 @@
+ #include <linux/interrupt.h>
+ #include <linux/kernel_stat.h>
  
- 	status = acpi_pci_run_osc(root->device->handle, capbuf, &result);
++#include <asm/mca.h>
++
+ /*
+  * 'what should we do if we get a hw irq event on an illegal vector'.
+  * each architecture has to answer this themselves.
+@@ -83,6 +85,12 @@ bool is_affinity_mask_valid(const struct cpumask *cpumask)
+ 
+ #endif /* CONFIG_SMP */
+ 
++int __init arch_early_irq_init(void)
++{
++	ia64_mca_irq_init();
++	return 0;
++}
++
+ #ifdef CONFIG_HOTPLUG_CPU
+ unsigned int vectors_in_migration[NR_IRQS];
+ 
+diff --git a/arch/ia64/kernel/mca.c b/arch/ia64/kernel/mca.c
+index 65bf9cd..d7396db 100644
+--- a/arch/ia64/kernel/mca.c
++++ b/arch/ia64/kernel/mca.c
+@@ -2074,22 +2074,16 @@ ia64_mca_init(void)
+ 	printk(KERN_INFO "MCA related initialization done\n");
+ }
+ 
++
+ /*
+- * ia64_mca_late_init
+- *
+- *	Opportunity to setup things that require initialization later
+- *	than ia64_mca_init.  Setup a timer to poll for CPEs if the
+- *	platform doesn't support an interrupt driven mechanism.
+- *
+- *  Inputs  :   None
+- *  Outputs :   Status
++ * These pieces cannot be done in ia64_mca_init() because it is called before
++ * early_irq_init() which would wipe out our percpu irq registrations. But we
++ * cannot leave them until ia64_mca_late_init() because by then all the other
++ * processors have been brought online and have set their own CMC vectors to
++ * point at a non-existant action. Called from arch_early_irq_init().
+  */
+-static int __init
+-ia64_mca_late_init(void)
++void __init ia64_mca_irq_init(void)
+ {
+-	if (!mca_init)
+-		return 0;
+-
+ 	/*
+ 	 *  Configure the CMCI/P vector and handler. Interrupts for CMC are
+ 	 *  per-processor, so AP CMC interrupts are setup in smp_callin() (smpboot.c).
+@@ -2108,6 +2102,23 @@ ia64_mca_late_init(void)
+ 	/* Setup the CPEI/P handler */
+ 	register_percpu_irq(IA64_CPEP_VECTOR, &mca_cpep_irqaction);
+ #endif
++}
++
++/*
++ * ia64_mca_late_init
++ *
++ *	Opportunity to setup things that require initialization later
++ *	than ia64_mca_init.  Setup a timer to poll for CPEs if the
++ *	platform doesn't support an interrupt driven mechanism.
++ *
++ *  Inputs  :   None
++ *  Outputs :   Status
++ */
++static int __init
++ia64_mca_late_init(void)
++{
++	if (!mca_init)
++		return 0;
+ 
+ 	register_hotcpu_notifier(&mca_cpu_notifier);
+ 
 -- 
 1.8.1.2
 
