@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab3EGNkf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:40:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42057 "EHLO
+	id S1753701Ab3EGOYh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:24:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42088 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201Ab3EGNkc (ORCPT
+	with ESMTP id S932364Ab3EGNkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:40:32 -0400
+	Tue, 7 May 2013 09:40:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 007/118] ARM: 7698/1: perf: fix group validation when using enable_on_exec
-Date: Tue,  7 May 2013 14:37:33 +0100
-Message-Id: <1367933964-1564-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 016/118] vm: convert HPET mmap to vm_iomap_memory() helper
+Date: Tue,  7 May 2013 14:37:42 +0100
+Message-Id: <1367933964-1564-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -30,46 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit cb2d8b342aa084d1f3ac29966245dec9163677fb upstream.
+commit 2323036dfec8ce3ce6e1c86a49a31b039f3300d1 upstream.
 
-Events may be created with attr->disabled == 1 and attr->enable_on_exec
-== 1, which confuses the group validation code because events with the
-PERF_EVENT_STATE_OFF are not considered candidates for scheduling, which
-may lead to failure at group scheduling time.
+This is my example conversion of a few existing mmap users.  The HPET
+case is simple, widely available, and easy to test (Clemens Ladisch sent
+a trivial test-program for it).
 
-This patch fixes the validation check for ARM, so that events in the
-OFF state are still considered when enable_on_exec is true.
-
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Reported-by: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-[ luis: adjust context ]
+Test-program-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/kernel/perf_event.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/char/hpet.c | 14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index a02eada..952a5a7 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -319,7 +319,10 @@ validate_event(struct pmu_hw_events *hw_events,
- 	struct hw_perf_event fake_event = event->hw;
- 	struct pmu *leader_pmu = event->group_leader->pmu;
+diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
+index dfd7876..0ff5c2e 100644
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -373,26 +373,14 @@ static int hpet_mmap(struct file *file, struct vm_area_struct *vma)
+ 	struct hpet_dev *devp;
+ 	unsigned long addr;
  
--	if (event->pmu != leader_pmu || event->state <= PERF_EVENT_STATE_OFF)
-+	if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
-+		return 1;
-+
-+	if (event->state == PERF_EVENT_STATE_OFF && !event->attr.enable_on_exec)
- 		return 1;
+-	if (((vma->vm_end - vma->vm_start) != PAGE_SIZE) || vma->vm_pgoff)
+-		return -EINVAL;
+-
+ 	devp = file->private_data;
+ 	addr = devp->hd_hpets->hp_hpet_phys;
  
- 	return armpmu->get_event_idx(hw_events, &fake_event) >= 0;
+ 	if (addr & (PAGE_SIZE - 1))
+ 		return -ENOSYS;
+ 
+-	vma->vm_flags |= VM_IO;
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+-
+-	if (io_remap_pfn_range(vma, vma->vm_start, addr >> PAGE_SHIFT,
+-					PAGE_SIZE, vma->vm_page_prot)) {
+-		printk(KERN_ERR "%s: io_remap_pfn_range failed\n",
+-			__func__);
+-		return -EAGAIN;
+-	}
+-
+-	return 0;
++	return vm_iomap_memory(vma, addr, PAGE_SIZE);
+ #else
+ 	return -ENOSYS;
+ #endif
 -- 
 1.8.1.2
 
