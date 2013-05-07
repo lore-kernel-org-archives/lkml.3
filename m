@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758297Ab3EGMUN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 08:20:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49445 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755969Ab3EGMUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 08:20:10 -0400
-Date: Tue, 7 May 2013 14:19:54 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andrew Jones <drjones@redhat.com>
-Cc: qemu-devel@nongnu.org, linux-kernel@vger.kernel.org,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Orit Wasserman <owasserm@redhat.com>,
-        Juan Quintela <quintela@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>, Mel Gorman <mgorman@suse.de>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH 0/4] madvise(MADV_USERFAULT) &
- sys_remap_anon_pages()
-Message-ID: <20130507121954.GE12538@redhat.com>
-References: <1367870221-12676-1-git-send-email-aarcange@redhat.com>
- <20130507113809.GB10720@hawk.usersys.redhat.com>
+	id S1758490Ab3EGMUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 08:20:52 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:64962 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758444Ab3EGMUv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 08:20:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130507113809.GB10720@hawk.usersys.redhat.com>
+In-Reply-To: <CAMuHMdWiQdUFREBMjQMmxrMa0LAOA2d3GqqeydyF5TK334ZwRw@mail.gmail.com>
+References: <20130506160253.GA27181@linux-mips.org>
+	<87mws8m3eu.fsf@hase.home>
+	<20130507100447.GA15044@linux-mips.org>
+	<CAMuHMdWiQdUFREBMjQMmxrMa0LAOA2d3GqqeydyF5TK334ZwRw@mail.gmail.com>
+Date: Tue, 7 May 2013 14:20:50 +0200
+X-Google-Sender-Auth: XIdk-TxU-m6d4PV6CVw80U9atVY
+Message-ID: <CAMuHMdWRJrvWw35yC4AHcC7o-DrTLz9kT9ipQs9XP=55oSNNYQ@mail.gmail.com>
+Subject: Re: Build errors caused by modalias generation patch
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Andreas Schwab <schwab@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 01:38:10PM +0200, Andrew Jones wrote:
-> What about instead of adding a new syscall (remap_anon_pages) to
-> instead extend mremap with new flags giving it a strict mode?
+On Tue, May 7, 2013 at 12:58 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Tue, May 7, 2013 at 12:04 PM, Ralf Baechle <ralf@linux-mips.org> wrote:
+>> On Mon, May 06, 2013 at 07:19:53PM +0200, Andreas Schwab wrote:
+>>> Please try the patch in
+>>> <http://marc.info/?l=linux-kbuild&m=136767800809256&w=2>.
+>>
+>> No change in observed behaviour.  I did all my builds in empty object
+>> directories so I don't see why this patch would make any difference.
+>
+> I'm getting this in an ia64 build (don't ask me why I build for itanic ;-):
+>
+> FATAL: drivers/acpi/button: sizeof(struct acpi_device_id)=14 is not a
+> modulo of the size of section __mod_acpi_device_table=144.
+> Fix definition of struct acpi_device_id in mod_devicetable.h
+>
+> This is next-20130501, with or without Andreas' fix.
+>
+> It works in my development tree based on yesterday's mainline
+> (d7ab7302f970a254997687a1cdede421a5635c68).
+>
+> I'll try today's linux-next, and will bisect if I find time...
 
-I actually thought about this and it's a very interesting argument.
+This was also caused by a leftover scripts/mod/devicetable-offsets.h in the
+source tree.
 
-When I thought about it, I felt the problem was that we won't know
-until we did some work (at least until reaching _each_ individual page
-structure of every page mapped in the mremapped range) if we can avoid
-the vma mangling or not. So then remap_anon_pages should be more
-efficient because it will just error out if strict mode is not
-possible, it won't need to search all page structures before it know
-if it has to do the vma mangling or not.
+Andreas' fix works (sort of, read on), but only if you run "make mrproper"
+_after_ applying it.
 
-It likely is simpler too than to try to teach mremap to do both things
-after checking which one it can do.
+Still, if you have other leftovers from a previous build in the source tree,
+you get:
 
-Also, the same argument could be made about remap_file_pages too.
+  Using /scratch/geert/linux/linux-next as source for kernel
+  /scratch/geert/linux/linux-next is not clean, please run 'make mrproper'
+  in the '/scratch/geert/linux/linux-next' directory.
 
-But it's still an interesting point, let's see what others thinks
-about it.
+However, you don't get that message if there's still a stale
+scripts/mod/devicetable-offsets.h in the source tree.
+Any idea how to fix that?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
