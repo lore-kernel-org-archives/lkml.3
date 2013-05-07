@@ -1,188 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758902Ab3EGQQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 12:16:56 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:40267 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756222Ab3EGQQz (ORCPT
+	id S1758932Ab3EGQR6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 12:17:58 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:10028 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756222Ab3EGQR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 12:16:55 -0400
-Message-ID: <518928B5.7050807@oracle.com>
-Date: Tue, 07 May 2013 12:15:49 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130429 Thunderbird/17.0.5
+	Tue, 7 May 2013 12:17:57 -0400
+X-IronPort-AV: E=Sophos;i="4.87,629,1363158000"; 
+   d="scan'208";a="44905191"
+Message-ID: <51892933.7090405@codeaurora.org>
+Date: Tue, 07 May 2013 12:17:55 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: torvalds@linux-foundation.org
-CC: Sasha Levin <sasha.levin@oracle.com>, mingo@kernel.org,
-        peterz@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] liblockdep: userspace lockdep
-References: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com>
-In-Reply-To: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 1/3] arm_arch_timer: introduce arch_timer_stolen_ticks
+References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com> <1367436460-10183-1-git-send-email-stefano.stabellini@eu.citrix.com> <51817CBE.4050003@codeaurora.org> <1367482772.21869.26.camel@zakaz.uk.xensource.com> <5182DBA9.9080609@codeaurora.org> <20130506143533.GF15278@phenom.dumpdata.com>
+In-Reply-To: <20130506143533.GF15278@phenom.dumpdata.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
+Hi Konrad,
 
+On 05/06/2013 10:35 AM, Konrad Rzeszutek Wilk wrote:
+>>> e.g. if a VCPU sets a timer for NOW+5, but 3 are stolen in the middle it
+>>> would not make sense (from the guests PoV) for NOW'==NOW+2 at the point
+>>> where the timer goes off. Nor does it make sense to require that the
+>>> guest actually be running for 5 before injecting the timer because that
+>>> would mean real time elapsed time for the timer would be 5+3 in the case
+>>> where 3 are stolen.
+>>
+>> This is a bit of an aside, but I think that hiding time spent at higher
+>> privilege levels can be a quite sensible approach to timekeeping in a
+>> virtualized environment, but I understand that it's not the approach taken
+>> with Xen, and as you pointed out above, adjusting the Virtual Offset Register
+>> by itself isn't enough to implement that approach.
+> 
+> This is the approach taken by Xen and KVM. Look in CONFIG_PARAVIRT_CLOCK for
+> implementation. In the user-space, the entry in 'top' of "stolen" (%st)
+> is for this exact value.
+
+I may have been unclear with my terms, sorry. When I refer to time being
+"hidden", I mean that kernel level software (supervisor mode, EL1) cannot
+detect the passage of that time at all. I don't know whether this would really
+work, but I imagine one might be able to get close with the current
+virtualization facilities for ARM.
+
+Am I correct in interpreting that what you're referring to is the deployment
+of paravirtualization code that ensures (observable) "stolen" time is factored
+into kernel decision-making?
 
 Thanks,
-Sasha
+Christopher
 
-On 04/30/2013 02:54 PM, Sasha Levin wrote:
-> liblockdep is a tiny wrapper built around kernel/lockdep.c. The aim is to
-> provide the same functionality the kernel gets from lockdep to userspace.
-> 
-> The bulk of the code here is the LD_PRELOAD support which provides users
-> an easy way to test their code without having to integrate liblockdep into
-> said code. Simply doing:
-> 
-> 	lockdep my_app
-> 
-> Would provide lockdep support to my_app.
-> 
-> There is also a small test suite to test both mutexes and rwlocks, it's
-> based on the tests in lib/locking-selftest.c.
-> 
-> This entire patch series was reviewed by lockdep maintainers and accepted to
-> the tip tree previously. It was pulled out so that the potential merge of
-> liblockdep won't delay the rest of the commits in the tip locking tree.
-> 
-> For some more background about this entire thing, the folks at LWN did
-> an awesome overview: http://lwn.net/Articles/536363/
-> 
-> 
-> Sasha Levin (9):
->   lockdep: Be nice about building from userspace
->   liblockdep: Wrap kernel/lockdep.c to allow usage from userspace
->   liblockdep: Add public headers for pthread_mutex_t implementation
->   liblockdep: Add pthread_mutex_t test suite
->   liblockdep: Add public headers for pthread_rwlock_t implementation
->   liblockdep: Add pthread_rwlock_t test suite
->   liblockdep: Support using LD_PRELOAD
->   liblockdep: Add the 'lockdep' user-space utility
->   liblockdep: Add a MAINTAINERS entry
-> 
->  MAINTAINERS                                        |   5 +
->  kernel/lockdep.c                                   |   4 +
->  tools/lib/lockdep/Makefile                         | 251 ++++++++++++++
->  tools/lib/lockdep/common.c                         |  33 ++
->  tools/lib/lockdep/include/liblockdep/common.h      |  43 +++
->  tools/lib/lockdep/include/liblockdep/mutex.h       |  73 ++++
->  tools/lib/lockdep/include/liblockdep/rwlock.h      |  91 +++++
->  tools/lib/lockdep/lockdep                          |   3 +
->  tools/lib/lockdep/lockdep.c                        |   2 +
->  tools/lib/lockdep/lockdep_internals.h              |   1 +
->  tools/lib/lockdep/lockdep_states.h                 |   1 +
->  tools/lib/lockdep/preload.c                        | 386 +++++++++++++++++++++
->  tools/lib/lockdep/rbtree.c                         |   1 +
->  tools/lib/lockdep/run_tests.sh                     |  27 ++
->  tools/lib/lockdep/tests/AA.c                       |  13 +
->  tools/lib/lockdep/tests/ABBA.c                     |  13 +
->  tools/lib/lockdep/tests/ABBCCA.c                   |  15 +
->  tools/lib/lockdep/tests/ABBCCDDA.c                 |  17 +
->  tools/lib/lockdep/tests/ABCABC.c                   |  15 +
->  tools/lib/lockdep/tests/ABCDBCDA.c                 |  17 +
->  tools/lib/lockdep/tests/ABCDBDDA.c                 |  17 +
->  tools/lib/lockdep/tests/WW.c                       |  13 +
->  tools/lib/lockdep/tests/common.h                   |  12 +
->  tools/lib/lockdep/tests/unlock_balance.c           |  12 +
->  tools/lib/lockdep/uinclude/asm/hweight.h           |   0
->  tools/lib/lockdep/uinclude/asm/sections.h          |   0
->  tools/lib/lockdep/uinclude/linux/bitops.h          |   0
->  tools/lib/lockdep/uinclude/linux/compiler.h        |   7 +
->  tools/lib/lockdep/uinclude/linux/debug_locks.h     |  12 +
->  tools/lib/lockdep/uinclude/linux/delay.h           |   0
->  tools/lib/lockdep/uinclude/linux/export.h          |   7 +
->  tools/lib/lockdep/uinclude/linux/ftrace.h          |   0
->  tools/lib/lockdep/uinclude/linux/gfp.h             |   0
->  tools/lib/lockdep/uinclude/linux/hardirq.h         |  11 +
->  tools/lib/lockdep/uinclude/linux/hash.h            |   1 +
->  tools/lib/lockdep/uinclude/linux/interrupt.h       |   0
->  tools/lib/lockdep/uinclude/linux/irqflags.h        |  38 ++
->  tools/lib/lockdep/uinclude/linux/kallsyms.h        |  32 ++
->  tools/lib/lockdep/uinclude/linux/kernel.h          |  36 ++
->  tools/lib/lockdep/uinclude/linux/kmemcheck.h       |   8 +
->  tools/lib/lockdep/uinclude/linux/linkage.h         |   0
->  tools/lib/lockdep/uinclude/linux/list.h            |   1 +
->  tools/lib/lockdep/uinclude/linux/lockdep.h         |  58 ++++
->  tools/lib/lockdep/uinclude/linux/mm_types.h        |   0
->  tools/lib/lockdep/uinclude/linux/module.h          |   6 +
->  tools/lib/lockdep/uinclude/linux/mutex.h           |   0
->  tools/lib/lockdep/uinclude/linux/poison.h          |   1 +
->  tools/lib/lockdep/uinclude/linux/prefetch.h        |   6 +
->  tools/lib/lockdep/uinclude/linux/proc_fs.h         |   0
->  tools/lib/lockdep/uinclude/linux/rbtree.h          |   1 +
->  .../lib/lockdep/uinclude/linux/rbtree_augmented.h  |   2 +
->  tools/lib/lockdep/uinclude/linux/rcu.h             |  16 +
->  tools/lib/lockdep/uinclude/linux/seq_file.h        |   0
->  tools/lib/lockdep/uinclude/linux/spinlock.h        |  25 ++
->  tools/lib/lockdep/uinclude/linux/stacktrace.h      |  32 ++
->  tools/lib/lockdep/uinclude/linux/stringify.h       |   7 +
->  tools/lib/lockdep/uinclude/linux/system.h          |   0
->  tools/lib/lockdep/uinclude/linux/types.h           |  58 ++++
->  tools/lib/lockdep/uinclude/linux/util.h            |   0
->  tools/lib/lockdep/uinclude/trace/events/lock.h     |   0
->  60 files changed, 1430 insertions(+)
->  create mode 100644 tools/lib/lockdep/Makefile
->  create mode 100644 tools/lib/lockdep/common.c
->  create mode 100644 tools/lib/lockdep/include/liblockdep/common.h
->  create mode 100644 tools/lib/lockdep/include/liblockdep/mutex.h
->  create mode 100644 tools/lib/lockdep/include/liblockdep/rwlock.h
->  create mode 100755 tools/lib/lockdep/lockdep
->  create mode 100644 tools/lib/lockdep/lockdep.c
->  create mode 100644 tools/lib/lockdep/lockdep_internals.h
->  create mode 100644 tools/lib/lockdep/lockdep_states.h
->  create mode 100644 tools/lib/lockdep/preload.c
->  create mode 100644 tools/lib/lockdep/rbtree.c
->  create mode 100755 tools/lib/lockdep/run_tests.sh
->  create mode 100644 tools/lib/lockdep/tests/AA.c
->  create mode 100644 tools/lib/lockdep/tests/ABBA.c
->  create mode 100644 tools/lib/lockdep/tests/ABBCCA.c
->  create mode 100644 tools/lib/lockdep/tests/ABBCCDDA.c
->  create mode 100644 tools/lib/lockdep/tests/ABCABC.c
->  create mode 100644 tools/lib/lockdep/tests/ABCDBCDA.c
->  create mode 100644 tools/lib/lockdep/tests/ABCDBDDA.c
->  create mode 100644 tools/lib/lockdep/tests/WW.c
->  create mode 100644 tools/lib/lockdep/tests/common.h
->  create mode 100644 tools/lib/lockdep/tests/unlock_balance.c
->  create mode 100644 tools/lib/lockdep/uinclude/asm/hweight.h
->  create mode 100644 tools/lib/lockdep/uinclude/asm/sections.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/bitops.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/compiler.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/debug_locks.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/delay.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/export.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/ftrace.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/gfp.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/hardirq.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/hash.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/interrupt.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/irqflags.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/kallsyms.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/kernel.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/kmemcheck.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/linkage.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/list.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/lockdep.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/mm_types.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/module.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/mutex.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/poison.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/prefetch.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/proc_fs.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/rbtree.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/rbtree_augmented.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/rcu.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/seq_file.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/spinlock.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/stacktrace.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/stringify.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/system.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/types.h
->  create mode 100644 tools/lib/lockdep/uinclude/linux/util.h
->  create mode 100644 tools/lib/lockdep/uinclude/trace/events/lock.h
-> 
-
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
