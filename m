@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758964Ab3EGQUk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 12:20:40 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:59922 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846Ab3EGQUg (ORCPT
+	id S1758999Ab3EGQ1b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 12:27:31 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:34776 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756096Ab3EGQ13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 12:20:36 -0400
+	Tue, 7 May 2013 12:27:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <157393863283F442885425D2C45428564F219B3B@nasanexd02f.na.qualcomm.com>
-References: <5153620E.4010608@gmail.com> <CAErSpo6w+tTbwJ7Qinpd0Vx20q5cm2gMvqzE1Do+2=G3b8rcHA@mail.gmail.com>
- <CAErSpo6iwM2r8b-aoiBPjQpkdpcfgLiO+WkpiM1wFsDhxuSXPg@mail.gmail.com>
- <CAErSpo68AWCGWQHKgoKuD-QFA0b+jbCRf7T_PzzKoUsVwdZHOg@mail.gmail.com> <157393863283F442885425D2C45428564F219B3B@nasanexd02f.na.qualcomm.com>
+In-Reply-To: <384171828.66802.1367942365492.JavaMail.mail@webmail05>
+References: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
+ <Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
+ <CAErSpo7NZoOQZyW76HEoOTVgdqL2CgbVScAeF6HGLAVaNCq0=w@mail.gmail.com>
+ <337833384.57445.1361860509194.JavaMail.mail@webmail08> <CAErSpo6CbO5KYXiErv6J_Dnm1u694C5fQPP2_cZL8VKDEnZa9A@mail.gmail.com>
+ <569718148.80620.1361906088301.JavaMail.mail@webmail13> <CAErSpo6UkVhSf+nFW4zwJLBQw_0RQ5H9Bv-UuQRb6zdwsFPw4g@mail.gmail.com>
+ <CAErSpo4X+XXKvWDfqh2CKZAtJ9WMQk91OcsWwdxwYv2MfEM_zQ@mail.gmail.com>
+ <771333906.75854.1367057440028.JavaMail.mail@webmail08> <CAErSpo4B4sRco-nuqgXiYtGQxBcbEB6ArQjHD0A9cj4TRE+qQw@mail.gmail.com>
+ <518097B8.4020402@gmail.com> <CAErSpo7KWPRVEnw+n068pUZz+=WSTwno6m6t7N6dunuhnFC8EA@mail.gmail.com>
+ <384171828.66802.1367942365492.JavaMail.mail@webmail05>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 7 May 2013 09:20:14 -0700
-Message-ID: <CAErSpo44-f4UdXxO5MdwVg09LFABwFQ320gG8v8jHcYh=5gqvA@mail.gmail.com>
-Subject: Re: 3.8.4 kernel
-To: "Huang, Xiong" <xiong@qca.qualcomm.com>
-Cc: "Joseph A. Millikan" <josephamillikan@gmail.com>,
+Date: Tue, 7 May 2013 09:27:09 -0700
+Message-ID: <CAErSpo75ittZE8pS0e6UGvVY3KXe5+_O=4AMU3ToWVyK9wwZ8g@mail.gmail.com>
+Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: Robert Hancock <hancockrwd@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ren, Cloud" <cjren@qca.qualcomm.com>, netdev <netdev@vger.kernel.org>,
-        Eric Dumazet <edumazet@google.com>
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, psusi@ubuntu.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Eric because he made a change (69b08f62e17) that apparently
-exposes driver bugs]
-
-On Mon, May 6, 2013 at 7:51 PM, Huang, Xiong <xiong@qca.qualcomm.com> wrote:
->> >
->> > Did this ever get resolved?
+On Tue, May 7, 2013 at 8:59 AM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
+> May 7, 2013 09:25:40 PM,        Bjorn Helgaas  wrote:
+>> [+cc Phillip]
 >>
->> I opened https://bugzilla.kernel.org/show_bug.cgi?id=57681 to keep track of
->> this and attached the dmesg logs you collected.  If you have a chance, could you
->> also collect and attach the output of "lspci -vv"
->> (any kernel is fine for this).
+>>> I would suspect that Windows' complaint about the BIOS mucking up the MTRRs
+>>> is likely the best hint. Likely Windows is detecting the problem and fixing
+>>> it up on resume, thus it only complains about "reduced resume performance".
+>>> If the MTRRs are messed up, then quite likely parts of RAM have become
+>>> uncacheable, causing performance to get randomly slaughtered in various
+>>> ways.
+>>>
+>>> From looking at the code it's not clear if we are checking/restoring the
+>>> MTRR contents after resume. If not, maybe we should be.
 >>
->> I don't see anything obvious wrong, at least from the PCI side.  Maybe the atl1c
->> guys will have some ideas.
+>>I agree; the MTRR warning is a good hint.  Artem?
+>>
+>>Phillip, I cc'd you because you have similar hardware and your
+>>https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1131468 report is
+>>slightly similar.  Have you seen anything like this "reduced
+>>performance after resume" issue?  If so, can you collect /proc/mtrr
+>>contents before and after suspending?
 >>
 >
-> Hi Bjorn and All
->      This issue should be same as bug https://bugzilla.kernel.org/show_bug.cgi?id=54021
->      I didn't find any abnormal info from the log and the PHY link is stable as well :(
->      Is it related to the network manager ?
+> Like Robert Hancock correctly noted the Linux kernel lacks the code to check
+> for MTTR changes after resume - I'm not a kernel hacker to write such a code ;-)
+>
+> Likewise there's no code to see if RAM pages have become uncacheable - i.e
+> I've no idea how to check it either.
+>
+> According to /proc/mttr nothing changes on resume - only Windows detects
+> the discrepancy between MTTR regions on resume. dmesg contains no warnings
+> or errors (aside from usual ACPI SATA warnings - but they happen right on
+> boot - so I highly doubt the ACPI or SATA layers can be the culprit, since USB
+> exhibits a similar performance degradation).
+>
+> In short, there's little to nothing that I can check.
 
-I looked at bug #54021 and it does look similar.  It doesn't look like
-it has been resolved.
+I'm not trying to be ungrateful, but maybe you could actually collect
+the info we've asked for and attach it to the bugzilla.  It's hard for
+me to get excited about digging into this when all I see is "nothing
+changes in MTRR" and "it's probably not X."  I really need some
+concrete data to help rule things out and suggest other things to
+investigate.
 
-http://forums.gentoo.org/viewtopic-t-949168-highlight-.html is another
-report that looks very similar.  BigE there has a Lenovo G570 that has
-both wireless and wired networking.  If BigE disables wireless with a
-hardware switch before booting, it seems to avoid the atl1c wired
-networking issue.  That's not a fix, of course, but it might be a clue
-and a temporary workaround until we have a real solution.
-
-Joseph, if there's no hardware switch for the wireless on your G770,
-you can probably still take wireless out of the picture by removing or
-renaming the bcma module (look in
-/lib/modules/.../kernel/drivers/bcma/), then rebooting.
-
-Xiong, do you have a specific network manager-related test that Joseph
-could perform?  I don't want to burden Joseph with a lot of debugging
-because he's currently happy with 3.6.11 and testing is pretty
-disruptive in his environment.
+Maybe we won't be able to make progress on this until other people
+start hitting similar issues and we can find patterns.
 
 Bjorn
