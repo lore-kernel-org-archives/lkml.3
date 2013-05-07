@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759459Ab3EGJTD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 05:19:03 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57930 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759343Ab3EGJTB (ORCPT
+	id S1759408Ab3EGJUf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 05:20:35 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:49215 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759261Ab3EGJUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 05:19:01 -0400
-Message-ID: <5188C6FD.9010903@pengutronix.de>
-Date: Tue, 07 May 2013 11:18:53 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Oliver Hartkopp <socketcan@hartkopp.net>, linux-can@vger.kernel.org
-Subject: Re: [PATCH, RFC 01/22] can: move CONFIG_HAVE_CAN_FLEXCAN out of CAN_DEV
-References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-2-git-send-email-arnd@arndb.de> <5183892B.8020400@pengutronix.de> <201305031724.15584.arnd@arndb.de>
-In-Reply-To: <201305031724.15584.arnd@arndb.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2HNSPVJXIPHKTIRHBFOQQ"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 7 May 2013 05:20:33 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] proc: Use PDE attribute setting accessor functions
+Date: Tue,  7 May 2013 11:20:26 +0200
+Message-Id: <1367918426-7076-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2HNSPVJXIPHKTIRHBFOQQ
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+arch/arm/mach-msm/last_radio_log.c: In function 'msm_init_last_radio_log':
+arch/arm/mach-msm/last_radio_log.c:69:7: error: dereferencing pointer to incomplete type
 
-On 05/03/2013 05:24 PM, Arnd Bergmann wrote:
-> On Friday 03 May 2013, Marc Kleine-Budde wrote:
->> On 05/02/2013 05:16 PM, Arnd Bergmann wrote:
->>> CONFIG_HAVE_CAN_FLEXCAN is a silect symbol that is meant to be select=
-ed
->>> by platforms that support this driver, but that is not possible witho=
-ut
->>> also selecting CAN_DEV, unless we move it out of the "if CAN_DEV"
->>> section of the Kconfig file.
->>>
->>> warning: (SOC_IMX28 && SOC_IMX25 && SOC_IMX35 &&
->>>  IMX_HAVE_PLATFORM_FLEXCAN && SOC_IMX53 && SOC_IMX6Q) selects HAVE_CA=
-N_FLEXCAN
->>>  which has unmet direct dependencies (NET && CAN && CAN_DEV)
->>
->> With the advent of multi platform kernels I like to get rid of
->> HAVE_CAN_FLEXCAN completely.
->=20
-> Yes, good idea. Are there any other dependencies we need to add then?
-> I assume FLEXCAN needs to depend on HAS_IOMEM and OF at least, but
-> there might be more.
+arch/cris/kernel/profile.c: In function 'init_cris_profile':
+arch/cris/kernel/profile.c:79:8: error: dereferencing pointer to incomplete type
 
-The driver compiles (tested on SH and blacksfin) and works without
-CONFIG_OF (on non DT arm platforms).
+Use proc_set_size(), cfr. commit 271a15eabe094538d958dc68ccfc9c36b699247a
+("proc: Supply PDE attribute setting accessor functions")
 
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/arm/mach-msm/last_radio_log.c |    2 +-
+ arch/cris/kernel/profile.c         |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/arch/arm/mach-msm/last_radio_log.c b/arch/arm/mach-msm/last_radio_log.c
+index 7777767..9c392a2 100644
+--- a/arch/arm/mach-msm/last_radio_log.c
++++ b/arch/arm/mach-msm/last_radio_log.c
+@@ -66,6 +66,6 @@ void msm_init_last_radio_log(struct module *owner)
+ 	pr_err("%s: last radio log is %d bytes long\n", __func__,
+ 		radio_log_size);
+ 	last_radio_log_fops.owner = owner;
+-	entry->size = radio_log_size;
++	proc_set_size(entry, radio_log_size);
+ }
+ EXPORT_SYMBOL(msm_init_last_radio_log);
+diff --git a/arch/cris/kernel/profile.c b/arch/cris/kernel/profile.c
+index b82e086..cd9f15b 100644
+--- a/arch/cris/kernel/profile.c
++++ b/arch/cris/kernel/profile.c
+@@ -76,7 +76,7 @@ static int __init init_cris_profile(void)
+ 	entry = proc_create("system_profile", S_IWUSR | S_IRUGO, NULL,
+ 			    &cris_proc_profile_operations);
+ 	if (entry) {
+-		entry->size = SAMPLE_BUFFER_SIZE;
++		proc_set_size(entry, SAMPLE_BUFFER_SIZE);
+ 	}
+ 	prof_running = 1;
+ 
+-- 
+1.7.0.4
 
-------enig2HNSPVJXIPHKTIRHBFOQQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlGIxv0ACgkQjTAFq1RaXHO3bQCfZP4g8Y+lK/pbe8e8m9gT4ixL
-zbQAn1H1HTr0TmnFlfGJeTKy8MAPJa8Z
-=37mW
------END PGP SIGNATURE-----
-
-------enig2HNSPVJXIPHKTIRHBFOQQ--
