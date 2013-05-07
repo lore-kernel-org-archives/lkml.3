@@ -1,124 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154Ab3EGXJF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 19:09:05 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37632 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752167Ab3EGXJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 19:09:03 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        Len Brown <lenb@kernel.org>, linux-mm@kvack.org, wency@cn.fujitsu.com
-Subject: Re: [PATCH 2/2 v2, RFC] Driver core: Introduce offline/online callbacks for memory blocks
-Date: Wed, 08 May 2013 01:17:25 +0200
-Message-ID: <228012439.MgiLXSqjLd@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1367966740.30363.26.camel@misato.fc.hp.com>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <2150698.7rPOtiF0kp@vostro.rjw.lan> <1367966740.30363.26.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753047Ab3EGXM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 19:12:28 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:49406 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab3EGXM0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 19:12:26 -0400
+X-AuditID: cbfee691-b7fe56d000004b96-e8-51898a595269
+Date: Tue, 07 May 2013 23:12:25 +0000 (GMT)
+From: EUNBONG SONG <eunb.song@samsung.com>
+Subject: Re: Re: MIPS: Test reault for  enable interrupts before WAIT
+ instruction patch
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: "david.daney@cavium.com" <david.daney@cavium.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "jogo@openwrt.org" <jogo@openwrt.org>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "manuel.lauss@gmail.com" <manuel.lauss@gmail.com>
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20130507230831915@eunb.song
+Msgkey: 20130507230831915@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20130507230831915@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <28076857.501501367968343732.JavaMail.weblogic@epv6ml01>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjleLIzCtJLcpLzFFi42I5/e+Zrm5kV2egwfOH0haXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugSvj0QSfgj6Wiv/vbrE2MP5h7mLk5BASUJFo+f+dEcSWEDCRmD7x
+	PyuELSZx4d56ti5GLqCaZYwS+9cfYIYpanr4ih2ieT6jxOlFcSA2C9CgLQvawQaxCWhLvP3y
+	AGyQsEC4xONFU5hAbBEBXYmW922MIEOZBV4zSaxv2c4CMUheYvLpy2BDeQUEJU7OfMICsUxJ
+	4uLOL2wQcWWJjoZXTBBxCYlZ0y9AXcorMaP9KVS9nMS0r2ugDpWWOD9rAyPMN4u/P4aK80sc
+	u70DaA4HWO+T+8EwY3ZvhlglISAgMfXMQahWdYkvr1rYIWw+iTUL37LAjNl1ajkzTO/9LXPB
+	TmMWUJSY0v2QHcLWkvjyYx8burd4BVwkJpztYJnAqDwLSWoWkvZZSNqR1SxgZFnFKJpakFxQ
+	nJReZKpXnJhbXJqXrpecn7uJEZIWJu5gvH/A+hBjMjBOJjJLiSbnA9NKXkm8obGZkYWpiamx
+	kbmlGWnCSuK86i3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoY08z7S+aXTl/XwKo4xe5Q
+	RvGnPqbIdIuN1v6ZHI+Phsq8eCVzJHF9hMWyGb8ctxSt+T+tbvM5TdHYBtX5+6btE/wYOSkx
+	OP/KyXWscueun4tIXy9V7aI8/X7793XFVR0OWXPlI0903bb6+NfctHXPxzVFC0XLrtTOV1x8
+	MLV34sulIX6X3EznKLEUZyQaajEXFScCABD0l2shAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e/2dN3Irs5Ag/bNkhaXd81hc2D0+LxJ
+	LoAxKsMmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2io
+	kkJZYk4pUCggsbhYSd/Opii/tCRVISO/uMRWKdrIwFjPyNREz8jYQM/EINbK0MDAyBSoKiEj
+	49EEn4I+lor/726xNjD+Ye5i5OQQElCRaPn/nRHElhAwkWh6+IodwhaTuHBvPRtEzXxGidOL
+	4kBsFqD6LQvawerZBLQl3n55wApiCwuESzxeNIUJxBYR0JVoed8GVMPFwSzwmklifct2FohB
+	8hKTT18GW8ArIChxcuYTFohlShIXd35hg4grS3Q0vGKCiEtIzJp+gRXC5pWY0f4Uql5OYtrX
+	NcwQtrTE+VkbGGGOXvz9MVScX+LY7R1AczjAep/cD4YZs3szxCoJAQGJqWcOQrWqS3x51QL1
+	O5/EmoVvWWDG7Dq1nBmm9/6WuWCnMQsoSkzpfsgOYWtJfPmxjw3dW7wCLhITznawTGCUm4Uk
+	NQtJ+ywk7chqFjCyrGIUTS1ILihOSq8w0itOzC0uzUvXS87P3cQITlDPFu1g/Hfe+hCjAAej
+	Eg+vBXdnoBBrYllxZe4hRgkOZiUR3rICoBBvSmJlVWpRfnxRaU5q8SHGZGAMTmSWEk3OBybP
+	vJJ4Q2MDY0NDS3MDU0MjC9KElcR5n7VaBwoJpCeWpGanphakFsFsYeLglGpg5PvWaWkit12f
+	selvh+uK+Te5FPh9+hY+XHM8NiTAKGTqx4Ajf5dsFfav7rf9lXVzk5LAvVUHNqz6rZC0XU7r
+	pt9J89OF3U53Pa2WW7YpXKhYtGD63ylmfy6aLRCzb08wLJtdWMvwsn7BkvlPk++phyTLax6p
+	WMfOsVekhpWPUeL6mpJ6+ytMSizFGYmGWsxFxYkAklSOi5QDAAA=
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On Tuesday, May 07, 2013 04:45:40 PM Toshi Kani wrote:
-> On Wed, 2013-05-08 at 00:10 +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, May 07, 2013 03:03:49 PM Toshi Kani wrote:
-> > > On Tue, 2013-05-07 at 14:11 +0200, Rafael J. Wysocki wrote:
-> > > > On Tuesday, May 07, 2013 12:59:45 PM Vasilis Liaskovitis wrote:
-> > > 
-> > >  :
-> > > 
-> > > > Updated patch is appended for completness.
-> > > 
-> > > Yes, this updated patch solved the locking issue.
-> > > 
-> > > > > > > A more general issue is that there are now two memory offlining efforts:
-> > > > > > > 
-> > > > > > > 1) from acpi_bus_offline_companions during device offline
-> > > > > > > 2) from mm: remove_memory during device detach (offline_memory_block_cb)
-> > > > > > > 
-> > > > > > > The 2nd is only called if the device offline operation was already succesful, so
-> > > > > > > it seems ineffective or redundant now, at least for x86_64/acpi_memhotplug machine
-> > > > > > > (unless the blocks were re-onlined in between).
-> > > > > > 
-> > > > > > Sure, and that should be OK for now.  Changing the detach behavior is not
-> > > > > > essential from the patch [2/2] perspective, we can do it later.
-> > > > > 
-> > > > > yes, ok.
-> > > > > 
-> > > > > > 
-> > > > > > > On the other hand, the 2nd effort has some more intelligence in offlining, as it
-> > > > > > > tries to offline twice in the precense of memcg, see commits df3e1b91 or
-> > > > > > > reworked 0baeab16. Maybe we need to consolidate the logic.
-> > > > > > 
-> > > > > > Hmm.  Perhaps it would make sense to implement that logic in
-> > > > > > memory_subsys_offline(), then?
-> > > > > 
-> > > > > the logic tries to offline the memory blocks of the device twice, because the
-> > > > > first memory block might be storing information for the subsequent memblocks.
-> > > > > 
-> > > > > memory_subsys_offline operates on one memory block at a time. Perhaps we can get
-> > > > > the same effect if we do an acpi_walk of acpi_bus_offline_companions twice in
-> > > > > acpi_scan_hot_remove but it's probably not a good idea, since that would
-> > > > > affect non-memory devices as well. 
-> > > > > 
-> > > > > I am not sure how important this intelligence is in practice (I am not using
-> > > > > mem cgroups in my guest kernel tests yet).  Maybe Wen (original author) has
-> > > > > more details on 2-pass offlining effectiveness.
-> > > > 
-> > > > OK
-> > > > 
-> > > > It may be added in a separate patch in any case.
-> > > 
-> > > I had the same comment as Vasilis.  And, I agree with you that we can
-> > > enhance it in separate patches.
-> > > 
-> > >  :
-> > > 
-> > > > +static int memory_subsys_offline(struct device *dev)
-> > > > +{
-> > > > +	struct memory_block *mem = container_of(dev, struct memory_block, dev);
-> > > > +	int ret;
-> > > > +
-> > > > +	mutex_lock(&mem->state_mutex);
-> > > > +	ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
-> > > 
-> > > This function needs to check mem->state just like
-> > > offline_memory_block().  That is:
-> > > 
-> > > 	int ret = 0;
-> > > 		:
-> > > 	if (mem->state != MEM_OFFLINE)
-> > > 		ret = __memory_block_change_state(...);
-> > > 
-> > > Otherwise, memory hot-delete to an off-lined memory fails in
-> > > __memory_block_change_state() since mem->state is already set to
-> > > MEM_OFFLINE.
-> > > 
-> > > With that change, for the series:
-> > > Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> > 
-> > OK, one more update, then (appended).
-> > 
-> > That said I thought that the check against dev->offline in device_offline()
-> > would be sufficient to guard agaist that.  Is there any "offline" code path
-> > I didn't take into account?
-> 
-> Oh, you are right about that.  The real problem is that dev->offline is
-> set to false (0) when a new memory is hot-added in off-line state.  So,
-> instead, dev->offline needs to be set properly.  
-
-OK, where does that happen?
-
-Rafael
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r47NCXHb006006
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
+>> 
+>> Hello. I  tested with two patches.
+>> The first one is thomas gleixner's patch. The patch is as follow.
+>> This patch works well without any problem.
+
+>You don't need them both.  When we fix it, it will be one or the other,
+>not both.
+
+Hello. David.
+Maybe i didn't write clearly for test result. I meant i applied only one patche for each test.
+
+Thanks. 
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
