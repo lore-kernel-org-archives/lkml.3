@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933067Ab3EGE16 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:27:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25931 "EHLO
+	id S933122Ab3EGE2d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:28:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13075 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932723Ab3EGE0A (ORCPT
+	with ESMTP id S932706Ab3EGE0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 May 2013 00:26:00 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=PCQpanxj7wIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=jYcHjeBbu4AA:10 a=yPCof4ZbAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=QyXUC8HyAAAA:8 a=0AWPF2qeU-xyIF9p1esA:9 a=QJx6o7id4AAA:10 a=7DSvI1NPTFQA:10 a=jEp0ucaQiEUA:10 a=0kPLrQdw3YYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=xZPe3FF7SAEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=OB5AkOFj6tkA:10 a=LpQP-O61AAAA:8 a=VwQbUJbxAAAA:8 a=Da1No7cPAAAA:8 a=S0oxW1tziPcxVXH5SaUA:9 a=6z04QOUsx9AA:10 a=YDjxKKMXsvQA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035850.774067031@goodmis.org>
+Message-Id: <20130507035851.111105716@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:58:11 -0400
+Date: Mon, 06 May 2013 23:58:13 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Josh Boyer <jwboyer@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [059/126] x86, mm: Patch out arch_flush_lazy_mmu_mode() when running on bare
- metal
+Cc: Michael Bohan <mbohan@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [061/126] hrtimer: Dont reinitialize a cpu_base lock on CPU_UP
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0059-x86-mm-Patch-out-arch_flush_lazy_mmu_mode-when-runni.patch
+Content-Disposition: inline; filename=0061-hrtimer-Don-t-reinitialize-a-cpu_base-lock-on-CPU_UP.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,149 +30,92 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+From: Michael Bohan <mbohan@codeaurora.org>
 
-[ Upstream commit 511ba86e1d386f671084b5d0e6f110bb30b8eeb2 ]
+[ Upstream commit 84cc8fd2fe65866e49d70b38b3fdf7219dd92fe0 ]
 
-Invoking arch_flush_lazy_mmu_mode() results in calls to
-preempt_enable()/disable() which may have performance impact.
+The current code makes the assumption that a cpu_base lock won't be
+held if the CPU corresponding to that cpu_base is offline, which isn't
+always true.
 
-Since lazy MMU is not used on bare metal we can patch away
-arch_flush_lazy_mmu_mode() so that it is never called in such
-environment.
+If a hrtimer is not queued, then it will not be migrated by
+migrate_hrtimers() when a CPU is offlined. Therefore, the hrtimer's
+cpu_base may still point to a CPU which has subsequently gone offline
+if the timer wasn't enqueued at the time the CPU went down.
 
-[ hpa: the previous patch "Fix vmalloc_fault oops during lazy MMU
-  updates" may cause a minor performance regression on
-  bare metal.  This patch resolves that performance regression.  It is
-  somewhat unclear to me if this is a good -stable candidate. ]
+Normally this wouldn't be a problem, but a cpu_base's lock is blindly
+reinitialized each time a CPU is brought up. If a CPU is brought
+online during the period that another thread is performing a hrtimer
+operation on a stale hrtimer, then the lock will be reinitialized
+under its feet, and a SPIN_BUG() like the following will be observed:
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Link: http://lkml.kernel.org/r/1364045796-10720-2-git-send-email-konrad.wilk@oracle.com
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org> SEE NOTE ABOVE
+<0>[   28.082085] BUG: spinlock already unlocked on CPU#0, swapper/0/0
+<0>[   28.087078]  lock: 0xc4780b40, value 0x0 .magic: dead4ead, .owner: <none>/-1, .owner_cpu: -1
+<4>[   42.451150] [<c0014398>] (unwind_backtrace+0x0/0x120) from [<c0269220>] (do_raw_spin_unlock+0x44/0xdc)
+<4>[   42.460430] [<c0269220>] (do_raw_spin_unlock+0x44/0xdc) from [<c071b5bc>] (_raw_spin_unlock+0x8/0x30)
+<4>[   42.469632] [<c071b5bc>] (_raw_spin_unlock+0x8/0x30) from [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8)
+<4>[   42.479521] [<c00a9ce0>] (__hrtimer_start_range_ns+0x1e4/0x4f8) from [<c00aa014>] (hrtimer_start+0x20/0x28)
+<4>[   42.489247] [<c00aa014>] (hrtimer_start+0x20/0x28) from [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320)
+<4>[   42.498709] [<c00e6190>] (rcu_idle_enter_common+0x1ac/0x320) from [<c00e6440>] (rcu_idle_enter+0xa0/0xb8)
+<4>[   42.508259] [<c00e6440>] (rcu_idle_enter+0xa0/0xb8) from [<c000f268>] (cpu_idle+0x24/0xf0)
+<4>[   42.516503] [<c000f268>] (cpu_idle+0x24/0xf0) from [<c06ed3c0>] (rest_init+0x88/0xa0)
+<4>[   42.524319] [<c06ed3c0>] (rest_init+0x88/0xa0) from [<c0c00978>] (start_kernel+0x3d0/0x434)
+
+As an example, this particular crash occurred when hrtimer_start() was
+executed on CPU #0. The code locked the hrtimer's current cpu_base
+corresponding to CPU #1. CPU #0 then tried to switch the hrtimer's
+cpu_base to an optimal CPU which was online. In this case, it selected
+the cpu_base corresponding to CPU #3.
+
+Before it could proceed, CPU #1 came online and reinitialized the
+spinlock corresponding to its cpu_base. Thus now CPU #0 held a lock
+which was reinitialized. When CPU #0 finally ended up unlocking the
+old cpu_base corresponding to CPU #1 so that it could switch to CPU
+#3, we hit this SPIN_BUG() above while in switch_hrtimer_base().
+
+CPU #0                            CPU #1
+----                              ----
+...                               <offline>
+hrtimer_start()
+lock_hrtimer_base(base #1)
+...                               init_hrtimers_cpu()
+switch_hrtimer_base()             ...
+...                               raw_spin_lock_init(&cpu_base->lock)
+raw_spin_unlock(&cpu_base->lock)  ...
+<spin_bug>
+
+Solve this by statically initializing the lock.
+
+Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
+Link: http://lkml.kernel.org/r/1363745965-23475-1-git-send-email-mbohan@codeaurora.org
+Cc: stable@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/include/asm/paravirt.h       |    5 ++++-
- arch/x86/include/asm/paravirt_types.h |    2 ++
- arch/x86/kernel/paravirt.c            |   25 +++++++++++++------------
- arch/x86/lguest/boot.c                |    1 +
- arch/x86/xen/mmu.c                    |    1 +
- 5 files changed, 21 insertions(+), 13 deletions(-)
+ kernel/hrtimer.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index a0facf3..97da2bb 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -705,7 +705,10 @@ static inline void arch_leave_lazy_mmu_mode(void)
- 	PVOP_VCALL0(pv_mmu_ops.lazy_mode.leave);
- }
- 
--void arch_flush_lazy_mmu_mode(void);
-+static inline void arch_flush_lazy_mmu_mode(void)
-+{
-+	PVOP_VCALL0(pv_mmu_ops.lazy_mode.flush);
-+}
- 
- static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
- 				phys_addr_t phys, pgprot_t flags)
-diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-index 142236e..b3b0ec1 100644
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -91,6 +91,7 @@ struct pv_lazy_ops {
- 	/* Set deferred update mode, used for batching operations. */
- 	void (*enter)(void);
- 	void (*leave)(void);
-+	void (*flush)(void);
- };
- 
- struct pv_time_ops {
-@@ -679,6 +680,7 @@ void paravirt_end_context_switch(struct task_struct *next);
- 
- void paravirt_enter_lazy_mmu(void);
- void paravirt_leave_lazy_mmu(void);
-+void paravirt_flush_lazy_mmu(void);
- 
- void _paravirt_nop(void);
- u32 _paravirt_ident_32(u32);
-diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
-index 17fff18..8bfb335 100644
---- a/arch/x86/kernel/paravirt.c
-+++ b/arch/x86/kernel/paravirt.c
-@@ -263,6 +263,18 @@ void paravirt_leave_lazy_mmu(void)
- 	leave_lazy(PARAVIRT_LAZY_MMU);
- }
- 
-+void paravirt_flush_lazy_mmu(void)
-+{
-+	preempt_disable();
-+
-+	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
-+		arch_leave_lazy_mmu_mode();
-+		arch_enter_lazy_mmu_mode();
-+	}
-+
-+	preempt_enable();
-+}
-+
- void paravirt_start_context_switch(struct task_struct *prev)
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 6db7a5e..1c5ab31 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -61,6 +61,7 @@
+ DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
  {
- 	BUG_ON(preemptible());
-@@ -292,18 +304,6 @@ enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
- 	return this_cpu_read(paravirt_lazy_mode);
- }
  
--void arch_flush_lazy_mmu_mode(void)
--{
--	preempt_disable();
++	.lock = __RAW_SPIN_LOCK_UNLOCKED(hrtimer_bases.lock),
+ 	.clock_base =
+ 	{
+ 		{
+@@ -1640,8 +1641,6 @@ static void __cpuinit init_hrtimers_cpu(int cpu)
+ 	struct hrtimer_cpu_base *cpu_base = &per_cpu(hrtimer_bases, cpu);
+ 	int i;
+ 
+-	raw_spin_lock_init(&cpu_base->lock);
 -
--	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
--		arch_leave_lazy_mmu_mode();
--		arch_enter_lazy_mmu_mode();
--	}
--
--	preempt_enable();
--}
--
- struct pv_info pv_info = {
- 	.name = "bare hardware",
- 	.paravirt_enabled = 0,
-@@ -475,6 +475,7 @@ struct pv_mmu_ops pv_mmu_ops = {
- 	.lazy_mode = {
- 		.enter = paravirt_nop,
- 		.leave = paravirt_nop,
-+		.flush = paravirt_nop,
- 	},
- 
- 	.set_fixmap = native_set_fixmap,
-diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
-index 642d880..53272bd 100644
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -1333,6 +1333,7 @@ __init void lguest_init(void)
- 	pv_mmu_ops.read_cr3 = lguest_read_cr3;
- 	pv_mmu_ops.lazy_mode.enter = paravirt_enter_lazy_mmu;
- 	pv_mmu_ops.lazy_mode.leave = lguest_leave_lazy_mmu_mode;
-+	pv_mmu_ops.lazy_mode.flush = paravirt_flush_lazy_mmu;
- 	pv_mmu_ops.pte_update = lguest_pte_update;
- 	pv_mmu_ops.pte_update_defer = lguest_pte_update;
- 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index dde1a3f..d396521 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2079,6 +2079,7 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
- 	.lazy_mode = {
- 		.enter = paravirt_enter_lazy_mmu,
- 		.leave = xen_leave_lazy_mmu,
-+		.flush = paravirt_flush_lazy_mmu,
- 	},
- 
- 	.set_fixmap = xen_set_fixmap,
+ 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+ 		cpu_base->clock_base[i].cpu_base = cpu_base;
+ 		timerqueue_init_head(&cpu_base->clock_base[i].active);
 -- 
 1.7.10.4
 
