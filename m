@@ -1,129 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab3EGOTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:19:50 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:39905 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab3EGOTs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 10:19:48 -0400
-Message-ID: <51890D71.9080600@hp.com>
-Date: Tue, 07 May 2013 10:19:29 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] perf: fix symbol processing bug and greatly improve performance
-References: <1367847833-4932-1-git-send-email-Waiman.Long@hp.com> <20130507070127.GA17830@gmail.com>
-In-Reply-To: <20130507070127.GA17830@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753081Ab3EGOTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:19:43 -0400
+Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:59328 "EHLO
+	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752678Ab3EGOSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 10:18:06 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: jirislaby@gmail.com
+Cc: linux-kernel@vger.kernel.org, Jiri Bohac <jbohac@suse.cz>,
+        Jiri Slaby <jslaby@suse.cz>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 05/15] connection tracking helper for SLP
+Date: Tue,  7 May 2013 16:18:13 +0200
+Message-Id: <1367936303-13386-5-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1367936303-13386-1-git-send-email-jslaby@suse.cz>
+References: <1367936303-13386-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2013 03:01 AM, Ingo Molnar wrote:
-> * Waiman Long<Waiman.Long@hp.com>  wrote:
->
->> When "perf record" was used on a large machine with a lot of CPUs,
->> the perf post-processing time could take a lot of minutes and even
->> hours depending on how large the resulting perf.data file was.
->>
->> While running AIM7 1500-user high_systime workload on a 80-core x86-64
->> system with a 3.9 kernel, the workload itself took about 2 minutes
->> to run and the perf.data file had a size of 1108.746 MB. However,
->> the post-processing step took more than 10 minutes.
->>
->> With a gprof-profiled perf binary, the time spent by perf was as
->> follows:
->>
->>    %   cumulative   self              self     total
->>   time   seconds   seconds    calls   s/call   s/call  name
->>   96.90    822.10   822.10   192156     0.00     0.00  dsos__find
->>    0.81    828.96     6.86 172089958     0.00     0.00  rb_next
->>    0.41    832.44     3.48 48539289     0.00     0.00  rb_erase
->>
->> So 97% (822 seconds) of the time was spent in a single dsos_find()
->> function. After analyzing the call-graph data below:
->>
->> -----------------------------------------------
->>                  0.00  822.12  192156/192156      map__new [6]
->> [7]     96.9    0.00  822.12  192156         vdso__dso_findnew [7]
->>                822.10    0.00  192156/192156      dsos__find [8]
->>                  0.01    0.00  192156/192156      dsos__add [62]
->>                  0.01    0.00  192156/192366      dso__new [61]
->>                  0.00    0.00       1/45282525     memdup [31]
->>                  0.00    0.00  192156/192230      dso__set_long_name [91]
->> -----------------------------------------------
->>                822.10    0.00  192156/192156      vdso__dso_findnew [7]
->> [8]     96.9  822.10    0.00  192156         dsos__find [8]
->> -----------------------------------------------
->>
->> It was found that the vdso__dso_findnew() function failed to locate
->> VDSO__MAP_NAME ("[vdso]") in the dso list and have to insert a new
->> entry at the end for 192156 times. This problem is due to the fact that
->> there are 2 types of name in the dso entry - short name and long name.
->> The initial dso__new() adds "[vdso]" to both the short and long names.
->> After that, vdso__dso_findnew() modifies the long name to something
->> like /tmp/perf-vdso.so-NoXkDj. The dsos__find() function only compares
->> the long name. As a result, the same vdso entry is duplicated many
->> time in the dso list. This bug increases memory consumption as well
->> as slows the symbol processing time to a crawl.
->>
->> To resolve this problem, the dsos__find() function interface was
->> modified to enable searching either the long name or the short
->> name. The vdso__dso_findnew() will now search only the short name
->> while the other call sites search for the long name as before.
->>
->> With this change, the cpu time of perf was reduced from 848.38s to
->> 15.77s and dsos__find() only accounted for 0.06% of the total time.
->>
->>    0.06     15.73     0.01   192151     0.00     0.00  dsos__find
-> Very nice!
->
-> I noticed that you used gprof to instrument perf itself on a call graph
-> level.
->
-> Does this method of profiling perf via perf:
->
->    perf record -g perf report
->    perf report
->
-> ... produce similarly useful call-graph instrumentation for you?
->
-> If not or not quite then could you describe the differences? We could use
-> that to further improve perf call-graph profiling.
+From: Jiri Bohac <jbohac@suse.cz>
 
-Thank for the comment.
+A simple connection tracking helper for SLP. Marks replies to a
+SLP broadcast query as ESTABLISHED to allow them to pass through the
+firewall.
 
-The slowdown that I was trying to fix was in the "perf record" part of 
-the profiling process, not the "perf report" part. I didn't try 
-perf-record on perf-record as the performance counters are limited 
-resources and I don't want resource conflicts to affect the results. As 
-the slow-down was entirely in the user space, I decided to use gprof to 
-do the profiling.
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: netfilter-devel@vger.kernel.org
+Cc: netfilter@vger.kernel.org
+Cc: coreteam@netfilter.org
+Cc: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+---
+ net/netfilter/Kconfig            |  15 +++++
+ net/netfilter/Makefile           |   1 +
+ net/netfilter/nf_conntrack_slp.c | 131 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 147 insertions(+)
+ create mode 100644 net/netfilter/nf_conntrack_slp.c
 
-One thing I noticed about the gprof instrumentation and perf call-graph 
-was that inlined functions were properly identified by gprof, but not 
-perf. This makes sense as the compiler produces additional 
-instrumentation code and data into the binary that can be used by gprof. 
-That is not the case for perf.
+diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
+index 56d22ca..ec61b30 100644
+--- a/net/netfilter/Kconfig
++++ b/net/netfilter/Kconfig
+@@ -320,6 +320,21 @@ config NF_CONNTRACK_TFTP
+ 
+ 	  To compile it as a module, choose M here.  If unsure, say N.
+ 
++config NF_CONNTRACK_SLP
++	tristate "SLP protocol support"
++	depends on NF_CONNTRACK
++	depends on NETFILTER_ADVANCED
++	help
++	  SLP queries are sometimes sent as broadcast messages from an
++	  unprivileged port and responded to with unicast messages to the
++	  same port. This make them hard to firewall properly because connection
++	  tracking doesn't deal with broadcasts. This helper tracks locally
++	  originating broadcast SLP queries and the corresponding
++	  responses. It relies on correct IP address configuration, specifically
++	  netmask and broadcast address.
++
++	  To compile it as a module, choose M here.  If unsure, say N.
++
+ config NF_CT_NETLINK
+ 	tristate 'Connection tracking netlink interface'
+ 	select NETFILTER_NETLINK
+diff --git a/net/netfilter/Makefile b/net/netfilter/Makefile
+index a1abf87..aa7d5f1 100644
+--- a/net/netfilter/Makefile
++++ b/net/netfilter/Makefile
+@@ -43,6 +43,7 @@ obj-$(CONFIG_NF_CONNTRACK_PPTP) += nf_conntrack_pptp.o
+ obj-$(CONFIG_NF_CONNTRACK_SANE) += nf_conntrack_sane.o
+ obj-$(CONFIG_NF_CONNTRACK_SIP) += nf_conntrack_sip.o
+ obj-$(CONFIG_NF_CONNTRACK_TFTP) += nf_conntrack_tftp.o
++obj-$(CONFIG_NF_CONNTRACK_SLP) += nf_conntrack_slp.o
+ 
+ nf_nat-y	:= nf_nat_core.o nf_nat_proto_unknown.o nf_nat_proto_common.o \
+ 		   nf_nat_proto_udp.o nf_nat_proto_tcp.o nf_nat_helper.o
+diff --git a/net/netfilter/nf_conntrack_slp.c b/net/netfilter/nf_conntrack_slp.c
+new file mode 100644
+index 0000000..0174dd0
+--- /dev/null
++++ b/net/netfilter/nf_conntrack_slp.c
+@@ -0,0 +1,131 @@
++/*
++ *      NetBIOS name service broadcast connection tracking helper
++ *
++ *      (c) 2007 Jiri Bohac <jbohac@suse.cz>
++ *      (c) 2005 Patrick McHardy <kaber@trash.net>
++ *
++ *      This program is free software; you can redistribute it and/or
++ *      modify it under the terms of the GNU General Public License
++ *      as published by the Free Software Foundation; either version
++ *      2 of the License, or (at your option) any later version.
++ */
++/*
++ *      This helper tracks locally originating NetBIOS name service
++ *      requests by issuing permanent expectations (valid until
++ *      timing out) matching all reply connections from the
++ *      destination network. The only NetBIOS specific thing is
++ *      actually the port number.
++ */
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/skbuff.h>
++#include <linux/netdevice.h>
++#include <linux/inetdevice.h>
++#include <linux/if_addr.h>
++#include <linux/in.h>
++#include <linux/ip.h>
++#include <linux/netfilter.h>
++#include <net/route.h>
++
++#include <net/netfilter/nf_conntrack.h>
++#include <net/netfilter/nf_conntrack_helper.h>
++#include <net/netfilter/nf_conntrack_expect.h>
++
++#define SLP_PORT	427
++
++MODULE_AUTHOR("Jiri Bohac <jbohac@suse.cz>");
++MODULE_DESCRIPTION("SLP broadcast connection tracking helper");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("ip_conntrack_slp");
++
++static unsigned int timeout __read_mostly = 3;
++module_param(timeout, uint, 0400);
++MODULE_PARM_DESC(timeout, "timeout for master connection/replies in seconds");
++
++static int help(struct sk_buff *skb, unsigned int protoff,
++		struct nf_conn *ct, enum ip_conntrack_info ctinfo)
++{
++	struct nf_conntrack_expect *exp;
++	struct rtable *rt = skb_rtable(skb);
++	struct in_device *in_dev;
++	__be32 mask = 0;
++	__be32 src = 0;
++
++	/* we're only interested in locally generated packets */
++	if (skb->sk == NULL)
++		goto out;
++	if (rt == NULL || !(rt->rt_flags & (RTCF_MULTICAST|RTCF_BROADCAST)))
++		goto out;
++	if (CTINFO2DIR(ctinfo) != IP_CT_DIR_ORIGINAL)
++		goto out;
++
++	rcu_read_lock();
++	in_dev = __in_dev_get_rcu(rt->dst.dev);
++	if (in_dev != NULL) {
++		for_primary_ifa(in_dev) {
++			/* this is a hack as slp uses multicast we can't match
++			 * the destination address to some broadcast address. So
++			 * just take the first one. Better would be to install
++			 * expectations for all addresses */
++			mask = ifa->ifa_mask;
++			src = ifa->ifa_broadcast;
++			break;
++		} endfor_ifa(in_dev);
++	}
++	rcu_read_unlock();
++
++	if (mask == 0 || src == 0)
++		goto out;
++
++	exp = nf_ct_expect_alloc(ct);
++	if (exp == NULL)
++		goto out;
++
++	exp->tuple                = ct->tuplehash[IP_CT_DIR_REPLY].tuple;
++	exp->tuple.src.u3.ip      = src;
++	exp->tuple.src.u.udp.port = htons(SLP_PORT);
++
++	exp->mask.src.u3.ip       = mask;
++	exp->mask.src.u.udp.port  = htons(0xFFFF);
++
++	exp->expectfn             = NULL;
++	exp->flags                = NF_CT_EXPECT_PERMANENT;
++	exp->class		  = NF_CT_EXPECT_CLASS_DEFAULT;
++	exp->helper               = NULL;
++
++	nf_ct_expect_related(exp);
++	nf_ct_expect_put(exp);
++
++	nf_ct_refresh(ct, skb, timeout * HZ);
++out:
++	return NF_ACCEPT;
++}
++
++static struct nf_conntrack_expect_policy exp_policy = {
++	.max_expected	= 1,
++};
++
++static struct nf_conntrack_helper helper __read_mostly = {
++	.name			= "slp",
++	.tuple.src.l3num	= AF_INET,
++	.tuple.src.u.udp.port	= __constant_htons(SLP_PORT),
++	.tuple.dst.protonum	= IPPROTO_UDP,
++	.me			= THIS_MODULE,
++	.help			= help,
++	.expect_policy		= &exp_policy,
++};
++
++static int __init nf_conntrack_slp_init(void)
++{
++	exp_policy.timeout = timeout;
++	return nf_conntrack_helper_register(&helper);
++}
++
++static void __exit nf_conntrack_slp_fini(void)
++{
++	nf_conntrack_helper_unregister(&helper);
++}
++
++module_init(nf_conntrack_slp_init);
++module_exit(nf_conntrack_slp_fini);
+-- 
+1.8.2.1
 
-I also looked into possible performance bottleneck in the perf-report 
-part of the process. Most of the time was spent in sorting and merging 
-the call-chain data and there didn't seem to have low hanging fruit for 
-performance tuning opportunity.
-
-Please let me know what other tests or data would you like to me to gather.
-
-Best regards,
-Longman
