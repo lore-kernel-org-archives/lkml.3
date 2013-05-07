@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab3EGH3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 03:29:43 -0400
-Received: from cyclops.biessmann.org ([134.0.25.77]:57896 "EHLO
-	cyclops.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab3EGH3l convert rfc822-to-8bit (ORCPT
+	id S1756964Ab3EGHbn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 03:31:43 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36908 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754679Ab3EGHbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 03:29:41 -0400
-X-Greylist: delayed 507 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 May 2013 03:29:41 EDT
+	Tue, 7 May 2013 03:31:42 -0400
+Date: Tue, 7 May 2013 08:31:36 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] dma: ste_dma40: fix up static memcpy event lines
+Message-ID: <20130507073136.GS24153@gmail.com>
+References: <1367610578-2437-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 07 May 2013 09:18:51 +0200
-From: =?UTF-8?Q?Andreas_Bie=C3=9Fmann?= <andreas@biessmann.de>
-To: =?UTF-8?Q?Andreas_Bie=C3=9Fmann?= <andreas@biessmann.de>
-Cc: <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay@vrfy.org>, Ben Hutchings <ben@decadent.org.uk>,
-        <stable@vger.kernel.org>
-Subject: Re: [PATCH v2] =?UTF-8?Q?register=5Fconsole=3A=20prevent=20adding?=
- =?UTF-8?Q?=20the=20same=20console=20twice?=
-In-Reply-To: <1364201964-2990-1-git-send-email-andreas@biessmann.de>
-References: <1364201964-2990-1-git-send-email-andreas@biessmann.de>
-Message-ID: <4776724114a6170424db01471c422892@biessmann.de>
-User-Agent: Roundcube Webmail/0.8.5
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1367610578-2437-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping?
+On Fri, 03 May 2013, Linus Walleij wrote:
 
-Am 2013-03-25 09:59, schrieb Andreas Bießmann:
-> This patch guards the console_drivers list to be corrupted. The
-> for_each_console() macro insist on a strictly forward list ended by 
-> NULL:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
->  con0->next->con1->next->NULL
+> The commit
+> "dmaengine: ste_dma40: Assign memcpy channels in the driver"
+> had two problems:
+> - It assigned magic numbers to the memcpy event lines
+>   instead of giving them symbolic names.
+> - It seems to have missed one of the memcpy event lines,
+>   number 51.
 > 
-> Without this patch it may happen easily to destroy this list for 
-> example by
-> adding 'earlyprintk' twice, especially on embedded devices where the 
-> early
-> console is often a single static instance.  This will result in the 
-> following
-> list:
-> 
->  con0->next->con0
-> 
-> This in turn will result in an endless loop in console_unlock() later 
-> on by
-> printing the first __log_buf line endlessly.
-> 
-> Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Kay Sievers <kay@vrfy.org>
-> Cc: Ben Hutchings <ben@decadent.org.uk>
-> Cc: stable@kernel.org
+> This patch fixes it up.
+
+Looks good to me: Acked-by Lee Jones <lee.jones@linaro.org>
+
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 > ---
-> since v1:
->  * use WARN() as Ben suggested
->  * print 'already registered' instead of 'prevent registering'
+> Vinod: seeking an ACK for this to take it with the rest of
+> Lee's patches in a DMA40 branch in ARM SoC.
+> ---
+>  drivers/dma/ste_dma40.c | 16 +++++++++++++++-
+>  1 file changed, 15 insertions(+), 1 deletion(-)
 > 
->  kernel/printk.c |    7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index abbdd9e..180ee25 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -2214,6 +2214,13 @@ void register_console(struct console *newcon)
->  	unsigned long flags;
->  	struct console *bcon = NULL;
-> 
-> +	if (console_drivers)
-> +		for_each_console(bcon)
-> +			if (WARN(bcon == newcon,
-> +					"console '%s%d' already registered\n",
-> +					bcon->name, bcon->index))
-> +				return;
+> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+> index 12de79e..cd7b480 100644
+> --- a/drivers/dma/ste_dma40.c
+> +++ b/drivers/dma/ste_dma40.c
+> @@ -56,7 +56,21 @@
+>  #define MAX(a, b) (((a) < (b)) ? (b) : (a))
+>  
+>  /* Reserved event lines for memcpy only. */
+> -static int dma40_memcpy_channels[] = { 56, 57, 58, 59, 60 };
+> +#define DB8500_DMA_MEMCPY_EV_0	51
+> +#define DB8500_DMA_MEMCPY_EV_1	56
+> +#define DB8500_DMA_MEMCPY_EV_2	57
+> +#define DB8500_DMA_MEMCPY_EV_3	58
+> +#define DB8500_DMA_MEMCPY_EV_4	59
+> +#define DB8500_DMA_MEMCPY_EV_5	60
 > +
->  	/*
->  	 * before we register a new CON_BOOT console, make sure we don't
->  	 * already have a valid console
+> +static int dma40_memcpy_channels[] = {
+> +	DB8500_DMA_MEMCPY_EV_0,
+> +	DB8500_DMA_MEMCPY_EV_1,
+> +	DB8500_DMA_MEMCPY_EV_2,
+> +	DB8500_DMA_MEMCPY_EV_3,
+> +	DB8500_DMA_MEMCPY_EV_4,
+> +	DB8500_DMA_MEMCPY_EV_5,
+> +};
+>  
+>  /**
+>   * enum 40_command - The different commands and/or statuses.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
