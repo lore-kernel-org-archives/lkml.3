@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933373Ab3EGD7j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 23:59:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23893 "EHLO
+	id S933270Ab3EGD7h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 23:59:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21552 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932970Ab3EGD7B (ORCPT
+	with ESMTP id S932978Ab3EGD7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 23:59:01 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=mbmLQ2SiDuYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Iz3IxIhng2EA:10 a=eh1Yez-EAAAA:8 a=20KFwNOVAAAA:8 a=yRT1tXsR65cmlkA8zI8A:9 a=W6U7dDoXpqQA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=cnGIwuGMVSEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Pw45o5U4ifkA:10 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=pGLkceISAAAA:8 a=0vF5R7nFAAAA:8 a=1haGB4nQzVCtRAZ18OIA:9 a=u8vfFSLHYHoA:10 a=UTB_XpHje0EA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035849.452548910@goodmis.org>
+Message-Id: <20130507035849.285608737@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:58:03 -0400
+Date: Mon, 06 May 2013 23:58:02 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Thomas Hellstrom <thellstrom@vmware.com>, Dave Airlie <airlied@redhat.com>
-Subject: [051/126] kref: Implement kref_get_unless_zero v3
+Cc: Suleiman Souhlal <suleiman@google.com>, Hugh Dickins <hughd@google.com>
+Subject: [050/126] vfs: Revert spurious fix to spinning prevention in prune_icache_sb
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0051-kref-Implement-kref_get_unless_zero-v3.patch
+Content-Disposition: inline; filename=0050-vfs-Revert-spurious-fix-to-spinning-prevention-in-pr.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,60 +29,42 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Suleiman Souhlal <suleiman@google.com>
 
-[ Upstream commit 4b20db3de8dab005b07c74161cb041db8c5ff3a7 ]
+[ Upstream commit 5b55d708335a9e3e4f61f2dadf7511502205ccd1 ]
 
-This function is intended to simplify locking around refcounting for
-objects that can be looked up from a lookup structure, and which are
-removed from that lookup structure in the object destructor.
-Operations on such objects require at least a read lock around
-lookup + kref_get, and a write lock around kref_put + remove from lookup
-structure. Furthermore, RCU implementations become extremely tricky.
-With a lookup followed by a kref_get_unless_zero *with return value check*
-locking in the kref_put path can be deferred to the actual removal from
-the lookup structure and RCU lookups become trivial.
+Revert commit 62a3ddef6181 ("vfs: fix spinning prevention in prune_icache_sb").
 
-v2: Formatting fixes.
-v3: Invert the return value.
+This commit doesn't look right: since we are looking at the tail of the
+list (sb->s_inode_lru.prev) if we want to skip an inode, we should put
+it back at the head of the list instead of the tail, otherwise we will
+keep spinning on it.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Discovered when investigating why prune_icache_sb came top in perf
+reports of a swapping load.
+
+Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: stable@vger.kernel.org # v3.2+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/kref.h |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ fs/inode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 65af688..4972e6e 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -111,4 +111,25 @@ static inline int kref_put_mutex(struct kref *kref,
- 	}
- 	return 0;
- }
-+
-+/**
-+ * kref_get_unless_zero - Increment refcount for object unless it is zero.
-+ * @kref: object.
-+ *
-+ * Return non-zero if the increment succeeded. Otherwise return 0.
-+ *
-+ * This function is intended to simplify locking around refcounting for
-+ * objects that can be looked up from a lookup structure, and which are
-+ * removed from that lookup structure in the object destructor.
-+ * Operations on such objects require at least a read lock around
-+ * lookup + kref_get, and a write lock around kref_put + remove from lookup
-+ * structure. Furthermore, RCU implementations become extremely tricky.
-+ * With a lookup followed by a kref_get_unless_zero *with return value check*
-+ * locking in the kref_put path can be deferred to the actual removal from
-+ * the lookup structure and RCU lookups become trivial.
-+ */
-+static inline int __must_check kref_get_unless_zero(struct kref *kref)
-+{
-+	return atomic_add_unless(&kref->refcount, 1, 0);
-+}
- #endif /* _KREF_H_ */
+diff --git a/fs/inode.c b/fs/inode.c
+index 7c14897..d76b46f 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -725,7 +725,7 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
+ 		 * inode to the back of the list so we don't spin on it.
+ 		 */
+ 		if (!spin_trylock(&inode->i_lock)) {
+-			list_move_tail(&inode->i_lru, &sb->s_inode_lru);
++			list_move(&inode->i_lru, &sb->s_inode_lru);
+ 			continue;
+ 		}
+ 
 -- 
 1.7.10.4
 
