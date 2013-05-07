@@ -1,824 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759298Ab3EGUri (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 16:47:38 -0400
-Received: from mga14.intel.com ([143.182.124.37]:7835 "EHLO mga14.intel.com"
+	id S1759498Ab3EGUrk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 16:47:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:8754 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758619Ab3EGUrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 16:47:35 -0400
+	id S1758759Ab3EGUrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 16:47:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,629,1363158000"; 
-   d="scan'208";a="299067438"
-Subject: [PATCH 2/7] order memory debugging Kconfig options
+   d="scan'208";a="299067493"
+Subject: [PATCH 6/7] kconfig: consolidate printk options
 To: mmarek@suse.cz
 Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
         Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Tue, 07 May 2013 13:46:45 -0700
+Date: Tue, 07 May 2013 13:46:51 -0700
 References: <20130507204642.D010DDC1@viggo.jf.intel.com>
 In-Reply-To: <20130507204642.D010DDC1@viggo.jf.intel.com>
-Message-Id: <20130507204645.E54DD1F6@viggo.jf.intel.com>
+Message-Id: <20130507204651.52F3D9A5@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-From: Dave Hansen <dave@linux.vnet.ibm.com>
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-There are a *LOT* of memory debugging options.  They are just scattered
-all over the "Kernel Hacking" menu.  Sure, "memory debugging" is a very
-vague term and it's going to be hard to make absolute rules about what
-goes in here, but this has to be better than what we had before.
+Same deal, take the printk-related things and hide them in a menu.
+This takes another 4 items out of the top-level menu.
 
-This does, however, leave out the architecture-specific memory
-debugging options (like x86's DEBUG_SET_MODULE_RONX).  There would need
-to be some substantial changes to move those in here.  Kconfig can not
-easily mix arch-specific and generic options together: it really
-requires a file per-architecture, and I think having an
-arch/foo/Kconfig.debug-memory might be taking things a bit too far
-
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
 
- linux.git-davehans/lib/Kconfig.debug |  685 +++++++++++++++++------------------
- 1 file changed, 345 insertions(+), 340 deletions(-)
+ linux.git-davehans/lib/Kconfig.debug |  177 +++++++++++++++++------------------
+ 1 file changed, 90 insertions(+), 87 deletions(-)
 
-diff -puN lib/Kconfig.debug~order-memory-debugging-options lib/Kconfig.debug
---- linux.git/lib/Kconfig.debug~order-memory-debugging-options	2013-05-07 13:41:37.398488673 -0700
-+++ linux.git-davehans/lib/Kconfig.debug	2013-05-07 13:41:37.402488850 -0700
-@@ -162,6 +162,283 @@ config DEBUG_KERNEL
- 	  Say Y here if you are developing drivers or trying to debug and
- 	  identify kernel problems.
+diff -puN lib/Kconfig.debug~printk-options lib/Kconfig.debug
+--- linux.git/lib/Kconfig.debug~printk-options	2013-05-07 13:41:38.407533570 -0700
++++ linux.git-davehans/lib/Kconfig.debug	2013-05-07 13:41:38.410533703 -0700
+@@ -1,3 +1,4 @@
++menu "printk and dmesg options"
  
-+menu "Memory Debugging"
-+
-+source mm/Kconfig.debug
-+
-+config DEBUG_OBJECTS
-+	bool "Debug object operations"
-+	depends on DEBUG_KERNEL
+ config PRINTK_TIME
+ 	bool "Show timing information on printks"
+@@ -25,6 +26,95 @@ config DEFAULT_MESSAGE_LOGLEVEL
+ 	  that are auditing their logs closely may want to set it to a lower
+ 	  priority.
+ 
++config BOOT_PRINTK_DELAY
++	bool "Delay each boot printk message by N milliseconds"
++	depends on DEBUG_KERNEL && PRINTK && GENERIC_CALIBRATE_DELAY
 +	help
-+	  If you say Y here, additional code will be inserted into the
-+	  kernel to track the life time of various objects and validate
-+	  the operations on those objects.
++	  This build option allows you to read kernel boot messages
++	  by inserting a short delay after each one.  The delay is
++	  specified in milliseconds on the kernel command line,
++	  using "boot_delay=N".
 +
-+config DEBUG_OBJECTS_SELFTEST
-+	bool "Debug objects selftest"
-+	depends on DEBUG_OBJECTS
-+	help
-+	  This enables the selftest of the object debug code.
++	  It is likely that you would also need to use "lpj=M" to preset
++	  the "loops per jiffie" value.
++	  See a previous boot log for the "lpj" value to use for your
++	  system, and then set "lpj=M" before setting "boot_delay=N".
++	  NOTE:  Using this option may adversely affect SMP systems.
++	  I.e., processors other than the first one may not boot up.
++	  BOOT_PRINTK_DELAY also may cause LOCKUP_DETECTOR to detect
++	  what it believes to be lockup conditions.
 +
-+config DEBUG_OBJECTS_FREE
-+	bool "Debug objects in freed memory"
-+	depends on DEBUG_OBJECTS
-+	help
-+	  This enables checks whether a k/v free operation frees an area
-+	  which contains an object which has not been deactivated
-+	  properly. This can make kmalloc/kfree-intensive workloads
-+	  much slower.
-+
-+config DEBUG_OBJECTS_TIMERS
-+	bool "Debug timer objects"
-+	depends on DEBUG_OBJECTS
-+	help
-+	  If you say Y here, additional code will be inserted into the
-+	  timer routines to track the life time of timer objects and
-+	  validate the timer operations.
-+
-+config DEBUG_OBJECTS_WORK
-+	bool "Debug work objects"
-+	depends on DEBUG_OBJECTS
-+	help
-+	  If you say Y here, additional code will be inserted into the
-+	  work queue routines to track the life time of work objects and
-+	  validate the work operations.
-+
-+config DEBUG_OBJECTS_RCU_HEAD
-+	bool "Debug RCU callbacks objects"
-+	depends on DEBUG_OBJECTS
-+	help
-+	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
-+
-+config DEBUG_OBJECTS_PERCPU_COUNTER
-+	bool "Debug percpu counter objects"
-+	depends on DEBUG_OBJECTS
-+	help
-+	  If you say Y here, additional code will be inserted into the
-+	  percpu counter routines to track the life time of percpu counter
-+	  objects and validate the percpu counter operations.
-+
-+config DEBUG_OBJECTS_ENABLE_DEFAULT
-+	int "debug_objects bootup default value (0-1)"
-+        range 0 1
-+        default "1"
-+        depends on DEBUG_OBJECTS
-+        help
-+          Debug objects boot parameter default value
-+
-+config DEBUG_SLAB
-+	bool "Debug slab memory allocations"
-+	depends on DEBUG_KERNEL && SLAB && !KMEMCHECK
-+	help
-+	  Say Y here to have the kernel do limited verification on memory
-+	  allocation as well as poisoning memory on free to catch use of freed
-+	  memory. This can make kmalloc/kfree-intensive workloads much slower.
-+
-+config DEBUG_SLAB_LEAK
-+	bool "Memory leak debugging"
-+	depends on DEBUG_SLAB
-+
-+config SLUB_DEBUG_ON
-+	bool "SLUB debugging on by default"
-+	depends on SLUB && SLUB_DEBUG && !KMEMCHECK
++config DYNAMIC_DEBUG
++	bool "Enable dynamic printk() support"
 +	default n
++	depends on PRINTK
++	depends on DEBUG_FS
 +	help
-+	  Boot with debugging on by default. SLUB boots by default with
-+	  the runtime debug capabilities switched off. Enabling this is
-+	  equivalent to specifying the "slub_debug" parameter on boot.
-+	  There is no support for more fine grained debug control like
-+	  possible with slub_debug=xxx. SLUB debugging may be switched
-+	  off in a kernel built with CONFIG_SLUB_DEBUG_ON by specifying
-+	  "slub_debug=-".
 +
-+config SLUB_STATS
-+	default n
-+	bool "Enable SLUB performance statistics"
-+	depends on SLUB && SYSFS
-+	help
-+	  SLUB statistics are useful to debug SLUBs allocation behavior in
-+	  order find ways to optimize the allocator. This should never be
-+	  enabled for production use since keeping statistics slows down
-+	  the allocator by a few percentage points. The slabinfo command
-+	  supports the determination of the most active slabs to figure
-+	  out which slabs are relevant to a particular load.
-+	  Try running: slabinfo -DA
++	  Compiles debug level messages into the kernel, which would not
++	  otherwise be available at runtime. These messages can then be
++	  enabled/disabled based on various levels of scope - per source file,
++	  function, module, format string, and line number. This mechanism
++	  implicitly compiles in all pr_debug() and dev_dbg() calls, which
++	  enlarges the kernel text size by about 2%.
 +
-+config HAVE_DEBUG_KMEMLEAK
-+	bool
++	  If a source file is compiled with DEBUG flag set, any
++	  pr_debug() calls in it are enabled by default, but can be
++	  disabled at runtime as below.  Note that DEBUG flag is
++	  turned on by many CONFIG_*DEBUG* options.
 +
-+config DEBUG_KMEMLEAK
-+	bool "Kernel memory leak detector"
-+	depends on DEBUG_KERNEL && HAVE_DEBUG_KMEMLEAK
-+	select DEBUG_FS
-+	select STACKTRACE if STACKTRACE_SUPPORT
-+	select KALLSYMS
-+	select CRC32
-+	help
-+	  Say Y here if you want to enable the memory leak
-+	  detector. The memory allocation/freeing is traced in a way
-+	  similar to the Boehm's conservative garbage collector, the
-+	  difference being that the orphan objects are not freed but
-+	  only shown in /sys/kernel/debug/kmemleak. Enabling this
-+	  feature will introduce an overhead to memory
-+	  allocations. See Documentation/kmemleak.txt for more
-+	  details.
++	  Usage:
 +
-+	  Enabling DEBUG_SLAB or SLUB_DEBUG may increase the chances
-+	  of finding leaks due to the slab objects poisoning.
++	  Dynamic debugging is controlled via the 'dynamic_debug/control' file,
++	  which is contained in the 'debugfs' filesystem. Thus, the debugfs
++	  filesystem must first be mounted before making use of this feature.
++	  We refer the control file as: <debugfs>/dynamic_debug/control. This
++	  file contains a list of the debug statements that can be enabled. The
++	  format for each line of the file is:
 +
-+	  In order to access the kmemleak file, debugfs needs to be
-+	  mounted (usually at /sys/kernel/debug).
++		filename:lineno [module]function flags format
 +
-+config DEBUG_KMEMLEAK_EARLY_LOG_SIZE
-+	int "Maximum kmemleak early log entries"
-+	depends on DEBUG_KMEMLEAK
-+	range 200 40000
-+	default 400
-+	help
-+	  Kmemleak must track all the memory allocations to avoid
-+	  reporting false positives. Since memory may be allocated or
-+	  freed before kmemleak is initialised, an early log buffer is
-+	  used to store these actions. If kmemleak reports "early log
-+	  buffer exceeded", please increase this value.
++	  filename : source file of the debug statement
++	  lineno : line number of the debug statement
++	  module : module that contains the debug statement
++	  function : function that contains the debug statement
++          flags : '=p' means the line is turned 'on' for printing
++          format : the format used for the debug statement
 +
-+config DEBUG_KMEMLEAK_TEST
-+	tristate "Simple test for the kernel memory leak detector"
-+	depends on DEBUG_KMEMLEAK && m
-+	help
-+	  This option enables a module that explicitly leaks memory.
++	  From a live system:
 +
-+	  If unsure, say N.
++		nullarbor:~ # cat <debugfs>/dynamic_debug/control
++		# filename:lineno [module]function flags format
++		fs/aio.c:222 [aio]__put_ioctx =_ "__put_ioctx:\040freeing\040%p\012"
++		fs/aio.c:248 [aio]ioctx_alloc =_ "ENOMEM:\040nr_events\040too\040high\012"
++		fs/aio.c:1770 [aio]sys_io_cancel =_ "calling\040cancel\012"
 +
-+config DEBUG_KMEMLEAK_DEFAULT_OFF
-+	bool "Default kmemleak to off"
-+	depends on DEBUG_KMEMLEAK
-+	help
-+	  Say Y here to disable kmemleak by default. It can then be enabled
-+	  on the command line via kmemleak=on.
++	  Example usage:
 +
-+config DEBUG_STACK_USAGE
-+	bool "Stack utilization instrumentation"
-+	depends on DEBUG_KERNEL && !IA64 && !PARISC && !METAG
-+	help
-+	  Enables the display of the minimum amount of free stack which each
-+	  task has ever had available in the sysrq-T and sysrq-P debug output.
++		// enable the message at line 1603 of file svcsock.c
++		nullarbor:~ # echo -n 'file svcsock.c line 1603 +p' >
++						<debugfs>/dynamic_debug/control
 +
-+	  This option will slow down process creation somewhat.
++		// enable all the messages in file svcsock.c
++		nullarbor:~ # echo -n 'file svcsock.c +p' >
++						<debugfs>/dynamic_debug/control
 +
-+config DEBUG_VM
-+	bool "Debug VM"
-+	depends on DEBUG_KERNEL
-+	help
-+	  Enable this to turn on extended checks in the virtual-memory system
-+          that may impact performance.
++		// enable all the messages in the NFS server module
++		nullarbor:~ # echo -n 'module nfsd +p' >
++						<debugfs>/dynamic_debug/control
 +
-+	  If unsure, say N.
++		// enable all 12 messages in the function svc_process()
++		nullarbor:~ # echo -n 'func svc_process +p' >
++						<debugfs>/dynamic_debug/control
 +
-+config DEBUG_VM_RB
-+	bool "Debug VM red-black trees"
-+	depends on DEBUG_VM
-+	help
-+	  Enable this to turn on more extended checks in the virtual-memory
-+	  system that may impact performance.
++		// disable all 12 messages in the function svc_process()
++		nullarbor:~ # echo -n 'func svc_process -p' >
++						<debugfs>/dynamic_debug/control
 +
-+	  If unsure, say N.
++	  See Documentation/dynamic-debug-howto.txt for additional information.
 +
-+config DEBUG_VIRTUAL
-+	bool "Debug VM translations"
-+	depends on DEBUG_KERNEL && X86
-+	help
-+	  Enable some costly sanity checks in virtual to page code. This can
-+	  catch mistakes with virt_to_page() and friends.
++endmenu # "printk and dmesg options"
 +
-+	  If unsure, say N.
-+
-+config DEBUG_NOMMU_REGIONS
-+	bool "Debug the global anon/private NOMMU mapping region tree"
-+	depends on DEBUG_KERNEL && !MMU
-+	help
-+	  This option causes the global tree of anonymous and private mapping
-+	  regions to be regularly checked for invalid topology.
-+
-+config DEBUG_MEMORY_INIT
-+	bool "Debug memory initialisation" if EXPERT
-+	default !EXPERT
-+	help
-+	  Enable this for additional checks during memory initialisation.
-+	  The sanity checks verify aspects of the VM such as the memory model
-+	  and other information provided by the architecture. Verbose
-+	  information will be printed at KERN_DEBUG loglevel depending
-+	  on the mminit_loglevel= command-line option.
-+
-+	  If unsure, say Y
-+
-+config MEMORY_NOTIFIER_ERROR_INJECT
-+	tristate "Memory hotplug notifier error injection module"
-+	depends on MEMORY_HOTPLUG_SPARSE && NOTIFIER_ERROR_INJECTION
-+	help
-+	  This option provides the ability to inject artificial errors to
-+	  memory hotplug notifier chain callbacks.  It is controlled through
-+	  debugfs interface under /sys/kernel/debug/notifier-error-inject/memory
-+
-+	  If the notifier call chain should be failed with some events
-+	  notified, write the error code to "actions/<notifier event>/error".
-+
-+	  Example: Inject memory hotplug offline error (-12 == -ENOMEM)
-+
-+	  # cd /sys/kernel/debug/notifier-error-inject/memory
-+	  # echo -12 > actions/MEM_GOING_OFFLINE/error
-+	  # echo offline > /sys/devices/system/memory/memoryXXX/state
-+	  bash: echo: write error: Cannot allocate memory
-+
-+	  To compile this code as a module, choose M here: the module will
-+	  be called memory-notifier-error-inject.
-+
-+	  If unsure, say N.
-+
-+config DEBUG_PER_CPU_MAPS
-+	bool "Debug access to per_cpu maps"
-+	depends on DEBUG_KERNEL
-+	depends on SMP
-+	help
-+	  Say Y to verify that the per_cpu map being accessed has
-+	  been set up. This adds a fair amount of code to kernel memory
-+	  and decreases performance.
-+
-+	  Say N if unsure.
-+
-+config DEBUG_HIGHMEM
-+	bool "Highmem debugging"
-+	depends on DEBUG_KERNEL && HIGHMEM
-+	help
-+	  This options enables addition error checking for high memory systems.
-+	  Disable for production systems.
-+
-+config HAVE_DEBUG_STACKOVERFLOW
-+	bool
-+
-+config DEBUG_STACKOVERFLOW
-+	bool "Check for stack overflows"
-+	depends on DEBUG_KERNEL && HAVE_DEBUG_STACKOVERFLOW
-+	---help---
-+	  Say Y here if you want to check for overflows of kernel, IRQ
-+	  and exception stacks (if your archicture uses them). This
-+	  option will show detailed messages if free stack space drops
-+	  below a certain limit.
-+
-+	  These kinds of bugs usually occur when call-chains in the
-+	  kernel get too deep, especially when interrupts are
-+	  involved.
-+
-+	  Use this in cases where you see apparently random memory
-+	  corruption, especially if it appears in 'struct thread_info'
-+
-+	  If in doubt, say "N".
-+
-+source "lib/Kconfig.kmemcheck"
-+
-+endmenu # "Memory Debugging"
-+
- config DEBUG_SHIRQ
- 	bool "Debug shared IRQ handlers"
- 	depends on DEBUG_KERNEL && GENERIC_HARDIRQS
-@@ -266,241 +543,89 @@ config DETECT_HUNG_TASK
- 	depends on DEBUG_KERNEL
- 	default LOCKUP_DETECTOR
- 	help
--	  Say Y here to enable the kernel to detect "hung tasks",
--	  which are bugs that cause the task to be stuck in
--	  uninterruptible "D" state indefinitiley.
--
--	  When a hung task is detected, the kernel will print the
--	  current stack trace (which you should report), but the
--	  task will stay in uninterruptible state. If lockdep is
--	  enabled then all held locks will also be reported. This
--	  feature has negligible overhead.
--
--config DEFAULT_HUNG_TASK_TIMEOUT
--	int "Default timeout for hung task detection (in seconds)"
--	depends on DETECT_HUNG_TASK
--	default 120
--	help
--	  This option controls the default timeout (in seconds) used
--	  to determine when a task has become non-responsive and should
--	  be considered hung.
--
--	  It can be adjusted at runtime via the kernel.hung_task_timeout_secs
--	  sysctl or by writing a value to
--	  /proc/sys/kernel/hung_task_timeout_secs.
--
--	  A timeout of 0 disables the check.  The default is two minutes.
--	  Keeping the default should be fine in most cases.
--
--config BOOTPARAM_HUNG_TASK_PANIC
--	bool "Panic (Reboot) On Hung Tasks"
--	depends on DETECT_HUNG_TASK
--	help
--	  Say Y here to enable the kernel to panic on "hung tasks",
--	  which are bugs that cause the kernel to leave a task stuck
--	  in uninterruptible "D" state.
--
--	  The panic can be used in combination with panic_timeout,
--	  to cause the system to reboot automatically after a
--	  hung task has been detected. This feature is useful for
--	  high-availability systems that have uptime guarantees and
--	  where a hung tasks must be resolved ASAP.
--
--	  Say N if unsure.
--
--config BOOTPARAM_HUNG_TASK_PANIC_VALUE
--	int
--	depends on DETECT_HUNG_TASK
--	range 0 1
--	default 0 if !BOOTPARAM_HUNG_TASK_PANIC
--	default 1 if BOOTPARAM_HUNG_TASK_PANIC
--
--config SCHED_DEBUG
--	bool "Collect scheduler debugging info"
--	depends on DEBUG_KERNEL && PROC_FS
--	default y
--	help
--	  If you say Y here, the /proc/sched_debug file will be provided
--	  that can help debug the scheduler. The runtime overhead of this
--	  option is minimal.
--
--config SCHEDSTATS
--	bool "Collect scheduler statistics"
--	depends on DEBUG_KERNEL && PROC_FS
--	help
--	  If you say Y here, additional code will be inserted into the
--	  scheduler and related routines to collect statistics about
--	  scheduler behavior and provide them in /proc/schedstat.  These
--	  stats may be useful for both tuning and debugging the scheduler
--	  If you aren't debugging the scheduler or trying to tune a specific
--	  application, you can say N to avoid the very slight overhead
--	  this adds.
--
--config TIMER_STATS
--	bool "Collect kernel timers statistics"
--	depends on DEBUG_KERNEL && PROC_FS
--	help
--	  If you say Y here, additional code will be inserted into the
--	  timer routines to collect statistics about kernel timers being
--	  reprogrammed. The statistics can be read from /proc/timer_stats.
--	  The statistics collection is started by writing 1 to /proc/timer_stats,
--	  writing 0 stops it. This feature is useful to collect information
--	  about timer usage patterns in kernel and userspace. This feature
--	  is lightweight if enabled in the kernel config but not activated
--	  (it defaults to deactivated on bootup and will only be activated
--	  if some application like powertop activates it explicitly).
--
--config DEBUG_OBJECTS
--	bool "Debug object operations"
--	depends on DEBUG_KERNEL
--	help
--	  If you say Y here, additional code will be inserted into the
--	  kernel to track the life time of various objects and validate
--	  the operations on those objects.
--
--config DEBUG_OBJECTS_SELFTEST
--	bool "Debug objects selftest"
--	depends on DEBUG_OBJECTS
--	help
--	  This enables the selftest of the object debug code.
--
--config DEBUG_OBJECTS_FREE
--	bool "Debug objects in freed memory"
--	depends on DEBUG_OBJECTS
--	help
--	  This enables checks whether a k/v free operation frees an area
--	  which contains an object which has not been deactivated
--	  properly. This can make kmalloc/kfree-intensive workloads
--	  much slower.
--
--config DEBUG_OBJECTS_TIMERS
--	bool "Debug timer objects"
--	depends on DEBUG_OBJECTS
--	help
--	  If you say Y here, additional code will be inserted into the
--	  timer routines to track the life time of timer objects and
--	  validate the timer operations.
--
--config DEBUG_OBJECTS_WORK
--	bool "Debug work objects"
--	depends on DEBUG_OBJECTS
--	help
--	  If you say Y here, additional code will be inserted into the
--	  work queue routines to track the life time of work objects and
--	  validate the work operations.
--
--config DEBUG_OBJECTS_RCU_HEAD
--	bool "Debug RCU callbacks objects"
--	depends on DEBUG_OBJECTS
--	help
--	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
--
--config DEBUG_OBJECTS_PERCPU_COUNTER
--	bool "Debug percpu counter objects"
--	depends on DEBUG_OBJECTS
--	help
--	  If you say Y here, additional code will be inserted into the
--	  percpu counter routines to track the life time of percpu counter
--	  objects and validate the percpu counter operations.
--
--config DEBUG_OBJECTS_ENABLE_DEFAULT
--	int "debug_objects bootup default value (0-1)"
--        range 0 1
--        default "1"
--        depends on DEBUG_OBJECTS
--        help
--          Debug objects boot parameter default value
--
--config DEBUG_SLAB
--	bool "Debug slab memory allocations"
--	depends on DEBUG_KERNEL && SLAB && !KMEMCHECK
--	help
--	  Say Y here to have the kernel do limited verification on memory
--	  allocation as well as poisoning memory on free to catch use of freed
--	  memory. This can make kmalloc/kfree-intensive workloads much slower.
-+	  Say Y here to enable the kernel to detect "hung tasks",
-+	  which are bugs that cause the task to be stuck in
-+	  uninterruptible "D" state indefinitiley.
+ menu "Compile-time checks and compiler options"
  
--config DEBUG_SLAB_LEAK
--	bool "Memory leak debugging"
--	depends on DEBUG_SLAB
-+	  When a hung task is detected, the kernel will print the
-+	  current stack trace (which you should report), but the
-+	  task will stay in uninterruptible state. If lockdep is
-+	  enabled then all held locks will also be reported. This
-+	  feature has negligible overhead.
+ config DEBUG_INFO
+@@ -940,24 +1030,6 @@ config DEBUG_CREDENTIALS
  
--config SLUB_DEBUG_ON
--	bool "SLUB debugging on by default"
--	depends on SLUB && SLUB_DEBUG && !KMEMCHECK
+ 	  If unsure, say N.
+ 
+-config BOOT_PRINTK_DELAY
+-	bool "Delay each boot printk message by N milliseconds"
+-	depends on DEBUG_KERNEL && PRINTK && GENERIC_CALIBRATE_DELAY
+-	help
+-	  This build option allows you to read kernel boot messages
+-	  by inserting a short delay after each one.  The delay is
+-	  specified in milliseconds on the kernel command line,
+-	  using "boot_delay=N".
+-
+-	  It is likely that you would also need to use "lpj=M" to preset
+-	  the "loops per jiffie" value.
+-	  See a previous boot log for the "lpj" value to use for your
+-	  system, and then set "lpj=M" before setting "boot_delay=N".
+-	  NOTE:  Using this option may adversely affect SMP systems.
+-	  I.e., processors other than the first one may not boot up.
+-	  BOOT_PRINTK_DELAY also may cause LOCKUP_DETECTOR to detect
+-	  what it believes to be lockup conditions.
+-
+ menu "RCU Debugging"
+ 
+ config PROVE_RCU
+@@ -1441,75 +1513,6 @@ config BUILD_DOCSRC
+ 
+ 	  Say N if you are unsure.
+ 
+-config DYNAMIC_DEBUG
+-	bool "Enable dynamic printk() support"
 -	default n
-+config DEFAULT_HUNG_TASK_TIMEOUT
-+	int "Default timeout for hung task detection (in seconds)"
-+	depends on DETECT_HUNG_TASK
-+	default 120
- 	help
--	  Boot with debugging on by default. SLUB boots by default with
--	  the runtime debug capabilities switched off. Enabling this is
--	  equivalent to specifying the "slub_debug" parameter on boot.
--	  There is no support for more fine grained debug control like
--	  possible with slub_debug=xxx. SLUB debugging may be switched
--	  off in a kernel built with CONFIG_SLUB_DEBUG_ON by specifying
--	  "slub_debug=-".
-+	  This option controls the default timeout (in seconds) used
-+	  to determine when a task has become non-responsive and should
-+	  be considered hung.
- 
--config SLUB_STATS
--	default n
--	bool "Enable SLUB performance statistics"
--	depends on SLUB && SYSFS
+-	depends on PRINTK
+-	depends on DEBUG_FS
 -	help
--	  SLUB statistics are useful to debug SLUBs allocation behavior in
--	  order find ways to optimize the allocator. This should never be
--	  enabled for production use since keeping statistics slows down
--	  the allocator by a few percentage points. The slabinfo command
--	  supports the determination of the most active slabs to figure
--	  out which slabs are relevant to a particular load.
--	  Try running: slabinfo -DA
-+	  It can be adjusted at runtime via the kernel.hung_task_timeout_secs
-+	  sysctl or by writing a value to
-+	  /proc/sys/kernel/hung_task_timeout_secs.
- 
--config HAVE_DEBUG_KMEMLEAK
--	bool
-+	  A timeout of 0 disables the check.  The default is two minutes.
-+	  Keeping the default should be fine in most cases.
- 
--config DEBUG_KMEMLEAK
--	bool "Kernel memory leak detector"
--	depends on DEBUG_KERNEL && HAVE_DEBUG_KMEMLEAK
--	select DEBUG_FS
--	select STACKTRACE if STACKTRACE_SUPPORT
--	select KALLSYMS
--	select CRC32
-+config BOOTPARAM_HUNG_TASK_PANIC
-+	bool "Panic (Reboot) On Hung Tasks"
-+	depends on DETECT_HUNG_TASK
- 	help
--	  Say Y here if you want to enable the memory leak
--	  detector. The memory allocation/freeing is traced in a way
--	  similar to the Boehm's conservative garbage collector, the
--	  difference being that the orphan objects are not freed but
--	  only shown in /sys/kernel/debug/kmemleak. Enabling this
--	  feature will introduce an overhead to memory
--	  allocations. See Documentation/kmemleak.txt for more
--	  details.
-+	  Say Y here to enable the kernel to panic on "hung tasks",
-+	  which are bugs that cause the kernel to leave a task stuck
-+	  in uninterruptible "D" state.
- 
--	  Enabling DEBUG_SLAB or SLUB_DEBUG may increase the chances
--	  of finding leaks due to the slab objects poisoning.
-+	  The panic can be used in combination with panic_timeout,
-+	  to cause the system to reboot automatically after a
-+	  hung task has been detected. This feature is useful for
-+	  high-availability systems that have uptime guarantees and
-+	  where a hung tasks must be resolved ASAP.
- 
--	  In order to access the kmemleak file, debugfs needs to be
--	  mounted (usually at /sys/kernel/debug).
-+	  Say N if unsure.
- 
--config DEBUG_KMEMLEAK_EARLY_LOG_SIZE
--	int "Maximum kmemleak early log entries"
--	depends on DEBUG_KMEMLEAK
--	range 200 40000
--	default 400
--	help
--	  Kmemleak must track all the memory allocations to avoid
--	  reporting false positives. Since memory may be allocated or
--	  freed before kmemleak is initialised, an early log buffer is
--	  used to store these actions. If kmemleak reports "early log
--	  buffer exceeded", please increase this value.
-+config BOOTPARAM_HUNG_TASK_PANIC_VALUE
-+	int
-+	depends on DETECT_HUNG_TASK
-+	range 0 1
-+	default 0 if !BOOTPARAM_HUNG_TASK_PANIC
-+	default 1 if BOOTPARAM_HUNG_TASK_PANIC
- 
--config DEBUG_KMEMLEAK_TEST
--	tristate "Simple test for the kernel memory leak detector"
--	depends on DEBUG_KMEMLEAK && m
-+config SCHED_DEBUG
-+	bool "Collect scheduler debugging info"
-+	depends on DEBUG_KERNEL && PROC_FS
-+	default y
- 	help
--	  This option enables a module that explicitly leaks memory.
-+	  If you say Y here, the /proc/sched_debug file will be provided
-+	  that can help debug the scheduler. The runtime overhead of this
-+	  option is minimal.
- 
--	  If unsure, say N.
-+config SCHEDSTATS
-+	bool "Collect scheduler statistics"
-+	depends on DEBUG_KERNEL && PROC_FS
-+	help
-+	  If you say Y here, additional code will be inserted into the
-+	  scheduler and related routines to collect statistics about
-+	  scheduler behavior and provide them in /proc/schedstat.  These
-+	  stats may be useful for both tuning and debugging the scheduler
-+	  If you aren't debugging the scheduler or trying to tune a specific
-+	  application, you can say N to avoid the very slight overhead
-+	  this adds.
- 
--config DEBUG_KMEMLEAK_DEFAULT_OFF
--	bool "Default kmemleak to off"
--	depends on DEBUG_KMEMLEAK
-+config TIMER_STATS
-+	bool "Collect kernel timers statistics"
-+	depends on DEBUG_KERNEL && PROC_FS
- 	help
--	  Say Y here to disable kmemleak by default. It can then be enabled
--	  on the command line via kmemleak=on.
-+	  If you say Y here, additional code will be inserted into the
-+	  timer routines to collect statistics about kernel timers being
-+	  reprogrammed. The statistics can be read from /proc/timer_stats.
-+	  The statistics collection is started by writing 1 to /proc/timer_stats,
-+	  writing 0 stops it. This feature is useful to collect information
-+	  about timer usage patterns in kernel and userspace. This feature
-+	  is lightweight if enabled in the kernel config but not activated
-+	  (it defaults to deactivated on bootup and will only be activated
-+	  if some application like powertop activates it explicitly).
- 
- config DEBUG_PREEMPT
- 	bool "Debug preemptible kernel"
-@@ -672,15 +797,6 @@ config STACKTRACE
- 	bool
- 	depends on STACKTRACE_SUPPORT
- 
--config DEBUG_STACK_USAGE
--	bool "Stack utilization instrumentation"
--	depends on DEBUG_KERNEL && !IA64 && !PARISC && !METAG
--	help
--	  Enables the display of the minimum amount of free stack which each
--	  task has ever had available in the sysrq-T and sysrq-P debug output.
 -
--	  This option will slow down process creation somewhat.
+-	  Compiles debug level messages into the kernel, which would not
+-	  otherwise be available at runtime. These messages can then be
+-	  enabled/disabled based on various levels of scope - per source file,
+-	  function, module, format string, and line number. This mechanism
+-	  implicitly compiles in all pr_debug() and dev_dbg() calls, which
+-	  enlarges the kernel text size by about 2%.
 -
- config DEBUG_KOBJECT
- 	bool "kobject debugging"
- 	depends on DEBUG_KERNEL
-@@ -688,13 +804,6 @@ config DEBUG_KOBJECT
- 	  If you say Y here, some extra kobject debugging messages will be sent
- 	  to the syslog. 
- 
--config DEBUG_HIGHMEM
--	bool "Highmem debugging"
--	depends on DEBUG_KERNEL && HIGHMEM
--	help
--	  This options enables addition error checking for high memory systems.
--	  Disable for production systems.
+-	  If a source file is compiled with DEBUG flag set, any
+-	  pr_debug() calls in it are enabled by default, but can be
+-	  disabled at runtime as below.  Note that DEBUG flag is
+-	  turned on by many CONFIG_*DEBUG* options.
 -
- config HAVE_DEBUG_BUGVERBOSE
- 	bool
- 
-@@ -733,40 +842,6 @@ config DEBUG_INFO_REDUCED
- 	  DEBUG_INFO build and compile times are reduced too.
- 	  Only works with newer gcc versions.
- 
--config DEBUG_VM
--	bool "Debug VM"
--	depends on DEBUG_KERNEL
--	help
--	  Enable this to turn on extended checks in the virtual-memory system
--          that may impact performance.
+-	  Usage:
 -
--	  If unsure, say N.
+-	  Dynamic debugging is controlled via the 'dynamic_debug/control' file,
+-	  which is contained in the 'debugfs' filesystem. Thus, the debugfs
+-	  filesystem must first be mounted before making use of this feature.
+-	  We refer the control file as: <debugfs>/dynamic_debug/control. This
+-	  file contains a list of the debug statements that can be enabled. The
+-	  format for each line of the file is:
 -
--config DEBUG_VM_RB
--	bool "Debug VM red-black trees"
--	depends on DEBUG_VM
--	help
--	  Enable this to turn on more extended checks in the virtual-memory
--	  system that may impact performance.
+-		filename:lineno [module]function flags format
 -
--	  If unsure, say N.
+-	  filename : source file of the debug statement
+-	  lineno : line number of the debug statement
+-	  module : module that contains the debug statement
+-	  function : function that contains the debug statement
+-          flags : '=p' means the line is turned 'on' for printing
+-          format : the format used for the debug statement
 -
--config DEBUG_VIRTUAL
--	bool "Debug VM translations"
--	depends on DEBUG_KERNEL && X86
--	help
--	  Enable some costly sanity checks in virtual to page code. This can
--	  catch mistakes with virt_to_page() and friends.
+-	  From a live system:
 -
--	  If unsure, say N.
+-		nullarbor:~ # cat <debugfs>/dynamic_debug/control
+-		# filename:lineno [module]function flags format
+-		fs/aio.c:222 [aio]__put_ioctx =_ "__put_ioctx:\040freeing\040%p\012"
+-		fs/aio.c:248 [aio]ioctx_alloc =_ "ENOMEM:\040nr_events\040too\040high\012"
+-		fs/aio.c:1770 [aio]sys_io_cancel =_ "calling\040cancel\012"
 -
--config DEBUG_NOMMU_REGIONS
--	bool "Debug the global anon/private NOMMU mapping region tree"
--	depends on DEBUG_KERNEL && !MMU
--	help
--	  This option causes the global tree of anonymous and private mapping
--	  regions to be regularly checked for invalid topology.
+-	  Example usage:
 -
- config DEBUG_WRITECOUNT
- 	bool "Debug filesystem writers count"
- 	depends on DEBUG_KERNEL
-@@ -777,18 +852,6 @@ config DEBUG_WRITECOUNT
- 
- 	  If unsure, say N.
- 
--config DEBUG_MEMORY_INIT
--	bool "Debug memory initialisation" if EXPERT
--	default !EXPERT
--	help
--	  Enable this for additional checks during memory initialisation.
--	  The sanity checks verify aspects of the VM such as the memory model
--	  and other information provided by the architecture. Verbose
--	  information will be printed at KERN_DEBUG loglevel depending
--	  on the mminit_loglevel= command-line option.
+-		// enable the message at line 1603 of file svcsock.c
+-		nullarbor:~ # echo -n 'file svcsock.c line 1603 +p' >
+-						<debugfs>/dynamic_debug/control
 -
--	  If unsure, say Y
+-		// enable all the messages in file svcsock.c
+-		nullarbor:~ # echo -n 'file svcsock.c +p' >
+-						<debugfs>/dynamic_debug/control
 -
- config DEBUG_LIST
- 	bool "Debug linked list manipulation"
- 	depends on DEBUG_KERNEL
-@@ -1088,17 +1151,6 @@ config DEBUG_FORCE_WEAK_PER_CPU
- 	  To ensure that generic code follows the above rules, this
- 	  option forces all percpu variables to be defined as weak.
- 
--config DEBUG_PER_CPU_MAPS
--	bool "Debug access to per_cpu maps"
--	depends on DEBUG_KERNEL
--	depends on SMP
--	help
--	  Say Y to verify that the per_cpu map being accessed has
--	  been set up. This adds a fair amount of code to kernel memory
--	  and decreases performance.
+-		// enable all the messages in the NFS server module
+-		nullarbor:~ # echo -n 'module nfsd +p' >
+-						<debugfs>/dynamic_debug/control
 -
--	  Say N if unsure.
+-		// enable all 12 messages in the function svc_process()
+-		nullarbor:~ # echo -n 'func svc_process +p' >
+-						<debugfs>/dynamic_debug/control
 -
- config LKDTM
- 	tristate "Linux Kernel Dump Test Tool Module"
- 	depends on DEBUG_FS
-@@ -1173,29 +1225,6 @@ config PM_NOTIFIER_ERROR_INJECT
- 
- 	  If unsure, say N.
- 
--config MEMORY_NOTIFIER_ERROR_INJECT
--	tristate "Memory hotplug notifier error injection module"
--	depends on MEMORY_HOTPLUG_SPARSE && NOTIFIER_ERROR_INJECTION
--	help
--	  This option provides the ability to inject artificial errors to
--	  memory hotplug notifier chain callbacks.  It is controlled through
--	  debugfs interface under /sys/kernel/debug/notifier-error-inject/memory
+-		// disable all 12 messages in the function svc_process()
+-		nullarbor:~ # echo -n 'func svc_process -p' >
+-						<debugfs>/dynamic_debug/control
 -
--	  If the notifier call chain should be failed with some events
--	  notified, write the error code to "actions/<notifier event>/error".
+-	  See Documentation/dynamic-debug-howto.txt for additional information.
 -
--	  Example: Inject memory hotplug offline error (-12 == -ENOMEM)
--
--	  # cd /sys/kernel/debug/notifier-error-inject/memory
--	  # echo -12 > actions/MEM_GOING_OFFLINE/error
--	  # echo offline > /sys/devices/system/memory/memoryXXX/state
--	  bash: echo: write error: Cannot allocate memory
--
--	  To compile this code as a module, choose M here: the module will
--	  be called memory-notifier-error-inject.
--
--	  If unsure, say N.
--
- config OF_RECONFIG_NOTIFIER_ERROR_INJECT
- 	tristate "OF reconfig notifier error injection module"
- 	depends on OF_DYNAMIC && NOTIFIER_ERROR_INJECTION
-@@ -1310,7 +1339,6 @@ config DEBUG_STRICT_USER_COPY_CHECKS
- 
- 	  If unsure, say N.
- 
--source mm/Kconfig.debug
- source kernel/trace/Kconfig
- 
- config RBTREE_TEST
-@@ -1475,33 +1503,10 @@ config ASYNC_RAID6_TEST
- 
- 	  If unsure, say N.
- 
--config HAVE_DEBUG_STACKOVERFLOW
--	bool
--
--config DEBUG_STACKOVERFLOW
--	bool "Check for stack overflows"
--	depends on DEBUG_KERNEL && HAVE_DEBUG_STACKOVERFLOW
--	---help---
--	  Say Y here if you want to check for overflows of kernel, IRQ
--	  and exception stacks (if your archicture uses them). This
--	  option will show detailed messages if free stack space drops
--	  below a certain limit.
--
--	  These kinds of bugs usually occur when call-chains in the
--	  kernel get too deep, especially when interrupts are
--	  involved.
--
--	  Use this in cases where you see apparently random memory
--	  corruption, especially if it appears in 'struct thread_info'
--
--	  If in doubt, say "N".
--
- source "samples/Kconfig"
- 
- source "lib/Kconfig.kgdb"
- 
--source "lib/Kconfig.kmemcheck"
--
- config TEST_STRING_HELPERS
- 	tristate "Test functions located in the string_helpers module at runtime"
- 
+ config DMA_API_DEBUG
+ 	bool "Enable debugging of DMA-API usage"
+ 	depends on HAVE_DMA_API_DEBUG
 _
