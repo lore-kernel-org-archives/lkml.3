@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759170Ab3EGQjW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 12:39:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38666 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758776Ab3EGQjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 12:39:21 -0400
-Date: Tue, 7 May 2013 12:37:01 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Jan Willeke <willeke@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Subject: Re: [PATCH 0/4] kdump: Allow ELF header creation in new kernel
-Message-ID: <20130507163701.GA14403@redhat.com>
-References: <1367845799-29125-1-git-send-email-holzheu@linux.vnet.ibm.com>
+	id S1759208Ab3EGQkD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 12:40:03 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:36923 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759133Ab3EGQkB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 12:40:01 -0400
+Message-ID: <51892E5E.8090909@linaro.org>
+Date: Tue, 07 May 2013 09:39:58 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367845799-29125-1-git-send-email-holzheu@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pavel Machek <pavel@denx.de>
+CC: Arnd Bergmann <arnd@arndb.de>, tglx@linutronix.de,
+        Jamie Iles <jamie@jamieiles.com>, dinguyen@altera.com, wd@denx.de,
+        linux-arm-kernel@lists.infradead.org, olof@lixom.net,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: dw_apb_timer_of.c: remove parts that were picoxcell-specific
+References: <20130426121433.GA16249@amd.pavel.ucw.cz> <201305061545.22587.arnd@arndb.de> <20130506155304.GA6645@amd.pavel.ucw.cz> <201305062324.17080.arnd@arndb.de> <20130507135752.GA3500@amd.pavel.ucw.cz>
+In-Reply-To: <20130507135752.GA3500@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 03:09:55PM +0200, Michael Holzheu wrote:
-> Hello Vivek,
-> 
-> For s390 we want to use /proc/vmcore for our SCSI stand-alone
-> dump (zfcpdump). We have support where the first HSA_SIZE bytes are
-> saved into a hypervisor owned memory area (HSA) before the kdump
-> kernel is booted. When the kdump kernel starts, it is restricted
-> to use only HSA_SIZE bytes.
-> 
+On 05/07/2013 06:57 AM, Pavel Machek wrote:
+>>> So I guess it should go through the timekeeping tree...?
+>> I would prefer that, but we can also take it through arm-soc, it doesn't
+>> really matter.
+> I see no response from timekeeping people... so if you could take it,
+> that would be great.
 
-Hi Michael,
+I don't think the original patch ever made it to my inbox.
 
-Hatayama is changing /proc/vmcore interface to support mmap(). Can you
-please rebase your changes on top of those patches.
+thanks
+-john
 
-http://thread.gmane.org/gmane.linux.kernel/1477622
 
-Secondly, I think /proc/vmcore does not have to know whether elf
-headers are in old memory or new memory. Given that s390 is taking
-a deviation, so it now becomes an arch specific detail. Can't we
-just create few arch specific helper functions to retrieve and free
-elf headers.
-
-- arch_get_crash_headers()
-	- All arch except return elfcorehdr_add except s390.
-- arch_read_crash_header_data()
-	- All arch just call into read_from_oldmem() except s390. We
-  	  can provide a generic implementation in /proc/vmcore.c so
-	  all other arch can use that generic implementation.  Or
-	  use symbol override trick.
-- arch_free_crash_headers()
-	- All arch do nothing except s390 which can reclaim the memory
- 	  for elf headers prepared. Generic code has parsed/copied the
-	  headers by now.
-
-What do you think? Above 3 calls should solve the problem and allow
-arch to handle elf headers differently. And generic implementation
-still keeps common logic for processing headers.
-
-Thanks
-Vivek
