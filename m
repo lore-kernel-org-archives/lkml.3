@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299Ab3EGOlb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:41:31 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:49941 "EHLO relay.sgi.com"
+	id S1756159Ab3EGOl3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:41:29 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:49948 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755110Ab3EGOkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755130Ab3EGOkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 May 2013 10:40:39 -0400
 From: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Miguel Boton <mboton.lkml@gmail.com>, Russ Anderson <rja@sgi.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+Cc: Robin Holt <holt@sgi.com>, Russ Anderson <rja@sgi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         the arch/x86 maintainers <x86@kernel.org>,
         Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH -v8 06/11] x86, prepare reboot_mode for moving to generic kernel code.
-Date: Tue,  7 May 2013 09:39:50 -0500
-Message-Id: <1367937595-32241-7-git-send-email-holt@sgi.com>
+Subject: [PATCH -v8 09/11] arm, prepare reboot_mode for moving to generic kernel code.
+Date: Tue,  7 May 2013 09:39:53 -0500
+Message-Id: <1367937595-32241-10-git-send-email-holt@sgi.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367937595-32241-1-git-send-email-holt@sgi.com>
 References: <1367937595-32241-1-git-send-email-holt@sgi.com>
@@ -30,90 +28,102 @@ kernel code by making reboot_mode into a more generic form.
 
 Signed-off-by: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Miguel Boton <mboton.lkml@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>
 Cc: Russ Anderson <rja@sgi.com>
 Cc: Robin Holt <holt@sgi.com>
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: H. Peter Anvin <hpa@zytor.com>
 Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: the arch/x86 maintainers <x86@kernel.org>
 Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
 ---
- arch/x86/kernel/reboot.c | 12 +++++++-----
- include/linux/reboot.h   |  5 +++++
- 2 files changed, 12 insertions(+), 5 deletions(-)
+ arch/arm/include/asm/mach/arch.h   | 3 ++-
+ arch/arm/kernel/process.c          | 8 ++++----
+ arch/arm/kernel/setup.c            | 6 +++---
+ arch/arm/mach-footbridge/cats-hw.c | 2 +-
+ 4 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 76fa1e9..d42e3b2 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -36,7 +36,7 @@ void (*pm_power_off)(void);
- EXPORT_SYMBOL(pm_power_off);
+diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
+index 308ad7d..e2b551e 100644
+--- a/arch/arm/include/asm/mach/arch.h
++++ b/arch/arm/include/asm/mach/arch.h
+@@ -9,6 +9,7 @@
+  */
  
- static const struct desc_ptr no_idt = {};
--static int reboot_mode;
-+static enum reboot_mode reboot_mode = REBOOT_COLD;
- enum reboot_type reboot_type = BOOT_ACPI;
- int reboot_force;
+ #ifndef __ASSEMBLY__
++#include <linux/reboot.h>
  
-@@ -88,11 +88,11 @@ static int __init reboot_setup(char *str)
+ struct tag;
+ struct meminfo;
+@@ -39,7 +40,7 @@ struct machine_desc {
+ 	unsigned char		reserve_lp0 :1;	/* never has lp0	*/
+ 	unsigned char		reserve_lp1 :1;	/* never has lp1	*/
+ 	unsigned char		reserve_lp2 :1;	/* never has lp2	*/
+-	char			restart_mode;	/* default restart mode	*/
++	enum reboot_mode	reboot_mode;	/* default restart mode	*/
+ 	struct smp_operations	*smp;		/* SMP operations	*/
+ 	void			(*fixup)(struct tag *, char **,
+ 					 struct meminfo *);
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index f219703..161e66c 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -174,14 +174,14 @@ void arch_cpu_idle(void)
+ 		default_idle();
+ }
  
- 		switch (*str) {
- 		case 'w':
--			reboot_mode = 0x1234;
-+			reboot_mode = REBOOT_WARM;
- 			break;
+-static char reboot_mode = 'h';
++enum reboot_mode reboot_mode;
  
- 		case 'c':
--			reboot_mode = 0;
-+			reboot_mode = REBOOT_COLD;
- 			break;
+-int __init reboot_setup(char *str)
++static int __init reboot_setup(char *str)
+ {
+-	reboot_mode = str[0];
++	if ('s' == str[0])
++		reboot_mode = REBOOT_WARM;
+ 	return 1;
+ }
+-
+ __setup("reboot=", reboot_setup);
  
- #ifdef CONFIG_SMP
-@@ -536,6 +536,7 @@ static void native_machine_emergency_restart(void)
- 	int i;
- 	int attempt = 0;
- 	int orig_reboot_type = reboot_type;
-+	unsigned short mode;
+ void machine_shutdown(void)
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 728007c..465e878 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -72,7 +72,7 @@ __setup("fpe=", fpe_setup);
  
- 	if (reboot_emergency)
- 		emergency_vmx_disable_all();
-@@ -543,7 +544,8 @@ static void native_machine_emergency_restart(void)
- 	tboot_shutdown(TB_SHUTDOWN_REBOOT);
+ extern void paging_init(struct machine_desc *desc);
+ extern void sanity_check_meminfo(void);
+-extern void reboot_setup(char *str);
++extern enum reboot_mode reboot_mode;
+ extern void setup_dma_zone(struct machine_desc *desc);
  
- 	/* Tell the BIOS if we want cold or warm reboot */
--	*((unsigned short *)__va(0x472)) = reboot_mode;
-+	mode = reboot_mode == REBOOT_WARM ? 0x1234 : 0;
-+	*((unsigned short *)__va(0x472)) = mode;
+ unsigned int processor_id;
+@@ -758,8 +758,8 @@ void __init setup_arch(char **cmdline_p)
  
- 	for (;;) {
- 		/* Could also try the reset bit in the Hammer NB */
-@@ -585,7 +587,7 @@ static void native_machine_emergency_restart(void)
+ 	setup_dma_zone(mdesc);
  
- 		case BOOT_EFI:
- 			if (efi_enabled(EFI_RUNTIME_SERVICES))
--				efi.reset_system(reboot_mode ?
-+				efi.reset_system(reboot_mode == REBOOT_WARM ?
- 						 EFI_RESET_WARM :
- 						 EFI_RESET_COLD,
- 						 EFI_SUCCESS, 0, NULL);
-diff --git a/include/linux/reboot.h b/include/linux/reboot.h
-index c6eba21..37d56c3 100644
---- a/include/linux/reboot.h
-+++ b/include/linux/reboot.h
-@@ -10,6 +10,11 @@
- #define SYS_HALT	0x0002	/* Notify of system halt */
- #define SYS_POWER_OFF	0x0003	/* Notify of system power off */
+-	if (mdesc->restart_mode)
+-		reboot_setup(&mdesc->restart_mode);
++	if (mdesc->reboot_mode != REBOOT_COLD)
++		reboot_mode = mdesc->reboot_mode;
  
-+enum reboot_mode {
-+	REBOOT_COLD = 0,
-+	REBOOT_WARM,
-+};
-+
- extern int register_reboot_notifier(struct notifier_block *);
- extern int unregister_reboot_notifier(struct notifier_block *);
- 
+ 	init_mm.start_code = (unsigned long) _text;
+ 	init_mm.end_code   = (unsigned long) _etext;
+diff --git a/arch/arm/mach-footbridge/cats-hw.c b/arch/arm/mach-footbridge/cats-hw.c
+index 6987a09..14c9cb9 100644
+--- a/arch/arm/mach-footbridge/cats-hw.c
++++ b/arch/arm/mach-footbridge/cats-hw.c
+@@ -86,7 +86,7 @@ fixup_cats(struct tag *tags, char **cmdline, struct meminfo *mi)
+ MACHINE_START(CATS, "Chalice-CATS")
+ 	/* Maintainer: Philip Blundell */
+ 	.atag_offset	= 0x100,
+-	.restart_mode	= 's',
++	.reboot_mode	= REBOOT_WARM,
+ 	.fixup		= fixup_cats,
+ 	.map_io		= footbridge_map_io,
+ 	.init_irq	= footbridge_init_irq,
 -- 
 1.8.2.1
 
