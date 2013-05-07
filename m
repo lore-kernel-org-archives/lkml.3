@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018Ab3EGOTJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:19:09 -0400
-Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:59366 "EHLO
+	id S1752928Ab3EGOTI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:19:08 -0400
+Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:59373 "EHLO
 	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752748Ab3EGOSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752469Ab3EGOSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 May 2013 10:18:07 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: jirislaby@gmail.com
-Cc: linux-kernel@vger.kernel.org, Vasiliy Kulikov <segooon@gmail.com>,
-        Thomas Renninger <trenn@suse.de>, Jiri Slaby <jslaby@suse.cz>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH 10/15] acpi: ec_sys: access user space with get_user()/put_user()
-Date: Tue,  7 May 2013 16:18:18 +0200
-Message-Id: <1367936303-13386-10-git-send-email-jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: [PATCH 09/15] Make selection of 'readdir-plus' adapt to usage patterns.
+Date: Tue,  7 May 2013 16:18:17 +0200
+Message-Id: <1367936303-13386-9-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367936303-13386-1-git-send-email-jslaby@suse.cz>
 References: <1367936303-13386-1-git-send-email-jslaby@suse.cz>
@@ -22,80 +22,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vasiliy Kulikov <segooon@gmail.com>
+From: NeilBrown <neilb@suse.de>
 
-User space pointer may not be dereferenced. Use get_user()/put_user()
-instead and check their return codes.
+While the use of READDIRPLUS is significantly more efficient than
+READDIR followed by many GETATTR calls, it is still less efficient
+than just READDIR if the attributes are not required.
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-Signed-off-by: Thomas Renninger <trenn@suse.de>
+We can get a hint as to whether the application requires attr information
+by looking at whether any ->getattr calls are made between
+->readdir calls.
+If there are any, then getting the attributes seems to be worth while.
+
+This patch tracks whether there have been recent getattr calls on
+children of a directory and uses that information to selectively
+disable READDIRPLUS on that directory.
+
+The first 'readdir' call is always served using READDIRPLUS.
+Subsequent calls only use READDIRPLUS if there was a getattr on a child
+in the mean time.
+
+The locking of ->d_parent access needs to be reviewed.
+As the bit is simply a hint, it isn't critical that it is set
+on the "correct" parent if a rename is happening, but it is
+critical that the 'set' doesn't set a bit in something that
+isn't even an inode any more.
+
+Acked-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Neil Brown <neilb@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Len Brown <lenb@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org
 ---
- drivers/acpi/ec_sys.c | 18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ fs/nfs/dir.c           | 3 +++
+ fs/nfs/inode.c         | 9 +++++++++
+ include/linux/nfs_fs.h | 4 ++++
+ 3 files changed, 16 insertions(+)
 
-diff --git a/drivers/acpi/ec_sys.c b/drivers/acpi/ec_sys.c
-index 7586544..4e7b798 100644
---- a/drivers/acpi/ec_sys.c
-+++ b/drivers/acpi/ec_sys.c
-@@ -12,6 +12,7 @@
- #include <linux/acpi.h>
- #include <linux/debugfs.h>
- #include <linux/module.h>
-+#include <linux/uaccess.h>
- #include "internal.h"
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index e093e73..f5b367c 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -826,6 +826,9 @@ static int nfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ 	desc->dir_cookie = &dir_ctx->dir_cookie;
+ 	desc->decode = NFS_PROTO(inode)->decode_dirent;
+ 	desc->plus = nfs_use_readdirplus(inode, filp) ? 1 : 0;
++	if (filp->f_pos > 0 && !test_bit(NFS_INO_SEEN_GETATTR, &NFS_I(inode)->flags))
++		desc->plus = 0;
++	clear_bit(NFS_INO_SEEN_GETATTR, &NFS_I(inode)->flags);
  
- MODULE_AUTHOR("Thomas Renninger <trenn@suse.de>");
-@@ -34,7 +35,6 @@ static ssize_t acpi_ec_read_io(struct file *f, char __user *buf,
- 	 * struct acpi_ec *ec = ((struct seq_file *)f->private_data)->private;
- 	 */
- 	unsigned int size = EC_SPACE_SIZE;
--	u8 *data = (u8 *) buf;
- 	loff_t init_off = *off;
- 	int err = 0;
+ 	nfs_block_sillyrename(dentry);
+ 	res = nfs_revalidate_mapping(inode, filp->f_mapping);
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index c1c7a9d..c15071d 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -520,6 +520,15 @@ int nfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+ 	struct inode *inode = dentry->d_inode;
+ 	int need_atime = NFS_I(inode)->cache_validity & NFS_INO_INVALID_ATIME;
+ 	int err;
++	struct dentry *p;
++	struct inode *pi;
++
++	rcu_read_lock();
++	p = dentry->d_parent;
++	pi = rcu_dereference(p)->d_inode;
++	if (pi && !test_bit(NFS_INO_SEEN_GETATTR, &NFS_I(pi)->flags))
++		set_bit(NFS_INO_SEEN_GETATTR, &NFS_I(pi)->flags);
++	rcu_read_unlock();
  
-@@ -47,9 +47,15 @@ static ssize_t acpi_ec_read_io(struct file *f, char __user *buf,
- 		size = count;
+ 	/* Flush out writes to the server in order to update c/mtime.  */
+ 	if (S_ISREG(inode->i_mode)) {
+diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
+index fc01d5c..633e2a9 100644
+--- a/include/linux/nfs_fs.h
++++ b/include/linux/nfs_fs.h
+@@ -220,6 +220,10 @@ struct nfs_inode {
+ #define NFS_INO_COMMIT		(7)		/* inode is committing unstable writes */
+ #define NFS_INO_LAYOUTCOMMIT	(9)		/* layoutcommit required */
+ #define NFS_INO_LAYOUTCOMMITTING (10)		/* layoutcommit inflight */
++#define NFS_INO_SEEN_GETATTR	(11)		/* flag to track if app is calling
++						 * getattr in a directory during
++						 * readdir
++						 */
  
- 	while (size) {
--		err = ec_read(*off, &data[*off - init_off]);
-+		u8 byte_read;
-+		err = ec_read(*off, &byte_read);
- 		if (err)
- 			return err;
-+		if (put_user(byte_read, buf + *off - init_off)) {
-+			if (*off - init_off)
-+				return *off - init_off; /* partial read */
-+			return -EFAULT;
-+		}
- 		*off += 1;
- 		size--;
- 	}
-@@ -65,7 +71,6 @@ static ssize_t acpi_ec_write_io(struct file *f, const char __user *buf,
- 
- 	unsigned int size = count;
- 	loff_t init_off = *off;
--	u8 *data = (u8 *) buf;
- 	int err = 0;
- 
- 	if (*off >= EC_SPACE_SIZE)
-@@ -76,7 +81,12 @@ static ssize_t acpi_ec_write_io(struct file *f, const char __user *buf,
- 	}
- 
- 	while (size) {
--		u8 byte_write = data[*off - init_off];
-+		u8 byte_write;
-+		if (get_user(byte_write, buf + *off - init_off)) {
-+			if (*off - init_off)
-+				return *off - init_off; /* partial write */
-+			return -EFAULT;
-+		}
- 		err = ec_write(*off, byte_write);
- 		if (err)
- 			return err;
+ static inline struct nfs_inode *NFS_I(const struct inode *inode)
+ {
 -- 
 1.8.2.1
 
