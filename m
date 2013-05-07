@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758632Ab3EGM22 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 08:28:28 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47164 "EHLO
+	id S1758686Ab3EGM3L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 08:29:11 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47201 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758562Ab3EGM2Z (ORCPT
+	with ESMTP id S1757931Ab3EGM3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 08:28:25 -0400
-Date: Tue, 7 May 2013 14:28:23 +0200
+	Tue, 7 May 2013 08:29:09 -0400
+Date: Tue, 7 May 2013 14:29:07 +0200
 From: Pavel Machek <pavel@ucw.cz>
 To: Colin Cross <ccross@android.com>
 Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
@@ -17,38 +17,50 @@ Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
         linux-pm@vger.kernel.org, netdev@vger.kernel.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Paul Walmsley <paul@pwsan.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH v3 03/16] lockdep: remove task argument from
- debug_check_no_locks_held
-Message-ID: <20130507122823.GB2585@elf.ucw.cz>
+        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH v3 04/16] lockdep: check that no locks held at freeze time
+Message-ID: <20130507122906.GC2585@elf.ucw.cz>
 References: <1367884221-20462-1-git-send-email-ccross@android.com>
- <1367884221-20462-4-git-send-email-ccross@android.com>
+ <1367884221-20462-5-git-send-email-ccross@android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1367884221-20462-4-git-send-email-ccross@android.com>
+In-Reply-To: <1367884221-20462-5-git-send-email-ccross@android.com>
 X-Warning: Reading this can be dangerous to your mental health.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2013-05-06 16:50:08, Colin Cross wrote:
-> The only existing caller to debug_check_no_locks_held calls it
-> with 'current' as the task, and the freezer needs to call
-> debug_check_no_locks_held but doesn't already have a current
-> task pointer, so remove the argument.  It is already assuming
-> that the current task is relevant by dumping the current stack
-> trace as part of the warning.
+On Mon 2013-05-06 16:50:09, Colin Cross wrote:
+> From: Mandeep Singh Baines <msb@chromium.org>
 > 
-> This was originally part of 6aa9707099c (lockdep: check that
-> no locks held at freeze time) which was reverted in
-> dbf520a9d7d4.
+> We shouldn't try_to_freeze if locks are held.  Holding a lock can cause a
+> deadlock if the lock is later acquired in the suspend or hibernate path
+> (e.g.  by dpm).  Holding a lock can also cause a deadlock in the case of
+> cgroup_freezer if a lock is held inside a frozen cgroup that is later
+> acquired by a process outside that group.
 > 
-> Original-author: Mandeep Singh Baines <msb@chromium.org>
+> History:
+> This patch was originally applied as 6aa9707099c and reverted in
+> dbf520a9d7d4 because NFS was freezing with locks held.  It was
+> deemed better to keep the bad freeze point in NFS to allow laptops
+> to suspend consistently.  The previous patch in this series converts
+> NFS to call _unsafe versions of the freezable helpers so that
+> lockdep doesn't complain about them until a more correct fix
+> can be applied.
+> 
+> [akpm@linux-foundation.org: export debug_check_no_locks_held]
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> Cc: Ben Chan <benchan@chromium.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> [ccross@android.com: don't warn if try_to_freeze_unsafe is called]
 > Signed-off-by: Colin Cross <ccross@android.com>
 
 Acked-by: Pavel Machek <pavel@ucw.cz>
