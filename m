@@ -1,47 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759611Ab3EGJbr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 05:31:47 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:55951 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759378Ab3EGJbq (ORCPT
+	id S1759569Ab3EGJfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 05:35:31 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:43472 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759478Ab3EGJf3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 05:31:46 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] frv: head.S - Remove commented-out initialization code
-Date: Tue,  7 May 2013 11:31:40 +0200
-Message-Id: <1367919100-7744-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 7 May 2013 05:35:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130507092428.GK23285@pengutronix.de>
+References: <20130507091734.GM3658@sgi.com>
+	<20130507092428.GK23285@pengutronix.de>
+Date: Tue, 7 May 2013 17:35:28 +0800
+Message-ID: <CAN1soZyHx1XZzukunbKsj+v4h93MRQKjPPjJ3+i3u8BeBbhCGw@mail.gmail.com>
+Subject: Re: How does commit 47ec340c not introduce a bug?
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Robin Holt <holt@sgi.com>, Qing Xu <qingx@marvell.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commented-out calls to processor_init() and unit_init() seem to have
-been copied from mn10300, when starting the frv port. Remove them.
+On Tue, May 7, 2013 at 5:24 PM, Uwe Kleine-König
+<u.kleine-koenig@pengutronix.de> wrote:
+> Hello,
+>
+> On Tue, May 07, 2013 at 04:17:34AM -0500, Robin Holt wrote:
+>> I noticed a warning while cross-compiling all arm defconfigs.
+>>
+>> The mmp2_defconfig gave this warning:
+>>
+>> drivers/video/backlight/max8925_bl.c: In function 'max8925_backlight_probe':
+>> drivers/video/backlight/max8925_bl.c:177:3: warning: statement with no effect [-Wunused-value]
+>>
+>> This appears to have been introduced by the above commit when !CONFIG_OF
+>>
+>> Looking at this more closely, I am not sure how this was ever intended
+>> to be handled or how the errors returned in the CONFIG_OF case were
+>> intended to be handled as the return from max8925_backlight_dt_init is
+>> always ignored.
+>>
+>> I think this needs some more attention, but do not feel like I know
+>> enough about it or have any means to test it to weigh in.
+>>
+>> Thanks,
+>> Robin
+>>
+>>
+>> commit 47ec340cb8e232671e7c4a4689ff32c3bdf329da
+>> Author: Qing Xu <qingx@marvell.com>
+>> Date:   Mon Feb 4 23:40:45 2013 +0800
+>>
+>>     mfd: max8925: Support dt for backlight
+>>
+>>     Add device tree support in max8925 backlight.
+>>
+>>     Signed-off-by: Qing Xu <qingx@marvell.com>
+>>     Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+>>     Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+>>
+>> diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
+>> index 2c9bce0..5ca11b0 100644
+>> --- a/drivers/video/backlight/max8925_bl.c
+>> +++ b/drivers/video/backlight/max8925_bl.c
+>> @@ -101,6 +101,29 @@ static const struct backlight_ops max8925_backlight_ops = {
+>>       .get_brightness = max8925_backlight_get_brightness,
+>>  };
+>>
+>> +#ifdef CONFIG_OF
+>> +static int max8925_backlight_dt_init(struct platform_device *pdev,
+>> +                           struct max8925_backlight_pdata *pdata)
+>> +{
+>> +     struct device_node *nproot = pdev->dev.parent->of_node, *np;
+>> +     int dual_string;
+>> +
+>> +     if (!nproot)
+>> +             return -ENODEV;
+>> +     np = of_find_node_by_name(nproot, "backlight");
+>> +     if (!np) {
+>> +             dev_err(&pdev->dev, "failed to find backlight node\n");
+>> +             return -ENODEV;
+>> +     }
+>> +
+>> +     of_property_read_u32(np, "maxim,max8925-dual-string", &dual_string);
+>> +     pdata->dual_string = dual_string;
+>> +     return 0;
+>> +}
+>> +#else
+>> +#define max8925_backlight_dt_init(x, y)      (-1)
+> It's probably best to make this:
+>
+> static inline max8925_backlight_dt_init(struct platform_device *pdev,
+>                                 struct max8925_backlight_pdata *pdata)
+> {
+>         return -ENODEV;
+> }
+>
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/frv/kernel/head.S |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+I've submitted this patch to fix this issue for a long time.
 
-diff --git a/arch/frv/kernel/head.S b/arch/frv/kernel/head.S
-index e9a8cc6..a7d0bea 100644
---- a/arch/frv/kernel/head.S
-+++ b/arch/frv/kernel/head.S
-@@ -479,11 +479,6 @@ __head_mmu_enabled:
- 
- 	LEDS		0x000c
- 
--	# initialise the processor and the peripherals
--	#call		SYMBOL_NAME(processor_init)
--	#call		SYMBOL_NAME(unit_init)
--	#LEDS		0x0aff
--
- 	sethi.p		#0xe5e5,gr3
- 	setlo		#0xe5e5,gr3
- 	or.p		gr3,gr0,gr4
--- 
-1.7.0.4
+Samuel,
 
+Should I send it again?
+
+Regards
+Haojian
