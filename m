@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760624Ab3EGEnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:43:12 -0400
+	id S1759447Ab3EGEZj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:25:39 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25931 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757024Ab3EGEZk (ORCPT
+	with ESMTP id S1757024Ab3EGEZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 00:25:40 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=dENSvqxkuyMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=IQU0_eSV2_IA:10 a=J1Y8HTJGAAAA:8 a=ag1SF4gXAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=fC4T7qsy4_4xvlMS5R0A:9 a=4N9Db7Z2_RYA:10 a=1TSTQ8KKaH4A:10 a=jEp0ucaQiEUA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 7 May 2013 00:25:36 -0400
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=H4pVhOlhE9IA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=rl_xSDhwSTgA:10 a=LpQP-O61AAAA:8 a=drOt6m5kAAAA:8 a=Gu_AdNV9dhMaPxAa7QQA:9 a=YDjxKKMXsvQA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035900.498953767@goodmis.org>
+Message-Id: <20130507035901.806171725@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:59:09 -0400
+Date: Mon, 06 May 2013 23:59:17 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Michael Riesch <michael.riesch@omicron.at>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Benc <jbenc@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
-        Mark Rustad <mark.d.rustad@intel.com>
-Subject: [117/126] rtnetlink: Call nlmsg_parse() with correct header length
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [125/126] ARM: 7699/1: sched_clock: Add more notrace to prevent recursion
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0117-rtnetlink-Call-nlmsg_parse-with-correct-header-lengt.patch
+Content-Disposition: inline; filename=0125-ARM-7699-1-sched_clock-Add-more-notrace-to-prevent-r.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,45 +30,47 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Michael Riesch <michael.riesch@omicron.at>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-[ Upstream commit 88c5b5ce5cb57af6ca2a7cf4d5715fa320448ff9 ]
+[ Upstream commit cea15092f098b7018e89f64a5a14bb71955965d5 ]
 
-Signed-off-by: Michael Riesch <michael.riesch@omicron.at>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Benc <jbenc@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org
-Acked-by: Mark Rustad <mark.d.rustad@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+cyc_to_sched_clock() is called by sched_clock() and cyc_to_ns()
+is called by cyc_to_sched_clock(). I suspect that some compilers
+inline both of these functions into sched_clock() and so we've
+been getting away without having a notrace marking. It seems that
+my compiler isn't inlining cyc_to_sched_clock() though, so I'm
+hitting a recursion bug when I enable the function graph tracer,
+causing my system to crash. Marking these functions notrace fixes
+it. Technically cyc_to_ns() doesn't need the notrace because it's
+already marked inline, but let's just add it so that if we ever
+remove inline from that function it doesn't blow up.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/core/rtnetlink.c |    4 ++--
+ arch/arm/kernel/sched_clock.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 1c854d4..cb99f6e 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1068,7 +1068,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
- 	rcu_read_lock();
- 	cb->seq = net->dev_base_seq;
+diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+index f451539..4975d1f 100644
+--- a/arch/arm/kernel/sched_clock.c
++++ b/arch/arm/kernel/sched_clock.c
+@@ -41,12 +41,12 @@ static u32 notrace jiffy_sched_clock_read(void)
  
--	if (nlmsg_parse(cb->nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-+	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
- 			ifla_policy) >= 0) {
+ static u32 __read_mostly (*read_sched_clock)(void) = jiffy_sched_clock_read;
  
- 		if (tb[IFLA_EXT_MASK])
-@@ -1918,7 +1918,7 @@ static u16 rtnl_calcit(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	u32 ext_filter_mask = 0;
- 	u16 min_ifinfo_dump_size = 0;
+-static inline u64 cyc_to_ns(u64 cyc, u32 mult, u32 shift)
++static inline u64 notrace cyc_to_ns(u64 cyc, u32 mult, u32 shift)
+ {
+ 	return (cyc * mult) >> shift;
+ }
  
--	if (nlmsg_parse(nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-+	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
- 			ifla_policy) >= 0) {
- 		if (tb[IFLA_EXT_MASK])
- 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
+-static unsigned long long cyc_to_sched_clock(u32 cyc, u32 mask)
++static unsigned long long notrace cyc_to_sched_clock(u32 cyc, u32 mask)
+ {
+ 	u64 epoch_ns;
+ 	u32 epoch_cyc;
 -- 
 1.7.10.4
 
