@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760645Ab3EGEnO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:43:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27877 "EHLO
+	id S1760624Ab3EGEnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:43:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25931 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759436Ab3EGEZj (ORCPT
+	with ESMTP id S1757024Ab3EGEZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 00:25:39 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=mVRcFgP9zmEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=mDda2rsxiAYA:10 a=LfA-LBJFAAAA:8 a=J1Y8HTJGAAAA:8 a=BU4qch4usoZhajSmOKEA:9 a=KHTnqCBSESUA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 7 May 2013 00:25:40 -0400
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=dENSvqxkuyMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=IQU0_eSV2_IA:10 a=J1Y8HTJGAAAA:8 a=ag1SF4gXAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=fC4T7qsy4_4xvlMS5R0A:9 a=4N9Db7Z2_RYA:10 a=1TSTQ8KKaH4A:10 a=jEp0ucaQiEUA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035900.685326413@goodmis.org>
+Message-Id: <20130507035900.498953767@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:59:10 -0400
+Date: Mon, 06 May 2013 23:59:09 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dmitry Popov <dp@highloadlab.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [118/126] tcp: incoming connections might use wrong route under synflood
+Cc: Michael Riesch <michael.riesch@omicron.at>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Benc <jbenc@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
+        Mark Rustad <mark.d.rustad@intel.com>
+Subject: [117/126] rtnetlink: Call nlmsg_parse() with correct header length
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0118-tcp-incoming-connections-might-use-wrong-route-under.patch
+Content-Disposition: inline; filename=0117-rtnetlink-Call-nlmsg_parse-with-correct-header-lengt.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,43 +33,45 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dmitry Popov <dp@highloadlab.com>
+From: Michael Riesch <michael.riesch@omicron.at>
 
-[ Upstream commit d66954a066158781ccf9c13c91d0316970fe57b6 ]
+[ Upstream commit 88c5b5ce5cb57af6ca2a7cf4d5715fa320448ff9 ]
 
-There is a bug in cookie_v4_check (net/ipv4/syncookies.c):
-	flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
-			   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
-			   inet_sk_flowi_flags(sk),
-			   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
-			   ireq->loc_addr, th->source, th->dest);
-
-Here we do not respect sk->sk_bound_dev_if, therefore wrong dst_entry may be
-taken. This dst_entry is used by new socket (get_cookie_sock ->
-tcp_v4_syn_recv_sock), so its packets may take the wrong path.
-
-Signed-off-by: Dmitry Popov <dp@highloadlab.com>
+Signed-off-by: Michael Riesch <michael.riesch@omicron.at>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Benc <jbenc@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org
+Acked-by: Mark Rustad <mark.d.rustad@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/ipv4/syncookies.c |    4 ++--
+ net/core/rtnetlink.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/syncookies.c b/net/ipv4/syncookies.c
-index 650e152..3324857 100644
---- a/net/ipv4/syncookies.c
-+++ b/net/ipv4/syncookies.c
-@@ -347,8 +347,8 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb,
- 	 * hasn't changed since we received the original syn, but I see
- 	 * no easy way to do this.
- 	 */
--	flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
--			   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
-+	flowi4_init_output(&fl4, sk->sk_bound_dev_if, sk->sk_mark,
-+			   RT_CONN_FLAGS(sk), RT_SCOPE_UNIVERSE, IPPROTO_TCP,
- 			   inet_sk_flowi_flags(sk),
- 			   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
- 			   ireq->loc_addr, th->source, th->dest);
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 1c854d4..cb99f6e 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1068,7 +1068,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+ 	rcu_read_lock();
+ 	cb->seq = net->dev_base_seq;
+ 
+-	if (nlmsg_parse(cb->nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
++	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+ 			ifla_policy) >= 0) {
+ 
+ 		if (tb[IFLA_EXT_MASK])
+@@ -1918,7 +1918,7 @@ static u16 rtnl_calcit(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 	u32 ext_filter_mask = 0;
+ 	u16 min_ifinfo_dump_size = 0;
+ 
+-	if (nlmsg_parse(nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
++	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+ 			ifla_policy) >= 0) {
+ 		if (tb[IFLA_EXT_MASK])
+ 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
 -- 
 1.7.10.4
 
