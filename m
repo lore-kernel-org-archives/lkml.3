@@ -1,92 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab3EGRMA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 13:12:00 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:50995 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322Ab3EGRL7 (ORCPT
+	id S1753012Ab3EGRPM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 13:15:12 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:63685 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab3EGRPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 13:11:59 -0400
-Message-ID: <1367946716.13473.9.camel@edumazet-glaptop>
-Subject: Re: 3.8.4 kernel
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Arend van Spriel <arend@broadcom.com>
-Cc: "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        "Joseph A. Millikan" <josephamillikan@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ren, Cloud" <cjren@qca.qualcomm.com>, netdev <netdev@vger.kernel.org>,
-        Eric Dumazet <edumazet@google.com>
-Date: Tue, 07 May 2013 10:11:56 -0700
-In-Reply-To: <CAErSpo44-f4UdXxO5MdwVg09LFABwFQ320gG8v8jHcYh=5gqvA@mail.gmail.com>
-References: <5153620E.4010608@gmail.com>
-	 <CAErSpo6w+tTbwJ7Qinpd0Vx20q5cm2gMvqzE1Do+2=G3b8rcHA@mail.gmail.com>
-	 <CAErSpo6iwM2r8b-aoiBPjQpkdpcfgLiO+WkpiM1wFsDhxuSXPg@mail.gmail.com>
-	 <CAErSpo68AWCGWQHKgoKuD-QFA0b+jbCRf7T_PzzKoUsVwdZHOg@mail.gmail.com>
-	 <157393863283F442885425D2C45428564F219B3B@nasanexd02f.na.qualcomm.com>
-	 <CAErSpo44-f4UdXxO5MdwVg09LFABwFQ320gG8v8jHcYh=5gqvA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 7 May 2013 13:15:10 -0400
+Date: Tue, 7 May 2013 19:15:05 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Fr??d??ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] perf: fix symbol processing bug and greatly improve
+ performance
+Message-ID: <20130507171505.GA29686@gmail.com>
+References: <1367847833-4932-1-git-send-email-Waiman.Long@hp.com>
+ <20130507070127.GA17830@gmail.com>
+ <51890D71.9080600@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51890D71.9080600@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-07 at 09:20 -0700, Bjorn Helgaas wrote:
-> [+cc Eric because he made a change (69b08f62e17) that apparently
-> exposes driver bugs]
-> 
-> On Mon, May 6, 2013 at 7:51 PM, Huang, Xiong <xiong@qca.qualcomm.com> wrote:
-> >> >
-> >> > Did this ever get resolved?
-> >>
-> >> I opened https://bugzilla.kernel.org/show_bug.cgi?id=57681 to keep track of
-> >> this and attached the dmesg logs you collected.  If you have a chance, could you
-> >> also collect and attach the output of "lspci -vv"
-> >> (any kernel is fine for this).
-> >>
-> >> I don't see anything obvious wrong, at least from the PCI side.  Maybe the atl1c
-> >> guys will have some ideas.
-> >>
+
+* Waiman Long <Waiman.Long@hp.com> wrote:
+
+> On 05/07/2013 03:01 AM, Ingo Molnar wrote:
+> >* Waiman Long<Waiman.Long@hp.com>  wrote:
 > >
-> > Hi Bjorn and All
-> >      This issue should be same as bug https://bugzilla.kernel.org/show_bug.cgi?id=54021
-> >      I didn't find any abnormal info from the log and the PHY link is stable as well :(
-> >      Is it related to the network manager ?
+> >>When "perf record" was used on a large machine with a lot of CPUs,
+> >>the perf post-processing time could take a lot of minutes and even
+> >>hours depending on how large the resulting perf.data file was.
+> >>
+> >>While running AIM7 1500-user high_systime workload on a 80-core x86-64
+> >>system with a 3.9 kernel, the workload itself took about 2 minutes
+> >>to run and the perf.data file had a size of 1108.746 MB. However,
+> >>the post-processing step took more than 10 minutes.
+> >>
+> >>With a gprof-profiled perf binary, the time spent by perf was as
+> >>follows:
+> >>
+> >>   %   cumulative   self              self     total
+> >>  time   seconds   seconds    calls   s/call   s/call  name
+> >>  96.90    822.10   822.10   192156     0.00     0.00  dsos__find
+> >>   0.81    828.96     6.86 172089958     0.00     0.00  rb_next
+> >>   0.41    832.44     3.48 48539289     0.00     0.00  rb_erase
+> >>
+> >>So 97% (822 seconds) of the time was spent in a single dsos_find()
+> >>function. After analyzing the call-graph data below:
+> >>
+> >>-----------------------------------------------
+> >>                 0.00  822.12  192156/192156      map__new [6]
+> >>[7]     96.9    0.00  822.12  192156         vdso__dso_findnew [7]
+> >>               822.10    0.00  192156/192156      dsos__find [8]
+> >>                 0.01    0.00  192156/192156      dsos__add [62]
+> >>                 0.01    0.00  192156/192366      dso__new [61]
+> >>                 0.00    0.00       1/45282525     memdup [31]
+> >>                 0.00    0.00  192156/192230      dso__set_long_name [91]
+> >>-----------------------------------------------
+> >>               822.10    0.00  192156/192156      vdso__dso_findnew [7]
+> >>[8]     96.9  822.10    0.00  192156         dsos__find [8]
+> >>-----------------------------------------------
+> >>
+> >>It was found that the vdso__dso_findnew() function failed to locate
+> >>VDSO__MAP_NAME ("[vdso]") in the dso list and have to insert a new
+> >>entry at the end for 192156 times. This problem is due to the fact that
+> >>there are 2 types of name in the dso entry - short name and long name.
+> >>The initial dso__new() adds "[vdso]" to both the short and long names.
+> >>After that, vdso__dso_findnew() modifies the long name to something
+> >>like /tmp/perf-vdso.so-NoXkDj. The dsos__find() function only compares
+> >>the long name. As a result, the same vdso entry is duplicated many
+> >>time in the dso list. This bug increases memory consumption as well
+> >>as slows the symbol processing time to a crawl.
+> >>
+> >>To resolve this problem, the dsos__find() function interface was
+> >>modified to enable searching either the long name or the short
+> >>name. The vdso__dso_findnew() will now search only the short name
+> >>while the other call sites search for the long name as before.
+> >>
+> >>With this change, the cpu time of perf was reduced from 848.38s to
+> >>15.77s and dsos__find() only accounted for 0.06% of the total time.
+> >>
+> >>   0.06     15.73     0.01   192151     0.00     0.00  dsos__find
+> >Very nice!
+> >
+> >I noticed that you used gprof to instrument perf itself on a call graph
+> >level.
+> >
+> >Does this method of profiling perf via perf:
+> >
+> >   perf record -g perf report
+> >   perf report
+> >
+> >... produce similarly useful call-graph instrumentation for you?
+> >
+> >If not or not quite then could you describe the differences? We could use
+> >that to further improve perf call-graph profiling.
 > 
-> I looked at bug #54021 and it does look similar.  It doesn't look like
-> it has been resolved.
+> Thank for the comment.
 > 
-> http://forums.gentoo.org/viewtopic-t-949168-highlight-.html is another
-> report that looks very similar.  BigE there has a Lenovo G570 that has
-> both wireless and wired networking.  If BigE disables wireless with a
-> hardware switch before booting, it seems to avoid the atl1c wired
-> networking issue.  That's not a fix, of course, but it might be a clue
-> and a temporary workaround until we have a real solution.
-> 
-> Joseph, if there's no hardware switch for the wireless on your G770,
-> you can probably still take wireless out of the picture by removing or
-> renaming the bcma module (look in
-> /lib/modules/.../kernel/drivers/bcma/), then rebooting.
-> 
-> Xiong, do you have a specific network manager-related test that Joseph
-> could perform?  I don't want to burden Joseph with a lot of debugging
-> because he's currently happy with 3.6.11 and testing is pretty
-> disruptive in his environment.
+> The slowdown that I was trying to fix was in the "perf record" part of 
+> the profiling process, not the "perf report" part. I didn't try 
+> perf-record on perf-record as the performance counters are limited 
+> resources and I don't want resource conflicts to affect the results.
 
-drivers/net/wireless/brcm80211/brcmsmac/dma.c contains this suspect code
-in dma64_getnextrxp() :
+ah, ok. In general two instances of cycles-profiling should work just fine 
+without any resource conflicts.
 
-dma_addr_t pa;
-...
-pa = le32_to_cpu(di->rxd64[i].addrlow) - di->dataoffsetlow;
-/* clear this packet from the descriptor ring */
-dma_unmap_single(di->dmadev, pa, di->rxbufsize, DMA_FROM_DEVICE);
+But yeah, with "perf record" that's a valid worry and I can see how you 
+wanted to not worry about that.
 
+Thanks,
 
-How can it possibly work, I honestly have no idea.
-
-I suggest enabling CONFIG_DMA_API_DEBUG ?
-
-
-
+	Ingo
