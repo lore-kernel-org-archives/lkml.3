@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab3EGOOg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:14:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42195 "EHLO
+	id S1752183Ab3EGOOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:14:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42187 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932718Ab3EGNk5 (ORCPT
+	with ESMTP id S932713Ab3EGNk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:40:57 -0400
+	Tue, 7 May 2013 09:40:56 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Hin-Tak Leung <htl10@users.sourceforge.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 010/118] hfsplus: fix potential overflow in hfsplus_file_truncate()
-Date: Tue,  7 May 2013 14:37:36 +0100
-Message-Id: <1367933964-1564-11-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 032/118] Bluetooth: RFCOMM - Fix missing msg_namelen update in rfcomm_sock_recvmsg()
+Date: Tue,  7 May 2013 14:37:58 +0100
+Message-Id: <1367933964-1564-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -32,36 +31,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 12f267a20aecf8b84a2a9069b9011f1661c779b4 upstream.
+commit e11e0455c0d7d3d62276a0c55d9dfbc16779d691 upstream.
 
-Change a u32 to loff_t hfsplus_file_truncate().
+If RFCOMM_DEFER_SETUP is set in the flags, rfcomm_sock_recvmsg() returns
+early with 0 without updating the possibly set msg_namelen member. This,
+in turn, leads to a 128 byte kernel stack leak in net/socket.c.
 
-Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Hin-Tak Leung <htl10@users.sourceforge.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fix this by updating msg_namelen in this case. For all other cases it
+will be handled in bt_sock_stream_recvmsg().
+
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/hfsplus/extents.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/bluetooth/rfcomm/sock.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/hfsplus/extents.c b/fs/hfsplus/extents.c
-index 5849e3e..32b12e5 100644
---- a/fs/hfsplus/extents.c
-+++ b/fs/hfsplus/extents.c
-@@ -517,7 +517,7 @@ void hfsplus_file_truncate(struct inode *inode)
- 		struct address_space *mapping = inode->i_mapping;
- 		struct page *page;
- 		void *fsdata;
--		u32 size = inode->i_size;
-+		loff_t size = inode->i_size;
+diff --git a/net/bluetooth/rfcomm/sock.c b/net/bluetooth/rfcomm/sock.c
+index 20bd148..514bead 100644
+--- a/net/bluetooth/rfcomm/sock.c
++++ b/net/bluetooth/rfcomm/sock.c
+@@ -629,6 +629,7 @@ static int rfcomm_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
  
- 		res = pagecache_write_begin(NULL, mapping, size, 0,
- 						AOP_FLAG_UNINTERRUPTIBLE,
+ 	if (test_and_clear_bit(RFCOMM_DEFER_SETUP, &d->flags)) {
+ 		rfcomm_dlc_accept(d);
++		msg->msg_namelen = 0;
+ 		return 0;
+ 	}
+ 
 -- 
 1.8.1.2
 
