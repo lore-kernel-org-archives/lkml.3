@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab3EGOSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:18:09 -0400
-Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:59341 "EHLO
+	id S1753018Ab3EGOTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:19:09 -0400
+Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:59366 "EHLO
 	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752699Ab3EGOSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 10:18:00 -0400
+	id S1752748Ab3EGOSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 10:18:07 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: jirislaby@gmail.com
-Cc: linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH 14/15] staging/sb105x: remove asm/segment.h dependency
-Date: Tue,  7 May 2013 16:18:22 +0200
-Message-Id: <1367936303-13386-14-git-send-email-jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Vasiliy Kulikov <segooon@gmail.com>,
+        Thomas Renninger <trenn@suse.de>, Jiri Slaby <jslaby@suse.cz>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH 10/15] acpi: ec_sys: access user space with get_user()/put_user()
+Date: Tue,  7 May 2013 16:18:18 +0200
+Message-Id: <1367936303-13386-10-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367936303-13386-1-git-send-email-jslaby@suse.cz>
 References: <1367936303-13386-1-git-send-email-jslaby@suse.cz>
@@ -22,34 +22,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Vasiliy Kulikov <segooon@gmail.com>
 
-sb105x doesn't seem to actually need <asm/segment.h> (builds on x86
-without it) and ppc/ppc64 doesn't provide it so it fails to build there.
+User space pointer may not be dereferenced. Use get_user()/put_user()
+instead and check their return codes.
 
-This patch removes the dependency.
-
-CC: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org
+Cc: Len Brown <lenb@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
 ---
- drivers/staging/sb105x/sb_pci_mp.h | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/acpi/ec_sys.c | 18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/sb105x/sb_pci_mp.h b/drivers/staging/sb105x/sb_pci_mp.h
-index a15f470..11d9299 100644
---- a/drivers/staging/sb105x/sb_pci_mp.h
-+++ b/drivers/staging/sb105x/sb_pci_mp.h
-@@ -19,7 +19,6 @@
- #include <asm/uaccess.h>
- #include <asm/io.h>
- #include <asm/irq.h>
--#include <asm/segment.h>
- #include <asm/serial.h>
- #include <linux/interrupt.h>
+diff --git a/drivers/acpi/ec_sys.c b/drivers/acpi/ec_sys.c
+index 7586544..4e7b798 100644
+--- a/drivers/acpi/ec_sys.c
++++ b/drivers/acpi/ec_sys.c
+@@ -12,6 +12,7 @@
+ #include <linux/acpi.h>
+ #include <linux/debugfs.h>
+ #include <linux/module.h>
++#include <linux/uaccess.h>
+ #include "internal.h"
  
+ MODULE_AUTHOR("Thomas Renninger <trenn@suse.de>");
+@@ -34,7 +35,6 @@ static ssize_t acpi_ec_read_io(struct file *f, char __user *buf,
+ 	 * struct acpi_ec *ec = ((struct seq_file *)f->private_data)->private;
+ 	 */
+ 	unsigned int size = EC_SPACE_SIZE;
+-	u8 *data = (u8 *) buf;
+ 	loff_t init_off = *off;
+ 	int err = 0;
+ 
+@@ -47,9 +47,15 @@ static ssize_t acpi_ec_read_io(struct file *f, char __user *buf,
+ 		size = count;
+ 
+ 	while (size) {
+-		err = ec_read(*off, &data[*off - init_off]);
++		u8 byte_read;
++		err = ec_read(*off, &byte_read);
+ 		if (err)
+ 			return err;
++		if (put_user(byte_read, buf + *off - init_off)) {
++			if (*off - init_off)
++				return *off - init_off; /* partial read */
++			return -EFAULT;
++		}
+ 		*off += 1;
+ 		size--;
+ 	}
+@@ -65,7 +71,6 @@ static ssize_t acpi_ec_write_io(struct file *f, const char __user *buf,
+ 
+ 	unsigned int size = count;
+ 	loff_t init_off = *off;
+-	u8 *data = (u8 *) buf;
+ 	int err = 0;
+ 
+ 	if (*off >= EC_SPACE_SIZE)
+@@ -76,7 +81,12 @@ static ssize_t acpi_ec_write_io(struct file *f, const char __user *buf,
+ 	}
+ 
+ 	while (size) {
+-		u8 byte_write = data[*off - init_off];
++		u8 byte_write;
++		if (get_user(byte_write, buf + *off - init_off)) {
++			if (*off - init_off)
++				return *off - init_off; /* partial write */
++			return -EFAULT;
++		}
+ 		err = ec_write(*off, byte_write);
+ 		if (err)
+ 			return err;
 -- 
 1.8.2.1
 
