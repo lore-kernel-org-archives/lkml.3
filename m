@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067Ab3EGSgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 14:36:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3325 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751602Ab3EGSgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 14:36:41 -0400
-Date: Tue, 7 May 2013 14:00:09 -0400
-From: Dave Jones <davej@redhat.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: 3.9+ tty lockdep trace.
-Message-ID: <20130507180009.GA16771@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Peter Hurley <peter@hurleysoftware.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Jiri Slaby <jslaby@suse.cz>
-References: <20130501154723.GB11841@redhat.com>
- <20130506180020.GB1309@redhat.com>
- <20130506184059.GA22897@kroah.com>
- <51890C31.3000203@hurleysoftware.com>
- <20130507150423.GA13062@redhat.com>
- <51893B68.1010907@hurleysoftware.com>
+	id S1757465Ab3EGSlw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 14:41:52 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:50387 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314Ab3EGSlt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 14:41:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL 0/5] ARM: Third batch of arm-soc changes for 3.10, again
+Date: Tue, 7 May 2013 20:41:37 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: ARM SoC <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <1367947574-2934383-1-git-send-email-arnd@arndb.de> <CA+55aFxJB3OG+-tu2SqAOzn9T7zDb0P9jgbUOMHnXs9m_nXNUA@mail.gmail.com>
+In-Reply-To: <CA+55aFxJB3OG+-tu2SqAOzn9T7zDb0P9jgbUOMHnXs9m_nXNUA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51893B68.1010907@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305072041.37493.arnd@arndb.de>
+X-Provags-ID: V02:K0:b0lIMCFSJx+7xBVT1o58kb546Fu0pJmCc3UEg7ug6WF
+ hLRifLJ5qlztN6NIE+PfOycBlr4VIi0bSjg3wlXct1t9M5HX1H
+ LDxq5SfXP2+GRrX6/IAM55riFMJN/B/u3JlJwQ64xJET7PBzHc
+ w0mLLvC4/6ee96jHD1qnHFONwnc/uJ/f88tUjnViDfd2TS26Ri
+ Ht4yqD/z/khniumnRdxWam8nNxzRcorozxsHJO3uy93ewvdHCW
+ iPJH+7UsQNY8S8S+yZiWAgMgWhr1smNMaxxZ4NQ6YLZWkZ09Z5
+ 7qeuFz+WgjmEIITRgiIsO4rFUsh4cUSGtCsAGa+9pE5fQfw2jW
+ R1DwJlDf8urwYVpF8gfw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 01:35:36PM -0400, Peter Hurley wrote:
- > On 05/07/2013 11:04 AM, Dave Jones wrote:
- > > On Tue, May 07, 2013 at 10:14:09AM -0400, Peter Hurley wrote:
- > >
- > >   > >> Just hit this again, by switching tty's during bootup.
- > >   > >> The previous time was switching from X to console iirc, so that seems to be
- > >   > >> the key to triggering this.
- > >   > >
- > >   > > Sorry for not getting back to this sooner, merge window fun...
- > >   > >
- > >   > > Anyway, Peter, could this be something that your ldisc patches are
- > >   > > triggering?
- > >   >
- > >   > Yes, although early analysis also suggests the lockdep splat is possible
- > >   > regardless, just much less likely.
- > >   >
- > >   > I looked at this over the weekend, but I wasn't able to determine (in
- > >   > the limited time I had available) if the splat was valid; ie., if the
- > >   > cpu states could actually be concurrent and result in deadlock.
- > >   >
- > >   > I need to study the VT_DISALLOCATE ioctl in more detail which I plan
- > >   > to do this week.
- > >
- > > I don't know if it proves/disproves anything, but shortly before the dump
- > > gets printed, everything is kind of locked up. I can switch tty's, but
- > > the gettys on them are dead to the world until after the dump.
- > >
- > > ISTR a pause for a while when I hit this switching from X too.
- > 
- > It would help to know the steps to reproduce. For example, you mention
- > unresponsive gettys but the VT_DISALLOCATE ioctl doesn't work (and isn't
- > designed to) on open ttys.
+On Tuesday 07 May 2013, Linus Torvalds wrote:
+> On Tue, May 7, 2013 at 10:26 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >
+> > Here are the same pull requests as before, with numbers and distinct
+> > time stamps. I hope I didn't screw up in a different way this time.
+> 
+> Ok, I notice that you seem to have forgotten the "--summary" flag from
+> your diffstat in your new script.
+> 
+> Not a showstopper, but make sure that the diffstat flags are
+> 
+>   "git diff -M --stat --summary"
+> 
+> (And yes, I prefer "-M", not "-C", because while copy information is
+> interesting, it tends to hide the fact that the copying added a lot of
+> lines, so the "-C" flag ends up not giving as good line add/del
+> information, even if the data that something looks like a copy of
+> another file is interesting).
 
-Hmm, dunno. I booted up, and tried to log in on tty1 (no X on that box), and after
-I entered my password everything just hung for a while. I flipped to tty2
-to try and log in as root, but after changing tty, I just got a blinking cursor.
-10 seconds or so later, lockdep spew.
+Right, another thing that I actually knew and then forgot to do. Olof
+has just sent me the script he used the past few times, I'll use that
+in the future.
 
-	Dave
-
+	Arnd
