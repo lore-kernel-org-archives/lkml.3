@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab3EGCQM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 22:16:12 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:33106 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757833Ab3EGCQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 22:16:08 -0400
-Date: Tue, 7 May 2013 10:15:56 +0800 (CST)
-From: Xiong Zhou <jencce.kernel@gmail.com>
-X-X-Sender: zx@M2420
-To: Lars-Peter Clausen <lars@metafoo.de>
-cc: Xiong Zhou <jencce.kernel@gmail.com>, anton@enomsg.org,
-        dwmw2@infradead.org, linux-next@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -next] power: fix bq27x00_battery kconfig
-In-Reply-To: <5184E2CD.8040900@metafoo.de>
-Message-ID: <alpine.DEB.2.02.1305071013410.9830@M2420>
-References: <alpine.DEB.2.02.1305031743190.6400@M2420> <51838C3E.5090303@metafoo.de> <CADJHv_s7TqdfULQKA6eTVEHkxBKqr44c9qeP8KCFXJuBxMmsYQ@mail.gmail.com> <5184E2CD.8040900@metafoo.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758410Ab3EGCSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 22:18:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2097 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757833Ab3EGCSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 22:18:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,625,1363158000"; 
+   d="scan'208";a="309280346"
+Message-ID: <51886460.3020009@intel.com>
+Date: Tue, 07 May 2013 10:18:08 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Paul Turner <pjt@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 3/7] sched: set initial value of runnable avg for new
+ forked task
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-4-git-send-email-alex.shi@intel.com> <CAPM31RJg7t8f1H-dZwzP1c-0HHb_=8twidX74gS2NfyQhHUhCw@mail.gmail.com> <5187760D.8060900@intel.com> <CAPM31RKiCfSZ=hJ9P7WOH6AC8uj6b06mEM6K0WCTYXC7OJAq7A@mail.gmail.com>
+In-Reply-To: <CAPM31RKiCfSZ=hJ9P7WOH6AC8uj6b06mEM6K0WCTYXC7OJAq7A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiong Zhou <jencce.kernel@gmail.com>
+On 05/06/2013 06:17 PM, Paul Turner wrote:
+>>> >> Rather than exposing the representation of load_avg_contrib to
+>>> >> __sched_fork it might also be better to call:
+>>> >>   __update_task_entity_contrib(&p->se)
+>>> >> After the initialization above; this would also avoid potential bugs
+>>> >> like the missing scale_load() above.
+>> >
+>> > Above simple change can not work.
+> Could you provide additional detail here?  Note that the sum change I
+> was suggesting above was:
+> 
+> __sched_fork():
+> +       p->se.avg.decay_count = 0;
+> +       p->se.avg.runnable_avg_period = 1024;
+> +       p->se.avg.runnable_avg_sum = 1024;
+> +       __update_task_entity_contrib(&p->se);
+> 
+> [ Also: move __sched_fork() beyond p->sched_reset_on_fork in sched_fork(). ]
 
-This patch fixes build failure(randconfig) of next-20130501.
-When config I2C as m, BATTERY_BQ27x00 as y, here comes the failure.
-The driver depends on I2C only if I2C is not disabled, as Lars
-commented. Last version of this patch make the driver depend on I2C
-unconditionally.
+Thanks Paul!
+It seems work with this change if new __sched_fork move after the
+p->sched_reset_on_fork setting.
 
-Failure message:
-drivers/built-in.o: In function `bq27x00_read_i2c':
-bq27x00_battery.c:(.text+0x1082a7): undefined reference to `i2c_transfer'
-drivers/built-in.o: In function `bq27x00_battery_init':
-bq27x00_battery.c:(.init.text+0x6085): undefined reference to `i2c_register_driver'
-bq27x00_battery.c:(.init.text+0x60c7): undefined reference to `i2c_del_driver'
-drivers/built-in.o: In function `bq27x00_battery_exit':
-bq27x00_battery.c:(.exit.text+0xbf0): undefined reference to `i2c_del_driver'
-make: *** [vmlinux] Error 1
+But why we initial avg sum to 1024? new task may goes to sleep, the
+initial 1024 give a unreasonable initial value.
 
-Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>
----
-drivers/power/Kconfig |    1 +
-1 file changed, 1 insertion(+)
+guess let the task accumulate itself avg sum and period is more natural.
+> 
+>> > We had talked this solution months ago. And get agreement on this patch.
+>> > https://lkml.org/lkml/2013/2/20/48  :)
+> Yes, I made the same suggestion in the last round, see:
+> https://lkml.org/lkml/2013/2/19/176
+> 
+> Your reply there seems like an ack of my suggestion, the only
+> difference I'm seeing is that using __update_task_entity_contrib() as
+> originally suggested is safer since it keeps the representation of
+> load_avg_contrib opaque.
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 0d0b5d7..f11bacd 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -152,6 +152,7 @@ config BATTERY_SBS
- 
- config BATTERY_BQ27x00
- 	tristate "BQ27x00 battery driver"
-+	depends on I2C || I2C=n
- 	help
- 	  Say Y here to enable support for batteries with BQ27x00 (I2C/HDQ) chips.
- 
+Yes, using __update_task_entity_contrib make load_avg_contrib opaque.
+but just initial value 1024 is a bit arbitrary.
+> 
+
+
+-- 
+Thanks
+    Alex
