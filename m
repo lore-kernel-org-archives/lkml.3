@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab3EGORG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:17:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49529 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752083Ab3EGORC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 10:17:02 -0400
-Date: Tue, 7 May 2013 10:16:57 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCHSET v2] blk-throttle: implement proper hierarchy support
-Message-ID: <20130507141657.GC7082@redhat.com>
-References: <1367880372-28312-1-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367880372-28312-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752598Ab3EGORf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:17:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42140 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932551Ab3EGNks (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 09:40:48 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 025/118] s390/memory hotplug: prevent offline of active memory increments
+Date: Tue,  7 May 2013 14:37:51 +0100
+Message-Id: <1367933964-1564-26-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
+References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 03:45:39PM -0700, Tejun Heo wrote:
-> Changes since the last take[L] are
-> 
-> * Unnecessary throtl_schedule_delayed_work() call dropped from 0007.
-> 
-> * throtl_log() implement in 0021 forgot to print space after blkg
->   path.  Fixed.
-> 
-> * 0030-blk-throttle-add-throtl_qnode-for-dispatch-fairness.patch added
->   to address dispatch fairness.
-> 
-> * 0031-blk-throttle-Account-for-child-group-s-start-time-in.patch
->   added to address unwarranted penalty of nested limit enforcement due
->   to staggered delays of slice start times at multiple levels.
-> 
-> The original patchset description follows.
+3.5.7.12 -stable review patch.  If anyone has any objections, please let me know.
 
-Hi Tejun,
+------------------
 
-Can you please also update blkio-controller.txt file to reflect the
-fact that now throttling also supports hierarchy. One of the places
-which needs updation is following.
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-Hierarchical Cgroups
-====================
-- Currently only CFQ supports hierarchical groups. For throttling,
-  cgroup interface does allow creation of hierarchical cgroups and
-  internally it treats them as flat hierarchy.
+commit 94c163663fc1dcfc067a5fb3cc1446b9469975ce upstream.
 
-Thanks
-Vivek
+In case a machine supports memory hotplug all active memory increments
+present at IPL time have been initialized with a "usecount" of 1.
+This is wrong if the memory increment size is larger than the memory
+section size of the memory hotplug code. If that is the case the
+usecount must be initialized with the number of memory sections that
+fit into one memory increment.
+Otherwise it is possible to put a memory increment into standby state
+even if there are still active sections.
+Afterwards addressing exceptions might happen which cause the kernel
+to panic.
+However even worse, if a memory increment was put into standby state
+and afterwards into active state again, it's contents would have been
+zeroed, leading to memory corruption.
+
+This was only an issue for machines that support standby memory and
+have at least 256GB memory.
+
+This is broken since commit fdb1bb15 "[S390] sclp/memory hotplug: fix
+initial usecount of increments".
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Reviewed-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/s390/char/sclp_cmd.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/s390/char/sclp_cmd.c b/drivers/s390/char/sclp_cmd.c
+index 766cb7b..1845ab5 100644
+--- a/drivers/s390/char/sclp_cmd.c
++++ b/drivers/s390/char/sclp_cmd.c
+@@ -529,6 +529,8 @@ static void __init sclp_add_standby_memory(void)
+ 	add_memory_merged(0);
+ }
+ 
++#define MEM_SCT_SIZE (1UL << SECTION_SIZE_BITS)
++
+ static void __init insert_increment(u16 rn, int standby, int assigned)
+ {
+ 	struct memory_increment *incr, *new_incr;
+@@ -541,7 +543,7 @@ static void __init insert_increment(u16 rn, int standby, int assigned)
+ 	new_incr->rn = rn;
+ 	new_incr->standby = standby;
+ 	if (!standby)
+-		new_incr->usecount = 1;
++		new_incr->usecount = rzm > MEM_SCT_SIZE ? rzm/MEM_SCT_SIZE : 1;
+ 	last_rn = 0;
+ 	prev = &sclp_mem_list;
+ 	list_for_each_entry(incr, &sclp_mem_list, list) {
+-- 
+1.8.1.2
+
