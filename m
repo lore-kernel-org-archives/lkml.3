@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577Ab3EGD1u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 23:27:50 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50034 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932324Ab3EGD1t (ORCPT
+	id S932673Ab3EGD3C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 23:29:02 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:50665 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756378Ab3EGD3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 23:27:49 -0400
-Date: Tue, 7 May 2013 11:27:33 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: tiwai@suse.de
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org, perex@perex.cz,
-        david.henningsson@canonical.com
-Subject: [PATCH]ALSA: HDA: Fix Oops caused by dereference NULL pointer
-Message-ID: <20130507032733.GA29944@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, tiwai@suse.de,
-	alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-	perex@perex.cz, david.henningsson@canonical.com
+	Mon, 6 May 2013 23:29:00 -0400
+Message-ID: <518874F3.50807@ozlabs.ru>
+Date: Tue, 07 May 2013 13:28:51 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm-ppc@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/5] KVM: PPC: iommu: Add missing kvm_iommu_map_pages/kvm_iommu_unmap_pages
+References: <1367824921-27151-1-git-send-email-y>   <51875a36.25ac440a.50d9.ffffe90d@mx.google.com>  <1367874436.2868.90.camel@ul30vt.home> <51884FA8.6010400@ozlabs.ru> <1367890979.2868.93.camel@ul30vt.home>
+In-Reply-To: <1367890979.2868.93.camel@ul30vt.home>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The interrupt handler azx_interrupt will call azx_update_rirb,
-which may call snd_hda_queue_unsol_event, snd_hda_queue_unsol_event
-will dereference chip->bus pointer.
+On 05/07/2013 11:42 AM, Alex Williamson wrote:
+> On Tue, 2013-05-07 at 10:49 +1000, Alexey Kardashevskiy wrote:
+>> On 05/07/2013 07:07 AM, Alex Williamson wrote:
+>>> On Mon, 2013-05-06 at 17:21 +1000, aik@ozlabs.ru wrote:
+>>>> From: Alexey Kardashevskiy <aik@ozlabs.ru>
+>>>>
+>>>> The IOMMU API implements groups creating/deletion, device binding
+>>>> and IOMMU map/unmap operations.
+>>>>
+>>>> The PowerPC implementation uses most of the API except map/unmap
+>>>> operations, which are implemented on POWER using hypercalls.
+>>>>
+>>>> However, in order to link a kernel with the CONFIG_IOMMU_API enabled,
+>>>> the empty kvm_iommu_map_pages/kvm_iommu_unmap_pages have to be
+>>>> defined, so this defines them.
+>>>>
+>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+>>>> Cc: David Gibson <david@gibson.dropbear.id.au>
+>>>> Signed-off-by: Paul Mackerras <paulus@samba.org>
+>>>> ---
+>>>>  arch/powerpc/include/asm/kvm_host.h |   14 ++++++++++++++
+>>>>  1 file changed, 14 insertions(+)
+>>>>
+>>>> diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
+>>>> index b6a047e..c025d91 100644
+>>>> --- a/arch/powerpc/include/asm/kvm_host.h
+>>>> +++ b/arch/powerpc/include/asm/kvm_host.h
+>>>> @@ -603,4 +603,18 @@ struct kvm_vcpu_arch {
+>>>>  
+>>>>  #define __KVM_HAVE_ARCH_WQP
+>>>>  
+>>>> +#ifdef CONFIG_IOMMU_API
+>>>> +/* POWERPC does not use IOMMU API for mapping/unmapping */
+>>>> +static inline int kvm_iommu_map_pages(struct kvm *kvm,
+>>>> +		struct kvm_memory_slot *slot)
+>>>> +{
+>>>> +	return 0;
+>>>> +}
+>>>> +
+>>>> +static inline void kvm_iommu_unmap_pages(struct kvm *kvm,
+>>>> +		struct kvm_memory_slot *slot)
+>>>> +{
+>>>> +}
+>>>> +#endif /* CONFIG_IOMMU_API */
+>>>> +
+>>>>  #endif /* __POWERPC_KVM_HOST_H__ */
+>>>
+>>> This is no longer needed, Gleb applied my patch for 3.10 that make all
+>>> of KVM device assignment dependent on a build config option and the top
+>>> level kvm_host.h now includes this when that is not set.  Thanks,
+>>
+>> Cannot find it, could you point me please where it is on github or
+>> git.kernel.org? Thanks.
+> 
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=2a5bab1004729f3302c776e53ee7c895b98bb1ce
 
-The problem is we alloc chip->bus in azx_codec_create
-which will be called after we enable IRQ and enable unsolicited
-event in azx_probe.
 
-This will cause Oops due dereference NULL pointer. I meet it, good luck:)
+Yes, I confirm, this is patch is not need any more. Thanks!
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- sound/pci/hda/hda_codec.c | 3 +++
- 1 file changed, 3 insertions(+)
 
-diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
-index 622f726..9c76752 100644
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -618,6 +618,9 @@ int snd_hda_queue_unsol_event(struct hda_bus *bus, u32 res, u32 res_ex)
- 	unsigned int wp;
- 
- 	trace_hda_unsol_event(bus, res, res_ex);
-+	if (!bus)
-+		return 0;
-+
- 	unsol = bus->unsol;
- 	if (!unsol)
- 		return 0;
+
 -- 
-1.7.12.4.dirty
+Alexey
