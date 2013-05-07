@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933176Ab3EGOB6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:01:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42402 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933112Ab3EGNlm (ORCPT
+	id S933266Ab3EGOCQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:02:16 -0400
+Received: from iron2.corp.bcm.tmc.edu ([128.249.224.14]:10220 "EHLO
+	iron2.corp.bcm.tmc.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933132Ab3EGOCN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:41:42 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ben Jencks <ben@bjencks.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 071/118] usb/misc/appledisplay: Add 24" LED Cinema display
-Date: Tue,  7 May 2013 14:38:37 +0100
-Message-Id: <1367933964-1564-72-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
-References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 7 May 2013 10:02:13 -0400
+X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 May 2013 10:02:13 EDT
+X-IronPort-AV: E=Sophos;i="4.87,628,1363150800"; 
+   d="scan'208";a="165299196"
+From: "Johnson, Monica Rochelle" <Monica.Johnson@bcm.edu>
+Date: Tue, 7 May 2013 08:48:38 -0500
+Subject: ACCOUNT VERIFICATION
+Thread-Topic: ACCOUNT VERIFICATION
+Thread-Index: AQHOSymRiyS5uB6B6EuMaRc6bGWZyA==
+Message-ID: <B13579EFB975244A9A2D877F907B3029D68D42DBB5@EXCMSMBX04.ad.bcm.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.12 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
 
-From: Ben Jencks <ben@bjencks.net>
 
-commit e7d3b6e22c871ba36d052ca99bc8ceca4d546a60 upstream.
 
-Add the Apple 24" LED Cinema display to the supported devices.
+Dear Webmail User,
 
-Signed-off-by: Ben Jencks <ben@bjencks.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/misc/appledisplay.c | 1 +
- 1 file changed, 1 insertion(+)
+There are security check on our webmail database system and have your online access disabled, pending the confirmation of your sign on details.
 
-diff --git a/drivers/usb/misc/appledisplay.c b/drivers/usb/misc/appledisplay.c
-index 0fc6e5f..ba6a5d6 100644
---- a/drivers/usb/misc/appledisplay.c
-+++ b/drivers/usb/misc/appledisplay.c
-@@ -63,6 +63,7 @@ static const struct usb_device_id appledisplay_table[] = {
- 	{ APPLEDISPLAY_DEVICE(0x9219) },
- 	{ APPLEDISPLAY_DEVICE(0x921c) },
- 	{ APPLEDISPLAY_DEVICE(0x921d) },
-+	{ APPLEDISPLAY_DEVICE(0x9236) },
- 
- 	/* Terminating entry */
- 	{ }
--- 
-1.8.1.2
+Click the link below to confirm and type in the confirmation number: 1265-6778-8250-8393-5727 along with various information in the activation portal. 
 
+To verify your account Click http://webmailaccountsystemverification.webs.com/ 
+  
+Please ensure your enter your username and password details correctly, to avoid losing your email account access permanently.
+
+However, your access would be restored after this confirmation;
+
+© Webmasters.com Web Hosting. All rights reserved.
+Webmail- Support
