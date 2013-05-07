@@ -1,197 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759469Ab3EGJXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 05:23:33 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:18978 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759277Ab3EGJXb (ORCPT
+	id S1759486Ab3EGJZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 05:25:10 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43339 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759277Ab3EGJZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 05:23:31 -0400
-X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
-   d="scan'208";a="4290277"
-Message-ID: <1367918609.26321.43.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH RFC v2 2/4] arm: introduce CONFIG_PARAVIRT
- and pv_time_ops
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nico@linaro.org" <nico@linaro.org>, "olof@lixom.net" <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "cov@codeaurora.org" <cov@codeaurora.org>
-Date: Tue, 7 May 2013 10:23:29 +0100
-In-Reply-To: <1367851878-21629-2-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1305061532310.4756@kaball.uk.xensource.com>
-	 <1367851878-21629-2-git-send-email-stefano.stabellini@eu.citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Tue, 7 May 2013 05:25:09 -0400
+Date: Tue, 7 May 2013 11:24:28 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Robin Holt <holt@sgi.com>
+Cc: Qing Xu <qingx@marvell.com>, Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: How does commit 47ec340c not introduce a bug?
+Message-ID: <20130507092428.GK23285@pengutronix.de>
+References: <20130507091734.GM3658@sgi.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130507091734.GM3658@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-06 at 15:51 +0100, Stefano Stabellini wrote:
-> Introduce CONFIG_PARAVIRT on ARM.
+Hello,
 
-What about PARAVIRT_TIME_ACCOUNTING? I'm not sure what it is but it
-looks like a more lightweight version of pv stolen time?
-
-> The only paravirt interface supported is pv_time_ops.steal_clock.
-> No runtime pvops patching yet.
-
-Or indeed ever, I think. The use cases for patching on x86 are not
-things which carry over to ARM with virt extensions.
-
-> This allows us to make us of steal_account_process_tick for stolen ticks
-> accounting.
+On Tue, May 07, 2013 at 04:17:34AM -0500, Robin Holt wrote:
+> I noticed a warning while cross-compiling all arm defconfigs.
+> 
+> The mmp2_defconfig gave this warning:
+> 
+> drivers/video/backlight/max8925_bl.c: In function 'max8925_backlight_probe':
+> drivers/video/backlight/max8925_bl.c:177:3: warning: statement with no effect [-Wunused-value]
+> 
+> This appears to have been introduced by the above commit when !CONFIG_OF
+> 
+> Looking at this more closely, I am not sure how this was ever intended
+> to be handled or how the errors returned in the CONFIG_OF case were
+> intended to be handled as the return from max8925_backlight_dt_init is
+> always ignored.
+> 
+> I think this needs some more attention, but do not feel like I know
+> enough about it or have any means to test it to weigh in.
+> 
+> Thanks,
+> Robin
 > 
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> CC: linux@arm.linux.org.uk
-> CC: will.deacon@arm.com
-> CC: nico@linaro.org
-> CC: marc.zyngier@arm.com
-> CC: cov@codeaurora.org
-> CC: arnd@arndb.de
-> CC: olof@lixom.net
-> ---
->  arch/arm/Kconfig                |    9 +++++++++
->  arch/arm/include/asm/paravirt.h |   19 +++++++++++++++++++
->  arch/arm/kernel/Makefile        |    1 +
->  arch/arm/kernel/paravirt.c      |   32 ++++++++++++++++++++++++++++++++
->  4 files changed, 61 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/include/asm/paravirt.h
->  create mode 100644 arch/arm/kernel/paravirt.c
+> commit 47ec340cb8e232671e7c4a4689ff32c3bdf329da
+> Author: Qing Xu <qingx@marvell.com>
+> Date:   Mon Feb 4 23:40:45 2013 +0800
 > 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 344e299..35cb10a 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1887,12 +1887,21 @@ config XEN_DOM0
->  	def_bool y
->  	depends on XEN
+>     mfd: max8925: Support dt for backlight
+>     
+>     Add device tree support in max8925 backlight.
+>     
+>     Signed-off-by: Qing Xu <qingx@marvell.com>
+>     Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+>     Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+> 
+> diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
+> index 2c9bce0..5ca11b0 100644
+> --- a/drivers/video/backlight/max8925_bl.c
+> +++ b/drivers/video/backlight/max8925_bl.c
+> @@ -101,6 +101,29 @@ static const struct backlight_ops max8925_backlight_ops = {
+>  	.get_brightness	= max8925_backlight_get_brightness,
+>  };
 >  
-> +config PARAVIRT
-> +	bool "Enable paravirtualization code"
-> +	---help---
-> +	  This changes the kernel so it can modify itself when it is run
-> +	  under a hypervisor, potentially improving performance significantly
-> +	  over full virtualization.  However, when run without a hypervisor
-> +	  the kernel is theoretically slower and slightly larger.
-
-I'm not sure this description (carried over from x86) are really true
-for ARM. e.g. the downsides there when not virtualised are in the PV MMU
-(pte operations) and interrupt masking stuff, which should never make
-its way onto ARM.
-
-I think it would be a worthwhile change to refactor the stolen time
-handling out from under the rather wide reaching umbrella of the x86
-PARAVIRT option. (assuming PARAVIRT_TIME_ACCOUNTING isn't already that)
-
-> +
->  config XEN
->  	bool "Xen guest support on ARM (EXPERIMENTAL)"
->  	depends on ARM && AEABI && OF
->  	depends on CPU_V7 && !CPU_V6
->  	depends on !GENERIC_ATOMIC64
->  	select ARM_PSCI
-> +	select PARAVIRT
->  	help
->  	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
->  
-> diff --git a/arch/arm/include/asm/paravirt.h b/arch/arm/include/asm/paravirt.h
-> new file mode 100644
-> index 0000000..3b95bc6
-> --- /dev/null
-> +++ b/arch/arm/include/asm/paravirt.h
-> @@ -0,0 +1,19 @@
-> +#ifndef _ASM_ARM_PARAVIRT_H
-> +#define _ASM_ARM_PARAVIRT_H
-> +
-> +struct static_key;
-> +extern struct static_key paravirt_steal_enabled;
-> +extern struct static_key paravirt_steal_rq_enabled;
-> +
-> +struct pv_time_ops {
-> +	unsigned long long (*steal_clock)(int cpu);
-> +};
-> +extern struct pv_time_ops pv_time_ops;
-> +
-> +static inline u64 paravirt_steal_clock(int cpu)
+> +#ifdef CONFIG_OF
+> +static int max8925_backlight_dt_init(struct platform_device *pdev,
+> +			      struct max8925_backlight_pdata *pdata)
 > +{
-> +	return pv_time_ops.steal_clock(cpu);
-> +}
+> +	struct device_node *nproot = pdev->dev.parent->of_node, *np;
+> +	int dual_string;
 > +
+> +	if (!nproot)
+> +		return -ENODEV;
+> +	np = of_find_node_by_name(nproot, "backlight");
+> +	if (!np) {
+> +		dev_err(&pdev->dev, "failed to find backlight node\n");
+> +		return -ENODEV;
+> +	}
 > +
-> +#endif
-> diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-> index dd9d90a..6764f60 100644
-> --- a/arch/arm/kernel/Makefile
-> +++ b/arch/arm/kernel/Makefile
-> @@ -86,5 +86,6 @@ ifeq ($(CONFIG_ARM_PSCI),y)
->  obj-y				+= psci.o
->  obj-$(CONFIG_SMP)		+= psci_smp.o
->  endif
-> +obj-$(CONFIG_PARAVIRT)	+= paravirt.o
->  
->  extra-y := $(head-y) vmlinux.lds
-> diff --git a/arch/arm/kernel/paravirt.c b/arch/arm/kernel/paravirt.c
-> new file mode 100644
-> index 0000000..3e73fc8
-> --- /dev/null
-> +++ b/arch/arm/kernel/paravirt.c
-> @@ -0,0 +1,32 @@
-> +/*
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * Copyright (C) 2013 Citrix Systems
-> + *
-> + * Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> + */
-> +
-> +#include <linux/export.h>
-> +#include <linux/jump_label.h>
-> +#include <linux/types.h>
-> +#include <asm/paravirt.h>
-> +
-> +struct static_key paravirt_steal_enabled;
-> +struct static_key paravirt_steal_rq_enabled;
-> +
-> +static u64 native_steal_clock(int cpu)
-> +{
+> +	of_property_read_u32(np, "maxim,max8925-dual-string", &dual_string);
+> +	pdata->dual_string = dual_string;
 > +	return 0;
 > +}
+> +#else
+> +#define max8925_backlight_dt_init(x, y)	(-1)
+It's probably best to make this:
+
+static inline max8925_backlight_dt_init(struct platform_device *pdev,
+				struct max8925_backlight_pdata *pdata)
+{
+	return -ENODEV;
+}
+
+> +#endif
 > +
-> +struct pv_time_ops pv_time_ops = {
-> +	.steal_clock = native_steal_clock,
-> +};
-> +EXPORT_SYMBOL_GPL(pv_time_ops);
+>  static int max8925_backlight_probe(struct platform_device *pdev)
+>  {
+>  	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
+> @@ -147,6 +170,13 @@ static int max8925_backlight_probe(struct platform_device *pdev)
+>  	platform_set_drvdata(pdev, bl);
+>  
+>  	value = 0;
+> +	if (pdev->dev.parent->of_node && !pdata) {
+> +		pdata = devm_kzalloc(&pdev->dev,
+> +				     sizeof(struct max8925_backlight_pdata),
+> +				     GFP_KERNEL);
+> +		max8925_backlight_dt_init(pdev, pdata);
+> +	}
+> +
+>  	if (pdata) {
+>  		if (pdata->lxw_scl)
+>  			value |= (1 << 7);
+> @@ -158,7 +188,6 @@ static int max8925_backlight_probe(struct platform_device *pdev)
+>  	ret = max8925_set_bits(chip->i2c, data->reg_mode_cntl, 0xfe, value);
+>  	if (ret < 0)
+>  		goto out_brt;
+> -
+>  	backlight_update_status(bl);
+>  	return 0;
+>  out_brt:
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
-This foo_ops.bar and native_bar thing is a bit of a hangover from the
-paravirt patching infrastructure on x86 and it doesn't really apply
-here.
-
-Given that the call to paravirt_steal_time call is already protected by
-this static_key stuff I think it would be safe to leave the hook as NULL
-in the case where it is unused.
-
-Given all the different clock sources on ARM is there not an existing
-ops struct where this could live?
-
-Ian.
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
