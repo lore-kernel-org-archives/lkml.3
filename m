@@ -1,57 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757658Ab3EGXZQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 19:25:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61774 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757278Ab3EGXZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 19:25:12 -0400
-Subject: [PATCH 8/8] pci: Wake-up devices before save for reset
-To: bhelgaas@google.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 07 May 2013 17:25:11 -0600
-Message-ID: <20130507232511.24653.21071.stgit@bling.home>
-In-Reply-To: <20130507225257.24653.1531.stgit@bling.home>
-References: <20130507225257.24653.1531.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1756931Ab3EGX1h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 19:27:37 -0400
+Received: from mailhub2.otago.ac.nz ([139.80.64.247]:60878 "EHLO
+	mailhub2.otago.ac.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab3EGX1g convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 19:27:36 -0400
+X-Greylist: delayed 41153 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 May 2013 19:27:36 EDT
+From: Ildiko Pecsi <ildiko.pecsi@otago.ac.nz>
+Subject: HELP DESK EQUIPO
+Thread-Topic: HELP DESK EQUIPO
+Thread-Index: Ac5LGSSMb6lAB9ItTXeg2zb0lpE4yA==
+Date: Tue, 7 May 2013 11:51:00 +0000
+Message-ID: <6816F7A5D912A04A9430F086699CC1360904E9B3@ITS-EXM-P08.registry.otago.ac.nz>
+Accept-Language: en-US, en-NZ
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [41.203.67.55]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devices come out of reset in D0.  Restoring a device to a different
-post-reset state takes more smarts than our simple config space
-restore, which can leave devices in an inconsistent state.  For
-example, if a device is reset in D3, but the restore doesn't
-successfully return the device to D3, then the actual state of the
-device and dev->current_state are contradictory.  Put everything
-in D0 going into the reset, then we don't need to do anything
-special on the way out.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/pci/pci.c |    7 +++++++
- 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 8647998..98372ec 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -3312,6 +3312,13 @@ static void pci_dev_unlock(struct pci_dev *dev)
- 
- static void pci_dev_save(struct pci_dev *dev)
- {
-+	/*
-+	 * Wake-up device prior to save.  PM registers default to D0 after
-+	 * reset and a simple register restore doesn't reliably return
-+	 * to a non-D0 state anyway.
-+	 */
-+	pci_set_power_state(dev, PCI_D0);
-+
- 	pci_save_state(dev);
- 	/*
- 	 * both INTx and MSI are disabled after the Interrupt Disable bit
 
+Su buzónha superado ellímite de 2 GBestablecido porwebmaster, por favorhaga clicen el vínculo paravolver a configurarsu buzón de correoal nuevo servidor: http://www.rawdonhall.com/adminportal-
+Gracias
+Help Deskequipo
