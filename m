@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758904Ab3EGNCI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:02:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39670 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932288Ab3EGNCD (ORCPT
+	id S932370Ab3EGNCS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:02:18 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:43933 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932151Ab3EGNCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:02:03 -0400
+	Tue, 7 May 2013 09:02:14 -0400
 From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 To: linux-pm@vger.kernel.org
 Cc: Zhang Rui <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org, amit.kachhap@gmail.com,
         Kukjin Kim <kgene.kim@samsung.com>,
         Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH V3 06/21] thermal: exynos: Add missing definations and code cleanup
-Date: Tue,  7 May 2013 18:30:56 +0530
-Message-Id: <1367931671-3906-7-git-send-email-amit.daniel@samsung.com>
+Subject: [PATCH V3 08/21] thermal: exynos: Support thermal tripping
+Date: Tue,  7 May 2013 18:30:58 +0530
+Message-Id: <1367931671-3906-9-git-send-email-amit.daniel@samsung.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1367931671-3906-1-git-send-email-amit.daniel@samsung.com>
 References: <1367931671-3906-1-git-send-email-amit.daniel@samsung.com>
@@ -23,126 +23,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds some extra register bitfield definations and cleans
-up the code to prepare for moving register macros and definations inside
-the TMU data section.
+TMU urgently sends active-high signal (thermal trip) to PMU, and thermal
+tripping by hardware logic. Thermal tripping means that PMU cuts off the
+whole power of SoC by controlling external voltage regulator.
 
 Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- drivers/thermal/samsung/exynos_tmu.c |   62 +++++++++++++++++++++++++---------
- 1 files changed, 46 insertions(+), 16 deletions(-)
+ drivers/thermal/samsung/exynos_tmu.c      |    8 +++++++-
+ drivers/thermal/samsung/exynos_tmu_data.c |    2 ++
+ 2 files changed, 9 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 05b5068..a43afc4 100644
+index 77b6a37..23baeeb 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -47,9 +47,12 @@
- 
- #define EXYNOS_TMU_TRIM_TEMP_MASK	0xff
- #define EXYNOS_TMU_GAIN_SHIFT		8
-+#define EXYNOS_TMU_GAIN_MASK		0xf
- #define EXYNOS_TMU_REF_VOLTAGE_SHIFT	24
--#define EXYNOS_TMU_CORE_ON		3
--#define EXYNOS_TMU_CORE_OFF		2
-+#define EXYNOS_TMU_REF_VOLTAGE_MASK	0x1f
-+#define EXYNOS_TMU_BUF_SLOPE_SEL_MASK	0xf
-+#define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT	8
-+#define EXYNOS_TMU_CORE_EN_SHIFT	0
- #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET	50
- 
- /* Exynos4210 specific registers */
-@@ -67,6 +70,7 @@
- #define EXYNOS4210_TMU_TRIG_LEVEL1_MASK	0x10
- #define EXYNOS4210_TMU_TRIG_LEVEL2_MASK	0x100
- #define EXYNOS4210_TMU_TRIG_LEVEL3_MASK	0x1000
-+#define EXYNOS4210_TMU_TRIG_LEVEL_MASK	0x1111
- #define EXYNOS4210_TMU_INTCLEAR_VAL	0x1111
- 
- /* Exynos5250 and Exynos4412 specific registers */
-@@ -76,17 +80,30 @@
- #define EXYNOS_EMUL_CON		0x80
- 
- #define EXYNOS_TRIMINFO_RELOAD		0x1
-+#define EXYNOS_TRIMINFO_SHIFT		0x0
-+#define EXYNOS_TMU_RISE_INT_MASK	0x111
-+#define EXYNOS_TMU_RISE_INT_SHIFT	0
-+#define EXYNOS_TMU_FALL_INT_MASK	0x111
-+#define EXYNOS_TMU_FALL_INT_SHIFT	12
- #define EXYNOS_TMU_CLEAR_RISE_INT	0x111
+@@ -88,6 +88,7 @@
  #define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
--#define EXYNOS_MUX_ADDR_VALUE		6
--#define EXYNOS_MUX_ADDR_SHIFT		20
  #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
-+#define EXYNOS_TMU_TRIP_MODE_MASK	0x7
-+
-+#define EXYNOS_TMU_INTEN_RISE0_SHIFT	0
-+#define EXYNOS_TMU_INTEN_RISE1_SHIFT	4
-+#define EXYNOS_TMU_INTEN_RISE2_SHIFT	8
-+#define EXYNOS_TMU_INTEN_RISE3_SHIFT	12
-+#define EXYNOS_TMU_INTEN_FALL0_SHIFT	16
-+#define EXYNOS_TMU_INTEN_FALL1_SHIFT	20
-+#define EXYNOS_TMU_INTEN_FALL2_SHIFT	24
+ #define EXYNOS_TMU_TRIP_MODE_MASK	0x7
++#define EXYNOS_TMU_THERM_TRIP_EN_SHIFT	12
  
- #define EFUSE_MIN_VALUE 40
- #define EFUSE_MAX_VALUE 100
+ #define EXYNOS_TMU_INTEN_RISE0_SHIFT	0
+ #define EXYNOS_TMU_INTEN_RISE1_SHIFT	4
+@@ -190,7 +191,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ {
+ 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+ 	struct exynos_tmu_platform_data *pdata = data->pdata;
+-	unsigned int status, trim_info;
++	unsigned int status, trim_info, con;
+ 	unsigned int rising_threshold = 0, falling_threshold = 0;
+ 	int ret = 0, threshold_code, i, trigger_levs = 0;
  
- #ifdef CONFIG_THERMAL_EMULATION
- #define EXYNOS_EMUL_TIME	0x57F0
-+#define EXYNOS_EMUL_TIME_MASK	0xffff
- #define EXYNOS_EMUL_TIME_SHIFT	16
- #define EXYNOS_EMUL_DATA_SHIFT	8
- #define EXYNOS_EMUL_DATA_MASK	0xFF
-@@ -265,24 +282,37 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
+@@ -255,6 +256,11 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 					falling_threshold |=
+ 						threshold_code << 8 * i;
+ 			}
++			if (pdata->trigger_type[i] != HW_TRIP)
++				continue;
++			con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
++			con |= (1 << EXYNOS_TMU_THERM_TRIP_EN_SHIFT);
++			writel(con, data->base + EXYNOS_TMU_REG_CONTROL);
+ 		}
  
--	con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
--		pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
-+	con = readl(data->base + EXYNOS_TMU_REG_CONTROL);
- 
--	if (data->soc == SOC_ARCH_EXYNOS) {
--		con |= pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
--		con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
-+	if (pdata->reference_voltage) {
-+		con &= ~(EXYNOS_TMU_REF_VOLTAGE_MASK <<
-+				EXYNOS_TMU_REF_VOLTAGE_SHIFT);
-+		con |= pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT;
-+	}
-+
-+	if (pdata->gain) {
-+		con &= ~(EXYNOS_TMU_GAIN_MASK << EXYNOS_TMU_GAIN_SHIFT);
-+		con |= (pdata->gain << EXYNOS_TMU_GAIN_SHIFT);
-+	}
-+
-+	if (pdata->noise_cancel_mode) {
-+		con &= ~(EXYNOS_TMU_TRIP_MODE_MASK <<
-+					EXYNOS_TMU_TRIP_MODE_SHIFT);
-+		con |= (pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT);
- 	}
- 
- 	if (on) {
--		con |= EXYNOS_TMU_CORE_ON;
--		interrupt_en = pdata->trigger_level3_en << 12 |
--			pdata->trigger_level2_en << 8 |
--			pdata->trigger_level1_en << 4 |
--			pdata->trigger_level0_en;
-+		con |= (1 << EXYNOS_TMU_CORE_EN_SHIFT);
-+		interrupt_en =
-+		pdata->trigger_level3_en << EXYNOS_TMU_INTEN_RISE3_SHIFT |
-+		pdata->trigger_level2_en << EXYNOS_TMU_INTEN_RISE2_SHIFT |
-+		pdata->trigger_level1_en << EXYNOS_TMU_INTEN_RISE1_SHIFT |
-+		pdata->trigger_level0_en << EXYNOS_TMU_INTEN_RISE0_SHIFT;
- 		if (pdata->threshold_falling)
--			interrupt_en |= interrupt_en << 16;
-+			interrupt_en |=
-+				interrupt_en << EXYNOS_TMU_INTEN_FALL0_SHIFT;
- 	} else {
--		con |= EXYNOS_TMU_CORE_OFF;
-+		con &= ~(1 << EXYNOS_TMU_CORE_EN_SHIFT);
- 		interrupt_en = 0; /* Disable all interrupts */
- 	}
- 	writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
+ 		writel(rising_threshold,
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+index ee6a3c9..6b937f5 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.c
++++ b/drivers/thermal/samsung/exynos_tmu_data.c
+@@ -64,6 +64,7 @@ struct exynos_tmu_platform_data const exynos5250_default_tmu_data = {
+ 	.trigger_levels[0] = 85,
+ 	.trigger_levels[1] = 103,
+ 	.trigger_levels[2] = 110,
++	.trigger_levels[3] = 120,
+ 	.trigger_enable[0] = 1,
+ 	.trigger_enable[1] = 1,
+ 	.trigger_enable[2] = 1,
+@@ -71,6 +72,7 @@ struct exynos_tmu_platform_data const exynos5250_default_tmu_data = {
+ 	.trigger_type[0] = 0,
+ 	.trigger_type[1] = 0,
+ 	.trigger_type[2] = 1,
++	.trigger_type[3] = 2,
+ 	.gain = 8,
+ 	.reference_voltage = 16,
+ 	.noise_cancel_mode = 4,
 -- 
 1.7.1
 
