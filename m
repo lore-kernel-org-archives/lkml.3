@@ -1,54 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab3EGRpB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 13:45:01 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:33310 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822Ab3EGRpA (ORCPT
+	id S1759393Ab3EGRrl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 13:47:41 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:46014 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759295Ab3EGRrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 13:45:00 -0400
+	Tue, 7 May 2013 13:47:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130507173231.GL18614@n2100.arm.linux.org.uk>
-References: <1367942534-2934003-1-git-send-email-arnd@arndb.de>
-	<CA+55aFwMXmJ9V+3o62ELm-0NT1DaUCTvidmAhJSXzQcTMfJygA@mail.gmail.com>
-	<20130507173231.GL18614@n2100.arm.linux.org.uk>
-Date: Tue, 7 May 2013 10:44:59 -0700
-X-Google-Sender-Auth: AAfrVNJcPvz8qwGBIoGtHpYPCKY
-Message-ID: <CA+55aFwW1TyWwJs1CQxnj08Qe-A+eFD20B4fVVT8Te=6eBcTqw@mail.gmail.com>
-Subject: Re: [GIT PULL] ARM: Third batch of arm-soc changes for 3.10
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, ARM SoC <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130507060730.03364687@tlielax.poochiereds.net>
+References: <1367884221-20462-1-git-send-email-ccross@android.com>
+	<1367884221-20462-3-git-send-email-ccross@android.com>
+	<20130507060730.03364687@tlielax.poochiereds.net>
+Date: Tue, 7 May 2013 10:47:36 -0700
+X-Google-Sender-Auth: sCKxjLovXRCoA0LLkOwMPDRsBLI
+Message-ID: <CAMbhsRQ1i_dFctwjkqjg3=GJdEc8ReEDk=NnEFEXj8u3MaEqDA@mail.gmail.com>
+Subject: Re: [PATCH v3 02/16] freezer: add unsafe versions of freezable
+ helpers for CIFS
+From: Colin Cross <ccross@android.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Len Brown <len.brown@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 7, 2013 at 10:32 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
+On Tue, May 7, 2013 at 3:07 AM, Jeff Layton <jlayton@redhat.com> wrote:
+> On Mon,  6 May 2013 16:50:07 -0700
+> Colin Cross <ccross@android.com> wrote:
 >
-> So I don't think that asking people to play games with delays between
-> consecutive messages is going to work all that well.
+>> CIFS calls wait_event_freezekillable_unsafe with a VFS lock held,
+>> which is unsafe and will cause lockdep warnings when 6aa9707
+>> "lockdep: check that no locks held at freeze time" is reapplied
+>> (it was reverted in dbf520a).  CIFS shouldn't be doing this, but
+>> it has long-running syscalls that must hold a lock but also
+>> shouldn't block suspend.  Until CIFS freeze handling is rewritten
+>> to use a signal to exit out of the critical section, add a new
+>> wait_event_freezekillable_unsafe helper that will not run the
+>> lockdep test when 6aa9707 is reapplied, and call it from CIFS.
+>>
+>> In practice the likley result of holding the lock while freezing
+>> is that a second task blocked on the lock will never freeze,
+>> aborting suspend, but it is possible to manufacture a case using
+>> the cgroup freezer, the lock, and the suspend freezer to create
+>> a deadlock.  Silencing the lockdep warning here will allow
+>> problems to be found in other drivers that may have a more
+>> serious deadlock risk, and prevent new problems from being added.
+>>
+>> Signed-off-by: Colin Cross <ccross@android.com>
+>> ---
+>>  include/linux/freezer.h | 13 +++++++++++++
+>>  1 file changed, 13 insertions(+)
+>>
+>> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+>> index 5b31e21c..d3c038e 100644
+>> --- a/include/linux/freezer.h
+>> +++ b/include/linux/freezer.h
+>> @@ -212,6 +212,16 @@ static inline bool freezer_should_skip(struct task_struct *p)
+>>       __retval;                                                       \
+>>  })
+>>
+>> +/* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
+>> +#define wait_event_freezekillable_unsafe(wq, condition)                      \
+>> +({                                                                   \
+>> +     int __retval;                                                   \
+>> +     freezer_do_not_count();                                         \
+>> +     __retval = wait_event_killable(wq, (condition));                \
+>> +     freezer_count_unsafe();                                         \
+>> +     __retval;                                                       \
+>> +})
+>> +
+>>  #define wait_event_freezable(wq, condition)                          \
+>>  ({                                                                   \
+>>       int __retval;                                                   \
+>> @@ -277,6 +287,9 @@ static inline void set_freezable(void) {}
+>>  #define wait_event_freezekillable(wq, condition)             \
+>>               wait_event_killable(wq, condition)
+>>
+>> +#define wait_event_freezekillable_unsafe(wq, condition)                      \
+>> +             wait_event_killable(wq, condition)
+>> +
+>>  #endif /* !CONFIG_FREEZER */
+>>
+>>  #endif       /* FREEZER_H_INCLUDED */
+>
+> I think you also need to convert wait_for_response in the cifs code to
+> use this helper. While it's a pretty straightforward change, you should
+> probably cc linux-cifs@vger.kernel.org as well.
+>
+> --
+> Jeff Layton <jlayton@redhat.com>
 
-Actually, since this has happened before (a lot) with patch series,
-I'm pretty sure it helps.
-
-I used to get re-ordered patches from Andrew all the time, and asked
-him to try to avoid it (yes, he also numbers them well, but alpine -
-which is what I used for batching email when there are lots of patches
-- had this annoying habit of ignoring the "[PATCH n]" part when asked
-to sort subject alphabetically). These days, he seems to put a delay
-of a second between his patch-bombings these days, and that has almost
-entirely solved the problem (so in a series of over a hundred, I
-seldom get any renumbering at all, and fixing it up manually if it
-happens is much easier now).
-
-But yes, it probably depends very much on where things get sent from,
-and in particular if you have some slow SMTP server in one of the
-hops. So it's possible that the reason I don't see it with Andrew any
-more is simply due to issues like that.
-
-                  Linus
+Oops, dropped a hunk which is why linux-cifs didn't get cc'd.  I will resend it.
