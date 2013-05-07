@@ -1,236 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434Ab3EGUK4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 16:10:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45352 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752070Ab3EGUKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 16:10:55 -0400
-Message-ID: <51895FAB.5010805@redhat.com>
-Date: Tue, 07 May 2013 16:10:19 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121116 Thunderbird/10.0.11
+	id S1756944Ab3EGULg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 16:11:36 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57136 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752695Ab3EGULe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 16:11:34 -0400
+Date: Tue, 7 May 2013 22:11:26 +0200
+From: Pavel Machek <pavel@denx.de>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, tglx@linutronix.de,
+        Jamie Iles <jamie@jamieiles.com>, dinguyen@altera.com, wd@denx.de,
+        linux-arm-kernel@lists.infradead.org, olof@lixom.net,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: dw_apb_timer_of.c: remove parts that were picoxcell-specific
+Message-ID: <20130507201126.GA8169@amd.pavel.ucw.cz>
+References: <20130426121433.GA16249@amd.pavel.ucw.cz>
+ <201305061545.22587.arnd@arndb.de>
+ <20130506155304.GA6645@amd.pavel.ucw.cz>
+ <201305062324.17080.arnd@arndb.de>
+ <20130507135752.GA3500@amd.pavel.ucw.cz>
+ <51892E5E.8090909@linaro.org>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Takao Indoh <indou.takao@jp.fujitsu.com>, bhelgaas@google.com,
-        linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Reset PCIe devices to stop ongoing DMA
-References: <1366779539-3584-1-git-send-email-indou.takao@jp.fujitsu.com> <1367944782.2868.106.camel@ul30vt.home>
-In-Reply-To: <1367944782.2868.106.camel@ul30vt.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51892E5E.8090909@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2013 12:39 PM, Alex Williamson wrote:
-> On Wed, 2013-04-24 at 13:58 +0900, Takao Indoh wrote:
->> This patch resets PCIe devices on boot to stop ongoing DMA. When
->> "pci=pcie_reset_devices" is specified, a hot reset is triggered on each
->> PCIe root port and downstream port to reset its downstream endpoint.
->>
->> Problem:
->> This patch solves the problem that kdump can fail when intel_iommu=on is
->> specified. When intel_iommu=on is specified, many dma-remapping errors
->> occur in second kernel and it causes problems like driver error or PCI
->> SERR, at last kdump fails. This problem is caused as follows.
->> 1) Devices are working on first kernel.
->> 2) Switch to second kernel(kdump kernel). The devices are still working
->>     and its DMA continues during this switch.
->> 3) iommu is initialized during second kernel boot and ongoing DMA causes
->>     dma-remapping errors.
->>
->> Solution:
->> All DMA transactions have to be stopped before iommu is initialized. By
->> this patch devices are reset and in-flight DMA is stopped before
->> pci_iommu_init.
->>
->> To invoke hot reset on an endpoint, its upstream link need to be reset.
->> reset_pcie_devices() is called from fs_initcall_sync, and it finds root
->> port/downstream port whose child is PCIe endpoint, and then reset link
->> between them. If the endpoint is VGA device, it is skipped because the
->> monitor blacks out if VGA controller is reset.
->>
->> Actually this is v8 patch but quite different from v7 and it's been so
->> long since previous post, so I start over again.
->> Previous post:
->> [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump
->> https://lkml.org/lkml/2012/11/26/814
->>
->> Signed-off-by: Takao Indoh<indou.takao@jp.fujitsu.com>
->> ---
->>   Documentation/kernel-parameters.txt |    2 +
->>   drivers/pci/pci.c                   |  103 +++++++++++++++++++++++++++++++++++
->>   2 files changed, 105 insertions(+), 0 deletions(-)
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index 4609e81..2a31ade 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -2250,6 +2250,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>   				any pair of devices, possibly at the cost of
->>   				reduced performance.  This also guarantees
->>   				that hot-added devices will work.
->> +		pcie_reset_devices	Reset PCIe endpoint on boot by hot
->> +				reset
->>   		cbiosize=nn[KMG]	The fixed amount of bus space which is
->>   				reserved for the CardBus bridge's IO window.
->>   				The default value is 256 bytes.
->> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->> index b099e00..42385c9 100644
->> --- a/drivers/pci/pci.c
->> +++ b/drivers/pci/pci.c
->> @@ -3878,6 +3878,107 @@ void __weak pci_fixup_cardbus(struct pci_bus *bus)
->>   }
->>   EXPORT_SYMBOL(pci_fixup_cardbus);
->>
->> +/*
->> + * Return true if dev is PCIe root port or downstream port whose child is PCIe
->> + * endpoint except VGA device.
->> + */
->> +static int __init need_reset(struct pci_dev *dev)
->> +{
->> +	struct pci_bus *subordinate;
->> +	struct pci_dev *child;
->> +
->> +	if (!pci_is_pcie(dev) || !dev->subordinate ||
->> +	    list_empty(&dev->subordinate->devices) ||
->> +	    ((pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT)&&
->> +	     (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM)))
->> +		return 0;
->> +
->> +	subordinate = dev->subordinate;
->> +	list_for_each_entry(child,&subordinate->devices, bus_list) {
->> +		if ((pci_pcie_type(child) == PCI_EXP_TYPE_UPSTREAM) ||
->> +		    (pci_pcie_type(child) == PCI_EXP_TYPE_PCI_BRIDGE) ||
->> +		    ((child->class>>  16) == PCI_BASE_CLASS_DISPLAY))
->> +			/* Don't reset switch, bridge, VGA device */
->> +			return 0;
->> +	}
->> +
->> +	return 1;
->> +}
->> +
->> +static void __init save_config(struct pci_dev *dev)
->> +{
->> +	struct pci_bus *subordinate;
->> +	struct pci_dev *child;
->> +
->> +	if (!need_reset(dev))
->> +		return;
->> +
->> +	subordinate = dev->subordinate;
->> +	list_for_each_entry(child,&subordinate->devices, bus_list) {
->> +		dev_info(&child->dev, "save state\n");
->> +		pci_save_state(child);
->> +	}
->> +}
->> +
->> +static void __init restore_config(struct pci_dev *dev)
->> +{
->> +	struct pci_bus *subordinate;
->> +	struct pci_dev *child;
->> +
->> +	if (!need_reset(dev))
->> +		return;
->> +
->> +	subordinate = dev->subordinate;
->> +	list_for_each_entry(child,&subordinate->devices, bus_list) {
->> +		dev_info(&child->dev, "restore state\n");
->> +		pci_restore_state(child);
->> +	}
->> +}
->> +
->> +static void __init do_device_reset(struct pci_dev *dev)
->> +{
->> +	u16 ctrl;
->> +
->> +	if (!need_reset(dev))
->> +		return;
->> +
->> +	dev_info(&dev->dev, "Reset Secondary bus\n");
->> +
->> +	/* Assert Secondary Bus Reset */
->> +	pci_read_config_word(dev, PCI_BRIDGE_CONTROL,&ctrl);
->> +	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
->> +	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
->> +
->> +	msleep(2);
->> +
->> +	/* De-assert Secondary Bus Reset */
->> +	ctrl&= ~PCI_BRIDGE_CTL_BUS_RESET;
->> +	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
->> +}
->> +
->> +static int __initdata pcie_reset_devices;
->> +static int __init reset_pcie_devices(void)
->> +{
->> +	struct pci_dev *dev = NULL;
->> +
->> +	if (!pcie_reset_devices)
->> +		return 0;
->> +
->> +	for_each_pci_dev(dev)
->> +		save_config(dev);
->> +
->> +	for_each_pci_dev(dev)
->> +		do_device_reset(dev);
->
-> So we do a reset on each root port or downstream port, but the PCI to
-> PCI bridge spec (1.2) states:
->
->          11.1.1. Secondary Reset Signal
->                  The secondary reset signal, RST#, is a logical OR of the
->                  primary interface RST# signal and
->                  the state of the Secondary Bus Reset bit of the Bridge
->                  Control register (see Section 3.2.5.18).
->
-> I read that to mean that in a legacy topology, doing a reset on the top
-> level bridge triggers a reset down the entire hierarchy.  How does this
-> apply to a PCIe topology?  Can we just do a reset on the top level root
-> ports?  If so, that would also imply that a reset propagates down
-On PCIe, a reset does not propagate down the tree (from upstream link to
-downstream link of a bridge/switch).
-> through PCIe-to-PCI bridges, so legacy PCI devices may be reset and the
-> option name is misleading.
->
-In earlier reply, I stated that the functions ought to be renamed to
-reflect their intentions: endpoint reset.
-It is not a reset-all-pci-devices interface, as it implies
+Hi!
 
-> Even so, you still have root complex endpoints, which are not getting
-> reset through this, so it's really not a complete solution.  Thanks,
->
-> Alex
->
->> +
->> +	msleep(1000);
->> +
->> +	for_each_pci_dev(dev)
->> +		restore_config(dev);
->> +
->> +	return 0;
->> +}
->> +fs_initcall_sync(reset_pcie_devices);
->> +
->>   static int __init pci_setup(char *str)
->>   {
->>   	while (str) {
->> @@ -3920,6 +4021,8 @@ static int __init pci_setup(char *str)
->>   				pcie_bus_config = PCIE_BUS_PEER2PEER;
->>   			} else if (!strncmp(str, "pcie_scan_all", 13)) {
->>   				pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
->> +			} else if (!strncmp(str, "pcie_reset_devices", 18)) {
->> +				pcie_reset_devices = 1;
->>   			} else {
->>   				printk(KERN_ERR "PCI: Unknown option `%s'\n",
->>   						str);
->
->
->
-> _______________________________________________
-> iommu mailing list
-> iommu@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+> >>>So I guess it should go through the timekeeping tree...?
+> >>I would prefer that, but we can also take it through arm-soc, it doesn't
+> >>really matter.
+> >I see no response from timekeeping people... so if you could take it,
+> >that would be great.
+> 
+> I don't think the original patch ever made it to my inbox.
+
+For some reason, I cced johnstul@us.ibm.com. (I guess
+get_maintainer.pl? But it seems to behave now.) Anyway, patch is
+below...
+
+It would be great if you could apply it... Thanks,
+							Pavel
+
+----
+
+It seems we made a mistake when creating dw_apb_timer_of.c:
+picoxcell sched_clock had parts that were not related to
+dw_apb_timer, yet we moved them to dw_apb_timer_of, and tried to
+use them on socfpga.
+
+This results in system where user/system time is not measured
+properly, as demonstrated by
+    
+    time dd if=/dev/urandom of=/dev/zero bs=100000 count=100
+    
+So this patch switches sched_clock to hardware that exists on both
+platforms, and adds missing of_node_put() in dw_apb_timer_init().
+    
+Signed-off-by: Pavel Machek <pavel@denx.de>
+Acked-by: Jamie Iles <jamie@jamieiles.com>
+
+diff --git a/arch/arm/mach-picoxcell/common.h b/arch/arm/mach-picoxcell/common.h
+index 481b42a..237fb3b 100644
+--- a/arch/arm/mach-picoxcell/common.h
++++ b/arch/arm/mach-picoxcell/common.h
+@@ -12,6 +12,4 @@
+ 
+ #include <asm/mach/time.h>
+ 
+-extern void dw_apb_timer_init(void);
+-
+ #endif /* __PICOXCELL_COMMON_H__ */
+diff --git a/drivers/clocksource/dw_apb_timer.c b/drivers/clocksource/dw_apb_timer.c
+index 8c2a35f..460ac99 100644
+--- a/drivers/clocksource/dw_apb_timer.c
++++ b/drivers/clocksource/dw_apb_timer.c
+@@ -21,12 +21,6 @@
+ #define APBT_MIN_PERIOD			4
+ #define APBT_MIN_DELTA_USEC		200
+ 
+-#define APBTMR_N_LOAD_COUNT		0x00
+-#define APBTMR_N_CURRENT_VALUE		0x04
+-#define APBTMR_N_CONTROL		0x08
+-#define APBTMR_N_EOI			0x0c
+-#define APBTMR_N_INT_STATUS		0x10
+-
+ #define APBTMRS_INT_STATUS		0xa0
+ #define APBTMRS_EOI			0xa4
+ #define APBTMRS_RAW_INT_STATUS		0xa8
+diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
+index ab09ed3..0fa3104 100644
+--- a/drivers/clocksource/dw_apb_timer_of.c
++++ b/drivers/clocksource/dw_apb_timer_of.c
+@@ -57,6 +57,15 @@ static void add_clockevent(struct device_node *event_timer)
+ 	dw_apb_clockevent_register(ced);
+ }
+ 
++static void __iomem *sched_io_base;
++
++/* This is actually same as __apbt_read_clocksource(), but with
++   different interface */
++static u32 read_sched_clock_sptimer(void)
++{
++	return ~__raw_readl(sched_io_base + APBTMR_N_CURRENT_VALUE);
++}
++
+ static void add_clocksource(struct device_node *source_timer)
+ {
+ 	void __iomem *iobase;
+@@ -71,41 +80,27 @@ static void add_clocksource(struct device_node *source_timer)
+ 
+ 	dw_apb_clocksource_start(cs);
+ 	dw_apb_clocksource_register(cs);
+-}
+ 
+-static void __iomem *sched_io_base;
+-
+-static u32 read_sched_clock(void)
+-{
+-	return __raw_readl(sched_io_base);
++	sched_io_base = iobase;
++	setup_sched_clock(read_sched_clock_sptimer, 32, rate);
+ }
+ 
+-static const struct of_device_id sptimer_ids[] __initconst = {
+-	{ .compatible = "picochip,pc3x2-rtc" },
++static const struct of_device_id osctimer_ids[] __initconst = {
++	{ .compatible = "picochip,pc3x2-timer" },
++	{ .compatible = "snps,dw-apb-timer-osc" },
+ 	{ .compatible = "snps,dw-apb-timer-sp" },
+-	{ /* Sentinel */ },
++	{  /* Sentinel */ },
+ };
+ 
+-static void init_sched_clock(void)
+-{
+-	struct device_node *sched_timer;
+-	u32 rate;
+-
+-	sched_timer = of_find_matching_node(NULL, sptimer_ids);
+-	if (!sched_timer)
+-		panic("No RTC for sched clock to use");
++/*
++   You don't have to use dw_apb_timer for scheduler clock,
++   this should also work fine on arm:
+ 
+-	timer_get_base_and_rate(sched_timer, &sched_io_base, &rate);
+-	of_node_put(sched_timer);
++  twd_local_timer_of_register();
++  arch_timer_of_register();                 
++  arch_timer_sched_clock_init();
++*/
+ 
+-	setup_sched_clock(read_sched_clock, 32, rate);
+-}
+-
+-static const struct of_device_id osctimer_ids[] __initconst = {
+-	{ .compatible = "picochip,pc3x2-timer" },
+-	{ .compatible = "snps,dw-apb-timer-osc" },
+-	{},
+-};
+ 
+ void __init dw_apb_timer_init(void)
+ {
+@@ -121,7 +116,6 @@ void __init dw_apb_timer_init(void)
+ 		panic("No timer for clocksource");
+ 	add_clocksource(source_timer);
+ 
++	of_node_put(event_timer);
+ 	of_node_put(source_timer);
+-
+-	init_sched_clock();
+ }
+diff --git a/include/linux/dw_apb_timer.h b/include/linux/dw_apb_timer.h
+index dd755ce..a64c987 100644
+--- a/include/linux/dw_apb_timer.h
++++ b/include/linux/dw_apb_timer.h
+@@ -17,6 +17,12 @@
+ #include <linux/clocksource.h>
+ #include <linux/interrupt.h>
+ 
++#define APBTMR_N_LOAD_COUNT		0x00
++#define APBTMR_N_CURRENT_VALUE		0x04
++#define APBTMR_N_CONTROL		0x08
++#define APBTMR_N_EOI			0x0c
++#define APBTMR_N_INT_STATUS		0x10
++
+ #define APBTMRS_REG_SIZE       0x14
+ 
+ struct dw_apb_timer {
+
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
 
