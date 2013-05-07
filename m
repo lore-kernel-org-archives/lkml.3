@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758946Ab3EGEM4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:12:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29703 "EHLO
+	id S1758904Ab3EGEMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:12:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27087 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932924Ab3EGD6q (ORCPT
+	with ESMTP id S932514Ab3EGD6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 23:58:46 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=raB0Mn4BeHgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=IppKSFhynL0A:10 a=QyXUC8HyAAAA:8 a=HmjiGiwDAAAA:8 a=VwQbUJbxAAAA:8 a=UOpjjlpZozkG-P3uORQA:9 a=italRXllwh8A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=BmrcGei1N7oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=cqPL34UvuKEA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=cm27Pg_UAAAA:8 a=oGMlB6cnAAAA:8 a=QyXUC8HyAAAA:8 a=UOpjjlpZozkG-P3uORQA:9 a=jEp0ucaQiEUA:10 a=zv9_9hqRWm8A:10 a=CY6gl2JlH4YA:10 a=jeBq3FmKZ4MA:10 a=g47H-S6DKWrq1WH8:21 a=ilVFhMu8VF5Bw45O:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035842.071907452@goodmis.org>
+Message-Id: <20130507035844.600903953@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:57:19 -0400
+Date: Mon, 06 May 2013 23:57:34 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Mark Jackson <mpfj-list@mimc.co.uk>
-Subject: [007/126] UBIFS: make space fixup work in the remount case
+Cc: Paul Moore <pmoore@redhat.com>, Will Drewry <wad@chromium.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [022/126] x86: remove the x32 syscall bitmask from syscall_get_nr()
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0007-UBIFS-make-space-fixup-work-in-the-remount-case.patch
+Content-Disposition: inline; filename=0022-x86-remove-the-x32-syscall-bitmask-from-syscall_get_.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,69 +31,66 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Paul Moore <pmoore@redhat.com>
 
-[ Upstream commit 67e753ca41782913d805ff4a8a2b0f60b26b7915 ]
+[ Upstream commit 8b4b9f27e57584f3d90e0bb84cf800ad81cfe3a1 ]
 
-The UBIFS space fixup is a useful feature which allows to fixup the "broken"
-flash space at the time of the first mount. The "broken" space is usually the
-result of using a "dumb" industrial flasher which is not able to skip empty
-NAND pages and just writes all 0xFFs to the empty space, which has grave
-side-effects for UBIFS when UBIFS trise to write useful data to those empty
-pages.
+Commit fca460f95e928bae373daa8295877b6905bc62b8 simplified the x32
+implementation by creating a syscall bitmask, equal to 0x40000000, that
+could be applied to x32 syscalls such that the masked syscall number
+would be the same as a x86_64 syscall.  While that patch was a nice
+way to simplify the code, it went a bit too far by adding the mask to
+syscall_get_nr(); returning the masked syscall numbers can cause
+confusion with callers that expect syscall numbers matching the x32
+ABI, e.g. unmasked syscall numbers.
 
-The fix-up feature works roughly like this:
-1. mkfs.ubifs sets the fixup flag in UBIFS superblock when creating the image
-   (see -F option)
-2. when the file-system is mounted for the first time, UBIFS notices the fixup
-   flag and re-writes the entire media atomically, which may take really a lot
-   of time.
-3. UBIFS clears the fixup flag in the superblock.
+This patch fixes this by simply removing the mask from syscall_get_nr()
+while preserving the other changes from the original commit.  While
+there are several syscall_get_nr() callers in the kernel, most simply
+check that the syscall number is greater than zero, in this case this
+patch will have no effect.  Of those remaining callers, they appear
+to be few, seccomp and ftrace, and from my testing of seccomp without
+this patch the original commit definitely breaks things; the seccomp
+filter does not correctly filter the syscalls due to the difference in
+syscall numbers in the BPF filter and the value from syscall_get_nr().
+Applying this patch restores the seccomp BPF filter functionality on
+x32.
 
-This works fine when the file system is mounted R/W for the very first time.
-But it did not really work in the case when we first mount the file-system R/O,
-and then re-mount R/W. The reason was that we started the fixup procedure too
-late, which we cannot really do because we have to fixup the space before it
-starts being used.
+I've tested this patch with the seccomp BPF filters as well as ftrace
+and everything looks reasonable to me; needless to say general usage
+seemed fine as well.
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reported-by: Mark Jackson <mpfj-list@mimc.co.uk>
-Cc: stable@vger.kernel.org # 3.0+
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Link: http://lkml.kernel.org/r/20130215172143.12549.10292.stgit@localhost
+Cc: <stable@vger.kernel.org>
+Cc: Will Drewry <wad@chromium.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- fs/ubifs/super.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/syscall.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
-index 71a197f..c39f275 100644
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -1576,6 +1576,12 @@ static int ubifs_remount_rw(struct ubifs_info *c)
- 	c->remounting_rw = 1;
- 	c->ro_mount = 0;
+diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
+index 1ace47b..2e188d6 100644
+--- a/arch/x86/include/asm/syscall.h
++++ b/arch/x86/include/asm/syscall.h
+@@ -29,13 +29,13 @@ extern const unsigned long sys_call_table[];
+  */
+ static inline int syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
+ {
+-	return regs->orig_ax & __SYSCALL_MASK;
++	return regs->orig_ax;
+ }
  
-+	if (c->space_fixup) {
-+		err = ubifs_fixup_free_space(c);
-+		if (err)
-+			return err;
-+	}
-+
- 	err = check_free_space(c);
- 	if (err)
- 		goto out;
-@@ -1692,12 +1698,6 @@ static int ubifs_remount_rw(struct ubifs_info *c)
- 		err = dbg_check_space_info(c);
- 	}
+ static inline void syscall_rollback(struct task_struct *task,
+ 				    struct pt_regs *regs)
+ {
+-	regs->ax = regs->orig_ax & __SYSCALL_MASK;
++	regs->ax = regs->orig_ax;
+ }
  
--	if (c->space_fixup) {
--		err = ubifs_fixup_free_space(c);
--		if (err)
--			goto out;
--	}
--
- 	mutex_unlock(&c->umount_mutex);
- 	return err;
- 
+ static inline long syscall_get_error(struct task_struct *task,
 -- 
 1.7.10.4
 
