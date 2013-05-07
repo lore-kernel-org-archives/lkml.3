@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab3EGXgf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 19:36:35 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:49801 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab3EGXgd (ORCPT
+	id S1754767Ab3EGXqX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 19:46:23 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58527 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752123Ab3EGXqW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 19:36:33 -0400
+	Tue, 7 May 2013 19:46:22 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/2] regulator: support operating mode in the device
+ tree structure
+Thread-Topic: [PATCH 1/2] regulator: support operating mode in the device
+ tree structure
+Thread-Index: Ac5LJBJM/oddlFLaRlaDBPM6ywYW8///qt2A//8JIlA=
+Date: Tue, 7 May 2013 23:46:12 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E5C9C8@DQHE06.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F82E5C95D@DQHE06.ent.ti.com>
+ <20130507160431.GV7478@sirena.org.uk>
+In-Reply-To: <20130507160431.GV7478@sirena.org.uk>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <51898BDD.90705@zytor.com>
-References: <51884263.4020608@zytor.com> <CA+55aFzwjQ03ZA71rgKMhCqh_+1fcMbPJUK3upcOacX2F8+Z9A@mail.gmail.com>
- <51898B87.9020005@mit.edu> <51898BDD.90705@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 7 May 2013 16:36:13 -0700
-Message-ID: <CALCETrVMwbFbAo1OHtuuAKstTG9S-v78taNh4b_AUtwnUmdYfA@mail.gmail.com>
-Subject: Re: The type of bitops
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 7, 2013 at 4:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/07/2013 04:17 PM, Andy Lutomirski wrote:
->>
->> The one and only time I tried to use this, I thought this was odd.  Long
->> has a different size on 32 vs 64 bit architectures, and bit ops seem
->> like they'd want to be the same size everywhere so you can allocate the
->> appropriate number of bits.  (Also, if you only want 32 bits, you have
->> to do some evil cheating, and I don't trust casting int* to long* on
->> big-endian architectures.)
->>
->> Would offering a u32* option make sense?
->>
->
-> Honestly, the only thing that makes sense on bigendian architectures is
-> either byte-by-byte elements or counting bit numbers from the MSB, but
-> that is serious water under the bridge at this point...
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@kernel.org]
+> Sent: Wednesday, May 08, 2013 1:05 AM
+> To: Kim, Milo
+> Cc: Liam Girdwood; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 1/2] regulator: support operating mode in the
+> device tree structure
+> 
+> On Tue, May 07, 2013 at 01:09:14PM +0000, Kim, Milo wrote:
+> > For better power efficiency, regulator subsystem provides operating
+> mode.
+> > (fast, normal, idle and standby)
+> > The operating mode is selective by a regulator consumer.
+> >
+> > With this patch, regulator operating mode can be set in the DT
+> structure.
+> > If any operating mode is configured, then 'valid_ops_mask' should be
+> set with
+> > REGULATOR_CHANGE_MODE.
+> 
+> It's not clear to me that these modes are a useful thing to be exposing
+> in device tree - they've always been rather arbatrary and are becoming
+> less and less relevant as regulator hardware improves in its ability to
+> adapt to load.  I think for fixed modes that don't vary dynamically at
+> runtime the best thing is just to make the modes custom so they map
+> onto
+> the device datasheets clearly.  That seems to be most of the usage
+> anyway.
 
-Sure... but would some important data structure that only need 32 bits
-get shorter if there were 32-bit bitops?
+I agree the operating mode depends on the device.
 
---Andy
+It's my intention to guarantee same operations in the DT as the regulator
+constraints in the platform side.
+In case a regulator has specific 'valid_modes_mask', the operating mode is 
+unable to be set with the device tree.
+For some regulator drivers such as LP8720/5 and LP8788, this patch would be
+useful because there is no difference between configuration in the platform side
+ and the device tree.
+
+Thanks,
+Milo
+
