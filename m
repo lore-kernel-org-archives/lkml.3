@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab3EGRU2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 13:20:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60705 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753720Ab3EGRU0 (ORCPT
+	id S1753766Ab3EGRV7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 13:21:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59313 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752841Ab3EGRV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 13:20:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PULL] ARM: Third batch of arm-soc changes for 3.10
-Date: Tue, 7 May 2013 19:19:53 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: ARM SoC <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <1367942534-2934003-1-git-send-email-arnd@arndb.de> <CA+55aFwMXmJ9V+3o62ELm-0NT1DaUCTvidmAhJSXzQcTMfJygA@mail.gmail.com>
-In-Reply-To: <CA+55aFwMXmJ9V+3o62ELm-0NT1DaUCTvidmAhJSXzQcTMfJygA@mail.gmail.com>
+	Tue, 7 May 2013 13:21:57 -0400
+Message-ID: <51893811.8080102@infradead.org>
+Date: Tue, 07 May 2013 10:21:21 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anton Vorontsov <cbou@mail.ru>, Rodolfo Giometti <giometti@linux.it>
+Subject: Re: linux-next: Tree for May 7 (bq27x00_battery)
+References: <20130507134922.981483ab1e5cb09e5543a6cc@canb.auug.org.au>
+In-Reply-To: <20130507134922.981483ab1e5cb09e5543a6cc@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201305071919.53353.arnd@arndb.de>
-X-Provags-ID: V02:K0:xzLyGrZA1Fnw/XDMrOxhrz/4dSfODVt2+5m/YQp4/ah
- JvMBevuBngmJj6V/MW7X41IZm4l3FwnrDo3bCFTHDOgwAAQRTU
- fZDC+JzSKrZls/j22Yy0ghmQK1JQy+DjafJWaWFkDwSBUsWUJo
- DJB1PexyNsK5G4iJM/mn9A62VyzPKwRl5TOcDDvrpcIN4xPMjb
- 0S/HeVhE/n3pwZBuwXjQfWIxkDkzCh5JC5+ioBpeFn6I9nf/6i
- 1FD7iqEWD/m5eKJ9ZfGgIpQGORQcFnEEm5VJHvZbLzFwOtGrwM
- H/8aSzGh+mLU9uVkf6i3uM0ruvp4SLh9ZSqDpoGhh9t5A/gr+D
- nGXaQvWVupNK4cjGBeAc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 07 May 2013, Linus Torvalds wrote:
-> On Tue, May 7, 2013 at 9:02 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >
-> > I used a new script to create the pull requests this time, hope
-> > I got it right now.
+On 05/06/13 20:49, Stephen Rothwell wrote:
+> Hi all,
 > 
-> So you seem to have blasted this series out with that automated
-> script, so they all got sent basically at the same timestamp, and they
-> are in the wrong order in my mailbox because email isn't that ordered.
-
-Yep, I'm very sorry about that. The old script I used had been a bit
-fragile so I stopped using it for the last few merge windows
-but tried something simpler this time. I had the sequence numbers
-in the script but forgot to actually write them out in the subject.
-
-> Of course, when there aren't any dependencies between pull requests,
-> and the ordering doesn't matter, this isn't an issue. And *most* of
-> the time you either have sent out emails by hand (and there's been
-> that human delay and they arrived in the right order) or I've just
-> been lucky.
-
-I think it's the first time I made /this/ mistake, they were always
-numbered in the past, and usually also had distinct time stamps.
- 
-> Quite frankly, I'm not going to bother guessing after the first one I
-> took was clearly not the right one and gave the wrong diffstat etc, so
-> they are all thrown down the toilet.
+> Please do not add any v3.11 destined work to your linux-next included
+> branches until after v3.10-rc1 is released.
 > 
-> Nothing pulled.
+> I am receiving a (un)reasonable number of conflicts from there being
+> multiple copies of some commits in various trees.   Please clean this up
+> and resist the temptataion to rebase your trees on the way to your
+> upstream ...
+> 
+> Changes since 20130506:
+> 
 
-Yes, of course. It was an obvious mistake and I would have rejected
-it the same way coming from my downstream maintainers. Sorry about
-bothering you with this and your lenghty reply. I hope you don't
-mind the contents, and I'll follow up with the same pull requests
-again, using sequence numbers.
+on x86_64:
 
-	Arnd
+drivers/built-in.o: In function `bq27x00_read_i2c':
+bq27x00_battery.c:(.text+0x169e20): undefined reference to `i2c_transfer'
+bq27x00_battery.c:(.text+0x169e44): undefined reference to `i2c_transfer'
+drivers/built-in.o: In function `bq27x00_battery_init':
+bq27x00_battery.c:(.init.text+0x82af): undefined reference to `i2c_register_driver'
+drivers/built-in.o: In function `bq27x00_battery_exit':
+bq27x00_battery.c:(.exit.text+0xd8f): undefined reference to `i2c_del_driver'
 
+
+when CONFIG_I2C=m and CONFIG_BATTERY_BQ27X00_I2C=y.
+
+
+-- 
+~Randy
