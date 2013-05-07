@@ -1,163 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab3EGFlq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 01:41:46 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:35942 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab3EGFlo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 01:41:44 -0400
+	id S1756354Ab3EGFoE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 01:44:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54240 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751467Ab3EGFoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 01:44:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,625,1363158000"; 
+   d="scan'208";a="309358215"
+Message-ID: <51889498.8090409@intel.com>
+Date: Tue, 07 May 2013 13:43:52 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1367665951-29848-2-git-send-email-manishv.b@ti.com>
-References: <1367665951-29848-1-git-send-email-manishv.b@ti.com> <1367665951-29848-2-git-send-email-manishv.b@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 7 May 2013 11:11:21 +0530
-Message-ID: <CA+V-a8ty3CEz5QZKkphD=_Hyjet31Ya59H9nW1nDd1Y1asRbmw@mail.gmail.com>
-Subject: Re: [PATCH V2 1/2] tps6507x-ts: Add DT support
-To: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-input@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        grant.likely@secretlab.ca, dmitry.torokhov@gmail.com, rob@landley.net,
-        rob.herring@calxeda.com
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: Paul Turner <pjt@google.com>, Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v5 7/7] sched: consider runnable load average in effective_load
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-8-git-send-email-alex.shi@intel.com> <518724D1.9040006@linux.vnet.ibm.com> <51874229.8050202@intel.com> <5187609C.5050209@linux.vnet.ibm.com> <518763B0.30200@intel.com> <51876AFE.80906@linux.vnet.ibm.com> <CAPM31RK-N=Cnt3cBo1f6er6TewQJKY+fgdj9QHvKziHe+TxTxw@mail.gmail.com> <51877970.8010303@intel.com> <51877EF8.20504@linux.vnet.ibm.com>
+In-Reply-To: <51877EF8.20504@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Manish,
+On 05/06/2013 05:59 PM, Preeti U Murthy wrote:
+> Suggestion1: Would change the CPU share calculation to use runnable load
+> average all the time.
+> 
+> Suggestion2: Did opposite of point 2 above,it used runnable load average
+> while calculating the CPU share *before* a new task has been woken up
+> while it retaining the instantaneous weight to calculate the CPU share
+> after a new task could be woken up.
+> 
+> So since there was no uniformity in the calculation of CPU shares in
+> approaches 2 and 3, I think it caused a regression. However I still
+> don't understand how approach 4-Suggestion2 made that go away although
+> there was non-uniformity in the CPU shares calculation.
+> 
+> But as Paul says we could retain the usage of instantaneous loads
+> wherever there is calculation of CPU shares for the reason he mentioned
+> and leave effective_load() and calc_cfs_shares() untouched.
+> 
+> This also brings forth another question,should we modify wake_affine()
+> to pass the runnable load average of the waking up task to effective_load().
+> 
+> What do you think?
 
-Thanks for the patch, below are few nits.
+I am not Paul. :)
 
-On Sat, May 4, 2013 at 4:42 PM, Vishwanathrao Badarkhe, Manish
-<manishv.b@ti.com> wrote:
-> Add device tree based support for TI's tps6507x touchscreen.
-[Snip]
+The acceptable patch of pgbench attached. In fact, since effective_load is mixed 
+with direct load and tg's runnable load. the patch looks no much sense.
+So, I am going to agree to drop it if there is no performance benefit on my benchmarks.
 
-> +- tsc: This node specifies touch screen data.
-> +       ti,poll_period : Time at which touch input is getting sampled in ms.
-> +       ti,min_pressure: Minimum pressure value to trigger touch.
-For devicetree properties '-' is preferred over '_'.
+---
 
-> +       ti,vref        : voltage reference for ADC.
-> +                     0: Reference voltage for ADC is disabled.
-> +                     1: Reference voltage for ADC is enabled.
->
->  Regulator Optional properties:
->  - defdcdc_default: It's property of DCDC2 and DCDC3 regulators.
-> @@ -30,6 +40,14 @@ Regulator Optional properties:
->                         1: If defdcdc pin of DCDC2/DCDC3 is driven HIGH.
->    If this property is not defined, it defaults to 0 (not enabled).
->
-> +Touchscreen Optional properties:
-> +- ti,vendor : Touchscreen vendor id to poppulate
-> +             in sysclass interface.
-> +- ti,product: Touchscreen product id to poppulate
-> +             in sysclass interface.
-> +- ti,version: Touchscreen version id to poppulate
-> +             in sysclass interface.
-> +
-s/poppulate/populate
+>From f58519a8de3cebb7a865c9911c00dce5f1dd87f2 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Fri, 3 May 2013 13:29:04 +0800
+Subject: [PATCH 7/7] sched: consider runnable load average in effective_load
 
->  Example:
->
->         pmu: tps6507x@48 {
-> @@ -88,4 +106,12 @@ Example:
->                         };
->                 };
->
-> +               tsc {
-> +                       ti,poll_period = <30>;
-> +                       ti,min_pressure = <0x30>;
-> +                       ti,vref = <0>;
-> +                       ti,vendor = <0>;
-> +                       ti,product = <65070>;
-> +                       ti,version = <0x100>;
-> +               };
->         };
-> diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/touchscreen/tps6507x-ts.c
-> index 65e0f9a..d5433d0 100644
-> --- a/drivers/input/touchscreen/tps6507x-ts.c
-> +++ b/drivers/input/touchscreen/tps6507x-ts.c
-> @@ -21,6 +21,8 @@
->  #include <linux/mfd/tps6507x.h>
->  #include <linux/input/tps6507x-ts.h>
->  #include <linux/delay.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
->
->  #define TSC_DEFAULT_POLL_PERIOD 30 /* ms */
->  #define TPS_DEFAULT_MIN_PRESSURE 0x30
-> @@ -231,36 +233,83 @@ done:
->         ret = tps6507x_adc_standby(tsc);
->  }
->
-> +static int tsc_init_data(struct tps6507x_dev *tps6507x_dev,
-> +               struct input_dev *input_dev)
-> +{
-> +       struct device_node *node = tps6507x_dev->dev->of_node;
-> +       struct tps6507x_board *tps_board =
-> +               (struct tps6507x_board *)tps6507x_dev->dev->platform_data;
-> +       struct touchscreen_init_data *init_data = NULL;
-> +       u32 val32;
-> +       int err;
-> +
-> +       if (node)
-> +               node = of_find_node_by_name(node, "tsc");
-> +       if (tps_board)
-> +               init_data = tps_board->tps6507x_ts_init_data;
-> +
-> +       if (init_data) {
-> +               tps6507x_dev->ts->poll_period = init_data->poll_period;
-> +               tps6507x_dev->ts->min_pressure = init_data->min_pressure;
-> +               tps6507x_dev->ts->vref = init_data->vref;
-> +               input_dev->id.vendor = init_data->vendor;
-> +               input_dev->id.product = init_data->product;
-> +               input_dev->id.version = init_data->version;
-> +       } else if (node) {
-> +               err = of_property_read_u32(node, "ti,poll_period", &val32);
-why not pass tps6507x_dev->ts->poll_period instead of val32 and similarly
-below that would avoid else case.
+effective_load calculates the load change as seen from the
+root_task_group. It needs to engage the runnable average
+of changed task.
 
-> +               if (err < 0)
-> +                       goto error_ret;
-> +               else
-> +                       tps6507x_dev->ts->poll_period = val32;
-> +
-> +               err = of_property_read_u32(node, "ti,min_pressure", &val32);
-> +               if (err < 0)
-> +                       goto error_ret;
-> +               else
-> +                       tps6507x_dev->ts->min_pressure = val32;
-> +
-> +               err = of_property_read_u32(node, "ti,vref", &val32);
-> +               if (err < 0)
-> +                       goto error_ret;
-> +               else
-> +                       tps6507x_dev->ts->vref = val32;
-> +
-> +               err = of_property_read_u32(node, "ti,vendor", &val32);
-> +               if (err < 0)
-> +                       goto error_ret;
-> +               else
-> +                       input_dev->id.vendor = val32;
-> +
-> +               err = of_property_read_u32(node, "ti,product", &val32);
-> +               if (err < 0)
-> +                       goto error_ret;
-> +               else
-> +                       input_dev->id.product = val32;
-> +
-> +               err = of_property_read_u32(node, "ti,version", &val32);
-> +               if (err < 0)
-> +                       goto error_ret;
-> +               else
-> +                       input_dev->id.version = val32;
-> +       } else {
-> +               err = -EINVAL;
-> +               goto error_ret;
-> +       }
-you can move this check at the top when both are NULL.
+Thanks for Morten Rasmussen and PeterZ's reminder of this.
 
-Regards,
---Prabhakar Lad
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ kernel/sched/fair.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index ca0e051..b683909 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2980,15 +2980,15 @@ static void task_waking_fair(struct task_struct *p)
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ /*
+- * effective_load() calculates the load change as seen from the root_task_group
++ * effective_load() calculates load avg change as seen from the root_task_group
+  *
+  * Adding load to a group doesn't make a group heavier, but can cause movement
+  * of group shares between cpus. Assuming the shares were perfectly aligned one
+  * can calculate the shift in shares.
+  *
+- * Calculate the effective load difference if @wl is added (subtracted) to @tg
+- * on this @cpu and results in a total addition (subtraction) of @wg to the
+- * total group weight.
++ * Calculate the effective load avg difference if @wl is added (subtracted) to
++ * @tg on this @cpu and results in a total addition (subtraction) of @wg to the
++ * total group load avg.
+  *
+  * Given a runqueue weight distribution (rw_i) we can compute a shares
+  * distribution (s_i) using:
+@@ -3002,7 +3002,7 @@ static void task_waking_fair(struct task_struct *p)
+  *   rw_i = {   2,   4,   1,   0 }
+  *   s_i  = { 2/7, 4/7, 1/7,   0 }
+  *
+- * As per wake_affine() we're interested in the load of two CPUs (the CPU the
++ * As per wake_affine() we're interested in load avg of two CPUs (the CPU the
+  * task used to run on and the CPU the waker is running on), we need to
+  * compute the effect of waking a task on either CPU and, in case of a sync
+  * wakeup, compute the effect of the current task going to sleep.
+@@ -3012,20 +3012,20 @@ static void task_waking_fair(struct task_struct *p)
+  *
+  *   s'_i = (rw_i + @wl) / (@wg + \Sum rw_j)				(2)
+  *
+- * Suppose we're interested in CPUs 0 and 1, and want to compute the load
++ * Suppose we're interested in CPUs 0 and 1, and want to compute the load avg
+  * differences in waking a task to CPU 0. The additional task changes the
+  * weight and shares distributions like:
+  *
+  *   rw'_i = {   3,   4,   1,   0 }
+  *   s'_i  = { 3/8, 4/8, 1/8,   0 }
+  *
+- * We can then compute the difference in effective weight by using:
++ * We can then compute the difference in effective load avg by using:
+  *
+  *   dw_i = S * (s'_i - s_i)						(3)
+  *
+  * Where 'S' is the group weight as seen by its parent.
+  *
+- * Therefore the effective change in loads on CPU 0 would be 5/56 (3/8 - 2/7)
++ * Therefore the effective change in load avg on CPU 0 would be 5/56 (3/8 - 2/7)
+  * times the weight of the group. The effect on CPU 1 would be -4/56 (4/8 -
+  * 4/7) times the weight of the group.
+  */
+@@ -3070,7 +3070,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
+ 		/*
+ 		 * wl = dw_i = S * (s'_i - s_i); see (3)
+ 		 */
+-		wl -= se->load.weight;
++		wl -= se->avg.load_avg_contrib;
+ 
+ 		/*
+ 		 * Recursively apply this logic to all parent groups to compute
+@@ -3116,14 +3116,14 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 	 */
+ 	if (sync) {
+ 		tg = task_group(current);
+-		weight = current->se.load.weight;
++		weight = current->se.avg.load_avg_contrib;
+ 
+ 		this_load += effective_load(tg, this_cpu, -weight, -weight);
+ 		load += effective_load(tg, prev_cpu, 0, -weight);
+ 	}
+ 
+ 	tg = task_group(p);
+-	weight = p->se.load.weight;
++	weight = p->se.avg.load_avg_contrib;
+ 
+ 	/*
+ 	 * In low-load situations, where prev_cpu is idle and this_cpu is idle
+-- 
+1.7.12
+
+-- 
+Thanks
+    Alex
