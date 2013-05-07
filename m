@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732Ab3EGLEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 07:04:21 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:54433 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754718Ab3EGLET (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 07:04:19 -0400
-Date: Tue, 7 May 2013 13:04:15 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, Andi Kleen <andi@firstfloor.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/2] perf, x86: Don't allow unusual PEBS raw flags
-Message-ID: <20130507110415.GA20999@gmail.com>
-References: <1366844694-2770-1-git-send-email-andi@firstfloor.org>
- <1366844694-2770-2-git-send-email-andi@firstfloor.org>
- <20130502073720.GH7521@dyad.programming.kicks-ass.net>
- <CABPqkBQb23aJJXhrnYOOG+RWZgfVfyAFS+ksAKxczVOqjtricQ@mail.gmail.com>
- <20130506185226.GA17723@dyad.programming.kicks-ass.net>
- <CABPqkBREmUfuPBvCvBF+4YNvzfuqgDffVvfUFE5_w6Yx88mBZQ@mail.gmail.com>
- <20130507064804.GE17705@gmail.com>
- <20130507084803.GD9688@dyad.programming.kicks-ass.net>
+	id S1756354Ab3EGLF0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 07:05:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:2209 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755030Ab3EGLFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 07:05:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,627,1363158000"; 
+   d="scan'208";a="309499044"
+Message-ID: <5188DFEF.6010403@intel.com>
+Date: Tue, 07 May 2013 19:05:19 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130507084803.GD9688@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Morten Rasmussen <morten.rasmussen@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 3/7] sched: set initial value of runnable avg for new
+ forked task
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-4-git-send-email-alex.shi@intel.com> <CAPM31RJg7t8f1H-dZwzP1c-0HHb_=8twidX74gS2NfyQhHUhCw@mail.gmail.com> <5187760D.8060900@intel.com> <CAPM31RKiCfSZ=hJ9P7WOH6AC8uj6b06mEM6K0WCTYXC7OJAq7A@mail.gmail.com> <51886460.3020009@intel.com> <CAPM31RLsip-PMY73oq58gyi42EQ+-upmPpMQFkukVBX6LTwtCw@mail.gmail.com> <20130507095715.GE4068@e103034-lin>
+In-Reply-To: <20130507095715.GE4068@e103034-lin>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/07/2013 05:57 PM, Morten Rasmussen wrote:
+> Agree. The tracked load of new tasks is often very unstable during first
+> couple of ms on loaded systems. I'm not sure if 1024 is the right
+> initial value. It may need to be larger.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Maybe Peter can give a better value according to the experience on
+scheduler. :)
 
-> On Tue, May 07, 2013 at 08:48:05AM +0200, Ingo Molnar wrote:
-> > Also, this code only runs when the event is set up, so a bit of sanity 
-> > checking can only help, right?
-> 
-> Nah, its all very circumspect. In fact; while what Andi states is 'true':
-> 
-> > documentation in the Intel SDM 18.6.1.1 states:
-> >
-> > """
-> > PEBS events are only valid when the following fields of IA32_PERFEVTSELx are all
-> > zero: AnyThread, Edge, Invert, CMask.
-> > """
-> 
-> It is also true that Intel themselves gave us events that contradict this; look
-> at the intel_pebs_aliases*() functions.
->
-> This patch would make it impossible to manually create those events.
-
-I missed that bit of obfuscation ...
-
-> Further, there's something entirely different behind this.
-
-Ok, I agree with you, this needs to be fully explained.
-
-Thanks,
-
-	Ingo
+-- 
+Thanks
+    Alex
