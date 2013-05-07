@@ -1,129 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab3EGAur (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 20:50:47 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:35247 "EHLO hydra.sisk.pl"
+	id S932148Ab3EGAup (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:50:45 -0400
+Received: from gate.crashing.org ([63.228.1.57]:36246 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759146Ab3EGAun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758122Ab3EGAun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 20:50:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        Len Brown <lenb@kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 2/2 v2, RFC] Driver core: Introduce offline/online callbacks for memory blocks
-Date: Tue, 07 May 2013 02:59:05 +0200
-Message-ID: <1809544.1r1JBXrr0i@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130506162812.GB4929@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <19540491.PRsM4lKIYM@vostro.rjw.lan> <20130506162812.GB4929@dhcp-192-168-178-175.profitbricks.localdomain>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Message-ID: <1367887826.4484.2.camel@pasglop>
+Subject: Re: [PATCH 1/2] PCI: Split pci_assign_unassigned_resources to per
+ root bus
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 07 May 2013 10:50:26 +1000
+In-Reply-To: <1367882130-19452-1-git-send-email-yinghai@kernel.org>
+References: <1367882130-19452-1-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 06, 2013 06:28:12 PM Vasilis Liaskovitis wrote:
-> Hi,
+On Mon, 2013-05-06 at 16:15 -0700, Yinghai Lu wrote:
+> BenH reported that there is some assign unassigned resource problem
+> in powerpc.
 > 
-> On Sat, May 04, 2013 at 01:21:16PM +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Introduce .offline() and .online() callbacks for memory_subsys
-> > that will allow the generic device_offline() and device_online()
-> > to be used with device objects representing memory blocks.  That,
-> > in turn, allows the ACPI subsystem to use device_offline() to put
-> > removable memory blocks offline, if possible, before removing
-> > memory modules holding them.
-> > 
-> > The 'online' sysfs attribute of memory block devices will attempt to
-> > put them offline if 0 is written to it and will attempt to apply the
-> > previously used online type when onlining them (i.e. when 1 is
-> > written to it).
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/base/memory.c  |  105 +++++++++++++++++++++++++++++++++++++------------
-> >  include/linux/memory.h |    1 
-> >  2 files changed, 81 insertions(+), 25 deletions(-)
-> >
-> [...]
+> It turns out after
+> | commit 0c5be0cb0edfe3b5c4b62eac68aa2aa15ec681af
+> | Date:   Thu Feb 23 19:23:29 2012 -0800
+> |
+> |    PCI: Retry on IORESOURCE_IO type allocations
 > 
-> > @@ -686,10 +735,16 @@ int offline_memory_block(struct memory_b
-> >  {
-> >  	int ret = 0;
-> >  
-> > +	lock_device_hotplug();
-> >  	mutex_lock(&mem->state_mutex);
-> > -	if (mem->state != MEM_OFFLINE)
-> > -		ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
-> > +	if (mem->state != MEM_OFFLINE) {
-> > +		ret = __memory_block_change_state_uevent(mem, MEM_OFFLINE,
-> > +							 MEM_ONLINE, -1);
-> > +		if (!ret)
-> > +			mem->dev.offline = true;
-> > +	}
-> >  	mutex_unlock(&mem->state_mutex);
-> > +	unlock_device_hotplug();
+> even the root bus does not have io port range, it will keep retrying
+> to realloc with mmio.
 > 
-> (Testing with qemu...)
+> Current retry logic is : try with must+optional at first, and if
+> it fails will try must then try to extend must with optional.
+> That will fail as mmio-non-pref and mmio-pref for bridge will
+> be next to each other. So we have no chance to extend mmio-non-pref.
 
-Thanks!
+Shouldn't you do completely separate passes for IO and MMIO through the
+whole lot instead since they are completely separate address spaces ?
 
-> offline_memory_block is called from remove_memory, which in turn is called from
-> acpi_memory_device_remove (detach operation) during acpi_bus_trim. We already
-> hold the device_hotplug lock when we trim (acpi_scan_hot_remove), so we
-> don't need to lock/unlock_device_hotplug in offline_memory_block.
+IE. Even a legit setup with IOs, in case of failures on the IO side
+(resource exhaustion, FW bugs, ...) we shouldn't retry the memory side
+and vice-versa.
 
-Indeed.
+Note that I'm a bit worried by how invasive your proposed patch is. I
+will let Gavin test it and if it works I'm happy but keep in mind that I
+really need that fixed in 3.10 ... (especially since there are noises
+around about a certain enterprise distro using that version...)
 
-First, it looks like offline_memory_block_cb() is the only place calling
-offline_memory_block(), is that right?  I'm wondering if it would make
-sense to use device_offline() in there and remove offline_memory_block()
-entirely?
-
-Second, if you ran into this issue during testing, that would mean that patch
-[1/2] actually worked for you, which would be nice. :-)  Was that really the
-case?
-
-> A more general issue is that there are now two memory offlining efforts:
-> 
-> 1) from acpi_bus_offline_companions during device offline
-> 2) from mm: remove_memory during device detach (offline_memory_block_cb)
-> 
-> The 2nd is only called if the device offline operation was already succesful, so
-> it seems ineffective or redundant now, at least for x86_64/acpi_memhotplug machine
-> (unless the blocks were re-onlined in between).
-
-Sure, and that should be OK for now.  Changing the detach behavior is not
-essential from the patch [2/2] perspective, we can do it later.
-
-> On the other hand, the 2nd effort has some more intelligence in offlining, as it
-> tries to offline twice in the precense of memcg, see commits df3e1b91 or
-> reworked 0baeab16. Maybe we need to consolidate the logic.
-
-Hmm.  Perhaps it would make sense to implement that logic in
-memory_subsys_offline(), then?
-
-> remove_memory is called from device_detach, during trim that can't fail, so it
-> should not fail. However this function can still fail in 2 cases:
-> - offline_memory_block_cb
-> - is_memblock_offlined_cb
-> in the case of re-onlined memblocks in between device-offline and device detach.
-> This seems possible I think, since we do not hold lock_memory_hotplug for the
-> duration of the hot-remove operation.
-
-But we do hold device_hotplug_lock, so every code path that may race with
-acpi_scan_hot_remove() needs to take device_hotplug_lock as well.  Now,
-question is whether or not there are any code paths like that calling one of
-the two functions above without holding device_hotplug_lock?
-
-Rafael
+Cheers,
+Ben.
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
