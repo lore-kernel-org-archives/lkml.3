@@ -1,398 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920Ab3EGMC4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 08:02:56 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:36370 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757117Ab3EGMCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 08:02:53 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        Len Brown <lenb@kernel.org>, linux-mm@kvack.org, wency@cn.fujitsu.com
-Subject: Re: [PATCH 2/2 v2, RFC] Driver core: Introduce offline/online callbacks for memory blocks
-Date: Tue, 07 May 2013 14:11:14 +0200
-Message-ID: <7132174.AKkXX1jln2@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130507105945.GA4354@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <1809544.1r1JBXrr0i@vostro.rjw.lan> <20130507105945.GA4354@dhcp-192-168-178-175.profitbricks.localdomain>
+	id S1758070Ab3EGMDU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 08:03:20 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:28122 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757621Ab3EGMDT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 08:03:19 -0400
+X-IronPort-AV: E=Sophos;i="4.87,628,1363132800"; 
+   d="scan'208";a="22584554"
+Date: Tue, 7 May 2013 12:58:32 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH RFC v2 4/4] xen/arm: account for stolen
+ ticks
+In-Reply-To: <1367918270.26321.39.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1305071252350.4147@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305061532310.4756@kaball.uk.xensource.com>  <1367851878-21629-4-git-send-email-stefano.stabellini@eu.citrix.com> <1367918270.26321.39.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 07, 2013 12:59:45 PM Vasilis Liaskovitis wrote:
-> Hi,
-> 
-> On Tue, May 07, 2013 at 02:59:05AM +0200, Rafael J. Wysocki wrote:
-> > On Monday, May 06, 2013 06:28:12 PM Vasilis Liaskovitis wrote:
-> > > On Sat, May 04, 2013 at 01:21:16PM +0200, Rafael J. Wysocki wrote:
-> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > 
-> > > > Introduce .offline() and .online() callbacks for memory_subsys
-> > > > that will allow the generic device_offline() and device_online()
-> > > > to be used with device objects representing memory blocks.  That,
-> > > > in turn, allows the ACPI subsystem to use device_offline() to put
-> > > > removable memory blocks offline, if possible, before removing
-> > > > memory modules holding them.
-> > > > 
-> > > > The 'online' sysfs attribute of memory block devices will attempt to
-> > > > put them offline if 0 is written to it and will attempt to apply the
-> > > > previously used online type when onlining them (i.e. when 1 is
-> > > > written to it).
-> > > > 
-> > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > ---
-> > > >  drivers/base/memory.c  |  105 +++++++++++++++++++++++++++++++++++++------------
-> > > >  include/linux/memory.h |    1 
-> > > >  2 files changed, 81 insertions(+), 25 deletions(-)
-> > > >
-> > > [...]
-> > > 
-> > > > @@ -686,10 +735,16 @@ int offline_memory_block(struct memory_b
-> > > >  {
-> > > >  	int ret = 0;
-> > > >  
-> > > > +	lock_device_hotplug();
-> > > >  	mutex_lock(&mem->state_mutex);
-> > > > -	if (mem->state != MEM_OFFLINE)
-> > > > -		ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
-> > > > +	if (mem->state != MEM_OFFLINE) {
-> > > > +		ret = __memory_block_change_state_uevent(mem, MEM_OFFLINE,
-> > > > +							 MEM_ONLINE, -1);
-> > > > +		if (!ret)
-> > > > +			mem->dev.offline = true;
-> > > > +	}
-> > > >  	mutex_unlock(&mem->state_mutex);
-> > > > +	unlock_device_hotplug();
-> > > 
-> > > (Testing with qemu...)
+On Tue, 7 May 2013, Ian Campbell wrote:
+> On Mon, 2013-05-06 at 15:51 +0100, Stefano Stabellini wrote:
+> > Register the runstate_memory_area with the hypervisor.
+> > Use pv_time_ops.steal_clock to account for stolen ticks.
 > > 
-> > Thanks!
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  arch/arm/xen/enlighten.c |   23 +++++++++++++++++++++++
+> >  1 files changed, 23 insertions(+), 0 deletions(-)
 > > 
-> > > offline_memory_block is called from remove_memory, which in turn is called from
-> > > acpi_memory_device_remove (detach operation) during acpi_bus_trim. We already
-> > > hold the device_hotplug lock when we trim (acpi_scan_hot_remove), so we
-> > > don't need to lock/unlock_device_hotplug in offline_memory_block.
-> > 
-> > Indeed.
-> > 
-> > First, it looks like offline_memory_block_cb() is the only place calling
-> > offline_memory_block(), is that right?  I'm wondering if it would make
+> > diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> > index ee86bfa..2a5cc82 100644
+> > --- a/arch/arm/xen/enlighten.c
+> > +++ b/arch/arm/xen/enlighten.c
+> > @@ -14,7 +14,10 @@
+> >  #include <xen/xen-ops.h>
+> >  #include <asm/xen/hypervisor.h>
+> >  #include <asm/xen/hypercall.h>
+> > +#include <asm/arch_timer.h>
+> >  #include <asm/system_misc.h>
+> > +#include <asm/paravirt.h>
+> > +#include <linux/jump_label.h>
+> >  #include <linux/interrupt.h>
+> >  #include <linux/irqreturn.h>
+> >  #include <linux/module.h>
+> > @@ -152,6 +155,20 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
+> >  }
+> >  EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
+> >  
+> > +unsigned long long xen_stolen_accounting(int cpu)
+> > +{
+> > +	struct vcpu_runstate_info state;
+> > +
+> > +	if (cpu != get_cpu())
 > 
-> correct.
+> get_cpu disables preempt, so you need a matching put_cpu.
 
-Great!
+Oops, thanks.
 
-> > sense to use device_offline() in there and remove offline_memory_block()
-> > entirely?
+
+> But actually I think you just want smp_processor_id and you probably
+> want the BUG_ON form to get unlikely etc.
+>
+> That said, you don't use cpu for anything else, so why not drop it
+> entirely?
+
+Ah, that's right, legacy of the past. I'll do that.
+
+
+> > +		BUG();
+> > +
+> > +	xen_get_runstate_snapshot(&state);
+> > +
+> > +	WARN_ON(state.state != RUNSTATE_running);
+> > +
+> > +	return state.time[RUNSTATE_runnable] + state.time[RUNSTATE_offline];
+> > +}
+> > +
+> >  static void __init xen_percpu_init(void *unused)
+> >  {
+> >  	struct vcpu_register_vcpu_info info;
+> > @@ -170,6 +187,8 @@ static void __init xen_percpu_init(void *unused)
+> >  		BUG();
+> >  	per_cpu(xen_vcpu, cpu) = vcpup;
+> >  
+> > +	xen_setup_runstate_info(cpu);
+> > +
+> >  	enable_percpu_irq(xen_events_irq, 0);
+> >  }
+> >  
+> > @@ -301,6 +320,10 @@ static int __init xen_init_events(void)
+> >  
+> >  	on_each_cpu(xen_percpu_init, NULL, 0);
+> >  
+> > +	pv_time_ops.steal_clock = xen_stolen_accounting;
+> > +	static_key_slow_inc(&paravirt_steal_enabled);
+> > +	static_key_slow_inc(&paravirt_steal_rq_enabled);
 > 
-> possibly. Not sure if we can get hold of the struct device from
-> mm/memory_hotplug.c, maybe we still need the helper function that operates
-> directly on the memory block.
+> We don't seem to do this on x86 -- is that a bug on x86 on Xen?
 
-We can pass mem->dev to device_offline() and the locking should be fine.
+On x86 we do all the accounting in do_stolen_accounting, called from our
+own interrupt handler (xen_timer_interrupt).
+I don't think we would gain anything by using the common infrastructure,
+we would actually loose the idle ticks accounting we do there.
 
-> > Second, if you ran into this issue during testing, that would mean that patch
-> > [1/2] actually worked for you, which would be nice. :-)  Was that really the
-> > case?
-> 
-> yes, the patchset works fine once the extra lock/unlock_device_hotplug is
-> removed. For various dimm hot-remove operations, I saw either successfull
-> offlining and removal, or failed offlining and aborted removal.
-> You can add this to 1/2 (or, once the extra lock is removed, to 2/2 as well):
-> 
-> Tested-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+Speaking of which, I don't think that pv_time_ops.steal_clock would
+properly increase CPUTIME_IDLE the way we do in do_stolen_accounting.
 
-Thanks!
-
-Updated patch is appended for completness.
-
-> > 
-> > > A more general issue is that there are now two memory offlining efforts:
-> > > 
-> > > 1) from acpi_bus_offline_companions during device offline
-> > > 2) from mm: remove_memory during device detach (offline_memory_block_cb)
-> > > 
-> > > The 2nd is only called if the device offline operation was already succesful, so
-> > > it seems ineffective or redundant now, at least for x86_64/acpi_memhotplug machine
-> > > (unless the blocks were re-onlined in between).
-> > 
-> > Sure, and that should be OK for now.  Changing the detach behavior is not
-> > essential from the patch [2/2] perspective, we can do it later.
-> 
-> yes, ok.
-> 
-> > 
-> > > On the other hand, the 2nd effort has some more intelligence in offlining, as it
-> > > tries to offline twice in the precense of memcg, see commits df3e1b91 or
-> > > reworked 0baeab16. Maybe we need to consolidate the logic.
-> > 
-> > Hmm.  Perhaps it would make sense to implement that logic in
-> > memory_subsys_offline(), then?
-> 
-> the logic tries to offline the memory blocks of the device twice, because the
-> first memory block might be storing information for the subsequent memblocks.
-> 
-> memory_subsys_offline operates on one memory block at a time. Perhaps we can get
-> the same effect if we do an acpi_walk of acpi_bus_offline_companions twice in
-> acpi_scan_hot_remove but it's probably not a good idea, since that would
-> affect non-memory devices as well. 
-> 
-> I am not sure how important this intelligence is in practice (I am not using
-> mem cgroups in my guest kernel tests yet).  Maybe Wen (original author) has
-> more details on 2-pass offlining effectiveness.
-
-OK
-
-It may be added in a separate patch in any case.
-
-> > > remove_memory is called from device_detach, during trim that can't fail, so it
-> > > should not fail. However this function can still fail in 2 cases:
-> > > - offline_memory_block_cb
-> > > - is_memblock_offlined_cb
-> > > in the case of re-onlined memblocks in between device-offline and device detach.
-> > > This seems possible I think, since we do not hold lock_memory_hotplug for the
-> > > duration of the hot-remove operation.
-> > 
-> > But we do hold device_hotplug_lock, so every code path that may race with
-> > acpi_scan_hot_remove() needs to take device_hotplug_lock as well.  Now,
-> > question is whether or not there are any code paths like that calling one of
-> > the two functions above without holding device_hotplug_lock?
-> 
-> I think you are right. The other code path I had in mind was userspace initiated
-> online/offline operations from store_mem_state in drivers/base/memory.c. But we
-> also do lock_device_hotplug in that case too. So it seems safe. If I find
-> something else with stress testing the paths simultaneously (or another code
-> path) I 'll update.
-
-OK
-
-Thanks,
-Rafael
-
-
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: Driver core: Introduce offline/online callbacks for memory blocks
-
-Introduce .offline() and .online() callbacks for memory_subsys
-that will allow the generic device_offline() and device_online()
-to be used with device objects representing memory blocks.  That,
-in turn, allows the ACPI subsystem to use device_offline() to put
-removable memory blocks offline, if possible, before removing
-memory modules holding them.
-
-The 'online' sysfs attribute of memory block devices will attempt to
-put them offline if 0 is written to it and will attempt to apply the
-previously used online type when onlining them (i.e. when 1 is
-written to it).
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Tested-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/base/memory.c  |  105 +++++++++++++++++++++++++++++++++++++------------
- include/linux/memory.h |    1 
- 2 files changed, 81 insertions(+), 25 deletions(-)
-
-Index: linux-pm/drivers/base/memory.c
-===================================================================
---- linux-pm.orig/drivers/base/memory.c
-+++ linux-pm/drivers/base/memory.c
-@@ -37,9 +37,14 @@ static inline int base_memory_block_id(i
- 	return section_nr / sections_per_block;
- }
- 
-+static int memory_subsys_online(struct device *dev);
-+static int memory_subsys_offline(struct device *dev);
-+
- static struct bus_type memory_subsys = {
- 	.name = MEMORY_CLASS_NAME,
- 	.dev_name = MEMORY_CLASS_NAME,
-+	.online = memory_subsys_online,
-+	.offline = memory_subsys_offline,
- };
- 
- static BLOCKING_NOTIFIER_HEAD(memory_chain);
-@@ -278,33 +283,64 @@ static int __memory_block_change_state(s
- {
- 	int ret = 0;
- 
--	if (mem->state != from_state_req) {
--		ret = -EINVAL;
--		goto out;
--	}
-+	if (mem->state != from_state_req)
-+		return -EINVAL;
- 
- 	if (to_state == MEM_OFFLINE)
- 		mem->state = MEM_GOING_OFFLINE;
- 
- 	ret = memory_block_action(mem->start_section_nr, to_state, online_type);
--
- 	if (ret) {
- 		mem->state = from_state_req;
--		goto out;
-+	} else {
-+		mem->state = to_state;
-+		if (to_state == MEM_ONLINE)
-+			mem->last_online = online_type;
- 	}
-+	return ret;
-+}
- 
--	mem->state = to_state;
--	switch (mem->state) {
--	case MEM_OFFLINE:
--		kobject_uevent(&mem->dev.kobj, KOBJ_OFFLINE);
--		break;
--	case MEM_ONLINE:
--		kobject_uevent(&mem->dev.kobj, KOBJ_ONLINE);
--		break;
--	default:
--		break;
-+static int memory_subsys_online(struct device *dev)
-+{
-+	struct memory_block *mem = container_of(dev, struct memory_block, dev);
-+	int ret;
-+
-+	mutex_lock(&mem->state_mutex);
-+	ret = __memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE,
-+					  mem->last_online);
-+	mutex_unlock(&mem->state_mutex);
-+	return ret;
-+}
-+
-+static int memory_subsys_offline(struct device *dev)
-+{
-+	struct memory_block *mem = container_of(dev, struct memory_block, dev);
-+	int ret;
-+
-+	mutex_lock(&mem->state_mutex);
-+	ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
-+	mutex_unlock(&mem->state_mutex);
-+	return ret;
-+}
-+
-+static int __memory_block_change_state_uevent(struct memory_block *mem,
-+		unsigned long to_state, unsigned long from_state_req,
-+		int online_type)
-+{
-+	int ret = __memory_block_change_state(mem, to_state, from_state_req,
-+					      online_type);
-+	if (!ret) {
-+		switch (mem->state) {
-+		case MEM_OFFLINE:
-+			kobject_uevent(&mem->dev.kobj, KOBJ_OFFLINE);
-+			break;
-+		case MEM_ONLINE:
-+			kobject_uevent(&mem->dev.kobj, KOBJ_ONLINE);
-+			break;
-+		default:
-+			break;
-+		}
- 	}
--out:
- 	return ret;
- }
- 
-@@ -315,8 +351,8 @@ static int memory_block_change_state(str
- 	int ret;
- 
- 	mutex_lock(&mem->state_mutex);
--	ret = __memory_block_change_state(mem, to_state, from_state_req,
--					  online_type);
-+	ret = __memory_block_change_state_uevent(mem, to_state, from_state_req,
-+						 online_type);
- 	mutex_unlock(&mem->state_mutex);
- 
- 	return ret;
-@@ -326,22 +362,34 @@ store_mem_state(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t count)
- {
- 	struct memory_block *mem;
-+	bool offline;
- 	int ret = -EINVAL;
- 
- 	mem = container_of(dev, struct memory_block, dev);
- 
--	if (!strncmp(buf, "online_kernel", min_t(int, count, 13)))
-+	lock_device_hotplug();
-+
-+	if (!strncmp(buf, "online_kernel", min_t(int, count, 13))) {
-+		offline = false;
- 		ret = memory_block_change_state(mem, MEM_ONLINE,
- 						MEM_OFFLINE, ONLINE_KERNEL);
--	else if (!strncmp(buf, "online_movable", min_t(int, count, 14)))
-+	} else if (!strncmp(buf, "online_movable", min_t(int, count, 14))) {
-+		offline = false;
- 		ret = memory_block_change_state(mem, MEM_ONLINE,
- 						MEM_OFFLINE, ONLINE_MOVABLE);
--	else if (!strncmp(buf, "online", min_t(int, count, 6)))
-+	} else if (!strncmp(buf, "online", min_t(int, count, 6))) {
-+		offline = false;
- 		ret = memory_block_change_state(mem, MEM_ONLINE,
- 						MEM_OFFLINE, ONLINE_KEEP);
--	else if(!strncmp(buf, "offline", min_t(int, count, 7)))
-+	} else if(!strncmp(buf, "offline", min_t(int, count, 7))) {
-+		offline = true;
- 		ret = memory_block_change_state(mem, MEM_OFFLINE,
- 						MEM_ONLINE, -1);
-+	}
-+	if (!ret)
-+		dev->offline = offline;
-+
-+	unlock_device_hotplug();
- 
- 	if (ret)
- 		return ret;
-@@ -563,6 +611,7 @@ static int init_memory_block(struct memo
- 			base_memory_block_id(scn_nr) * sections_per_block;
- 	mem->end_section_nr = mem->start_section_nr + sections_per_block - 1;
- 	mem->state = state;
-+	mem->last_online = ONLINE_KEEP;
- 	mem->section_count++;
- 	mutex_init(&mem->state_mutex);
- 	start_pfn = section_nr_to_pfn(mem->start_section_nr);
-@@ -681,14 +730,20 @@ int unregister_memory_section(struct mem
- 
- /*
-  * offline one memory block. If the memory block has been offlined, do nothing.
-+ *
-+ * Call under device_hotplug_lock.
-  */
- int offline_memory_block(struct memory_block *mem)
- {
- 	int ret = 0;
- 
- 	mutex_lock(&mem->state_mutex);
--	if (mem->state != MEM_OFFLINE)
--		ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
-+	if (mem->state != MEM_OFFLINE) {
-+		ret = __memory_block_change_state_uevent(mem, MEM_OFFLINE,
-+							 MEM_ONLINE, -1);
-+		if (!ret)
-+			mem->dev.offline = true;
-+	}
- 	mutex_unlock(&mem->state_mutex);
- 
- 	return ret;
-Index: linux-pm/include/linux/memory.h
-===================================================================
---- linux-pm.orig/include/linux/memory.h
-+++ linux-pm/include/linux/memory.h
-@@ -26,6 +26,7 @@ struct memory_block {
- 	unsigned long start_section_nr;
- 	unsigned long end_section_nr;
- 	unsigned long state;
-+	int last_online;
- 	int section_count;
- 
- 	/*
-
+How much of an issue is that?
