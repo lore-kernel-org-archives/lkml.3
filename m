@@ -1,242 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759498Ab3EGUrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 16:47:40 -0400
-Received: from mga14.intel.com ([143.182.124.37]:8754 "EHLO mga14.intel.com"
+	id S1759425Ab3EGUsP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 16:48:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34227 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758759Ab3EGUrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 16:47:36 -0400
+	id S1754202Ab3EGUsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 16:48:13 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,629,1363158000"; 
-   d="scan'208";a="299067493"
-Subject: [PATCH 6/7] kconfig: consolidate printk options
+   d="scan'208";a="333389144"
+Subject: [PATCH 0/7] Put "Kernel hacking" Kconfig menu on a diet
 To: mmarek@suse.cz
 Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
         Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Tue, 07 May 2013 13:46:51 -0700
-References: <20130507204642.D010DDC1@viggo.jf.intel.com>
-In-Reply-To: <20130507204642.D010DDC1@viggo.jf.intel.com>
-Message-Id: <20130507204651.52F3D9A5@viggo.jf.intel.com>
+Date: Tue, 07 May 2013 13:46:42 -0700
+Message-Id: <20130507204642.D010DDC1@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Michal, I figure you're the most logical person for these to go
+through.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+There is a fair amount of churn in the areas around these patches
+so I've resolved conflicts a couple of times.  For the patches that
+are almost purely code move patches, I'm doing this:
 
-Same deal, take the printk-related things and hide them in a menu.
-This takes another 4 items out of the top-level menu.
+	cat foo.patch | grep '^[-+]' | perl -pe 's/^.//' | sort | uniq -c | sort -n
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+and watching for any non-even numbers coming out of uniq.  This
+helps me make sure I'm not adding/removing code that I should not
+be.
+
+The Signed-off-by's in here look funky.  I changed employers
+while working on this set, so I have signoffs from both email
+addresses.
+
 ---
 
- linux.git-davehans/lib/Kconfig.debug |  177 +++++++++++++++++------------------
- 1 file changed, 90 insertions(+), 87 deletions(-)
+I think the "Kernel Hacking" menu has gotten a bit out of hand.  It
+is over 120 lines long on my system with everything enabled and
+options are scattered around it haphazardly.
 
-diff -puN lib/Kconfig.debug~printk-options lib/Kconfig.debug
---- linux.git/lib/Kconfig.debug~printk-options	2013-05-07 13:41:38.407533570 -0700
-+++ linux.git-davehans/lib/Kconfig.debug	2013-05-07 13:41:38.410533703 -0700
-@@ -1,3 +1,4 @@
-+menu "printk and dmesg options"
- 
- config PRINTK_TIME
- 	bool "Show timing information on printks"
-@@ -25,6 +26,95 @@ config DEFAULT_MESSAGE_LOGLEVEL
- 	  that are auditing their logs closely may want to set it to a lower
- 	  priority.
- 
-+config BOOT_PRINTK_DELAY
-+	bool "Delay each boot printk message by N milliseconds"
-+	depends on DEBUG_KERNEL && PRINTK && GENERIC_CALIBRATE_DELAY
-+	help
-+	  This build option allows you to read kernel boot messages
-+	  by inserting a short delay after each one.  The delay is
-+	  specified in milliseconds on the kernel command line,
-+	  using "boot_delay=N".
-+
-+	  It is likely that you would also need to use "lpj=M" to preset
-+	  the "loops per jiffie" value.
-+	  See a previous boot log for the "lpj" value to use for your
-+	  system, and then set "lpj=M" before setting "boot_delay=N".
-+	  NOTE:  Using this option may adversely affect SMP systems.
-+	  I.e., processors other than the first one may not boot up.
-+	  BOOT_PRINTK_DELAY also may cause LOCKUP_DETECTOR to detect
-+	  what it believes to be lockup conditions.
-+
-+config DYNAMIC_DEBUG
-+	bool "Enable dynamic printk() support"
-+	default n
-+	depends on PRINTK
-+	depends on DEBUG_FS
-+	help
-+
-+	  Compiles debug level messages into the kernel, which would not
-+	  otherwise be available at runtime. These messages can then be
-+	  enabled/disabled based on various levels of scope - per source file,
-+	  function, module, format string, and line number. This mechanism
-+	  implicitly compiles in all pr_debug() and dev_dbg() calls, which
-+	  enlarges the kernel text size by about 2%.
-+
-+	  If a source file is compiled with DEBUG flag set, any
-+	  pr_debug() calls in it are enabled by default, but can be
-+	  disabled at runtime as below.  Note that DEBUG flag is
-+	  turned on by many CONFIG_*DEBUG* options.
-+
-+	  Usage:
-+
-+	  Dynamic debugging is controlled via the 'dynamic_debug/control' file,
-+	  which is contained in the 'debugfs' filesystem. Thus, the debugfs
-+	  filesystem must first be mounted before making use of this feature.
-+	  We refer the control file as: <debugfs>/dynamic_debug/control. This
-+	  file contains a list of the debug statements that can be enabled. The
-+	  format for each line of the file is:
-+
-+		filename:lineno [module]function flags format
-+
-+	  filename : source file of the debug statement
-+	  lineno : line number of the debug statement
-+	  module : module that contains the debug statement
-+	  function : function that contains the debug statement
-+          flags : '=p' means the line is turned 'on' for printing
-+          format : the format used for the debug statement
-+
-+	  From a live system:
-+
-+		nullarbor:~ # cat <debugfs>/dynamic_debug/control
-+		# filename:lineno [module]function flags format
-+		fs/aio.c:222 [aio]__put_ioctx =_ "__put_ioctx:\040freeing\040%p\012"
-+		fs/aio.c:248 [aio]ioctx_alloc =_ "ENOMEM:\040nr_events\040too\040high\012"
-+		fs/aio.c:1770 [aio]sys_io_cancel =_ "calling\040cancel\012"
-+
-+	  Example usage:
-+
-+		// enable the message at line 1603 of file svcsock.c
-+		nullarbor:~ # echo -n 'file svcsock.c line 1603 +p' >
-+						<debugfs>/dynamic_debug/control
-+
-+		// enable all the messages in file svcsock.c
-+		nullarbor:~ # echo -n 'file svcsock.c +p' >
-+						<debugfs>/dynamic_debug/control
-+
-+		// enable all the messages in the NFS server module
-+		nullarbor:~ # echo -n 'module nfsd +p' >
-+						<debugfs>/dynamic_debug/control
-+
-+		// enable all 12 messages in the function svc_process()
-+		nullarbor:~ # echo -n 'func svc_process +p' >
-+						<debugfs>/dynamic_debug/control
-+
-+		// disable all 12 messages in the function svc_process()
-+		nullarbor:~ # echo -n 'func svc_process -p' >
-+						<debugfs>/dynamic_debug/control
-+
-+	  See Documentation/dynamic-debug-howto.txt for additional information.
-+
-+endmenu # "printk and dmesg options"
-+
- menu "Compile-time checks and compiler options"
- 
- config DEBUG_INFO
-@@ -940,24 +1030,6 @@ config DEBUG_CREDENTIALS
- 
- 	  If unsure, say N.
- 
--config BOOT_PRINTK_DELAY
--	bool "Delay each boot printk message by N milliseconds"
--	depends on DEBUG_KERNEL && PRINTK && GENERIC_CALIBRATE_DELAY
--	help
--	  This build option allows you to read kernel boot messages
--	  by inserting a short delay after each one.  The delay is
--	  specified in milliseconds on the kernel command line,
--	  using "boot_delay=N".
--
--	  It is likely that you would also need to use "lpj=M" to preset
--	  the "loops per jiffie" value.
--	  See a previous boot log for the "lpj" value to use for your
--	  system, and then set "lpj=M" before setting "boot_delay=N".
--	  NOTE:  Using this option may adversely affect SMP systems.
--	  I.e., processors other than the first one may not boot up.
--	  BOOT_PRINTK_DELAY also may cause LOCKUP_DETECTOR to detect
--	  what it believes to be lockup conditions.
--
- menu "RCU Debugging"
- 
- config PROVE_RCU
-@@ -1441,75 +1513,6 @@ config BUILD_DOCSRC
- 
- 	  Say N if you are unsure.
- 
--config DYNAMIC_DEBUG
--	bool "Enable dynamic printk() support"
--	default n
--	depends on PRINTK
--	depends on DEBUG_FS
--	help
--
--	  Compiles debug level messages into the kernel, which would not
--	  otherwise be available at runtime. These messages can then be
--	  enabled/disabled based on various levels of scope - per source file,
--	  function, module, format string, and line number. This mechanism
--	  implicitly compiles in all pr_debug() and dev_dbg() calls, which
--	  enlarges the kernel text size by about 2%.
--
--	  If a source file is compiled with DEBUG flag set, any
--	  pr_debug() calls in it are enabled by default, but can be
--	  disabled at runtime as below.  Note that DEBUG flag is
--	  turned on by many CONFIG_*DEBUG* options.
--
--	  Usage:
--
--	  Dynamic debugging is controlled via the 'dynamic_debug/control' file,
--	  which is contained in the 'debugfs' filesystem. Thus, the debugfs
--	  filesystem must first be mounted before making use of this feature.
--	  We refer the control file as: <debugfs>/dynamic_debug/control. This
--	  file contains a list of the debug statements that can be enabled. The
--	  format for each line of the file is:
--
--		filename:lineno [module]function flags format
--
--	  filename : source file of the debug statement
--	  lineno : line number of the debug statement
--	  module : module that contains the debug statement
--	  function : function that contains the debug statement
--          flags : '=p' means the line is turned 'on' for printing
--          format : the format used for the debug statement
--
--	  From a live system:
--
--		nullarbor:~ # cat <debugfs>/dynamic_debug/control
--		# filename:lineno [module]function flags format
--		fs/aio.c:222 [aio]__put_ioctx =_ "__put_ioctx:\040freeing\040%p\012"
--		fs/aio.c:248 [aio]ioctx_alloc =_ "ENOMEM:\040nr_events\040too\040high\012"
--		fs/aio.c:1770 [aio]sys_io_cancel =_ "calling\040cancel\012"
--
--	  Example usage:
--
--		// enable the message at line 1603 of file svcsock.c
--		nullarbor:~ # echo -n 'file svcsock.c line 1603 +p' >
--						<debugfs>/dynamic_debug/control
--
--		// enable all the messages in file svcsock.c
--		nullarbor:~ # echo -n 'file svcsock.c +p' >
--						<debugfs>/dynamic_debug/control
--
--		// enable all the messages in the NFS server module
--		nullarbor:~ # echo -n 'module nfsd +p' >
--						<debugfs>/dynamic_debug/control
--
--		// enable all 12 messages in the function svc_process()
--		nullarbor:~ # echo -n 'func svc_process +p' >
--						<debugfs>/dynamic_debug/control
--
--		// disable all 12 messages in the function svc_process()
--		nullarbor:~ # echo -n 'func svc_process -p' >
--						<debugfs>/dynamic_debug/control
--
--	  See Documentation/dynamic-debug-howto.txt for additional information.
--
- config DMA_API_DEBUG
- 	bool "Enable debugging of DMA-API usage"
- 	depends on HAVE_DMA_API_DEBUG
-_
+        http://sr71.net/~dave/linux/kconfig-horror.png
+
+Let's try to introduce some sanity.  This set takes that 120 lines
+down to 55 and makes it vastly easier to find some things.  It's a
+start.
+
+This set stands on its own, but there is plenty of room for follow-up
+patches.  The arch-specific debug options still end up getting stuck
+in the top-level "kernel hacking" menu.  OPTIMIZE_INLINING, for
+instance, could obviously go in to the "compiler options" menu, but
+the fact that it is defined in arch/ in a separate Kconfig file keeps
+it on its own for the moment.
+
