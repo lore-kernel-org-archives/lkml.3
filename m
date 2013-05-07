@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758590Ab3EGELi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:11:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5656 "EHLO
+	id S1758418Ab3EGELg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:11:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9670 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932967Ab3EGD6r (ORCPT
+	with ESMTP id S932977Ab3EGD6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 23:58:47 -0400
-X-Authority-Analysis: v=2.0 cv=GtrACzJC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=g2hrVCTNmYUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=rujq3MB7sFYA:10 a=THCAyMpEAAAA:8 a=VwQbUJbxAAAA:8 a=2LjLHKtCAAAA:8 a=fC4T7qsy4_4xvlMS5R0A:9 a=FCIOWvmKq0cA:10 a=C3PaYh0q9tsA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=sy9Gx369cj0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3TuL5Nk-cTAA:10 a=t7CeM3EgAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=fC4T7qsy4_4xvlMS5R0A:9 a=2e6ZYRoF4I4A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035844.897473527@goodmis.org>
+Message-Id: <20130507035843.092818112@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:57:36 -0400
+Date: Mon, 06 May 2013 23:57:25 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [024/126] remoteproc: fix error path of handle_vdev
+Cc: Shan Hai <shan.hai@windriver.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [013/126] libata: Use integer return value for atapi_command_packet_set
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0024-remoteproc-fix-error-path-of-handle_vdev.patch
+Content-Disposition: inline; filename=0013-libata-Use-integer-return-value-for-atapi_command_pa.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,41 +29,40 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+From: Shan Hai <shan.hai@windriver.com>
 
-[ Upstream commit cde42e076c1cdd69a1f955d66ff6596bad3d2105 ]
+[ Upstream commit d8668fcb0b257d9fdcfbe5c172a99b8d85e1cd82 ]
 
-Remove the vdev entry from the list before freeing it,
-otherwise rproc->vdevs will explode.
+The function returns type of ATAPI drives so it should return integer value.
+The commit 4dce8ba94c7 (libata: Use 'bool' return value for ata_id_XXX) since
+v2.6.39 changed the type of return value from int to bool, the change would
+cause all of the ATAPI class drives to be treated as TYPE_TAPE and the
+max_sectors of the drives to be set to 65535 because of the commit
+f8d8e5799b7(libata: increase 128 KB / cmd limit for ATAPI tape drives), for the
+function would return true for all ATAPI class drives and the TYPE_TAPE is
+defined as 0x01.
 
 Cc: stable@vger.kernel.org
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
-Acked-by: Ido Yariv <ido@wizery.com>
-[edit subject, minor commit log edit, cc stable]
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/remoteproc/remoteproc_core.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/linux/ata.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 70b296f..cf68afb 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -342,10 +342,12 @@ static int rproc_handle_vdev(struct rproc *rproc, struct fw_rsc_vdev *rsc,
- 	/* it is now safe to add the virtio device */
- 	ret = rproc_add_virtio_dev(rvdev, rsc->id);
- 	if (ret)
--		goto free_rvdev;
-+		goto remove_rvdev;
+diff --git a/include/linux/ata.h b/include/linux/ata.h
+index 5713d3a..b07e008 100644
+--- a/include/linux/ata.h
++++ b/include/linux/ata.h
+@@ -938,7 +938,7 @@ static inline int atapi_cdb_len(const u16 *dev_id)
+ 	}
+ }
  
- 	return 0;
- 
-+remove_rvdev:
-+	list_del(&rvdev->node);
- free_rvdev:
- 	kfree(rvdev);
- 	return ret;
+-static inline bool atapi_command_packet_set(const u16 *dev_id)
++static inline int atapi_command_packet_set(const u16 *dev_id)
+ {
+ 	return (dev_id[ATA_ID_CONFIG] >> 8) & 0x1f;
+ }
 -- 
 1.7.10.4
 
