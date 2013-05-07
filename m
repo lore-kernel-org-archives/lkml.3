@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933809Ab3EGOJw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:09:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42278 "EHLO
+	id S933790Ab3EGOJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:09:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42279 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932907Ab3EGNlN (ORCPT
+	with ESMTP id S932909Ab3EGNlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 May 2013 09:41:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nikolay Aleksandrov <nikolay@redhat.com>,
+Cc: "Huang, Xiong" <xiong@qca.qualcomm.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 046/118] bonding: fix bonding_masters race condition in bond unloading
-Date: Tue,  7 May 2013 14:38:12 +0100
-Message-Id: <1367933964-1564-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 045/118] atl1e: limit gso segment size to prevent generation of wrong ip length fields
+Date: Tue,  7 May 2013 14:38:11 +0100
+Message-Id: <1367933964-1564-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,51 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "nikolay@redhat.com" <nikolay@redhat.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit 69b0216ac255f523556fa3d4ff030d857eaaa37f upstream.
+commit 31d1670e73f4911fe401273a8f576edc9c2b5fea upstream.
 
-While the bonding module is unloading, it is considered that after
-rtnl_link_unregister all bond devices are destroyed but since no
-synchronization mechanism exists, a new bond device can be created
-via bonding_masters before unregister_pernet_subsys which would
-lead to multiple problems (e.g. NULL pointer dereference, wrong RIP,
-list corruption).
+The limit of 0x3c00 is taken from the windows driver.
 
-This patch fixes the issue by removing any bond devices left in the
-netns after bonding_masters is removed from sysfs.
-
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
-Acked-by: Veaceslav Falico <vfalico@redhat.com>
+Suggested-by: Huang, Xiong <xiong@qca.qualcomm.com>
+Cc: Huang, Xiong <xiong@qca.qualcomm.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/bonding/bond_main.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/net/ethernet/atheros/atl1e/atl1e.h      | 2 +-
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c | 1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 1a6b118..5fc31a1 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -4870,9 +4870,18 @@ static int __net_init bond_net_init(struct net *net)
- static void __net_exit bond_net_exit(struct net *net)
- {
- 	struct bond_net *bn = net_generic(net, bond_net_id);
-+	struct bonding *bond, *tmp_bond;
-+	LIST_HEAD(list);
+diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e.h b/drivers/net/ethernet/atheros/atl1e/atl1e.h
+index edfdf6b..b5fd934 100644
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e.h
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e.h
+@@ -186,7 +186,7 @@ struct atl1e_tpd_desc {
+ /* how about 0x2000 */
+ #define MAX_TX_BUF_LEN      0x2000
+ #define MAX_TX_BUF_SHIFT    13
+-/*#define MAX_TX_BUF_LEN  0x3000 */
++#define MAX_TSO_SEG_SIZE    0x3c00
  
- 	bond_destroy_sysfs(bn);
- 	bond_destroy_proc_dir(bn);
-+
-+	/* Kill off any bonds created after unregistering bond rtnl ops */
-+	rtnl_lock();
-+	list_for_each_entry_safe(bond, tmp_bond, &bn->dev_list, bond_list)
-+		unregister_netdevice_queue(bond->dev, &list);
-+	unregister_netdevice_many(&list);
-+	rtnl_unlock();
- }
+ /* rrs word 1 bit 0:31 */
+ #define RRS_RX_CSUM_MASK	0xFFFF
+diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+index 38f7093..56b04c4 100644
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+@@ -2352,6 +2352,7 @@ static int __devinit atl1e_probe(struct pci_dev *pdev,
  
- static struct pernet_operations bond_net_ops = {
+ 	INIT_WORK(&adapter->reset_task, atl1e_reset_task);
+ 	INIT_WORK(&adapter->link_chg_task, atl1e_link_chg_task);
++	netif_set_gso_max_size(netdev, MAX_TSO_SEG_SIZE);
+ 	err = register_netdev(netdev);
+ 	if (err) {
+ 		netdev_err(netdev, "register netdevice failed\n");
 -- 
 1.8.1.2
 
