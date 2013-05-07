@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759553Ab3EGJbK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 05:31:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10291 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759510Ab3EGJbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 05:31:08 -0400
-Date: Tue, 7 May 2013 11:30:31 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH] perf: fix symbol processing bug and greatly improve
- performance
-Message-ID: <20130507093031.GA1076@krava.brq.redhat.com>
-References: <1367847833-4932-1-git-send-email-Waiman.Long@hp.com>
+	id S1759577Ab3EGJb3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 05:31:29 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:6658 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759378Ab3EGJb1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 05:31:27 -0400
+Message-ID: <5188C9EC.7000303@atmel.com>
+Date: Tue, 7 May 2013 11:31:24 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367847833-4932-1-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+CC: Mark Brown <broonie@kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Richard Genoud" <richard.genoud@gmail.com>,
+        Joachim Eastwood <manabian@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "Lin, JM" <JM.Lin@atmel.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after xfer->speed_hz
+ set
+References: <1362626715-6549-1-git-send-email-wenyou.yang@atmel.com> <1362626815-6628-1-git-send-email-wenyou.yang@atmel.com> <CAGhQ9VwW18LXY5Jn0FUFCaAzKxP1W3QADG=JBp9JbgaAwo=F2Q@mail.gmail.com> <B256D81BAE5131468A838E5D7A24364154236AB5@penmbx02> <CACQ1gAhZO3stjrwf5SiZf7jOO8T5bAJZiz97M7+7vwFmk2e65g@mail.gmail.com> <5182414F.1000201@atmel.com> <20130506103105.GB13472@opensource.wolfsonmicro.com> <B256D81BAE5131468A838E5D7A24364154238AF5@penmbx02>
+In-Reply-To: <B256D81BAE5131468A838E5D7A24364154238AF5@penmbx02>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 09:43:53AM -0400, Waiman Long wrote:
-> When "perf record" was used on a large machine with a lot of CPUs,
-> the perf post-processing time could take a lot of minutes and even
-> hours depending on how large the resulting perf.data file was.
+On 07/05/2013 03:11, Yang, Wenyou :
+> Hi, Mark
 > 
-> While running AIM7 1500-user high_systime workload on a 80-core x86-64
-> system with a 3.9 kernel, the workload itself took about 2 minutes
-> to run and the perf.data file had a size of 1108.746 MB. However,
-> the post-processing step took more than 10 minutes.
+>> From: Mark Brown [mailto:broonie@kernel.org]
+>> Sent: 2013Äê5ÔÂ6ÈÕ 18:31
+>> To: Ferre, Nicolas
+>> Cc: grant.likely@secretlab.ca; Grant Likely; Richard Genoud; Yang, Wenyou;
+>> Joachim Eastwood; linux-arm-kernel@lists.infradead.org;
+>> plagnioj@jcrosoft.com; Lin, JM; spi-devel-general@lists.sourceforge.net;
+>> linux-kernel@vger.kernel.org
+>> Subject: Re: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after
+>> xfer->speed_hz set
+>>
+>> On Thu, May 02, 2013 at 12:34:55PM +0200, Nicolas Ferre wrote:
+>>
+>>> Can you tell us if this SPI patch will be merged upstream using one of
+>>> your paths?
+>>
+>> I have no idea what patch this is but if it's not in my tree -next it's unlikely to be
+>> merged.
+> This is dropped patch, no need to be merged.
 > 
-> With a gprof-profiled perf binary, the time spent by perf was as
-> follows:
-> 
->   %   cumulative   self              self     total
->  time   seconds   seconds    calls   s/call   s/call  name
->  96.90    822.10   822.10   192156     0.00     0.00  dsos__find
->   0.81    828.96     6.86 172089958     0.00     0.00  rb_next
->   0.41    832.44     3.48 48539289     0.00     0.00  rb_erase
-> 
-> So 97% (822 seconds) of the time was spent in a single dsos_find()
-> function. After analyzing the call-graph data below:
-> 
-> -----------------------------------------------
->                 0.00  822.12  192156/192156      map__new [6]
-> [7]     96.9    0.00  822.12  192156         vdso__dso_findnew [7]
->               822.10    0.00  192156/192156      dsos__find [8]
->                 0.01    0.00  192156/192156      dsos__add [62]
->                 0.01    0.00  192156/192366      dso__new [61]
->                 0.00    0.00       1/45282525     memdup [31]
->                 0.00    0.00  192156/192230      dso__set_long_name [91]
-> -----------------------------------------------
->               822.10    0.00  192156/192156      vdso__dso_findnew [7]
-> [8]     96.9  822.10    0.00  192156         dsos__find [8]
-> -----------------------------------------------
-> 
-> It was found that the vdso__dso_findnew() function failed to locate
-> VDSO__MAP_NAME ("[vdso]") in the dso list and have to insert a new
-> entry at the end for 192156 times. This problem is due to the fact that
-> there are 2 types of name in the dso entry - short name and long name.
-> The initial dso__new() adds "[vdso]" to both the short and long names.
-> After that, vdso__dso_findnew() modifies the long name to something
-> like /tmp/perf-vdso.so-NoXkDj. The dsos__find() function only compares
-> the long name. As a result, the same vdso entry is duplicated many
-> time in the dso list. This bug increases memory consumption as well
-> as slows the symbol processing time to a crawl.
+> We tested Atmel spi in your tree-next , but it doesn't work, the reason is the Joachim Eastwood's patch is not included.
+> https://patchwork.kernel.org/patch/2165301/
+> which Joachim said that Grant said he applied.
 
-hi,
-the issue is there and fix looks ok, thanks!
+Hi Wenyou,
 
-though I'm not able to get vdso callchains to pop out
-even by investigating report with vdso heavy workload.
+Sorry for not having communicating with you after Mark told me the story
+about this patch: Mark merged Grant's material in his SPI tree (with is
+the official one nowadays). You can see that by browsing linux-next:
 
-I'll have a closer look..
+ Merge remote-tracking branch 'spi/fix/grant' into spi-linus
 
-thanks,
-jirka
+Joachim's patch is well included in it. We still have to monitor
+inclusion of it in Linus' tree...
+
+Mark, sorry for the noise.
+
+Bye,
+-- 
+Nicolas Ferre
