@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758257Ab3EGIOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 04:14:31 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:65492 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757460Ab3EGIO3 (ORCPT
+	id S1758336Ab3EGIPL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 04:15:11 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:57083 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757991Ab3EGIPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 04:14:29 -0400
-Date: Tue, 7 May 2013 09:14:24 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "'Mika Westerberg'" <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH 1/8] mfd: intel_msic: remove unnecessary
- platform_set_drvdata()
-Message-ID: <20130507081424.GA3102@gmail.com>
-References: <002e01ce4a0e$cbe76460$63b62d20$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <002e01ce4a0e$cbe76460$63b62d20$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 7 May 2013 04:15:08 -0400
+From: Marek Belisko <marek.belisko@gmail.com>
+To: mturquette@linaro.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        daniel@zonque.org, sebastian.hesselbarth@gmail.com,
+        Marek Belisko <marek.belisko@streamunlimited.com>
+Subject: [PATCH 1/2] clk: si5351: Fix msynth_recalc_rate return value when fOUT is 0.
+Date: Tue,  7 May 2013 10:14:50 +0200
+Message-Id: <1367914491-17445-1-git-send-email-marek.belisko@streamunlimited.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 06 May 2013, Jingoo Han wrote:
+When p3 is eual to 0 then result for fOUT is 0. In that case we should
+return 0 not parent_rate;
 
-> The driver core clears the driver data to NULL after device_release
-> or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
-> (device-core: Ensure drvdata = NULL when no driver is bound).
-> Thus, it is not needed to manually clear the device driver data to NULL.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/mfd/intel_msic.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mfd/intel_msic.c b/drivers/mfd/intel_msic.c
-> index 5be3b5e..977506e 100644
-> --- a/drivers/mfd/intel_msic.c
-> +++ b/drivers/mfd/intel_msic.c
-> @@ -443,7 +443,6 @@ static int intel_msic_remove(struct platform_device *pdev)
->  	struct intel_msic *msic = platform_get_drvdata(pdev);
->  
->  	intel_msic_remove_devices(msic);
-> -	platform_set_drvdata(pdev, NULL);
->  
->  	return 0;
->  }
+This issue was causing deadlock in si5351 chip when user set_rate for
+ms0->clk0 and then set_rate for ms1->clk1 (both ms sourced from plla).
+After that clk1 was 0 and it wasn't possible to enable it again (try also
+manually with i2cset commands). Only power cycle helps.
 
-For the set:
+Signed-off-by: Marek Belisko <marek.belisko@streamunlimited.com>
+---
+ drivers/clk/clk-si5351.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
+diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
+index fc215ce..a8fc0f4 100644
+--- a/drivers/clk/clk-si5351.c
++++ b/drivers/clk/clk-si5351.c
+@@ -607,7 +607,7 @@ static unsigned long si5351_msynth_recalc_rate(struct clk_hw *hw,
+ 		si5351_read_parameters(hwdata->drvdata, reg, &hwdata->params);
+ 
+ 	if (hwdata->params.p3 == 0)
+-		return parent_rate;
++		return 0;
+ 
+ 	/*
+ 	 * multisync0-5: fOUT = (128 * P3 * fIN) / (P1*P3 + P2 + 512*P3)
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
