@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab3EGEZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:25:58 -0400
+	id S1758977Ab3EGEab (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:30:31 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25931 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932159Ab3EGEZp (ORCPT
+	with ESMTP id S932607Ab3EGEZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 00:25:45 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=91ZxE9VgbrEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=076Q6VXC_-AA:10 a=mK_AVkanAAAA:8 a=h3sCQ_blAAAA:8 a=J1Y8HTJGAAAA:8 a=fC4T7qsy4_4xvlMS5R0A:9 a=9xyTavCNlvEA:10 a=fNChW5oJl9MA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 7 May 2013 00:25:57 -0400
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=BeX6n8KoOMYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=TymciAGTofkA:10 a=1XWaLZrsAAAA:8 a=20KFwNOVAAAA:8 a=fC4T7qsy4_4xvlMS5R0A:9 a=UTB_XpHje0EA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=-cyeKQDD62-ZVCI4:21 a=oJRY0AgXXGG1ERsd:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035858.102229582@goodmis.org>
+Message-Id: <20130507035852.058901437@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:58:55 -0400
+Date: Mon, 06 May 2013 23:58:19 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [103/126] llc: Fix missing msg_namelen update in llc_ui_recvmsg()
+Cc: Andrew Honig <ahonig@google.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [067/126] KVM: x86: fix for buffer overflow in handling of MSR_KVM_SYSTEM_TIME
+ (CVE-2013-1796)
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0103-llc-Fix-missing-msg_namelen-update-in-llc_ui_recvmsg.patch
+Content-Disposition: inline; filename=0067-KVM-x86-fix-for-buffer-overflow-in-handling-of-MSR_K.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,40 +30,43 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Andy Honig <ahonig@google.com>
 
-[ Upstream commit c77a4b9cffb6215a15196ec499490d116dfad181 ]
+[ Upstream commit c300aa64ddf57d9c5d9c898a64b36877345dd4a9 ]
 
-For stream sockets the code misses to update the msg_namelen member
-to 0 and therefore makes net/socket.c leak the local, uninitialized
-sockaddr_storage variable to userland -- 128 bytes of kernel stack
-memory. The msg_namelen update is also missing for datagram sockets
-in case the socket is shutting down during receive.
+If the guest sets the GPA of the time_page so that the request to update the
+time straddles a page then KVM will write onto an incorrect page.  The
+write is done byusing kmap atomic to get a pointer to the page for the time
+structure and then performing a memcpy to that page starting at an offset
+that the guest controls.  Well behaved guests always provide a 32-byte aligned
+address, however a malicious guest could use this to corrupt host kernel
+memory.
 
-Fix both issues by setting msg_namelen to 0 early. It will be
-updated later if we're going to fill the msg_name member.
+Tested: Tested against kvmclock unit test.
 
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/llc/af_llc.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kvm/x86.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
-index c219000..c9d0431 100644
---- a/net/llc/af_llc.c
-+++ b/net/llc/af_llc.c
-@@ -720,6 +720,8 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	int target;	/* Read at least this many bytes */
- 	long timeo;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index a201790..142e18a 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1636,6 +1636,11 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 		/* ...but clean it before doing the actual write */
+ 		vcpu->arch.time_offset = data & ~(PAGE_MASK | 1);
  
-+	msg->msg_namelen = 0;
++		/* Check that the address is 32-byte aligned. */
++		if (vcpu->arch.time_offset &
++				(sizeof(struct pvclock_vcpu_time_info) - 1))
++			break;
 +
- 	lock_sock(sk);
- 	copied = -ENOTCONN;
- 	if (unlikely(sk->sk_type == SOCK_STREAM && sk->sk_state == TCP_LISTEN))
+ 		vcpu->arch.time_page =
+ 				gfn_to_page(vcpu->kvm, data >> PAGE_SHIFT);
+ 
 -- 
 1.7.10.4
 
