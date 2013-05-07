@@ -1,84 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285Ab3EGAt4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 20:49:56 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:56462 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755599Ab3EGAty (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 20:49:54 -0400
-Message-ID: <51884FA8.6010400@ozlabs.ru>
-Date: Tue, 07 May 2013 10:49:44 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S932370Ab3EGAur (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:50:47 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:35247 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759146Ab3EGAun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 20:50:43 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
+        Len Brown <lenb@kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 2/2 v2, RFC] Driver core: Introduce offline/online callbacks for memory blocks
+Date: Tue, 07 May 2013 02:59:05 +0200
+Message-ID: <1809544.1r1JBXrr0i@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130506162812.GB4929@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <19540491.PRsM4lKIYM@vostro.rjw.lan> <20130506162812.GB4929@dhcp-192-168-178-175.profitbricks.localdomain>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 2/5] KVM: PPC: iommu: Add missing kvm_iommu_map_pages/kvm_iommu_unmap_pages
-References: <1367824921-27151-1-git-send-email-y>  <51875a36.25ac440a.50d9.ffffe90d@mx.google.com> <1367874436.2868.90.camel@ul30vt.home>
-In-Reply-To: <1367874436.2868.90.camel@ul30vt.home>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2013 07:07 AM, Alex Williamson wrote:
-> On Mon, 2013-05-06 at 17:21 +1000, aik@ozlabs.ru wrote:
->> From: Alexey Kardashevskiy <aik@ozlabs.ru>
->>
->> The IOMMU API implements groups creating/deletion, device binding
->> and IOMMU map/unmap operations.
->>
->> The PowerPC implementation uses most of the API except map/unmap
->> operations, which are implemented on POWER using hypercalls.
->>
->> However, in order to link a kernel with the CONFIG_IOMMU_API enabled,
->> the empty kvm_iommu_map_pages/kvm_iommu_unmap_pages have to be
->> defined, so this defines them.
->>
->> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->> Cc: David Gibson <david@gibson.dropbear.id.au>
->> Signed-off-by: Paul Mackerras <paulus@samba.org>
->> ---
->>  arch/powerpc/include/asm/kvm_host.h |   14 ++++++++++++++
->>  1 file changed, 14 insertions(+)
->>
->> diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
->> index b6a047e..c025d91 100644
->> --- a/arch/powerpc/include/asm/kvm_host.h
->> +++ b/arch/powerpc/include/asm/kvm_host.h
->> @@ -603,4 +603,18 @@ struct kvm_vcpu_arch {
->>  
->>  #define __KVM_HAVE_ARCH_WQP
->>  
->> +#ifdef CONFIG_IOMMU_API
->> +/* POWERPC does not use IOMMU API for mapping/unmapping */
->> +static inline int kvm_iommu_map_pages(struct kvm *kvm,
->> +		struct kvm_memory_slot *slot)
->> +{
->> +	return 0;
->> +}
->> +
->> +static inline void kvm_iommu_unmap_pages(struct kvm *kvm,
->> +		struct kvm_memory_slot *slot)
->> +{
->> +}
->> +#endif /* CONFIG_IOMMU_API */
->> +
->>  #endif /* __POWERPC_KVM_HOST_H__ */
+On Monday, May 06, 2013 06:28:12 PM Vasilis Liaskovitis wrote:
+> Hi,
 > 
-> This is no longer needed, Gleb applied my patch for 3.10 that make all
-> of KVM device assignment dependent on a build config option and the top
-> level kvm_host.h now includes this when that is not set.  Thanks,
+> On Sat, May 04, 2013 at 01:21:16PM +0200, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > Introduce .offline() and .online() callbacks for memory_subsys
+> > that will allow the generic device_offline() and device_online()
+> > to be used with device objects representing memory blocks.  That,
+> > in turn, allows the ACPI subsystem to use device_offline() to put
+> > removable memory blocks offline, if possible, before removing
+> > memory modules holding them.
+> > 
+> > The 'online' sysfs attribute of memory block devices will attempt to
+> > put them offline if 0 is written to it and will attempt to apply the
+> > previously used online type when onlining them (i.e. when 1 is
+> > written to it).
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  drivers/base/memory.c  |  105 +++++++++++++++++++++++++++++++++++++------------
+> >  include/linux/memory.h |    1 
+> >  2 files changed, 81 insertions(+), 25 deletions(-)
+> >
+> [...]
+> 
+> > @@ -686,10 +735,16 @@ int offline_memory_block(struct memory_b
+> >  {
+> >  	int ret = 0;
+> >  
+> > +	lock_device_hotplug();
+> >  	mutex_lock(&mem->state_mutex);
+> > -	if (mem->state != MEM_OFFLINE)
+> > -		ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
+> > +	if (mem->state != MEM_OFFLINE) {
+> > +		ret = __memory_block_change_state_uevent(mem, MEM_OFFLINE,
+> > +							 MEM_ONLINE, -1);
+> > +		if (!ret)
+> > +			mem->dev.offline = true;
+> > +	}
+> >  	mutex_unlock(&mem->state_mutex);
+> > +	unlock_device_hotplug();
+> 
+> (Testing with qemu...)
 
-Cannot find it, could you point me please where it is on github or
-git.kernel.org? Thanks.
+Thanks!
+
+> offline_memory_block is called from remove_memory, which in turn is called from
+> acpi_memory_device_remove (detach operation) during acpi_bus_trim. We already
+> hold the device_hotplug lock when we trim (acpi_scan_hot_remove), so we
+> don't need to lock/unlock_device_hotplug in offline_memory_block.
+
+Indeed.
+
+First, it looks like offline_memory_block_cb() is the only place calling
+offline_memory_block(), is that right?  I'm wondering if it would make
+sense to use device_offline() in there and remove offline_memory_block()
+entirely?
+
+Second, if you ran into this issue during testing, that would mean that patch
+[1/2] actually worked for you, which would be nice. :-)  Was that really the
+case?
+
+> A more general issue is that there are now two memory offlining efforts:
+> 
+> 1) from acpi_bus_offline_companions during device offline
+> 2) from mm: remove_memory during device detach (offline_memory_block_cb)
+> 
+> The 2nd is only called if the device offline operation was already succesful, so
+> it seems ineffective or redundant now, at least for x86_64/acpi_memhotplug machine
+> (unless the blocks were re-onlined in between).
+
+Sure, and that should be OK for now.  Changing the detach behavior is not
+essential from the patch [2/2] perspective, we can do it later.
+
+> On the other hand, the 2nd effort has some more intelligence in offlining, as it
+> tries to offline twice in the precense of memcg, see commits df3e1b91 or
+> reworked 0baeab16. Maybe we need to consolidate the logic.
+
+Hmm.  Perhaps it would make sense to implement that logic in
+memory_subsys_offline(), then?
+
+> remove_memory is called from device_detach, during trim that can't fail, so it
+> should not fail. However this function can still fail in 2 cases:
+> - offline_memory_block_cb
+> - is_memblock_offlined_cb
+> in the case of re-onlined memblocks in between device-offline and device detach.
+> This seems possible I think, since we do not hold lock_memory_hotplug for the
+> duration of the hot-remove operation.
+
+But we do hold device_hotplug_lock, so every code path that may race with
+acpi_scan_hot_remove() needs to take device_hotplug_lock as well.  Now,
+question is whether or not there are any code paths like that calling one of
+the two functions above without holding device_hotplug_lock?
+
+Rafael
 
 
 -- 
-Alexey
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
