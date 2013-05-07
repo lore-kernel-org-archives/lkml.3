@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476Ab3EGNnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:43:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42661 "EHLO
+	id S933514Ab3EGNob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:44:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42629 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933439Ab3EGNmh (ORCPT
+	with ESMTP id S933370Ab3EGNmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:37 -0400
+	Tue, 7 May 2013 09:42:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Jonghwan Choi <jhbird.choi@samsung.com>,
+Cc: Greg Thelen <gthelen@google.com>, Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 118/118] ARM: 7699/1: sched_clock: Add more notrace to prevent recursion
-Date: Tue,  7 May 2013 14:39:24 +0100
-Message-Id: <1367933964-1564-119-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 113/118] fs/dcache.c: add cond_resched() to shrink_dcache_parent()
+Date: Tue,  7 May 2013 14:39:19 +0100
+Message-Id: <1367933964-1564-114-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -29,48 +29,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Greg Thelen <gthelen@google.com>
 
-commit cea15092f098b7018e89f64a5a14bb71955965d5 upstream.
+commit 421348f1ca0bf17769dee0aed4d991845ae0536d upstream.
 
-cyc_to_sched_clock() is called by sched_clock() and cyc_to_ns()
-is called by cyc_to_sched_clock(). I suspect that some compilers
-inline both of these functions into sched_clock() and so we've
-been getting away without having a notrace marking. It seems that
-my compiler isn't inlining cyc_to_sched_clock() though, so I'm
-hitting a recursion bug when I enable the function graph tracer,
-causing my system to crash. Marking these functions notrace fixes
-it. Technically cyc_to_ns() doesn't need the notrace because it's
-already marked inline, but let's just add it so that if we ever
-remove inline from that function it doesn't blow up.
+Call cond_resched() in shrink_dcache_parent() to maintain interactivity.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Before this patch:
+
+	void shrink_dcache_parent(struct dentry * parent)
+	{
+		while ((found = select_parent(parent, &dispose)) != 0)
+			shrink_dentry_list(&dispose);
+	}
+
+select_parent() populates the dispose list with dentries which
+shrink_dentry_list() then deletes.  select_parent() carefully uses
+need_resched() to avoid doing too much work at once.  But neither
+shrink_dcache_parent() nor its called functions call cond_resched().  So
+once need_resched() is set select_parent() will return single dentry
+dispose list which is then deleted by shrink_dentry_list().  This is
+inefficient when there are a lot of dentry to process.  This can cause
+softlockup and hurts interactivity on non preemptable kernels.
+
+This change adds cond_resched() in shrink_dcache_parent().  The benefit
+of this is that need_resched() is quickly cleared so that future calls
+to select_parent() are able to efficiently return a big batch of dentry.
+
+These additional cond_resched() do not seem to impact performance, at
+least for the workload below.
+
+Here is a program which can cause soft lockup if other system activity
+sets need_resched().
+
+	int main()
+	{
+	        struct rlimit rlim;
+	        int i;
+	        int f[100000];
+	        char buf[20];
+	        struct timeval t1, t2;
+	        double diff;
+
+	        /* cleanup past run */
+	        system("rm -rf x");
+
+	        /* boost nfile rlimit */
+	        rlim.rlim_cur = 200000;
+	        rlim.rlim_max = 200000;
+	        if (setrlimit(RLIMIT_NOFILE, &rlim))
+	                err(1, "setrlimit");
+
+	        /* make directory for files */
+	        if (mkdir("x", 0700))
+	                err(1, "mkdir");
+
+	        if (gettimeofday(&t1, NULL))
+	                err(1, "gettimeofday");
+
+	        /* populate directory with open files */
+	        for (i = 0; i < 100000; i++) {
+	                snprintf(buf, sizeof(buf), "x/%d", i);
+	                f[i] = open(buf, O_CREAT);
+	                if (f[i] == -1)
+	                        err(1, "open");
+	        }
+
+	        /* close some of the files */
+	        for (i = 0; i < 85000; i++)
+	                close(f[i]);
+
+	        /* unlink all files, even open ones */
+	        system("rm -rf x");
+
+	        if (gettimeofday(&t2, NULL))
+	                err(1, "gettimeofday");
+
+	        diff = (((double)t2.tv_sec * 1000000 + t2.tv_usec) -
+	                ((double)t1.tv_sec * 1000000 + t1.tv_usec));
+
+	        printf("done: %g elapsed\n", diff/1e6);
+	        return 0;
+	}
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/kernel/sched_clock.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/dcache.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-index 6bbf936..926c98f 100644
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -39,12 +39,12 @@ static u32 notrace jiffy_sched_clock_read(void)
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 458ec45..9b36632 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1254,8 +1254,10 @@ void shrink_dcache_parent(struct dentry * parent)
+ 	LIST_HEAD(dispose);
+ 	int found;
  
- static u32 __read_mostly (*read_sched_clock)(void) = jiffy_sched_clock_read;
- 
--static inline u64 cyc_to_ns(u64 cyc, u32 mult, u32 shift)
-+static inline u64 notrace cyc_to_ns(u64 cyc, u32 mult, u32 shift)
- {
- 	return (cyc * mult) >> shift;
+-	while ((found = select_parent(parent, &dispose)) != 0)
++	while ((found = select_parent(parent, &dispose)) != 0) {
+ 		shrink_dentry_list(&dispose);
++		cond_resched();
++	}
  }
+ EXPORT_SYMBOL(shrink_dcache_parent);
  
--static unsigned long long cyc_to_sched_clock(u32 cyc, u32 mask)
-+static unsigned long long notrace cyc_to_sched_clock(u32 cyc, u32 mask)
- {
- 	u64 epoch_ns;
- 	u32 epoch_cyc;
 -- 
 1.8.1.2
 
