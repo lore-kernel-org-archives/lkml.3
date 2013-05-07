@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933180Ab3EGNlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:41:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42404 "EHLO
+	id S933272Ab3EGOAA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:00:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42424 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933115Ab3EGNln (ORCPT
+	with ESMTP id S933162Ab3EGNlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:41:43 -0400
+	Tue, 7 May 2013 09:41:49 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+Cc: Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 067/118] cgroup: fix an off-by-one bug which may trigger BUG_ON()
-Date: Tue,  7 May 2013 14:38:33 +0100
-Message-Id: <1367933964-1564-68-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 075/118] usb: chipidea: udc: fix memory access of shared memory on armv5 machines
+Date: Tue,  7 May 2013 14:38:41 +0100
+Message-Id: <1367933964-1564-76-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -27,38 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-commit 3ac1707a13a3da9cfc8f242a15b2fae6df2c5f88 upstream.
+commit a9c174302b1590ef3ead485d804a303c5f89174b upstream.
 
-The 3rd parameter of flex_array_prealloc() is the number of elements,
-not the index of the last element.
+The udc uses an shared dma memory space between hard and software. This
+memory layout is described in ci13xxx_qh and ci13xxx_td which are marked
+with the attribute ((packed)).
 
-The effect of the bug is, when opening cgroup.procs, a flex array will
-be allocated and all elements of the array is allocated with
-GFP_KERNEL flag, but the last one is GFP_ATOMIC, and if we fail to
-allocate memory for it, it'll trigger a BUG_ON().
+The compiler currently does not know about the alignment of the memory
+layout, and will create strb and ldrb operations.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+The Datasheet of the synopsys core describes, that some operations on
+the mapped memory need to be atomic double word operations. I.e. the
+next pointer addressing in the qhead, as otherwise the hardware will
+read wrong data and totally stuck.
+
+This is also possible while working with the current active td queue,
+and preparing the td->ptr.next in software while the hardware is still
+working with the current active td which is supposed to be changed:
+
+writeb(0xde, &td->ptr.next + 0x0); /* strb */
+writeb(0xad, &td->ptr.next + 0x1); /* strb */
+
+<----- hardware reads value of td->ptr.next and get stuck!
+
+writeb(0xbe, &td->ptr.next + 0x2); /* strb */
+writeb(0xef, &td->ptr.next + 0x3); /* strb */
+
+This appeares on armv5 machines where the hardware does not support
+unaligned 32bit operations.
+
+This patch adds the attribute ((aligned(4))) to the structures to tell
+the compiler to use 32bit operations. It also adds an wmb() for the
+prepared TD data before it gets enqueued into the qhead.
+
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/cgroup.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/chipidea/udc.c | 2 ++
+ drivers/usb/chipidea/udc.h | 4 ++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 87fbb45..5168e37 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2079,7 +2079,7 @@ static int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	if (!group)
- 		return -ENOMEM;
- 	/* pre-allocate to guarantee space while iterating in rcu read-side. */
--	retval = flex_array_prealloc(group, 0, group_size - 1, GFP_KERNEL);
-+	retval = flex_array_prealloc(group, 0, group_size, GFP_KERNEL);
- 	if (retval)
- 		goto out_free_group_list;
+diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
+index ea271d7..60bcf1c 100644
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -439,6 +439,8 @@ static int _hardware_enqueue(struct ci13xxx_ep *mEp, struct ci13xxx_req *mReq)
+ 		mReq->ptr->page[i] =
+ 			(mReq->req.dma + i * CI13XXX_PAGE_SIZE) & ~TD_RESERVED_MASK;
  
++	wmb();
++
+ 	if (!list_empty(&mEp->qh.queue)) {
+ 		struct ci13xxx_req *mReqPrev;
+ 		int n = hw_ep_bit(mEp->num, mEp->dir);
+diff --git a/drivers/usb/chipidea/udc.h b/drivers/usb/chipidea/udc.h
+index 4ff2384d..d12e8b5 100644
+--- a/drivers/usb/chipidea/udc.h
++++ b/drivers/usb/chipidea/udc.h
+@@ -40,7 +40,7 @@ struct ci13xxx_td {
+ #define TD_CURR_OFFSET        (0x0FFFUL <<  0)
+ #define TD_FRAME_NUM          (0x07FFUL <<  0)
+ #define TD_RESERVED_MASK      (0x0FFFUL <<  0)
+-} __attribute__ ((packed));
++} __attribute__ ((packed, aligned(4)));
+ 
+ /* DMA layout of queue heads */
+ struct ci13xxx_qh {
+@@ -57,7 +57,7 @@ struct ci13xxx_qh {
+ 	/* 9 */
+ 	u32 RESERVED;
+ 	struct usb_ctrlrequest   setup;
+-} __attribute__ ((packed));
++} __attribute__ ((packed, aligned(4)));
+ 
+ /**
+  * struct ci13xxx_req - usb request representation
 -- 
 1.8.1.2
 
