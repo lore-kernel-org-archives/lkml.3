@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933514Ab3EGNob (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:44:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42629 "EHLO
+	id S933484Ab3EGNoa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:44:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42653 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933370Ab3EGNmc (ORCPT
+	with ESMTP id S933428Ab3EGNmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:32 -0400
+	Tue, 7 May 2013 09:42:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Greg Thelen <gthelen@google.com>, Dave Chinner <david@fromorbit.com>,
+Cc: Derek Basehore <dbasehore@chromium.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 113/118] fs/dcache.c: add cond_resched() to shrink_dcache_parent()
-Date: Tue,  7 May 2013 14:39:19 +0100
-Message-Id: <1367933964-1564-114-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 109/118] drivers/rtc/rtc-cmos.c: don't disable hpet emulation on suspend
+Date: Tue,  7 May 2013 14:39:15 +0100
+Message-Id: <1367933964-1564-110-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -29,114 +32,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Thelen <gthelen@google.com>
+From: Derek Basehore <dbasehore@chromium.org>
 
-commit 421348f1ca0bf17769dee0aed4d991845ae0536d upstream.
+commit e005715efaf674660ae59af83b13822567e3a758 upstream.
 
-Call cond_resched() in shrink_dcache_parent() to maintain interactivity.
+There's a bug where rtc alarms are ignored after the rtc cmos suspends
+but before the system finishes suspend.  Since hpet emulation is
+disabled and it still handles the interrupts, a wake event is never
+registered which is done from the rtc layer.
 
-Before this patch:
+This patch reverts commit d1b2efa83fbf ("rtc: disable hpet emulation on
+suspend") which disabled hpet emulation.  To fix the problem mentioned
+in that commit, hpet_rtc_timer_init() is called directly on resume.
 
-	void shrink_dcache_parent(struct dentry * parent)
-	{
-		while ((found = select_parent(parent, &dispose)) != 0)
-			shrink_dentry_list(&dispose);
-	}
-
-select_parent() populates the dispose list with dentries which
-shrink_dentry_list() then deletes.  select_parent() carefully uses
-need_resched() to avoid doing too much work at once.  But neither
-shrink_dcache_parent() nor its called functions call cond_resched().  So
-once need_resched() is set select_parent() will return single dentry
-dispose list which is then deleted by shrink_dentry_list().  This is
-inefficient when there are a lot of dentry to process.  This can cause
-softlockup and hurts interactivity on non preemptable kernels.
-
-This change adds cond_resched() in shrink_dcache_parent().  The benefit
-of this is that need_resched() is quickly cleared so that future calls
-to select_parent() are able to efficiently return a big batch of dentry.
-
-These additional cond_resched() do not seem to impact performance, at
-least for the workload below.
-
-Here is a program which can cause soft lockup if other system activity
-sets need_resched().
-
-	int main()
-	{
-	        struct rlimit rlim;
-	        int i;
-	        int f[100000];
-	        char buf[20];
-	        struct timeval t1, t2;
-	        double diff;
-
-	        /* cleanup past run */
-	        system("rm -rf x");
-
-	        /* boost nfile rlimit */
-	        rlim.rlim_cur = 200000;
-	        rlim.rlim_max = 200000;
-	        if (setrlimit(RLIMIT_NOFILE, &rlim))
-	                err(1, "setrlimit");
-
-	        /* make directory for files */
-	        if (mkdir("x", 0700))
-	                err(1, "mkdir");
-
-	        if (gettimeofday(&t1, NULL))
-	                err(1, "gettimeofday");
-
-	        /* populate directory with open files */
-	        for (i = 0; i < 100000; i++) {
-	                snprintf(buf, sizeof(buf), "x/%d", i);
-	                f[i] = open(buf, O_CREAT);
-	                if (f[i] == -1)
-	                        err(1, "open");
-	        }
-
-	        /* close some of the files */
-	        for (i = 0; i < 85000; i++)
-	                close(f[i]);
-
-	        /* unlink all files, even open ones */
-	        system("rm -rf x");
-
-	        if (gettimeofday(&t2, NULL))
-	                err(1, "gettimeofday");
-
-	        diff = (((double)t2.tv_sec * 1000000 + t2.tv_usec) -
-	                ((double)t1.tv_sec * 1000000 + t1.tv_usec));
-
-	        printf("done: %g elapsed\n", diff/1e6);
-	        return 0;
-	}
-
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Derek Basehore <dbasehore@chromium.org>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/dcache.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/rtc/rtc-cmos.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 458ec45..9b36632 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1254,8 +1254,10 @@ void shrink_dcache_parent(struct dentry * parent)
- 	LIST_HEAD(dispose);
- 	int found;
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index 4267789..6a4adf7 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -805,9 +805,8 @@ static int cmos_suspend(struct device *dev)
+ 			mask = RTC_IRQMASK;
+ 		tmp &= ~mask;
+ 		CMOS_WRITE(tmp, RTC_CONTROL);
++		hpet_mask_rtc_irq_bit(mask);
  
--	while ((found = select_parent(parent, &dispose)) != 0)
-+	while ((found = select_parent(parent, &dispose)) != 0) {
- 		shrink_dentry_list(&dispose);
-+		cond_resched();
-+	}
- }
- EXPORT_SYMBOL(shrink_dcache_parent);
- 
+-		/* shut down hpet emulation - we don't need it for alarm */
+-		hpet_mask_rtc_irq_bit(RTC_PIE|RTC_AIE|RTC_UIE);
+ 		cmos_checkintr(cmos, tmp);
+ 	}
+ 	spin_unlock_irq(&rtc_lock);
+@@ -872,6 +871,7 @@ static int cmos_resume(struct device *dev)
+ 			rtc_update_irq(cmos->rtc, 1, mask);
+ 			tmp &= ~RTC_AIE;
+ 			hpet_mask_rtc_irq_bit(RTC_AIE);
++			hpet_rtc_timer_init();
+ 		} while (mask & RTC_AIE);
+ 		spin_unlock_irq(&rtc_lock);
+ 	}
 -- 
 1.8.1.2
 
