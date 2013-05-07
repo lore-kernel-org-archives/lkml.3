@@ -1,103 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222Ab3EGEpP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:45:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13075 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759322Ab3EGEZf (ORCPT
+	id S1760737Ab3EGE4g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:56:36 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:60924 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757107Ab3EGE4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 00:25:35 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=p0OKwHXBEJAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=ol_ggUAGy90A:10 a=drOt6m5kAAAA:8 a=a8mUjMzut-K6YpWAQgcA:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035901.959062037@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:59:18 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mikael Pettersson <mikpe@it.uu.se>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [126/126] ARM: 7692/1: iop3xx: move IOP3XX_PERIPHERAL_VIRT_BASE
-References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0126-ARM-7692-1-iop3xx-move-IOP3XX_PERIPHERAL_VIRT_BASE.patch
+	Tue, 7 May 2013 00:56:34 -0400
+From: "Michael D. Setzer II" <msetzerii@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
+Date: Tue, 07 May 2013 14:56:29 +1000
+MIME-Version: 1.0
+Subject: Re: Kernel Firmware Support
+Message-ID: <5188897D.15662.1AD368@msetzerii.gmail.com>
+In-reply-to: <20130507024750.GA26639@kroah.com>
+References: <51885C8A.28146.10AA3F@msetzerii.gmail.com>, <20130507024750.GA26639@kroah.com>
+X-mailer: Pegasus Mail for Windows (4.63)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.3 stable review patch.
-If anyone has any objections, please let me know.
+On 6 May 2013 at 19:47, Greg KH wrote:
 
-------------------
+Date sent:      	Mon, 6 May 2013 19:47:50 -0700
+From:           	Greg KH <gregkh@linuxfoundation.org>
+To:             	"Michael D. Setzer II" <msetzerii@gmail.com>
+Copies to:      	linux-kernel@vger.kernel.org
+Subject:        	Re: Kernel Firmware Support
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+> On Tue, May 07, 2013 at 11:44:42AM +1000, Michael D. Setzer II wrote:
+> > Looking for method to best support users firmware needs within 
+> > the kernel. 
+> > 
+> > Have a disk-image project that users kernel.org kernels, and have 
+> > had users that require firmware that is not included in the 
+> > kernel.org source. I've been able to find it in linux-firmware.git and 
+> > then manually adding it to the kernel.org firmware directory and 
+> > then modifying the Makefile.
+> 
+> Use the linux-firmware package, all of the distros package it up for you
+> automatically, and install it in the correct place, so it should "just
+> work".
+> 
+> What is failing for you when you use the firmware package?
+> 
 
-[ Upstream commit f5d6a1441a5045824f36ff7c6b6bbae0373472a6 ]
+First, Thanks for the quick reply. The problem is this isn't using a 
+distro build. My project (G4L) uses a number of kernels from 
+kernel.org and I try to include as many of the nic and other 
+devices in the kernel to make it support hardware that is outside 
+my control. I've had users with bnx2x hardware that requires 
+firmware that is not part of the kernel.org source code, and have 
+manuaully added it by putting the .fw file in the subdirectory of 
+firmware and modifying the Makefile. Then building the kernel 
+includes that additional firmware in the about 8M kernel file that 
+the user selects from the CD boot process. 
 
-Currently IOP3XX_PERIPHERAL_VIRT_BASE conflicts with PCI_IO_VIRT_BASE:
+The ideal is to be able to boot from the cd, or load the kernel with 
+its filesystem to be able to do partition or disk image backups, but 
+it must be able to use the hardware to access the disks and in 
+most cases the nic. Without the firmware these bnx2x nics don't 
+work.
 
-					address         size
-	PCI_IO_VIRT_BASE                0xfee00000      0x200000
-	IOP3XX_PERIPHERAL_VIRT_BASE     0xfeffe000      0x2000
+For awhile I've been manually adding these two firmwares
+./bnx2x/bnx2x-e2-7.2.51.0.fw
+./bnx2/bnx2-mips-09-6.2.1b.fw
 
-Fix by moving IOP3XX_PERIPHERAL_VIRT_BASE below PCI_IO_VIRT_BASE.
+But yesterday, I got a message from a different user with screen 
+captures that showed  failure of loading the firmware below. 
+Actually, one screen shot with the 7.0.23.0 and another with the 
+7.0.29.0. Wasn't sure, so I had added all three of th 7.0.x group to 
+a test build of my kernels. Is only the latest needed?
 
-The patch fixes the following kernel panic with 3.9-rc1 on iop3xx boards:
+./bnx2x/bnx2x-e1h-7.0.23.0.fw
+./bnx2x/bnx2x-e1h-7.0.29.0.fw
+./bnx2x/bnx2x-e1h-7.0.20.0.fw
 
-[    0.000000] Booting Linux on physical CPU 0x0
-[    0.000000] Initializing cgroup subsys cpu
-[    0.000000] Linux version 3.9.0-rc1-iop32x (aaro@blackmetal) (gcc version 4.7.2 (GCC) ) #20 PREEMPT Tue Mar 5 16:44:36 EET 2013
-[    0.000000] bootconsole [earlycon0] enabled
-[    0.000000] ------------[ cut here ]------------
-[    0.000000] kernel BUG at mm/vmalloc.c:1145!
-[    0.000000] Internal error: Oops - BUG: 0 [#1] PREEMPT ARM
-[    0.000000] Modules linked in:
-[    0.000000] CPU: 0    Not tainted  (3.9.0-rc1-iop32x #20)
-[    0.000000] PC is at vm_area_add_early+0x4c/0x88
-[    0.000000] LR is at add_static_vm_early+0x14/0x68
-[    0.000000] pc : [<c03e74a8>]    lr : [<c03e1c40>]    psr: 800000d3
-[    0.000000] sp : c03ffee4  ip : dfffdf88  fp : c03ffef4
-[    0.000000] r10: 00000002  r9 : 000000cf  r8 : 00000653
-[    0.000000] r7 : c040eca8  r6 : c03e2408  r5 : dfffdf60  r4 : 00200000
-[    0.000000] r3 : dfffdfd8  r2 : feffe000  r1 : ff000000  r0 : dfffdf60
-[    0.000000] Flags: Nzcv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-[    0.000000] Control: 0000397f  Table: a0004000  DAC: 00000017
-[    0.000000] Process swapper (pid: 0, stack limit = 0xc03fe1b8)
-[    0.000000] Stack: (0xc03ffee4 to 0xc0400000)
-[    0.000000] fee0:          00200000 c03fff0c c03ffef8 c03e1c40 c03e7468 00200000 fee00000
-[    0.000000] ff00: c03fff2c c03fff10 c03e23e4 c03e1c38 feffe000 c0408ee4 ff000000 c0408f04
-[    0.000000] ff20: c03fff3c c03fff30 c03e2434 c03e23b4 c03fff84 c03fff40 c03e2c94 c03e2414
-[    0.000000] ff40: c03f8878 c03f6410 ffff0000 000bffff 00001000 00000008 c03fff84 c03f6410
-[    0.000000] ff60: c04227e8 c03fffd4 a0008000 c03f8878 69052e30 c02f96eb c03fffbc c03fff88
-[    0.000000] ff80: c03e044c c03e268c 00000000 0000397f c0385130 00000001 ffffffff c03f8874
-[    0.000000] ffa0: dfffffff a0004000 69052e30 a03f61a0 c03ffff4 c03fffc0 c03dd5cc c03e0184
-[    0.000000] ffc0: 00000000 00000000 00000000 00000000 00000000 c03f8878 0000397d c040601c
-[    0.000000] ffe0: c03f8874 c0408674 00000000 c03ffff8 a0008040 c03dd558 00000000 00000000
-[    0.000000] Backtrace:
-[    0.000000] [<c03e745c>] (vm_area_add_early+0x0/0x88) from [<c03e1c40>] (add_static_vm_early+0x14/0x68)
+I don't have access to any hardware with these bnx2? devices, so 
+have to get feedback from users. The previous additions of 
+firmware solved the problems, but just looking for the best way to 
+solve it.
 
-Tested-by: Mikael Pettersson <mikpe@it.uu.se>
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/arm/include/asm/hardware/iop3xx.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks again.
 
-diff --git a/arch/arm/include/asm/hardware/iop3xx.h b/arch/arm/include/asm/hardware/iop3xx.h
-index 2ff2c75..7e2507f 100644
---- a/arch/arm/include/asm/hardware/iop3xx.h
-+++ b/arch/arm/include/asm/hardware/iop3xx.h
-@@ -37,7 +37,7 @@ extern int iop3xx_get_init_atu(void);
-  * IOP3XX processor registers
-  */
- #define IOP3XX_PERIPHERAL_PHYS_BASE	0xffffe000
--#define IOP3XX_PERIPHERAL_VIRT_BASE	0xfeffe000
-+#define IOP3XX_PERIPHERAL_VIRT_BASE	0xfedfe000
- #define IOP3XX_PERIPHERAL_SIZE		0x00002000
- #define IOP3XX_PERIPHERAL_UPPER_PA (IOP3XX_PERIPHERAL_PHYS_BASE +\
- 					IOP3XX_PERIPHERAL_SIZE - 1)
--- 
-1.7.10.4
 
+
+
+
+> thanks,
+> 
+> greg k-h
+
+
++----------------------------------------------------------+
+  Michael D. Setzer II -  Computer Science Instructor      
+  Guam Community College  Computer Center                  
+  mailto:mikes@kuentos.guam.net                            
+  mailto:msetzerii@gmail.com
+  http://www.guam.net/home/mikes
+  Guam - Where America's Day Begins                        
+  G4L Disk Imaging Project maintainer 
+  http://sourceforge.net/projects/g4l/
++----------------------------------------------------------+
+
+http://setiathome.berkeley.edu (Original)
+Number of Seti Units Returned:  19,471
+Processing time:  32 years, 290 days, 12 hours, 58 minutes
+(Total Hours: 287,489)
+
+BOINC@HOME CREDITS
+SETI        14672667.574611   |   EINSTEIN    11160884.209852
+ROSETTA      7189167.439443   |   ABC         15954188.106838
 
