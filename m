@@ -1,112 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab3EGJRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 05:17:38 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:39359 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759277Ab3EGJRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 05:17:36 -0400
-Date: Tue, 7 May 2013 04:17:34 -0500
-From: Robin Holt <holt@sgi.com>
-To: Qing Xu <qingx@marvell.com>, Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: How does commit 47ec340c not introduce a bug?
-Message-ID: <20130507091734.GM3658@sgi.com>
+	id S932212Ab3EGJRy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 05:17:54 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:57306 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932104Ab3EGJRx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 05:17:53 -0400
+X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
+   d="scan'208";a="4289979"
+Message-ID: <1367918270.26321.39.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH RFC v2 4/4] xen/arm: account for stolen ticks
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 7 May 2013 10:17:50 +0100
+In-Reply-To: <1367851878-21629-4-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <alpine.DEB.2.02.1305061532310.4756@kaball.uk.xensource.com>
+	 <1367851878-21629-4-git-send-email-stefano.stabellini@eu.citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed a warning while cross-compiling all arm defconfigs.
+On Mon, 2013-05-06 at 15:51 +0100, Stefano Stabellini wrote:
+> Register the runstate_memory_area with the hypervisor.
+> Use pv_time_ops.steal_clock to account for stolen ticks.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/arm/xen/enlighten.c |   23 +++++++++++++++++++++++
+>  1 files changed, 23 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> index ee86bfa..2a5cc82 100644
+> --- a/arch/arm/xen/enlighten.c
+> +++ b/arch/arm/xen/enlighten.c
+> @@ -14,7 +14,10 @@
+>  #include <xen/xen-ops.h>
+>  #include <asm/xen/hypervisor.h>
+>  #include <asm/xen/hypercall.h>
+> +#include <asm/arch_timer.h>
+>  #include <asm/system_misc.h>
+> +#include <asm/paravirt.h>
+> +#include <linux/jump_label.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/irqreturn.h>
+>  #include <linux/module.h>
+> @@ -152,6 +155,20 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
+>  }
+>  EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
+>  
+> +unsigned long long xen_stolen_accounting(int cpu)
+> +{
+> +	struct vcpu_runstate_info state;
+> +
+> +	if (cpu != get_cpu())
 
-The mmp2_defconfig gave this warning:
+get_cpu disables preempt, so you need a matching put_cpu.
 
-drivers/video/backlight/max8925_bl.c: In function 'max8925_backlight_probe':
-drivers/video/backlight/max8925_bl.c:177:3: warning: statement with no effect [-Wunused-value]
+But actually I think you just want smp_processor_id and you probably
+want the BUG_ON form to get unlikely etc.
 
-This appears to have been introduced by the above commit when !CONFIG_OF
+That said, you don't use cpu for anything else, so why not drop it
+entirely?
 
-Looking at this more closely, I am not sure how this was ever intended
-to be handled or how the errors returned in the CONFIG_OF case were
-intended to be handled as the return from max8925_backlight_dt_init is
-always ignored.
+> +		BUG();
+> +
+> +	xen_get_runstate_snapshot(&state);
+> +
+> +	WARN_ON(state.state != RUNSTATE_running);
+> +
+> +	return state.time[RUNSTATE_runnable] + state.time[RUNSTATE_offline];
+> +}
+> +
+>  static void __init xen_percpu_init(void *unused)
+>  {
+>  	struct vcpu_register_vcpu_info info;
+> @@ -170,6 +187,8 @@ static void __init xen_percpu_init(void *unused)
+>  		BUG();
+>  	per_cpu(xen_vcpu, cpu) = vcpup;
+>  
+> +	xen_setup_runstate_info(cpu);
+> +
+>  	enable_percpu_irq(xen_events_irq, 0);
+>  }
+>  
+> @@ -301,6 +320,10 @@ static int __init xen_init_events(void)
+>  
+>  	on_each_cpu(xen_percpu_init, NULL, 0);
+>  
+> +	pv_time_ops.steal_clock = xen_stolen_accounting;
+> +	static_key_slow_inc(&paravirt_steal_enabled);
+> +	static_key_slow_inc(&paravirt_steal_rq_enabled);
 
-I think this needs some more attention, but do not feel like I know
-enough about it or have any means to test it to weigh in.
+We don't seem to do this on x86 -- is that a bug on x86 on Xen?
 
-Thanks,
-Robin
+> +
+>  	return 0;
+>  }
+>  postcore_initcall(xen_init_events);
 
 
-commit 47ec340cb8e232671e7c4a4689ff32c3bdf329da
-Author: Qing Xu <qingx@marvell.com>
-Date:   Mon Feb 4 23:40:45 2013 +0800
-
-    mfd: max8925: Support dt for backlight
-    
-    Add device tree support in max8925 backlight.
-    
-    Signed-off-by: Qing Xu <qingx@marvell.com>
-    Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-    Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-
-diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
-index 2c9bce0..5ca11b0 100644
---- a/drivers/video/backlight/max8925_bl.c
-+++ b/drivers/video/backlight/max8925_bl.c
-@@ -101,6 +101,29 @@ static const struct backlight_ops max8925_backlight_ops = {
- 	.get_brightness	= max8925_backlight_get_brightness,
- };
- 
-+#ifdef CONFIG_OF
-+static int max8925_backlight_dt_init(struct platform_device *pdev,
-+			      struct max8925_backlight_pdata *pdata)
-+{
-+	struct device_node *nproot = pdev->dev.parent->of_node, *np;
-+	int dual_string;
-+
-+	if (!nproot)
-+		return -ENODEV;
-+	np = of_find_node_by_name(nproot, "backlight");
-+	if (!np) {
-+		dev_err(&pdev->dev, "failed to find backlight node\n");
-+		return -ENODEV;
-+	}
-+
-+	of_property_read_u32(np, "maxim,max8925-dual-string", &dual_string);
-+	pdata->dual_string = dual_string;
-+	return 0;
-+}
-+#else
-+#define max8925_backlight_dt_init(x, y)	(-1)
-+#endif
-+
- static int max8925_backlight_probe(struct platform_device *pdev)
- {
- 	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
-@@ -147,6 +170,13 @@ static int max8925_backlight_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, bl);
- 
- 	value = 0;
-+	if (pdev->dev.parent->of_node && !pdata) {
-+		pdata = devm_kzalloc(&pdev->dev,
-+				     sizeof(struct max8925_backlight_pdata),
-+				     GFP_KERNEL);
-+		max8925_backlight_dt_init(pdev, pdata);
-+	}
-+
- 	if (pdata) {
- 		if (pdata->lxw_scl)
- 			value |= (1 << 7);
-@@ -158,7 +188,6 @@ static int max8925_backlight_probe(struct platform_device *pdev)
- 	ret = max8925_set_bits(chip->i2c, data->reg_mode_cntl, 0xfe, value);
- 	if (ret < 0)
- 		goto out_brt;
--
- 	backlight_update_status(bl);
- 	return 0;
- out_brt:
