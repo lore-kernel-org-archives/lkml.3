@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758595Ab3EGTDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 15:03:52 -0400
-Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:41961 "HELO
-	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755138Ab3EGTDu convert rfc822-to-8bit (ORCPT
+	id S1758847Ab3EGTFF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 15:05:05 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:64227 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753721Ab3EGTFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 15:03:50 -0400
-Subject: Re: [PATCH 07/15] hfs: avoid crash in hfs_bnode_create
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-In-Reply-To: <1367936303-13386-7-git-send-email-jslaby@suse.cz>
-Date: Tue, 7 May 2013 23:05:26 +0400
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Jeff Mahoney <jeffm@suse.com>, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D666C431-DAD2-4189-9716-564602705D82@dubeyko.com>
-References: <1367936303-13386-1-git-send-email-jslaby@suse.cz> <1367936303-13386-7-git-send-email-jslaby@suse.cz>
-To: Jiri Slaby <jslaby@suse.cz>
-X-Mailer: Apple Mail (2.1085)
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.28 authed with slava@dubeyko.com}
+	Tue, 7 May 2013 15:05:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <384171828.66802.1367942365492.JavaMail.mail@webmail05>
+References: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
+	<Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
+	<CAErSpo7NZoOQZyW76HEoOTVgdqL2CgbVScAeF6HGLAVaNCq0=w@mail.gmail.com>
+	<337833384.57445.1361860509194.JavaMail.mail@webmail08>
+	<CAErSpo6CbO5KYXiErv6J_Dnm1u694C5fQPP2_cZL8VKDEnZa9A@mail.gmail.com>
+	<569718148.80620.1361906088301.JavaMail.mail@webmail13>
+	<CAErSpo6UkVhSf+nFW4zwJLBQw_0RQ5H9Bv-UuQRb6zdwsFPw4g@mail.gmail.com>
+	<CAErSpo4X+XXKvWDfqh2CKZAtJ9WMQk91OcsWwdxwYv2MfEM_zQ@mail.gmail.com>
+	<771333906.75854.1367057440028.JavaMail.mail@webmail08>
+	<CAErSpo4B4sRco-nuqgXiYtGQxBcbEB6ArQjHD0A9cj4TRE+qQw@mail.gmail.com>
+	<518097B8.4020402@gmail.com>
+	<CAErSpo7KWPRVEnw+n068pUZz+=WSTwno6m6t7N6dunuhnFC8EA@mail.gmail.com>
+	<384171828.66802.1367942365492.JavaMail.mail@webmail05>
+Date: Tue, 7 May 2013 13:05:00 -0600
+Message-ID: <CADLC3L3bdTP8-X3ftMq1qxnL=LVDf7d5gbu2ZMH0pXg2AU8xjw@mail.gmail.com>
+Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
+From: Robert Hancock <hancockrwd@gmail.com>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, psusi@ubuntu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 7, 2013, at 6:18 PM, Jiri Slaby wrote:
+On Tue, May 7, 2013 at 9:59 AM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
+> May 7, 2013 09:25:40 PM,        Bjorn Helgaas  wrote:
+>> [+cc Phillip]
+>>
+>>> I would suspect that Windows' complaint about the BIOS mucking up the MTRRs
+>>> is likely the best hint. Likely Windows is detecting the problem and fixing
+>>> it up on resume, thus it only complains about "reduced resume performance".
+>>> If the MTRRs are messed up, then quite likely parts of RAM have become
+>>> uncacheable, causing performance to get randomly slaughtered in various
+>>> ways.
+>>>
+>>> From looking at the code it's not clear if we are checking/restoring the
+>>> MTRR contents after resume. If not, maybe we should be.
+>>
+>>I agree; the MTRR warning is a good hint.  Artem?
+>>
+>>Phillip, I cc'd you because you have similar hardware and your
+>>https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1131468 report is
+>>slightly similar.  Have you seen anything like this "reduced
+>>performance after resume" issue?  If so, can you collect /proc/mtrr
+>>contents before and after suspending?
+>>
+>
+> Like Robert Hancock correctly noted the Linux kernel lacks the code to check
+> for MTTR changes after resume - I'm not a kernel hacker to write such a code ;-)
+>
+> Likewise there's no code to see if RAM pages have become uncacheable - i.e
+> I've no idea how to check it either.
+>
+> According to /proc/mttr nothing changes on resume - only Windows detects
+> the discrepancy between MTTR regions on resume. dmesg contains no warnings
+> or errors (aside from usual ACPI SATA warnings - but they happen right on
+> boot - so I highly doubt the ACPI or SATA layers can be the culprit, since USB
+> exhibits a similar performance degradation).
 
-> From: Jeff Mahoney <jeffm@suse.com>
-> 
-> Commit 634725a92938b0f282b17cec0b007dca77adebd2 removed the BUG_ON in
-> hfs_bnode_create in hfsplus. This patch removes it from the hfs
-> version and avoids an fsfuzzer crash.
-> 
-> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-> Acked-by: Jeff Mahoney <jeffm@suse.com>
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: linux-fsdevel@vger.kernel.org
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> fs/hfs/bnode.c | 6 +++++-
-> 1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/hfs/bnode.c b/fs/hfs/bnode.c
-> index f3b1a15..6d435c2 100644
-> --- a/fs/hfs/bnode.c
-> +++ b/fs/hfs/bnode.c
-> @@ -415,7 +415,11 @@ struct hfs_bnode *hfs_bnode_create(struct hfs_btree *tree, u32 num)
-> 	spin_lock(&tree->hash_lock);
-> 	node = hfs_bnode_findhash(tree, num);
-> 	spin_unlock(&tree->hash_lock);
-> -	BUG_ON(node);
-> +	if (node) {
-> +		printk(KERN_CRIT "new node %u already hashed?\n", num);
+I'm not sure if reading /proc/mtrr actually reads the registers out of
+the CPU each time, or whether we just return the cached values we read
+out during initial boot-up. If the latter, then this output isn't
+really useful as there's no guarantee the values are still intact.
 
-The error/debug subsystem of HFS/HFS+ was reworked by Joe Perches, recently. Please, change printk() on pr_crit().
-
-Thanks,
-Vyacheslav Dubeyko.
-
-> +		WARN_ON(1);
-> +		return node;
-> +	}
-> 	node = __hfs_bnode_create(tree, num);
-> 	if (!node)
-> 		return ERR_PTR(-ENOMEM);
-> -- 
-> 1.8.2.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+>
+> In short, there's little to nothing that I can check.
+>
+> That bug report has nothing to do with my problem - my PC suspends and
+> resumes more or less correctly - everything works (albeit some parts don't
+> work as they should). That person also has a very outdated BIOS -  1904 from
+> 08/15/2011. I wouldn't be surprised if BIOS update solved his problem.
+>
+> Best regards,
+>
+> Artem
