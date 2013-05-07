@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933479Ab3EGOEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:04:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42364 "EHLO
+	id S933731Ab3EGOFT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:05:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42345 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933062Ab3EGNlc (ORCPT
+	with ESMTP id S933013Ab3EGNl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:41:32 -0400
+	Tue, 7 May 2013 09:41:28 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 063/118] tracing: Remove most or all of stack tracer stack size from stack_max_size
-Date: Tue,  7 May 2013 14:38:29 +0100
-Message-Id: <1367933964-1564-64-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 059/118] sparc64: Fix race in TLB batch processing.
+Date: Tue,  7 May 2013 14:38:25 +0100
+Message-Id: <1367933964-1564-60-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -27,178 +27,629 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 4df297129f622bdc18935c856f42b9ddd18f9f28 upstream.
+[ Commits f36391d2790d04993f48da6a45810033a2cdf847 and
+  f0af97070acbad5d6a361f485828223a4faaa0ee upstream. ]
 
-Currently, the depth reported in the stack tracer stack_trace file
-does not match the stack_max_size file. This is because the stack_max_size
-includes the overhead of stack tracer itself while the depth does not.
+As reported by Dave Kleikamp, when we emit cross calls to do batched
+TLB flush processing we have a race because we do not synchronize on
+the sibling cpus completing the cross call.
 
-The first time a max is triggered, a calculation is not performed that
-figures out the overhead of the stack tracer and subtracts it from
-the stack_max_size variable. The overhead is stored and is subtracted
-from the reported stack size for comparing for a new max.
+So meanwhile the TLB batch can be reset (tb->tlb_nr set to zero, etc.)
+and either flushes are missed or flushes will flush the wrong
+addresses.
 
-Now the stack_max_size corresponds to the reported depth:
+Fix this by using generic infrastructure to synchonize on the
+completion of the cross call.
 
- # cat stack_max_size
-4640
+This first required getting the flush_tlb_pending() call out from
+switch_to() which operates with locks held and interrupts disabled.
+The problem is that smp_call_function_many() cannot be invoked with
+IRQs disabled and this is explicitly checked for with WARN_ON_ONCE().
 
- # cat stack_trace
-        Depth    Size   Location    (48 entries)
-        -----    ----   --------
-  0)     4640      32   _raw_spin_lock+0x18/0x24
-  1)     4608     112   ____cache_alloc+0xb7/0x22d
-  2)     4496      80   kmem_cache_alloc+0x63/0x12f
-  3)     4416      16   mempool_alloc_slab+0x15/0x17
-[...]
+We get the batch processing outside of locked IRQ disabled sections by
+using some ideas from the powerpc port. Namely, we only batch inside
+of arch_{enter,leave}_lazy_mmu_mode() calls.  If we're not in such a
+region, we flush TLBs synchronously.
 
-While testing against and older gcc on x86 that uses mcount instead
-of fentry, I found that pasing in ip + MCOUNT_INSN_SIZE let the
-stack trace show one more function deep which was missing before.
+1) Get rid of xcall_flush_tlb_pending and per-cpu type
+   implementations.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+2) Do TLB batch cross calls instead via:
+
+	smp_call_function_many()
+		tlb_pending_func()
+			__flush_tlb_pending()
+
+3) Batch only in lazy mmu sequences:
+
+	a) Add 'active' member to struct tlb_batch
+	b) Define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
+	c) Set 'active' in arch_enter_lazy_mmu_mode()
+	d) Run batch and clear 'active' in arch_leave_lazy_mmu_mode()
+	e) Check 'active' in tlb_batch_add_one() and do a synchronous
+           flush if it's clear.
+
+4) Add infrastructure for synchronous TLB page flushes.
+
+	a) Implement __flush_tlb_page and per-cpu variants, patch
+	   as needed.
+	b) Likewise for xcall_flush_tlb_page.
+	c) Implement smp_flush_tlb_page() to invoke the cross-call.
+	d) Wire up global_flush_tlb_page() to the right routine based
+           upon CONFIG_SMP
+
+5) It turns out that singleton batches are very common, 2 out of every
+   3 batch flushes have only a single entry in them.
+
+   The batch flush waiting is very expensive, both because of the poll
+   on sibling cpu completeion, as well as because passing the tlb batch
+   pointer to the sibling cpus invokes a shared memory dereference.
+
+   Therefore, in flush_tlb_pending(), if there is only one entry in
+   the batch perform a completely asynchronous global_flush_tlb_page()
+   instead.
+
+Reported-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Signed-off-by: Luis Henriques<luis.henriques@canonical.com>
 ---
- kernel/trace/trace_stack.c | 75 +++++++++++++++++++++++++++++++++-------------
- 1 file changed, 54 insertions(+), 21 deletions(-)
+ arch/sparc/include/asm/pgtable_64.h   |   1 +
+ arch/sparc/include/asm/switch_to_64.h |   3 +-
+ arch/sparc/include/asm/tlbflush_64.h  |  37 +++++++++--
+ arch/sparc/kernel/smp_64.c            |  41 ++++++++++--
+ arch/sparc/mm/tlb.c                   |  39 +++++++++--
+ arch/sparc/mm/tsb.c                   |  57 +++++++++++-----
+ arch/sparc/mm/ultra.S                 | 119 +++++++++++++++++++++++++++-------
+ 7 files changed, 242 insertions(+), 55 deletions(-)
 
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index 2e341fe..0cdcba3 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -20,27 +20,24 @@
+diff --git a/arch/sparc/include/asm/pgtable_64.h b/arch/sparc/include/asm/pgtable_64.h
+index 61210db..d319489 100644
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -776,6 +776,7 @@ static inline int io_remap_pfn_range(struct vm_area_struct *vma,
+ 	return remap_pfn_range(vma, from, phys_base >> PAGE_SHIFT, size, prot);
+ }
  
- #define STACK_TRACE_ENTRIES 500
++#include <asm/tlbflush.h>
+ #include <asm-generic/pgtable.h>
  
--/*
-- * If fentry is used, then the function being traced will
-- * jump to fentry directly before it sets up its stack frame.
-- * We need to ignore that one and record the parent. Since
-- * the stack frame for the traced function wasn't set up yet,
-- * the stack_trace wont see the parent. That needs to be added
-- * manually to stack_dump_trace[] as the first element.
-- */
- #ifdef CC_USING_FENTRY
--# define add_func	1
-+# define fentry		1
- #else
--# define add_func	0
-+# define fentry		0
- #endif
- 
- static unsigned long stack_dump_trace[STACK_TRACE_ENTRIES+1] =
- 	 { [0 ... (STACK_TRACE_ENTRIES)] = ULONG_MAX };
- static unsigned stack_dump_index[STACK_TRACE_ENTRIES];
- 
-+/*
-+ * Reserve one entry for the passed in ip. This will allow
-+ * us to remove most or all of the stack size overhead
-+ * added by the stack tracer itself.
-+ */
- static struct stack_trace max_stack_trace = {
--	.max_entries		= STACK_TRACE_ENTRIES - add_func,
--	.entries		= &stack_dump_trace[add_func],
-+	.max_entries		= STACK_TRACE_ENTRIES - 1,
-+	.entries		= &stack_dump_trace[1],
+ /* We provide our own get_unmapped_area to cope with VA holes and
+diff --git a/arch/sparc/include/asm/switch_to_64.h b/arch/sparc/include/asm/switch_to_64.h
+index 7923c4a..9c2a92d 100644
+--- a/arch/sparc/include/asm/switch_to_64.h
++++ b/arch/sparc/include/asm/switch_to_64.h
+@@ -18,8 +18,7 @@ do {						\
+ 	 * and 2 stores in this critical code path.  -DaveM
+ 	 */
+ #define switch_to(prev, next, last)					\
+-do {	flush_tlb_pending();						\
+-	save_and_clear_fpu();						\
++do {	save_and_clear_fpu();						\
+ 	/* If you are tempted to conditionalize the following */	\
+ 	/* so that ASI is only written if it changes, think again. */	\
+ 	__asm__ __volatile__("wr %%g0, %0, %%asi"			\
+diff --git a/arch/sparc/include/asm/tlbflush_64.h b/arch/sparc/include/asm/tlbflush_64.h
+index 2ef4634..f0d6a97 100644
+--- a/arch/sparc/include/asm/tlbflush_64.h
++++ b/arch/sparc/include/asm/tlbflush_64.h
+@@ -11,24 +11,40 @@
+ struct tlb_batch {
+ 	struct mm_struct *mm;
+ 	unsigned long tlb_nr;
++	unsigned long active;
+ 	unsigned long vaddrs[TLB_BATCH_NR];
  };
  
- static unsigned long max_stack_size;
-@@ -59,10 +56,14 @@ check_stack(unsigned long ip, unsigned long *stack)
+ extern void flush_tsb_kernel_range(unsigned long start, unsigned long end);
+ extern void flush_tsb_user(struct tlb_batch *tb);
++extern void flush_tsb_user_page(struct mm_struct *mm, unsigned long vaddr);
+ 
+ /* TLB flush operations. */
+ 
+-extern void flush_tlb_pending(void);
++static inline void flush_tlb_mm(struct mm_struct *mm)
++{
++}
++
++static inline void flush_tlb_page(struct vm_area_struct *vma,
++				  unsigned long vmaddr)
++{
++}
++
++static inline void flush_tlb_range(struct vm_area_struct *vma,
++				   unsigned long start, unsigned long end)
++{
++}
++
++#define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
+ 
+-#define flush_tlb_range(vma,start,end)	\
+-	do { (void)(start); flush_tlb_pending(); } while (0)
+-#define flush_tlb_page(vma,addr)	flush_tlb_pending()
+-#define flush_tlb_mm(mm)		flush_tlb_pending()
++extern void flush_tlb_pending(void);
++extern void arch_enter_lazy_mmu_mode(void);
++extern void arch_leave_lazy_mmu_mode(void);
++#define arch_flush_lazy_mmu_mode()      do {} while (0)
+ 
+ /* Local cpu only.  */
+ extern void __flush_tlb_all(void);
+-
++extern void __flush_tlb_page(unsigned long context, unsigned long vaddr);
+ extern void __flush_tlb_kernel_range(unsigned long start, unsigned long end);
+ 
+ #ifndef CONFIG_SMP
+@@ -38,15 +54,24 @@ do {	flush_tsb_kernel_range(start,end); \
+ 	__flush_tlb_kernel_range(start,end); \
+ } while (0)
+ 
++static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr)
++{
++	__flush_tlb_page(CTX_HWBITS(mm->context), vaddr);
++}
++
+ #else /* CONFIG_SMP */
+ 
+ extern void smp_flush_tlb_kernel_range(unsigned long start, unsigned long end);
++extern void smp_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr);
+ 
+ #define flush_tlb_kernel_range(start, end) \
+ do {	flush_tsb_kernel_range(start,end); \
+ 	smp_flush_tlb_kernel_range(start, end); \
+ } while (0)
+ 
++#define global_flush_tlb_page(mm, vaddr) \
++	smp_flush_tlb_page(mm, vaddr)
++
+ #endif /* ! CONFIG_SMP */
+ 
+ #endif /* _SPARC64_TLBFLUSH_H */
+diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+index f591598..b8870b6 100644
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -852,7 +852,7 @@ void smp_tsb_sync(struct mm_struct *mm)
+ }
+ 
+ extern unsigned long xcall_flush_tlb_mm;
+-extern unsigned long xcall_flush_tlb_pending;
++extern unsigned long xcall_flush_tlb_page;
+ extern unsigned long xcall_flush_tlb_kernel_range;
+ extern unsigned long xcall_fetch_glob_regs;
+ extern unsigned long xcall_receive_signal;
+@@ -1066,23 +1066,56 @@ local_flush_and_out:
+ 	put_cpu();
+ }
+ 
++struct tlb_pending_info {
++	unsigned long ctx;
++	unsigned long nr;
++	unsigned long *vaddrs;
++};
++
++static void tlb_pending_func(void *info)
++{
++	struct tlb_pending_info *t = info;
++
++	__flush_tlb_pending(t->ctx, t->nr, t->vaddrs);
++}
++
+ void smp_flush_tlb_pending(struct mm_struct *mm, unsigned long nr, unsigned long *vaddrs)
  {
- 	unsigned long this_size, flags;
- 	unsigned long *p, *top, *start;
-+	static int tracer_frame;
-+	int frame_size = ACCESS_ONCE(tracer_frame);
- 	int i;
+ 	u32 ctx = CTX_HWBITS(mm->context);
++	struct tlb_pending_info info;
+ 	int cpu = get_cpu();
  
- 	this_size = ((unsigned long)stack) & (THREAD_SIZE-1);
- 	this_size = THREAD_SIZE - this_size;
-+	/* Remove the frame of the tracer */
-+	this_size -= frame_size;
- 
- 	if (this_size <= max_stack_size)
- 		return;
-@@ -74,6 +75,10 @@ check_stack(unsigned long ip, unsigned long *stack)
- 	local_irq_save(flags);
- 	arch_spin_lock(&max_stack_lock);
- 
-+	/* In case another CPU set the tracer_frame on us */
-+	if (unlikely(!frame_size))
-+		this_size -= tracer_frame;
++	info.ctx = ctx;
++	info.nr = nr;
++	info.vaddrs = vaddrs;
 +
- 	/* a race could have already updated it */
- 	if (this_size <= max_stack_size)
- 		goto out;
-@@ -86,15 +91,12 @@ check_stack(unsigned long ip, unsigned long *stack)
- 	save_stack_trace(&max_stack_trace);
+ 	if (mm == current->mm && atomic_read(&mm->mm_users) == 1)
+ 		cpumask_copy(mm_cpumask(mm), cpumask_of(cpu));
+ 	else
+-		smp_cross_call_masked(&xcall_flush_tlb_pending,
+-				      ctx, nr, (unsigned long) vaddrs,
+-				      mm_cpumask(mm));
++		smp_call_function_many(mm_cpumask(mm), tlb_pending_func,
++				       &info, 1);
  
- 	/*
--	 * When fentry is used, the traced function does not get
--	 * its stack frame set up, and we lose the parent.
--	 * Add that one in manally. We set up save_stack_trace()
--	 * to not touch the first element in this case.
-+	 * Add the passed in ip from the function tracer.
-+	 * Searching for this on the stack will skip over
-+	 * most of the overhead from the stack tracer itself.
- 	 */
--	if (add_func) {
--		stack_dump_trace[0] = ip;
--		max_stack_trace.nr_entries++;
--	}
-+	stack_dump_trace[0] = ip;
-+	max_stack_trace.nr_entries++;
+ 	__flush_tlb_pending(ctx, nr, vaddrs);
  
- 	/*
- 	 * Now find where in the stack these are.
-@@ -124,6 +126,18 @@ check_stack(unsigned long ip, unsigned long *stack)
- 				found = 1;
- 				/* Start the search from here */
- 				start = p + 1;
-+				/*
-+				 * We do not want to show the overhead
-+				 * of the stack tracer stack in the
-+				 * max stack. If we haven't figured
-+				 * out what that is, then figure it out
-+				 * now.
-+				 */
-+				if (unlikely(!tracer_frame) && i == 1) {
-+					tracer_frame = (p - stack) *
-+						sizeof(unsigned long);
-+					max_stack_size -= tracer_frame;
-+				}
- 			}
- 		}
+ 	put_cpu();
+ }
  
-@@ -152,7 +166,26 @@ stack_trace_call(unsigned long ip, unsigned long parent_ip)
- 	if (per_cpu(trace_active, cpu)++ != 0)
- 		goto out;
- 
--	check_stack(parent_ip, &stack);
-+	/*
-+	 * When fentry is used, the traced function does not get
-+	 * its stack frame set up, and we lose the parent.
-+	 * The ip is pretty useless because the function tracer
-+	 * was called before that function set up its stack frame.
-+	 * In this case, we use the parent ip.
-+	 *
-+	 * By adding the return address of either the parent ip
-+	 * or the current ip we can disregard most of the stack usage
-+	 * caused by the stack tracer itself.
-+	 *
-+	 * The function tracer always reports the address of where the
-+	 * mcount call was, but the stack will hold the return address.
-+	 */
-+	if (fentry)
-+		ip = parent_ip;
++void smp_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr)
++{
++	unsigned long context = CTX_HWBITS(mm->context);
++	int cpu = get_cpu();
++
++	if (mm == current->mm && atomic_read(&mm->mm_users) == 1)
++		cpumask_copy(mm_cpumask(mm), cpumask_of(cpu));
 +	else
-+		ip += MCOUNT_INSN_SIZE;
++		smp_cross_call_masked(&xcall_flush_tlb_page,
++				      context, vaddr, 0,
++				      mm_cpumask(mm));
++	__flush_tlb_page(context, vaddr);
 +
-+	check_stack(ip, &stack);
++	put_cpu();
++}
++
+ void smp_flush_tlb_kernel_range(unsigned long start, unsigned long end)
+ {
+ 	start &= PAGE_MASK;
+diff --git a/arch/sparc/mm/tlb.c b/arch/sparc/mm/tlb.c
+index b1f279c..afd021e 100644
+--- a/arch/sparc/mm/tlb.c
++++ b/arch/sparc/mm/tlb.c
+@@ -24,11 +24,17 @@ static DEFINE_PER_CPU(struct tlb_batch, tlb_batch);
+ void flush_tlb_pending(void)
+ {
+ 	struct tlb_batch *tb = &get_cpu_var(tlb_batch);
++	struct mm_struct *mm = tb->mm;
  
-  out:
- 	per_cpu(trace_active, cpu)--;
+-	if (tb->tlb_nr) {
+-		flush_tsb_user(tb);
++	if (!tb->tlb_nr)
++		goto out;
+ 
+-		if (CTX_VALID(tb->mm->context)) {
++	flush_tsb_user(tb);
++
++	if (CTX_VALID(mm->context)) {
++		if (tb->tlb_nr == 1) {
++			global_flush_tlb_page(mm, tb->vaddrs[0]);
++		} else {
+ #ifdef CONFIG_SMP
+ 			smp_flush_tlb_pending(tb->mm, tb->tlb_nr,
+ 					      &tb->vaddrs[0]);
+@@ -37,12 +43,30 @@ void flush_tlb_pending(void)
+ 					    tb->tlb_nr, &tb->vaddrs[0]);
+ #endif
+ 		}
+-		tb->tlb_nr = 0;
+ 	}
+ 
++	tb->tlb_nr = 0;
++
++out:
+ 	put_cpu_var(tlb_batch);
+ }
+ 
++void arch_enter_lazy_mmu_mode(void)
++{
++	struct tlb_batch *tb = &__get_cpu_var(tlb_batch);
++
++	tb->active = 1;
++}
++
++void arch_leave_lazy_mmu_mode(void)
++{
++	struct tlb_batch *tb = &__get_cpu_var(tlb_batch);
++
++	if (tb->tlb_nr)
++		flush_tlb_pending();
++	tb->active = 0;
++}
++
+ void tlb_batch_add(struct mm_struct *mm, unsigned long vaddr,
+ 		   pte_t *ptep, pte_t orig, int fullmm)
+ {
+@@ -90,6 +114,12 @@ no_cache_flush:
+ 		nr = 0;
+ 	}
+ 
++	if (!tb->active) {
++		global_flush_tlb_page(mm, vaddr);
++		flush_tsb_user_page(mm, vaddr);
++		goto out;
++	}
++
+ 	if (nr == 0)
+ 		tb->mm = mm;
+ 
+@@ -98,5 +128,6 @@ no_cache_flush:
+ 	if (nr >= TLB_BATCH_NR)
+ 		flush_tlb_pending();
+ 
++out:
+ 	put_cpu_var(tlb_batch);
+ }
+diff --git a/arch/sparc/mm/tsb.c b/arch/sparc/mm/tsb.c
+index 7c2d9ac..8adc660 100644
+--- a/arch/sparc/mm/tsb.c
++++ b/arch/sparc/mm/tsb.c
+@@ -7,11 +7,10 @@
+ #include <linux/preempt.h>
+ #include <linux/slab.h>
+ #include <asm/page.h>
+-#include <asm/tlbflush.h>
+-#include <asm/tlb.h>
+-#include <asm/mmu_context.h>
+ #include <asm/pgtable.h>
++#include <asm/mmu_context.h>
+ #include <asm/tsb.h>
++#include <asm/tlb.h>
+ #include <asm/oplib.h>
+ 
+ extern struct tsb swapper_tsb[KERNEL_TSB_NENTRIES];
+@@ -46,23 +45,27 @@ void flush_tsb_kernel_range(unsigned long start, unsigned long end)
+ 	}
+ }
+ 
+-static void __flush_tsb_one(struct tlb_batch *tb, unsigned long hash_shift,
+-			    unsigned long tsb, unsigned long nentries)
++static void __flush_tsb_one_entry(unsigned long tsb, unsigned long v,
++				  unsigned long hash_shift,
++				  unsigned long nentries)
+ {
+-	unsigned long i;
++	unsigned long tag, ent, hash;
+ 
+-	for (i = 0; i < tb->tlb_nr; i++) {
+-		unsigned long v = tb->vaddrs[i];
+-		unsigned long tag, ent, hash;
++	v &= ~0x1UL;
++	hash = tsb_hash(v, hash_shift, nentries);
++	ent = tsb + (hash * sizeof(struct tsb));
++	tag = (v >> 22UL);
+ 
+-		v &= ~0x1UL;
++	tsb_flush(ent, tag);
++}
+ 
+-		hash = tsb_hash(v, hash_shift, nentries);
+-		ent = tsb + (hash * sizeof(struct tsb));
+-		tag = (v >> 22UL);
++static void __flush_tsb_one(struct tlb_batch *tb, unsigned long hash_shift,
++			    unsigned long tsb, unsigned long nentries)
++{
++	unsigned long i;
+ 
+-		tsb_flush(ent, tag);
+-	}
++	for (i = 0; i < tb->tlb_nr; i++)
++		__flush_tsb_one_entry(tsb, tb->vaddrs[i], hash_shift, nentries);
+ }
+ 
+ void flush_tsb_user(struct tlb_batch *tb)
+@@ -90,6 +93,30 @@ void flush_tsb_user(struct tlb_batch *tb)
+ 	spin_unlock_irqrestore(&mm->context.lock, flags);
+ }
+ 
++void flush_tsb_user_page(struct mm_struct *mm, unsigned long vaddr)
++{
++	unsigned long nentries, base, flags;
++
++	spin_lock_irqsave(&mm->context.lock, flags);
++
++	base = (unsigned long) mm->context.tsb_block[MM_TSB_BASE].tsb;
++	nentries = mm->context.tsb_block[MM_TSB_BASE].tsb_nentries;
++	if (tlb_type == cheetah_plus || tlb_type == hypervisor)
++		base = __pa(base);
++	__flush_tsb_one_entry(base, vaddr, PAGE_SHIFT, nentries);
++
++#if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
++	if (mm->context.tsb_block[MM_TSB_HUGE].tsb) {
++		base = (unsigned long) mm->context.tsb_block[MM_TSB_HUGE].tsb;
++		nentries = mm->context.tsb_block[MM_TSB_HUGE].tsb_nentries;
++		if (tlb_type == cheetah_plus || tlb_type == hypervisor)
++			base = __pa(base);
++		__flush_tsb_one_entry(base, vaddr, HPAGE_SHIFT, nentries);
++	}
++#endif
++	spin_unlock_irqrestore(&mm->context.lock, flags);
++}
++
+ #if defined(CONFIG_SPARC64_PAGE_SIZE_8KB)
+ #define HV_PGSZ_IDX_BASE	HV_PGSZ_IDX_8K
+ #define HV_PGSZ_MASK_BASE	HV_PGSZ_MASK_8K
+diff --git a/arch/sparc/mm/ultra.S b/arch/sparc/mm/ultra.S
+index 874162a..dd10caa 100644
+--- a/arch/sparc/mm/ultra.S
++++ b/arch/sparc/mm/ultra.S
+@@ -53,6 +53,33 @@ __flush_tlb_mm:		/* 18 insns */
+ 	nop
+ 
+ 	.align		32
++	.globl		__flush_tlb_page
++__flush_tlb_page:	/* 22 insns */
++	/* %o0 = context, %o1 = vaddr */
++	rdpr		%pstate, %g7
++	andn		%g7, PSTATE_IE, %g2
++	wrpr		%g2, %pstate
++	mov		SECONDARY_CONTEXT, %o4
++	ldxa		[%o4] ASI_DMMU, %g2
++	stxa		%o0, [%o4] ASI_DMMU
++	andcc		%o1, 1, %g0
++	andn		%o1, 1, %o3
++	be,pn		%icc, 1f
++	 or		%o3, 0x10, %o3
++	stxa		%g0, [%o3] ASI_IMMU_DEMAP
++1:	stxa		%g0, [%o3] ASI_DMMU_DEMAP
++	membar		#Sync
++	stxa		%g2, [%o4] ASI_DMMU
++	sethi		%hi(KERNBASE), %o4
++	flush		%o4
++	retl
++	 wrpr		%g7, 0x0, %pstate
++	nop
++	nop
++	nop
++	nop
++
++	.align		32
+ 	.globl		__flush_tlb_pending
+ __flush_tlb_pending:	/* 26 insns */
+ 	/* %o0 = context, %o1 = nr, %o2 = vaddrs[] */
+@@ -203,6 +230,31 @@ __cheetah_flush_tlb_mm: /* 19 insns */
+ 	retl
+ 	 wrpr		%g7, 0x0, %pstate
+ 
++__cheetah_flush_tlb_page:	/* 22 insns */
++	/* %o0 = context, %o1 = vaddr */
++	rdpr		%pstate, %g7
++	andn		%g7, PSTATE_IE, %g2
++	wrpr		%g2, 0x0, %pstate
++	wrpr		%g0, 1, %tl
++	mov		PRIMARY_CONTEXT, %o4
++	ldxa		[%o4] ASI_DMMU, %g2
++	srlx		%g2, CTX_PGSZ1_NUC_SHIFT, %o3
++	sllx		%o3, CTX_PGSZ1_NUC_SHIFT, %o3
++	or		%o0, %o3, %o0	/* Preserve nucleus page size fields */
++	stxa		%o0, [%o4] ASI_DMMU
++	andcc		%o1, 1, %g0
++	be,pn		%icc, 1f
++	 andn		%o1, 1, %o3
++	stxa		%g0, [%o3] ASI_IMMU_DEMAP
++1:	stxa		%g0, [%o3] ASI_DMMU_DEMAP
++	membar		#Sync
++	stxa		%g2, [%o4] ASI_DMMU
++	sethi		%hi(KERNBASE), %o4
++	flush		%o4
++	wrpr		%g0, 0, %tl
++	retl
++	 wrpr		%g7, 0x0, %pstate
++
+ __cheetah_flush_tlb_pending:	/* 27 insns */
+ 	/* %o0 = context, %o1 = nr, %o2 = vaddrs[] */
+ 	rdpr		%pstate, %g7
+@@ -269,6 +321,20 @@ __hypervisor_flush_tlb_mm: /* 10 insns */
+ 	retl
+ 	 nop
+ 
++__hypervisor_flush_tlb_page: /* 11 insns */
++	/* %o0 = context, %o1 = vaddr */
++	mov		%o0, %g2
++	mov		%o1, %o0              /* ARG0: vaddr + IMMU-bit */
++	mov		%g2, %o1	      /* ARG1: mmu context */
++	mov		HV_MMU_ALL, %o2	      /* ARG2: flags */
++	srlx		%o0, PAGE_SHIFT, %o0
++	sllx		%o0, PAGE_SHIFT, %o0
++	ta		HV_MMU_UNMAP_ADDR_TRAP
++	brnz,pn		%o0, __hypervisor_tlb_tl0_error
++	 mov		HV_MMU_UNMAP_ADDR_TRAP, %o1
++	retl
++	 nop
++
+ __hypervisor_flush_tlb_pending: /* 16 insns */
+ 	/* %o0 = context, %o1 = nr, %o2 = vaddrs[] */
+ 	sllx		%o1, 3, %g1
+@@ -339,6 +405,13 @@ cheetah_patch_cachetlbops:
+ 	call		tlb_patch_one
+ 	 mov		19, %o2
+ 
++	sethi		%hi(__flush_tlb_page), %o0
++	or		%o0, %lo(__flush_tlb_page), %o0
++	sethi		%hi(__cheetah_flush_tlb_page), %o1
++	or		%o1, %lo(__cheetah_flush_tlb_page), %o1
++	call		tlb_patch_one
++	 mov		22, %o2
++
+ 	sethi		%hi(__flush_tlb_pending), %o0
+ 	or		%o0, %lo(__flush_tlb_pending), %o0
+ 	sethi		%hi(__cheetah_flush_tlb_pending), %o1
+@@ -397,10 +470,9 @@ xcall_flush_tlb_mm:	/* 21 insns */
+ 	nop
+ 	nop
+ 
+-	.globl		xcall_flush_tlb_pending
+-xcall_flush_tlb_pending:	/* 21 insns */
+-	/* %g5=context, %g1=nr, %g7=vaddrs[] */
+-	sllx		%g1, 3, %g1
++	.globl		xcall_flush_tlb_page
++xcall_flush_tlb_page:	/* 17 insns */
++	/* %g5=context, %g1=vaddr */
+ 	mov		PRIMARY_CONTEXT, %g4
+ 	ldxa		[%g4] ASI_DMMU, %g2
+ 	srlx		%g2, CTX_PGSZ1_NUC_SHIFT, %g4
+@@ -408,20 +480,16 @@ xcall_flush_tlb_pending:	/* 21 insns */
+ 	or		%g5, %g4, %g5
+ 	mov		PRIMARY_CONTEXT, %g4
+ 	stxa		%g5, [%g4] ASI_DMMU
+-1:	sub		%g1, (1 << 3), %g1
+-	ldx		[%g7 + %g1], %g5
+-	andcc		%g5, 0x1, %g0
++	andcc		%g1, 0x1, %g0
+ 	be,pn		%icc, 2f
+-
+-	 andn		%g5, 0x1, %g5
++	 andn		%g1, 0x1, %g5
+ 	stxa		%g0, [%g5] ASI_IMMU_DEMAP
+ 2:	stxa		%g0, [%g5] ASI_DMMU_DEMAP
+ 	membar		#Sync
+-	brnz,pt		%g1, 1b
+-	 nop
+ 	stxa		%g2, [%g4] ASI_DMMU
+ 	retry
+ 	nop
++	nop
+ 
+ 	.globl		xcall_flush_tlb_kernel_range
+ xcall_flush_tlb_kernel_range:	/* 25 insns */
+@@ -596,15 +664,13 @@ __hypervisor_xcall_flush_tlb_mm: /* 21 insns */
+ 	membar		#Sync
+ 	retry
+ 
+-	.globl		__hypervisor_xcall_flush_tlb_pending
+-__hypervisor_xcall_flush_tlb_pending: /* 21 insns */
+-	/* %g5=ctx, %g1=nr, %g7=vaddrs[], %g2,%g3,%g4,g6=scratch */
+-	sllx		%g1, 3, %g1
++	.globl		__hypervisor_xcall_flush_tlb_page
++__hypervisor_xcall_flush_tlb_page: /* 17 insns */
++	/* %g5=ctx, %g1=vaddr */
+ 	mov		%o0, %g2
+ 	mov		%o1, %g3
+ 	mov		%o2, %g4
+-1:	sub		%g1, (1 << 3), %g1
+-	ldx		[%g7 + %g1], %o0	/* ARG0: virtual address */
++	mov		%g1, %o0	        /* ARG0: virtual address */
+ 	mov		%g5, %o1		/* ARG1: mmu context */
+ 	mov		HV_MMU_ALL, %o2		/* ARG2: flags */
+ 	srlx		%o0, PAGE_SHIFT, %o0
+@@ -613,8 +679,6 @@ __hypervisor_xcall_flush_tlb_pending: /* 21 insns */
+ 	mov		HV_MMU_UNMAP_ADDR_TRAP, %g6
+ 	brnz,a,pn	%o0, __hypervisor_tlb_xcall_error
+ 	 mov		%o0, %g5
+-	brnz,pt		%g1, 1b
+-	 nop
+ 	mov		%g2, %o0
+ 	mov		%g3, %o1
+ 	mov		%g4, %o2
+@@ -697,6 +761,13 @@ hypervisor_patch_cachetlbops:
+ 	call		tlb_patch_one
+ 	 mov		10, %o2
+ 
++	sethi		%hi(__flush_tlb_page), %o0
++	or		%o0, %lo(__flush_tlb_page), %o0
++	sethi		%hi(__hypervisor_flush_tlb_page), %o1
++	or		%o1, %lo(__hypervisor_flush_tlb_page), %o1
++	call		tlb_patch_one
++	 mov		11, %o2
++
+ 	sethi		%hi(__flush_tlb_pending), %o0
+ 	or		%o0, %lo(__flush_tlb_pending), %o0
+ 	sethi		%hi(__hypervisor_flush_tlb_pending), %o1
+@@ -728,12 +799,12 @@ hypervisor_patch_cachetlbops:
+ 	call		tlb_patch_one
+ 	 mov		21, %o2
+ 
+-	sethi		%hi(xcall_flush_tlb_pending), %o0
+-	or		%o0, %lo(xcall_flush_tlb_pending), %o0
+-	sethi		%hi(__hypervisor_xcall_flush_tlb_pending), %o1
+-	or		%o1, %lo(__hypervisor_xcall_flush_tlb_pending), %o1
++	sethi		%hi(xcall_flush_tlb_page), %o0
++	or		%o0, %lo(xcall_flush_tlb_page), %o0
++	sethi		%hi(__hypervisor_xcall_flush_tlb_page), %o1
++	or		%o1, %lo(__hypervisor_xcall_flush_tlb_page), %o1
+ 	call		tlb_patch_one
+-	 mov		21, %o2
++	 mov		17, %o2
+ 
+ 	sethi		%hi(xcall_flush_tlb_kernel_range), %o0
+ 	or		%o0, %lo(xcall_flush_tlb_kernel_range), %o0
 -- 
 1.8.1.2
 
