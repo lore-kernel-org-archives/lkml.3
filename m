@@ -1,90 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757601Ab3EGGhO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 02:37:14 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:53098 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757491Ab3EGGhM (ORCPT
+	id S1757437Ab3EGGnt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 02:43:49 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:42965 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757219Ab3EGGnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 02:37:12 -0400
-Date: Tue, 7 May 2013 09:37:05 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
+	Tue, 7 May 2013 02:43:47 -0400
+Date: Tue, 7 May 2013 08:43:42 +0200
+From: Ingo Molnar <mingo@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] SLAB changes for v3.10
-Message-ID: <alpine.LFD.2.03.1305070936320.2383@kernel.org>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL, RFC] Full dynticks, CONFIG_NO_HZ_FULL feature
+Message-ID: <20130507064342.GC17705@gmail.com>
+References: <20130505110351.GA4768@gmail.com>
+ <CA+55aFzPHkCH7CVZ4tkaF91+=GLZAxxncTq0J9d6AKpSPqovZw@mail.gmail.com>
+ <20130505212511.GC3659@linux.vnet.ibm.com>
+ <20130506092537.GA8879@gmail.com>
+ <20130506153517.GA3501@linux.vnet.ibm.com>
+ <CA+55aFxYRDZvisB7iZ5a-bcp5_2pkvcC9Opk6=yJtjfK57EWTw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxYRDZvisB7iZ5a-bcp5_2pkvcC9Opk6=yJtjfK57EWTw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull the latest SLAB tree from:
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
+> On Mon, May 6, 2013 at 8:35 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> >>
+> >> I think Linus might have referred to my 'future plans' entry:
+> 
+> Indeed. I feel that HPC is entirely irrelevant to anybody,
+> *especially* HPC benchmarks. In real life, even HPC doesn't tend to
+> have the nice behavior their much-touted benchmarks have.
+> 
+> So as long as the NOHZ is for HPC-style loads, then quite frankly, I
+> don't feel it is worth it. The _only_ thing that makes it worth it is
+> that "future plans" part where it would actually help real loads.
+> 
+> >>
+> >> Interesting that HZ=1000 caused 8% overhead there. On a regular x86 server
+> >> PC I've measured the HZ=1000 overhead to pure user-space execution to be
+> >> around 1% (sometimes a bit less, sometimes a bit more).
+> >>
+> >> But even 1% is worth it.
+> >
+> > I believe that the difference is tick skew
+> 
+> Quite possibly it is also virtualization.
+> 
+> The VM people are the one who complain the loudest about how certain
+> things make their performance go down the toilet. And interrupts tend
+> to be high on that list, and unless you have hardware support for
+> virtual timer interrupts I can easily see a factor of four cost or
+> more.
+> 
+> And the VM people then flail around wildly to always blame everybody
+> else. *Anybody* else than the VM overhead itself.
+> 
+> It also depends a lot on architecture. The ia64 people had much bigger
+> problems with the timer interrupt than x86 ever did. Again, they saw
+> this mainly on the HPC benchmarks, because the benchmarks were
+> carefully tuned to have huge-page support and were doing largely
+> irrelevant things like big LINPACK runs, and the timer irq ended up
+> blowing their carefully tuned caches and TLB's out.
+> 
+> Never mind that nobody sane ever *cared*. Afaik, no real HPC load has
+> anything like that behavior, much less anything else. But they had
+> numbers to prove how bad it was, and it was a load with very stable
+> numbers.
+> 
+> Combine the two (bad HPC benchmarks and VM), and you can make an
+> argument for just about anything. And people have.
+> 
+> I am personally less than impressed with some of the benchmarks I've
+> seen, if it wasn't clear.
 
-Bulk of the changes are more slab unification from Christoph. There's
-also few fixes from Aaron, Glauber, and Joonsoo thrown into the mix.
+Okay.
 
-			Pekka
+I never actually ran HPC benchmarks to characterise the overhead - the 
+0.5%-1.0% figure was the 'worst case' improvement on native hardware with 
+a couple of cores, running a plain infinite loop with no cache footprint. 
 
------------------->
-The following changes since commit 51a26ae7a14b85c99c9be470c2d28eeeba0f26a3:
+The per CPU timer/scheduler irq takes 5-10 usecs to execute, and with 
+HZ=1000 which most distros use that happens once every 1000 usecs, which 
+is measurable overhead.
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2013-05-06 15:51:10 -0700)
+So this feature, in the nr_running=1 case, will produce at minimum a 
+0.5%-1.0% speedup of user-space workloads (on typical x86).
 
-are available in the git repository at:
+That alone makes it worth it I think - but we also want to generalize it 
+to nr_running >= 2 as well to cover make -jX workloads, etc.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
+Thanks,
 
-Aaron Tomlin (1):
-      mm: slab: Verify the nodeid passed to ____cache_alloc_node
-
-Christoph Lameter (19):
-      slab: Use proper formatting specs for unsigned size_t
-      slab: Move kmalloc related function defs
-      slab: Common kmalloc slab index determination
-      slab: Use common kmalloc_index/kmalloc_size functions
-      slab: Common name for the per node structures
-      slab: Rename nodelists to node
-      slab: Common constants for kmalloc boundaries
-      slab: Common definition for the array of kmalloc caches
-      slab: Common function to create the kmalloc array
-      stat: Use size_t for sizes instead of unsigned
-      slab: Common Kmalloc cache determination
-      slab: Rename list3/l3 to node
-      slab: Common definition for kmem_cache_node
-      slab: Handle ARCH_DMA_MINALIGN correctly
-      slab: Fixup CONFIG_PAGE_ALLOC/DEBUG_SLAB_LEAK sections
-      slub: Do not dereference NULL pointer in node_match
-      slub: tid must be retrieved from the percpu area of the current processor
-      slab: Return NULL for oversized allocations
-      mm, slab_common: Fix bootstrap creation of kmalloc caches
-
-Glauber Costa (1):
-      slub: correctly bootstrap boot caches
-
-Joonsoo Kim (3):
-      mm/sl[au]b: correct allocation type check in kmalloc_slab()
-      slub: correct to calculate num of acquired objects in get_partial_node()
-      slub: add 'likely' macro to inc_slabs_node()
-
-Pekka Enberg (1):
-      Merge branch 'slab/next' into slab/for-linus
-
- fs/proc/stat.c                |    2 +-
- include/linux/kmalloc_sizes.h |   45 ---
- include/linux/slab.h          |  231 +++++++++----
- include/linux/slab_def.h      |   54 +--
- include/linux/slub_def.h      |  136 +-------
- mm/slab.c                     |  790 +++++++++++++++++------------------------
- mm/slab.h                     |   43 +++-
- mm/slab_common.c              |  174 +++++++++-
- mm/slub.c                     |  221 ++----------
- 9 files changed, 781 insertions(+), 915 deletions(-)
- delete mode 100644 include/linux/kmalloc_sizes.h
+	Ingo
