@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759311Ab3EGNmN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:42:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42493 "EHLO
+	id S933527Ab3EGNxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:53:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42539 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933281Ab3EGNmC (ORCPT
+	with ESMTP id S1759298Ab3EGNmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:02 -0400
+	Tue, 7 May 2013 09:42:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: Adrian Thomasset <adrian.thomasset@st.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 086/118] tracing: Check return value of tracing_init_dentry()
-Date: Tue,  7 May 2013 14:38:52 +0100
-Message-Id: <1367933964-1564-87-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 097/118] USB: ftdi_sio: correct ST Micro Connect Lite PIDs
+Date: Tue,  7 May 2013 14:39:03 +0100
+Message-Id: <1367933964-1564-98-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -30,65 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Adrian Thomasset <adrian.thomasset@st.com>
 
-commit ed6f1c996bfe4b6e520cf7a74b51cd6988d84420 upstream.
+commit 9f06d15f8db6946e41f73196a122b84a37938878 upstream.
 
-Check return value and bail out if it's NULL.
+The current ST Micro Connect Lite uses the FT4232H hi-speed quad USB
+UART FTDI chip. It is also possible to drive STM reference targets
+populated with an on-board JTAG debugger based on the FT2232H chip with
+the same STMicroelectronics tools.
 
-Link: http://lkml.kernel.org/r/1365553093-10180-2-git-send-email-namhyung@kernel.org
+For this reason, the ST Micro Connect Lite PIDs should be
+ST_STMCLT_2232_PID: 0x3746
+ST_STMCLT_4232_PID: 0x3747
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[ luis: adjust context ]
+Signed-off-by: Adrian Thomasset <adrian.thomasset@st.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/trace.c       | 2 ++
- kernel/trace/trace_stack.c | 2 ++
- kernel/trace/trace_stat.c  | 2 ++
- 3 files changed, 6 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     | 4 +++-
+ drivers/usb/serial/ftdi_sio_ids.h | 3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 28e2b14..0ae8b32 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4832,6 +4832,8 @@ static __init int tracer_init_debugfs(void)
- 	trace_access_lock_init();
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 527fb35..ecfd525 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -877,7 +877,9 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DOTEC_PID) },
+ 	{ USB_DEVICE(QIHARDWARE_VID, MILKYMISTONE_JTAGSERIAL_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+-	{ USB_DEVICE(ST_VID, ST_STMCLT1030_PID),
++	{ USB_DEVICE(ST_VID, ST_STMCLT_2232_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(ST_VID, ST_STMCLT_4232_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_stmclite_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RF_R106) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DISTORTEC_JTAG_LOCK_PICK_PID),
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 3c00351..9852827 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1151,7 +1151,8 @@
+  * STMicroelectonics
+  */
+ #define ST_VID			0x0483
+-#define ST_STMCLT1030_PID	0x3747 /* ST Micro Connect Lite STMCLT1030 */
++#define ST_STMCLT_2232_PID	0x3746
++#define ST_STMCLT_4232_PID	0x3747
  
- 	d_tracer = tracing_init_dentry();
-+	if (!d_tracer)
-+		return 0;
- 
- 	trace_create_file("tracing_enabled", 0644, d_tracer,
- 			&global_trace, &tracing_ctrl_fops);
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index 0cdcba3..8298997 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -433,6 +433,8 @@ static __init int stack_trace_init(void)
- 	struct dentry *d_tracer;
- 
- 	d_tracer = tracing_init_dentry();
-+	if (!d_tracer)
-+		return 0;
- 
- 	trace_create_file("stack_max_size", 0644, d_tracer,
- 			&max_stack_size, &stack_max_size_fops);
-diff --git a/kernel/trace/trace_stat.c b/kernel/trace/trace_stat.c
-index 96cffb2..847f88a 100644
---- a/kernel/trace/trace_stat.c
-+++ b/kernel/trace/trace_stat.c
-@@ -307,6 +307,8 @@ static int tracing_stat_init(void)
- 	struct dentry *d_tracing;
- 
- 	d_tracing = tracing_init_dentry();
-+	if (!d_tracing)
-+		return 0;
- 
- 	stat_dir = debugfs_create_dir("trace_stat", d_tracing);
- 	if (!stat_dir)
+ /*
+  * Papouch products (http://www.papouch.com/)
 -- 
 1.8.1.2
 
