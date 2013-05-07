@@ -1,114 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab3EGJRy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 05:17:54 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:57306 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104Ab3EGJRx (ORCPT
+	id S1759433Ab3EGJSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 05:18:07 -0400
+Received: from mail-de.keymile.com ([195.8.104.250]:43521 "EHLO
+	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759277Ab3EGJSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 05:17:53 -0400
-X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
-   d="scan'208";a="4289979"
-Message-ID: <1367918270.26321.39.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH RFC v2 4/4] xen/arm: account for stolen ticks
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 7 May 2013 10:17:50 +0100
-In-Reply-To: <1367851878-21629-4-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1305061532310.4756@kaball.uk.xensource.com>
-	 <1367851878-21629-4-git-send-email-stefano.stabellini@eu.citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Tue, 7 May 2013 05:18:04 -0400
+X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 May 2013 05:18:04 EDT
+Message-ID: <5188C500.8010209@keymile.com>
+Date: Tue, 07 May 2013 11:10:24 +0200
+From: Valentin Longchamp <valentin.longchamp@keymile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Jason Cooper <jason@lakedaemon.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] mv643xx_eth: device tree bindings
+References: <1365071235-11611-1-git-send-email-florian@openwrt.org> <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-06 at 15:51 +0100, Stefano Stabellini wrote:
-> Register the runstate_memory_area with the hypervisor.
-> Use pv_time_ops.steal_clock to account for stolen ticks.
+Sebastian,
+
+On 05/06/2013 05:33 PM, Sebastian Hesselbarth wrote:
+> This patch set picks up work by Florian Fainelli bringing full DT
+> support to mv643xx_eth and Marvell SoCs using it.
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/arm/xen/enlighten.c |   23 +++++++++++++++++++++++
->  1 files changed, 23 insertions(+), 0 deletions(-)
+> The current patch set drops Florian's device tree conversions for
+> Kirkwood, Dove, and Orion5x in favour of split patches for board
+> files and board descriptor files.
 > 
-> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> index ee86bfa..2a5cc82 100644
-> --- a/arch/arm/xen/enlighten.c
-> +++ b/arch/arm/xen/enlighten.c
-> @@ -14,7 +14,10 @@
->  #include <xen/xen-ops.h>
->  #include <asm/xen/hypervisor.h>
->  #include <asm/xen/hypercall.h>
-> +#include <asm/arch_timer.h>
->  #include <asm/system_misc.h>
-> +#include <asm/paravirt.h>
-> +#include <linux/jump_label.h>
->  #include <linux/interrupt.h>
->  #include <linux/irqreturn.h>
->  #include <linux/module.h>
-> @@ -152,6 +155,20 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
->  }
->  EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
->  
-> +unsigned long long xen_stolen_accounting(int cpu)
-> +{
-> +	struct vcpu_runstate_info state;
-> +
-> +	if (cpu != get_cpu())
+> Device tree conversion for Dove and Kirkwood is added. Dove has
+> been fully tested, while Kirkwood is compile-tested only.
+> 
+> Florian Fainelli (2):
+>   net: mv643xx_eth: add Device Tree bindings
+>   net: mv643xx_eth: update Device Tree bindings documentation
+> 
+> Sebastian Hesselbarth (5):
+>   ARM: dove: remove legacy mv643xx_eth setup
+>   ARM: dove: add gigabit ethernet and mvmdio device tree nodes
+>   ARM: kirkwood: remove legacy mv643xx_eth board setup
+>   ARM: kirkwood: add gigabit ethernet and mvmdio device tree nodes
+>   ARM: kirkwood: remove legacy clk alias for mv643xx_eth
+> 
 
-get_cpu disables preempt, so you need a matching put_cpu.
+I have successfully tested these patches on km_kirkwood, you can add my tested-by:
 
-But actually I think you just want smp_processor_id and you probably
-want the BUG_ON form to get unlikely etc.
-
-That said, you don't use cpu for anything else, so why not drop it
-entirely?
-
-> +		BUG();
-> +
-> +	xen_get_runstate_snapshot(&state);
-> +
-> +	WARN_ON(state.state != RUNSTATE_running);
-> +
-> +	return state.time[RUNSTATE_runnable] + state.time[RUNSTATE_offline];
-> +}
-> +
->  static void __init xen_percpu_init(void *unused)
->  {
->  	struct vcpu_register_vcpu_info info;
-> @@ -170,6 +187,8 @@ static void __init xen_percpu_init(void *unused)
->  		BUG();
->  	per_cpu(xen_vcpu, cpu) = vcpup;
->  
-> +	xen_setup_runstate_info(cpu);
-> +
->  	enable_percpu_irq(xen_events_irq, 0);
->  }
->  
-> @@ -301,6 +320,10 @@ static int __init xen_init_events(void)
->  
->  	on_each_cpu(xen_percpu_init, NULL, 0);
->  
-> +	pv_time_ops.steal_clock = xen_stolen_accounting;
-> +	static_key_slow_inc(&paravirt_steal_enabled);
-> +	static_key_slow_inc(&paravirt_steal_rq_enabled);
-
-We don't seem to do this on x86 -- is that a bug on x86 on Xen?
-
-> +
->  	return 0;
->  }
->  postcore_initcall(xen_init_events);
-
-
+Tested-by: Valentin Longchamp<valentin.longchamp@keymile.com>
