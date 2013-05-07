@@ -1,124 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab3EGWpp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 18:45:45 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:20335 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700Ab3EGWpn (ORCPT
+	id S1755148Ab3EGWrs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 18:47:48 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:34933 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab3EGWrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 18:45:43 -0400
-Message-ID: <1367966740.30363.26.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 2/2 v2, RFC] Driver core: Introduce offline/online
- callbacks for memory blocks
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        Len Brown <lenb@kernel.org>, linux-mm@kvack.org, wency@cn.fujitsu.com
-Date: Tue, 07 May 2013 16:45:40 -0600
-In-Reply-To: <2150698.7rPOtiF0kp@vostro.rjw.lan>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan>
-	 <7132174.AKkXX1jln2@vostro.rjw.lan>
-	 <1367960629.30363.21.camel@misato.fc.hp.com>
-	 <2150698.7rPOtiF0kp@vostro.rjw.lan>
+	Tue, 7 May 2013 18:47:47 -0400
+X-Greylist: delayed 521 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 May 2013 18:47:47 EDT
+Message-ID: <1367966343.1770.3.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH v3 15/14] rwsem: check counter to avoid cmpxchg calls
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>, Alex Shi <alex.shi@intel.com>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 07 May 2013 15:39:03 -0700
+In-Reply-To: <1367934362-10433-1-git-send-email-walken@google.com>
+References: <1367934362-10433-1-git-send-email-walken@google.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-08 at 00:10 +0200, Rafael J. Wysocki wrote:
-> On Tuesday, May 07, 2013 03:03:49 PM Toshi Kani wrote:
-> > On Tue, 2013-05-07 at 14:11 +0200, Rafael J. Wysocki wrote:
-> > > On Tuesday, May 07, 2013 12:59:45 PM Vasilis Liaskovitis wrote:
-> > 
-> >  :
-> > 
-> > > Updated patch is appended for completness.
-> > 
-> > Yes, this updated patch solved the locking issue.
-> > 
-> > > > > > A more general issue is that there are now two memory offlining efforts:
-> > > > > > 
-> > > > > > 1) from acpi_bus_offline_companions during device offline
-> > > > > > 2) from mm: remove_memory during device detach (offline_memory_block_cb)
-> > > > > > 
-> > > > > > The 2nd is only called if the device offline operation was already succesful, so
-> > > > > > it seems ineffective or redundant now, at least for x86_64/acpi_memhotplug machine
-> > > > > > (unless the blocks were re-onlined in between).
-> > > > > 
-> > > > > Sure, and that should be OK for now.  Changing the detach behavior is not
-> > > > > essential from the patch [2/2] perspective, we can do it later.
-> > > > 
-> > > > yes, ok.
-> > > > 
-> > > > > 
-> > > > > > On the other hand, the 2nd effort has some more intelligence in offlining, as it
-> > > > > > tries to offline twice in the precense of memcg, see commits df3e1b91 or
-> > > > > > reworked 0baeab16. Maybe we need to consolidate the logic.
-> > > > > 
-> > > > > Hmm.  Perhaps it would make sense to implement that logic in
-> > > > > memory_subsys_offline(), then?
-> > > > 
-> > > > the logic tries to offline the memory blocks of the device twice, because the
-> > > > first memory block might be storing information for the subsequent memblocks.
-> > > > 
-> > > > memory_subsys_offline operates on one memory block at a time. Perhaps we can get
-> > > > the same effect if we do an acpi_walk of acpi_bus_offline_companions twice in
-> > > > acpi_scan_hot_remove but it's probably not a good idea, since that would
-> > > > affect non-memory devices as well. 
-> > > > 
-> > > > I am not sure how important this intelligence is in practice (I am not using
-> > > > mem cgroups in my guest kernel tests yet).  Maybe Wen (original author) has
-> > > > more details on 2-pass offlining effectiveness.
-> > > 
-> > > OK
-> > > 
-> > > It may be added in a separate patch in any case.
-> > 
-> > I had the same comment as Vasilis.  And, I agree with you that we can
-> > enhance it in separate patches.
-> > 
-> >  :
-> > 
-> > > +static int memory_subsys_offline(struct device *dev)
-> > > +{
-> > > +	struct memory_block *mem = container_of(dev, struct memory_block, dev);
-> > > +	int ret;
-> > > +
-> > > +	mutex_lock(&mem->state_mutex);
-> > > +	ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
-> > 
-> > This function needs to check mem->state just like
-> > offline_memory_block().  That is:
-> > 
-> > 	int ret = 0;
-> > 		:
-> > 	if (mem->state != MEM_OFFLINE)
-> > 		ret = __memory_block_change_state(...);
-> > 
-> > Otherwise, memory hot-delete to an off-lined memory fails in
-> > __memory_block_change_state() since mem->state is already set to
-> > MEM_OFFLINE.
-> > 
-> > With that change, for the series:
-> > Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> 
-> OK, one more update, then (appended).
-> 
-> That said I thought that the check against dev->offline in device_offline()
-> would be sufficient to guard agaist that.  Is there any "offline" code path
-> I didn't take into account?
+On Tue, 2013-05-07 at 06:45 -0700, Michel Lespinasse wrote:
+> (Davidlohr also has one additional patch which further improves throughput,
+> though I will ask him to send it directly to you as I have suggested some
+> minor changes).
 
-Oh, you are right about that.  The real problem is that dev->offline is
-set to false (0) when a new memory is hot-added in off-line state.  So,
-instead, dev->offline needs to be set properly.  
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-Thanks,
--Toshi
+This patch tries to reduce the amount of cmpxchg calls in the
+writer failed path by checking the counter value first before
+issuing the instruction. If ->count is not set to RWSEM_WAITING_BIAS
+then there is no point wasting a cmpxchg call.
+
+Furthermore, Michel states "I suppose it helps due to the case where
+someone else steals the lock while we're trying to acquire sem->wait_lock."
+
+Two very different workloads and machines were used to see how this
+patch improves throughput: pgbench on a quad-core laptop and aim7 on a
+large 8 socket box with 80 cores.
+
+Some results comparing Michel's fast-path write lock stealing
+(tps-rwsem) on a quad-core laptop running pgbench:
+
+| db_size | clients  |  tps-rwsem     |   tps-patch  |
++---------+----------+----------------+--------------+
+| 160 MB   |       1 |           6906 |         9153 | + 32.5
+| 160 MB   |       2 |          15931 |        22487 | + 41.1%
+| 160 MB   |       4 |          33021 |        32503 |
+| 160 MB   |       8 |          34626 |        34695 |
+| 160 MB   |      16 |          33098 |        34003 |
+| 160 MB   |      20 |          31343 |        31440 |
+| 160 MB   |      30 |          28961 |        28987 |
+| 160 MB   |      40 |          26902 |        26970 |
+| 160 MB   |      50 |          25760 |        25810 |
+------------------------------------------------------
+| 1.6 GB   |       1 |           7729 |         7537 |
+| 1.6 GB   |       2 |          19009 |        23508 | + 23.7%
+| 1.6 GB   |       4 |          33185 |        32666 |
+| 1.6 GB   |       8 |          34550 |        34318 |
+| 1.6 GB   |      16 |          33079 |        32689 |
+| 1.6 GB   |      20 |          31494 |        31702 |
+| 1.6 GB   |      30 |          28535 |        28755 |
+| 1.6 GB   |      40 |          27054 |        27017 |
+| 1.6 GB   |      50 |          25591 |        25560 |
+------------------------------------------------------
+| 7.6 GB   |       1 |           6224 |         7469 | + 20.0%
+| 7.6 GB   |       2 |          13611 |        12778 |
+| 7.6 GB   |       4 |          33108 |        32927 |
+| 7.6 GB   |       8 |          34712 |        34878 |
+| 7.6 GB   |      16 |          32895 |        33003 |
+| 7.6 GB   |      20 |          31689 |        31974 |
+| 7.6 GB   |      30 |          29003 |        28806 |
+| 7.6 GB   |      40 |          26683 |        26976 |
+| 7.6 GB   |      50 |          25925 |        25652 |
+------------------------------------------------------
+
+For the aim7 worloads, they overall improved on top of Michel's
+patchset. For full graphs on how the rwsem series plus this patch
+behaves on a large 8 socket machine against a vanilla kernel:
+http://stgolabs.net/rwsem-aim7-results.tar.gz
+
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+---
+ lib/rwsem.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index cf0ad2a..19c5fa9 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -223,7 +223,9 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+ 			count = RWSEM_ACTIVE_WRITE_BIAS;
+ 			if (!list_is_singular(&sem->wait_list))
+ 				count += RWSEM_WAITING_BIAS;
+-			if (cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
++
++			if (sem->count == RWSEM_WAITING_BIAS &&
++			    cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
+ 							RWSEM_WAITING_BIAS)
+ 				break;
+ 		}
+-- 
+1.7.11.7
+
 
 
