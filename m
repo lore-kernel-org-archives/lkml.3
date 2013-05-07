@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759265Ab3EGJJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 05:09:24 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34055 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759160Ab3EGJJW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 05:09:22 -0400
-Date: Tue, 7 May 2013 10:08:49 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Christopher Covington <cov@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/2] ARM: Remove any correlation between IPC and
- BogoMips value
-Message-ID: <20130507090849.GC25387@mudshark.cambridge.arm.com>
-References: <1367602547-19322-1-git-send-email-will.deacon@arm.com>
- <5187EFF3.6010005@codeaurora.org>
+	id S1759294Ab3EGJMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 05:12:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43263 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759198Ab3EGJMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 05:12:40 -0400
+Message-ID: <5188C578.4030907@redhat.com>
+Date: Tue, 07 May 2013 11:12:24 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5187EFF3.6010005@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Liu Ying <liu.y.victor@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>, davem@davemloft.net,
+        tglx@linutronix.de, john.stultz@linaro.org,
+        Liu Ying <Ying.Liu@freescale.com>
+Subject: Re: [PATCH 1/1] ktime: Use macro NSEC_PER_USEC instead of a magic
+ number
+References: <5188B809.5060803@redhat.com> <CA+8Hj83_6Feq8KVSJh+E=R35wm2ZkF+uGWxcJV7XZsOxdze41A@mail.gmail.com> <CA+8Hj838CfaAKjdLtO2zdZ5DJP10a0QCzhYJbZ3GqQhmE5MZzw@mail.gmail.com>
+In-Reply-To: <CA+8Hj838CfaAKjdLtO2zdZ5DJP10a0QCzhYJbZ3GqQhmE5MZzw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 07:01:23PM +0100, Christopher Covington wrote:
-> Hi Will,
-> 
-> On 05/03/2013 01:35 PM, Will Deacon wrote:
-> > Hi all,
-> > 
-> > This small patch set may look a little over a month late, but there is a
-> > serious reason for posting it.
-> > 
-> > When I moved the ARM delay loop over to using the architected timers
-> > rather than the CPU spinning loop (which has all the problems associated
-> > with cpu frequency scaling and what-not) I thought I was doing something
-> > useful for the port. However, it turns out that a surprising number of
-> > people have complained, and continue to complain, about the drop in
-> > their `BogoMIPs score'.
-> 
-> Have you considered adding the old code back in, but in a form that's not at
-> all referenced by the delay loop code and just calculates CPU-based bogomips?
+On 05/07/2013 11:08 AM, Liu Ying wrote:
+> 2013/5/7 Liu Ying <liu.y.victor@gmail.com>
+>> 2013/5/7 Daniel Borkmann <dborkman@redhat.com>
+>>> On 05/06/2013 02:42 PM, y@shlinux1.ap.freescale.net wrote:
+>>>> From: Liu Ying <Ying.Liu@freescale.com>
 
-That seems like a lot of effort in order to preserve something that isn't
-even meaningful. We might be better just zeroing the value, but then we'll
-inevitably get bug reports of it being `wrong'.
+>>> If you only have 1 patch, then you don't need "1/1" in the subject.
+>>> The term magic number here might be a little exaggerated, not so
+>>> magic actually. :-)
+>>>
+>> Thanks. I will update this. How about turning "magic number" to "immediate
+>> number"?
 
-Plus, the calibration during boot introduces a brief delay when onlining
-each core whereas this can be skipped when using a constant timer.
-
-Will
+Maybe like ``ktime: Use macro NSEC_PER_USEC where appropriate''.
