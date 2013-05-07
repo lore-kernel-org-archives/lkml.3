@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759396Ab3EGSBX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 14:01:23 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:39400 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757312Ab3EGSBW (ORCPT
+	id S1757518Ab3EGSKT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 14:10:19 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:44589 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752628Ab3EGSKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 14:01:22 -0400
+	Tue, 7 May 2013 14:10:15 -0400
+Message-ID: <5189441E.6020606@metafoo.de>
+Date: Tue, 07 May 2013 20:12:46 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <1367947574-2934383-1-git-send-email-arnd@arndb.de>
-References: <1367947574-2934383-1-git-send-email-arnd@arndb.de>
-Date: Tue, 7 May 2013 11:01:21 -0700
-X-Google-Sender-Auth: c9YRGHE-fjJA0HZ7004VN73WTBg
-Message-ID: <CA+55aFxJB3OG+-tu2SqAOzn9T7zDb0P9jgbUOMHnXs9m_nXNUA@mail.gmail.com>
-Subject: Re: [GIT PULL 0/5] ARM: Third batch of arm-soc changes for 3.10, again
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: ARM SoC <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
+        linux-iio@vger.kernel.org
+Subject: Re: linux-next: Tree for May 7 (iio)
+References: <20130507134922.981483ab1e5cb09e5543a6cc@canb.auug.org.au> <51893523.9000105@infradead.org>
+In-Reply-To: <51893523.9000105@infradead.org>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 7, 2013 at 10:26 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->
-> Here are the same pull requests as before, with numbers and distinct
-> time stamps. I hope I didn't screw up in a different way this time.
+On 05/07/2013 07:08 PM, Randy Dunlap wrote:
+> On 05/06/13 20:49, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Please do not add any v3.11 destined work to your linux-next included
+>> branches until after v3.10-rc1 is released.
+>>
+>> I am receiving a (un)reasonable number of conflicts from there being
+>> multiple copies of some commits in various trees.   Please clean this up
+>> and resist the temptataion to rebase your trees on the way to your
+>> upstream ...
+>>
+>> Changes since 20130506:
+>>
+> 
+> on x86_64:
+> 
+> when CONFIG_AD5446=y and CONFIG_I2C=m:
+> 
+> drivers/built-in.o: In function `ad5622_write':
+> ad5446.c:(.text+0xae0b5): undefined reference to `i2c_master_send'
+> drivers/built-in.o: In function `ad5446_init':
+> ad5446.c:(.init.text+0x4f28): undefined reference to `i2c_register_driver'
+> drivers/built-in.o: In function `ad5446_i2c_unregister_driver':
+> ad5446.c:(.exit.text+0xc73): undefined reference to `i2c_del_driver'
+> 
 
-Ok, I notice that you seem to have forgotten the "--summary" flag from
-your diffstat in your new script.
+My fault, will fix it. Thanks for reporting.
 
-Not a showstopper, but make sure that the diffstat flags are
-
-  "git diff -M --stat --summary"
-
-(And yes, I prefer "-M", not "-C", because while copy information is
-interesting, it tends to hide the fact that the copying added a lot of
-lines, so the "-C" flag ends up not giving as good line add/del
-information, even if the data that something looks like a copy of
-another file is interesting).
-
-              Linus
+- Lars
