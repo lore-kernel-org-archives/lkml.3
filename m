@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932386Ab3EGBoA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 21:44:00 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:13669 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757346Ab3EGBn7 (ORCPT
+	id S1759628Ab3EGBot (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 21:44:49 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:35507 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756580Ab3EGBos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 21:43:59 -0400
-Message-ID: <51885C4D.3010607@huawei.com>
-Date: Tue, 7 May 2013 09:43:41 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Mon, 6 May 2013 21:44:48 -0400
+From: "Michael D. Setzer II" <msetzerii@gmail.com>
+To: linux-kernel@vger.kernel.org
+Date: Tue, 07 May 2013 11:44:42 +1000
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Wengmeiling <wengmeiling.weng@huawei.com>,
-        Libo Chen <libo.chen@huawei.com>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: bcdedcc1afd6 breaks search in menuconfig
-References: <20130506154903.GD22041@pd.tnic>
-In-Reply-To: <20130506154903.GD22041@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Subject: Kernel Firmware Support
+Message-ID: <51885C8A.28146.10AA3F@msetzerii.gmail.com>
+X-mailer: Pegasus Mail for Windows (4.63)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/5/6 23:49, Borislav Petkov wrote:
-> When I do
-> 
-> make menuconfig
-> 
-> then press '/' in order to search for a symbol, and I type 'EFI', for
-> example, and press enter, I get:
-> 
->  │  Enter CONFIG_ (sub)string to search for (with or without "CONFIG_")    │  
->  │ ┌─────────────────────────────────────────────────────────────────────┐ │  
->  │ │EFImake[1]: *** [menuconfig] Segmentation fault                      │ │  
->  │ └───────────────────────────────────────────────make: *** [menuconfig] Error 2
-> 
-> and the terminal is left in an inconsistent state which I need to
-> 'reset'. But, more importantly, the search is b0rked now.
-> 
+Looking for method to best support users firmware needs within 
+the kernel. 
 
-Add a "if (prop)" will fix it.
+Have a disk-image project that users kernel.org kernels, and have 
+had users that require firmware that is not included in the 
+kernel.org source. I've been able to find it in linux-firmware.git and 
+then manually adding it to the kernel.org firmware directory and 
+then modifying the Makefile.
 
-I'll prepare a patch.
+Had seen something that was suppose to be working on getting 
+firmware out of the kernel, but that process seems to have been 
+dormant for some time. 
 
-> Reverting the above commit fixes the issue.
-> 
+
++----------------------------------------------------------+
+  Michael D. Setzer II -  Computer Science Instructor      
+  Guam Community College  Computer Center                  
+  mailto:mikes@kuentos.guam.net                            
+  mailto:msetzerii@gmail.com
+  http://www.guam.net/home/mikes
+  Guam - Where America's Day Begins                        
+  G4L Disk Imaging Project maintainer 
+  http://sourceforge.net/projects/g4l/
++----------------------------------------------------------+
+
+http://setiathome.berkeley.edu (Original)
+Number of Seti Units Returned:  19,471
+Processing time:  32 years, 290 days, 12 hours, 58 minutes
+(Total Hours: 287,489)
+
+BOINC@HOME CREDITS
+SETI        14672667.574611   |   EINSTEIN    11160884.209852
+ROSETTA      7189167.439443   |   ABC         15954188.106838
 
