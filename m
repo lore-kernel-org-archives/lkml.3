@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab3EGFcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 01:32:14 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:62416 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753238Ab3EGFcN (ORCPT
+	id S1755504Ab3EGFeS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 01:34:18 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:47923 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752434Ab3EGFeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 01:32:13 -0400
-X-AuditID: cbfee68f-b7f066d000003683-94-518891dccb7c
+	Tue, 7 May 2013 01:34:16 -0400
+X-AuditID: cbfee68e-b7efa6d000004d12-8a-51889257ff92
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Arnd Bergmann'" <arnd@arndb.de>,
         "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Linus Walleij'" <linus.walleij@linaro.org>,
+Cc: linux-kernel@vger.kernel.org,
+        "'Hartley Sweeten'" <hartleys@visionengravers.com>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/2] misc: arm-charlcd: remove unnecessary
- platform_set_drvdata()
-Date: Tue, 07 May 2013 14:32:11 +0900
-Message-id: <003701ce4ae4$39926f20$acb74d60$@samsung.com>
+Subject: [PATCH 2/2] misc: ep93xx_pwm: remove unnecessary platform_set_drvdata()
+Date: Tue, 07 May 2013 14:34:15 +0900
+Message-id: <003801ce4ae4$830d02f0$892708d0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5K5B99LZDrDkjmT0urYwRGn5u+pw==
+Thread-index: Ac5K5G+eyewmerWGShaB6B8jbdVETA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zQ907EzsCDR7v47T4O+kYu0Xz4vVs
-	FpcXXmK1mPJnOZPF5V1z2BxYPX7/msTocefaHjaP/XPXsHv0bVnF6PF5k1wAaxSXTUpqTmZZ
-	apG+XQJXxrT1X9kLergrrt54wtzAOJ+zi5GTQ0LAROLFhHvMELaYxIV769m6GLk4hASWMUrM
-	3bSFHaZo38f37BCJ6YwS63fOYIVwfjFKdE4+ygRSxSagJvHly2GwDhGBCImW1mbGLkYODmaB
-	IokP5/VAwsICwRI9p5eChVkEVCVazseDhHkFLCWuzXjACmELSvyYfI8FxGYW0AJadZwJwpaX
-	2LzmLdShChI7zr5mhNikJ7F50XaoGhGJfS/eMYKcJiFwiF3i+b89YEUsAgIS3yYfYgHZKyEg
-	K7HpANQcSYmDK26wTGAUm4Vk9Swkq2chWT0LyYoFjCyrGEVTC5ILipPSi4z1ihNzi0vz0vWS
-	83M3MUIir38H490D1ocYk4HWT2SWEk3OB0ZuXkm8obGZkYWpiamxkbmlGWnCSuK8ai3WgUIC
-	6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYRTaXvU34npQTt3VG7WWX+jliNv1dxsXm05buuxX0
-	3j9dadppJ3Mu0UPsnbXVQqwV7QXa9nG5XNsf11zlm7y+zG7j9QnJ9XKZK/epvlrx98DxkJeV
-	9aebtu+fcIbf1LPl2kl9+exJLed3ZV19+tm/XWDGtn+FP1y/Rk22eDh1zcPqG/GbdVzvKLEU
-	ZyQaajEXFScCAHRCRmTSAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jQd07EzsCDV6+Y7X4O+kYu0Xz4vVs
-	FpcXXmK1mPJnOZPF5V1z2BxYPX7/msTocefaHjaP/XPXsHv0bVnF6PF5k1wAa1QDo01GamJK
-	apFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0HYlhbLEnFKgUEBi
-	cbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8a09V/ZC3q4K67eeMLcwDifs4uRk0NCwERi
-	38f37BC2mMSFe+vZuhi5OIQEpjNKrN85gxXC+cUo0Tn5KBNIFZuAmsSXL4fBOkQEIiRaWpsZ
-	uxg5OJgFiiQ+nNcDCQsLBEv0nF4KFmYRUJVoOR8PEuYVsJS4NuMBK4QtKPFj8j0WEJtZQAto
-	1XEmCFteYvOat8wQ9yhI7Dj7mhFik57E5kXboWpEJPa9eMc4gVFgFpJRs5CMmoVk1CwkLQsY
-	WVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBMf1M+kdjKsaLA4xCnAwKvHwKpxqDxRiTSwr
-	rsw9xCjBwawkwiut3REoxJuSWFmVWpQfX1Sak1p8iDEZ6NGJzFKiyfnAlJNXEm9obGJmZGlk
-	ZmFkYm5OmrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxSDYyGAaZftFKqnjOxfS1Uuv2puu+p
-	uYbeqaNfKqb0PN2c632yV+b/13OxmzcZLyywm1PA+Cx9pc4B/b6DgRtW7Cy5kjb1a6XE7Peb
-	X5/wyT17WG7BxLAXfLbHdy3b8cY09rqL4+XC6NvBvMfYElOF/svGP7lyqDUwSHeejB7LDu5r
-	PXvW3rLLPXxHiaU4I9FQi7moOBEAFvHUMC8DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zI93wSR2BBhenyFn8nXSM3aJ58Xo2
+	i5dnd7NYXF54idXi8q45bA6sHr9/TWL02D93DbtH35ZVjB6fN8l5PD/zgy2ANYrLJiU1J7Ms
+	tUjfLoEr48LVt+wF+9krbj5/z9jAuJmti5GTQ0LARGLzh01QtpjEhXvrgWwuDiGBZYwSm5c9
+	YYcp+r2vjwkisYhRouPHdlYI5xejxNX/vWDtbAJqEl++HAbrEBGIkGhpbWYEsZkFqiT+PPgM
+	ZgsLBEhs7XsPVs8ioCrxYtZdFhCbV8BS4vi3X6wQtqDEj8n3WCB6tSTW7zzOBGHLS2xe85YZ
+	4iIFiR1nXzNC7NKT6J96FGqXiMS+F+8YQY6TENjHLrH0YiPUMgGJb5MPAQ3lAErISmw6ADVH
+	UuLgihssExjFZiFZPQvJ6llIVs9CsmIBI8sqRtHUguSC4qT0IiO94sTc4tK8dL3k/NxNjJDo
+	69vBePOA9SHGZKD1E5mlRJPzgdGbVxJvaGxmZGFqYmpsZG5pRpqwkjivWot1oJBAemJJanZq
+	akFqUXxRaU5q8SFGJg5OqQbG6rt6T9tnd4m9ebjxF/sav0sck2qlNdYHpv27avz90aT2jf9b
+	8uuv7VY/+fhdsEJzdtKRti+LP9qf/hj6V2G1kNnb80JNq8TezfxlqOt48JL5ucv6l2wu/VYP
+	+/bZwWNjx1fxEx5ziorYQ+TLp2/t1Ol7dDFp2Tqxa8s0Ew5NljON2bi8vp1bQ4mlOCPRUIu5
+	qDgRAOWoUtnUAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jAd3wSR2BBpN2S1n8nXSM3aJ58Xo2
+	i5dnd7NYXF54idXi8q45bA6sHr9/TWL02D93DbtH35ZVjB6fN8l5PD/zgy2ANaqB0SYjNTEl
+	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
+	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMePC1bfsBfvZK24+f8/YwLiZrYuRk0NCwETi
+	974+JghbTOLCvfVAcS4OIYFFjBIdP7azQji/GCWu/u8F62ATUJP48uUwO4gtIhAh0dLazAhi
+	MwtUSfx58BnMFhYIkNja9x6snkVAVeLFrLssIDavgKXE8W+/WCFsQYkfk++xQPRqSazfeZwJ
+	wpaX2LzmLTPERQoSO86+ZoTYpSfRP/Uo1C4RiX0v3jFOYBSYhWTULCSjZiEZNQtJywJGllWM
+	oqkFyQXFSem5RnrFibnFpXnpesn5uZsYwbH9THoH46oGi0OMAhyMSjy8CqfaA4VYE8uKK3MP
+	MUpwMCuJ8EprdwQK8aYkVlalFuXHF5XmpBYfYkwG+nQis5Rocj4w7eSVxBsam5gZWRqZWRiZ
+	mJuTJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA+OGmyk3D3tOPhHWIOz2yrhnohETk5c2
+	a1b8Beb7jzj8ZEy3LA9j2cRi9fki16wwLkX+/b9DnjAlX5r3fopglNVHfUtWXd7iOzdM9D/4
+	Rr42WJunZrjQ6MQcjifHX1fcff7ilMvkg5P+ukWbd+vvbrd5nqje2809jXONd3Og/e1axtil
+	Z+y2P1BiKc5INNRiLipOBACmvMxBMQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -62,39 +62,21 @@ Thus, it is not needed to manually clear the device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/misc/arm-charlcd.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+ drivers/misc/ep93xx_pwm.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/misc/arm-charlcd.c b/drivers/misc/arm-charlcd.c
-index 48651ef..1256a4b 100644
---- a/drivers/misc/arm-charlcd.c
-+++ b/drivers/misc/arm-charlcd.c
-@@ -291,7 +291,7 @@ static int __init charlcd_probe(struct platform_device *pdev)
- 	lcd->virtbase = ioremap(lcd->phybase, lcd->physize);
- 	if (!lcd->virtbase) {
- 		ret = -ENOMEM;
--		goto out_no_remap;
-+		goto out_no_memregion;
- 	}
- 
- 	lcd->irq = platform_get_irq(pdev, 0);
-@@ -320,8 +320,6 @@ static int __init charlcd_probe(struct platform_device *pdev)
- 
- out_no_irq:
- 	iounmap(lcd->virtbase);
--out_no_remap:
+diff --git a/drivers/misc/ep93xx_pwm.c b/drivers/misc/ep93xx_pwm.c
+index 96787ec..9ba93f0 100644
+--- a/drivers/misc/ep93xx_pwm.c
++++ b/drivers/misc/ep93xx_pwm.c
+@@ -347,7 +347,6 @@ static int __exit ep93xx_pwm_remove(struct platform_device *pdev)
+ 	ep93xx_pwm_disable(pwm);
+ 	clk_disable(pwm->clk);
+ 	clk_put(pwm->clk);
 -	platform_set_drvdata(pdev, NULL);
- out_no_memregion:
- 	release_mem_region(lcd->phybase, SZ_4K);
- out_no_resource:
-@@ -337,7 +335,6 @@ static int __exit charlcd_remove(struct platform_device *pdev)
- 		free_irq(lcd->irq, lcd);
- 		iounmap(lcd->virtbase);
- 		release_mem_region(lcd->phybase, lcd->physize);
--		platform_set_drvdata(pdev, NULL);
- 		kfree(lcd);
- 	}
- 
+ 	sysfs_remove_group(&pdev->dev.kobj, &ep93xx_pwm_sysfs_files);
+ 	iounmap(pwm->mmio_base);
+ 	release_mem_region(res->start, resource_size(res));
 -- 
 1.7.2.5
 
