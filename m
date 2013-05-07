@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366Ab3EGQ4L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 12:56:11 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:47292 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab3EGQ4K (ORCPT
+	id S1753413Ab3EGRCY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 13:02:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55608 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab3EGRCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 12:56:10 -0400
+	Tue, 7 May 2013 13:02:22 -0400
+Message-ID: <51893378.6050600@infradead.org>
+Date: Tue, 07 May 2013 10:01:44 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <51885FC4.7000401@gmail.com>
-References: <1367824946-6160-1-git-send-email-jaswinder.singh@linaro.org>
-	<1367825063-6263-1-git-send-email-jaswinder.singh@linaro.org>
-	<51885FC4.7000401@gmail.com>
-Date: Tue, 7 May 2013 22:26:07 +0530
-Message-ID: <CAJe_ZheEut1fbifGeWfiZmar0zm_ZgdzygeaAYTOitSR_tqbiA@mail.gmail.com>
-Subject: Re: [PATCHv2 3/4] mailbox: pl320: Introduce common API driver
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Jassi Brar <jassisinghbrar@gmail.com>, "Anna, Suman" <s-anna@ti.com>,
-        "Loic PALLARDY (loic.pallardy@st.com)" <loic.pallardy@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 7 (usb/chipidea)
+References: <20130507134922.981483ab1e5cb09e5543a6cc@canb.auug.org.au>
+In-Reply-To: <20130507134922.981483ab1e5cb09e5543a6cc@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 May 2013 07:28, Rob Herring <robherring2@gmail.com> wrote:
-> On 05/06/2013 02:24 AM, Jassi Brar wrote:
->> Convert the PL320 controller driver to work with the common
->> mailbox API. Also convert the only user of PL320, highbank-cpufreq.c
->> to work with thee API. Drop the obsoleted driver pl320-ipc.c
->>
->> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
->> ---
->>  drivers/cpufreq/highbank-cpufreq.c |   22 +++-
->>  drivers/mailbox/Makefile           |    2 +-
->>  drivers/mailbox/pl320-ipc.c        |  198 ---------------------------------
->>  drivers/mailbox/pl320.c            |  212 ++++++++++++++++++++++++++++++++++++
->
-> Can you resend this using git format-patch -M option.
->
-IIRC I already did that. Anyways I just checked -M doesn't produce
-anything different for the patch. Except for headers, defines and
-module init rituals, everything else is from scratch.
+On 05/06/13 20:49, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Please do not add any v3.11 destined work to your linux-next included
+> branches until after v3.10-rc1 is released.
+> 
+> I am receiving a (un)reasonable number of conflicts from there being
+> multiple copies of some commits in various trees.   Please clean this up
+> and resist the temptataion to rebase your trees on the way to your
+> upstream ...
+> 
+> Changes since 20130506:
+> 
 
--Jassi
+
+on i386:
+
+drivers/built-in.o: In function `ci_hdrc_host_init':
+(.text+0x2ce75c): undefined reference to `ehci_init_driver'
+
+when USB_EHCI_HCD=m and USB_CHIPIDEA=y.
+
+
+
+-- 
+~Randy
