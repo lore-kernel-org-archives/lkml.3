@@ -1,89 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759237Ab3EGQqw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 12:46:52 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:46963 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758587Ab3EGQqv (ORCPT
+	id S1759248Ab3EGQuZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 12:50:25 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:47392 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab3EGQuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 12:46:51 -0400
-Message-ID: <51892FF5.9020607@gmail.com>
-Date: Wed, 08 May 2013 00:46:45 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 7 May 2013 12:50:24 -0400
+Date: Tue, 7 May 2013 09:50:18 -0700
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        vgoyal@redhat.com
+Subject: [PATCH v2 33/33] blk-throttle: implement proper hierarchy support
+Message-ID: <20130507165018.GA5531@mtj.dyndns.org>
+References: <1367880372-28312-1-git-send-email-tj@kernel.org>
+ <1367880372-28312-34-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: eunb.song@samsung.com
-CC: "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jogo@openwrt.org" <jogo@openwrt.org>,
-        "david.daney@cavium.com" <david.daney@cavium.com>
-Subject: Re: MIPS : die at free_initmem() function 3.9+
-References: <21534601.395241367793582818.JavaMail.weblogic@epv6ml08>
-In-Reply-To: <21534601.395241367793582818.JavaMail.weblogic@epv6ml08>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367880372-28312-34-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eunsong,
-	Thanks for your help. I have done some code inspection and have 
-found a possible reason for this issue. It seems that virt_to_page()
-can't be used to handle address in compatible segments due to following
-definitions.
+With the recent updates, blk-throttle is finally ready for proper
+hierarchy support.  Dispatching now honors service_queue->parent_sq
+and propagates correctly.  The only thing missing is setting
+->parent_sq correctly so that throtl_grp hierarchy matches the cgroup
+hierarchy.
 
-#define virt_to_page(kaddr)     pfn_to_page(PFN_DOWN(virt_to_phys(kaddr)))
-static inline unsigned long virt_to_phys(volatile const void *address)
-{
-        return (unsigned long)address - PAGE_OFFSET + PHYS_OFFSET;
-}
-#define __va(x)         ((void *)((unsigned long)(x) + PAGE_OFFSET - PHYS_OFFSET))
-#define __pa_symbol(x)  __pa(RELOC_HIDE((unsigned long)(x), 0))
-#define __pa(x)                                                         \
-({                                                                      \
-    unsigned long __x = (unsigned long)(x);                             \
-    __x < CKSEG0 ? XPHYSADDR(__x) : CPHYSADDR(__x);                     \
-})
+This patch updates throtl_pd_init() such that service_queues form the
+same hierarchy as the cgroup hierarchy if sane_behavior is enabled.
+As this concludes proper hierarchy support for blkcg, the shameful
+.broken_hierarchy tag is removed from blkio_subsys.
 
-#define CPHYSADDR(a)            ((_ACAST32_(a)) & 0x1fffffff)
-#define XPHYSADDR(a)            ((_ACAST64_(a)) &                       \
-                                 _CONST64_(0x000000ffffffffff))
+v2: Updated blkio-controller.txt as suggested by Vivek.
 
-#define XKUSEG                  _CONST64_(0x0000000000000000)
-#define XKSSEG                  _CONST64_(0x4000000000000000)
-#define XKPHYS                  _CONST64_(0x8000000000000000)
-#define XKSEG                   _CONST64_(0xc000000000000000)
-#define CKSEG0                  _CONST64_(0xffffffff80000000)
-#define CKSEG1                  _CONST64_(0xffffffffa0000000)
-#define CKSSEG                  _CONST64_(0xffffffffc0000000)
-#define CKSEG3                  _CONST64_(0xffffffffe0000000)
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Cc: Li Zefan <lizefan@huawei.com>
+---
+Updated the doc as suggested.  Will push out once -rc1 drops.
 
-So could you please help to prepare a formal patch for this bug and send
-it to Andrew Morton for v3.10-rc1? Otherwise I could help to it too.
+Thanks!
 
-Regards!
-Gerry
+ Documentation/cgroups/blkio-controller.txt |   29 +++++++++++++++--------------
+ block/blk-cgroup.c                         |    8 --------
+ block/blk-throttle.c                       |   22 +++++++++++++++++++++-
+ include/linux/cgroup.h                     |    2 ++
+ 4 files changed, 38 insertions(+), 23 deletions(-)
 
-
-=On 05/06/2013 06:39 AM, EUNBONG SONG wrote:
-> 
->> So on 64bits MIPS platforms, __va(__pa(x)) may not equal to x, that may cause
->> trouble to free_initmem_default(). Could you please help to do another test
->> by changing
->> free_initmem_default(POISON_FREE_INITMEM);
->> to
->> free_initmem_default(0);
-> 
->> This test could help to identify whether this panic is caused by
->> memset((void *)pos, poison, PAGE_SIZE);
->> in function free_reserved_area().
-> 
-> Hello, as you said i changed  "free_initmem_default(POISON_FREE_INITMEM);" to
-> "free_initmem_default(0);". Panic still occurred. 
-> Actually, i put the some debug messages. and i confirmed panic occurs in __free_reserved_page() function.
-> Thanks!
-> 
-> N떑꿩�r툤y鉉싕b쾊Ф푤v�^�)頻{.n�+돴쪐{콗喩zX㎍썳變}찠꼿쟺�&j:+v돣�쳭喩zZ+�+zf＂톒쉱�~넮녬i�鎬z�췿ⅱ�?솳鈺�&�)刪f뷌^j푹y쬶끷@A첺뛴��0띠h��i�
-> 
-
+--- a/Documentation/cgroups/blkio-controller.txt
++++ b/Documentation/cgroups/blkio-controller.txt
+@@ -94,11 +94,13 @@ Throttling/Upper Limit policy
+ 
+ Hierarchical Cgroups
+ ====================
+-- Currently only CFQ supports hierarchical groups. For throttling,
+-  cgroup interface does allow creation of hierarchical cgroups and
+-  internally it treats them as flat hierarchy.
+ 
+-  If somebody created a hierarchy like as follows.
++Both CFQ and throttling implement hierarchy support; however,
++throttling's hierarchy support is enabled iff "sane_behavior" is
++enabled from cgroup side, which currently is a development option and
++not publicly available.
++
++If somebody created a hierarchy like as follows.
+ 
+ 			root
+ 			/  \
+@@ -106,21 +108,20 @@ Hierarchical Cgroups
+ 			|
+ 		     test3
+ 
+-  CFQ will handle the hierarchy correctly but and throttling will
+-  practically treat all groups at same level. For details on CFQ
+-  hierarchy support, refer to Documentation/block/cfq-iosched.txt.
+-  Throttling will treat the hierarchy as if it looks like the
+-  following.
++CFQ by default and throttling with "sane_behavior" will handle the
++hierarchy correctly.  For details on CFQ hierarchy support, refer to
++Documentation/block/cfq-iosched.txt.  For throttling, all limits apply
++to the whole subtree while all statistics are local to the IOs
++directly generated by tasks in that cgroup.
++
++Throttling without "sane_behavior" enabled from cgroup side will
++practically treat all groups at same level as if it looks like the
++following.
+ 
+ 				pivot
+ 			     /  /   \  \
+ 			root  test1 test2  test3
+ 
+-  Nesting cgroups, while allowed, isn't officially supported and blkio
+-  genereates warning when cgroups nest. Once throttling implements
+-  hierarchy support, hierarchy will be supported and the warning will
+-  be removed.
+-
+ Various user visible config options
+ ===================================
+ CONFIG_BLK_CGROUP
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -911,14 +911,6 @@ struct cgroup_subsys blkio_subsys = {
+ 	.subsys_id = blkio_subsys_id,
+ 	.base_cftypes = blkcg_files,
+ 	.module = THIS_MODULE,
+-
+-	/*
+-	 * blkio subsystem is utterly broken in terms of hierarchy support.
+-	 * It treats all cgroups equally regardless of where they're
+-	 * located in the hierarchy - all cgroups are treated as if they're
+-	 * right below the root.  Fix it and remove the following.
+-	 */
+-	.broken_hierarchy = true,
+ };
+ EXPORT_SYMBOL_GPL(blkio_subsys);
+ 
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -397,10 +397,30 @@ static void throtl_pd_init(struct blkcg_
+ {
+ 	struct throtl_grp *tg = blkg_to_tg(blkg);
+ 	struct throtl_data *td = blkg->q->td;
++	struct throtl_service_queue *parent_sq;
+ 	unsigned long flags;
+ 	int rw;
+ 
+-	throtl_service_queue_init(&tg->service_queue, &td->service_queue);
++	/*
++	 * If sane_hierarchy is enabled, we switch to properly hierarchical
++	 * behavior where limits on a given throtl_grp are applied to the
++	 * whole subtree rather than just the group itself.  e.g. If 16M
++	 * read_bps limit is set on the root group, the whole system can't
++	 * exceed 16M for the device.
++	 *
++	 * If sane_hierarchy is not enabled, the broken flat hierarchy
++	 * behavior is retained where all throtl_grps are treated as if
++	 * they're all separate root groups right below throtl_data.
++	 * Limits of a group don't interact with limits of other groups
++	 * regardless of the position of the group in the hierarchy.
++	 */
++	parent_sq = &td->service_queue;
++
++	if (cgroup_sane_behavior(blkg->blkcg->css.cgroup) && blkg->parent)
++		parent_sq = &blkg_to_tg(blkg->parent)->service_queue;
++
++	throtl_service_queue_init(&tg->service_queue, parent_sq);
++
+ 	for (rw = READ; rw <= WRITE; rw++) {
+ 		throtl_qnode_init(&tg->qnode_on_self[rw], tg);
+ 		throtl_qnode_init(&tg->qnode_on_parent[rw], tg);
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -272,6 +272,8 @@ enum {
+ 	 * - memcg: use_hierarchy is on by default and the cgroup file for
+ 	 *   the flag is not created.
+ 	 *
++	 * - blkcg: blk-throttle becomes properly hierarchical.
++	 *
+ 	 * The followings are planned changes.
+ 	 *
+ 	 * - release_agent will be disallowed once replacement notification
