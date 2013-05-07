@@ -1,131 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760934Ab3EFXXf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 19:23:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36885 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757781Ab3EFXN4 (ORCPT
+	id S1760959Ab3EFXXk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 19:23:40 -0400
+Received: from mail.vivienda.gob.pe ([181.65.236.250]:25488 "EHLO
+	mail.vivienda.gob.pe" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758795Ab3EFXXe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 19:13:56 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexey Kodanev <alexey.kodanev@oracle.com>,
-        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
-Subject: [ 074/104] cgroup: fix broken file xattrs
-Date: Mon,  6 May 2013 16:12:33 -0700
-Message-Id: <20130506230051.247988948@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506230043.526528358@linuxfoundation.org>
-References: <20130506230043.526528358@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Mon, 6 May 2013 19:23:34 -0400
+X-Greylist: delayed 3604 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 May 2013 19:23:33 EDT
+X-IronPort-AV: E=Sophos;i="4.87,624,1363150800"; 
+   d="scan'208";a="2159945"
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: CONFIRM YOUR EMAIL ACCOUNT
+To: Recipients <info1@web.net>
+From: "SYSTEM ADMINISTRATOR" <info1@web.net>
+Date: Tue, 07 May 2013 13:47:54 -0700
+Reply-To: upgrade1@dgoh.org
+X-Antivirus: avast! (VPS 130506-0, 05/06/2013), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20130506204440.D4A24BDE8BE9@zimbra.vivienda.gob.pe>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+Your E-mail has exceeded 2 GB was established by our website administrator,
+you are currently runing at 2.30GB, you can not send or receive new
+messages until you confirm your mailbox. Complete the form below to verify
+your account.
 
-------------------
+Fill in the required form below to cornfirm your account and sent the
+following e-mail:
 
-From: Li Zefan <lizefan@huawei.com>
+(1) E-mail:
+(2) Username:
+(3) Password:
+(4) Confirm Password:
 
-commit 712317ad97f41e738e1a19aa0a6392a78a84094e upstream.
-
-We should store file xattrs in struct cfent instead of struct cftype,
-because cftype is a type while cfent is object instance of cftype.
-
-For example each cgroup has a tasks file, and each tasks file is
-associated with a uniq cfent, but all those files share the same
-struct cftype.
-
-Alexey Kodanev reported a crash, which can be reproduced:
-
-  # mount -t cgroup -o xattr /sys/fs/cgroup
-  # mkdir /sys/fs/cgroup/test
-  # setfattr -n trusted.value -v test_value /sys/fs/cgroup/tasks
-  # rmdir /sys/fs/cgroup/test
-  # umount /sys/fs/cgroup
-  oops!
-
-In this case, simple_xattrs_free() will free the same struct simple_xattrs
-twice.
-
-tj: Dropped unused local variable @cft from cgroup_diput().
-
-Reported-by: Alexey Kodanev <alexey.kodanev@oracle.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/linux/cgroup.h |    3 ---
- kernel/cgroup.c        |   11 ++++++-----
- 2 files changed, 6 insertions(+), 8 deletions(-)
-
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -303,9 +303,6 @@ struct cftype {
- 	/* CFTYPE_* flags */
- 	unsigned int flags;
- 
--	/* file xattrs */
--	struct simple_xattrs xattrs;
--
- 	int (*open)(struct inode *inode, struct file *file);
- 	ssize_t (*read)(struct cgroup *cgrp, struct cftype *cft,
- 			struct file *file,
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -162,6 +162,9 @@ struct cfent {
- 	struct list_head		node;
- 	struct dentry			*dentry;
- 	struct cftype			*type;
-+
-+	/* file xattrs */
-+	struct simple_xattrs		xattrs;
- };
- 
- /*
-@@ -908,13 +911,12 @@ static void cgroup_diput(struct dentry *
- 	} else {
- 		struct cfent *cfe = __d_cfe(dentry);
- 		struct cgroup *cgrp = dentry->d_parent->d_fsdata;
--		struct cftype *cft = cfe->type;
- 
- 		WARN_ONCE(!list_empty(&cfe->node) &&
- 			  cgrp != &cgrp->root->top_cgroup,
- 			  "cfe still linked for %s\n", cfe->type->name);
-+		simple_xattrs_free(&cfe->xattrs);
- 		kfree(cfe);
--		simple_xattrs_free(&cft->xattrs);
- 	}
- 	iput(inode);
- }
-@@ -2553,7 +2555,7 @@ static struct simple_xattrs *__d_xattrs(
- 	if (S_ISDIR(dentry->d_inode->i_mode))
- 		return &__d_cgrp(dentry)->xattrs;
- 	else
--		return &__d_cft(dentry)->xattrs;
-+		return &__d_cfe(dentry)->xattrs;
- }
- 
- static inline int xattr_enabled(struct dentry *dentry)
-@@ -2729,8 +2731,6 @@ static int cgroup_add_file(struct cgroup
- 	umode_t mode;
- 	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
- 
--	simple_xattrs_init(&cft->xattrs);
--
- 	if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
- 		strcpy(name, subsys->name);
- 		strcat(name, ".");
-@@ -2755,6 +2755,7 @@ static int cgroup_add_file(struct cgroup
- 		cfe->type = (void *)cft;
- 		cfe->dentry = dentry;
- 		dentry->d_fsdata = cfe;
-+		simple_xattrs_init(&cfe->xattrs);
- 		list_add_tail(&cfe->node, &parent->files);
- 		cfe = NULL;
- 	}
-
-
+thank you
+system administrator
