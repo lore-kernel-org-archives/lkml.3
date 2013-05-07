@@ -1,117 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760737Ab3EGE4g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:56:36 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:60924 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757107Ab3EGE4e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 00:56:34 -0400
-From: "Michael D. Setzer II" <msetzerii@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
-Date: Tue, 07 May 2013 14:56:29 +1000
+	id S1757007Ab3EGFDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 01:03:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:35340 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756506Ab3EGFDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 01:03:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,625,1363158000"; 
+   d="scan'208";a="237858341"
+Message-ID: <51888B2D.30901@intel.com>
+Date: Tue, 07 May 2013 13:03:41 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Subject: Re: Kernel Firmware Support
-Message-ID: <5188897D.15662.1AD368@msetzerii.gmail.com>
-In-reply-to: <20130507024750.GA26639@kroah.com>
-References: <51885C8A.28146.10AA3F@msetzerii.gmail.com>, <20130507024750.GA26639@kroah.com>
-X-mailer: Pegasus Mail for Windows (4.63)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
+To: Paul Turner <pjt@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 3/7] sched: set initial value of runnable avg for new
+ forked task
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-4-git-send-email-alex.shi@intel.com> <CAPM31RJg7t8f1H-dZwzP1c-0HHb_=8twidX74gS2NfyQhHUhCw@mail.gmail.com> <5187760D.8060900@intel.com> <CAPM31RKiCfSZ=hJ9P7WOH6AC8uj6b06mEM6K0WCTYXC7OJAq7A@mail.gmail.com> <51886460.3020009@intel.com> <CAPM31RLsip-PMY73oq58gyi42EQ+-upmPpMQFkukVBX6LTwtCw@mail.gmail.com> <51887404.4060102@intel.com>
+In-Reply-To: <51887404.4060102@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 May 2013 at 19:47, Greg KH wrote:
-
-Date sent:      	Mon, 6 May 2013 19:47:50 -0700
-From:           	Greg KH <gregkh@linuxfoundation.org>
-To:             	"Michael D. Setzer II" <msetzerii@gmail.com>
-Copies to:      	linux-kernel@vger.kernel.org
-Subject:        	Re: Kernel Firmware Support
-
-> On Tue, May 07, 2013 at 11:44:42AM +1000, Michael D. Setzer II wrote:
-> > Looking for method to best support users firmware needs within 
-> > the kernel. 
-> > 
-> > Have a disk-image project that users kernel.org kernels, and have 
-> > had users that require firmware that is not included in the 
-> > kernel.org source. I've been able to find it in linux-firmware.git and 
-> > then manually adding it to the kernel.org firmware directory and 
-> > then modifying the Makefile.
+On 05/07/2013 11:24 AM, Alex Shi wrote:
+>> > The reason to store a small initial "observation" here is so that as
+>> > when we reach our next period edge our load converges (presumably
+>> > down) towards its true target more smoothly; as well as providing a
+>> > task additional protection from being considered "small" through
+>> > start-up.
+>> > 
+> It will give new forked task 1 ms extra running time. That will bring
+> incorrect info if the new forked goes to sleep a while.
+> But this info should benefit to some benchmarks like aim7,
+> pthread_cond_broadcast. So I am convinced. :)
 > 
-> Use the linux-firmware package, all of the distros package it up for you
-> automatically, and install it in the correct place, so it should "just
-> work".
-> 
-> What is failing for you when you use the firmware package?
-> 
-
-First, Thanks for the quick reply. The problem is this isn't using a 
-distro build. My project (G4L) uses a number of kernels from 
-kernel.org and I try to include as many of the nic and other 
-devices in the kernel to make it support hardware that is outside 
-my control. I've had users with bnx2x hardware that requires 
-firmware that is not part of the kernel.org source code, and have 
-manuaully added it by putting the .fw file in the subdirectory of 
-firmware and modifying the Makefile. Then building the kernel 
-includes that additional firmware in the about 8M kernel file that 
-the user selects from the CD boot process. 
-
-The ideal is to be able to boot from the cd, or load the kernel with 
-its filesystem to be able to do partition or disk image backups, but 
-it must be able to use the hardware to access the disks and in 
-most cases the nic. Without the firmware these bnx2x nics don't 
-work.
-
-For awhile I've been manually adding these two firmwares
-./bnx2x/bnx2x-e2-7.2.51.0.fw
-./bnx2/bnx2-mips-09-6.2.1b.fw
-
-But yesterday, I got a message from a different user with screen 
-captures that showed  failure of loading the firmware below. 
-Actually, one screen shot with the 7.0.23.0 and another with the 
-7.0.29.0. Wasn't sure, so I had added all three of th 7.0.x group to 
-a test build of my kernels. Is only the latest needed?
-
-./bnx2x/bnx2x-e1h-7.0.23.0.fw
-./bnx2x/bnx2x-e1h-7.0.29.0.fw
-./bnx2x/bnx2x-e1h-7.0.20.0.fw
-
-I don't have access to any hardware with these bnx2? devices, so 
-have to get feedback from users. The previous additions of 
-firmware solved the problems, but just looking for the best way to 
-solve it.
-
-Thanks again.
+> What's your opinion of this, Peter?
 
 
+Here is the patch according to Paul's opinions. 
+just refer the __update_task_entity_contrib in sched.h looks ugly.
+comments are appreciated!
 
+---
+>From 647404447c996507b6a94110ed13fd122e4ee154 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Mon, 3 Dec 2012 17:30:39 +0800
+Subject: [PATCH 3/7] sched: set initial value of runnable avg for new forked
+ task
 
+We need initialize the se.avg.{decay_count, load_avg_contrib} for a
+new forked task.
+Otherwise random values of above variables cause mess when do new task
+enqueue:
+    enqueue_task_fair
+        enqueue_entity
+            enqueue_entity_load_avg
 
-> thanks,
-> 
-> greg k-h
+and make forking balancing imbalance since incorrect load_avg_contrib.
 
+set avg.decay_count = 0, and give initial value of runnable_avg_sum/period
+to resolve such issues.
 
-+----------------------------------------------------------+
-  Michael D. Setzer II -  Computer Science Instructor      
-  Guam Community College  Computer Center                  
-  mailto:mikes@kuentos.guam.net                            
-  mailto:msetzerii@gmail.com
-  http://www.guam.net/home/mikes
-  Guam - Where America's Day Begins                        
-  G4L Disk Imaging Project maintainer 
-  http://sourceforge.net/projects/g4l/
-+----------------------------------------------------------+
+Thanks for Pual's suggestions
 
-http://setiathome.berkeley.edu (Original)
-Number of Seti Units Returned:  19,471
-Processing time:  32 years, 290 days, 12 hours, 58 minutes
-(Total Hours: 287,489)
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ kernel/sched/core.c  | 8 +++++++-
+ kernel/sched/fair.c  | 4 ++++
+ kernel/sched/sched.h | 1 +
+ 3 files changed, 12 insertions(+), 1 deletion(-)
 
-BOINC@HOME CREDITS
-SETI        14672667.574611   |   EINSTEIN    11160884.209852
-ROSETTA      7189167.439443   |   ABC         15954188.106838
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c8db984..4e78de1 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1566,6 +1566,11 @@ static void __sched_fork(struct task_struct *p)
+ #ifdef CONFIG_SMP
+ 	p->se.avg.runnable_avg_period = 0;
+ 	p->se.avg.runnable_avg_sum = 0;
++	p->se.avg.decay_count = 0;
++	/* New forked task assumed with full utilization */
++	p->se.avg.runnable_avg_period = 1024;
++	p->se.avg.runnable_avg_sum = 1024;
++	__update_task_entity_contrib(&p->se);
+ #endif
+ #ifdef CONFIG_SCHEDSTATS
+ 	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
+@@ -1619,7 +1624,6 @@ void sched_fork(struct task_struct *p)
+ 	unsigned long flags;
+ 	int cpu = get_cpu();
+ 
+-	__sched_fork(p);
+ 	/*
+ 	 * We mark the process as running here. This guarantees that
+ 	 * nobody will actually run it, and a signal or other external
+@@ -1653,6 +1657,8 @@ void sched_fork(struct task_struct *p)
+ 		p->sched_reset_on_fork = 0;
+ 	}
+ 
++	__sched_fork(p);
++
+ 	if (!rt_prio(p->prio))
+ 		p->sched_class = &fair_sched_class;
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9c2f726..2881d42 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1508,6 +1508,10 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 	 * We track migrations using entity decay_count <= 0, on a wake-up
+ 	 * migration we use a negative decay count to track the remote decays
+ 	 * accumulated while sleeping.
++	 *
++	 * When enqueue a new forked task, the se->avg.decay_count == 0, so
++	 * we bypass update_entity_load_avg(), use avg.load_avg_contrib initial
++	 * value: se->load.weight.
+ 	 */
+ 	if (unlikely(se->avg.decay_count <= 0)) {
+ 		se->avg.last_runnable_update = rq_of(cfs_rq)->clock_task;
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index c6634f1..ec4cb9b 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -876,6 +876,7 @@ extern const struct sched_class idle_sched_class;
+ extern void trigger_load_balance(struct rq *rq, int cpu);
+ extern void idle_balance(int this_cpu, struct rq *this_rq);
+ 
++extern inline void __update_task_entity_contrib(struct sched_entity *se);
+ #else	/* CONFIG_SMP */
+ 
+ static inline void idle_balance(int cpu, struct rq *rq)
+-- 
+1.7.12
 
+-- 
+Thanks
+    Alex
