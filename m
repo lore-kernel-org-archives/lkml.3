@@ -1,91 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759417Ab3EGJQm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 05:16:42 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:40163 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759277Ab3EGJQk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 05:16:40 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] powerpc,
- cpu hotplug: Fix warning on boot regarding sysfs file permission
-To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Cc: anton@samba.org, paulus@samba.org, gregkh@linuxfoundation.org,
-        balbi@ti.com, caiqian@redhat.com,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 07 May 2013 14:43:34 +0530
-Message-ID: <20130507091309.12448.70498.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	id S932092Ab3EGJRi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 05:17:38 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:39359 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759277Ab3EGJRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 05:17:36 -0400
+Date: Tue, 7 May 2013 04:17:34 -0500
+From: Robin Holt <holt@sgi.com>
+To: Qing Xu <qingx@marvell.com>, Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: How does commit 47ec340c not introduce a bug?
+Message-ID: <20130507091734.GM3658@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050709-1618-0000-0000-000003D65328
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On boot, the following warning shows up on each CPU online operation:
+I noticed a warning while cross-compiling all arm defconfigs.
 
-------------[ cut here ]------------
-WARNING: at drivers/base/core.c:575
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper/0 Tainted: G        W    3.9.0+ #2
-task: c0000006fa180000 ti: c0000006fa200000 task.ti: c0000006fa200000
-NIP: c00000000053772c LR: c000000000537728 CTR: 0000000001764c5c
-REGS: c0000006fa203780 TRAP: 0700   Tainted: G        W     (3.9.0+)
-MSR: 8000000000029032 <SF,EE,ME,IR,DR,RI>  CR: 28000024  XER: 00000002
-SOFTE: 1
-CFAR: c0000000008a6994
+The mmp2_defconfig gave this warning:
 
-GPR00: c000000000537728 c0000006fa203a00 c000000000dafaf0 0000000000000020
-GPR04: 0000000000000001 c000000000085d9c 0000000000000000 0000000000000002
-GPR08: 0000000000000000 c0000006fa180000 c0000006fa180000 c000000000e38804
-GPR12: 0000000000000000 c000000001db0000 c00000000000c1b0 0000000000000000
-GPR16: 0000000000000000 0000000000000000 0000000000000001 c000000000e44880
-GPR20: c000000000e44d18 c000000000c726a8 0000000000000000 0000000000000000
-GPR24: c000000000bab158 000000000000007e c000000000e68200 c000000000c71d48
-GPR28: c0000000130c0030 0000000000000002 c0000000130c0030 c000000000c71f58
-NIP [c00000000053772c] .device_create_file+0xac/0xc0
-LR [c000000000537728] .device_create_file+0xa8/0xc0
-PACATMSCRATCH [8000000000009032]
-Call Trace:
-[c0000006fa203a00] [c000000000537728] .device_create_file+0xa8/0xc0 (unreliable)
-[c0000006fa203a80] [c00000000089f3e4] .register_cpu_online+0x10c/0x238
-[c0000006fa203b30] [c000000000bc9a80] .topology_init+0x1fc/0x200
-[c0000006fa203c10] [c00000000000b870] .do_one_initcall+0x60/0x1e0
-[c0000006fa203cd0] [c000000000bc3fc0] .kernel_init_freeable+0x22c/0x310
-[c0000006fa203da0] [c00000000000c1cc] .kernel_init+0x1c/0x1c0
-[c0000006fa203e30] [c00000000000a170] .ret_from_kernel_thread+0x64/0x74
-Instruction dump:
-0fe00000 4bffffb8 60000000 60000000 60000000 e8040028 2fa00000 409eff98
-3c62ffd6 3863dc38 4836f221 60000000 <0fe00000> a13f0008 4bffff7c 60000000
----[ end trace b53dfda141d62ab0 ]---
+drivers/video/backlight/max8925_bl.c: In function 'max8925_backlight_probe':
+drivers/video/backlight/max8925_bl.c:177:3: warning: statement with no effect [-Wunused-value]
+
+This appears to have been introduced by the above commit when !CONFIG_OF
+
+Looking at this more closely, I am not sure how this was ever intended
+to be handled or how the errors returned in the CONFIG_OF case were
+intended to be handled as the return from max8925_backlight_dt_init is
+always ignored.
+
+I think this needs some more attention, but do not feel like I know
+enough about it or have any means to test it to weigh in.
+
+Thanks,
+Robin
 
 
-The problem is that the 'spurr' per-cpu sysfs file sports a write permission
-without the corresponding ->store() method. So remove the bogus write
-permission to fix the warning.
+commit 47ec340cb8e232671e7c4a4689ff32c3bdf329da
+Author: Qing Xu <qingx@marvell.com>
+Date:   Mon Feb 4 23:40:45 2013 +0800
 
-Reported-by: CAI Qian <caiqian@redhat.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+    mfd: max8925: Support dt for backlight
+    
+    Add device tree support in max8925 backlight.
+    
+    Signed-off-by: Qing Xu <qingx@marvell.com>
+    Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+    Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 
- arch/powerpc/kernel/sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/powerpc/kernel/sysfs.c b/arch/powerpc/kernel/sysfs.c
-index 3ce1f86..e68a845 100644
---- a/arch/powerpc/kernel/sysfs.c
-+++ b/arch/powerpc/kernel/sysfs.c
-@@ -180,7 +180,7 @@ SYSFS_PMCSETUP(dscr, SPRN_DSCR);
- SYSFS_PMCSETUP(pir, SPRN_PIR);
+diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
+index 2c9bce0..5ca11b0 100644
+--- a/drivers/video/backlight/max8925_bl.c
++++ b/drivers/video/backlight/max8925_bl.c
+@@ -101,6 +101,29 @@ static const struct backlight_ops max8925_backlight_ops = {
+ 	.get_brightness	= max8925_backlight_get_brightness,
+ };
  
- static DEVICE_ATTR(mmcra, 0600, show_mmcra, store_mmcra);
--static DEVICE_ATTR(spurr, 0600, show_spurr, NULL);
-+static DEVICE_ATTR(spurr, 0400, show_spurr, NULL);
- static DEVICE_ATTR(dscr, 0600, show_dscr, store_dscr);
- static DEVICE_ATTR(purr, 0600, show_purr, store_purr);
- static DEVICE_ATTR(pir, 0400, show_pir, NULL);
-
++#ifdef CONFIG_OF
++static int max8925_backlight_dt_init(struct platform_device *pdev,
++			      struct max8925_backlight_pdata *pdata)
++{
++	struct device_node *nproot = pdev->dev.parent->of_node, *np;
++	int dual_string;
++
++	if (!nproot)
++		return -ENODEV;
++	np = of_find_node_by_name(nproot, "backlight");
++	if (!np) {
++		dev_err(&pdev->dev, "failed to find backlight node\n");
++		return -ENODEV;
++	}
++
++	of_property_read_u32(np, "maxim,max8925-dual-string", &dual_string);
++	pdata->dual_string = dual_string;
++	return 0;
++}
++#else
++#define max8925_backlight_dt_init(x, y)	(-1)
++#endif
++
+ static int max8925_backlight_probe(struct platform_device *pdev)
+ {
+ 	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
+@@ -147,6 +170,13 @@ static int max8925_backlight_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, bl);
+ 
+ 	value = 0;
++	if (pdev->dev.parent->of_node && !pdata) {
++		pdata = devm_kzalloc(&pdev->dev,
++				     sizeof(struct max8925_backlight_pdata),
++				     GFP_KERNEL);
++		max8925_backlight_dt_init(pdev, pdata);
++	}
++
+ 	if (pdata) {
+ 		if (pdata->lxw_scl)
+ 			value |= (1 << 7);
+@@ -158,7 +188,6 @@ static int max8925_backlight_probe(struct platform_device *pdev)
+ 	ret = max8925_set_bits(chip->i2c, data->reg_mode_cntl, 0xfe, value);
+ 	if (ret < 0)
+ 		goto out_brt;
+-
+ 	backlight_update_status(bl);
+ 	return 0;
+ out_brt:
