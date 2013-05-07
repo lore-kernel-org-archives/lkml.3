@@ -1,118 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934544Ab3EGCnV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 22:43:21 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:52541 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934528Ab3EGCnR (ORCPT
+	id S1758821Ab3EGCqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 22:46:36 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:47397 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758427Ab3EGCqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 22:43:17 -0400
-Message-ID: <51886A39.2090708@linux.vnet.ibm.com>
-Date: Tue, 07 May 2013 10:43:05 +0800
+	Mon, 6 May 2013 22:46:35 -0400
+Message-ID: <51886AFF.4090500@linux.vnet.ibm.com>
+Date: Tue, 07 May 2013 10:46:23 +0800
 From: Michael Wang <wangyun@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-CC: Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+To: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v5 7/7] sched: consider runnable load average in effective_load
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-8-git-send-email-alex.shi@intel.com> <518724D1.9040006@linux.vnet.ibm.com> <51874229.8050202@intel.com> <5187609C.5050209@linux.vnet.ibm.com> <518763B0.30200@intel.com> <51876AFE.80906@linux.vnet.ibm.com> <CAPM31RK-N=Cnt3cBo1f6er6TewQJKY+fgdj9QHvKziHe+TxTxw@mail.gmail.com> <51877970.8010303@intel.com> <51877EF8.20504@linux.vnet.ibm.com>
-In-Reply-To: <51877EF8.20504@linux.vnet.ibm.com>
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: wake-affine throttle
+References: <5164DCE7.8080906@linux.vnet.ibm.com> <51833302.6090208@linux.vnet.ibm.com>
+In-Reply-To: <51833302.6090208@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050702-2674-0000-0000-000008DBB65C
+x-cbid: 13050702-3864-0000-0000-00000804C874
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 05:59 PM, Preeti U Murthy wrote:
-> On 05/06/2013 03:05 PM, Alex Shi wrote:
->> On 05/06/2013 05:06 PM, Paul Turner wrote:
->>> I don't think this is a good idea:
->>>
->>> The problem with not using the instantaneous weight here is that you
->>> potentially penalize the latency of interactive tasks (similarly,
->>> potentially important background threads -- e.g. garbage collection).
->>>
->>> Counter-intuitively we actually want such tasks on the least loaded
->>> cpus to minimize their latency.  If the load they contribute ever
->>> becomes more substantial we trust that periodic balance will start
->>> taking notice of them.
->>
->> Sounds reasonable. Many thanks for your input, Paul!
->>
->> So, will use the seconds try. :)
->>>
->>> [ This is similar to why we have to use the instantaneous weight in
->>> calc_cfs_shares. ]
->>>
->>
->>
+On 05/03/2013 11:46 AM, Michael Wang wrote:
+> On 04/10/2013 11:30 AM, Michael Wang wrote:
 > 
-> Yes thank you very much for the inputs Paul :)
+> Now long time has been passed since the first version, I'd like to 
+> do some summary about current states:
 > 
-> So Alex, Michael looks like this is what happened.
+> On a 12 cpu box with tip 3.9.0-rc7, test show that:
 > 
-> 1. The effective_load() as it is, uses instantaneous loads to calculate
-> the CPU shares before and after a new task can be woken up on the given cpu.
+> 1. remove wake-affine stuff cause regression on hackbench (could be 15%).
+> 2. reserve wake-affine stuff cause regression on pgbench (could be 45%).
 > 
-> 2. With my patch, I modified it to use runnable load average while
-> calculating the CPU share *after* a new task could be woken up and
-> retained instantaneous load to calculate the CPU share before a new task
-> could be woken up.
+> And since neither remove or reserve is acceptable, this patch introduced a
+> knob to throttle wake-affine stuff.
 > 
-> 3. With the first patch of Alex, he has used runnable load average while
-> calculating the CPU share both before and after a new task could be
-> woken up on the given CPU.
+> By turning the knob, we could benefit both hackbench and pgbench, or sacrifice
+> one to significantly benefit another.
 > 
-> 4.The suggestions that Alex gave:
+> All similar workload which prefer or hate wake-affine behaviour could
+> been cared.
 > 
-> Suggestion1: Would change the CPU share calculation to use runnable load
-> average all the time.
-> 
-> Suggestion2: Did opposite of point 2 above,it used runnable load average
-> while calculating the CPU share *before* a new task has been woken up
-> while it retaining the instantaneous weight to calculate the CPU share
-> after a new task could be woken up.
-> 
-> So since there was no uniformity in the calculation of CPU shares in
-> approaches 2 and 3, I think it caused a regression. However I still
-> don't understand how approach 4-Suggestion2 made that go away although
-> there was non-uniformity in the CPU shares calculation.
-> 
-> But as Paul says we could retain the usage of instantaneous loads
-> wherever there is calculation of CPU shares for the reason he mentioned
-> and leave effective_load() and calc_cfs_shares() untouched.
-> 
-> This also brings forth another question,should we modify wake_affine()
-> to pass the runnable load average of the waking up task to effective_load().
-> 
-> What do you think?
+> If this approach caused any concerns, please let me know ;-)
 
-I would suggest we don't touch that dark corner...unless it damaged some
-benchmark, AFAIK, pgbench is the only one could be influenced, and all
-those approach won't make things better than patch 1~6 only...
+Is there any more concerns? or should we take some action now?
 
 Regards,
 Michael Wang
 
 > 
+> Regards,
+> Michael Wang
 > 
-> Thanks
-> 
-> Regards
-> Preeti U Murthy
+>>
+>> Recently testing show that wake-affine stuff cause regression on pgbench, the
+>> hiding rat was finally catched out.
+>>
+>> wake-affine stuff is always trying to pull wakee close to waker, by theory,
+>> this will benefit us if waker's cpu cached hot data for wakee, or the extreme
+>> ping-pong case.
+>>
+>> However, the whole stuff is somewhat blindly, load balance is the only factor
+>> to be guaranteed, and since the stuff itself is time-consuming, some workload
+>> suffered, pgbench is just the one who has been found.
+>>
+>> Thus, throttle the wake-affine stuff for such workload is necessary.
+>>
+>> This patch introduced a new knob 'sysctl_sched_wake_affine_interval' with the
+>> default value 1ms (default minimum balance interval), which means wake-affine
+>> will keep silent for 1ms after it returned false.
+>>
+>> By turning the new knob, those workload who suffered will have the chance to
+>> stop the regression.
+>>
+>> Test:
+>> 	Test with 12 cpu X86 server and tip 3.9.0-rc2.
+>>
+>> 				default
+>> 		    base	1ms interval	 10ms interval	 100ms interval
+>> | db_size | clients |  tps  |	|  tps  | 	 |  tps  |	   |  tps  |
+>> +---------+---------+-------+-  +-------+        +-------+         +-------+
+>> | 21 MB   |       1 | 10572 |   | 10804 |        | 10802 |         | 10801 |
+>> | 21 MB   |       2 | 21275 |   | 21533 |        | 21400 |         | 21498 |
+>> | 21 MB   |       4 | 41866 |   | 42158 |        | 42410 |         | 42306 |
+>> | 21 MB   |       8 | 53931 |   | 55796 |        | 58608 | +8.67%  | 59916 | +11.10%
+>> | 21 MB   |      12 | 50956 |   | 52266 |        | 54586 | +7.12%  | 55982 | +9.86%
+>> | 21 MB   |      16 | 49911 |   | 52862 | +5.91% | 55668 | +11.53% | 57255 | +14.71%
+>> | 21 MB   |      24 | 46046 |   | 48820 | +6.02% | 54269 | +17.86% | 58113 | +26.21%
+>> | 21 MB   |      32 | 43405 |   | 46635 | +7.44% | 53690 | +23.70% | 57729 | +33.00%
+>> | 7483 MB |       1 |  7734 |   |  8013 |        |  8046 |         |  7879 |
+>> | 7483 MB |       2 | 19375 |   | 19459 |        | 19448 |         | 19421 |
+>> | 7483 MB |       4 | 37408 |   | 37780 |        | 37937 |         | 37819 |
+>> | 7483 MB |       8 | 49033 |   | 50389 |        | 51636 | +5.31%  | 52294 | +6.65%
+>> | 7483 MB |      12 | 45525 |   | 47794 | +4.98% | 49828 | +9.45%  | 50571 | +11.08%
+>> | 7483 MB |      16 | 45731 |   | 47921 | +4.79% | 50203 | +9.78%  | 52033 | +13.78%
+>> | 7483 MB |      24 | 41533 |   | 44301 | +6.67% | 49697 | +19.66% | 53833 | +29.62%
+>> | 7483 MB |      32 | 36370 |   | 38301 | +5.31% | 48146 | +32.38% | 52795 | +45.16%
+>> | 15 GB   |       1 |  7576 |   |  7926 |        |  7722 |         |  7969 |
+>> | 15 GB   |       2 | 19157 |   | 19284 |        | 19294 |         | 19304 |
+>> | 15 GB   |       4 | 37285 |   | 37539 |        | 37281 |         | 37508 |
+>> | 15 GB   |       8 | 48718 |   | 49176 |        | 50836 | +4.35%  | 51239 | +5.17%
+>> | 15 GB   |      12 | 45167 |   | 47180 | +4.45% | 49206 | +8.94%  | 50126 | +10.98%
+>> | 15 GB   |      16 | 45270 |   | 47293 | +4.47% | 49638 | +9.65%  | 51748 | +14.31%
+>> | 15 GB   |      24 | 40984 |   | 43366 | +5.81% | 49356 | +20.43% | 53157 | +29.70%
+>> | 15 GB   |      32 | 35918 |   | 37632 | +4.77% | 47923 | +33.42% | 52241 | +45.45%
+>>
+>> Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+>> ---
+>>  include/linux/sched.h |    5 +++++
+>>  kernel/sched/fair.c   |   31 +++++++++++++++++++++++++++++++
+>>  kernel/sysctl.c       |   10 ++++++++++
+>>  3 files changed, 46 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/sched.h b/include/linux/sched.h
+>> index d35d2b6..e9efd3a 100644
+>> --- a/include/linux/sched.h
+>> +++ b/include/linux/sched.h
+>> @@ -1197,6 +1197,10 @@ enum perf_event_task_context {
+>>  	perf_nr_task_contexts,
+>>  };
+>>
+>> +#ifdef CONFIG_SMP
+>> +extern unsigned int sysctl_sched_wake_affine_interval;
+>> +#endif
+>> +
+>>  struct task_struct {
+>>  	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
+>>  	void *stack;
+>> @@ -1207,6 +1211,7 @@ struct task_struct {
+>>  #ifdef CONFIG_SMP
+>>  	struct llist_node wake_entry;
+>>  	int on_cpu;
+>> +	unsigned long next_wake_affine;
+>>  #endif
+>>  	int on_rq;
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 7a33e59..68eedd7 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -3087,6 +3087,22 @@ static inline unsigned long effective_load(struct task_group *tg, int cpu,
+>>
+>>  #endif
+>>
+>> +/*
+>> + * Default is 1ms, to prevent the wake_affine() stuff working too frequently.
+>> + */
+>> +unsigned int sysctl_sched_wake_affine_interval = 1U;
+>> +
+>> +static inline int wake_affine_throttled(struct task_struct *p)
+>> +{
+>> +	return time_before(jiffies, p->next_wake_affine);
+>> +}
+>> +
+>> +static inline void wake_affine_throttle(struct task_struct *p)
+>> +{
+>> +	p->next_wake_affine = jiffies +
+>> +			msecs_to_jiffies(sysctl_sched_wake_affine_interval);
+>> +}
+>> +
+>>  static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>>  {
+>>  	s64 this_load, load;
+>> @@ -3096,6 +3112,9 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>>  	unsigned long weight;
+>>  	int balanced;
+>>
+>> +	if (wake_affine_throttled(p))
+>> +		return 0;
+>> +
+>>  	idx	  = sd->wake_idx;
+>>  	this_cpu  = smp_processor_id();
+>>  	prev_cpu  = task_cpu(p);
+>> @@ -3167,6 +3186,18 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>>
+>>  		return 1;
+>>  	}
+>> +
+>> +	/*
+>> +	 * wake_affine() stuff try to pull wakee to the cpu
+>> +	 * around waker, this will benefit us if the data
+>> +	 * cached on waker cpu is hot for wakee, or the extreme
+>> +	 * ping-pong case.
+>> +	 *
+>> +	 * However, do such blindly work too frequently will
+>> +	 * cause regression to some workload, thus, each time
+>> +	 * when wake_affine() failed, throttle it for a while.
+>> +	 */
+>> +	wake_affine_throttle(p);
+>>  	return 0;
+>>  }
+>>
+>> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+>> index afc1dc6..6ebfc18 100644
+>> --- a/kernel/sysctl.c
+>> +++ b/kernel/sysctl.c
+>> @@ -437,6 +437,16 @@ static struct ctl_table kern_table[] = {
+>>  		.extra1		= &one,
+>>  	},
+>>  #endif
+>> +#ifdef CONFIG_SMP
+>> +	{
+>> +		.procname	= "sched_wake_affine_interval",
+>> +		.data		= &sysctl_sched_wake_affine_interval,
+>> +		.maxlen		= sizeof(unsigned int),
+>> +		.mode		= 0644,
+>> +		.proc_handler	= proc_dointvec_minmax,
+>> +		.extra1		= &zero,
+>> +	},
+>> +#endif
+>>  #ifdef CONFIG_PROVE_LOCKING
+>>  	{
+>>  		.procname	= "prove_locking",
+>>
 > 
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
