@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933586Ab3EGED7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:03:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8035 "EHLO
+	id S1757452Ab3EGED5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:03:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28906 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760341Ab3EGD6y (ORCPT
+	with ESMTP id S1760360Ab3EGD6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 23:58:54 -0400
-X-Authority-Analysis: v=2.0 cv=GtrACzJC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=AB216oD2IGAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=_WC_M6a3ZY4A:10 a=DfNHnWVPAAAA:8 a=danhDmx_AAAA:8 a=pGLkceISAAAA:8 a=mK_AVkanAAAA:8 a=vmLDa1wCAAAA:8 a=VwQbUJbxAAAA:8 a=cq5IILDZAAAA:8 a=fC4T7qsy4_4xvlMS5R0A:9 a=lBRciGGoxdUA:10 a=MSl-tDqOz04A:10 a=9xyTavCNlvEA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 6 May 2013 23:58:55 -0400
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=L2ijxXTr58wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=MoNTIbdOQBQA:10 a=57SyGIRnAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=vnREMb7VAAAA:8 a=fC4T7qsy4_4xvlMS5R0A:9 a=lSinr4eg3GwA:10 a=TIV7c6GJmisA:10 a=LI9Vle30uBYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035847.818086055@goodmis.org>
+Message-Id: <20130507035848.296583047@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:57:53 -0400
+Date: Mon, 06 May 2013 23:57:56 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ivo van Doorn <IvDoorn@gmail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, <users@rt2x00.serialmonkey.com>,
-        <netdev@vger.kernel.org>, Tim Gardner <tim.gardner@canonical.com>
-Subject: [041/126] rt2x00: rt2x00pci_regbusy_read() - only print register access
- failure once
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [044/126] tracing: Fix double free when function profile init failed
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0041-rt2x00-rt2x00pci_regbusy_read-only-print-register-ac.patch
+Content-Disposition: inline; filename=0044-tracing-Fix-double-free-when-function-profile-init-f.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,45 +31,36 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tim Gardner <tim.gardner@canonical.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-[ Upstream commit 83589b30f1e1dc9898986293c9336b8ce1705dec ]
+[ Upstream commit 83e03b3fe4daffdebbb42151d5410d730ae50bd1 ]
 
-BugLink: http://bugs.launchpad.net/bugs/1128840
+On the failure path, stat->start and stat->pages will refer same page.
+So it'll attempt to free the same page again and get kernel panic.
 
-It appears that when this register read fails it never recovers, so
-I think there is no need to repeat the same error message ad infinitum.
+Link: http://lkml.kernel.org/r/1364820385-32027-1-git-send-email-namhyung@kernel.org
 
-Cc: Ivo van Doorn <IvDoorn@gmail.com>
-Cc: Gertjan van Wingerde <gwingerde@gmail.com>
-Cc: Helmut Schaa <helmut.schaa@googlemail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
-Cc: users@rt2x00.serialmonkey.com
-Cc: netdev@vger.kernel.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: stable@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/wireless/rt2x00/rt2x00pci.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/ftrace.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00pci.c b/drivers/net/wireless/rt2x00/rt2x00pci.c
-index a0c8cae..b1c673e 100644
---- a/drivers/net/wireless/rt2x00/rt2x00pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00pci.c
-@@ -52,8 +52,8 @@ int rt2x00pci_regbusy_read(struct rt2x00_dev *rt2x00dev,
- 		udelay(REGISTER_BUSY_DELAY);
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index bef5ebc..a1dd715 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -642,7 +642,6 @@ int ftrace_profile_pages_init(struct ftrace_profile_stat *stat)
+ 		free_page(tmp);
  	}
  
--	ERROR(rt2x00dev, "Indirect register access failed: "
--	      "offset=0x%.08x, value=0x%.08x\n", offset, *reg);
-+	printk_once(KERN_ERR "%s() Indirect register access failed: "
-+	      "offset=0x%.08x, value=0x%.08x\n", __func__, offset, *reg);
- 	*reg = ~0;
+-	free_page((unsigned long)stat->pages);
+ 	stat->pages = NULL;
+ 	stat->start = NULL;
  
- 	return 0;
 -- 
 1.7.10.4
 
