@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759517Ab3EGJaw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 05:30:52 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:20646 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759277Ab3EGJau (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 05:30:50 -0400
-X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
-   d="scan'208";a="4290601"
-Message-ID: <1367919047.26321.47.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 2/4] xen/vcpu: Document the xen_vcpu_info
- and xen_vcpu
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Date: Tue, 7 May 2013 10:30:47 +0100
-In-Reply-To: <1367845498-14290-3-git-send-email-konrad.wilk@oracle.com>
-References: <1367845498-14290-1-git-send-email-konrad.wilk@oracle.com>
-	 <1367845498-14290-3-git-send-email-konrad.wilk@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S1759553Ab3EGJbK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 05:31:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10291 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759510Ab3EGJbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 05:31:08 -0400
+Date: Tue, 7 May 2013 11:30:31 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH] perf: fix symbol processing bug and greatly improve
+ performance
+Message-ID: <20130507093031.GA1076@krava.brq.redhat.com>
+References: <1367847833-4932-1-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367847833-4932-1-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-06 at 14:04 +0100, Konrad Rzeszutek Wilk wrote:
-> They are important structures and it is not clear at first
-> look what they are for.
+On Mon, May 06, 2013 at 09:43:53AM -0400, Waiman Long wrote:
+> When "perf record" was used on a large machine with a lot of CPUs,
+> the perf post-processing time could take a lot of minutes and even
+> hours depending on how large the resulting perf.data file was.
 > 
-> The xen_vcpu is a pointer. By default it points to the shared_info
-> structure (at the CPU offset location). However if the
-> VCPUOP_register_vcpu_info hypercall is implemented we can make the
-> xen_vcpu pointer point to a per-CPU location.
+> While running AIM7 1500-user high_systime workload on a 80-core x86-64
+> system with a 3.9 kernel, the workload itself took about 2 minutes
+> to run and the perf.data file had a size of 1108.746 MB. However,
+> the post-processing step took more than 10 minutes.
 > 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/enlighten.c | 21 ++++++++++++++++++++-
->  1 file changed, 20 insertions(+), 1 deletion(-)
+> With a gprof-profiled perf binary, the time spent by perf was as
+> follows:
 > 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 94a81f4..9b34475 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -85,7 +85,21 @@
->  
->  EXPORT_SYMBOL_GPL(hypercall_page);
->  
-> +/*
-> + * Pointer to the xen_vcpu_info structure or
-> + * &HYPERVISOR_shared_info->vcpu_info[cpu]. See xen_hvm_init_shared_info
-> + * and xen_vcpu_setup for details. By default it points to share_info->vcpu_info
-> + * but if the hypervisor supports VCPUOP_register_vcpu_info then it can point
-> + * to xen_vcpu_info. The pointer is used in __xen_evtchn_do_upcall to
-> + * acknowledge pending events.
+>   %   cumulative   self              self     total
+>  time   seconds   seconds    calls   s/call   s/call  name
+>  96.90    822.10   822.10   192156     0.00     0.00  dsos__find
+>   0.81    828.96     6.86 172089958     0.00     0.00  rb_next
+>   0.41    832.44     3.48 48539289     0.00     0.00  rb_erase
+> 
+> So 97% (822 seconds) of the time was spent in a single dsos_find()
+> function. After analyzing the call-graph data below:
+> 
+> -----------------------------------------------
+>                 0.00  822.12  192156/192156      map__new [6]
+> [7]     96.9    0.00  822.12  192156         vdso__dso_findnew [7]
+>               822.10    0.00  192156/192156      dsos__find [8]
+>                 0.01    0.00  192156/192156      dsos__add [62]
+>                 0.01    0.00  192156/192366      dso__new [61]
+>                 0.00    0.00       1/45282525     memdup [31]
+>                 0.00    0.00  192156/192230      dso__set_long_name [91]
+> -----------------------------------------------
+>               822.10    0.00  192156/192156      vdso__dso_findnew [7]
+> [8]     96.9  822.10    0.00  192156         dsos__find [8]
+> -----------------------------------------------
+> 
+> It was found that the vdso__dso_findnew() function failed to locate
+> VDSO__MAP_NAME ("[vdso]") in the dso list and have to insert a new
+> entry at the end for 192156 times. This problem is due to the fact that
+> there are 2 types of name in the dso entry - short name and long name.
+> The initial dso__new() adds "[vdso]" to both the short and long names.
+> After that, vdso__dso_findnew() modifies the long name to something
+> like /tmp/perf-vdso.so-NoXkDj. The dsos__find() function only compares
+> the long name. As a result, the same vdso entry is duplicated many
+> time in the dso list. This bug increases memory consumption as well
+> as slows the symbol processing time to a crawl.
 
-Also more subtly it is used by the patched version of irq enable/disable
-e.g. xen_irq_enable_direct and xen_iret.
+hi,
+the issue is there and fix looks ok, thanks!
 
-The desire to be able to do those mask/unmask operations as a single
-instruction by using the per-cpu offset held in %gs is the real reason
-vcpu info is in a per-cpu pointer and for the whole register_vcpu_info
-thing IIRC.
+though I'm not able to get vdso callchains to pop out
+even by investigating report with vdso heavy workload.
 
-> + */
->  DEFINE_PER_CPU(struct vcpu_info *, xen_vcpu);
-> +
-> +/*
-> + * Per CPU pages used if hypervisor supports VCPUOP_register_vcpu_info
-> + * hypercall. This can be used both in PV and PVHVM mode. The structure
-> + * overrides the default per_cpu(xen_vcpu, cpu) value.
-> + */
->  DEFINE_PER_CPU(struct vcpu_info, xen_vcpu_info);
->  
->  enum xen_domain_type xen_domain_type = XEN_NATIVE;
-> @@ -187,7 +201,12 @@ static void xen_vcpu_setup(int cpu)
->  
->  	/* Check to see if the hypervisor will put the vcpu_info
->  	   structure where we want it, which allows direct access via
-> -	   a percpu-variable. */
-> +	   a percpu-variable.
-> +	   N.B. This hypercall can _only_ be called once per CPU. Subsequent
-> +	   calls will error out with -EINVAL. This is due to the fact that
-> +	   hypervisor has no unregister variant and this hypercall does not
-> +	   allow to over-write info.mfn and info.offset.
-> +	 */
->  	err = HYPERVISOR_vcpu_op(VCPUOP_register_vcpu_info, cpu, &info);
->  
->  	if (err) {
+I'll have a closer look..
 
-
+thanks,
+jirka
