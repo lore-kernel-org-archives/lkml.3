@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab3EGOcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:32:33 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:37550 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745Ab3EGOcb (ORCPT
+	id S1754587Ab3EGOco (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:32:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56281 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857Ab3EGOcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 10:32:31 -0400
-Message-ID: <51891095.4070008@suse.cz>
-Date: Tue, 07 May 2013 16:32:53 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Tue, 7 May 2013 10:32:39 -0400
+Date: Tue, 7 May 2013 07:32:16 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-97a5b81fa4d3a11dcdf224befc577f2e0abadc0b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        markus@trippelsdorf.de, tglx@linutronix.de, bp@alien8.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        markus@trippelsdorf.de, tglx@linutronix.de, bp@alien8.de
+In-Reply-To: <alpine.LFD.2.02.1305021557030.3972@ionos>
+References: <alpine.LFD.2.02.1305021557030.3972@ionos>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Fix idle consolidation fallout
+Git-Commit-ID: 97a5b81fa4d3a11dcdf224befc577f2e0abadc0b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Jiri Slaby <jirislaby@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        NeilBrown <neilb@suse.de>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
-Subject: Re: [PATCH 09/15] Make selection of 'readdir-plus' adapt to usage
- patterns.
-References: <1367936303-13386-1-git-send-email-jslaby@suse.cz>  <1367936303-13386-9-git-send-email-jslaby@suse.cz> <1367936852.3580.6.camel@leira.trondhjem.org>
-In-Reply-To: <1367936852.3580.6.camel@leira.trondhjem.org>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2013 04:27 PM, Myklebust, Trond wrote:
-> On Tue, 2013-05-07 at 16:18 +0200, Jiri Slaby wrote:
->> From: NeilBrown <neilb@suse.de>
->>
->> While the use of READDIRPLUS is significantly more efficient than
->> READDIR followed by many GETATTR calls, it is still less efficient
->> than just READDIR if the attributes are not required.
->>
->> We can get a hint as to whether the application requires attr information
->> by looking at whether any ->getattr calls are made between
->> ->readdir calls.
->> If there are any, then getting the attributes seems to be worth while.
->>
->> This patch tracks whether there have been recent getattr calls on
->> children of a directory and uses that information to selectively
->> disable READDIRPLUS on that directory.
->>
->> The first 'readdir' call is always served using READDIRPLUS.
->> Subsequent calls only use READDIRPLUS if there was a getattr on a child
->> in the mean time.
->>
->> The locking of ->d_parent access needs to be reviewed.
->> As the bit is simply a hint, it isn't critical that it is set
->> on the "correct" parent if a rename is happening, but it is
->> critical that the 'set' doesn't set a bit in something that
->> isn't even an inode any more.
->>
->> Acked-by: NeilBrown <neilb@suse.de>
->> Signed-off-by: Neil Brown <neilb@suse.de>
->> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
->> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
->> Cc: linux-nfs@vger.kernel.org
->> ---
-> 
-> Why am I being Cced on this?
+Commit-ID:  97a5b81fa4d3a11dcdf224befc577f2e0abadc0b
+Gitweb:     http://git.kernel.org/tip/97a5b81fa4d3a11dcdf224befc577f2e0abadc0b
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Thu, 2 May 2013 16:21:15 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 7 May 2013 16:24:03 +0200
 
-Because we have the patch still in _3.9_. Dropped now in favor of the
-commit below.
+x86: Fix idle consolidation fallout
 
-> You have looked at commit d69ee9b85541a69a1092f5da675bd23256dc62af (NFS:
-> Adapt readdirplus to application usage patterns) which was upstreamed in
-> Linux 3.5, right?
+The core code expects the arch idle code to return with interrupts
+enabled. The conversion missed two x86 cases which fail to do that.
 
-Thanks for letting me know.
+Reported-and-tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Tested-by: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1305021557030.3972@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/process.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
--- 
-js
-suse labs
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 607af0d..4e7a37f 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -312,6 +312,8 @@ void arch_cpu_idle(void)
+ {
+ 	if (cpuidle_idle_call())
+ 		x86_idle();
++	else
++		local_irq_enable();
+ }
+ 
+ /*
+@@ -368,9 +370,6 @@ void amd_e400_remove_cpu(int cpu)
+  */
+ static void amd_e400_idle(void)
+ {
+-	if (need_resched())
+-		return;
+-
+ 	if (!amd_e400_c1e_detected) {
+ 		u32 lo, hi;
+ 
