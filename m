@@ -1,93 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934414Ab3EGCcs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 22:32:48 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63100 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1760016Ab3EGCT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 22:19:26 -0400
-X-IronPort-AV: E=Sophos;i="4.87,625,1363104000"; 
-   d="scan'208";a="7201755"
-From: Gao feng <gaofeng@cn.fujitsu.com>
-To: viro@zeniv.linux.org.uk, eparis@redhat.com, ebiederm@xmission.com,
-        sgrubb@redhat.com, akpm@linux-foundation.org, serge.hallyn@ubuntu.com,
-        davem@davemloft.net
-Cc: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH RFC 08/48] Audit: make audit_nlk_portid per user namesapce
-Date: Tue, 7 May 2013 10:20:29 +0800
-Message-Id: <1367893269-9308-9-git-send-email-gaofeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
-References: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/07 10:18:26,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/07 10:18:27,
-	Serialize complete at 2013/05/07 10:18:27
+	id S934432Ab3EGCdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 22:33:14 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:49765 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934418Ab3EGCdL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 22:33:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <51885AA0.4090807@zytor.com>
+References: <51884263.4020608@zytor.com>
+	<CA+55aFzwjQ03ZA71rgKMhCqh_+1fcMbPJUK3upcOacX2F8+Z9A@mail.gmail.com>
+	<51885AA0.4090807@zytor.com>
+Date: Mon, 6 May 2013 19:33:09 -0700
+X-Google-Sender-Auth: O0bdfE29tsiGJaAm4FFQs7bP4jI
+Message-ID: <CA+55aFxqnB4CmJQyE1_r7swFyWUYhSU7Eyvg+7uRpCXUtpU1jg@mail.gmail.com>
+Subject: Re: The type of bitops
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-arch <linux-arch@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After this patch, audit_nlk_port is per user namespace.
-Just like prev patch does,use audit_nlk_portid of init
-user namespace in kauditd_send_skb.
+On Mon, May 6, 2013 at 6:36 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> That sounds insane. Just *how* could the size of the argument even
+>> matter? Seriously, there's no *difference* between a 32-bit or a
+>> 64-bit index. The code is the same, there's no possible reason to make
+>> it be different.
+>>
+>
+> The only reason on x86 would be to avoid the REX prefix.  Hardly worth
+> it, though.
 
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
----
- include/linux/user_namespace.h |  1 +
- kernel/audit.c                 | 11 ++---------
- 2 files changed, 3 insertions(+), 9 deletions(-)
+Hmm. You *might* be able to do it by simply turning the inline
+functions into statement expressions, and letting the compiler do the
+types as it will. Use "(nr)+0" to make sure that the type is at least
+"int", and then "Ir" as the asm constraint.
 
-diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-index a6c6174..769a12b 100644
---- a/include/linux/user_namespace.h
-+++ b/include/linux/user_namespace.h
-@@ -22,6 +22,7 @@ struct uid_gid_map {	/* 64 bytes -- 1 cache line */
- struct audit_ctrl {
- 	struct sock		*sock;
- 	int			pid;
-+	int			portid;
- 	struct sk_buff_head	queue;
- 	struct sk_buff_head	hold_queue;
- 	struct task_struct	*kauditd_task;
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 2ce7a21..b946b29 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -87,13 +87,6 @@ static int	audit_default;
- /* If auditing cannot proceed, audit_failure selects what happens. */
- static int	audit_failure = AUDIT_FAIL_PRINTK;
- 
--/*
-- * If audit records are to be written to the netlink socket, audit_pid
-- * contains the pid of the auditd process and audit_nlk_portid contains
-- * the portid to use to send netlink messages to that process.
-- */
--static int	audit_nlk_portid;
--
- /* If audit_rate_limit is non-zero, limit the rate of sending audit records
-  * to that number per second.  This prevents DoS attacks, but results in
-  * audit records being dropped. */
-@@ -400,7 +393,7 @@ static void kauditd_send_skb(struct sk_buff *skb)
- 	/* take a reference in case we can't send it and we want to hold it */
- 	skb_get(skb);
- 	err = netlink_unicast(init_user_ns.audit.sock, skb,
--			      audit_nlk_portid, 0);
-+			      init_user_ns.audit.portid, 0);
- 	if (err < 0) {
- 		BUG_ON(err != -ECONNREFUSED); /* Shouldn't happen */
- 		printk(KERN_ERR "audit: *NO* daemon at audit_pid=%d\n",
-@@ -717,7 +710,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 							sessionid, sid, 1);
- 
- 			ns->audit.pid = new_pid;
--			audit_nlk_portid = NETLINK_CB(skb).portid;
-+			ns->audit.portid = NETLINK_CB(skb).portid;
- 		}
- 		if (status_get->mask & AUDIT_STATUS_RATE_LIMIT) {
- 			err = audit_set_rate_limit(status_get->rate_limit,
--- 
-1.8.1.4
+A quick test seems to imply that this works:
 
+  #define test_bit(nr, addr) \
+    ({ int oldbit; \
+        asm volatile("bt %2,%1\n\t" \
+                "sbb %0,%0" \
+                : "=r" (oldbit) \
+                : "m" (*(unsigned long *)(addr)), \
+                 "Ir" ((nr)+0)); \
+    oldbit; })
+
+  int test(int idx1, long idx2, void *addr)
+  {
+    return test_bit(idx1, addr) + test_bit(idx2, addr);
+  }
+
+and I get
+
+    ...
+    bt %edi,(%rdx)
+    ...
+    bt %rsi,(%rdx)
+    ...
+
+for the int/long index respectively. So if the argument is an 'int',
+it will avoid the rex prefix.
+
+And I tested that using a "char" index does indeed do the right thing too:
+
+    movsbl %dil,%eax
+    bt     %eax,(%rcx)
+
+so that all seems surmountable.Whether it really matters, I dunno.
+
+                 Linus
