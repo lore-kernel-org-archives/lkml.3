@@ -1,56 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758583Ab3EGQBm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 12:01:42 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:43609 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758202Ab3EGQBk (ORCPT
+	id S1758660Ab3EGQCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 12:02:11 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:54288 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758033Ab3EGQCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 12:01:40 -0400
-Message-ID: <51892560.7090202@linaro.org>
-Date: Tue, 07 May 2013 09:01:36 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Feng Tang <feng.tang@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Fwd: [GIT PULL] timer changes for v3.10
-References: <20130430074322.GA20110@gmail.com> <20130506230137.GA16801@amd.pavel.ucw.cz> <CA++bM2scosWgBpC3_LzcKYOjG4EQQzN5Vf4rZFds-5qRVRwvDQ@mail.gmail.com> <20130507023853.GA2945@feng-snb> <20130507065348.GF17705@gmail.com>
-In-Reply-To: <20130507065348.GF17705@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 7 May 2013 12:02:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: torvalds@linux-foundation.org
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [GIT PULL] ARM: arm-soc: late Exynos multiplatform changes
+Date: Tue,  7 May 2013 18:02:14 +0200
+Message-Id: <1367942534-2934003-6-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1367942534-2934003-1-git-send-email-arnd@arndb.de>
+References: <1367942534-2934003-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:AmeI1DK1vBSvIZ7VUIBOVo6rVlaT/cO7d2vlkzuBCWh
+ +g4OMqOFVhTMIoNNzTe7YuqHJeRcIzTa7tp7WesWAZ8CpXa/oZ
+ H2w2ZjhbApzhBiD44hufsEZ74E1ubryyEbF/he/rbWkX2HiwIC
+ OO5X0iq/slC4cEttW+KtMwqF9sHS9j1uhGR127BV4KWdRLwMTS
+ YKLzyEtNXCyAXQlY2gr5DnRyGT4HLCyKh/ezMS0Au03GLLuueN
+ QZYGl/ut0g+lASQqRg8riROfBVBGKZQEqj5sKYBOGX/xqQCd2c
+ RwkMd/Ze/bpmprpkBZi2xKurqHwlydpBLqoDl6xb1QqVdJNbyw
+ B3QUXo3sJDsnBXpt5cA8bXMZbqoDQhkzbwzTHqMZz
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2013 11:53 PM, Ingo Molnar wrote:
-> * Feng Tang <feng.tang@intel.com> wrote:
->
->>> is even worse than that. Machine can stay is s2ram for weeks (for a
->>> lot more if it is desktop and you do s2ram for powersaving). Also
->>> temperature of CPU varies a lot between active and s2ram states. Is
->>> TSC good enough?
->> Yes, I think it is relatively precise. Per our test, system time backed
->> by the S3 non stop TSC only has 1 second drift after 4 days running
->> (with mixed running and S3 states). And before using this feature, we've
->> seen many time drift problems due to the RTC HW or system FW with our
->> platforms.
-> Nice result ...
->
-> Is that with NTP running?
->
-> Without NTP, the TSC fast-calibration on bootup is not (expected to be)
-> nearly as precise as the 1:345600 precision you've measured.
+These continue the multiplatform support for exynos, adding support
+for building most of the essential drivers (clocksource, clk, irqchip)
+when combined with other platforms. As a result, it should become
+really easy to add full multiplatform exynos support in 3.11, although
+we don't yet enable it for 3.10.
 
-We also do refined calibration now on the TSC asynchronously over a 
-period of seconds at boot up that gives us much better accuracy then the 
-fast calibration. This helps provide much more consistent boot-to-boot 
-TSC frequencies.
+The changes were not included in the earlier multiplatform series
+in order to avoid clashes with the other Exynos updates.
 
-thanks
--john
+This also includes work from Tomasz Figa to fix the pwm clocksource
+code on Exynos, which is not strictly required for multiplatform,
+but related to the other patches in this set and needed as a bug
+fix for at least one board.
 
+Conflicts:
+- in arch/arm/mach-exynos/common.c, the irq_set_wake callback
+  gets added, while a call to s5p_init_irq() gets removed and
+  the prototype for combiner_init changes.
+
+
+-------------------------------------------------------------
+
+The following changes since commit
+
+   e8b1270 Merge tag 'cleanup-for-linus-2' into for-next
+
+are available in the git repository at
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/multiplatform-for-linus-2
+
+you to fetch changes up to
+
+   241a987 Merge branch 'exynos/pwm-clocksource' into late/multiplatform
+
+
+-------------------------------------------------------------
+
+Arnd Bergmann (12):
+      clk: exynos: prepare for multiplatform
+      clocksource: exynos_mct: remove platform header dependency
+      ARM: exynos: add missing properties for combiner IRQs
+      irqchip: exynos: pass max combiner number to combiner_init
+      irqchip: exynos: allocate combiner_data dynamically
+      irqchip: exynos: localize irq lookup for ATAGS
+      irqchip: exynos: pass irq_base from platform
+      irqchip: exynos: look up irq using irq_find_mapping
+      Merge branch 'next/drivers' into late/multiplatform
+      Merge branch 'samsung/exynos-multiplatform-drivers' into late/multiplatform
+      Merge branch 'exynos/pwm-clocksource' into late/multiplatform
+      Merge tag 'multiplatform-for-linus-2' into for-next
+
+Olof Johansson (1):
+      ARM: dts: exynops4210: really add universal_c210 dts
+
+Tomasz Figa (13):
+      clocksource: add samsung pwm timer driver
+      Documentation: Add device tree bindings for Samsung PWM timers
+      clocksource: samsung_pwm_timer: Let platforms select the driver
+      clocksource: samsung_pwm_timer: Make PWM spinlock global
+      clocksource: samsung_pwm_timer: Keep all driver data in a structure
+      clocksource: samsung_pwm_timer: Drop unused samsung_pwm struct
+      clocksource: samsung_pwm_timer: Add support for non-DT platforms
+      clocksource: samsung_pwm_timer: Use proper clockevents max_delta
+      clocksource: samsung_pwm_timer: Correct programming of clock events
+      clocksource: samsung_pwm_timer: Work around rounding errors in clockevents core
+      ARM: SAMSUNG: Do not register legacy timer interrupts on Exynos
+      ARM: dts: exynos4: Add node for PWM device
+      ARM: dts: exynos4210: Add basic dts file for universal_c210 board
+
+ .../devicetree/bindings/pwm/pwm-samsung.txt        |  43 ++
+ arch/arm/boot/dts/Makefile                         |   1 +
+ arch/arm/boot/dts/exynos4.dtsi                     |   8 +
+ arch/arm/boot/dts/exynos4210-universal_c210.dts    | 352 +++++++++++++++
+ arch/arm/boot/dts/exynos4210.dtsi                  |   1 +
+ arch/arm/boot/dts/exynos4212.dtsi                  |   9 +
+ arch/arm/boot/dts/exynos4412.dtsi                  |   9 +
+ arch/arm/mach-exynos/common.c                      |  35 +-
+ arch/arm/mach-exynos/common.h                      |   7 +-
+ arch/arm/plat-samsung/Kconfig                      |   4 +-
+ drivers/clk/samsung/clk-exynos4.c                  |  93 ++--
+ drivers/clk/samsung/clk-exynos5250.c               |   1 -
+ drivers/clk/samsung/clk-exynos5440.c               |   1 -
+ drivers/clk/samsung/clk.h                          |   2 -
+ drivers/clocksource/Kconfig                        |   9 +
+ drivers/clocksource/Makefile                       |   1 +
+ drivers/clocksource/exynos_mct.c                   |  21 +-
+ drivers/clocksource/samsung_pwm_timer.c            | 494 +++++++++++++++++++++
+ drivers/irqchip/exynos-combiner.c                  | 125 +++---
+ include/clocksource/samsung_pwm.h                  |  36 ++
+ 20 files changed, 1098 insertions(+), 154 deletions(-)
