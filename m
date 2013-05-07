@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757932Ab3EGLjX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 07:39:23 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:65050 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756685Ab3EGLjV (ORCPT
+	id S1758011Ab3EGLjd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 07:39:33 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:56834 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757760Ab3EGLjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 07:39:21 -0400
+	Tue, 7 May 2013 07:39:22 -0400
 MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <517ABCF6.5040103@parallels.com>
-References: <20130401103749.19027.89833.stgit@maximpc.sw.ru>
-	<20130401104250.19027.27795.stgit@maximpc.sw.ru>
-	<51793DE6.3000503@parallels.com>
-	<CAJfpegv1zc4oeE=YXrQd0jmzVXB8jjvXkz-_4Nv_ELcvfsa74Q@mail.gmail.com>
-	<517956ED.7060102@parallels.com>
-	<20130425204331.GB16238@tucsk.piliscsaba.szeredi.hu>
-	<517A3B98.807@parallels.com>
-	<20130426140240.GC16238@tucsk.piliscsaba.szeredi.hu>
-	<517ABCF6.5040103@parallels.com>
-Date: Tue, 7 May 2013 13:39:19 +0200
-Message-ID: <CAJfpegucNfxYsz3G2JwxK5JtDPaYQu-SUR_VGvwCDz_iTGBt5Q@mail.gmail.com>
-Subject: Re: [fuse-devel] [PATCH 14/14] mm: Account for WRITEBACK_TEMP in balance_dirty_pages
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Maxim V. Patlasov" <mpatlasov@parallels.com>
-Cc: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
-        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, devel@openvz.org,
-        Andrew Morton <akpm@linux-foundation.org>, fengguang.wu@intel.com,
-        Mel Gorman <mgorman@suse.de>, riel@redhat.com, hughd@google.com,
-        gthelen@google.com, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+Date: Tue, 7 May 2013 19:39:20 +0800
+Message-ID: <CAPgLHd9w_PpotgpN+KZKs79W4xZrLsBNxRsh+DjspeMxc+vxpA@mail.gmail.com>
+Subject: [PATCH] pstore/ram: fix error return code in ramoops_probe()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: cbouatmailru@gmail.com, ccross@android.com, keescook@chromium.org,
+        tony.luck@intel.com
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 7:44 PM, Maxim V. Patlasov
-<mpatlasov@parallels.com> wrote:
-> I'm for accounting NR_WRITEBACK_TEMP because balance_dirty_pages is already
-> overcomplicated (imho) and adding new clauses for FUSE makes me sick.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Agreed.
+Fix to return a negative error code from the error handling
+case instead of 0, as done elsewhere in this function.
 
-But instead of further complexifying balance_dirty_pages() fuse
-specific throttling can be done in fuse_page_mkwrite(), I think.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ fs/pstore/ram.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-And at that point NR_WRITEBACK_TEMP really becomes irrelevant to the
-dirty balancing logic.
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 32cbd7c..1376e5a 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -438,6 +438,7 @@ static int ramoops_probe(struct platform_device *pdev)
+ 		pr_err("memory size too small, minimum is %zu\n",
+ 			cxt->console_size + cxt->record_size +
+ 			cxt->ftrace_size);
++		err = -EINVAL;
+ 		goto fail_cnt;
+ 	}
+ 
+@@ -455,6 +456,7 @@ static int ramoops_probe(struct platform_device *pdev)
+ 	spin_lock_init(&cxt->pstore.buf_lock);
+ 	if (!cxt->pstore.buf) {
+ 		pr_err("cannot allocate pstore buffer\n");
++		err = -ENOMEM;
+ 		goto fail_clear;
+ 	}
+ 
 
-Thanks,
-Miklos
