@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757714Ab3EGX2k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 19:28:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55819 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865Ab3EGX2j (ORCPT
+	id S1757852Ab3EGX3o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 19:29:44 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:48429 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab3EGX3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 19:28:39 -0400
-Date: Tue, 7 May 2013 16:28:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: a.zummo@towertech.it, yongjun_wei@trendmicro.com.cn,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtc: rtc-tile: add missing platform_device_unregister()
- when module exit
-Message-Id: <20130507162838.81a78e16234ef86e0b332275@linux-foundation.org>
-In-Reply-To: <CAPgLHd86cg11pHka0TRMFkEJV2ETLHwnr3oUo=FpBYnSLk=8sA@mail.gmail.com>
-References: <CAPgLHd86cg11pHka0TRMFkEJV2ETLHwnr3oUo=FpBYnSLk=8sA@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 7 May 2013 19:29:42 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Doug Thompson <dougthompson@xmission.com>
+Cc: linux-pci@vger.kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] PCI, EDAC: fix ordering assign resource and bus_add
+Date: Tue,  7 May 2013 16:29:31 -0700
+Message-Id: <1367969371-27414-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 May 2013 13:07:00 +0800 Wei Yongjun <weiyj.lk@gmail.com> wrote:
+We should assign unassigned resource before pci_bus_add_device.
 
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> We have registered platform device when module init, and
-> need unregister it when module exit.
-> 
-> ...
->
-> --- a/drivers/rtc/rtc-tile.c
-> +++ b/drivers/rtc/rtc-tile.c
-> @@ -146,6 +146,7 @@ exit_driver_unregister:
->   */
->  static void __exit tile_rtc_driver_exit(void)
->  {
-> +	platform_device_unregister(tile_rtc_platform_device);
->  	platform_driver_unregister(&tile_rtc_platform_driver);
->  }
+as late one will enable driver and create sysfs file that will need
+pci io resources from assign unassigned code.
 
-We don't need to do a platform_device_put(), as tile_rtc_driver_init()
-does?
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-drivers/rtc/rtc-stmp3xxx.c appears to need the same fix.
+---
+ drivers/edac/i82875p_edac.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-  
+Index: linux-2.6/drivers/edac/i82875p_edac.c
+===================================================================
+--- linux-2.6.orig/drivers/edac/i82875p_edac.c
++++ linux-2.6/drivers/edac/i82875p_edac.c
+@@ -293,13 +293,14 @@ static int i82875p_setup_overfl_dev(stru
+ 		if (dev == NULL)
+ 			return 1;
+ 
++		pci_bus_assign_resources(dev->bus);
++
+ 		err = pci_bus_add_device(dev);
+ 		if (err) {
+ 			i82875p_printk(KERN_ERR,
+ 				"%s(): pci_bus_add_device() Failed\n",
+ 				__func__);
+ 		}
+-		pci_bus_assign_resources(dev->bus);
+ 	}
+ 
+ 	*ovrfl_pdev = dev;
