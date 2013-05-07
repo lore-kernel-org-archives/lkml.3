@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933215Ab3EGNml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:42:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42638 "EHLO
+	id S933508Ab3EGNnj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:43:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42658 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933419Ab3EGNmd (ORCPT
+	with ESMTP id S933433Ab3EGNmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:33 -0400
+	Tue, 7 May 2013 09:42:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zhao Hongjiang <zhaohongjiang@huawei.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Eric Paris <eparis@parisplace.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Steve Conklin <sconklin@canonical.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Ben Widawsky <ben@bwidawsk.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 112/118] inotify: invalid mask should return a error number but not set it
-Date: Tue,  7 May 2013 14:39:18 +0100
-Message-Id: <1367933964-1564-113-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 117/118] Revert "drm/i915: GFX_MODE Flush TLB Invalidate Mode must be '1' for scanline waits"
+Date: Tue,  7 May 2013 14:39:23 +0100
+Message-Id: <1367933964-1564-118-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -32,70 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhao Hongjiang <zhaohongjiang@huawei.com>
+From: Luis Henriques <luis.henriques@canonical.com>
 
-commit 04df32fa10ab9a6f0643db2949d42efc966bc844 upstream.
+This reverts commit 899b5509abbdfee2eab408e7178e559346091ad3, which is commit
+f05bb0c7b624252a5e768287e340e8e45df96e42 in Linus' tree.
 
-When we run the crackerjack testsuite, the inotify_add_watch test is
-stalled.
+This commit has been shown to cause GPU hangs on Sandy Bridge GPUs
 
-This is caused by the invalid mask 0 - the task is waiting for the event
-but it never comes.  inotify_add_watch() should return -EINVAL as it did
-before commit 676a0675cf92 ("inotify: remove broken mask checks causing
-unmount to be EINVAL").  That commit removes the invalid mask check, but
-that check is needed.
+BugLink: http://bugs.launchpad.net/bugs/1140716
 
-Check the mask's ALL_INOTIFY_BITS before the inotify_arg_to_mask() call.
-If none are set, just return -EINVAL.
-
-Because IN_UNMOUNT is in ALL_INOTIFY_BITS, this change will not trigger
-the problem that above commit fixed.
-
-[akpm@linux-foundation.org: fix build]
-Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
-Acked-by: Jim Somerville <Jim.Somerville@windriver.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>
-Cc: Eric Paris <eparis@parisplace.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: adjust context ]
+Signed-off-by: Steve Conklin <sconklin@canonical.com>
+Acked-by: Brad Figg <brad.figg@canonical.com>
+Acked-by: Luis Henriques <luis.henriques@canonical.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Ben Widawsky <ben@bwidawsk.net>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/notify/inotify/inotify_user.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_ringbuffer.c | 5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
-index 6f292dd..f255d37 100644
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -577,7 +577,6 @@ static int inotify_update_existing_watch(struct fsnotify_group *group,
- 	int add = (arg & IN_MASK_ADD);
- 	int ret;
+diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+index e75d794..78486c7 100644
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -421,11 +421,6 @@ static int init_render_ring(struct intel_ring_buffer *ring)
+ 	if (INTEL_INFO(dev)->gen >= 6)
+ 		I915_WRITE(MI_MODE, _MASKED_BIT_ENABLE(ASYNC_FLIP_PERF_DISABLE));
  
--	/* don't allow invalid bits: we don't want flags set */
- 	mask = inotify_arg_to_mask(arg);
- 
- 	fsn_mark = fsnotify_find_inode_mark(group, inode);
-@@ -628,7 +627,6 @@ static int inotify_new_watch(struct fsnotify_group *group,
- 	struct idr *idr = &group->inotify_data.idr;
- 	spinlock_t *idr_lock = &group->inotify_data.idr_lock;
- 
--	/* don't allow invalid bits: we don't want flags set */
- 	mask = inotify_arg_to_mask(arg);
- 
- 	tmp_i_mark = kmem_cache_alloc(inotify_inode_mark_cachep, GFP_KERNEL);
-@@ -757,6 +755,10 @@ SYSCALL_DEFINE3(inotify_add_watch, int, fd, const char __user *, pathname,
- 	int ret, fput_needed;
- 	unsigned flags = 0;
- 
-+	/* don't allow invalid bits: we don't want flags set */
-+	if (unlikely(!(mask & ALL_INOTIFY_BITS)))
-+		return -EINVAL;
-+
- 	filp = fget_light(fd, &fput_needed);
- 	if (unlikely(!filp))
- 		return -EBADF;
+-	/* Required for the hardware to program scanline values for waiting */
+-	if (INTEL_INFO(dev)->gen == 6)
+-		I915_WRITE(GFX_MODE,
+-			   _MASKED_BIT_ENABLE(GFX_TLB_INVALIDATE_ALWAYS));
+-
+ 	if (IS_GEN7(dev))
+ 		I915_WRITE(GFX_MODE_GEN7,
+ 			   _MASKED_BIT_DISABLE(GFX_TLB_INVALIDATE_ALWAYS) |
 -- 
 1.8.1.2
 
