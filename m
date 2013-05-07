@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab3EGO02 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:26:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42025 "EHLO
+	id S1753974Ab3EGO0r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:26:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42020 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759217Ab3EGNkY (ORCPT
+	with ESMTP id S1758527Ab3EGNkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:40:24 -0400
+	Tue, 7 May 2013 09:40:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Fritz <chf.fritz@googlemail.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 004/118] can: sja1000: fix handling on dt properties on little endian systems
-Date: Tue,  7 May 2013 14:37:30 +0100
-Message-Id: <1367933964-1564-5-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 003/118] can: mcp251x: add missing IRQF_ONESHOT to request_threaded_irq
+Date: Tue,  7 May 2013 14:37:29 +0100
+Message-Id: <1367933964-1564-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,87 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Fritz <chf.fritz@googlemail.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit 0443de5fbf224abf41f688d8487b0c307dc5a4b4 upstream.
+commit db388d6460ffa53b3b38429da6f70a913f89b048 upstream.
 
-To get correct endianes on little endian cpus (like arm) while reading device
-tree properties, this patch replaces of_get_property() with
-of_property_read_u32(). While there use of_property_read_bool() for the
-handling of the boolean "nxp,no-comparator-bypass" property.
+Since commit:
 
-Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+    1c6c695 genirq: Reject bogus threaded irq requests
+
+threaded irqs must provide a primary handler or set the IRQF_ONESHOT flag.
+Since the mcp251x driver doesn't make use of a primary handler set the
+IRQF_ONESHOT flag.
+
+Reported-by: Mylene Josserand <Mylene.Josserand@navocap.com>
+Tested-by: Mylene Josserand <Mylene.Josserand@navocap.com>
 Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/can/sja1000/sja1000_of_platform.c | 31 +++++++++++++--------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+ drivers/net/can/mcp251x.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/can/sja1000/sja1000_of_platform.c b/drivers/net/can/sja1000/sja1000_of_platform.c
-index f2683eb..c505b55 100644
---- a/drivers/net/can/sja1000/sja1000_of_platform.c
-+++ b/drivers/net/can/sja1000/sja1000_of_platform.c
-@@ -94,8 +94,8 @@ static int __devinit sja1000_ofp_probe(struct platform_device *ofdev)
- 	struct net_device *dev;
- 	struct sja1000_priv *priv;
- 	struct resource res;
--	const u32 *prop;
--	int err, irq, res_size, prop_size;
-+	u32 prop;
-+	int err, irq, res_size;
- 	void __iomem *base;
+diff --git a/drivers/net/can/mcp251x.c b/drivers/net/can/mcp251x.c
+index 9d60742..a17c048 100644
+--- a/drivers/net/can/mcp251x.c
++++ b/drivers/net/can/mcp251x.c
+@@ -922,6 +922,7 @@ static int mcp251x_open(struct net_device *net)
+ 	struct mcp251x_priv *priv = netdev_priv(net);
+ 	struct spi_device *spi = priv->spi;
+ 	struct mcp251x_platform_data *pdata = spi->dev.platform_data;
++	unsigned long flags;
+ 	int ret;
  
- 	err = of_address_to_resource(np, 0, &res);
-@@ -136,27 +136,27 @@ static int __devinit sja1000_ofp_probe(struct platform_device *ofdev)
- 	priv->read_reg = sja1000_ofp_read_reg;
- 	priv->write_reg = sja1000_ofp_write_reg;
+ 	ret = open_candev(net);
+@@ -938,9 +939,14 @@ static int mcp251x_open(struct net_device *net)
+ 	priv->tx_skb = NULL;
+ 	priv->tx_len = 0;
  
--	prop = of_get_property(np, "nxp,external-clock-frequency", &prop_size);
--	if (prop && (prop_size ==  sizeof(u32)))
--		priv->can.clock.freq = *prop / 2;
-+	err = of_property_read_u32(np, "nxp,external-clock-frequency", &prop);
-+	if (!err)
-+		priv->can.clock.freq = prop / 2;
- 	else
- 		priv->can.clock.freq = SJA1000_OFP_CAN_CLOCK; /* default */
- 
--	prop = of_get_property(np, "nxp,tx-output-mode", &prop_size);
--	if (prop && (prop_size == sizeof(u32)))
--		priv->ocr |= *prop & OCR_MODE_MASK;
-+	err = of_property_read_u32(np, "nxp,tx-output-mode", &prop);
-+	if (!err)
-+		priv->ocr |= prop & OCR_MODE_MASK;
- 	else
- 		priv->ocr |= OCR_MODE_NORMAL; /* default */
- 
--	prop = of_get_property(np, "nxp,tx-output-config", &prop_size);
--	if (prop && (prop_size == sizeof(u32)))
--		priv->ocr |= (*prop << OCR_TX_SHIFT) & OCR_TX_MASK;
-+	err = of_property_read_u32(np, "nxp,tx-output-config", &prop);
-+	if (!err)
-+		priv->ocr |= (prop << OCR_TX_SHIFT) & OCR_TX_MASK;
- 	else
- 		priv->ocr |= OCR_TX0_PULLDOWN; /* default */
- 
--	prop = of_get_property(np, "nxp,clock-out-frequency", &prop_size);
--	if (prop && (prop_size == sizeof(u32)) && *prop) {
--		u32 divider = priv->can.clock.freq * 2 / *prop;
-+	err = of_property_read_u32(np, "nxp,clock-out-frequency", &prop);
-+	if (!err && prop) {
-+		u32 divider = priv->can.clock.freq * 2 / prop;
- 
- 		if (divider > 1)
- 			priv->cdr |= divider / 2 - 1;
-@@ -166,8 +166,7 @@ static int __devinit sja1000_ofp_probe(struct platform_device *ofdev)
- 		priv->cdr |= CDR_CLK_OFF; /* default */
- 	}
- 
--	prop = of_get_property(np, "nxp,no-comparator-bypass", NULL);
--	if (!prop)
-+	if (!of_property_read_bool(np, "nxp,no-comparator-bypass"))
- 		priv->cdr |= CDR_CBP; /* default */
- 
- 	priv->irq_flags = IRQF_SHARED;
++	flags = IRQF_ONESHOT;
++	if (pdata->irq_flags)
++		flags |= pdata->irq_flags;
++	else
++		flags |= IRQF_TRIGGER_FALLING;
++
+ 	ret = request_threaded_irq(spi->irq, NULL, mcp251x_can_ist,
+-		  pdata->irq_flags ? pdata->irq_flags : IRQF_TRIGGER_FALLING,
+-		  DEVICE_NAME, priv);
++				   flags, DEVICE_NAME, priv);
+ 	if (ret) {
+ 		dev_err(&spi->dev, "failed to acquire irq %d\n", spi->irq);
+ 		if (pdata->transceiver_enable)
 -- 
 1.8.1.2
 
