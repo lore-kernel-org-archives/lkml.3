@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab3EGO27 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:28:59 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57092 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754111Ab3EGO2y (ORCPT
+	id S1754210Ab3EGO25 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:28:57 -0400
+Received: from a9-54.smtp-out.amazonses.com ([54.240.9.54]:46846 "EHLO
+	a9-54.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754108Ab3EGO2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 10:28:54 -0400
-Date: Tue, 7 May 2013 15:28:51 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Message-ID: <20130507142851.GU7478@sirena.org.uk>
-References: <1367932297-27926-1-git-send-email-srinivas.kandagatla@st.com>
+	Tue, 7 May 2013 10:28:55 -0400
+X-Greylist: delayed 329 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 May 2013 10:28:55 EDT
+Date: Tue, 7 May 2013 14:23:23 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Pekka Enberg <penberg@kernel.org>
+cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Glauber Costa <glommer@parallels.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+In-Reply-To: <CAOJsxLGvbJ+FNq8J3j1FHz9gjo7vGgfTyWQT1vvy0D3Ykq8SyA@mail.gmail.com>
+Message-ID: <0000013e7f60169e-47b0bd92-a757-41da-8b30-fa78511fe298-000000@email.amazonses.com>
+References: <0000013e5b56d067-7982dfa6-08a2-4c48-ad77-6888b5114c5f-000000@email.amazonses.com> <201305010101.CGB86424.JFQOtSFOVOLFHM@I-love.SAKURA.ne.jp> <0000013e5bfc7c4d-54fa9464-dccd-4157-b4a5-22594261eaf3-000000@email.amazonses.com>
+ <201305012114.AED78178.tFSHFQOOJLMOFV@I-love.SAKURA.ne.jp> <0000013e6705da99-094923c6-e239-43d2-8f0c-5e661656a27c-000000@email.amazonses.com> <201305031726.BJG78631.tQSOVOLHJFMFFO@I-love.SAKURA.ne.jp> <0000013e6b90e65e-e0e184d9-7da5-4873-9572-3b40958552e2-000000@email.amazonses.com>
+ <CAOJsxLGvbJ+FNq8J3j1FHz9gjo7vGgfTyWQT1vvy0D3Ykq8SyA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DFFMAMYvrfM3lt66"
-Content-Disposition: inline
-In-Reply-To: <1367932297-27926-1-git-send-email-srinivas.kandagatla@st.com>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC] regmap: debugfs: Fix start_reg calculation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.05.07-54.240.9.54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 6 May 2013, Pekka Enberg wrote:
 
---DFFMAMYvrfM3lt66
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Fri, May 3, 2013 at 9:04 PM, Christoph Lameter <cl@linux.com> wrote:
+> > -       for (i = KMALLOC_SHIFT_LOW; i < KMALLOC_SHIFT_HIGH; i++)
+>
+> This didn't match what I had in my tree. I fixed it by hand but please
+> verify the end result:
+>
+> https://git.kernel.org/cgit/linux/kernel/git/penberg/linux.git/commit/?h=slab/next&id=8a965b3baa89ffedc73c0fbc750006c631012ced
+>
+Well this is because you did not take the patch that changed the way
+KMALLOC_SHIFT_HIGH is treated.
 
-On Tue, May 07, 2013 at 02:11:37PM +0100, Srinivas KANDAGATLA wrote:
+The patch above looks fine though.
 
-> regmap_debugfs_get_dump_start returns register number, not the actual
-> offset into the map. So we use the return value as start to dump the=20
 
-No, it doesn't - it returns the register it should start reading from.
-It's just that the code isn't paying attention to stride and should.
-Fix the function, not the callers.
-
---DFFMAMYvrfM3lt66
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRiQ+gAAoJELSic+t+oim94mEQAIFo5ZPqqSr0uwbpQZn8LudC
-sQIBAklLEkf1JWnIxiQacYYyjB/okfJ81CQUhoebDZkltihslsfmh1pWwzQWZEj9
-OXxvg/YoTOfhH6O68en1JmE60SeSFtrsWsC/t5XrXawMREkMwlsheNvqB5oOr1lI
-2bTP9jfBoOFymXEqF0VD85ejYWbgKHLbK5q6dM6mnQlpJ1bERVWWc3KLH3zr2ctS
-JZMwr/WU86RkFAmWKRM5Jmstowf1PmRwvfXLXqJNbCq+03b+jTAhIs6WdA62sMRW
-5zT+HF4m4BD5yYXrfi+aHk4v3xlFQ3dZEhpJSZKtzXQDcK8vI0GNMOn5vg0Fbvwp
-TrNFB7mUNw3CN9/2t3K21k0pK5qP5ml9Dt2gB26HqRVclj0SoGiJ31qoIWFS16sN
-AzRQcxXQ9NJUWDk77QImcilXpbB2W+GqmeHzN/i8WQG3Hi+WiVHiM53aL7katjZZ
-CqcJqxaYdiN9Rsf76qLYCujqn5nXuoFSYX3f/fNW4J89aJ4vf8cXSgZN6ivGc8Tx
-2PpMzfftKUVGZaUZ58fd7RuoOic/+4hTHRu/Tf7o43w/tWMPdZ8b6VCVr24aryCG
-Hg+RCeeoIETpSDWyAddRnsLgawYkwJgw6B8jDnYHwfoEdN/CNYNIlFEUBnQhSwPX
-gX83QljQ1zzvUQ7nZe59
-=Nr3Y
------END PGP SIGNATURE-----
-
---DFFMAMYvrfM3lt66--
