@@ -1,35 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab3EGX1h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 19:27:37 -0400
-Received: from mailhub2.otago.ac.nz ([139.80.64.247]:60878 "EHLO
-	mailhub2.otago.ac.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab3EGX1g convert rfc822-to-8bit (ORCPT
+	id S1757714Ab3EGX2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 19:28:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55819 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753865Ab3EGX2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 19:27:36 -0400
-X-Greylist: delayed 41153 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 May 2013 19:27:36 EDT
-From: Ildiko Pecsi <ildiko.pecsi@otago.ac.nz>
-Subject: HELP DESK EQUIPO
-Thread-Topic: HELP DESK EQUIPO
-Thread-Index: Ac5LGSSMb6lAB9ItTXeg2zb0lpE4yA==
-Date: Tue, 7 May 2013 11:51:00 +0000
-Message-ID: <6816F7A5D912A04A9430F086699CC1360904E9B3@ITS-EXM-P08.registry.otago.ac.nz>
-Accept-Language: en-US, en-NZ
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [41.203.67.55]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 7 May 2013 19:28:39 -0400
+Date: Tue, 7 May 2013 16:28:38 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: a.zummo@towertech.it, yongjun_wei@trendmicro.com.cn,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc: rtc-tile: add missing platform_device_unregister()
+ when module exit
+Message-Id: <20130507162838.81a78e16234ef86e0b332275@linux-foundation.org>
+In-Reply-To: <CAPgLHd86cg11pHka0TRMFkEJV2ETLHwnr3oUo=FpBYnSLk=8sA@mail.gmail.com>
+References: <CAPgLHd86cg11pHka0TRMFkEJV2ETLHwnr3oUo=FpBYnSLk=8sA@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 5 May 2013 13:07:00 +0800 Wei Yongjun <weiyj.lk@gmail.com> wrote:
 
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> We have registered platform device when module init, and
+> need unregister it when module exit.
+> 
+> ...
+>
+> --- a/drivers/rtc/rtc-tile.c
+> +++ b/drivers/rtc/rtc-tile.c
+> @@ -146,6 +146,7 @@ exit_driver_unregister:
+>   */
+>  static void __exit tile_rtc_driver_exit(void)
+>  {
+> +	platform_device_unregister(tile_rtc_platform_device);
+>  	platform_driver_unregister(&tile_rtc_platform_driver);
+>  }
 
+We don't need to do a platform_device_put(), as tile_rtc_driver_init()
+does?
 
-Su buzónha superado ellímite de 2 GBestablecido porwebmaster, por favorhaga clicen el vínculo paravolver a configurarsu buzón de correoal nuevo servidor: http://www.rawdonhall.com/adminportal-
-Gracias
-Help Deskequipo
+drivers/rtc/rtc-stmp3xxx.c appears to need the same fix.
+
+  
