@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760076Ab3EGAIU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 20:08:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36013 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758928Ab3EFW4o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 18:56:44 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adrian Thomasset <adrian.thomasset@st.com>
-Subject: [ 10/63] USB: ftdi_sio: correct ST Micro Connect Lite PIDs
-Date: Mon,  6 May 2013 15:55:48 -0700
-Message-Id: <20130506225317.404025541@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130506225314.802167948@linuxfoundation.org>
-References: <20130506225314.802167948@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1760101Ab3EGAIe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:08:34 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59447 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757466Ab3EGAIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 20:08:30 -0400
+Message-ID: <518844A4.8040203@ti.com>
+Date: Mon, 6 May 2013 19:02:44 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Jassi Brar <jassisinghbrar@gmail.com>
+CC: <loic.pallardy@st.com>, <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Jassi Brar <jaswinder.singh@linaro.org>
+Subject: Re: [PATCHv2 0/4] mailbox: Common API
+References: <1367824946-6160-1-git-send-email-jaswinder.singh@linaro.org>
+In-Reply-To: <1367824946-6160-1-git-send-email-jaswinder.singh@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Hi Jassi,
 
-------------------
+On 05/06/2013 02:22 AM, Jassi Brar wrote:
+> Hello,
+>   I have made the implementation look more proper. Also made some changes
+> suggested by Suman. Changes since V1:
+> 
+> * Delete timer upon mailbox release
+> * Filled in the stub ipc_links_unregister()
+> * Check kzalloc return for errors.
+> * Add the controller driver for OMAP2 class. I have taken the patch
+>   for mailbox's hwmod from Suman's. The clients are yet to be converted
+>   but this should be enough to convey the idea that the API could
+>   work for OMAP as well. If I had access to STE documentation, I might
+>   have done some implementation for U8500 as well.
 
-From: Adrian Thomasset <adrian.thomasset@st.com>
+The bug fixes in this series look good in general. I have provided my
+design comments in the previous RFC thread [1] still, since the overall
+changes here are not that much different from the RFC.
 
-commit 9f06d15f8db6946e41f73196a122b84a37938878 upstream.
+Thanks for prototyping the OMAP portions, it demonstrates the adaptation
+to the new API, but I have to take a step approach in moving the current
+OMAP mailbox code and making incremental changes on top of it. The
+mailbox driver is the bottom-most layer in our IPC stacks, so changes at
+this layer are very critical to the functional behavior.
 
-The current ST Micro Connect Lite uses the FT4232H hi-speed quad USB
-UART FTDI chip. It is also possible to drive STM reference targets
-populated with an on-board JTAG debugger based on the FT2232H chip with
-the same STMicroelectronics tools.
+regards
+Suman
 
-For this reason, the ST Micro Connect Lite PIDs should be
-ST_STMCLT_2232_PID: 0x3746
-ST_STMCLT_4232_PID: 0x3747
-
-Signed-off-by: Adrian Thomasset <adrian.thomasset@st.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/serial/ftdi_sio.c     |    4 +++-
- drivers/usb/serial/ftdi_sio_ids.h |    3 ++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
-
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -879,7 +879,9 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_DOTEC_PID) },
- 	{ USB_DEVICE(QIHARDWARE_VID, MILKYMISTONE_JTAGSERIAL_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
--	{ USB_DEVICE(ST_VID, ST_STMCLT1030_PID),
-+	{ USB_DEVICE(ST_VID, ST_STMCLT_2232_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(ST_VID, ST_STMCLT_4232_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_stmclite_quirk },
- 	{ USB_DEVICE(FTDI_VID, FTDI_RF_R106) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_DISTORTEC_JTAG_LOCK_PICK_PID),
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1151,7 +1151,8 @@
-  * STMicroelectonics
-  */
- #define ST_VID			0x0483
--#define ST_STMCLT1030_PID	0x3747 /* ST Micro Connect Lite STMCLT1030 */
-+#define ST_STMCLT_2232_PID	0x3746
-+#define ST_STMCLT_4232_PID	0x3747
- 
- /*
-  * Papouch products (http://www.papouch.com/)
+[1] http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg429678.html
 
 
