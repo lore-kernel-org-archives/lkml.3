@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185Ab3EGH5L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 03:57:11 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52210 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755257Ab3EGH5K (ORCPT
+	id S1758315Ab3EGH66 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 03:58:58 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:39452 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab3EGH64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 03:57:10 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <5188B3BE.9040104@jp.fujitsu.com>
-Date: Tue, 07 May 2013 16:56:46 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Tue, 7 May 2013 03:58:56 -0400
+Date: Tue, 7 May 2013 08:58:24 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, balbi@ti.com,
+        ldewangan@nvidia.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
+        gg@slimlogic.co.uk, ruchika@ti.com, tony@atomide.com,
+        sameo@linux.intel.com
+Message-ID: <20130507075824.GM7478@sirena.org.uk>
+References: <1362662506-14823-4-git-send-email-kishon@ti.com>
+ <1367846225-15685-1-git-send-email-kishon@ti.com>
+ <20130506144010.GF13472@opensource.wolfsonmicro.com>
+ <51888D55.3090907@ti.com>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        lisa.mitchell@hp.com, kumagai-atsushi@mxc.nes.nec.co.jp,
-        ebiederm@xmission.com, zhangyanfei@cn.fujitsu.com,
-        akpm@linux-foundation.org, cpw@sgi.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v4 5/8] vmcore: copy ELF note segments in the 2nd kernel
- per page vmcore objects
-References: <20130413002000.18245.21513.stgit@localhost6.localdomain6> <20130413002133.18245.91528.stgit@localhost6.localdomain6> <20130429193611.GQ8204@redhat.com>
-In-Reply-To: <20130429193611.GQ8204@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bPrm2PuLP7ysUh6c"
+Content-Disposition: inline
+In-Reply-To: <51888D55.3090907@ti.com>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4] extcon: Palmas Extcon Driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/30 4:36), Vivek Goyal wrote:
-> On Sat, Apr 13, 2013 at 09:21:33AM +0900, HATAYAMA Daisuke wrote:
->
-> [..]
->> ELF notes are per-cpu, so total size of ELF note segments increases
->> according to the number of CPUs. The current maximum number of CPUs on
->> x86_64 is 5192, and there's already system with 4192 CPUs in SGI,
->> where total size amounts to 1MB. This can be larger in the neare
->> futrue or possibly even now on another architecture. Thus, to avoid
->> the case where memory allocation for large block fails, we allocate
->> vmcore objects per pages.
->
-> IIRC, eric had suggested using vmalloc() and remap_vmalloc_range(). What's
-> wrong with that? That should keep your vc_list relatively smaller.
->
 
-Yes, it's handy if it's possible to remap them in vmalloc space, but the 
-problem here is that remap_vmalloc_range requires the first argument vma 
-to cover full range of the requested map. This becomes problem when 
-requested area for mmap() overlaps multiple objects, for example, ELF 
-headers and memory refered to by the first PT_LOAD program header.
+--bPrm2PuLP7ysUh6c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-To use remap_vmalloc_range, it's necessary to prepare a new variant 
-similar to remap_pfn_range by which we can remap different objects 
-separately to a single vma.
+On Tue, May 07, 2013 at 10:42:53AM +0530, Kishon Vijay Abraham I wrote:
+> On Monday 06 May 2013 08:10 PM, Mark Brown wrote:
+> >On Mon, May 06, 2013 at 06:47:04PM +0530, Kishon Vijay Abraham I wrote:
+> >
+> >>+		if (palmas_usb->linkstat != PALMAS_USB_STATE_VBUS) {
+> >>+			if (palmas_usb->vbus_reg) {
+> >>+				ret = regulator_enable(palmas_usb->vbus_reg);
+> >>+				if (ret) {
+> >>+					dev_dbg(palmas_usb->dev,
+> >>+						"regulator enable failed\n");
+> >>+					goto ret0;
 
-/**
-  *      remap_vmalloc_range  -  map vmalloc pages to userspace
-  *      @vma:           vma to cover (map full range of vma)
-  *      @addr:          vmalloc memory
-  *      @pgoff:         number of pages into addr before first page to map
-  *
-  *      Returns:        0 for success, -Exxx on failure
-  *
-  *      This function checks that addr is a valid vmalloc'ed area, and
-  *      that it is big enough to cover the vma. Will return failure if
-  *      that criteria isn't met.
-  *
-  *      Similar to remap_pfn_range() (see mm/memory.c)
-  */
-int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
-                                                 unsigned long pgoff)
+> >This is very bad karma, why is the regulator optional?
 
+> The platform can provide it's own vbus control in which case this is
+> not needed.
 
--- 
-Thanks.
-HATAYAMA, Daisuke
+So why is there no interaction with this external VBUS control and how
+does the driver distinguish between that and an error getting the
+regulator?
 
+--bPrm2PuLP7ysUh6c
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRiLQdAAoJELSic+t+oim9IcgP/REeNr48hy+v4SL4nbnVylm0
+nnDouNmr9htqqqXgGxJsphHt6IhcS78yjFESwvcxe9m4YsYDZHjXNuW5oXVgPxwV
+XdD3ExXDqkljbY0UtB7VQ7HGQPIqP38CEmPStwWKFKeOmlb0hvTFpKoMgUnYSeCV
+1i5YadxZg4jtgczvL63feCE2yqX/+etQcesk8+rmFj+oJ/niegGLCXdcO+Y8wrl3
+fJlbOBpud4/+NmnC3Q5wYLOyiQ9Idq+Bv/gcBF84kCijhprUOiqjabB9jkwyM37d
+M3a6KbTJuY/LBCrhUcdADsD3dEvOXTOgQFV7/jOvAcJHqqqEuxANuO50yDmktxk1
+u0KRxZVBdkXRaD7rrSJLVCY7tXnt4FBOSp3xknq6ZDwdDfxEQGvn2KSObmZxan5z
+ugNErUiS/QVkspxG4OEuXc58CAP+XnIEkRNUPYs0DoGi4M6IKZKAzkxxuZ5HKg91
+zS1aUNTGK4CNtD1cQ30Tn9TYMRmIcr6QTk+iIsVWJue3CdM2stW2LNr1yKrtpt7D
+c7Uw4QmpEYW6ZRiHHv+4P+L2+x9FfEY2sx90TGyHNcPWL7vOQyQMpRwhN3wbCW+q
+Tnrqd+UzqGCXHX2nYoRFSbcc9kXA2nelEWWQICCzpBLW6lvWm/7B3kBPa7lvXUKo
+WPWjs52yEfwG+WK+P6j5
+=lQrk
+-----END PGP SIGNATURE-----
+
+--bPrm2PuLP7ysUh6c--
