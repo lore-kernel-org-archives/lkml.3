@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758319Ab3EGP6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 11:58:39 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:50420 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758192Ab3EGP6i (ORCPT
+	id S1758489Ab3EGP6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 11:58:47 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:54972 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758378Ab3EGP6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 11:58:38 -0400
-From: Syed Salman Mansoor <syed.salman.mansoor@gmail.com>
-To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Syed Salman Mansoor <syed.salman.mansoor@gmail.com>
-Subject: [PATCH] x86, boot: Cleanup A20 Code
-Date: Tue,  7 May 2013 20:58:25 +0500
-Message-Id: <1367942305-32748-1-git-send-email-syed.salman.mansoor@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 7 May 2013 11:58:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <5189234D.3040208@codeaurora.org>
+References: <1366974299-17877-1-git-send-email-pranavkumar@linaro.org>
+ <BA2076A6-0688-4E5C-85F9-A9CA8FD75782@suse.de> <87obcyc9sh.fsf@rustcorp.com.au>
+ <336C59AA-D5D7-472E-A8DA-EEB413DD6C68@suse.de> <CAAHg+Hj0tySbzUGnoFE9ybVYP291B-i8-Ck1EkwD57t8yG5wwg@mail.gmail.com>
+ <C52CCDD4-D8FB-4AD6-B83D-3B5251A7A0F5@suse.de> <87sj27xxjr.fsf@rustcorp.com.au>
+ <CAFEAcA9h8iSYfTBtf6n+Vk5sDtBR2yB2oafRxikHoWbKt0VRUw@mail.gmail.com>
+ <87ip2wr8tp.fsf@rustcorp.com.au> <CAFEAcA_=BTXVdkN0WmajxVSjbDrmxc5z65hCbxr=7TqJVsE9EA@mail.gmail.com>
+ <87txmfo0rl.fsf@rustcorp.com.au> <CAFEAcA9jBSpN2p9ZaU+_gX41Ke3nvpSKVrWV8Rioy_ioadKCgg@mail.gmail.com>
+ <5189234D.3040208@codeaurora.org>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Tue, 7 May 2013 16:58:23 +0100
+Message-ID: <CAFEAcA-eSB=_UT0-L7o=2o6JGv0WkXZv5UPxPVqLRxjUZQegFA@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
+To: Christopher Covington <cov@codeaurora.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Alexander Graf <agraf@suse.de>, Amit Shah <amit.shah@redhat.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch.pl warnings in a20.c
-i)  WARNING: please, no spaces at the start of a line
-ii) WARNING: suspect code indent for conditional statements
-iii) ERROR: trailing whitespace
+On 7 May 2013 16:52, Christopher Covington <cov@codeaurora.org> wrote:
+> On 05/07/2013 08:19 AM, Peter Maydell wrote:
+>> Well, at the moment EARLY_PRINTK is hardcoded to
+>> "use some specific UART or equivalent selected at
+>> compile time". So the equivalent presumably would
+>> be to hard-compile "use virtio-console", but then
+>> how does that code know where the virtio-console
+>> is in the address space?
+>
+> arm64 uses a kernel argument.
 
-Signed-off-by: Syed Salman Mansoor <syed.salman.mansoor@gmail.com>
----
- arch/x86/boot/a20.c |   48 ++++++++++++++++++++++++------------------------
- 1 file changed, 24 insertions(+), 24 deletions(-)
+This mixes up "information that the user provides to the
+kernel" (ie configuration) with "information that QEMU or
+kvmtool should provide to the kernel" (ie hardware
+description), and would require QEMU/kvmtool to parse
+the user's commandline tool to figure out if they
+needed to override it or edit it (or alternatively,
+would require the user to know internal details of
+QEMU/kvmtool's address map for the guest). I think it
+would be nicer to keep them separate.
 
-diff --git a/arch/x86/boot/a20.c b/arch/x86/boot/a20.c
-index 64a31a6..4565f4d 100644
---- a/arch/x86/boot/a20.c
-+++ b/arch/x86/boot/a20.c
-@@ -129,37 +129,37 @@ static void enable_a20_fast(void)
- 
- int enable_a20(void)
- {
--       int loops = A20_ENABLE_LOOPS;
--       int kbc_err;
-+	int loops = A20_ENABLE_LOOPS;
-+	int kbc_err;
- 
--       while (loops--) {
--	       /* First, check to see if A20 is already enabled
-+	while (loops--) {
-+		/* First, check to see if A20 is already enabled
- 		  (legacy free, etc.) */
--	       if (a20_test_short())
--		       return 0;
--	       
-+		if (a20_test_short())
-+			return 0;
-+
- 	       /* Next, try the BIOS (INT 0x15, AX=0x2401) */
- 	       enable_a20_bios();
--	       if (a20_test_short())
--		       return 0;
--	       
-+		if (a20_test_short())
-+			return 0;
-+
- 	       /* Try enabling A20 through the keyboard controller */
- 	       kbc_err = empty_8042();
- 
--	       if (a20_test_short())
--		       return 0; /* BIOS worked, but with delayed reaction */
--	
--	       if (!kbc_err) {
--		       enable_a20_kbc();
--		       if (a20_test_long())
--			       return 0;
-+		if (a20_test_short())
-+			return 0; /* BIOS worked, but with delayed reaction */
-+
-+		if (!kbc_err) {
-+			enable_a20_kbc();
-+			if (a20_test_long())
-+				return 0;
- 	       }
--	       
-+
- 	       /* Finally, try enabling the "fast A20 gate" */
--	       enable_a20_fast();
--	       if (a20_test_long())
--		       return 0;
--       }
--       
--       return -1;
-+		enable_a20_fast();
-+		if (a20_test_long())
-+			return 0;
-+	}
-+
-+	return -1;
- }
--- 
-1.7.9.5
-
+thanks
+-- PMM
