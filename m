@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933322Ab3EGN7A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:59:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42455 "EHLO
+	id S933209Ab3EGNlx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:41:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42431 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933185Ab3EGNly (ORCPT
+	with ESMTP id S933185Ab3EGNlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:41:54 -0400
+	Tue, 7 May 2013 09:41:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 081/118] ARM: omap3: cpuidle: enable time keeping
-Date: Tue,  7 May 2013 14:38:47 +0100
-Message-Id: <1367933964-1564-82-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 076/118] NFSv4: Handle NFS4ERR_DELAY and NFS4ERR_GRACE in nfs4_open_delegation_recall
+Date: Tue,  7 May 2013 14:38:42 +0100
+Message-Id: <1367933964-1564-77-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,41 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 0d97558901c446a989de202a5d9ae94ec53644e5 upstream.
+commit 8b6cc4d6f841d31f72fe7478453759166d366274 upstream.
 
-The TIME_VALID flag is specified for the different states but
-the time residency computation is not done, no tk flag, no time
-computation in the idle function.
+A server shouldn't normally return NFS4ERR_GRACE if the client holds a
+delegation, since no conflicting lock reclaims can be granted, however
+the spec does not require the server to grant the open in this
+instance
 
-Set the en_core_tk_irqen flag to activate it.
-
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 [ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-omap2/cpuidle34xx.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/nfs/nfs4proc.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
-index 207bc1c..36f65a8 100644
---- a/arch/arm/mach-omap2/cpuidle34xx.c
-+++ b/arch/arm/mach-omap2/cpuidle34xx.c
-@@ -284,8 +284,9 @@ select_state:
- DEFINE_PER_CPU(struct cpuidle_device, omap3_idle_dev);
- 
- struct cpuidle_driver omap3_idle_driver = {
--	.name = 	"omap3_idle",
--	.owner = 	THIS_MODULE,
-+	.name             = "omap3_idle",
-+	.owner            = THIS_MODULE,
-+	.en_core_tk_irqen = 1,
- 	.states = {
- 		{
- 			.enter		  = omap3_enter_idle,
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index b96aa12..480918e 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1381,6 +1381,12 @@ int nfs4_open_delegation_recall(struct nfs_open_context *ctx, struct nfs4_state
+ 			case -ENOMEM:
+ 				err = 0;
+ 				goto out;
++			case -NFS4ERR_DELAY:
++			case -NFS4ERR_GRACE:
++				set_bit(NFS_DELEGATED_STATE, &state->flags);
++				ssleep(1);
++				err = -EAGAIN;
++				goto out;
+ 		}
+ 		err = nfs4_handle_exception(server, err, &exception);
+ 	} while (exception.retry);
 -- 
 1.8.1.2
 
