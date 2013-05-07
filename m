@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933663Ab3EGNrZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:47:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40533 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933381Ab3EGNrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:47:21 -0400
-Message-ID: <518905E6.5050502@suse.cz>
-Date: Tue, 07 May 2013 15:47:18 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Weng Meiling <wengmeiling.weng@huawei.com>,
-        Libo Chen <clbchenlibo.chen@huawei.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH] menuconfig: fix NULL pointer dereference when searching
- a symbol
-References: <518869BB.2020808@huawei.com> <20130507132159.GA15137@free.fr>
-In-Reply-To: <20130507132159.GA15137@free.fr>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S933642Ab3EGNrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:47:49 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:35085 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933612Ab3EGNqg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 09:46:36 -0400
+From: Michel Lespinasse <walken@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Cc: Alex Shi <alex.shi@intel.com>, Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 12/14] rwsem: do not block readers at head of queue if other readers are active
+Date: Tue,  7 May 2013 06:46:00 -0700
+Message-Id: <1367934362-10433-13-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1367934362-10433-1-git-send-email-walken@google.com>
+References: <1367934362-10433-1-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7.5.2013 15:21, Yann E. MORIN wrote:
-> Li, All,
-> 
-> On Tue, May 07, 2013 at 10:40:59AM +0800, Li Zefan wrote:
->> Searching PPC_EFIKA results segmentation fault, and it's because
->> get_symbol_prop() returns NULL.
->>
->> In this case CONFIG_PPC_EFIKA is defined in arch/powerpc/platforms/
->> 52xx/Kconfig, so it won't be parsed if ARCH!=PPC, but menuconfig
->> knows this symbol when it parses sound/soc/fsl/Kconfig:
->>
->> config SND_MPC52xx_SOC_EFIKA
->>         tristate "SoC AC97 Audio support for bbplan Efika and STAC9766"
->>         depends on PPC_EFIKA
->>
->> This bug was introduced by commit bcdedcc1afd6 ("menuconfig: print more
->> info for symbol without prompts").
->>
->> Reported-by: Borislav Petkov <bp@alien8.de>
->> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> 
-> Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> 
-> Michal, I'll get this in my tree, and will send a pull-request to you
-> later (I may have a few other smallish fixes shortly).
+This change fixes a race condition where a reader might determine it
+needs to block, but by the time it acquires the wait_lock the rwsem
+has active readers and no queued waiters.
 
-It's difficult to apply this to kbuild.git#kconfig, because the bug that
-it is fixing is not there. I will send it to Linus by mail.
+In this situation the reader can run in parallel with the existing active
+readers; it does not need to block until the active readers complete.
 
-Michal
+Thanks to Peter Hurley for noticing this possible race.
+
+Signed-off-by: Michel Lespinasse <walken@google.com>
+Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
+Acked-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+---
+ lib/rwsem.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index bbe48c04f363..61f91ca75e40 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -163,8 +163,14 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
+ 	/* we're now waiting on the lock, but no longer actively locking */
+ 	count = rwsem_atomic_update(adjustment, sem);
+ 
+-	/* If there are no active locks, wake the front queued process(es). */
+-	if (!(count & RWSEM_ACTIVE_MASK))
++	/* If there are no active locks, wake the front queued process(es).
++	 *
++	 * If there are no writers and we are first in the queue,
++	 * wake our own waiter to join the existing active readers !
++	 */
++	if (count == RWSEM_WAITING_BIAS ||
++	    (count > RWSEM_WAITING_BIAS &&
++	     adjustment != -RWSEM_ACTIVE_READ_BIAS))
+ 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_ANY);
+ 
+ 	raw_spin_unlock_irq(&sem->wait_lock);
+-- 
+1.8.2.1
+
