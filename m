@@ -1,42 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759227Ab3EGU34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 16:29:56 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:45808 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757778Ab3EGU3z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 16:29:55 -0400
-Date: Tue, 7 May 2013 22:29:50 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: unable to fetch the watchdog tree
-Message-ID: <20130507202950.GS14155@spo001.leaseweb.com>
-References: <20130507101246.1337bb2362b2f9fc202923fc@canb.auug.org.au>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130507101246.1337bb2362b2f9fc202923fc@canb.auug.org.au>
-User-Agent: Mutt/1.4.1i
+	id S1758755Ab3EGUqw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 16:46:52 -0400
+Received: from mga11.intel.com ([192.55.52.93]:11043 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752849Ab3EGUqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 16:46:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,629,1363158000"; 
+   d="scan'208";a="334078850"
+Subject: [PATCH 3/7] consolidate runtime testing configs
+To: mmarek@suse.cz
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Tue, 07 May 2013 13:46:46 -0700
+References: <20130507204642.D010DDC1@viggo.jf.intel.com>
+In-Reply-To: <20130507204642.D010DDC1@viggo.jf.intel.com>
+Message-Id: <20130507204646.081371C6@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
 
-> Trying to fetch the watchdog tree
-> (git://www.linux-watchdog.org/linux-watchdog-next.git#master)
-> pauses for a long time, and then produces this error:
-> 
-> fatal: read error: Connection reset by peer
-> 
-> I will continue to use what I previously fetched.
+From: Dave Hansen <dave@linux.vnet.ibm.com>
 
-Thanks for pointing it out again. It restarted git-daemon. It should be fixed now.
+These runtime tests are great, except that there are a lot of them,
+and they are very rarely needed.  Give them their own menu so that
+only the folks who need them will have to go looking for them.
 
-Only thing I still need to do is catch up from some overloaded work weeks.
+Note that there are some other runtime tests that are not in here,
+like for RCU or locking.  This menu should only be used for tests
+that do not have a more appropriate home.
 
-Kind regards,
-Wim.
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
 
+ linux.git-davehans/lib/Kconfig.debug |  157 ++++++++++++++++++-----------------
+ 1 file changed, 81 insertions(+), 76 deletions(-)
+
+diff -puN lib/Kconfig.debug~consolidat-runtime-testing-configs lib/Kconfig.debug
+--- linux.git/lib/Kconfig.debug~consolidat-runtime-testing-configs	2013-05-07 13:41:37.658500241 -0700
++++ linux.git-davehans/lib/Kconfig.debug	2013-05-07 13:41:37.661500377 -0700
+@@ -861,15 +861,6 @@ config DEBUG_LIST
+ 
+ 	  If unsure, say N.
+ 
+-config TEST_LIST_SORT
+-	bool "Linked list sorting test"
+-	depends on DEBUG_KERNEL
+-	help
+-	  Enable this to turn on 'list_sort()' function test. This test is
+-	  executed only once during system boot, so affects only boot time.
+-
+-	  If unsure, say N.
+-
+ config DEBUG_SG
+ 	bool "Debug SG table operations"
+ 	depends on DEBUG_KERNEL
+@@ -1082,33 +1073,6 @@ config RCU_TRACE
+ 
+ endmenu # "RCU Debugging"
+ 
+-config KPROBES_SANITY_TEST
+-	bool "Kprobes sanity tests"
+-	depends on DEBUG_KERNEL
+-	depends on KPROBES
+-	default n
+-	help
+-	  This option provides for testing basic kprobes functionality on
+-	  boot. A sample kprobe, jprobe and kretprobe are inserted and
+-	  verified for functionality.
+-
+-	  Say N if you are unsure.
+-
+-config BACKTRACE_SELF_TEST
+-	tristate "Self test for the backtrace code"
+-	depends on DEBUG_KERNEL
+-	default n
+-	help
+-	  This option provides a kernel module that can be used to test
+-	  the kernel stack backtrace code. This option is not useful
+-	  for distributions or general kernels, but only for kernel
+-	  developers working on architecture code.
+-
+-	  Note that if you want to also test saved backtraces, you will
+-	  have to enable STACKTRACE as well.
+-
+-	  Say N if you are unsure.
+-
+ config DEBUG_BLOCK_EXT_DEVT
+         bool "Force extended block device numbers and spread them"
+ 	depends on DEBUG_KERNEL
+@@ -1151,21 +1115,6 @@ config DEBUG_FORCE_WEAK_PER_CPU
+ 	  To ensure that generic code follows the above rules, this
+ 	  option forces all percpu variables to be defined as weak.
+ 
+-config LKDTM
+-	tristate "Linux Kernel Dump Test Tool Module"
+-	depends on DEBUG_FS
+-	depends on BLOCK
+-	default n
+-	help
+-	This module enables testing of the different dumping mechanisms by
+-	inducing system failures at predefined crash points.
+-	If you don't need it: say N
+-	Choose M here to compile this code as a module. The module will be
+-	called lkdtm.
+-
+-	Documentation on how to use the module can be found in
+-	Documentation/fault-injection/provoke-crashes.txt
+-
+ config NOTIFIER_ERROR_INJECTION
+ 	tristate "Notifier error injection"
+ 	depends on DEBUG_KERNEL
+@@ -1341,6 +1290,59 @@ config DEBUG_STRICT_USER_COPY_CHECKS
+ 
+ source kernel/trace/Kconfig
+ 
++menu "Runtime Testing"
++
++config LKDTM
++	tristate "Linux Kernel Dump Test Tool Module"
++	depends on DEBUG_FS
++	depends on BLOCK
++	default n
++	help
++	This module enables testing of the different dumping mechanisms by
++	inducing system failures at predefined crash points.
++	If you don't need it: say N
++	Choose M here to compile this code as a module. The module will be
++	called lkdtm.
++
++	Documentation on how to use the module can be found in
++	Documentation/fault-injection/provoke-crashes.txt
++
++config TEST_LIST_SORT
++	bool "Linked list sorting test"
++	depends on DEBUG_KERNEL
++	help
++	  Enable this to turn on 'list_sort()' function test. This test is
++	  executed only once during system boot, so affects only boot time.
++
++	  If unsure, say N.
++
++config KPROBES_SANITY_TEST
++	bool "Kprobes sanity tests"
++	depends on DEBUG_KERNEL
++	depends on KPROBES
++	default n
++	help
++	  This option provides for testing basic kprobes functionality on
++	  boot. A sample kprobe, jprobe and kretprobe are inserted and
++	  verified for functionality.
++
++	  Say N if you are unsure.
++
++config BACKTRACE_SELF_TEST
++	tristate "Self test for the backtrace code"
++	depends on DEBUG_KERNEL
++	default n
++	help
++	  This option provides a kernel module that can be used to test
++	  the kernel stack backtrace code. This option is not useful
++	  for distributions or general kernels, but only for kernel
++	  developers working on architecture code.
++
++	  Note that if you want to also test saved backtraces, you will
++	  have to enable STACKTRACE as well.
++
++	  Say N if you are unsure.
++
+ config RBTREE_TEST
+ 	tristate "Red-Black tree test"
+ 	depends on m && DEBUG_KERNEL
+@@ -1354,6 +1356,34 @@ config INTERVAL_TREE_TEST
+ 	help
+ 	  A benchmark measuring the performance of the interval tree library
+ 
++config ATOMIC64_SELFTEST
++	bool "Perform an atomic64_t self-test at boot"
++	help
++	  Enable this option to test the atomic64_t functions at boot.
++
++	  If unsure, say N.
++
++config ASYNC_RAID6_TEST
++	tristate "Self test for hardware accelerated raid6 recovery"
++	depends on ASYNC_RAID6_RECOV
++	select ASYNC_MEMCPY
++	---help---
++	  This is a one-shot self test that permutes through the
++	  recovery of all the possible two disk failure scenarios for a
++	  N-disk array.  Recovery is performed with the asynchronous
++	  raid6 recovery routines, and will optionally use an offload
++	  engine if one is available.
++
++	  If unsure, say N.
++
++config TEST_STRING_HELPERS
++	tristate "Test functions located in the string_helpers module at runtime"
++
++config TEST_KSTRTOX
++	tristate "Test kstrto*() family of functions at runtime"
++
++endmenu # runtime tests
++
+ config PROVIDE_OHCI1394_DMA_INIT
+ 	bool "Remote debugging over FireWire early on boot"
+ 	depends on PCI && X86
+@@ -1483,32 +1513,7 @@ config DMA_API_DEBUG
+ 	  This option causes a performance degredation.  Use only if you want
+ 	  to debug device drivers. If unsure, say N.
+ 
+-config ATOMIC64_SELFTEST
+-	bool "Perform an atomic64_t self-test at boot"
+-	help
+-	  Enable this option to test the atomic64_t functions at boot.
+-
+-	  If unsure, say N.
+-
+-config ASYNC_RAID6_TEST
+-	tristate "Self test for hardware accelerated raid6 recovery"
+-	depends on ASYNC_RAID6_RECOV
+-	select ASYNC_MEMCPY
+-	---help---
+-	  This is a one-shot self test that permutes through the
+-	  recovery of all the possible two disk failure scenarios for a
+-	  N-disk array.  Recovery is performed with the asynchronous
+-	  raid6 recovery routines, and will optionally use an offload
+-	  engine if one is available.
+-
+-	  If unsure, say N.
+-
+ source "samples/Kconfig"
+ 
+ source "lib/Kconfig.kgdb"
+ 
+-config TEST_STRING_HELPERS
+-	tristate "Test functions located in the string_helpers module at runtime"
+-
+-config TEST_KSTRTOX
+-	tristate "Test kstrto*() family of functions at runtime"
+_
