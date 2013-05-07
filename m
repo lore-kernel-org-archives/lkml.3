@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab3EGKDi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 06:03:38 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:46247 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab3EGKDh (ORCPT
+	id S1756178Ab3EGKEJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 06:04:09 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:40842
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754719Ab3EGKEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 06:03:37 -0400
-Message-ID: <5188D174.90400@gmail.com>
-Date: Tue, 07 May 2013 12:03:32 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Tue, 7 May 2013 06:04:07 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bh8275dh8275chz2dh2a8h668h839he5bhf0ah107ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14afh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+From: Liu Ying <Ying.Liu@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <davem@davemloft.net>, <dborkman@redhat.com>, <tglx@linutronix.de>,
+        <john.stultz@linaro.org>, <liu.y.victor@gmail.com>,
+        Liu Ying <Ying.Liu@freescale.com>
+Subject: [PATCH v2] ktime: Use macro NSEC_PER_USEC where appropriate
+Date: Tue, 7 May 2013 16:38:40 +0800
+Message-ID: <1367915920-13485-1-git-send-email-Ying.Liu@freescale.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-To: Marek Belisko <marek.belisko@gmail.com>
-CC: mturquette@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, daniel@zonque.org,
-        Marek Belisko <marek.belisko@streamunlimited.com>
-Subject: Re: [PATCH 1/2] clk: si5351: Fix msynth_recalc_rate return value
- when fOUT is 0.
-References: <1367914491-17445-1-git-send-email-marek.belisko@streamunlimited.com>
-In-Reply-To: <1367914491-17445-1-git-send-email-marek.belisko@streamunlimited.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2013 10:14 AM, Marek Belisko wrote:
-> When p3 is eual to 0 then result for fOUT is 0. In that case we should
-> return 0 not parent_rate;
->
-> This issue was causing deadlock in si5351 chip when user set_rate for
-> ms0->clk0 and then set_rate for ms1->clk1 (both ms sourced from plla).
-> After that clk1 was 0 and it wasn't possible to enable it again (try also
-> manually with i2cset commands). Only power cycle helps.
+We've got the macro NSEC_PER_USEC defined in header file
+include/linux/time.h. To make the code decent, this patch
+replaces the immediate number 1000 to convert bewteen a
+time value in microseconds and one in nanoseconds with the
+macro NSEC_PER_USEC.
 
-Marek,
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Daniel Borkmann <dborkman@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+---
+Changes for v2:
+1. Update commit head and message to be more appropriate.
+2. Avoid an unnecessary cast in the function
+   timeval_to_ktime().
+---
+ include/linux/ktime.h |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-does the fix below also affect the behavior above, i.e. not causing
-si5351 to hang?
+diff --git a/include/linux/ktime.h b/include/linux/ktime.h
+index bbca128..608728a 100644
+--- a/include/linux/ktime.h
++++ b/include/linux/ktime.h
+@@ -229,7 +229,8 @@ static inline ktime_t timespec_to_ktime(const struct timespec ts)
+ static inline ktime_t timeval_to_ktime(const struct timeval tv)
+ {
+ 	return (ktime_t) { .tv = { .sec = (s32)tv.tv_sec,
+-				   .nsec = (s32)tv.tv_usec * 1000 } };
++				   .nsec = (s32)(tv.tv_usec *
++						 NSEC_PER_USEC) } };
+ }
+ 
+ /**
+@@ -320,12 +321,12 @@ static inline s64 ktime_us_delta(const ktime_t later, const ktime_t earlier)
+ 
+ static inline ktime_t ktime_add_us(const ktime_t kt, const u64 usec)
+ {
+-	return ktime_add_ns(kt, usec * 1000);
++	return ktime_add_ns(kt, usec * NSEC_PER_USEC);
+ }
+ 
+ static inline ktime_t ktime_sub_us(const ktime_t kt, const u64 usec)
+ {
+-	return ktime_sub_ns(kt, usec * 1000);
++	return ktime_sub_ns(kt, usec * NSEC_PER_USEC);
+ }
+ 
+ extern ktime_t ktime_add_safe(const ktime_t lhs, const ktime_t rhs);
+-- 
+1.7.1
 
-Anyway, your fix looks very sane to me and you get my
-
-Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-
-> Signed-off-by: Marek Belisko<marek.belisko@streamunlimited.com>
-> ---
->   drivers/clk/clk-si5351.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
-> index fc215ce..a8fc0f4 100644
-> --- a/drivers/clk/clk-si5351.c
-> +++ b/drivers/clk/clk-si5351.c
-> @@ -607,7 +607,7 @@ static unsigned long si5351_msynth_recalc_rate(struct clk_hw *hw,
->   		si5351_read_parameters(hwdata->drvdata, reg,&hwdata->params);
->
->   	if (hwdata->params.p3 == 0)
-> -		return parent_rate;
-> +		return 0;
->
->   	/*
->   	 * multisync0-5: fOUT = (128 * P3 * fIN) / (P1*P3 + P2 + 512*P3)
 
