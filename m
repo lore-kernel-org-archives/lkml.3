@@ -1,108 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759537Ab3EGUuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 16:50:09 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:38686 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757187Ab3EGUuI (ORCPT
+	id S1759414Ab3EGUvK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 16:51:10 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56270 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119Ab3EGUvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 16:50:08 -0400
-Message-ID: <518968FD.4030402@hurleysoftware.com>
-Date: Tue, 07 May 2013 16:50:05 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 7 May 2013 16:51:08 -0400
+Message-ID: <51896934.5080803@dawncrow.de>
+Date: Tue, 07 May 2013 22:51:00 +0200
+From: =?ISO-8859-15?Q?Andr=E9_Hentschel?= <nerv@dawncrow.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Wang YanQing <udknight@gmail.com>
-CC: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]TTY: Fix tty can't be restarted by TCXONC ioctl request
-References: <20130507184734.GA2459@udknight>
-In-Reply-To: <20130507184734.GA2459@udknight>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+To: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Jonathan Austin <jonathan.austin@arm.com>
+Subject: [PATCHv3] arm: Preserve the user r/w register TPIDRURW on context
+ switch and fork
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:hFeEEiZytfX8rqb32ai6stNnLt/nYOYUSV2cAnni8/V
+ O9YWizQHQ8DkogJigHK7Qyyx/AwJR6VM2wOUBKMNx8OOg1bgTK
+ 1BXX6pALLXWDI1fUYzY3Lhw9eEq7gdWcoBga76La406juKPFGG
+ zZj3DOdyE2lwd0rFAhxBtBWefGVW/Za8mDPj/wlRaagG2ghYxw
+ Ik9xaUiS93z+CMqIQLcNTuHIbDBTqOCYR4vA3J6+N8tDv2Hsdv
+ T1+gVOYGHvtkBoa76KBZFkR6AGNo/8PaM72EMWezkAq/MeqELd
+ jKfNz9gVsYBCO7mU0MhT4xOOLxjR/sM98WHjmVVkJkwazu6qVA
+ EnO9AjTU0jkalLhv20dc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2013 02:47 PM, Wang YanQing wrote:
-> I meet emacs hang in start if I do the operation below:
->    1: echo 3 > /proc/sys/vm/drop_caches
->    2: emacs BigFile
->    3: Press CTRL-S follow 2 immediately
->
-> Then emacs hang on, CTRL-Q can't resume, the terminal
-> hang on, you can do nothing with this terminal except
-> close it.
->
-> The reason is before emacs takeover control the tty,
-> we use CTRL-S to XOFF it. Then when emacs takeover the
-> control, it may don't use the flow-control, so emacs hang.
-> But after search the emacs's startup codes, I find they use TCXONC
-> to workaround this situation:
->
->    /* This code added to insure that, if flow-control is not to be used,
->       we have an unlocked terminal at the start. */
->    if (!tty_out->flow_control) ioctl (fileno (tty_out->input), TCXONC, 1);
->    ioctl (fileno (tty_out->input), TCXONC, 1);
->
-> But this workaround never work due the kernel's current code.
-> This patch fix it.
->
-> Below is the ChangeLog introduce the tty->flow_stopped flag:
->
-> Thu Nov 21 10:05:22 1996  Theodre Ts'o  <tytso@localhost.mit.edu>
->
->         * tty_ioctl.c (tty_wait_until_sent): Always check the driver
->                 wait_until_ready routine, even if there are no characters
->                 in the xmit buffer.  (There may be charactes in the device
->                 FIFO.)
->                 (n_tty_ioctl): Add new flag tty->flow_stopped which
->                 indicates whether the tty is stopped due to a request by
->                 the TCXONC ioctl (used by tcflow).  If so, don't let an
->                 incoming XOFF character restart the tty.  The tty can only
->                 be restarted by another TCXONC request.
->
-> So I think this patch make TCXONC can restart tty which stopped by
-> STOP_CHAR don't break the original meaning.
->
-> This patch will fix some strange tty relation hang problem,
-> I believe I meet it with vim in ssh, and also see below bug report:
-> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=465823
->
-> Signed-off-by: Wang YanQing <udknight@gmail.com>
-> ---
->   drivers/tty/tty_ioctl.c | 5 +++--
->   1 file changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
-> index e4455e0..42e08e5 100644
-> --- a/drivers/tty/tty_ioctl.c
-> +++ b/drivers/tty/tty_ioctl.c
-> @@ -1129,11 +1129,12 @@ int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
->   		case TCOOFF:
->   			if (!tty->flow_stopped) {
->   				tty->flow_stopped = 1;
-> -				stop_tty(tty);
-> +				if (!tty->stopped)
-> +					stop_tty(tty);
->   			}
->   			break;
->   		case TCOON:
-> -			if (tty->flow_stopped) {
-> +			if (tty->flow_stopped || tty->stopped) {
->   				tty->flow_stopped = 0;
->   				start_tty(tty);
->   			}
+From: =?UTF-8?q?Andr=C3=A9=20Hentschel?= <nerv@dawncrow.de>
 
-This should be fixed in n_tty_set_termios() instead of fixing userspace
-workarounds.
+Since commit 6a1c53124aa1 the user writeable TLS register was zeroed to
+prevent it from being used as a covert channel between two tasks.
 
-The problem occurs when the tty has been stopped with STOP_CHAR(tty) and then
-termios is changed so that START_CHAR(tty) is subsequently ignored
-(in the reported case, I_IXON(tty) is cleared).
+There are more and more applications coming to WinRT, Wine could support them,
+but mostly they expect to have the thread environment block (TEB) in TPIDRURW.
 
-Regards,
-Peter Hurley
+This patch preserves that register per thread instead of clearing it.
+Unlike the TPIDRURO, which is already switched, the TPIDRURW
+can be updated from userspace so needs careful treatment in the case that we
+modify TPIDRURW and call fork(). To avoid this we must always read
+TPIDRURW in copy_thread.
+
+Signed-off-by: André Hentschel <nerv@dawncrow.de>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Jonathan Austin <jonathan.austin@arm.com> 
+
+---
+This patch is against a86d52667d8eda5de39393ce737794403bdce1eb
+
+I could only test it with kernel 3.4.6, beside using Wine for testing i also
+used https://github.com/AndreRH/tpidrurw-test
+
+Why so much Signed-off-bys? Some History:
+The first patch had performance issues pointed out by Russel King,
+so Will Deacon jumped in to help me with that. The second one again
+had performance issues and the missing copy_thread part was uncovered.
+After some iterations by me, Jonathan Austin proposed a patch and
+Russel King sent his idea of the assembler part. All this was finally
+merged and refined into this patch.
+Thanks to everyone!
+
+ arch/arm/include/asm/thread_info.h |    2 +-
+ arch/arm/include/asm/tls.h         |   41 ++++++++++++++++++++++++++++-------------
+ arch/arm/kernel/entry-armv.S       |    4 ++--
+ arch/arm/kernel/process.c          |    4 +++-
+ arch/arm/kernel/ptrace.c           |    2 +-
+ arch/arm/kernel/traps.c            |    4 ++--
+ 6 files changed, 37 insertions(+), 20 deletions(-)
 
 
+
+diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
+index cddda1f..d90be6d 100644
+--- a/arch/arm/include/asm/thread_info.h
++++ b/arch/arm/include/asm/thread_info.h
+@@ -58,7 +58,7 @@ struct thread_info {
+ 	struct cpu_context_save	cpu_context;	/* cpu context */
+ 	__u32			syscall;	/* syscall number */
+ 	__u8			used_cp[16];	/* thread used copro */
+-	unsigned long		tp_value;
++	unsigned long		tp_value[2];	/* TLS registers */
+ #ifdef CONFIG_CRUNCH
+ 	struct crunch_state	crunchstate;
+ #endif
+diff --git a/arch/arm/include/asm/tls.h b/arch/arm/include/asm/tls.h
+index 73409e6..22756ab 100644
+--- a/arch/arm/include/asm/tls.h
++++ b/arch/arm/include/asm/tls.h
+@@ -2,27 +2,30 @@
+ #define __ASMARM_TLS_H
+ 
+ #ifdef __ASSEMBLY__
+-	.macro set_tls_none, tp, tmp1, tmp2
++#include <asm/asm-offsets.h>
++	.macro switch_tls_none, base, tp, tpuser, tmp1, tmp2
+ 	.endm
+ 
+-	.macro set_tls_v6k, tp, tmp1, tmp2
++	.macro switch_tls_v6k, base, tp, tpuser, tmp1, tmp2
++	mrc	p15, 0, \tmp2, c13, c0, 2	@ get the user r/w register
+ 	mcr	p15, 0, \tp, c13, c0, 3		@ set TLS register
+-	mov	\tmp1, #0
+-	mcr	p15, 0, \tmp1, c13, c0, 2	@ clear user r/w TLS register
++	mcr	p15, 0, \tpuser, c13, c0, 2	@ and the user r/w register
++	strne	\tmp2, [\base, #TI_TP_VALUE + 4] @ save it
+ 	.endm
+ 
+-	.macro set_tls_v6, tp, tmp1, tmp2
++	.macro switch_tls_v6, base, tp, tpuser, tmp1, tmp2
+ 	ldr	\tmp1, =elf_hwcap
+ 	ldr	\tmp1, [\tmp1, #0]
+ 	mov	\tmp2, #0xffff0fff
+ 	tst	\tmp1, #HWCAP_TLS		@ hardware TLS available?
+-	mcrne	p15, 0, \tp, c13, c0, 3		@ yes, set TLS register
+-	movne	\tmp1, #0
+-	mcrne	p15, 0, \tmp1, c13, c0, 2	@ clear user r/w TLS register
+ 	streq	\tp, [\tmp2, #-15]		@ set TLS value at 0xffff0ff0
++	mrcne	p15, 0, \tmp2, c13, c0, 2	@ get the user r/w register
++	mcrne	p15, 0, \tp, c13, c0, 3		@ yes, set TLS register
++	mcrne	p15, 0, \tpuser, c13, c0, 2	@ set user r/w register
++	strne	\tmp2, [\base, #TI_TP_VALUE + 4] @ save it
+ 	.endm
+ 
+-	.macro set_tls_software, tp, tmp1, tmp2
++	.macro switch_tls_software, base, tp, tpuser, tmp1, tmp2
+ 	mov	\tmp1, #0xffff0fff
+ 	str	\tp, [\tmp1, #-15]		@ set TLS value at 0xffff0ff0
+ 	.endm
+@@ -31,19 +34,31 @@
+ #ifdef CONFIG_TLS_REG_EMUL
+ #define tls_emu		1
+ #define has_tls_reg		1
+-#define set_tls		set_tls_none
++#define switch_tls	switch_tls_none
+ #elif defined(CONFIG_CPU_V6)
+ #define tls_emu		0
+ #define has_tls_reg		(elf_hwcap & HWCAP_TLS)
+-#define set_tls		set_tls_v6
++#define switch_tls	switch_tls_v6
+ #elif defined(CONFIG_CPU_32v6K)
+ #define tls_emu		0
+ #define has_tls_reg		1
+-#define set_tls		set_tls_v6k
++#define switch_tls	switch_tls_v6k
+ #else
+ #define tls_emu		0
+ #define has_tls_reg		0
+-#define set_tls		set_tls_software
++#define switch_tls	switch_tls_software
+ #endif
+ 
++#ifndef __ASSEMBLY__
++static inline unsigned long get_tlsuser(void)
++{
++	if (has_tls_reg && !tls_emu)
++	{
++		unsigned long t;
++		__asm__("mrc p15, 0, %0, c13, c0, 2" : "=r" (t));
++		return t;
++	}
++	return 0;
++}
++#endif
+ #endif	/* __ASMARM_TLS_H */
+diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+index 0f82098..80f09fe 100644
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -728,15 +728,15 @@ ENTRY(__switch_to)
+  UNWIND(.fnstart	)
+  UNWIND(.cantunwind	)
+ 	add	ip, r1, #TI_CPU_SAVE
+-	ldr	r3, [r2, #TI_TP_VALUE]
+  ARM(	stmia	ip!, {r4 - sl, fp, sp, lr} )	@ Store most regs on stack
+  THUMB(	stmia	ip!, {r4 - sl, fp}	   )	@ Store most regs on stack
+  THUMB(	str	sp, [ip], #4		   )
+  THUMB(	str	lr, [ip], #4		   )
++	ldrd	r4, r5, [r2, #TI_TP_VALUE]
+ #ifdef CONFIG_CPU_USE_DOMAINS
+ 	ldr	r6, [r2, #TI_CPU_DOMAIN]
+ #endif
+-	set_tls	r3, r4, r5
++	switch_tls r1, r4, r5, r3, r7
+ #if defined(CONFIG_CC_STACKPROTECTOR) && !defined(CONFIG_SMP)
+ 	ldr	r7, [r2, #TI_TASK]
+ 	ldr	r8, =__stack_chk_guard
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 047d3e4..24dbc72 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -39,6 +39,7 @@
+ #include <asm/thread_notify.h>
+ #include <asm/stacktrace.h>
+ #include <asm/mach/time.h>
++#include <asm/tls.h>
+ 
+ #ifdef CONFIG_CC_STACKPROTECTOR
+ #include <linux/stackprotector.h>
+@@ -395,7 +396,8 @@ copy_thread(unsigned long clone_flags, unsigned long stack_start,
+ 	clear_ptrace_hw_breakpoint(p);
+ 
+ 	if (clone_flags & CLONE_SETTLS)
+-		thread->tp_value = childregs->ARM_r3;
++		thread->tp_value[0] = childregs->ARM_r3;
++	thread->tp_value[1] = get_tlsuser();
+ 
+ 	thread_notify(THREAD_NOTIFY_COPY, thread);
+ 
+diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
+index 03deeff..2bc1514 100644
+--- a/arch/arm/kernel/ptrace.c
++++ b/arch/arm/kernel/ptrace.c
+@@ -849,7 +849,7 @@ long arch_ptrace(struct task_struct *child, long request,
+ #endif
+ 
+ 		case PTRACE_GET_THREAD_AREA:
+-			ret = put_user(task_thread_info(child)->tp_value,
++			ret = put_user(task_thread_info(child)->tp_value[0],
+ 				       datap);
+ 			break;
+ 
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 1c08911..f9d6259 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -588,7 +588,7 @@ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
+ 		return regs->ARM_r0;
+ 
+ 	case NR(set_tls):
+-		thread->tp_value = regs->ARM_r0;
++		thread->tp_value[0] = regs->ARM_r0;
+ 		if (tls_emu)
+ 			return 0;
+ 		if (has_tls_reg) {
+@@ -706,7 +706,7 @@ static int get_tp_trap(struct pt_regs *regs, unsigned int instr)
+ 	int reg = (instr >> 12) & 15;
+ 	if (reg == 15)
+ 		return 1;
+-	regs->uregs[reg] = current_thread_info()->tp_value;
++	regs->uregs[reg] = current_thread_info()->tp_value[0];
+ 	regs->ARM_pc += 4;
+ 	return 0;
+ }
