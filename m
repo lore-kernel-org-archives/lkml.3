@@ -1,78 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759451Ab3EGUsf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 16:48:35 -0400
-Received: from mga14.intel.com ([143.182.124.37]:12433 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754882Ab3EGUqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 16:46:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,629,1363158000"; 
-   d="scan'208";a="330469299"
-Subject: [PATCH 5/7] group locking debugging options
-To: mmarek@suse.cz
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Tue, 07 May 2013 13:46:49 -0700
-References: <20130507204642.D010DDC1@viggo.jf.intel.com>
-In-Reply-To: <20130507204642.D010DDC1@viggo.jf.intel.com>
-Message-Id: <20130507204649.0188E6DB@viggo.jf.intel.com>
+	id S1759509Ab3EGUsi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 16:48:38 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:48511 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759457Ab3EGUsg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 16:48:36 -0400
+MIME-Version: 1.0
+Date: Tue, 7 May 2013 16:48:34 -0400
+Message-ID: <CAAVq3rmW=EskLWareDKjwf6BNiFuv=RZiQuZ0jRZfcTkX8+9FQ@mail.gmail.com>
+Subject: readahead window size benchmarking
+From: yan cui <ccuiyyan@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear all:
 
-From: Dave Hansen <dave@linux.vnet.ibm.com>
+    I am new to the Linux readahead system. After reading the recent
+kernel code (3.8.8), I find there is an initial window size decided
+based on the read size. And it will increase the window size to a
+maximal value (32 pages) if the detected reading is sequential. To me,
+the window size seems an important parameter to performance. However,
+after testing using some home-made micro-benchmarks, I find that
+performance is not sensible to this parameter. So, I wonder to know
+what benchmarks (or applications) do you use to test the performance
+difference when using different window size? Why not just use the
+fixed window size (e.g., 32 pages)?
 
-There are quite a few of these, and we want to make sure that
-there is one-stop-shopping for lock debugging.
 
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
+Thanks,
+Yan
 
- linux.git-davehans/lib/Kconfig.debug |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
-
-diff -puN lib/Kconfig.debug~order-lock-debugging-options lib/Kconfig.debug
---- linux.git/lib/Kconfig.debug~order-lock-debugging-options	2013-05-07 13:41:38.156522402 -0700
-+++ linux.git-davehans/lib/Kconfig.debug	2013-05-07 13:41:38.160522578 -0700
-@@ -703,6 +703,8 @@ config DEBUG_PREEMPT
- 	  if kernel code uses it in a preemption-unsafe way. Also, the kernel
- 	  will detect preemption count underflows.
- 
-+menu "Lock Debugging (spinlocks, mutexes, etc...)"
-+
- config DEBUG_RT_MUTEXES
- 	bool "RT Mutex debugging, deadlock detection"
- 	depends on DEBUG_KERNEL && RT_MUTEXES
-@@ -832,12 +834,6 @@ config DEBUG_LOCKDEP
- 	  additional runtime checks to debug itself, at the price
- 	  of more runtime overhead.
- 
--config TRACE_IRQFLAGS
--	bool
--	help
--	  Enables hooks to interrupt enabling and disabling for
--	  either tracing or lock debugging.
--
- config DEBUG_ATOMIC_SLEEP
- 	bool "Sleep inside atomic section checking"
- 	select PREEMPT_COUNT
-@@ -859,6 +855,14 @@ config DEBUG_LOCKING_API_SELFTESTS
- 	  The following locking APIs are covered: spinlocks, rwlocks,
- 	  mutexes and rwsems.
- 
-+endmenu # lock debugging
-+
-+config TRACE_IRQFLAGS
-+	bool
-+	help
-+	  Enables hooks to interrupt enabling and disabling for
-+	  either tracing or lock debugging.
-+
- config STACKTRACE
- 	bool
- 	depends on STACKTRACE_SUPPORT
-_
+--
+Think big; Dream impossible; Make it happen.
