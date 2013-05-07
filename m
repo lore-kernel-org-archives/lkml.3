@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758686Ab3EGM3L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 08:29:11 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47201 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757931Ab3EGM3J (ORCPT
+	id S1758772Ab3EGMaS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 08:30:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21746 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758662Ab3EGMaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 08:29:09 -0400
-Date: Tue, 7 May 2013 14:29:07 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
-        linux-pm@vger.kernel.org, netdev@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Ben Chan <benchan@chromium.org>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH v3 04/16] lockdep: check that no locks held at freeze time
-Message-ID: <20130507122906.GC2585@elf.ucw.cz>
-References: <1367884221-20462-1-git-send-email-ccross@android.com>
- <1367884221-20462-5-git-send-email-ccross@android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367884221-20462-5-git-send-email-ccross@android.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 7 May 2013 08:30:16 -0400
+X-Authority-Analysis: v=2.0 cv=GtrACzJC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=slPD7z3sIfwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=3xO3pHl8zQEA:10 a=Z4Rwk6OoAAAA:8 a=LNaclEAlAAAA:8 a=PyRFuKKJ3_q1AHMFSVQA:9 a=QEXdDO2ut3YA:10 a=AUilTyUHL0gA:10 a=iCipCs-3YsAA:10 a=t2YydbHNi0cA:10 a=TEPOqWUp2fEA:10 a=jbrJJM5MRmoA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1367929814.7373.50.camel@gandalf.local.home>
+Subject: Re: [094/126] TTY: fix atime/mtime regression
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Tue, 07 May 2013 08:30:14 -0400
+In-Reply-To: <5188A739.8080309@suse.cz>
+References: <20130507035712.909872333@goodmis.org>
+	 <20130507035856.682670331@goodmis.org> <5188A739.8080309@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2013-05-06 16:50:09, Colin Cross wrote:
-> From: Mandeep Singh Baines <msb@chromium.org>
+On Tue, 2013-05-07 at 09:03 +0200, Jiri Slaby wrote:
+> On 05/07/2013 05:58 AM, Steven Rostedt wrote:
+> > 3.6.11.3 stable review patch.
+> > If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Jiri Slaby <jslaby@suse.cz>
+> > 
+> > [ Upstream commit 37b7f3c76595e23257f61bd80b223de8658617ee ]
 > 
-> We shouldn't try_to_freeze if locks are held.  Holding a lock can cause a
-> deadlock if the lock is later acquired in the suspend or hibernate path
-> (e.g.  by dpm).  Holding a lock can also cause a deadlock in the case of
-> cgroup_freezer if a lock is held inside a frozen cgroup that is later
-> acquired by a process outside that group.
+> Hi, you also want this one:
+> commit b0b885657b6c8ef63a46bc9299b2a7715d19acde
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Wed May 1 07:32:21 2013 -0700
 > 
-> History:
-> This patch was originally applied as 6aa9707099c and reverted in
-> dbf520a9d7d4 because NFS was freezing with locks held.  It was
-> deemed better to keep the bad freeze point in NFS to allow laptops
-> to suspend consistently.  The previous patch in this series converts
-> NFS to call _unsafe versions of the freezable helpers so that
-> lockdep doesn't complain about them until a more correct fix
-> can be applied.
+>     tty: fix up atime/mtime mess, take three
 > 
-> [akpm@linux-foundation.org: export debug_check_no_locks_held]
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> Cc: Ben Chan <benchan@chromium.org>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> [ccross@android.com: don't warn if try_to_freeze_unsafe is called]
-> Signed-off-by: Colin Cross <ccross@android.com>
 
-Acked-by: Pavel Machek <pavel@ucw.cz>
+Heh, thanks. I may add it. I'm usually behind Greg's releases by one.
+I'm sure he's adding this to his 3.9.1 series, and I haven't pulled his
+stuff in. I've based this off of 3.8.11.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I may just leave this out and pull it in on 3.6.11.4 when I use the 3.9
+series.
+
+But thanks for letting me know. I haven't totally decided yet.
+
+-- Steve
+
+
