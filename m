@@ -1,338 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab3EGWCB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 18:02:01 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37516 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750774Ab3EGWB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 18:01:59 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        Len Brown <lenb@kernel.org>, linux-mm@kvack.org, wency@cn.fujitsu.com
-Subject: Re: [PATCH 2/2 v2, RFC] Driver core: Introduce offline/online callbacks for memory blocks
-Date: Wed, 08 May 2013 00:10:21 +0200
-Message-ID: <2150698.7rPOtiF0kp@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1367960629.30363.21.camel@misato.fc.hp.com>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <7132174.AKkXX1jln2@vostro.rjw.lan> <1367960629.30363.21.camel@misato.fc.hp.com>
+	id S1752270Ab3EGWDU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 18:03:20 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:60347 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab3EGWDS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 18:03:18 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CAMeQTsZEpRE_bv6o9mBpqNrbf36SZVscxy+JS72=BOzA1ey-XQ@mail.gmail.com>
+References: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
+ <Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
+ <CAErSpo7NZoOQZyW76HEoOTVgdqL2CgbVScAeF6HGLAVaNCq0=w@mail.gmail.com>
+ <337833384.57445.1361860509194.JavaMail.mail@webmail08> <CAErSpo6CbO5KYXiErv6J_Dnm1u694C5fQPP2_cZL8VKDEnZa9A@mail.gmail.com>
+ <569718148.80620.1361906088301.JavaMail.mail@webmail13> <CAErSpo6UkVhSf+nFW4zwJLBQw_0RQ5H9Bv-UuQRb6zdwsFPw4g@mail.gmail.com>
+ <CAErSpo4X+XXKvWDfqh2CKZAtJ9WMQk91OcsWwdxwYv2MfEM_zQ@mail.gmail.com>
+ <771333906.75854.1367057440028.JavaMail.mail@webmail08> <CAErSpo4B4sRco-nuqgXiYtGQxBcbEB6ArQjHD0A9cj4TRE+qQw@mail.gmail.com>
+ <518097B8.4020402@gmail.com> <CAErSpo7KWPRVEnw+n068pUZz+=WSTwno6m6t7N6dunuhnFC8EA@mail.gmail.com>
+ <384171828.66802.1367942365492.JavaMail.mail@webmail05> <CADLC3L3bdTP8-X3ftMq1qxnL=LVDf7d5gbu2ZMH0pXg2AU8xjw@mail.gmail.com>
+ <CAErSpo50iyEbCer+-K8uXUdnsG_EzFe_ZjKnrtfq5x0Zw3Yd6w@mail.gmail.com> <CAMeQTsZEpRE_bv6o9mBpqNrbf36SZVscxy+JS72=BOzA1ey-XQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 7 May 2013 15:02:57 -0700
+Message-ID: <CAErSpo75SETEe-OKhY2-NW3csaxt=f09JcheHx95bzkCcGO6yg@mail.gmail.com>
+Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
+To: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Cc: Robert Hancock <hancockrwd@gmail.com>,
+        "Artem S. Tashkinov" <t.artem@lycos.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Phillip Susi <psusi@ubuntu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 07, 2013 03:03:49 PM Toshi Kani wrote:
-> On Tue, 2013-05-07 at 14:11 +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, May 07, 2013 12:59:45 PM Vasilis Liaskovitis wrote:
-> 
->  :
-> 
-> > Updated patch is appended for completness.
-> 
-> Yes, this updated patch solved the locking issue.
-> 
-> > > > > A more general issue is that there are now two memory offlining efforts:
-> > > > > 
-> > > > > 1) from acpi_bus_offline_companions during device offline
-> > > > > 2) from mm: remove_memory during device detach (offline_memory_block_cb)
-> > > > > 
-> > > > > The 2nd is only called if the device offline operation was already succesful, so
-> > > > > it seems ineffective or redundant now, at least for x86_64/acpi_memhotplug machine
-> > > > > (unless the blocks were re-onlined in between).
-> > > > 
-> > > > Sure, and that should be OK for now.  Changing the detach behavior is not
-> > > > essential from the patch [2/2] perspective, we can do it later.
-> > > 
-> > > yes, ok.
-> > > 
-> > > > 
-> > > > > On the other hand, the 2nd effort has some more intelligence in offlining, as it
-> > > > > tries to offline twice in the precense of memcg, see commits df3e1b91 or
-> > > > > reworked 0baeab16. Maybe we need to consolidate the logic.
-> > > > 
-> > > > Hmm.  Perhaps it would make sense to implement that logic in
-> > > > memory_subsys_offline(), then?
-> > > 
-> > > the logic tries to offline the memory blocks of the device twice, because the
-> > > first memory block might be storing information for the subsequent memblocks.
-> > > 
-> > > memory_subsys_offline operates on one memory block at a time. Perhaps we can get
-> > > the same effect if we do an acpi_walk of acpi_bus_offline_companions twice in
-> > > acpi_scan_hot_remove but it's probably not a good idea, since that would
-> > > affect non-memory devices as well. 
-> > > 
-> > > I am not sure how important this intelligence is in practice (I am not using
-> > > mem cgroups in my guest kernel tests yet).  Maybe Wen (original author) has
-> > > more details on 2-pass offlining effectiveness.
-> > 
-> > OK
-> > 
-> > It may be added in a separate patch in any case.
-> 
-> I had the same comment as Vasilis.  And, I agree with you that we can
-> enhance it in separate patches.
-> 
->  :
-> 
-> > +static int memory_subsys_offline(struct device *dev)
-> > +{
-> > +	struct memory_block *mem = container_of(dev, struct memory_block, dev);
-> > +	int ret;
-> > +
-> > +	mutex_lock(&mem->state_mutex);
-> > +	ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
-> 
-> This function needs to check mem->state just like
-> offline_memory_block().  That is:
-> 
-> 	int ret = 0;
-> 		:
-> 	if (mem->state != MEM_OFFLINE)
-> 		ret = __memory_block_change_state(...);
-> 
-> Otherwise, memory hot-delete to an off-lined memory fails in
-> __memory_block_change_state() since mem->state is already set to
-> MEM_OFFLINE.
-> 
-> With that change, for the series:
-> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+On Tue, May 7, 2013 at 2:48 PM, Patrik Jakobsson
+<patrik.r.jakobsson@gmail.com> wrote:
+> On Tue, May 7, 2013 at 10:20 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>> I'm not sure if reading /proc/mtrr actually reads the registers out of
+>>> the CPU each time, or whether we just return the cached values we read
+>>> out during initial boot-up. If the latter, then this output isn't
+>>> really useful as there's no guarantee the values are still intact.
+>>
+>> Good point.  From what I can tell, on Artem's system with "CPU0:
+>> Intel(R) Core(TM) i5-2500 CPU @ 3.30GHz," we would be using
+>> generic_mtrr_ops, and generic_get_mtrr() appears to read from the
+>> MSRs, so I think it should be useful.
+>
+> FWIW, that motherboard suffers from a PCI to PCIE bridge problem. It might
+> have been fixed by bios upgrades by now but not sure.
+>
+> It might also suffer (depending on the revision) from the Sandy bridge SATA
+> issue. So if affected, SATA controller is a ticking bomb.
+>
+> I have a P8H67-V motherboard but I haven't seen any suspend related issues.
+>
+> If this is totally unrelated I'm sorry for wasting your time. Just thought it
+> might be good to know.
 
-OK, one more update, then (appended).
+Thanks for chiming in.  I'm not familiar with either of the issues you
+mentioned.  Do you have any references where I could read up on them?
 
-That said I thought that the check against dev->offline in device_offline()
-would be sufficient to guard agaist that.  Is there any "offline" code path
-I didn't take into account?
+Artem's system has a PCIe-to-PCI bridge (not a PCI-to-PCIe bridge) at
+05:00.0, but it leads to [bus 06] and there's nothing on bus 06, so I
+don't think that's the problem.
 
-Rafael
+And the issue affects both USB and a hard drive, so I suspect it's
+more than just SATA.  Artem, did you identify the PCI devices leading
+to your USB and hard drive?  I can't remember if I've actually seen
+that.
 
-
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: Driver core: Introduce offline/online callbacks for memory blocks
-
-Introduce .offline() and .online() callbacks for memory_subsys
-that will allow the generic device_offline() and device_online()
-to be used with device objects representing memory blocks.  That,
-in turn, allows the ACPI subsystem to use device_offline() to put
-removable memory blocks offline, if possible, before removing
-memory modules holding them.
-
-The 'online' sysfs attribute of memory block devices will attempt to
-put them offline if 0 is written to it and will attempt to apply the
-previously used online type when onlining them (i.e. when 1 is
-written to it).
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Tested-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
----
- drivers/base/memory.c  |  111 +++++++++++++++++++++++++++++++++++++------------
- include/linux/memory.h |    1 
- 2 files changed, 87 insertions(+), 25 deletions(-)
-
-Index: linux-pm/drivers/base/memory.c
-===================================================================
---- linux-pm.orig/drivers/base/memory.c
-+++ linux-pm/drivers/base/memory.c
-@@ -37,9 +37,14 @@ static inline int base_memory_block_id(i
- 	return section_nr / sections_per_block;
- }
- 
-+static int memory_subsys_online(struct device *dev);
-+static int memory_subsys_offline(struct device *dev);
-+
- static struct bus_type memory_subsys = {
- 	.name = MEMORY_CLASS_NAME,
- 	.dev_name = MEMORY_CLASS_NAME,
-+	.online = memory_subsys_online,
-+	.offline = memory_subsys_offline,
- };
- 
- static BLOCKING_NOTIFIER_HEAD(memory_chain);
-@@ -278,33 +283,70 @@ static int __memory_block_change_state(s
- {
- 	int ret = 0;
- 
--	if (mem->state != from_state_req) {
--		ret = -EINVAL;
--		goto out;
--	}
-+	if (mem->state != from_state_req)
-+		return -EINVAL;
- 
- 	if (to_state == MEM_OFFLINE)
- 		mem->state = MEM_GOING_OFFLINE;
- 
- 	ret = memory_block_action(mem->start_section_nr, to_state, online_type);
--
- 	if (ret) {
- 		mem->state = from_state_req;
--		goto out;
-+	} else {
-+		mem->state = to_state;
-+		if (to_state == MEM_ONLINE)
-+			mem->last_online = online_type;
- 	}
-+	return ret;
-+}
- 
--	mem->state = to_state;
--	switch (mem->state) {
--	case MEM_OFFLINE:
--		kobject_uevent(&mem->dev.kobj, KOBJ_OFFLINE);
--		break;
--	case MEM_ONLINE:
--		kobject_uevent(&mem->dev.kobj, KOBJ_ONLINE);
--		break;
--	default:
--		break;
-+static int memory_subsys_online(struct device *dev)
-+{
-+	struct memory_block *mem = container_of(dev, struct memory_block, dev);
-+	int ret;
-+
-+	mutex_lock(&mem->state_mutex);
-+
-+	ret = mem->state == MEM_ONLINE ? 0 :
-+		__memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE,
-+					    mem->last_online);
-+
-+	mutex_unlock(&mem->state_mutex);
-+	return ret;
-+}
-+
-+static int memory_subsys_offline(struct device *dev)
-+{
-+	struct memory_block *mem = container_of(dev, struct memory_block, dev);
-+	int ret;
-+
-+	mutex_lock(&mem->state_mutex);
-+
-+	ret = mem->state == MEM_OFFLINE ? 0 :
-+		__memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
-+
-+	mutex_unlock(&mem->state_mutex);
-+	return ret;
-+}
-+
-+static int __memory_block_change_state_uevent(struct memory_block *mem,
-+		unsigned long to_state, unsigned long from_state_req,
-+		int online_type)
-+{
-+	int ret = __memory_block_change_state(mem, to_state, from_state_req,
-+					      online_type);
-+	if (!ret) {
-+		switch (mem->state) {
-+		case MEM_OFFLINE:
-+			kobject_uevent(&mem->dev.kobj, KOBJ_OFFLINE);
-+			break;
-+		case MEM_ONLINE:
-+			kobject_uevent(&mem->dev.kobj, KOBJ_ONLINE);
-+			break;
-+		default:
-+			break;
-+		}
- 	}
--out:
- 	return ret;
- }
- 
-@@ -315,8 +357,8 @@ static int memory_block_change_state(str
- 	int ret;
- 
- 	mutex_lock(&mem->state_mutex);
--	ret = __memory_block_change_state(mem, to_state, from_state_req,
--					  online_type);
-+	ret = __memory_block_change_state_uevent(mem, to_state, from_state_req,
-+						 online_type);
- 	mutex_unlock(&mem->state_mutex);
- 
- 	return ret;
-@@ -326,22 +368,34 @@ store_mem_state(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t count)
- {
- 	struct memory_block *mem;
-+	bool offline;
- 	int ret = -EINVAL;
- 
- 	mem = container_of(dev, struct memory_block, dev);
- 
--	if (!strncmp(buf, "online_kernel", min_t(int, count, 13)))
-+	lock_device_hotplug();
-+
-+	if (!strncmp(buf, "online_kernel", min_t(int, count, 13))) {
-+		offline = false;
- 		ret = memory_block_change_state(mem, MEM_ONLINE,
- 						MEM_OFFLINE, ONLINE_KERNEL);
--	else if (!strncmp(buf, "online_movable", min_t(int, count, 14)))
-+	} else if (!strncmp(buf, "online_movable", min_t(int, count, 14))) {
-+		offline = false;
- 		ret = memory_block_change_state(mem, MEM_ONLINE,
- 						MEM_OFFLINE, ONLINE_MOVABLE);
--	else if (!strncmp(buf, "online", min_t(int, count, 6)))
-+	} else if (!strncmp(buf, "online", min_t(int, count, 6))) {
-+		offline = false;
- 		ret = memory_block_change_state(mem, MEM_ONLINE,
- 						MEM_OFFLINE, ONLINE_KEEP);
--	else if(!strncmp(buf, "offline", min_t(int, count, 7)))
-+	} else if(!strncmp(buf, "offline", min_t(int, count, 7))) {
-+		offline = true;
- 		ret = memory_block_change_state(mem, MEM_OFFLINE,
- 						MEM_ONLINE, -1);
-+	}
-+	if (!ret)
-+		dev->offline = offline;
-+
-+	unlock_device_hotplug();
- 
- 	if (ret)
- 		return ret;
-@@ -563,6 +617,7 @@ static int init_memory_block(struct memo
- 			base_memory_block_id(scn_nr) * sections_per_block;
- 	mem->end_section_nr = mem->start_section_nr + sections_per_block - 1;
- 	mem->state = state;
-+	mem->last_online = ONLINE_KEEP;
- 	mem->section_count++;
- 	mutex_init(&mem->state_mutex);
- 	start_pfn = section_nr_to_pfn(mem->start_section_nr);
-@@ -681,14 +736,20 @@ int unregister_memory_section(struct mem
- 
- /*
-  * offline one memory block. If the memory block has been offlined, do nothing.
-+ *
-+ * Call under device_hotplug_lock.
-  */
- int offline_memory_block(struct memory_block *mem)
- {
- 	int ret = 0;
- 
- 	mutex_lock(&mem->state_mutex);
--	if (mem->state != MEM_OFFLINE)
--		ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
-+	if (mem->state != MEM_OFFLINE) {
-+		ret = __memory_block_change_state_uevent(mem, MEM_OFFLINE,
-+							 MEM_ONLINE, -1);
-+		if (!ret)
-+			mem->dev.offline = true;
-+	}
- 	mutex_unlock(&mem->state_mutex);
- 
- 	return ret;
-Index: linux-pm/include/linux/memory.h
-===================================================================
---- linux-pm.orig/include/linux/memory.h
-+++ linux-pm/include/linux/memory.h
-@@ -26,6 +26,7 @@ struct memory_block {
- 	unsigned long start_section_nr;
- 	unsigned long end_section_nr;
- 	unsigned long state;
-+	int last_online;
- 	int section_count;
- 
- 	/*
+Bjorn
