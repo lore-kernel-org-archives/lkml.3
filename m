@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab3EGEEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:04:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4008 "EHLO
+	id S1757802Ab3EGEGN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:06:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9670 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760346Ab3EGD6y (ORCPT
+	with ESMTP id S1760156Ab3EGD6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 23:58:54 -0400
-X-Authority-Analysis: v=2.0 cv=GtrACzJC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=C85d1Gu8pxIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=jakkqOUl1FMA:10 a=lVtvZNkcAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=Z9hppVypvsQCDiRzgicA:9 a=-ng5EX9Dtv0A:10 a=MSl-tDqOz04A:10 a=0kPLrQdw3YYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 6 May 2013 23:58:52 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=KD9RH4bWTR8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=A_W-nbdQbVoA:10 a=iox4zFpeAAAA:8 a=VwQbUJbxAAAA:8 a=1nSz6Ew-AAAA:8 a=20KFwNOVAAAA:8 a=QyXUC8HyAAAA:8 a=ppDWQa8pdrQpKnv6qjEA:9 a=n9GBPR9yFnkA:10 a=jEp0ucaQiEUA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035847.975861650@goodmis.org>
+Message-Id: <20130507035846.028726759@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:57:54 -0400
+Date: Mon, 06 May 2013 23:57:43 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Eldad Zack <eldad@fogrefinery.com>, Daniel Mack <zonque@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [042/126] ALSA: usb-audio: fix endianness bug in snd_nativeinstruments_*
+Cc: Jan Beulich <jbeulich@suse.com>, Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [031/126] x86: Fix rebuild with EFI_STUB enabled
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0042-ALSA-usb-audio-fix-endianness-bug-in-snd_nativeinstr.patch
+Content-Disposition: inline; filename=0031-x86-Fix-rebuild-with-EFI_STUB-enabled.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,79 +31,65 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eldad Zack <eldad@fogrefinery.com>
+From: Jan Beulich <JBeulich@suse.com>
 
-[ Upstream commit 889d66848b12d891248b03abcb2a42047f8e172a ]
+[ Upstream commit 918708245e92941df16a634dc201b407d12bcd91 ]
 
-The usb_control_msg() function expects __u16 types and performs
-the endianness conversions by itself.
-However, in three places, a conversion is performed before it is
-handed over to usb_control_msg(), which leads to a double conversion
-(= no conversion):
-* snd_usb_nativeinstruments_boot_quirk()
-* snd_nativeinstruments_control_get()
-* snd_nativeinstruments_control_put()
+eboot.o and efi_stub_$(BITS).o didn't get added to "targets", and hence
+their .cmd files don't get included by the build machinery, leading to
+the files always getting rebuilt.
 
-Caught by sparse:
+Rather than adding the two files individually, take the opportunity and
+add $(VMLINUX_OBJS) to "targets" instead, thus allowing the assignment
+at the top of the file to be shrunk quite a bit.
 
-sound/usb/mixer_quirks.c:512:38: warning: incorrect type in argument 6 (different base types)
-sound/usb/mixer_quirks.c:512:38:    expected unsigned short [unsigned] [usertype] index
-sound/usb/mixer_quirks.c:512:38:    got restricted __le16 [usertype] <noident>
-sound/usb/mixer_quirks.c:543:35: warning: incorrect type in argument 5 (different base types)
-sound/usb/mixer_quirks.c:543:35:    expected unsigned short [unsigned] [usertype] value
-sound/usb/mixer_quirks.c:543:35:    got restricted __le16 [usertype] <noident>
-sound/usb/mixer_quirks.c:543:56: warning: incorrect type in argument 6 (different base types)
-sound/usb/mixer_quirks.c:543:56:    expected unsigned short [unsigned] [usertype] index
-sound/usb/mixer_quirks.c:543:56:    got restricted __le16 [usertype] <noident>
-sound/usb/quirks.c:502:35: warning: incorrect type in argument 5 (different base types)
-sound/usb/quirks.c:502:35:    expected unsigned short [unsigned] [usertype] value
-sound/usb/quirks.c:502:35:    got restricted __le16 [usertype] <noident>
+At the same time, remove a pointless flags override line - the variable
+assigned to was misspelled anyway, and the options added are
+meaningless for assembly sources.
 
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
-Acked-by: Daniel Mack <zonque@gmail.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ hpa: the patch is not minimal, but I am taking it for -urgent anyway
+  since the excess impact of the patch seems to be small enough. ]
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/515C5D2502000078000CA6AD@nat28.tlf.novell.com
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- sound/usb/mixer_quirks.c |    4 ++--
- sound/usb/quirks.c       |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/boot/compressed/Makefile |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/sound/usb/mixer_quirks.c b/sound/usb/mixer_quirks.c
-index ae2b714..76e7dda 100644
---- a/sound/usb/mixer_quirks.c
-+++ b/sound/usb/mixer_quirks.c
-@@ -493,7 +493,7 @@ static int snd_nativeinstruments_control_get(struct snd_kcontrol *kcontrol,
- 	else
- 		ret = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), bRequest,
- 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
--				  0, cpu_to_le16(wIndex),
-+				  0, wIndex,
- 				  &tmp, sizeof(tmp), 1000);
- 	up_read(&mixer->chip->shutdown_rwsem);
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 8a84501..5ef205c 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -4,7 +4,7 @@
+ # create a compressed vmlinux image from the original vmlinux
+ #
  
-@@ -524,7 +524,7 @@ static int snd_nativeinstruments_control_put(struct snd_kcontrol *kcontrol,
- 	else
- 		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), bRequest,
- 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
--				  cpu_to_le16(wValue), cpu_to_le16(wIndex),
-+				  wValue, wIndex,
- 				  NULL, 0, 1000);
- 	up_read(&mixer->chip->shutdown_rwsem);
+-targets := vmlinux.lds vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo head_$(BITS).o misc.o string.o cmdline.o early_serial_console.o piggy.o
++targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo
  
-diff --git a/sound/usb/quirks.c b/sound/usb/quirks.c
-index 0f58b4b..213ecad 100644
---- a/sound/usb/quirks.c
-+++ b/sound/usb/quirks.c
-@@ -484,7 +484,7 @@ static int snd_usb_nativeinstruments_boot_quirk(struct usb_device *dev)
- {
- 	int ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
- 				  0xaf, USB_TYPE_VENDOR | USB_RECIP_DEVICE,
--				  cpu_to_le16(1), 0, NULL, 0, 1000);
-+				  1, 0, NULL, 0, 1000);
+ KBUILD_CFLAGS := -m$(BITS) -D__KERNEL__ $(LINUX_INCLUDE) -O2
+ KBUILD_CFLAGS += -fno-strict-aliasing -fPIC
+@@ -29,7 +29,6 @@ VMLINUX_OBJS = $(obj)/vmlinux.lds $(obj)/head_$(BITS).o $(obj)/misc.o \
+ 	$(obj)/piggy.o
  
- 	if (ret < 0)
- 		return ret;
+ $(obj)/eboot.o: KBUILD_CFLAGS += -fshort-wchar -mno-red-zone
+-$(obj)/efi_stub_$(BITS).o: KBUILD_CLFAGS += -fshort-wchar -mno-red-zone
+ 
+ ifeq ($(CONFIG_EFI_STUB), y)
+ 	VMLINUX_OBJS += $(obj)/eboot.o $(obj)/efi_stub_$(BITS).o
+@@ -43,7 +42,7 @@ OBJCOPYFLAGS_vmlinux.bin :=  -R .comment -S
+ $(obj)/vmlinux.bin: vmlinux FORCE
+ 	$(call if_changed,objcopy)
+ 
+-targets += vmlinux.bin.all vmlinux.relocs
++targets += $(patsubst $(obj)/%,%,$(VMLINUX_OBJS)) vmlinux.bin.all vmlinux.relocs
+ 
+ CMD_RELOCS = arch/x86/tools/relocs
+ quiet_cmd_relocs = RELOCS  $@
 -- 
 1.7.10.4
 
