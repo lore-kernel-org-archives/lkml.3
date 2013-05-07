@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932602Ab3EGNku (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:40:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42125 "EHLO
+	id S932671Ab3EGNlG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:41:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42223 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384Ab3EGNkp (ORCPT
+	with ESMTP id S932825Ab3EGNlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:40:45 -0400
+	Tue, 7 May 2013 09:41:02 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 023/118] xen/smp/spinlock: Fix leakage of the spinlock interrupt line for every CPU online/offline
-Date: Tue,  7 May 2013 14:37:49 +0100
-Message-Id: <1367933964-1564-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 037/118] netrom: fix info leak via msg_name in nr_recvmsg()
+Date: Tue,  7 May 2013 14:38:03 +0100
+Message-Id: <1367933964-1564-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -27,74 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 66ff0fe9e7bda8aec99985b24daad03652f7304e upstream.
+commit 3ce5efad47b62c57a4f5c54248347085a750ce0e upstream.
 
-While we don't use the spinlock interrupt line (see for details
-commit f10cd522c5fbfec9ae3cc01967868c9c2401ed23 -
-xen: disable PV spinlocks on HVM) - we should still do the proper
-init / deinit sequence. We did not do that correctly and for the
-CPU init for PVHVM guest we would allocate an interrupt line - but
-failed to deallocate the old interrupt line.
+In case msg_name is set the sockaddr info gets filled out, as
+requested, but the code fails to initialize the padding bytes of
+struct sockaddr_ax25 inserted by the compiler for alignment. Also
+the sax25_ndigis member does not get assigned, leaking four more
+bytes.
 
-This resulted in leakage of an irq_desc but more importantly this splat
-as we online an offlined CPU:
+Both issues lead to the fact that the code will leak uninitialized
+kernel stack bytes in net/socket.c.
 
-genirq: Flags mismatch irq 71. 0002cc20 (spinlock1) vs. 0002cc20 (spinlock1)
-Pid: 2542, comm: init.late Not tainted 3.9.0-rc6upstream #1
-Call Trace:
- [<ffffffff811156de>] __setup_irq+0x23e/0x4a0
- [<ffffffff81194191>] ? kmem_cache_alloc_trace+0x221/0x250
- [<ffffffff811161bb>] request_threaded_irq+0xfb/0x160
- [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
- [<ffffffff813a8423>] bind_ipi_to_irqhandler+0xa3/0x160
- [<ffffffff81303758>] ? kasprintf+0x38/0x40
- [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
- [<ffffffff810cad35>] ? update_max_interval+0x15/0x40
- [<ffffffff816605db>] xen_init_lock_cpu+0x3c/0x78
- [<ffffffff81660029>] xen_hvm_cpu_notify+0x29/0x33
- [<ffffffff81676bdd>] notifier_call_chain+0x4d/0x70
- [<ffffffff810bb2a9>] __raw_notifier_call_chain+0x9/0x10
- [<ffffffff8109402b>] __cpu_notify+0x1b/0x30
- [<ffffffff8166834a>] _cpu_up+0xa0/0x14b
- [<ffffffff816684ce>] cpu_up+0xd9/0xec
- [<ffffffff8165f754>] store_online+0x94/0xd0
- [<ffffffff8141d15b>] dev_attr_store+0x1b/0x20
- [<ffffffff81218f44>] sysfs_write_file+0xf4/0x170
- [<ffffffff811a2864>] vfs_write+0xb4/0x130
- [<ffffffff811a302a>] sys_write+0x5a/0xa0
- [<ffffffff8167ada9>] system_call_fastpath+0x16/0x1b
-cpu 1 spinlock event irq -16
-smpboot: Booting Node 0 Processor 1 APIC 0x2
+Fix both issues by initializing the memory with memset(0).
 
-And if one looks at the /proc/interrupts right after
-offlining (CPU1):
-
-  70:          0          0  xen-percpu-ipi       spinlock0
-  71:          0          0  xen-percpu-ipi       spinlock1
-  77:          0          0  xen-percpu-ipi       spinlock2
-
-There is the oddity of the 'spinlock1' still being present.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/xen/smp.c | 1 +
+ net/netrom/af_netrom.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 150178e..caeff44 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -669,6 +669,7 @@ static void xen_hvm_cpu_die(unsigned int cpu)
- 	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
- 	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
- 	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
-+	xen_uninit_lock_cpu(cpu);
- 	xen_teardown_timer(cpu);
- 	native_cpu_die(cpu);
- }
+diff --git a/net/netrom/af_netrom.c b/net/netrom/af_netrom.c
+index 1b9024e..72cad6c 100644
+--- a/net/netrom/af_netrom.c
++++ b/net/netrom/af_netrom.c
+@@ -1177,6 +1177,7 @@ static int nr_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 	}
+ 
+ 	if (sax != NULL) {
++		memset(sax, 0, sizeof(sax));
+ 		sax->sax25_family = AF_NETROM;
+ 		skb_copy_from_linear_data_offset(skb, 7, sax->sax25_call.ax25_call,
+ 			      AX25_ADDR_LEN);
 -- 
 1.8.1.2
 
