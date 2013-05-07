@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab3EGT3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 15:29:51 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:34030 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173Ab3EGT3t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 15:29:49 -0400
-Date: Tue, 7 May 2013 21:29:38 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Jeff Mahoney <jeffm@suse.com>, netdev@vger.kernel.org
-Subject: Re: [PATCH 15/15] ptp: PTP_1588_CLOCK_PCH depends on x86
-Message-ID: <20130507192938.GA3599@netboy>
-References: <1367936303-13386-1-git-send-email-jslaby@suse.cz>
- <1367936303-13386-15-git-send-email-jslaby@suse.cz>
+	id S1757070Ab3EGTcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 15:32:23 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:39357 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752973Ab3EGTcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 15:32:22 -0400
+Date: Tue, 7 May 2013 12:32:16 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [PATCH] drm: refactor call to request_module
+Message-ID: <20130507193216.GA2214@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1367936303-13386-15-git-send-email-jslaby@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 04:18:23PM +0200, Jiri Slaby wrote:
-> From: Jeff Mahoney <jeffm@suse.com>
-> 
-> The PCH EG20T is only compatible with Intel Atom processors so it
-> should depend on x86.
+This reduces the size of the stack frame when calling request_module().
+Performing the sprintf before the call is not needed.
 
-This patch has been submitted before,
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ drivers/gpu/drm/drm_encoder_slave.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-   https://patchwork.kernel.org/patch/2069071/
+diff --git a/drivers/gpu/drm/drm_encoder_slave.c b/drivers/gpu/drm/drm_encoder_slave.c
+index 48c52f7..0cfb60f 100644
+--- a/drivers/gpu/drm/drm_encoder_slave.c
++++ b/drivers/gpu/drm/drm_encoder_slave.c
+@@ -54,16 +54,12 @@ int drm_i2c_encoder_init(struct drm_device *dev,
+ 			 struct i2c_adapter *adap,
+ 			 const struct i2c_board_info *info)
+ {
+-	char modalias[sizeof(I2C_MODULE_PREFIX)
+-		      + I2C_NAME_SIZE];
+ 	struct module *module = NULL;
+ 	struct i2c_client *client;
+ 	struct drm_i2c_encoder_driver *encoder_drv;
+ 	int err = 0;
+ 
+-	snprintf(modalias, sizeof(modalias),
+-		 "%s%s", I2C_MODULE_PREFIX, info->type);
+-	request_module(modalias);
++	request_module("%s%s", I2C_MODULE_PREFIX, info->type);
+ 
+ 	client = i2c_new_device(adap, info);
+ 	if (!client) {
+-- 
+1.7.9.5
 
-and at that time the reaction was that it is good to have drivers
-cross-compiled, if only for code quality reasons.
 
-Thanks,
-Richard
+-- 
+Kees Cook
+Chrome OS Security
