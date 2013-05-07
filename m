@@ -1,71 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757821Ab3EGVbr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 17:31:47 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58504 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239Ab3EGVbq (ORCPT
+	id S1759726Ab3EGVc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 17:32:56 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:38497 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757572Ab3EGVcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 17:31:46 -0400
-Date: Tue, 7 May 2013 23:31:42 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Feng Tang <feng.tang@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Fwd: [GIT PULL] timer changes for v3.10
-Message-ID: <20130507213142.GA10061@amd.pavel.ucw.cz>
-References: <20130430074322.GA20110@gmail.com>
- <20130506230137.GA16801@amd.pavel.ucw.cz>
- <CA++bM2scosWgBpC3_LzcKYOjG4EQQzN5Vf4rZFds-5qRVRwvDQ@mail.gmail.com>
- <20130507023853.GA2945@feng-snb>
- <20130507065348.GF17705@gmail.com>
- <51892560.7090202@linaro.org>
+	Tue, 7 May 2013 17:32:54 -0400
+Date: Tue, 7 May 2013 15:32:50 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: David Bulkow <David.Bulkow@stratus.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PCI: move down pci_fixup_final for hotplug path
+Message-ID: <20130507213250.GA22773@google.com>
+References: <5AA430FFE4486C448003201AC83BC85E03DEA379@EXHQ.corp.stratus.com>
+ <1366940827-15336-1-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51892560.7090202@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1366940827-15336-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2013-05-07 09:01:36, John Stultz wrote:
-> On 05/06/2013 11:53 PM, Ingo Molnar wrote:
-> >* Feng Tang <feng.tang@intel.com> wrote:
-> >
-> >>>is even worse than that. Machine can stay is s2ram for weeks (for a
-> >>>lot more if it is desktop and you do s2ram for powersaving). Also
-> >>>temperature of CPU varies a lot between active and s2ram states. Is
-> >>>TSC good enough?
-> >>Yes, I think it is relatively precise. Per our test, system time backed
-> >>by the S3 non stop TSC only has 1 second drift after 4 days running
-> >>(with mixed running and S3 states). And before using this feature, we've
-> >>seen many time drift problems due to the RTC HW or system FW with our
-> >>platforms.
-> >Nice result ...
-> >
-> >Is that with NTP running?
-> >
-> >Without NTP, the TSC fast-calibration on bootup is not (expected to be)
-> >nearly as precise as the 1:345600 precision you've measured.
+On Thu, Apr 25, 2013 at 06:47:07PM -0700, Yinghai Lu wrote:
+> David found some resource conflict issue after
+> | PCI: Put pci_dev in device tree as early as possible
+> | commit 4f535093cf8f6da8cfda7c36c2c1ecd2e9586ee4
 > 
-> We also do refined calibration now on the TSC asynchronously over a
-> period of seconds at boot up that gives us much better accuracy then
-> the fast calibration. This helps provide much more consistent
-> boot-to-boot TSC frequencies.
+> and
+> | USB: Fix handoff when BIOS disables host PCI device
+> | commit: cab928ee1f221c9cc48d6615070fefe2e444384a
+> 
+> for usb qirks for hotplug path.
+> 
+> After checking pci_fixup_device() with pci_fixup_final,
+> now we have different path for boot path and hotadd path.
+> 
+> Boot path: because pci_apply_fix_final_quirks is not set yet,
+> 	so pci_fixup_device(pci_fixup_final) will be skipped
+> 	from pci_device_add().
+>         And later pci_apply_final_quirks will be called for all
+> 	pci devices via fs_initcall.
+> 	That is after pci_assign_unassign resource.
+> 	In that case quirk could use bars with problem.
+> 
+> Hotadd path: pci_fixup_device(pci_fixup_final) will be executed
+> 	via pci_device_add(), and that is too early for hotplug
+> 	path, as pci bar for hot add devices is not assigned yet
+> 	after commit 4f535093.
+> 
+> So we need to move down that for hotplug path, call that in
+> pci_bus_add_devices instead, as at that time just before
+> drivers get attached. 
+> And that is simliar calling place for pci_device_add before
+> commit 4f535093 is applied.
+> 
+> We should apply this fix for v3.9, but is too late now.
+> so get it into v3.10 and could get into v3.9 stable instead.
+> 
+> Reported-by: David Bulkow <David.Bulkow@stratus.com>
+> Tested-by: David Bulkow <David.Bulkow@stratus.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-On android (and this is targetted at android, right?) system is going
-to suspend basically as soon as it boots. Will refined calibration
-have enough time to do its job?
+I applied the following slightly tweaked patch to for-linus and will
+ask Linus to pull it for v3.10.  Let me know if it looks OK.
 
-And... reason for all this is that RTC has one second granularity when
-accessed naively. But surely we could poll RTC X times a second,
-getting error down by factor of X?
+Bjorn
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+commit a939563f3fd9cd6226c7fb7135d0b93507c53888
+Author: Bjorn Helgaas <bhelgaas@google.com>
+Date:   Tue May 7 14:35:44 2013 -0600
+
+    PCI: Delay final fixups until resources are assigned
+    
+    Commit 4f535093cf "PCI: Put pci_dev in device tree as early as possible"
+    moved final fixups from pci_bus_add_device() to pci_device_add().  But
+    pci_device_add() happens before resource assignment, so BARs may not be
+    valid yet.
+    
+    Typical flow for hot-add:
+    
+        pciehp_configure_device
+          pci_scan_slot
+            pci_scan_single_device
+              pci_device_add
+                pci_fixup_device(pci_fixup_final, dev)  # previous location
+          # resource assignment happens here
+          pci_bus_add_devices
+            pci_bus_add_device
+              pci_fixup_device(pci_fixup_final, dev)    # new location
+    
+    [bhelgaas: changelog, move fixups to pci_bus_add_device()]
+    Reference: https://lkml.kernel.org/r/20130415182614.GB9224@xanatos
+    Reported-by: David Bulkow <David.Bulkow@stratus.com>
+    Tested-by: David Bulkow <David.Bulkow@stratus.com>
+    Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+    CC: stable@vger.kernel.org	# v3.9+
+
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 748f8f3..32e66a6 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -174,6 +174,7 @@ int pci_bus_add_device(struct pci_dev *dev)
+ 	 * Can not put in pci_device_add yet because resources
+ 	 * are not assigned yet for some devices.
+ 	 */
++	pci_fixup_device(pci_fixup_final, dev);
+ 	pci_create_sysfs_dev_files(dev);
+ 
+ 	dev->match_driver = true;
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 43ece5d..67cd045 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1341,7 +1341,6 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
+ 	list_add_tail(&dev->bus_list, &bus->devices);
+ 	up_write(&pci_bus_sem);
+ 
+-	pci_fixup_device(pci_fixup_final, dev);
+ 	ret = pcibios_add_device(dev);
+ 	WARN_ON(ret < 0);
+ 
