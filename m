@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032Ab3EGXYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 19:24:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24199 "EHLO mx1.redhat.com"
+	id S1757305Ab3EGXYp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 19:24:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50176 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756954Ab3EGXYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 19:24:31 -0400
-Subject: [PATCH 2/8] pci: Add hotplug_slot_ops.reset_slot()
+	id S1757217Ab3EGXYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 19:24:43 -0400
+Subject: [PATCH 4/8] pci: Implement reset_slot for pciehp
 To: bhelgaas@google.com
 From: Alex Williamson <alex.williamson@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Date: Tue, 07 May 2013 17:24:29 -0600
-Message-ID: <20130507232429.24653.21821.stgit@bling.home>
+Date: Tue, 07 May 2013 17:24:41 -0600
+Message-ID: <20130507232441.24653.55615.stgit@bling.home>
 In-Reply-To: <20130507225257.24653.1531.stgit@bling.home>
 References: <20130507225257.24653.1531.stgit@bling.home>
 User-Agent: StGit/0.16
@@ -22,36 +22,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This optional callback allows htoplug controllers to perform slot
-specific resets.  These may be necessary in cases where a normal
-secondary bus reset can interact with controller logic and expose
-spurious hotplugs.
+Disable notification around secondary bus reset.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- include/linux/pci_hotplug.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/pci/hotplug/pciehp.h      |    1 +
+ drivers/pci/hotplug/pciehp_core.c |   12 ++++++++++++
+ drivers/pci/hotplug/pciehp_hpc.c  |   31 +++++++++++++++++++++++++++++++
+ 3 files changed, 44 insertions(+)
 
-diff --git a/include/linux/pci_hotplug.h b/include/linux/pci_hotplug.h
-index 45fc162..0d3a604 100644
---- a/include/linux/pci_hotplug.h
-+++ b/include/linux/pci_hotplug.h
-@@ -63,6 +63,9 @@ enum pcie_link_width {
-  * @get_adapter_status: Called to get see if an adapter is present in the slot or not.
-  *	If this field is NULL, the value passed in the struct hotplug_slot_info
-  *	will be used when this value is requested by a user.
-+ * @reset_slot: Optional interface to allow override of a bus reset for the
-+ *	slot for cases where a secondary bus reset can result in spurious
-+ *	hotplug events or where a slot can be reset independent of the bus.
-  *
-  * The table of function pointers that is passed to the hotplug pci core by a
-  * hotplug pci driver.  These functions are called by the hotplug pci core when
-@@ -80,6 +83,7 @@ struct hotplug_slot_ops {
- 	int (*get_attention_status)	(struct hotplug_slot *slot, u8 *value);
- 	int (*get_latch_status)		(struct hotplug_slot *slot, u8 *value);
- 	int (*get_adapter_status)	(struct hotplug_slot *slot, u8 *value);
-+	int (*reset_slot)		(struct hotplug_slot *slot, int probe);
- };
+diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
+index 2c113de..6c9e674 100644
+--- a/drivers/pci/hotplug/pciehp.h
++++ b/drivers/pci/hotplug/pciehp.h
+@@ -155,6 +155,7 @@ void pciehp_green_led_off(struct slot *slot);
+ void pciehp_green_led_blink(struct slot *slot);
+ int pciehp_check_link_status(struct controller *ctrl);
+ void pciehp_release_ctrl(struct controller *ctrl);
++int pciehp_reset_slot(struct slot *slot, int probe);
+ 
+ static inline const char *slot_name(struct slot *slot)
+ {
+diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
+index 7d72c5e..f4a18f5 100644
+--- a/drivers/pci/hotplug/pciehp_core.c
++++ b/drivers/pci/hotplug/pciehp_core.c
+@@ -69,6 +69,7 @@ static int get_power_status	(struct hotplug_slot *slot, u8 *value);
+ static int get_attention_status	(struct hotplug_slot *slot, u8 *value);
+ static int get_latch_status	(struct hotplug_slot *slot, u8 *value);
+ static int get_adapter_status	(struct hotplug_slot *slot, u8 *value);
++static int reset_slot		(struct hotplug_slot *slot, int probe);
  
  /**
+  * release_slot - free up the memory used by a slot
+@@ -111,6 +112,7 @@ static int init_slot(struct controller *ctrl)
+ 	ops->disable_slot = disable_slot;
+ 	ops->get_power_status = get_power_status;
+ 	ops->get_adapter_status = get_adapter_status;
++	ops->reset_slot = reset_slot;
+ 	if (MRL_SENS(ctrl))
+ 		ops->get_latch_status = get_latch_status;
+ 	if (ATTN_LED(ctrl)) {
+@@ -223,6 +225,16 @@ static int get_adapter_status(struct hotplug_slot *hotplug_slot, u8 *value)
+ 	return pciehp_get_adapter_status(slot, value);
+ }
+ 
++static int reset_slot(struct hotplug_slot *hotplug_slot, int probe)
++{
++	struct slot *slot = hotplug_slot->private;
++
++	ctrl_dbg(slot->ctrl, "%s: physical_slot = %s\n",
++		 __func__, slot_name(slot));
++
++	return pciehp_reset_slot(slot, probe);
++}
++
+ static int pciehp_probe(struct pcie_device *dev)
+ {
+ 	int rc;
+diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
+index 5127f3f..b01ed53 100644
+--- a/drivers/pci/hotplug/pciehp_hpc.c
++++ b/drivers/pci/hotplug/pciehp_hpc.c
+@@ -749,6 +749,37 @@ static void pcie_disable_notification(struct controller *ctrl)
+ 		ctrl_warn(ctrl, "Cannot disable software notification\n");
+ }
+ 
++/*
++ * pciehp has a 1:1 bus:slot relationship so we ultimately want a secondary
++ * bus reset of the bridge, but if the slot supports surprise removal we need
++ * to disable presence detection around the bus reset and clear any spurious
++ * events after.
++ */
++int pciehp_reset_slot(struct slot *slot, int probe)
++{
++	struct controller *ctrl = slot->ctrl;
++
++	if (probe)
++		return 0;
++
++	if (HP_SUPR_RM(ctrl)) {
++		pcie_write_cmd(ctrl, 0, PCI_EXP_SLTCTL_PDCE);
++		if (pciehp_poll_mode)
++			del_timer_sync(&ctrl->poll_timer);
++	}
++
++	pci_reset_bridge_secondary_bus(ctrl->pcie->port);
++
++	if (HP_SUPR_RM(ctrl)) {
++		pciehp_writew(ctrl, PCI_EXP_SLTSTA, PCI_EXP_SLTSTA_PDC);
++		pcie_write_cmd(ctrl, PCI_EXP_SLTCTL_PDCE, PCI_EXP_SLTCTL_PDCE);
++		if (pciehp_poll_mode)
++			int_poll_timeout(ctrl->poll_timer.data);
++	}
++
++	return 0;
++}
++
+ int pcie_init_notification(struct controller *ctrl)
+ {
+ 	if (pciehp_request_irq(ctrl))
 
