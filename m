@@ -1,47 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759484Ab3EGUtd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 16:49:33 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:47814 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756760Ab3EGUtc (ORCPT
+	id S1759537Ab3EGUuJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 16:50:09 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:38686 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757187Ab3EGUuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 16:49:32 -0400
-From: j.glisse@gmail.com
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Jerome Glisse <jglisse@redhat.com>
-Subject: [PATCH 1/3] mm: honor FOLL_GET flag in follow_hugetlb_page
-Date: Tue,  7 May 2013 16:45:54 -0400
-Message-Id: <1367959554-3218-1-git-send-email-j.glisse@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	Tue, 7 May 2013 16:50:08 -0400
+Message-ID: <518968FD.4030402@hurleysoftware.com>
+Date: Tue, 07 May 2013 16:50:05 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Wang YanQing <udknight@gmail.com>
+CC: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]TTY: Fix tty can't be restarted by TCXONC ioctl request
+References: <20130507184734.GA2459@udknight>
+In-Reply-To: <20130507184734.GA2459@udknight>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jerome Glisse <jglisse@redhat.com>
+On 05/07/2013 02:47 PM, Wang YanQing wrote:
+> I meet emacs hang in start if I do the operation below:
+>    1: echo 3 > /proc/sys/vm/drop_caches
+>    2: emacs BigFile
+>    3: Press CTRL-S follow 2 immediately
+>
+> Then emacs hang on, CTRL-Q can't resume, the terminal
+> hang on, you can do nothing with this terminal except
+> close it.
+>
+> The reason is before emacs takeover control the tty,
+> we use CTRL-S to XOFF it. Then when emacs takeover the
+> control, it may don't use the flow-control, so emacs hang.
+> But after search the emacs's startup codes, I find they use TCXONC
+> to workaround this situation:
+>
+>    /* This code added to insure that, if flow-control is not to be used,
+>       we have an unlocked terminal at the start. */
+>    if (!tty_out->flow_control) ioctl (fileno (tty_out->input), TCXONC, 1);
+>    ioctl (fileno (tty_out->input), TCXONC, 1);
+>
+> But this workaround never work due the kernel's current code.
+> This patch fix it.
+>
+> Below is the ChangeLog introduce the tty->flow_stopped flag:
+>
+> Thu Nov 21 10:05:22 1996  Theodre Ts'o  <tytso@localhost.mit.edu>
+>
+>         * tty_ioctl.c (tty_wait_until_sent): Always check the driver
+>                 wait_until_ready routine, even if there are no characters
+>                 in the xmit buffer.  (There may be charactes in the device
+>                 FIFO.)
+>                 (n_tty_ioctl): Add new flag tty->flow_stopped which
+>                 indicates whether the tty is stopped due to a request by
+>                 the TCXONC ioctl (used by tcflow).  If so, don't let an
+>                 incoming XOFF character restart the tty.  The tty can only
+>                 be restarted by another TCXONC request.
+>
+> So I think this patch make TCXONC can restart tty which stopped by
+> STOP_CHAR don't break the original meaning.
+>
+> This patch will fix some strange tty relation hang problem,
+> I believe I meet it with vim in ssh, and also see below bug report:
+> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=465823
+>
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> ---
+>   drivers/tty/tty_ioctl.c | 5 +++--
+>   1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
+> index e4455e0..42e08e5 100644
+> --- a/drivers/tty/tty_ioctl.c
+> +++ b/drivers/tty/tty_ioctl.c
+> @@ -1129,11 +1129,12 @@ int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
+>   		case TCOOFF:
+>   			if (!tty->flow_stopped) {
+>   				tty->flow_stopped = 1;
+> -				stop_tty(tty);
+> +				if (!tty->stopped)
+> +					stop_tty(tty);
+>   			}
+>   			break;
+>   		case TCOON:
+> -			if (tty->flow_stopped) {
+> +			if (tty->flow_stopped || tty->stopped) {
+>   				tty->flow_stopped = 0;
+>   				start_tty(tty);
+>   			}
 
-Do not increase page count if FOLL_GET is not set.
+This should be fixed in n_tty_set_termios() instead of fixing userspace
+workarounds.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
----
- mm/hugetlb.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+The problem occurs when the tty has been stopped with STOP_CHAR(tty) and then
+termios is changed so that START_CHAR(tty) is subsequently ignored
+(in the reported case, I_IXON(tty) is cleared).
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 1a12f5b..5d1e46b 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2991,7 +2991,9 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
- same_page:
- 		if (pages) {
- 			pages[i] = mem_map_offset(page, pfn_offset);
--			get_page(pages[i]);
-+			if (flags & FOLL_GET) {
-+				get_page_foll(pages[i]);
-+			}
- 		}
- 
- 		if (vmas)
--- 
-1.8.2.1
+Regards,
+Peter Hurley
+
 
