@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933677Ab3EGCV2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 22:21:28 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:2879 "EHLO song.cn.fujitsu.com"
+	id S933652Ab3EGCVZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 22:21:25 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59645 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933349Ab3EGCTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933352Ab3EGCTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 May 2013 22:19:35 -0400
 X-IronPort-AV: E=Sophos;i="4.87,625,1363104000"; 
-   d="scan'208";a="7201792"
+   d="scan'208";a="7201794"
 From: Gao feng <gaofeng@cn.fujitsu.com>
 To: viro@zeniv.linux.org.uk, eparis@redhat.com, ebiederm@xmission.com,
         sgrubb@redhat.com, akpm@linux-foundation.org, serge.hallyn@ubuntu.com,
@@ -15,197 +15,68 @@ To: viro@zeniv.linux.org.uk, eparis@redhat.com, ebiederm@xmission.com,
 Cc: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org, linux-audit@redhat.com,
         Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH RFC 46/48] Audit: rename audit_enabled_ns to audit_enabled
-Date: Tue, 7 May 2013 10:21:07 +0800
-Message-Id: <1367893269-9308-47-git-send-email-gaofeng@cn.fujitsu.com>
+Subject: [PATCH RFC 31/48] Audit: pass proper user namespace to audit_filter_syscall
+Date: Tue, 7 May 2013 10:20:52 +0800
+Message-Id: <1367893269-9308-32-git-send-email-gaofeng@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
 References: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/07 10:18:29,
+ 2013/05/07 10:18:28,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/07 10:18:32,
-	Serialize complete at 2013/05/07 10:18:32
+ 2013/05/07 10:18:29,
+	Serialize complete at 2013/05/07 10:18:29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now,all the callers of audit_enabled is user namespace
-awared, we can rename audit_enable_ns to audit_enabled.
+We should use the proper user namespace to filter the syscall.
 
 Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 ---
- drivers/tty/tty_audit.c      | 4 ++--
- include/linux/audit.h        | 6 ++----
- include/net/xfrm.h           | 2 +-
- kernel/audit_watch.c         | 2 +-
- kernel/auditsc.c             | 4 ++--
- net/core/dev.c               | 2 +-
- net/netfilter/x_tables.c     | 2 +-
- net/netfilter/xt_AUDIT.c     | 2 +-
- net/netlabel/netlabel_user.c | 2 +-
- security/apparmor/lib.c      | 2 +-
- 10 files changed, 13 insertions(+), 15 deletions(-)
+ kernel/auditsc.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/tty/tty_audit.c b/drivers/tty/tty_audit.c
-index f2d6811..8bb92bb 100644
---- a/drivers/tty/tty_audit.c
-+++ b/drivers/tty/tty_audit.c
-@@ -99,7 +99,7 @@ static void tty_audit_buf_push(struct task_struct *tsk, kuid_t loginuid,
- {
- 	if (buf->valid == 0)
- 		return;
--	if (audit_enabled_ns(task_cred_xxx(tsk, user_ns)) == 0) {
-+	if (audit_enabled(task_cred_xxx(tsk, user_ns)) == 0) {
- 		buf->valid = 0;
- 		return;
- 	}
-@@ -182,7 +182,7 @@ void tty_audit_tiocsti(struct tty_struct *tty, char ch)
- 		tty_audit_buf_put(buf);
- 	}
- 
--	if (should_audit && audit_enabled_ns(current_user_ns())) {
-+	if (should_audit && audit_enabled(current_user_ns())) {
- 		kuid_t auid;
- 		unsigned int sessionid;
- 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index a46efa3..3f5dbe3 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -446,8 +446,7 @@ extern int audit_filter_type(int type);
- extern int  audit_receive_filter(int type, int pid, int seq,
- 				void *data, size_t datasz, kuid_t loginuid,
- 				u32 sessionid, u32 sid);
--#define audit_enabled (init_user_ns.audit.enabled)
--#define audit_enabled_ns (ns->audit.enabled)
-+#define audit_enabled(ns) (ns->audit.enabled)
- #else /* CONFIG_AUDIT */
- static inline __printf(4, 5)
- void audit_log(struct audit_context *ctx, gfp_t gfp_mask, int type,
-@@ -495,8 +494,7 @@ static inline void audit_set_user_ns(struct user_namespace *ns)
- 
- static inline void audit_free_user_ns(struct user_namespace *ns)
- { }
--#define audit_enabled 0
--#define audit_enabled_ns(ns) 0
-+#define audit_enabled(ns) 0
- #endif /* CONFIG_AUDIT */
- static inline void audit_log_string(struct audit_buffer *ab, const char *buf)
- {
-diff --git a/include/net/xfrm.h b/include/net/xfrm.h
-index bb4d6b2..e625ae9 100644
---- a/include/net/xfrm.h
-+++ b/include/net/xfrm.h
-@@ -685,7 +685,7 @@ static inline struct audit_buffer *xfrm_audit_start(const char *op)
- 	struct audit_buffer *audit_buf = NULL;
- 	struct user_namespace *ns = current_user_ns();
- 
--	if (audit_enabled_ns(ns) == 0)
-+	if (audit_enabled(ns) == 0)
- 		return NULL;
- 	audit_buf = audit_log_start(ns, current->audit_context,
- 				    GFP_ATOMIC, AUDIT_MAC_IPSEC_EVENT);
-diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
-index 4dcc331..f82edc7 100644
---- a/kernel/audit_watch.c
-+++ b/kernel/audit_watch.c
-@@ -240,7 +240,7 @@ static void audit_watch_log_rule_change(struct audit_krule *r,
- {
- 	struct user_namespace *ns = current_user_ns();
- 
--	if (audit_enabled_ns(ns)) {
-+	if (audit_enabled(ns)) {
- 		struct audit_buffer *ab;
- 		ab = audit_log_start(ns, NULL, GFP_NOFS,
- 					AUDIT_CONFIG_CHANGE);
 diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index e579b75..8930158 100644
+index 29c3e05..5401d21 100644
 --- a/kernel/auditsc.c
 +++ b/kernel/auditsc.c
-@@ -1782,7 +1782,7 @@ void __audit_syscall_entry(int arch, int major,
- 
- 	BUG_ON(context->in_syscall || context->name_count);
- 
--	if (!audit_enabled_ns(ns))
-+	if (!audit_enabled(ns))
- 		return;
- 
- 	context->arch	    = arch;
-@@ -2734,7 +2734,7 @@ void audit_core_dumps(long signr)
- 	struct audit_buffer *ab;
- 	struct user_namespace *ns = current_user_ns();
- 
--	if (!audit_enabled_ns(ns))
-+	if (!audit_enabled(ns))
- 		return;
- 
- 	if (signr == SIGQUIT)	/* don't care for those */
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 651ad69..128ee39 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4458,7 +4458,7 @@ static int __dev_set_promiscuity(struct net_device *dev, int inc)
- 		pr_info("device %s %s promiscuous mode\n",
- 			dev->name,
- 			dev->flags & IFF_PROMISC ? "entered" : "left");
--		if (audit_enabled_ns(current_user_ns())) {
-+		if (audit_enabled(current_user_ns())) {
- 			current_uid_gid(&uid, &gid);
- 			audit_log(current->audit_context, GFP_ATOMIC,
- 				AUDIT_ANOM_PROMISCUOUS,
-diff --git a/net/netfilter/x_tables.c b/net/netfilter/x_tables.c
-index 8be219e..9571d7e 100644
---- a/net/netfilter/x_tables.c
-+++ b/net/netfilter/x_tables.c
-@@ -858,7 +858,7 @@ xt_replace_table(struct xt_table *table,
- 	local_bh_enable();
- 
- #ifdef CONFIG_AUDIT
--	if (audit_enabled_ns(ns)) {
-+	if (audit_enabled(ns)) {
- 		struct audit_buffer *ab;
- 
- 		ab = audit_log_start(ns, current->audit_context,
-diff --git a/net/netfilter/xt_AUDIT.c b/net/netfilter/xt_AUDIT.c
-index a0b102a..1079a1ac 100644
---- a/net/netfilter/xt_AUDIT.c
-+++ b/net/netfilter/xt_AUDIT.c
-@@ -126,7 +126,7 @@ audit_tg(struct sk_buff *skb, const struct xt_action_param *par)
- 	struct user_namespace *ns = net->user_ns;
- 	struct audit_buffer *ab;
- 
--	if (audit_enabled_ns(ns) == 0)
-+	if (audit_enabled(ns) == 0)
- 		goto errout;
- 
- 	ab = audit_log_start(ns, NULL, GFP_ATOMIC, AUDIT_NETFILTER_PKT);
-diff --git a/net/netlabel/netlabel_user.c b/net/netlabel/netlabel_user.c
-index e9e4e84..098eaa2 100644
---- a/net/netlabel/netlabel_user.c
-+++ b/net/netlabel/netlabel_user.c
-@@ -102,7 +102,7 @@ struct audit_buffer *netlbl_audit_start_common(int type,
- 	u32 secctx_len;
- 	struct user_namespace *ns = current_user_ns();
- 
--	if (audit_enabled_ns(ns) == 0)
-+	if (audit_enabled(ns) == 0)
- 		return NULL;
- 
- 	audit_buf = audit_log_start(ns, current->audit_context,
-diff --git a/security/apparmor/lib.c b/security/apparmor/lib.c
-index 9cae5ce..3058bb1d 100644
---- a/security/apparmor/lib.c
-+++ b/security/apparmor/lib.c
-@@ -63,7 +63,7 @@ char *aa_split_fqname(char *fqname, char **ns_name)
+@@ -866,14 +866,15 @@ static enum audit_state audit_filter_task(struct task_struct *tsk, char **key)
+  * also not high enough that we already know we have to write an audit
+  * record (i.e., the state is AUDIT_SETUP_CONTEXT or AUDIT_BUILD_CONTEXT).
   */
- void aa_info_message(const char *str)
+-static enum audit_state audit_filter_syscall(struct task_struct *tsk,
++static enum audit_state audit_filter_syscall(struct user_namespace *ns,
++					     struct task_struct *tsk,
+ 					     struct audit_context *ctx,
+ 					     struct list_head *list)
  {
--	if (audit_enabled_ns(current_user_ns())) {
-+	if (audit_enabled(current_user_ns())) {
- 		struct common_audit_data sa;
- 		struct apparmor_audit_data aad = {0,};
- 		sa.type = LSM_AUDIT_DATA_NONE;
+ 	struct audit_entry *e;
+ 	enum audit_state state;
+ 
+-	if (init_user_ns.audit.pid && tsk->tgid == init_user_ns.audit.pid)
++	if (ns->audit.pid && tsk->tgid == ns->audit.pid)
+ 		return AUDIT_DISABLED;
+ 
+ 	rcu_read_lock();
+@@ -976,7 +977,7 @@ static inline struct audit_context *audit_get_context(struct task_struct *tsk,
+ 		context->return_code  = return_code;
+ 
+ 	if (context->in_syscall && !context->dummy) {
+-		audit_filter_syscall(tsk, context,
++		audit_filter_syscall(ns, tsk, context,
+ 				&ns->audit.filter_list[AUDIT_FILTER_EXIT]);
+ 		audit_filter_inodes(tsk, context);
+ 	}
+@@ -1784,7 +1785,7 @@ void __audit_syscall_entry(int arch, int major,
+ 	context->dummy = !audit_n_rules;
+ 	if (!context->dummy && state == AUDIT_BUILD_CONTEXT) {
+ 		context->prio = 0;
+-		state = audit_filter_syscall(tsk, context,
++		state = audit_filter_syscall(ns, tsk, context,
+ 			&ns->audit.filter_list[AUDIT_FILTER_ENTRY]);
+ 	}
+ 	if (state == AUDIT_DISABLED)
 -- 
 1.8.1.4
 
