@@ -1,206 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757070Ab3EGFyr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 01:54:47 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:37779 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475Ab3EGFyp (ORCPT
+	id S1757295Ab3EGF4B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 01:56:01 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:6986 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab3EGFz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 01:54:45 -0400
+	Tue, 7 May 2013 01:55:59 -0400
+Message-ID: <51889744.1090109@huawei.com>
+Date: Tue, 7 May 2013 13:55:16 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1367905910-30913-1-git-send-email-giridhar.m@samsung.com>
-References: <1367905910-30913-1-git-send-email-giridhar.m@samsung.com>
-Date: Tue, 7 May 2013 11:24:43 +0530
-Message-ID: <CAHuqX+HUWcX_sTXKCjSQ9pR1K8obLc+T7vYK_zTn_gqO8ULPVQ@mail.gmail.com>
-Subject: Re: [RFC PATCH V2] ARM: EXYNOS: Fix hotplug when CPUs boot in HYP mode
-From: Giridhar Maruthy <giridhar.maruthy@linaro.org>
-To: kgene.kim@samsung.com, Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvmarm@lists.cs.columbia.edu, Christoffer Dall <cdall@cs.columbia.edu>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Cc: Giridhar Maruthy <giridhar.maruthy@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+CC: <wsa@the-dreams.de>, <uclinux-dist-devel@blackfin.uclinux.org>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH 2/2] i2c: pxa: no need release_mem_region before request_mem_region
+ successful
+References: <5187ABF9.4000903@huawei.com> <51886E12.8070701@cn.fujitsu.com>
+In-Reply-To: <51886E12.8070701@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is a modification from the Christoffer Dall's u-boot
-patch. This is required to put the secondary processors in hyp
-mode during cpu hotplug when u-boot is no longer alive.
+On 2013/5/7 10:59, Gu Zheng wrote:
+> Hi libo,
+> 
+> On 05/06/2013 09:11 PM, Libo Chen wrote:
+> 
+>>
+>> move release_mem_region above kfree(i2c) && below clk_put(i2c->clk)
+>>
+>> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+>> ---
+>>  drivers/i2c/busses/i2c-pxa.c |    5 +++--
+>>  1 files changed, 3 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+>> index ea6d45d..3188cd0 100644
+>> --- a/drivers/i2c/busses/i2c-pxa.c
+>> +++ b/drivers/i2c/busses/i2c-pxa.c
+>> @@ -1129,7 +1129,7 @@ static int i2c_pxa_probe(struct platform_device *dev)
+>>  	i2c->clk = clk_get(&dev->dev, NULL);
+>>  	if (IS_ERR(i2c->clk)) {
+>>  		ret = PTR_ERR(i2c->clk);
+>> -		goto eclk;
+>> +		goto emm;
+> 
+> The new tag 'emm' seems not suitable here, keep the original 'eclk' here, modify the upper 'eclk' tags instead:
+> ...
+> 	ret = i2c_pxa_probe_dt(dev, i2c, &i2c_type);
+> 	if (ret > 0)
+> 		ret = i2c_pxa_probe_pdata(dev, i2c, &i2c_type);
+> 	if (ret < 0)
+> -		goto eclk;
+> +		goto etype;
+> 
+> 	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
+> 	irq = platform_get_irq(dev, 0);
+> 	if (res == NULL || irq < 0) {
+> 		ret = -ENODEV;
+> -		goto eclk;
+> +		goto edev;
 
-Marc Zyngier suggested this logic to go into firmware or, u-boot
-putting a trampoline code into a page /memreserve/d by DT. But
-this seemed to have a problem. Once the cpu is hotplugged in
-runtime, the control is in ROM code and waits for event.
-Kernel provides a return address in kernel to which the processor
-jumps once it gets an event. If the control branches to the
-trampoline code here, this trampoline code has no kernel return
-address.
 
-Someone with better logic or better placement of this logic
-elsewhere is welcome.
+Thanks a lot.  Yes, it is . Original lable name seems not suitable.
+but lable:edev is redundant, useless .
 
-Regards,
-Giridhar
+I concern this patch is usefull for your work? However I will change it later.
 
-On 7 May 2013 11:21,  <giridhar.maruthy@linaro.org> wrote:
-> From: Giridhar Maruthy <giridhar.maruthy@linaro.org>
->
-> In intial boot-up, u-boot commit "3d28a181aab5e... arndale5250: Boot in Hyp
-> mode and enable architected timers" puts the CPUs in HYP mode.
->
-> Hence, the CPUs need to be put in HYP mode when they are hot plugged out and
-> plugged in back.
->
-> This patch is almost same as above u-boot patch, it additionally takes care
-> if the kernel is compiled with thumb-2 option.
->
-> Signed-off-by: Giridhar Maruthy <giridhar.m@samsung.com>
-> Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
-> ---
->  arch/arm/mach-exynos/headsmp.S |  114 ++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 114 insertions(+)
->
-> diff --git a/arch/arm/mach-exynos/headsmp.S b/arch/arm/mach-exynos/headsmp.S
-> index 5364d4b..a837941 100644
-> --- a/arch/arm/mach-exynos/headsmp.S
-> +++ b/arch/arm/mach-exynos/headsmp.S
-> @@ -12,6 +12,7 @@
->   */
->  #include <linux/linkage.h>
->  #include <linux/init.h>
-> +#include <asm/assembler.h>
->
->         __CPUINIT
->
-> @@ -20,6 +21,98 @@
->   * a "holding pen" into which all secondary cores are held until we're
->   * ready for them to initialise.
->   */
-> +
-> +.arch_extension sec
-> +.arch_extension virt
-> +.text
-> +
-> +.align 5
-> +/* We use the same vector table for Hyp and Monitor mode, since
-> + * we will only use each once and they don't overlap.
-> + */
-> +mon_vectors:
-> +       W(b)    .       /* reset */
-> +       W(b)    .       /* undef */
-> +       W(b)    2f      /* smc */
-> +       W(b)    .       /* pabt */
-> +       W(b)    .       /* dabt */
-> +       W(b)    1f      /* hyp */
-> +       W(b)    .       /* irq */
-> +       W(b)    .       /* fiq */
-> +
-> +/* Return directly back to the caller without leaving Hyp mode: */
-> +1:     mrs     lr, elr_hyp
-> +       mov     pc, lr
-> +
-> +/* In monitor mode, set up HVBAR and SCR then return to caller in NS-SVC. */
-> +2:
-> +       mrc     p15, 0, r1, c1, c1, 0           @ SCR
-> +       /*
-> +        * Set SCR.NS=1(needed for setting HVBAR and also returning to NS state)
-> +        *        .IRQ,FIQ,EA=0 (don't take aborts/exceptions to Monitor mode)
-> +        *        .FW,AW=1 (CPSR.A,F modifiable in NS state)
-> +        *        .nET=0 (early termination OK)
-> +        *        .SCD=0 (SMC in NS mode OK, so we can call secure firmware)
-> +        *        .HCE=1 (HVC does Hyp call)
-> +        */
-> +       bic     r1, r1, #0x07f
-> +       ldr     r2, =0x131
-> +       orr     r1, r1, r2
-> +       mcr     p15, 0, r2, c1, c1, 0           @ SCR
-> +       isb
-> +       ldr     r2, =mon_vectors
-> +
-> +
-> +       adr     r4, 1f
-> +       ldmia   r4, {r5}
-> +       sub     r4, r4, r5
-> +       add     r2, r2, r4
-> +
-> +       mcr     p15, 4, r2, c12, c0, 0          @ set HVBAR
-> +
-> + THUMB(        mrc     p15, 4, r2, c1, c0, 0 )         @ ctrl register
-> + THUMB(        orr     r2, r2, #1 << 30 )              @ HSCTLR.TE (Thumb exceptions)
-> + THUMB(        mcr     p15, 4, r2, c1, c0, 0 )
-> + THUMB(        isb)
-> +
-> +       /* ...and return to calling code in NS state */
-> +       movs    pc, lr
-> +
-> +
-> +       .globl monitor_init
-> +monitor_init:
-> +       ldr     ip, =mon_vectors
-> +
-> +       adr     r4, 1f
-> +       ldmia   r4, {r5}
-> +       sub     r4, r4, r5
-> +       add     ip, ip, r4
-> +       mcr     p15, 0, ip, c12, c0, 1
-> +
-> + THUMB(        mrc     p15, 0, r1, c1, c0, 0 )         @ ctrl register
-> + THUMB( orr     r1, r1, #1 << 30 )             @ SCTLR.TE (Thumb exceptions)
-> + THUMB( mcr     p15, 0, r1, c1, c0, 0 )
-> + THUMB( isb )
-> +
-> +       mov     pc, lr
-> +
-> +       /* Try to go into NS-SVC: void enter_ns(void); */
-> +       .globl enter_ns
-> +enter_ns:
-> +       smc     #0
-> +       mov     pc, lr
-> +
-> +       /* void enter_hyp(void); */
-> +       .globl enter_hyp
-> +enter_hyp:
-> +       /* Now we're in NS-SVC, make a Hyp call to get into Hyp mode */
-> +       mov     r0, lr
-> +       mov     r1, sp
-> +       hvc     #0
-> +       /* We will end up here in NS-Hyp. */
-> +       mov     sp, r1
-> +       mov     pc, r0
-> +
->  ENTRY(exynos4_secondary_startup)
->         mrc     p15, 0, r0, c0, c0, 5
->         and     r0, r0, #15
-> @@ -31,6 +124,27 @@ pen:        ldr     r7, [r6]
->         cmp     r7, r0
->         bne     pen
->
-> +       ldr     r1, =__boot_cpu_mode
-> +       add     r1, r1, r4
-> +       ldr     r2, [r1]
-> +       mrs     r0, cpsr
-> +       ands    r0, r0, #MODE_MASK
-> +       subs    r1, r0, r2
-> +       beq     3f
-> +       subs    r2, r2, #HYP_MODE
-> +       bne     3f
-> +
-> +       /* Setting NSACR to allow coprocessor access from non-secure mode */
-> +       mrc     p15, 0, r0, c1, c1, 2
-> +       movw    r1, #0x3fff
-> +       orr     r0, r0, r1
-> +       mcr     p15, 0, r0, c1, c1, 2
-> +5:
-> +       bl      monitor_init
-> +       bl      enter_ns
-> +       bl      enter_hyp
-> +
-> +3:
->         /*
->          * we've been released from the holding pen: secondary_stack
->          * should now contain the SVC stack for this core
-> --
-> 1.7.9.5
->
+Thanks,
+Libo
+
+
+> 	}
+> 
+> 	if (!request_mem_region(res->start, resource_size(res), res->name)) {
+> 		ret = -ENOMEM;
+> -		goto eclk;
+> +		goto emem;
+> 	}
+> ...
+> 
+>>  	}
+>>
+>>  	i2c->reg_base = ioremap(res->start, resource_size(res));
+>> @@ -1206,10 +1206,11 @@ ereqirq:
+>>  	iounmap(i2c->reg_base);
+>>  eremap:
+>>  	clk_put(i2c->clk);
+>> +emm:
+>> +	release_mem_region(res->start, resource_size(res));
+>>  eclk:
+>>  	kfree(i2c);
+> 
+>    eclk:
+> 	release_mem_region(res->start, resource_size(res));
+>    etype:
+>    edev:
+>    emem:
+>   	kfree(i2c);
+> 
+>>  emalloc:
+>> -	release_mem_region(res->start, resource_size(res));
+>>  	return ret;
+>>  }
+>>
+> 
+> Thanks,
+> Gu
+> 
+> 
+> .
+> 
+
+
