@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933642Ab3EGNrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:47:49 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:35085 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933612Ab3EGNqg (ORCPT
+	id S933661Ab3EGNsG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:48:06 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:60482 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933590Ab3EGNqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:46:36 -0400
+	Tue, 7 May 2013 09:46:33 -0400
 From: Michel Lespinasse <walken@google.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         David Howells <dhowells@redhat.com>,
@@ -17,9 +17,9 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
 Cc: Alex Shi <alex.shi@intel.com>, Yuanhan Liu <yuanhan.liu@linux.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 12/14] rwsem: do not block readers at head of queue if other readers are active
-Date: Tue,  7 May 2013 06:46:00 -0700
-Message-Id: <1367934362-10433-13-git-send-email-walken@google.com>
+Subject: [PATCH v3 10/14] rwsem: simplify __rwsem_do_wake
+Date: Tue,  7 May 2013 06:45:58 -0700
+Message-Id: <1367934362-10433-11-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1367934362-10433-1-git-send-email-walken@google.com>
 References: <1367934362-10433-1-git-send-email-walken@google.com>
@@ -27,43 +27,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change fixes a race condition where a reader might determine it
-needs to block, but by the time it acquires the wait_lock the rwsem
-has active readers and no queued waiters.
+This is mostly for cleanup value:
 
-In this situation the reader can run in parallel with the existing active
-readers; it does not need to block until the active readers complete.
+- We don't need several gotos to handle the case where the first
+  waiter is a writer. Two simple tests will do (and generate very
+  similar code).
 
-Thanks to Peter Hurley for noticing this possible race.
+- In the remainder of the function, we know the first waiter is a reader,
+  so we don't have to double check that. We can use do..while loops
+  to iterate over the readers to wake (generates slightly better code).
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
 Acked-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 ---
- lib/rwsem.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ lib/rwsem-spinlock.c | 23 +++++++----------------
+ lib/rwsem.c          | 26 ++++++++++++--------------
+ 2 files changed, 19 insertions(+), 30 deletions(-)
 
+diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
+index 5f117f37ac0a..9be8a9144978 100644
+--- a/lib/rwsem-spinlock.c
++++ b/lib/rwsem-spinlock.c
+@@ -70,26 +70,17 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
+ 
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+ 
+-	if (!wakewrite) {
+-		if (waiter->type == RWSEM_WAITING_FOR_WRITE)
+-			goto out;
+-		goto dont_wake_writers;
+-	}
+-
+-	/*
+-	 * as we support write lock stealing, we can't set sem->activity
+-	 * to -1 here to indicate we get the lock. Instead, we wake it up
+-	 * to let it go get it again.
+-	 */
+ 	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
+-		wake_up_process(waiter->task);
++		if (wakewrite)
++			/* Wake up a writer. Note that we do not grant it the
++			 * lock - it will have to acquire it when it runs. */
++			wake_up_process(waiter->task);
+ 		goto out;
+ 	}
+ 
+ 	/* grant an infinite number of read locks to the front of the queue */
+- dont_wake_writers:
+ 	woken = 0;
+-	while (waiter->type == RWSEM_WAITING_FOR_READ) {
++	do {
+ 		struct list_head *next = waiter->list.next;
+ 
+ 		list_del(&waiter->list);
+@@ -99,10 +90,10 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
+ 		wake_up_process(tsk);
+ 		put_task_struct(tsk);
+ 		woken++;
+-		if (list_empty(&sem->wait_list))
++		if (next == &sem->wait_list)
+ 			break;
+ 		waiter = list_entry(next, struct rwsem_waiter, list);
+-	}
++	} while (waiter->type != RWSEM_WAITING_FOR_WRITE);
+ 
+ 	sem->activity += woken;
+ 
 diff --git a/lib/rwsem.c b/lib/rwsem.c
-index bbe48c04f363..61f91ca75e40 100644
+index 0d50e46d5b0c..9a675fa9d78e 100644
 --- a/lib/rwsem.c
 +++ b/lib/rwsem.c
-@@ -163,8 +163,14 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
- 	/* we're now waiting on the lock, but no longer actively locking */
- 	count = rwsem_atomic_update(adjustment, sem);
+@@ -68,20 +68,17 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 	signed long woken, loop, adjustment;
  
--	/* If there are no active locks, wake the front queued process(es). */
--	if (!(count & RWSEM_ACTIVE_MASK))
-+	/* If there are no active locks, wake the front queued process(es).
-+	 *
-+	 * If there are no writers and we are first in the queue,
-+	 * wake our own waiter to join the existing active readers !
-+	 */
-+	if (count == RWSEM_WAITING_BIAS ||
-+	    (count > RWSEM_WAITING_BIAS &&
-+	     adjustment != -RWSEM_ACTIVE_READ_BIAS))
- 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_ANY);
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+-	if (waiter->type != RWSEM_WAITING_FOR_WRITE)
+-		goto readers_only;
+-
+-	if (wake_type == RWSEM_WAKE_READ_OWNED)
+-		/* Another active reader was observed, so wakeup is not
+-		 * likely to succeed. Save the atomic op.
+-		 */
++	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
++		if (wake_type != RWSEM_WAKE_READ_OWNED)
++			/* Wake writer at the front of the queue, but do not
++			 * grant it the lock yet as we want other writers
++			 * to be able to steal it.  Readers, on the other hand,
++			 * will block as they will notice the queued writer.
++			 */
++			wake_up_process(waiter->task);
+ 		goto out;
++	}
  
- 	raw_spin_unlock_irq(&sem->wait_lock);
+-	/* Wake up the writing waiter and let the task grab the sem: */
+-	wake_up_process(waiter->task);
+-	goto out;
+-
+- readers_only:
+ 	/* If we come here from up_xxxx(), another thread might have reached
+ 	 * rwsem_down_failed_common() before we acquired the spinlock and
+ 	 * woken up a waiter, making it now active.  We prefer to check for
+@@ -125,7 +122,8 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 	rwsem_atomic_add(adjustment, sem);
+ 
+ 	next = sem->wait_list.next;
+-	for (loop = woken; loop > 0; loop--) {
++	loop = woken;
++	do {
+ 		waiter = list_entry(next, struct rwsem_waiter, list);
+ 		next = waiter->list.next;
+ 		tsk = waiter->task;
+@@ -133,7 +131,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 		waiter->task = NULL;
+ 		wake_up_process(tsk);
+ 		put_task_struct(tsk);
+-	}
++	} while (--loop);
+ 
+ 	sem->wait_list.next = next;
+ 	next->prev = &sem->wait_list;
 -- 
 1.8.2.1
 
