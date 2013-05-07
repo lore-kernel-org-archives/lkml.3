@@ -1,116 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab3EGNIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:08:00 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:33178 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758434Ab3EGNH5 (ORCPT
+	id S932183Ab3EGNJZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:09:25 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44001 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757388Ab3EGNJY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:07:57 -0400
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-pm@vger.kernel.org
-Cc: Zhang Rui <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, amit.kachhap@gmail.com,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [RESEND PATCH V3 01/21] thermal: exynos: Moving exynos thermal files into samsung directory
-Date: Tue,  7 May 2013 18:37:42 +0530
-Message-Id: <1367932062-3974-1-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1367931671-3906-2-git-send-email-amit.daniel@samsung.com>
-References: <1367931671-3906-2-git-send-email-amit.daniel@samsung.com>
+	Tue, 7 May 2013 09:09:24 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "broonie@kernel.org" <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] regulator: lp872x: support the device tree feature
+Thread-Topic: [PATCH 2/2] regulator: lp872x: support the device tree feature
+Thread-Index: Ac5LJBMSaoThyIQrS1yCX1iod5tqJA==
+Date: Tue, 7 May 2013 13:09:16 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E5C965@DQHE06.ent.ti.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This movement of files is done for easy maintenance and adding more
-new sensor's support for exynos platform easily . This will also help in
-bifurcating exynos common, sensor driver and sensor data related parts.
+This patch creates the DT structure of the LP8720 and LP8725 device.
+The LP872x platform data is generated when the device tree is configured.
+Even if the platform data is NULL, it is no issue at all because the driver is
+configured with the default mode.
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Change on the DVS initialization:
+  When a DVS GPIO is invalid, use the default mode instead of returning error.
+
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/thermal/Kconfig                        |   13 +++++--------
- drivers/thermal/Makefile                       |    2 +-
- drivers/thermal/samsung/Kconfig                |    9 +++++++++
- drivers/thermal/samsung/Makefile               |    4 ++++
- drivers/thermal/{ => samsung}/exynos_thermal.c |    0
- 5 files changed, 19 insertions(+), 9 deletions(-)
- create mode 100644 drivers/thermal/samsung/Kconfig
- create mode 100644 drivers/thermal/samsung/Makefile
- rename drivers/thermal/{ => samsung}/exynos_thermal.c (100%)
+ .../devicetree/bindings/regulator/lp872x.txt       |  158 ++++++++++++++++++++
+ drivers/regulator/lp872x.c                         |   64 +++++++-
+ 2 files changed, 220 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/lp872x.txt
 
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index 5e3c025..081ddc5 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -114,14 +114,6 @@ config KIRKWOOD_THERMAL
- 	  Support for the Kirkwood thermal sensor driver into the Linux thermal
- 	  framework. Only kirkwood 88F6282 and 88F6283 have this sensor.
- 
--config EXYNOS_THERMAL
--	tristate "Temperature sensor on Samsung EXYNOS"
--	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5)
--	depends on CPU_THERMAL
--	help
--	  If you say yes here you get support for TMU (Thermal Management
--	  Unit) on SAMSUNG EXYNOS series of SoC.
--
- config DOVE_THERMAL
- 	tristate "Temperature sensor on Marvell Dove SoCs"
- 	depends on ARCH_DOVE
-@@ -169,4 +161,9 @@ config INTEL_POWERCLAMP
- 	  enforce idle time which results in more package C-state residency. The
- 	  user interface is exposed via generic thermal framework.
- 
-+menu "Samsung thermal drivers"
-+depends on PLAT_SAMSUNG
-+source "drivers/thermal/samsung/Kconfig"
-+endmenu
+diff --git a/Documentation/devicetree/bindings/regulator/lp872x.txt b/Documentation/devicetree/bindings/regulator/lp872x.txt
+new file mode 100644
+index 0000000..f6f4abc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/lp872x.txt
+@@ -0,0 +1,158 @@
++Binding for TI/National Semiconductor LP872x Driver
 +
- endif
-diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-index c054d41..b3063a9 100644
---- a/drivers/thermal/Makefile
-+++ b/drivers/thermal/Makefile
-@@ -17,7 +17,7 @@ thermal_sys-$(CONFIG_CPU_THERMAL)	+= cpu_cooling.o
- obj-$(CONFIG_SPEAR_THERMAL)	+= spear_thermal.o
- obj-$(CONFIG_RCAR_THERMAL)	+= rcar_thermal.o
- obj-$(CONFIG_KIRKWOOD_THERMAL)  += kirkwood_thermal.o
--obj-$(CONFIG_EXYNOS_THERMAL)	+= exynos_thermal.o
-+obj-y				+= samsung/
- obj-$(CONFIG_DOVE_THERMAL)  	+= dove_thermal.o
- obj-$(CONFIG_DB8500_THERMAL)	+= db8500_thermal.o
- obj-$(CONFIG_ARMADA_THERMAL)	+= armada_thermal.o
-diff --git a/drivers/thermal/samsung/Kconfig b/drivers/thermal/samsung/Kconfig
-new file mode 100644
-index 0000000..2d3d9dc
---- /dev/null
-+++ b/drivers/thermal/samsung/Kconfig
-@@ -0,0 +1,9 @@
-+config EXYNOS_THERMAL
-+	tristate "Temperature sensor on Samsung EXYNOS"
-+	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5)
-+	depends on CPU_THERMAL
-+	help
-+	  If you say yes here you get support for TMU (Thermal Management
-+	  Unit) on SAMSUNG EXYNOS series of SoC. This helps in registering
-+	  the exynos thermal driver with the core thermal layer and cpu
-+	  cooling API's.
-diff --git a/drivers/thermal/samsung/Makefile b/drivers/thermal/samsung/Makefile
-new file mode 100644
-index 0000000..1fe6d93
---- /dev/null
-+++ b/drivers/thermal/samsung/Makefile
-@@ -0,0 +1,4 @@
-+#
-+# Samsung thermal specific Makefile
-+#
-+obj-$(CONFIG_EXYNOS_THERMAL)	+= exynos_thermal.o
-diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/samsung/exynos_thermal.c
-similarity index 100%
-rename from drivers/thermal/exynos_thermal.c
-rename to drivers/thermal/samsung/exynos_thermal.c
++Required properties:
++- compatible: "ti,lp8720" or "ti,lp8725"
++- reg: I2C slave address
++
++Optional properties:
++- general-config: the value of LP872X_GENERAL_CFG register (u8)
++- update-config: define it when LP872X_GENERAL_CFG register should be updated
++- dvs-gpio: GPIO number for DVS control
++- dvs-vsel: DVS selector. 0 = SEL_V1, 1 = SEL_V2.
++- dvs-state: initial DVS pin state. 0 = DVS_LOG, 1 = DVS_HIGH.
++
++Child node
++- regulator-id: the value of enum lp872x_regulator_id. (u8)
++- regulator_init_data: please see the regulator device tree document.
++  (Documentation/devicetree/bindings/regulator/regulator.txt)
++
++Example 1) LP8720
++
++lp8720@7d {
++	compatible = "ti,lp8720";
++	reg = <0x7d>;
++
++	/* DVS pin, timestep = 25usec */
++	general-config = /bits/ 8 <0x03>;
++	update-config;
++
++	dvs-gpio = <&gpio5 6 0>;		/* GPIO 134 */
++	dvs-vsel = /bits/ 8 <1>;		/* SEL_V2 */
++	dvs-state = /bits/ 8 <1>;		/* DVS_HIGH */
++
++	vaf {
++		regulator-id = /bits/ 8 <0>;	/* LP8720_ID_LDO1 */
++		regulator-min-microvolt = <1200000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-boot-on;
++	};
++
++	vmmc {
++		regulator-id = /bits/ 8 <1>;	/* LP8720_ID_LDO2 */
++		regulator-min-microvolt = <1200000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-boot-on;
++	};
++
++	vcam_io {
++		regulator-id = /bits/ 8 <2>;	/* LP8720_ID_LDO3 */
++		regulator-min-microvolt = <1200000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-boot-on;
++	};
++
++	vcam_core {
++		regulator-id = /bits/ 8 <3>;	/* LP8720_ID_LDO4 */
++		regulator-min-microvolt = <800000>;
++		regulator-max-microvolt = <2850000>;
++		regulator-boot-on;
++	};
++
++	vcam {
++		regulator-id = /bits/ 8 <4>;	/* LP8720_ID_LDO5 */
++		regulator-min-microvolt = <1200000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-boot-on;
++	};
++
++	vcc {
++		regulator-id = /bits/ 8 <5>;	/* LP8720_ID_BUCK */
++		regulator-name = "VBUCK";
++		regulator-min-microvolt = <800000>;
++		regulator-max-microvolt = <2300000>;
++		regulator-mode-fast;
++		regulator-mode-normal;
++	};
++};
++
++Example 2) LP8725
++
++lp8725@7a {
++	compatible = "ti,lp8725";
++	reg = <0x7a>;
++
++	/* Enable BUCK1,2, no DVS, timestep = 256usec */
++	general-config = /bits/ 8 <0xdd>;
++	update-config;
++
++	vcam_io {
++		regulator-id = /bits/ 8 <6>;	/* LP8725_ID_LDO1 */
++		regulator-min-microvolt = <1200000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-boot-on;
++	};
++
++	vcam_core {
++		regulator-id = /bits/ 8 <7>;	/* LP8725_ID_LDO2 */
++		regulator-min-microvolt = <1200000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-boot-on;
++	};
++
++	vcam {
++		regulator-id = /bits/ 8 <8>;	/* LP8725_ID_LDO3 */
++		regulator-min-microvolt = <1200000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-boot-on;
++	};
++
++	vcmmb_io {
++		regulator-id = /bits/ 8 <9>;	/* LP8725_ID_LDO4 */
++		regulator-min-microvolt = <1200000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-boot-on;
++	};
++
++	vcmmb_core {
++		regulator-id = /bits/ 8 <10>;	/* LP8725_ID_LDO5 */
++		regulator-min-microvolt = <1200000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-boot-on;
++	};
++
++	vaux1 {
++		regulator-id = /bits/ 8 <11>;	/* LP8725_ID_LILO1 */
++		regulator-name = "VAUX1";
++		regulator-min-microvolt = <800000>;
++		regulator-max-microvolt = <3300000>;
++	};
++
++	vaux2 {
++		regulator-id = /bits/ 8 <12>;	/* LP8725_ID_LILO2 */
++		regulator-name = "VAUX2";
++		regulator-min-microvolt = <800000>;
++		regulator-max-microvolt = <3300000>;
++	};
++
++	vcc1 {
++		regulator-id = /bits/ 8 <13>;	/* LP8725_ID_BUCK1 */
++		regulator-name = "VBUCK1";
++		regulator-min-microvolt = <800000>;
++		regulator-max-microvolt = <3000000>;
++		regulator-min-microamp  = <460000>;
++		regulator-max-microamp  = <1370000>;
++		regulator-mode-fast;
++		regulator-mode-normal;
++	};
++
++	vcc2 {
++		regulator-id = /bits/ 8 <14>;	/* LP8725_ID_BUCK2 */
++		regulator-name = "VBUCK2";
++		regulator-min-microvolt = <800000>;
++		regulator-max-microvolt = <3000000>;
++		regulator-min-microamp  = <460000>;
++		regulator-max-microamp  = <1370000>;
++		regulator-mode-fast;
++		regulator-mode-normal;
++	};
++};
+diff --git a/drivers/regulator/lp872x.c b/drivers/regulator/lp872x.c
+index f5fc4a1..f990bcf 100644
+--- a/drivers/regulator/lp872x.c
++++ b/drivers/regulator/lp872x.c
+@@ -18,6 +18,9 @@
+ #include <linux/regulator/lp872x.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/platform_device.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/regulator/of_regulator.h>
+ 
+ /* Registers : LP8720/8725 shared */
+ #define LP872X_GENERAL_CFG		0x00
+@@ -723,8 +726,8 @@ static int lp872x_init_dvs(struct lp872x *lp)
+ 
+ 	gpio = dvs->gpio;
+ 	if (!gpio_is_valid(gpio)) {
+-		dev_err(lp->dev, "invalid gpio: %d\n", gpio);
+-		return -EINVAL;
++		dev_warn(lp->dev, "invalid gpio: %d\n", gpio);
++		goto set_default_dvs_mode;
+ 	}
+ 
+ 	pinstate = dvs->init_state;
+@@ -829,6 +832,52 @@ static const struct regmap_config lp872x_regmap_config = {
+ 	.max_register = MAX_REGISTERS,
+ };
+ 
++#ifdef CONFIG_OF
++static struct lp872x_platform_data *lp872x_populate_dt(struct device *dev)
++{
++	struct device_node *np = dev->of_node;
++	struct lp872x_platform_data *pdata;
++	struct device_node *child;
++	u8 dvs_state;
++	int i = 0;
++
++	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		goto out;
++
++	of_property_read_u8(np, "general-config", &pdata->general_config);
++	if (of_find_property(np, "update-config", NULL))
++		pdata->update_config = true;
++
++	pdata->dvs = devm_kzalloc(dev, sizeof(struct lp872x_dvs), GFP_KERNEL);
++	if (!pdata->dvs)
++		goto out;
++
++	pdata->dvs->gpio = of_get_named_gpio(np, "dvs-gpio", 0);
++	of_property_read_u8(np, "dvs-vsel", (u8 *)&pdata->dvs->vsel);
++	of_property_read_u8(np, "dvs-state", &dvs_state);
++	pdata->dvs->init_state = dvs_state ? DVS_HIGH : DVS_LOW;
++
++	if (of_get_child_count(np) == 0)
++		goto out;
++
++	for_each_child_of_node(np, child) {
++		of_property_read_u8(child, "regulator-id",
++				(u8 *)&pdata->regulator_data[i].id);
++		pdata->regulator_data[i].init_data =
++				of_get_regulator_init_data(dev, child);
++		i++;
++	}
++out:
++	return pdata;
++}
++#else
++static struct lp872x_platform_data *lp872x_populate_dt(struct device *dev)
++{
++	return NULL;
++}
++#endif
++
+ static int lp872x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+ {
+ 	struct lp872x *lp;
+@@ -838,6 +887,9 @@ static int lp872x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+ 		[LP8725] = LP8725_NUM_REGULATORS,
+ 	};
+ 
++	if (cl->dev.of_node)
++		cl->dev.platform_data = lp872x_populate_dt(&cl->dev);
++
+ 	lp = devm_kzalloc(&cl->dev, sizeof(struct lp872x), GFP_KERNEL);
+ 	if (!lp)
+ 		goto err_mem;
+@@ -882,6 +934,13 @@ static int lp872x_remove(struct i2c_client *cl)
+ 	return 0;
+ }
+ 
++static const struct of_device_id lp872x_dt_ids[] = {
++	{ .compatible = "ti,lp8720", },
++	{ .compatible = "ti,lp8725", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, lp872x_dt_ids);
++
+ static const struct i2c_device_id lp872x_ids[] = {
+ 	{"lp8720", LP8720},
+ 	{"lp8725", LP8725},
+@@ -893,6 +952,7 @@ static struct i2c_driver lp872x_driver = {
+ 	.driver = {
+ 		.name = "lp872x",
+ 		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(lp872x_dt_ids),
+ 	},
+ 	.probe = lp872x_probe,
+ 	.remove = lp872x_remove,
 -- 
-1.7.1
+1.7.9.5
+
+
+Best Regards,
+Milo
+
 
