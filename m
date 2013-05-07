@@ -1,310 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab3EGAnO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 20:43:14 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:50201 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977Ab3EGAnM (ORCPT
+	id S1758285Ab3EGAt4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 20:49:56 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:56462 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755599Ab3EGAty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 20:43:12 -0400
-X-AuditID: cbfee691-b7fe56d000004b96-68-51884e1eaf5a
-From: "myungjoo.ham" <myungjoo.ham@samsung.com>
-To: "'Kishon Vijay Abraham I'" <kishon@ti.com>, cw00.choi@samsung.com,
-        balbi@ti.com, ldewangan@nvidia.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
-        gg@slimlogic.co.uk, ruchika@ti.com, tony@atomide.com,
-        sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com
-References: <1362662506-14823-4-git-send-email-kishon@ti.com>
- <1367846225-15685-1-git-send-email-kishon@ti.com>
-In-reply-to: <1367846225-15685-1-git-send-email-kishon@ti.com>
-Subject: RE: [PATCH v4] extcon: Palmas Extcon Driver
-Date: Tue, 07 May 2013 09:43:10 +0900
-Message-id: <005c01ce4abb$d956fea0$8c04fbe0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQFNk8EEfLkZOISNIoZ4wWkIx2HqpQIZv2ommemCIDA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNKsWRmVeSWpSXmKPExsWyRsSkRFfOryPQYHqfmsXB+/UW/2afYrO4
-	/uU5q8WB2Q9ZLfq3uFgc+LOD0eLC0x42i6X7VrNYLGxbwmJxedccNovDKw4wWax7OZ3F4u3C
-	2ywWp7tZLfZf8XLg9/j2dRKLx4LPV9g9Xq2eyepx59oeNo95JwM9zs9YyOjR2/yOzePlxN9s
-	Hn1bVjF6TJ3yl9Hj+I3tTB6fN8kF8ERx2aSk5mSWpRbp2yVwZey//4a94Jtpxbxbp1gbGB9q
-	dzFyckgImEhMXfeDDcIWk7hwbz2QzcUhJLCUUeLbhV5WmKJ/3WsZIRKLGCUO7LvJDOH8ZpSY
-	+mUVC0gVm4C+xJ5rv8CqRAROMkp86nsFNotZYDejxKyOq0wgVUIChRJdq3awg9icAnYSL590
-	gu0QBtrR+60JbBKLgKrEv/n7weK8ApYSNx5tZ4OwBSV+TL4HVsMsoCWxfudxJghbXmLzmrfM
-	ELcqSOw4+5oRxBYRsJI4+xViF7OAiMS+F+/ArpMQuMEh0bjiAjPEMgGJb5MPAQ3lAErISmw6
-	ADVHUuLgihssE4BOR7J6FpLVs5CsnoVkxQJGllWMoqkFyQXFSelFpnrFibnFpXnpesn5uZsY
-	gQnl9L9nE3cw3j9gfYgxGWj9RGYp0eR8YELKK4k3NDYzsjA1MTU2Mrc0I01YSZxXvcU6UEgg
-	PbEkNTs1tSC1KL6oNCe1+BAjEwenVAPjLo2Lf0VXXgnNUDjzde6B8mf87CV3LWs553V8cnha
-	LHS9r/7ume3py9rU/G7ZHo9I9m0V7p8pq8M3QcXT4oi2zKXPr60mTnk3eVla3MOznpu693pe
-	kbGpuLPyfu1nk8p75jddroh45P54v+S0WUlKf9EFV+OXFe83uk3i8JDkTSpufW+0abebEktx
-	RqKhFnNRcSIA7sq6vT4DAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgk+LIzCtJLcpLzFFi42I5/e+xgK6cX0egwfZT0hYH79db/Jt9is3i
-	+pfnrBYHZj9ktejf4mJx4M8ORosLT3vYLJbuW81isbBtCYvF5V1z2CwOrzjAZLHu5XQWi7cL
-	b7NYnO5mtdh/xcuB3+Pb10ksHgs+X2H3eLV6JqvHnWt72DzmnQz0OD9jIaNHb/M7No+XE3+z
-	efRtWcXoMXXKX0aP4ze2M3l83iQXwBPVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhr
-	aGlhrqSQl5ibaqvk4hOg65aZA/SNkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMD
-	NJCwhjFj//037AXfTCvm3TrF2sD4ULuLkZNDQsBE4l/3WkYIW0ziwr31bF2MXBxCAosYJQ7s
-	u8kM4fxmlJj6ZRULSBWbgL7Enmu/GEESIgInGSU+9b0Ca2EW2M0oMavjKhNIlZBAoUTXqh3s
-	IDangJ3EyyedrCC2MNC+3m9NYJNYBFQl/s3fDxbnFbCUuPFoOxuELSjxY/I9sBpmAS2J9TuP
-	M0HY8hKb17xlhrhVQWLH2ddgd4sIWEmc/Qqxi1lARGLfi3eMExiFZiEZNQvJqFlIRs1C0rKA
-	kWUVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnC6eia1g3Flg8UhRgEORiUeXoVT7YFCrIll
-	xZW5hxglOJiVRHiltTsChXhTEiurUovy44tKc1KLDzEmA306kVlKNDkfmErzSuINjU3MjCyN
-	zA0tjIzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoHR4USf0/mFQj9ZNStKO5NmMnas
-	iD4esdTYg/OGju5tXYlXObxbz4u/UninIepb/u/7t2XNBtXX1BgmmjVMdvdKmdzFdTJdZsvk
-	3an1Xk763zzMzaONFec2sl5+yuDVV/c7fOn/NUa3p3icDP7RlMehE/FMbIaR/YVuuX9/jBg4
-	9yy2fuR5mVGJpTgj0VCLuag4EQDgkw/QmwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 6 May 2013 20:49:54 -0400
+Message-ID: <51884FA8.6010400@ozlabs.ru>
+Date: Tue, 07 May 2013 10:49:44 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm-ppc@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/5] KVM: PPC: iommu: Add missing kvm_iommu_map_pages/kvm_iommu_unmap_pages
+References: <1367824921-27151-1-git-send-email-y>  <51875a36.25ac440a.50d9.ffffe90d@mx.google.com> <1367874436.2868.90.camel@ul30vt.home>
+In-Reply-To: <1367874436.2868.90.camel@ul30vt.home>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Graeme Gregory <gg@slimlogic.co.uk>
+On 05/07/2013 07:07 AM, Alex Williamson wrote:
+> On Mon, 2013-05-06 at 17:21 +1000, aik@ozlabs.ru wrote:
+>> From: Alexey Kardashevskiy <aik@ozlabs.ru>
+>>
+>> The IOMMU API implements groups creating/deletion, device binding
+>> and IOMMU map/unmap operations.
+>>
+>> The PowerPC implementation uses most of the API except map/unmap
+>> operations, which are implemented on POWER using hypercalls.
+>>
+>> However, in order to link a kernel with the CONFIG_IOMMU_API enabled,
+>> the empty kvm_iommu_map_pages/kvm_iommu_unmap_pages have to be
+>> defined, so this defines them.
+>>
+>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+>> Cc: David Gibson <david@gibson.dropbear.id.au>
+>> Signed-off-by: Paul Mackerras <paulus@samba.org>
+>> ---
+>>  arch/powerpc/include/asm/kvm_host.h |   14 ++++++++++++++
+>>  1 file changed, 14 insertions(+)
+>>
+>> diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
+>> index b6a047e..c025d91 100644
+>> --- a/arch/powerpc/include/asm/kvm_host.h
+>> +++ b/arch/powerpc/include/asm/kvm_host.h
+>> @@ -603,4 +603,18 @@ struct kvm_vcpu_arch {
+>>  
+>>  #define __KVM_HAVE_ARCH_WQP
+>>  
+>> +#ifdef CONFIG_IOMMU_API
+>> +/* POWERPC does not use IOMMU API for mapping/unmapping */
+>> +static inline int kvm_iommu_map_pages(struct kvm *kvm,
+>> +		struct kvm_memory_slot *slot)
+>> +{
+>> +	return 0;
+>> +}
+>> +
+>> +static inline void kvm_iommu_unmap_pages(struct kvm *kvm,
+>> +		struct kvm_memory_slot *slot)
+>> +{
+>> +}
+>> +#endif /* CONFIG_IOMMU_API */
+>> +
+>>  #endif /* __POWERPC_KVM_HOST_H__ */
 > 
-> This is the driver for the USB comparator built into the palmas chip. It
-> handles the various USB OTG events that can be generated by cable
-> insertion/removal.
-> 
-> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> Signed-off-by: Moiz Sonasath <m-sonasath@ti.com>
-> Signed-off-by: Ruchika Kharwar <ruchika@ti.com>
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> [kishon@ti.com: adapted palmas usb driver to use the extcon framework]
-> Signed-off-by: Sebastien Guiriec <s-guiriec@ti.com>
+> This is no longer needed, Gleb applied my patch for 3.10 that make all
+> of KVM device assignment dependent on a build config option and the top
+> level kvm_host.h now includes this when that is not set.  Thanks,
 
-Here goes some comments in the code:
-
-[]
-
-> diff --git a/drivers/extcon/extcon-palmas.c
-b/drivers/extcon/extcon-palmas.c
-> new file mode 100644
-> index 0000000..3ef042f
-> --- /dev/null
-> +++ b/drivers/extcon/extcon-palmas.c
-> @@ -0,0 +1,389 @@
-> +/*
-> + * Palmas USB transceiver driver
-> + *
-> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * Author: Graeme Gregory <gg@...mlogic.co.uk>
-> + * Author: Kishon Vijay Abraham I <kishon@...com>
-> + *
-> + * Based on twl6030_usb.c
-> + *
-> + * Author: Hema HK <hemahk@...com>
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-
-Why the email addresses are masked in the source code?
-(I'm just curious as this is the first time to see such in kernel source)
-
-> +
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/io.h>
-> +#include <linux/usb/phy_companion.h>
-> +#include <linux/regulator/consumer.h>
-> +#include <linux/err.h>
-> +#include <linux/notifier.h>
-> +#include <linux/slab.h>
-> +#include <linux/delay.h>
-> +#include <linux/mfd/palmas.h>
-> +#include <linux/of.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/extcon/extcon_palmas.h>
-> +
-> +static const char *palmas_extcon_cable[] = {
-> +	[0] = "USB",
-> +	[1] = "USB-HOST",
-
-	[1] = "USB-Host",
-
-> +	NULL,
-> +};
-> +
-> +static const int mutually_exclusive[] = {0x3, 0x0};
-> +
-> +static void palmas_usb_wakeup(struct palmas *palmas, int enable)
-> +{
-> +	if (enable)
-> +		palmas_write(palmas, PALMAS_USB_OTG_BASE, PALMAS_USB_WAKEUP,
-> +			PALMAS_USB_WAKEUP_ID_WK_UP_COMP);
-> +	else
-> +		palmas_write(palmas, PALMAS_USB_OTG_BASE, PALMAS_USB_WAKEUP,
-0);
-> +}
-> +
-> +static ssize_t palmas_usb_vbus_show(struct device *dev,
-> +			struct device_attribute *attr, char *buf)
-> +{
-> +	unsigned long		flags;
-> +	int			ret = -EINVAL;
-> +	struct palmas_usb	*palmas_usb = dev_get_drvdata(dev);
-> +
-> +	spin_lock_irqsave(&palmas_usb->lock, flags);
-
-This spinlock is used in this sysfs-show function only.
-Is this really needed?
-The only protected value here is "linkstat", which is "readonly"
-in this protected context.
-Thus, removing the spin_lock and updating like the following should
-be the same with less overhead:
-
-	int linkstat = palmas_usb->linkstat;
-	switch(linkstat) {
+Cannot find it, could you point me please where it is on github or
+git.kernel.org? Thanks.
 
 
-> +
-> +	switch (palmas_usb->linkstat) {
-> +	case PALMAS_USB_STATE_VBUS:
-> +	       ret = snprintf(buf, PAGE_SIZE, "vbus\n");
-> +	       break;
-> +	case PALMAS_USB_STATE_ID:
-> +	       ret = snprintf(buf, PAGE_SIZE, "id\n");
-> +	       break;
-> +	case PALMAS_USB_STATE_DISCONNECT:
-> +	       ret = snprintf(buf, PAGE_SIZE, "none\n");
-> +	       break;
-> +	default:
-> +	       ret = snprintf(buf, PAGE_SIZE, "UNKNOWN\n");
-> +	}
-> +	spin_unlock_irqrestore(&palmas_usb->lock, flags);
-> +
-> +	return ret;
-> +}
-> +static DEVICE_ATTR(vbus, 0444, palmas_usb_vbus_show, NULL);
-> +
-
-[]
-
-> +
-> +static void palmas_set_vbus_work(struct work_struct *data)
-> +{
-> +	int ret;
-> +	struct palmas_usb *palmas_usb = container_of(data, struct
-palmas_usb,
-> +
-set_vbus_work);
-> +
-> +	if (IS_ERR_OR_NULL(palmas_usb->vbus_reg)) {
-> +		dev_err(palmas_usb->dev, "invalid regulator\n");
-> +		return;
-> +	}
-> +
-> +	/*
-> +	 * Start driving VBUS. Set OPA_MODE bit in CHARGERUSB_CTRL1
-> +	 * register. This enables boost mode.
-> +	 */
-> +
-> +	if (palmas_usb->vbus_enable) {
-> +		ret = regulator_enable(palmas_usb->vbus_reg);
-> +		if (ret)
-> +			dev_dbg(palmas_usb->dev, "regulator enable
-failed\n");
-> +	} else {
-> +		regulator_disable(palmas_usb->vbus_reg);
-> +	}
-> +}
-> +
-> +static int palmas_set_vbus(struct phy_companion *comparator, bool
-enabled)
-> +{
-> +	struct palmas_usb *palmas_usb = comparator_to_palmas(comparator);
-> +
-> +	palmas_usb->vbus_enable = enabled;
-> +	schedule_work(&palmas_usb->set_vbus_work);
-> +
-> +	return 0;
-> +}
-> +
-> +static int palmas_start_srp(struct phy_companion *comparator)
-> +{
-> +	struct palmas_usb *palmas_usb = comparator_to_palmas(comparator);
-> +
-> +	palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +		PALMAS_USB_VBUS_CTRL_SET,
-PALMAS_USB_VBUS_CTRL_SET_VBUS_DISCHRG
-> +		| PALMAS_USB_VBUS_CTRL_SET_VBUS_IADP_SINK);
-> +	palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +		PALMAS_USB_VBUS_CTRL_SET,
-> +		PALMAS_USB_VBUS_CTRL_SET_VBUS_CHRG_VSYS |
-> +		PALMAS_USB_VBUS_CTRL_SET_VBUS_IADP_SINK);
-> +
-> +	mdelay(100);
-
-Why not msleep()? It's long enough to consider sleep.
-Is this in an atomic context? (if so, 100msec seems even more awful)
-
-> +
-> +	palmas_write(palmas_usb->palmas, PALMAS_USB_OTG_BASE,
-> +		PALMAS_USB_VBUS_CTRL_CLR,
-> +		PALMAS_USB_VBUS_CTRL_SET_VBUS_CHRG_VSYS |
-> +		PALMAS_USB_VBUS_CTRL_SET_VBUS_CHRG_VSYS);
-> +
-> +	return 0;
-> +}
-> +
-> +static void palmas_dt_to_pdata(struct device_node *node,
-> +		struct palmas_usb_platform_data *pdata)
-> +{
-> +	pdata->no_control_vbus = of_property_read_bool(node,
-> +					"ti,no_control_vbus");
-> +	pdata->wakeup = of_property_read_bool(node, "ti,wakeup");
-> +}
-> +
-> +static int palmas_usb_probe(struct platform_device *pdev)
-> +{
-
-[]
-
-> +	/* init spinlock for workqueue */
-> +	spin_lock_init(&palmas_usb->lock);
-
-[]
-
-> +	/* init spinlock for workqueue */
-> +	spin_lock_init(&palmas_usb->lock);
-
-Why this lock is initialized again?
-
-> +
-> +	INIT_WORK(&palmas_usb->set_vbus_work, palmas_set_vbus_work);
-> +
-
-[]
-
-> +
-> +module_platform_driver(palmas_usb_driver);
-> +
-> +MODULE_ALIAS("platform:palmas-usb");
-> +MODULE_AUTHOR("Graeme Gregory <gg@...mlogic.co.uk>");
-
-Is this intentional?
-
-> +MODULE_DESCRIPTION("Palmas USB transceiver driver");
-> +MODULE_LICENSE("GPL");
-> +MODULE_DEVICE_TABLE(of, of_palmas_match_tbl);
->
-
-
-Cheers,
-MyungJoo
-
-
+-- 
+Alexey
