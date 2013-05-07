@@ -1,140 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933594Ab3EGOCn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:02:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2615 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933126Ab3EGOCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 10:02:39 -0400
-Date: Tue, 7 May 2013 10:02:03 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCHSET v2] blk-throttle: implement proper hierarchy support
-Message-ID: <20130507140202.GB7082@redhat.com>
-References: <1367880372-28312-1-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367880372-28312-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933728Ab3EGODL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:03:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42392 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933094Ab3EGNlk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 09:41:40 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 068/118] PCI / ACPI: Don't query OSC support with all possible controls
+Date: Tue,  7 May 2013 14:38:34 +0100
+Message-Id: <1367933964-1564-69-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
+References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 03:45:39PM -0700, Tejun Heo wrote:
-> Changes since the last take[L] are
-> 
-> * Unnecessary throtl_schedule_delayed_work() call dropped from 0007.
-> 
-> * throtl_log() implement in 0021 forgot to print space after blkg
->   path.  Fixed.
-> 
-> * 0030-blk-throttle-add-throtl_qnode-for-dispatch-fairness.patch added
->   to address dispatch fairness.
-> 
-> * 0031-blk-throttle-Account-for-child-group-s-start-time-in.patch
->   added to address unwarranted penalty of nested limit enforcement due
->   to staggered delays of slice start times at multiple levels.
-> 
-> The original patchset description follows.
-> 
+3.5.7.12 -stable review patch.  If anyone has any objections, please let me know.
 
-This patch series looks good to me.
+------------------
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-Vivek
+commit 545d6e189a41c94c11f55045a771118eccc9d9eb upstream.
 
-> blk-throttle is the last controller with broken hierarchy support
-> making blkcg the last one tagged with .broken_hierarchy.  This
-> patchset implements hierarchy support for blk-throttle.  The semantics
-> is pretty simple - limits on an intermediate node applies to the whole
-> subtree and the statistics remain local.
-> 
-> As this changes the meaning of the knobs in an incompatible manner -
-> e.g. configuring limits on root cgroup now means setting the limit for
-> the whole system - the hierarchy mode is enabled by "sane_behavior"
-> cgroup mount flag.  If the flag is not specified, the original broken
-> flat hierarchy behavior is retained.
-> 
-> While this patchset contains many patches, the implementation is
-> pretty straight-forward.  throtl_grp's form a tree anchored at
-> throtl_data and bios climb the tree as they get dispatched at each
-> level.  The bios which reach the top of the tree - throl_data - are
-> issued.  The scheduling algorithm remains unchanged at each level and
-> blk-throttle should behave the same for flat hierarchy after the
-> changes.  The same algorithm is repeated until bios clear all limits
-> to the top of the tree.
-> 
-> This patchset contains the following 33 patches.
-> 
->  0001-blkcg-fix-error-return-path-in-blkg_create.patch
->  0002-blkcg-move-blkg_for_each_descendant_pre-to-block-blk.patch
->  0003-blkcg-implement-blkg_for_each_descendant_post.patch
->  0004-blkcg-invoke-blkcg_policy-pd_init-after-parent-is-li.patch
->  0005-blkcg-move-bulk-of-blkcg_gq-release-operations-to-th.patch
->  0006-blk-throttle-remove-spurious-throtl_enqueue_tg-call-.patch
->  0007-blk-throttle-removed-deferred-config-application-mec.patch
->  0008-blk-throttle-collapse-throtl_dispatch-into-the-work-.patch
->  0009-blk-throttle-relocate-throtl_schedule_delayed_work.patch
->  0010-blk-throttle-remove-pointless-throtl_nr_queued-optim.patch
->  0011-blk-throttle-rename-throtl_rb_root-to-throtl_service.patch
->  0012-blk-throttle-simplify-throtl_grp-flag-handling.patch
->  0013-blk-throttle-add-backlink-pointer-from-throtl_grp-to.patch
->  0014-blk-throttle-pass-around-throtl_service_queue-instea.patch
->  0015-blk-throttle-reorganize-throtl_service_queue-passed-.patch
->  0016-blk-throttle-add-throtl_grp-service_queue.patch
->  0017-blk-throttle-move-bio_lists-and-friends-to-throtl_se.patch
->  0018-blk-throttle-dispatch-to-throtl_data-service_queue.b.patch
->  0019-blk-throttle-generalize-update_disptime-optimization.patch
->  0020-blk-throttle-add-throtl_service_queue-parent_sq.patch
->  0021-blk-throttle-implement-sq_to_tg-sq_to_td-and-throtl_.patch
->  0022-blk-throttle-set-REQ_THROTTLED-from-throtl_charge_bi.patch
->  0023-blk-throttle-separate-out-throtl_service_queue-pendi.patch
->  0024-blk-throttle-implement-dispatch-looping.patch
->  0025-blk-throttle-dispatch-from-throtl_pending_timer_fn.patch
->  0026-blk-throttle-make-blk_throtl_drain-ready-for-hierarc.patch
->  0027-blk-throttle-make-blk_throtl_bio-ready-for-hierarchy.patch
->  0028-blk-throttle-make-tg_dispatch_one_bio-ready-for-hier.patch
->  0029-blk-throttle-make-throtl_pending_timer_fn-ready-for-.patch
->  0030-blk-throttle-add-throtl_qnode-for-dispatch-fairness.patch
->  0031-blk-throttle-Account-for-child-group-s-start-time-in.patch
->  0032-blk-throttle-implement-throtl_grp-has_rules.patch
->  0033-blk-throttle-implement-proper-hierarchy-support.patch
-> 
-> 0001-0005 prepare blkcg so that hierarchy operations are easier.
-> 
-> 0006-0016 reorganize code piece-by-piece so that hierarchy support can
-> be added.  These don't change behaviors.
-> 
-> 0017-0025 prepare for hierarchy support.  Moves fields which are used
-> in hierarchy to throtl_service_queue and define parent-child
-> relationship.
-> 
-> 0026-0032 make queueing, dispatching and configuration changes
-> propagate through the hierarchy.
-> 
-> 0033 implemenats hierarchy support.
-> 
-> As we're in the middle of a merge window, this patchset is currently
-> based on cgroup/for-3.10.  Once 3.10-rc1 drops, I'll rebase the tree
-> and send pull request to Jens so that it can be routed with other
-> block changes.  The patches are also available on the following git
-> branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-throtl-hierarchy
-> 
-> diffstat follows.  Thanks.
-> 
->  block/blk-cgroup.c     |  105 +---
->  block/blk-cgroup.h     |   38 +
->  block/blk-throttle.c   | 1064 ++++++++++++++++++++++++++++++++++---------------
->  include/linux/cgroup.h |    2 
->  4 files changed, 822 insertions(+), 387 deletions(-)
-> 
-> --
-> tejun
-> 
-> [L] http://thread.gmane.org/gmane.linux.kernel.containers/25845
+Found problem on system that firmware that could handle pci aer.
+Firmware get error reporting after pci injecting error, before os boots.
+But after os boots, firmware can not get report anymore, even pci=noaer
+is passed.
+
+Root cause: BIOS _OSC has problem with query bit checking.
+It turns out that BIOS vendor is copying example code from ACPI Spec.
+In ACPI Spec 5.0, page 290:
+
+	If (Not(And(CDW1,1))) // Query flag clear?
+	{	// Disable GPEs for features granted native control.
+		If (And(CTRL,0x01)) // Hot plug control granted?
+		{
+			Store(0,HPCE) // clear the hot plug SCI enable bit
+			Store(1,HPCS) // clear the hot plug SCI status bit
+		}
+	...
+	}
+
+When Query flag is set, And(CDW1,1) will be 1, Not(1) will return 0xfffffffe.
+So it will get into code path that should be for control set only.
+BIOS acpi code should be changed to "If (LEqual(And(CDW1,1), 0)))"
+
+Current kernel code is using _OSC query to notify firmware about support
+from OS and then use _OSC to set control bits.
+During query support, current code is using all possible controls.
+So will execute code that should be only for control set stage.
+
+That will have problem when pci=noaer or aer firmware_first is used.
+As firmware have that control set for os aer already in query support stage,
+but later will not os aer handling.
+
+We should avoid passing all possible controls, just use osc_control_set
+instead.
+That should workaround BIOS bugs with affected systems on the field
+as more bios vendors are copying sample code from ACPI spec.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/acpi/pci_root.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index 7aff631..5b0f075 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -247,8 +247,8 @@ static acpi_status acpi_pci_query_osc(struct acpi_pci_root *root,
+ 		*control &= OSC_PCI_CONTROL_MASKS;
+ 		capbuf[OSC_CONTROL_TYPE] = *control | root->osc_control_set;
+ 	} else {
+-		/* Run _OSC query for all possible controls. */
+-		capbuf[OSC_CONTROL_TYPE] = OSC_PCI_CONTROL_MASKS;
++		/* Run _OSC query only with existing controls. */
++		capbuf[OSC_CONTROL_TYPE] = root->osc_control_set;
+ 	}
+ 
+ 	status = acpi_pci_run_osc(root->device->handle, capbuf, &result);
+-- 
+1.8.1.2
+
