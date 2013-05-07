@@ -1,83 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759230Ab3EGI4G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 04:56:06 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:42110 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759184Ab3EGI4B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 04:56:01 -0400
-Date: Tue, 7 May 2013 09:55:35 +0100
-From: Mark Brown <broonie@kernel.org>
-To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20130507085535.GN7478@sirena.org.uk>
-References: <1367868998-12667-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1BAFE6F6C881BF42822005164F1491C33EBE473A@DBDE04.ent.ti.com>
+	id S1759218Ab3EGI6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 04:58:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2644 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759016Ab3EGI6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 04:58:53 -0400
+Date: Tue, 7 May 2013 11:58:48 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, avi.kivity@gmail.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        takuya.yoshikawa@gmail.com
+Subject: Re: [PATCH v4 4/6] KVM: MMU: fast invalid all shadow pages
+Message-ID: <20130507085848.GI12349@redhat.com>
+References: <20130503010534.GA5467@amt.cnet>
+ <51835087.8090605@linux.vnet.ibm.com>
+ <20130503155302.GB3362@amt.cnet>
+ <5183EAFA.4050500@linux.vnet.ibm.com>
+ <20130504005201.GA11823@amt.cnet>
+ <518725DF.5090503@linux.vnet.ibm.com>
+ <20130506123625.GB12349@redhat.com>
+ <5187ABB3.7020403@linux.vnet.ibm.com>
+ <20130506172455.GB18963@redhat.com>
+ <5187EC50.4030308@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ztcJpsdPpsnnlAp8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EBE473A@DBDE04.ent.ti.com>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi/omap2: Let device core handle pinctrl
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <5187EC50.4030308@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 07, 2013 at 01:45:52AM +0800, Xiao Guangrong wrote:
+> On 05/07/2013 01:24 AM, Gleb Natapov wrote:
+> > On Mon, May 06, 2013 at 09:10:11PM +0800, Xiao Guangrong wrote:
+> >> On 05/06/2013 08:36 PM, Gleb Natapov wrote:
+> >>
+> >>>>> Step 1) Fix kvm_mmu_zap_all's behaviour: introduce lockbreak via
+> >>>>> spin_needbreak. Use generation numbers so that in case kvm_mmu_zap_all 
+> >>>>> releases mmu_lock and reacquires it again, only shadow pages 
+> >>>>> from the generation with which kvm_mmu_zap_all started are zapped (this
+> >>>>> guarantees forward progress and eventual termination).
+> >>>>>
+> >>>>> kvm_mmu_zap_generation()
+> >>>>> 	spin_lock(mmu_lock)
+> >>>>> 	int generation = kvm->arch.mmu_generation;
+> >>>>>
+> >>>>> 	for_each_shadow_page(sp) {
+> >>>>> 		if (sp->generation == kvm->arch.mmu_generation)
+> >>>>> 			zap_page(sp)
+> >>>>> 		if (spin_needbreak(mmu_lock)) {
+> >>>>> 			kvm->arch.mmu_generation++;
+> >>>>> 			cond_resched_lock(mmu_lock);
+> >>>>> 		}
+> >>>>> 	}
+> >>>>>
+> >>>>> kvm_mmu_zap_all()
+> >>>>> 	spin_lock(mmu_lock)
+> >>>>> 	for_each_shadow_page(sp) {
+> >>>>> 		if (spin_needbreak(mmu_lock)) {
+> >>>>> 			cond_resched_lock(mmu_lock);
+> >>>>> 		}
+> >>>>> 	}
+> >>>>>
+> >>>>> Use kvm_mmu_zap_generation for kvm_arch_flush_shadow_memslot.
+> >>>>> Use kvm_mmu_zap_all for kvm_mmu_notifier_release,kvm_destroy_vm.
+> >>>>>
+> >>>>> This addresses the main problem: excessively long hold times 
+> >>>>> of kvm_mmu_zap_all with very large guests.
+> >>>>>
+> >>>>> Do you see any problem with this logic? This was what i was thinking 
+> >>>>> we agreed.
+> >>>>
+> >>>> No. I understand it and it can work.
+> >>>>
+> >>>> Actually, it is similar with Gleb's idea that "zapping stale shadow pages
+> >>>> (and uses lock break technique)", after some discussion, we thought "only zap
+> >>>> shadow pages that are reachable from the slot's rmap" is better, that is this
+> >>>> patchset does.
+> >>>> (https://lkml.org/lkml/2013/4/23/73)
+> >>>>
+> >>> But this is not what the patch is doing. Close, but not the same :)
+> >>
+> >> Okay. :)
+> >>
+> >>> Instead of zapping shadow pages reachable from slot's rmap the patch
+> >>> does kvm_unmap_rmapp() which drop all spte without zapping shadow pages.
+> >>> That is why you need special code to re-init lpage_info. What I proposed
+> >>> was to call zap_page() on all shadow pages reachable from rmap. This
+> >>> will take care of lpage_info counters. Does this make sense?
+> >>
+> >> Unfortunately, no! We still need to care lpage_info. lpage_info is used
+> >> to count the number of guest page tables in the memslot.
+> >>
+> >> For example, there is a memslot:
+> >> memslot[0].based_gfn = 0, memslot[0].npages = 100,
+> >>
+> >> and there is a shadow page:
+> >> sp->role.direct =0, sp->role.level = 4, sp->gfn = 10.
+> >>
+> >> this sp is counted in the memslot[0] but it can not be found by walking
+> >> memslot[0]->rmap since there is no last mapping in this shadow page.
+> >>
+> > Right, so what about walking mmu_page_hash for each gfn belonging to the
+> > slot that is in process to be removed to find those?
+> 
+> That will cost lots of time. The size of hashtable is 1 << 10. If the
+> memslot has 4M memory, it will walk all the entries, the cost is the same
+> as walking active_list (maybe litter more). And a memslot has 4M memory is
+> the normal case i think.
+> 
+Memslots will be much bigger with memory hotplug. Lock break should be
+used while walking mmu_page_hash obviously, but still iterating over
+entire memslot gfn space to find a few gfn that may be there is
+suboptimal. We can keep a list of them in the memslot itself.
 
---ztcJpsdPpsnnlAp8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Another point is that lpage_info stops mmu to use large page. If we
+> do not reset lpage_info, mmu is using 4K page until the invalid-sp is
+> zapped.
+> 
+I do not think this is a big issue. If lpage_info prevented the use of
+large pages for some memory ranges before we zapped entire shadow pages
+it was probably for a reason, so new shadow page will prevent large
+pages from been created for the same memory ranges.
 
-On Tue, May 07, 2013 at 03:56:09AM +0000, Hebbar, Gururaja wrote:
-
-> There are cases where driver('s) needs to place pin-mux's to sleep on sus=
-pend
-> & default/idle on resume. For such cases Pinctrl needs to be handled insi=
-de=20
-> the driver. Example [1].
-
-Well, obviously - but at the minute the driver is pure boilerplate.
-There's also been some discussion about factoring out the suspend/resume
-code since it's going to get equally repetitive.
-
-> I will be submitting a patch to enhance the existing pinctrl support for=
-=20
-> spi omap2 shortly which does above work.
-
-How soon is shortly?
-
---ztcJpsdPpsnnlAp8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRiMGEAAoJELSic+t+oim97SMP/0fqs04Yw/xucmdnRiHEDMRc
-VVyRsTH1D91qye854TVNngo5Ob1tCnnluhNycuT2kLbRxeIbOWXKNEjYBTvjFpYv
-puXOUnJYJfjm64DFa7HXa78YOci6pUqEbVbRICU5/CiJu3PIlstC/47sGh+VfV1Y
-E58dr/5doqJxGUug+0V3cr/83IGn0j5NWSmbyYfvN3MX3HPRDLdrAY1NeDFcactf
-OSNa7o+YdJq0dcD2w5IhDJbnMXqV5L/rc54kOhFX8kox5jnB5HSY7nH70XgB2Jgf
-LsZnzXFxfj3utzr8Rb8Mzz0DJVvu9ToN/mYc6aGzUFfPj43YDf4TUWHiQncsoFfR
-bkoppL5EFyp5/ZAUOGcpfnVNv/ovok18edjRtEk+nlyGRdPg14x+4RVzYMvKz0st
-AwNWPZr55Ol9qAL+zz/J6rIGJMTY3zfVDD1MSZt8iIOJ9Xn1t38/2YSi0gv27/Iy
-Wd17tmvnUO/eUZeirpX7PAdPrG3bY2izkIT7RKxgNRGuzGp8uXH/TM19h2TEf2gz
-6z8nS6iHlMK76DvCHlflKVj6LWXJQE9KyVKdhEwtEmMhZdDt1/tC5hvyVqoBmFt/
-8eAMuznFuKNQPS/YzJTj08y3wcj5urO8orp8/W92SRK3qQEnuxnzpr9LJpiy4lPi
-/UN8+uThgEsZnc47oH2G
-=eMXk
------END PGP SIGNATURE-----
-
---ztcJpsdPpsnnlAp8--
+--
+			Gleb.
