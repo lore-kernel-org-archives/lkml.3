@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758351Ab3EGFHr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 01:07:47 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:53857 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757967Ab3EGFHp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 01:07:45 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v2] media: davinci: vpbe: fix layer availability for NV12 format
-Date: Tue,  7 May 2013 10:37:25 +0530
-Message-Id: <1367903245-4494-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1758705Ab3EGFIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 01:08:06 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29518 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758436Ab3EGFIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 01:08:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,625,1363158000"; 
+   d="scan'208";a="237859020"
+Message-ID: <51888C28.8030401@intel.com>
+Date: Tue, 07 May 2013 13:07:52 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Paul Turner <pjt@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 2/7] sched: remove SMP cover for runnable variables
+ in cfs_rq
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-3-git-send-email-alex.shi@intel.com> <CAPM31R+oBDRF4geM451-ySCtkU1NpqFT_R1mtB95jV-pnLBimQ@mail.gmail.com> <5187708A.20103@intel.com> <CAPM31R+-zeuquH7ozjjZEGX03aWoek1xJ5LgsaVP5j1WnxzzRw@mail.gmail.com>
+In-Reply-To: <CAPM31R+-zeuquH7ozjjZEGX03aWoek1xJ5LgsaVP5j1WnxzzRw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On 05/06/2013 05:08 PM, Paul Turner wrote:
+>> >
+>> >
+>> > Do you mean to move the rq->avg and task_group->load_avg into CONFIG_SMP?
+> More generally:  Why do we need them in !CONFIG_SMP?
+> 
+> [ I was suggesting (potentially) using only rq->avg in the !CONFIG_SMP case. ]
+> 
+> 
 
-For NV12 format, even if display data is single image,
-both VIDWIN0 and VIDWIN1 parameters must be used. The start
-address of Y data plane and C data plane is configured in
-VIDEOWIN0ADH/L and VIDEOWIN1ADH/L respectively.
-cuurently only one layer was requested, which is suffice
-for yuv422, but for yuv420(NV12) two layers are required and
-fix the same by requesting for other layer if pix fmt is NV12
-during set_fmt.
+Paul,
+here is the patch according to your opinions. any comments? :)
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- Changes for v2:
- 1: Dropped cpu_is_*() check in driver as, any way driver would fail to set
-    NV12 if the device doesnt support it.
+>From 206957227ed899aa44fabeb9890117428103dd1e Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Mon, 6 May 2013 22:20:29 +0800
+Subject: [PATCH 2/7] sched: move few runnable tg variables into CONFIG_SMP
 
- drivers/media/platform/davinci/vpbe_display.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+The following 2 variables only used under CONFIG_SMP, so better to move
+their definiation into CONFIG_SMP too.
 
-diff --git a/drivers/media/platform/davinci/vpbe_display.c b/drivers/media/platform/davinci/vpbe_display.c
-index 0341dcc..4ceee3a 100644
---- a/drivers/media/platform/davinci/vpbe_display.c
-+++ b/drivers/media/platform/davinci/vpbe_display.c
-@@ -922,6 +922,21 @@ static int vpbe_display_s_fmt(struct file *file, void *priv,
- 	other video window */
+        atomic64_t load_avg;
+        atomic_t runnable_avg;
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ kernel/sched/sched.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 9419764..c6634f1 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -114,9 +114,11 @@ struct task_group {
+ 	unsigned long shares;
  
- 	layer->pix_fmt = *pixfmt;
-+	if (pixfmt->pixelformat == V4L2_PIX_FMT_NV12) {
-+		struct vpbe_layer *otherlayer;
-+
-+		otherlayer = _vpbe_display_get_other_win_layer(disp_dev, layer);
-+		/* if other layer is available, only
-+		 * claim it, do not configure it
-+		 */
-+		ret = osd_device->ops.request_layer(osd_device,
-+						    otherlayer->layer_info.id);
-+		if (ret < 0) {
-+			v4l2_err(&vpbe_dev->v4l2_dev,
-+				 "Display Manager failed to allocate layer\n");
-+			return -EBUSY;
-+		}
-+	}
+ 	atomic_t load_weight;
++#ifdef	CONFIG_SMP
+ 	atomic64_t load_avg;
+ 	atomic_t runnable_avg;
+ #endif
++#endif
  
- 	/* Get osd layer config */
- 	osd_device->ops.get_layer_config(osd_device,
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 	struct sched_rt_entity **rt_se;
 -- 
-1.7.4.1
+1.7.12
 
+-- 
+Thanks
+    Alex
