@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab3EGLVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 07:21:42 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:61690 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755836Ab3EGLVk (ORCPT
+	id S1757250Ab3EGL3D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 07:29:03 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45112 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585Ab3EGL3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 07:21:40 -0400
-X-Spam-Score: -100.8
-Message-ID: <5188E391.6040505@asianux.com>
-Date: Tue, 07 May 2013 19:20:49 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>
-CC: tj@kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] kernel/cgroup.c: about kfree after 'get_new_cssid'
-References: <5188DB93.2080504@asianux.com> <5188DF27.4080000@huawei.com>
-In-Reply-To: <5188DF27.4080000@huawei.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 7 May 2013 07:29:01 -0400
+Date: Tue, 07 May 2013 07:31:01 -0400 (EDT)
+Message-Id: <20130507.073101.877164997428477669.davem@davemloft.net>
+To: jeffrey.t.kirsher@intel.com
+Cc: torvalds@linux-foundation.org, bruce.w.allan@intel.com,
+        netdev@vger.kernel.org, gospo@redhat.com, sassmann@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [net] e1000e: fix scheduling while atomic bug
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1367905967-12824-1-git-send-email-jeffrey.t.kirsher@intel.com>
+References: <1367905967-12824-1-git-send-email-jeffrey.t.kirsher@intel.com>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 07 May 2013 04:29:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年05月07日 19:01, Li Zefan wrote:
-> On 2013/5/7 18:46, Chen Gang wrote:
->> Hello Maintainers:
->>
->> After call get_new_cssid(), I can not find the related free function
->> (it seems free_css_id() is for that, but not used).
->>
->> The memory location is:
->>   get_new_cssid() --> kzalloc() for 'struct css_id'
->>   get_new_cssid() --> idr_alloc() for 'ss->idr'
->>
->> One work flow:
->>   cgroup_load_subsys() --> cgroup_init_idr() --> get_new_cssid()
->>   when get_new_cssid() fails, it will:
->>   cgroup_load_subsys() --> cgroup_unload_subsys() --> idr_destroy(),
->>   and also:
->>   cgroup_load_subsys() --> cgroup_unload_subsys() --> ss->css_free();
->>     ('css_free' may 'debug_css_free', or 'freezer_css_free' ...)
->>
->> It seems the work flow above is not 'kfree' 'struct css_id', is it true?
->>
->> BTW: I also guess, for cgroup_init_idr() in cgroup_init(), need check
->> the return value.
->>
->> Please help check.
->>
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Date: Mon,  6 May 2013 22:52:47 -0700
+
+> From: Bruce Allan <bruce.w.allan@intel.com>
 > 
-> It's the specific cgroup subsystem that calls free_css_id() in it's subsys->css_free()
-> callback. See __mem_cgroup_free() for example.
+> A scheduling while atomic bug was introduced recently (by commit ce43a216
+> e1000e: cleanup USLEEP_RANGE checkpatch checks).  Revert the particular
+> instance of usleep_range() which causes the bug.
 > 
+> Reported-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+> Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
+> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 
-OK, thank you for your confirmation.
+Linus, please apply this directly, thanks:
 
-> There's a bug in cgroup_unload_subsys() that idr_destroy() should be called after
-> ss->css_free(). That said, given there's no modular cgroup subsystem using css_id,
-> and the whole css_id thing will be eliminated in 3.11, why bother fixing it.
+Acked-by: David S. Miller <davem@davemloft.net>
+
+> ---
+>  drivers/net/ethernet/intel/e1000e/e1000.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-
-I just find it by reading code (I also want to learn about kernel).
-
-I guess, for some stable versions, may focus on it, they are the
-different branches from the latest version.
-
-So, is it suitable to send related patch for the bug ?
-
-Thanks.
-
--- 
-Chen Gang
-
-Asianux Corporation
+> diff --git a/drivers/net/ethernet/intel/e1000e/e1000.h b/drivers/net/ethernet/intel/e1000e/e1000.h
+> index 82f1c84..ffbc08f 100644
+> --- a/drivers/net/ethernet/intel/e1000e/e1000.h
+> +++ b/drivers/net/ethernet/intel/e1000e/e1000.h
+> @@ -600,7 +600,7 @@ static inline s32 __ew32_prepare(struct e1000_hw *hw)
+>  	s32 i = E1000_ICH_FWSM_PCIM2PCI_COUNT;
+>  
+>  	while ((er32(FWSM) & E1000_ICH_FWSM_PCIM2PCI) && --i)
+> -		usleep_range(50, 100);
+> +		udelay(50);
+>  
+>  	return i;
+>  }
+> -- 
+> 1.7.11.7
+> 
