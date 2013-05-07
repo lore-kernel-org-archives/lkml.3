@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933282Ab3EGNmB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:42:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42472 "EHLO
+	id S1759469Ab3EGNmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:42:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42555 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933252Ab3EGNl6 (ORCPT
+	with ESMTP id S1759364Ab3EGNmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:41:58 -0400
+	Tue, 7 May 2013 09:42:16 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Adrian Thomasset <adrian.thomasset@st.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 084/118] ext4: fix big-endian bug in metadata checksum calculations
-Date: Tue,  7 May 2013 14:38:50 +0100
-Message-Id: <1367933964-1564-85-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 100/118] USB: ftdi_sio: enable two UART ports on ST Microconnect Lite
+Date: Tue,  7 May 2013 14:39:06 +0100
+Message-Id: <1367933964-1564-101-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -27,61 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Adrian Thomasset <adrian.thomasset@st.com>
 
-commit 171a7f21a76a0958c225b97c00a97a10390d40ee upstream.
+commit 71d9a2b95fc9c9474d46d764336efd7a5a805555 upstream.
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+The FT4232H used in the ST Micro Connect Lite has four hi-speed UART ports.
+The first two ports are reserved for the JTAG interface.
+
+We enable by default ports 2 and 3 as UARTs (where port 2 is a
+conventional RS-232 UART)
+
+Signed-off-by: Adrian Thomasset <adrian.thomasset@st.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/inode.c | 8 ++++----
- fs/ext4/mmp.c   | 2 +-
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/usb/serial/ftdi_sio.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 0ec3a3f..55006fa 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -55,21 +55,21 @@ static __u32 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw,
- 	__u16 csum_hi = 0;
- 	__u32 csum;
- 
--	csum_lo = raw->i_checksum_lo;
-+	csum_lo = le16_to_cpu(raw->i_checksum_lo);
- 	raw->i_checksum_lo = 0;
- 	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
- 	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi)) {
--		csum_hi = raw->i_checksum_hi;
-+		csum_hi = le16_to_cpu(raw->i_checksum_hi);
- 		raw->i_checksum_hi = 0;
- 	}
- 
- 	csum = ext4_chksum(sbi, ei->i_csum_seed, (__u8 *)raw,
- 			   EXT4_INODE_SIZE(inode->i_sb));
- 
--	raw->i_checksum_lo = csum_lo;
-+	raw->i_checksum_lo = cpu_to_le16(csum_lo);
- 	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
- 	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
--		raw->i_checksum_hi = csum_hi;
-+		raw->i_checksum_hi = cpu_to_le16(csum_hi);
- 
- 	return csum;
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index ecfd525..d5b9a74 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -1799,20 +1799,24 @@ static int ftdi_8u2232c_probe(struct usb_serial *serial)
  }
-diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
-index b4d5088..f0e2c96 100644
---- a/fs/ext4/mmp.c
-+++ b/fs/ext4/mmp.c
-@@ -7,7 +7,7 @@
- #include "ext4.h"
  
- /* Checksumming functions */
--static __u32 ext4_mmp_csum(struct super_block *sb, struct mmp_struct *mmp)
-+static __le32 ext4_mmp_csum(struct super_block *sb, struct mmp_struct *mmp)
+ /*
+- * First and second port on STMCLiteadaptors is reserved for JTAG interface
+- * and the forth port for pio
++ * First two ports on JTAG adaptors using an FT4232 such as STMicroelectronics's
++ * ST Micro Connect Lite are reserved for JTAG or other non-UART interfaces and
++ * can be accessed from userspace.
++ * The next two ports are enabled as UARTs by default, where port 2 is
++ * a conventional RS-232 UART.
+  */
+ static int ftdi_stmclite_probe(struct usb_serial *serial)
  {
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
- 	int offset = offsetof(struct mmp_struct, mmp_checksum);
+ 	struct usb_device *udev = serial->dev;
+ 	struct usb_interface *interface = serial->interface;
+ 
+-	if (interface == udev->actconfig->interface[2])
+-		return 0;
+-
+-	dev_info(&udev->dev, "Ignoring serial port reserved for JTAG\n");
++	if (interface == udev->actconfig->interface[0] ||
++	    interface == udev->actconfig->interface[1]) {
++		dev_info(&udev->dev, "Ignoring serial port reserved for JTAG\n");
++		return -ENODEV;
++	}
+ 
+-	return -ENODEV;
++	return 0;
+ }
+ 
+ /*
 -- 
 1.8.1.2
 
