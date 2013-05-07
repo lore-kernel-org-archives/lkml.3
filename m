@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757771Ab3EGE0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:26:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14371 "EHLO
+	id S933028Ab3EGE1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:27:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9021 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932794Ab3EGE0C (ORCPT
+	with ESMTP id S932412Ab3EGE0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 00:26:02 -0400
-X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=8-CMYm9u0m0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=F-_l9sjweG4A:10 a=5gWr373iAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=yPCof4ZbAAAA:8 a=QyXUC8HyAAAA:8 a=bV27znWfk4DAUmVXYEwA:9 a=cpbqSep1WiAA:10 a=jEp0ucaQiEUA:10 a=7DSvI1NPTFQA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 7 May 2013 00:26:01 -0400
+X-Authority-Analysis: v=2.0 cv=GtrACzJC c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=eg2frOOOrEEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=87S406WYmVAA:10 a=57SyGIRnAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=Z9hppVypvsQCDiRzgicA:9 a=lSinr4eg3GwA:10 a=TIV7c6GJmisA:10 a=LI9Vle30uBYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035850.597840180@goodmis.org>
+Message-Id: <20130507035849.938356065@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:58:10 -0400
+Date: Mon, 06 May 2013 23:58:06 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Josh Boyer <jwboyer@redhat.com>,
-        Samu Kallio <samu.kallio@aberdeencloud.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [058/126] x86, mm, paravirt: Fix vmalloc_fault oops during lazy MMU updates
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [054/126] tracing: Fix possible NULL pointer dereferences
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0058-x86-mm-paravirt-Fix-vmalloc_fault-oops-during-lazy-M.patch
+Content-Disposition: inline; filename=0054-tracing-Fix-possible-NULL-pointer-dereferences.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,91 +31,113 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Samu Kallio <samu.kallio@aberdeencloud.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-[ Upstream commit 1160c2779b826c6f5c08e5cc542de58fd1f667d5 ]
+[ Upstream commit 6a76f8c0ab19f215af2a3442870eeb5f0e81998d ]
 
-In paravirtualized x86_64 kernels, vmalloc_fault may cause an oops
-when lazy MMU updates are enabled, because set_pgd effects are being
-deferred.
+Currently set_ftrace_pid and set_graph_function files use seq_lseek
+for their fops.  However seq_open() is called only for FMODE_READ in
+the fops->open() so that if an user tries to seek one of those file
+when she open it for writing, it sees NULL seq_file and then panic.
 
-One instance of this problem is during process mm cleanup with memory
-cgroups enabled. The chain of events is as follows:
+It can be easily reproduced with following command:
 
-- zap_pte_range enables lazy MMU updates
-- zap_pte_range eventually calls mem_cgroup_charge_statistics,
-  which accesses the vmalloc'd mem_cgroup per-cpu stat area
-- vmalloc_fault is triggered which tries to sync the corresponding
-  PGD entry with set_pgd, but the update is deferred
-- vmalloc_fault oopses due to a mismatch in the PUD entries
+  $ cd /sys/kernel/debug/tracing
+  $ echo 1234 | sudo tee -a set_ftrace_pid
 
-The OOPs usually looks as so:
+In this example, GNU coreutils' tee opens the file with fopen(, "a")
+and then the fopen() internally calls lseek().
 
-------------[ cut here ]------------
-kernel BUG at arch/x86/mm/fault.c:396!
-invalid opcode: 0000 [#1] SMP
-.. snip ..
-CPU 1
-Pid: 10866, comm: httpd Not tainted 3.6.10-4.fc18.x86_64 #1
-RIP: e030:[<ffffffff816271bf>]  [<ffffffff816271bf>] vmalloc_fault+0x11f/0x208
-.. snip ..
-Call Trace:
- [<ffffffff81627759>] do_page_fault+0x399/0x4b0
- [<ffffffff81004f4c>] ? xen_mc_extend_args+0xec/0x110
- [<ffffffff81624065>] page_fault+0x25/0x30
- [<ffffffff81184d03>] ? mem_cgroup_charge_statistics.isra.13+0x13/0x50
- [<ffffffff81186f78>] __mem_cgroup_uncharge_common+0xd8/0x350
- [<ffffffff8118aac7>] mem_cgroup_uncharge_page+0x57/0x60
- [<ffffffff8115fbc0>] page_remove_rmap+0xe0/0x150
- [<ffffffff8115311a>] ? vm_normal_page+0x1a/0x80
- [<ffffffff81153e61>] unmap_single_vma+0x531/0x870
- [<ffffffff81154962>] unmap_vmas+0x52/0xa0
- [<ffffffff81007442>] ? pte_mfn_to_pfn+0x72/0x100
- [<ffffffff8115c8f8>] exit_mmap+0x98/0x170
- [<ffffffff810050d9>] ? __raw_callee_save_xen_pmd_val+0x11/0x1e
- [<ffffffff81059ce3>] mmput+0x83/0xf0
- [<ffffffff810624c4>] exit_mm+0x104/0x130
- [<ffffffff8106264a>] do_exit+0x15a/0x8c0
- [<ffffffff810630ff>] do_group_exit+0x3f/0xa0
- [<ffffffff81063177>] sys_exit_group+0x17/0x20
- [<ffffffff8162bae9>] system_call_fastpath+0x16/0x1b
+Link: http://lkml.kernel.org/r/1365663302-2170-1-git-send-email-namhyung@kernel.org
 
-Calling arch_flush_lazy_mmu_mode immediately after set_pgd makes the
-changes visible to the consistency checks.
-
-Cc: <stable@vger.kernel.org>
-RedHat-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=914737
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Reported-and-Tested-by: Krishna Raman <kraman@redhat.com>
-Signed-off-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Link: http://lkml.kernel.org/r/1364045796-10720-1-git-send-email-konrad.wilk@oracle.com
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/mm/fault.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ include/linux/ftrace.h     |    2 +-
+ kernel/trace/ftrace.c      |   10 +++++-----
+ kernel/trace/trace_stack.c |    2 +-
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 76dcd9d..3e6b840 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -377,10 +377,12 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
- 	if (pgd_none(*pgd_ref))
- 		return -1;
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 55e6d63..6ce7928 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -305,7 +305,7 @@ ssize_t ftrace_filter_write(struct file *file, const char __user *ubuf,
+ 			    size_t cnt, loff_t *ppos);
+ ssize_t ftrace_notrace_write(struct file *file, const char __user *ubuf,
+ 			     size_t cnt, loff_t *ppos);
+-loff_t ftrace_regex_lseek(struct file *file, loff_t offset, int origin);
++loff_t ftrace_filter_lseek(struct file *file, loff_t offset, int origin);
+ int ftrace_regex_release(struct inode *inode, struct file *file);
  
--	if (pgd_none(*pgd))
-+	if (pgd_none(*pgd)) {
- 		set_pgd(pgd, *pgd_ref);
--	else
-+		arch_flush_lazy_mmu_mode();
-+	} else {
- 		BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
-+	}
+ void __init
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index a1dd715..ae08e1e 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2594,7 +2594,7 @@ ftrace_notrace_open(struct inode *inode, struct file *file)
+ }
  
- 	/*
- 	 * Below here mismatches are bugs because these lower tables
+ loff_t
+-ftrace_regex_lseek(struct file *file, loff_t offset, int origin)
++ftrace_filter_lseek(struct file *file, loff_t offset, int origin)
+ {
+ 	loff_t ret;
+ 
+@@ -3413,7 +3413,7 @@ static const struct file_operations ftrace_filter_fops = {
+ 	.open = ftrace_filter_open,
+ 	.read = seq_read,
+ 	.write = ftrace_filter_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
+ };
+ 
+@@ -3421,7 +3421,7 @@ static const struct file_operations ftrace_notrace_fops = {
+ 	.open = ftrace_notrace_open,
+ 	.read = seq_read,
+ 	.write = ftrace_notrace_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
+ };
+ 
+@@ -3626,8 +3626,8 @@ static const struct file_operations ftrace_graph_fops = {
+ 	.open		= ftrace_graph_open,
+ 	.read		= seq_read,
+ 	.write		= ftrace_graph_write,
++	.llseek		= ftrace_filter_lseek,
+ 	.release	= ftrace_graph_release,
+-	.llseek		= seq_lseek,
+ };
+ #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+ 
+@@ -4236,7 +4236,7 @@ static const struct file_operations ftrace_pid_fops = {
+ 	.open		= ftrace_pid_open,
+ 	.write		= ftrace_pid_write,
+ 	.read		= seq_read,
+-	.llseek		= seq_lseek,
++	.llseek		= ftrace_filter_lseek,
+ 	.release	= ftrace_pid_release,
+ };
+ 
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index d4545f4..aa4270a 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -324,7 +324,7 @@ static const struct file_operations stack_trace_filter_fops = {
+ 	.open = stack_trace_filter_open,
+ 	.read = seq_read,
+ 	.write = ftrace_filter_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
+ };
+ 
 -- 
 1.7.10.4
 
