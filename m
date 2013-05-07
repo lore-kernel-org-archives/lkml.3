@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab3EGWxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 18:53:33 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:35883 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219Ab3EGWxc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 18:53:32 -0400
-MIME-Version: 1.0
-X-Originating-IP: [212.159.75.221]
-In-Reply-To: <20130507204643.3ACA416E@viggo.jf.intel.com>
-References: <20130507204642.D010DDC1@viggo.jf.intel.com>
-	<20130507204643.3ACA416E@viggo.jf.intel.com>
-Date: Tue, 7 May 2013 23:53:30 +0100
-X-Google-Sender-Auth: zqRhE--0wpDzySIY0WiInx31qVI
-Message-ID: <CAAG0J9-TBpSJ4yU3kTq-0b3f_Y2-vFbPZBoW9try2CYyyTsJHg@mail.gmail.com>
-Subject: Re: [PATCH 1/7] consolidate per-arch stack overflow debugging options
-From: James Hogan <james.hogan@imgtec.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756062Ab3EGXAn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 19:00:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30166 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750833Ab3EGXAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 19:00:42 -0400
+Date: Tue, 07 May 2013 19:00:07 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Jerome Glisse <jglisse@redhat.com>
+Message-ID: <1367967607-vpfj91fc-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <CAH3drwbQ91tb=C2D+fNkdPapK75db0yAaWsUrU2A41Rigsuxfg@mail.gmail.com>
+References: <1367959554-3218-1-git-send-email-j.glisse@gmail.com>
+ <1367963581-fsskl9vz-mutt-n-horiguchi@ah.jp.nec.com>
+ <CAH3drwbQ91tb=C2D+fNkdPapK75db0yAaWsUrU2A41Rigsuxfg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mm: honor FOLL_GET flag in follow_hugetlb_page
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <CAH3drwbQ91tb=C2D+fNkdPapK75db0yAaWsUrU2A41Rigsuxfg@mail.gmail.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 May 2013 21:46, Dave Hansen <dave@sr71.net> wrote:
->
-> From: Dave Hansen <dave@linux.vnet.ibm.com>
->
-> Several architectures have similar stack debugging config options.
-> They all pretty much do the same thing, some with slightly
-> differing help text.
->
-> This patch changes the architectures to instead enable a Kconfig
-> boolean, and then use that boolean in the generic Kconfig.debug
-> to present the actual menu option.  This removes a bunch of
-> duplication and adds consistency across arches.
->
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> Reviewed-by: H. Peter Anvin <hpa@zytor.com>
-> Reviewed-by: James Hogan <james.hogan@imgtec.com>
-> Acked-by: Chris Metcalf <cmetcalf@tilera.com> [for tile]
-> Signed-off-by: Dave Hansen <dave.hansen@intel.com>
-> ---
->
->  linux.git-davehans/arch/blackfin/Kconfig       |    1 +
->  linux.git-davehans/arch/blackfin/Kconfig.debug |    7 -------
->  linux.git-davehans/arch/frv/Kconfig            |    1 +
->  linux.git-davehans/arch/frv/Kconfig.debug      |    4 ----
->  linux.git-davehans/arch/m32r/Kconfig           |    1 +
->  linux.git-davehans/arch/m32r/Kconfig.debug     |    7 -------
->  linux.git-davehans/arch/mips/Kconfig           |    1 +
->  linux.git-davehans/arch/mips/Kconfig.debug     |    9 ---------
->  linux.git-davehans/arch/mn10300/Kconfig        |    1 +
->  linux.git-davehans/arch/mn10300/Kconfig.debug  |    4 ----
->  linux.git-davehans/arch/powerpc/Kconfig        |    1 +
->  linux.git-davehans/arch/powerpc/Kconfig.debug  |    7 -------
->  linux.git-davehans/arch/tile/Kconfig           |    1 +
->  linux.git-davehans/arch/tile/Kconfig.debug     |    7 -------
->  linux.git-davehans/arch/x86/Kconfig            |    1 +
->  linux.git-davehans/arch/x86/Kconfig.debug      |   10 ----------
->  linux.git-davehans/lib/Kconfig.debug           |   21 +++++++++++++++++++++
->  17 files changed, 29 insertions(+), 55 deletions(-)
+On Tue, May 07, 2013 at 06:28:18PM -0400, Jerome Glisse wrote:
+> On Tue, May 7, 2013 at 5:53 PM, Naoya Horiguchi
+> <n-horiguchi@ah.jp.nec.com> wrote:
+> > On Tue, May 07, 2013 at 04:45:54PM -0400, j.glisse@gmail.com wrote:
+> >> From: Jerome Glisse <jglisse@redhat.com>
+> >>
+> >> Do not increase page count if FOLL_GET is not set.
+> >>
+> >> Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+> >> ---
+> >>  mm/hugetlb.c | 4 +++-
+> >>  1 file changed, 3 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> >> index 1a12f5b..5d1e46b 100644
+> >> --- a/mm/hugetlb.c
+> >> +++ b/mm/hugetlb.c
+> >> @@ -2991,7 +2991,9 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
+> >>  same_page:
+> >>               if (pages) {
+> >>                       pages[i] = mem_map_offset(page, pfn_offset);
+> >> -                     get_page(pages[i]);
+> >> +                     if (flags & FOLL_GET) {
+> >> +                             get_page_foll(pages[i]);
+> >> +                     }
+> >>               }
+> >>
+> >>               if (vmas)
+> >> --
+> >
+> > Hi Jerome,
+> >
+> > I think that we need to be careful in handling tail pages, because
+> > __get_page_tail_foll() uses page->_mapcount as refcount.
+> > When you get refcount on a tail page and free the hugepage without
+> > putting the *mapcount*, you will hit BUG_ON() in free_huge_page().
+> > Yes, this is a very tricky workaround for thp, so to avoid making
+> > things too complicated, I think either of the following is better:
+> >  - to get refcount only for head pages, or
+> >  - to introduce a hugetlbfs variant of get_page_foll().
+> 
+> Maybe a simpler variant is to just not take any refcount, ie like
+> current code if FOLL_GET is set then take refcount on all page wether
+> they are head/tail or not. I will resend with that.
 
-Now that metag, arc, and openrisc architectures are merged, maybe you
-could convert them too?
+Hmm, I think that FOLL_GET flag means "do get_page on page", so
+the "not take any refcount" variant seems to make no sense for me.
+Would it be better just call without FOLL_GET?
 
-Cheers
-James
+> > BTW, who do you expect is the caller of follow_hugetlb_page()
+> > with FOLL_GET (I can't find your subsequent patches 2/3 or 3/3)?
+> > I'm interested in this change because in my project it's necessary
+> > to implement this for hugepage migration
+> > (see https://lkml.org/lkml/2013/3/22/553).
+> 
+> I can not talk about the patchset yet (and it's not fully cook) but i
+> need to be able to get the page without taking reference so without
+> the FOLL_GET flag set but i need splitting, well no real splitting, i
+> need pfn for each fake sub page of huge page (interested in physical
+> address not in the page struct).
+
+If the caller knows the vma is backed by hugetlbfs, we can get pfn of
+the tail page by adding page offset (which can be calcurated by the virtual
+address with proper huge page mask) to the head page's pfn.
+
+Thanks,
+Naoya Horiguchi
