@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759433Ab3EGJSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 05:18:07 -0400
-Received: from mail-de.keymile.com ([195.8.104.250]:43521 "EHLO
-	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759277Ab3EGJSE (ORCPT
+	id S1759459Ab3EGJTD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 05:19:03 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57930 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759343Ab3EGJTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 05:18:04 -0400
-X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 May 2013 05:18:04 EDT
-Message-ID: <5188C500.8010209@keymile.com>
-Date: Tue, 07 May 2013 11:10:24 +0200
-From: Valentin Longchamp <valentin.longchamp@keymile.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Tue, 7 May 2013 05:19:01 -0400
+Message-ID: <5188C6FD.9010903@pengutronix.de>
+Date: Tue, 07 May 2013 11:18:53 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Jason Cooper <jason@lakedaemon.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] mv643xx_eth: device tree bindings
-References: <1365071235-11611-1-git-send-email-florian@openwrt.org> <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Oliver Hartkopp <socketcan@hartkopp.net>, linux-can@vger.kernel.org
+Subject: Re: [PATCH, RFC 01/22] can: move CONFIG_HAVE_CAN_FLEXCAN out of CAN_DEV
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-2-git-send-email-arnd@arndb.de> <5183892B.8020400@pengutronix.de> <201305031724.15584.arnd@arndb.de>
+In-Reply-To: <201305031724.15584.arnd@arndb.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2HNSPVJXIPHKTIRHBFOQQ"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2HNSPVJXIPHKTIRHBFOQQ
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-On 05/06/2013 05:33 PM, Sebastian Hesselbarth wrote:
-> This patch set picks up work by Florian Fainelli bringing full DT
-> support to mv643xx_eth and Marvell SoCs using it.
-> 
-> The current patch set drops Florian's device tree conversions for
-> Kirkwood, Dove, and Orion5x in favour of split patches for board
-> files and board descriptor files.
-> 
-> Device tree conversion for Dove and Kirkwood is added. Dove has
-> been fully tested, while Kirkwood is compile-tested only.
-> 
-> Florian Fainelli (2):
->   net: mv643xx_eth: add Device Tree bindings
->   net: mv643xx_eth: update Device Tree bindings documentation
-> 
-> Sebastian Hesselbarth (5):
->   ARM: dove: remove legacy mv643xx_eth setup
->   ARM: dove: add gigabit ethernet and mvmdio device tree nodes
->   ARM: kirkwood: remove legacy mv643xx_eth board setup
->   ARM: kirkwood: add gigabit ethernet and mvmdio device tree nodes
->   ARM: kirkwood: remove legacy clk alias for mv643xx_eth
-> 
+On 05/03/2013 05:24 PM, Arnd Bergmann wrote:
+> On Friday 03 May 2013, Marc Kleine-Budde wrote:
+>> On 05/02/2013 05:16 PM, Arnd Bergmann wrote:
+>>> CONFIG_HAVE_CAN_FLEXCAN is a silect symbol that is meant to be select=
+ed
+>>> by platforms that support this driver, but that is not possible witho=
+ut
+>>> also selecting CAN_DEV, unless we move it out of the "if CAN_DEV"
+>>> section of the Kconfig file.
+>>>
+>>> warning: (SOC_IMX28 && SOC_IMX25 && SOC_IMX35 &&
+>>>  IMX_HAVE_PLATFORM_FLEXCAN && SOC_IMX53 && SOC_IMX6Q) selects HAVE_CA=
+N_FLEXCAN
+>>>  which has unmet direct dependencies (NET && CAN && CAN_DEV)
+>>
+>> With the advent of multi platform kernels I like to get rid of
+>> HAVE_CAN_FLEXCAN completely.
+>=20
+> Yes, good idea. Are there any other dependencies we need to add then?
+> I assume FLEXCAN needs to depend on HAS_IOMEM and OF at least, but
+> there might be more.
 
-I have successfully tested these patches on km_kirkwood, you can add my tested-by:
+The driver compiles (tested on SH and blacksfin) and works without
+CONFIG_OF (on non DT arm platforms).
 
-Tested-by: Valentin Longchamp<valentin.longchamp@keymile.com>
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+------enig2HNSPVJXIPHKTIRHBFOQQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGIxv0ACgkQjTAFq1RaXHO3bQCfZP4g8Y+lK/pbe8e8m9gT4ixL
+zbQAn1H1HTr0TmnFlfGJeTKy8MAPJa8Z
+=37mW
+-----END PGP SIGNATURE-----
+
+------enig2HNSPVJXIPHKTIRHBFOQQ--
