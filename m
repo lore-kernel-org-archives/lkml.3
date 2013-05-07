@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933566Ab3EGNxm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:53:42 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:54421 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933416Ab3EGNxh (ORCPT
+	id S1759255Ab3EGNmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:42:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42494 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933285Ab3EGNmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:53:37 -0400
-Message-ID: <1367934810.8328.30.camel@jlt4.sipsolutions.net>
-Subject: Re: Bisected 3.9 regression for iwl4965 connection problem to
- 1672c0e3
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Jake Edge <jake@lwn.net>, linux-wireless@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Date: Tue, 07 May 2013 15:53:30 +0200
-In-Reply-To: <20130507084241.GA1581@redhat.com>
-References: <20130505143803.7e46e4c6@chukar.edge2.net>
-	 <20130506123805.GA1602@redhat.com>
-	 <20130506083759.556dac76@chukar.edge2.net>
-	 <20130506153044.GB1602@redhat.com>
-	 <1367854279.8434.13.camel@jlt4.sipsolutions.net>
-	 <1367855046.8434.16.camel@jlt4.sipsolutions.net>
-	 <20130507084241.GA1581@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 7 May 2013 09:42:02 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 085/118] tracing: Reset ftrace_graph_filter_enabled if count is zero
+Date: Tue,  7 May 2013 14:38:51 +0100
+Message-Id: <1367933964-1564-86-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
+References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-07 at 10:42 +0200, Stanislaw Gruszka wrote:
+3.5.7.12 -stable review patch.  If anyone has any objections, please let me know.
 
-> Can you explain why it is named passive_no_rx instead passive_no_tx ?
+------------------
 
-Emmanuel already commented on this, basically the error codes are all
-for "I couldn't transmit this frame", so here we have "I couldn't
-transmit this frame because it was on a _passive_ channel and there was
-_no rx_ yet."
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-> > I think the best way to solve this would be to do such a thing in
-> > iwlegacy as well, but until then and for stable maybe we should
-> > introduce another HW flag to restore the previous mac80211 behaviour?
-> 
-> I'm not sure if I like to add passive_no_rx to iwlegacy. Stopping queues
-> and waiting for beacon looks sticky, what happen if beacon will not be
-> received?
+commit 9f50afccfdc15d95d7331acddcb0f7703df089ae upstream.
 
-Good question, do we get stuck? I was assuming we'd time out, but maybe
-that's not the case?
+The ftrace_graph_count can be decreased with a "!" pattern, so that
+the enabled flag should be updated too.
 
-> Perhaps I will just remove IEEE80211_HW_REPORTS_TX_ACK_STATUS from 4965,
-> it's simpler workaround ?
+Link: http://lkml.kernel.org/r/1365663698-2413-1-git-send-email-namhyung@kernel.org
 
-Sure, but maybe that loses other semantics that you want?
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ kernel/trace/ftrace.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-And anyway it's not complete. If you have a very long beacon interval
-(say 1 second) then this could still lead to all probe/auth retries
-going out inbetween two beacons since the timeout is just 3*100ms.
-
-johannes
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 80b2000..36759bf 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3579,7 +3579,8 @@ out:
+ 	if (fail)
+ 		return -EINVAL;
+ 
+-	ftrace_graph_filter_enabled = 1;
++	ftrace_graph_filter_enabled = !!(*idx);
++
+ 	return 0;
+ }
+ 
+-- 
+1.8.1.2
 
