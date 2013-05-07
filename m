@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933770Ab3EGOMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 10:12:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42228 "EHLO
+	id S933665Ab3EGOND (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 10:13:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42211 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932837Ab3EGNlD (ORCPT
+	with ESMTP id S932807Ab3EGNlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:41:03 -0400
+	Tue, 7 May 2013 09:41:00 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+Cc: Ursula Braun <ursula.braun@de.ibm.com>,
+        Mathias Krause <minipli@googlemail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 038/118] netrom: fix invalid use of sizeof in nr_recvmsg()
-Date: Tue,  7 May 2013 14:38:04 +0100
-Message-Id: <1367933964-1564-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 035/118] iucv: Fix missing msg_namelen update in iucv_sock_recvmsg()
+Date: Tue,  7 May 2013 14:38:01 +0100
+Message-Id: <1367933964-1564-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit c802d759623acbd6e1ee9fbdabae89159a513913 upstream.
+commit a5598bd9c087dc0efc250a5221e5d0e6f584ee88 upstream.
 
-sizeof() when applied to a pointer typed expression gives the size of the
-pointer, not that of the pointed data.
-Introduced by commit 3ce5ef(netrom: fix info leak via msg_name in nr_recvmsg)
+The current code does not fill the msg_name member in case it is set.
+It also does not set the msg_namelen member to 0 and therefore makes
+net/socket.c leak the local, uninitialized sockaddr_storage variable
+to userland -- 128 bytes of kernel stack memory.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Fix that by simply setting msg_namelen to 0 as obviously nobody cared
+about iucv_sock_recvmsg() not filling the msg_name in case it was set.
+
+Cc: Ursula Braun <ursula.braun@de.ibm.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/netrom/af_netrom.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/iucv/af_iucv.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/netrom/af_netrom.c b/net/netrom/af_netrom.c
-index 72cad6c..7ed9b1d 100644
---- a/net/netrom/af_netrom.c
-+++ b/net/netrom/af_netrom.c
-@@ -1177,7 +1177,7 @@ static int nr_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	}
+diff --git a/net/iucv/af_iucv.c b/net/iucv/af_iucv.c
+index cd6f7a9..625bc50 100644
+--- a/net/iucv/af_iucv.c
++++ b/net/iucv/af_iucv.c
+@@ -1331,6 +1331,8 @@ static int iucv_sock_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 	struct sk_buff *skb, *rskb, *cskb;
+ 	int err = 0;
  
- 	if (sax != NULL) {
--		memset(sax, 0, sizeof(sax));
-+		memset(sax, 0, sizeof(*sax));
- 		sax->sax25_family = AF_NETROM;
- 		skb_copy_from_linear_data_offset(skb, 7, sax->sax25_call.ax25_call,
- 			      AX25_ADDR_LEN);
++	msg->msg_namelen = 0;
++
+ 	if ((sk->sk_state == IUCV_DISCONN) &&
+ 	    skb_queue_empty(&iucv->backlog_skb_q) &&
+ 	    skb_queue_empty(&sk->sk_receive_queue) &&
 -- 
 1.8.1.2
 
