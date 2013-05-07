@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932647Ab3EGBsu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 21:48:50 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:34537 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932440Ab3EGBst (ORCPT
+	id S932821Ab3EGBzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 21:55:22 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:45180 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759352Ab3EGBzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 21:48:49 -0400
+	Mon, 6 May 2013 21:55:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <1367889447-15619-3-git-send-email-chao.xie@marvell.com>
-References: <1367889447-15619-1-git-send-email-chao.xie@marvell.com>
-	<1367889447-15619-3-git-send-email-chao.xie@marvell.com>
-Date: Tue, 7 May 2013 09:48:47 +0800
-Message-ID: <CAN1soZxQQTQG1CdNGYmCDfddLHWA5HVZ+SWjFhcfidsdGazprw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] rtc: pxa: add pxa95x rtc support
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Chao Xie <chao.xie@marvell.com>
-Cc: xie chao <xiechao.mail@gmail.com>, Linux Russell <linux@arm.linux.org.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Leo Song <liangs@marvell.com>
+In-Reply-To: <CAErSpo6iwM2r8b-aoiBPjQpkdpcfgLiO+WkpiM1wFsDhxuSXPg@mail.gmail.com>
+References: <5153620E.4010608@gmail.com> <CAErSpo6w+tTbwJ7Qinpd0Vx20q5cm2gMvqzE1Do+2=G3b8rcHA@mail.gmail.com>
+ <CAErSpo6iwM2r8b-aoiBPjQpkdpcfgLiO+WkpiM1wFsDhxuSXPg@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 6 May 2013 18:54:59 -0700
+Message-ID: <CAErSpo68AWCGWQHKgoKuD-QFA0b+jbCRf7T_PzzKoUsVwdZHOg@mail.gmail.com>
+Subject: Re: 3.8.4 kernel
+To: "Joseph A. Millikan" <josephamillikan@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Xiong" <xiong@qca.qualcomm.com>,
+        Cloud Ren <cjren@qca.qualcomm.com>, netdev <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 7, 2013 at 9:17 AM, Chao Xie <chao.xie@marvell.com> wrote:
-> the pxa95x rtc need access PBSR register before write to RTTR, RCNR, RDCR, and RYCR registers.
+[+cc Xiong, Cloud, netdev since this looks like an atl1c issue]
+
+On Fri, Apr 26, 2013 at 3:33 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Wed, Mar 27, 2013 at 3:46 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Wed, Mar 27, 2013 at 3:18 PM, Joseph A. Millikan
+>> <josephamillikan@gmail.com> wrote:
+>>>
+>>> We use Mint 11 32-bit and we've noticed with any kernel beyond 3.6.11, the
+>>> Ethernet port stops responding to pings after 15 minutes and samba clients
+>>> cease to receive data in realtime.  I hope this is the correct place to
+>>> report this as we received a nasty, sullen response when posted with the
+>>> Ubuntu folks (which we will NEVER do again.)
+>>>
+>>> If you aren't the proper party to whom we should direct this report, please
+>>> disregard.  We were just trying to help developers if there is an
+>>> undiscovered issue with Ethernet ports on Lenovo G770 laptops which our
+>>> court uses with Mint 11.
+>>
+>> What specific kernels have you tried?  It'd be surprising if such an
+>> egregious issue went unnoticed for long, but if recent kernels like
+>> 3.8 or 3.9-rc are still broken, there's likely something we need to
+>> fix.  Can you collect complete dmesg logs from 3.6.11 and the oldest
+>> broken kernel you've found?  You might also run "watch cat
+>> /proc/interrupts" in a window off to the side and see if the NIC
+>> interrupt count stops increasing after 15 minutes.
 >
-> Signed-off-by: Chao Xie <chao.xie@marvell.com>
-> ---
+> Did this ever get resolved?
 
-Do we really need this for other SoC? PXA95x is removed already since
-it's a block on supporting
-multi-platform & not used widely.
+I opened https://bugzilla.kernel.org/show_bug.cgi?id=57681 to keep
+track of this and attached the dmesg logs you collected.  If you have
+a chance, could you also collect and attach the output of "lspci -vv"
+(any kernel is fine for this).
 
-Regards
-Haojian
+I don't see anything obvious wrong, at least from the PCI side.  Maybe
+the atl1c guys will have some ideas.
+
+Bjorn
