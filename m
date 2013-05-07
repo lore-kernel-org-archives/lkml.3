@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933669Ab3EGN4l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:56:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42513 "EHLO
+	id S933557Ab3EGN4z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:56:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42505 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933302Ab3EGNmG (ORCPT
+	with ESMTP id S933291Ab3EGNmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:06 -0400
+	Tue, 7 May 2013 09:42:05 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 092/118] iwlwifi: dvm: don't send zeroed LQ cmd
-Date: Tue,  7 May 2013 14:38:58 +0100
-Message-Id: <1367933964-1564-93-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 090/118] usbfs: Always allow ctrl requests with USB_RECIP_ENDPOINT on the ctrl ep
+Date: Tue,  7 May 2013 14:38:56 +0100
+Message-Id: <1367933964-1564-91-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
 References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
@@ -28,50 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 63b77bf489881747c5118476918cc8c29378ee63 upstream.
+commit 1361bf4b9f9ef45e628a5b89e0fd9bedfdcb7104 upstream.
 
-When the stations are being restored because of unassoc
-RXON, the LQ cmd may not have been initialized because it
-is initialized only after association.
-Sending zeroed LQ_CMD makes the fw unhappy: it raises
-SYSASSERT_2078.
+When usbfs receives a ctrl-request from userspace it calls check_ctrlrecip,
+which for a request with USB_RECIP_ENDPOINT tries to map this to an interface
+to see if this interface is claimed, except for ctrl-requests with a type of
+USB_TYPE_VENDOR.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-[move zero_lq and make static const]
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[ luis: backport to 3.5:
-  - file rename: dvm/sta.c -> iwl-agn-sta.c ]
+When trying to use this device: http://www.akaipro.com/eiepro
+redirected to a Windows vm running on qemu on top of Linux.
+
+The windows driver makes a ctrl-req with USB_TYPE_CLASS and
+USB_RECIP_ENDPOINT with index 0, and the mapping of the endpoint (0) to
+the interface fails since ep 0 is the ctrl endpoint and thus never is
+part of an interface.
+
+This patch fixes this ctrl-req failing by skipping the checkintf call for
+USB_RECIP_ENDPOINT ctrl-reqs on the ctrl endpoint.
+
+Reported-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
+Tested-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-sta.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/usb/core/devio.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-sta.c b/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
-index 287fdd0..b4f0661 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
-@@ -723,6 +723,7 @@ void iwl_clear_ucode_stations(struct iwl_priv *priv,
- void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
- {
- 	struct iwl_addsta_cmd sta_cmd;
-+	static const struct iwl_link_quality_cmd zero_lq = {};
- 	struct iwl_link_quality_cmd lq;
- 	int i;
- 	bool found = false;
-@@ -761,7 +762,9 @@ void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
- 				else
- 					memcpy(&lq, priv->stations[i].lq,
- 					       sizeof(struct iwl_link_quality_cmd));
--				send_lq = true;
-+
-+				if (!memcmp(&lq, &zero_lq, sizeof(lq)))
-+					send_lq = true;
- 			}
- 			spin_unlock_bh(&priv->sta_lock);
- 			ret = iwl_send_add_sta(priv, &sta_cmd, CMD_SYNC);
+diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+index 62679bc..f70b887 100644
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -681,6 +681,8 @@ static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
+ 	index &= 0xff;
+ 	switch (requesttype & USB_RECIP_MASK) {
+ 	case USB_RECIP_ENDPOINT:
++		if ((index & ~USB_DIR_IN) == 0)
++			return 0;
+ 		ret = findintfep(ps->dev, index);
+ 		if (ret >= 0)
+ 			ret = checkintf(ps, ret);
 -- 
 1.8.1.2
 
