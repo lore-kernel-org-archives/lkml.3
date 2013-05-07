@@ -1,125 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab3EGKfH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 06:35:07 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:59921 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756104Ab3EGKfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 06:35:04 -0400
-X-AuditID: cbfee68d-b7f016d000007930-3e-5188d8d56684
-Message-id: <1367922839.16581.42.camel@kjgkr>
-Subject: Re: [PATCH 4/4] f2fs: optimize build_free_nids()
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Haicheng Li <haicheng.li@linux.intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Haicheng Li <haicheng.lee@gmail.com>
-Date: Tue, 07 May 2013 19:33:59 +0900
-In-reply-to: <1367853344-28938-5-git-send-email-haicheng.li@linux.intel.com>
-References: <1367853344-28938-1-git-send-email-haicheng.li@linux.intel.com>
- <1367853344-28938-5-git-send-email-haicheng.li@linux.intel.com>
-Organization: samsung
-Content-type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature"; boundary="=-ujGAJO0sZkMGphlpYptQ"
-X-Mailer: Evolution 3.2.3-0ubuntu6
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgleLIzCtJLcpLzFFi42I5/e+Zvu7VGx2BBo9eW1ncWFBmceZZB6PF
-	pUXuFnv2nmSxuLxrDpsDq8fOWXfZPeadDPTYveAzk8fnTXIBLFFcNimpOZllqUX6dglcGR/X
-	LmQumC1QcfrNQZYGxi6+LkZODgkBE4lDF18zQ9hiEhfurWfrYuTiEBJYxijxZX87G0xR/9ET
-	LBCJRYwS15fNZIRwXjNK7DzYA5Th4OAV0JVo+VwI0iAsYCmxefUbRpAwm4C2xOb9BiBhIQFF
-	ibf777KC2CJA1RPfzmYCGcMs0A+0bPtDsGUsAqoS25dvZwKxOQV8JDr//maC2NXLKNF5oAUs
-	wS8gKnGy9RMjiM0sUCXRvrYJ6lIlid3tnewgNq+AoMSPyffArpYQ6OWQuD3jFhPEBgGJb5MP
-	gR0tISArsekA1PuSEgdX3GCZwCg+C8nYWUhGQcQ1JVq3/2aHsLUlli18zQxh20qsW/ceqsZG
-	YtPVBYwQtrzE9rdzmBcwsq9iFE0tSC4oTkovMtQrTswtLs1L10vOz93ECInm3h2Mtw9YH2Ks
-	AjpxIrOUaHI+MBnklcQbGpsZWZiamBobmVuaUUVYSZxXrcU6UEggPbEkNTs1tSC1KL6oNCe1
-	+BAjEwenVAMjn5/Jocv3Or1qs//qnsxfp2d8VizpppbRmo0fXq1eHvH02PRrvUt0g3hvadds
-	/Fdl/9Zb42oTa8/hy6tnSM85dv7P290x/DtNQ6+9+XnuuE3vcS/dxwffV3r//fFPd43IP76b
-	Irv69B5Yzd8Ubajzg6M9dOo25ZOyXzjC5vrdlzAulbP7qMi9VYmlOCPRUIu5qDgRAHlUtkUT	AwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e+xgO7VGx2BBvuXmVncWFBmceZZB6PF
-	pUXuFnv2nmSxuLxrDpsDq8fOWXfZPeadDPTYveAzk8fnTXIBLFENjDYZqYkpqUUKqXnJ+SmZ
-	eem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QFuVFMoSc0qBQgGJxcVK+naYJoSG
-	uOlawDRG6PqGBMH1GBmggYR1jBkf1y5kLpgtUHH6zUGWBsYuvi5GTg4JAROJ/qMnWCBsMYkL
-	99azdTFycQgJLGKUuL5sJiOE85pRYufBHqAqDg5eAV2Jls+FIA3CApYSm1e/YQQJswloS2ze
-	bwASFhJQlHi7/y4riC0CVD3x7WwmkDHMAv2MEl+2P2QDSbAIqEpsX76dCcTmFPCR6Pz7mwli
-	Vy+jROeBFrAEv4CoxMnWT4wgNrNAlUT72iY2iEuVJHa3d7KD2LwCghI/Jt9jmcAoOAtJ2Swk
-	KYi4pkTr9t/sELa2xLKFr5khbFuJdeveQ9XYSGy6uoARwpaX2P52DvMCRvZVjKKpBckFxUnp
-	uUZ6xYm5xaV56XrJ+bmbGMGp4pn0DsZVDRaHGAU4GJV4eBVOtQcKsSaWFVfmHmJUAZrzaMPq
-	C4xSLHn5ealKIrw3DnYECvGmJFZWpRblxxeV5qQWH2KcyAgMj4nMUqLJ+cAEl1cSb2hsYmZk
-	aWRmYWRibk5LYSVx3oOt1oFCAumJJanZqakFqUUwRzFxcEo1MPLcfnjzt3znNofiZWKTWPon
-	RT1YM3OG/Kq2Biatg0m9Sfr99hkrEuVPLt1v80DpUb6Px0TTs5Gx/7uPnlQN38HTfsPMnjds
-	WlteTtsKPrU5575wXxe4stPs9QuDqa5bKrf9Dn766GXZ5cPszsomcyMezpJYv5/vgVKeB+9x
-	hfKzeuHKiwKEHZRYijMSDbWYi4oTAZMxL+mUAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1756512Ab3EGKgm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 06:36:42 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34377 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755728Ab3EGKgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 06:36:40 -0400
+Date: Tue, 7 May 2013 12:38:30 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Bruno =?utf-8?Q?Pr=C3=A9mont?= <bonbons@linux-vserver.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux-ACPI <linux-acpi@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Lance Ortiz <lance.ortiz@hp.com>,
+        Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: WARNING at drivers/pci/search.c:214 for 3.9
+Message-ID: <20130507103830.GA7633@pd.tnic>
+References: <20130506162112.6b79b7b1@pluto.restena.lu>
+ <20130506150757.GC22041@pd.tnic>
+ <20130507085205.5a41b5ca@pluto.restena.lu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130507085205.5a41b5ca@pluto.restena.lu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 07, 2013 at 08:52:05AM +0200, Bruno Prémont wrote:
+> Better that way (log_buf_len=10M)!
+> 
+> The full boot log is available at:
+>   http://pastebin.com/hVVne14C
+> (the Hardware Error message is there right before the series of
+> WARNINGs)
 
---=-ujGAJO0sZkMGphlpYptQ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Yep, thanks.
 
-Hi,
+So your error doesn't happen straight after the box has booted but
+later, ~70 seconds within the boot. I'm guessing that's reproducible?
+Are you doing something specific right after the machine is booted? It
+doesn't look so to me because you're in cpu_idle when the timer IRQ
+happens.
 
-2013-05-06 (=EC=9B=94), 23:15 +0800, Haicheng Li:
-> When nm_i->fcnt > 2 * MAX_FREE_NIDS, stop scanning other NAT pages.
->=20
-> Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
-> ---
->  fs/f2fs/node.c |    2 ++
->  1 file changed, 2 insertions(+)
->=20
-> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> index 1fe3fe2..3136224 100644
-> --- a/fs/f2fs/node.c
-> +++ b/fs/f2fs/node.c
-> @@ -1342,6 +1342,8 @@ static void build_free_nids(struct f2fs_sb_info *sb=
-i)
->  		if (nid >=3D nm_i->max_nid)
->  			nid =3D 0;
-> =20
-> +		if (nm_i->fcnt > 2 * MAX_FREE_NIDS)
-> +			break;
+It looks like this is the polling interval that comes from the GHES
+gunk.
 
-Could you explain when this can happen?
+I guess what I'm trying to say is, are you doing something special to
+cause the PCIe error or it just happens while the machine is idle?
 
-IMO, this is an unnecessary condition check, since the below condition
-that includes FREE_NID_PAGES already limits the number of free nids.
-Thanks,
+What about a BIOS update?
 
->  		if (i++ =3D=3D FREE_NID_PAGES)
->  			break;
->  	}
+> > > For older kernels (3.8.x and older) I only have:
+> > > [   65.741777] {1}[Hardware Error]: Hardware error from APEI Generic Hardware Error Source: 1
+> > > [   65.763335] {1}[Hardware Error]: APEI generic hardware error status
+> > > [   65.782650] {1}[Hardware Error]: severity: 2, corrected
+> > > [   65.782652] {1}[Hardware Error]: section: 0, severity: 2, corrected
+> > > [   65.782653] {1}[Hardware Error]: flags: 0x01
+> > > [   65.782655] {1}[Hardware Error]: primary
+> > > [   65.782656] {1}[Hardware Error]: fru_text: CorrectedErr
+> > > [   65.782658] {1}[Hardware Error]: section_type: PCIe error
+> > > [   65.782659] {1}[Hardware Error]: port_type: 0, PCIe end point
+> > > [   65.782660] {1}[Hardware Error]: version: 0.0
+> > > [   65.782662] {1}[Hardware Error]: command: 0xffff, status: 0xffff
+> > > [   65.782664] {1}[Hardware Error]: device_id: 0000:00:02.3
+> > 
+> > Interesting. AFAICT, you don't have such device in lspci below.
+> 
+> Yes it has been that way from the start and under BIOS settings I've
+> found nothing that would make mentioned device visible.
 
---=20
-Jaegeuk Kim
-Samsung
+Hmm, so it could be some hidden device or maybe the error info is
+corrupted. Btw, it also says:
 
---=-ujGAJO0sZkMGphlpYptQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+[   72.948961] PCI AER Cannot get PCI device 0000:00:00.3
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+which is also a device you *don't* find in lspci.
 
-iQIcBAABAgAGBQJRiNiXAAoJEEAUqH6CSFDSogkP/1/YJNe2b2Tdt2EuMX53sO/7
-9Goy4BrZkJV1+w15Dj/tP3TDg+kRKot58PWqUblARww3R9YF+aPl4pr401vjtAeh
-JQh9iEgwfutbrlbZTRG1SapWNMYD5wQAcWUN5rfdDRRQeCu5CUdFs+VzdHoPIj0k
-CPz8fpsSwthJW03Apt5pRJIntfUfRCg3GYOLjYTS809Hdhrhv2PnVx3EXRax/daU
-lIqcNg9vj4JZflDlMPZf6tumTbWZCsoCKaArHfnxlJl1YlNckjZZbITdzcPhh3wk
-B6aOJep5utRWVbfQ9UFPy7GfJ18VrGutt8U4JImvBgkBEdDjBs/5geqb85qTOufL
-QMmULibfR3t5dEh7lJ+ePort8Pzv/Dlx6xwamaI4xIK4PMwxGLsMbOJsr1+Nka2B
-d7dazH60zPBDasBr46cVEVlUyGac8EdpsENlJl5p7en4IgebmTn1TJIra5O0T9WU
-/aH+j0gLkX8F8RVDWQG9EqaCymM8qGeDU5OQFxieJTSqJ++M02/RxAWwFQxT6Kem
-wDU7gBaieqpl0ZNfDlGquclfCEPvrNm1DuK/8lEedS3Utr1KRKtSHEDfR+VAKzTP
-UJIBmSBWUkG3ZFuqI4VSwAmHIYASgsW3Oy1CUUl9DtjMqw/D4Jw449waMAe5CW0w
-iT6R9hYSv4kg/1un/dBc
-=C7dS
------END PGP SIGNATURE-----
+This is fun - detecting PCIe devices by the errors they generate.
+Hahahaha.
 
---=-ujGAJO0sZkMGphlpYptQ--
+To tell you the truth, nothing will surprise me anymore. :-)
 
+> > > [   65.782665] {1}[Hardware Error]: slot: 0
+> > > [   65.782666] {1}[Hardware Error]: secondary_bus: 0x00
+> > > [   65.782667] {1}[Hardware Error]: vendor_id: 0xffff, device_id: 0xffff
+> > > [   65.782668] {1}[Hardware Error]: class_code: ffffff
+> > > 
+> > > which was being "triggered" by
+> > >  commit 3c076351c4027a56d5005a39a0b518a4ba393ce2
+> > >  Author: Matthew Garrett <mjg@redhat.com>
+> > >  Date:   Thu Nov 10 16:38:33 2011 -0500
+> > > 
+> > >     PCI: Rework ASPM disable code
+> > 
+> > And if you revert it, the error above disappears? Adding Matthew.
+> 
+> Correct (at least on 3.0.y stable series).
+> 
+> 
+> Toggling the "ASPM support" BIOS option makes no difference.
+> 
+> I've even contacted Fujitsu but unfortunately got no useful result as
+> they only support SLES kernels,
+
+You gotta love hw vendors' excuses. I can translate this message into
+what it actually means :)
+
+> which have Matthew's patch reverted with
+> commit message:
+>   This reverts commit 6cac12dfab9c57a4f76821412224b226a9b08dff,
+>   upstream commit 3c076351c4027a56d5005a39a0b518a4ba393ce2.
+
+Yeah, they got reverted for SP2 but are back in SP3:
+
+http://kernel.opensuse.org/cgit/kernel-source/commit/?h=SLE11-SP3&id=cd825d98ec79f777c14531f402d13a66598f3179
+
+>   My PS/2 keyboard and touchpad are not detected with this patch.
+> 
+>   This turn 3.0.20 in a noop as there is no other patch. Except
+>   numbering is correct for further patches...
+
+I don't understand: are you saying this patch breaks detection of your
+keyboard and touchpad and if you revert it, it works again? But 3.9 works?
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
