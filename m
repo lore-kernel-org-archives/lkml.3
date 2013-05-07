@@ -1,246 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758755Ab3EGUqw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 16:46:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:11043 "EHLO mga11.intel.com"
+	id S1759386Ab3EGUq5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 16:46:57 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44289 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752849Ab3EGUqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 16:46:48 -0400
+	id S1758959Ab3EGUqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 16:46:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,629,1363158000"; 
-   d="scan'208";a="334078850"
-Subject: [PATCH 3/7] consolidate runtime testing configs
+   d="scan'208";a="334078892"
+Subject: [PATCH 7/7] hang and lockup detection menu
 To: mmarek@suse.cz
 Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
         Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Tue, 07 May 2013 13:46:46 -0700
+Date: Tue, 07 May 2013 13:46:52 -0700
 References: <20130507204642.D010DDC1@viggo.jf.intel.com>
 In-Reply-To: <20130507204642.D010DDC1@viggo.jf.intel.com>
-Message-Id: <20130507204646.081371C6@viggo.jf.intel.com>
+Message-Id: <20130507204652.3BA40001@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-From: Dave Hansen <dave@linux.vnet.ibm.com>
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-These runtime tests are great, except that there are a lot of them,
-and they are very rarely needed.  Give them their own menu so that
-only the folks who need them will have to go looking for them.
+The hard/softlockup and hung-task entries take up 6 lines
+of screen real-estate when enabled.  I bet folks don't
+mess with these _that_ often, so move them in a group
+down a level.
 
-Note that there are some other runtime tests that are not in here,
-like for RCU or locking.  This menu should only be used for tests
-that do not have a more appropriate home.
-
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
 
- linux.git-davehans/lib/Kconfig.debug |  157 ++++++++++++++++++-----------------
- 1 file changed, 81 insertions(+), 76 deletions(-)
+ linux.git-davehans/lib/Kconfig.debug |   42 +++++++++++++++++++----------------
+ 1 file changed, 23 insertions(+), 19 deletions(-)
 
-diff -puN lib/Kconfig.debug~consolidat-runtime-testing-configs lib/Kconfig.debug
---- linux.git/lib/Kconfig.debug~consolidat-runtime-testing-configs	2013-05-07 13:41:37.658500241 -0700
-+++ linux.git-davehans/lib/Kconfig.debug	2013-05-07 13:41:37.661500377 -0700
-@@ -861,15 +861,6 @@ config DEBUG_LIST
+diff -puN lib/Kconfig.debug~lockup-detection lib/Kconfig.debug
+--- linux.git/lib/Kconfig.debug~lockup-detection	2013-05-07 13:41:38.654544560 -0700
++++ linux.git-davehans/lib/Kconfig.debug	2013-05-07 13:41:38.658544740 -0700
+@@ -604,6 +604,8 @@ config DEBUG_SHIRQ
+ 	  Drivers ought to be able to handle interrupts coming in at those
+ 	  points; some don't and need to be caught.
  
- 	  If unsure, say N.
++menu "Debug Lockups and Hangs"
++
+ config LOCKUP_DETECTOR
+ 	bool "Detect Hard and Soft Lockups"
+ 	depends on DEBUG_KERNEL && !S390
+@@ -675,25 +677,6 @@ config BOOTPARAM_SOFTLOCKUP_PANIC_VALUE
+ 	default 0 if !BOOTPARAM_SOFTLOCKUP_PANIC
+ 	default 1 if BOOTPARAM_SOFTLOCKUP_PANIC
  
--config TEST_LIST_SORT
--	bool "Linked list sorting test"
--	depends on DEBUG_KERNEL
+-config PANIC_ON_OOPS
+-	bool "Panic on Oops"
 -	help
--	  Enable this to turn on 'list_sort()' function test. This test is
--	  executed only once during system boot, so affects only boot time.
+-	  Say Y here to enable the kernel to panic when it oopses. This
+-	  has the same effect as setting oops=panic on the kernel command
+-	  line.
 -
--	  If unsure, say N.
+-	  This feature is useful to ensure that the kernel does not do
+-	  anything erroneous after an oops which could result in data
+-	  corruption or other issues.
 -
- config DEBUG_SG
- 	bool "Debug SG table operations"
+-	  Say N if unsure.
+-
+-config PANIC_ON_OOPS_VALUE
+-	int
+-	range 0 1
+-	default 0 if !PANIC_ON_OOPS
+-	default 1 if PANIC_ON_OOPS
+-
+ config DETECT_HUNG_TASK
+ 	bool "Detect Hung Tasks"
  	depends on DEBUG_KERNEL
-@@ -1082,33 +1073,6 @@ config RCU_TRACE
+@@ -748,6 +731,27 @@ config BOOTPARAM_HUNG_TASK_PANIC_VALUE
+ 	default 0 if !BOOTPARAM_HUNG_TASK_PANIC
+ 	default 1 if BOOTPARAM_HUNG_TASK_PANIC
  
- endmenu # "RCU Debugging"
- 
--config KPROBES_SANITY_TEST
--	bool "Kprobes sanity tests"
--	depends on DEBUG_KERNEL
--	depends on KPROBES
--	default n
--	help
--	  This option provides for testing basic kprobes functionality on
--	  boot. A sample kprobe, jprobe and kretprobe are inserted and
--	  verified for functionality.
--
--	  Say N if you are unsure.
--
--config BACKTRACE_SELF_TEST
--	tristate "Self test for the backtrace code"
--	depends on DEBUG_KERNEL
--	default n
--	help
--	  This option provides a kernel module that can be used to test
--	  the kernel stack backtrace code. This option is not useful
--	  for distributions or general kernels, but only for kernel
--	  developers working on architecture code.
--
--	  Note that if you want to also test saved backtraces, you will
--	  have to enable STACKTRACE as well.
--
--	  Say N if you are unsure.
--
- config DEBUG_BLOCK_EXT_DEVT
-         bool "Force extended block device numbers and spread them"
- 	depends on DEBUG_KERNEL
-@@ -1151,21 +1115,6 @@ config DEBUG_FORCE_WEAK_PER_CPU
- 	  To ensure that generic code follows the above rules, this
- 	  option forces all percpu variables to be defined as weak.
- 
--config LKDTM
--	tristate "Linux Kernel Dump Test Tool Module"
--	depends on DEBUG_FS
--	depends on BLOCK
--	default n
--	help
--	This module enables testing of the different dumping mechanisms by
--	inducing system failures at predefined crash points.
--	If you don't need it: say N
--	Choose M here to compile this code as a module. The module will be
--	called lkdtm.
--
--	Documentation on how to use the module can be found in
--	Documentation/fault-injection/provoke-crashes.txt
--
- config NOTIFIER_ERROR_INJECTION
- 	tristate "Notifier error injection"
- 	depends on DEBUG_KERNEL
-@@ -1341,6 +1290,59 @@ config DEBUG_STRICT_USER_COPY_CHECKS
- 
- source kernel/trace/Kconfig
- 
-+menu "Runtime Testing"
++endmenu # "Debug lockups and hangs"
 +
-+config LKDTM
-+	tristate "Linux Kernel Dump Test Tool Module"
-+	depends on DEBUG_FS
-+	depends on BLOCK
-+	default n
++config PANIC_ON_OOPS
++	bool "Panic on Oops"
 +	help
-+	This module enables testing of the different dumping mechanisms by
-+	inducing system failures at predefined crash points.
-+	If you don't need it: say N
-+	Choose M here to compile this code as a module. The module will be
-+	called lkdtm.
++	  Say Y here to enable the kernel to panic when it oopses. This
++	  has the same effect as setting oops=panic on the kernel command
++	  line.
 +
-+	Documentation on how to use the module can be found in
-+	Documentation/fault-injection/provoke-crashes.txt
++	  This feature is useful to ensure that the kernel does not do
++	  anything erroneous after an oops which could result in data
++	  corruption or other issues.
 +
-+config TEST_LIST_SORT
-+	bool "Linked list sorting test"
-+	depends on DEBUG_KERNEL
-+	help
-+	  Enable this to turn on 'list_sort()' function test. This test is
-+	  executed only once during system boot, so affects only boot time.
++	  Say N if unsure.
 +
-+	  If unsure, say N.
++config PANIC_ON_OOPS_VALUE
++	int
++	range 0 1
++	default 0 if !PANIC_ON_OOPS
++	default 1 if PANIC_ON_OOPS
 +
-+config KPROBES_SANITY_TEST
-+	bool "Kprobes sanity tests"
-+	depends on DEBUG_KERNEL
-+	depends on KPROBES
-+	default n
-+	help
-+	  This option provides for testing basic kprobes functionality on
-+	  boot. A sample kprobe, jprobe and kretprobe are inserted and
-+	  verified for functionality.
-+
-+	  Say N if you are unsure.
-+
-+config BACKTRACE_SELF_TEST
-+	tristate "Self test for the backtrace code"
-+	depends on DEBUG_KERNEL
-+	default n
-+	help
-+	  This option provides a kernel module that can be used to test
-+	  the kernel stack backtrace code. This option is not useful
-+	  for distributions or general kernels, but only for kernel
-+	  developers working on architecture code.
-+
-+	  Note that if you want to also test saved backtraces, you will
-+	  have to enable STACKTRACE as well.
-+
-+	  Say N if you are unsure.
-+
- config RBTREE_TEST
- 	tristate "Red-Black tree test"
- 	depends on m && DEBUG_KERNEL
-@@ -1354,6 +1356,34 @@ config INTERVAL_TREE_TEST
- 	help
- 	  A benchmark measuring the performance of the interval tree library
- 
-+config ATOMIC64_SELFTEST
-+	bool "Perform an atomic64_t self-test at boot"
-+	help
-+	  Enable this option to test the atomic64_t functions at boot.
-+
-+	  If unsure, say N.
-+
-+config ASYNC_RAID6_TEST
-+	tristate "Self test for hardware accelerated raid6 recovery"
-+	depends on ASYNC_RAID6_RECOV
-+	select ASYNC_MEMCPY
-+	---help---
-+	  This is a one-shot self test that permutes through the
-+	  recovery of all the possible two disk failure scenarios for a
-+	  N-disk array.  Recovery is performed with the asynchronous
-+	  raid6 recovery routines, and will optionally use an offload
-+	  engine if one is available.
-+
-+	  If unsure, say N.
-+
-+config TEST_STRING_HELPERS
-+	tristate "Test functions located in the string_helpers module at runtime"
-+
-+config TEST_KSTRTOX
-+	tristate "Test kstrto*() family of functions at runtime"
-+
-+endmenu # runtime tests
-+
- config PROVIDE_OHCI1394_DMA_INIT
- 	bool "Remote debugging over FireWire early on boot"
- 	depends on PCI && X86
-@@ -1483,32 +1513,7 @@ config DMA_API_DEBUG
- 	  This option causes a performance degredation.  Use only if you want
- 	  to debug device drivers. If unsure, say N.
- 
--config ATOMIC64_SELFTEST
--	bool "Perform an atomic64_t self-test at boot"
--	help
--	  Enable this option to test the atomic64_t functions at boot.
--
--	  If unsure, say N.
--
--config ASYNC_RAID6_TEST
--	tristate "Self test for hardware accelerated raid6 recovery"
--	depends on ASYNC_RAID6_RECOV
--	select ASYNC_MEMCPY
--	---help---
--	  This is a one-shot self test that permutes through the
--	  recovery of all the possible two disk failure scenarios for a
--	  N-disk array.  Recovery is performed with the asynchronous
--	  raid6 recovery routines, and will optionally use an offload
--	  engine if one is available.
--
--	  If unsure, say N.
--
- source "samples/Kconfig"
- 
- source "lib/Kconfig.kgdb"
- 
--config TEST_STRING_HELPERS
--	tristate "Test functions located in the string_helpers module at runtime"
--
--config TEST_KSTRTOX
--	tristate "Test kstrto*() family of functions at runtime"
+ config SCHED_DEBUG
+ 	bool "Collect scheduler debugging info"
+ 	depends on DEBUG_KERNEL && PROC_FS
 _
