@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933091Ab3EGE2A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 00:28:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27877 "EHLO
+	id S933067Ab3EGE16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 00:27:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25931 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932718Ab3EGE0A (ORCPT
+	with ESMTP id S932723Ab3EGE0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 May 2013 00:26:00 -0400
-X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ivOjn_Gv3FMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=EPFvfYCz1DQA:10 a=drOt6m5kAAAA:8 a=VwQbUJbxAAAA:8 a=0AWPF2qeU-xyIF9p1esA:9 a=jeBq3FmKZ4MA:10 a=HEOv9xTZUOywZFQr:21 a=Zav5JBlrvi9NyppZ:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=cOZiQyiN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=PCQpanxj7wIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=jYcHjeBbu4AA:10 a=yPCof4ZbAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=QyXUC8HyAAAA:8 a=0AWPF2qeU-xyIF9p1esA:9 a=QJx6o7id4AAA:10 a=7DSvI1NPTFQA:10 a=jEp0ucaQiEUA:10 a=0kPLrQdw3YYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130507035850.947586356@goodmis.org>
+Message-Id: <20130507035850.774067031@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 06 May 2013 23:58:12 -0400
+Date: Mon, 06 May 2013 23:58:11 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [060/126] ARM: Do 15e0d9e37c (ARM: pm: let platforms select cpu_suspend
- support) properly
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Josh Boyer <jwboyer@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [059/126] x86, mm: Patch out arch_flush_lazy_mmu_mode() when running on bare
+ metal
 References: <20130507035712.909872333@goodmis.org>
-Content-Disposition: inline; filename=0060-ARM-Do-15e0d9e37c-ARM-pm-let-platforms-select-cpu_su.patch
+Content-Disposition: inline; filename=0059-x86-mm-Patch-out-arch_flush_lazy_mmu_mode-when-runni.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,117 +33,149 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-[ Upstream commit b6c7aabd923a17af993c5a5d5d7995f0b27c000a ]
+[ Upstream commit 511ba86e1d386f671084b5d0e6f110bb30b8eeb2 ]
 
-Let's do the changes properly and fix the same problem everywhere, not
-just for one case.
+Invoking arch_flush_lazy_mmu_mode() results in calls to
+preempt_enable()/disable() which may have performance impact.
 
-Cc: <stable@vger.kernel.org> # kernels containing 15e0d9e37c or equivalent
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Since lazy MMU is not used on bare metal we can patch away
+arch_flush_lazy_mmu_mode() so that it is never called in such
+environment.
+
+[ hpa: the previous patch "Fix vmalloc_fault oops during lazy MMU
+  updates" may cause a minor performance regression on
+  bare metal.  This patch resolves that performance regression.  It is
+  somewhat unclear to me if this is a good -stable candidate. ]
+
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Link: http://lkml.kernel.org/r/1364045796-10720-2-git-send-email-konrad.wilk@oracle.com
+Tested-by: Josh Boyer <jwboyer@redhat.com>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: <stable@vger.kernel.org> SEE NOTE ABOVE
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/arm/mm/proc-arm920.S |    2 +-
- arch/arm/mm/proc-arm926.S |    2 +-
- arch/arm/mm/proc-mohawk.S |    2 +-
- arch/arm/mm/proc-sa1100.S |    2 +-
- arch/arm/mm/proc-v6.S     |    2 +-
- arch/arm/mm/proc-xsc3.S   |    2 +-
- arch/arm/mm/proc-xscale.S |    2 +-
- 7 files changed, 7 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/paravirt.h       |    5 ++++-
+ arch/x86/include/asm/paravirt_types.h |    2 ++
+ arch/x86/kernel/paravirt.c            |   25 +++++++++++++------------
+ arch/x86/lguest/boot.c                |    1 +
+ arch/x86/xen/mmu.c                    |    1 +
+ 5 files changed, 21 insertions(+), 13 deletions(-)
 
-diff --git a/arch/arm/mm/proc-arm920.S b/arch/arm/mm/proc-arm920.S
-index 1a8c138..2a5691a 100644
---- a/arch/arm/mm/proc-arm920.S
-+++ b/arch/arm/mm/proc-arm920.S
-@@ -384,7 +384,7 @@ ENTRY(cpu_arm920_set_pte_ext)
- /* Suspend/resume support: taken from arch/arm/plat-s3c24xx/sleep.S */
- .globl	cpu_arm920_suspend_size
- .equ	cpu_arm920_suspend_size, 4 * 3
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_arm920_do_suspend)
- 	stmfd	sp!, {r4 - r6, lr}
- 	mrc	p15, 0, r4, c13, c0, 0	@ PID
-diff --git a/arch/arm/mm/proc-arm926.S b/arch/arm/mm/proc-arm926.S
-index c31e62c..5e174e4 100644
---- a/arch/arm/mm/proc-arm926.S
-+++ b/arch/arm/mm/proc-arm926.S
-@@ -399,7 +399,7 @@ ENTRY(cpu_arm926_set_pte_ext)
- /* Suspend/resume support: taken from arch/arm/plat-s3c24xx/sleep.S */
- .globl	cpu_arm926_suspend_size
- .equ	cpu_arm926_suspend_size, 4 * 3
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_arm926_do_suspend)
- 	stmfd	sp!, {r4 - r6, lr}
- 	mrc	p15, 0, r4, c13, c0, 0	@ PID
-diff --git a/arch/arm/mm/proc-mohawk.S b/arch/arm/mm/proc-mohawk.S
-index fbb2124..3fbb2c2 100644
---- a/arch/arm/mm/proc-mohawk.S
-+++ b/arch/arm/mm/proc-mohawk.S
-@@ -347,7 +347,7 @@ ENTRY(cpu_mohawk_set_pte_ext)
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index a0facf3..97da2bb 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -705,7 +705,10 @@ static inline void arch_leave_lazy_mmu_mode(void)
+ 	PVOP_VCALL0(pv_mmu_ops.lazy_mode.leave);
+ }
  
- .globl	cpu_mohawk_suspend_size
- .equ	cpu_mohawk_suspend_size, 4 * 6
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_mohawk_do_suspend)
- 	stmfd	sp!, {r4 - r9, lr}
- 	mrc	p14, 0, r4, c6, c0, 0	@ clock configuration, for turbo mode
-diff --git a/arch/arm/mm/proc-sa1100.S b/arch/arm/mm/proc-sa1100.S
-index 3aa0da1..d92dfd0 100644
---- a/arch/arm/mm/proc-sa1100.S
-+++ b/arch/arm/mm/proc-sa1100.S
-@@ -172,7 +172,7 @@ ENTRY(cpu_sa1100_set_pte_ext)
+-void arch_flush_lazy_mmu_mode(void);
++static inline void arch_flush_lazy_mmu_mode(void)
++{
++	PVOP_VCALL0(pv_mmu_ops.lazy_mode.flush);
++}
  
- .globl	cpu_sa1100_suspend_size
- .equ	cpu_sa1100_suspend_size, 4 * 3
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_sa1100_do_suspend)
- 	stmfd	sp!, {r4 - r6, lr}
- 	mrc	p15, 0, r4, c3, c0, 0		@ domain ID
-diff --git a/arch/arm/mm/proc-v6.S b/arch/arm/mm/proc-v6.S
-index 86b8b48..d9b9f8b 100644
---- a/arch/arm/mm/proc-v6.S
-+++ b/arch/arm/mm/proc-v6.S
-@@ -138,7 +138,7 @@ ENTRY(cpu_v6_set_pte_ext)
- /* Suspend/resume support: taken from arch/arm/mach-s3c64xx/sleep.S */
- .globl	cpu_v6_suspend_size
- .equ	cpu_v6_suspend_size, 4 * 6
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_v6_do_suspend)
- 	stmfd	sp!, {r4 - r9, lr}
- 	mrc	p15, 0, r4, c13, c0, 0	@ FCSE/PID
-diff --git a/arch/arm/mm/proc-xsc3.S b/arch/arm/mm/proc-xsc3.S
-index b0d5786..a2d1e86 100644
---- a/arch/arm/mm/proc-xsc3.S
-+++ b/arch/arm/mm/proc-xsc3.S
-@@ -410,7 +410,7 @@ ENTRY(cpu_xsc3_set_pte_ext)
+ static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
+ 				phys_addr_t phys, pgprot_t flags)
+diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+index 142236e..b3b0ec1 100644
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -91,6 +91,7 @@ struct pv_lazy_ops {
+ 	/* Set deferred update mode, used for batching operations. */
+ 	void (*enter)(void);
+ 	void (*leave)(void);
++	void (*flush)(void);
+ };
  
- .globl	cpu_xsc3_suspend_size
- .equ	cpu_xsc3_suspend_size, 4 * 6
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_xsc3_do_suspend)
- 	stmfd	sp!, {r4 - r9, lr}
- 	mrc	p14, 0, r4, c6, c0, 0	@ clock configuration, for turbo mode
-diff --git a/arch/arm/mm/proc-xscale.S b/arch/arm/mm/proc-xscale.S
-index 4ffebaa..9882153 100644
---- a/arch/arm/mm/proc-xscale.S
-+++ b/arch/arm/mm/proc-xscale.S
-@@ -524,7 +524,7 @@ ENTRY(cpu_xscale_set_pte_ext)
+ struct pv_time_ops {
+@@ -679,6 +680,7 @@ void paravirt_end_context_switch(struct task_struct *next);
  
- .globl	cpu_xscale_suspend_size
- .equ	cpu_xscale_suspend_size, 4 * 6
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_ARM_CPU_SUSPEND
- ENTRY(cpu_xscale_do_suspend)
- 	stmfd	sp!, {r4 - r9, lr}
- 	mrc	p14, 0, r4, c6, c0, 0	@ clock configuration, for turbo mode
+ void paravirt_enter_lazy_mmu(void);
+ void paravirt_leave_lazy_mmu(void);
++void paravirt_flush_lazy_mmu(void);
+ 
+ void _paravirt_nop(void);
+ u32 _paravirt_ident_32(u32);
+diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
+index 17fff18..8bfb335 100644
+--- a/arch/x86/kernel/paravirt.c
++++ b/arch/x86/kernel/paravirt.c
+@@ -263,6 +263,18 @@ void paravirt_leave_lazy_mmu(void)
+ 	leave_lazy(PARAVIRT_LAZY_MMU);
+ }
+ 
++void paravirt_flush_lazy_mmu(void)
++{
++	preempt_disable();
++
++	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
++		arch_leave_lazy_mmu_mode();
++		arch_enter_lazy_mmu_mode();
++	}
++
++	preempt_enable();
++}
++
+ void paravirt_start_context_switch(struct task_struct *prev)
+ {
+ 	BUG_ON(preemptible());
+@@ -292,18 +304,6 @@ enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
+ 	return this_cpu_read(paravirt_lazy_mode);
+ }
+ 
+-void arch_flush_lazy_mmu_mode(void)
+-{
+-	preempt_disable();
+-
+-	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
+-		arch_leave_lazy_mmu_mode();
+-		arch_enter_lazy_mmu_mode();
+-	}
+-
+-	preempt_enable();
+-}
+-
+ struct pv_info pv_info = {
+ 	.name = "bare hardware",
+ 	.paravirt_enabled = 0,
+@@ -475,6 +475,7 @@ struct pv_mmu_ops pv_mmu_ops = {
+ 	.lazy_mode = {
+ 		.enter = paravirt_nop,
+ 		.leave = paravirt_nop,
++		.flush = paravirt_nop,
+ 	},
+ 
+ 	.set_fixmap = native_set_fixmap,
+diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+index 642d880..53272bd 100644
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -1333,6 +1333,7 @@ __init void lguest_init(void)
+ 	pv_mmu_ops.read_cr3 = lguest_read_cr3;
+ 	pv_mmu_ops.lazy_mode.enter = paravirt_enter_lazy_mmu;
+ 	pv_mmu_ops.lazy_mode.leave = lguest_leave_lazy_mmu_mode;
++	pv_mmu_ops.lazy_mode.flush = paravirt_flush_lazy_mmu;
+ 	pv_mmu_ops.pte_update = lguest_pte_update;
+ 	pv_mmu_ops.pte_update_defer = lguest_pte_update;
+ 
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index dde1a3f..d396521 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2079,6 +2079,7 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
+ 	.lazy_mode = {
+ 		.enter = paravirt_enter_lazy_mmu,
+ 		.leave = xen_leave_lazy_mmu,
++		.flush = paravirt_flush_lazy_mmu,
+ 	},
+ 
+ 	.set_fixmap = xen_set_fixmap,
 -- 
 1.7.10.4
 
