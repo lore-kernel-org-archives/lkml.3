@@ -1,129 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759218Ab3EGI6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 04:58:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2644 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759016Ab3EGI6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 04:58:53 -0400
-Date: Tue, 7 May 2013 11:58:48 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, avi.kivity@gmail.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        takuya.yoshikawa@gmail.com
-Subject: Re: [PATCH v4 4/6] KVM: MMU: fast invalid all shadow pages
-Message-ID: <20130507085848.GI12349@redhat.com>
-References: <20130503010534.GA5467@amt.cnet>
- <51835087.8090605@linux.vnet.ibm.com>
- <20130503155302.GB3362@amt.cnet>
- <5183EAFA.4050500@linux.vnet.ibm.com>
- <20130504005201.GA11823@amt.cnet>
- <518725DF.5090503@linux.vnet.ibm.com>
- <20130506123625.GB12349@redhat.com>
- <5187ABB3.7020403@linux.vnet.ibm.com>
- <20130506172455.GB18963@redhat.com>
- <5187EC50.4030308@linux.vnet.ibm.com>
+	id S1759265Ab3EGJJY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 05:09:24 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34055 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759160Ab3EGJJW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 05:09:22 -0400
+Date: Tue, 7 May 2013 10:08:49 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/2] ARM: Remove any correlation between IPC and
+ BogoMips value
+Message-ID: <20130507090849.GC25387@mudshark.cambridge.arm.com>
+References: <1367602547-19322-1-git-send-email-will.deacon@arm.com>
+ <5187EFF3.6010005@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5187EC50.4030308@linux.vnet.ibm.com>
+In-Reply-To: <5187EFF3.6010005@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 01:45:52AM +0800, Xiao Guangrong wrote:
-> On 05/07/2013 01:24 AM, Gleb Natapov wrote:
-> > On Mon, May 06, 2013 at 09:10:11PM +0800, Xiao Guangrong wrote:
-> >> On 05/06/2013 08:36 PM, Gleb Natapov wrote:
-> >>
-> >>>>> Step 1) Fix kvm_mmu_zap_all's behaviour: introduce lockbreak via
-> >>>>> spin_needbreak. Use generation numbers so that in case kvm_mmu_zap_all 
-> >>>>> releases mmu_lock and reacquires it again, only shadow pages 
-> >>>>> from the generation with which kvm_mmu_zap_all started are zapped (this
-> >>>>> guarantees forward progress and eventual termination).
-> >>>>>
-> >>>>> kvm_mmu_zap_generation()
-> >>>>> 	spin_lock(mmu_lock)
-> >>>>> 	int generation = kvm->arch.mmu_generation;
-> >>>>>
-> >>>>> 	for_each_shadow_page(sp) {
-> >>>>> 		if (sp->generation == kvm->arch.mmu_generation)
-> >>>>> 			zap_page(sp)
-> >>>>> 		if (spin_needbreak(mmu_lock)) {
-> >>>>> 			kvm->arch.mmu_generation++;
-> >>>>> 			cond_resched_lock(mmu_lock);
-> >>>>> 		}
-> >>>>> 	}
-> >>>>>
-> >>>>> kvm_mmu_zap_all()
-> >>>>> 	spin_lock(mmu_lock)
-> >>>>> 	for_each_shadow_page(sp) {
-> >>>>> 		if (spin_needbreak(mmu_lock)) {
-> >>>>> 			cond_resched_lock(mmu_lock);
-> >>>>> 		}
-> >>>>> 	}
-> >>>>>
-> >>>>> Use kvm_mmu_zap_generation for kvm_arch_flush_shadow_memslot.
-> >>>>> Use kvm_mmu_zap_all for kvm_mmu_notifier_release,kvm_destroy_vm.
-> >>>>>
-> >>>>> This addresses the main problem: excessively long hold times 
-> >>>>> of kvm_mmu_zap_all with very large guests.
-> >>>>>
-> >>>>> Do you see any problem with this logic? This was what i was thinking 
-> >>>>> we agreed.
-> >>>>
-> >>>> No. I understand it and it can work.
-> >>>>
-> >>>> Actually, it is similar with Gleb's idea that "zapping stale shadow pages
-> >>>> (and uses lock break technique)", after some discussion, we thought "only zap
-> >>>> shadow pages that are reachable from the slot's rmap" is better, that is this
-> >>>> patchset does.
-> >>>> (https://lkml.org/lkml/2013/4/23/73)
-> >>>>
-> >>> But this is not what the patch is doing. Close, but not the same :)
-> >>
-> >> Okay. :)
-> >>
-> >>> Instead of zapping shadow pages reachable from slot's rmap the patch
-> >>> does kvm_unmap_rmapp() which drop all spte without zapping shadow pages.
-> >>> That is why you need special code to re-init lpage_info. What I proposed
-> >>> was to call zap_page() on all shadow pages reachable from rmap. This
-> >>> will take care of lpage_info counters. Does this make sense?
-> >>
-> >> Unfortunately, no! We still need to care lpage_info. lpage_info is used
-> >> to count the number of guest page tables in the memslot.
-> >>
-> >> For example, there is a memslot:
-> >> memslot[0].based_gfn = 0, memslot[0].npages = 100,
-> >>
-> >> and there is a shadow page:
-> >> sp->role.direct =0, sp->role.level = 4, sp->gfn = 10.
-> >>
-> >> this sp is counted in the memslot[0] but it can not be found by walking
-> >> memslot[0]->rmap since there is no last mapping in this shadow page.
-> >>
-> > Right, so what about walking mmu_page_hash for each gfn belonging to the
-> > slot that is in process to be removed to find those?
+On Mon, May 06, 2013 at 07:01:23PM +0100, Christopher Covington wrote:
+> Hi Will,
 > 
-> That will cost lots of time. The size of hashtable is 1 << 10. If the
-> memslot has 4M memory, it will walk all the entries, the cost is the same
-> as walking active_list (maybe litter more). And a memslot has 4M memory is
-> the normal case i think.
+> On 05/03/2013 01:35 PM, Will Deacon wrote:
+> > Hi all,
+> > 
+> > This small patch set may look a little over a month late, but there is a
+> > serious reason for posting it.
+> > 
+> > When I moved the ARM delay loop over to using the architected timers
+> > rather than the CPU spinning loop (which has all the problems associated
+> > with cpu frequency scaling and what-not) I thought I was doing something
+> > useful for the port. However, it turns out that a surprising number of
+> > people have complained, and continue to complain, about the drop in
+> > their `BogoMIPs score'.
 > 
-Memslots will be much bigger with memory hotplug. Lock break should be
-used while walking mmu_page_hash obviously, but still iterating over
-entire memslot gfn space to find a few gfn that may be there is
-suboptimal. We can keep a list of them in the memslot itself.
+> Have you considered adding the old code back in, but in a form that's not at
+> all referenced by the delay loop code and just calculates CPU-based bogomips?
 
-> Another point is that lpage_info stops mmu to use large page. If we
-> do not reset lpage_info, mmu is using 4K page until the invalid-sp is
-> zapped.
-> 
-I do not think this is a big issue. If lpage_info prevented the use of
-large pages for some memory ranges before we zapped entire shadow pages
-it was probably for a reason, so new shadow page will prevent large
-pages from been created for the same memory ranges.
+That seems like a lot of effort in order to preserve something that isn't
+even meaningful. We might be better just zeroing the value, but then we'll
+inevitably get bug reports of it being `wrong'.
 
---
-			Gleb.
+Plus, the calibration during boot introduces a brief delay when onlining
+each core whereas this can be skipped when using a constant timer.
+
+Will
