@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757500Ab3EGXZA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 19:25:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42778 "EHLO mx1.redhat.com"
+	id S1757407Ab3EGXYv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 19:24:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6681 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757278Ab3EGXY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 19:24:58 -0400
-Subject: [PATCH 6/8] pci: Split out pci_dev lock/unlock and save/restore
+	id S1757278Ab3EGXYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 19:24:49 -0400
+Subject: [PATCH 5/8] pci: Add reset_slot option to pci_dev_reset
 To: bhelgaas@google.com
 From: Alex Williamson <alex.williamson@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Date: Tue, 07 May 2013 17:24:53 -0600
-Message-ID: <20130507232453.24653.22451.stgit@bling.home>
+Date: Tue, 07 May 2013 17:24:47 -0600
+Message-ID: <20130507232447.24653.68433.stgit@bling.home>
 In-Reply-To: <20130507225257.24653.1531.stgit@bling.home>
 References: <20130507225257.24653.1531.stgit@bling.home>
 User-Agent: StGit/0.16
@@ -22,91 +22,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only cosmetic changes to existing paths.
+If the hotplug controller provides a way to reset a slot, use that
+before a direct parent bus reset.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/pci/pci.c |   52 +++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 35 insertions(+), 17 deletions(-)
+ drivers/pci/pci.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
 diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index f5035f5..ee3cb18 100644
+index d0f313f..f5035f5 100644
 --- a/drivers/pci/pci.c
 +++ b/drivers/pci/pci.c
-@@ -3297,22 +3297,46 @@ done:
- 	return rc;
+@@ -22,6 +22,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/device.h>
+ #include <linux/pm_runtime.h>
++#include <linux/pci_hotplug.h>
+ #include <asm-generic/pci-bridge.h>
+ #include <asm/setup.h>
+ #include "pci.h"
+@@ -3251,6 +3252,20 @@ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
+ 	return 0;
  }
  
-+static void pci_dev_lock(struct pci_dev *dev)
++static int pci_dev_reset_slot_function(struct pci_dev *dev, int probe)
 +{
-+	pci_cfg_access_lock(dev);
-+	/* block PM suspend, driver probe, etc. */
-+	device_lock(&dev->dev);
++	struct pci_dev *pdev;
++
++	if (dev->subordinate || !dev->slot)
++		return -ENOTTY;
++
++	list_for_each_entry(pdev, &dev->bus->devices, bus_list)
++		if (pdev != dev && pdev->slot == dev->slot)
++			return -ENOTTY;
++
++	return pci_hp_reset_slot(dev->slot->hotplug, probe);
 +}
 +
-+static void pci_dev_unlock(struct pci_dev *dev)
-+{
-+	device_unlock(&dev->dev);
-+	pci_cfg_access_unlock(dev);
-+}
-+
-+static void pci_dev_save(struct pci_dev *dev)
-+{
-+	pci_save_state(dev);
-+	/*
-+	 * both INTx and MSI are disabled after the Interrupt Disable bit
-+	 * is set and the Bus Master bit is cleared.
-+	 */
-+	pci_write_config_word(dev, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE);
-+}
-+
-+static void pci_dev_restore(struct pci_dev *dev)
-+{
-+	pci_restore_state(dev);
-+}
-+
- static int pci_dev_reset(struct pci_dev *dev, int probe)
+ static int __pci_dev_reset(struct pci_dev *dev, int probe)
  {
  	int rc;
+@@ -3273,6 +3288,10 @@ static int __pci_dev_reset(struct pci_dev *dev, int probe)
+ 	if (rc != -ENOTTY)
+ 		goto done;
  
--	if (!probe) {
--		pci_cfg_access_lock(dev);
--		/* block PM suspend, driver probe, etc. */
--		device_lock(&dev->dev);
--	}
-+	if (!probe)
-+		pci_dev_lock(dev);
- 
- 	rc = __pci_dev_reset(dev, probe);
- 
--	if (!probe) {
--		device_unlock(&dev->dev);
--		pci_cfg_access_unlock(dev);
--	}
-+	if (!probe)
-+		pci_dev_unlock(dev);
++	rc = pci_dev_reset_slot_function(dev, probe);
++	if (rc != -ENOTTY)
++		goto done;
 +
+ 	rc = pci_parent_bus_reset(dev, probe);
+ done:
  	return rc;
- }
- /**
-@@ -3403,17 +3427,11 @@ int pci_reset_function(struct pci_dev *dev)
- 	if (rc)
- 		return rc;
- 
--	pci_save_state(dev);
--
--	/*
--	 * both INTx and MSI are disabled after the Interrupt Disable bit
--	 * is set and the Bus Master bit is cleared.
--	 */
--	pci_write_config_word(dev, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE);
-+	pci_dev_save(dev);
- 
- 	rc = pci_dev_reset(dev, 0);
- 
--	pci_restore_state(dev);
-+	pci_dev_restore(dev);
- 
- 	return rc;
- }
 
