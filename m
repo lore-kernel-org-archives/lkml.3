@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933427Ab3EGCTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 22:19:37 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63100 "EHLO song.cn.fujitsu.com"
+	id S933551Ab3EGCU5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 22:20:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:15985 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1760074Ab3EGCT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 22:19:27 -0400
+	id S933360Ab3EGCTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 May 2013 22:19:36 -0400
 X-IronPort-AV: E=Sophos;i="4.87,625,1363104000"; 
-   d="scan'208";a="7201761"
+   d="scan'208";a="7201795"
 From: Gao feng <gaofeng@cn.fujitsu.com>
 To: viro@zeniv.linux.org.uk, eparis@redhat.com, ebiederm@xmission.com,
         sgrubb@redhat.com, akpm@linux-foundation.org, serge.hallyn@ubuntu.com,
@@ -15,115 +15,292 @@ To: viro@zeniv.linux.org.uk, eparis@redhat.com, ebiederm@xmission.com,
 Cc: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org, linux-audit@redhat.com,
         Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH RFC 15/48] Audit: allow to send netlink message to auditd in uninit user namespace
-Date: Tue, 7 May 2013 10:20:36 +0800
-Message-Id: <1367893269-9308-16-git-send-email-gaofeng@cn.fujitsu.com>
+Subject: [PATCH RFC 47/48] Audit: make audit_log user namespace awared
+Date: Tue, 7 May 2013 10:21:08 +0800
+Message-Id: <1367893269-9308-48-git-send-email-gaofeng@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
 References: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/07 10:18:26,
+ 2013/05/07 10:18:29,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/07 10:18:28,
-	Serialize complete at 2013/05/07 10:18:28
+ 2013/05/07 10:18:32,
+	Serialize complete at 2013/05/07 10:18:32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can allow audit kernel side netlink sock of uninit
-user namespace to send message to the right auditd.
+This patch makes audit_log user namespace awared.
 
 Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 ---
- kernel/audit.c | 28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+ include/linux/audit.h          | 12 ++++++------
+ kernel/audit.c                 | 11 ++++++-----
+ net/core/dev.c                 | 12 +++++++-----
+ security/selinux/avc.c         |  3 ++-
+ security/selinux/hooks.c       |  3 ++-
+ security/selinux/selinuxfs.c   |  9 ++++++---
+ security/selinux/ss/services.c | 24 +++++++++++++++---------
+ security/smack/smack_lsm.c     |  3 ++-
+ 8 files changed, 46 insertions(+), 31 deletions(-)
 
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 3f5dbe3..3af4d5d 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -395,9 +395,9 @@ static inline void audit_ptrace(struct task_struct *t)
+ #ifdef CONFIG_AUDIT
+ /* These are defined in audit.c */
+ 				/* Public API */
+-extern __printf(4, 5)
+-void audit_log(struct audit_context *ctx, gfp_t gfp_mask, int type,
+-	       const char *fmt, ...);
++extern __printf(5, 6)
++void audit_log(struct user_namespace *ns, struct audit_context *ctx,
++	       gfp_t gfp_mask, int type, const char *fmt, ...);
+ 
+ extern struct audit_buffer *
+ audit_log_start(struct user_namespace *ns, struct audit_context *ctx,
+@@ -448,9 +448,9 @@ extern int  audit_receive_filter(int type, int pid, int seq,
+ 				u32 sessionid, u32 sid);
+ #define audit_enabled(ns) (ns->audit.enabled)
+ #else /* CONFIG_AUDIT */
+-static inline __printf(4, 5)
+-void audit_log(struct audit_context *ctx, gfp_t gfp_mask, int type,
+-	       const char *fmt, ...)
++static inline __printf(5, 6)
++void audit_log(struct user_namespace *ns, struct audit_context *ctx,
++	       gfp_t gfp_mask, int type, const char *fmt, ...)
+ { }
+ static inline
+ struct audit_buffer *audit_log_start(struct user_namespace *ns,
 diff --git a/kernel/audit.c b/kernel/audit.c
-index 18cf5ce..d39296b 100644
+index da1c0ad..59e5cca 100644
 --- a/kernel/audit.c
 +++ b/kernel/audit.c
-@@ -361,9 +361,9 @@ static int audit_set_failure(int state, kuid_t loginuid, u32 sessionid, u32 sid)
-  * This only holds messages is audit_default is set, aka booting with audit=1
-  * or building your kernel that way.
-  */
--static void audit_hold_skb(struct sk_buff *skb)
-+static void audit_hold_skb(struct user_namespace *ns, struct sk_buff *skb)
- {
--	struct sk_buff_head *list = &init_user_ns.audit.hold_queue;
-+	struct sk_buff_head *list = &ns->audit.hold_queue;
+@@ -998,7 +998,8 @@ static int __init audit_init(void)
  
- 	if (audit_default &&
- 	    skb_queue_len(list) < audit_backlog_limit)
-@@ -376,7 +376,7 @@ static void audit_hold_skb(struct sk_buff *skb)
-  * For one reason or another this nlh isn't getting delivered to the userspace
-  * audit daemon, just send it to printk.
+ 	audit_set_user_ns(&init_user_ns);
+ 
+-	audit_log(NULL, GFP_KERNEL, AUDIT_KERNEL, "initialized");
++	audit_log(&init_user_ns, NULL, GFP_KERNEL,
++		  AUDIT_KERNEL, "initialized");
+ 
+ 	return 0;
+ }
+@@ -1541,18 +1542,18 @@ void audit_log_end(struct user_namespace *ns, struct audit_buffer *ab)
+  * audit_log_vformat, and audit_log_end.  It may be called
+  * in any context.
   */
--static void audit_printk_skb(struct sk_buff *skb)
-+static void audit_printk_skb(struct user_namespace *ns, struct sk_buff *skb)
+-void audit_log(struct audit_context *ctx, gfp_t gfp_mask, int type,
+-	       const char *fmt, ...)
++void audit_log(struct user_namespace *ns, struct audit_context *ctx,
++	       gfp_t gfp_mask, int type, const char *fmt, ...)
  {
- 	struct nlmsghdr *nlh = nlmsg_hdr(skb);
- 	char *data = nlmsg_data(nlh);
-@@ -388,24 +388,24 @@ static void audit_printk_skb(struct sk_buff *skb)
- 			audit_log_lost("printk limit exceeded\n");
+ 	struct audit_buffer *ab;
+ 	va_list args;
+ 
+-	ab = audit_log_start(&init_user_ns, ctx, gfp_mask, type);
++	ab = audit_log_start(ns, ctx, gfp_mask, type);
+ 	if (ab) {
+ 		va_start(args, fmt);
+ 		audit_log_vformat(ab, fmt, args);
+ 		va_end(args);
+-		audit_log_end(&init_user_ns, ab);
++		audit_log_end(ns, ab);
  	}
- 
--	audit_hold_skb(skb);
-+	audit_hold_skb(ns, skb);
  }
  
--static void kauditd_send_skb(struct sk_buff *skb)
-+static void kauditd_send_skb(struct user_namespace *ns, struct sk_buff *skb)
- {
- 	int err;
- 	/* take a reference in case we can't send it and we want to hold it */
- 	skb_get(skb);
--	err = netlink_unicast(init_user_ns.audit.sock, skb,
--			      init_user_ns.audit.portid, 0);
-+	err = netlink_unicast(ns->audit.sock, skb,
-+			      ns->audit.portid, 0);
- 	if (err < 0) {
- 		BUG_ON(err != -ECONNREFUSED); /* Shouldn't happen */
- 		printk(KERN_ERR "audit: *NO* daemon at audit_pid=%d\n",
--		       init_user_ns.audit.pid);
-+		       ns->audit.pid);
- 		audit_log_lost("auditd disappeared\n");
--		init_user_ns.audit.pid = 0;
-+		ns->audit.pid = 0;
- 		/* we might get lucky and get this in the next auditd */
--		audit_hold_skb(skb);
-+		audit_hold_skb(ns, skb);
- 	} else
- 		/* drop the extra reference if sent ok */
- 		consume_skb(skb);
-@@ -437,7 +437,7 @@ static int kauditd_thread(void *dummy)
- 			skb = skb_dequeue(hold_queue);
- 			if (unlikely(skb)) {
- 				while (skb && ns->audit.pid) {
--					kauditd_send_skb(skb);
-+					kauditd_send_skb(ns, skb);
- 					skb = skb_dequeue(hold_queue);
- 				}
- 			}
-@@ -447,9 +447,9 @@ static int kauditd_thread(void *dummy)
- 		wake_up(&audit_backlog_wait);
- 		if (skb) {
- 			if (ns->audit.pid)
--				kauditd_send_skb(skb);
-+				kauditd_send_skb(ns, skb);
- 			else
--				audit_printk_skb(skb);
-+				audit_printk_skb(ns, skb);
- 		} else {
- 			DECLARE_WAITQUEUE(wait, current);
- 			set_current_state(TASK_INTERRUPTIBLE);
-@@ -1529,7 +1529,7 @@ void audit_log_end(struct audit_buffer *ab)
- 				       ab->skb);
- 			wake_up_interruptible(&kauditd_wait);
- 		} else {
--			audit_printk_skb(ab->skb);
-+			audit_printk_skb(&init_user_ns, ab->skb);
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 128ee39..53a4af7 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4455,19 +4455,21 @@ static int __dev_set_promiscuity(struct net_device *dev, int inc)
  		}
- 		ab->skb = NULL;
+ 	}
+ 	if (dev->flags != old_flags) {
++		struct user_namespace *ns = current_user_ns();
+ 		pr_info("device %s %s promiscuous mode\n",
+ 			dev->name,
+ 			dev->flags & IFF_PROMISC ? "entered" : "left");
+-		if (audit_enabled(current_user_ns())) {
++		if (audit_enabled(ns)) {
+ 			current_uid_gid(&uid, &gid);
+-			audit_log(current->audit_context, GFP_ATOMIC,
++			audit_log(ns, current->audit_context,
++				GFP_ATOMIC,
+ 				AUDIT_ANOM_PROMISCUOUS,
+ 				"dev=%s prom=%d old_prom=%d auid=%u uid=%u gid=%u ses=%u",
+ 				dev->name, (dev->flags & IFF_PROMISC),
+ 				(old_flags & IFF_PROMISC),
+-				from_kuid(&init_user_ns, audit_get_loginuid(current)),
+-				from_kuid(&init_user_ns, uid),
+-				from_kgid(&init_user_ns, gid),
++				from_kuid(ns, audit_get_loginuid(current)),
++				from_kuid(ns, uid),
++				from_kgid(ns, gid),
+ 				audit_get_sessionid(current));
+ 		}
+ 
+diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+index dad36a6..5559be3 100644
+--- a/security/selinux/avc.c
++++ b/security/selinux/avc.c
+@@ -172,7 +172,8 @@ void __init avc_init(void)
+ 	avc_node_cachep = kmem_cache_create("avc_node", sizeof(struct avc_node),
+ 					     0, SLAB_PANIC, NULL);
+ 
+-	audit_log(current->audit_context, GFP_KERNEL, AUDIT_KERNEL, "AVC INITIALIZED\n");
++	audit_log(current_user_ns(), current->audit_context,
++		  GFP_KERNEL, AUDIT_KERNEL, "AVC INITIALIZED\n");
+ }
+ 
+ int avc_get_hash_stats(char *page)
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 3e5a906..ac924af 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -4523,7 +4523,8 @@ static int selinux_nlmsg_perm(struct sock *sk, struct sk_buff *skb)
+ 	err = selinux_nlmsg_lookup(sksec->sclass, nlh->nlmsg_type, &perm);
+ 	if (err) {
+ 		if (err == -EINVAL) {
+-			audit_log(current->audit_context, GFP_KERNEL, AUDIT_SELINUX_ERR,
++			audit_log(current_user_ns(), current->audit_context,
++				  GFP_KERNEL, AUDIT_SELINUX_ERR,
+ 				  "SELinux:  unrecognized netlink message"
+ 				  " type=%hu for sclass=%hu\n",
+ 				  nlh->nlmsg_type, sksec->sclass);
+diff --git a/security/selinux/selinuxfs.c b/security/selinux/selinuxfs.c
+index ff42773..4969a5d 100644
+--- a/security/selinux/selinuxfs.c
++++ b/security/selinux/selinuxfs.c
+@@ -171,7 +171,8 @@ static ssize_t sel_write_enforce(struct file *file, const char __user *buf,
+ 		length = task_has_security(current, SECURITY__SETENFORCE);
+ 		if (length)
+ 			goto out;
+-		audit_log(current->audit_context, GFP_KERNEL, AUDIT_MAC_STATUS,
++		audit_log(current_user_ns(), current->audit_context,
++			GFP_KERNEL, AUDIT_MAC_STATUS,
+ 			"enforcing=%d old_enforcing=%d auid=%u ses=%u",
+ 			new_value, selinux_enforcing,
+ 			from_kuid(&init_user_ns, audit_get_loginuid(current)),
+@@ -303,7 +304,8 @@ static ssize_t sel_write_disable(struct file *file, const char __user *buf,
+ 		length = selinux_disable();
+ 		if (length)
+ 			goto out;
+-		audit_log(current->audit_context, GFP_KERNEL, AUDIT_MAC_STATUS,
++		audit_log(current_user_ns(), current->audit_context,
++			GFP_KERNEL, AUDIT_MAC_STATUS,
+ 			"selinux=0 auid=%u ses=%u",
+ 			from_kuid(&init_user_ns, audit_get_loginuid(current)),
+ 			audit_get_sessionid(current));
+@@ -549,7 +551,8 @@ static ssize_t sel_write_load(struct file *file, const char __user *buf,
+ 	length = count;
+ 
+ out1:
+-	audit_log(current->audit_context, GFP_KERNEL, AUDIT_MAC_POLICY_LOAD,
++	audit_log(current_user_ns(), current->audit_context,
++		GFP_KERNEL, AUDIT_MAC_POLICY_LOAD,
+ 		"policy loaded auid=%u ses=%u",
+ 		from_kuid(&init_user_ns, audit_get_loginuid(current)),
+ 		audit_get_sessionid(current));
+diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
+index 9cdd1e5..81c6f71 100644
+--- a/security/selinux/ss/services.c
++++ b/security/selinux/ss/services.c
+@@ -728,7 +728,8 @@ static int security_validtrans_handle_fail(struct context *ocontext,
+ 		goto out;
+ 	if (context_struct_to_string(tcontext, &t, &tlen))
+ 		goto out;
+-	audit_log(current->audit_context, GFP_ATOMIC, AUDIT_SELINUX_ERR,
++	audit_log(current_user_ns(), current->audit_context,
++		  GFP_ATOMIC, AUDIT_SELINUX_ERR,
+ 		  "security_validate_transition:  denied for"
+ 		  " oldcontext=%s newcontext=%s taskcontext=%s tclass=%s",
+ 		  o, n, t, sym_name(&policydb, SYM_CLASSES, tclass-1));
+@@ -875,7 +876,7 @@ int security_bounded_transition(u32 old_sid, u32 new_sid)
+ 					      &old_name, &length) &&
+ 		    !context_struct_to_string(new_context,
+ 					      &new_name, &length)) {
+-			audit_log(current->audit_context,
++			audit_log(current_user_ns(), current->audit_context,
+ 				  GFP_ATOMIC, AUDIT_SELINUX_ERR,
+ 				  "op=security_bounded_transition "
+ 				  "result=denied "
+@@ -1345,7 +1346,8 @@ static int compute_sid_handle_invalid_context(
+ 		goto out;
+ 	if (context_struct_to_string(newcontext, &n, &nlen))
+ 		goto out;
+-	audit_log(current->audit_context, GFP_ATOMIC, AUDIT_SELINUX_ERR,
++	audit_log(current_user_ns(), current->audit_context,
++		  GFP_ATOMIC, AUDIT_SELINUX_ERR,
+ 		  "security_compute_sid:  invalid context %s"
+ 		  " for scontext=%s"
+ 		  " tcontext=%s"
+@@ -2436,8 +2438,8 @@ int security_set_bools(int len, int *values)
+ 
+ 	for (i = 0; i < len; i++) {
+ 		if (!!values[i] != policydb.bool_val_to_struct[i]->state) {
+-			audit_log(current->audit_context, GFP_ATOMIC,
+-				AUDIT_MAC_CONFIG_CHANGE,
++			audit_log(current_user_ns(), current->audit_context,
++				GFP_ATOMIC, AUDIT_MAC_CONFIG_CHANGE,
+ 				"bool=%s val=%d old_val=%d auid=%u ses=%u",
+ 				sym_name(&policydb, SYM_BOOLS, i),
+ 				!!values[i],
+@@ -2570,7 +2572,8 @@ int security_sid_mls_copy(u32 sid, u32 mls_sid, u32 *new_sid)
+ 		rc = convert_context_handle_invalid_context(&newcon);
+ 		if (rc) {
+ 			if (!context_struct_to_string(&newcon, &s, &len)) {
+-				audit_log(current->audit_context, GFP_ATOMIC, AUDIT_SELINUX_ERR,
++				audit_log(current_user_ns(), current->audit_context,
++					  GFP_ATOMIC, AUDIT_SELINUX_ERR,
+ 					  "security_sid_mls_copy: invalid context %s", s);
+ 				kfree(s);
+ 			}
+@@ -2941,7 +2944,8 @@ int selinux_audit_rule_match(u32 sid, u32 field, u32 op, void *vrule,
+ 	int match = 0;
+ 
+ 	if (!rule) {
+-		audit_log(actx, GFP_ATOMIC, AUDIT_SELINUX_ERR,
++		audit_log(current_user_ns(), actx,
++			  GFP_ATOMIC, AUDIT_SELINUX_ERR,
+ 			  "selinux_audit_rule_match: missing rule\n");
+ 		return -ENOENT;
+ 	}
+@@ -2949,7 +2953,8 @@ int selinux_audit_rule_match(u32 sid, u32 field, u32 op, void *vrule,
+ 	read_lock(&policy_rwlock);
+ 
+ 	if (rule->au_seqno < latest_granting) {
+-		audit_log(actx, GFP_ATOMIC, AUDIT_SELINUX_ERR,
++		audit_log(current_user_ns(), actx,
++			  GFP_ATOMIC, AUDIT_SELINUX_ERR,
+ 			  "selinux_audit_rule_match: stale rule\n");
+ 		match = -ESTALE;
+ 		goto out;
+@@ -2957,7 +2962,8 @@ int selinux_audit_rule_match(u32 sid, u32 field, u32 op, void *vrule,
+ 
+ 	ctxt = sidtab_search(&sidtab, sid);
+ 	if (!ctxt) {
+-		audit_log(actx, GFP_ATOMIC, AUDIT_SELINUX_ERR,
++		audit_log(current_user_ns(), actx,
++			  GFP_ATOMIC, AUDIT_SELINUX_ERR,
+ 			  "selinux_audit_rule_match: unrecognized SID %d\n",
+ 			  sid);
+ 		match = -ENOENT;
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index d52c780..816d3bb 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -3292,7 +3292,8 @@ static int smack_audit_rule_match(u32 secid, u32 field, u32 op, void *vrule,
+ 	char *rule = vrule;
+ 
+ 	if (!rule) {
+-		audit_log(actx, GFP_ATOMIC, AUDIT_SELINUX_ERR,
++		audit_log(current_user_ns(), actx,
++			  GFP_ATOMIC, AUDIT_SELINUX_ERR,
+ 			  "Smack: missing rule\n");
+ 		return -ENOENT;
  	}
 -- 
 1.8.1.4
