@@ -1,97 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756426Ab3EGKIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 06:08:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49714 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756181Ab3EGKIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 06:08:06 -0400
-Date: Tue, 7 May 2013 06:07:30 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
-        linux-pm@vger.kernel.org, netdev@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH v3 02/16] freezer: add unsafe versions of freezable
- helpers for CIFS
-Message-ID: <20130507060730.03364687@tlielax.poochiereds.net>
-In-Reply-To: <1367884221-20462-3-git-send-email-ccross@android.com>
-References: <1367884221-20462-1-git-send-email-ccross@android.com>
-	<1367884221-20462-3-git-send-email-ccross@android.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756697Ab3EGKIg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 06:08:36 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36256 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754765Ab3EGKIe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 06:08:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <5188905A.4020703@zytor.com>
+References: <5188905A.4020703@zytor.com>
+Date: Tue, 7 May 2013 10:10:36 +0200
+Message-ID: <CAN+gG=F3ZpTFj99azqrw0Sq4WNhP3HkKptDEc82myqCq-9Z6JA@mail.gmail.com>
+Subject: Re: Lenovo Yoga 13 touchpad regression
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-input <linux-input@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  6 May 2013 16:50:07 -0700
-Colin Cross <ccross@android.com> wrote:
+On Tue, May 7, 2013 at 7:25 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> Hello,
+>
+> The touchpad on Lenovo Yoga 13 seems to have broken some time between 3.4
+> and the current kernel.  The dmesg is full of spewage:
+>
+> [  256.246481] atkbd serio0: Use 'setkeycodes e03e <keycode>' to make it
+> known.
+> [  256.251473] atkbd serio0: Unknown key released (translated set 2, code
+> 0xbe on isa0060/serio0
+>
+> ... about once per second; I am wondering if the touchpad is spewing output
+> onto the keyboard channel or if there is something else wrong.
+>
+> I have tried i8042.nomux and i8042.noloop to no effect.
+>
+> Unless someone has a better idea I'll try to do a bisect.
 
-> CIFS calls wait_event_freezekillable_unsafe with a VFS lock held,
-> which is unsafe and will cause lockdep warnings when 6aa9707
-> "lockdep: check that no locks held at freeze time" is reapplied
-> (it was reverted in dbf520a).  CIFS shouldn't be doing this, but
-> it has long-running syscalls that must hold a lock but also
-> shouldn't block suspend.  Until CIFS freeze handling is rewritten
-> to use a signal to exit out of the critical section, add a new
-> wait_event_freezekillable_unsafe helper that will not run the
-> lockdep test when 6aa9707 is reapplied, and call it from CIFS.
-> 
-> In practice the likley result of holding the lock while freezing
-> is that a second task blocked on the lock will never freeze,
-> aborting suspend, but it is possible to manufacture a case using
-> the cgroup freezer, the lock, and the suspend freezer to create
-> a deadlock.  Silencing the lockdep warning here will allow
-> problems to be found in other drivers that may have a more
-> serious deadlock risk, and prevent new problems from being added.
-> 
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
->  include/linux/freezer.h | 13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-> index 5b31e21c..d3c038e 100644
-> --- a/include/linux/freezer.h
-> +++ b/include/linux/freezer.h
-> @@ -212,6 +212,16 @@ static inline bool freezer_should_skip(struct task_struct *p)
->  	__retval;							\
->  })
->  
-> +/* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
-> +#define wait_event_freezekillable_unsafe(wq, condition)			\
-> +({									\
-> +	int __retval;							\
-> +	freezer_do_not_count();						\
-> +	__retval = wait_event_killable(wq, (condition));		\
-> +	freezer_count_unsafe();						\
-> +	__retval;							\
-> +})
-> +
->  #define wait_event_freezable(wq, condition)				\
->  ({									\
->  	int __retval;							\
-> @@ -277,6 +287,9 @@ static inline void set_freezable(void) {}
->  #define wait_event_freezekillable(wq, condition)		\
->  		wait_event_killable(wq, condition)
->  
-> +#define wait_event_freezekillable_unsafe(wq, condition)			\
-> +		wait_event_killable(wq, condition)
-> +
->  #endif /* !CONFIG_FREEZER */
->  
->  #endif	/* FREEZER_H_INCLUDED */
+On top of Kevin's answer:
 
-I think you also need to convert wait_for_response in the cifs code to
-use this helper. While it's a pretty straightforward change, you should
-probably cc linux-cifs@vger.kernel.org as well.
+I already saw that with Yoga 13 laptops.
+The touchpad went into this mode, and Linux was not able to recognize
+it anymore.
+What "solves" the pb was to stop the machine, then go to the bios (or
+UEFI), then the touchpad was back alive when the guy rebooted under
+Linux. I bet the bios managed to set the touchpad in the right mode
+where Linux can then handle it correctly.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+This is not an ideal solution, but at least this may help restoring
+your touchpad to a functional state while the correct driver is being
+developed.
+
+Anyway, if you are able to do a real bisect (instead of my dirty
+trick), that would be great because it would help fixing the problem.
+
+Cheers,
+Benjamin
