@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759059Ab3EGNiz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:38:55 -0400
-Received: from beta.dmz-eu.st.com ([164.129.1.35]:47325 "EHLO
-	beta.dmz-eu.st.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758587Ab3EGNiy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:38:54 -0400
-X-Greylist: delayed 1355 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 May 2013 09:38:54 EDT
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: broonie@kernel.org
-Cc: srinivas.kandagatla@st.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC] regmap: debugfs: Fix start_reg calculation
-Date: Tue,  7 May 2013 14:11:37 +0100
-Message-Id: <1367932297-27926-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
+	id S1759131Ab3EGNkE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:40:04 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:24325 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758781Ab3EGNkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 09:40:00 -0400
+Message-ID: <5189042A.6050302@imgtec.com>
+Date: Tue, 7 May 2013 14:39:54 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Rusty Russell <rusty@rustcorp.com.au>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: h8300 SYMBOL_NAME() breakage
+References: <CAMuHMdXBk0oZUufY3KoFaZiawRHdm9juMqHPMTftqcjQDXnUgw@mail.gmail.com>
+In-Reply-To: <CAMuHMdXBk0oZUufY3KoFaZiawRHdm9juMqHPMTftqcjQDXnUgw@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_05_07_14_39_55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+On 06/05/13 13:31, Geert Uytterhoeven wrote:
+> Commit e1b5bb6d1236d4ad2084c53aa83dde7cdf6f8eea ("consolidate cond_syscall
+> and SYSCALL_ALIAS declarations") broke the h8300 build because it removed
+> the duplicate SYMBOL_NAME from arch/h8300/include/asm/linkage.h, and all
+> the h8300 asm files include <asm/linkage.h> instead of <linux/linkage.h>.
+> (yes, this was in -next).
+> 
+> Commit 126de6b20bfb82cc19012d5048f11f339ae5a021 ("linkage.h: fix build
+> breakage due to symbol prefix handling") broke it even more, by removing
+> SYMBOL_NAME() and replacing it by __SYMBOL_NAME().
 
-If we dump syscon regmap registers via debufs you will notice that the
-dump contains lot of XXXXXXXX values at the end.
+Yes, sorry about that. I had assumed h8300 still referred to it's own
+definition of SYMBOL_NAME from arch/h8300/include/asm/linkage.h, which
+was still intact on modules-next where I had last checked it.
 
-An example configuration is:
-syscon@fdde0000{
-	compatible      = "syscon";
-	reg		= <0xfdde0000 0x15c>;
-};
-
-example dump:
-cat  /sys/kernel/debug/regmap/fdde0000.syscon/registers
-...
-154: 001c1dff
-158: 00000003
-05a: XXXXXXXX
-05e: XXXXXXXX
-...
-
-regmap_debugfs_get_dump_start returns register number, not the actual
-offset into the map. So we use the return value as start to dump the 
-registers we can endup with wrong start address, in the example case
-for the second loop the code ends up with start_reg = 0x56. Which is
-incorrect.
-Also this keeps incremeting by stride, which can than result in
-unaligned address.
-
-This patch multiples the return value of regmap_debugfs_get_dump_start
-with stride to get the correct offset into the map.
-
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
----
- drivers/base/regmap/regmap-debugfs.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 81d6f60..4a66e54 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -190,6 +190,7 @@ static ssize_t regmap_read_debugfs(struct regmap *map, unsigned int from,
- 
- 	/* Work out which register we're starting at */
- 	start_reg = regmap_debugfs_get_dump_start(map, from, *ppos, &p);
-+	start_reg *= map->reg_stride;
- 
- 	for (i = start_reg; i <= to; i += map->reg_stride) {
- 		if (!regmap_readable(map, i))
--- 
-1.7.6.5
+Cheers
+James
 
