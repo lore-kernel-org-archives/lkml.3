@@ -1,115 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759824Ab3EGDg3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 May 2013 23:36:29 -0400
-Received: from oproxy14-pub.unifiedlayer.com ([67.222.51.224]:35061 "HELO
-	oproxy14-pub.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757395Ab3EGDg2 (ORCPT
+	id S932596Ab3EGDkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 May 2013 23:40:10 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:33385 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756380Ab3EGDkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 May 2013 23:36:28 -0400
-Message-ID: <1367897750.14310.59.camel@Wailaba2>
-Subject: Re: [PATCH v3 1/3] posix_timers: do not account group_exec_runtime
- for dying autoreaped tasks
-From: Olivier Langlois <olivier@trillion01.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, schwidefsky@de.ibm.com,
-        Steven Rostedt <rostedt@goodmis.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 06 May 2013 23:35:50 -0400
-In-Reply-To: <20130506231835.GC1225@somewhere>
-References: <1367258649.8833.19.camel@Wailaba2>
-	 <20130506231835.GC1225@somewhere>
-Organization: Trillion01 Inc
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.1 
-Mime-Version: 1.0
+	Mon, 6 May 2013 23:40:08 -0400
+Message-ID: <5188778F.9030804@linux.vnet.ibm.com>
+Date: Tue, 07 May 2013 11:39:59 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, takuya.yoshikawa@gmail.com
+Subject: Re: [PATCH v4 4/6] KVM: MMU: fast invalid all shadow pages
+References: <1367032402-13729-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1367032402-13729-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130503010534.GA5467@amt.cnet> <51835087.8090605@linux.vnet.ibm.com> <20130503155302.GB3362@amt.cnet> <5183EAFA.4050500@linux.vnet.ibm.com> <20130504005201.GA11823@amt.cnet> <518725DF.5090503@linux.vnet.ibm.com> <20130506195022.GA5706@amt.cnet>
+In-Reply-To: <20130506195022.GA5706@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050703-9574-0000-0000-000007BDECA0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic,
-
-On Tue, 2013-05-07 at 01:18 +0200, Frederic Weisbecker wrote:
-> On Mon, Apr 29, 2013 at 02:04:09PM -0400, Olivier Langlois wrote:
-> > 
-> > 
-> > Forbids the cputimer to drift ahead of its process clock by
-> > blocking its update when a tick occurs while a autoreaping task
-> > is currently in do_exit() between the call to release_task() and
-> > its final call to schedule().
-> > 
-> > Any task stats update after having called release_task() will
-> > be lost because they are added to the global process stats located
-> > in the signal struct from release_task().
+On 05/07/2013 03:50 AM, Marcelo Tosatti wrote:
+> On Mon, May 06, 2013 at 11:39:11AM +0800, Xiao Guangrong wrote:
+>> On 05/04/2013 08:52 AM, Marcelo Tosatti wrote:
+>>> On Sat, May 04, 2013 at 12:51:06AM +0800, Xiao Guangrong wrote:
+>>>> On 05/03/2013 11:53 PM, Marcelo Tosatti wrote:
+>>>>> On Fri, May 03, 2013 at 01:52:07PM +0800, Xiao Guangrong wrote:
+>>>>>> On 05/03/2013 09:05 AM, Marcelo Tosatti wrote:
+>>>>>>
+>>>>>>>> +
+>>>>>>>> +/*
+>>>>>>>> + * Fast invalid all shadow pages belong to @slot.
+>>>>>>>> + *
+>>>>>>>> + * @slot != NULL means the invalidation is caused the memslot specified
+>>>>>>>> + * by @slot is being deleted, in this case, we should ensure that rmap
+>>>>>>>> + * and lpage-info of the @slot can not be used after calling the function.
+>>>>>>>> + *
+>>>>>>>> + * @slot == NULL means the invalidation due to other reasons, we need
+>>>>>>>> + * not care rmap and lpage-info since they are still valid after calling
+>>>>>>>> + * the function.
+>>>>>>>> + */
+>>>>>>>> +void kvm_mmu_invalid_memslot_pages(struct kvm *kvm,
+>>>>>>>> +				   struct kvm_memory_slot *slot)
+>>>>>>>> +{
+>>>>>>>> +	spin_lock(&kvm->mmu_lock);
+>>>>>>>> +	kvm->arch.mmu_valid_gen++;
+>>>>>>>> +
+>>>>>>>> +	/*
+>>>>>>>> +	 * All shadow paes are invalid, reset the large page info,
+>>>>>>>> +	 * then we can safely desotry the memslot, it is also good
+>>>>>>>> +	 * for large page used.
+>>>>>>>> +	 */
+>>>>>>>> +	kvm_clear_all_lpage_info(kvm);
+>>>>>>>
+>>>>>>> Xiao,
+>>>>>>>
+>>>>>>> I understood it was agreed that simple mmu_lock lockbreak while
+>>>>>>> avoiding zapping of newly instantiated pages upon a
+>>>>>>>
+>>>>>>> 	if(spin_needbreak)
+>>>>>>> 		cond_resched_lock()
+>>>>>>>
+>>>>>>> cycle was enough as a first step? And then later introduce root zapping
+>>>>>>> along with measurements.
+>>>>>>>
+>>>>>>> https://lkml.org/lkml/2013/4/22/544
+>>>>>>
+>>>>>> Yes, it is.
+>>>>>>
+>>>>>> See the changelog in 0/0:
+>>>>>>
+>>>>>> " we use lock-break technique to zap all sptes linked on the
+>>>>>> invalid rmap, it is not very effective but good for the first step."
+>>>>>>
+>>>>>> Thanks!
+>>>>>
+>>>>> Sure, but what is up with zeroing kvm_clear_all_lpage_info(kvm) and
+>>>>> zapping the root? Only lock-break technique along with generation number 
+>>>>> was what was agreed.
+>>>>
+>>>> Marcelo,
+>>>>
+>>>> Please Wait... I am completely confused. :(
+>>>>
+>>>> Let's clarify "zeroing kvm_clear_all_lpage_info(kvm) and zapping the root" first.
+>>>> Are these changes you wanted?
+>>>>
+>>>> void kvm_mmu_invalid_memslot_pages(struct kvm *kvm,
+>>>> 				   struct kvm_memory_slot *slot)
+>>>> {
+>>>> 	spin_lock(&kvm->mmu_lock);
+>>>> 	kvm->arch.mmu_valid_gen++;
+>>>>
+>>>> 	/* Zero all root pages.*/
+>>>> restart:
+>>>> 	list_for_each_entry_safe(sp, node, &kvm->arch.active_mmu_pages, link) {
+>>>> 		if (!sp->root_count)
+>>>> 			continue;
+>>>>
+>>>> 		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
+>>>> 			goto restart;
+>>>> 	}
+>>>>
+>>>> 	/*
+>>>> 	 * All shadow paes are invalid, reset the large page info,
+>>>> 	 * then we can safely desotry the memslot, it is also good
+>>>> 	 * for large page used.
+>>>> 	 */
+>>>> 	kvm_clear_all_lpage_info(kvm);
+>>>>
+>>>> 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+>>>> 	spin_unlock(&kvm->mmu_lock);
+>>>> }
+>>>>
+>>>> static void rmap_remove(struct kvm *kvm, u64 *spte)
+>>>> {
+>>>> 	struct kvm_mmu_page *sp;
+>>>> 	gfn_t gfn;
+>>>> 	unsigned long *rmapp;
+>>>>
+>>>> 	sp = page_header(__pa(spte));
+>>>> +
+>>>> +       /* Let invalid sp do not access its rmap. */
+>>>> +	if (!sp_is_valid(sp))
+>>>> +		return;
+>>>> +
+>>>> 	gfn = kvm_mmu_page_get_gfn(sp, spte - sp->spt);
+>>>> 	rmapp = gfn_to_rmap(kvm, gfn, sp->role.level);
+>>>> 	pte_list_remove(spte, rmapp);
+>>>> }
+>>>>
+>>>> If yes, there is the reason why we can not do this that i mentioned before:
+>>>>
+>>>> after call kvm_mmu_invalid_memslot_pages(), the memslot->rmap will be destroyed.
+>>>> Later, if host reclaim page, the mmu-notify handlers, ->invalidate_page and
+>>>> ->invalidate_range_start, can not find any spte using the host page, then
+>>>> Accessed/Dirty for host page is missing tracked.
+>>>> (missing call kvm_set_pfn_accessed and kvm_set_pfn_dirty properly.)
+>>>>
+>>>> What's your idea?
+>>>
+>>>
+>>> Step 1) Fix kvm_mmu_zap_all's behaviour: introduce lockbreak via
+>>> spin_needbreak. Use generation numbers so that in case kvm_mmu_zap_all 
+>>> releases mmu_lock and reacquires it again, only shadow pages 
+>>> from the generation with which kvm_mmu_zap_all started are zapped (this
+>>> guarantees forward progress and eventual termination).
+>>>
+>>> kvm_mmu_zap_generation()
+>>> 	spin_lock(mmu_lock)
+>>> 	int generation = kvm->arch.mmu_generation;
+>>>
+>>> 	for_each_shadow_page(sp) {
+>>> 		if (sp->generation == kvm->arch.mmu_generation)
+>>> 			zap_page(sp)
+>>> 		if (spin_needbreak(mmu_lock)) {
+>>> 			kvm->arch.mmu_generation++;
+>>> 			cond_resched_lock(mmu_lock);
+>>> 		}
+>>> 	}
+>>>
+>>> kvm_mmu_zap_all()
+>>> 	spin_lock(mmu_lock)
+>>> 	for_each_shadow_page(sp) {
+>>> 		if (spin_needbreak(mmu_lock)) {
+>>> 			cond_resched_lock(mmu_lock);
+>>> 		}
+>>> 	}
+>>>
+>>> Use kvm_mmu_zap_generation for kvm_arch_flush_shadow_memslot.
+>>> Use kvm_mmu_zap_all for kvm_mmu_notifier_release,kvm_destroy_vm.
+>>>
+>>> This addresses the main problem: excessively long hold times 
+>>> of kvm_mmu_zap_all with very large guests.
+>>>
+>>> Do you see any problem with this logic? This was what i was thinking 
+>>> we agreed.
+>>
+>> No. I understand it and it can work.
+>>
+>> Actually, it is similar with Gleb's idea that "zapping stale shadow pages
+>> (and uses lock break technique)", after some discussion, we thought "only zap
+>> shadow pages that are reachable from the slot's rmap" is better, that is this
+>> patchset does.
+>> (https://lkml.org/lkml/2013/4/23/73)
+>>
+>>>
+>>> Step 2) Show that the optimization to zap only the roots is worthwhile
+>>> via benchmarking, and implement it.
+>>
+>> This is what i am confused. I can not understand how "zap only the roots"
+>> works. You mean these change?
+>>
+>> kvm_mmu_zap_generation()
+>>  	spin_lock(mmu_lock)
+>>  	int generation = kvm->arch.mmu_generation;
+>>
+>>  	for_each_shadow_page(sp) {
+>> 		/* Change here. */
+>> => 		if ((sp->generation == kvm->arch.mmu_generation) &&
+>> =>		      sp->root_count)
+>>  			zap_page(sp)
+>>
+>>  		if (spin_needbreak(mmu_lock)) {
+>>  			kvm->arch.mmu_generation++;
+>>  			cond_resched_lock(mmu_lock);
+>>  		}
+>>  	}
+>>
+>> If we do this, there will have shadow pages that are linked to invalid memslot's
+>> rmap. How do we handle these pages and the mmu-notify issue?
+>>
+>> Thanks!
 > 
-> I wonder if this is real problem that the clock is ahead of the timer.
-> Have you seen any issue in practice with this?
+> By "zap only roots" i mean zapping roots plus generation number on
+> shadow pages. But this as a second step, after it has been demonstrated
+> its worthwhile.
 
-note that it is the timer that will be ahead because the process clock
-is the sum of past group tasks exec time plus current group tasks exec
-time. Few updates are missing in the past group tasks exec time counter
-in struct signal.
+Marcelo,
 
-The effect of this is failure of the unittest testing POSIX compliance
-in glibc rt/tst-cputimer1.c
-
-pseudo code of the test is:
-
-1. call clock_gettime() to get now
-2. Compute timer expiring time now+timer interval
-3. call clock_gettime() when timer cb is called
-4. Compare that clock_gettime() result is >= than computed expiring time
-
-The error is adding up as more thread exits and usually the test fails
-when testing periodic timers where threads are created to handle the
-timer timeouts.
-
->  Or may be it's a
-> guarantee that the posix clock should provide wrt. to the timer?
-> 
-> thanks.
+Sorry for my stupidity, still do not understand. Could you please show me the
+pseudocode and answer my questions above?
 
 
-> 
-> > 
-> > Signed-off-by: Olivier Langlois <olivier@trillion01.com>
-> > ---
-> >  kernel/sched/fair.c | 10 +++++++++-
-> >  1 file changed, 9 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > index 7a33e59..52d7b10 100644
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -708,7 +708,15 @@ static void update_curr(struct cfs_rq *cfs_rq)
-> >  
-> >                 trace_sched_stat_runtime(curtask, delta_exec, curr->vruntime);
-> >                 cpuacct_charge(curtask, delta_exec);
-> > -               account_group_exec_runtime(curtask, delta_exec);
-> > +               /*
-> > +                * Do not update the cputimer if the task is already released by
-> > +                * release_task().
-> > +                *
-> > +                * it would preferable to defer the autoreap release_task
-> > +                * after the last context switch but harder to do.
-> > +                */
-> > +               if (likely(curtask->sighand))
-> > +                       account_group_exec_runtime(curtask, delta_exec);
-> >         }
-> >  
-> >         account_cfs_rq_runtime(cfs_rq, delta_exec);
-> > -- 
-> > 1.8.2.1
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+
 
 
