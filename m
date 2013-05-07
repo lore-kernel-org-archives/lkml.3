@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933557Ab3EGN4z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 09:56:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42505 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933291Ab3EGNmF (ORCPT
+	id S933694Ab3EGN5E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 09:57:04 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:37613 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933578Ab3EGN47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 09:42:05 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 090/118] usbfs: Always allow ctrl requests with USB_RECIP_ENDPOINT on the ctrl ep
-Date: Tue,  7 May 2013 14:38:56 +0100
-Message-Id: <1367933964-1564-91-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
-References: <1367933964-1564-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 7 May 2013 09:56:59 -0400
+Date: Tue, 7 May 2013 15:56:54 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: raven@themaw.net
+Cc: autofs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sukadev@linux.vnet.ibm.com,
+        serge.hallyn@canonical.com, ebiederm@xmission.com
+Subject: [PATCH 2/2] autofs4: translate pids to the right namespace for the
+ daemon
+Message-ID: <20130507135654.GB6129@tucsk.piliscsaba.szeredi.hu>
+References: <20130507135446.GA6129@tucsk.piliscsaba.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130507135446.GA6129@tucsk.piliscsaba.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.12 -stable review patch.  If anyone has any objections, please let me know.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-------------------
+The PID and the TGID of the process tringgering the mount are sent to the
+daemon.  Currently the global pid values are sent (ones valid in the initial pid
+namespace) but this is wrong if the autofs daemon itself is not running in the
+initial pid namespace.
 
-From: Hans de Goede <hdegoede@redhat.com>
+So send the pid values that are valid in the namespace of the autofs daemon.
 
-commit 1361bf4b9f9ef45e628a5b89e0fd9bedfdcb7104 upstream.
+The namespace to use is taken from the oz_pgrp pid pointer, which was set at
+mount time to the mounting process' pid namespace.
 
-When usbfs receives a ctrl-request from userspace it calls check_ctrlrecip,
-which for a request with USB_RECIP_ENDPOINT tries to map this to an interface
-to see if this interface is claimed, except for ctrl-requests with a type of
-USB_TYPE_VENDOR.
+If the pid translation fails (the triggering process is in an unrelated pid
+namespace) then the automount fails with ENOENT.
 
-When trying to use this device: http://www.akaipro.com/eiepro
-redirected to a Windows vm running on qemu on top of Linux.
-
-The windows driver makes a ctrl-req with USB_TYPE_CLASS and
-USB_RECIP_ENDPOINT with index 0, and the mapping of the endpoint (0) to
-the interface fails since ep 0 is the ctrl endpoint and thus never is
-part of an interface.
-
-This patch fixes this ctrl-req failing by skipping the checkintf call for
-USB_RECIP_ENDPOINT ctrl-reqs on the ctrl endpoint.
-
-Reported-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
-Tested-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Cc: Serge E. Hallyn <serue@us.ibm.com>
+Cc: Eric Biederman <ebiederm@xmission.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- drivers/usb/core/devio.c | 2 ++
- 1 file changed, 2 insertions(+)
+ fs/autofs4/waitq.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index 62679bc..f70b887 100644
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -681,6 +681,8 @@ static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
- 	index &= 0xff;
- 	switch (requesttype & USB_RECIP_MASK) {
- 	case USB_RECIP_ENDPOINT:
-+		if ((index & ~USB_DIR_IN) == 0)
-+			return 0;
- 		ret = findintfep(ps->dev, index);
- 		if (ret >= 0)
- 			ret = checkintf(ps, ret);
--- 
-1.8.1.2
-
+--- a/fs/autofs4/waitq.c
++++ b/fs/autofs4/waitq.c
+@@ -353,11 +353,23 @@ int autofs4_wait(struct autofs_sb_info *
+ 	struct qstr qstr;
+ 	char *name;
+ 	int status, ret, type;
++	pid_t pid;
++	pid_t tgid;
+ 
+ 	/* In catatonic mode, we don't wait for nobody */
+ 	if (sbi->catatonic)
+ 		return -ENOENT;
+ 
++	/*
++	 * Try translating pids to the namespace of the daemon.
++	 *
++	 * Zero means failure: we are in an unrelated pid namespace.
++	 */
++	pid = task_pid_nr_ns(current, ns_of_pid(sbi->oz_pgrp));
++	tgid = task_tgid_nr_ns(current, ns_of_pid(sbi->oz_pgrp));
++	if (pid == 0 || tgid == 0)
++		return -ENOENT;
++
+ 	if (!dentry->d_inode) {
+ 		/*
+ 		 * A wait for a negative dentry is invalid for certain
+@@ -423,8 +435,8 @@ int autofs4_wait(struct autofs_sb_info *
+ 		wq->ino = autofs4_get_ino(sbi);
+ 		wq->uid = current_uid();
+ 		wq->gid = current_gid();
+-		wq->pid = current->pid;
+-		wq->tgid = current->tgid;
++		wq->pid = pid;
++		wq->tgid = tgid;
+ 		wq->status = -EINTR; /* Status return if interrupted */
+ 		wq->wait_ctr = 2;
+ 		mutex_unlock(&sbi->wq_mutex);
