@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884Ab3EHVsx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 17:48:53 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:32327 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755642Ab3EHVsu (ORCPT
+	id S1754517Ab3EHVun (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 17:50:43 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:24332 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754798Ab3EHVu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 17:48:50 -0400
-Date: Wed, 8 May 2013 14:48:45 -0700
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Mike Snitzer <msnitzer@redhat.com>, Joe Thornber <thornber@redhat.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: dm-cache not writing out cache metadata at reboot?
-Message-ID: <20130508214845.GA7729@blackbox.djwong.org>
+	Wed, 8 May 2013 17:50:29 -0400
+X-IronPort-AV: E=Sophos;i="4.87,636,1363158000"; 
+   d="scan'208";a="45526893"
+Message-ID: <518AC8A4.8070701@codeaurora.org>
+Date: Wed, 08 May 2013 14:50:28 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Russell King <linux@arm.linux.org.uk>
+CC: Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: avoid mis-detecting some V7 cores in the decompressor
+References: <1368049671-22879-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1368049671-22879-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 05/08/13 14:47, Stephen Boyd wrote:
+> From: Brian Swetland <swetland@google.com>
+>
+> Currently v7 CPUs with an MIDR that has no bits set in the range
+> [16:12] will be detected as old ARM CPUs with no caches and so
 
-So I've been watching the hit/miss counters in dmcache and I've noticed a
-couple of things that look like errors to me:
+I mean [15:12], sorry.
 
-First, I noticed that if I reboot the system, neither cache_postsuspend nor
-cache_dtr get called.  This might simply be expected behavior, but it means
-that the in-memory superblock structure doesn't get written out to disk upon
-reboot.  Just to be sure, I put a printk into __commit_transaction.  It prints
-out for 'dmsetup info' and 'dmsetup remove' but nothing at reboot.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Second, cache_status calls dm_cache_commit, which writes out a superblock to
-the metadata device.  However, there's no call to save_stats to copy the
-current values of the counters out to the disk's copy prior to calling
-dm_cache_commit.  Therefore, we seem to be writing out stale copies of
-superblock fields.
-
-The second one seems fixable with the attached patch, but the first one I don't
-know about.  Any ideas?
-
----
-Subject: [PATCH] dmcache: flush superblock when retrieving status info
-
-When userspace queries dmcache for stats info, we should ensure that all the
-metadata gets flushed out of memory to disk.  The current code neglects to
-update at least the hit/miss counters, so take care of everything.
-
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
----
- drivers/md/dm-cache-target.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index 1074409..f476ada 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -2451,8 +2451,7 @@ static void cache_status(struct dm_target *ti, status_type_t type,
- 	case STATUSTYPE_INFO:
- 		/* Commit to ensure statistics aren't out-of-date */
- 		if (!(status_flags & DM_STATUS_NOFLUSH_FLAG) && !dm_suspended(ti)) {
--			r = dm_cache_commit(cache->cmd, false);
--			if (r)
-+			if (!sync_metadata(cache))
- 				DMERR("could not commit metadata for accurate status");
- 		}
- 
