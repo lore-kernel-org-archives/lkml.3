@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab3EHCBG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 22:01:06 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:30698 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755443Ab3EHCBE (ORCPT
+	id S1755967Ab3EHCCA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 22:02:00 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:55045 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219Ab3EHCB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 22:01:04 -0400
-X-Spam-Score: -100.8
-Message-ID: <5189B1AE.4000906@asianux.com>
-Date: Wed, 08 May 2013 10:00:14 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 7 May 2013 22:01:58 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <s.hauer@pengutronix.de>,
+        LMML <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH RFC v3] media: i2c: mt9p031: add OF support
+Date: Wed, 08 May 2013 04:02:12 +0200
+Message-ID: <124364082.ILKsvVk9ro@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo-r1; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <CA+V-a8tXZrh68_T=VAOTB23sFfOCOA+GafueWuH6cFFmKz7cvA@mail.gmail.com>
+References: <1367563919-2880-1-git-send-email-prabhakar.csengg@gmail.com> <CA+V-a8vxhedos6cQbxAbMAwiXOmjrqh0TVp8Rhc_Ou4y9tSaoQ@mail.gmail.com> <CA+V-a8tXZrh68_T=VAOTB23sFfOCOA+GafueWuH6cFFmKz7cvA@mail.gmail.com>
 MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>
-CC: tj@kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] kernel/cgroup.c: about kfree after 'get_new_cssid'
-References: <5188DB93.2080504@asianux.com> <5188DF27.4080000@huawei.com> <5188E391.6040505@asianux.com> <5189A166.9080301@huawei.com>
-In-Reply-To: <5189A166.9080301@huawei.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年05月08日 08:50, Li Zefan wrote:
->>> There's a bug in cgroup_unload_subsys() that idr_destroy() should be called after
->>> >> ss->css_free(). That said, given there's no modular cgroup subsystem using css_id,
->>> >> and the whole css_id thing will be eliminated in 3.11, why bother fixing it.
->>> >>
->> > 
->> > I just find it by reading code (I also want to learn about kernel).
->> > 
->> > I guess, for some stable versions, may focus on it, they are the
->> > different branches from the latest version.
->> > 
->> > So, is it suitable to send related patch for the bug ?
->> > 
-> As I said, there's no modular cgroup subsystem using css_id, so the bug
-> doesn't exist in real world.
+Hi Prabhakar,
+
+On Tuesday 07 May 2013 15:10:36 Prabhakar Lad wrote:
+> On Mon, May 6, 2013 at 8:29 PM, Prabhakar Lad wrote:
+> > On Fri, May 3, 2013 at 8:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >> On Friday 03 May 2013, Prabhakar Lad wrote:
+> > [snip]
+> > 
+> >>> +}
+> >> 
+> >> Ok, good.
+> >> 
+> >>> @@ -955,7 +998,17 @@ static int mt9p031_probe(struct i2c_client *client,
+> >>> 
+> >>>         mt9p031->pdata = pdata;
+> >>>         mt9p031->output_control = MT9P031_OUTPUT_CONTROL_DEF;
+> >>>         mt9p031->mode2 = MT9P031_READ_MODE_2_ROW_BLC;
+> >>> 
+> >>> -       mt9p031->model = did->driver_data;
+> >>> +
+> >>> +       if (!client->dev.of_node) {
+> >>> +               mt9p031->model = (enum mt9p031_model)did->driver_data;
+> >>> +       } else {
+> >>> +               const struct of_device_id *of_id;
+> >>> +
+> >>> +               of_id = of_match_device(of_match_ptr(mt9p031_of_match),
+> >>> +                                       &client->dev);
+> >>> +               if (of_id)
+> >>> +                       mt9p031->model = (enum
+> >>> mt9p031_model)of_id->data;
+> >>> +       }
+> >>> 
+> >>>         mt9p031->reset = -1;
+> >> 
+> >> Is this actually required? I thought the i2c core just compared the
+> >> part of the "compatible" value after the first comma to the string, so
+> >> "mt9p031->model = (enum mt9p031_model)did->driver_data" should work
+> >> in both cases.
+> > 
+> > I am OK with "mt9p031->model = (enum mt9p031_model)did->driver_data"
+> > but I see still few drivers doing this, I am not sure for what reason.
+> > If everyone is
+> > OK with it I can drop the above change.
 > 
-> 
-> 
+> My bad, while booting with DT the i2c_device_id ie did in this case will be
+> NULL, so the above changes are required :-)
 
-Excuse me, my English is not quite well, I guess what you said is:
-
-  a. idr_destroy() should be called after ss->css_free()
-  b. need check the return value of cgroup_init_idr() in cgroup_init().
-
-  but all features which related with the 2 issues above, never be used
-in any main linux main branches.
-  so, the 2 bugs doesn't exist in real world.
-
-Is what I guess correct ?
-
-Thanks.
+I've just tested your patch, and did isn't NULL when booting my Beagleboard 
+with DT (on v3.9-rc5).
 
 -- 
-Chen Gang
+Regards,
 
-Asianux Corporation
+Laurent Pinchart
+
