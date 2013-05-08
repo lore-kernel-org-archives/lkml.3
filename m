@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab3EHSVL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:21:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56009 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757701Ab3EHSVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:21:08 -0400
-Date: Wed, 8 May 2013 20:22:35 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, hpa@zytor.com,
-        mingo@redhat.com, fenghua.yu@intel.com, tglx@linutronix.de,
-        xen-devel@lists.xensource.com, stable@vger.kernel.org
-Subject: Re: [PATCH] x86, microcode: Add local mutex to not hit a deadlock.
-Message-ID: <20130508182235.GE30955@pd.tnic>
-References: <1368029583-23337-1-git-send-email-konrad.wilk@oracle.com>
+	id S1758107Ab3EHSXb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:23:31 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:58666 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757747Ab3EHSX3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 14:23:29 -0400
+Message-ID: <518A96DA.5060809@st.com>
+Date: Wed, 08 May 2013 19:18:02 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1368029583-23337-1-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-doc@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, jslaby@suse.cz,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, Nicolas Pitre <nico@linaro.org>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        linux-serial@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/8] serial:st-asc: Add ST ASC driver.
+References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <1368022248-2153-1-git-send-email-srinivas.kandagatla@st.com> <201305081634.43498.arnd@arndb.de> <20130508143908.GJ24282@game.jcrosoft.org>
+In-Reply-To: <20130508143908.GJ24282@game.jcrosoft.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 12:13:03PM -0400, Konrad Rzeszutek Wilk wrote:
-> This can easily be triggered if a new CPU is added (via
-> ACPI hotplug mechanism) and from user-space do:
-> 
-> echo 1 > /sys/devices/system/cpu/cpu3/online
-> 
-> (or wait for UDEV to do it) on a newly appeared CPU.
-> 
-> The deadlock is that the "store_online" in drivers/base/cpu.c
-> takes the cpu_hotplug_driver_lock() lock, then calls "cpu_up".
-> "cpu_up" eventually ends up calling "save_mc_for_early"
-> which also takes the cpu_hotplug_driver_lock() lock.
-> 
-> And here is that kernel thinks of it:
-> 
-> smpboot: Stack at about ffff880075c39f44
-> smpboot: CPU3: has booted.
-> microcode: CPU3 sig=0x206a7, pf=0x2, revision=0x25
-> 
-> =============================================
-> [ INFO: possible recursive locking detected ]
-> 3.9.0upstream-10129-g167af0e #1 Not tainted
-> ---------------------------------------------
-> sh/2487 is trying to acquire lock:
->  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
-> 
-> but task is already holding lock:
->  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
-> 
-> other info that might help us debug this:
->  Possible unsafe locking scenario:
-> 
->        CPU0
->        ----
->   lock(x86_cpu_hotplug_driver_mutex);
->   lock(x86_cpu_hotplug_driver_mutex);
-> 
->  *** DEADLOCK ***
+On 08/05/13 15:39, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>>> +
+>> > 
+>> > Please remove all forward declarations, by reordering the functions in
+>> > the way they are called.
+>> > 
+> and drop the dummy functions
+We can not remove the dummy functions, as the serial-core does not check
+it before using them.
+>> > 
+>>> > > diff --git a/drivers/tty/serial/st-asc.h b/drivers/tty/serial/st-asc.h
+>>> > > new file mode 100644
+>>> > > index 0000000..e59f818
+>>> > > --- /dev/null
+>>> > > +++ b/drivers/tty/serial/st-asc.h
 
-Ok, just for my own understanding: is this something which can actually
-happen now?
-
-Judging by the presence of traces, it can be triggered in a guest,
-correct?
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
