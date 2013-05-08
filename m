@@ -1,92 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758245Ab3EHUpD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 16:45:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37541 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757198Ab3EHUpB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 16:45:01 -0400
-Date: Wed, 8 May 2013 13:45:00 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Wang YanQing <udknight@gmail.com>, airlied@redhat.com,
-        linux-kernel@vger.kernel.org, jslaby@suse.cz, alan@linux.intel.com
-Subject: Re: [PATCH 3/9] vt: delete unneeded functions
- register_con_driver|take_over_console
-Message-ID: <20130508204500.GA16930@kroah.com>
-References: <20130508181359.GD12344@udknight>
- <518AAE01.2010005@hurleysoftware.com>
- <20130508201412.GA17401@kroah.com>
- <518AB77A.6090201@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757778Ab3EHUsb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 16:48:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63301 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756426Ab3EHUsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 16:48:30 -0400
+Date: Wed, 08 May 2013 16:48:13 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Message-ID: <1368046093-mpzcumyb-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130508184524.GF30955@pd.tnic>
+References: <20130508143411.GD30955@pd.tnic>
+ <1368029552-dzvitovl-mutt-n-horiguchi@ah.jp.nec.com>
+ <20130508184524.GF30955@pd.tnic>
+Subject: [PATCH] ipc/shm.c: don't use auto variable hs in newseg()
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <518AB77A.6090201@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 04:37:14PM -0400, Peter Hurley wrote:
-> On 05/08/2013 04:14 PM, Greg KH wrote:
-> >On Wed, May 08, 2013 at 03:56:49PM -0400, Peter Hurley wrote:
-> >>On 05/08/2013 02:13 PM, Wang YanQing wrote:
-> >>>Now there is no place use register_con_driver|take_over_console,
-> >>>and we can achieve their function with do_register_con_driver|
-> >>>do_take_over_console easily, so just delete them to reduce code duplication.
-> >>>
-> >>>Signed-off-by: Wang YanQing <udknight@gmail.com>
-> >>>---
-> >>>  drivers/tty/vt/vt.c     | 45 ---------------------------------------------
-> >>>  include/linux/console.h |  2 --
-> >>>  2 files changed, 47 deletions(-)
-> >>>
-> >>>diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-> >>>index fbd447b..852d470 100644
-> >>>--- a/drivers/tty/vt/vt.c
-> >>>+++ b/drivers/tty/vt/vt.c
-> >>>@@ -3576,26 +3576,6 @@ err:
-> >>>  	return retval;
-> >>>  }
-> >>>
-> >>>-/**
-> >>>- * register_con_driver - register console driver to console layer
-> >>>- * @csw: console driver
-> >>>- * @first: the first console to take over, minimum value is 0
-> >>>- * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
-> >>>- *
-> >>>- * DESCRIPTION: This function registers a console driver which can later
-> >>>- * bind to a range of consoles specified by @first and @last. It will
-> >>>- * also initialize the console driver by calling con_startup().
-> >>>- */
-> >>>-int register_con_driver(const struct consw *csw, int first, int last)
-> >>>-{
-> >>>-	int retval;
-> >>>-
-> >>>-	console_lock();
-> >>>-	retval = do_register_con_driver(csw, first, last);
-> >>>-	console_unlock();
-> >>>-	return retval;
-> >>>-}
-> >>>-EXPORT_SYMBOL(register_con_driver);
-> >>
-> >>Maybe register_con_driver() should print a deprecated warning
-> >>for a release or two before we remove it.
-> >
-> >If there are no in-kernel users, why do we need to keep it around?
+On Wed, May 08, 2013 at 08:45:24PM +0200, Borislav Petkov wrote:
+> On Wed, May 08, 2013 at 12:12:32PM -0400, Naoya Horiguchi wrote:
+> > Thank you for the report.
+> > I believe we can fix it with this one.
+> > ---
+> > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Date: Wed, 8 May 2013 11:48:01 -0400
+> > Subject: [PATCH] ipc/shm.c: don't use auto variable hs in newseg()
+> > 
+> > This patch fixes "warning: unused variable 'hs'" when !CONFIG_HUGETLB_PAGE
+> > introduced by commit af73e4d9506d "hugetlbfs: fix mmap failure in unaligned
+> > size request".
+> > 
+> > Reported-by: Borislav Petkov <bp@alien8.de>
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > ---
+> >  ipc/shm.c | 5 ++---
+> >  1 file changed, 2 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/ipc/shm.c b/ipc/shm.c
+> > index e316cb9..9ff741a 100644
+> > --- a/ipc/shm.c
+> > +++ b/ipc/shm.c
+> > @@ -491,9 +491,8 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+> >  
+> >  	sprintf (name, "SYSV%08x", key);
+> >  	if (shmflg & SHM_HUGETLB) {
+> > -		struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
+> > -						& SHM_HUGE_MASK);
+> > -		size_t hugesize = ALIGN(size, huge_page_size(hs));
+> > +		size_t hugesize = ALIGN(size, huge_page_size(hstate_sizelog(
+> > +				(shmflg >> SHM_HUGE_SHIFT) & SHM_HUGE_MASK)));
 > 
-> Well, it's not my position that we *need* to keep previously exported
-> symbols around, but I do think a release or two is enough of a
-> heads-up for out-of-tree drivers to transition.
+> Yeah, it fixes the warning alright but makes the code more unreadable.
+> Which makes me wonder which is worse - to have an innocuous warning or
+> have unreadable code.
+> 
+> You could also do the below. The line sticks out but it kills the
+> warning. Readability is hmm, not optimal still though. :)
+> --
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -491,9 +491,8 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+>  
+>  	sprintf (name, "SYSV%08x", key);
+>  	if (shmflg & SHM_HUGETLB) {
+> -		struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
+> -						& SHM_HUGE_MASK);
+> -		size_t hugesize = ALIGN(size, huge_page_size(hs));
+> +		unsigned long hsz = huge_page_size(hstate_sizelog((shmflg >> SHM_HUGE_SHIFT) & SHM_HUGE_MASK));
+> +		size_t hugesize = ALIGN(size, hsz);
+>  
+>  		/* hugetlb_file_setup applies strict accounting */
+>  		if (shmflg & SHM_NORESERVE)
+> --
+> 
+> Yeah, you decide.
 
-I don't care about out-of-tree drivers, as we have no insight into what
-they do, but they can see everything we can do, it's up to them to keep
-up with us.
+(CCed: Andrew and linux-mm)
+OK, personally both are OK (comparably bad) for me, so I'll do the same
+as af73e4d9506d3b does for SYSCALL_DEFINE6(mmap_pgoff), where we have
+a line break just after '('.
 
-Or even better yet, get merged into the tree, and then these types of
-things aren't even an issue.
+Andrew, could you pick up the following fix?
+-----
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Wed, 8 May 2013 11:48:01 -0400
+Subject: [PATCH] ipc/shm.c: don't use auto variable hs in newseg()
 
-thanks,
+This patch fixes "warning: unused variable 'hs'" when !CONFIG_HUGETLB_PAGE
+introduced by commit af73e4d9506d "hugetlbfs: fix mmap failure in unaligned
+size request".
 
-greg k-h
+Reported-by: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ ipc/shm.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/ipc/shm.c b/ipc/shm.c
+index e316cb9..9ff741a 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -491,9 +491,8 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ 
+ 	sprintf (name, "SYSV%08x", key);
+ 	if (shmflg & SHM_HUGETLB) {
+-		struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
+-						& SHM_HUGE_MASK);
+-		size_t hugesize = ALIGN(size, huge_page_size(hs));
++		size_t hugesize = ALIGN(size, huge_page_size(hstate_sizelog(
++				(shmflg >> SHM_HUGE_SHIFT) & SHM_HUGE_MASK)));
+ 
+ 		/* hugetlb_file_setup applies strict accounting */
+ 		if (shmflg & SHM_NORESERVE)
+-- 
+1.7.11.7
