@@ -1,78 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab3EHM7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 08:59:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35511 "EHLO
+	id S1755654Ab3EHM7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 08:59:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35509 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754935Ab3EHM7K (ORCPT
+	by vger.kernel.org with ESMTP id S1754502Ab3EHM7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 May 2013 08:59:10 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Mark Brown <broonie@kernel.org>
 Cc: linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 4/4] regmap: rbtree: Use range information to allocate nodes
-Date: Wed,  8 May 2013 13:55:25 +0100
-Message-Id: <1368017725-23723-4-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/4] regmap: Add support for discarding parts of the register cache
+Date: Wed,  8 May 2013 13:55:22 +0100
+Message-Id: <1368017725-23723-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368017725-23723-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1368017725-23723-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If range information has been provided then when we allocate a rbnode
-within a range allocate the entire range. The goal is to minimise the
-number of reallocations done when combining or extending blocks. At
-present only readability and yes_ranges are taken into account, this is
-expected to cover most cases efficiently.
+Allow drivers to discard parts of the register cache, for example if part
+of the hardware has been reset.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/base/regmap/regcache-rbtree.c |   25 +++++++++++++++++++++++--
- 1 file changed, 23 insertions(+), 2 deletions(-)
+ drivers/base/regmap/internal.h |    1 +
+ drivers/base/regmap/regcache.c |   37 +++++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h         |    9 +++++++++
+ include/trace/events/regmap.h  |   23 +++++++++++++++++++++++
+ 4 files changed, 70 insertions(+)
 
-diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
-index 47f8047..24b06a4 100644
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -308,13 +308,34 @@ static struct regcache_rbtree_node *
- regcache_rbtree_node_alloc(struct regmap *map, unsigned int reg)
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index c130536..b33a4ff 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -148,6 +148,7 @@ struct regcache_ops {
+ 	int (*read)(struct regmap *map, unsigned int reg, unsigned int *value);
+ 	int (*write)(struct regmap *map, unsigned int reg, unsigned int value);
+ 	int (*sync)(struct regmap *map, unsigned int min, unsigned int max);
++	int (*drop)(struct regmap *map, unsigned int min, unsigned int max);
+ };
+ 
+ bool regmap_writeable(struct regmap *map, unsigned int reg);
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index 1196c21..14c6eef 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -359,6 +359,43 @@ out:
+ EXPORT_SYMBOL_GPL(regcache_sync_region);
+ 
+ /**
++ * regcache_drop_region: Discard part of the register cache
++ *
++ * @map: map to operate on
++ * @min: first register to discard
++ * @max: last register to discard
++ *
++ * Discard part of the register cache.
++ *
++ * Return a negative value on failure, 0 on success.
++ */
++int regcache_drop_region(struct regmap *map, unsigned int min,
++			 unsigned int max)
++{
++	unsigned int reg;
++	int ret = 0;
++
++	if (!map->cache_present && !(map->cache_ops && map->cache_ops->drop))
++		return -EINVAL;
++
++	map->lock(map);
++
++	trace_regcache_drop_region(map->dev, min, max);
++
++	if (map->cache_present)
++		for (reg = min; reg < max + 1; reg++)
++			clear_bit(reg, map->cache_present);
++
++	if (map->cache_ops && map->cache_ops->drop)
++		ret = map->cache_ops->drop(map, min, max);
++
++	map->unlock(map);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(regcache_drop_region);
++
++/**
+  * regcache_cache_only: Put a register map into cache only mode
+  *
+  * @map: map to configure
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 02d84e2..5067ee9 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -394,6 +394,8 @@ bool regmap_can_raw_write(struct regmap *map);
+ int regcache_sync(struct regmap *map);
+ int regcache_sync_region(struct regmap *map, unsigned int min,
+ 			 unsigned int max);
++int regcache_drop_region(struct regmap *map, unsigned int min,
++			 unsigned int max);
+ void regcache_cache_only(struct regmap *map, bool enable);
+ void regcache_cache_bypass(struct regmap *map, bool enable);
+ void regcache_mark_dirty(struct regmap *map);
+@@ -562,6 +564,13 @@ static inline int regcache_sync_region(struct regmap *map, unsigned int min,
+ 	return -EINVAL;
+ }
+ 
++static inline int regcache_drop_region(struct regmap *map, unsigned int min,
++				       unsigned int max)
++{
++	WARN_ONCE(1, "regmap API is disabled");
++	return -EINVAL;
++}
++
+ static inline void regcache_cache_only(struct regmap *map, bool enable)
  {
- 	struct regcache_rbtree_node *rbnode;
-+	const struct regmap_range *range;
-+	int i;
+ 	WARN_ONCE(1, "regmap API is disabled");
+diff --git a/include/trace/events/regmap.h b/include/trace/events/regmap.h
+index a43a2f6..23d5615 100644
+--- a/include/trace/events/regmap.h
++++ b/include/trace/events/regmap.h
+@@ -223,6 +223,29 @@ DEFINE_EVENT(regmap_async, regmap_async_complete_done,
  
- 	rbnode = kzalloc(sizeof(*rbnode), GFP_KERNEL);
- 	if (!rbnode)
- 		return NULL;
+ );
  
--	rbnode->blklen = sizeof(*rbnode);
--	rbnode->base_reg = reg;
-+	/* If there is a read table then use it to guess at an allocation */
-+	if (map->rd_table) {
-+		for (i = 0; i < map->rd_table->n_yes_ranges; i++) {
-+			if (regmap_reg_in_range(reg,
-+						&map->rd_table->yes_ranges[i]))
-+				break;
-+		}
++TRACE_EVENT(regcache_drop_region,
 +
-+		if (i != map->rd_table->n_yes_ranges) {
-+			range = &map->rd_table->yes_ranges[i];
-+			rbnode->blklen = range->range_max - range->range_min
-+				+ 1;
-+			rbnode->base_reg = range->range_min;
-+		}
-+	}
++	TP_PROTO(struct device *dev, unsigned int from,
++		 unsigned int to),
 +
-+	if (!rbnode->blklen) {
-+		rbnode->blklen = sizeof(*rbnode);
-+		rbnode->base_reg = reg;
-+	}
++	TP_ARGS(dev, from, to),
 +
- 	rbnode->block = kmalloc(rbnode->blklen * map->cache_word_size,
- 				GFP_KERNEL);
- 	if (!rbnode->block) {
++	TP_STRUCT__entry(
++		__string(       name,           dev_name(dev)   )
++		__field(	unsigned int,	from		)
++		__field(	unsigned int,	to		)
++	),
++
++	TP_fast_assign(
++		__assign_str(name, dev_name(dev));
++		__entry->from = from;
++		__entry->to = to;
++	),
++
++	TP_printk("%s %u-%u", __get_str(name), (unsigned int)__entry->from,
++		  (unsigned int)__entry->to)
++);
++
+ #endif /* _TRACE_REGMAP_H */
+ 
+ /* This part must be outside protection */
 -- 
 1.7.10.4
 
