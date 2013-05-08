@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526Ab3EHN6a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 09:58:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58471 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755383Ab3EHN63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 09:58:29 -0400
-Date: Wed, 8 May 2013 15:58:25 +0200
-From: Jan Kara <jack@suse.cz>
-To: Maarten ter Huurne <maarten@treewalker.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext4: Fixed corruption when online resizing a fs with 1K
- block size
-Message-ID: <20130508135825.GA3810@quack.suse.cz>
-References: <1367856367-15924-1-git-send-email-maarten@treewalker.org>
+	id S1756609Ab3EHN7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 09:59:10 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:53163 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756568Ab3EHN7J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 09:59:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367856367-15924-1-git-send-email-maarten@treewalker.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1367591569-32197-37-git-send-email-lee.jones@linaro.org>
+References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
+	<1367591569-32197-37-git-send-email-lee.jones@linaro.org>
+Date: Wed, 8 May 2013 15:59:08 +0200
+Message-ID: <CAPDyKFqD93K_vBKpoWmLjFHaY06seARDpxb-KJJFv4LAzXa1Vw@mail.gmail.com>
+Subject: Re: [PATCH 36/63] crypto: ux500/hash - Prepare clock before enabling it
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andreas Westin <andreas.westin@stericsson.com>,
+        linux-crypto@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 06-05-13 18:06:07, Maarten ter Huurne wrote:
-> Subtracting the number of the first data block places the superblock
-> backups one block too early, corrupting the file system. When the block
-> size is larger than 1K, the first data block is 0, so the subtraction
-> has no effect and no corruption occurs.
-  Looking where mke2fs places backup super blocks you are right. You can
-add:
-Reviewed-by: Jan Kara <jack@suse.cz>
-
-								Honza
-> 
-> Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
+On 3 May 2013 16:32, Lee Jones <lee.jones@linaro.org> wrote:
+> If we fail to prepare the ux500-hash clock before enabling it the
+> platform will fail to boot. Here we insure this happens.
+>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Andreas Westin <andreas.westin@stericsson.com>
+> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> Cc: linux-crypto@vger.kernel.org
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > ---
->  fs/ext4/resize.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
-> 
-> diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-> index c169477..116c80d 100644
-> --- a/fs/ext4/resize.c
-> +++ b/fs/ext4/resize.c
-> @@ -1654,12 +1654,10 @@ errout:
->  		err = err2;
->  
->  	if (!err) {
-> -		ext4_fsblk_t first_block;
-> -		first_block = ext4_group_first_block_no(sb, 0);
->  		if (test_opt(sb, DEBUG))
->  			printk(KERN_DEBUG "EXT4-fs: extended group to %llu "
->  			       "blocks\n", ext4_blocks_count(es));
-> -		update_backups(sb, EXT4_SB(sb)->s_sbh->b_blocknr - first_block,
-> +		update_backups(sb, EXT4_SB(sb)->s_sbh->b_blocknr,
->  			       (char *)es, sizeof(struct ext4_super_block), 0);
->  	}
->  	return err;
-> -- 
-> 1.7.10.4
-> 
+>  drivers/crypto/ux500/hash/hash_core.c |   12 +++++++++++-
+>  1 file changed, 11 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
+> index 632c333..1e8b2f3 100644
+> --- a/drivers/crypto/ux500/hash/hash_core.c
+> +++ b/drivers/crypto/ux500/hash/hash_core.c
+> @@ -1727,11 +1727,17 @@ static int ux500_hash_probe(struct platform_device *pdev)
+>                 goto out_regulator;
+>         }
+>
+> +       ret = clk_prepare(device_data->clk);
+> +       if (ret) {
+> +               dev_err(dev, "[%s] clk_prepare() failed!", __func__);
+> +               goto out_clk;
+> +       }
+> +
+>         /* Enable device power (and clock) */
+>         ret = hash_enable_power(device_data, false);
+>         if (ret) {
+>                 dev_err(dev, "[%s]: hash_enable_power() failed!", __func__);
+> -               goto out_clk;
+> +               goto out_clk_unprepare;
+>         }
+>
+>         ret = hash_check_hw(device_data);
+> @@ -1763,6 +1769,9 @@ static int ux500_hash_probe(struct platform_device *pdev)
+>  out_power:
+>         hash_disable_power(device_data, false);
+>
+> +out_clk_unprepare:
+> +       clk_unprepare(device_data->clk);
+> +
+>  out_clk:
+>         clk_put(device_data->clk);
+>
+> @@ -1827,6 +1836,7 @@ static int ux500_hash_remove(struct platform_device *pdev)
+>                 dev_err(dev, "[%s]: hash_disable_power() failed",
+>                         __func__);
+>
+> +       clk_unprepare(device_data->clk);
+>         clk_put(device_data->clk);
+>         regulator_put(device_data->regulator);
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> 1.7.10.4
+>
+
+Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
