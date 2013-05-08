@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab3EHTBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 15:01:38 -0400
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:36103 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752243Ab3EHTBh (ORCPT
+	id S1753362Ab3EHTCO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 15:02:14 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:14304 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752243Ab3EHTCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 15:01:37 -0400
-Date: Wed, 8 May 2013 19:01:35 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Chris Mason <clmason@fusionio.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [GIT PULL] SLAB changes for v3.10
-In-Reply-To: <20130508184817.4271.72594@localhost.localdomain>
-Message-ID: <0000013e85852607-fd84223c-112e-46b9-a60f-73d9597d90ac-000000@email.amazonses.com>
-References: <alpine.LFD.2.03.1305070936320.2383@kernel.org> <20130508003022.GS28721@atomide.com> <20130508042422.GU28721@atomide.com> <20130508181353.23991.17852@localhost.localdomain> <0000013e856463fa-9a895b58-ef76-42fa-a33d-778b89f97cf2-000000@email.amazonses.com>
- <20130508184817.4271.72594@localhost.localdomain>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 8 May 2013 15:02:11 -0400
+Date: Wed, 8 May 2013 21:02:08 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, sparclinux@vger.kernel.org
+Subject: Re: [PATCH v5, part4 35/41] mm/SPARC: prepare for removing
+	num_physpages and simplify mem_init()
+Message-ID: <20130508190208.GA13601@merkur.ravnborg.org>
+References: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com> <1368028298-7401-36-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.05.08-54.240.9.70
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368028298-7401-36-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 May 2013, Chris Mason wrote:
+On Wed, May 08, 2013 at 11:51:32PM +0800, Jiang Liu wrote:
+> Prepare for removing num_physpages and simplify mem_init().
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Sam Ravnborg <sam@ravnborg.org>
+> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Cc: Tang Chen <tangchen@cn.fujitsu.com>
+> Cc: sparclinux@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
 
-> > You correctly moved the checks out of the if (!kmalloc_cacheS())
-> > condition so that the caches are created properly.
->
-> But if the ordering is required at all, why is it ok to create cache 2
-> after cache 6 instead of after cache 7?
-
-The power of two caches are 2^x beginning with KMALLOC_MIN_SHIFT. The non
-power of two caches were folded into number 1 + 2 since they do not fit
-into the scheme and they are special cased throughout. This works since
-the minimal slab cache size is 8 bytes.
-
-> IOW if we can safely do cache 2 after cache 6, why can't we just do both
-> cache 1 and cache 2 after the loop?
-
-Because the cache creation in SLAB can cause the use of a fractional slab
-size if kmem_cache_create() thinks its better to put the metadata on a
-different slab cache (OFF_SLAB type) because data will align better that
-way. Its weird I know but its due to the way that SLAB aligns data in the
-page frame.
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
