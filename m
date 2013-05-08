@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab3EHVsA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 17:48:00 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:41836 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885Ab3EHVr6 (ORCPT
+	id S1755175Ab3EHVst (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 17:48:49 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:52094 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752763Ab3EHVss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 17:47:58 -0400
-X-IronPort-AV: E=Sophos;i="4.87,636,1363158000"; 
-   d="scan'208";a="45526386"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] ARM: avoid mis-detecting some V7 cores in the decompressor
-Date: Wed,  8 May 2013 14:47:51 -0700
-Message-Id: <1368049671-22879-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.rc1.25.g423ecb0.dirty
+	Wed, 8 May 2013 17:48:48 -0400
+X-Nat-Received: from [202.181.97.72]:51795 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1368049704.3749
+To: clmason@fusionio.com, cl@linux.com
+Cc: penberg@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        tony@atomide.com
+Subject: Re: [PATCH] Fix crash during slab init
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20130508003022.GS28721@atomide.com>
+	<20130508042422.GU28721@atomide.com>
+	<20130508181353.23991.17852@localhost.localdomain>
+	<0000013e85852607-fd84223c-112e-46b9-a60f-73d9597d90ac-000000@email.amazonses.com>
+	<20130508195628.4271.97115@localhost.localdomain>
+In-Reply-To: <20130508195628.4271.97115@localhost.localdomain>
+Message-Id: <201305090648.HHG43284.FOFHOOVLStMFQJ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Thu, 9 May 2013 06:48:23 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 08052013 #9920543, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Brian Swetland <swetland@google.com>
+Chris Mason wrote:
+> Commit 8a965b3b introduced a regression that caused us to crash early
+> during boot.  The commit was introducing ordering of slab creation,
+> making sure two odd-sized slabs were created after specific powers of
+> two sizes.
+> 
+> But, if any of the  power of two slabs were created earlier during boot,
+> slabs at index 1 or 2 might not get created at all.  This patch makes
+> sure none of the slabs get skipped.
+> 
+> Tony Lindgren bisected this down to the offending commit, which really
+> helped because bisect kept bringing me to almost but not quite this one.
+> 
+> Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+> Acked-by: Christoph Lameter <cl@linux.com>
+> Acked-by: Tony Lindgren <tony@atomide.com>
 
-Currently v7 CPUs with an MIDR that has no bits set in the range
-[16:12] will be detected as old ARM CPUs with no caches and so
-the cache will never be turned on during decompression. ARM's
-Cortex chips have an 0xC in the range [16:12] so they never match
-this entry, but Qualcomm's Scorpion and Krait processors never
-set these bits to anything besides 0 so they always match.
-
-Skip this entry if we've compiled in support for v7 CPUs. This
-allows kernel decompression to happen nearly instantly instead of
-taking over 20 seconds.
-
-Signed-off-by: Brian Swetland <swetland@google.com>
-[sboyd: Clarified and extended commit text]
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/boot/compressed/head.S | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
-index fe4d9c3..a236190 100644
---- a/arch/arm/boot/compressed/head.S
-+++ b/arch/arm/boot/compressed/head.S
-@@ -805,6 +805,8 @@ call_cache_fn:	adr	r12, proc_types
- 		.align	2
- 		.type	proc_types,#object
- proc_types:
-+#if !defined(CONFIG_CPU_V7)
-+		/* This collides with some V7 IDs, preventing correct detection */
- 		.word	0x00000000		@ old ARM ID
- 		.word	0x0000f000
- 		mov	pc, lr
-@@ -813,6 +815,7 @@ proc_types:
-  THUMB(		nop				)
- 		mov	pc, lr
-  THUMB(		nop				)
-+#endif
- 
- 		.word	0x41007000		@ ARM7/710
- 		.word	0xfff8fe00
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+This patch keeps my x86_32 debug kernel boots fine. Thank you.
