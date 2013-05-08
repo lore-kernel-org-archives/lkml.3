@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab3EHLuk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 07:50:40 -0400
-Received: from mga03.intel.com ([143.182.124.21]:58537 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755100Ab3EHLuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 07:50:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,634,1363158000"; 
-   d="scan'208";a="238488227"
-Date: Wed, 8 May 2013 19:50:32 +0800
-From: Haicheng Li <haicheng.li@linux.intel.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Haicheng Li <haicheng.lee@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [PATCH 4/4] f2fs: optimize build_free_nids()
-Message-ID: <20130508115032.GA23356@hli22-desktop>
-References: <1367853344-28938-1-git-send-email-haicheng.li@linux.intel.com>
- <1367853344-28938-5-git-send-email-haicheng.li@linux.intel.com>
- <1367922839.16581.42.camel@kjgkr>
- <20130508062455.GB8705@hli22-desktop>
- <1368006604.16581.64.camel@kjgkr>
+	id S1755367Ab3EHL5d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 07:57:33 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:46753 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755251Ab3EHL5c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 07:57:32 -0400
+Message-ID: <518A3DDC.1090905@parallels.com>
+Date: Wed, 8 May 2013 15:58:20 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368006604.16581.64.camel@kjgkr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pekka Enberg <penberg@kernel.org>
+CC: Tony Lindgren <tony@atomide.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Subject: Re: [GIT PULL] SLAB changes for v3.10
+References: <alpine.LFD.2.03.1305070936320.2383@kernel.org> <20130508003022.GS28721@atomide.com> <20130508042422.GU28721@atomide.com> <20130508051602.GV28721@atomide.com> <CAOJsxLEB2gSWefNHNeKfxv9Hp=H9PG0bGgTcUPE4abz3fv_fxw@mail.gmail.com>
+In-Reply-To: <CAOJsxLEB2gSWefNHNeKfxv9Hp=H9PG0bGgTcUPE4abz3fv_fxw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 06:50:04PM +0900, Jaegeuk Kim wrote:
- > > Could you explain when this can happen?
-> >
-> > I'm thinking of this possible scenario:
-> >
-> > as we don't hold any spinlock to protect the context, add_free_nid() could be
-> > called by other thread anytime, e.g. by the gc_thread_func() in background.
->
-> The gc_thread_func() is not a proper example here though, the
-> buid_free_nids() is covered by nm_i->build_lock, so build_free_nids is
-> entered only one at a time.
-> In addtion, build_free_nids starts with checking if (nm_i->fcnt >
-> NAT_ENTRY_PER_BLOCK) in order not to be conducted repeatedely.
+On 05/08/2013 10:20 AM, Pekka Enberg wrote:
+>> > Hmm it's actually CONFIG_PROVE_LOCKING=y that causes the problem,
+>> > not CONFIG_DEBUG_SPINLOCK=y. CONFIG_DEBUG_SPINLOCK=y was just selected
+>> > by CONFIG_PROVE_LOCKING=y in my non-booting .config. I can now fix my
+>> > non-booting .config by removing PROVE_LOCKING and DEBUG_SPINLOCK,
+>> > but I cannot break my other working .config by adding PROVE_LOCKING
+>> > and DEBUG_SPINLOCK. Hmm.
+> That's almost certainly a slab bootstrap issue. Lockdep et al just
+> change struct sizes which is why the problem shows up. Is this with
+> SLAB or SLUB? Christoph, Glauber, care to take a look?
+> 
+>>>> >> > 
 
-surely build_free_nids() itself is under well protection.
-but this scenario would happen when gc_thread_func() is running in background:
-        f2fs_gc()
-                write_checkpoint()
-                        flush_nat_entries()
-                                add_free_nid()
-> >
-> > then nm_i->fcnt could be increased as 2 * MAX_FREE_NIDS while i < FREE_NID_PAGES.
-> > Anything I misconsidered?
->
-> Apart from the correctness of this behavior, I'm not sure why we should
-> strictly manage this threshold value.
-> Should we really need to do this?
+My first guess is that it hit a NULL cache. Being a NULL pointer
+dereference, the thing among all that has the biggest chances of being
+NULL and accessed unconditionally is the cache pointer itself.
 
-This threshold value itself should have already be well managed in current code.
+Due to the size being too big. But if that were the case, he would have
+hit the WARN_ON recently introduced:
 
-This patch is just to avoid unecessary while-loop that tries scan_nat_page() even when this threshold
-has already been reached. But as I mentioned previously, it just possibly avoids "< 4" unecessary tries.
+                if (WARN_ON_ONCE(size > KMALLOC_MAX_SIZE))
+                        return NULL;
 
-So this patch now becomes a very very trivial optimization because scan_nat_page() itself can detect out the condition.
 
-In such case, You can *ignore* this patch:). 
-Thanks for the patch review, Jaegeuk!
- 
-> > 
-> > hmm, the pros is that this check may possibly avoid some (< 4) unnecessary while-loop,
-> > the cons is that too many checks of (nm_i->fcnt > 2 * MAX_FREE_NIDS)
-> > would make the code looking messy and fragmentary...
-> >  
-> > > >  		if (i++ == FREE_NID_PAGES)
-> > > >  			break;
-> > > >  	}
-
--haicheng
+Is this WARN hit ?
