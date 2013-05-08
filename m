@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab3EHMkz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 08:40:55 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:42536 "EHLO
+	id S1755696Ab3EHMlw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 08:41:52 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:42554 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498Ab3EHMky (ORCPT
+	with ESMTP id S1754323Ab3EHMlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 08:40:54 -0400
-Date: Wed, 8 May 2013 13:40:19 +0100
+	Wed, 8 May 2013 08:41:51 -0400
+Date: Wed, 8 May 2013 13:41:19 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Message-ID: <20130508124019.GN7478@sirena.org.uk>
-References: <1368008409-15250-1-git-send-email-srinivas.kandagatla@st.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com,
+        Marek Vasut <marek.vasut@gmail.com>
+Message-ID: <20130508124119.GO7478@sirena.org.uk>
+References: <1368009546-20770-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0oEQci8Wf3TZ4Qnh"
+	protocol="application/pgp-signature"; boundary="gIhrS3Q23Nl70UJ5"
 Content-Disposition: inline
-In-Reply-To: <1368008409-15250-1-git-send-email-srinivas.kandagatla@st.com>
+In-Reply-To: <1368009546-20770-1-git-send-email-sachin.kamat@linaro.org>
 X-Cookie: You have no real enemies.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 212.183.132.60
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] regmap: debugfs: Fix start_reg calculation (v2)
+Subject: Re: [PATCH 1/2] regulator: isl6271a: Use NULL instead of 0
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,39 +31,40 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---0oEQci8Wf3TZ4Qnh
+--gIhrS3Q23Nl70UJ5
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, May 08, 2013 at 11:20:09AM +0100, Srinivas KANDAGATLA wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+On Wed, May 08, 2013 at 04:09:05PM +0530, Sachin Kamat wrote:
+> init_data is a pointer. Use NULL instead of 0.
 >=20
-> If we dump syscon regmap registers via debugfs you will notice that the
-> dump contains lot of XXXXXXXX values.
+> Silences the following sparse warning:
+> drivers/regulator/isl6271a-regulator.c:133:44:
+> warning: Using plain integer as NULL pointer
 
 Applied, thanks.
 
---0oEQci8Wf3TZ4Qnh
+--gIhrS3Q23Nl70UJ5
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRikevAAoJELSic+t+oim9MwUP/Rx8MOXyMx69IuNP7JnP+XZm
-LDHFtZczUjhpKuJJ+aliOKu2iw6qjrdC6OqfjqWeH1UvpfQa0rBz7yWo3ZelyNiD
-AKCK614IaitETQB1dQKn4rwdmSBcy25FUYQ4RwlGfnQ8Labr8Xj7tb0yLTHjDgsS
-4iLLidnyQeHkdqaevKfkzvWwjqwuk84ydOTvDG2It1nBqj4s2A2x9kE3O6iC4D8Q
-AnBb8zYsDEYMNLtxm9n5bSMGENpIVFa5T2lkxYpGluBSECru8SE5pIpCxcFrUgwo
-Zzcn9RQchvhyugUpCk2xWWetLoad19PfsWc5CgSUQHjXJS6+PVUsKl1rTQtmLlgM
-+uVhknWk/CF+QG+JHDjouujAyvvRrBFnhqSouiaP551llvnOKC78Bcl+DDji43Q8
-bCdSpn1a12fFhxnzpcTddqf4eIpQYgVY3lOIYA3/WWcJhokYgwBjYVpvesyMyvxv
-+LXGRqFZwopVnzbS/I5VzjtYQdDJdzR5M80eRN09bTic3nUxno8fMGTqJglhAkMp
-JQAmr3obZ57UpWXsg4E3oB4Q6uLTzogb71enYzeV70msI7Vy44ARU/fLYiaJfm7x
-9DBmM0bexeLgQSBWdGPA4wm2/qVg2zBRfDr+OFQUSlYZqdd2jXUp7kaBU5KjurW9
-H5gdeERs4yWne20VL/2/
-=XPpy
+iQIcBAEBAgAGBQJRikfsAAoJELSic+t+oim91KIP/0/EQG5VW34ytnjiBEm4joHA
+sdtEKktYh5vIV0ppHXUXKopGzp9zfkW7I82Dj/54ysgjfhxl1p5TUH8RA4c53+sf
+CV/2otgi/DBVnS7vh6CqNdkqFAejGWYgJMG41WEXT1kxOeB2gvK/coyOIYLHLpD/
+ouXQNDKqm1/rUq5Beqx34WkkO8Q+0cMrPZHJMa60kQbWwp3tLCI7BmdM2yDpmgRX
+BggvaSd4HT9axBb4r5HOhpdXyGR7jzSmirBPPOvy+cXNu0Pu8NUCzYfTiE/x/7N1
+gBoEYR6sw7yK0EwkJ+uakVLQ6Lw9+X135Ij5C4KNBlaSGYR7MucbZsOCcFbazezp
+FFSZvlg7gEubBbKfpuJRlcExGN2GbK2Gc+leTOtayI7D4mHp2IcH+JFEEHQ5wKQ2
+3vHm4ct0TmOf3ZJdfJuNkprhF/YPHVeYl9wOGqjkzqK46MgWJz18G13w9xknm8xO
+uOhWBtxZJjFJQWcfKXHSn5dMVeHw8QWgK+SqvyL0Ahuddb7R9i5UUUIRfEtXQA+5
+DRg6PADEBMWYCSsn5RlYkn+GeKMH/iQ7yUGmHsugJn89gFkdefBJITr6JuQh46F6
+wxyEmTr/BI9cHxCX9RgrfAwLEANpPEdXPOze15d9osMKY/gcokvGqY1BU/83qdpP
+rPaDlo5hm0EdUVWReFll
+=Gzr/
 -----END PGP SIGNATURE-----
 
---0oEQci8Wf3TZ4Qnh--
+--gIhrS3Q23Nl70UJ5--
