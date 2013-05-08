@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab3EHJnv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 05:43:51 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:54563 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950Ab3EHJnt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 05:43:49 -0400
-From: Robert Richter <rric@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@calxeda.com>
-Subject: [PATCH] perf tools: Fix perf version generation
-Date: Wed,  8 May 2013 11:43:34 +0200
-Message-Id: <1368006214-12912-1-git-send-email-rric@kernel.org>
-X-Mailer: git-send-email 1.8.1.1
+	id S1753701Ab3EHJty (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 05:49:54 -0400
+Received: from mga14.intel.com ([143.182.124.37]:32775 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751950Ab3EHJtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 05:49:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,632,1363158000"; 
+   d="scan'208";a="299314269"
+Message-ID: <1368006588.16616.5.camel@intelbox>
+Subject: Re: [PATCH] wait: fix false timeouts when using wait_event_timeout()
+From: Imre Deak <imre.deak@intel.com>
+Reply-To: imre.deak@intel.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Lukas Czerner <lczerner@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 08 May 2013 12:49:48 +0300
+In-Reply-To: <20130507161248.aedfde86659ae45cc5390bc4@linux-foundation.org>
+References: <1367485129-4423-1-git-send-email-imre.deak@intel.com>
+	 <CAKMK7uEL0kbS1j=gEu_GzUevseeKQ6JuZWPptr96JumCYurfnQ@mail.gmail.com>
+	 <20130507161248.aedfde86659ae45cc5390bc4@linux-foundation.org>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@calxeda.com>
+On Tue, 2013-05-07 at 16:12 -0700, Andrew Morton wrote:
+> On Thu, 2 May 2013 11:36:56 +0200 Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> 
+> > On Thu, May 2, 2013 at 10:58 AM, Imre Deak <imre.deak@intel.com> wrote:
+> > > Many callers of the wait_event_timeout() and
+> > > wait_event_interruptible_timeout() expect that the return value will be
+> > > positive if the specified condition becomes true before the timeout
+> > > elapses. However, at the moment this isn't guaranteed. If the wake-up
+> > > handler is delayed enough, the time remaining until timeout will be
+> > > calculated as 0 - and passed back as a return value - even if the
+> > > condition became true before the timeout has passed.
+> > >
+> > > Fix this by returning at least 1 if the condition becomes true. This
+> > > semantic is in line with what wait_for_condition_timeout() does; see
+> > > commit bb10ed09 - "sched: fix wait_for_completion_timeout() spurious
+> > > failure under heavy load".
+> > >
+> > > Signed-off-by: Imre Deak <imre.deak@intel.com>
+> > 
+> > We have 3 instances of this bug in drm/i915. One case even where we
+> > switch between the interruptible and not interruptible
+> > wait_event_timeout variants, foolishly presuming they have the same
+> > semantics. I very much like this.
+> 
+> Let's think about scheduling this fix.
+> 
+> Are any of the bugs which we expect this patch fixes serious enough to
+> warrant merging it into 3.10?  And -stable?
 
-The tag of the perf version is wrongly determined, always the latest
-tag is taken regardless of the HEAD commit:
+There is at least [1], but I'm sure there is more similar reports about
+i915. I'd vote for -stable at least.
 
- $ perf --version
- perf version 3.9.rc8.gd7f5d3
- $ git describe d7f5d3
- v3.9-rc7-154-gd7f5d33
- $ head -n 4 Makefile
- VERSION = 3
- PATCHLEVEL = 9
- SUBLEVEL = 0
- EXTRAVERSION = -rc7
+--Imre
 
-In other cases no tag might be found.
+[1] https://bugs.freedesktop.org/show_bug.cgi?id=64133
 
-This patch fixes this.
-
-This new implementation handles also the case if there are no tags at
-all found in the git repo but there is a commit id.
-
-Signed-off-by: Robert Richter <robert.richter@calxeda.com>
----
- tools/perf/util/PERF-VERSION-GEN | 21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
-
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index 055fef3..15a77b7 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -13,13 +13,22 @@ LF='
- # First check if there is a .git to get the version from git describe
- # otherwise try to get the version from the kernel Makefile
- #
--if test -d ../../.git -o -f ../../.git &&
--	VN=$(git tag 2>/dev/null | tail -1 | grep -E "v[0-9].[0-9]*")
-+CID=
-+TAG=
-+if test -d ../../.git -o -f ../../.git
- then
--	VN=$(echo $VN"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD))
--	VN=$(echo "$VN" | sed -e 's/-/./g');
--else
--	VN=$(MAKEFLAGS= make -sC ../.. kernelversion)
-+	TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
-+	CID=$(git log -1 --abbrev=4 --pretty=format:"%h" 2>/dev/null) && CID="-g$CID"
-+fi
-+if test -z "$TAG"
-+then
-+	TAG=$(MAKEFLAGS= make -sC ../.. kernelversion)
-+fi
-+VN="$TAG$CID"
-+if test -n "$CID"
-+then
-+	# format version string, strip trailing zero of sublevel:
-+	VN=$(echo "$VN" | sed -e 's/-/./g;s/\([0-9]*[.][0-9]*\)[.]0/\1/')
- fi
- 
- VN=$(expr "$VN" : v*'\(.*\)')
--- 
-1.8.1.1
 
