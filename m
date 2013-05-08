@@ -1,99 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab3EHJnh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 05:43:37 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:37043 "HELO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751950Ab3EHJnf (ORCPT
+	id S1753803Ab3EHJnv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 05:43:51 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:54563 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab3EHJnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 05:43:35 -0400
-From: joem <joem@martindale-electric.co.uk>
-To: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>
-CC: David Goodenough <david.goodenough@btconnect.com>,
-        "debian-arm@lists.debian.org" <debian-arm@lists.debian.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Arm-netbook] device tree not the answer in the ARM world [was:
- Re: running Debian on a Cubieboard]
-Thread-Topic: [Arm-netbook] device tree not the answer in the ARM world
- [was: Re: running Debian on a Cubieboard]
-Thread-Index: AQHOSYw01f0IEEHWWUOGwhgLHUMbD5j6/P+A
-Date: Wed, 8 May 2013 09:43:02 +0000
-Message-ID: <1368006181.5589.30.camel@jm-desktop>
-References: <CAPweEDym3TSEKWB1PsRWZ77irkTPF-Qdm9nRGfRBrv72CQ8zJA@mail.gmail.com>
-In-Reply-To: <CAPweEDym3TSEKWB1PsRWZ77irkTPF-Qdm9nRGfRBrv72CQ8zJA@mail.gmail.com>
-Reply-To: joem <joem@martindale-electric.co.uk>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [81.149.149.147]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <320CB8DCD07D654EBD257463DA6D07C2@swifthost.local>
-MIME-Version: 1.0
+	Wed, 8 May 2013 05:43:49 -0400
+From: Robert Richter <rric@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@calxeda.com>
+Subject: [PATCH] perf tools: Fix perf version generation
+Date: Wed,  8 May 2013 11:43:34 +0200
+Message-Id: <1368006214-12912-1-git-send-email-rric@kernel.org>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r489hgq5008022
 
-On Sun, 2013-05-05 at 13:27 +0100, Luke Kenneth Casson Leighton wrote:
+From: Robert Richter <robert.richter@calxeda.com>
 
-> when i say "completely and utterly different", i am not just talking
-> about the processor, i am not just talking about the GPIO, or even the
-> buses: i'm talking about the sensors, the power-up mechanisms, the
-> startup procedures - everything.  one device uses GPIO pin 32 for
-> powering up and resetting a USB hub peripheral, yet for another device
-> that exact same GPIO pin is used not even as a GPIO but as an
-> alternate multiplexed function e.g. as RS232 TX pin!
+The tag of the perf version is wrongly determined, always the latest
+tag is taken regardless of the HEAD commit:
 
+ $ perf --version
+ perf version 3.9.rc8.gd7f5d3
+ $ git describe d7f5d3
+ v3.9-rc7-154-gd7f5d33
+ $ head -n 4 Makefile
+ VERSION = 3
+ PATCHLEVEL = 9
+ SUBLEVEL = 0
+ EXTRAVERSION = -rc7
 
-Wrong approach Luke.
+In other cases no tag might be found.
 
-The guys in PIC world will be laughing at all this since they have
-no such difficulties.
+This patch fixes this.
 
-Only one file changes between CPUs in the myriads of PICs out there.
+This new implementation handles also the case if there are no tags at
+all found in the git repo but there is a commit id.
 
-Every register and every bit field is defined.
+Signed-off-by: Robert Richter <robert.richter@calxeda.com>
+---
+ tools/perf/util/PERF-VERSION-GEN | 21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
 
-*Unions take care of multiplexed function*
-(and #define of exact CPU model + product + wake up modes etc
- takes care of fine tuning including power-up mechanisms).
+diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
+index 055fef3..15a77b7 100755
+--- a/tools/perf/util/PERF-VERSION-GEN
++++ b/tools/perf/util/PERF-VERSION-GEN
+@@ -13,13 +13,22 @@ LF='
+ # First check if there is a .git to get the version from git describe
+ # otherwise try to get the version from the kernel Makefile
+ #
+-if test -d ../../.git -o -f ../../.git &&
+-	VN=$(git tag 2>/dev/null | tail -1 | grep -E "v[0-9].[0-9]*")
++CID=
++TAG=
++if test -d ../../.git -o -f ../../.git
+ then
+-	VN=$(echo $VN"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD))
+-	VN=$(echo "$VN" | sed -e 's/-/./g');
+-else
+-	VN=$(MAKEFLAGS= make -sC ../.. kernelversion)
++	TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
++	CID=$(git log -1 --abbrev=4 --pretty=format:"%h" 2>/dev/null) && CID="-g$CID"
++fi
++if test -z "$TAG"
++then
++	TAG=$(MAKEFLAGS= make -sC ../.. kernelversion)
++fi
++VN="$TAG$CID"
++if test -n "$CID"
++then
++	# format version string, strip trailing zero of sublevel:
++	VN=$(echo "$VN" | sed -e 's/-/./g;s/\([0-9]*[.][0-9]*\)[.]0/\1/')
+ fi
+ 
+ VN=$(expr "$VN" : v*'\(.*\)')
+-- 
+1.8.1.1
 
-
-ARM realizes their mistake and introduces 'CMSIS' library.
-It is available for NXP arm chips.
-But the engineers who wrote it are too stupid.
-They named the registers but bit fields and multiplexed pins etc
-are not defined or just too stupid for words - they even change
-similar register names like
-
- RS232-UART_Tx_REGISTER to  RS232-UART-TX-REGISTER
-
-from one chip model to next bringing endless joy and happiness to
-themselves as they aimlessly shoot themselves in both foot with one
-bullet to make their library unusable from chip to chip. Doh!
-(Ok just exaggerating, but its not far from the truth.)
-
-The correct approach is to be critical of ARM lack of
-a proper 'CMSIS' library and encourage them to hire just 4 open source
-engineers and write some proper 'CMSIS' library, one chip at a time,
-until a couple of chips get done, and then fan out and cover some
-more bigger SoCs and families of chips. Its just too late to
-go back and recover from all their mistakes. I'm sure once 4 engineers
-publish each day their work on github, developers of SoC companies
-will rapidly begin filling in the missing details for their custom
-chips, because it is to their benefit to release one header file that
-describe their chip completely to help port software quickly, and sell
-more chips more quickly.
-
-Who else could do this work? The SoC makers? Open source developers?
-Distro makers? Not one fat chance!!
-
-It is ARM's responsibility to make sure UART1 means UART1 in all
-CPUs and not make a flat footed excuse about it.
-
-This problem will never go away until they (ARM) do something about it.
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
