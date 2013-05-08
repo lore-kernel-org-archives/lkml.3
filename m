@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab3EHMRG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 08:17:06 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:43557 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119Ab3EHMRF (ORCPT
+	id S1755324Ab3EHMXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 08:23:19 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:36017 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312Ab3EHMXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 08:17:05 -0400
-X-IronPort-AV: E=Sophos;i="4.87,552,1363132800"; 
-   d="scan'208";a="4350245"
-Message-ID: <1368015421.26321.263.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH 2/3] xen/arm: do not handle VCPUOP_register_vcpu_info
- failures
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Wed, 8 May 2013 08:23:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <5188C18D.10103@arm.com>
+References: <1367905910-30913-1-git-send-email-giridhar.m@samsung.com>
+	<CAHuqX+HUWcX_sTXKCjSQ9pR1K8obLc+T7vYK_zTn_gqO8ULPVQ@mail.gmail.com>
+	<5188C18D.10103@arm.com>
+Date: Wed, 8 May 2013 17:53:04 +0530
+Message-ID: <CAHuqX+GOLO_H81B3bwcqF7Sp0srctBn+6J9mbRF_kbPRTXC-ng@mail.gmail.com>
+Subject: Re: [RFC PATCH V2] ARM: EXYNOS: Fix hotplug when CPUs boot in HYP mode
+From: Giridhar Maruthy <giridhar.maruthy@linaro.org>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Julien Grall <julien.grall@citrix.com>
-Date: Wed, 8 May 2013 13:17:01 +0100
-In-Reply-To: <1368015080-5182-2-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1305081303310.18865@kaball.uk.xensource.com>
-	 <1368015080-5182-2-git-send-email-stefano.stabellini@eu.citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Christoffer Dall <cdall@cs.columbia.edu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-08 at 13:11 +0100, Stefano Stabellini wrote:
-> We expect VCPUOP_register_vcpu_info to succeed, do not try to handle
-> failures.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/arm/xen/enlighten.c |   11 ++++-------
->  1 files changed, 4 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> index 83d13b0..519acf9 100644
-> --- a/arch/arm/xen/enlighten.c
-> +++ b/arch/arm/xen/enlighten.c
-> @@ -165,13 +165,10 @@ static int __init xen_secondary_init(unsigned int cpu)
->  	info.offset = offset_in_page(vcpup);
->  
->  	err = HYPERVISOR_vcpu_op(VCPUOP_register_vcpu_info, cpu, &info);
-> -	if (err) {
-> -		pr_debug("register_vcpu_info failed: err=%d\n", err);
-> -	} else {
-> -		/* This cpu is using the registered vcpu info, even if
-> -		   later ones fail to. */
-> -		per_cpu(xen_vcpu, cpu) = vcpup;
-> -	}
-> +	if (err)
-> +		BUG();
+On 7 May 2013 14:25, Marc Zyngier <marc.zyngier@arm.com> wrote:
+> On 07/05/13 06:54, Giridhar Maruthy wrote:
+>> This patch is a modification from the Christoffer Dall's u-boot
+>> patch. This is required to put the secondary processors in hyp
+>> mode during cpu hotplug when u-boot is no longer alive.
+>>
+>> Marc Zyngier suggested this logic to go into firmware or, u-boot
+>> putting a trampoline code into a page /memreserve/d by DT. But
+>> this seemed to have a problem. Once the cpu is hotplugged in
+>> runtime, the control is in ROM code and waits for event.
+>> Kernel provides a return address in kernel to which the processor
+>> jumps once it gets an event. If the control branches to the
+>> trampoline code here, this trampoline code has no kernel return
+>> address.
+>>
+>> Someone with better logic or better placement of this logic
+>> elsewhere is welcome.
+>
+> What prevents you from writing the kernel address in the memreserved
+> page? Some obvious location, like the last word of the page? You only
+> have to do it once (from the boot CPU, for example).
+>
+> Or did I miss something else?
 
-AKA BUG_ON(err);
+Thanks Marc, I think I understand now.
 
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+I guess I also need to put the primary cpu boot mode into a temporary location.
 
-> +	per_cpu(xen_vcpu, cpu) = vcpup;
-> +
->  	return 0;
->  }
->  
-
-
+-Giridhar
