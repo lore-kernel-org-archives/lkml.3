@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3EHX1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 19:27:20 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:25602 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab3EHX1S (ORCPT
+	id S1754274Ab3EHXdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 19:33:12 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:16014 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753077Ab3EHXdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 19:27:18 -0400
-X-AuditID: cbfee68f-b7f066d000003683-3e-518adf543384
-Date: Wed, 08 May 2013 23:27:16 +0000 (GMT)
-From: EUNBONG SONG <eunb.song@samsung.com>
-Subject: Fwd: [PATCH v2] MIPS: Make virt_to_phys() work for all unmapped
- addresses.
-To: David Daney <ddaney.cavm@gmail.com>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>
-Cc: Jiang Liu <liuj97@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20130508232513655@eunb.song
-Msgkey: 20130508232513655@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130508232513655@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <20691271.332801368055634504.JavaMail.weblogic@epml11>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+Znm7I/a5Ag1v7TS0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGhy75gibmiq/XDrA3MH5h6mLk5BASUJFo+f+dsYuRg0NCwETi
-	3Ts5kLCEgJjEhXvr2boYuYBKljFK7PnWyAKRMJFo2HSKHSIxn1Fi/bk5jCAJFqBBTz8eYQax
-	2QS0Jd5+ecAKYgsLBEt0X5vACNIgIjCZUeLt5ZdgCWaBXkaJ5/ctIK6Ql5h8+jI7iM0rIChx
-	cuYTqG1KEhfvP2WGiCtLbPn9lxEiLiExa/oFVgibV2JG+1OoejmJaV/XMEPY0hLnZ21ghHln
-	8ffHUHF+iWO3dzBBfMwr8eR+MMyY3Zu/sEHYAhJTzxyEalWX6Pv3gQnC5pNYs/AtC8yYXaeW
-	M8P03t8ylwniLUWJKd0P2SFsLYkvP/axoXqLA8h2knj9MGYCo/IsJJlZSLpnIelGVrOAkWUV
-	o2hqQXJBcVJ6kbFecWJucWleul5yfu4mRkhS6N/BePeA9SHGZGCUTGSWEk3OByaVvJJ4Q2Mz
-	IwtTE1NjI3NLM9KElcR51VqsA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUw5s2Y37fXKfzG
-	6luz9S5/i9y1PVPkfPC0d7MtX8j15xjHTjXr/Xe5cMLm1YcCA7bsblr8sKecv0hg7f5LrQnJ
-	Ws3Ftww9v568lesuEnzRSjP5vb+NYIbvDhXZb4bBq5in3Phs0bXwqLjAyhoVmX3Munwz459Y
-	JmQy5e1s1uKvteC4c/qH3UkOJZbijERDLeai4kQA13hNhyADAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e/2TN2Q+12BBm87jC0u75rD5sDo8XmT
-	XABjVIZNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
-	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrSRgbGekamJnpGxgZ6JQayVoYGBkSlQVUJG
-	xocu+YIm5oqv1w6wNzB+Yepi5OQQElCRaPn/nRHElhAwkWjYdIodwhaTuHBvPVsXIxdQzXxG
-	ifXn5oAVsQA1PP14hBnEZhPQlnj75QEriC0sECzRfW0CI0iDiMBkRom3l1+CJZgFehklnt+3
-	gNgmLzH59GWwDbwCghInZz5hgdimJHHx/lNmiLiyxJbff6EukpCYNf0CK4TNKzGj/SlUvZzE
-	tK9rmCFsaYnzszYwwly9+PtjqDi/xLHbO4C+5ADrfXI/GGbM7s1f2CBsAYmpZw5CtapL9P37
-	wARh80msWfiWBWbMrlPLmWF672+ZywTxlqLElO6H7BC2lsSXH/vYUL3FAWQ7Sbx+GDOBUW4W
-	kswsJN2zkHQjq1nAyLKKUTS1ILmgOCm9wkSvODG3uDQvXS85P3cTIzhBPVuyg7HhgvUhRgEO
-	RiUe3ozErkAh1sSy4srcQ4wSHMxKIrx3W4FCvCmJlVWpRfnxRaU5qcWHGJOBETiRWUo0OR+Y
-	PPNK4g2NDYwNDS3NDUwNjSxIE1YS533Wah0oJJCeWJKanZpakFoEs4WJg1OqgdFT8FnSwVPV
-	zkv+bt4tGLDlsmW1CAvjmc1G+84HMbiuUghi16wpSl+7ctH20uj8F3N5nqd+mvniTsDJ5U+N
-	JvRaGoXoHzKeJy8c+a/pfJJ/Rrvh5Vs89VGCz5aV3+r53b4jZYZizlKRJ6+On/5e1HPm1LbX
-	6teM5H2OM5TUOBVe036z7sFEiV4lluKMREMt5qLiRADdPpH0lAMAAA==
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Wed, 8 May 2013 19:33:10 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/mMNYHGdI6y3RO/uKWpfqK
+Date: Wed, 8 May 2013 16:33:06 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Vaibhav Hiremath <hvaibhav@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP2: AM33XX: id: Add support for new AM335x
+ PG2.1 Si
+Message-ID: <20130508233306.GU32546@atomide.com>
+References: <1367691820-11875-1-git-send-email-hvaibhav@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367691820-11875-1-git-send-email-hvaibhav@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r48NRXBg012534
 
-> From: David Daney 
+* Vaibhav Hiremath <hvaibhav@ti.com> [130504 11:29]:
+> Add support for chip id detection of AM335x PG2.1 Silicon.
+> 
+> Currently omap3xxx_check_revision() detects PG1.0 and PG2.0 only,
+> this patch extends it by adding PG2.1 Si support.
+> 
+> Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
 
-> This one appears to build against Linus' tree.
+Thanks applying into omap-for-v3.10/fixes.
 
-> This could also fix problems noted by Eunbong Song with the
-> free_initmem_default() call.
+Tony
 
-I tested your patch, And i confirmed your patch fixes panic at free_initmem_default() problem.
-Thanks. ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> ---
+>  arch/arm/mach-omap2/id.c  |    8 ++++++--
+>  arch/arm/mach-omap2/soc.h |    1 +
+>  2 files changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
+> index 0f4c18e..9bc5a18 100644
+> --- a/arch/arm/mach-omap2/id.c
+> +++ b/arch/arm/mach-omap2/id.c
+> @@ -419,11 +419,15 @@ void __init omap3xxx_check_revision(void)
+>  			cpu_rev = "1.0";
+>  			break;
+>  		case 1:
+> -		/* FALLTHROUGH */
+> -		default:
+>  			omap_revision = AM335X_REV_ES2_0;
+>  			cpu_rev = "2.0";
+>  			break;
+> +		case 2:
+> +		/* FALLTHROUGH */
+> +		default:
+> +			omap_revision = AM335X_REV_ES2_1;
+> +			cpu_rev = "2.1";
+> +			break;
+>  		}
+>  		break;
+>  	case 0xb8f2:
+> diff --git a/arch/arm/mach-omap2/soc.h b/arch/arm/mach-omap2/soc.h
+> index 18fdeeb..ccef2dd 100644
+> --- a/arch/arm/mach-omap2/soc.h
+> +++ b/arch/arm/mach-omap2/soc.h
+> @@ -396,6 +396,7 @@ IS_OMAP_TYPE(3430, 0x3430)
+>  #define AM335X_CLASS		0x33500033
+>  #define AM335X_REV_ES1_0	AM335X_CLASS
+>  #define AM335X_REV_ES2_0	(AM335X_CLASS | (0x1 << 8))
+> +#define AM335X_REV_ES2_1	(AM335X_CLASS | (0x2 << 8))
+> 
+>  #define OMAP443X_CLASS		0x44300044
+>  #define OMAP4430_REV_ES1_0	(OMAP443X_CLASS | (0x10 << 8))
+> --
+> 1.7.0.4
+> 
