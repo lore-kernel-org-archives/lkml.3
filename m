@@ -1,84 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab3EHP4w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:56:52 -0400
-Received: from mail-da0-f51.google.com ([209.85.210.51]:35115 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758149Ab3EHP4t (ORCPT
+	id S1758136Ab3EHP7b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:59:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51858 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756515Ab3EHP73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:56:49 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-Subject: [PATCH v5, part4 32/41] mm/s390: prepare for removing num_physpages and simplify mem_init()
-Date: Wed,  8 May 2013 23:51:29 +0800
-Message-Id: <1368028298-7401-33-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
-References: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
+	Wed, 8 May 2013 11:59:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130508154216.GA24838@kroah.com>
+References: <1367996197-32748-1-git-send-email-tiwai@suse.de>
+	<20130508154216.GA24838@kroah.com>
+Date: Wed, 8 May 2013 23:59:27 +0800
+Message-ID: <CACVXFVM09z5kGsrVa38SneX46XrFD3Ydj9_Z8BB44=w6mqn=PQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] firmware: Fix usermodehelper deadlock at shutdown
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for removing num_physpages and simplify mem_init().
+On Wed, May 8, 2013 at 11:42 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+>
+> This is the second time this has been sent, right?  Any differences from
+> the first set?
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux390@de.ibm.com
-Cc: linux-s390@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/s390/mm/init.c |   17 ++---------------
- 1 file changed, 2 insertions(+), 15 deletions(-)
+Sorry to not see that.
 
-diff --git a/arch/s390/mm/init.c b/arch/s390/mm/init.c
-index 24d52aa..771c27a 100644
---- a/arch/s390/mm/init.c
-+++ b/arch/s390/mm/init.c
-@@ -133,9 +133,7 @@ void __init paging_init(void)
- 
- void __init mem_init(void)
- {
--	unsigned long codesize, reservedpages, datasize, initsize;
--
--        max_mapnr = num_physpages = max_low_pfn;
-+        max_mapnr = max_low_pfn;
-         high_memory = (void *) __va(max_low_pfn * PAGE_SIZE);
- 
- 	/* Setup guest page hinting */
-@@ -145,18 +143,7 @@ void __init mem_init(void)
- 	free_all_bootmem();
- 	setup_zero_pages();	/* Setup zeroed pages. */
- 
--	reservedpages = 0;
--
--	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
--	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
--	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
--        printk("Memory: %luk/%luk available (%ldk kernel code, %ldk reserved, %ldk data, %ldk init)\n",
--		nr_free_pages() << (PAGE_SHIFT-10),
--                max_mapnr << (PAGE_SHIFT-10),
--                codesize >> 10,
--                reservedpages << (PAGE_SHIFT-10),
--                datasize >>10,
--                initsize >> 10);
-+	mem_init_print_info(NULL);
- 	printk("Write protected kernel read-only data: %#lx - %#lx\n",
- 	       (unsigned long)&_stext,
- 	       PFN_ALIGN((unsigned long)&_eshared) - 1);
--- 
-1.7.9.5
+> I'll get to these after 3.10-rc1 is out, thanks.
 
+I think we need to discuss the patch further, see my comments on
+patches, :-)
+
+Thanks,
+--
+Ming Lei
