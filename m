@@ -1,491 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886Ab3EHO0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 10:26:41 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:57265 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755252Ab3EHO0j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 10:26:39 -0400
-Message-ID: <518A6099.8070505@gmail.com>
-Date: Wed, 08 May 2013 09:26:33 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1755876Ab3EHO1p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 10:27:45 -0400
+Received: from smtp47.i.mail.ru ([94.100.177.107]:53916 "EHLO smtp47.i.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754851Ab3EHO1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 10:27:43 -0400
+Message-ID: <518A6049.4090303@list.ru>
+Date: Wed, 08 May 2013 18:25:13 +0400
+From: Stas Sergeev <stsp@list.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-CC: linux@arm.linux.org.uk, will.deacon@arm.com, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Stuart Menefy <stuart.menefy@st.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>, Dave Martin <dave.martin@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
-Subject: Re: [RFC 2/8] ARM:global_timer: Add ARM global timer support.
-References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <1368022260-2197-1-git-send-email-srinivas.kandagatla@st.com>
-In-Reply-To: <1368022260-2197-1-git-send-email-srinivas.kandagatla@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Johan Hovold <jhovold@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Jarkko Huijts <jarkko.huijts@gmail.com>,
+        Alan Cox <alan@linux.intel.com>, linux-usb@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Caylan Van Larson <i@caylan.net>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH 2/7] USB: serial: add generic wait_until_sent implementation
+References: <20130505182913.GE16818@localhost> <1367778753-22297-1-git-send-email-jhovold@gmail.com> <1367778753-22297-3-git-send-email-jhovold@gmail.com>
+In-Reply-To: <1367778753-22297-3-git-send-email-jhovold@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2013 09:11 AM, Srinivas KANDAGATLA wrote:
-> From: Stuart Menefy <stuart.menefy@st.com>
-> 
-> This is a simple driver for the global timer module found in the Cortex
-> A9-MP cores from revision r1p0 onwards. This should be able to perform
-> the functions of the system timer and the local timer in an SMP system.
-> 
-> The global timer has the following features:
->     The global timer is a 64-bit incrementing counter with an
-> auto-incrementing feature. It continues incrementing after sending
-> interrupts. The global timer is memory mapped in the private memory
-> region.
->     The global timer is accessible to all Cortex-A9 processors in the
-> cluster. Each Cortex-A9 processor has a private 64-bit comparator that
-> is used to assert a private interrupt when the global timer has reached
-> the comparator value. All the Cortex-A9 processors in a design use the
-> banked ID, ID27, for this interrupt. ID27 is sent to the Interrupt
-> Controller as a Private Peripheral Interrupt. The global timer is
-> clocked by PERIPHCLK.
+05.05.2013 22:32, Johan Hovold пишет:
+> Add generic wait_until_sent implementation which polls for empty
+> hardware buffers using the new port-operation tx_empty.
+>
+> The generic implementation will be used for all sub-drivers that
+> implement tx_empty but does not define wait_until_sent.
+Hi Johan.
 
-PERIPHCLK scales with cpu clock typically so the global timer is not a
-suitable clocksource if you use cpufreq. You can deal with the scaling
-on clockevents, but not a clocksource. I imagine the global timers is
-also typically power-gated in some low power modes. This is why no one
-has added support already. Are neither of those an issue or going to be
-an issue for you?
+The customer reports an Oops below.
+Does that ring any bells?
+Well, there is only one division in usb_serial_generic_wait_until_sent(),
+anyway. :)
 
-Rob
-
-> 
-> Signed-off-by: Stuart Menefy <stuart.menefy@st.com>
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> ---
->  Documentation/devicetree/bindings/arm/gt.txt |   21 ++
->  arch/arm/Kconfig                             |    6 +
->  arch/arm/include/asm/global_timer.h          |   12 +
->  arch/arm/kernel/Makefile                     |    1 +
->  arch/arm/kernel/global_timer.c               |  325 ++++++++++++++++++++++++++
->  5 files changed, 365 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/arm/gt.txt
->  create mode 100644 arch/arm/include/asm/global_timer.h
->  create mode 100644 arch/arm/kernel/global_timer.c
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/gt.txt b/Documentation/devicetree/bindings/arm/gt.txt
-> new file mode 100644
-> index 0000000..4ec5fb0
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/gt.txt
-> @@ -0,0 +1,21 @@
-> +
-> +* ARM Global Timer
-> +	Cortex-A9 are often associated with a per-core Global timer.
-> +
-> +** Timer node required properties:
-> +
-> +- compatible : Should be one of:
-> +	"arm,cortex-a9-global-timer"
-> +
-> +- interrupts : One interrupt to each core
-> +
-> +- reg : Specify the base address and the size of the GT timer
-> +	register window.
-> +
-> +Example:
-> +
-> +	gt-timer@2c000600 {
-> +		compatible = "arm,cortex-a9-global-timer";
-> +		reg = <0x2c000600 0x20>;
-> +		interrupts = <1 13 0xf01>;
-> +	};
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 1cacda4..c8c524e 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1606,6 +1606,12 @@ config HAVE_ARM_TWD
->  	help
->  	  This options enables support for the ARM timer and watchdog unit
->  
-> +config HAVE_ARM_GT
-> +	bool
-> +	select CLKSRC_OF if OF
-> +	help
-> +	  This options enables support for the ARM global timer unit
-> +
->  choice
->  	prompt "Memory split"
->  	default VMSPLIT_3G
-> diff --git a/arch/arm/include/asm/global_timer.h b/arch/arm/include/asm/global_timer.h
-> new file mode 100644
-> index 0000000..46f9188
-> --- /dev/null
-> +++ b/arch/arm/include/asm/global_timer.h
-> @@ -0,0 +1,12 @@
-> +/*
-> + * arch/arm/include/asm/global_timer.h
-> + *
-> + * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-> + * Author: Stuart Menefy <stuart.menefy@st.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +int __init global_timer_init(void __iomem *base, unsigned int timer_irq);
-> diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-> index 5f3338e..af51808 100644
-> --- a/arch/arm/kernel/Makefile
-> +++ b/arch/arm/kernel/Makefile
-> @@ -35,6 +35,7 @@ obj-$(CONFIG_ARM_CPU_SUSPEND)	+= sleep.o suspend.o
->  obj-$(CONFIG_SMP)		+= smp.o smp_tlb.o
->  obj-$(CONFIG_HAVE_ARM_SCU)	+= smp_scu.o
->  obj-$(CONFIG_HAVE_ARM_TWD)	+= smp_twd.o
-> +obj-$(CONFIG_HAVE_ARM_GT)	+= global_timer.o
->  obj-$(CONFIG_ARM_ARCH_TIMER)	+= arch_timer.o
->  obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o insn.o
->  obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o insn.o
-> diff --git a/arch/arm/kernel/global_timer.c b/arch/arm/kernel/global_timer.c
-> new file mode 100644
-> index 0000000..0ab1af3
-> --- /dev/null
-> +++ b/arch/arm/kernel/global_timer.c
-> @@ -0,0 +1,325 @@
-> +/*
-> + * linux/arch/arm/kernel/global_timer.c
-> + *
-> + * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-> + * Author: Stuart Menefy <stuart.menefy@st.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/clocksource.h>
-> +#include <linux/clockchips.h>
-> +#include <linux/clk.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/err.h>
-> +#include <linux/io.h>
-> +#include <linux/of.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/of_address.h>
-> +
-> +#include <asm/mach/irq.h>
-> +#include <asm/global_timer.h>
-> +#include <asm/localtimer.h>
-> +
-> +#define GT_COUNTER0	0x00
-> +#define GT_COUNTER1	0x04
-> +
-> +#define GT_CONTROL	0x08
-> +#define GT_CONTROL_TIMER_ENABLE		BIT(0)
-> +#define GT_CONTROL_COMP_ENABLE		BIT(1)	/* banked */
-> +#define GT_CONTROL_IRQ_ENABLE		BIT(2)	/* banked */
-> +#define GT_CONTROL_AUTO_INC		BIT(3)	/* banked */
-> +
-> +#define GT_INT_STATUS	0x0c
-> +#define GT_INT_STATUS_EVENT_FLAG	BIT(0)
-> +
-> +#define GT_COMP0	0x10
-> +#define GT_COMP1	0x14
-> +#define GT_AUTO_INC	0x18
-> +
-> +/*
-> + * We are expecting to be clocked by the ARM peripheral clock.
-> + *
-> + * Note: it is assumed we are using a prescaler value of zero, so this is
-> + * the units for all operations.
-> + */
-> +static void __iomem *gt_base;
-> +static struct clk *gt_clk;
-> +static unsigned long gt_clk_rate;
-> +static int gt_ppi;
-> +static struct clock_event_device __percpu **gt_evt;
-> +static DEFINE_PER_CPU(bool, percpu_init_called);
-> +static DEFINE_PER_CPU(struct clock_event_device, gt_clockevent);
-> +
-> +union gt_counter {
-> +	cycle_t cycles;
-> +	struct {
-> +		uint32_t lower;
-> +		uint32_t upper;
-> +	};
-> +};
-> +
-> +static union gt_counter gt_counter_read(void)
-> +{
-> +	union gt_counter res;
-> +	uint32_t upper;
-> +
-> +	upper = readl(gt_base + GT_COUNTER1);
-> +	do {
-> +		res.upper = upper;
-> +		res.lower = readl(gt_base + GT_COUNTER0);
-> +		upper = readl(gt_base + GT_COUNTER1);
-> +	} while (upper != res.upper);
-> +
-> +	return res;
-> +}
-> +
-> +static void gt_compare_set(unsigned long delta, int periodic)
-> +{
-> +	union gt_counter counter = gt_counter_read();
-> +	unsigned long ctrl = readl(gt_base + GT_CONTROL);
-> +
-> +	BUG_ON(!(ctrl & GT_CONTROL_TIMER_ENABLE));
-> +	BUG_ON(ctrl & (GT_CONTROL_COMP_ENABLE |
-> +		       GT_CONTROL_IRQ_ENABLE |
-> +		       GT_CONTROL_AUTO_INC));
-> +
-> +	counter.cycles += delta;
-> +	writel(counter.lower, gt_base + GT_COMP0);
-> +	writel(counter.upper, gt_base + GT_COMP1);
-> +
-> +	ctrl |= GT_CONTROL_COMP_ENABLE | GT_CONTROL_IRQ_ENABLE;
-> +
-> +	if (periodic) {
-> +		writel(delta, gt_base + GT_AUTO_INC);
-> +		ctrl |= GT_CONTROL_AUTO_INC;
-> +	}
-> +
-> +	writel(ctrl, gt_base + GT_CONTROL);
-> +}
-> +
-> +static void gt_clockevent_set_mode(enum clock_event_mode mode,
-> +				   struct clock_event_device *clk)
-> +{
-> +	switch (mode) {
-> +	case CLOCK_EVT_MODE_PERIODIC:
-> +		gt_compare_set(gt_clk_rate/HZ, 1);
-> +		break;
-> +	case CLOCK_EVT_MODE_ONESHOT:
-> +		/* period set, and timer enabled in 'next_event' hook */
-> +		BUG_ON(readl(gt_base + GT_CONTROL) &
-> +		       (GT_CONTROL_COMP_ENABLE |
-> +			GT_CONTROL_IRQ_ENABLE |
-> +			GT_CONTROL_AUTO_INC));
-> +		/* Fall through */
-> +	case CLOCK_EVT_MODE_UNUSED:
-> +	case CLOCK_EVT_MODE_SHUTDOWN:
-> +	default:
-> +		writel(GT_CONTROL_TIMER_ENABLE, gt_base + GT_CONTROL);
-> +		break;
-> +	}
-> +}
-> +
-> +static int gt_clockevent_set_next_event(unsigned long evt,
-> +					struct clock_event_device *unused)
-> +{
-> +	gt_compare_set(evt, 0);
-> +	return 0;
-> +}
-> +
-> +static irqreturn_t gt_clockevent_interrupt(int irq, void *dev_id)
-> +{
-> +	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
-> +
-> +	writel(GT_INT_STATUS_EVENT_FLAG, gt_base + GT_INT_STATUS);
-> +	evt->event_handler(evt);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int __cpuinit gt_clockevents_init(struct clock_event_device *clk)
-> +{
-> +	struct clock_event_device **this_cpu_clk;
-> +	int cpu = smp_processor_id();
-> +
-> +	clk->name = "Global Timer CE";
-> +	clk->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
-> +	clk->set_mode = gt_clockevent_set_mode;
-> +	clk->set_next_event = gt_clockevent_set_next_event;
-> +	this_cpu_clk = __this_cpu_ptr(gt_evt);
-> +	*this_cpu_clk = clk;
-> +	clk->irq = gt_ppi;
-> +	clockevents_config_and_register(clk, gt_clk_rate,
-> +					0xf, 0xffffffff);
-> +	per_cpu(percpu_init_called, cpu) = true;
-> +	enable_percpu_irq(clk->irq, IRQ_TYPE_NONE);
-> +	return 0;
-> +}
-> +
-> +static void gt_clockevents_stop(struct clock_event_device *clk)
-> +{
-> +	gt_clockevent_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
-> +	disable_percpu_irq(clk->irq);
-> +}
-> +
-> +static int __cpuinit gt_clockevents_setup(struct clock_event_device *clk)
-> +{
-> +	int cpu = smp_processor_id();
-> +
-> +	/* Use existing clock_event for boot cpu */
-> +	if (per_cpu(percpu_init_called, cpu))
-> +		return 0;
-> +
-> +	writel(0, gt_base + GT_CONTROL);
-> +	writel(0, gt_base + GT_COUNTER0);
-> +	writel(0, gt_base + GT_COUNTER1);
-> +	writel(GT_CONTROL_TIMER_ENABLE, gt_base + GT_CONTROL);
-> +
-> +	return gt_clockevents_init(clk);
-> +}
-> +
-> +static cycle_t gt_clocksource_read(struct clocksource *cs)
-> +{
-> +	union gt_counter res = gt_counter_read();
-> +	return res.cycles;
-> +}
-> +
-> +static struct clocksource gt_clocksource = {
-> +	.name	= "Global Timer CS",
-> +	.rating	= 300,
-> +	.read	= gt_clocksource_read,
-> +	.mask	= CLOCKSOURCE_MASK(64),
-> +	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
-> +};
-> +
-> +static void __init gt_clocksource_init(void)
-> +{
-> +	writel(0, gt_base + GT_CONTROL);
-> +	writel(0, gt_base + GT_COUNTER0);
-> +	writel(0, gt_base + GT_COUNTER1);
-> +	writel(GT_CONTROL_TIMER_ENABLE, gt_base + GT_CONTROL);
-> +
-> +	gt_clocksource.shift = 20;
-> +	gt_clocksource.mult =
-> +		clocksource_hz2mult(gt_clk_rate, gt_clocksource.shift);
-> +	clocksource_register(&gt_clocksource);
-> +}
-> +
-> +static struct clk *gt_get_clock(void)
-> +{
-> +	struct clk *clk;
-> +	int err;
-> +
-> +	clk = clk_get_sys("gt", NULL);
-> +	if (IS_ERR(clk)) {
-> +		pr_err("global-timer: clock not found: %ld\n", PTR_ERR(clk));
-> +		return clk;
-> +	}
-> +
-> +	err = clk_prepare_enable(clk);
-> +	if (err) {
-> +		pr_err("global-timer: clock prepare+enable failed: %d\n", err);
-> +		clk_put(clk);
-> +		return ERR_PTR(err);
-> +	}
-> +
-> +	return clk;
-> +}
-> +
-> +static struct local_timer_ops gt_lt_ops __cpuinitdata = {
-> +	.setup	= gt_clockevents_setup,
-> +	.stop	= gt_clockevents_stop,
-> +};
-> +
-> +int __init global_timer_init(void __iomem *base, unsigned int timer_irq)
-> +{
-> +	unsigned int cpu = smp_processor_id();
-> +	struct clock_event_device *evt = &per_cpu(gt_clockevent, cpu);
-> +	int err = 0;
-> +
-> +	if (gt_base) {
-> +		pr_warn("global-timer: invalid base address\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	gt_clk = gt_get_clock();
-> +	if (IS_ERR(gt_clk)) {
-> +		pr_warn("global-timer: clk not found\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	gt_evt = alloc_percpu(struct clock_event_device *);
-> +	if (!gt_evt) {
-> +		pr_warn("global-timer: can't allocate memory\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	err = request_percpu_irq(timer_irq, gt_clockevent_interrupt,
-> +				 "gt", gt_evt);
-> +	if (err) {
-> +		pr_warn("global-timer: can't register interrupt %d (%d)\n",
-> +			timer_irq, err);
-> +		goto out_free;
-> +	}
-> +
-> +	gt_base = base;
-> +	gt_clk_rate = clk_get_rate(gt_clk);
-> +
-> +	evt->irq = timer_irq;
-> +	gt_ppi = timer_irq;
-> +	evt->cpumask = cpumask_of(cpu);
-> +
-> +	gt_clocksource_init();
-> +	gt_clockevents_init(evt);
-> +	err =  local_timer_register(&gt_lt_ops);
-> +	if (err) {
-> +		pr_warn("global-timer: unable to register local timer.\n");
-> +		goto out_irq;
-> +	}
-> +
-> +	return 0;
-> +
-> +out_irq:
-> +	free_percpu_irq(timer_irq, gt_evt);
-> +out_free:
-> +	free_percpu(gt_evt);
-> +	return err;
-> +}
-> +
-> +#ifdef CONFIG_OF
-> +static void __init global_timer_of_register(struct device_node *np)
-> +{
-> +	struct clk *clk;
-> +	int err = 0;
-> +	int gt_ppi;
-> +	static void __iomem *gt_base;
-> +
-> +	gt_ppi = irq_of_parse_and_map(np, 0);
-> +	if (!gt_ppi) {
-> +		err = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	gt_base = of_iomap(np, 0);
-> +	if (!gt_base) {
-> +		err = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	clk = of_clk_get(np, 0);
-> +	if (!IS_ERR(clk))
-> +		clk_register_clkdev(clk, NULL, "gt");
-> +
-> +	global_timer_init(gt_base, gt_ppi);
-> +
-> +out:
-> +	WARN(err, "Global timer register failed (%d)\n", err);
-> +}
-> +
-> +CLOCKSOURCE_OF_DECLARE(arm_gt_a9, "arm,cortex-a9-global-timer",
-> +			global_timer_of_register);
-> +#endif
-> 
-
+---
+May  8 08:23:06 localhost kernel: [   19.086679] divide error: 0000 [#1] SMP
+May  8 08:23:06 localhost kernel: [   19.086801] Modules linked in: 
+ip6t_REJECT nf_conntrack_ipv6 nf_conntrack_ipv4 nf_defrag_
+ipv6 nf_defrag_ipv4 xt_state nf_conntrack ip6table_filter ip6_tables 
+coretemp e1000e kvm snd_hda_codec_hdmi snd_hda_codec_real
+tek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm crc32c_intel 
+snd_page_alloc snd_timer iTCO_wdt pcspkr iTCO_vendor_support sn
+d i2c_i801 microcode ptp of_i2c usblp soundcore lpc_ich pps_core 
+ftdi_sio raid1 i915 video i2c_algo_bit drm_kms_helper drm i2c
+_core
+May  8 08:23:06 localhost kernel: [   19.088296] CPU: 0 PID: 2554 Comm: 
+dosemu.bin Not tainted 3.9.0+ #1
+May  8 08:23:06 localhost kernel: [   19.088344] Hardware name: MSI 
+MS-9899/MS-9899, BIOS V1.0b13 11/30/2012
+May  8 08:23:06 localhost kernel: [   19.088393] task: f6b572c0 ti: 
+f6a2c000 task.ti: f6a2c000
+May  8 08:23:06 localhost kernel: [   19.088440] EIP: 0060:[<c07f38df>] 
+EFLAGS: 00010246 CPU: 0
+May  8 08:23:06 localhost kernel: [   19.088489] EIP is at 
+usb_serial_generic_wait_until_sent+0x2f/0xe0
+May  8 08:23:06 localhost kernel: [   19.088537] EAX: 00002710 EBX: 
+f6a40400 ECX: 00000000 EDX: 00000000
+May  8 08:23:06 localhost kernel: [   19.088585] ESI: 00000001 EDI: 
+7fffffff EBP: f6a2dd60 ESP: f6a2dd30
+May  8 08:23:06 localhost kernel: [   19.088634]  DS: 007b ES: 007b FS: 
+00d8 GS: 00e0 SS: 0068
+May  8 08:23:06 localhost kernel: [   19.088679] CR0: 80050033 CR2: 
+0818cf69 CR3: 3139b000 CR4: 000407d0
+May  8 08:23:06 localhost kernel: [   19.088725] DR0: 00000000 DR1: 
+00000000 DR2: 00000000 DR3: 00000000
+May  8 08:23:06 localhost kernel: [   19.088774] DR6: ffff0ff0 DR7: 00000400
+May  8 08:23:06 localhost kernel: [   19.088843] Stack:
+May  8 08:23:06 localhost kernel: [   19.088910]  00000015 f5fe2620 
+00000000 00000206 00000206 f6a2dd70 c07f3d88 f1a030c0
+May  8 08:23:06 localhost kernel: [   19.089305]  f6a2dd60 f39bc180 
+f39bc1b8 f1b5e000 f6a2dd90 c07f11ed f39bc180 7fffffff
+May  8 08:23:06 localhost kernel: [   19.089703]  f6a2dd90 c07f147d 
+7fffffff f6a40400 00000015 7fffffff f1b5e000 7fffffff
+May  8 08:23:06 localhost kernel: [   19.090096] Call Trace:
+May  8 08:23:06 localhost kernel: [   19.090167]  [<c07f3d88>] ? 
+usb_serial_generic_chars_in_buffer+0x68/0xa0
+May  8 08:23:06 localhost kernel: [   19.090243]  [<c07f11ed>] 
+serial_wait_until_sent+0x7d/0xc0
+May  8 08:23:06 localhost kernel: [   19.090315]  [<c07f147d>] ? 
+serial_chars_in_buffer+0x3d/0x70
+May  8 08:23:06 localhost kernel: [   19.090389]  [<c0715710>] 
+tty_wait_until_sent+0xc0/0xe0
+May  8 08:23:06 localhost kernel: [   19.090464]  [<c0716586>] ? 
+tty_ldisc_deref+0x36/0x90
+May  8 08:23:06 localhost kernel: [   19.090537]  [<c0715a5f>] 
+set_termios+0x13f/0x260
+May  8 08:23:06 localhost kernel: [   19.090608]  [<c0715f83>] 
+tty_mode_ioctl+0x403/0x510
+May  8 08:23:06 localhost kernel: [   19.090681]  [<c04fa4d9>] ? 
+generic_file_aio_write+0xa9/0xd0
+May  8 08:23:06 localhost kernel: [   19.090754]  [<c07160c0>] 
+n_tty_ioctl_helper+0x30/0x100
+May  8 08:23:06 localhost kernel: [   19.090826]  [<c0712af2>] 
+n_tty_ioctl+0x32/0xe0
+May  8 08:23:06 localhost kernel: [   19.090898]  [<c0712ac0>] ? 
+n_tty_set_room+0x130/0x130
+May  8 08:23:06 localhost kernel: [   19.090971]  [<c071113d>] 
+tty_ioctl+0x27d/0xa40
+May  8 08:23:06 localhost kernel: [   19.091043]  [<c0712ac0>] ? 
+n_tty_set_room+0x130/0x130
+May  8 08:23:06 localhost kernel: [   19.091116]  [<c051b360>] ? 
+handle_pte_fault+0x80/0x7e0
+May  8 08:23:06 localhost kernel: [   19.091191]  [<c0548217>] ? 
+do_sync_write+0x97/0xd0
+May  8 08:23:06 localhost kernel: [   19.091263]  [<c0710ec0>] ? 
+no_tty+0x30/0x30
+May  8 08:23:06 localhost kernel: [   19.091335]  [<c0557f47>] 
+do_vfs_ioctl+0x77/0x590
+May  8 08:23:06 localhost kernel: [   19.091407]  [<c054a5d1>] ? 
+__sb_end_write+0x31/0x70
+May  8 08:23:06 localhost kernel: [   19.091479]  [<c0548dd5>] ? 
+vfs_write+0x165/0x1c0
+May  8 08:23:06 localhost kernel: [   19.091552]  [<c05584d8>] 
+SyS_ioctl+0x78/0x90
+May  8 08:23:06 localhost kernel: [   19.091623]  [<c0985141>] 
+sysenter_do_call+0x12/0x22
+May  8 08:23:06 localhost kernel: [   19.091694] Code: 56 53 83 e4 f8 83 
+ec 20 66 66 66 66 90 be 01 00 00 00 8b 98 78 01 00 00
+  83 e8 80 89 d7 e8 ba 13 f2 ff 31 d2 89 c1 b8 10 27 00 00 <f7> f1 85 c0 
+0f 45 f0 39 fe 0f 47 f7 f6 05 9a 00 c4 c0 04 75 49
+May  8 08:23:06 localhost kernel: [   19.094241] EIP: [<c07f38df>] 
+usb_serial_generic_wait_until_sent+0x2f/0xe0 SS:ESP 0068:f6
+a2dd30
+May  8 08:23:06 localhost kernel: [   19.094443] ---[ end trace 
+571b299bbe1655fd ]---
+May  8 08:23:09 localhost lcdcontroller.sh[598]: Goodbye
