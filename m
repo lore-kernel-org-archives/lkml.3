@@ -1,37 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab3EHMjn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 08:39:43 -0400
-Received: from smtp.knology.net ([64.8.71.112]:20958 "EHLO smtp.knology.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754979Ab3EHMjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 08:39:41 -0400
-X-Greylist: delayed 481 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 May 2013 08:39:41 EDT
-X-Spam-Rating: **
-X-CLOUDMARK-CSI: SUSPECT
-X-Spam-Rating: **
-X-SPAMHAUS: CSS
-X_CMAE_Category: 0,0 Undefined,Undefined
-X-CNFS-Analysis: v=2.0 cv=fYgvOjsF c=1 sm=0 a=Ajks72diuxiADYwZ14oLzw==:17 a=Dyoqhi_TatcA:10 a=MdAS_kl_EoQA:10 a=nDghuxUhq_wA:10 a=Fp6YZVf2xG0A:10 a=oJL9TIRMo0YA:10 a=Cfj4BQAnxiAA:10 a=pGLkceISAAAA:8 a=CjxXgO3LAAAA:8 a=HKg1EaaiaxQA:10 a=Ajks72diuxiADYwZ14oLzw==:117
-X-CM-Score: 0
-Authentication-Results: smtp02.knology.synacor.com smtp.mail=mrmusaadam001@gmail.com; spf=neutral; sender-id=neutral
-Authentication-Results: smtp02.knology.synacor.com header.from=mrmusaadam001@gmail.com; sender-id=neutral
-Authentication-Results: smtp02.knology.synacor.com smtp.user=pdmac@knology.net; auth=pass (LOGIN)
-Reply-To: <mrkings071@yahoo.com>
-Message-ID: <A0.3E.22204.C754A815@smtp02.knology.synacor.com>
-From: "K,Moghalu" <mrmusaadam001@gmail.com>
-Subject: Mr john wheeler claim wants to claim your outstanding payment from CBN??get back to me for more informations
-Date: Wed, 8 May 2013 07:31:41 -0500
+	id S1755551Ab3EHMjw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 08:39:52 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:42508 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754980Ab3EHMju (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 08:39:50 -0400
+Date: Wed, 8 May 2013 13:39:36 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Message-ID: <20130508123936.GM7478@sirena.org.uk>
+References: <20130508080448.GG3102@gmail.com>
+ <1368002354-15471-1-git-send-email-fabio.baltieri@linaro.org>
+ <20130508103401.GX7478@sirena.org.uk>
+ <20130508120449.GA18323@balto.lan>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ByWDhVrfOLxO82cA"
+Content-Disposition: inline
+In-Reply-To: <20130508120449.GA18323@balto.lan>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 212.183.132.60
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/6] ASoC: ux500: Do not clear state if already idle
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+--ByWDhVrfOLxO82cA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed, May 08, 2013 at 02:04:49PM +0200, Fabio Baltieri wrote:
+
+> Anything on the patch itself?
+
+I didn't really look at it TBH.
+
+--ByWDhVrfOLxO82cA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRikeFAAoJELSic+t+oim9YekP/AlsseYdHOju1kjBW5MTS6Y8
+V219aiSPsgvB1TC/JFQRsZrd5cNuvGX4GZpFEZFv0T4hNFviPld4fM5lG1otktzX
+uVgQ5+i9avpevRLRP6gUlniGo+fuljoaKsnYnKnHSNw2MUlBW6Z7sGGdw81B6+2G
+mhDJEXPETyZgFt4vuAslNeTmJ4UDqpkJuXlEWpiDRJKzWFLMEdQsGbGuvUGjSqoy
+WisQGUC9zJmh5+YpSoRLgnXXoyOemlmpcJCYTGdcvijlklcMxfiJz3YHl0lpS4HV
+JVy1a8bFfWMECNMDqJfhaamkKk8KRf+c+1zBNF6HJg7QhgzPNU6qsRKc6smzU2k1
+6nspLcW1TA9Vre4RWuImO4bJru10fCmPQkqkXgqYoQbTNIe9XZXjGzEaUFSdoda7
+bo8IguiC1CiKmpHEot+58BuzOJmbvevgFTCdKa0x8OsrAIJ1aDK1FFWAVI4JNrei
+XJe6i8ve1f9h1UIYZlIEpi6uuA/4pX0P63Bmnrszx7tP4jwUh0ClbWY6AC8nRHi+
+KgXUbudjOWwJRxyki+b8/CQnhtyRB7IcI4pJK8Oj7yMIcl6JLXo0vWdvPXyLEHxl
+SnfCWkp4vdE5Oc8FO6R+jTEX9vayOq1QWUS4U6tn5vEmDYs3aXpHuIPxajuq3Apm
+4++VoV/GqPiIlnc7SCyh
+=4sXc
+-----END PGP SIGNATURE-----
+
+--ByWDhVrfOLxO82cA--
