@@ -1,65 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181Ab3EHPS4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:18:56 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:50305 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753581Ab3EHPSx (ORCPT
+	id S1755420Ab3EHPTH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:19:07 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:57409 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150Ab3EHPTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:18:53 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH] perf: detect loops processing events
-Date: Wed,  8 May 2013 09:18:47 -0600
-Message-Id: <1368026327-4741-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Wed, 8 May 2013 11:19:03 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Tang Chen <tangchen@cn.fujitsu.com>
+Subject: [PATCH v5, part3 04/15] mm/x86: use free_reserved_area() to simplify code
+Date: Wed,  8 May 2013 23:17:03 +0800
+Message-Id: <1368026235-5976-5-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1368026235-5976-1-git-send-email-jiang.liu@huawei.com>
+References: <1368026235-5976-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recovery algorithm in __perf_session__process_events attempts to remap
-a perf.data file with a different file_offset and try again at a new head
-position. Both of these adjustment rely on page_offset. If page_offset is
-0 then file_offset and head never change which means the remap attempt is
-the same and the fetch_mmaped_event is the same and the processing just
-loops forever.
+Use common help function free_reserved_area() to simplify code.
 
-Detect this condition and warn the user.
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>
+Cc: linux-kernel@vger.kernel.org
 ---
- tools/perf/util/session.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/mm/init.c    |   14 +++-----------
+ arch/x86/mm/init_64.c |    5 ++---
+ 2 files changed, 5 insertions(+), 14 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index cf1fe01..1c4dc45 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1235,6 +1235,12 @@ more:
- 		}
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index fdc5dca..6738e1b 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -477,7 +477,6 @@ int devmem_is_allowed(unsigned long pagenr)
  
- 		page_offset = page_size * (head / page_size);
-+		/* catch looping where we never make forward progress. */
-+		if (page_offset == 0) {
-+			pr_err("Loop detection processing events. Is file corrupted?\n");
-+			return -1;
-+		}
-+
- 		file_offset += page_offset;
- 		head -= page_offset;
- 		goto remap;
+ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+ {
+-	unsigned long addr;
+ 	unsigned long begin_aligned, end_aligned;
+ 
+ 	/* Make sure boundaries are page aligned */
+@@ -492,8 +491,6 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+ 	if (begin >= end)
+ 		return;
+ 
+-	addr = begin;
+-
+ 	/*
+ 	 * If debugging page accesses then do not free this memory but
+ 	 * mark them not present - any buggy init-section access will
+@@ -512,18 +509,13 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+ 	set_memory_nx(begin, (end - begin) >> PAGE_SHIFT);
+ 	set_memory_rw(begin, (end - begin) >> PAGE_SHIFT);
+ 
+-	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
+-
+-	for (; addr < end; addr += PAGE_SIZE) {
+-		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
+-		free_reserved_page(virt_to_page(addr));
+-	}
++	free_reserved_area(begin, end, POISON_FREE_INITMEM, what);
+ #endif
+ }
+ 
+ void free_initmem(void)
+ {
+-	free_init_pages("unused kernel memory",
++	free_init_pages("unused kernel",
+ 			(unsigned long)(&__init_begin),
+ 			(unsigned long)(&__init_end));
+ }
+@@ -549,7 +541,7 @@ void __init free_initrd_mem(unsigned long start, unsigned long end)
+ 	 *   - relocate_initrd()
+ 	 * So here We can do PAGE_ALIGN() safely to get partial page to be freed
+ 	 */
+-	free_init_pages("initrd memory", start, PAGE_ALIGN(end));
++	free_init_pages("initrd", start, PAGE_ALIGN(end));
+ }
+ #endif
+ 
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index caad9a0..0c6efb8 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1165,11 +1165,10 @@ void mark_rodata_ro(void)
+ 	set_memory_ro(start, (end-start) >> PAGE_SHIFT);
+ #endif
+ 
+-	free_init_pages("unused kernel memory",
++	free_init_pages("unused kernel",
+ 			(unsigned long) __va(__pa_symbol(text_end)),
+ 			(unsigned long) __va(__pa_symbol(rodata_start)));
+-
+-	free_init_pages("unused kernel memory",
++	free_init_pages("unused kernel",
+ 			(unsigned long) __va(__pa_symbol(rodata_end)),
+ 			(unsigned long) __va(__pa_symbol(_sdata)));
+ }
 -- 
-1.7.10.1
+1.7.9.5
 
