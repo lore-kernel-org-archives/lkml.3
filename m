@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab3EHSrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:47:09 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:36792 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454Ab3EHSrF (ORCPT
+	id S1752639Ab3EHSsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:48:21 -0400
+Received: from dkim1.fusionio.com ([66.114.96.53]:37483 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab3EHSsU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:47:05 -0400
+	Wed, 8 May 2013 14:48:20 -0400
+X-ASG-Debug-ID: 1368038899-0421b536855cf50001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <s5ha9o5wi7j.wl%tiwai@suse.de>
-References: <1367996197-32748-1-git-send-email-tiwai@suse.de>
- <CACVXFVPwXtD8uO-L6xhYC8j1B3XMVKQSDd=tMskgAvGQ=dNrZw@mail.gmail.com> <s5ha9o5wi7j.wl%tiwai@suse.de>
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 8 May 2013 20:46:43 +0200
-Message-ID: <CAPXgP13yH_JvdrewbXjvpuQg2E4oaqJAk6zrPMXvEHX-cns0qg@mail.gmail.com>
-Subject: Re: [PATCH 0/3] firmware: Fix usermodehelper deadlock at shutdown
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+To: Christoph Lameter <cl@linux.com>
+From: Chris Mason <clmason@fusionio.com>
+In-Reply-To: <0000013e856463fa-9a895b58-ef76-42fa-a33d-778b89f97cf2-000000@email.amazonses.com>
+CC: Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>
+References: <alpine.LFD.2.03.1305070936320.2383@kernel.org>
+ <20130508003022.GS28721@atomide.com> <20130508042422.GU28721@atomide.com>
+ <20130508181353.23991.17852@localhost.localdomain>
+ <0000013e856463fa-9a895b58-ef76-42fa-a33d-778b89f97cf2-000000@email.amazonses.com>
+Message-ID: <20130508184817.4271.72594@localhost.localdomain>
+User-Agent: alot/0.3.4
+Subject: Re: [GIT PULL] SLAB changes for v3.10
+Date: Wed, 8 May 2013 14:48:17 -0400
+X-ASG-Orig-Subj: Re: [GIT PULL] SLAB changes for v3.10
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1368038899
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.130384
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 8, 2013 at 6:26 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Thu, 9 May 2013 00:07:17 +0800,
-> Ming Lei wrote:
+Quoting Christoph Lameter (2013-05-08 14:25:49)
+> On Wed, 8 May 2013, Chris Mason wrote:
+> 
+> > This patch fixes things for me, but to maintain the rules from
+> > Christoph's patch,  kmalloc_caches[2] should have been created whenever
+> > kmalloc_caches[7] was done.
+> 
+> Not necessary. The early slab bootstrap must create some slab caches of
+> specific sizes, it will only use those during very early bootstrap.
+> 
+> The later creation of the array must skip those.
+> 
+> You correctly moved the checks out of the if (!kmalloc_cacheS())
+> condition so that the caches are created properly.
 
->> On Wed, May 8, 2013 at 2:56 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> > Hi,
->> >
->> > this is a series of patches for the issue we faced in the firmware
->> > loader code during debugging the problem with dell_rbu driver with
->> > 3.9 kernel.
->> >
->> > The original problem was that the shutdown gets stuck when DELL BIOS
->> > update is performed.  This turned out to be a problem in the firmware
->> > loader.  Although the reason of dell_rbu driver breakage is still
->>
->> Sorry, from these patchset, I can't see why it is a problem in firmware.
->>
->> > unclear, we should fix the firmware loader side, at least, not to
->> > stall during shutdown.
->>
->> Firstly you need to describe what/why is the stall? In fact, firmware
->> loading can't stall forever and it will timeout, but the current 60sec
->> timeout might be too long.
->
-> The timeout check is activated only when uevent flag is set, and
-> dell_rbu driver doesn't set it explicitly (because it's not supposed
-> to be handled via udev or whatever).
+But if the ordering is required at all, why is it ok to create cache 2
+after cache 6 instead of after cache 7?
 
-These use the firmware loader not in the way the interface was intended:
-  drivers/misc/lattice-ecp3-config.c
-  drivers/firmware/dell_rbu.c
+IOW if we can safely do cache 2 after cache 6, why can't we just do both
+cache 1 and cache 2 after the loop?
 
-They just use the mechanism without any of the usual userspace setup.
-It's really a nasty hack to hijack the interface that way.
-
-The commit 6e3eaab02028c4087a92711b20abb9e72cc803a7 is a pretty broken
-idea to start with. If something triggers uevents during runtime which
-is not uncommon, these on-demand silently created firmware devices
-would get really confused and race against the udev firmware loader
-which cancels the events.
-
-As if the userspace firmware loading in general wasn't a bad enough
-idea already. :)
-
-Kay
+-chris
