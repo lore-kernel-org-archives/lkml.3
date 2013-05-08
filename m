@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab3EGXvU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 19:51:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20515 "EHLO mga09.intel.com"
+	id S1756269Ab3EGXyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 19:54:01 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:37720 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796Ab3EGXvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 19:51:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,631,1363158000"; 
-   d="scan'208";a="333455841"
-From: James Ralston <james.d.ralston@intel.com>
-To: Peter Tyser <ptyser@xes-inc.com>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, James Ralston <james.d.ralston@intel.com>,
-        Seth Heasley <seth.heasley@intel.com>
-Subject: [PATCH 1/1] lpc_ich: Watchdog/GPIO patch for Intel Avoton SoC
-Date: Tue,  7 May 2013 23:50:53 -0700
-Message-Id: <1367995853-24448-1-git-send-email-james.d.ralston@intel.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1753375Ab3EGXyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 19:54:00 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>, Colin Cross <ccross@android.com>
+Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
+        linux-pm@vger.kernel.org, netdev@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2 00/10] optimize freezing tasks by reducing task wakeups
+Date: Wed, 08 May 2013 02:02:24 +0200
+Message-ID: <8514381.qPm240gC5h@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130507181237.GE5531@mtj.dyndns.org>
+References: <1367884221-20462-1-git-send-email-ccross@android.com> <20130507181237.GE5531@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the LPC Controller Device IDs for Watchdog and GPIO for the Intel Avoton SoC.
+On Tuesday, May 07, 2013 11:12:37 AM Tejun Heo wrote:
+> Hello,
+> 
+> On Mon, May 06, 2013 at 04:50:05PM -0700, Colin Cross wrote:
+> > On slow cpus the large number of task wakeups and context switches
+> > triggered by freezing and thawing tasks can take a significant amount
+> > of cpu time.  This patch series reduces the amount of work done during
+> > freezing tasks by avoiding waking up tasks that are already in a freezable
+> > state.
+> 
+> For the whole series,
+> 
+>  Acked-by: Tejun Heo <tj@kernel.org>
+> 
+> Thanks a lot!
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
----
- drivers/mfd/lpc_ich.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+All 16 patches queued up as v3.11 material.
 
-diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-index 9f12f91..140bf38 100644
---- a/drivers/mfd/lpc_ich.c
-+++ b/drivers/mfd/lpc_ich.c
-@@ -51,6 +51,7 @@
-  *	document number TBD : Lynx Point
-  *	document number TBD : Lynx Point-LP
-  *	document number TBD : Wellsburg
-+ *	document number TBD : Avoton SoC
-  */
- 
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-@@ -207,6 +208,7 @@ enum lpc_chipsets {
- 	LPC_LPT,	/* Lynx Point */
- 	LPC_LPT_LP,	/* Lynx Point-LP */
- 	LPC_WBG,	/* Wellsburg */
-+	LPC_AVN,	/* Avoton SoC */
- };
- 
- struct lpc_ich_info lpc_chipset_info[] = {
-@@ -491,6 +493,10 @@ struct lpc_ich_info lpc_chipset_info[] = {
- 		.name = "Wellsburg",
- 		.iTCO_version = 2,
- 	},
-+	[LPC_AVN] = {
-+		.name = "Avoton SoC",
-+		.iTCO_version = 2,
-+	},
- };
- 
- /*
-@@ -704,6 +710,10 @@ static DEFINE_PCI_DEVICE_TABLE(lpc_ich_ids) = {
- 	{ PCI_VDEVICE(INTEL, 0x8d5d), LPC_WBG},
- 	{ PCI_VDEVICE(INTEL, 0x8d5e), LPC_WBG},
- 	{ PCI_VDEVICE(INTEL, 0x8d5f), LPC_WBG},
-+	{ PCI_VDEVICE(INTEL, 0x1f38), LPC_AVN},
-+	{ PCI_VDEVICE(INTEL, 0x1f39), LPC_AVN},
-+	{ PCI_VDEVICE(INTEL, 0x1f3a), LPC_AVN},
-+	{ PCI_VDEVICE(INTEL, 0x1f3b), LPC_AVN},
- 	{ 0, },			/* End of list */
- };
- MODULE_DEVICE_TABLE(pci, lpc_ich_ids);
+Many thanks to everyone involved,
+Rafael
+
+
 -- 
-1.7.7.6
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
