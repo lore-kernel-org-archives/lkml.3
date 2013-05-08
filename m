@@ -1,79 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab3EHOfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 10:35:16 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:53003 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755832Ab3EHOfM (ORCPT
+	id S1756387Ab3EHOfa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 10:35:30 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:63881 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756310Ab3EHOf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 10:35:12 -0400
-Date: Wed, 8 May 2013 10:35:08 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Andy Lutomirski <luto@amacapital.net>, stefan.bader@canonical.com
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: WT memory type on x86_64?
-Message-ID: <20130508143505.GA8599@phenom.dumpdata.com>
-References: <CALCETrVBor6fKwxP=+0mtJ4SjKn2YrFczSdXhazw3m8E5Sxx6A@mail.gmail.com>
+	Wed, 8 May 2013 10:35:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Subject: Re: [RFC 1/8] serial:st-asc: Add ST ASC driver.
+Date: Wed, 8 May 2013 16:34:43 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stuart Menefy <stuart.menefy@st.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Olof Johansson <olof@lixom.net>, Jason Cooper <jason@lakedaemon.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Dave Martin <dave.martin@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        Stephen Gallimore <stephen.gallimore@st.com>
+References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <1368022248-2153-1-git-send-email-srinivas.kandagatla@st.com>
+In-Reply-To: <1368022248-2153-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVBor6fKwxP=+0mtJ4SjKn2YrFczSdXhazw3m8E5Sxx6A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305081634.43498.arnd@arndb.de>
+X-Provags-ID: V02:K0:i0sQUL4HQs9JaUoQymwZItYcNm5EnCYZrSBoilrTpLl
+ qxzrtfUeF/JoHDO75Ucx1w0fez/AI1ZmF9tt1MA5N6S0Iwoy9k
+ iycLJIpbrSvZooJCdErjbeha4RAZEjKX/rp71TPab28FBsIxvo
+ B5USQTUSEHCIx3mrdpGcgxqwlQGk6t3j3eztxsJ+WxddgR5WiZ
+ NtN9hSZ591Oe5QFmjxfEi9T9umNrs2R9MTNrIkChZlSG9D1xSv
+ q9ZxWvWBhkKNvop+4+gZbsdFgCAAuUY324bxfg2kQV2VGvpVq+
+ WRZu8Div+drTGSEZXOAY7K4LHtSzebD60SLkpYFxRFTorYXDNO
+ hCYUTDgMU2BsBQviCSMQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 12:33:33PM -0700, Andy Lutomirski wrote:
-> For an upcoming (and, sadly, NDA'd [1]) project, I may need to use
-> write-through memory.  I'd like to gauge how unpleasant this will be.
-> 
-> AFAICT, modern CPUs allow the WT type to be set using MTRR or a PAT
-> entry.  Sadly, MTRRs are in short supply, and the four fully-usable
-> PAT slots are used for UC, UC-, WB, and WC.  I can keep my fingers
-> crossed and hope that there are enough free MTRRs, or I could try to
-> free up a PAT entry.
-> 
-> How nasty will the latter be?  I just looked at two rather different
-> modern Sandy Bridge machines, and BIOS doesn't appear to set up any
-> MTRRs in the WC or WP states.  As long as those MTRR types aren't
-> used, I think the UC- PAT entry is useless -- it behaves identically
-> to UC.  Lots of DRM drivers, though, seen to add a WC MTRR to cover
-> video memory.  Is there any need for this on modern machines?  That
-> is, are there any drivers that actually need the mtrr_add call to
-> succeed on a machine that has a working PAT?
-> 
-> If not, then here's a proposal:  At startup, if there are no WC or WP
-> MTRRs and the CPU is new enough, then set a flag for an alternative
-> PAT.  In alternative PAT mode, UC- is replaced with WT in the PAT and
-> mtrr_add fails when attempting to add a WC or WP entry.  Add
-> set_memory_wt, etc.  They fail in non-alternative-PAT mode.  This gets
-> a bit unpleasant, since _PAGE_CACHE_UC_MINUS will have a different
-> meaning depending on the mode.
-> 
-> A less conservative proposal would be to stop using UC- in the PAT
-> entirely.  The memtype code could learn to emulate UC- when there's an
-> overlapping WC or WP MTRR.
-> 
-> Any thoughts?  Are there known errata here?  Is there a good reason
-> why the kernel needs UC-?  Will this be such a big can of worms that I
-> should just hope there's an available MTRR?
+On Wednesday 08 May 2013, Srinivas KANDAGATLA wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-Stefan Bader (CC-ed here) was looking in making a "black-box" type
-code wherein for any types but WC it would lookup in the PAT index
-the right bit and provide that for the page_attr_set functions.
+> +*st-asc(Serial Port)
+> +
+> +Required properties:
+> +- compatible : Should be "st,asc".
 
-If I recall he had run in a bit of issue with of the hard-coded values
-set by the macros.
+Are there any hardware revision numbers for the asc? If there are potentially
+incompatible or backwards-compatible variants, it would be good to include
+the version in this string.
 
-> 
-> --Andy
-> 
-> [1]  I hope to be able to upstream all kernel code related to this
-> project.  It will be neat -- I promise.  It will depend on convincing
-> the people on the other end of the NDA that they should let me.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> +- reg, reg-names, interrupts, interrupt-names	: Standard way to define device
+> +			resources with names. look in
+> +			Documentation/devicetree/bindings/resource-names.txt
+> +
+> +Optional properties:
+> +- st,hw-flow-ctrl	bool flag to enable hardware flow control.
+> +- st,force-m1		bool flat to force asc to be in Mode-1 recommeded
+> +			for high bit rates (above 19.2K)
+> +Example:
+> +serial@fe440000{
+> +    compatible    = "st,asc";
+> +    reg         = <0xfe440000 0x2c>;
+> +    interrupts     =  <0 209 0>;
+> +};
+
+I would also recommed adding a way to set the default baud rate through
+a property. Following the example of the 8250 driver, you should probably
+call that "current-speed".
+
+> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+> index 7e7006f..346f325 100644
+> --- a/drivers/tty/serial/Kconfig
+> +++ b/drivers/tty/serial/Kconfig
+> @@ -1484,6 +1484,25 @@ config SERIAL_RP2_NR_UARTS
+>  	  If multiple cards are present, the default limit of 32 ports may
+>  	  need to be increased.
+>  
+> +config SERIAL_ST_ASC
+> +	tristate "ST ASC serial port support"
+> +	depends on PLAT_STIXXXX
+> +	default y
+> +	select SERIAL_CORE
+> +	help
+> +	  This driver is for the on-chip Asychronous Serial Controller on
+> +	  STMicroelectronics STixxxx SoCs.
+> +	  ASC is embedded in ST COMMS IP block. It supports Rx & Tx functionality.
+> +	  It support all industry standard baud rates.
+> +
+> +	  If unsure, say N.
+
+I would not make it "default y".
+
+> +config SERIAL_ST_ASC_CONSOLE
+> +	bool "Support for console on ST ASC"
+> +	depends on SERIAL_ST_ASC
+> +	default y
+> +	select SERIAL_CORE_CONSOLE
+> +
+>  endmenu
+
+This needs to be "depends on SERIAL_ST_ASC=y". You would get a link error
+if you try to make SERIAL_ST_ASC a loadable module and SERIAL_ST_ASC_CONSOLE
+built-in.
+
+> +
+> +static struct asc_port asc_ports[ASC_MAX_PORTS];
+> +static struct uart_driver asc_uart_driver;
+> +
+> +/*---- Forward function declarations---------------------------*/
+> +static irqreturn_t asc_interrupt(int irq, void *ptr);
+> +static void asc_transmit_chars(struct uart_port *);
+> +static int asc_set_baud(struct asc_port *ascport, int baud);
+> +
+
+Please remove all forward declarations, by reordering the functions in
+the way they are called.
+
+
+> diff --git a/drivers/tty/serial/st-asc.h b/drivers/tty/serial/st-asc.h
+> new file mode 100644
+> index 0000000..e59f818
+> --- /dev/null
+> +++ b/drivers/tty/serial/st-asc.h
+> +#ifndef _ST_ASC_H
+> +#define _ST_ASC_H
+> +
+> +#include <linux/serial_core.h>
+> +#include <linux/clk.h>
+> +
+> +struct asc_port {
+> +	struct uart_port port;
+> +	struct clk *clk;
+> +	unsigned int hw_flow_control:1;
+> +	unsigned int check_parity:1;
+> +	unsigned int force_m1:1;
+> +};
+
+Since this header file is only used in one place, just merge it into
+the driver itself.
+
+> +#define ASC_MAJOR		204
+> +#define ASC_MINOR_START		40
+
+I don't know what the current policy is on allocating major/minor numbers,
+but I'm sure you cannot just reuse one that is already used.
+
+Documentation/devices.txt lists the ones that are officially assigned.
+Can't you use dynamic allocation here?
+
+	Arnd
