@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758263Ab3EHP5t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:57:49 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:34886 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757600Ab3EHP5q (ORCPT
+	id S1758236Ab3EHP5h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:57:37 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:63636 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757598Ab3EHP5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:57:46 -0400
+	Wed, 8 May 2013 11:57:33 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,12 +19,13 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: [PATCH v5, part4 41/41] mm: kill global variable num_physpages
-Date: Wed,  8 May 2013 23:51:38 +0800
-Message-Id: <1368028298-7401-42-git-send-email-jiang.liu@huawei.com>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>
+Subject: [PATCH v5, part4 39/41] mm/x86: prepare for removing num_physpages and simplify mem_init()
+Date: Wed,  8 May 2013 23:51:36 +0800
+Message-Id: <1368028298-7401-40-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
 References: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
@@ -32,77 +33,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now all references to num_physpages have been removed, so kill it.
+Prepare for removing num_physpages and simplify mem_init().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>
 Cc: linux-kernel@vger.kernel.org
 ---
- include/linux/mm.h |    1 -
- mm/memory.c        |    2 --
- mm/nommu.c         |    2 --
- 3 files changed, 5 deletions(-)
+ arch/x86/kernel/cpu/amd.c |    2 +-
+ arch/x86/kernel/setup.c   |    2 --
+ arch/x86/mm/init_32.c     |   30 ++----------------------------
+ arch/x86/mm/init_64.c     |   20 +-------------------
+ arch/x86/mm/numa_32.c     |    2 --
+ 5 files changed, 4 insertions(+), 52 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 66e5fb8..f02b34f 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -29,7 +29,6 @@ struct writeback_control;
- extern unsigned long max_mapnr;
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 5013a48..c587a87 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -90,7 +90,7 @@ static void __cpuinit init_amd_k5(struct cpuinfo_x86 *c)
+ static void __cpuinit init_amd_k6(struct cpuinfo_x86 *c)
+ {
+ 	u32 l, h;
+-	int mbytes = num_physpages >> (20-PAGE_SHIFT);
++	int mbytes = get_num_physpages() >> (20-PAGE_SHIFT);
+ 
+ 	if (c->x86_model < 6) {
+ 		/* Based on AMD doc 20734R - June 2000 */
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index c8dbdfd..58f1a8ad 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1041,8 +1041,6 @@ void __init setup_arch(char **cmdline_p)
+ 	/* max_low_pfn get updated here */
+ 	find_low_pfn_range();
+ #else
+-	num_physpages = max_pfn;
+-
+ 	check_x2apic();
+ 
+ 	/* How many end-of-memory variables you have, grandma! */
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 9fa46ba..4287f1f 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -660,10 +660,8 @@ void __init initmem_init(void)
+ 		highstart_pfn = max_low_pfn;
+ 	printk(KERN_NOTICE "%ldMB HIGHMEM available.\n",
+ 		pages_to_mb(highend_pfn - highstart_pfn));
+-	num_physpages = highend_pfn;
+ 	high_memory = (void *) __va(highstart_pfn * PAGE_SIZE - 1) + 1;
+ #else
+-	num_physpages = max_low_pfn;
+ 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE - 1) + 1;
  #endif
  
--extern unsigned long num_physpages;
- extern unsigned long totalram_pages;
- extern void * high_memory;
- extern int page_cluster;
-diff --git a/mm/memory.c b/mm/memory.c
-index f7a1fba..0022366 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -82,7 +82,6 @@ EXPORT_SYMBOL(max_mapnr);
- EXPORT_SYMBOL(mem_map);
+@@ -671,7 +669,7 @@ void __init initmem_init(void)
+ 	sparse_memory_present_with_active_regions(0);
+ 
+ #ifdef CONFIG_FLATMEM
+-	max_mapnr = num_physpages;
++	max_mapnr = IS_ENABLED(CONFIG_HIGHMEM) ? highend_pfn : max_low_pfn;
  #endif
+ 	__vmalloc_start_set = true;
  
--unsigned long num_physpages;
- /*
-  * A number of key systems in x86 including ioremap() rely on the assumption
-  * that high_memory defines the upper bound on direct map memory, then end
-@@ -92,7 +91,6 @@ unsigned long num_physpages;
-  */
- void * high_memory;
+@@ -739,9 +737,6 @@ static void __init test_wp_bit(void)
  
--EXPORT_SYMBOL(num_physpages);
- EXPORT_SYMBOL(high_memory);
+ void __init mem_init(void)
+ {
+-	int codesize, reservedpages, datasize, initsize;
+-	int tmp;
+-
+ 	pci_iommu_alloc();
  
- /*
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 247ef84..09cfde8 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -56,7 +56,6 @@
- void *high_memory;
- struct page *mem_map;
- unsigned long max_mapnr;
--unsigned long num_physpages;
- unsigned long highest_memmap_pfn;
- struct percpu_counter vm_committed_as;
- int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
-@@ -85,7 +84,6 @@ unsigned long vm_memory_committed(void)
- EXPORT_SYMBOL_GPL(vm_memory_committed);
+ #ifdef CONFIG_FLATMEM
+@@ -761,30 +756,9 @@ void __init mem_init(void)
+ 	/* this will put all low memory onto the freelists */
+ 	free_all_bootmem();
  
- EXPORT_SYMBOL(mem_map);
--EXPORT_SYMBOL(num_physpages);
+-	reservedpages = 0;
+-	for (tmp = 0; tmp < max_low_pfn; tmp++)
+-		/*
+-		 * Only count reserved RAM pages:
+-		 */
+-		if (page_is_ram(tmp) && PageReserved(pfn_to_page(tmp)))
+-			reservedpages++;
+-
+ 	after_bootmem = 1;
  
- /* list of mapped, potentially shareable regions */
- static struct kmem_cache *vm_region_jar;
+-	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
+-	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
+-	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
+-
+-	printk(KERN_INFO "Memory: %luk/%luk available (%dk kernel code, "
+-			"%dk reserved, %dk data, %dk init, %ldk highmem)\n",
+-		nr_free_pages() << (PAGE_SHIFT-10),
+-		num_physpages << (PAGE_SHIFT-10),
+-		codesize >> 10,
+-		reservedpages << (PAGE_SHIFT-10),
+-		datasize >> 10,
+-		initsize >> 10,
+-		totalhigh_pages << (PAGE_SHIFT-10));
+-
++	mem_init_print_info(NULL);
+ 	printk(KERN_INFO "virtual kernel memory layout:\n"
+ 		"    fixmap  : 0x%08lx - 0x%08lx   (%4ld kB)\n"
+ #ifdef CONFIG_HIGHMEM
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 65116e5..650264b 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1043,9 +1043,6 @@ static void __init register_page_bootmem_info(void)
+ 
+ void __init mem_init(void)
+ {
+-	long codesize, reservedpages, datasize, initsize;
+-	unsigned long absent_pages;
+-
+ 	pci_iommu_alloc();
+ 
+ 	/* clear_bss() already clear the empty_zero_page */
+@@ -1054,28 +1051,13 @@ void __init mem_init(void)
+ 
+ 	/* this will put all memory onto the freelists */
+ 	free_all_bootmem();
+-
+-	absent_pages = absent_pages_in_range(0, max_pfn);
+-	reservedpages = max_pfn - totalram_pages - absent_pages;
+ 	after_bootmem = 1;
+ 
+-	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
+-	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
+-	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
+-
+ 	/* Register memory areas for /proc/kcore */
+ 	kclist_add(&kcore_vsyscall, (void *)VSYSCALL_START,
+ 			 VSYSCALL_END - VSYSCALL_START, KCORE_OTHER);
+ 
+-	printk(KERN_INFO "Memory: %luk/%luk available (%ldk kernel code, "
+-			 "%ldk absent, %ldk reserved, %ldk data, %ldk init)\n",
+-		nr_free_pages() << (PAGE_SHIFT-10),
+-		max_pfn << (PAGE_SHIFT-10),
+-		codesize >> 10,
+-		absent_pages << (PAGE_SHIFT-10),
+-		reservedpages << (PAGE_SHIFT-10),
+-		datasize >> 10,
+-		initsize >> 10);
++	mem_init_print_info(NULL);
+ }
+ 
+ #ifdef CONFIG_DEBUG_RODATA
+diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
+index 73a6d73..0342d27 100644
+--- a/arch/x86/mm/numa_32.c
++++ b/arch/x86/mm/numa_32.c
+@@ -83,10 +83,8 @@ void __init initmem_init(void)
+ 		highstart_pfn = max_low_pfn;
+ 	printk(KERN_NOTICE "%ldMB HIGHMEM available.\n",
+ 	       pages_to_mb(highend_pfn - highstart_pfn));
+-	num_physpages = highend_pfn;
+ 	high_memory = (void *) __va(highstart_pfn * PAGE_SIZE - 1) + 1;
+ #else
+-	num_physpages = max_low_pfn;
+ 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE - 1) + 1;
+ #endif
+ 	printk(KERN_NOTICE "%ldMB LOWMEM available.\n",
 -- 
 1.7.9.5
 
