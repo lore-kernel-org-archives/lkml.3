@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751982Ab3EHVQu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 17:16:50 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:39917 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab3EHVQt (ORCPT
+	id S1752122Ab3EHVSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 17:18:06 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:53926 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750774Ab3EHVSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 17:16:49 -0400
-Date: Wed, 8 May 2013 14:16:35 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_preempt running flat out on idle desktop.
-Message-ID: <20130508211634.GP3648@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130508203042.GA18895@redhat.com>
- <20130508205258.GN3648@linux.vnet.ibm.com>
- <20130508205633.GB18895@redhat.com>
+	Wed, 8 May 2013 17:18:05 -0400
+Message-ID: <518AC108.2000906@hurleysoftware.com>
+Date: Wed, 08 May 2013 17:18:00 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130508205633.GB18895@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050821-7606-0000-0000-00000B343FC7
+To: Dave Jones <davej@redhat.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: 3.9+ tty lockdep trace.
+References: <20130501154723.GB11841@redhat.com> <20130506180020.GB1309@redhat.com> <20130506184059.GA22897@kroah.com> <51890C31.3000203@hurleysoftware.com> <20130507150423.GA13062@redhat.com> <51893B68.1010907@hurleysoftware.com> <20130507180009.GA16771@redhat.com>
+In-Reply-To: <20130507180009.GA16771@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 04:56:33PM -0400, Dave Jones wrote:
-> On Wed, May 08, 2013 at 01:52:58PM -0700, Paul E. McKenney wrote:
->  > On Wed, May 08, 2013 at 04:30:42PM -0400, Dave Jones wrote:
-> 
->  > >   PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND 
->  > >    10 root      20   0     0    0    0 S 200.0  0.0 185301:36 rcu_preempt
->  > >   553 root      20   0  268m  76m 6764 S 200.0  2.6 144579:53 Xorg
->  > >  1199 root      20   0     0    0    0 S 200.0  0.0 306:17.85 kworker/1:0
->  > >   501 root      20   0     0    0    0 S 200.0  0.0   4471:03 kworker/0:2
->  > >    12 root      20   0     0    0    0 S 200.0  0.0  67277:16 rcuop/1
->  > >  1237 davej     20   0  535m  15m 8484 S 200.0  0.5   3645:16 Terminal
->  > >   859 davej     20   0  117m 3036 1336 S 200.0  0.1   1986:55 htop
->  > > 
->  > > There are a lot of processes allegedly using "200%" of CPU time, a handful
->  > > in the "196%" range, and then a bunch at 0.
->  > 
->  > Yow!!!  185301 minutes is 128 days, which is a truly impressive amount of
->  > CPU time to accumulate in a few short hours.
-> 
-> perf top doesn't show anything out of the ordinary. Just as an idle desktop
-> should behave, it's spending a bunch of time in delay_tsc.
-> 
->  > This is 3.9, or Linus's current tree?  I am guessing the latter, but
->  > figured I should ask.
-> 
-> Yeah, the latter. (v3.9-11572-g5af43c2)
+On 05/07/2013 02:00 PM, Dave Jones wrote:
+> On Tue, May 07, 2013 at 01:35:36PM -0400, Peter Hurley wrote:
+>   > On 05/07/2013 11:04 AM, Dave Jones wrote:
+>   > > On Tue, May 07, 2013 at 10:14:09AM -0400, Peter Hurley wrote:
+>   > >
+>   > >   > >> Just hit this again, by switching tty's during bootup.
+>   > >   > >> The previous time was switching from X to console iirc, so that seems to be
+>   > >   > >> the key to triggering this.
+>   > >   > >
+>   > >   > > Sorry for not getting back to this sooner, merge window fun...
+>   > >   > >
+>   > >   > > Anyway, Peter, could this be something that your ldisc patches are
+>   > >   > > triggering?
+>   > >   >
+>   > >   > Yes, although early analysis also suggests the lockdep splat is possible
+>   > >   > regardless, just much less likely.
+>   > >   >
+>   > >   > I looked at this over the weekend, but I wasn't able to determine (in
+>   > >   > the limited time I had available) if the splat was valid; ie., if the
+>   > >   > cpu states could actually be concurrent and result in deadlock.
+>   > >   >
+>   > >   > I need to study the VT_DISALLOCATE ioctl in more detail which I plan
+>   > >   > to do this week.
+>   > >
+>   > > I don't know if it proves/disproves anything, but shortly before the dump
+>   > > gets printed, everything is kind of locked up. I can switch tty's, but
+>   > > the gettys on them are dead to the world until after the dump.
+>   > >
+>   > > ISTR a pause for a while when I hit this switching from X too.
+>   >
+>   > It would help to know the steps to reproduce. For example, you mention
+>   > unresponsive gettys but the VT_DISALLOCATE ioctl doesn't work (and isn't
+>   > designed to) on open ttys.
+>
+> Hmm, dunno. I booted up, and tried to log in on tty1 (no X on that box), and after
+> I entered my password everything just hung for a while. I flipped to tty2
+> to try and log in as root, but after changing tty, I just got a blinking cursor.
+> 10 seconds or so later, lockdep spew.
 
-Do you have CONFIG_NO_HZ_FULL=y?  We just might have a bug in tickless
-CPU-time accounting...
+Ok, Dave, thanks for the extra information; that makes sense now.
 
-							Thanx, Paul
+systemd optionally uses the VT_DISALLOCATE ioctl to free the VT. So when
+getty on tty2 died because of some error, systemd exercises the VT_DISALLOCATE
+ioctl which generates the lockdep splat.
 
+I'm still trying to figure out if the states can actually overlap; they're
+not supposed to, but the VT_DISALLOCATE ioctl is not particularly
+defensive and I suspect that overlap is possible.
+
+It's somewhat unfortunate that systemd chose to use a really antiquated
+and fundamentally unsafe ioctl like VT_DISALLOCATE. Even when I fix this
+lockdep splat, bad things may still be possible.
+
+I'm certain that the lockdep warning has nothing to do with your
+login delay; if you want to send me sysrq+t output when that happens again,
+I'd be willing to look over it for the underlying problem.
+
+Regards,
+Peter Hurley
