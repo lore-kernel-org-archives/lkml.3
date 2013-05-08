@@ -1,73 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894Ab3EHTLT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 15:11:19 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:28660 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753328Ab3EHTLS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 15:11:18 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+OEuyMl2QDw/GTU0z47zDU
-Date: Wed, 8 May 2013 12:11:09 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Chris Mason <clmason@fusionio.com>, Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] SLAB changes for v3.10
-Message-ID: <20130508191109.GB32546@atomide.com>
-References: <alpine.LFD.2.03.1305070936320.2383@kernel.org>
- <20130508003022.GS28721@atomide.com>
- <20130508042422.GU28721@atomide.com>
- <20130508181353.23991.17852@localhost.localdomain>
- <0000013e856463fa-9a895b58-ef76-42fa-a33d-778b89f97cf2-000000@email.amazonses.com>
- <20130508184817.4271.72594@localhost.localdomain>
- <0000013e85852607-fd84223c-112e-46b9-a60f-73d9597d90ac-000000@email.amazonses.com>
+	id S1755061Ab3EHTOo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 15:14:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15112 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753251Ab3EHTOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 15:14:42 -0400
+Message-ID: <518AA420.5020900@redhat.com>
+Date: Wed, 08 May 2013 15:14:40 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121116 Thunderbird/10.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000013e85852607-fd84223c-112e-46b9-a60f-73d9597d90ac-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/8] pci: Create pci_reset_bridge_secondary_bus()
+References: <20130508025339.30771.61937.stgit@bling.home> <20130508025740.30771.50033.stgit@bling.home>
+In-Reply-To: <20130508025740.30771.50033.stgit@bling.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Christoph Lameter <cl@linux.com> [130508 12:06]:
-> On Wed, 8 May 2013, Chris Mason wrote:
-> 
-> > > You correctly moved the checks out of the if (!kmalloc_cacheS())
-> > > condition so that the caches are created properly.
-> >
-> > But if the ordering is required at all, why is it ok to create cache 2
-> > after cache 6 instead of after cache 7?
-> 
-> The power of two caches are 2^x beginning with KMALLOC_MIN_SHIFT. The non
-> power of two caches were folded into number 1 + 2 since they do not fit
-> into the scheme and they are special cased throughout. This works since
-> the minimal slab cache size is 8 bytes.
-> 
-> > IOW if we can safely do cache 2 after cache 6, why can't we just do both
-> > cache 1 and cache 2 after the loop?
-> 
-> Because the cache creation in SLAB can cause the use of a fractional slab
-> size if kmem_cache_create() thinks its better to put the metadata on a
-> different slab cache (OFF_SLAB type) because data will align better that
-> way. Its weird I know but its due to the way that SLAB aligns data in the
-> page frame.
+On 05/07/2013 10:57 PM, Alex Williamson wrote:
+> Move the secondary bus reset code from pci_parent_bus_reset() into its own
+> function.  Export it as we'll later be calling it from hotplug controllers.
+>
+> Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
+> ---
+>   drivers/pci/pci.c   |   32 +++++++++++++++++++++++---------
+>   include/linux/pci.h |    1 +
+>   2 files changed, 24 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index b099e00..d0f313f 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -3210,9 +3210,30 @@ static int pci_pm_reset(struct pci_dev *dev, int probe)
+>   	return 0;
+>   }
+>
+> -static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
+> +/**
+> + * pci_reset_bridge_secondary_bus - Reset the secondary bus on a PCI bridge.
+> + * @dev: Bridge device
+> + *
+> + * Use the bridge control register to assert reset on the secondary bus.
+> + * Devices on the secondary bus are left in power-on state.
+> + */
+> +void pci_reset_bridge_secondary_bus(struct pci_dev *dev)
+see recommended api change below...
 
-Hmm OK so kmalloc_caches[7] got created earlier with INDEX_AC != INDEX_NODE,
-and those are defined as:
+>   {
+>   	u16 ctrl;
+> +
+> +	pci_read_config_word(dev, PCI_BRIDGE_CONTROL,&ctrl);
+> +	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
+> +	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
+> +	msleep(100);
+> +
+> +	ctrl&= ~PCI_BRIDGE_CTL_BUS_RESET;
+> +	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
+> +	msleep(100);
+> +}
+> +EXPORT_SYMBOL_GPL(pci_reset_bridge_secondary_bus);
+> +
+> +static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
+> +{
+>   	struct pci_dev *pdev;
+>
+>   	if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
+> @@ -3225,14 +3246,7 @@ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
+>   	if (probe)
+>   		return 0;
+>
+> -	pci_read_config_word(dev->bus->self, PCI_BRIDGE_CONTROL,&ctrl);
+> -	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
+> -	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
+> -	msleep(100);
+> -
+> -	ctrl&= ~PCI_BRIDGE_CTL_BUS_RESET;
+> -	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
+> -	msleep(100);
+> +	pci_reset_bridge_secondary_bus(dev->bus->self);
+>
+It makes more sense to pass the pci-bus struct of the bus you want to reset,
+instead of the pdev of the bridge that bus is sourced by.
+i.e, dev->bus,  and above, extract the pdev from the bus-struct.
+That way, devices asking for bus-reset, don't have to know the bus-struct details
+to make the call right... just their own pdev->bus reference.
+(more object-like/clean).
 
-#define INDEX_AC kmalloc_index(sizeof(struct arraycache_init))
-#define INDEX_NODE kmalloc_index(sizeof(struct kmem_cache_node))
+>   	return 0;
+>   }
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 710067f..695620c 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -905,6 +905,7 @@ int pcie_set_mps(struct pci_dev *dev, int mps);
+>   int __pci_reset_function(struct pci_dev *dev);
+>   int __pci_reset_function_locked(struct pci_dev *dev);
+>   int pci_reset_function(struct pci_dev *dev);
+> +void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
+and final tweak.
 
-So the different sizes for the structs can trigger it like Pekka was
-speculating earlier.
+>   void pci_update_resource(struct pci_dev *dev, int resno);
+>   int __must_check pci_assign_resource(struct pci_dev *dev, int i);
+>   int __must_check pci_reassign_resource(struct pci_dev *dev, int i, resource_size_t add_size, resource_size_t align);
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Regards,
-
-Tony
