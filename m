@@ -1,53 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751368Ab3EHFaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 01:30:25 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:31420 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719Ab3EHFaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 01:30:24 -0400
-X-IronPort-AV: E=Sophos;i="4.87,632,1363104000"; 
-   d="scan'208";a="7213429"
-Message-ID: <5189E39A.4040202@cn.fujitsu.com>
-Date: Wed, 08 May 2013 13:33:14 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752206Ab3EHFbn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 01:31:43 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47623 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107Ab3EHFbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 01:31:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,632,1363158000"; 
+   d="scan'208";a="238370382"
+Date: Wed, 8 May 2013 13:31:34 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Haicheng Li <haicheng.lee@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [PATCH 3/4] f2fs: optimize scan_nat_page()
+Message-ID: <20130508053134.GA8705@hli22-desktop>
+References: <1367853344-28938-1-git-send-email-haicheng.li@linux.intel.com>
+ <1367853344-28938-4-git-send-email-haicheng.li@linux.intel.com>
+ <1367922988.16581.45.camel@kjgkr>
 MIME-Version: 1.0
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-CC: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [RFC/PATCH 3/5] mm: get_user_pages: use NON-MOVABLE pages when
- FOLL_DURABLE flag is set
-References: <1362466679-17111-1-git-send-email-m.szyprowski@samsung.com> <1362466679-17111-4-git-send-email-m.szyprowski@samsung.com> <51875977.4090006@cn.fujitsu.com> <5188DBCF.6040104@samsung.com>
-In-Reply-To: <5188DBCF.6040104@samsung.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/08 13:29:27,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/08 13:29:28,
-	Serialize complete at 2013/05/08 13:29:28
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1367922988.16581.45.camel@kjgkr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek,
+On Tue, May 07, 2013 at 07:36:28PM +0900, Jaegeuk Kim wrote:
+> Hi,
+> 
+> 2013-05-06 (월), 23:15 +0800, Haicheng Li:
+> >  	if (nm_i->fcnt > 2 * MAX_FREE_NIDS)
+> > -		return 0;
+> > +		return -1;
+> 
+> We should check all the handler of add_free_nid().
+yes, sorry that I missed double checking it while rebasing this patch
+from master to dev branch, since there is only one handler on the master branch.
 
-On 05/07/2013 06:47 PM, Marek Szyprowski wrote:
->
-> I don't think that there was any conclusion after my patch, so I really see
-> no point in submitting it again now. If you need it for Your patchset, You
-> can include it directly. Just please keep my signed-off-by tag.
->
+> So, plz see the below modified patch.
+> > +		if (blk_addr == NULL_ADDR) {
+> > +			cnt = add_free_nid(nm_i, start_nid);
+> > +			if (cnt < 0)
+> > +				break;
+> > +		}
+> 
+> Here we need to eliminate cnt.
+sure, harmless & can reduce the code line.
 
-That's very kind of you. I'll keep you as the Author and your 
-signed-off-by tag
-if I use your patches, and will cc you.
-
-Thanks. :)
+and the below patch looks good to me. Thanks.
+> -----
+> From e2da02f0ba045f792d166ac8215d04474c06f319 Mon Sep 17 00:00:00 2001
+> From: Haicheng Li <haicheng.li@linux.intel.com>
+> Date: Mon, 6 May 2013 23:15:43 +0800
+> Subject: [PATCH] f2fs: optimize scan_nat_page()
+> Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+> linux-f2fs-devel@lists.sourceforge.net
+> 
+> When nm_i->fcnt > 2 * MAX_FREE_NIDS, stop scanning other NAT entries.
+> 
+> Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+> [Jaegeuk Kim: fix handling the return value of add_free_nid()]
+> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> ---
+>  fs/f2fs/node.c | 14 +++++++++-----
+>  1 file changed, 9 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> index 122200e..e42934e 100644
+> --- a/fs/f2fs/node.c
+> +++ b/fs/f2fs/node.c
+> @@ -1254,7 +1254,7 @@ static int add_free_nid(struct f2fs_nm_info *nm_i,
+> nid_t nid)
+>  	struct free_nid *i;
+>  
+>  	if (nm_i->fcnt > 2 * MAX_FREE_NIDS)
+> -		return 0;
+> +		return -1;
+>  
+>  	/* 0 nid should not be used */
+>  	if (nid == 0)
+> @@ -1302,12 +1302,16 @@ static void scan_nat_page(struct f2fs_nm_info
+> *nm_i,
+>  	i = start_nid % NAT_ENTRY_PER_BLOCK;
+>  
+>  	for (; i < NAT_ENTRY_PER_BLOCK; i++, start_nid++) {
+> +
+>  		if (start_nid >= nm_i->max_nid)
+>  			break;
+> -		blk_addr  = le32_to_cpu(nat_blk->entries[i].block_addr);
+> +
+> +		blk_addr = le32_to_cpu(nat_blk->entries[i].block_addr);
+>  		BUG_ON(blk_addr == NEW_ADDR);
+> -		if (blk_addr == NULL_ADDR)
+> -			add_free_nid(nm_i, start_nid);
+> +		if (blk_addr == NULL_ADDR) {
+> +			if (add_free_nid(nm_i, start_nid) < 0)
+> +				break;
+> +		}
+>  	}
+>  }
+>  
+> @@ -1655,7 +1659,7 @@ flush_now:
+>  		}
+>  
+>  		if (nat_get_blkaddr(ne) == NULL_ADDR &&
+> -					!add_free_nid(NM_I(sbi), nid)) {
+> +				add_free_nid(NM_I(sbi), nid) <= 0) {
+>  			write_lock(&nm_i->nat_tree_lock);
+>  			__del_from_nat_cache(nm_i, ne);
+>  			write_unlock(&nm_i->nat_tree_lock);
+> -- 
+> 1.8.1.3.566.gaa39828
+> 
