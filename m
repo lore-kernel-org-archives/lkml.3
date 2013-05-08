@@ -1,97 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab3EHVS2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 17:18:28 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:63588 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab3EHVSZ (ORCPT
+	id S1752817Ab3EHVUw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 17:20:52 -0400
+Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:44456 "HELO
+	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751520Ab3EHVUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 17:18:25 -0400
-Date: Wed, 8 May 2013 23:18:19 +0200
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        linux-media <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH -next] media/usb: fix kconfig dependencies (aka bool
- depending on tristate considered harmful)
-Message-ID: <20130508211819.GF3413@free.fr>
-References: <20130508140122.e4747b58be4333060b7a248a@canb.auug.org.au>
- <518A98D9.4020906@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <518A98D9.4020906@infradead.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 8 May 2013 17:20:50 -0400
+From: Roland Dreier <roland@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+Date: Wed,  8 May 2013 14:20:37 -0700
+Message-Id: <1368048037-7958-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy, All,
+Hi Linus,
 
-On Wed, May 08, 2013 at 11:26:33AM -0700, Randy Dunlap wrote:
-> (a.k.a. Kconfig bool depending on a tristate considered harmful)
+Please pull from
 
-Maybe that would warrant a bit of explanations in:
-    Documentation/kbuild/kconfig-language.txt
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
 
-> Fix various build errors when CONFIG_USB=m and media USB drivers
-> are builtin.  In this case, CONFIG_USB_ZR364XX=y,
-> CONFIG_VIDEO_PVRUSB2=y, and CONFIG_VIDEO_STK1160=y.
-> 
-> This is caused by (from drivers/media/usb/Kconfig):
-> 
-> menuconfig MEDIA_USB_SUPPORT
-> 	bool "Media USB Adapters"
-> 	depends on USB && MEDIA_SUPPORT
-> 	           =m     =y
-> so MEDIA_USB_SUPPORT=y and all following Kconfig 'source' lines
-> are included.  By adding an "if USB" guard around the 'source' lines,
-> the needed dependencies are enforced.
-[--SNIP--]
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> ---
->  drivers/media/usb/Kconfig |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> --- linux-next-20130508.orig/drivers/media/usb/Kconfig
-> +++ linux-next-20130508/drivers/media/usb/Kconfig
-> @@ -5,6 +5,7 @@ menuconfig MEDIA_USB_SUPPORT
->  	  Enable media drivers for USB bus.
->  	  If you have such devices, say Y.
->  
-> +if USB
->  if MEDIA_USB_SUPPORT
+----------------------------------------------------------------
 
-Why not starting the 'if USB' block just above MEDIA_USB_SUPPORT, and
-removing the 'depends on USB' from MEDIA_USB_SUPPORT :
+InfiniBand/RDMA changes for the 3.10 merge window:
+ - XRC transport fixes
+ - Fix DHCP on IPoIB
+ - mlx4 preparations for flow steering
+ - iSER fixes
+ - miscellaneous other fixes
 
----8<--- 
-if USB
-menuconfig MEDIA_USB_SUPPORT
-    bool "Media USB Adapters"
-    depends on MEDIA_SUPPORT
+Sorry for being so late on this -- I moved houses and the system with
+all my private keys was offline for a week or so.
 
-if MEDIA_USB_SUPPORT
----8<--- 
+----------------------------------------------------------------
+Akinobu Mita (1):
+      RDMA: Rename random32() to prandom_u32()
 
-And keeping this hunk as-is:
-> @@ -52,3 +53,4 @@ source "drivers/media/usb/em28xx/Kconfig
->  endif
->  
->  endif #MEDIA_USB_SUPPORT
-> +endif #USB
+Cong Ding (1):
+      RDMA/cxgb3: Fix uninitialized variable
 
-Regards,
-Yann E. MORIN.
+Dotan Barak (1):
+      IB/mlx4: Disable VLAN stripping for RAW PACKET QPs
 
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+Doug Ledford (1):
+      IPoIB: Fix ipoib_hard_header() return value
+
+Eli Cohen (1):
+      IB/mlx4: Set link type for RAW PACKET QPs in the QP context
+
+Grant Grundler (1):
+      SRPT: Fix odd use of WARN_ON()
+
+Hadar Hen Zion (5):
+      mlx4_core: Move DMFS HW structs to common header file
+      mlx4: Match DMFS promiscuous field names to firmware spec
+      mlx4_core: Change a few DMFS fields names to match firmare spec
+      mlx4_core: Directly expose fields of DMFS HW rule control segment
+      mlx4_core: Expose a few helpers to fill DMFS HW strucutures
+
+Jack Morgenstein (1):
+      mlx4_core: Reduce warning message for SRQ_LIMIT event to debug level
+
+Mike Marciniszyn (2):
+      IB/ipath: Correct ipath_verbs_register_sysfs() error handling
+      IB/qib: Correct qib_verbs_register_sysfs() error handling
+
+Or Gerlitz (2):
+      IB/iser: Return error to upper layers on EAGAIN registration failures
+      IB/iser: Add support for iser CM REQ additional info
+
+Roi Dayan (2):
+      IB/iser: Add module version
+      IB/iser: Move informational messages from error to info level
+
+Roland Dreier (1):
+      Merge branches 'cxgb4', 'ipoib', 'iser', 'misc', 'mlx4', 'qib' and 'srp' into for-next
+
+Shlomo Pongratz (3):
+      IB/core: Verify that QP handler is valid before dispatching events
+      mlx4_core: Implement SRQ object lookup from srqn
+      IB/mlx4: Fetch XRC SRQ in the CQ polling code
+
+Steve Wise (1):
+      RDMA/iwcm: Don't touch cmid after dropping reference
+
+Thadeu Lima de Souza Cascardo (1):
+      RDMA/cxgb4: Fix SQ allocation when on-chip SQ is disabled
+
+ drivers/infiniband/core/iwcm.c                  |   2 +
+ drivers/infiniband/core/verbs.c                 |   3 +-
+ drivers/infiniband/hw/cxgb3/cxio_resource.c     |   4 +-
+ drivers/infiniband/hw/cxgb3/iwch_provider.c     |   2 +-
+ drivers/infiniband/hw/cxgb4/id_table.c          |   4 +-
+ drivers/infiniband/hw/cxgb4/qp.c                |  25 ++---
+ drivers/infiniband/hw/ipath/ipath_verbs.c       |  19 ++--
+ drivers/infiniband/hw/mlx4/cq.c                 |  21 +++++
+ drivers/infiniband/hw/mlx4/mad.c                |   2 +-
+ drivers/infiniband/hw/mlx4/qp.c                 |   6 ++
+ drivers/infiniband/hw/qib/qib_sysfs.c           |   6 +-
+ drivers/infiniband/hw/qib/qib_verbs.c           |   3 +-
+ drivers/infiniband/ulp/ipoib/ipoib_cm.c         |   2 +-
+ drivers/infiniband/ulp/ipoib/ipoib_main.c       |   2 +-
+ drivers/infiniband/ulp/iser/iscsi_iser.c        |  24 ++---
+ drivers/infiniband/ulp/iser/iscsi_iser.h        |  24 ++++-
+ drivers/infiniband/ulp/iser/iser_memory.c       |   3 +-
+ drivers/infiniband/ulp/iser/iser_verbs.c        |  36 ++++---
+ drivers/infiniband/ulp/srpt/ib_srpt.c           |   2 +-
+ drivers/net/ethernet/mellanox/mlx4/en_ethtool.c |   2 +-
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c  |  16 ++--
+ drivers/net/ethernet/mellanox/mlx4/eq.c         |   4 +-
+ drivers/net/ethernet/mellanox/mlx4/mcg.c        | 120 +++++++++++++++---------
+ drivers/net/ethernet/mellanox/mlx4/mlx4.h       |  79 ----------------
+ drivers/net/ethernet/mellanox/mlx4/srq.c        |  15 +++
+ include/linux/mlx4/device.h                     | 104 ++++++++++++++++++--
+ include/linux/mlx4/srq.h                        |   2 +
+ 27 files changed, 328 insertions(+), 204 deletions(-)
