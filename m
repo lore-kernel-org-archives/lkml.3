@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab3EHLuO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 07:50:14 -0400
-Received: from 84-245-11-97.dsl.cambrium.nl ([84.245.11.97]:50981 "EHLO
-	grubby.stderr.nl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754403Ab3EHLuL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 07:50:11 -0400
-X-Greylist: delayed 2153 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 May 2013 07:50:11 EDT
-From: Matthijs Kooijman <matthijs@stdin.nl>
-To: Michal Marek <mmarek@suse.cz>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: linux-kbuild@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Matthijs Kooijman <matthijs@stdin.nl>
-Subject: [PATCH] kbuild: Don't assume dts files live in arch/*/boot/dts
-Date: Wed,  8 May 2013 12:59:04 +0200
-Message-Id: <1368010744-11281-1-git-send-email-matthijs@stdin.nl>
-X-Mailer: git-send-email 1.8.0
+	id S1755339Ab3EHLuk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 07:50:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:58537 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755100Ab3EHLuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 07:50:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,634,1363158000"; 
+   d="scan'208";a="238488227"
+Date: Wed, 8 May 2013 19:50:32 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Haicheng Li <haicheng.lee@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [PATCH 4/4] f2fs: optimize build_free_nids()
+Message-ID: <20130508115032.GA23356@hli22-desktop>
+References: <1367853344-28938-1-git-send-email-haicheng.li@linux.intel.com>
+ <1367853344-28938-5-git-send-email-haicheng.li@linux.intel.com>
+ <1367922839.16581.42.camel@kjgkr>
+ <20130508062455.GB8705@hli22-desktop>
+ <1368006604.16581.64.camel@kjgkr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368006604.16581.64.camel@kjgkr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit b40b25ff (kbuild: always run gcc -E on *.dts, remove cmd_dtc_cpp),
-dts building was changed to always use the C preprocessor. This meant
-that the .dts file passed to dtc is not the original, but the
-preprocessed one.
+On Wed, May 08, 2013 at 06:50:04PM +0900, Jaegeuk Kim wrote:
+ > > Could you explain when this can happen?
+> >
+> > I'm thinking of this possible scenario:
+> >
+> > as we don't hold any spinlock to protect the context, add_free_nid() could be
+> > called by other thread anytime, e.g. by the gc_thread_func() in background.
+>
+> The gc_thread_func() is not a proper example here though, the
+> buid_free_nids() is covered by nm_i->build_lock, so build_free_nids is
+> entered only one at a time.
+> In addtion, build_free_nids starts with checking if (nm_i->fcnt >
+> NAT_ENTRY_PER_BLOCK) in order not to be conducted repeatedely.
 
-When compiling with a separate build directory (i.e., with O=), this
-preprocessed file will not live in the same directory as the original.
-When the .dts file includes .dtsi files, dtc will look for them in the
-build directory, not in the source directory and compilation will fail.
+surely build_free_nids() itself is under well protection.
+but this scenario would happen when gc_thread_func() is running in background:
+        f2fs_gc()
+                write_checkpoint()
+                        flush_nat_entries()
+                                add_free_nid()
+> >
+> > then nm_i->fcnt could be increased as 2 * MAX_FREE_NIDS while i < FREE_NID_PAGES.
+> > Anything I misconsidered?
+>
+> Apart from the correctness of this behavior, I'm not sure why we should
+> strictly manage this threshold value.
+> Should we really need to do this?
 
-The commit referenced above tried to fix this by passing arch/*/boot/dts
-as an include path to dtc. However, for mips, the .dts files are not in
-this directory, so dts compilation on mips breaks for some targets.
+This threshold value itself should have already be well managed in current code.
 
-Instead of hardcoding this particular include path, this commit just
-uses the directory of the .dts file that is being compiled, which
-effectively restores the previous behaviour wrt includes. For most .dts
-files, this path is just the same as the previous hardcoded
-arch/*/boot/dts path.
+This patch is just to avoid unecessary while-loop that tries scan_nat_page() even when this threshold
+has already been reached. But as I mentioned previously, it just possibly avoids "< 4" unecessary tries.
 
-This was tested on a mips (rt3052) and an arm (bcm2835) target.
+So this patch now becomes a very very trivial optimization because scan_nat_page() itself can detect out the condition.
 
-Signed-off-by: Matthijs Kooijman <matthijs@stdin.nl>
----
- scripts/Makefile.lib | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 51bb3de..8337663 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -264,7 +264,7 @@ $(obj)/%.dtb.S: $(obj)/%.dtb
- quiet_cmd_dtc = DTC     $@
- cmd_dtc = $(CPP) $(dtc_cpp_flags) -x assembler-with-cpp -o $(dtc-tmp) $< ; \
- 	$(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 \
--		-i $(srctree)/arch/$(SRCARCH)/boot/dts $(DTC_FLAGS) \
-+		-i $(dir $<) $(DTC_FLAGS) \
- 		-d $(depfile).dtc $(dtc-tmp) ; \
- 	cat $(depfile).pre $(depfile).dtc > $(depfile)
+In such case, You can *ignore* this patch:). 
+Thanks for the patch review, Jaegeuk!
  
--- 
-1.8.0
+> > 
+> > hmm, the pros is that this check may possibly avoid some (< 4) unnecessary while-loop,
+> > the cons is that too many checks of (nm_i->fcnt > 2 * MAX_FREE_NIDS)
+> > would make the code looking messy and fragmentary...
+> >  
+> > > >  		if (i++ == FREE_NID_PAGES)
+> > > >  			break;
+> > > >  	}
 
+-haicheng
