@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab3EHLrw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 07:47:52 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:38754 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754734Ab3EHLrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 07:47:51 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Intel pstate driver update
-Date: Wed, 08 May 2013 13:56:16 +0200
-Message-ID: <3678383.f41mhRL7NJ@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51899AA7.4030106@gmail.com>
-References: <1367940030-19311-1-git-send-email-dirk.j.brandewie@gmail.com> <4686510.A1KmKYg1tS@vostro.rjw.lan> <51899AA7.4030106@gmail.com>
+	id S1755175Ab3EHLsW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 07:48:22 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:26636 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729Ab3EHLsU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 07:48:20 -0400
+X-IronPort-AV: E=Sophos;i="4.87,634,1363158000"; 
+   d="scan'208";a="45318400"
+Message-ID: <518A3B81.3080308@codeaurora.org>
+Date: Wed, 08 May 2013 07:48:17 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 1/3] arm_arch_timer: introduce arch_timer_stolen_ticks
+References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com> <1367436460-10183-1-git-send-email-stefano.stabellini@eu.citrix.com> <51817CBE.4050003@codeaurora.org> <1367482772.21869.26.camel@zakaz.uk.xensource.com> <5182DBA9.9080609@codeaurora.org> <20130506143533.GF15278@phenom.dumpdata.com> <51892933.7090405@codeaurora.org> <alpine.DEB.2.02.1305081217010.18865@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1305081217010.18865@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 07, 2013 05:21:59 PM Dirk Brandewie wrote:
-> On 05/07/2013 05:07 PM, Rafael J. Wysocki wrote:
-> > On Tuesday, May 07, 2013 08:20:24 AM dirk.brandewie@gmail.com wrote:
-> >> From: dirk <dirk.brandewie@gmail.com>
-> >>
-> > All queued up for a post-3.10-rc1 push as 3.10 material, but I have a couple
-> > of comments.
-> >
-> > First, the patches didn't apply for me cleanly.  I needed to fix up one of
-> > them manually to make it apply and patch [5/6] didn't appear to be necessary
-> > at all (it made changes that had been made previously).  Please check the
-> > bleeding-edge branch of my tree to see if the code is what you wanted and
-> > let me know (either way).
-> >
-> Srinivas's commit d1b6848 collided with my 5/6 patch. my patches were based off 
-> of v3.9. Which branch of yours should I base my submissions on?
-
-Usually, linux-next is a safe bet.
-
-> linux-pm/bleeding-edge is correct.
-
-Good.
-
-> > Second, can you please CC your cpufreq submissions to linux-pm@vger.kernel.org?
-> > That will allow me to use Patchwork for managing them, which is much more
-> > convenient than plain email.
-> >
+On 05/08/2013 07:19 AM, Stefano Stabellini wrote:
+> On Tue, 7 May 2013, Christopher Covington wrote:
+>> Hi Konrad,
+>>
+>> On 05/06/2013 10:35 AM, Konrad Rzeszutek Wilk wrote:
+>>>>> e.g. if a VCPU sets a timer for NOW+5, but 3 are stolen in the middle it
+>>>>> would not make sense (from the guests PoV) for NOW'==NOW+2 at the point
+>>>>> where the timer goes off. Nor does it make sense to require that the
+>>>>> guest actually be running for 5 before injecting the timer because that
+>>>>> would mean real time elapsed time for the timer would be 5+3 in the case
+>>>>> where 3 are stolen.
+>>>>
+>>>> This is a bit of an aside, but I think that hiding time spent at higher
+>>>> privilege levels can be a quite sensible approach to timekeeping in a
+>>>> virtualized environment, but I understand that it's not the approach taken
+>>>> with Xen, and as you pointed out above, adjusting the Virtual Offset Register
+>>>> by itself isn't enough to implement that approach.
+>>>
+>>> This is the approach taken by Xen and KVM. Look in CONFIG_PARAVIRT_CLOCK for
+>>> implementation. In the user-space, the entry in 'top' of "stolen" (%st)
+>>> is for this exact value.
+>>
+>> I may have been unclear with my terms, sorry. When I refer to time being
+>> "hidden", I mean that kernel level software (supervisor mode, EL1) cannot
+>> detect the passage of that time at all. I don't know whether this would really
+>> work, but I imagine one might be able to get close with the current
+>> virtualization facilities for ARM.
+>>
+>> Am I correct in interpreting that what you're referring to is the deployment
+>> of paravirtualization code that ensures (observable) "stolen" time is factored
+>> into kernel decision-making?
 > 
-> No problem
+> Although it might be possible to hide the real time flow from the VM, it
+> is inadvisable: what would happen when the VM needs to deal with a real
+> hardware device? Or just send packets over the network?  This is why it
+> is much safer and more reliable to expose the stolen ticks to the VM.
 
-Thanks!
+One would probably have to emulate all the hardware. I don't mean to imply
+that I think this is useful for everyday virtualization, but I speculate that
+such an approach might enable the analysis of kernels infected with
+VM-detecting malware or other niche use-cases.
 
-Rafael
-
+Christopher
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
