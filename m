@@ -1,104 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab3EHASM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 20:18:12 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37766 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754068Ab3EHASK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 20:18:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH, RFC 02/22] cpufreq: ARM_DT_BL_CPUFREQ needs ARM_CPU_TOPOLOGY
-Date: Wed, 08 May 2013 02:26:34 +0200
-Message-ID: <2500374.5Hpjds0B3f@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohponuYRm+D-FU5_7Ny1PPmwUhFLm9DkAR9iHURur+GFq_kA@mail.gmail.com>
-References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-3-git-send-email-arnd@arndb.de> <CAKohponuYRm+D-FU5_7Ny1PPmwUhFLm9DkAR9iHURur+GFq_kA@mail.gmail.com>
+	id S1756195Ab3EHAWF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 20:22:05 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:38692 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755110Ab3EHAWD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 20:22:03 -0400
+Message-ID: <51899AA7.4030106@gmail.com>
+Date: Tue, 07 May 2013 17:21:59 -0700
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: dirk.brandewie@gmail.com, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 0/6] Intel pstate driver update
+References: <1367940030-19311-1-git-send-email-dirk.j.brandewie@gmail.com> <4686510.A1KmKYg1tS@vostro.rjw.lan>
+In-Reply-To: <4686510.A1KmKYg1tS@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, May 04, 2013 12:09:40 PM Viresh Kumar wrote:
-> On 2 May 2013 20:46, Arnd Bergmann <arnd@arndb.de> wrote:
-> > The big.LITTLE cpufreq driver uses the CPU topology API, which
-> > needs to be reflected in Kconfig to prevent broken configurations.
-> >
-> > warning: (ARM_DT_BL_CPUFREQ) selects ARM_BIG_LITTLE_CPUFREQ which
-> > has unmet direct dependencies (ARCH_HAS_CPUFREQ && CPU_FREQ && ARM && ARM_CPU_TOPOLOGY)
-> >
-> > Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> > Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> > Cc: cpufreq@vger.kernel.org
-> > Cc: linux-pm@vger.kernel.org
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > ---
-> >  drivers/cpufreq/Kconfig.arm | 1 +
-> >  1 file changed, 1 insertion(+)
-> 
-> With all the discussions we had, please see if you can replace your
-> patch with this one (Attached too for applying, copy/paste in gmail
-> will break it):
-> 
-> From: Viresh Kumar <viresh.kumar@linaro.org>
-> Date: Sat, 4 May 2013 12:03:54 +0530
-> Subject: [PATCH] cpufreq: ARM big LITTLE: Fix Kconfig entries
-> 
-> This fixes usage of "depends on" and "select" options in Kconfig for ARM big
-> LITTLE cpufreq driver. Otherwise we get these warnings:
-> 
-> warning: (ARM_DT_BL_CPUFREQ) selects ARM_BIG_LITTLE_CPUFREQ which
-> has unmet direct dependencies (ARCH_HAS_CPUFREQ && CPU_FREQ && ARM &&
-> ARM_CPU_TOPOLOGY)
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+On 05/07/2013 05:07 PM, Rafael J. Wysocki wrote:
+> On Tuesday, May 07, 2013 08:20:24 AM dirk.brandewie@gmail.com wrote:
+>> From: dirk <dirk.brandewie@gmail.com>
+>>
+> All queued up for a post-3.10-rc1 push as 3.10 material, but I have a couple
+> of comments.
+>
+> First, the patches didn't apply for me cleanly.  I needed to fix up one of
+> them manually to make it apply and patch [5/6] didn't appear to be necessary
+> at all (it made changes that had been made previously).  Please check the
+> bleeding-edge branch of my tree to see if the code is what you wanted and
+> let me know (either way).
+>
+Srinivas's commit d1b6848 collided with my 5/6 patch. my patches were based off 
+of v3.9. Which branch of yours should I base my submissions on?
 
-Queued up as a fix for v3.10.
+linux-pm/bleeding-edge is correct.
 
-Thanks,
-Rafael
+> Second, can you please CC your cpufreq submissions to linux-pm@vger.kernel.org?
+> That will allow me to use Patchwork for managing them, which is much more
+> convenient than plain email.
+>
 
+No problem
 
-> ---
->  drivers/cpufreq/Kconfig.arm | 16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-> index 634e992..a924408 100644
-> --- a/drivers/cpufreq/Kconfig.arm
-> +++ b/drivers/cpufreq/Kconfig.arm
-> @@ -3,17 +3,17 @@
->  #
-> 
->  config ARM_BIG_LITTLE_CPUFREQ
-> -	tristate
-> -	depends on ARM_CPU_TOPOLOGY
-> -	select PM_OPP
-> +	tristate "Generic ARM big LITTLE CPUfreq driver"
-> +	depends on ARM_CPU_TOPOLOGY && PM_OPP && HAVE_CLK
-> +	help
-> +	  This enables the Generic CPUfreq driver for ARM big.LITTLE platforms.
-> 
->  config ARM_DT_BL_CPUFREQ
-> -	tristate "Generic ARM big LITTLE CPUfreq driver probed via DT"
-> -	select ARM_BIG_LITTLE_CPUFREQ
-> -	depends on OF && HAVE_CLK
-> +	tristate "Generic probing via DT for ARM big LITTLE CPUfreq driver"
-> +	depends on ARM_BIG_LITTLE_CPUFREQ && OF
->  	help
-> -	  This enables the Generic CPUfreq driver for ARM big.LITTLE platform.
-> -	  This gets frequency tables from DT.
-> +	  This enables probing via DT for Generic CPUfreq driver for ARM
-> +	  big.LITTLE platform. This gets frequency tables from DT.
-> 
->  config ARM_EXYNOS_CPUFREQ
->  	bool "SAMSUNG EXYNOS SoCs"
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--Dirk
+
+> Thanks,
+> Rafael
+>
+>
+
