@@ -1,113 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab3EHRiD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 13:38:03 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:49355 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756924Ab3EHRiA (ORCPT
+	id S1757589Ab3EHRli (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 13:41:38 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61586 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756904Ab3EHRlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 13:38:00 -0400
-Message-ID: <518A8C1D.3090600@st.com>
-Date: Wed, 08 May 2013 18:32:13 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Wed, 8 May 2013 13:41:36 -0400
+Message-ID: <518A8E48.2080801@dawncrow.de>
+Date: Wed, 08 May 2013 19:41:28 +0200
+From: =?ISO-8859-1?Q?Andr=E9_Hentschel?= <nerv@dawncrow.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: dong.aisheng@linaro.org, sameo@linux.intel.com,
-        Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Stuart Menefy <stuart.menefy@st.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
-Subject: Re: [RFC 3/8] mfd:syscon: Introduce claim/read/write/release APIs
-References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <1368022272-2241-1-git-send-email-srinivas.kandagatla@st.com> <201305081650.23264.arnd@arndb.de>
-In-Reply-To: <201305081650.23264.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Jonathan Austin <Jonathan.Austin@arm.com>
+Subject: Re: [PATCHv3] arm: Preserve the user r/w register TPIDRURW on context
+ switch and fork
+References: <51896934.5080803@dawncrow.de> <20130508085753.GA15568@mudshark.cambridge.arm.com>
+In-Reply-To: <20130508085753.GA15568@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:/R0K2FE96A/PI+nYpKzwH90eqWNtwK75Rd9p9/KzGUh
+ iMLIQXFC0cOETJsS/j1HG0rIu1q9S4tbZvPvjk+1nAuYXQt1wO
+ yPUH58fwupjqwn9oCYnLCPlSnrNdKvxL3ie4q3owzOkXE0P122
+ RrS04CVHvcPiqXzI9K0cKty+dqW8Jl7xnFoYQl3GtbC9+d+4US
+ HcHcOTWgiVVqvRlHEF8qxr+THFU1pfxf+svoOxECuB3yDgkEUk
+ MKEOgPYu/W4RmyMjNGmhCY7JVDBuwYijZN/8EcIUrHYHdJrjoD
+ efACvg3ree6U7mXph8NEiWtaS6vkGWqZl0d+PPOxBPlUwUEp34
+ JhsIsXJPk6U32qv6hl2U=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thankyou for your comments.
-On 08/05/13 15:50, Arnd Bergmann wrote:
-> On Wednesday 08 May 2013, Srinivas KANDAGATLA wrote:
->> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->>
->> This patch introduces syscon_claim, syscon_read, syscon_write,
->> syscon_release APIs to help drivers to use syscon registers in much more
->> flexible way.
->>
->> With this patch, a driver can claim few/all bits in the syscon registers
->> and do read/write and then release them when its totally finished with
->> them, in the mean time if another driver requests same bits or registers
->> the API will detect conflit and return error to the second request.
->>
->> Reason to introduce this API.
->> System configuration/control registers are very basic configuration
->> registers arranged in groups across ST Settop Box parts. These registers
->> are independent of IP itself. Many IPs, clock, pad and other functions
->> are wired up to these registers.
->>
->> In many cases a single syconf register contains bits related to multiple
->> devices, and therefore it need to be shared across multiple drivers at
->> bit level. The same IP block can have different syscon mappings on
->> different SOCs.
->>
->> Typically in a SOC there will be more than hundreds of these registers,
->> which are again divided into groups.
->>
->> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->> CC: Stuart Menefy <stuart.menefy@st.com>
-> My feeling is that syscon is the wrong place for this functionality,
-> since regmap already handles (some of?) these issues. If you need
-> additional synchronization, it's probably best to extend regmap
-> as needed so other code besides syscon can take advantage of that
-> as well.
-Its not just synchronisation that we are looking for.
-It also the usability, drivers want to just refer to a syscon
-register/bits of it from device trees/non-devicetrees.
+Hi Will,
 
-The extent of syscon usage is very high in ST set-top-box parts.
-As example, ST pinctrl driver uses use bits of the syscon register to
-control alternate functions, and many other parameters of pinconf.
+thx for having a look.
 
-In device tree we do something like:
-        syscfg_sbc: syscon@fe600000{
-            compatible      = "syscon";
-            reg        = <0xfe600000 0xb4>;         
-        };
-and in pinctrl dts file
-    st,alt-control    = <&syscfg_sbc  0 0 31>;
-    st,od-control    = <&syscfg_sbc  9 0 7>;
+Am 08.05.2013 10:57, schrieb Will Deacon:> Hi Andre,
+> 
+> On Tue, May 07, 2013 at 09:51:00PM +0100, André Hentschel wrote:
+>> From: =?UTF-8?q?Andr=C3=A9=20Hentschel?= <nerv@dawncrow.de>
+> 
+> Might just be my mailer, but you should check that your name is intact here
+> otherwise the git log will be mangled.
 
-the pinctrl driver calls syconf_claim(np, "st,alt-control) to get a
-field and then do a read/write on the field.
+That's for my acute accent and already worked with my first linux patch, it's git generated.
 
-Just in pinctrl driver we use around 50-100 sysconf registers scatters
-across different groups.
+>> Since commit 6a1c53124aa1 the user writeable TLS register was zeroed to
+>> prevent it from being used as a covert channel between two tasks.
+>>
+>> There are more and more applications coming to WinRT, Wine could support them,
+>> but mostly they expect to have the thread environment block (TEB) in TPIDRURW.
+>>
+>> This patch preserves that register per thread instead of clearing it.
+>> Unlike the TPIDRURO, which is already switched, the TPIDRURW
+>> can be updated from userspace so needs careful treatment in the case that we
+>> modify TPIDRURW and call fork(). To avoid this we must always read
+>> TPIDRURW in copy_thread.
+>>
+>> Signed-off-by: André Hentschel <nerv@dawncrow.de>
+>> Signed-off-by: Will Deacon <will.deacon@arm.com>
+>> Signed-off-by: Jonathan Austin <jonathan.austin@arm.com> 
+> 
+> [...]
+> 
+>> diff --git a/arch/arm/include/asm/tls.h b/arch/arm/include/asm/tls.h
+>> index 73409e6..22756ab 100644
+>> --- a/arch/arm/include/asm/tls.h
+>> +++ b/arch/arm/include/asm/tls.h
+>> @@ -2,27 +2,30 @@
+>>  #define __ASMARM_TLS_H
+>>  
+>>  #ifdef __ASSEMBLY__
+>> -	.macro set_tls_none, tp, tmp1, tmp2
+>> +#include <asm/asm-offsets.h>
+>> +	.macro switch_tls_none, base, tp, tpuser, tmp1, tmp2
+>>  	.endm
+>>  
+>> -	.macro set_tls_v6k, tp, tmp1, tmp2
+>> +	.macro switch_tls_v6k, base, tp, tpuser, tmp1, tmp2
+>> +	mrc	p15, 0, \tmp2, c13, c0, 2	@ get the user r/w register
+>>  	mcr	p15, 0, \tp, c13, c0, 3		@ set TLS register
+>> -	mov	\tmp1, #0
+>> -	mcr	p15, 0, \tmp1, c13, c0, 2	@ clear user r/w TLS register
+>> +	mcr	p15, 0, \tpuser, c13, c0, 2	@ and the user r/w register
+>> +	strne	\tmp2, [\base, #TI_TP_VALUE + 4] @ save it
+> 
+> Why is this conditional?
 
-Without these new APIs, its very difficult to pass this information to
-the drivers.
 
-Thanks,
-srini
->
-> 	Arnd
->
+Seems like a copy&paste one, i'll send a v4
+
 
