@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890Ab3EHUB7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 16:01:59 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52833 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab3EHUB5 (ORCPT
+	id S1755822Ab3EHUCi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 16:02:38 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:40935 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753399Ab3EHUCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 16:01:57 -0400
-Message-ID: <518AAF31.8080502@wwwdotorg.org>
-Date: Wed, 08 May 2013 14:01:53 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 8 May 2013 16:02:37 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Alex Elder <elder@inktank.com>
+Cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] rbd: Use min_t() to fix comparison of distinct pointer types warning
+Date: Wed,  8 May 2013 22:02:33 +0200
+Message-Id: <1368043353-21896-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Christian Ruppert <christian.ruppert@abilis.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-References: <1365608728-30494-1-git-send-email-christian.ruppert@abilis.com> <516EEAA0.10906@wwwdotorg.org> <20130418090310.GA17636@ab42.lan> <CACRpkdZd0_W432od5565phhUcJMRWiV9vXX4QVF4osKkxstC0Q@mail.gmail.com> <20130429161725.GB30136@ab42.lan> <5182B557.4040804@wwwdotorg.org> <CACRpkdaxO0q_P2wJFy3zv4F-QM9dZk54qW8ft350XqcBt1Gr1w@mail.gmail.com> <20130508164123.GA10248@ab42.lan>
-In-Reply-To: <20130508164123.GA10248@ab42.lan>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2013 10:41 AM, Christian Ruppert wrote:
-...
-> What do you think about the following modification to the pinctrl/GPIO
-> frameworks instead (not yet a formal patch, more a request for comment
-> to illustrate what I mean. If you agree, I will clean it up and submit a
-> proper patch after discussion).
-> 
-> It adds a dt_gpiorange_xlate function to the pinctrl callbacks which
-> defaults to the conventional behaviour using kernel logical pin numbers.
-> However, pin controllers which provide more complex mechanisms can
-> define #gpio-range-cells and provide this callback in order to keep
-> Linux pin numbering inside the kernel.
+drivers/block/rbd.c: In function ‘zero_pages’:
+drivers/block/rbd.c:1102: warning: comparison of distinct pointer types lacks a cast
 
-Can you provide an example of the DT content, and explain exactly what
-this patch does with it; what effect it has on the existing GPIO or
-pinctrl code?
+Remove the hackish casts and use min_t() to fix this.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/block/rbd.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+index 22ffd5d..1318c6b 100644
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -1098,8 +1098,8 @@ static void zero_pages(struct page **pages, u64 offset, u64 end)
+ 		unsigned long flags;
+ 		void *kaddr;
+ 
+-		page_offset = (size_t)(offset & ~PAGE_MASK);
+-		length = min(PAGE_SIZE - page_offset, (size_t)(end - offset));
++		page_offset = offset & ~PAGE_MASK;
++		length = min_t(size_t, PAGE_SIZE - page_offset, end - offset);
+ 		local_irq_save(flags);
+ 		kaddr = kmap_atomic(*page);
+ 		memset(kaddr + page_offset, 0, length);
+-- 
+1.7.0.4
+
