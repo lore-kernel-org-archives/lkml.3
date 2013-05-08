@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992Ab3EHKwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 06:52:24 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55862 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754227Ab3EHKwV (ORCPT
+	id S1754751Ab3EHKxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 06:53:09 -0400
+Received: from mail-da0-f49.google.com ([209.85.210.49]:44771 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab3EHKxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 06:52:21 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
+	Wed, 8 May 2013 06:53:07 -0400
+Date: Wed, 8 May 2013 18:52:48 +0800 (CST)
+From: Xiong Zhou <jencce.kernel@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: broonie@kernel.org, lgirdwood@gmail.com, sachin.kamat@linaro.org,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 2/2] regulator: palmas: Fix incorrect condition
-Date: Wed,  8 May 2013 16:09:06 +0530
-Message-Id: <1368009546-20770-2-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1368009546-20770-1-git-send-email-sachin.kamat@linaro.org>
-References: <1368009546-20770-1-git-send-email-sachin.kamat@linaro.org>
+cc: kernel-team@android.com, nnk@google.com, john.stultz@linaro.org,
+        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        jencce.kernel@gmail.com
+Subject: [PATCH] staging: android: logger: use kuid_t instead of uid_t
+Message-ID: <alpine.DEB.2.02.1305081846070.29540@M2420>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 'id' cannot take two values at the same time, the condition
-should probably be an OR (||) instead of AND (&&).
+From: Xiong Zhou <jencce.kernel@gmail.com>
 
-Introduced by commit 28d1e8cd67 ("regulator: palma: add ramp delay
-support through regulator constraints").
+Use kuid_t instead of uid_t, to pass the UIDGID_STRICT_TYPE_CHECKS.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
 ---
-Compile tested against for-next branch of regulator tree.
----
- drivers/regulator/palmas-regulator.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+drivers/staging/android/logger.c |    4 ++--
+drivers/staging/android/logger.h |    2 +-
+2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index 92ceed0..ced7416 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -840,7 +840,7 @@ static int palmas_regulators_probe(struct platform_device *pdev)
- 			break;
- 		}
+diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
+index b040200..9bd8747 100644
+--- a/drivers/staging/android/logger.c
++++ b/drivers/staging/android/logger.c
+@@ -242,7 +242,7 @@ static ssize_t do_read_log_to_user(struct logger_log *log,
+  * 'log->buffer' which contains the first entry readable by 'euid'
+  */
+ static size_t get_next_entry_by_uid(struct logger_log *log,
+-		size_t off, uid_t euid)
++		size_t off, kuid_t euid)
+ {
+ 	while (off != log->w_off) {
+ 		struct logger_entry *entry;
+@@ -251,7 +251,7 @@ static size_t get_next_entry_by_uid(struct logger_log *log,
  
--		if ((id == PALMAS_REG_SMPS6) && (id == PALMAS_REG_SMPS8))
-+		if ((id == PALMAS_REG_SMPS6) || (id == PALMAS_REG_SMPS8))
- 			ramp_delay_support = true;
+ 		entry = get_entry_header(log, off, &scratch);
  
- 		if (ramp_delay_support) {
--- 
-1.7.9.5
-
+-		if (entry->euid == euid)
++		if (uid_eq(entry->euid, euid))
+ 			return off;
+ 
+ 		next_len = sizeof(struct logger_entry) + entry->len;
+diff --git a/drivers/staging/android/logger.h b/drivers/staging/android/logger.h
+index cc6bbd9..70af7d8 100644
+--- a/drivers/staging/android/logger.h
++++ b/drivers/staging/android/logger.h
+@@ -66,7 +66,7 @@ struct logger_entry {
+ 	__s32		tid;
+ 	__s32		sec;
+ 	__s32		nsec;
+-	uid_t		euid;
++	kuid_t		euid;
+ 	char		msg[0];
+ };
+ 
