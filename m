@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab3EHSk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:40:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14836 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751657Ab3EHSk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:40:27 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: sds@tycho.nsa.gov, james.l.morris@oracle.com, eparis@parisplace.org
-Cc: linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] selinux: make return code consistent with conflicting context= settings on same superblock
-Date: Wed,  8 May 2013 14:40:20 -0400
-Message-Id: <1368038420-19879-1-git-send-email-jlayton@redhat.com>
+	id S1751982Ab3EHSlu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:41:50 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42994 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab3EHSls (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 14:41:48 -0400
+Date: Wed, 8 May 2013 14:41:17 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, hpa@zytor.com,
+        mingo@redhat.com, fenghua.yu@intel.com, tglx@linutronix.de,
+        xen-devel@lists.xensource.com, stable@vger.kernel.org
+Subject: Re: [PATCH] x86, microcode: Add local mutex to not hit a deadlock.
+Message-ID: <20130508184117.GC11906@phenom.dumpdata.com>
+References: <1368029583-23337-1-git-send-email-konrad.wilk@oracle.com>
+ <20130508182235.GE30955@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130508182235.GE30955@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 094f7b69ea73 adds a new check to ensure that when we clone an
-existing superblock that the contexts match properly. We do however have
-another place where you can hit similar problems in
-selinux_set_mnt_opts. That function returns -EINVAL, whereas
-selinux_sb_clone_mnt_opts returns -EBUSY in this situation.
+On Wed, May 08, 2013 at 08:22:35PM +0200, Borislav Petkov wrote:
+> On Wed, May 08, 2013 at 12:13:03PM -0400, Konrad Rzeszutek Wilk wrote:
+> > This can easily be triggered if a new CPU is added (via
+> > ACPI hotplug mechanism) and from user-space do:
+> > 
+> > echo 1 > /sys/devices/system/cpu/cpu3/online
+> > 
+> > (or wait for UDEV to do it) on a newly appeared CPU.
+> > 
+> > The deadlock is that the "store_online" in drivers/base/cpu.c
+> > takes the cpu_hotplug_driver_lock() lock, then calls "cpu_up".
+> > "cpu_up" eventually ends up calling "save_mc_for_early"
+> > which also takes the cpu_hotplug_driver_lock() lock.
+> > 
+> > And here is that kernel thinks of it:
+> > 
+> > smpboot: Stack at about ffff880075c39f44
+> > smpboot: CPU3: has booted.
+> > microcode: CPU3 sig=0x206a7, pf=0x2, revision=0x25
+> > 
+> > =============================================
+> > [ INFO: possible recursive locking detected ]
+> > 3.9.0upstream-10129-g167af0e #1 Not tainted
+> > ---------------------------------------------
+> > sh/2487 is trying to acquire lock:
+> >  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
+> > 
+> > but task is already holding lock:
+> >  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
+> > 
+> > other info that might help us debug this:
+> >  Possible unsafe locking scenario:
+> > 
+> >        CPU0
+> >        ----
+> >   lock(x86_cpu_hotplug_driver_mutex);
+> >   lock(x86_cpu_hotplug_driver_mutex);
+> > 
+> >  *** DEADLOCK ***
+> 
+> Ok, just for my own understanding: is this something which can actually
+> happen now?
 
-I think -EBUSY is probably more descriptive of the situation here. The
-context= option would have worked had the superblock not already been in
-use. Fix selinux_set_mnt_opts to return -EBUSY instead of -EINVAL in
-this situation.
+Yes. Since v3.9 I've been getting this.
+> 
+> Judging by the presence of traces, it can be triggered in a guest,
+> correct?
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- security/selinux/hooks.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Correct. I don't have the hardware to test this on baremetal but looking
+at how processor-driver.c works I would think this would be hit there as well.
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 5c6f2cd..348f069 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -745,7 +745,7 @@ out:
- 	mutex_unlock(&sbsec->lock);
- 	return rc;
- out_double_mount:
--	rc = -EINVAL;
-+	rc = -EBUSY;
- 	printk(KERN_WARNING "SELinux: mount invalid.  Same superblock, different "
- 	       "security settings for (dev %s, type %s)\n", sb->s_id, name);
- 	goto out;
--- 
-1.7.1
-
+> 
+> Thanks.
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
