@@ -1,152 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274Ab3EHQD1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 12:03:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37238 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932212Ab3EHQDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 12:03:24 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-MM <linux-mm@kvack.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Dave Hansen <dave@sr71.net>,
-        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 20/22] mm: page allocator: Hold magazine lock for a batch of pages
-Date: Wed,  8 May 2013 17:03:05 +0100
-Message-Id: <1368028987-8369-21-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1368028987-8369-1-git-send-email-mgorman@suse.de>
-References: <1368028987-8369-1-git-send-email-mgorman@suse.de>
+	id S1758309Ab3EHQDp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 12:03:45 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:59376 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756515Ab3EHQDm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 12:03:42 -0400
+Date: Wed, 8 May 2013 18:03:32 +0200
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Subject: Re: [PATCH 4/6] ASoC: ux500: Update tx tdm slots configuration
+Message-ID: <20130508160332.GB12970@balto.lan>
+References: <1367997261-32048-1-git-send-email-fabio.baltieri@linaro.org>
+ <1367997261-32048-5-git-send-email-fabio.baltieri@linaro.org>
+ <20130508110149.GF7478@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130508110149.GF7478@sirena.org.uk>
+X-Operating-System: Linux balto 3.9.0-rc8-00030-g4cbbd1d x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-free_base_page_list() frees a list of pages. This patch will batch
-the magazine lock for the list of pages if possible.
+On Wed, May 08, 2013 at 12:01:49PM +0100, Mark Brown wrote:
+> On Wed, May 08, 2013 at 09:14:19AM +0200, Fabio Baltieri wrote:
+> > Update ab8500-codec and mop500_ab8500 tx slot configuration to reflect
+> > the actual one used by STE.  Also update a wrong comment in the process.
+> 
+> This seems wrong, the individual chip drivers should just be doing
+> whatever they're being told by the machine driver.  Sounds like there's
+> two fixes needed here - one is to change the TDM API so that the chip
+> drivers are just implementing configuration supplied by the machine
+> driver and the other is to change the configuration being done to
+> whatever is desired.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/page_alloc.c | 75 ++++++++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 61 insertions(+), 14 deletions(-)
+Ok so, this patch was really just going to slightly align the
+configuration with the STE driver.  I'll drop it and just fix the wrong
+comment as a trivial patch.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 727c8d3..cf31191 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1236,15 +1236,13 @@ static void magazine_drain(struct zone *zone, struct free_magazine *mag,
- 	spin_unlock_irqrestore(&zone->lock, flags);
- }
- 
--/* Free a 0-order page */
--void free_base_page(struct page *page)
-+/* Prepare a page for freeing and return its migratetype */
-+static inline int free_base_page_prep(struct page *page)
- {
--	struct zone *zone = page_zone(page);
--	struct free_magazine *mag;
- 	int migratetype;
- 
- 	if (!free_pages_prepare(page, 0))
--		return;
-+		return -1;
- 
- 	migratetype = get_pageblock_migratetype(page);
- 
-@@ -1256,24 +1254,46 @@ void free_base_page(struct page *page)
- 	 * excessively into the page allocator
- 	 */
- 	if (migratetype >= MIGRATE_PCPTYPES) {
--		if (unlikely(is_migrate_isolate(migratetype))) {
--			free_one_page(zone, page, 0, migratetype);
--			return;
--		}
--		migratetype = MIGRATE_MOVABLE;
-+		if (likely(!is_migrate_isolate(migratetype)))
-+			migratetype = MIGRATE_MOVABLE;
- 	}
-+
-+	set_freepage_migratetype(page, migratetype);
-+
-+	return migratetype;
-+}
-+
-+/* Put the free page on the magazine list with magazine lock held */
-+static inline void __free_base_page(struct zone *zone,
-+				struct free_area_magazine *area,
-+				struct page *page, int migratetype)
-+{
-+	list_add(&page->lru, &area->free_list[migratetype]);
-+	area->nr_free++;
-+}
-+
-+/* Free a 0-order page */
-+void free_base_page(struct page *page)
-+{
-+	struct zone *zone = page_zone(page);
-+	struct free_magazine *mag;
-+	int migratetype;
-+
-+	migratetype = free_base_page_prep(page);
-+	if (migratetype == -1)
-+		return;
- 	set_freepage_migratetype(page, migratetype);
- 
- 	/* magazine_lock is not safe against IRQs */
--	if (in_interrupt() || irqs_disabled()) {
-+	if (migratetype >= MIGRATE_PCPTYPES || in_interrupt() ||
-+					       irqs_disabled()) {
- 		free_one_page(zone, page, 0, migratetype);
- 		return;
- 	}
- 
- 	/* Put the free page on the magazine list */
- 	mag = lock_magazine(zone);
--	list_add(&page->lru, &mag->area.free_list[migratetype]);
--	mag->area.nr_free++;
-+	__free_base_page(zone, &mag->area, page, migratetype);
- 
- 	/* Drain the magazine if necessary, releases the magazine lock */
- 	magazine_drain(zone, mag, migratetype);
-@@ -1283,11 +1303,38 @@ void free_base_page(struct page *page)
- void free_base_page_list(struct list_head *list)
- {
- 	struct page *page, *next;
-+	struct zone *locked_zone = NULL;
-+	struct free_magazine *mag = NULL;
-+	bool use_magazine = (!in_interrupt() && !irqs_disabled());
-+	int migratetype = MIGRATE_UNMOVABLE;
- 
-+	/* Similar to free_hot_cold_page except magazine lock is batched */
- 	list_for_each_entry_safe(page, next, list, lru) {
-+		struct zone *zone = page_zone(page);
-+		int migratetype;
-+
- 		trace_mm_page_free_batched(page);
--		free_base_page(page);
-+		migratetype = free_base_page_prep(page);
-+		if (migratetype == -1)
-+			continue;
-+
-+		if (!use_magazine || migratetype >= MIGRATE_PCPTYPES) {
-+			free_one_page(zone, page, 0, migratetype);
-+			continue;
-+		}
-+
-+		if (zone != locked_zone) {
-+			/* Drain unlocks magazine lock */
-+			if (locked_zone)
-+				magazine_drain(locked_zone, mag, migratetype);
-+			mag = lock_magazine(zone);
-+			locked_zone = zone;
-+		}
-+		__free_base_page(zone, &mag->area, page, migratetype);
- 	}
-+
-+	if (locked_zone)
-+		magazine_drain(locked_zone, mag, migratetype);
- }
- 
- /*
+For the reimplementation with channel configuration from machine driver,
+I actually went through that, but was not able to find the reason why
+there is a slot offset somewhere (example: I request 0x0001 for first
+slot on the DAI and that shows up on slot 8 on the codec), so I just
+updated the hardcoded value.  I'll try to get some explanation for that.
+
+Fabio
+
 -- 
-1.8.1.4
-
+Fabio Baltieri
