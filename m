@@ -1,78 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab3EHPUX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:20:23 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:64528 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755144Ab3EHPUS (ORCPT
+	id S1756919Ab3EHPUg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:20:36 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:51877 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756480Ab3EHPUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:20:18 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5, part3 15/15] mm: report available pages as "MemTotal" for each NUMA node
-Date: Wed,  8 May 2013 23:17:14 +0800
-Message-Id: <1368026235-5976-16-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1368026235-5976-1-git-send-email-jiang.liu@huawei.com>
-References: <1368026235-5976-1-git-send-email-jiang.liu@huawei.com>
+	Wed, 8 May 2013 11:20:30 -0400
+Date: Wed, 8 May 2013 16:20:25 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Subject: Re: [PATCH 20/63] dmaengine: ste_dma40: Remove unnecessary call to
+ d40_phy_cfg()
+Message-ID: <20130508152025.GL3459@gmail.com>
+References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
+ <1367591569-32197-21-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbx_-wcatRaUpRw5LJY6qsoqDc3iqwk+UVmoBWR1M35KQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbx_-wcatRaUpRw5LJY6qsoqDc3iqwk+UVmoBWR1M35KQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As reported by https://bugzilla.kernel.org/show_bug.cgi?id=53501,
-"MemTotal" from /proc/meminfo means memory pages managed by the buddy
-system (managed_pages), but "MemTotal" from /sys/.../node/nodex/meminfo
-means phsical pages present (present_pages) within the NUMA node.
-There's a difference between managed_pages and present_pages due to
-bootmem allocator and reserved pages.
+On Fri, 03 May 2013, Linus Walleij wrote:
 
-And Documentation/filesystems/proc.txt says
-    MemTotal: Total usable ram (i.e. physical ram minus a few reserved
-              bits and the kernel binary code)
+> On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > All configuration left in d40_phy_cfg() is runtime configurable and
+> > there is already a call into it from d40_runtime_config(), so let's
+> > rely on that.
+> >
+> > Acked-by: Vinod Koul <vnod.koul@intel.com>
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> (...)
+> 
+> > @@ -2027,6 +2027,14 @@ static int d40_config_memcpy(struct d40_chan *d40c)
+> >         } else if (dma_has_cap(DMA_MEMCPY, cap) &&
+> >                    dma_has_cap(DMA_SLAVE, cap)) {
+> >                 d40c->dma_cfg = dma40_memcpy_conf_phy;
+> > +
+> > +               /* Generate interrrupt at end of transfer or relink. */
+> > +               d40c->dst_def_cfg |= BIT(D40_SREG_CFG_TIM_POS);
+> > +
+> > +               /* Generate interrupt on error. */
+> > +               d40c->src_def_cfg |= BIT(D40_SREG_CFG_EIM_POS);
+> > +               d40c->dst_def_cfg |= BIT(D40_SREG_CFG_EIM_POS);
+> > +
+> 
+> This hunk looks like it's fixing a bug introduced in patch 19/63.
 
-So change /sys/.../node/nodex/meminfo to report available pages within
-the node as "MemTotal".
+What makes you say that?
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Reported-by: sworddragon2@aol.com
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
----
- mm/page_alloc.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+This patch is removing the d40_phy_cfg() invocation from the channel
+allocation code, as all slaves now call dmaengine_slave_config(),
+where this should happen. The ramification is that memcpy channels
+won't be configured correctly, as they do not call the runtime
+configuration code. Hence this hunk. It's taking the only important
+bit which is relevant for physical memcpy channels and placing it
+here instead. It has nothing to do with a bugfix from patch 19.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index eabfbcb..d49cb72 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2922,9 +2922,13 @@ EXPORT_SYMBOL(si_meminfo);
- #ifdef CONFIG_NUMA
- void si_meminfo_node(struct sysinfo *val, int nid)
- {
-+	int zone_type;		/* needs to be signed */
-+	unsigned long managed_pages = 0;
- 	pg_data_t *pgdat = NODE_DATA(nid);
- 
--	val->totalram = pgdat->node_present_pages;
-+	for (zone_type = 0; zone_type < MAX_NR_ZONES; zone_type++)
-+		managed_pages += pgdat->node_zones[zone_type].managed_pages;
-+	val->totalram = managed_pages;
- 	val->freeram = node_page_state(nid, NR_FREE_PAGES);
- #ifdef CONFIG_HIGHMEM
- 	val->totalhigh = pgdat->node_zones[ZONE_HIGHMEM].managed_pages;
+> Do you try to run a memcpy test after patch 19?
+
+Yes, it works fine.
+
+> Breaking the drive in one patch and fixing it in the next is
+> a no-no because of bisection.
+
+We're not doing that.
+
+> Maybe things work fine if you just move this hunk of the
+> patch over to 19/63?
+
+That makes no sense.
+
+> Apart from this the patch looks fine.
+> 
+> Yours,
+> Linus Walleij
+
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
