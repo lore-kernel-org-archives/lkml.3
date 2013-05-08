@@ -1,132 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab3EHXmD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 19:42:03 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57137 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab3EHXmB (ORCPT
+	id S1755679Ab3EHXmM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 19:42:12 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:47462 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755257Ab3EHXmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 19:42:01 -0400
-X-AuditID: 9c930197-b7c1fae000001854-90-518ae2c6460b
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: [PATCH v3] mm: remove compressed copy from zram in-memory
-Date: Thu,  9 May 2013 08:41:57 +0900
-Message-Id: <1368056517-31065-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.8.2.1
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 8 May 2013 19:42:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAH3drwZym3+o2cUhB37Zi6ALj65Z7j+N1w9WA-t1+0xi7XjWaw@mail.gmail.com>
+References: <1367967522-3934-1-git-send-email-j.glisse@gmail.com>
+ <CAHGf_=ofADKRCgDN5Tanx4PyvoJFF9r=cHYMd+VRc=N3=4FGuA@mail.gmail.com>
+ <CAH3drwbt_YX-jWrwsp0X2CH3t9ms65fX40cvumr4FyRhKBcbyw@mail.gmail.com>
+ <CAHGf_=rFd7xktoom2kg_1QgoCrqsVwdo2gzVR6UDzvm53ngjgw@mail.gmail.com> <CAH3drwZym3+o2cUhB37Zi6ALj65Z7j+N1w9WA-t1+0xi7XjWaw@mail.gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Wed, 8 May 2013 19:41:48 -0400
+Message-ID: <CAHGf_=pV5suTybY50EH+73TqFW9cLqBYmA_Xzz5Bs0pZhYGD1A@mail.gmail.com>
+Subject: Re: [PATCH] mm: honor FOLL_GET flag in follow_hugetlb_page v2
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jerome Glisse <jglisse@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Swap subsystem does lazy swap slot free with expecting the page
-would be swapped out again so we can avoid unnecessary write.
+>> Why? The following bug_on inhibit both case.
+>
+> Yes i get lost on the double negation, but still my patch is correct
+> and i am not using gup but follow_hugetlb_page directly and i run into
+> the issue. My patch does not change the behavior for current user,
+> just fix assumption new user might have when not setting the FOLL_GET
+> flags.
 
-But the problem in in-memory swap(ex, zram) is that it consumes
-memory space until vm_swap_full(ie, used half of all of swap device)
-condition meet. It could be bad if we use multiple swap device,
-small in-memory swap and big storage swap or in-memory swap alone.
-
-This patch makes swap subsystem free swap slot as soon as swap-read
-is completed and make the swapcache page dirty so the page should
-be written out the swap device to reclaim it.
-It means we never lose it.
-
-I tested this patch with kernel compile workload.
-
-1. before
-
-compile time : 9882.42
-zram max wasted space by fragmentation: 13471881 byte
-memory space consumed by zram: 174227456 byte
-the number of slot free notify: 206684
-
-2. after
-
-compile time : 9653.90
-zram max wasted space by fragmentation: 11805932 byte
-memory space consumed by zram: 154001408 byte
-the number of slot free notify: 426972
-
-* changelog from v3
-  * Rebased on next-20130508
-
-* changelog from v1
-  * Add more comment
-
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: Shaohua Li <shli@kernel.org>
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- mm/page_io.c | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
-
-diff --git a/mm/page_io.c b/mm/page_io.c
-index a294076..527db57 100644
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -21,6 +21,7 @@
- #include <linux/writeback.h>
- #include <linux/frontswap.h>
- #include <linux/aio.h>
-+#include <linux/blkdev.h>
- #include <asm/pgtable.h>
- 
- static struct bio *get_swap_bio(gfp_t gfp_flags,
-@@ -82,8 +83,42 @@ void end_swap_bio_read(struct bio *bio, int err, struct batch_complete *batch)
- 				iminor(bio->bi_bdev->bd_inode),
- 				(unsigned long long)bio->bi_sector);
- 	} else {
-+		struct swap_info_struct *sis;
-+
- 		SetPageUptodate(page);
-+		sis = page_swap_info(page);
-+		if (sis->flags & SWP_BLKDEV) {
-+			/*
-+			 * Swap subsystem does lazy swap slot free with
-+			 * expecting the page would be swapped out again
-+			 * so we can avoid unnecessary write if the page
-+			 * isn't redirty.
-+			 * It's good for real swap storage  because we can
-+			 * reduce unnecessary I/O and enhance wear-leveling
-+			 * if you use SSD as swap device.
-+			 * But if you use in-memory swap device(ex, zram),
-+			 * it causes duplicated copy between uncompressed
-+			 * data in VM-owned memory and compressed data in
-+			 * zram-owned memory. So let's free zram-owned memory
-+			 * and make the VM-owned decompressed page *dirty*
-+			 * so the page should be swap out somewhere again if
-+			 * we want to reclaim it, again.
-+			 */
-+			struct gendisk *disk = sis->bdev->bd_disk;
-+			if (disk->fops->swap_slot_free_notify) {
-+				swp_entry_t entry;
-+				unsigned long offset;
-+
-+				entry.val = page_private(page);
-+				offset = swp_offset(entry);
-+
-+				SetPageDirty(page);
-+				disk->fops->swap_slot_free_notify(sis->bdev,
-+						offset);
-+			}
-+		}
- 	}
-+
- 	unlock_page(page);
- 	bio_put(bio);
- }
--- 
-1.8.2.1
-
+I have no idea. I haven't seen your new use case.
