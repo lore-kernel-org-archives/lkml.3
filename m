@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab3EHWQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 18:16:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38173 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520Ab3EHWQZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 18:16:25 -0400
-Date: Wed, 8 May 2013 15:16:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel@vger.kernel.org, Christopher Li <sparse@chrisli.org>
-Subject: Re: [patch] err.h: IS_ERR() can accept __user pointers
-Message-Id: <20130508151622.87bde6d58f96ddca9561541f@linux-foundation.org>
-In-Reply-To: <20130508074221.GA5024@elgon.mountain>
-References: <CANeU7QnO8MzqT+9BDsXj3=nkKOBKumOwEKGnT=BL_cS0wiPPmw@mail.gmail.com>
-	<20130508074221.GA5024@elgon.mountain>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752767Ab3EHWUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 18:20:35 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:40761 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751195Ab3EHWUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 18:20:34 -0400
+Date: Wed, 8 May 2013 15:20:29 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: fweisbec@gmail.com
+Subject: Re: rcu_preempt running flat out on idle desktop.
+Message-ID: <20130508222029.GR3648@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130508203042.GA18895@redhat.com>
+ <20130508205258.GN3648@linux.vnet.ibm.com>
+ <20130508205633.GB18895@redhat.com>
+ <20130508211634.GP3648@linux.vnet.ibm.com>
+ <20130508211759.GA6808@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130508211759.GA6808@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050822-9360-0000-0000-00001217AEAD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 May 2013 10:42:22 +0300 Dan Carpenter <dan.carpenter@oracle.com> wrote:
+On Wed, May 08, 2013 at 05:17:59PM -0400, Dave Jones wrote:
+> On Wed, May 08, 2013 at 02:16:35PM -0700, Paul E. McKenney wrote:
+>  > On Wed, May 08, 2013 at 04:56:33PM -0400, Dave Jones wrote:
+>  > > On Wed, May 08, 2013 at 01:52:58PM -0700, Paul E. McKenney wrote:
+>  > >  > On Wed, May 08, 2013 at 04:30:42PM -0400, Dave Jones wrote:
+>  > > 
+>  > >  > >   PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND 
+>  > >  > >    10 root      20   0     0    0    0 S 200.0  0.0 185301:36 rcu_preempt
+>  > >  > >   553 root      20   0  268m  76m 6764 S 200.0  2.6 144579:53 Xorg
+>  > >  > >  1199 root      20   0     0    0    0 S 200.0  0.0 306:17.85 kworker/1:0
+>  > >  > >   501 root      20   0     0    0    0 S 200.0  0.0   4471:03 kworker/0:2
+>  > >  > >    12 root      20   0     0    0    0 S 200.0  0.0  67277:16 rcuop/1
+>  > >  > >  1237 davej     20   0  535m  15m 8484 S 200.0  0.5   3645:16 Terminal
+>  > >  > >   859 davej     20   0  117m 3036 1336 S 200.0  0.1   1986:55 htop
+>  > >  > > 
+>  > >  > > There are a lot of processes allegedly using "200%" of CPU time, a handful
+>  > >  > > in the "196%" range, and then a bunch at 0.
+>  > >  > 
+>  > >  > Yow!!!  185301 minutes is 128 days, which is a truly impressive amount of
+>  > >  > CPU time to accumulate in a few short hours.
+>  > > 
+>  > > perf top doesn't show anything out of the ordinary. Just as an idle desktop
+>  > > should behave, it's spending a bunch of time in delay_tsc.
+>  > > 
+>  > >  > This is 3.9, or Linus's current tree?  I am guessing the latter, but
+>  > >  > figured I should ask.
+>  > > 
+>  > > Yeah, the latter. (v3.9-11572-g5af43c2)
+>  > 
+>  > Do you have CONFIG_NO_HZ_FULL=y?  We just might have a bug in tickless
+>  > CPU-time accounting...
+> 
+> I never saw a new config option I didn't like.
 
-> Sparse generates a false positive when you pass a __user or __iomem
-> pointer to the IS_ERR() functions.
-> 
-> drivers/rtc/rtc-ds1286.c:344:36: sparse: incorrect type in argument 1 (different address spaces)
-> drivers/rtc/rtc-ds1286.c:344:36:    expected void const *ptr
-> drivers/rtc/rtc-ds1286.c:344:36:    got unsigned int [noderef] [usertype] <asn:2>*rtcregs
-> 
-> We can silence these by adding a __force here and upgrading to the
-> latest git release of Sparse.
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> ---
-> This change has no effect when using current Sparse releases.
+;-) ;-) ;-)
 
-You often put really important stuff after the ^--- and I always move
-it to before the ^--- :)
+> CONFIG_NO_HZ_FULL=y
+> CONFIG_NO_HZ_FULL_ALL=y
+
+Adding Frederic on CC...
+
+							Thanx, Paul
 
