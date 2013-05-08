@@ -1,166 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab3EHOvD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 10:51:03 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:47861
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755957Ab3EHOu7 (ORCPT
+	id S1756888Ab3EHOvy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 10:51:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58938 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755957Ab3EHOvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 10:50:59 -0400
-Date: Wed, 8 May 2013 16:50:23 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Block IO core changes for 3.10
-Message-ID: <20130508145023.GN7800@kernel.dk>
+	Wed, 8 May 2013 10:51:53 -0400
+Date: Wed, 8 May 2013 16:51:24 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        linux-doc@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        will.deacon@arm.com, Jiri Slaby <jslaby@suse.cz>,
+        linux@arm.linux.org.uk, Samuel Ortiz <sameo@linux.intel.com>,
+        Nicolas Pitre <nico@linaro.org>, linux-serial@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 2/8] ARM:global_timer: Add ARM global timer support.
+Message-ID: <20130508145124.GA29391@pengutronix.de>
+References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
+ <1368022260-2197-1-git-send-email-srinivas.kandagatla@st.com>
+ <201305081638.23100.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <201305081638.23100.arnd@arndb.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 16:48:33 up 60 days, 28 min, 17 users,  load average: 0.86, 0.81,
+ 0.70
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, May 08, 2013 at 04:38:22PM +0200, Arnd Bergmann wrote:
+> On Wednesday 08 May 2013, Srinivas KANDAGATLA wrote:
+> > From: Stuart Menefy <stuart.menefy@st.com>
+> > 
+> > This is a simple driver for the global timer module found in the Cortex
+> > A9-MP cores from revision r1p0 onwards. This should be able to perform
+> > the functions of the system timer and the local timer in an SMP system.
+> > 
+> > The global timer has the following features:
+> >     The global timer is a 64-bit incrementing counter with an
+> > auto-incrementing feature. It continues incrementing after sending
+> > interrupts. The global timer is memory mapped in the private memory
+> > region.
+> >     The global timer is accessible to all Cortex-A9 processors in the
+> > cluster. Each Cortex-A9 processor has a private 64-bit comparator that
+> > is used to assert a private interrupt when the global timer has reached
+> > the comparator value. All the Cortex-A9 processors in a design use the
+> > banked ID, ID27, for this interrupt. ID27 is sent to the Interrupt
+> > Controller as a Private Peripheral Interrupt. The global timer is
+> > clocked by PERIPHCLK.
+> > 
+> > Signed-off-by: Stuart Menefy <stuart.menefy@st.com>
+> > Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> >
+> 
+> Are you sure we don't already have a driver for this? It sounds unlikely
+> that you are the first one to do this when the hardware is so common.
+> 
 
-Below are the block layer core changes for 3.10. The pull request
-contains:
+Isn't this the same as arch/arm/kernel/smp_twd.c ?
+That is atleast the timer I used with Cortex-A9. I don't think the core
+has another one. But maybe I'm wrong.
 
-- Major bit is Kents prep work for immutable bio vecs.
+> >  Documentation/devicetree/bindings/arm/gt.txt |   21 ++
+> >  arch/arm/Kconfig                             |    6 +
+> >  arch/arm/include/asm/global_timer.h          |   12 +
+> >  arch/arm/kernel/Makefile                     |    1 +
+> >  arch/arm/kernel/global_timer.c               |  325 ++++++++++++++++++++++++++
+> >  5 files changed, 365 insertions(+), 0 deletions(-)
+> >  create mode 100644 Documentation/devicetree/bindings/arm/gt.txt
+> >  create mode 100644 arch/arm/include/asm/global_timer.h
+> >  create mode 100644 arch/arm/kernel/global_timer.c
+> 
+> Move it into drivers/clocksource?
+>  
+> > diff --git a/arch/arm/include/asm/global_timer.h b/arch/arm/include/asm/global_timer.h
+> > new file mode 100644
+> > index 0000000..46f9188
+> > --- /dev/null
+> > +++ b/arch/arm/include/asm/global_timer.h
+> > @@ -0,0 +1,12 @@
+> > +int __init global_timer_init(void __iomem *base, unsigned int timer_irq);
+> 
+> I don't see a need to call this from platform code for non-DT platforms, it
+> can easily be used with CLOCKSOURCE_OF_DECLARE() all the time I think.
+> 
 
-- Stable candidate fix for a scheduling-while-atomic in the queue bypass
-  operation.
-
-- Fix for the hang on exceeded rq->datalen 32-bit unsigned when merging
-  discard bios.
-
-- Tejuns changes to convert the writeback thread pool to the generic
-  workqueue mechanism.
-
-- Runtime PM framework, SCSI patches exists on top of these in James'
-  tree.
-
-- A few random fixes.
-
-Please pull! Should satisfy your merge cravings too.
-
-
-  git://git.kernel.dk/linux-block.git for-3.10/core
-
-----------------------------------------------------------------
-Dmitry Monakhov (1):
-      relay: move remove_buf_file inside relay_close_buf
-
-Gu Zheng (1):
-      fs/block_dev.c: fix iov_shorten() criteria in blkdev_aio_read()
-
-James Bottomley (1):
-      block: fix max discard sectors limit
-
-Jens Axboe (2):
-      Merge branch 'for-jens' of http://evilpiepirate.org/git/linux-bcache into for-3.10/core
-      Merge branch 'writeback-workqueue' of git://git.kernel.org/.../tj/wq into for-3.10/core
-
-Jun'ichi Nomura (1):
-      blkcg: fix "scheduling while atomic" in blk_queue_bypass_start
-
-Kent Overstreet (28):
-      block: Reorder struct bio_set
-      block: Avoid deadlocks with bio allocation by stacking drivers
-      block: Fix a buffer overrun in bio_integrity_split()
-      block: Convert integrity to bvec_alloc_bs()
-      block: Add bio_advance()
-      block: Refactor blk_update_request()
-      md: Convert md_trim_bio() to use bio_advance()
-      block: Add bio_end_sector()
-      block: Use bio_sectors() more consistently
-      block: Change bio_split() to respect the current value of bi_idx
-      block: Remove bi_idx references
-      block: Remove some unnecessary bi_vcnt usage
-      block: Add submit_bio_wait(), remove from md
-      raid10: Use bio_reset()
-      raid1: use bio_reset()
-      raid5: use bio_reset()
-      raid1: Refactor narrow_write_error() to not use bi_idx
-      block: Add bio_copy_data()
-      pktcdvd: use bio_copy_data()
-      pktcdvd: Use bio_reset() in disabled code to kill bi_idx usage
-      raid1: use bio_copy_data()
-      bounce: Refactor __blk_queue_bounce to not use bi_io_vec
-      block: Add bio_for_each_segment_all()
-      block: Convert some code to bio_for_each_segment_all()
-      block: Add bio_alloc_pages()
-      block: Add an explicit bio flag for bios that own their bvec
-      bio-integrity: Add explicit field for owner of bip_buf
-      aoe: Fix unitialized var usage
-
-Lin Ming (3):
-      block: add a flag to identify PM request
-      block: add runtime pm helpers
-      block: implement runtime pm strategy
-
-Namjae Jeon (1):
-      Documentation: cfq-iosched: update documentation help for cfq tunables
-
-Philippe De Muyter (1):
-      partitions/efi.c: replace useless kzalloc's by kmalloc's
-
-Tejun Heo (3):
-      writeback: remove unused bdi_pending_list
-      writeback: replace custom worker pool implementation with unbound workqueue
-      writeback: expose the bdi_wq workqueue
-
- Documentation/block/cfq-iosched.txt      |  47 +++-
- block/blk-cgroup.c                       |   4 +-
- block/blk-core.c                         | 265 ++++++++++++++++------
- block/cfq-iosched.c                      |   7 +-
- block/deadline-iosched.c                 |   2 +-
- block/elevator.c                         |  26 +++
- block/partitions/efi.c                   |   4 +-
- drivers/block/aoe/aoecmd.c               |   2 +-
- drivers/block/brd.c                      |   3 +-
- drivers/block/floppy.c                   |   1 -
- drivers/block/pktcdvd.c                  | 102 ++-------
- drivers/block/rbd.c                      |   2 +-
- drivers/md/dm-crypt.c                    |   3 +-
- drivers/md/dm-raid1.c                    |   2 +-
- drivers/md/dm-stripe.c                   |   2 +-
- drivers/md/dm-verity.c                   |   4 +-
- drivers/md/faulty.c                      |   6 +-
- drivers/md/linear.c                      |   3 +-
- drivers/md/md.c                          |  17 +-
- drivers/md/raid0.c                       |   9 +-
- drivers/md/raid1.c                       | 133 ++++-------
- drivers/md/raid10.c                      |  78 ++-----
- drivers/md/raid5.c                       |  49 ++---
- drivers/message/fusion/mptsas.c          |   6 +-
- drivers/s390/block/dcssblk.c             |   3 +-
- drivers/scsi/libsas/sas_expander.c       |   6 +-
- drivers/scsi/mpt2sas/mpt2sas_transport.c |  10 +-
- fs/bio-integrity.c                       | 144 +++++-------
- fs/bio.c                                 | 366 +++++++++++++++++++++++++++----
- fs/block_dev.c                           |   2 +-
- fs/btrfs/extent_io.c                     |   3 +-
- fs/btrfs/volumes.c                       |   2 +-
- fs/buffer.c                              |   1 -
- fs/direct-io.c                           |   8 +-
- fs/exofs/ore.c                           |   2 +-
- fs/exofs/ore_raid.c                      |   2 +-
- fs/fs-writeback.c                        | 102 +++------
- fs/gfs2/lops.c                           |   2 +-
- fs/jfs/jfs_logmgr.c                      |   2 -
- fs/logfs/dev_bdev.c                      |   5 -
- include/linux/backing-dev.h              |  16 +-
- include/linux/bio.h                      | 115 ++++++----
- include/linux/blk_types.h                |   5 +
- include/linux/blkdev.h                   |  29 ++-
- include/trace/events/block.h             |  12 +-
- include/trace/events/writeback.h         |   5 -
- kernel/relay.c                           |   2 +-
- mm/backing-dev.c                         | 259 +++-------------------
- mm/bounce.c                              |  75 ++-----
- mm/page_io.c                             |   1 -
- 50 files changed, 1000 insertions(+), 956 deletions(-)
+Regards,
+Steffen
 
 -- 
-Jens Axboe
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
