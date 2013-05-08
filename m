@@ -1,145 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab3EHJlq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 05:41:46 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:61441 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab3EHJlo convert rfc822-to-8bit (ORCPT
+	id S1753527Ab3EHJnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 05:43:37 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:37043 "HELO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751950Ab3EHJnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 05:41:44 -0400
+	Wed, 8 May 2013 05:43:35 -0400
+From: joem <joem@martindale-electric.co.uk>
+To: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>
+CC: David Goodenough <david.goodenough@btconnect.com>,
+        "debian-arm@lists.debian.org" <debian-arm@lists.debian.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Arm-netbook] device tree not the answer in the ARM world [was:
+ Re: running Debian on a Cubieboard]
+Thread-Topic: [Arm-netbook] device tree not the answer in the ARM world
+ [was: Re: running Debian on a Cubieboard]
+Thread-Index: AQHOSYw01f0IEEHWWUOGwhgLHUMbD5j6/P+A
+Date: Wed, 8 May 2013 09:43:02 +0000
+Message-ID: <1368006181.5589.30.camel@jm-desktop>
+References: <CAPweEDym3TSEKWB1PsRWZ77irkTPF-Qdm9nRGfRBrv72CQ8zJA@mail.gmail.com>
+In-Reply-To: <CAPweEDym3TSEKWB1PsRWZ77irkTPF-Qdm9nRGfRBrv72CQ8zJA@mail.gmail.com>
+Reply-To: joem <joem@martindale-electric.co.uk>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [81.149.149.147]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <320CB8DCD07D654EBD257463DA6D07C2@swifthost.local>
 MIME-Version: 1.0
-From: Hui Zhu <teawater@gmail.com>
-Date: Wed, 8 May 2013 17:41:03 +0800
-Message-ID: <CANFwon3SBnRBAFwPOAL6++fHdisxTh==2ZQWWDqyuoF5vPQLNQ@mail.gmail.com>
-Subject: KGTP (Linux debugger and tracer) 20130508 release (add single step support)
-To: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
-        kgtp <kgtp@freelists.org>
-Cc: Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Geunsik Lim <leemgs1@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Tao Ma <taoma.tm@gmail.com>,
-        Oliver Yang <yangoliver@gmail.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r489hgq5008022
 
-Hi guys,
+On Sun, 2013-05-05 at 13:27 +0100, Luke Kenneth Casson Leighton wrote:
 
-KGTP (http://code.google.com/p/kgtp/) is a flexible, lightweight and
-realtime Linux debugger and tracer.
-To use it, you don't need patch or rebuild the Linux kernel. Just
-build KGTP module and insmod it is OK.
+> when i say "completely and utterly different", i am not just talking
+> about the processor, i am not just talking about the GPIO, or even the
+> buses: i'm talking about the sensors, the power-up mechanisms, the
+> startup procedures - everything.  one device uses GPIO pin 32 for
+> powering up and resetting a USB hub peripheral, yet for another device
+> that exact same GPIO pin is used not even as a GPIO but as an
+> alternate multiplexed function e.g. as RS232 TX pin!
 
-Please go to http://code.google.com/p/kgtp/wiki/HOWTO or
-http://code.google.com/p/kgtp/wiki/HOWTO (Chinese) to get more info
-about howto use KGTP.
 
-Please goto https://code.google.com/p/kgtp/wiki/HOWTO#Table_of_different_between_GDB_debug_normal_program_and_KGTP
-or https://code.google.com/p/kgtp/wiki/HOWTOCN#GDBµ˜ ‘∆’Õ®≥Ã–Ú∫ÕKGTPµƒ«¯±±Ì
-(Chinese) get the table of different between GDB debug normal program
-and KGTP if you have experience using GDB debug normal program.
+Wrong approach Luke.
 
-Now, KGTP 20130508 release.
-You can get the package for it from
-http://kgtp.googlecode.com/files/kgtp_20130508.tar.bz2
-or
-svn co https://kgtp.googlecode.com/svn/tags/20130508
+The guys in PIC world will be laughing at all this since they have
+no such difficulties.
 
-The main change of this release is complete the support of
-while-stepping.  KGTP can let Linux kernel do single step now.
-Please note that while-stepping is just support by X86 and X86_64 now.
-Howto use while-stepping:
-while-stepping is a special tracepoint action that include some actions with it.
-When tracepoints that its actions include "while-stepping n" execute,
-it will do n times single steps and executes the actions of
-while-stepping. For example:
-trace vfs_read
-#Because single step will make system slow, so use passcount or
-condition to limit the execution times of tracepoint is better.
-passcount 1
-  commands
-    collect $bt
-    collect $step_count
-    #do 2000 times single steps.
-    while-stepping 2000
-      #Following part is actions of "while-stepping 2000".
-      #Because step maybe execute to other functions, so does not
-access local variables is better.
-      collect $bt
-      collect $step_count
-    end
-  end
-You can switch KGTP to replay mode to select all the traceframe of a
-while-stepping tracepoint with GDB execution and reverse-execution
-commands. For example:
-Use tfind select one the traceframe of a while-stepping tracepoint.
-(gdb) tfind
-Found trace frame 0, tracepoint 1
-#0  vfs_read (file=0xffff8801f7bd4c00, buf=0x7fff74e4edb0 <Address
-0x7fff74e4edb0 out of bounds>, count=16,
-    pos=0xffff8801f4b45f48) at /build/buildd/linux-3.2.0/fs/read_write.c:365
-365     {
-Following commands will swith KGTP to replay mode.
+Only one file changes between CPUs in the myriads of PICs out there.
 
-(gdb) monitor replay
-(gdb) tfind -1
-No longer looking at any trace frame
-#0  vfs_read (file=0xffff8801f7bd4c00, buf=0x7fff74e4edb0 <Address
-0x7fff74e4edb0 out of bounds>, count=16,
-    pos=0xffff8801f4b45f48) at /build/buildd/linux-3.2.0/fs/read_write.c:365
-365     {
-Then you can use execution commands.
+Every register and every bit field is defined.
 
-(gdb) n
-368             if (!(file->f_mode & FMODE_READ))
-(gdb) p file->f_mode
-$5 = 3
-Set breakpoints (Just valid in replay mode, will not affect Linux
-kernel execution).
+*Unions take care of multiplexed function*
+(and #define of exact CPU model + product + wake up modes etc
+ takes care of fine tuning including power-up mechanisms).
 
-(gdb) b 375
-Breakpoint 2 at 0xffffffff81179b75: file
-/build/buildd/linux-3.2.0/fs/read_write.c, line 375.
-(gdb) c
-Continuing.
 
-Breakpoint 2, vfs_read (file=0xffff8801f7bd4c00, buf=0x7fff74e4edb0
-<Address 0x7fff74e4edb0 out of bounds>, count=16,
-    pos=0xffff8801f4b45f48) at /build/buildd/linux-3.2.0/fs/read_write.c:375
-375             ret = rw_verify_area(READ, file, pos, count);
-(gdb) s
-rw_verify_area (read_write=0, file=0xffff8801f7bd4c00,
-ppos=0xffff8801f4b45f48, count=16)
-    at /build/buildd/linux-3.2.0/fs/read_write.c:300
-300             inode = file->f_path.dentry->d_inode;
-Use reverse-execution commands.
+ARM realizes their mistake and introduces 'CMSIS' library.
+It is available for NXP arm chips.
+But the engineers who wrote it are too stupid.
+They named the registers but bit fields and multiplexed pins etc
+are not defined or just too stupid for words - they even change
+similar register names like
 
-(gdb) rs
+ RS232-UART_Tx_REGISTER to  RS232-UART-TX-REGISTER
 
-Breakpoint 2, vfs_read (file=0xffff8801f7bd4c00, buf=0x7fff74e4edb0
-<Address 0x7fff74e4edb0 out of bounds>, count=16,
-    pos=0xffff8801f4b45f48) at /build/buildd/linux-3.2.0/fs/read_write.c:375
-375             ret = rw_verify_area(READ, file, pos, count);
-(gdb) rn
-372             if (unlikely(!access_ok(VERIFY_WRITE, buf, count)))
-GDB commands tstart, tfind or quit can auto close the replay mode.
+from one chip model to next bringing endless joy and happiness to
+themselves as they aimlessly shoot themselves in both foot with one
+bullet to make their library unusable from chip to chip. Doh!
+(Ok just exaggerating, but its not far from the truth.)
 
-Please goto https://code.google.com/p/kgtp/wiki/HOWTO#Use_while-stepping_let_Linux_kernel_do_single_step
-or https://code.google.com/p/kgtp/wiki/HOWTOCN# π”√while-stepping»√Linuxƒ⁄∫À◊ˆµ•≤Ω
-(Chinese version) get more info about it.
+The correct approach is to be critical of ARM lack of
+a proper 'CMSIS' library and encourage them to hire just 4 open source
+engineers and write some proper 'CMSIS' library, one chip at a time,
+until a couple of chips get done, and then fan out and cover some
+more bigger SoCs and families of chips. Its just too late to
+go back and recover from all their mistakes. I'm sure once 4 engineers
+publish each day their work on github, developers of SoC companies
+will rapidly begin filling in the missing details for their custom
+chips, because it is to their benefit to release one header file that
+describe their chip completely to help port software quickly, and sell
+more chips more quickly.
 
-Please goto http://code.google.com/p/kgtp/wiki/UPDATE get more info
-about this release.
+Who else could do this work? The SoC makers? Open source developers?
+Distro makers? Not one fat chance!!
 
-According to the comments of Christoph, Geoff and Andi.  I make lite
-patch for review.  Please goto https://lkml.org/lkml/2012/5/9/90 to
-see it.
+It is ARM's responsibility to make sure UART1 means UART1 in all
+CPUs and not make a flat footed excuse about it.
 
-Thanks,
-Hui
+This problem will never go away until they (ARM) do something about it.
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
