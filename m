@@ -1,147 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab3EHKkD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 06:40:03 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:65160 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407Ab3EHKkA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 06:40:00 -0400
-Date: Wed, 8 May 2013 12:39:56 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Russ Anderson <rja@sgi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH -v8 11/11] Move arch/x86 reboot= handling to generic
- kernel.
-Message-ID: <20130508103956.GA7677@gmail.com>
-References: <1367937595-32241-1-git-send-email-holt@sgi.com>
- <1367937595-32241-12-git-send-email-holt@sgi.com>
+	id S1754633Ab3EHKlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 06:41:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61754 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754058Ab3EHKlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 06:41:04 -0400
+Date: Wed, 8 May 2013 13:41:00 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        takuya.yoshikawa@gmail.com
+Subject: Re: [PATCH v4 4/6] KVM: MMU: fast invalid all shadow pages
+Message-ID: <20130508104100.GU12349@redhat.com>
+References: <20130506123625.GB12349@redhat.com>
+ <5187ABB3.7020403@linux.vnet.ibm.com>
+ <20130506172455.GB18963@redhat.com>
+ <5187EC50.4030308@linux.vnet.ibm.com>
+ <20130507085848.GI12349@redhat.com>
+ <5188CC4F.3070306@linux.vnet.ibm.com>
+ <20130507100051.GK12349@redhat.com>
+ <20130507143329.GB6408@amt.cnet>
+ <20130507145608.GB7899@redhat.com>
+ <20130507150929.GA8118@amt.cnet>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1367937595-32241-12-git-send-email-holt@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130507150929.GA8118@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 07, 2013 at 12:09:29PM -0300, Marcelo Tosatti wrote:
+> On Tue, May 07, 2013 at 05:56:08PM +0300, Gleb Natapov wrote:
+> > > > Yes, I am missing what Marcelo means there too. We cannot free memslot
+> > > > until we unmap its rmap one way or the other.
+> > > 
+> > > I do not understand what are you optimizing for, given the four possible
+> > > cases we discussed at
+> > > 
+> > > https://lkml.org/lkml/2013/4/18/280
+> > > 
+> > We are optimizing mmu_lock holding time for all of those cases.
+> > 
+> > But you cannot just "zap roots + sp gen number increase." on slot
+> > deletion because you need to transfer access/dirty information from rmap
+> > that is going to be deleted to actual page before
+> > kvm_set_memory_region() returns to a caller.
+> > 
+> > > That is, why a simple for_each_all_shadow_page(zap_page) is not sufficient.
+> > With a lock break? It is. We tried to optimize that by zapping only pages
+> > that reference memslot that is going to be deleted and zap all other
+> > later when recycling old sps, but if you think this is premature
+> > optimization I am fine with it.
+> 
+> If it can be shown that its not premature optimization, I am fine with
+> it.
+> 
+> AFAICS all cases are 1) rare and 2) not latency sensitive (as in there
+> is no requirement for those cases to finish in a short period of time).
+OK, lets start from a simple version. The one that goes through rmap
+turned out to be more complicated that we expected.
 
-* Robin Holt <holt@sgi.com> wrote:
-
-> Merge together the unicore32, arm, and x86 reboot= command line
-> parameter handling.
-
-The series still has this CONFIG_X86 dependency that I inquired about 
-previously:
-
-> +static int __init reboot_setup(char *str)
-> +{
-> +	for (;;) {
-> +		/*
-> +		 * Having anything passed on the command line via
-> +		 * reboot= will cause us to disable DMI checking
-> +		 * below.
-> +		 */
-> +		reboot_default = 0;
-> +
-> +		switch (*str) {
-> +#if defined(CONFIG_X86) || defined(CONFIG_X86_64)
-> +		case 'w':
-> +			reboot_mode = REBOOT_WARM;
-> +			break;
-> +
-> +		case 'c':
-> +			reboot_mode = REBOOT_COLD;
-> +			break;
-> +
-> +#ifdef CONFIG_SMP
-> +		case 's':
-> +			if (isdigit(*(str+1))) {
-> +				reboot_cpu = (int) (*(str+1) - '0');
-> +				if (isdigit(*(str+2)))
-> +					reboot_cpu = reboot_cpu*10 + (int)(*(str+2) - '0');
-> +			}
-> +			/*
-> +			 * We will leave sorting out the final value
-> +			 * when we are ready to reboot, since we might not
-> +			 * have detected BSP APIC ID or smp_num_cpu
-> +			 */
-> +			break;
-> +#endif /* CONFIG_SMP */
-> +
-> +#else
-> +		case 's':
-> +			reboot_mode = REBOOT_WARM;
-> +		case 'h':
-> +			reboot_mode = REBOOT_COLD;
-> +		case 'g':
-> +			reboot_mode = REBOOT_GPIO;
-> +#endif
-> +
-> +		case 'b':
-> +		case 'a':
-> +		case 'k':
-> +		case 't':
-> +		case 'e':
-> +		case 'p':
-> +			reboot_type = *str;
-> +			break;
-> +
-> +		case 'f':
-> +			reboot_force = 1;
-> +			break;
-> +		}
-> +
-> +		str = strchr(str, ',');
-> +		if (str)
-> +			str++;
-> +		else
-> +			break;
-> +	}
-> +	return 1;
-
-To explain my concern more verbosely, if we cannot make it 'obviously 
-generic' then there's no point in moving it to kernel/reboot.c ...
-
-And yes, I realize that there's an option clash between architectures - 
-see below for potential solutions to that.
-
-To generalize it, firstly here's a summary of the existing reboot option 
-mappings:
-
- x86-only:  w, c, s
- non-x86:         s, h, g
- generic:                  b, a, k, t, e, p, f
-
-
-it appears that 'w', 'c', 'h', and 'g' could be made generic straight 
-away.
-
-Which leaves 's' as the only truly problematic option:
-
- - it means REBOOT_WARM on some non-x86 platform(s?)
- - while it means the SMP-cpu on x86.
-
-Stupid question: which non-x86 platform(s) use 's'?
-
-I think we should either change that platform to have 'w' as the warm 
-reboot (and hope that no-one actually relies on the old 's' option: it's a 
-truly rare option) - or change the x86 mapping from 's' to 'S' and 
-generalize and unify it thusly.
-
-Another cleanliness problem is the duality of reboot_mode and reboot_type. 
-We should pick one and use it everywhere consistently.
-
-[ Once these problems are solved and there's no objections from others to 
-  this approach, I'd be willing to apply, test and push this series to 
-  Linus. ]
-
-Thanks,
-
-	Ingo
+--
+			Gleb.
