@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346Ab3EHSrE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:47:04 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46836 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab3EHSrC (ORCPT
+	id S1752798Ab3EHSrJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:47:09 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:36792 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab3EHSrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:47:02 -0400
-Date: Wed, 8 May 2013 19:45:55 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        David Howells <dhowells@redhat.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org, Mark Salter <msalter@redhat.com>,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: Re: [PATCH v5, part3 01/15] mm: fix build warnings caused by
-	free_reserved_area()
-Message-ID: <20130508184555.GR18614@n2100.arm.linux.org.uk>
-References: <1368026235-5976-1-git-send-email-jiang.liu@huawei.com> <1368026235-5976-2-git-send-email-jiang.liu@huawei.com>
+	Wed, 8 May 2013 14:47:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368026235-5976-2-git-send-email-jiang.liu@huawei.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <s5ha9o5wi7j.wl%tiwai@suse.de>
+References: <1367996197-32748-1-git-send-email-tiwai@suse.de>
+ <CACVXFVPwXtD8uO-L6xhYC8j1B3XMVKQSDd=tMskgAvGQ=dNrZw@mail.gmail.com> <s5ha9o5wi7j.wl%tiwai@suse.de>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 8 May 2013 20:46:43 +0200
+Message-ID: <CAPXgP13yH_JvdrewbXjvpuQg2E4oaqJAk6zrPMXvEHX-cns0qg@mail.gmail.com>
+Subject: Re: [PATCH 0/3] firmware: Fix usermodehelper deadlock at shutdown
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 11:17:00PM +0800, Jiang Liu wrote:
-> Fix following build warnings cuased by free_reserved_area():
-> 
-> arch/arm/mm/init.c: In function 'mem_init':
-> arch/arm/mm/init.c:603:2: warning: passing argument 1 of 'free_reserved_area' makes integer from pointer without a cast [enabled by default]
->   free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
->   ^
-> In file included from include/linux/mman.h:4:0,
->                  from arch/arm/mm/init.c:15:
-> include/linux/mm.h:1301:22: note: expected 'long unsigned int' but argument is of type 'void *'
->  extern unsigned long free_reserved_area(unsigned long start, unsigned long end,
-> 
->    mm/page_alloc.c: In function 'free_reserved_area':
-> >> mm/page_alloc.c:5134:3: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast [enabled by default]
->    In file included from arch/mips/include/asm/page.h:49:0,
->                     from include/linux/mmzone.h:20,
->                     from include/linux/gfp.h:4,
->                     from include/linux/mm.h:8,
->                     from mm/page_alloc.c:18:
->    arch/mips/include/asm/io.h:119:29: note: expected 'const volatile void *' but argument is of type 'long unsigned int'
->    mm/page_alloc.c: In function 'free_area_init_nodes':
->    mm/page_alloc.c:5030:34: warning: array subscript is below array bounds [-Warray-bounds]
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Reported-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-mm@kvack.org
-> ---
->  arch/arm/mm/init.c |    6 ++++--
->  mm/page_alloc.c    |    2 +-
->  2 files changed, 5 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> index 9a5cdc0..7a82fcd 100644
-> --- a/arch/arm/mm/init.c
-> +++ b/arch/arm/mm/init.c
-> @@ -600,7 +600,8 @@ void __init mem_init(void)
->  
->  #ifdef CONFIG_SA1111
->  	/* now that our DMA memory is actually so designated, we can free it */
-> -	free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
-> +	free_reserved_area((unsigned long)__va(PHYS_PFN_OFFSET),
-> +			   (unsigned long)swapper_pg_dir, 0, NULL);
+On Wed, May 8, 2013 at 6:26 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Thu, 9 May 2013 00:07:17 +0800,
+> Ming Lei wrote:
 
-*YUCK*.
+>> On Wed, May 8, 2013 at 2:56 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > Hi,
+>> >
+>> > this is a series of patches for the issue we faced in the firmware
+>> > loader code during debugging the problem with dell_rbu driver with
+>> > 3.9 kernel.
+>> >
+>> > The original problem was that the shutdown gets stuck when DELL BIOS
+>> > update is performed.  This turned out to be a problem in the firmware
+>> > loader.  Although the reason of dell_rbu driver breakage is still
+>>
+>> Sorry, from these patchset, I can't see why it is a problem in firmware.
+>>
+>> > unclear, we should fix the firmware loader side, at least, not to
+>> > stall during shutdown.
+>>
+>> Firstly you need to describe what/why is the stall? In fact, firmware
+>> loading can't stall forever and it will timeout, but the current 60sec
+>> timeout might be too long.
+>
+> The timeout check is activated only when uevent flag is set, and
+> dell_rbu driver doesn't set it explicitly (because it's not supposed
+> to be handled via udev or whatever).
 
-As I've said before, fixing the arguments on free_reserved_area() would
-be much better than throwing these horrid casts all over the code.
+These use the firmware loader not in the way the interface was intended:
+  drivers/misc/lattice-ecp3-config.c
+  drivers/firmware/dell_rbu.c
 
-You're casting pointers to integers, and then immediately casting them
-back to pointers in free_reserved_area().  Please fix the function
-argument types to be sane.
+They just use the mechanism without any of the usual userspace setup.
+It's really a nasty hack to hijack the interface that way.
+
+The commit 6e3eaab02028c4087a92711b20abb9e72cc803a7 is a pretty broken
+idea to start with. If something triggers uevents during runtime which
+is not uncommon, these on-demand silently created firmware devices
+would get really confused and race against the udev firmware loader
+which cancels the events.
+
+As if the userspace firmware loading in general wasn't a bad enough
+idea already. :)
+
+Kay
