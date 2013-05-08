@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab3EHSsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:48:21 -0400
-Received: from dkim1.fusionio.com ([66.114.96.53]:37483 "EHLO
-	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520Ab3EHSsU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:48:20 -0400
-X-ASG-Debug-ID: 1368038899-0421b536855cf50001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Content-Type: text/plain; charset="utf-8"
+	id S1753060Ab3EHSsi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:48:38 -0400
+Received: from lake.fysh.org ([81.94.195.195]:47025 "EHLO lake.fysh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752731Ab3EHSsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 14:48:37 -0400
+Date: Wed, 8 May 2013 19:48:36 +0100
+From: Athanasius <link@miggy.org>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.9.1
+Message-ID: <20130508184836.GD4169@fysh.org>
+Mail-Followup-To: Greg KH <gregkh@linuxfoundation.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <20130508041010.GA17374@kroah.com>
+ <20130508072245.GB4169@fysh.org>
+ <20130508175020.GA17950@kroah.com>
+ <20130508181943.GC4169@fysh.org>
+ <20130508182837.GA26128@kroah.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Christoph Lameter <cl@linux.com>
-From: Chris Mason <clmason@fusionio.com>
-In-Reply-To: <0000013e856463fa-9a895b58-ef76-42fa-a33d-778b89f97cf2-000000@email.amazonses.com>
-CC: Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-References: <alpine.LFD.2.03.1305070936320.2383@kernel.org>
- <20130508003022.GS28721@atomide.com> <20130508042422.GU28721@atomide.com>
- <20130508181353.23991.17852@localhost.localdomain>
- <0000013e856463fa-9a895b58-ef76-42fa-a33d-778b89f97cf2-000000@email.amazonses.com>
-Message-ID: <20130508184817.4271.72594@localhost.localdomain>
-User-Agent: alot/0.3.4
-Subject: Re: [GIT PULL] SLAB changes for v3.10
-Date: Wed, 8 May 2013 14:48:17 -0400
-X-ASG-Orig-Subj: Re: [GIT PULL] SLAB changes for v3.10
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1368038899
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.130384
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130508182837.GA26128@kroah.com>
+X-gpg-fingerprint: E218CE1D
+X-gpg-key: http://www.fysh.org/~athan/gpg-key
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Christoph Lameter (2013-05-08 14:25:49)
-> On Wed, 8 May 2013, Chris Mason wrote:
+On Wed, May 08, 2013 at 11:28:37AM -0700, Greg KH wrote:
+> On Wed, May 08, 2013 at 07:19:43PM +0100, Athanasius wrote:
+> >   'uname -r' says I was.  Also 'git log' for my v3.8 branch currently on
+> > 3.8.9 via the 'master' method does include at least the top few commits
+> > listed on:
+> > 
+> > <https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/log/?id=refs/tags/v3.8.9>
+> > 
+> > Of course only having gotten to 3.8.9 a pull against linux-3.8.y does
+> > see changes.  Perhaps someone else, or a script on git.kernel.org was
+> > merging into master before and now isn't ?
 > 
-> > This patch fixes things for me, but to maintain the rules from
-> > Christoph's patch,  kmalloc_caches[2] should have been created whenever
-> > kmalloc_caches[7] was done.
-> 
-> Not necessary. The early slab bootstrap must create some slab caches of
-> specific sizes, it will only use those during very early bootstrap.
-> 
-> The later creation of the array must skip those.
-> 
-> You correctly moved the checks out of the if (!kmalloc_cacheS())
-> condition so that the caches are created properly.
+> No, nothing was ever mergeing into master in the linux-stable git tree.
+> You might have been doing that locally, check the merges to see who was
+> doing it.
 
-But if the ordering is required at all, why is it ok to create cache 2
-after cache 6 instead of after cache 7?
+  It really is just your Makefile/version commits, and then the commits
+you merged in to make the release.
 
-IOW if we can safely do cache 2 after cache 6, why can't we just do both
-cache 1 and cache 2 after the loop?
+> >   Anyway, if it's unsupported to pull from linux-stable.git master I'll
+> > change my scripts.
+> 
+> It's not unsupported, you will just get a copy of Linus's tree there,
+> delayed by usually a -rc release or so.
 
--chris
+  I'm going to guess that what happened then was I was lucky enough for
+Linus to have released a new -rc by the time I pulled a new stable. So,
+then checking out the stable tag would have pointed to the right commit
+to also checkout the associated commits.
+  Anyway, enough noise over this now.
+
+-- 
+- Athanasius = Athanasius(at)miggy.org / http://www.miggy.org/
+                  Finger athan(at)fysh.org for PGP key
+	   "And it's me who is my enemy. Me who beats me up.
+Me who makes the monsters. Me who strips my confidence." Paula Cole - ME
