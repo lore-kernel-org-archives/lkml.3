@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab3EHPI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:08:56 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:36988 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab3EHPIz (ORCPT
+	id S1753413Ab3EHPLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:11:25 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62507 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752961Ab3EHPLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:08:55 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH] perf: detect when perf.data file not closed out properly
-Date: Wed,  8 May 2013 09:08:48 -0600
-Message-Id: <1368025728-4669-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Wed, 8 May 2013 11:11:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.44L0.1305081039250.1450-100000@iolanthe.rowland.org>
+References: <CADB-Go+9SPt8A7E3FsF0TFcF-yARMYX7QDZTsZU4uNSTZWrgqw@mail.gmail.com>
+	<Pine.LNX.4.44L0.1305081039250.1450-100000@iolanthe.rowland.org>
+Date: Wed, 8 May 2013 23:11:12 +0800
+Message-ID: <CADB-Go+ODh8Tw8bXPPRxD0g2raok6-ep6hQU8Ytiy5_5ZR2ZZw@mail.gmail.com>
+Subject: Re: [PATCH v4] usb host: Faraday USB2.0 FUSBH200-HCD driver
+From: Yuan-Hsin Chen <yuanlmm@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: gregkh@linuxfoundation.org, sarah.a.sharp@linux.intel.com,
+        Felipe Balbi <balbi@ti.com>, Julia.Lawall@lip6.fr,
+        USB list <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Yuan-Hsin Chen <yhchen@faraday-tech.com>,
+        ratbert <ratbert.chuang@gmail.com>,
+        =?UTF-8?B?Sm9obiBGZW5nLUhzaW4gQ2hpYW5nKOaxn+WzsOiIiCk=?= 
+	<john453@faraday-tech.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf-record updates the header in the perf.data file at termination.
-Without this update perf-report (and other processing builtins) cannot
-properly read events from the file -- the algorithm in
-__perf_session__process_events depends on the data_size which is read
-from the file header and that function loops if data_size is 0.
+Hi,
 
-Catch this condition when the file is opened and warn the user.
+On Wed, May 8, 2013 at 10:40 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Wed, 8 May 2013, Yuan-Hsin Chen wrote:
+>
+>> Hi,
+>>
+>> Are there any advice?
+>> Thanks.
+>>
+>> On Fri, Apr 26, 2013 at 5:37 PM, Yuan-Hsin Chen <yuanlmm@gmail.com> wrote:
+>> > FUSBH200-HCD is an USB2.0 hcd for Faraday FUSBH200.
+>> > FUSBH200 is an ehci-like controller with some differences.
+>> > First, register layout of FUSBH200 is incompatible with EHCI.
+>> > Furthermore, FUSBH200 is lack of siTDs which means iTDs
+>> > are used for both HS and FS ISO transfer.
+>
+> As far as I'm concerned, this can be merged.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/util/header.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Thanks for your great help.
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 326068a..aa42c8c 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2802,6 +2802,18 @@ int perf_session__read_header(struct perf_session *session, int fd)
- 	if (perf_file_header__read(&f_header, header, fd) < 0)
- 		return -EINVAL;
- 
-+	/*
-+	 * sanity check that perf.data was written cleanly: data size
-+	 * is initialized to 0 and updated only if the on_exit function
-+	 * is run. If data size is still 0 then the file cannot be
-+	 * processed.
-+	 */
-+	if (f_header.data.size == 0) {
-+		pr_err("data size is 0. "
-+		       "Was the record command properly terminated?\n");
-+		return -1;
-+	}
-+
- 	nr_attrs = f_header.attrs.size / f_header.attr_size;
- 	lseek(fd, f_header.attrs.offset, SEEK_SET);
- 
--- 
-1.7.10.1
+>
+> Alan Stern
+>
 
+Yuan-Hsin
