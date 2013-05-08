@@ -1,318 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab3EHIez (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 04:34:55 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42513 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab3EHIew (ORCPT
+	id S1753090Ab3EHIgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 04:36:33 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:56062 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752083Ab3EHIga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 04:34:52 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <518A0E1D.60104@jp.fujitsu.com>
-Date: Wed, 08 May 2013 17:34:37 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: alex.williamson@redhat.com
-CC: ddutile@redhat.com, bhelgaas@google.com, linux-pci@vger.kernel.org,
-        iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Reset PCIe devices to stop ongoing DMA
-References: <1366779539-3584-1-git-send-email-indou.takao@jp.fujitsu.com>  <1367944782.2868.106.camel@ul30vt.home> <51895FAB.5010805@redhat.com> <1367964279.2868.128.camel@ul30vt.home>
-In-Reply-To: <1367964279.2868.128.camel@ul30vt.home>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Wed, 8 May 2013 04:36:30 -0400
+Message-ID: <1368002183.31837.2.camel@phoenix>
+Subject: [PATCH RFC] iio: dac: Fix build error when CONFIG_SPI_MASTER=y &&
+ CONFIG_I2C=m
+From: Axel Lin <axel.lin@ingics.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 08 May 2013 16:36:23 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/05/08 7:04), Alex Williamson wrote:
-> On Tue, 2013-05-07 at 16:10 -0400, Don Dutile wrote:
->> On 05/07/2013 12:39 PM, Alex Williamson wrote:
->>> On Wed, 2013-04-24 at 13:58 +0900, Takao Indoh wrote:
->>>> This patch resets PCIe devices on boot to stop ongoing DMA. When
->>>> "pci=pcie_reset_devices" is specified, a hot reset is triggered on each
->>>> PCIe root port and downstream port to reset its downstream endpoint.
->>>>
->>>> Problem:
->>>> This patch solves the problem that kdump can fail when intel_iommu=on is
->>>> specified. When intel_iommu=on is specified, many dma-remapping errors
->>>> occur in second kernel and it causes problems like driver error or PCI
->>>> SERR, at last kdump fails. This problem is caused as follows.
->>>> 1) Devices are working on first kernel.
->>>> 2) Switch to second kernel(kdump kernel). The devices are still working
->>>>      and its DMA continues during this switch.
->>>> 3) iommu is initialized during second kernel boot and ongoing DMA causes
->>>>      dma-remapping errors.
->>>>
->>>> Solution:
->>>> All DMA transactions have to be stopped before iommu is initialized. By
->>>> this patch devices are reset and in-flight DMA is stopped before
->>>> pci_iommu_init.
->>>>
->>>> To invoke hot reset on an endpoint, its upstream link need to be reset.
->>>> reset_pcie_devices() is called from fs_initcall_sync, and it finds root
->>>> port/downstream port whose child is PCIe endpoint, and then reset link
->>>> between them. If the endpoint is VGA device, it is skipped because the
->>>> monitor blacks out if VGA controller is reset.
->>>>
->>>> Actually this is v8 patch but quite different from v7 and it's been so
->>>> long since previous post, so I start over again.
->>>> Previous post:
->>>> [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump
->>>> https://lkml.org/lkml/2012/11/26/814
->>>>
->>>> Signed-off-by: Takao Indoh<indou.takao@jp.fujitsu.com>
->>>> ---
->>>>    Documentation/kernel-parameters.txt |    2 +
->>>>    drivers/pci/pci.c                   |  103 +++++++++++++++++++++++++++++++++++
->>>>    2 files changed, 105 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->>>> index 4609e81..2a31ade 100644
->>>> --- a/Documentation/kernel-parameters.txt
->>>> +++ b/Documentation/kernel-parameters.txt
->>>> @@ -2250,6 +2250,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>>>    				any pair of devices, possibly at the cost of
->>>>    				reduced performance.  This also guarantees
->>>>    				that hot-added devices will work.
->>>> +		pcie_reset_devices	Reset PCIe endpoint on boot by hot
->>>> +				reset
->>>>    		cbiosize=nn[KMG]	The fixed amount of bus space which is
->>>>    				reserved for the CardBus bridge's IO window.
->>>>    				The default value is 256 bytes.
->>>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->>>> index b099e00..42385c9 100644
->>>> --- a/drivers/pci/pci.c
->>>> +++ b/drivers/pci/pci.c
->>>> @@ -3878,6 +3878,107 @@ void __weak pci_fixup_cardbus(struct pci_bus *bus)
->>>>    }
->>>>    EXPORT_SYMBOL(pci_fixup_cardbus);
->>>>
->>>> +/*
->>>> + * Return true if dev is PCIe root port or downstream port whose child is PCIe
->>>> + * endpoint except VGA device.
->>>> + */
->>>> +static int __init need_reset(struct pci_dev *dev)
->>>> +{
->>>> +	struct pci_bus *subordinate;
->>>> +	struct pci_dev *child;
->>>> +
->>>> +	if (!pci_is_pcie(dev) || !dev->subordinate ||
->>>> +	    list_empty(&dev->subordinate->devices) ||
->>>> +	    ((pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT)&&
->>>> +	     (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM)))
->>>> +		return 0;
->>>> +
->>>> +	subordinate = dev->subordinate;
->>>> +	list_for_each_entry(child,&subordinate->devices, bus_list) {
->>>> +		if ((pci_pcie_type(child) == PCI_EXP_TYPE_UPSTREAM) ||
->>>> +		    (pci_pcie_type(child) == PCI_EXP_TYPE_PCI_BRIDGE) ||
->>>> +		    ((child->class>>  16) == PCI_BASE_CLASS_DISPLAY))
->>>> +			/* Don't reset switch, bridge, VGA device */
->>>> +			return 0;
->>>> +	}
->>>> +
->>>> +	return 1;
->>>> +}
->>>> +
->>>> +static void __init save_config(struct pci_dev *dev)
->>>> +{
->>>> +	struct pci_bus *subordinate;
->>>> +	struct pci_dev *child;
->>>> +
->>>> +	if (!need_reset(dev))
->>>> +		return;
->>>> +
->>>> +	subordinate = dev->subordinate;
->>>> +	list_for_each_entry(child,&subordinate->devices, bus_list) {
->>>> +		dev_info(&child->dev, "save state\n");
->>>> +		pci_save_state(child);
->>>> +	}
->>>> +}
->>>> +
->>>> +static void __init restore_config(struct pci_dev *dev)
->>>> +{
->>>> +	struct pci_bus *subordinate;
->>>> +	struct pci_dev *child;
->>>> +
->>>> +	if (!need_reset(dev))
->>>> +		return;
->>>> +
->>>> +	subordinate = dev->subordinate;
->>>> +	list_for_each_entry(child,&subordinate->devices, bus_list) {
->>>> +		dev_info(&child->dev, "restore state\n");
->>>> +		pci_restore_state(child);
->>>> +	}
->>>> +}
->>>> +
->>>> +static void __init do_device_reset(struct pci_dev *dev)
->>>> +{
->>>> +	u16 ctrl;
->>>> +
->>>> +	if (!need_reset(dev))
->>>> +		return;
->>>> +
->>>> +	dev_info(&dev->dev, "Reset Secondary bus\n");
->>>> +
->>>> +	/* Assert Secondary Bus Reset */
->>>> +	pci_read_config_word(dev, PCI_BRIDGE_CONTROL,&ctrl);
->>>> +	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
->>>> +	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
->>>> +
->>>> +	msleep(2);
->>>> +
->>>> +	/* De-assert Secondary Bus Reset */
->>>> +	ctrl&= ~PCI_BRIDGE_CTL_BUS_RESET;
->>>> +	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
->>>> +}
->>>> +
->>>> +static int __initdata pcie_reset_devices;
->>>> +static int __init reset_pcie_devices(void)
->>>> +{
->>>> +	struct pci_dev *dev = NULL;
->>>> +
->>>> +	if (!pcie_reset_devices)
->>>> +		return 0;
->>>> +
->>>> +	for_each_pci_dev(dev)
->>>> +		save_config(dev);
->>>> +
->>>> +	for_each_pci_dev(dev)
->>>> +		do_device_reset(dev);
->>>
->>> So we do a reset on each root port or downstream port, but the PCI to
->>> PCI bridge spec (1.2) states:
->>>
->>>           11.1.1. Secondary Reset Signal
->>>                   The secondary reset signal, RST#, is a logical OR of the
->>>                   primary interface RST# signal and
->>>                   the state of the Secondary Bus Reset bit of the Bridge
->>>                   Control register (see Section 3.2.5.18).
->>>
->>> I read that to mean that in a legacy topology, doing a reset on the top
->>> level bridge triggers a reset down the entire hierarchy.  How does this
->>> apply to a PCIe topology?  Can we just do a reset on the top level root
->>> ports?  If so, that would also imply that a reset propagates down
->> On PCIe, a reset does not propagate down the tree (from upstream link to
->> downstream link of a bridge/switch).
-> 
-> I don't think this is actually true.  Section 6.6.1 of the spec defines
-> 3 types of conventional resets, cold, warm and hot.  I believe the one
-> we're interested in is hot, which is an in-band mechanism for
-> propagating a conventional reset across a link.  Section 4.2.5.11
-> defines hot reset:
-> 
->          Hot Reset uses bit 0 (Hot Reset) in the Training Control field
->          (see Table 4-5 and Table 4-6) within the TS1 and TS2 Ordered
->          Sets.
->          
->          A Link can enter Hot Reset if directed by a higher Layer. A Link
->          can also reach the Hot Reset state by receiving two consecutive
->          TS1 Ordered Sets with the Hot Reset bit asserted (see Section
->          4.2.6.11).
-> 
-> Section 4.2.6.11 then goes on as:
-> 
->        * Lanes that were not directed by a higher Layer to initiate Hot
->          Reset (i.e., received two consecutive TS1 Ordered Sets with the
->          Hot Reset bit asserted on any configured Lanes):
->                * If any Lane of an Upstream Port of a Switch receives two
->                  consecutive TS1 Ordered Sets with the Hot Reset bit
->                  asserted, all configured Downstream Ports must
->                  transition to Hot Reset as soon as possible.
->                * All Lanes in the configured Link transmit TS1 Ordered
->                  Sets with the Hot Reset bit asserted and the configured
->                  Link and Lane numbers.
-> 
-> Also included is the footnote:
-> 
->          Note: Generally, Lanes of a Downstream or optional crosslink
->          Port will be directed to Hot Reset, and Lanes of an Upstream or
->          optional crosslink Port will enter Hot Reset by receiving two
->          consecutive TS1 Ordered Sets with the Hot Reset bit asserted on
->          any configured Lanes...
-> 
-> So I think that means that if a hot reset is received by an upstream
-> port, it's propagated to the downstream ports and on to the downstream
-> links.  The latter point is where there's potential for interpretation.
-> 
-> Going back to sections 6.6.1, we can generate a hot reset via:
-> 
->        * For any Root or Switch Downstream Port, setting the Secondary
->          Bus Reset bit of the Bridge Control register associated with the
->          Port must cause a hot reset to be sent.
->        * For a Switch, the following must cause a hot reset to be sent on
->          all Downstream Ports:
->                * Setting the Secondary Bus Reset bit of the Bridge
->                  Control register associated with the    Upstream Port
->                * Receiving a hot reset on the Upstream Port
-> 
-> Sounds like it propagates to me.  But, re-reading this patch, I think
-> the goal is to attempt a bus reset on the most downstream
-> root/downstream port, but it's pretty confusing.
+This patch fixes below build error when CONFIG_SPI_MASTER=y && CONFIG_I2C=m:
 
-Yes, I also think a hot reset is propagated to all downstream link. This
-patch does bus reset only on root port/downstream port whose children
-are endpoints since I need to skip display class devices to avoid
-monitor blacks out. 
+drivers/built-in.o: In function `ad5064_i2c_write':
+drivers/iio/dac/ad5064.c:608: undefined reference to `i2c_master_send'
+drivers/built-in.o: In function `ad5064_i2c_register_driver':
+drivers/iio/dac/ad5064.c:646: undefined reference to `i2c_register_driver'
+drivers/built-in.o: In function `ad5064_i2c_unregister_driver':
+drivers/iio/dac/ad5064.c:651: undefined reference to `i2c_del_driver'
+make: *** [vmlinux] Error 1
 
-Thanks,
-Takao Indoh
+Add config IIO_DAC_I2C_AND_SPI helper to handle such case:
+When CONFIG_I2C=m, meaning we can't build the drivers in with I2C support.
+Thus don't allow the drivers to be compiled as built-in.
 
-> 
-> I also have a need to add a bus reset interface, in my case though the
-> end goal is specifically to reset display class devices to get them into
-> a usable state.  I just want to provide the kernel interfaces though,
-> it's up to the drivers how to use them.  Thanks,
-> 
-> Alex
-> 
->>> through PCIe-to-PCI bridges, so legacy PCI devices may be reset and the
->>> option name is misleading.
->>>
->> In earlier reply, I stated that the functions ought to be renamed to
->> reflect their intentions: endpoint reset.
->> It is not a reset-all-pci-devices interface, as it implies
->>
->>> Even so, you still have root complex endpoints, which are not getting
->>> reset through this, so it's really not a complete solution.  Thanks,
->>>
->>> Alex
->>>
->>>> +
->>>> +	msleep(1000);
->>>> +
->>>> +	for_each_pci_dev(dev)
->>>> +		restore_config(dev);
->>>> +
->>>> +	return 0;
->>>> +}
->>>> +fs_initcall_sync(reset_pcie_devices);
->>>> +
->>>>    static int __init pci_setup(char *str)
->>>>    {
->>>>    	while (str) {
->>>> @@ -3920,6 +4021,8 @@ static int __init pci_setup(char *str)
->>>>    				pcie_bus_config = PCIE_BUS_PEER2PEER;
->>>>    			} else if (!strncmp(str, "pcie_scan_all", 13)) {
->>>>    				pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
->>>> +			} else if (!strncmp(str, "pcie_reset_devices", 18)) {
->>>> +				pcie_reset_devices = 1;
->>>>    			} else {
->>>>    				printk(KERN_ERR "PCI: Unknown option `%s'\n",
->>>>    						str);
->>>
->>>
->>>
->>> _______________________________________________
->>> iommu mailing list
->>> iommu@lists.linux-foundation.org
->>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
->>
-> 
-> 
-> 
-> 
-> 
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/iio/dac/Kconfig | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
+index f4a6f08..34bc1d7 100644
+--- a/drivers/iio/dac/Kconfig
++++ b/drivers/iio/dac/Kconfig
+@@ -1,11 +1,22 @@
+ #
+ # DAC drivers
+ #
++
++# Helper to resolve issues with configs that have SPI enabled but I2C
++# modular, meaning we can't build the drivers in with I2C support.
++# We use an ordered list of conditional defaults to pick the appropriate
++# setting - SPI can't be modular so that case doesn't need to be covered.
++config IIO_DAC_I2C_AND_SPI
++	tristate
++	default m if I2C=m
++	default y if I2C=y
++	default y if SPI_MASTER=y
++
+ menu "Digital to analog converters"
+ 
+ config AD5064
+ 	tristate "Analog Devices AD5064 and similar multi-channel DAC driver"
+-	depends on (SPI_MASTER || I2C)
++	depends on IIO_DAC_I2C_AND_SPI
+ 	help
+ 	  Say yes here to build support for Analog Devices AD5024, AD5025, AD5044,
+ 	  AD5045, AD5064, AD5064-1, AD5065, AD5628, AD5629R, AD5648, AD5666, AD5668,
+@@ -27,7 +38,7 @@ config AD5360
+ 
+ config AD5380
+ 	tristate "Analog Devices AD5380/81/82/83/84/90/91/92 DAC driver"
+-	depends on (SPI_MASTER || I2C)
++	depends on IIO_DAC_I2C_AND_SPI
+ 	select REGMAP_I2C if I2C
+ 	select REGMAP_SPI if SPI_MASTER
+ 	help
+@@ -57,7 +68,7 @@ config AD5624R_SPI
+ 
+ config AD5446
+ 	tristate "Analog Devices AD5446 and similar single channel DACs driver"
+-	depends on (SPI_MASTER || I2C)
++	depends on IIO_DAC_I2C_AND_SPI
+ 	help
+ 	  Say yes here to build support for Analog Devices AD5300, AD5301, AD5310,
+ 	  AD5311, AD5320, AD5321, AD5444, AD5446, AD5450, AD5451, AD5452, AD5453,
+-- 
+1.8.1.2
+
+
 
