@@ -1,57 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758309Ab3EHQDp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 12:03:45 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:59376 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756515Ab3EHQDm (ORCPT
+	id S1758327Ab3EHQDz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 12:03:55 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34450 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757524Ab3EHQDx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 12:03:42 -0400
-Date: Wed, 8 May 2013 18:03:32 +0200
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Ola Lilja <ola.o.lilja@stericsson.com>
-Subject: Re: [PATCH 4/6] ASoC: ux500: Update tx tdm slots configuration
-Message-ID: <20130508160332.GB12970@balto.lan>
-References: <1367997261-32048-1-git-send-email-fabio.baltieri@linaro.org>
- <1367997261-32048-5-git-send-email-fabio.baltieri@linaro.org>
- <20130508110149.GF7478@sirena.org.uk>
+	Wed, 8 May 2013 12:03:53 -0400
+Message-ID: <518A7763.4050509@arm.com>
+Date: Wed, 08 May 2013 17:03:47 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130508110149.GF7478@sirena.org.uk>
-X-Operating-System: Linux balto 3.9.0-rc8-00030-g4cbbd1d x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "cov@codeaurora.org" <cov@codeaurora.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "olof@lixom.net" <olof@lixom.net>
+Subject: Re: [PATCH v3 3/4] arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING
+ and pv_time_ops
+References: <alpine.DEB.2.02.1305081446580.18865@kaball.uk.xensource.com> <1368027714-14506-3-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1368027714-14506-3-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 08 May 2013 16:03:47.0843 (UTC) FILETIME=[9FB6D530:01CE4C05]
+X-MC-Unique: 113050817035017001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 12:01:49PM +0100, Mark Brown wrote:
-> On Wed, May 08, 2013 at 09:14:19AM +0200, Fabio Baltieri wrote:
-> > Update ab8500-codec and mop500_ab8500 tx slot configuration to reflect
-> > the actual one used by STE.  Also update a wrong comment in the process.
+Hi Stefano,
+
+On 08/05/13 16:41, Stefano Stabellini wrote:
+> Introduce CONFIG_PARAVIRT and PARAVIRT_TIME_ACCOUNTING on ARM.
 > 
-> This seems wrong, the individual chip drivers should just be doing
-> whatever they're being told by the machine driver.  Sounds like there's
-> two fixes needed here - one is to change the TDM API so that the chip
-> drivers are just implementing configuration supplied by the machine
-> driver and the other is to change the configuration being done to
-> whatever is desired.
+> The only paravirt interface supported is pv_time_ops.steal_clock, so no
+> runtime pvops patching needed.
+> 
+> This allows us to make use of steal_account_process_tick for stolen
+> ticks accounting.
+> 
+> Changes in v3:
+> - improve commit description and Kconfig help text;
+> - no need to initialize pv_time_ops;
+> - add PARAVIRT_TIME_ACCOUNTING.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: linux@arm.linux.org.uk
+> CC: will.deacon@arm.com
+> CC: nico@linaro.org
+> CC: marc.zyngier@arm.com
+> CC: cov@codeaurora.org
+> CC: arnd@arndb.de
+> CC: olof@lixom.net
+> ---
+>  arch/arm/Kconfig                |   20 ++++++++++++++++++++
+>  arch/arm/include/asm/paravirt.h |   19 +++++++++++++++++++
+>  arch/arm/kernel/Makefile        |    1 +
+>  arch/arm/kernel/paravirt.c      |   25 +++++++++++++++++++++++++
+>  4 files changed, 65 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/include/asm/paravirt.h
+>  create mode 100644 arch/arm/kernel/paravirt.c
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 344e299..89ee2f1 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1887,12 +1887,32 @@ config XEN_DOM0
+>  	def_bool y
+>  	depends on XEN
+>  
+> +config PARAVIRT
+> +	bool "Enable paravirtualization code"
+> +	---help---
+> +	  This changes the kernel so it can modify itself when it is run
+> +	  under a hypervisor, potentially improving performance significantly
+> +	  over full virtualization.
+> +
+> +config PARAVIRT_TIME_ACCOUNTING
+> +	bool "Paravirtual steal time accounting"
+> +	select PARAVIRT
 
-Ok so, this patch was really just going to slightly align the
-configuration with the STE driver.  I'll drop it and just fix the wrong
-comment as a trivial patch.
+Surely you meant "depends on" instead of "select" here? Otherwise I
+don't really see the point of PARAVIRT...
 
-For the reimplementation with channel configuration from machine driver,
-I actually went through that, but was not able to find the reason why
-there is a slot offset somewhere (example: I request 0x0001 for first
-slot on the DAI and that shows up on slot 8 on the codec), so I just
-updated the hardcoded value.  I'll try to get some explanation for that.
-
-Fabio
-
+> +	default n
+> +	---help---
+> +	  Select this option to enable fine granularity task steal time
+> +	  accounting. Time spent executing other tasks in parallel with
+> +	  the current vCPU is discounted from the vCPU power. To account for
+> +	  that, there can be a small performance impact.
+> +
+> +	  If in doubt, say N here.
+> +
+>  config XEN
+>  	bool "Xen guest support on ARM (EXPERIMENTAL)"
+>  	depends on ARM && AEABI && OF
+>  	depends on CPU_V7 && !CPU_V6
+>  	depends on !GENERIC_ATOMIC64
+>  	select ARM_PSCI
+> +	select PARAVIRT
+>  	help
+>  	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
+>  
 -- 
-Fabio Baltieri
+Jazz is not dead. It just smells funny...
+
