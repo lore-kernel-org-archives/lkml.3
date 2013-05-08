@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832Ab3EHVbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 17:31:33 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25239 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755611Ab3EHVb3 (ORCPT
+	id S1756022Ab3EHVcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 17:32:07 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2976 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab3EHVcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 17:31:29 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: akpm@linux-foundation.org, bob.liu@oracle.com, dan.magenheimer@oracle.com,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 8/8] xen/tmem: Remove the usage of 'noselfballoon','selfballoon' and use 'tmem.selfballon' bool instead.
-Date: Wed,  8 May 2013 17:31:08 -0400
-Message-Id: <1368048668-8140-9-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1368048668-8140-1-git-send-email-konrad.wilk@oracle.com>
-References: <1368048668-8140-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 8 May 2013 17:32:04 -0400
+X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=-mNGWZWXaDgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=mDu0LJtoDNUA:10 a=Rea1SEVNW_ZoIBXDLXAA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1368048721.7373.70.camel@gandalf.local.home>
+Subject: Re: [PATCH] kmsg: honor dmesg_restrict sysctl on /dev/kmsg
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Boyer <jwboyer@redhat.com>, Kay Sievers <kay@vrfy.org>,
+        LKML <linux-kernel@vger.kernel.org>, Eric Paris <eparis@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Date: Wed, 08 May 2013 17:32:01 -0400
+In-Reply-To: <CAGXu5j+onJqbhEXffXuqjR_-wkQpLJNnH-jqP_zpe4GCoU_8dg@mail.gmail.com>
+References: <20130430172541.GA23382@www.outflux.net>
+	 <20130508142223.c4497dc285600f30cc56d21a@linux-foundation.org>
+	 <CAGXu5j+onJqbhEXffXuqjR_-wkQpLJNnH-jqP_zpe4GCoU_8dg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the 'tmem' driver is the one that actually sets whether
-it will use it or not so might as well make tmem responsible
-for this knob.
+On Wed, 2013-05-08 at 14:26 -0700, Kees Cook wrote:
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/Kconfig           |  5 ++---
- drivers/xen/xen-selfballoon.c | 21 ---------------------
- 2 files changed, 2 insertions(+), 24 deletions(-)
+> Yeah, that'll be fine. I kind of like having the longer rationale in
+> the commit message for future reference (i.e. destructive vs
+> non-destructive, etc), but I'd rather see the code fixed. :)
 
-diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-index b0337a6..221b3a6 100644
---- a/drivers/xen/Kconfig
-+++ b/drivers/xen/Kconfig
-@@ -19,11 +19,10 @@ config XEN_SELFBALLOONING
- 	  by the current usage of anonymous memory ("committed AS") and
- 	  controlled by various sysfs-settable parameters.  Configuring
- 	  FRONTSWAP is highly recommended; if it is not configured, self-
--	  ballooning is disabled by default but can be enabled with the
--	  'selfballooning' kernel boot parameter.  If FRONTSWAP is configured,
-+	  ballooning is disabled by default. If FRONTSWAP is configured,
- 	  frontswap-selfshrinking is enabled by default but can be disabled
- 	  with the 'tmem.selfshrink=0' kernel boot parameter; and self-ballooning
--	  is enabled by default but can be disabled with the 'noselfballooning'
-+	  is enabled by default but can be disabled with the 'tmem.selfballooning=0'
- 	  kernel boot parameter.  Note that systems without a sufficiently
- 	  large swap device should not enable self-ballooning.
- 
-diff --git a/drivers/xen/xen-selfballoon.c b/drivers/xen/xen-selfballoon.c
-index 012f9d9..ee49367 100644
---- a/drivers/xen/xen-selfballoon.c
-+++ b/drivers/xen/xen-selfballoon.c
-@@ -173,27 +173,6 @@ static void frontswap_selfshrink(void)
- 	frontswap_shrink(tgt_frontswap_pages);
- }
- 
--/* Disable with kernel boot option. */
--static bool use_selfballooning = true;
--
--static int __init xen_noselfballooning_setup(char *s)
--{
--	use_selfballooning = false;
--	return 1;
--}
--
--__setup("noselfballooning", xen_noselfballooning_setup);
--#else /* !CONFIG_FRONTSWAP */
--/* Enable with kernel boot option. */
--static bool use_selfballooning;
--
--static int __init xen_selfballooning_setup(char *s)
--{
--	use_selfballooning = true;
--	return 1;
--}
--
--__setup("selfballooning", xen_selfballooning_setup);
- #endif /* CONFIG_FRONTSWAP */
- 
- #define MB2PAGES(mb)	((mb) << (20 - PAGE_SHIFT))
--- 
-1.8.1.4
+There's no reason not to have both, is there?
+
+-- Steve
+
 
