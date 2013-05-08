@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab3EHC56 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 22:57:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64886 "EHLO mx1.redhat.com"
+	id S1757073Ab3EHC6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 22:58:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29377 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756421Ab3EHC5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 22:57:55 -0400
-Subject: [PATCH v2 3/8] pci: Add pci_hp_reset_slot
+	id S1753241Ab3EHC6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 22:58:09 -0400
+Subject: [PATCH v2 5/8] pci: Add reset_slot option to pci_dev_reset
 To: bhelgaas@google.com, linux-pci@vger.kernel.org
 From: Alex Williamson <alex.williamson@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Date: Tue, 07 May 2013 20:57:53 -0600
-Message-ID: <20130508025753.30771.43656.stgit@bling.home>
+Date: Tue, 07 May 2013 20:58:07 -0600
+Message-ID: <20130508025807.30771.14527.stgit@bling.home>
 In-Reply-To: <20130508025339.30771.61937.stgit@bling.home>
 References: <20130508025339.30771.61937.stgit@bling.home>
 User-Agent: StGit/0.16
@@ -22,70 +22,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide an interface to get to hotplug controller reset_slot callback
+If the hotplug controller provides a way to reset a slot, use that
+before a direct parent bus reset.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/pci/hotplug/pci_hotplug_core.c |   24 ++++++++++++++++++++++++
- include/linux/pci_hotplug.h            |    8 ++++++++
- 2 files changed, 32 insertions(+)
+ drivers/pci/pci.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/drivers/pci/hotplug/pci_hotplug_core.c b/drivers/pci/hotplug/pci_hotplug_core.c
-index 202f4a9..1d0fee4 100644
---- a/drivers/pci/hotplug/pci_hotplug_core.c
-+++ b/drivers/pci/hotplug/pci_hotplug_core.c
-@@ -537,6 +537,29 @@ int __must_check pci_hp_change_slot_info(struct hotplug_slot *hotplug,
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index d0f313f..f5035f5 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -22,6 +22,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/device.h>
+ #include <linux/pm_runtime.h>
++#include <linux/pci_hotplug.h>
+ #include <asm-generic/pci-bridge.h>
+ #include <asm/setup.h>
+ #include "pci.h"
+@@ -3251,6 +3252,20 @@ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
  	return 0;
  }
  
-+/**
-+ * pci_hp_reset_slot - reset slot
-+ *
-+ * @hotplug: pointer to hotplug slot to reset
-+ * @probe: reset slot (0) or just probe
-+ *
-+ * Returns 0 if successful, anything else for an error.
-+ */
-+int pci_hp_reset_slot(struct hotplug_slot *hotplug, int probe)
++static int pci_dev_reset_slot_function(struct pci_dev *dev, int probe)
 +{
-+	int result = -ENOTTY;
++	struct pci_dev *pdev;
 +
-+	if (!hotplug || !try_module_get(hotplug->ops->owner))
-+		return result;
++	if (dev->subordinate || !dev->slot)
++		return -ENOTTY;
 +
-+	if (hotplug->ops->reset_slot)
-+		result = hotplug->ops->reset_slot(hotplug, probe);
++	list_for_each_entry(pdev, &dev->bus->devices, bus_list)
++		if (pdev != dev && pdev->slot == dev->slot)
++			return -ENOTTY;
 +
-+	module_put(hotplug->ops->owner);
-+
-+	return result;
++	return pci_hp_reset_slot(dev->slot->hotplug, probe);
 +}
 +
- static int __init pci_hotplug_init (void)
+ static int __pci_dev_reset(struct pci_dev *dev, int probe)
  {
- 	int result;
-@@ -570,3 +593,4 @@ MODULE_PARM_DESC(debug, "Debugging mode enabled or not");
- EXPORT_SYMBOL_GPL(__pci_hp_register);
- EXPORT_SYMBOL_GPL(pci_hp_deregister);
- EXPORT_SYMBOL_GPL(pci_hp_change_slot_info);
-+EXPORT_SYMBOL_GPL(pci_hp_reset_slot);
-diff --git a/include/linux/pci_hotplug.h b/include/linux/pci_hotplug.h
-index 0d3a604..d771cee 100644
---- a/include/linux/pci_hotplug.h
-+++ b/include/linux/pci_hotplug.h
-@@ -135,6 +135,14 @@ extern int __pci_hp_register(struct hotplug_slot *slot, struct pci_bus *pbus,
- extern int pci_hp_deregister(struct hotplug_slot *slot);
- extern int __must_check pci_hp_change_slot_info	(struct hotplug_slot *slot,
- 						 struct hotplug_slot_info *info);
-+#ifdef CONFIG_HOTPLUG_PCI
-+int pci_hp_reset_slot(struct hotplug_slot *slot, int probe);
-+#else
-+static inline int pci_hp_reset_slot(struct hotplug_slot *slot, int probe)
-+{
-+	return -ENOTTY;
-+}
-+#endif
+ 	int rc;
+@@ -3273,6 +3288,10 @@ static int __pci_dev_reset(struct pci_dev *dev, int probe)
+ 	if (rc != -ENOTTY)
+ 		goto done;
  
- /* use a define to avoid include chaining to get THIS_MODULE & friends */
- #define pci_hp_register(slot, pbus, devnr, name) \
++	rc = pci_dev_reset_slot_function(dev, probe);
++	if (rc != -ENOTTY)
++		goto done;
++
+ 	rc = pci_parent_bus_reset(dev, probe);
+ done:
+ 	return rc;
 
