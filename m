@@ -1,203 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497Ab3EHRaz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 13:30:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8019 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756904Ab3EHRay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 13:30:54 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-audit@redhat.com,
-        Steve Grubb <sgrubb@redhat.com>, Jiri Jaburek <jjaburek@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] audit: fix mq_open and mq_unlink to add the MQ root as a hidden parent audit_names record
-Date: Wed,  8 May 2013 13:30:36 -0400
-Message-Id: <1368034236-10773-1-git-send-email-jlayton@redhat.com>
+	id S1757561Ab3EHRc7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 13:32:59 -0400
+Received: from mail-yh0-f74.google.com ([209.85.213.74]:42213 "EHLO
+	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757324Ab3EHRc5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 13:32:57 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Thomas Abraham <thomas.abraham@linaro.org>,
+        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: exynos: Select PINCTRL_EXYNOS for exynos5
+Date: Wed,  8 May 2013 10:32:29 -0700
+Message-Id: <1368034349-15091-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old audit PATH records for mq_open looked like this:
+If you've got MACH_EXYNOS5_DT but not MACH_EXYNOS4_DT you'll be
+missing the pincontrol definitions.  Add them for exynos5.
 
-type=PATH msg=audit(1366282323.982:869): item=1 name=(null) inode=6777
-dev=00:0c mode=041777 ouid=0 ogid=0 rdev=00:00
-obj=system_u:object_r:tmpfs_t:s15:c0.c1023
-type=PATH msg=audit(1366282323.982:869): item=0 name="test_mq" inode=26732
-dev=00:0c mode=0100700 ouid=0 ogid=0 rdev=00:00
-obj=staff_u:object_r:user_tmpfs_t:s15:c0.c1023
-
-...with the audit related changes that went into 3.7, they now look like this:
-
-type=PATH msg=audit(1366282236.776:3606): item=2 name=(null) inode=66655
-dev=00:0c mode=0100700 ouid=0 ogid=0 rdev=00:00
-obj=staff_u:object_r:user_tmpfs_t:s15:c0.c1023
-type=PATH msg=audit(1366282236.776:3606): item=1 name=(null) inode=6926
-dev=00:0c mode=041777 ouid=0 ogid=0 rdev=00:00
-obj=system_u:object_r:tmpfs_t:s15:c0.c1023
-type=PATH msg=audit(1366282236.776:3606): item=0 name="test_mq"
-
-Both of these look wrong to me. As Steve Grubb pointed out:
-
-"What we need is 1 PATH record that identifies the MQ. The other PATH
- records probably should not be there."
-
-Fix it to record the mq root as a parent, and flag it such that it
-should be hidden from view when the names are logged, since the root of
-the mq filesystem isn't terribly interesting. With this change, we get a
-single PATH record that looks more like this:
-
-type=PATH msg=audit(1368021604.836:484): item=0 name="test_mq" inode=16914
-dev=00:0c mode=0100644 ouid=0 ogid=0 rdev=00:00
-obj=unconfined_u:object_r:user_tmpfs_t:s0
-
-In order to do this, a new audit_inode_parent_hidden() function is
-added. If we do it this way, then we avoid having the existing callers
-of audit_inode needing to do any sort of flag conversion if auditing is
-inactive.
-
-Cc: Steve Grubb <sgrubb@redhat.com>
-Reported-by: Jiri Jaburek <jjaburek@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
- include/linux/audit.h |   26 ++++++++++++++++++++++----
- ipc/mqueue.c          |    2 ++
- kernel/auditsc.c      |   13 ++++++++++---
- 3 files changed, 34 insertions(+), 7 deletions(-)
+ arch/arm/mach-exynos/Kconfig | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 5a6d718..89f3584 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -98,8 +98,11 @@ extern void __audit_syscall_exit(int ret_success, long ret_value);
- extern struct filename *__audit_reusename(const __user char *uptr);
- extern void __audit_getname(struct filename *name);
- extern void audit_putname(struct filename *name);
-+
-+#define AUDIT_INODE_PARENT	1	/* dentry represents the parent */
-+#define AUDIT_INODE_HIDDEN	2	/* audit record should be hidden */
- extern void __audit_inode(struct filename *name, const struct dentry *dentry,
--				unsigned int parent);
-+				unsigned int flags);
- extern void __audit_inode_child(const struct inode *parent,
- 				const struct dentry *dentry,
- 				const unsigned char type);
-@@ -143,10 +146,22 @@ static inline void audit_getname(struct filename *name)
- 	if (unlikely(!audit_dummy_context()))
- 		__audit_getname(name);
- }
--static inline void audit_inode(struct filename *name, const struct dentry *dentry,
-+static inline void audit_inode(struct filename *name,
-+				const struct dentry *dentry,
- 				unsigned int parent) {
-+	if (unlikely(!audit_dummy_context())) {
-+		unsigned int flags = 0;
-+		if (parent)
-+			flags |= AUDIT_INODE_PARENT;
-+		__audit_inode(name, dentry, flags);
-+	}
-+}
-+static inline void audit_inode_parent_hidden(struct filename *name,
-+						const struct dentry *dentry)
-+{
- 	if (unlikely(!audit_dummy_context()))
--		__audit_inode(name, dentry, parent);
-+		__audit_inode(name, dentry,
-+				AUDIT_INODE_PARENT | AUDIT_INODE_HIDDEN);
- }
- static inline void audit_inode_child(const struct inode *parent,
- 				     const struct dentry *dentry,
-@@ -307,7 +322,7 @@ static inline void audit_putname(struct filename *name)
- { }
- static inline void __audit_inode(struct filename *name,
- 					const struct dentry *dentry,
--					unsigned int parent)
-+					unsigned int flags)
- { }
- static inline void __audit_inode_child(const struct inode *parent,
- 					const struct dentry *dentry,
-@@ -317,6 +332,9 @@ static inline void audit_inode(struct filename *name,
- 				const struct dentry *dentry,
- 				unsigned int parent)
- { }
-+static inline void audit_inode_parent_hidden(struct filename *name,
-+				const struct dentry *dentry)
-+{ }
- static inline void audit_inode_child(const struct inode *parent,
- 				     const struct dentry *dentry,
- 				     const unsigned char type)
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index e4e47f6..ae1996d 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -823,6 +823,7 @@ SYSCALL_DEFINE4(mq_open, const char __user *, u_name, int, oflag, umode_t, mode,
- 				error = ro;
- 				goto out;
- 			}
-+			audit_inode_parent_hidden(name, root);
- 			filp = do_create(ipc_ns, root->d_inode,
- 						&path, oflag, mode,
- 						u_attr ? &attr : NULL);
-@@ -868,6 +869,7 @@ SYSCALL_DEFINE1(mq_unlink, const char __user *, u_name)
- 	if (IS_ERR(name))
- 		return PTR_ERR(name);
- 
-+	audit_inode_parent_hidden(name, mnt->mnt_root);
- 	err = mnt_want_write(mnt);
- 	if (err)
- 		goto out_name;
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 4f90536..a599291 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -119,6 +119,7 @@ struct audit_names {
- 	unsigned int		fcap_ver;
- 	int			name_len;	/* number of name's characters to log */
- 	unsigned char		type;		/* record type */
-+	bool			hidden;		/* don't log this record */
- 	bool			name_put;	/* call __putname() for this name */
- 	/*
- 	 * This was an allocated audit_names and not from the array of
-@@ -1716,8 +1717,11 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
- 	}
- 
- 	i = 0;
--	list_for_each_entry(n, &context->names_list, list)
-+	list_for_each_entry(n, &context->names_list, list) {
-+		if (n->hidden)
-+			continue;
- 		audit_log_name(context, n, i++, &call_panic);
-+	}
- 
- 	/* Send end of event record to help user space know we are finished */
- 	ab = audit_log_start(context, GFP_KERNEL, AUDIT_EOE);
-@@ -2121,14 +2125,15 @@ static void audit_copy_inode(struct audit_names *name, const struct dentry *dent
-  * __audit_inode - store the inode and device from a lookup
-  * @name: name being audited
-  * @dentry: dentry being audited
-- * @parent: does this dentry represent the parent?
-+ * @flags: attributes for this particular entry
-  */
- void __audit_inode(struct filename *name, const struct dentry *dentry,
--		   unsigned int parent)
-+		   unsigned int flags)
- {
- 	struct audit_context *context = current->audit_context;
- 	const struct inode *inode = dentry->d_inode;
- 	struct audit_names *n;
-+	bool parent = flags & AUDIT_INODE_PARENT;
- 
- 	if (!context->in_syscall)
- 		return;
-@@ -2183,6 +2188,8 @@ out:
- 	if (parent) {
- 		n->name_len = n->name ? parent_len(n->name->name) : AUDIT_NAME_FULL;
- 		n->type = AUDIT_TYPE_PARENT;
-+		if (flags & AUDIT_INODE_HIDDEN)
-+			n->hidden = true;
- 	} else {
- 		n->name_len = AUDIT_NAME_FULL;
- 		n->type = AUDIT_TYPE_NORMAL;
+diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+index 6e77432..cdcd7fa 100644
+--- a/arch/arm/mach-exynos/Kconfig
++++ b/arch/arm/mach-exynos/Kconfig
+@@ -428,6 +428,8 @@ config MACH_EXYNOS5_DT
+ 	depends on ARCH_EXYNOS5
+ 	select ARM_AMBA
+ 	select CLKSRC_OF
++	select PINCTRL
++	select PINCTRL_EXYNOS
+ 	select USB_ARCH_HAS_XHCI
+ 	select USE_OF
+ 	help
 -- 
-1.7.1
+1.8.2.1
 
