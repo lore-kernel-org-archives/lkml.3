@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751643Ab3EHFQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 01:16:10 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54472 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab3EHFQI (ORCPT
+	id S1752122Ab3EHFQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 01:16:53 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:9756 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751088Ab3EHFQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 01:16:08 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18SIEyz/7uhOIYQU7b1obvl
-Date: Tue, 7 May 2013 22:16:03 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] SLAB changes for v3.10
-Message-ID: <20130508051602.GV28721@atomide.com>
-References: <alpine.LFD.2.03.1305070936320.2383@kernel.org>
- <20130508003022.GS28721@atomide.com>
- <20130508042422.GU28721@atomide.com>
+	Wed, 8 May 2013 01:16:51 -0400
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: PS-6(zz98dI936eI1432I13e6Kzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2fh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        Xiaoyan Zhang <xiaoyan.zhang@intel.com>, Gang Wei <gang.wei@intel.com>
+Subject: Re: [PATCH 3/4] driver: provide sysfs interfaces to access TXT log
+Thread-Topic: [PATCH 3/4] driver: provide sysfs interfaces to access TXT log
+Thread-Index: AQHOSvE9bxnf/3s/7UWUo8Zw/n8iKpj6wJAA
+Date: Wed, 8 May 2013 05:16:43 +0000
+Message-ID: <1367990202.2425.26.camel@x230>
+References: <1367938519-840-1-git-send-email-qiaowei.ren@intel.com>
+	 <1367938519-840-4-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1367938519-840-4-git-send-email-qiaowei.ren@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <61966D219BF4B646874C4D67E97F1619@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130508042422.GU28721@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r485GwKi007194
 
-* Tony Lindgren <tony@atomide.com> [130507 21:30]:
-> * Tony Lindgren <tony@atomide.com> [130507 17:35]:
-> > * Pekka Enberg <penberg@kernel.org> [130506 23:42]:
-> > > Hi Linus,
-> > > 
-> > > Please pull the latest SLAB tree from:
-> > > 
-> > >   git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
-> > ...
-> > 
-> > >       mm, slab_common: Fix bootstrap creation of kmalloc caches
-> > 
-> > This one seems to cause a regression for me on at least arm omap
-> > and vexpress that depends on some kconfig option I have not been
-> > able to figure out yet. Reverting 8a965b3b fixes the issue.
-> > 
-> > Any ideas?
-> 
-> OK got it narrowed down to CONFIG_DEBUG_SPINLOCK=y causing the problem
-> with commit 8a965b3b. Ain't nothing like bisecting and booting and then
-> diffing .config files on top of that. 
+On Tue, 2013-05-07 at 22:55 +0800, Qiaowei Ren wrote:
 
-Hmm it's actually CONFIG_PROVE_LOCKING=y that causes the problem,
-not CONFIG_DEBUG_SPINLOCK=y. CONFIG_DEBUG_SPINLOCK=y was just selected
-by CONFIG_PROVE_LOCKING=y in my non-booting .config. I can now fix my
-non-booting .config by removing PROVE_LOCKING and DEBUG_SPINLOCK,
-but I cannot break my other working .config by adding PROVE_LOCKING
-and DEBUG_SPINLOCK. Hmm.
-  
-> > Without reverting 8a965b3b I'm getting:
-> > 
-> > [    0.000000] Unable to handle kernel NULL pointer dereference at virtual address 00000054
-> > [    0.000000] pgd = c0004000
-> > [    0.000000] [00000054] *pgd=00000000
-> > [    0.000000] Internal error: Oops: 5 [#1] SMP ARM
-> > [    0.000000] Modules linked in:
-> > [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.9.0-11486-g6d13e11 #689
-> > [    0.000000] task: c06f77c8 ti: c06ec000 task.ti: c06ec000
-> > [    0.000000] PC is at kmem_cache_alloc_trace+0x50/0x178
-> > [    0.000000] LR is at kmem_cache_alloc_trace+0x38/0x178
-> > [    0.000000] pc : [<c00edab4>]    lr : [<c00eda9c>]    psr: 600001d3
-> > [    0.000000] sp : c06edf70  ip : 600001d3  fp : 00000000
-> > [    0.000000] r10: 000000c0  r9 : c0086958  r8 : 000080d0
-> > [    0.000000] r7 : 00000000  r6 : 600001d3  r5 : 00000000  r4 : 00008000
-> > [    0.000000] r3 : 00000050  r2 : c06ec000  r1 : c06f77c8  r0 : c00eda9c
-> > [    0.000000] Flags: nZCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-> > [    0.000000] Control: 10c5387d  Table: 6000406a  DAC: 00000015
-> > [    0.000000] Process swapper/0 (pid: 0, stack limit = 0xc06ec240)
-> > [    0.000000] Stack: (0xc06edf70 to 0xc06ee000)
-> > [    0.000000] df60:                                     00002014 00000010 c0702890 00000000
-> > [    0.000000] df80: 00000000 00000000 00000000 410fc090 c06f4480 c0086958 c0702890 00000000
-> > [    0.000000] dfa0: 00000010 c06dc0b0 ffffffff c06b44f4 9fffffff c073834c c0738340 c06a5828
-> > [    0.000000] dfc0: ffffffff ffffffff c06a5478 00000000 00000000 c06dc0b0 00000000 10c5387d
-> > [    0.000000] dfe0: c06f44c8 c06dc4b4 c06f8cac 6000406a 00000000 60008074 00000000 00000000
-> > [    0.000000] [<c00edab4>] (kmem_cache_alloc_trace+0x50/0x178) from [<c0086958>] (alloc_desc+0x24/0xb4)
-> > [    0.000000] [<c0086958>] (alloc_desc+0x24/0xb4) from [<c06b44f4>] (early_irq_init+0x78/0xec)
-> > [    0.000000] [<c06b44f4>] (early_irq_init+0x78/0xec) from [<c06a5828>] (start_kernel+0x17c/0x33c)
-> > [    0.000000] [<c06a5828>] (start_kernel+0x17c/0x33c) from [<60008074>] (0x60008074)
-> > [    0.000000] Code: e5923014 e2833014 e1a03103 e0873003 (e5931004)
-> > [    0.000000] ---[ end trace 1b75b31a2719ed1c ]---
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> +What:		/sys/devices/platform/intel_txt/log/log_header
+> +Date:		May 2013
+> +KernelVersion:	3.9
+
+How different are these logs to the TPM measurements exported via
+securityfs?
+
+> +What:		/sys/devices/platform/intel_txt/log/block_index
+> +Date:		May 2013
+> +KernelVersion:	3.9
+> +Contact:	"Qiaowei Ren" <qiaowei.ren@intel.com>
+> +Description:	The "block_index" property allows you to set the block
+> +		index for output.
+
+So I write a value here and then I see different chunks of log? This
+doesn't seem like an optimal interface. What do these logs actually
+contain? How do I know which block I should be reading?
+
+> +static int are_uuids_equal(const struct uuid *uuid1,
+> +			   const struct uuid *uuid2)
+> +{
+> +	return (memcmp(uuid1, uuid2, sizeof(*uuid1)) == 0) ? 1 : 0;
+> +}
+
+Use one of the uuidcmp functions from uuid.h?
+
+> +EXPORT_SYMBOL_GPL(sysfs_create_log);
+> +
+> +MODULE_LICENSE("GPL");
+
+Same as for the previous patch - you don't need these.
+
+> +struct uuid {
+> +	uint32_t data1;
+> +	uint16_t data2;
+> +	uint16_t data3;
+> +	uint16_t data4;
+> +	uint8_t  data5[6];
+> +} __packed;
+
+There's already UUID structures in uuid.h
+
+> +#define TBOOT_LOG_UUID		{0xc0192526, 0x6b30, 0x4db4, 0x844c, \
+> +				{0xa3, 0xe9, 0x53, 0xb8, 0x81, 0x74} }
+
+uuid.h again.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
