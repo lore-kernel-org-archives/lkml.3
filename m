@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015Ab3EHMFA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 08:05:00 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:65358 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752317Ab3EHME7 (ORCPT
+	id S1754820Ab3EHMKy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 08:10:54 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:60620 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861Ab3EHMKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 08:04:59 -0400
-Date: Wed, 8 May 2013 14:04:49 +0200
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ola Lilja <ola.o.lilja@stericsson.com>
-Subject: Re: [PATCH v2 2/6] ASoC: ux500: Do not clear state if already idle
-Message-ID: <20130508120449.GA18323@balto.lan>
-References: <20130508080448.GG3102@gmail.com>
- <1368002354-15471-1-git-send-email-fabio.baltieri@linaro.org>
- <20130508103401.GX7478@sirena.org.uk>
+	Wed, 8 May 2013 08:10:53 -0400
+X-IronPort-AV: E=Sophos;i="4.87,634,1363132800"; 
+   d="scan'208";a="22855988"
+Date: Wed, 8 May 2013 13:10:30 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Julien Grall <julien.grall@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: [PATCH 0/3] Xen ARM fixes for 3.10-RC1
+Message-ID: <alpine.DEB.2.02.1305081303310.18865@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130508103401.GX7478@sirena.org.uk>
-X-Operating-System: Linux balto 3.9.0-rc8-00030-g4cbbd1d x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 11:34:01AM +0100, Mark Brown wrote:
-> On Wed, May 08, 2013 at 10:39:14AM +0200, Fabio Baltieri wrote:
-> > As enable_msp gets called only after some audio data has been received,
-> > if the userspace closes the device before sending any data it causes
-> > ux500_msp_i2s_close to clear device state even if it was not previously
-> > initialized.
-> 
-> Ugh, please don't do stuff like this - you're posting an individual
-> revision of a patch buried in the middle of a thread.  This just makes
-> things hard to follow and error prone.  Repost the patch series or wait
-> until what can be applied is applied then repost.
+Hi all,
+this small patch series fixes few Xen on ARM problems I found with more
+testing:
 
-Ok, I'll just repost all the not applied patches after the review.
+- in order to work in dom0, we need to delay the initilization of the pm
+  functions after arch_init;
 
-Anything on the patch itself?
+- VCPUOP_register_vcpu_info needs to be executed by each online cpu
+  separately;
 
-Fabio
+- VCPUOP_register_vcpu_info is not actually supposed to fail.
 
--- 
-Fabio Baltieri
+
+
+Stefano Stabellini (3):
+      xen/arm: initialize pm functions later
+      xen/arm: do not handle VCPUOP_register_vcpu_info failures
+      xen: rename xen_secondary_init and run it on every online cpu
+
+ arch/arm/xen/enlighten.c |   34 +++++++++++++++-------------------
+ 1 files changed, 15 insertions(+), 19 deletions(-)
