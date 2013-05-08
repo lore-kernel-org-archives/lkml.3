@@ -1,88 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab3EHXsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 19:48:07 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40318 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab3EHXrw (ORCPT
+	id S1756022Ab3EHXvP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 19:51:15 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:49778 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215Ab3EHXvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 19:47:52 -0400
-Date: Thu, 9 May 2013 09:47:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Teigland <teigland@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cluster-devel@redhat.com, Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: linux-next: Tree for May 8 (dlm)
-Message-Id: <20130509094745.049e46fff25f357e7eb50123@canb.auug.org.au>
-In-Reply-To: <518A93BD.3020300@infradead.org>
-References: <20130508140122.e4747b58be4333060b7a248a@canb.auug.org.au>
-	<518A93BD.3020300@infradead.org>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__9_May_2013_09_47_45_+1000_CVvkeDkwbZD5=G9Z"
+	Wed, 8 May 2013 19:51:14 -0400
+From: Rick Farina <sidhayn@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org,
+        "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>
+Subject: [PATCH] [PATCH] full listing for RT Systems ftdi devices
+Date: Wed,  8 May 2013 19:51:09 -0400
+Message-Id: <1368057069-16997-1-git-send-email-sidhayn@gmail.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__9_May_2013_09_47_45_+1000_CVvkeDkwbZD5=G9Z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>
 
-[Just forwarding to David ...]
+RT Systems makes many usb serial cables based on the ftdi_sio driver for
+programming various amateur radios.  This patch is a full listing of
+their current product offerings and should allow these cables to all
+be recognized.
 
-On Wed, 08 May 2013 11:04:45 -0700 Randy Dunlap <rdunlap@infradead.org> wro=
-te:
->
-> on x86_64:
->=20
-> when CONFIG_GFS2_FS_LOCKING_DLM=3Dy and CONFIG_DLM=3Dm:
->=20
-> fs/built-in.o: In function `gfs2_lock':
-> file.c:(.text+0xa512c): undefined reference to `dlm_posix_get'
-> file.c:(.text+0xa5140): undefined reference to `dlm_posix_unlock'
-> file.c:(.text+0xa514a): undefined reference to `dlm_posix_lock'
-> fs/built-in.o: In function `gdlm_cancel':
-> lock_dlm.c:(.text+0xb3f57): undefined reference to `dlm_unlock'
-> fs/built-in.o: In function `gdlm_unmount':
-> lock_dlm.c:(.text+0xb40ff): undefined reference to `dlm_release_lockspace'
-> fs/built-in.o: In function `sync_unlock.isra.4':
-> lock_dlm.c:(.text+0xb420d): undefined reference to `dlm_unlock'
-> fs/built-in.o: In function `sync_lock.isra.5':
-> lock_dlm.c:(.text+0xb42d9): undefined reference to `dlm_lock'
-> fs/built-in.o: In function `gdlm_put_lock':
-> lock_dlm.c:(.text+0xb45e7): undefined reference to `dlm_unlock'
-> fs/built-in.o: In function `gdlm_mount':
-> lock_dlm.c:(.text+0xb4928): undefined reference to `dlm_new_lockspace'
-> lock_dlm.c:(.text+0xb4c75): undefined reference to `dlm_release_lockspace'
-> fs/built-in.o: In function `gdlm_lock':
-> lock_dlm.c:(.text+0xb529f): undefined reference to `dlm_lock'
+Signed-off-by: Rick Farina (Zero_Chaos) <zerochaos@gentoo.org>
+---
+ drivers/usb/serial/ftdi_sio.c     | 31 ++++++++++++++++++++++++++++---
+ drivers/usb/serial/ftdi_sio_ids.h | 34 +++++++++++++++++++++++++++++-----
+ 2 files changed, 57 insertions(+), 8 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 242b577..bd635f9 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -733,9 +733,34 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
+ 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
+-	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
+-	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_CT29B_PID) },
+-	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_RTS01_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S03_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_59_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57A_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29A_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29F_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S01_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29C_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_81B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_82B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5D_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K4Y_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5G_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S05_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_60_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_61_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_64_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_65_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92D_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_W5R_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_A5R_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_PW1_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
+ 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 9852827..5f75c5f 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -813,11 +813,35 @@
+ /*
+  * RT Systems programming cables for various ham radios
+  */
+-#define RTSYSTEMS_VID			0x2100	/* Vendor ID */
+-#define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
+-#define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
+-#define RTSYSTEMS_RTS01_PID		0x9e57	/* USB-RTS01 Radio Cable */
+-
++#define RTSYSTEMS_VID		0x2100	/* Vendor ID */
++#define RTSYSTEMS_USB_S03_PID	0x9001	/* RTS-03 USB to Serial Adapter */
++#define RTSYSTEMS_USB_59_PID	0x9e50	/* USB-59 USB to 8 pin plug */
++#define RTSYSTEMS_USB_57A_PID	0x9e51	/* USB-57A USB to 4pin 3.5mm plug */
++#define RTSYSTEMS_USB_57B_PID	0x9e52	/* USB-57B USB to extended 4pin 3.5mm plug */
++#define RTSYSTEMS_USB_29A_PID	0x9e53	/* USB-29A USB to 3.5mm stereo plug */
++#define RTSYSTEMS_USB_29B_PID	0x9e54	/* USB-29B USB to 6 pin mini din */
++#define RTSYSTEMS_USB_29F_PID	0x9e55	/* USB-29F USB to 6 pin modular plug */
++#define RTSYSTEMS_USB_62_PID	0x9e56	/* USB-62 USB to 8 pin mini din plug*/
++#define RTSYSTEMS_USB_S01_PID	0x9e57	/* USB-RTS01 USB to 3.5 mm stereo plug*/
++#define RTSYSTEMS_USB_63_PID	0x9e58	/* USB-63 USB to 9 pin female*/
++#define RTSYSTEMS_USB_29C_PID	0x9e59	/* USB-29C USB to 4 pin modular plug*/
++#define RTSYSTEMS_USB_81B_PID	0x9e5A	/* USB-81 USB to 8 pin mini din plug*/
++#define RTSYSTEMS_USB_82B_PID	0x9e5B	/* USB-82 USB to 2.5 mm stereo plug*/
++#define RTSYSTEMS_USB_K5D_PID	0x9e5C	/* USB-K5D USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_K4Y_PID	0x9e5D	/* USB-K4Y USB to 2.5/3.5 mm plugs*/
++#define RTSYSTEMS_USB_K5G_PID	0x9e5E	/* USB-K5G USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_S05_PID	0x9e5F	/* USB-RTS05 USB to 2.5 mm stereo plug*/
++#define RTSYSTEMS_USB_60_PID	0x9e60	/* USB-60 USB to 6 pin din*/
++#define RTSYSTEMS_USB_61_PID	0x9e61	/* USB-61 USB to 6 pin mini din*/
++#define RTSYSTEMS_USB_62_PID	0x9e62	/* USB-62 USB to 8 pin mini din*/
++#define RTSYSTEMS_USB_63B_PID	0x9e63	/* USB-63 USB to 9 pin female*/
++#define RTSYSTEMS_USB_64_PID	0x9e64	/* USB-64 USB to 9 pin male*/
++#define RTSYSTEMS_USB_65_PID	0x9e65	/* USB-65 USB to 9 pin female null modem*/
++#define RTSYSTEMS_USB_92_PID	0x9e66	/* USB-92 USB to 12 pin plug*/
++#define RTSYSTEMS_USB_92D_PID	0x9e67	/* USB-92D USB to 12 pin plug data*/
++#define RTSYSTEMS_USB_W5R_PID	0x9e68	/* USB-W5R USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_A5R_PID	0x9e69	/* USB-A5R USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_PW1_PID	0x9e6A	/* USB-PW1 USB to 8 pin modular plug*/
+ 
+ /*
+  * Physik Instrumente
+-- 
+1.8.1.5
 
---Signature=_Thu__9_May_2013_09_47_45_+1000_CVvkeDkwbZD5=G9Z
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRiuQhAAoJEECxmPOUX5FEz98P/2YGNmnmwmAx1aEorXAFPlX4
-5srNezqIPSE8xj2ZWPT/EyLnWsj+axdSdrqgnjMgMuN2WiVx8rakmM628DmcTQXN
-pknk53y2LBDUqHW3gesJC0c4FbGVjUsFDLxUlsngy0FPJqCCmM3o4eWdnreMyLTj
-cfwt4UPc1ndnQru5mXYjdc2YdMbUIVl8E1m8Sb9TyYyVRmq4ufa/OSLtQLa/1eJZ
-kjFbkEPRuslaqO4u3tyhoYQcDG3leE6WquwvXoMVAfGs7YQargdxlwVaXTbM3AP1
-/cqxiMXQ2RR4G3Ogk1H9+6VEdE99Pgs4YEW8Dudfi1kXD7PJVRBrq0yFN5OjlHO+
-RcaAdIHM7ehk7Rek4aOV953U3YtlZaUM55BroLpDdGEx46HYGOmx63pHZMWu8jMc
-6OEICYAgxwro+iXjNxT6UpV0pAYf2OJqJlvoSJi07E93Dp3/aZ/5lFtP87C2Afnm
-Zi4pUbaiJGR2YI6Ujm37rWuQ7ZQZD7GT8hNYT8nwdtjlpiaF5ZYemGELMkc7NTC8
-J/o1JfXTcNjjLjDZ+IBV+uux5uW6mUqtgWR5tqL+FKqevCMgINoAm7c97VdcHBIx
-hIbfhm/XlIwcfJJY8bezfmUkfp82hkOJZPDRZWmPv+VfDoVvnv5NaOoE0BbtaJaA
-i5tQKqxx6EVlT3yLawL6
-=IAV4
------END PGP SIGNATURE-----
-
---Signature=_Thu__9_May_2013_09_47_45_+1000_CVvkeDkwbZD5=G9Z--
