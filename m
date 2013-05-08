@@ -1,103 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab3EHO3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 10:29:52 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51863 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755455Ab3EHO3v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 10:29:51 -0400
-Date: Wed, 8 May 2013 15:29:38 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Ola Lilja <ola.o.lilja@stericsson.com>
-Message-ID: <20130508142938.GS7478@sirena.org.uk>
-References: <1367997261-32048-1-git-send-email-fabio.baltieri@linaro.org>
- <1367997261-32048-4-git-send-email-fabio.baltieri@linaro.org>
- <20130508105124.GA7478@sirena.org.uk>
- <20130508114216.GB29130@balto.lan>
- <20130508123225.GK7478@sirena.org.uk>
- <20130508131020.GA30503@balto.lan>
- <20130508135413.GR7478@sirena.org.uk>
- <20130508141723.GA12155@balto.lan>
+	id S1755974Ab3EHOcF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 10:32:05 -0400
+Received: from mga14.intel.com ([143.182.124.37]:58533 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754585Ab3EHOcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 10:32:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,635,1363158000"; 
+   d="scan'208,223";a="299419208"
+Date: Wed, 8 May 2013 14:34:36 +0100 (IST)
+From: Josef Ahmad <josef.ahmad@linux.intel.com>
+X-X-Sender: joey@localhost
+To: Wolfram Sang <wsa@the-dreams.de>
+cc: Josef Ahmad <josef.ahmad@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Ben Dooks <ben-linux@fluff.org>, Jean Delvare <khali@linux-fr.org>,
+        Stefan Roese <sr@denx.de>, Axel Lin <axel.lin@gmail.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: Re: [PATCH] i2c-designware: fix RX FIFO overrun
+In-Reply-To: <20130425174348.GA3612@the-dreams.de>
+Message-ID: <alpine.DEB.2.02.1305081433430.7163@localhost>
+References: <alpine.DEB.2.02.1304191859570.17829@localhost> <20130422071943.GK1283@intel.com> <53398.163.33.213.79.1366630241.squirrel@linux.intel.com> <20130422122808.GO1283@intel.com> <alpine.DEB.2.02.1304221508050.31571@localhost> <20130423163543.GB3228@the-dreams.de>
+ <51465.163.33.213.85.1366739082.squirrel@linux.intel.com> <20130423182707.GA3649@the-dreams.de> <alpine.DEB.2.02.1304241110480.32505@localhost> <20130425174348.GA3612@the-dreams.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qoa3+4LHNtB0VmQh"
-Content-Disposition: inline
-In-Reply-To: <20130508141723.GA12155@balto.lan>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 212.183.132.60
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/6] ASoC: ux500: Drop pinctrl sleep support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From 8a4773d0c0df6fe2e816ad37fde30a2d90a1ad31 Mon Sep 17 00:00:00 2001
+From: Josef Ahmad <josef.ahmad@linux.intel.com>
+Date: Fri, 19 Apr 2013 17:28:10 +0100
+Subject: [PATCH] i2c-designware: fix RX FIFO overrun
 
---qoa3+4LHNtB0VmQh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+i2c_dw_xfer_msg() pushes a number of bytes to transmit/receive
+to/from the bus into the TX FIFO.
+For master-rx transactions, the maximum amount of data that can be
+received is calculated depending solely on TX and RX FIFO load.
 
-On Wed, May 08, 2013 at 04:17:23PM +0200, Fabio Baltieri wrote:
-> On Wed, May 08, 2013 at 02:54:13PM +0100, Mark Brown wrote:
+This is racy - TX FIFO may contain master-rx data yet to be
+processed, which will eventually land into the RX FIFO. This
+data is not taken into account and the function may request more
+data than the controller is actually capable of storing.
 
-> > But why does the rest of the code work well if the reference counting is
-> > wrong, it's in the middle of a big block of code?  This all smells like
-> > this change is papering over a specific symptom of some underlying issue
-> > - if that's not the case then it needs to be clearer why.
+This patch ensures the driver takes into account the outstanding
+master-rx data in TX FIFO to prevent RX FIFO overrun.
 
-> Well, the counting by itself is not wrong, it's just that the same pins
-> are used by both driver instances (ux500-msp-i2s.1 and ux500-msp-i2s.3)
-> but the actual counter is specific of each instance
-> (msp->pinctrl_rxtx_ref, if I'm not mistaken msp is different between the
-> capture and playback interfaces).
+Signed-off-by: Josef Ahmad <josef.ahmad@linux.intel.com>
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/i2c/busses/i2c-designware-core.c |   11 ++++++++++-
+ drivers/i2c/busses/i2c-designware-core.h |    2 ++
+ 2 files changed, 12 insertions(+), 1 deletions(-)
 
-So if these pins are being shared between the instances then surely
-there are other interdependencies that need to be taken care of Is that
-happening?  For example if the clocks are shared then is the code
-currently stopping the interfaces being configured with incompatible
-sample rates or word sizes?
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index 21fbb34..1f06c8e 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -448,8 +448,14 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
+ 				cmd |= BIT(9);
 
-It seems like the code is definitely buggy here but is this really all
-that's buggy or is it just the symptom you happen to have seen?
+ 			if (msgs[dev->msg_write_idx].flags & I2C_M_RD) {
++
++				/* avoid rx buffer overrun */
++				if (rx_limit - dev->rx_outstanding <= 0)
++					break;
++
+ 				dw_writel(dev, cmd | 0x100, DW_IC_DATA_CMD);
+ 				rx_limit--;
++				dev->rx_outstanding++;
+ 			} else
+ 				dw_writel(dev, cmd | *buf++, DW_IC_DATA_CMD);
+ 			tx_limit--; buf_len--;
+@@ -502,8 +508,10 @@ i2c_dw_read(struct dw_i2c_dev *dev)
 
-> Ok, what I'm trying to say is that the codec used in this platform
-> should be able to handle sleep modes without requiring any
-> reconfiguration of the digital interface on the SoC side.  In support of
-> this the fact that the STE fork of the driver does not do that, and the
-> same goes for all other ASoC drivers currently in mainline.
+ 		rx_valid = dw_readl(dev, DW_IC_RXFLR);
 
-Well, most things would probably be able to get some small benefit from
-doing this, it's just that we've not had any real support for managing
-pin muxing - one of the goals of adding pinctrl is to make it easier to
-deploy this sort of thing.
+-		for (; len > 0 && rx_valid > 0; len--, rx_valid--)
++		for (; len > 0 && rx_valid > 0; len--, rx_valid--) {
+ 			*buf++ = dw_readl(dev, DW_IC_DATA_CMD);
++			dev->rx_outstanding--;
++		}
 
---qoa3+4LHNtB0VmQh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ 		if (len > 0) {
+ 			dev->status |= STATUS_READ_IN_PROGRESS;
+@@ -561,6 +569,7 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+ 	dev->msg_err = 0;
+ 	dev->status = STATUS_IDLE;
+ 	dev->abort_source = 0;
++	dev->rx_outstanding = 0;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+ 	ret = i2c_dw_wait_bus_not_busy(dev);
+ 	if (ret < 0)
+diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
+index 9c1840e..e761ad1 100644
+--- a/drivers/i2c/busses/i2c-designware-core.h
++++ b/drivers/i2c/busses/i2c-designware-core.h
+@@ -60,6 +60,7 @@
+  * @adapter: i2c subsystem adapter node
+  * @tx_fifo_depth: depth of the hardware tx fifo
+  * @rx_fifo_depth: depth of the hardware rx fifo
++ * @rx_outstanding: current master-rx elements in tx fifo
+  */
+ struct dw_i2c_dev {
+ 	struct device		*dev;
+@@ -88,6 +89,7 @@ struct dw_i2c_dev {
+ 	u32			master_cfg;
+ 	unsigned int		tx_fifo_depth;
+ 	unsigned int		rx_fifo_depth;
++	int			rx_outstanding;
+ };
 
-iQIcBAEBAgAGBQJRimFPAAoJELSic+t+oim95S0P/AmeXItPl+0O8Pyoj2SZKUKv
-F7yPyiPZtZOqrcRaKnJQgHiaxt6O4msL5JzrPA2a9SPd8m6X4yUC4Osxtp9VNoUN
-l8keVitOg5MsmpK12uUeDV3dO/d3jGBYP7P8RY0tXOICnOnlQkxfc/bxeOk+Z7fs
-xKG1aVUe+kCh+D8VpTVguhVITOAUeAs4S0UecRn6V5dWg3jAVZk252uy5OVMORqA
-BVek8iOcRfWGnqNJ0ZXl0xTUdcpJ2aSw4RjBf0/JWcLsO3L7jTB3xxGtxbyrRkGF
-p5HgsKRh45yxFBIsYJnIEVId+wK8haofDAdTbLYRmVnRIU3aZt4d2VgXcT3VQQ3F
-vCv7mNqiAH62EfbrpL29Kd0+k+NXiqv6z8Hfu64nEeiwzqJYa3Mc2/0/WXHPnnzx
-XyMtX9K7eVjThRWDkCWbx42io+P/gVzEu6xWavLwrG2ZbY1671yT4QPM/2MOHGeG
-j0mV6vX4u+1fcnNLPfXYsZLwjspL2fBNvgH21lfteoY6neylybEmpGD8g2nQ0dgy
-M+KVcCeaZvoVvIcXIib6sUldF7L+4BlfVQKtaf6ljg4EbJMGNc0i+RbeOezHhuoU
-90SImSLmAfIlRVb4STT7k6BWKONLgo1Mj7IqVCVFiPDXHwOE1aQqiT9fFpfUd+/9
-BvChSjPf64ym7rCJVErC
-=vyPI
------END PGP SIGNATURE-----
+ #define ACCESS_SWAP		0x00000001
+-- 
+1.7.0.7
 
---qoa3+4LHNtB0VmQh--
+
