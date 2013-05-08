@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab3EHC6e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 22:58:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49890 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757108Ab3EHC6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 22:58:31 -0400
-Subject: [PATCH v2 8/8] pci: Wake-up devices before save for reset
-To: bhelgaas@google.com, linux-pci@vger.kernel.org
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 07 May 2013 20:58:27 -0600
-Message-ID: <20130508025827.30771.78449.stgit@bling.home>
-In-Reply-To: <20130508025339.30771.61937.stgit@bling.home>
-References: <20130508025339.30771.61937.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1753413Ab3EHDKD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 23:10:03 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:49543 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183Ab3EHDKB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 23:10:01 -0400
+X-Spam-Score: -100.8
+Message-ID: <5189C1D6.1040209@asianux.com>
+Date: Wed, 08 May 2013 11:09:10 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/module.c: for looping, need use 'goto' instead
+ of 'break' to jump out in time
+References: <51889EE4.4070504@asianux.com> <87ip2unwkt.fsf@rustcorp.com.au>
+In-Reply-To: <87ip2unwkt.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devices come out of reset in D0.  Restoring a device to a different
-post-reset state takes more smarts than our simple config space
-restore, which can leave devices in an inconsistent state.  For
-example, if a device is reset in D3, but the restore doesn't
-successfully return the device to D3, then the actual state of the
-device and dev->current_state are contradictory.  Put everything
-in D0 going into the reset, then we don't need to do anything
-special on the way out.
+On 2013年05月08日 08:29, Rusty Russell wrote:
+> Chen Gang <gang.chen@asianux.com> writes:
+>> > In the 'for' looping, when error occurs, the 'break' only jump out of
+>> > 'switch', and still in 'for' looping.  If error occurs multiple times,
+>> > the original error value will be overwrite.
+>> >
+>> > Currently, that will not cause issue, but still better to improve it,
+>> > so that let it return the first real error code in time.
+> We choose to print all the problems, rather than just one.  I don't
+> really mind though.
+> 
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/pci/pci.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+It sounds good: "choose to print all the problems, rather than just one"
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 8647998..98372ec 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -3312,6 +3312,13 @@ static void pci_dev_unlock(struct pci_dev *dev)
- 
- static void pci_dev_save(struct pci_dev *dev)
- {
-+	/*
-+	 * Wake-up device prior to save.  PM registers default to D0 after
-+	 * reset and a simple register restore doesn't reliably return
-+	 * to a non-D0 state anyway.
-+	 */
-+	pci_set_power_state(dev, PCI_D0);
-+
- 	pci_save_state(dev);
- 	/*
- 	 * both INTx and MSI are disabled after the Interrupt Disable bit
+If so, it seems enough to only return a bool value to known whether
+success or fail, do not need the error details any more (since they are
+already been printed)
 
+> It we want this patch, it would be neater to just 'return -ENOEXEC'
+> and 'return PTR_ERR(ksym) ?: -ENOENT'.
+
+If we really want this patch (still only print the first error, and
+return the real error value), I should send patch v2 (also 'ret' is
+obsoleted)
+
+Thanks.
+
+-- 
+Chen Gang
+
+Asianux Corporation
