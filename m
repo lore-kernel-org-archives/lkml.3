@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299Ab3EHQis (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 12:38:48 -0400
-Received: from smtpx.feld.cvut.cz ([147.32.192.33]:36019 "EHLO
-	smtpx.feld.cvut.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755276Ab3EHQir (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 12:38:47 -0400
-X-Greylist: delayed 626 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 May 2013 12:38:47 EDT
-Date: Wed, 08 May 2013 18:28:14 +0200
-Message-ID: <20130508182814.Horde.hakqXtmsOi7FNBjwBV1zlw1@wimap.feld.cvut.cz>
-From: strnape1@fel.cvut.cz
-To: kernel-janitors@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, cocci@systeme.lip6.fr, mmarek@suse.cz,
-        julia.lawall@lip6.fr
-Subject: [PATCH] scripts: Coccinelle script for pci_free_consistent()
-User-Agent: Internet Messaging Program (IMP) H5 (6.0.4)
-Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
+	id S1757387Ab3EHQiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 12:38:55 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:37085 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755276Ab3EHQiw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 12:38:52 -0400
+From: Stephen GALLIMORE <stephen.gallimore@st.com>
+To: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>
+Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Stuart MENEFY <stuart.menefy@st.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
+Date: Wed, 8 May 2013 18:10:48 +0200
+Subject: RE: [RFC 1/8] serial:st-asc: Add ST ASC driver.
+Thread-Topic: [RFC 1/8] serial:st-asc: Add ST ASC driver.
+Thread-Index: Ac5MAZt6GB2onu7ySGeL3ypSBxqboQAAQQRQ
+Message-ID: <A3BF01DB4A606149A4C20C4C4C808F6C3189E576C2@SAFEX1MAIL1.st.com>
+References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
+ <1368022248-2153-1-git-send-email-srinivas.kandagatla@st.com>
+ <201305081634.43498.arnd@arndb.de> <20130508153459.GA17186@kroah.com>
+In-Reply-To: <20130508153459.GA17186@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Created coccinelle script for reporting missing pci_free_consistent() calls.
 
-Signed-off-by: Petr Strnad <strnape1@fel.cvut.cz>
----
-/// Find missing pci_free_consistent for every pci_alloc_consistent.
-///
-// Confidence: Moderate
-// Copyright: (C) 2013 Petr Strnad.  GPLv2.
-// URL: http://coccinelle.lip6.fr/
-// Keywords: pci_free_consistent, pci_alloc_consistent
-// Options: --no-includes --include-headers
+>On Wed, May 08, 2013 at 04:34:43PM +0200, Arnd Bergmann wrote:
+> > > +#define ASC_MAJOR		204
+> > > +#define ASC_MINOR_START		40
+> > 
+> > I don't know what the current policy is on allocating major/minor 
+> > numbers, but I'm sure you cannot just reuse one that is already used.
 
-virtual report
-virtual org
+First, our apologies, this issue was raised internally and then got forgotten about, there's always something I guess.
+ 
+> >I agree, why are you trying to create a new tty device name?  Can't you use the existing ttyS name and minor number as you will not have any other type of serial
+> >device on this system?
 
-@search@
-local idexpression id;
-expression x,y,z,e;
-position p1,p2;
-type T;
-@@
+That is an interesting question Greg; I believe it probably stems from historic ST SoCs that had two different types of serial devices, something that is no longer the case. We will review our approach to this again, although we are not sure we can use the existing ttyS major/minor (even if that is an acceptable thing to do) because of the (remote) possibility of someone using a standard PCIe attached serial card.
 
-id = pci_alloc_consistent@p1(x,y,&z)
-... when != e = id
-if (id == NULL || ...) { ... return ...; }
-... when != pci_free_consistent(x,y,id,z)
-     when != if (id) { ... pci_free_consistent(x,y,id,z) ... }
-     when != if (y) { ... pci_free_consistent(x,y,id,z) ... }
-     when != e = (T)id
-     when exists
-(
-return 0;
-|
-return 1;
-|
-return id;
-|
-return@p2 ...;
-)
+Regards,
+-stephen
 
-@script:python depends on report@
-p1 << search.p1;
-p2 << search.p2;
-@@
-
-msg = "ERROR: missing pci_free_consistent; pci_alloc_consistent on  
-line %s and return without freeing on line %s" % (p1[0].line,p2[0].line)
-coccilib.report.print_report(p2[0],msg)
-
-@script:python depends on org@
-p1 << search.p1;
-p2 << search.p2;
-@@
-
-msg = "ERROR: missing pci_free_consistent; pci_alloc_consistent on  
-line %s and return without freeing on line %s" % (p1[0].line,p2[0].line)
-cocci.print_main(msg,p1)
-cocci.print_secs("",p2)
 
