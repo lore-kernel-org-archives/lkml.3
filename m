@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990Ab3EHC4G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 22:56:06 -0400
-Received: from ozlabs.org ([203.10.76.45]:45251 "EHLO ozlabs.org"
+	id S1755941Ab3EHC5h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 22:57:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9472 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752402Ab3EHC4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 22:56:05 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/module.c: for looping, need use 'goto' instead of 'break' to jump out in time
-In-Reply-To: <51889EE4.4070504@asianux.com>
-References: <51889EE4.4070504@asianux.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 08 May 2013 09:59:06 +0930
-Message-ID: <87ip2unwkt.fsf@rustcorp.com.au>
+	id S1754791Ab3EHC5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 22:57:36 -0400
+Subject: [PATCH v2 0/8] pci: bus and slot reset interface
+To: bhelgaas@google.com, linux-pci@vger.kernel.org
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 07 May 2013 20:57:34 -0600
+Message-ID: <20130508025339.30771.61937.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chen Gang <gang.chen@asianux.com> writes:
-> In the 'for' looping, when error occurs, the 'break' only jump out of
-> 'switch', and still in 'for' looping.  If error occurs multiple times,
-> the original error value will be overwrite.
->
-> Currently, that will not cause issue, but still better to improve it,
-> so that let it return the first real error code in time.
+v2: Sorry, v1 somehow didn't cc linux-pci.  No code change
 
-We choose to print all the problems, rather than just one.  I don't
-really mind though.
+We currently support reset of individual functions via the
+pci_reset_function() interface.  If a device supports one of the FLR
+mechanisms, this works great.  If not, things get a little shady.  We
+can do a D3hot->D0 PM reset if the device claims that does a soft
+reset, but the definition of a soft reset seems to be left to
+interpretation.  We can do a secondary bus reset if the device is
+behind a bridge, but this is a function level reset interface, so if
+there's anything else on that bus, we're out of luck.  Speaking of out
+of luck, guess what happens when we do a secondary bus reset on a port
+that supports pciehp surprise removal... we tickle the presence
+detection logic and start a hot remove, but the device is locked, so
+it doesn't get removed, then it gets added again, but it already
+exists... ugh, what a mess.
 
-It we want this patch, it would be neater to just 'return -ENOEXEC'
-and 'return PTR_ERR(ksym) ?: -ENOENT'.
+That seems like an indication that we want to create an interface for
+hotplug controllers to participate in a bus reset and prevent such
+craziness.  But we don't hotplug a bus, we hotplug a slot.  A bus can
+support multiple slots, so depending on the hotplug controller
+capabilities, we can potentially do a reset on a slot granularity and
+we can avoid spurious hotplug events.  Thus, pci_reset_slot.
 
-Cheers,
-Rusty.
+We're not always going to have a hotplug controller, in fact pciehp is
+the only one I know how to implement a reset_slot interface for (and
+it actually has a 1:1 slot:bus interface), so we can try pci_reset_slot
+and fall through to pci_reset_bus if needed.
 
-> The related commit: "1da177e Linux-2.6.12-rc"
->
->
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  kernel/module.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/module.c b/kernel/module.c
-> index b049939..7e012ff 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -1977,7 +1977,7 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
->  			printk("%s: please compile with -fno-common\n",
->  			       mod->name);
->  			ret = -ENOEXEC;
-> -			break;
-> +			goto tail;
->  
->  		case SHN_ABS:
->  			/* Don't need to do anything */
-> @@ -2000,7 +2000,7 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
->  			printk(KERN_WARNING "%s: Unknown symbol %s (err %li)\n",
->  			       mod->name, name, PTR_ERR(ksym));
->  			ret = PTR_ERR(ksym) ?: -ENOENT;
-> -			break;
-> +			goto tail;
->  
->  		default:
->  			/* Divert to percpu allocation if a percpu var. */
-> @@ -2013,6 +2013,7 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
->  		}
->  	}
->  
-> +tail:
->  	return ret;
->  }
->  
-> -- 
-> 1.7.7.6
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Once we have these we can export them to drivers, because sometimes
+those shady parts of pci_reset_function just aren't good enough and we
+understand that a reset can affect multiple devices.  VFIO is a driver
+that can take advantage of such an interface.  A VFIO user can be in
+control of multiple devices.  If they control all of the devices on a
+bus or a slot, a bus or slot reset mechanism should be available.
+Where we particularly need this is for exposing VGA devices to
+userspace.  These fall into the shady area where they claim to support
+a PM function reset, but it doesn't actually do anything.  They're
+also often not alone on the bus as they support a separate function
+for the audio controller.  With this series we can expose a bus reset
+interface and get repeatability.
+
+Comments welcome.  Thanks,
+Alex
+
+---
+
+Alex Williamson (8):
+      pci: Create pci_reset_bridge_secondary_bus()
+      pci: Add hotplug_slot_ops.reset_slot()
+      pci: Add pci_hp_reset_slot
+      pci: Implement reset_slot for pciehp
+      pci: Add reset_slot option to pci_dev_reset
+      pci: Split out pci_dev lock/unlock and save/restore
+      pci: Add slot and bus reset interfaces
+      pci: Wake-up devices before save for reset
+
+
+ drivers/pci/hotplug/pci_hotplug_core.c |   24 ++
+ drivers/pci/hotplug/pciehp.h           |    1 
+ drivers/pci/hotplug/pciehp_core.c      |   12 +
+ drivers/pci/hotplug/pciehp_hpc.c       |   31 +++
+ drivers/pci/pci.c                      |  313 +++++++++++++++++++++++++++++---
+ include/linux/pci.h                    |    3 
+ include/linux/pci_hotplug.h            |   12 +
+ 7 files changed, 370 insertions(+), 26 deletions(-)
