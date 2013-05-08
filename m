@@ -1,44 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab3EHPmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:42:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35899 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755326Ab3EHPmR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:42:17 -0400
-Date: Wed, 8 May 2013 08:42:16 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: Re: [PATCH 0/3] firmware: Fix usermodehelper deadlock at shutdown
-Message-ID: <20130508154216.GA24838@kroah.com>
-References: <1367996197-32748-1-git-send-email-tiwai@suse.de>
+	id S1756497Ab3EHPmL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:42:11 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:56898 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756022Ab3EHPmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 11:42:08 -0400
+X-IronPort-AV: E=Sophos;i="4.87,635,1363132800"; 
+   d="scan'208";a="24043600"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <marc.zyngier@arm.com>,
+        <will.deacon@arm.com>, <Stefano.Stabellini@eu.citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v3 4/4] xen/arm: account for stolen ticks
+Date: Wed, 8 May 2013 16:41:54 +0100
+Message-ID: <1368027714-14506-4-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1305081446580.18865@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305081446580.18865@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367996197-32748-1-git-send-email-tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 08:56:34AM +0200, Takashi Iwai wrote:
-> Hi,
-> 
-> this is a series of patches for the issue we faced in the firmware
-> loader code during debugging the problem with dell_rbu driver with
-> 3.9 kernel.
-> 
-> The original problem was that the shutdown gets stuck when DELL BIOS
-> update is performed.  This turned out to be a problem in the firmware
-> loader.  Although the reason of dell_rbu driver breakage is still
-> unclear, we should fix the firmware loader side, at least, not to
-> stall during shutdown.
+Register the runstate_memory_area with the hypervisor.
+Use pv_time_ops.steal_clock to account for stolen ticks.
 
-This is the second time this has been sent, right?  Any differences from
-the first set?
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-I'll get to these after 3.10-rc1 is out, thanks.
+Changes in v3:
+- use BUG_ON and smp_processor_id.
+---
+ arch/arm/xen/enlighten.c |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
 
-greg k-h
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index 13609e0..dfa7738 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -14,7 +14,10 @@
+ #include <xen/xen-ops.h>
+ #include <asm/xen/hypervisor.h>
+ #include <asm/xen/hypercall.h>
++#include <asm/arch_timer.h>
+ #include <asm/system_misc.h>
++#include <asm/paravirt.h>
++#include <linux/jump_label.h>
+ #include <linux/interrupt.h>
+ #include <linux/irqreturn.h>
+ #include <linux/module.h>
+@@ -152,6 +155,19 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
+ }
+ EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
+ 
++unsigned long long xen_stolen_accounting(int cpu)
++{
++	struct vcpu_runstate_info state;
++
++	BUG_ON(cpu != smp_processor_id());
++
++	xen_get_runstate_snapshot(&state);
++
++	WARN_ON(state.state != RUNSTATE_running);
++
++	return state.time[RUNSTATE_runnable] + state.time[RUNSTATE_offline];
++}
++
+ static void __init xen_percpu_init(void *unused)
+ {
+ 	struct vcpu_register_vcpu_info info;
+@@ -169,6 +185,8 @@ static void __init xen_percpu_init(void *unused)
+ 	BUG_ON(err);
+ 	per_cpu(xen_vcpu, cpu) = vcpup;
+ 
++	xen_setup_runstate_info(cpu);
++
+ 	enable_percpu_irq(xen_events_irq, 0);
+ }
+ 
+@@ -300,6 +318,10 @@ static int __init xen_init_events(void)
+ 
+ 	on_each_cpu(xen_percpu_init, NULL, 0);
+ 
++	pv_time_ops.steal_clock = xen_stolen_accounting;
++	static_key_slow_inc(&paravirt_steal_enabled);
++	static_key_slow_inc(&paravirt_steal_rq_enabled);
++
+ 	return 0;
+ }
+ postcore_initcall(xen_init_events);
+-- 
+1.7.2.5
+
