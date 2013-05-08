@@ -1,225 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843Ab3EHKDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 06:03:19 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:46459
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752798Ab3EHKDR (ORCPT
+	id S1754150Ab3EHKKb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 06:10:31 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50176 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab3EHKK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 06:03:17 -0400
-Date: Wed, 8 May 2013 12:01:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: torvalds@linux-foundation.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/9] liblockdep: Wrap kernel/lockdep.c to allow usage
- from userspace
-Message-ID: <20130508100143.GA6131@dyad.programming.kicks-ass.net>
-References: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com>
- <1367348080-4680-3-git-send-email-sasha.levin@oracle.com>
+	Wed, 8 May 2013 06:10:29 -0400
+X-AuditID: 9c930179-b7bb6ae000001131-bb-518a2493b926
+From: Jongsung Kim <neidhard.kim@lge.com>
+Organization: LG Electronics
+To: davem@davemloft.net, peppe.cavallaro@st.com, chohnstaedt@innominate.com
+Subject: net: phy: realtek: add rtl8201f driver
+Date: Wed, 8 May 2013 19:10:27 +0900
+User-Agent: KMail/1.12.4 (Linux/2.6.32-358.2.1.el6.x86_64; KDE/4.3.4; x86_64; ; )
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367348080-4680-3-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305081910.27203.neidhard.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 02:54:33PM -0400, Sasha Levin wrote:
-> diff --git a/tools/lib/lockdep/common.c b/tools/lib/lockdep/common.c
-> new file mode 100644
-> index 0000000..eb5e481
-> --- /dev/null
-> +++ b/tools/lib/lockdep/common.c
-> @@ -0,0 +1,33 @@
-> +#include <stddef.h>
-> +#include <stdbool.h>
-> +#include <linux/compiler.h>
-> +#include <linux/lockdep.h>
-> +#include <unistd.h>
-> +#include <sys/syscall.h>
-> +
-> +static struct task_struct current_obj;
-> +
-> +/* lockdep wants these */
-> +bool debug_locks = true;
-> +bool debug_locks_silent;
-> +
-> +__attribute__((constructor)) static void liblockdep_init(void)
-> +{
-> +	lockdep_init();
-> +}
-> +
-> +__attribute__((destructor)) static void liblockdep_exit(void)
-> +{
-> +	debug_check_no_locks_held(&current_obj);
-> +}
-> +
-> +struct task_struct *__curr(void)
-> +{
-> +	if (current_obj.pid == 0) {
-> +		/* Makes lockdep output pretty */
-> +		prctl(PR_GET_NAME, current_obj.comm);
-> +		current_obj.pid = syscall(__NR_gettid);
-> +	}
-> +
-> +	return &current_obj;
-> +}
+This patch adds the minimal driver to manage the
+Realtek RTL8201F 10/100Mbps Transceivers.
 
-> diff --git a/tools/lib/lockdep/uinclude/linux/lockdep.h b/tools/lib/lockdep/uinclude/linux/lockdep.h
-> new file mode 100644
-> index 0000000..8e9a5c4
-> --- /dev/null
-> +++ b/tools/lib/lockdep/uinclude/linux/lockdep.h
-> @@ -0,0 +1,58 @@
-> +#ifndef _LIBLOCKDEP_LOCKDEP_H_
-> +#define _LIBLOCKDEP_LOCKDEP_H_
-> +
-> +#include <sys/prctl.h>
-> +#include <sys/syscall.h>
-> +#include <string.h>
-> +#include <limits.h>
-> +#include <linux/utsname.h>
-> +
-> +
-> +#define MAX_LOCK_DEPTH 2000UL
-> +
-> +#include "../../../include/linux/lockdep.h"
-> +
-> +struct task_struct {
-> +	u64 curr_chain_key;
-> +	int lockdep_depth;
-> +	unsigned int lockdep_recursion;
-> +	struct held_lock held_locks[MAX_LOCK_DEPTH];
-> +	gfp_t lockdep_reclaim_gfp;
-> +	int pid;
-> +	char comm[17];
-> +};
-> +
-> +extern struct task_struct *__curr(void);
-> +
-> +#define current (__curr())
-> +
-> +#define debug_locks_off() 1
-> +#define task_pid_nr(tsk) ((tsk)->pid)
-> +
-> +#define KSYM_NAME_LEN 128
-> +#define printk printf
-> +
-> +#define KERN_ERR
-> +#define KERN_CONT
-> +
-> +#define list_del_rcu list_del
-> +
-> +#define atomic_t unsigned long
-> +#define atomic_inc(x) ((*(x))++)
-> +
-> +static struct new_utsname *init_utsname(void)
-> +{
-> +	static struct new_utsname n = (struct new_utsname) {
-> +		.release = "liblockdep",
-> +		.version = LIBLOCKDEP_VERSION,
-> +	};
-> +
-> +	return &n;
-> +}
-> +
-> +#define print_tainted() ""
-> +#define static_obj(x) 1
-> +
-> +#define debug_show_all_locks()
-> +
-> +#endif
-
-I don't see how this could possible work for threaded programs; you only have a
-single task_struct instance. Wouldn't you need something like the below?
-
+Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
 ---
+ drivers/net/phy/realtek.c |   60 +++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 53 insertions(+), 7 deletions(-)
 
-static int (*pthread_create_orig)(pthread_t *__restrict,
-		__const pthread_attr_t *__restrict,
-		void *(*)(void *),
-		void *__restrict) = NULL;
-
-
-static __thread struct task_struct __current;
-
-#define current (&__current)
-
-static void sched_fork(void)
-{
-	/* init __current */
-}
-
-__attribute__((constructor)) static void sched_init(void) 
-{
-	pthread_create_orig = dlsym(RTLD_NEXT, "pthread_create");
-	if (!pthread_create_orig) {
-		char *error = dlerror();
-		if (!error)
-			error = "pthread_create is NULL";
-		die("%s\n", error);
-	}
-
-	sched_fork(); /* main thread */
-}
-
-__attribute__((destructor)) static void sched_exit(void)
-{
-	/* */
-}
-
-struct tramp_data {
-
-	void *(*func)(void *);
-	void *arg;
-
-	pthread_mutex_t lock;
-	pthread_cond_t  wait;
-};
-
-static void *tramp_func(void *data)
-{
-	struct tramp_data *tramp_data = data;
-	void *(*func)(void *) = tramp_data->func;
-	void *arg = tramp_data->arg;
-
-	sched_fork();
-
-	pthread_mutex_lock(&tramp_data->lock);
-	pthread_cond_signal(&tramp_data->wait);
-	pthread_mutex_unlock(&tramp_data->lock);
-
-	return func(arg);
-}
-
-/* hijack pthread_create() */
-int pthread_create(pthread_t *__restrict thread,
-		__const pthread_attr_t *__restrict attr,
-		void *(*func)(void *),
-		void *__restrict arg)
-{
-	struct tramp_data tramp_data = {
-		.func = func,
-		.arg = arg,
-	};
-	int ret;
-
-	pthread_cond_init(&tramp_data.wait, NULL);
-	pthread_mutex_init(&tramp_data.lock, NULL);
-
-	pthread_mutex_lock(&tramp_data.lock);
-
-	ret = pthread_create_orig(thread, attr, &tramp_func, &tramp_data);
-	if (!ret)
-		pthread_cond_wait(&tramp_data.wait, &tramp_data.lock);
-
-	pthread_mutex_unlock(&tramp_data.lock);
-
-	pthread_mutex_destroy(&tramp_data.lock);
-	pthread_cond_destroy(&tramp_data.wait);
-
-	return ret;
-} 
-
+diff --git a/drivers/net/phy/realtek.c b/drivers/net/phy/realtek.c
+index 8e7af83..27847ca 100644
+--- a/drivers/net/phy/realtek.c
++++ b/drivers/net/phy/realtek.c
+@@ -16,9 +16,13 @@
+ #include <linux/phy.h>
+ #include <linux/module.h>
+ 
+-#define RTL821x_PHYSR		0x11
+-#define RTL821x_PHYSR_DUPLEX	0x2000
+-#define RTL821x_PHYSR_SPEED	0xc000
++/* page 0 register 30 - interrupt indicators and SNR display register */
++#define RTL8201F_ISR		0x1e
++/* page 0 register 31 - page select register */
++#define RTL8201F_PSR		0x1f
++/* page 7 register 19 - interrupt, WOL enable, and LEDs function register */
++#define RTL8201F_IER		0x13
++
+ #define RTL821x_INER		0x12
+ #define RTL821x_INER_INIT	0x6400
+ #define RTL821x_INSR		0x13
+@@ -29,6 +33,15 @@ MODULE_DESCRIPTION("Realtek PHY driver");
+ MODULE_AUTHOR("Johnson Leung");
+ MODULE_LICENSE("GPL");
+ 
++static int rtl8201f_ack_interrupt(struct phy_device *phydev)
++{
++	int err;
++
++	err = phy_read(phydev, RTL8201F_ISR);
++
++	return (err < 0) ? err : 0;
++}
++
+ static int rtl821x_ack_interrupt(struct phy_device *phydev)
+ {
+ 	int err;
+@@ -38,6 +51,24 @@ static int rtl821x_ack_interrupt(struct phy_device *phydev)
+ 	return (err < 0) ? err : 0;
+ }
+ 
++static int rtl8201f_config_intr(struct phy_device *phydev)
++{
++	int err;
++
++	phy_write(phydev, RTL8201F_PSR, 0x0007);	/* select page 7 */
++
++	if (phydev->interrupts == PHY_INTERRUPT_ENABLED)
++		err = phy_write(phydev, RTL8201F_IER, 0x3800 |
++		                phy_read(phydev, RTL8201F_IER));
++	else
++		err = phy_write(phydev, RTL8201F_IER, ~0x3800 &
++		                phy_read(phydev, RTL8201F_IER));
++
++	phy_write(phydev, RTL8201F_PSR, 0x0000);	/* back to page 0 */
++
++	return err;
++}
++
+ static int rtl8211b_config_intr(struct phy_device *phydev)
+ {
+ 	int err;
+@@ -64,6 +95,20 @@ static int rtl8211e_config_intr(struct phy_device *phydev)
+ 	return err;
+ }
+ 
++/* RTL8201F */
++static struct phy_driver rtl8201f_driver = {
++	.phy_id		= 0x001cc816,
++	.name		= "RTL8201F 10/100Mbps Ethernet",
++	.phy_id_mask	= 0x001fffff,
++	.features	= PHY_BASIC_FEATURES,
++	.flags		= PHY_HAS_INTERRUPT,
++	.config_aneg	= &genphy_config_aneg,
++	.read_status	= &genphy_read_status,
++	.ack_interrupt	= &rtl8201f_ack_interrupt,
++	.config_intr	= &rtl8201f_config_intr,
++	.driver		= { .owner = THIS_MODULE,},
++};
++
+ /* RTL8211B */
+ static struct phy_driver rtl8211b_driver = {
+ 	.phy_id		= 0x001cc912,
+@@ -96,16 +141,16 @@ static struct phy_driver rtl8211e_driver = {
+ 
+ static int __init realtek_init(void)
+ {
+-	int ret;
+-
+-	ret = phy_driver_register(&rtl8211b_driver);
+-	if (ret < 0)
++	if(phy_driver_register(&rtl8201f_driver) < 0)
++		return -ENODEV;
++	if(phy_driver_register(&rtl8211b_driver) < 0)
+ 		return -ENODEV;
+ 	return phy_driver_register(&rtl8211e_driver);
+ }
+ 
+ static void __exit realtek_exit(void)
+ {
++	phy_driver_unregister(&rtl8201f_driver);
+ 	phy_driver_unregister(&rtl8211b_driver);
+ 	phy_driver_unregister(&rtl8211e_driver);
+ }
+@@ -114,6 +159,7 @@ module_init(realtek_init);
+ module_exit(realtek_exit);
+ 
+ static struct mdio_device_id __maybe_unused realtek_tbl[] = {
++	{ 0x001cc816, 0x001fffff },
+ 	{ 0x001cc912, 0x001fffff },
+ 	{ 0x001cc915, 0x001fffff },
+ 	{ }
