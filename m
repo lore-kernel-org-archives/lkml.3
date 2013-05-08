@@ -1,104 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab3EHI6c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 04:58:32 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:47750 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753560Ab3EHI6a (ORCPT
+	id S1754131Ab3EHI6n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 04:58:43 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58028 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751557Ab3EHI6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 04:58:30 -0400
-Message-ID: <1368003504.32385.3.camel@phoenix>
-Subject: Re: [PATCH RFC] iio: dac: Fix build error when CONFIG_SPI_MASTER=y
- && CONFIG_I2C=m
-From: Axel Lin <axel.lin@ingics.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wu Fengguang <fengguang.wu@intel.com>
-Date: Wed, 08 May 2013 16:58:24 +0800
-In-Reply-To: <1368002183.31837.2.camel@phoenix>
-References: <1368002183.31837.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Wed, 8 May 2013 04:58:40 -0400
+Date: Wed, 8 May 2013 09:57:53 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Jonathan Austin <Jonathan.Austin@arm.com>
+Subject: Re: [PATCHv3] arm: Preserve the user r/w register TPIDRURW on
+ context switch and fork
+Message-ID: <20130508085753.GA15568@mudshark.cambridge.arm.com>
+References: <51896934.5080803@dawncrow.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <51896934.5080803@dawncrow.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 三，2013-05-08 於 16:36 +0800，Axel Lin 提到：
-> This patch fixes below build error when CONFIG_SPI_MASTER=y && CONFIG_I2C=m:
-> 
-> drivers/built-in.o: In function `ad5064_i2c_write':
-> drivers/iio/dac/ad5064.c:608: undefined reference to `i2c_master_send'
-> drivers/built-in.o: In function `ad5064_i2c_register_driver':
-> drivers/iio/dac/ad5064.c:646: undefined reference to `i2c_register_driver'
-> drivers/built-in.o: In function `ad5064_i2c_unregister_driver':
-> drivers/iio/dac/ad5064.c:651: undefined reference to `i2c_del_driver'
-> make: *** [vmlinux] Error 1
-> 
-> Add config IIO_DAC_I2C_AND_SPI helper to handle such case:
-> When CONFIG_I2C=m, meaning we can't build the drivers in with I2C support.
-> Thus don't allow the drivers to be compiled as built-in.
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Hi Andre,
 
-I should add 
-Reported-by: Wu Fengguang <fengguang.wu@intel.com>
-And also Cc Fengguang now.
-I look into this issue because it is reported by Fengguang's kbuild test
-robot.
+On Tue, May 07, 2013 at 09:51:00PM +0100, Andr� Hentschel wrote:
+> From: =?UTF-8?q?Andr=C3=A9=20Hentschel?= <nerv@dawncrow.de>
 
-> ---
->  drivers/iio/dac/Kconfig | 17 ++++++++++++++---
->  1 file changed, 14 insertions(+), 3 deletions(-)
+Might just be my mailer, but you should check that your name is intact here
+otherwise the git log will be mangled.
+
+> Since commit 6a1c53124aa1 the user writeable TLS register was zeroed to
+> prevent it from being used as a covert channel between two tasks.
 > 
-> diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
-> index f4a6f08..34bc1d7 100644
-> --- a/drivers/iio/dac/Kconfig
-> +++ b/drivers/iio/dac/Kconfig
-> @@ -1,11 +1,22 @@
->  #
->  # DAC drivers
->  #
-> +
-> +# Helper to resolve issues with configs that have SPI enabled but I2C
-> +# modular, meaning we can't build the drivers in with I2C support.
-> +# We use an ordered list of conditional defaults to pick the appropriate
-> +# setting - SPI can't be modular so that case doesn't need to be covered.
-> +config IIO_DAC_I2C_AND_SPI
-> +	tristate
-> +	default m if I2C=m
-> +	default y if I2C=y
-> +	default y if SPI_MASTER=y
-> +
->  menu "Digital to analog converters"
+> There are more and more applications coming to WinRT, Wine could support them,
+> but mostly they expect to have the thread environment block (TEB) in TPIDRURW.
+> 
+> This patch preserves that register per thread instead of clearing it.
+> Unlike the TPIDRURO, which is already switched, the TPIDRURW
+> can be updated from userspace so needs careful treatment in the case that we
+> modify TPIDRURW and call fork(). To avoid this we must always read
+> TPIDRURW in copy_thread.
+> 
+> Signed-off-by: Andr� Hentschel <nerv@dawncrow.de>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Jonathan Austin <jonathan.austin@arm.com> 
+
+[...]
+
+> diff --git a/arch/arm/include/asm/tls.h b/arch/arm/include/asm/tls.h
+> index 73409e6..22756ab 100644
+> --- a/arch/arm/include/asm/tls.h
+> +++ b/arch/arm/include/asm/tls.h
+> @@ -2,27 +2,30 @@
+>  #define __ASMARM_TLS_H
 >  
->  config AD5064
->  	tristate "Analog Devices AD5064 and similar multi-channel DAC driver"
-> -	depends on (SPI_MASTER || I2C)
-> +	depends on IIO_DAC_I2C_AND_SPI
->  	help
->  	  Say yes here to build support for Analog Devices AD5024, AD5025, AD5044,
->  	  AD5045, AD5064, AD5064-1, AD5065, AD5628, AD5629R, AD5648, AD5666, AD5668,
-> @@ -27,7 +38,7 @@ config AD5360
+>  #ifdef __ASSEMBLY__
+> -	.macro set_tls_none, tp, tmp1, tmp2
+> +#include <asm/asm-offsets.h>
+> +	.macro switch_tls_none, base, tp, tpuser, tmp1, tmp2
+>  	.endm
 >  
->  config AD5380
->  	tristate "Analog Devices AD5380/81/82/83/84/90/91/92 DAC driver"
-> -	depends on (SPI_MASTER || I2C)
-> +	depends on IIO_DAC_I2C_AND_SPI
->  	select REGMAP_I2C if I2C
->  	select REGMAP_SPI if SPI_MASTER
->  	help
-> @@ -57,7 +68,7 @@ config AD5624R_SPI
+> -	.macro set_tls_v6k, tp, tmp1, tmp2
+> +	.macro switch_tls_v6k, base, tp, tpuser, tmp1, tmp2
+> +	mrc	p15, 0, \tmp2, c13, c0, 2	@ get the user r/w register
+>  	mcr	p15, 0, \tp, c13, c0, 3		@ set TLS register
+> -	mov	\tmp1, #0
+> -	mcr	p15, 0, \tmp1, c13, c0, 2	@ clear user r/w TLS register
+> +	mcr	p15, 0, \tpuser, c13, c0, 2	@ and the user r/w register
+> +	strne	\tmp2, [\base, #TI_TP_VALUE + 4] @ save it
+
+Why is this conditional?
+
+>  	.endm
 >  
->  config AD5446
->  	tristate "Analog Devices AD5446 and similar single channel DACs driver"
-> -	depends on (SPI_MASTER || I2C)
-> +	depends on IIO_DAC_I2C_AND_SPI
->  	help
->  	  Say yes here to build support for Analog Devices AD5300, AD5301, AD5310,
->  	  AD5311, AD5320, AD5321, AD5444, AD5446, AD5450, AD5451, AD5452, AD5453,
+> -	.macro set_tls_v6, tp, tmp1, tmp2
+> +	.macro switch_tls_v6, base, tp, tpuser, tmp1, tmp2
+>  	ldr	\tmp1, =elf_hwcap
+>  	ldr	\tmp1, [\tmp1, #0]
+>  	mov	\tmp2, #0xffff0fff
+>  	tst	\tmp1, #HWCAP_TLS		@ hardware TLS available?
+> -	mcrne	p15, 0, \tp, c13, c0, 3		@ yes, set TLS register
+> -	movne	\tmp1, #0
+> -	mcrne	p15, 0, \tmp1, c13, c0, 2	@ clear user r/w TLS register
+>  	streq	\tp, [\tmp2, #-15]		@ set TLS value at 0xffff0ff0
+> +	mrcne	p15, 0, \tmp2, c13, c0, 2	@ get the user r/w register
+> +	mcrne	p15, 0, \tp, c13, c0, 3		@ yes, set TLS register
+> +	mcrne	p15, 0, \tpuser, c13, c0, 2	@ set user r/w register
+> +	strne	\tmp2, [\base, #TI_TP_VALUE + 4] @ save it
+>  	.endm
+>  
+> -	.macro set_tls_software, tp, tmp1, tmp2
+> +	.macro switch_tls_software, base, tp, tpuser, tmp1, tmp2
+>  	mov	\tmp1, #0xffff0fff
+>  	str	\tp, [\tmp1, #-15]		@ set TLS value at 0xffff0ff0
+>  	.endm
+> @@ -31,19 +34,31 @@
+>  #ifdef CONFIG_TLS_REG_EMUL
+>  #define tls_emu		1
+>  #define has_tls_reg		1
+> -#define set_tls		set_tls_none
+> +#define switch_tls	switch_tls_none
+>  #elif defined(CONFIG_CPU_V6)
+>  #define tls_emu		0
+>  #define has_tls_reg		(elf_hwcap & HWCAP_TLS)
+> -#define set_tls		set_tls_v6
+> +#define switch_tls	switch_tls_v6
+>  #elif defined(CONFIG_CPU_32v6K)
+>  #define tls_emu		0
+>  #define has_tls_reg		1
+> -#define set_tls		set_tls_v6k
+> +#define switch_tls	switch_tls_v6k
+>  #else
+>  #define tls_emu		0
+>  #define has_tls_reg		0
+> -#define set_tls		set_tls_software
+> +#define switch_tls	switch_tls_software
+>  #endif
+>  
+> +#ifndef __ASSEMBLY__
+> +static inline unsigned long get_tlsuser(void)
+> +{
+> +	if (has_tls_reg && !tls_emu)
+> +	{
+> +		unsigned long t;
+> +		__asm__("mrc p15, 0, %0, c13, c0, 2" : "=r" (t));
+> +		return t;
+> +	}
+> +	return 0;
 
+This isn't standard kernel coding style. Please do something like:
 
+	static inline unsigned long get_tlsuser(void)
+	{
+		unsigned long reg = 0;
+
+		if (has_tls_reg && !tls_emu)
+			asm("mrc p15, 0, %0, c13, c0, 2" : "=r" (reg));
+
+		return reg;
+	}
+
+Will
