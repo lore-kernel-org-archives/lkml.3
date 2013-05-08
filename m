@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066Ab3EHP4c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:56:32 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:33673 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756849Ab3EHP43 (ORCPT
+	id S1758145Ab3EHP4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:56:45 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:59938 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758123Ab3EHP4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:56:29 -0400
+	Wed, 8 May 2013 11:56:42 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,10 +19,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux@openrisc.net
-Subject: [PATCH v5, part4 29/41] mm/openrisc: prepare for removing num_physpages and simplify mem_init()
-Date: Wed,  8 May 2013 23:51:26 +0800
-Message-Id: <1368028298-7401-30-git-send-email-jiang.liu@huawei.com>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH v5, part4 31/41] mm/ppc: prepare for removing num_physpages and simplify mem_init()
+Date: Wed,  8 May 2013 23:51:28 +0800
+Message-Id: <1368028298-7401-32-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
 References: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
@@ -33,80 +34,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Prepare for removing num_physpages and simplify mem_init().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: Jonas Bonn <jonas@southpole.se>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: linux@lists.openrisc.net
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/openrisc/mm/init.c |   44 ++++----------------------------------------
- 1 file changed, 4 insertions(+), 40 deletions(-)
+ arch/powerpc/mm/mem.c |   56 +++++++++++--------------------------------------
+ 1 file changed, 12 insertions(+), 44 deletions(-)
 
-diff --git a/arch/openrisc/mm/init.c b/arch/openrisc/mm/init.c
-index da26482..ac438ab 100644
---- a/arch/openrisc/mm/init.c
-+++ b/arch/openrisc/mm/init.c
-@@ -202,56 +202,20 @@ void __init paging_init(void)
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index b890245..4e24f1c 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -299,46 +299,27 @@ void __init paging_init(void)
  
- /* References to section boundaries */
- 
--static int __init free_pages_init(void)
--{
--	int reservedpages, pfn;
--
--	/* this will put all low memory onto the freelists */
--	free_all_bootmem();
--
--	reservedpages = 0;
--	for (pfn = 0; pfn < max_low_pfn; pfn++) {
--		/*
--		 * Only count reserved RAM pages
--		 */
--		if (PageReserved(mem_map + pfn))
--			reservedpages++;
--	}
--
--	return reservedpages;
--}
--
--static void __init set_max_mapnr_init(void)
--{
--	max_mapnr = num_physpages = max_low_pfn;
--}
--
  void __init mem_init(void)
  {
--	int codesize, reservedpages, datasize, initsize;
+-#ifdef CONFIG_NEED_MULTIPLE_NODES
+-	int nid;
+-#endif
+-	pg_data_t *pgdat;
+-	unsigned long i;
+-	struct page *page;
+-	unsigned long reservedpages = 0, codesize, initsize, datasize, bsssize;
 -
- 	BUG_ON(!mem_map);
+ #ifdef CONFIG_SWIOTLB
+ 	swiotlb_init(0);
+ #endif
  
--	set_max_mapnr_init();
+-	num_physpages = memblock_phys_mem_size() >> PAGE_SHIFT;
+ 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE);
+ 
+ #ifdef CONFIG_NEED_MULTIPLE_NODES
+-        for_each_online_node(nid) {
+-		if (NODE_DATA(nid)->node_spanned_pages != 0) {
+-			printk("freeing bootmem node %d\n", nid);
+-			free_all_bootmem_node(NODE_DATA(nid));
+-		}
++	{
++		pg_data_t *pgdat;
++
++		for_each_online_pgdat(pgdat)
++			if (pgdat->node_spanned_pages != 0) {
++				printk("freeing bootmem node %d\n",
++					pgdat->node_id);
++				free_all_bootmem_node(pgdat);
++			}
+ 	}
+ #else
+ 	max_mapnr = max_pfn;
+ 	free_all_bootmem();
+ #endif
+-	for_each_online_pgdat(pgdat) {
+-		for (i = 0; i < pgdat->node_spanned_pages; i++) {
+-			if (!pfn_valid(pgdat->node_start_pfn + i))
+-				continue;
+-			page = pgdat_page_nr(pgdat, i);
+-			if (PageReserved(page))
+-				reservedpages++;
+-		}
+-	}
 -
-+	max_mapnr = max_low_pfn;
- 	high_memory = (void *)__va(max_low_pfn * PAGE_SIZE);
- 
- 	/* clear the zero-page */
- 	memset((void *)empty_zero_page, 0, PAGE_SIZE);
- 
--	reservedpages = free_pages_init();
--
--	codesize = (unsigned long)&_etext - (unsigned long)&_stext;
--	datasize = (unsigned long)&_edata - (unsigned long)&_etext;
+-	codesize = (unsigned long)&_sdata - (unsigned long)&_stext;
+-	datasize = (unsigned long)&_edata - (unsigned long)&_sdata;
 -	initsize = (unsigned long)&__init_end - (unsigned long)&__init_begin;
-+	/* this will put all low memory onto the freelists */
-+	free_all_bootmem();
+-	bsssize = (unsigned long)&__bss_stop - (unsigned long)&__bss_start;
  
--	printk(KERN_INFO
--	       "Memory: %luk/%luk available (%dk kernel code, %dk reserved, %dk data, %dk init, %ldk highmem)\n",
--	       (unsigned long)nr_free_pages() << (PAGE_SHIFT - 10),
--	       max_mapnr << (PAGE_SHIFT - 10), codesize >> 10,
--	       reservedpages << (PAGE_SHIFT - 10), datasize >> 10,
--	       initsize >> 10, (unsigned long)(0 << (PAGE_SHIFT - 10))
--	    );
+ #ifdef CONFIG_HIGHMEM
+ 	{
+@@ -348,13 +329,9 @@ void __init mem_init(void)
+ 		for (pfn = highmem_mapnr; pfn < max_mapnr; ++pfn) {
+ 			phys_addr_t paddr = (phys_addr_t)pfn << PAGE_SHIFT;
+ 			struct page *page = pfn_to_page(pfn);
+-			if (memblock_is_reserved(paddr))
+-				continue;
+-			free_highmem_page(page);
+-			reservedpages--;
++			if (!memblock_is_reserved(paddr))
++				free_highmem_page(page);
+ 		}
+-		printk(KERN_DEBUG "High memory: %luk\n",
+-		       totalhigh_pages << (PAGE_SHIFT-10));
+ 	}
+ #endif /* CONFIG_HIGHMEM */
+ 
+@@ -367,16 +344,7 @@ void __init mem_init(void)
+ 		(mfspr(SPRN_TLB1CFG) & TLBnCFG_N_ENTRY) - 1;
+ #endif
+ 
+-	printk(KERN_INFO "Memory: %luk/%luk available (%luk kernel code, "
+-	       "%luk reserved, %luk data, %luk bss, %luk init)\n",
+-		nr_free_pages() << (PAGE_SHIFT-10),
+-		num_physpages << (PAGE_SHIFT-10),
+-		codesize >> 10,
+-		reservedpages << (PAGE_SHIFT-10),
+-		datasize >> 10,
+-		bsssize >> 10,
+-		initsize >> 10);
+-
 +	mem_init_print_info(NULL);
- 
- 	printk("mem_init_done ...........................................\n");
- 	mem_init_done = 1;
+ #ifdef CONFIG_PPC32
+ 	pr_info("Kernel virtual memory layout:\n");
+ 	pr_info("  * 0x%08lx..0x%08lx  : fixmap\n", FIXADDR_START, FIXADDR_TOP);
 -- 
 1.7.9.5
 
