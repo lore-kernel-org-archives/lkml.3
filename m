@@ -1,84 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab3EHAMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 20:12:08 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50036 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229Ab3EHAME (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 20:12:04 -0400
-Date: Wed, 8 May 2013 10:11:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ville =?UTF-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>
-Subject: Re: linux-next: manual merge of the drm-intel tree with Linus' tree
-Message-Id: <20130508101154.05cd9327d7ebb0e7b9f82378@canb.auug.org.au>
-In-Reply-To: <CAKMK7uEr4Fs00nM3iuwwBdd+LV3_6w2sarR+i8tk02BrTHQmNA@mail.gmail.com>
-References: <20130507112751.195757b78defdbea58aa6134@canb.auug.org.au>
-	<CAKMK7uEr4Fs00nM3iuwwBdd+LV3_6w2sarR+i8tk02BrTHQmNA@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__8_May_2013_10_11_54_+1000_=0NLpcgQz7.Pqml="
+	id S1753215Ab3EHAQT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 20:16:19 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:37759 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751310Ab3EHAQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 20:16:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
+        Len Brown <lenb@kernel.org>, linux-mm@kvack.org, wency@cn.fujitsu.com
+Subject: Re: [PATCH 2/2 v2, RFC] Driver core: Introduce offline/online callbacks for memory blocks
+Date: Wed, 08 May 2013 02:24:40 +0200
+Message-ID: <1738385.YBsAESXG5F@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1367971156.30363.32.camel@misato.fc.hp.com>
+References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <228012439.MgiLXSqjLd@vostro.rjw.lan> <1367971156.30363.32.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__8_May_2013_10_11_54_+1000_=0NLpcgQz7.Pqml=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tuesday, May 07, 2013 05:59:16 PM Toshi Kani wrote:
+> On Wed, 2013-05-08 at 01:17 +0200, Rafael J. Wysocki wrote:
+> > On Tuesday, May 07, 2013 04:45:40 PM Toshi Kani wrote:
+> > > On Wed, 2013-05-08 at 00:10 +0200, Rafael J. Wysocki wrote:
+> > > > On Tuesday, May 07, 2013 03:03:49 PM Toshi Kani wrote:
+> > > > > On Tue, 2013-05-07 at 14:11 +0200, Rafael J. Wysocki wrote:
+> > > > > > On Tuesday, May 07, 2013 12:59:45 PM Vasilis Liaskovitis wrote:
+> > > > > 
+> > > > >  :
+> > > > > 
+> > > > > > Updated patch is appended for completness.
+> > > > > 
+> > > > > Yes, this updated patch solved the locking issue.
+> > > > > 
+> > > > > > > > > A more general issue is that there are now two memory offlining efforts:
+> > > > > > > > > 
+> > > > > > > > > 1) from acpi_bus_offline_companions during device offline
+> > > > > > > > > 2) from mm: remove_memory during device detach (offline_memory_block_cb)
+> > > > > > > > > 
+> > > > > > > > > The 2nd is only called if the device offline operation was already succesful, so
+> > > > > > > > > it seems ineffective or redundant now, at least for x86_64/acpi_memhotplug machine
+> > > > > > > > > (unless the blocks were re-onlined in between).
+> > > > > > > > 
+> > > > > > > > Sure, and that should be OK for now.  Changing the detach behavior is not
+> > > > > > > > essential from the patch [2/2] perspective, we can do it later.
+> > > > > > > 
+> > > > > > > yes, ok.
+> > > > > > > 
+> > > > > > > > 
+> > > > > > > > > On the other hand, the 2nd effort has some more intelligence in offlining, as it
+> > > > > > > > > tries to offline twice in the precense of memcg, see commits df3e1b91 or
+> > > > > > > > > reworked 0baeab16. Maybe we need to consolidate the logic.
+> > > > > > > > 
+> > > > > > > > Hmm.  Perhaps it would make sense to implement that logic in
+> > > > > > > > memory_subsys_offline(), then?
+> > > > > > > 
+> > > > > > > the logic tries to offline the memory blocks of the device twice, because the
+> > > > > > > first memory block might be storing information for the subsequent memblocks.
+> > > > > > > 
+> > > > > > > memory_subsys_offline operates on one memory block at a time. Perhaps we can get
+> > > > > > > the same effect if we do an acpi_walk of acpi_bus_offline_companions twice in
+> > > > > > > acpi_scan_hot_remove but it's probably not a good idea, since that would
+> > > > > > > affect non-memory devices as well. 
+> > > > > > > 
+> > > > > > > I am not sure how important this intelligence is in practice (I am not using
+> > > > > > > mem cgroups in my guest kernel tests yet).  Maybe Wen (original author) has
+> > > > > > > more details on 2-pass offlining effectiveness.
+> > > > > > 
+> > > > > > OK
+> > > > > > 
+> > > > > > It may be added in a separate patch in any case.
+> > > > > 
+> > > > > I had the same comment as Vasilis.  And, I agree with you that we can
+> > > > > enhance it in separate patches.
+> > > > > 
+> > > > >  :
+> > > > > 
+> > > > > > +static int memory_subsys_offline(struct device *dev)
+> > > > > > +{
+> > > > > > +	struct memory_block *mem = container_of(dev, struct memory_block, dev);
+> > > > > > +	int ret;
+> > > > > > +
+> > > > > > +	mutex_lock(&mem->state_mutex);
+> > > > > > +	ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
+> > > > > 
+> > > > > This function needs to check mem->state just like
+> > > > > offline_memory_block().  That is:
+> > > > > 
+> > > > > 	int ret = 0;
+> > > > > 		:
+> > > > > 	if (mem->state != MEM_OFFLINE)
+> > > > > 		ret = __memory_block_change_state(...);
+> > > > > 
+> > > > > Otherwise, memory hot-delete to an off-lined memory fails in
+> > > > > __memory_block_change_state() since mem->state is already set to
+> > > > > MEM_OFFLINE.
+> > > > > 
+> > > > > With that change, for the series:
+> > > > > Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+> > > > 
+> > > > OK, one more update, then (appended).
+> > > > 
+> > > > That said I thought that the check against dev->offline in device_offline()
+> > > > would be sufficient to guard agaist that.  Is there any "offline" code path
+> > > > I didn't take into account?
+> > > 
+> > > Oh, you are right about that.  The real problem is that dev->offline is
+> > > set to false (0) when a new memory is hot-added in off-line state.  So,
+> > > instead, dev->offline needs to be set properly.  
+> > 
+> > OK, where does that happen?
+> 
+> It's a bit messy, but the following change seems to work.  A tricky part
+> is that online() is not called during boot, so I needed to update the
+> offline flag in __memory_block_change_state().
 
-Hi Daniel,
+I wonder why? ->
 
-On Tue, 7 May 2013 10:43:17 +0200 Daniel Vetter <daniel.vetter@ffwll.ch> wr=
-ote:
->
-> On Tue, May 7, 2013 at 3:27 AM, Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
-> >
-> > Daniel, I assume all this stuff being added to the drm-intel tree is
-> > going upstream very soon?
->=20
-> Oops, no that is stuff for 3.11. Lazy me hoped I could sneak stuff
-> through (since we just keep on merging features to
-> drm-intel-next-queued to avoid stalls), but that's obviously not what
-> you want for linux-next. My apologies for that mess. I've now created
-> a for-linux-next branch which will not contain patches heading for
-> 3.x+1 while 3.x-rc1 hasn't been released yet.
->=20
-> Can you please switch over to that branch for inclusion into linux-next?
+> ---
+>  drivers/base/memory.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+> index b9dfd34..1c8d781 100644
+> --- a/drivers/base/memory.c
+> +++ b/drivers/base/memory.c
+> @@ -294,8 +294,10 @@ static int __memory_block_change_state(struct
+> memory_block *mem,
+>  		mem->state = from_state_req;
+>  	} else {
+>  		mem->state = to_state;
+> -		if (to_state == MEM_ONLINE)
+> +		if (to_state == MEM_ONLINE) {
+>  			mem->last_online = online_type;
+> +			mem->dev.offline = false;
+> +		}
 
-Done.  Thanks.
+->
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+__memory_block_change_state() is called by memory_subsys_online/offline()
+and by __memory_block_change_state_uevent() only, so it should be sufficient
+to do this under the switch () in the latter.
 
---Signature=_Wed__8_May_2013_10_11_54_+1000_=0NLpcgQz7.Pqml=
-Content-Type: application/pgp-signature
+Still, though, __memory_block_change_state_uevent() is only called (indirectly)
+from store_mem_state() and by offline_memory_block() the both of which update
+dev->offline.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+What's the exact scenario you needed this for?
 
-iQIcBAEBCAAGBQJRiZhKAAoJEECxmPOUX5FEHfYP/i9T1NEZgwsSA9PKpARo149/
-jBTt9i4R5XkXIE3s3rqi9DA7qMRT3Dz8/ueEmna+iIAXGo2eq/rkOfm0jUI4Hh8n
-ZFlL0IwqagrOOJYrBK6KIc8CLJRNFgRCvUSav3yrrG5zFxWgnpJBYIqd424t41VE
-cCC9MEtiXMjvPz4Ju5TaRjfJWcUPSU3UuJz7PTGtsNqj72bDMga/jpX1QXBjolRN
-gF/0Wo9rKbN2QHQZMn4F8ByVf9s2XReA4OkhLNI0VZeMSNuDdhlnmzbkuKuuWsme
-WAuQnGOvYJNcwAf96EF0jUQ3+4VxhlUSkdy0zQCI2qEgRIziNyxnhQzo2ROJvmVm
-Q1PXznNnc19/HpTCIpQNha8rNQPfl2QhU9pQ1zqxThnkOMQUc5hbcrzsyNOpfEPb
-AcwyexVYjXfzB45sxldwZxbImn7WT9BTLzyGM8yMc0A+lC1POKWRMqwqXpPnb0KU
-VXqFhl88leXRCarhCYOggIEEQzjio/cpXA0wnhtvQm/pfrqhrdNSdfpWe+f7O8V2
-t6Kt7hAz3rxi/5Wg11HeGjK6BFujvHirQb73c42ScxbVRh2heriefD3TiGpwVyYf
-iFadgTnAnNYA3wBjVIZxF7+w4leAgbwO9ypAlfhroQFoRBDefa/i6C9JE6ASaW3u
-mskalv1GAhxpsQxt8Rt5
-=cCsb
------END PGP SIGNATURE-----
+>  	}
+>  	return ret;
+>  }
+> @@ -613,6 +615,7 @@ static int init_memory_block(struct memory_block
+> **memory,
+>  	mem->state = state;
+>  	mem->last_online = ONLINE_KEEP;
+>  	mem->section_count++;
+> +	mem->dev.offline = (state == MEM_OFFLINE) ? true : false; 
 
---Signature=_Wed__8_May_2013_10_11_54_+1000_=0NLpcgQz7.Pqml=--
+You could write this as
+
++	mem->dev.offline = state == MEM_OFFLINE; 
+
+Moreover, it'd be better to do it in register_memory(), I think.
+
+>  	mutex_init(&mem->state_mutex);
+>  	start_pfn = section_nr_to_pfn(mem->start_section_nr);
+>  	mem->phys_device = arch_get_memory_phys_device(start_pfn);
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
