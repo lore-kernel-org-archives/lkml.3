@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab3EHAaa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 20:30:30 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:37499 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752725Ab3EHAa3 (ORCPT
+	id S1754161Ab3EHAa5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 20:30:57 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:54713 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab3EHAa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 20:30:29 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+SirwpfEVCygeEx7Gm9WL2
-Date: Tue, 7 May 2013 17:30:23 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] SLAB changes for v3.10
-Message-ID: <20130508003022.GS28721@atomide.com>
-References: <alpine.LFD.2.03.1305070936320.2383@kernel.org>
+	Tue, 7 May 2013 20:30:56 -0400
+Message-ID: <51899CBC.6020003@linaro.org>
+Date: Tue, 07 May 2013 17:30:52 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.03.1305070936320.2383@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Pavel Machek <pavel@denx.de>
+CC: Arnd Bergmann <arnd@arndb.de>, tglx@linutronix.de,
+        Jamie Iles <jamie@jamieiles.com>, dinguyen@altera.com, wd@denx.de,
+        linux-arm-kernel@lists.infradead.org, olof@lixom.net,
+        kernel list <linux-kernel@vger.kernel.org>, jacob.jun.pan@intel.com
+Subject: Re: dw_apb_timer_of.c: remove parts that were picoxcell-specific
+References: <20130426121433.GA16249@amd.pavel.ucw.cz> <201305061545.22587.arnd@arndb.de> <20130506155304.GA6645@amd.pavel.ucw.cz> <201305062324.17080.arnd@arndb.de> <20130507135752.GA3500@amd.pavel.ucw.cz> <51892E5E.8090909@linaro.org> <20130507201126.GA8169@amd.pavel.ucw.cz>
+In-Reply-To: <20130507201126.GA8169@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pekka Enberg <penberg@kernel.org> [130506 23:42]:
-> Hi Linus,
-> 
-> Please pull the latest SLAB tree from:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
-...
+On 05/07/2013 01:11 PM, Pavel Machek wrote:
+> It seems we made a mistake when creating dw_apb_timer_of.c:
+> picoxcell sched_clock had parts that were not related to
+> dw_apb_timer, yet we moved them to dw_apb_timer_of, and tried to
+> use them on socfpga.
+>
+> This results in system where user/system time is not measured
+> properly, as demonstrated by
+>      
+>      time dd if=/dev/urandom of=/dev/zero bs=100000 count=100
+>      
+> So this patch switches sched_clock to hardware that exists on both
+> platforms, and adds missing of_node_put() in dw_apb_timer_init().
+>      
+> Signed-off-by: Pavel Machek <pavel@denx.de>
+> Acked-by: Jamie Iles <jamie@jamieiles.com>
 
->       mm, slab_common: Fix bootstrap creation of kmalloc caches
+Ok. I'm still not a happy about the general issue of 
+sched_clock/clockevent code being in drivers/clocksources (I know, 
+everyone is sick of my griping about it :), so reviewing this sucks, but 
+at least this patch technically isn't making that issue worse.
 
-This one seems to cause a regression for me on at least arm omap
-and vexpress that depends on some kconfig option I have not been
-able to figure out yet. Reverting 8a965b3b fixes the issue.
+Additionally, this is an *ugly* driver in my opinion. Its split between 
+arch specific logic in arch/x86/kernel/apb_timer.c, 
+arch/arm/mach-picoxcell/common.c, and arch/arm/mach-socfpga/socfpga.c, 
+and then arch independent logic in drivers/clocksource/dw_apb_timer.c 
+and drivers/clocksource/dw_apb_timer_of.c, but then it seems like much 
+of drivers/clocksource/dw_apb_timer_of.c is actually ARM specific.
 
-Any ideas?
+Are there any plans to clean this up in the future?
 
-Regards,
+Also, next time please run checkpatch.pl to catch trivial issues like 
+trailing whitespace. :P
 
-Tony
+But I've gone ahead and queued this for 3.11.
 
+thanks
+-john
 
-Without reverting 8a965b3b I'm getting:
-
-[    0.000000] Unable to handle kernel NULL pointer dereference at virtual address 00000054
-[    0.000000] pgd = c0004000
-[    0.000000] [00000054] *pgd=00000000
-[    0.000000] Internal error: Oops: 5 [#1] SMP ARM
-[    0.000000] Modules linked in:
-[    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.9.0-11486-g6d13e11 #689
-[    0.000000] task: c06f77c8 ti: c06ec000 task.ti: c06ec000
-[    0.000000] PC is at kmem_cache_alloc_trace+0x50/0x178
-[    0.000000] LR is at kmem_cache_alloc_trace+0x38/0x178
-[    0.000000] pc : [<c00edab4>]    lr : [<c00eda9c>]    psr: 600001d3
-[    0.000000] sp : c06edf70  ip : 600001d3  fp : 00000000
-[    0.000000] r10: 000000c0  r9 : c0086958  r8 : 000080d0
-[    0.000000] r7 : 00000000  r6 : 600001d3  r5 : 00000000  r4 : 00008000
-[    0.000000] r3 : 00000050  r2 : c06ec000  r1 : c06f77c8  r0 : c00eda9c
-[    0.000000] Flags: nZCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-[    0.000000] Control: 10c5387d  Table: 6000406a  DAC: 00000015
-[    0.000000] Process swapper/0 (pid: 0, stack limit = 0xc06ec240)
-[    0.000000] Stack: (0xc06edf70 to 0xc06ee000)
-[    0.000000] df60:                                     00002014 00000010 c0702890 00000000
-[    0.000000] df80: 00000000 00000000 00000000 410fc090 c06f4480 c0086958 c0702890 00000000
-[    0.000000] dfa0: 00000010 c06dc0b0 ffffffff c06b44f4 9fffffff c073834c c0738340 c06a5828
-[    0.000000] dfc0: ffffffff ffffffff c06a5478 00000000 00000000 c06dc0b0 00000000 10c5387d
-[    0.000000] dfe0: c06f44c8 c06dc4b4 c06f8cac 6000406a 00000000 60008074 00000000 00000000
-[    0.000000] [<c00edab4>] (kmem_cache_alloc_trace+0x50/0x178) from [<c0086958>] (alloc_desc+0x24/0xb4)
-[    0.000000] [<c0086958>] (alloc_desc+0x24/0xb4) from [<c06b44f4>] (early_irq_init+0x78/0xec)
-[    0.000000] [<c06b44f4>] (early_irq_init+0x78/0xec) from [<c06a5828>] (start_kernel+0x17c/0x33c)
-[    0.000000] [<c06a5828>] (start_kernel+0x17c/0x33c) from [<60008074>] (0x60008074)
-[    0.000000] Code: e5923014 e2833014 e1a03103 e0873003 (e5931004)
-[    0.000000] ---[ end trace 1b75b31a2719ed1c ]---
