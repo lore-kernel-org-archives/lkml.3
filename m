@@ -1,75 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026Ab3EHOSU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 10:18:20 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54199 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755548Ab3EHOSR (ORCPT
+	id S1756359Ab3EHOSk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 10:18:40 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:46907 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755272Ab3EHORV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 10:18:17 -0400
-Date: Wed, 8 May 2013 15:17:06 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Peter Maydell <peter.maydell@linaro.org>
-Cc: Christopher Covington <cov@codeaurora.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Alexander Graf <agraf@suse.de>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Amit Shah <amit.shah@redhat.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Subject: Re: [PATCH 0/2] Early printk support for virtio console devices.
-Message-ID: <20130508141706.GF2703@arm.com>
-References: <CAAHg+Hj0tySbzUGnoFE9ybVYP291B-i8-Ck1EkwD57t8yG5wwg@mail.gmail.com>
- <C52CCDD4-D8FB-4AD6-B83D-3B5251A7A0F5@suse.de>
- <87sj27xxjr.fsf@rustcorp.com.au>
- <CAFEAcA9h8iSYfTBtf6n+Vk5sDtBR2yB2oafRxikHoWbKt0VRUw@mail.gmail.com>
- <87ip2wr8tp.fsf@rustcorp.com.au>
- <CAFEAcA_=BTXVdkN0WmajxVSjbDrmxc5z65hCbxr=7TqJVsE9EA@mail.gmail.com>
- <87txmfo0rl.fsf@rustcorp.com.au>
- <CAFEAcA9jBSpN2p9ZaU+_gX41Ke3nvpSKVrWV8Rioy_ioadKCgg@mail.gmail.com>
- <5189234D.3040208@codeaurora.org>
- <CAFEAcA-eSB=_UT0-L7o=2o6JGv0WkXZv5UPxPVqLRxjUZQegFA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFEAcA-eSB=_UT0-L7o=2o6JGv0WkXZv5UPxPVqLRxjUZQegFA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 8 May 2013 10:17:21 -0400
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+To: linux@arm.linux.org.uk, arnd@arndb.de, olof@lixom.net
+Cc: Rob Landley <rob@landley.net>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Dave Martin <dave.martin@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        Stephen Gallimore <stephen.gallimore@st.com>
+Subject: [RFC 7/8] ARM:stih41x: Add B2000 board support
+Date: Wed,  8 May 2013 15:12:09 +0100
+Message-Id: <1368022329-2424-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 04:58:23PM +0100, Peter Maydell wrote:
-> On 7 May 2013 16:52, Christopher Covington <cov@codeaurora.org> wrote:
-> > On 05/07/2013 08:19 AM, Peter Maydell wrote:
-> >> Well, at the moment EARLY_PRINTK is hardcoded to
-> >> "use some specific UART or equivalent selected at
-> >> compile time". So the equivalent presumably would
-> >> be to hard-compile "use virtio-console", but then
-> >> how does that code know where the virtio-console
-> >> is in the address space?
-> >
-> > arm64 uses a kernel argument.
-> 
-> This mixes up "information that the user provides to the
-> kernel" (ie configuration) with "information that QEMU or
-> kvmtool should provide to the kernel" (ie hardware
-> description), and would require QEMU/kvmtool to parse
-> the user's commandline tool to figure out if they
-> needed to override it or edit it (or alternatively,
-> would require the user to know internal details of
-> QEMU/kvmtool's address map for the guest). I think it
-> would be nicer to keep them separate.
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-I'm not sure it's worth it, the earlyprintk is meant for debugging the
-early kernel booting code, not for general use (you have the normal
-console for this). Someone doing platform port should know the address
-of the uart and pass the right information on the kernel command line to
-help debug early booting issues.
+B2000 board is reference board for STIH415/416 SOCs, it has
+2 x UART, 4x USB, 2 x Ethernet, 1 x SATA, 1 x PCIe, and 1GB RAM.
 
-But if someone comes up with some bindings, I won't reject the patch.
+This patch add initial support to b2000 with STiH415/416 with UART2 as
+console and a heard beat LED.
 
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+CC: Stephen Gallimore <stephen.gallimore@st.com>
+CC: Stuart Menefy <stuart.menefy@st.com>
+---
+ arch/arm/boot/dts/Makefile           |    2 +
+ arch/arm/boot/dts/stih415-b2000.dtsp |   15 ++++++++++++
+ arch/arm/boot/dts/stih416-b2000.dtsp |   16 +++++++++++++
+ arch/arm/boot/dts/stih41x-b2000.dtsi |   41 ++++++++++++++++++++++++++++++++++
+ arch/arm/mach-stih41x/board-dt.c     |    2 +
+ 5 files changed, 76 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/boot/dts/stih415-b2000.dtsp
+ create mode 100644 arch/arm/boot/dts/stih416-b2000.dtsp
+ create mode 100644 arch/arm/boot/dts/stih41x-b2000.dtsi
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 9c62558..78b0271 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -147,6 +147,8 @@ dtb-$(CONFIG_ARCH_SPEAR3XX)+= spear300-evb.dtb \
+ 	spear320-evb.dtb \
+ 	spear320-hmi.dtb
+ dtb-$(CONFIG_ARCH_SPEAR6XX)+= spear600-evb.dtb
++dtb-$(CONFIG_ARCH_STIH41X)+= stih415-b2000.dtb \
++	stih416-b2000.dtb
+ dtb-$(CONFIG_ARCH_SUNXI) += sun4i-a10-cubieboard.dtb \
+ 	sun4i-a10-hackberry.dtb \
+ 	sun5i-a13-olinuxino.dtb
+diff --git a/arch/arm/boot/dts/stih415-b2000.dtsp b/arch/arm/boot/dts/stih415-b2000.dtsp
+new file mode 100644
+index 0000000..d4af531
+--- /dev/null
++++ b/arch/arm/boot/dts/stih415-b2000.dtsp
+@@ -0,0 +1,15 @@
++/*
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
++ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * publishhed by the Free Software Foundation.
++ */
++/dts-v1/;
++#include "stih415.dtsi"
++#include "stih41x-b2000.dtsi"
++/ {
++	model = "STiH415 B2000 Board";
++	compatible = "st,stih415", "st,stih415-b2000";
++};
+diff --git a/arch/arm/boot/dts/stih416-b2000.dtsp b/arch/arm/boot/dts/stih416-b2000.dtsp
+new file mode 100644
+index 0000000..a5eb6ee
+--- /dev/null
++++ b/arch/arm/boot/dts/stih416-b2000.dtsp
+@@ -0,0 +1,16 @@
++/*
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
++ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * publishhed by the Free Software Foundation.
++ */
++/dts-v1/;
++#include "stih416.dtsi"
++#include "stih41x-b2000.dtsi"
++
++/ {
++	compatible = "st,stih416", "st,stih416-b2000";
++	model = "STiH416 B2000";
++};
+diff --git a/arch/arm/boot/dts/stih41x-b2000.dtsi b/arch/arm/boot/dts/stih41x-b2000.dtsi
+new file mode 100644
+index 0000000..8c17e4a
+--- /dev/null
++++ b/arch/arm/boot/dts/stih41x-b2000.dtsi
+@@ -0,0 +1,41 @@
++/*
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
++ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * publishhed by the Free Software Foundation.
++ */
++/ {
++
++	memory{
++		device_type = "memory";
++		reg = <0x60000000 0x40000000>;
++	};
++
++	chosen {
++		bootargs = "console=ttyAS0,115200";
++		linux,stdout-path = &uart2;
++	};
++
++	aliases {
++		ttyAS0 = &uart2;
++	};
++
++	soc {
++		uart2: uart@fed32000 {
++			status = "okay";
++		};
++
++		leds {
++			compatible	= "gpio-leds";
++			fp_led {
++				#gpio-cells = <1>;
++				label	= "Front Panel LED";
++				gpios	= <&PIO105 7>;
++				linux,default-trigger	= "heartbeat";
++			};
++		};
++
++	};
++};
+diff --git a/arch/arm/mach-stih41x/board-dt.c b/arch/arm/mach-stih41x/board-dt.c
+index 8005f71..1f23aca 100644
+--- a/arch/arm/mach-stih41x/board-dt.c
++++ b/arch/arm/mach-stih41x/board-dt.c
+@@ -63,6 +63,8 @@ void __init stih41x_dt_init(void)
+ }
+ 
+ static const char *stih41x_dt_match[] __initdata = {
++	"st,stih415-b2000",
++	"st,stih416-b2000",
+ 	NULL
+ };
+ 
 -- 
-Catalin
+1.7.6.5
+
