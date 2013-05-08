@@ -1,302 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758513Ab3EHQJg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 12:09:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37187 "EHLO mx2.suse.de"
+	id S1758525Ab3EHQKZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 12:10:25 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:34883 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757734Ab3EHQDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 12:03:16 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-MM <linux-mm@kvack.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Dave Hansen <dave@sr71.net>,
-        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 09/22] mm: page allocator: Allocate/free order-0 pages from a per-zone magazine
-Date: Wed,  8 May 2013 17:02:54 +0100
-Message-Id: <1368028987-8369-10-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1368028987-8369-1-git-send-email-mgorman@suse.de>
-References: <1368028987-8369-1-git-send-email-mgorman@suse.de>
+	id S1758381Ab3EHQKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 12:10:21 -0400
+Message-ID: <518A78CC.2000501@linux.vnet.ibm.com>
+Date: Wed, 08 May 2013 11:09:48 -0500
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers/base: Use attribute groups to create sysfs memory
+ files
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050816-9360-0000-0000-00001215F771
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a simple magazine of order-0 pages that sits between
-the buddy allocator and the caller. Simplistically there is a "struct
-free_area zone->noirq_magazine" in each zone protected by an IRQ-unsafe
-spinlock zone->magazine_lock. It replaces the per-cpu allocator that
-used to exist but has several properties that may be better depending on
-the workload.
+Update the sysfs memory code to create/delete files at the time of device
+and subsystem registration.
 
-1. IRQs do not have to be disabled to access the lists reducing IRQs
-   disabled times.
+The current code creates files in the root memory directory explicitly through
+the use of init_* routines. The files for each memory block are created and
+deleted explicitly using the mem_[create|delete]_simple_file macros.
 
-2. As the list is protected by a spinlock, it is not necessary to
-   send IPI to drain the list. As the lists are accessible by multiple CPUs,
-   it is easier to tune.
+This patch creates attribute groups for the memory root files and files in
+each memory block directory so that they are created and deleted implicitly
+at subsys and device register and unregister time.
+ 
+This did necessitate moving the register_memory() and unregister_memory()
+routines in the file. There are no changes to unregister_memory, the
+register_memory routine is only updated to set the dev.groups field.
 
-3. The magazine_lock is potentially hot but it can be split to have
-   one lock per CPU socket to reduce contention. Draining the lists
-   in this case would acquire multiple locks be acquired.
+Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Please cc me on responses/comments.
 ---
- include/linux/mmzone.h |   7 +++
- mm/page_alloc.c        | 114 +++++++++++++++++++++++++++++++++++++++++--------
- mm/vmstat.c            |  14 ++++--
- 3 files changed, 114 insertions(+), 21 deletions(-)
+ drivers/base/memory.c |  163 ++++++++++++++++++++++----------------------------
+ 1 file changed, 72 insertions(+), 91 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 3ee9b27..a6f84f1 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -361,6 +361,13 @@ struct zone {
- #endif
- 	struct free_area	free_area[MAX_ORDER];
- 
-+	/*
-+	 * Keep some order-0 pages on a separate free list
-+	 * protected by an irq-unsafe lock
-+	 */
-+	spinlock_t		magazine_lock;
-+	struct free_area	noirq_magazine;
-+
- #ifndef CONFIG_SPARSEMEM
- 	/*
- 	 * Flags for a pageblock_nr_pages block. See pageblock-flags.h.
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index cd64c27..9ed05a5 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -601,6 +601,8 @@ static inline void __free_one_page(struct page *page,
- 	list_add(&page->lru, &zone->free_area[order].free_list[migratetype]);
- out:
- 	zone->free_area[order].nr_free++;
-+	if (unlikely(!is_migrate_isolate(migratetype)))
-+		__mod_zone_freepage_state(zone, 1 << order, migratetype);
+Index: driver-core/drivers/base/memory.c
+===================================================================
+--- driver-core.orig/drivers/base/memory.c	2013-05-08 08:34:05.000000000 -0500
++++ driver-core/drivers/base/memory.c	2013-05-08 09:43:48.000000000 -0500
+@@ -77,32 +77,6 @@
+ 	kfree(mem);
  }
  
- static inline int free_pages_check(struct page *page)
-@@ -632,8 +634,6 @@ static void free_one_page(struct zone *zone, struct page *page,
- 	__count_vm_events(PGFREE, 1 << order);
- 
- 	__free_one_page(page, zone, order, migratetype);
--	if (unlikely(!is_migrate_isolate(migratetype)))
--		__mod_zone_freepage_state(zone, 1 << order, migratetype);
- 	spin_unlock_irqrestore(&zone->lock, flags);
- }
- 
-@@ -1092,6 +1092,8 @@ void mark_free_pages(struct zone *zone)
- }
- #endif /* CONFIG_PM */
- 
-+#define MAGAZINE_LIMIT (1024)
-+
- /*
-  * Free a 0-order page
-  * cold == 1 ? free a cold page : free a hot page
-@@ -1100,13 +1102,51 @@ void free_hot_cold_page(struct page *page, bool cold)
+-/*
+- * register_memory - Setup a sysfs device for a memory block
+- */
+-static
+-int register_memory(struct memory_block *memory)
+-{
+-	int error;
+-
+-	memory->dev.bus = &memory_subsys;
+-	memory->dev.id = memory->start_section_nr / sections_per_block;
+-	memory->dev.release = memory_block_release;
+-
+-	error = device_register(&memory->dev);
+-	return error;
+-}
+-
+-static void
+-unregister_memory(struct memory_block *memory)
+-{
+-	BUG_ON(memory->dev.bus != &memory_subsys);
+-
+-	/* drop the ref. we got in remove_memory_block() */
+-	kobject_put(&memory->dev.kobj);
+-	device_unregister(&memory->dev);
+-}
+-
+ unsigned long __weak memory_block_size_bytes(void)
  {
- 	struct zone *zone = page_zone(page);
- 	int migratetype;
-+	struct free_area *area;
+ 	return MIN_MEMORY_BLOCK_SIZE;
+@@ -382,11 +356,6 @@
+ static DEVICE_ATTR(phys_device, 0444, show_phys_device, NULL);
+ static DEVICE_ATTR(removable, 0444, show_mem_removable, NULL);
  
- 	if (!free_pages_prepare(page, 0))
- 		return;
+-#define mem_create_simple_file(mem, attr_name)	\
+-	device_create_file(&mem->dev, &dev_attr_##attr_name)
+-#define mem_remove_simple_file(mem, attr_name)	\
+-	device_remove_file(&mem->dev, &dev_attr_##attr_name)
+-
+ /*
+  * Block size attribute stuff
+  */
+@@ -399,12 +368,6 @@
  
- 	migratetype = get_pageblock_migratetype(page);
- 	set_freepage_migratetype(page, migratetype);
--	free_one_page(zone, page, 0, migratetype);
-+
-+	/* magazine_lock is not safe against IRQs */
-+	if (in_interrupt() || irqs_disabled())
-+		goto free_one;
-+
-+	/* Put the free page on the magazine list */
-+	spin_lock(&zone->magazine_lock);
-+	area = &(zone->noirq_magazine);
-+	if (!cold)
-+		list_add(&page->lru, &area->free_list[migratetype]);
-+	else
-+		list_add_tail(&page->lru, &area->free_list[migratetype]);
-+	page = NULL;
-+
-+	/* If the magazine is full, remove a cold page for the buddy list */
-+	if (area->nr_free > MAGAZINE_LIMIT) {
-+		struct list_head *list = &area->free_list[migratetype];
-+		int starttype = migratetype;
-+
-+		while (list_empty(list)) {
-+			if (++migratetype == MIGRATE_PCPTYPES)
-+				migratetype = 0;
-+			list = &area->free_list[migratetype];;
-+		
-+			WARN_ON_ONCE(starttype == migratetype);
-+		}
-+			
-+		page = list_entry(list->prev, struct page, lru);
-+		list_del(&page->lru);
-+	} else {
-+		area->nr_free++;
-+	}
-+	spin_unlock(&zone->magazine_lock);
-+
-+free_one:
-+	/* Free a page back to the buddy lists if necessary */
-+	if (page)
-+		free_one_page(zone, page, 0, migratetype);
+ static DEVICE_ATTR(block_size_bytes, 0444, print_block_size, NULL);
+ 
+-static int block_size_init(void)
+-{
+-	return device_create_file(memory_subsys.dev_root,
+-				  &dev_attr_block_size_bytes);
+-}
+-
+ /*
+  * Some architectures will have custom drivers to do this, and
+  * will not need to do it from userspace.  The fake hot-add code
+@@ -440,17 +403,8 @@
+ out:
+ 	return ret;
  }
+-static DEVICE_ATTR(probe, S_IWUSR, NULL, memory_probe_store);
+ 
+-static int memory_probe_init(void)
+-{
+-	return device_create_file(memory_subsys.dev_root, &dev_attr_probe);
+-}
+-#else
+-static inline int memory_probe_init(void)
+-{
+-	return 0;
+-}
++static DEVICE_ATTR(probe, S_IWUSR, NULL, memory_probe_store);
+ #endif
+ 
+ #ifdef CONFIG_MEMORY_FAILURE
+@@ -496,23 +450,6 @@
+ 
+ static DEVICE_ATTR(soft_offline_page, S_IWUSR, NULL, store_soft_offline_page);
+ static DEVICE_ATTR(hard_offline_page, S_IWUSR, NULL, store_hard_offline_page);
+-
+-static __init int memory_fail_init(void)
+-{
+-	int err;
+-
+-	err = device_create_file(memory_subsys.dev_root,
+-				&dev_attr_soft_offline_page);
+-	if (!err)
+-		err = device_create_file(memory_subsys.dev_root,
+-				&dev_attr_hard_offline_page);
+-	return err;
+-}
+-#else
+-static inline int memory_fail_init(void)
+-{
+-	return 0;
+-}
+ #endif
  
  /*
-@@ -1216,18 +1256,45 @@ int split_free_page(struct page *page)
- 	return nr_pages;
+@@ -557,6 +494,51 @@
+ 	return find_memory_block_hinted(section, NULL);
  }
  
-+/* Remove a page from the noirq_magazine if one is available */
++static struct attribute *memory_memblk_attrs[] = {
++	&dev_attr_phys_index.attr,
++	&dev_attr_end_phys_index.attr,
++	&dev_attr_state.attr,
++	&dev_attr_phys_device.attr,
++	&dev_attr_removable.attr,
++	NULL
++};
++
++static struct attribute_group memory_memblk_attr_group = {
++	.attrs = memory_memblk_attrs,
++};
++
++static const struct attribute_group *memory_memblk_attr_groups[] = {
++	&memory_memblk_attr_group,
++	NULL,
++};
++
++/*
++ * register_memory - Setup a sysfs device for a memory block
++ */
 +static
-+struct page *rmqueue_magazine(struct zone *zone, int migratetype)
++int register_memory(struct memory_block *memory)
 +{
-+	struct page *page = NULL;
-+	struct free_area *area;
++	int error;
 +
-+	/* Check if it is worth acquiring the lock */
-+	if (!zone->noirq_magazine.nr_free)
-+		return NULL;
-+		
-+	spin_lock(&zone->magazine_lock);
-+	area = &(zone->noirq_magazine);
-+	if (list_empty(&area->free_list[migratetype]))
-+		goto out;
++	memory->dev.bus = &memory_subsys;
++	memory->dev.id = memory->start_section_nr / sections_per_block;
++	memory->dev.release = memory_block_release;
++	memory->dev.groups = memory_memblk_attr_groups;
 +
-+	/* Page is available in the magazine, allocate it */
-+	page = list_entry(area->free_list[migratetype].next, struct page, lru);
-+	list_del(&page->lru);
-+	area->nr_free--;
-+	set_page_private(page, 0);
-+
-+out:
-+	spin_unlock(&zone->magazine_lock);
-+	return page;
++	error = device_register(&memory->dev);
++	return error;
 +}
 +
- /*
-  * Really, prep_compound_page() should be called from __rmqueue_bulk().  But
-  * we cheat by calling it from here, in the order > 0 path.  Saves a branch
-  * or two.
-  */
- static inline
--struct page *buffered_rmqueue(struct zone *preferred_zone,
-+struct page *rmqueue(struct zone *preferred_zone,
- 			struct zone *zone, unsigned int order,
- 			gfp_t gfp_flags, int migratetype)
++static void
++unregister_memory(struct memory_block *memory)
++{
++	BUG_ON(memory->dev.bus != &memory_subsys);
++
++	/* drop the ref. we got in remove_memory_block() */
++	kobject_put(&memory->dev.kobj);
++	device_unregister(&memory->dev);
++}
++
+ static int init_memory_block(struct memory_block **memory,
+ 			     struct mem_section *section, unsigned long state)
  {
- 	unsigned long flags;
--	struct page *page;
-+	struct page *page = NULL;
+@@ -580,16 +562,6 @@
+ 	mem->phys_device = arch_get_memory_phys_device(start_pfn);
  
- 	if (unlikely(gfp_flags & __GFP_NOFAIL)) {
- 		/*
-@@ -1244,13 +1311,27 @@ struct page *buffered_rmqueue(struct zone *preferred_zone,
- 	}
+ 	ret = register_memory(mem);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, phys_index);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, end_phys_index);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, state);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, phys_device);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, removable);
  
- again:
--	spin_lock_irqsave(&zone->lock, flags);
--	page = __rmqueue(zone, order, migratetype);
--	spin_unlock(&zone->lock);
--	if (!page)
--		goto failed;
--	__mod_zone_freepage_state(zone, -(1 << order),
--				  get_freepage_migratetype(page));
-+	/*
-+	 * For order-0 allocations that are not from irq context, try
-+	 * allocate from a separate magazine of free pages
-+	 */
-+	if (order == 0 && !in_interrupt() && !irqs_disabled())
-+		page = rmqueue_magazine(zone, migratetype);
-+
-+	/* IRQ disabled for buddy list access of updating statistics */
-+	local_irq_save(flags);
-+
-+	if (!page) {
-+		spin_lock(&zone->lock);
-+		page = __rmqueue(zone, order, migratetype);
-+		if (!page) {
-+			spin_unlock_irqrestore(&zone->lock, flags);
-+			return NULL;
-+		}
-+		__mod_zone_freepage_state(zone, -(1 << order),
-+					get_freepage_migratetype(page));
-+		spin_unlock(&zone->lock);
-+	}
+ 	*memory = mem;
+ 	return ret;
+@@ -647,14 +619,9 @@
+ 	unregister_mem_sect_under_nodes(mem, __section_nr(section));
  
- 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
- 	zone_statistics(preferred_zone, zone, gfp_flags);
-@@ -1260,10 +1341,6 @@ again:
- 	if (prep_new_page(page, order, gfp_flags))
- 		goto again;
- 	return page;
--
--failed:
--	local_irq_restore(flags);
--	return NULL;
+ 	mem->section_count--;
+-	if (mem->section_count == 0) {
+-		mem_remove_simple_file(mem, phys_index);
+-		mem_remove_simple_file(mem, end_phys_index);
+-		mem_remove_simple_file(mem, state);
+-		mem_remove_simple_file(mem, phys_device);
+-		mem_remove_simple_file(mem, removable);
++	if (mem->section_count == 0)
+ 		unregister_memory(mem);
+-	} else
++	else
+ 		kobject_put(&mem->dev.kobj);
+ 
+ 	mutex_unlock(&mem_sysfs_mutex);
+@@ -699,6 +666,29 @@
+ 	return mem->state == MEM_OFFLINE;
  }
  
- #ifdef CONFIG_FAIL_PAGE_ALLOC
-@@ -1676,7 +1753,7 @@ zonelist_scan:
- 		}
- 
- try_this_zone:
--		page = buffered_rmqueue(preferred_zone, zone, order,
-+		page = rmqueue(preferred_zone, zone, order,
- 						gfp_mask, migratetype);
- 		if (page)
- 			break;
-@@ -3615,6 +3692,8 @@ static void __meminit zone_init_free_lists(struct zone *zone)
- 	for_each_migratetype_order(order, t) {
- 		INIT_LIST_HEAD(&zone->free_area[order].free_list[t]);
- 		zone->free_area[order].nr_free = 0;
-+		INIT_LIST_HEAD(&zone->noirq_magazine.free_list[t]);
-+		zone->noirq_magazine.nr_free = 0;
- 	}
- }
- 
-@@ -4164,6 +4243,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 		zone->name = zone_names[j];
- 		spin_lock_init(&zone->lock);
- 		spin_lock_init(&zone->lru_lock);
-+		spin_lock_init(&zone->magazine_lock);
- 		zone_seqlock_init(zone);
- 		zone->zone_pgdat = pgdat;
- 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 45e699c..7274ca5 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -1001,14 +1001,20 @@ static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
- 		seq_printf(m, ", %lu", zone->lowmem_reserve[i]);
- 	seq_printf(m,
- 		   ")"
--		   "\n  pagesets");
-+		   "\n  noirq magazine");
-+	seq_printf(m,
-+		"\n    cpu: %i"
-+		"\n              count: %lu",
-+		i,
-+		zone->noirq_magazine.nr_free);
++static struct attribute *memory_root_attrs[] = {
++#ifdef CONFIG_ARCH_MEMORY_PROBE
++	&dev_attr_probe.attr,
++#endif
 +
- #ifdef CONFIG_SMP
- 	for_each_online_cpu(i) {
- 		struct per_cpu_pageset *pageset;
++#ifdef CONFIG_MEMORY_FAILURE
++	&dev_attr_soft_offline_page.attr,
++	&dev_attr_hard_offline_page.attr,
++#endif
++
++	&dev_attr_block_size_bytes.attr,
++	NULL
++};
++
++static struct attribute_group memory_root_attr_group = {
++	.attrs = memory_root_attrs,
++};
++
++static const struct attribute_group *memory_root_attr_groups[] = {
++	&memory_root_attr_group,
++	NULL,
++};
++
+ /*
+  * Initialize the sysfs support for memory devices...
+  */
+@@ -710,7 +700,7 @@
+ 	unsigned long block_sz;
+ 	struct memory_block *mem = NULL;
  
--		pageset = per_cpu_ptr(zone->pageset, i);
--		seq_printf(m, "\n  vm stats threshold: %d",
--				pageset->stat_threshold);
-+ 		pageset = per_cpu_ptr(zone->pageset, i);
-+		seq_printf(m, "\n  pagesets\n  vm stats threshold: %d",
-+ 				pageset->stat_threshold);
+-	ret = subsys_system_register(&memory_subsys, NULL);
++	ret = subsys_system_register(&memory_subsys, memory_root_attr_groups);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -733,15 +723,6 @@
+ 			ret = err;
  	}
- #endif
- 	seq_printf(m,
--- 
-1.8.1.4
+ 
+-	err = memory_probe_init();
+-	if (!ret)
+-		ret = err;
+-	err = memory_fail_init();
+-	if (!ret)
+-		ret = err;
+-	err = block_size_init();
+-	if (!ret)
+-		ret = err;
+ out:
+ 	if (ret)
+ 		printk(KERN_ERR "%s() failed: %d\n", __func__, ret);
 
