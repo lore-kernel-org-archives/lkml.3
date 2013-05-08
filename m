@@ -1,55 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757994Ab3EHQBM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 12:01:12 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:48273
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756213Ab3EHQBJ (ORCPT
+	id S1757969Ab3EHQBt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 12:01:49 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:61691 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757830Ab3EHPzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 12:01:09 -0400
-Date: Wed, 8 May 2013 17:59:29 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael Neuling <mikey@neuling.org>
-Cc: eranian@google.com, Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        linux-kernel@vger.kernel.org, michael@ellerman.id.au,
-        Anshuman Khandual <anshuman.khandual@in.ibm.com>
-Subject: Re: Invalid perf_branch_entry.to entries question
-Message-ID: <20130508155929.GA8459@dyad.programming.kicks-ass.net>
-References: <25394.1367890528@ale.ozlabs.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <25394.1367890528@ale.ozlabs.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 8 May 2013 11:55:32 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH v5, part4 20/41] mm/h8300: prepare for removing num_physpages and simplify mem_init()
+Date: Wed,  8 May 2013 23:51:17 +0800
+Message-Id: <1368028298-7401-21-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
+References: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 11:35:28AM +1000, Michael Neuling wrote:
-> Peter & Stephane,
-> 
-> We are plumbing the POWER8 Branch History Rolling Buffer (BHRB) into
-> struct perf_branch_entry.
-> 
-> Sometimes on POWER8 we may not be able to fill out the "to" address.  
+Prepare for removing num_physpages and simplify mem_init().
 
-Just because I'm curious.. however does that happen? Surely the CPU knows where
-next to fetch instructions?
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/h8300/mm/init.c |   34 ++++++++--------------------------
+ 1 file changed, 8 insertions(+), 26 deletions(-)
 
-> We
-> initially thought of just making this 0, but it's feasible that this
-> could be a valid address to branch to. 
+diff --git a/arch/h8300/mm/init.c b/arch/h8300/mm/init.c
+index 22fd869..0088f3a 100644
+--- a/arch/h8300/mm/init.c
++++ b/arch/h8300/mm/init.c
+@@ -121,40 +121,22 @@ void __init paging_init(void)
+ 
+ void __init mem_init(void)
+ {
+-	int codek = 0, datak = 0, initk = 0;
+-	/* DAVIDM look at setup memory map generically with reserved area */
+-	unsigned long tmp;
+-	extern unsigned long  _ramend, _ramstart;
+-	unsigned long len = &_ramend - &_ramstart;
+-	unsigned long start_mem = memory_start; /* DAVIDM - these must start at end of kernel */
+-	unsigned long end_mem   = memory_end; /* DAVIDM - this must not include kernel stack at top */
++	unsigned long codesize = _etext - _stext;
+ 
+ #ifdef DEBUG
+-	printk(KERN_DEBUG "Mem_init: start=%lx, end=%lx\n", start_mem, end_mem);
++	pr_debug("Mem_init: start=%lx, end=%lx\n", memory_start, memory_end);
+ #endif
+ 
+-	end_mem &= PAGE_MASK;
+-	high_memory = (void *) end_mem;
+-
+-	start_mem = PAGE_ALIGN(start_mem);
+-	max_mapnr = num_physpages = MAP_NR(high_memory);
++	high_memory = (void *) (memory_end & PAGE_MASK);
++	max_mapnr = MAP_NR(high_memory);
+ 
+ 	/* this will put all low memory onto the freelists */
+ 	free_all_bootmem();
+ 
+-	codek = (_etext - _stext) >> 10;
+-	datak = (__bss_stop - _sdata) >> 10;
+-	initk = (__init_begin - __init_end) >> 10;
+-
+-	tmp = nr_free_pages() << PAGE_SHIFT;
+-	printk(KERN_INFO "Memory available: %luk/%luk RAM, %luk/%luk ROM (%dk kernel code, %dk data)\n",
+-	       tmp >> 10,
+-	       len >> 10,
+-	       (rom_length > 0) ? ((rom_length >> 10) - codek) : 0,
+-	       rom_length >> 10,
+-	       codek,
+-	       datak
+-	       );
++	mem_init_print_info(NULL);
++	if (rom_length > 0 && rom_length > codesize)
++		pr_info("Memory available: %luK/%luK ROM\n",
++			(rom_length - codesize) >> 10, rom_length >> 10);
+ }
+ 
+ 
+-- 
+1.7.9.5
 
-Right, while highly unlikely, x86 actually has some cases where 0 address is
-valid *shudder*..
-
-> The other logical value to indicate an invalid entry would be all 1s
-> which is not possible (on POWER at least).
-> 
-> Do you guys have a preference as to what we should use as an invalid
-> entry?  This would have some consequences for the userspace tool also.
-> 
-> The alternative would be to add a flag alongside mispred/predicted to
-> indicate the validity of the "to" address.
-
-Either would work with me I suppose.. Stephane do you have any preference?
