@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756964Ab3EHPnF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:43:05 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:45973 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755912Ab3EHPnA (ORCPT
+	id S1755974Ab3EHPoq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:44:46 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:42408 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754558Ab3EHPop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:43:00 -0400
-Message-ID: <518A7284.4000504@cogentembedded.com>
-Date: Wed, 08 May 2013 19:43:00 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Wed, 8 May 2013 11:44:45 -0400
+Message-ID: <518A72E3.6070606@hp.com>
+Date: Wed, 08 May 2013 11:44:35 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
 MIME-Version: 1.0
-To: Jongsung Kim <neidhard.kim@lge.com>
-CC: davem@davemloft.net, peppe.cavallaro@st.com, chohnstaedt@innominate.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: net: phy: realtek: add rtl8201f driver
-References: <201305081910.27203.neidhard.kim@lge.com>
-In-Reply-To: <201305081910.27203.neidhard.kim@lge.com>
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH] perf: fix symbol processing bug and greatly improve performance
+References: <1367847833-4932-1-git-send-email-Waiman.Long@hp.com> <20130507093031.GA1076@krava.brq.redhat.com>
+In-Reply-To: <20130507093031.GA1076@krava.brq.redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 08-05-2013 14:10, Jongsung Kim wrote:
-
-> This patch adds the minimal driver to manage the
-> Realtek RTL8201F 10/100Mbps Transceivers.
-
-> Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
-> ---
->   drivers/net/phy/realtek.c |   60 +++++++++++++++++++++++++++++++++++++++-----
->   1 files changed, 53 insertions(+), 7 deletions(-)
-
-> diff --git a/drivers/net/phy/realtek.c b/drivers/net/phy/realtek.c
-> index 8e7af83..27847ca 100644
-> --- a/drivers/net/phy/realtek.c
-> +++ b/drivers/net/phy/realtek.c
-> @@ -16,9 +16,13 @@
->   #include <linux/phy.h>
->   #include <linux/module.h>
+On 05/07/2013 05:30 AM, Jiri Olsa wrote:
+> On Mon, May 06, 2013 at 09:43:53AM -0400, Waiman Long wrote:
+>> When "perf record" was used on a large machine with a lot of CPUs,
+>> the perf post-processing time could take a lot of minutes and even
+>> hours depending on how large the resulting perf.data file was.
+>>
+>> While running AIM7 1500-user high_systime workload on a 80-core x86-64
+>> system with a 3.9 kernel, the workload itself took about 2 minutes
+>> to run and the perf.data file had a size of 1108.746 MB. However,
+>> the post-processing step took more than 10 minutes.
+>>
+>> With a gprof-profiled perf binary, the time spent by perf was as
+>> follows:
+>>
+>>    %   cumulative   self              self     total
+>>   time   seconds   seconds    calls   s/call   s/call  name
+>>   96.90    822.10   822.10   192156     0.00     0.00  dsos__find
+>>    0.81    828.96     6.86 172089958     0.00     0.00  rb_next
+>>    0.41    832.44     3.48 48539289     0.00     0.00  rb_erase
+>>
+>> So 97% (822 seconds) of the time was spent in a single dsos_find()
+>> function. After analyzing the call-graph data below:
+>>
+>> -----------------------------------------------
+>>                  0.00  822.12  192156/192156      map__new [6]
+>> [7]     96.9    0.00  822.12  192156         vdso__dso_findnew [7]
+>>                822.10    0.00  192156/192156      dsos__find [8]
+>>                  0.01    0.00  192156/192156      dsos__add [62]
+>>                  0.01    0.00  192156/192366      dso__new [61]
+>>                  0.00    0.00       1/45282525     memdup [31]
+>>                  0.00    0.00  192156/192230      dso__set_long_name [91]
+>> -----------------------------------------------
+>>                822.10    0.00  192156/192156      vdso__dso_findnew [7]
+>> [8]     96.9  822.10    0.00  192156         dsos__find [8]
+>> -----------------------------------------------
+>>
+>> It was found that the vdso__dso_findnew() function failed to locate
+>> VDSO__MAP_NAME ("[vdso]") in the dso list and have to insert a new
+>> entry at the end for 192156 times. This problem is due to the fact that
+>> there are 2 types of name in the dso entry - short name and long name.
+>> The initial dso__new() adds "[vdso]" to both the short and long names.
+>> After that, vdso__dso_findnew() modifies the long name to something
+>> like /tmp/perf-vdso.so-NoXkDj. The dsos__find() function only compares
+>> the long name. As a result, the same vdso entry is duplicated many
+>> time in the dso list. This bug increases memory consumption as well
+>> as slows the symbol processing time to a crawl.
+> hi,
+> the issue is there and fix looks ok, thanks!
 >
-> -#define RTL821x_PHYSR		0x11
-> -#define RTL821x_PHYSR_DUPLEX	0x2000
-> -#define RTL821x_PHYSR_SPEED	0xc000
-
-     Removal of unused #define's is a matter of a separate cleanup patch...
-
-> +/* page 0 register 30 - interrupt indicators and SNR display register */
-> +#define RTL8201F_ISR		0x1e
-> +/* page 0 register 31 - page select register */
-> +#define RTL8201F_PSR		0x1f
-> +/* page 7 register 19 - interrupt, WOL enable, and LEDs function register */
-> +#define RTL8201F_IER		0x13
-> +
->   #define RTL821x_INER		0x12
->   #define RTL821x_INER_INIT	0x6400
->   #define RTL821x_INSR		0x13
-> @@ -29,6 +33,15 @@ MODULE_DESCRIPTION("Realtek PHY driver");
->   MODULE_AUTHOR("Johnson Leung");
->   MODULE_LICENSE("GPL");
+> though I'm not able to get vdso callchains to pop out
+> even by investigating report with vdso heavy workload.
 >
-> +static int rtl8201f_ack_interrupt(struct phy_device *phydev)
-> +{
-> +	int err;
-> +
-> +	err = phy_read(phydev, RTL8201F_ISR);
+> I'll have a closer look..
 
-    This could be an initializer and so make the function shorter.
+Is there a chance that the fix will go to v3.10 or have to wait for v3.11?
 
-> +
-> +	return (err < 0) ? err : 0;
-> +}
-> +
->   static int rtl821x_ack_interrupt(struct phy_device *phydev)
->   {
->   	int err;
-[...]
-> @@ -96,16 +141,16 @@ static struct phy_driver rtl8211e_driver = {
->
->   static int __init realtek_init(void)
->   {
-> -	int ret;
-> -
-> -	ret = phy_driver_register(&rtl8211b_driver);
-> -	if (ret < 0)
-> +	if(phy_driver_register(&rtl8201f_driver) < 0)
-> +		return -ENODEV;
-> +	if(phy_driver_register(&rtl8211b_driver) < 0)
-
-     You haven't run this patch thru scripts/checkpatch.pl -- there 
-should be a space between *if* and (.
-
-WBR, Sergei
-
+Regards,
+Longman
