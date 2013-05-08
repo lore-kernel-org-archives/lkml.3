@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758269Ab3EHUud (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 16:50:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37551 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757541Ab3EHUuc (ORCPT
+	id S1758332Ab3EHUxT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 16:53:19 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:51232 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758000Ab3EHUxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 16:50:32 -0400
-Date: Wed, 8 May 2013 13:50:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Robin Holt <holt@sgi.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Russell King <linux@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Russ Anderson <rja@sgi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH -v8 11/11] Move arch/x86 reboot= handling to generic
- kernel.
-Message-Id: <20130508135029.ffbeefa6b8154bee31e7bbbe@linux-foundation.org>
-In-Reply-To: <1367937595-32241-12-git-send-email-holt@sgi.com>
-References: <1367937595-32241-1-git-send-email-holt@sgi.com>
-	<1367937595-32241-12-git-send-email-holt@sgi.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 8 May 2013 16:53:18 -0400
+Date: Wed, 8 May 2013 13:52:58 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: rcu_preempt running flat out on idle desktop.
+Message-ID: <20130508205258.GN3648@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130508203042.GA18895@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130508203042.GA18895@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050820-7282-0000-0000-000016FB98CF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  7 May 2013 09:39:55 -0500 Robin Holt <holt@sgi.com> wrote:
-
-> Merge together the unicore32, arm, and x86 reboot= command line
-> parameter handling.
+On Wed, May 08, 2013 at 04:30:42PM -0400, Dave Jones wrote:
+> On what should be an idle desktop, I'm seeing really strange things.
 > 
-> ...
->
-> +static int __init reboot_setup(char *str)
-> +{
-> +	for (;;) {
-> +		/*
-> +		 * Having anything passed on the command line via
-> +		 * reboot= will cause us to disable DMI checking
-> +		 * below.
-> +		 */
-> +		reboot_default = 0;
-> +
-> +		switch (*str) {
-> +#if defined(CONFIG_X86) || defined(CONFIG_X86_64)
-> +		case 'w':
-> +			reboot_mode = REBOOT_WARM;
-> +			break;
-> +
-> +		case 'c':
-> +			reboot_mode = REBOOT_COLD;
-> +			break;
-> +
-> +#ifdef CONFIG_SMP
-> +		case 's':
-> +			if (isdigit(*(str+1))) {
-> +				reboot_cpu = (int) (*(str+1) - '0');
-> +				if (isdigit(*(str+2)))
-> +					reboot_cpu = reboot_cpu*10 + (int)(*(str+2) - '0');
-> +			}
+> The XFCE CPU meter shows both cores are running with no idle time.
+> 
+> here's the top of the top(1) output..
+> 
+>   PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND 
+>    10 root      20   0     0    0    0 S 200.0  0.0 185301:36 rcu_preempt
+>   553 root      20   0  268m  76m 6764 S 200.0  2.6 144579:53 Xorg
+>  1199 root      20   0     0    0    0 S 200.0  0.0 306:17.85 kworker/1:0
+>   501 root      20   0     0    0    0 S 200.0  0.0   4471:03 kworker/0:2
+>    12 root      20   0     0    0    0 S 200.0  0.0  67277:16 rcuop/1
+>  1237 davej     20   0  535m  15m 8484 S 200.0  0.5   3645:16 Terminal
+>   859 davej     20   0  117m 3036 1336 S 200.0  0.1   1986:55 htop
+> 
+> There are a lot of processes allegedly using "200%" of CPU time, a handful
+> in the "196%" range, and then a bunch at 0.
 
-Boy, that's some weird stuff.
+Yow!!!  185301 minutes is 128 days, which is a truly impressive amount of
+CPU time to accumulate in a few short hours.
 
-What's wrong with doing
+> rcu_preempt is staying at the top of the list while everything else bubbles
+> up the list.
+> 
+> And what's up with those TIME entries? Box has only been up a few hours,
+> so those numbers look really crazy.
+> 
+> RCU options for this build are..
+> 
+> CONFIG_TREE_PREEMPT_RCU=y
+> CONFIG_PREEMPT_RCU=y
+> CONFIG_RCU_STALL_COMMON=y
+> CONFIG_RCU_USER_QS=y
+> CONFIG_RCU_FANOUT=64
+> CONFIG_RCU_FANOUT_LEAF=16
+> # CONFIG_RCU_FANOUT_EXACT is not set
+> # CONFIG_RCU_FAST_NO_HZ is not set
+> CONFIG_TREE_RCU_TRACE=y
+> CONFIG_RCU_BOOST=y
+> CONFIG_RCU_BOOST_PRIO=1
+> CONFIG_RCU_BOOST_DELAY=500
+> CONFIG_RCU_NOCB_CPU=y
+> CONFIG_RCU_NOCB_CPU_ALL=y
+> CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+> CONFIG_PROVE_RCU=y
+> # CONFIG_PROVE_RCU_REPEATEDLY is not set
+> CONFIG_PROVE_RCU_DELAY=y
+> CONFIG_SPARSE_RCU_POINTER=y
+> # CONFIG_RCU_TORTURE_TEST is not set
+> CONFIG_RCU_CPU_STALL_TIMEOUT=60
+> CONFIG_RCU_CPU_STALL_VERBOSE=y
+> # CONFIG_RCU_CPU_STALL_INFO is not set
+> CONFIG_RCU_TRACE=y
 
-			if (isdigit(str[1])) {
-				reboot_cpu = str[1] - '0';
-				if (isdigit(str[2]))
-					reboot_cpu = reboot_cpu * 10 +
-							str[2] - '0';
-			}
+This is 3.9, or Linus's current tree?  I am guessing the latter, but
+figured I should ask.
 
-?
-
-But it's still nonsense - we should eliminate its
-you-have-less-than-101-CPUs restriction by using, you know, atoi().
+							Thanx, Paul
 
