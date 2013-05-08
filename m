@@ -1,68 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757792Ab3EHRyt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 13:54:49 -0400
-Received: from abc.logicbricks.com ([89.201.165.132]:22927 "EHLO
-	abc.logicbricks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757589Ab3EHRyr convert rfc822-to-8bit (ORCPT
+	id S1757890Ab3EHRz2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 13:55:28 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22166 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757853Ab3EHRz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 13:54:47 -0400
-X-Greylist: delayed 913 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 May 2013 13:54:47 EDT
-Content-class: urn:content-classes:message
+	Wed, 8 May 2013 13:55:27 -0400
+Date: Wed, 8 May 2013 13:54:44 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, marc.zyngier@arm.com,
+        will.deacon@arm.com
+Subject: Re: [PATCH v3 1/4] xen: move xen_setup_runstate_info and
+ get_runstate_snapshot to drivers/xen/time.c
+Message-ID: <20130508175444.GB2800@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1305081446580.18865@kaball.uk.xensource.com>
+ <1368027714-14506-1-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-Subject: fb driver for logiCVC
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Date: Wed, 8 May 2013 19:36:14 +0200
-Message-ID: <9D79B9A9194389468A922F618415D0A401229CA9@abc.xylon.local>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: fb driver for logiCVC
-Thread-Index: Ac5MEomtL9yZpNS+RH2g0FQG6c+tkQ==
-From: "Davor Joja" <Davor.Joja@logicbricks.com>
-To: <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368027714-14506-1-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, May 08, 2013 at 04:41:51PM +0100, Stefano Stabellini wrote:
+> Changes in v2:
+> - leave do_stolen_accounting in arch/x86/xen/time.c;
+> - use the new common functions in arch/ia64/xen/time.c.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Acked-by: Ian Campbell <ian.campbell@citrix.com>
+> CC: konrad.wilk@oracle.com
 
-I am sending link to frame buffer driver for Xylon "logiCVC" FPGA IP
-core, so I would kindly ask for driver review.
-logiCVC is Configurable Video Controller developed for Xilinx FPGA
-devices.
-logiCVC device together with xylonfb driver is widely used in Xilinx
-Targeted Referent Designs on Zynq SoC platforms (ZC702, ZC706, ZED, TED,
-Xilinx customers and Xilinx university program) and on custom projects
-from Xylon and Xylon customers.
+On the generic and x86 side it looks OK to me. I presume you did a sanity
+check on x86 to make sure nothing was off?
 
-Driver implements platform and open firmware registration types.
-It has built in interface with V4L2 ADV7511 HDMI transmitter driver for
-handling EDID and miscellaneous clock generator SI570 driver.
-I would seek an advice for above mentioned and other issues which will
-get to surface in review.
-
-For now fb driver runs on 3.8 kernel (ARM architecture), and it was
-tested in all its configurations with:
-- Xylon test application
-- fbdev - Frame buffer device test application
-- DirectFB,
-- QT
-- Ubuntu 10.04 (16bpp and 32bpp color depth) Driver build was tested by
-Open Source Technology Center.
-
-Latest driver is available at
-https://github.com/logicbricks/linux_kernel.git under
-"drivers/video/xylon" and "include/linux" "Documentation (xylonfb
-devicetree parameters)"
-It is available on https://github.com/xilinx but not latest version.
-
-I have placed on ftp.logicbricks.com logiCVC datasheet, application
-note, current xylonfb driver user manual and test applications.
-Username: xylonfb
-Password: xylonfb
-
-Regards,
-Davor Joja
+> ---
+>  arch/ia64/xen/time.c  |   48 +++----------------------
+>  arch/x86/xen/time.c   |   76 +----------------------------------------
+>  drivers/xen/Makefile  |    2 +-
+>  drivers/xen/time.c    |   91 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/xen/xen-ops.h |    5 +++
+>  5 files changed, 104 insertions(+), 118 deletions(-)
+>  create mode 100644 drivers/xen/time.c
+> 
+> diff --git a/arch/ia64/xen/time.c b/arch/ia64/xen/time.c
+> index 1f8244a..79a0b8c 100644
+> --- a/arch/ia64/xen/time.c
+> +++ b/arch/ia64/xen/time.c
+> @@ -34,53 +34,17 @@
+>  
+>  #include "../kernel/fsyscall_gtod_data.h"
+>  
+> -static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
+>  static DEFINE_PER_CPU(unsigned long, xen_stolen_time);
+>  static DEFINE_PER_CPU(unsigned long, xen_blocked_time);
+>  
+>  /* taken from i386/kernel/time-xen.c */
+>  static void xen_init_missing_ticks_accounting(int cpu)
+>  {
+> -	struct vcpu_register_runstate_memory_area area;
+> -	struct vcpu_runstate_info *runstate = &per_cpu(xen_runstate, cpu);
+> -	int rc;
+> +	xen_setup_runstate_info(&runstate);
+>  
+> -	memset(runstate, 0, sizeof(*runstate));
+> -
+> -	area.addr.v = runstate;
+> -	rc = HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area, cpu,
+> -				&area);
+> -	WARN_ON(rc && rc != -ENOSYS);
+> -
+> -	per_cpu(xen_blocked_time, cpu) = runstate->time[RUNSTATE_blocked];
+> -	per_cpu(xen_stolen_time, cpu) = runstate->time[RUNSTATE_runnable]
+> -					    + runstate->time[RUNSTATE_offline];
+> -}
+> -
+> -/*
+> - * Runstate accounting
+> - */
+> -/* stolen from arch/x86/xen/time.c */
+> -static void get_runstate_snapshot(struct vcpu_runstate_info *res)
+> -{
+> -	u64 state_time;
+> -	struct vcpu_runstate_info *state;
+> -
+> -	BUG_ON(preemptible());
+> -
+> -	state = &__get_cpu_var(xen_runstate);
+> -
+> -	/*
+> -	 * The runstate info is always updated by the hypervisor on
+> -	 * the current CPU, so there's no need to use anything
+> -	 * stronger than a compiler barrier when fetching it.
+> -	 */
+> -	do {
+> -		state_time = state->state_entry_time;
+> -		rmb();
+> -		*res = *state;
+> -		rmb();
+> -	} while (state->state_entry_time != state_time);
+> +	per_cpu(xen_blocked_time, cpu) = runstate.time[RUNSTATE_blocked];
+> +	per_cpu(xen_stolen_time, cpu) = runstate.time[RUNSTATE_runnable]
+> +					    + runstate.time[RUNSTATE_offline];
+>  }
+>  
+>  #define NS_PER_TICK (1000000000LL/HZ)
+> @@ -94,7 +58,7 @@ consider_steal_time(unsigned long new_itm)
+>  	struct vcpu_runstate_info runstate;
+>  	struct task_struct *p = current;
+>  
+> -	get_runstate_snapshot(&runstate);
+> +	xen_get_runstate_snapshot(&runstate);
+>  
+>  	/*
+>  	 * Check for vcpu migration effect
+> @@ -202,7 +166,7 @@ static unsigned long long xen_sched_clock(void)
+>  	 */
+>  	now = ia64_native_sched_clock();
+>  
+> -	get_runstate_snapshot(&runstate);
+> +	xen_get_runstate_snapshot(&runstate);
+>  
+>  	WARN_ON(runstate.state != RUNSTATE_running);
+>  
+> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+> index 0296a95..18d0104 100644
+> --- a/arch/x86/xen/time.c
+> +++ b/arch/x86/xen/time.c
+> @@ -30,9 +30,6 @@
+>  #define TIMER_SLOP	100000
+>  #define NS_PER_TICK	(1000000000LL / HZ)
+>  
+> -/* runstate info updated by Xen */
+> -static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
+> -
+>  /* snapshots of runstate info */
+>  static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
+>  
+> @@ -40,77 +37,6 @@ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
+>  static DEFINE_PER_CPU(u64, xen_residual_stolen);
+>  static DEFINE_PER_CPU(u64, xen_residual_blocked);
+>  
+> -/* return an consistent snapshot of 64-bit time/counter value */
+> -static u64 get64(const u64 *p)
+> -{
+> -	u64 ret;
+> -
+> -	if (BITS_PER_LONG < 64) {
+> -		u32 *p32 = (u32 *)p;
+> -		u32 h, l;
+> -
+> -		/*
+> -		 * Read high then low, and then make sure high is
+> -		 * still the same; this will only loop if low wraps
+> -		 * and carries into high.
+> -		 * XXX some clean way to make this endian-proof?
+> -		 */
+> -		do {
+> -			h = p32[1];
+> -			barrier();
+> -			l = p32[0];
+> -			barrier();
+> -		} while (p32[1] != h);
+> -
+> -		ret = (((u64)h) << 32) | l;
+> -	} else
+> -		ret = *p;
+> -
+> -	return ret;
+> -}
+> -
+> -/*
+> - * Runstate accounting
+> - */
+> -static void get_runstate_snapshot(struct vcpu_runstate_info *res)
+> -{
+> -	u64 state_time;
+> -	struct vcpu_runstate_info *state;
+> -
+> -	BUG_ON(preemptible());
+> -
+> -	state = &__get_cpu_var(xen_runstate);
+> -
+> -	/*
+> -	 * The runstate info is always updated by the hypervisor on
+> -	 * the current CPU, so there's no need to use anything
+> -	 * stronger than a compiler barrier when fetching it.
+> -	 */
+> -	do {
+> -		state_time = get64(&state->state_entry_time);
+> -		barrier();
+> -		*res = *state;
+> -		barrier();
+> -	} while (get64(&state->state_entry_time) != state_time);
+> -}
+> -
+> -/* return true when a vcpu could run but has no real cpu to run on */
+> -bool xen_vcpu_stolen(int vcpu)
+> -{
+> -	return per_cpu(xen_runstate, vcpu).state == RUNSTATE_runnable;
+> -}
+> -
+> -void xen_setup_runstate_info(int cpu)
+> -{
+> -	struct vcpu_register_runstate_memory_area area;
+> -
+> -	area.addr.v = &per_cpu(xen_runstate, cpu);
+> -
+> -	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
+> -			       cpu, &area))
+> -		BUG();
+> -}
+> -
+>  static void do_stolen_accounting(void)
+>  {
+>  	struct vcpu_runstate_info state;
+> @@ -118,7 +44,7 @@ static void do_stolen_accounting(void)
+>  	s64 blocked, runnable, offline, stolen;
+>  	cputime_t ticks;
+>  
+> -	get_runstate_snapshot(&state);
+> +	xen_get_runstate_snapshot(&state);
+>  
+>  	WARN_ON(state.state != RUNSTATE_running);
+>  
+> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+> index eabd0ee..2bf461a 100644
+> --- a/drivers/xen/Makefile
+> +++ b/drivers/xen/Makefile
+> @@ -3,7 +3,7 @@ obj-y	+= manage.o
+>  obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
+>  endif
+>  obj-$(CONFIG_X86)			+= fallback.o
+> -obj-y	+= grant-table.o features.o events.o balloon.o
+> +obj-y	+= grant-table.o features.o events.o balloon.o time.o
+>  obj-y	+= xenbus/
+>  
+>  nostackp := $(call cc-option, -fno-stack-protector)
+> diff --git a/drivers/xen/time.c b/drivers/xen/time.c
+> new file mode 100644
+> index 0000000..c2e39d3
+> --- /dev/null
+> +++ b/drivers/xen/time.c
+> @@ -0,0 +1,91 @@
+> +/*
+> + * Xen stolen ticks accounting.
+> + */
+> +#include <linux/kernel.h>
+> +#include <linux/kernel_stat.h>
+> +#include <linux/math64.h>
+> +#include <linux/gfp.h>
+> +
+> +#include <asm/xen/hypervisor.h>
+> +#include <asm/xen/hypercall.h>
+> +
+> +#include <xen/events.h>
+> +#include <xen/features.h>
+> +#include <xen/interface/xen.h>
+> +#include <xen/interface/vcpu.h>
+> +#include <xen/xen-ops.h>
+> +
+> +/* runstate info updated by Xen */
+> +static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
+> +
+> +/* return an consistent snapshot of 64-bit time/counter value */
+> +static u64 get64(const u64 *p)
+> +{
+> +	u64 ret;
+> +
+> +	if (BITS_PER_LONG < 64) {
+> +		u32 *p32 = (u32 *)p;
+> +		u32 h, l;
+> +
+> +		/*
+> +		 * Read high then low, and then make sure high is
+> +		 * still the same; this will only loop if low wraps
+> +		 * and carries into high.
+> +		 * XXX some clean way to make this endian-proof?
+> +		 */
+> +		do {
+> +			h = p32[1];
+> +			barrier();
+> +			l = p32[0];
+> +			barrier();
+> +		} while (p32[1] != h);
+> +
+> +		ret = (((u64)h) << 32) | l;
+> +	} else
+> +		ret = *p;
+> +
+> +	return ret;
+> +}
+> +
+> +/*
+> + * Runstate accounting
+> + */
+> +void xen_get_runstate_snapshot(struct vcpu_runstate_info *res)
+> +{
+> +	u64 state_time;
+> +	struct vcpu_runstate_info *state;
+> +
+> +	BUG_ON(preemptible());
+> +
+> +	state = &__get_cpu_var(xen_runstate);
+> +
+> +	/*
+> +	 * The runstate info is always updated by the hypervisor on
+> +	 * the current CPU, so there's no need to use anything
+> +	 * stronger than a compiler barrier when fetching it.
+> +	 */
+> +	do {
+> +		state_time = get64(&state->state_entry_time);
+> +		barrier();
+> +		*res = *state;
+> +		barrier();
+> +	} while (get64(&state->state_entry_time) != state_time);
+> +}
+> +
+> +/* return true when a vcpu could run but has no real cpu to run on */
+> +bool xen_vcpu_stolen(int vcpu)
+> +{
+> +	return per_cpu(xen_runstate, vcpu).state == RUNSTATE_runnable;
+> +}
+> +
+> +void xen_setup_runstate_info(int cpu)
+> +{
+> +	struct vcpu_register_runstate_memory_area area;
+> +
+> +	area.addr.v = &per_cpu(xen_runstate, cpu);
+> +
+> +	if (HYPERVISOR_vcpu_op(VCPUOP_register_runstate_memory_area,
+> +			       cpu, &area))
+> +		BUG();
+> +}
+> +
+> diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
+> index d6fe062..4fd4e47 100644
+> --- a/include/xen/xen-ops.h
+> +++ b/include/xen/xen-ops.h
+> @@ -3,6 +3,7 @@
+>  
+>  #include <linux/percpu.h>
+>  #include <asm/xen/interface.h>
+> +#include <xen/interface/vcpu.h>
+>  
+>  DECLARE_PER_CPU(struct vcpu_info *, xen_vcpu);
+>  
+> @@ -16,6 +17,10 @@ void xen_mm_unpin_all(void);
+>  void xen_timer_resume(void);
+>  void xen_arch_resume(void);
+>  
+> +bool xen_vcpu_stolen(int vcpu);
+> +void xen_setup_runstate_info(int cpu);
+> +void xen_get_runstate_snapshot(struct vcpu_runstate_info *res);
+> +
+>  int xen_setup_shutdown_event(void);
+>  
+>  extern unsigned long *xen_contiguous_bitmap;
+> -- 
+> 1.7.2.5
+> 
