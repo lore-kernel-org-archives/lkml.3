@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab3EHSXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:23:31 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:58666 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757747Ab3EHSX3 (ORCPT
+	id S1757997Ab3EHSXa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:23:30 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46798 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757789Ab3EHSX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 May 2013 14:23:29 -0400
-Message-ID: <518A96DA.5060809@st.com>
-Date: Wed, 08 May 2013 19:18:02 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+Date: Wed, 8 May 2013 19:23:05 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Robin Holt <holt@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Russ Anderson <rja@sgi.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH -v8 11/11] Move arch/x86 reboot= handling to generic
+	kernel.
+Message-ID: <20130508182304.GP18614@n2100.arm.linux.org.uk>
+References: <1367937595-32241-1-git-send-email-holt@sgi.com> <1367937595-32241-12-git-send-email-holt@sgi.com>
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-doc@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Will Deacon <will.deacon@arm.com>, jslaby@suse.cz,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, Nicolas Pitre <nico@linaro.org>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        linux-serial@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/8] serial:st-asc: Add ST ASC driver.
-References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <1368022248-2153-1-git-send-email-srinivas.kandagatla@st.com> <201305081634.43498.arnd@arndb.de> <20130508143908.GJ24282@game.jcrosoft.org>
-In-Reply-To: <20130508143908.GJ24282@game.jcrosoft.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367937595-32241-12-git-send-email-holt@sgi.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/13 15:39, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>> +
->> > 
->> > Please remove all forward declarations, by reordering the functions in
->> > the way they are called.
->> > 
-> and drop the dummy functions
-We can not remove the dummy functions, as the serial-core does not check
-it before using them.
->> > 
->>> > > diff --git a/drivers/tty/serial/st-asc.h b/drivers/tty/serial/st-asc.h
->>> > > new file mode 100644
->>> > > index 0000000..e59f818
->>> > > --- /dev/null
->>> > > +++ b/drivers/tty/serial/st-asc.h
+On Tue, May 07, 2013 at 09:39:55AM -0500, Robin Holt wrote:
+> +		case 's':
+> +			reboot_mode = REBOOT_WARM;
+> +		case 'h':
+> +			reboot_mode = REBOOT_COLD;
+> +		case 'g':
+> +			reboot_mode = REBOOT_GPIO;
 
+Further to Ingo's comments, also note that the above is broken.  Any
+of s,h,g will result in REBOOT_GPIO being set which is clearly wrong.
