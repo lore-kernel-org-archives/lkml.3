@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520Ab3EHEuV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 00:50:21 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50414 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719Ab3EHEuT (ORCPT
+	id S1751591Ab3EHE6p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 00:58:45 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53130 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab3EHE6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 00:50:19 -0400
+	Wed, 8 May 2013 00:58:34 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <5189DB4A.8020902@jp.fujitsu.com>
+Date: Wed, 08 May 2013 13:57:46 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <124364082.ILKsvVk9ro@avalon>
-References: <1367563919-2880-1-git-send-email-prabhakar.csengg@gmail.com>
- <CA+V-a8vxhedos6cQbxAbMAwiXOmjrqh0TVp8Rhc_Ou4y9tSaoQ@mail.gmail.com>
- <CA+V-a8tXZrh68_T=VAOTB23sFfOCOA+GafueWuH6cFFmKz7cvA@mail.gmail.com> <124364082.ILKsvVk9ro@avalon>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Wed, 8 May 2013 10:19:57 +0530
-Message-ID: <CA+V-a8sknnoq7M-HJUW6aW8jtf7T0qxA8OpPjsXdmxO22ic7og@mail.gmail.com>
-Subject: Re: [PATCH RFC v3] media: i2c: mt9p031: add OF support
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <s.hauer@pengutronix.de>,
-        LMML <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        lisa.mitchell@hp.com, kumagai-atsushi@mxc.nes.nec.co.jp,
+        ebiederm@xmission.com, zhangyanfei@cn.fujitsu.com,
+        akpm@linux-foundation.org, cpw@sgi.com, jingbai.ma@hp.com
+Subject: Re: [PATCH v4 5/8] vmcore: copy ELF note segments in the 2nd kernel
+ per page vmcore objects
+References: <20130413002000.18245.21513.stgit@localhost6.localdomain6> <20130413002133.18245.91528.stgit@localhost6.localdomain6> <20130429193611.GQ8204@redhat.com> <5188B3BE.9040104@jp.fujitsu.com> <20130507150840.GA12965@redhat.com>
+In-Reply-To: <20130507150840.GA12965@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
-
-On Wed, May 8, 2013 at 7:32 AM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Prabhakar,
->
-> On Tuesday 07 May 2013 15:10:36 Prabhakar Lad wrote:
->> On Mon, May 6, 2013 at 8:29 PM, Prabhakar Lad wrote:
->> > On Fri, May 3, 2013 at 8:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> >> On Friday 03 May 2013, Prabhakar Lad wrote:
->> > [snip]
->> >
->> >>> +}
->> >>
->> >> Ok, good.
->> >>
->> >>> @@ -955,7 +998,17 @@ static int mt9p031_probe(struct i2c_client *client,
->> >>>
->> >>>         mt9p031->pdata = pdata;
->> >>>         mt9p031->output_control = MT9P031_OUTPUT_CONTROL_DEF;
->> >>>         mt9p031->mode2 = MT9P031_READ_MODE_2_ROW_BLC;
->> >>>
->> >>> -       mt9p031->model = did->driver_data;
->> >>> +
->> >>> +       if (!client->dev.of_node) {
->> >>> +               mt9p031->model = (enum mt9p031_model)did->driver_data;
->> >>> +       } else {
->> >>> +               const struct of_device_id *of_id;
->> >>> +
->> >>> +               of_id = of_match_device(of_match_ptr(mt9p031_of_match),
->> >>> +                                       &client->dev);
->> >>> +               if (of_id)
->> >>> +                       mt9p031->model = (enum
->> >>> mt9p031_model)of_id->data;
->> >>> +       }
->> >>>
->> >>>         mt9p031->reset = -1;
->> >>
->> >> Is this actually required? I thought the i2c core just compared the
->> >> part of the "compatible" value after the first comma to the string, so
->> >> "mt9p031->model = (enum mt9p031_model)did->driver_data" should work
->> >> in both cases.
->> >
->> > I am OK with "mt9p031->model = (enum mt9p031_model)did->driver_data"
->> > but I see still few drivers doing this, I am not sure for what reason.
->> > If everyone is
->> > OK with it I can drop the above change.
+(2013/05/08 0:08), Vivek Goyal wrote:
+> On Tue, May 07, 2013 at 04:56:46PM +0900, HATAYAMA Daisuke wrote:
+>> (2013/04/30 4:36), Vivek Goyal wrote:
+>>> On Sat, Apr 13, 2013 at 09:21:33AM +0900, HATAYAMA Daisuke wrote:
+>>>
+>>> [..]
+>>>> ELF notes are per-cpu, so total size of ELF note segments increases
+>>>> according to the number of CPUs. The current maximum number of CPUs on
+>>>> x86_64 is 5192, and there's already system with 4192 CPUs in SGI,
+>>>> where total size amounts to 1MB. This can be larger in the neare
+>>>> futrue or possibly even now on another architecture. Thus, to avoid
+>>>> the case where memory allocation for large block fails, we allocate
+>>>> vmcore objects per pages.
+>>>
+>>> IIRC, eric had suggested using vmalloc() and remap_vmalloc_range(). What's
+>>> wrong with that? That should keep your vc_list relatively smaller.
+>>>
 >>
->> My bad, while booting with DT the i2c_device_id ie did in this case will be
->> NULL, so the above changes are required :-)
+>> Yes, it's handy if it's possible to remap them in vmalloc space, but
+>> the problem here is that remap_vmalloc_range requires the first
+>> argument vma to cover full range of the requested map. This becomes
+>> problem when requested area for mmap() overlaps multiple objects,
+>> for example, ELF headers and memory refered to by the first PT_LOAD
+>> program header.
+>>
+>> To use remap_vmalloc_range, it's necessary to prepare a new variant
+>> similar to remap_pfn_range by which we can remap different objects
+>> separately to a single vma.
 >
-> I've just tested your patch, and did isn't NULL when booting my Beagleboard
-> with DT (on v3.9-rc5).
->
-I am pretty much sure you tested it compatible property as "aptina,mt9p031"
-if the compatible property is set to "aptina,mt9p031m" the did will be NULL.
+> Ok. Is it hard to prepare one such variant. If we can write one, it will
+> simplify the vmcore code.
 
-Regards,
---Prabhakar Lad
+I'll try to write it. Although I avoided implementing it once, now it 
+looks relatively easy to implement thanks to vm_insert_page, which does 
+all essential thing. All I have to do should be consider sanity-check only.
+
+-- 
+Thanks.
+HATAYAMA, Daisuke
+
