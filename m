@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab3EHOG3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 10:06:29 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:34435 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab3EHOG2 (ORCPT
+	id S1756786Ab3EHOIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 10:08:35 -0400
+Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:31918
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754329Ab3EHOIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 10:06:28 -0400
-Date: Wed, 8 May 2013 15:06:18 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Fabio Baltieri <fabio.baltieri@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Ola Lilja <ola.o.lilja@stericsson.com>
-Subject: Re: [PATCH v2 2/6] ASoC: ux500: Do not clear state if already idle
-Message-ID: <20130508140618.GI3459@gmail.com>
-References: <20130508080448.GG3102@gmail.com>
- <1368002354-15471-1-git-send-email-fabio.baltieri@linaro.org>
- <20130508103401.GX7478@sirena.org.uk>
- <20130508110451.GC3459@gmail.com>
- <20130508113124.GH7478@sirena.org.uk>
- <20130508120326.GF3459@gmail.com>
- <20130508123902.GL7478@sirena.org.uk>
- <20130508130554.GG3459@gmail.com>
- <20130508134814.GQ7478@sirena.org.uk>
+	Wed, 8 May 2013 10:08:34 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 7
+X-BigFish: VS7(z329eqz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h1151h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 8 May 2013 21:53:19 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+CC: Fabio Estevam <fabio.estevam@freescale.com>, <kernel@pengutronix.de>,
+        <festevam@gmail.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/13] pwm: pwm-mxs: Let device core handle pinctrl
+Message-ID: <20130508135317.GB26072@S2101-09.ap.freescale.net>
+References: <1367863561-11534-1-git-send-email-fabio.estevam@freescale.com>
+ <1367863561-11534-6-git-send-email-fabio.estevam@freescale.com>
+ <87d2t1n0ze.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130508134814.GQ7478@sirena.org.uk>
+In-Reply-To: <87d2t1n0ze.fsf@ashishki-desk.ger.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 May 2013, Mark Brown wrote:
-
-> On Wed, May 08, 2013 at 02:05:54PM +0100, Lee Jones wrote:
+On Wed, May 08, 2013 at 02:51:33PM +0300, Alexander Shishkin wrote:
+> Fabio Estevam <fabio.estevam@freescale.com> writes:
 > 
-> > I'm saying, from experience, from the developer side, that if a
-> > reviewer goes though a patch-set taking the ones s/he likes leaving
-> > the rest behind, there are bound to be merge conflicts and semantic
-> > issues which the developer will then have to resolve. Stuff that I
-> > believe is added, unnecessary burden which would be easily avoided if
-> > the set is firstly reviewed and _then_ applied after the Acks have
-> > been awarded.
+> > Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
+> > we can rely on device core for handling pinctrl.
+> >
+> > So remove devm_pinctrl_get_select_default() from the driver. 
+> >
+> > Cc: Thierry Reding <thierry.reding@avionic-design.de>
+> > Cc: <linux-kernel@vger.kernel.org>
+> > Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> > ---
+> >  drivers/pwm/pwm-mxs.c |    6 ------
+> >  1 file changed, 6 deletions(-)
 > 
-> So, you have to assume a bit of taste on the part of the people applying
-> the patches here.  If you're seeing merge conflicts that's probably an
-> issue, but then it's very surprising that the patches would apply
-> successfully in the first place since the conflicts generally come up
-> when the patches are applied too.
-> 
-> The other thing to bear in mind here is that a patch series which is
-> "here's a bunch of random changes to this driver" isn't the same as a
-> patch series which builds something up through a series of changes.
-> This series is a good example of the former - there's a few related
-> things but really there's no visible relationship between most of the
-> changes except that they happen to be for the same driver and sent at
-> the same time.
-> 
-> The big downsides of not applying patches are that it takes longer to
-> get the benefit of the bits that are good out to people and the big
-> increase in reviewer fatigue from having to re-read the same patches
-> over and over again.  This is one of the major ways problematic code
-> gets in, reviewers eyes glaze over and they just start missing things.
-> There's also the fact that serieses often end up having separate bugfix
-> and development components which need to be routed differently anyway.
+> Looks good, can we have some tested-by from imx guys?
 
-I understand your points and certainly sympathise with a great many of
-them. I also understand the difference between random changes, which
-aren't related in any systematic way and changes which are build upon
-each other. It was the latter type to which I was referring to having
-issues with.
+I'm not sure why you're interested in this patch instead of
+"[PATCH 01/13] usb: chipidea: ci13xxx_imx: Let device core handle
+pinctrl".  I tested both patches, so
 
-Bringing this back on subject, whilst trying not to drag this out for
-longer than we have to. I think replying to one's first patch with a
-subsequent version has its merits. And as long as the thread hasn't
-become too overgrown I see it as a useful tool to obtain an Ack or
-further comment easily and without churn overhead. This also aids in
-your quest to save maintainers from reviewing the same code
-repeatedly, as once the Ack is in place it's easy to see which patches
-are in need of further review and which ones can be skipped.
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
