@@ -1,42 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab3EHTv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 15:51:28 -0400
-Received: from nm8.bullet.mail.ird.yahoo.com ([77.238.189.23]:30508 "HELO
-	nm8.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752143Ab3EHTv1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 15:51:27 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 535385.27644.bm@omp1031.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=ikKtkAt2W67iU1NzpAdtMJ/MLvXTU3mPSKVa0OJQCqGtDRK6oM/y2yaunenuEhVhPB6dYqwuLaM8Uu3VAFAiNXBRK1OniwfqR4a0IgIGC/W1K1dJqyS66O5kL/I8gxAvAJu9Xz9eOwELjzmOQnbBi0TXYYeONIy+KQvMIXU+Gng=;
-X-YMail-OSG: r3HVxrcVM1kTDhSMMZCgayIWc1BlI6iCvkwzNyhIOqT0OuT
- Q7j.i.B0xPN8Sz2F_0o8165F98hYO9RFUcvEQR9WzBDNxwFQYLsZVvcv3xaD
- Id6CTNhOf01iIfvHEq8OnjQQbuZ.rWb.._Z7p0.vNrwxlKGEWaHFnVlyXWSl
- N0DOsVWslbPny_IbAsK.l5s7Y4pgIyAxASSKtCmaSB5D1ZwOIuDCFzBI4C6r
- aoqZ7ixv8rwqhY_9bIQPfYnZPmcoIoI8RHh.ccgvje3WTnnWgaMgO648YurZ
- 76hjeTmKC7jNY.ZXjbn2f5JuRgy5XkYAQtZuQm9zFUx7YW43WnZsioOopLND
- xG6aHe18H8lFxi6du1HKQF8smUJ3qgS1WluzLnVJGmH5aySM1kiBRYQx2C4a
- Q9ufyC4vkPIlRF0RuocQnl5pBTTrC2D543Q--
-X-Rocket-MIMEInfo: 002.001,4bqt05fhuq3Ih.G6vdOTz7LhuKHEhwEwAQEBAQ--
-X-Mailer: YahooMailWebService/0.8.141.536
-Message-ID: <1368042685.49251.YahooMailNeo@web172306.mail.ir2.yahoo.com>
-Date: Wed, 8 May 2013 20:51:25 +0100 (BST)
-From: Babs Middents <babs1233mid@yahoo.com>
-Reply-To: Babs1233mid <babs1233mid@yahoo.com>
-Subject: =?utf-8?B?VyBlIGNhIG4gc2hvIHcgeW/vvZUgd2hhIHQgeW8gdeKAmXZlIGJlZW4gdGhp?=
- =?utf-8?B?bmtpbmcgb2Y=?=
-To: "jkilicdd@northstate.net" <jkilicdd@northstate.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kristinavasileva@gmail.com" <kristinavasileva@gmail.com>
+	id S1755592Ab3EHTzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 15:55:31 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53837 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab3EHTz3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 15:55:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: srinivas.kandagatla@st.com
+Subject: Re: [RFC 1/8] serial:st-asc: Add ST ASC driver.
+Date: Wed, 8 May 2013 21:55:22 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        linux-doc@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, jslaby@suse.cz,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, Nicolas Pitre <nico@linaro.org>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        linux-serial@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <20130508143908.GJ24282@game.jcrosoft.org> <518A96DA.5060809@st.com>
+In-Reply-To: <518A96DA.5060809@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305082155.23088.arnd@arndb.de>
+X-Provags-ID: V02:K0:9upS94UTciqDGVxbkAC3WNdY4P9xakmk8T6u72/2xK0
+ apEi5b3cwKc17jJMlQrMiw09BBrDhbOfQe9YK86MKOEHS+Wezu
+ jvE40YStfR5t3wF92Rbq3gRn2Ymhvep+xXQtpKapG8F/R1a+8V
+ QCSqBxfh+d91ggq+WwZuT3vWyRx3En0NuPscGH3eWsGo44JyRX
+ FcSyeAPJPZLY7hwK0N9kNpyShIQdLczvOjgKZEHKBhUkGEEcAg
+ NGcOVwXrKpJTZj67xmI097s6yKSYl3DPWvRx6ByGBb12ABhAvh
+ EAJCHXRKSyX8Y73Ny3hFp/Xx6Kf+lifQPG1YeN0HtfcMzNhUEN
+ 5EOfMfE31Auxz7MH+uig=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ậӗậȇẽӓϲḡć
+On Wednesday 08 May 2013, Srinivas KANDAGATLA wrote:
+> 
+> On 08/05/13 15:39, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> >>> +
+> >> > 
+> >> > Please remove all forward declarations, by reordering the functions in
+> >> > the way they are called.
+> >> > 
+> > and drop the dummy functions
+>
+> We can not remove the dummy functions, as the serial-core does not check
+> it before using them.
+
+None of them seem performance critical, so it sounds reasonable to change
+this in the core so you don't have to provide them. It's up to Greg to decide
+whether he'd like that change or not.
+
+	Arnd
