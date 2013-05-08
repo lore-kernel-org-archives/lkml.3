@@ -1,105 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab3EHIwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 04:52:35 -0400
-Received: from smtp-out-108.synserver.de ([212.40.185.108]:1094 "EHLO
-	smtp-out-108.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab3EHIwd (ORCPT
+	id S1753638Ab3EHIyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 04:54:50 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:32857 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab3EHIyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 04:52:33 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 11584
-Message-ID: <518A1232.1020605@metafoo.de>
-Date: Wed, 08 May 2013 10:52:02 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Wed, 8 May 2013 04:54:46 -0400
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] iio: dac: Fix build error when CONFIG_SPI_MASTER=y
- && CONFIG_I2C=m
-References: <1368002183.31837.2.camel@phoenix>
-In-Reply-To: <1368002183.31837.2.camel@phoenix>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1786821921.88859.1368002273356.JavaMail.mail@webmail05>
+References: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
+	<Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
+	<CAErSpo7NZoOQZyW76HEoOTVgdqL2CgbVScAeF6HGLAVaNCq0=w@mail.gmail.com>
+	<337833384.57445.1361860509194.JavaMail.mail@webmail08>
+	<CAErSpo6CbO5KYXiErv6J_Dnm1u694C5fQPP2_cZL8VKDEnZa9A@mail.gmail.com>
+	<569718148.80620.1361906088301.JavaMail.mail@webmail13>
+	<CAErSpo6UkVhSf+nFW4zwJLBQw_0RQ5H9Bv-UuQRb6zdwsFPw4g@mail.gmail.com>
+	<CAErSpo4X+XXKvWDfqh2CKZAtJ9WMQk91OcsWwdxwYv2MfEM_zQ@mail.gmail.com>
+	<771333906.75854.1367057440028.JavaMail.mail@webmail08>
+	<CAErSpo4B4sRco-nuqgXiYtGQxBcbEB6ArQjHD0A9cj4TRE+qQw@mail.gmail.com>
+	<518097B8.4020402@gmail.com>
+	<CAErSpo7KWPRVEnw+n068pUZz+=WSTwno6m6t7N6dunuhnFC8EA@mail.gmail.com>
+	<384171828.66802.1367942365492.JavaMail.mail@webmail05>
+	<CADLC3L3bdTP8-X3ftMq1qxnL=LVDf7d5gbu2ZMH0pXg2AU8xjw@mail.gmail.com>
+	<CAErSpo50iyEbCer+-K8uXUdnsG_EzFe_ZjKnrtfq5x0Zw3Yd6w@mail.gmail.com>
+	<CAMeQTsZEpRE_bv6o9mBpqNrbf36SZVscxy+JS72=BOzA1ey-XQ@mail.gmail.com>
+	<CAErSpo75SETEe-OKhY2-NW3csaxt=f09JcheHx95bzkCcGO6yg@mail.gmail.com>
+	<CAMeQTsY1jc99boFC_KDTL=-Pt-W1q5ZiS+r89QkPE+vAk386UQ@mail.gmail.com>
+	<1786821921.88859.1368002273356.JavaMail.mail@webmail05>
+Date: Wed, 8 May 2013 10:54:44 +0200
+Message-ID: <CAMeQTsY4gupzL2g-10n9wSMzpxNKp-xNKOOcYiNm0d+5jq5Xyw@mail.gmail.com>
+Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: bhelgaas@google.com, hancockrwd@gmail.com, stern@rowland.harvard.edu,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, rjw@sisk.pl, psusi@ubuntu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2013 10:36 AM, Axel Lin wrote:
-> This patch fixes below build error when CONFIG_SPI_MASTER=y && CONFIG_I2C=m:
-> 
-> drivers/built-in.o: In function `ad5064_i2c_write':
-> drivers/iio/dac/ad5064.c:608: undefined reference to `i2c_master_send'
-> drivers/built-in.o: In function `ad5064_i2c_register_driver':
-> drivers/iio/dac/ad5064.c:646: undefined reference to `i2c_register_driver'
-> drivers/built-in.o: In function `ad5064_i2c_unregister_driver':
-> drivers/iio/dac/ad5064.c:651: undefined reference to `i2c_del_driver'
-> make: *** [vmlinux] Error 1
-> 
-> Add config IIO_DAC_I2C_AND_SPI helper to handle such case:
-> When CONFIG_I2C=m, meaning we can't build the drivers in with I2C support.
-> Thus don't allow the drivers to be compiled as built-in.
-> 
+On Wed, May 8, 2013 at 10:37 AM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
+>>I think this is the official statement from Intel on the SATA issue:
+>>http://newsroom.intel.com/community/intel_newsroom/blog/2011/01/31/intel-identifies-chipset-design-error-implementing-solution
+>
+> My motherboard has a new fixed B3 revision so this issue doesn't affect me.
+> Besides this SATA ports degradation issue is constantly present - it has no
+> relationship to suspend.
 
-My plan was to do something like "depends on (SPI_MASTER && I2C!=m) || I2C",
-but if this works as well I'm fine with it. The real fix though is to break
-the driver apart into a SPI part, an I2S part and a common part. But that's
-something for 3.11 while this is something for 3.10/stable.
+Yes, Rev. B3 should be fine.
 
+>>And here's a link to a discussion about the PCIe-to-PCI bridge stuff:
+>>https://lkml.org/lkml/2012/1/30/216
+>>
+>>> Artem's system has a PCIe-to-PCI bridge (not a PCI-to-PCIe bridge) at
+>>> 05:00.0, but it leads to [bus 06] and there's nothing on bus 06, so I
+>>> don't think that's the problem.
+>>
+>>I meant what you said ;) and yes, it seems unrelated. Both my P8H67 and a
+>>P8P67 I've built behave nicely if nothing is connected.
+>
+> Have you tried suspending more than three times? In the absence of UEFI
+> boot this bug emerges only on a third or even fourth resume attempt. UEFI
+> boot triggers it immediately on a first resume though.
 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/iio/dac/Kconfig | 17 ++++++++++++++---
->  1 file changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
-> index f4a6f08..34bc1d7 100644
-> --- a/drivers/iio/dac/Kconfig
-> +++ b/drivers/iio/dac/Kconfig
-> @@ -1,11 +1,22 @@
->  #
->  # DAC drivers
->  #
-> +
-> +# Helper to resolve issues with configs that have SPI enabled but I2C
-> +# modular, meaning we can't build the drivers in with I2C support.
-> +# We use an ordered list of conditional defaults to pick the appropriate
-> +# setting - SPI can't be modular so that case doesn't need to be covered.
-> +config IIO_DAC_I2C_AND_SPI
-> +	tristate
-> +	default m if I2C=m
-> +	default y if I2C=y
-> +	default y if SPI_MASTER=y
-> +
->  menu "Digital to analog converters"
->  
->  config AD5064
->  	tristate "Analog Devices AD5064 and similar multi-channel DAC driver"
-> -	depends on (SPI_MASTER || I2C)
-> +	depends on IIO_DAC_I2C_AND_SPI
->  	help
->  	  Say yes here to build support for Analog Devices AD5024, AD5025, AD5044,
->  	  AD5045, AD5064, AD5064-1, AD5065, AD5628, AD5629R, AD5648, AD5666, AD5668,
-> @@ -27,7 +38,7 @@ config AD5360
->  
->  config AD5380
->  	tristate "Analog Devices AD5380/81/82/83/84/90/91/92 DAC driver"
-> -	depends on (SPI_MASTER || I2C)
-> +	depends on IIO_DAC_I2C_AND_SPI
->  	select REGMAP_I2C if I2C
->  	select REGMAP_SPI if SPI_MASTER
->  	help
-> @@ -57,7 +68,7 @@ config AD5624R_SPI
->  
->  config AD5446
->  	tristate "Analog Devices AD5446 and similar single channel DACs driver"
-> -	depends on (SPI_MASTER || I2C)
-> +	depends on IIO_DAC_I2C_AND_SPI
->  	help
->  	  Say yes here to build support for Analog Devices AD5300, AD5301, AD5310,
->  	  AD5311, AD5320, AD5321, AD5444, AD5446, AD5450, AD5451, AD5452, AD5453,
+I haven't enabled UEFI boot but did ~10 suspend/resume cycles with no issues.
+I'm on 3.9-rc5 if that makes a difference. I'll do some more testing with
+various kernel versions to see if I can trigger it.
 
+-Patrik
