@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab3EHNwD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 09:52:03 -0400
-Received: from outrelay02.libero.it ([212.52.84.102]:59377 "EHLO
-	outrelay02.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755821Ab3EHNwB (ORCPT
+	id S1755326Ab3EHNxx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 09:53:53 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:30140 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab3EHNxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 09:52:01 -0400
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0C0203.518A57E7.0051,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1587
-Message-ID: <29716324.262431368020966937.JavaMail.defaultUser@defaultHost>
-Date: Wed, 8 May 2013 15:49:26 +0200 (CEST)
-From: "web2013s@libero.it" <web2013s@libero.it>
-Reply-To: "web2013s@libero.it" <web2013s@libero.it>
-Subject: claim uk
+	Wed, 8 May 2013 09:53:52 -0400
+Message-ID: <518A58C0.9030304@oracle.com>
+Date: Wed, 08 May 2013 09:53:04 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130429 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: APPLICATION/OCTET-STREAM; name=bbc.docx
-Content-Transfer-Encoding: base64
-X-SenderIP: 115.185.124.229
-X-libjamv: Ws42V46qK64=
-X-libjamsun: yk3ZIR8F9OTBm8ul8k+FAjTAk12DZIyB
-Content-Disposition: attachment; filename=bbc.docx; size=3631
-To: unlisted-recipients:; (no To-header on input)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: torvalds@linux-foundation.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] liblockdep: Wrap kernel/lockdep.c to allow usage
+ from userspace
+References: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com> <1367348080-4680-3-git-send-email-sasha.levin@oracle.com> <20130508100143.GA6131@dyad.programming.kicks-ass.net> <518A52D2.4050505@oracle.com> <20130508133547.GA8386@dyad.programming.kicks-ass.net>
+In-Reply-To: <20130508133547.GA8386@dyad.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-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
+On 05/08/2013 09:35 AM, Peter Zijlstra wrote:
+> On Wed, May 08, 2013 at 09:27:46AM -0400, Sasha Levin wrote:
+>> [snip]
+>>
+>> Hi Peter,
+>>
+>> You're right - I broke multithreading for some odd reason (mostly me being stupid)
+>> after having it working :/
+>>
+>> It's enough to set the __thread flag on current_obj:
+>>
+>> 	diff --git a/tools/lib/lockdep/common.c b/tools/lib/lockdep/common.c
+>> 	index eb5e481..8ef602f 100644
+>> 	--- a/tools/lib/lockdep/common.c
+>> 	+++ b/tools/lib/lockdep/common.c
+>> 	@@ -5,7 +5,7 @@
+>> 	 #include <unistd.h>
+>> 	 #include <sys/syscall.h>
+>> 	
+>> 	-static struct task_struct current_obj;
+>> 	+static __thread struct task_struct current_obj;
+>> 	
+>> 	 /* lockdep wants these */
+>> 	 bool debug_locks = true;
+>>
+>> Since we don't need any special initialization of the struct at any point. This
+>> means that the patch above is enough and we don't need to hook pthread_create.
+>>
+> 
+> I tried googling but failed to find the TLS initialization rules. Are they
+> zero'd for each thread or copied about or what? And is this documented or
+> implementation behaviour?
+> 
+> If its consistently zero'd then I suppose you're right and we can get away with
+> just adding __thread; *phew*.
+
+I assumed that they are zero'd because it is a global variable, and those are
+supposed to be zero'd.
+
+Running a quick test confirmed that they are indeed zero'd for each thread, so
+we're safe to just add that __thread.
+
+
+Thanks,
+Sasha
+
