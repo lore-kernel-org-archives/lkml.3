@@ -1,54 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab3EHSmC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:42:02 -0400
-Received: from a9-66.smtp-out.amazonses.com ([54.240.9.66]:50026 "EHLO
-	a9-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751491Ab3EHSmA (ORCPT
+	id S1752499Ab3EHSml (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:42:41 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:48984 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852Ab3EHSmj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:42:00 -0400
-Date: Wed, 8 May 2013 18:41:58 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Mel Gorman <mgorman@suse.de>
-cc: Linux-MM <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Dave Hansen <dave@sr71.net>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/22] mm: page allocator: Allocate/free order-0 pages
- from a per-zone magazine
-In-Reply-To: <1368028987-8369-10-git-send-email-mgorman@suse.de>
-Message-ID: <0000013e85732d03-05e35c8e-205e-4242-98f5-2ae7bda64c5c-000000@email.amazonses.com>
-References: <1368028987-8369-1-git-send-email-mgorman@suse.de> <1368028987-8369-10-git-send-email-mgorman@suse.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 8 May 2013 14:42:39 -0400
+Date: Wed, 8 May 2013 14:42:06 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Borislav Petkov <bp@alien8.de>, prarit@redhat.com,
+        rafael.j.wysocki@intel.com, isimatu.yasuaki@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, fenghua.yu@intel.com,
+        xen-devel@lists.xensource.com
+Subject: Re: v3.9 - CPU hotplug and microcode earlier loading hits a mutex
+ deadlock (x86_cpu_hotplug_driver_mutex)
+Message-ID: <20130508184206.GD11906@phenom.dumpdata.com>
+References: <20130506125937.GA14036@phenom.dumpdata.com>
+ <20130507190024.GA4303@phenom.dumpdata.com>
+ <20130508125414.GB30955@pd.tnic>
+ <20130508140342.GA8152@phenom.dumpdata.com>
+ <20130508142949.GC30955@pd.tnic>
+ <20130508163249.GB369@phenom.dumpdata.com>
+ <1368037185.30363.58.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.05.08-54.240.9.66
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1368037185.30363.58.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 May 2013, Mel Gorman wrote:
+On Wed, May 08, 2013 at 12:19:45PM -0600, Toshi Kani wrote:
+> On Wed, 2013-05-08 at 12:32 -0400, Konrad Rzeszutek Wilk wrote:
+> > On Wed, May 08, 2013 at 04:29:49PM +0200, Borislav Petkov wrote:
+> > > On Wed, May 08, 2013 at 10:03:42AM -0400, Konrad Rzeszutek Wilk wrote:
+> > > 
+> > > [ … snip some funky BIOS code ]
+> > > 
+> > > > [here it shifts and continues on testing each CPU bit]
+> > > > 
+> > > > > Questions over questions...?
+> > > > 
+> > > > I probably went overboard with my answers :-)
+> > > 
+> > > Konrad, you're killing me! :-) You actually went and looked at the
+> > > BIOS disassembly voluntarily. You must be insane, I think you should
+> > > immediately go to the doctor now for a thorough checkup. :-)
+> > > 
+> > > I think I know who I can sling BIOS issues now to.
+> > 
+> > Great .. :-)
+> > > 
+> > > > > Looks like save_mc_for_early would need another, local mutex to fix that.
+> > > > 
+> > > > Let me try that. Thanks for the suggestion.
+> > > 
+> > > Ok, seriously now: yeah, this was just an idea, it should at least get
+> > > the nesting out of the way.
+> > > 
+> > > About the BIOS deal: you're probably staring at some BIOS out there
+> > > but is this the way that it is actually going to be implemented on
+> > > the physical hotplug BIOS? I mean, I've only heard rumors about IVB
+> > > supporting physical hotplug but do you even have access to such BIOS to
+> > > verify?
+> > 
+> > Unfortunatly not. I am getting an IvyTown box so hopefully that has this
+> > support. But I thought that Fenghua did since he mentioned in the patch.
+> > 
+> > Besides that I think this can also appear on VMWare if one is doing 
+> > CPU hotplug and on some HP machines - let me CC the relevant people
+> > extracted from drivers/acpi/processor_driver.c.
+> > (see  https://lkml.org/lkml/2013/5/7/588 for the thread)
+> 
+> >From the stack trace, it looks like a bug in save_mc_for_early().  This
+> function may not call cpu_hotplug_driver_lock() during CPU online.  I
+> suppose it intends to protect from CPU offline when microcode is updated
+> outside of the boot/CPU online context.  If it indeed supports updating
+> the microcode without using reboot/cpu hotplug, the lock should be held
+> when such update request is made.
 
-> 1. IRQs do not have to be disabled to access the lists reducing IRQs
->    disabled times.
 
-The per cpu structure access also would not need to disable irq if the
-fast path would be using this_cpu ops.
+Hey Toshi,
 
-> 2. As the list is protected by a spinlock, it is not necessary to
->    send IPI to drain the list. As the lists are accessible by multiple CPUs,
->    it is easier to tune.
+The fix for this I have posted, but I am more curious whether you have
+seen on baremetal this issue? Meaning using CPU ACPI hotplug on v3.9?
 
-The lists are a problem since traversing list heads creates a lot of
-pressure on the processor and TLB caches. Could we either move to an array
-of pointers to page structs (like in SLAB) or to a linked list that is
-constrained within physical boundaries like within a PMD? (comparable
-to the SLUB approach)?
-
-> > 3. The magazine_lock is potentially hot but it can be split to have
->    one lock per CPU socket to reduce contention. Draining the lists
->    in this case would acquire multiple locks be acquired.
-
-IMHO the use of per cpu RMV operations would be lower latency than the use
-of spinlocks. There is no "lock" prefix overhead with those. Page
-allocation is a frequent operation that I would think needs to be as fast
-as possible.
+> 
+> Thanks,
+> -Toshi
+> 
