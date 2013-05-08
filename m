@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab3EHLSY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 07:18:24 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:42865 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249Ab3EHLSX (ORCPT
+	id S1754831Ab3EHLT4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 07:19:56 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:21463 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab3EHLTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 07:18:23 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: broonie@kernel.org, lgirdwood@gmail.com, sachin.kamat@linaro.org,
-        sundar.iyer@stericsson.com
-Subject: [PATCH 1/1] regulator: dbx500: Make local symbol static
-Date: Wed,  8 May 2013 16:35:10 +0530
-Message-Id: <1368011110-4049-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 8 May 2013 07:19:55 -0400
+X-IronPort-AV: E=Sophos;i="4.87,632,1363132800"; 
+   d="scan'208";a="22846722"
+Date: Wed, 8 May 2013 12:19:52 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Christopher Covington <cov@codeaurora.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 1/3] arm_arch_timer: introduce
+ arch_timer_stolen_ticks
+In-Reply-To: <51892933.7090405@codeaurora.org>
+Message-ID: <alpine.DEB.2.02.1305081217010.18865@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com> <1367436460-10183-1-git-send-email-stefano.stabellini@eu.citrix.com> <51817CBE.4050003@codeaurora.org> <1367482772.21869.26.camel@zakaz.uk.xensource.com> <5182DBA9.9080609@codeaurora.org>
+ <20130506143533.GF15278@phenom.dumpdata.com> <51892933.7090405@codeaurora.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-power_state_active_get is used only in this file. Make it static.
-While at it also move this function definition inside the
-CONFIG_REGULATOR_DEBUG macro as it is called only from within it.
-This also avoids further build warning related to unused definition.
+On Tue, 7 May 2013, Christopher Covington wrote:
+> Hi Konrad,
+> 
+> On 05/06/2013 10:35 AM, Konrad Rzeszutek Wilk wrote:
+> >>> e.g. if a VCPU sets a timer for NOW+5, but 3 are stolen in the middle it
+> >>> would not make sense (from the guests PoV) for NOW'==NOW+2 at the point
+> >>> where the timer goes off. Nor does it make sense to require that the
+> >>> guest actually be running for 5 before injecting the timer because that
+> >>> would mean real time elapsed time for the timer would be 5+3 in the case
+> >>> where 3 are stolen.
+> >>
+> >> This is a bit of an aside, but I think that hiding time spent at higher
+> >> privilege levels can be a quite sensible approach to timekeeping in a
+> >> virtualized environment, but I understand that it's not the approach taken
+> >> with Xen, and as you pointed out above, adjusting the Virtual Offset Register
+> >> by itself isn't enough to implement that approach.
+> > 
+> > This is the approach taken by Xen and KVM. Look in CONFIG_PARAVIRT_CLOCK for
+> > implementation. In the user-space, the entry in 'top' of "stolen" (%st)
+> > is for this exact value.
+> 
+> I may have been unclear with my terms, sorry. When I refer to time being
+> "hidden", I mean that kernel level software (supervisor mode, EL1) cannot
+> detect the passage of that time at all. I don't know whether this would really
+> work, but I imagine one might be able to get close with the current
+> virtualization facilities for ARM.
+> 
+> Am I correct in interpreting that what you're referring to is the deployment
+> of paravirtualization code that ensures (observable) "stolen" time is factored
+> into kernel decision-making?
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/regulator/dbx500-prcmu.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/regulator/dbx500-prcmu.c b/drivers/regulator/dbx500-prcmu.c
-index 89bd2fa..ce89f78 100644
---- a/drivers/regulator/dbx500-prcmu.c
-+++ b/drivers/regulator/dbx500-prcmu.c
-@@ -24,18 +24,6 @@
- static int power_state_active_cnt; /* will initialize to zero */
- static DEFINE_SPINLOCK(power_state_active_lock);
- 
--int power_state_active_get(void)
--{
--	unsigned long flags;
--	int cnt;
--
--	spin_lock_irqsave(&power_state_active_lock, flags);
--	cnt = power_state_active_cnt;
--	spin_unlock_irqrestore(&power_state_active_lock, flags);
--
--	return cnt;
--}
--
- void power_state_active_enable(void)
- {
- 	unsigned long flags;
-@@ -65,6 +53,18 @@ out:
- 
- #ifdef CONFIG_REGULATOR_DEBUG
- 
-+static int power_state_active_get(void)
-+{
-+	unsigned long flags;
-+	int cnt;
-+
-+	spin_lock_irqsave(&power_state_active_lock, flags);
-+	cnt = power_state_active_cnt;
-+	spin_unlock_irqrestore(&power_state_active_lock, flags);
-+
-+	return cnt;
-+}
-+
- static struct ux500_regulator_debug {
- 	struct dentry *dir;
- 	struct dentry *status_file;
--- 
-1.7.9.5
-
+Although it might be possible to hide the real time flow from the VM, it
+is inadvisable: what would happen when the VM needs to deal with a real
+hardware device? Or just send packets over the network?  This is why it
+is much safer and more reliable to expose the stolen ticks to the VM.
