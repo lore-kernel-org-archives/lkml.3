@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab3EHMKy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 08:10:54 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:60620 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab3EHMKx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 08:10:53 -0400
+	id S1755201Ab3EHMLb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 08:11:31 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:12593 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754403Ab3EHML3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 08:11:29 -0400
 X-IronPort-AV: E=Sophos;i="4.87,634,1363132800"; 
-   d="scan'208";a="22855988"
-Date: Wed, 8 May 2013 13:10:30 +0100
+   d="scan'208";a="23987253"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Julien Grall <julien.grall@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: [PATCH 0/3] Xen ARM fixes for 3.10-RC1
-Message-ID: <alpine.DEB.2.02.1305081303310.18865@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        <Stefano.Stabellini@eu.citrix.com>, <konrad.wilk@oracle.com>,
+        <julien.grall@citrix.com>, <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 1/3] xen/arm: initialize pm functions later
+Date: Wed, 8 May 2013 13:11:18 +0100
+Message-ID: <1368015080-5182-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1305081303310.18865@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305081303310.18865@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this small patch series fixes few Xen on ARM problems I found with more
-testing:
+If we are running in dom0, we have to wait for the arch specific code to
+complete the initialization in order for us to successfully reset the
+power_off and pm_restart functions.
 
-- in order to work in dom0, we need to delay the initilization of the pm
-  functions after arch_init;
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/arm/xen/enlighten.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-- VCPUOP_register_vcpu_info needs to be executed by each online cpu
-  separately;
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index d30042e..83d13b0 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -272,12 +272,18 @@ static int __init xen_guest_init(void)
+ 	if (!xen_initial_domain())
+ 		xenbus_probe(NULL);
+ 
++	return 0;
++}
++core_initcall(xen_guest_init);
++
++static int __init xen_pm_init(void)
++{
+ 	pm_power_off = xen_power_off;
+ 	arm_pm_restart = xen_restart;
+ 
+ 	return 0;
+ }
+-core_initcall(xen_guest_init);
++subsys_initcall(xen_pm_init);
+ 
+ static irqreturn_t xen_arm_callback(int irq, void *arg)
+ {
+-- 
+1.7.2.5
 
-- VCPUOP_register_vcpu_info is not actually supposed to fail.
-
-
-
-Stefano Stabellini (3):
-      xen/arm: initialize pm functions later
-      xen/arm: do not handle VCPUOP_register_vcpu_info failures
-      xen: rename xen_secondary_init and run it on every online cpu
-
- arch/arm/xen/enlighten.c |   34 +++++++++++++++-------------------
- 1 files changed, 15 insertions(+), 19 deletions(-)
