@@ -1,69 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab3EHVbY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 17:31:24 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25187 "EHLO
+	id S1756603Ab3EHVdZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 17:33:25 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25195 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab3EHVbX (ORCPT
+	with ESMTP id S1754851Ab3EHVbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 May 2013 17:31:23 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: akpm@linux-foundation.org, bob.liu@oracle.com, dan.magenheimer@oracle.com,
         xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/8] xen/tmem: Split out the different module/boot options.
-Date: Wed,  8 May 2013 17:31:03 -0400
-Message-Id: <1368048668-8140-4-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 5/8] xen/tmem: s/disable_// and change the logic.
+Date: Wed,  8 May 2013 17:31:05 -0400
+Message-Id: <1368048668-8140-6-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1368048668-8140-1-git-send-email-konrad.wilk@oracle.com>
 References: <1368048668-8140-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are three options - depending on what combination of
-CONFIG_FRONTSWAP, CONFIG_CLEANCACHE and CONFIG_XEN_SELFBALLOONING
-is used. Lets split them out nicely out in three groups to
-make it easier to clean up.
+The variety of disable_[cleancache|frontswap|selfshrinking] are
+making this a bit complex. Just remove the "disable_" part and
+change the logic around for the "nofrontswap" and "nocleancache"
+parameters.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/tmem.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/xen/tmem.c | 27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/xen/tmem.c b/drivers/xen/tmem.c
-index edf7e18..c2ee188 100644
+index 30bf974..411c7e3 100644
 --- a/drivers/xen/tmem.c
 +++ b/drivers/xen/tmem.c
-@@ -49,10 +49,8 @@ __setup("nocleancache", no_cleancache);
+@@ -32,15 +32,15 @@ __setup("tmem", enable_tmem);
+ #endif
+ 
+ #ifdef CONFIG_CLEANCACHE
+-static bool disable_cleancache __read_mostly;
+-static bool disable_selfballooning __read_mostly;
++static bool cleancache __read_mostly = true;
++static bool selfballooning __read_mostly = true;
+ #ifdef CONFIG_XEN_TMEM_MODULE
+-module_param(disable_cleancache, bool, S_IRUGO);
+-module_param(disable_selfballooning, bool, S_IRUGO);
++module_param(cleancache, bool, S_IRUGO);
++module_param(selfballooning, bool, S_IRUGO);
+ #else
+ static int __init no_cleancache(char *s)
+ {
+-	disable_cleancache = true;
++	cleancache = false;
+ 	return 1;
+ }
+ __setup("nocleancache", no_cleancache);
+@@ -48,13 +48,13 @@ __setup("nocleancache", no_cleancache);
+ #endif /* CONFIG_CLEANCACHE */
  
  #ifdef CONFIG_FRONTSWAP
- static bool disable_frontswap __read_mostly;
--static bool disable_frontswap_selfshrinking __read_mostly;
+-static bool disable_frontswap __read_mostly;
++static bool frontswap __read_mostly = true;
  #ifdef CONFIG_XEN_TMEM_MODULE
- module_param(disable_frontswap, bool, S_IRUGO);
--module_param(disable_frontswap_selfshrinking, bool, S_IRUGO);
+-module_param(disable_frontswap, bool, S_IRUGO);
++module_param(frontswap, bool, S_IRUGO);
  #else
  static int __init no_frontswap(char *s)
  {
-@@ -61,8 +59,15 @@ static int __init no_frontswap(char *s)
+-	disable_frontswap = true;
++	frontswap = false;
+ 	return 1;
  }
  __setup("nofrontswap", no_frontswap);
- #endif
--#else /* CONFIG_FRONTSWAP */
-+#endif /* CONFIG_FRONTSWAP */
-+
-+#ifdef CONFIG_FRONTSWAP
-+static bool disable_frontswap_selfshrinking __read_mostly;
-+#ifdef CONFIG_XEN_TMEM_MODULE
-+module_param(disable_frontswap_selfshrinking, bool, S_IRUGO);
-+#else
- #define disable_frontswap_selfshrinking 1
-+#endif
+@@ -62,9 +62,9 @@ __setup("nofrontswap", no_frontswap);
  #endif /* CONFIG_FRONTSWAP */
  
- #define TMEM_CONTROL               0
+ #ifdef CONFIG_XEN_SELFBALLOONING
+-static bool disable_frontswap_selfshrinking __read_mostly;
++static bool frontswap_selfshrinking __read_mostly = true;
+ #ifdef CONFIG_XEN_TMEM_MODULE
+-module_param(disable_frontswap_selfshrinking, bool, S_IRUGO);
++module_param(frontswap_selfshrinking, bool, S_IRUGO);
+ #endif
+ #endif /* CONFIG_XEN_SELFBALLOONING */
+ 
+@@ -395,7 +395,7 @@ static int xen_tmem_init(void)
+ 	if (!xen_domain())
+ 		return 0;
+ #ifdef CONFIG_FRONTSWAP
+-	if (tmem_enabled && !disable_frontswap) {
++	if (tmem_enabled && frontswap) {
+ 		char *s = "";
+ 		struct frontswap_ops *old_ops =
+ 			frontswap_register_ops(&tmem_frontswap_ops);
+@@ -412,7 +412,7 @@ static int xen_tmem_init(void)
+ #endif
+ #ifdef CONFIG_CLEANCACHE
+ 	BUG_ON(sizeof(struct cleancache_filekey) != sizeof(struct tmem_oid));
+-	if (tmem_enabled && !disable_cleancache) {
++	if (tmem_enabled && cleancache) {
+ 		char *s = "";
+ 		struct cleancache_ops *old_ops =
+ 			cleancache_register_ops(&tmem_cleancache_ops);
+@@ -423,8 +423,7 @@ static int xen_tmem_init(void)
+ 	}
+ #endif
+ #ifdef CONFIG_XEN_SELFBALLOONING
+-	xen_selfballoon_init(!disable_selfballooning,
+-				!disable_frontswap_selfshrinking);
++	xen_selfballoon_init(selfballooning, frontswap_selfshrinking);
+ #endif
+ 	return 0;
+ }
 -- 
 1.8.1.4
 
