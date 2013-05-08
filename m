@@ -1,141 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab3EHNsn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 09:48:43 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:59565 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404Ab3EHNsm (ORCPT
+	id S1756427Ab3EHNs4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 09:48:56 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53225 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755955Ab3EHNsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 09:48:42 -0400
-Message-ID: <518A57B5.2040605@gmail.com>
-Date: Wed, 08 May 2013 07:48:37 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Wed, 8 May 2013 09:48:54 -0400
+Date: Wed, 8 May 2013 14:48:14 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Message-ID: <20130508134814.GQ7478@sirena.org.uk>
+References: <20130508080448.GG3102@gmail.com>
+ <1368002354-15471-1-git-send-email-fabio.baltieri@linaro.org>
+ <20130508103401.GX7478@sirena.org.uk>
+ <20130508110451.GC3459@gmail.com>
+ <20130508113124.GH7478@sirena.org.uk>
+ <20130508120326.GF3459@gmail.com>
+ <20130508123902.GL7478@sirena.org.uk>
+ <20130508130554.GG3459@gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH] perf record: handle death by SIGTERM
-References: <1367864663-1309-1-git-send-email-dsahern@gmail.com> <CABPqkBTj6Jt82mvVJKJxXaGnbD5GbW5mo4L71StOZuA=8MwDdw@mail.gmail.com> <20130507062947.GB17705@gmail.com> <51896A71.8010007@gmail.com> <20130508065447.GB5378@gmail.com>
-In-Reply-To: <20130508065447.GB5378@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="d5xRKMqY7hkGAt+u"
+Content-Disposition: inline
+In-Reply-To: <20130508130554.GG3459@gmail.com>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 212.183.132.60
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/6] ASoC: ux500: Do not clear state if already idle
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/8/13 12:54 AM, Ingo Molnar wrote:
->
-> * David Ahern <dsahern@gmail.com> wrote:
->
->> On 5/7/13 12:29 AM, Ingo Molnar wrote:
->>>
->>> * Stephane Eranian <eranian@google.com> wrote:
->>>
->>>> This is a good fix. I have run into this infinite loop in perf report
->>>> many times.
->>>
->>> Hm, perf record should really not assume much about the perf.data and
->>> should avoid infinite loops ...
->>>
->>> So while making perf.data more consistent on SIGTERM is a nice fix, perf
->>> report should be fixed as well to detect loops and such.
->>>
->>> Thanks,
->>>
->>> 	Ingo
->>>
->>
->> This seems to do the trick:
->>
->> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
->> index 326068a..e82646f 100644
->> --- a/tools/perf/util/header.c
->> +++ b/tools/perf/util/header.c
->> @@ -2802,6 +2802,17 @@ int perf_session__read_header(struct
->> perf_session *session, int fd)
->>      if (perf_file_header__read(&f_header, header, fd) < 0)
->>          return -EINVAL;
->>
->> +   /*
->> +    * sanity check that perf.data was written cleanly: data size
->> +    * is initialized to 0 and updated only if the on_exit function
->> +    * is run. If data size is still 0 then the file cannot be
->> +    * processed.
->> +    */
->> +   if (f_header.data.size == 0) {
->> +       pr_err("data size is 0. Was record properly terminated?\n");
->> +       return -1;
->> +   }
->
-> Hm, this detects the condition - but where does the looping come from?
->
-> Can it happen with a perf.data that 'seems' clean but is corrupted
-> (because not fully written, buggy kernel just crashed, etc.).
->
-> In essence it would be _very_ nice if someone reproduced the looping and
-> checked what to do to fix the looping itself. Or does the above
-> data.size == 0 check fully fix the looping under every possible state of a
-> perf.data?
 
-I think so. If you want the dirty details here you go.
+--d5xRKMqY7hkGAt+u
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The looping is in __perf_session__process_events. When the data file is 
-not closed properly data_size is 0 and n my case data_offset is 288. 
-Dropping into this function:
+On Wed, May 08, 2013 at 02:05:54PM +0100, Lee Jones wrote:
 
-     page_offset = page_size * (data_offset / page_size);
-     file_offset = page_offset;
-     head = data_offset - page_offset;
+> I'm saying, from experience, from the developer side, that if a
+> reviewer goes though a patch-set taking the ones s/he likes leaving
+> the rest behind, there are bound to be merge conflicts and semantic
+> issues which the developer will then have to resolve. Stuff that I
+> believe is added, unnecessary burden which would be easily avoided if
+> the set is firstly reviewed and _then_ applied after the Acks have
+> been awarded.
 
-which means
+So, you have to assume a bit of taste on the part of the people applying
+the patches here.  If you're seeing merge conflicts that's probably an
+issue, but then it's very surprising that the patches would apply
+successfully in the first place since the conflicts generally come up
+when the patches are applied too.
 
-   page_offset = 0
-   file_offset = 0
-   head = 288
+The other thing to bear in mind here is that a patch series which is
+"here's a bunch of random changes to this driver" isn't the same as a
+patch series which builds something up through a series of changes.
+This series is a good example of the former - there's a few related
+things but really there's no visible relationship between most of the
+changes except that they happen to be for the same driver and sent at
+the same time.
 
-The looping is here:
+The big downsides of not applying patches are that it takes longer to
+get the benefit of the bits that are good out to people and the big
+increase in reviewer fatigue from having to re-read the same patches
+over and over again.  This is one of the major ways problematic code
+gets in, reviewers eyes glaze over and they just start missing things.
+There's also the fact that serieses often end up having separate bugfix
+and development components which need to be routed differently anyway.
 
-remap:
-     buf = mmap(NULL, mmap_size, mmap_prot, mmap_flags, session->fd,
-            file_offset);
-     if (buf == MAP_FAILED) {
-         pr_err("failed to mmap file\n");
-         err = -errno;
-         goto out_err;
-     }
-     mmaps[map_idx] = buf;
-     map_idx = (map_idx + 1) & (ARRAY_SIZE(mmaps) - 1);
-     file_pos = file_offset + head;
+--d5xRKMqY7hkGAt+u
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-more:
-     event = fetch_mmaped_event(session, head, mmap_size, buf);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
---> returned event is NULL
+iQIcBAEBAgAGBQJRilebAAoJELSic+t+oim9yoAP/2eAsPKTIFw2nFGkn6BG6Q/K
+/deS/CTUOkLn5inLi+5YKPaA3jlNhKQxfbxsYl90aN1YS4Zw7KxtzknarEyNPz11
+PXGVfrZe0WStlOeZsFH5gokfppXlLxZbYXT4M0KN/4JUnQQiXFRr9jQC5z8W9zyI
+KlckvbzMP5UnC2FQEWaPZU71sAvPmH70SmdA9lXWRKKgUsqWVqk/eRUIgT+w0NVT
+9U5cId+A94AklJqjEZlntryF0rVb/IkX2ez9vJkVuWOW+v0GbWGFLtG4jkbXSsb8
+PxiKLEMxV9AfNMPb14HJAn2q67q1FSL4AZaBdkb1R9cDDZjFTKZPwdYZ7hPzJS5r
+tA61RHPWjw40wafGv4wSTeUbfLh2z2JzjNmvE5ZX7g07HCxSnHHADen+ZbykTr79
+39nY1B7GV2VAs1vEP9tb3Plenmjf24QLX0+xPIjs/UDb6IUhkEH90TAVlFs8sjSg
+eoa9cN8wVhtz3lDsn4dXwhRPuP0e4tXvWxwRBtAf5JiIvdJWNjjkKNW3RU/sHpZZ
+8+E8KKH+n6qHbn/qpAA+1oDF15PzaWLabzGxQUkYq9KWcCHnZYrjwJ9j3/rXzZOx
+c4F3NH2Bqn0Bl5WxlbDh7OGaT012kNcdFYX4ooxTZdW3II35fNRXBKNPuTXM7grU
+whZ8bJLVZkc+hfXtpczG
+=kwp7
+-----END PGP SIGNATURE-----
 
-     if (!event) {
-         if (mmaps[map_idx]) {
-             munmap(mmaps[map_idx], mmap_size);
-             mmaps[map_idx] = NULL;
-         }
-
-         page_offset = page_size * (head / page_size);
-         file_offset += page_offset;
-         head -= page_offset;
-
---> head is 288 which means the new page_offset is 0 and the new 
-file_offset is 0. head never changes. and then we go back to remap.
-
-         goto remap;
-     }
-
-So, if you want to handle the looping then seeing that page_offset new 
-in the above is 0 would suffice. A 0 value means file_offset does not 
-change and the jump to remap means the mmap does not change. ie., in a 
-loop where no values are changing.
-
-David
+--d5xRKMqY7hkGAt+u--
