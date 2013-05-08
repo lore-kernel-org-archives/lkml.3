@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122Ab3EHHmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 03:42:31 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:36261 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab3EHHma (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 03:42:30 -0400
-Date: Wed, 8 May 2013 10:42:22 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Christopher Li <sparse@chrisli.org>
-Subject: [patch] err.h: IS_ERR() can accept __user pointers
-Message-ID: <20130508074221.GA5024@elgon.mountain>
+	id S1752578Ab3EHHna (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 03:43:30 -0400
+Received: from lake.fysh.org ([81.94.195.195]:42827 "EHLO lake.fysh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751863Ab3EHHn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 03:43:29 -0400
+X-Greylist: delayed 1240 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 May 2013 03:43:28 EDT
+Date: Wed, 8 May 2013 08:22:45 +0100
+From: Athanasius <link@miggy.org>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.9.1
+Message-ID: <20130508072245.GB4169@fysh.org>
+Mail-Followup-To: Greg KH <gregkh@linuxfoundation.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <20130508041010.GA17374@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANeU7QnO8MzqT+9BDsXj3=nkKOBKumOwEKGnT=BL_cS0wiPPmw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20130508041010.GA17374@kroah.com>
+X-gpg-fingerprint: E218CE1D
+X-gpg-key: http://www.fysh.org/~athan/gpg-key
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sparse generates a false positive when you pass a __user or __iomem
-pointer to the IS_ERR() functions.
+On Tue, May 07, 2013 at 09:10:10PM -0700, Greg KH wrote:
+> I'm announcing the release of the 3.9.1 kernel.
+> 
+> All users of the 3.9 kernel series must upgrade.
+> 
+> The updated 3.9.y git tree can be found at:
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.9.y
 
-drivers/rtc/rtc-ds1286.c:344:36: sparse: incorrect type in argument 1 (different address spaces)
-drivers/rtc/rtc-ds1286.c:344:36:    expected void const *ptr
-drivers/rtc/rtc-ds1286.c:344:36:    got unsigned int [noderef] [usertype] <asn:2>*rtcregs
+  Usually I can:
 
-We can silence these by adding a __force here and upgrading to the
-latest git release of Sparse.
+	git pull git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git master
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-This change has no effect when using current Sparse releases.
+which means not having to update scripts/commandline history on each
+major verison change, but this time I did indeed need to:
 
-diff --git a/include/linux/err.h b/include/linux/err.h
-index f2edce2..221fcfb 100644
---- a/include/linux/err.h
-+++ b/include/linux/err.h
-@@ -24,17 +24,17 @@ static inline void * __must_check ERR_PTR(long error)
- 	return (void *) error;
- }
- 
--static inline long __must_check PTR_ERR(const void *ptr)
-+static inline long __must_check PTR_ERR(__force const void *ptr)
- {
- 	return (long) ptr;
- }
- 
--static inline long __must_check IS_ERR(const void *ptr)
-+static inline long __must_check IS_ERR(__force const void *ptr)
- {
- 	return IS_ERR_VALUE((unsigned long)ptr);
- }
- 
--static inline long __must_check IS_ERR_OR_NULL(const void *ptr)
-+static inline long __must_check IS_ERR_OR_NULL(__force const void *ptr)
- {
- 	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
- }
-@@ -46,13 +46,13 @@ static inline long __must_check IS_ERR_OR_NULL(const void *ptr)
-  * Explicitly cast an error-valued pointer to another pointer type in such a
-  * way as to make it clear that's what's going on.
-  */
--static inline void * __must_check ERR_CAST(const void *ptr)
-+static inline void * __must_check ERR_CAST(__force const void *ptr)
- {
- 	/* cast away the const */
- 	return (void *) ptr;
- }
- 
--static inline int __must_check PTR_RET(const void *ptr)
-+static inline int __must_check PTR_RET(__force const void *ptr)
- {
- 	if (IS_ERR(ptr))
- 		return PTR_ERR(ptr);
+	git pull git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.9.y
+
+is this an intended change, or did you do something like forgetting to
+merge into master on linux-stable ?
+
+-- 
+- Athanasius = Athanasius(at)miggy.org / http://www.miggy.org/
+                  Finger athan(at)fysh.org for PGP key
+	   "And it's me who is my enemy. Me who beats me up.
+Me who makes the monsters. Me who strips my confidence." Paula Cole - ME
