@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab3EHAB1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 20:01:27 -0400
-Received: from www.sr71.net ([198.145.64.142]:44584 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796Ab3EHAB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 20:01:26 -0400
-Message-ID: <518995D4.90002@sr71.net>
-Date: Tue, 07 May 2013 17:01:24 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1753729Ab3EHALp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 20:11:45 -0400
+Received: from mail-da0-f43.google.com ([209.85.210.43]:63243 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab3EHALo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 20:11:44 -0400
+Message-ID: <5189983B.3090400@linaro.org>
+Date: Tue, 07 May 2013 17:11:39 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: mmarek@suse.cz, linux-kbuild@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/7] consolidate per-arch stack overflow debugging options
-References: <20130507204642.D010DDC1@viggo.jf.intel.com> <20130507204643.3ACA416E@viggo.jf.intel.com> <CAAG0J9-TBpSJ4yU3kTq-0b3f_Y2-vFbPZBoW9try2CYyyTsJHg@mail.gmail.com>
-In-Reply-To: <CAAG0J9-TBpSJ4yU3kTq-0b3f_Y2-vFbPZBoW9try2CYyyTsJHg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Liu Ying <Ying.Liu@freescale.com>
+CC: linux-kernel@vger.kernel.org, davem@davemloft.net, dborkman@redhat.com,
+        tglx@linutronix.de, liu.y.victor@gmail.com
+Subject: Re: [PATCH v2] ktime: Use macro NSEC_PER_USEC where appropriate
+References: <1367915920-13485-1-git-send-email-Ying.Liu@freescale.com>
+In-Reply-To: <1367915920-13485-1-git-send-email-Ying.Liu@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2013 03:53 PM, James Hogan wrote:
-> On 7 May 2013 21:46, Dave Hansen <dave@sr71.net> wrote:
->> Several architectures have similar stack debugging config options.
->> They all pretty much do the same thing, some with slightly
->> differing help text.
->>
->> This patch changes the architectures to instead enable a Kconfig
->> boolean, and then use that boolean in the generic Kconfig.debug
->> to present the actual menu option.  This removes a bunch of
->> duplication and adds consistency across arches.
-...
-> Now that metag, arc, and openrisc architectures are merged, maybe you
-> could convert them too?
+On 05/07/2013 01:38 AM, Liu Ying wrote:
+> We've got the macro NSEC_PER_USEC defined in header file
+> include/linux/time.h. To make the code decent, this patch
+> replaces the immediate number 1000 to convert bewteen a
+> time value in microseconds and one in nanoseconds with the
+> macro NSEC_PER_USEC.
+>
+> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Daniel Borkmann <dborkman@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: John Stultz <john.stultz@linaro.org>
+> ---
+> Changes for v2:
+> 1. Update commit head and message to be more appropriate.
+> 2. Avoid an unnecessary cast in the function
+>     timeval_to_ktime().
 
-I'll send a follow-on to do that once this gets merged somewhere. :)
+I've gone ahead and queued this for 3.11.
 
+thanks
+-john
 
