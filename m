@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab3EHLGS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 07:06:18 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46796 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab3EHLGR (ORCPT
+	id S1754360Ab3EHLIm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 07:08:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:51586 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab3EHLIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 07:06:17 -0400
-Date: Wed, 8 May 2013 13:06:11 +0200
-From: Robert Richter <rric@kernel.org>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, SH-Run Zhen RZ Wang <rzwang@cn.ibm.com>
-Subject: Re: [PATCH] perf tools: Fix perf version generation
-Message-ID: <20130508110611.GA8356@rric.localhost>
-References: <1368006214-12912-1-git-send-email-rric@kernel.org>
- <518A2B4B.4040509@linux.vnet.ibm.com>
+	Wed, 8 May 2013 07:08:41 -0400
+Date: Wed, 8 May 2013 13:08:36 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: linux-kernel@vger.kernel.org
+cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: 3.9.1: x86_64 configuration failing to build
+In-Reply-To: <Pine.LNX.4.64.1305081147230.9647@axis700.grange>
+Message-ID: <Pine.LNX.4.64.1305081307430.11398@axis700.grange>
+References: <Pine.LNX.4.64.1305081147230.9647@axis700.grange>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <518A2B4B.4040509@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:rPuWMOS8mcPmagKn/KCm6IKLNA7ZTpRH+fQ0DCksSU4
+ SSelask+jXMHPyhQ0FZY8u60ANKc+wvDQ0gMqTmfhDA6w92C87
+ oQm624Ty99bHmY0Iux1OjFJMwZKx1SOE9xH+F/noN5CPskK9ty
+ rrOKXeZBlmG5+IhUNML8R7jD/pBwFRUKGz+ayN+uradM6qZA+T
+ 2nmhW/HoOjV77trgPh6tvhNcOa+BJSM6j59m7qORfbP6p667j9
+ vD0++v4WhzxZ2apwjMn5jTuNHQYEc6z9foxHeiDHHhtizXf2j8
+ NjljXJafY16YC1Fyja5tMnqa7NUAMfaIE0Oby5iUePKHQt5lpJ
+ 8iEzo12Al7uH9jOzgpiJLGxyBvkBNXW7b/fDwfOJHIDH/m/NFm
+ 0Qvp1UbX3Kuhg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.05.13 18:39:07, Xiao Guangrong wrote:
-> I remember that Wang has posted a similar patch to fix this bug several
-> weeks ago:
-> 	http://lkml.org/lkml/2013/4/24/70
+On Wed, 8 May 2013, Guennadi Liakhovetski wrote:
+
+> Hi
 > 
-> But have no response yet.
+> Based on an old (2.6.35) configuration for my PC I updated to 3.9.1 and 
+> went through make config, automatically called by make bzImage, the 
+> resulted configuration couldn't be built:
 
-Yes, this patch would fix the version tag too.
+A "make distclean" fixed it.
 
-The patch I wrote also reports a commit id even in the case when no
-tag is found. This was the original reason why I stumbled over this.
-Assume a repository for testing there you just push the commit id to.
-This does not contain any tags but a valid commit id. Now, it
-determines the version tag from the makefile but does not drop the
-commit id.
+Thanks
+Guennadi
 
--Robert
+> scripts/kconfig/conf --silentoldconfig Kconfig
+> include/config/auto.conf:8:warning: symbol value 'm' invalid for INTEL_IDLE
+> include/config/auto.conf:420:warning: symbol value 'm' invalid for RTC_CLASS
+> include/config/auto.conf:514:warning: symbol value 'm' invalid for RTC_LIB
+> include/config/auto.conf:883:warning: symbol value 'm' invalid for ACPI_CONTAINER
+> 
+> *** Error during update of the configuration.
+> 
+> Updating the configuration per "make menuconfig" doesn't help either.
