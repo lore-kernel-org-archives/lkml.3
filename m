@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab3EHTFm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 15:05:42 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16173 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752942Ab3EHTFl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 15:05:41 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18dkMNrrDwIeS9UTxcJDjD3
-Date: Wed, 8 May 2013 12:05:34 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Chris Mason <chris.mason@fusionio.com>, Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] SLAB changes for v3.10
-Message-ID: <20130508190534.GA32546@atomide.com>
-References: <alpine.LFD.2.03.1305070936320.2383@kernel.org>
- <20130508003022.GS28721@atomide.com>
- <20130508042422.GU28721@atomide.com>
- <20130508181353.23991.17852@localhost.localdomain>
- <0000013e856463fa-9a895b58-ef76-42fa-a33d-778b89f97cf2-000000@email.amazonses.com>
+	id S1754980Ab3EHTGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 15:06:55 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47095 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754517Ab3EHTGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 15:06:53 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH V5 2/6] ARM: dts: OMAP3: add clock nodes for CPU
+Date: Wed, 8 May 2013 14:06:12 -0500
+Message-ID: <1368039976-29648-3-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1368039976-29648-1-git-send-email-nm@ti.com>
+References: <1368039976-29648-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000013e856463fa-9a895b58-ef76-42fa-a33d-778b89f97cf2-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Christoph Lameter <cl@linux.com> [130508 11:31]:
-> On Wed, 8 May 2013, Chris Mason wrote:
-> 
-> > This patch fixes things for me, but to maintain the rules from
-> > Christoph's patch,  kmalloc_caches[2] should have been created whenever
-> > kmalloc_caches[7] was done.
-> 
-> Not necessary. The early slab bootstrap must create some slab caches of
-> specific sizes, it will only use those during very early bootstrap.
-> 
-> The later creation of the array must skip those.
-> 
-> You correctly moved the checks out of the if (!kmalloc_cacheS())
-> condition so that the caches are created properly.
-> 
-> Acked-by: Christoph Lameter <cl@linux.com>
+OMAP34xx and OMAP36xx platforms use dpll1 clock. Add same to common
+definition.
 
-Great this fixes things for me too:
+Cc: Benoit Cousson <b-cousson@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+no change in current revision.
+Previous version: http://marc.info/?l=linux-kernel&m=136580740024201&w=2
 
-Acked-by: Tony Lindgren <tony@atomide.com> 
+ arch/arm/boot/dts/omap3.dtsi |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+index 4ad03d9..4f445ca 100644
+--- a/arch/arm/boot/dts/omap3.dtsi
++++ b/arch/arm/boot/dts/omap3.dtsi
+@@ -23,6 +23,8 @@
+ 	cpus {
+ 		cpu@0 {
+ 			compatible = "arm,cortex-a8";
++			clocks = <&dpll1>;
++			clock-names = "cpu";
+ 		};
+ 	};
+ 
+@@ -73,6 +75,11 @@
+ 			ti,hwmods = "counter_32k";
+ 		};
+ 
++		dpll1: dpll1 {
++			#clock-cells = <0>;
++			compatible = "ti,omap-clock";
++		};
++
+ 		intc: interrupt-controller@48200000 {
+ 			compatible = "ti,omap2-intc";
+ 			interrupt-controller;
+-- 
+1.7.9.5
+
