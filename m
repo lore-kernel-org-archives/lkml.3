@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757932Ab3EHSTq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:19:46 -0400
-Received: from lake.fysh.org ([81.94.195.195]:46903 "EHLO lake.fysh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757848Ab3EHSTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:19:45 -0400
-Date: Wed, 8 May 2013 19:19:43 +0100
-From: Athanasius <link@miggy.org>
-To: Greg KH <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.9.1
-Message-ID: <20130508181943.GC4169@fysh.org>
-Mail-Followup-To: Greg KH <gregkh@linuxfoundation.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>
-References: <20130508041010.GA17374@kroah.com>
- <20130508072245.GB4169@fysh.org>
- <20130508175020.GA17950@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130508175020.GA17950@kroah.com>
-X-gpg-fingerprint: E218CE1D
-X-gpg-key: http://www.fysh.org/~athan/gpg-key
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758049Ab3EHSTx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:19:53 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:47008 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757870Ab3EHSTt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 14:19:49 -0400
+Message-ID: <1368037185.30363.58.camel@misato.fc.hp.com>
+Subject: Re: v3.9 - CPU hotplug and microcode earlier loading hits a mutex
+ deadlock (x86_cpu_hotplug_driver_mutex)
+From: Toshi Kani <toshi.kani@hp.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Borislav Petkov <bp@alien8.de>, prarit@redhat.com,
+        rafael.j.wysocki@intel.com, isimatu.yasuaki@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, fenghua.yu@intel.com,
+        xen-devel@lists.xensource.com
+Date: Wed, 08 May 2013 12:19:45 -0600
+In-Reply-To: <20130508163249.GB369@phenom.dumpdata.com>
+References: <20130506125937.GA14036@phenom.dumpdata.com>
+	 <20130507190024.GA4303@phenom.dumpdata.com>
+	 <20130508125414.GB30955@pd.tnic>
+	 <20130508140342.GA8152@phenom.dumpdata.com>
+	 <20130508142949.GC30955@pd.tnic> <20130508163249.GB369@phenom.dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 10:50:20AM -0700, Greg KH wrote:
-> On Wed, May 08, 2013 at 08:22:45AM +0100, Athanasius wrote:
-> > On Tue, May 07, 2013 at 09:10:10PM -0700, Greg KH wrote:
-> > > I'm announcing the release of the 3.9.1 kernel.
+On Wed, 2013-05-08 at 12:32 -0400, Konrad Rzeszutek Wilk wrote:
+> On Wed, May 08, 2013 at 04:29:49PM +0200, Borislav Petkov wrote:
+> > On Wed, May 08, 2013 at 10:03:42AM -0400, Konrad Rzeszutek Wilk wrote:
+> > 
+> > [ … snip some funky BIOS code ]
+> > 
+> > > [here it shifts and continues on testing each CPU bit]
 > > > 
-> > > All users of the 3.9 kernel series must upgrade.
+> > > > Questions over questions...?
 > > > 
-> > > The updated 3.9.y git tree can be found at:
-> > > 	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.9.y
+> > > I probably went overboard with my answers :-)
 > > 
-> >   Usually I can:
+> > Konrad, you're killing me! :-) You actually went and looked at the
+> > BIOS disassembly voluntarily. You must be insane, I think you should
+> > immediately go to the doctor now for a thorough checkup. :-)
 > > 
-> > 	git pull git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git master
+> > I think I know who I can sling BIOS issues now to.
 > 
-> If you do that, you only get the master branch updated locally.  Which
-> tracks Linus's tree, not the different stable releases.
-> 
-> > which means not having to update scripts/commandline history on each
-> > major verison change, but this time I did indeed need to:
+> Great .. :-)
 > > 
-> > 	git pull git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.9.y
+> > > > Looks like save_mc_for_early would need another, local mutex to fix that.
+> > > 
+> > > Let me try that. Thanks for the suggestion.
 > > 
-> > is this an intended change, or did you do something like forgetting to
-> > merge into master on linux-stable ?
+> > Ok, seriously now: yeah, this was just an idea, it should at least get
+> > the nesting out of the way.
+> > 
+> > About the BIOS deal: you're probably staring at some BIOS out there
+> > but is this the way that it is actually going to be implemented on
+> > the physical hotplug BIOS? I mean, I've only heard rumors about IVB
+> > supporting physical hotplug but do you even have access to such BIOS to
+> > verify?
 > 
-> No, I have not changed anything on my end, perhaps you never really were
-> updating the different stable branches?
+> Unfortunatly not. I am getting an IvyTown box so hopefully that has this
+> support. But I thought that Fenghua did since he mentioned in the patch.
+> 
+> Besides that I think this can also appear on VMWare if one is doing 
+> CPU hotplug and on some HP machines - let me CC the relevant people
+> extracted from drivers/acpi/processor_driver.c.
+> (see  https://lkml.org/lkml/2013/5/7/588 for the thread)
 
-  'uname -r' says I was.  Also 'git log' for my v3.8 branch currently on
-3.8.9 via the 'master' method does include at least the top few commits
-listed on:
+>From the stack trace, it looks like a bug in save_mc_for_early().  This
+function may not call cpu_hotplug_driver_lock() during CPU online.  I
+suppose it intends to protect from CPU offline when microcode is updated
+outside of the boot/CPU online context.  If it indeed supports updating
+the microcode without using reboot/cpu hotplug, the lock should be held
+when such update request is made.
 
-<https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/log/?id=refs/tags/v3.8.9>
+Thanks,
+-Toshi
 
-Of course only having gotten to 3.8.9 a pull against linux-3.8.y does
-see changes.  Perhaps someone else, or a script on git.kernel.org was
-merging into master before and now isn't ?
-
-  Anyway, if it's unsupported to pull from linux-stable.git master I'll
-change my scripts.
-
--- 
-- Athanasius = Athanasius(at)miggy.org / http://www.miggy.org/
-                  Finger athan(at)fysh.org for PGP key
-	   "And it's me who is my enemy. Me who beats me up.
-Me who makes the monsters. Me who strips my confidence." Paula Cole - ME
