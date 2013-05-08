@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab3EHWlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 18:41:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38337 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402Ab3EHWlh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 18:41:37 -0400
-Date: Wed, 8 May 2013 15:41:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: athorlton@sgi.com
-Cc: linux-kernel@vger.kernel.org, Vineet Gupta <vgupta@synopsys.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>, Robin Holt <holt@sgi.com>
-Subject: Re: [patch 1/2] dump_stack: serialize the output from dump_stack()
-Message-Id: <20130508154135.6a954bc4424050c607bc8378@linux-foundation.org>
-In-Reply-To: <20130508210144.090393535@asylum.americas.sgi.com>
-References: <20130508210144.090393535@asylum.americas.sgi.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754942Ab3EHWpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 18:45:53 -0400
+Received: from ozlabs.org ([203.10.76.45]:34734 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753336Ab3EHWpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 18:45:52 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Stephane Eranian <eranian@google.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Anshuman Khandual <anshuman.khandual@in.ibm.com>
+Subject: Re: Invalid perf_branch_entry.to entries question
+In-reply-to: <CABPqkBRSMxQK8LJWhD39yo8EQZBd3-dRkeMqvwhWwLiHa6m66g@mail.gmail.com>
+References: <25394.1367890528@ale.ozlabs.ibm.com> <20130508155929.GA8459@dyad.programming.kicks-ass.net> <CABPqkBRSMxQK8LJWhD39yo8EQZBd3-dRkeMqvwhWwLiHa6m66g@mail.gmail.com>
+Comments: In-reply-to Stephane Eranian <eranian@google.com>
+   message dated "Wed, 08 May 2013 23:33:52 +0200."
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Thu, 09 May 2013 08:45:51 +1000
+Message-ID: <15099.1368053151@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 May 2013 16:01:03 -0500 athorlton@sgi.com wrote:
+Stephane Eranian <eranian@google.com> wrote:
 
-> These patches fix up issues with interspersed output from multiple
-> simultaneous calls to warn or dump_stack on multi-cpu systems.
-> References: <20130508210102.898396979@asylum.americas.sgi.com>
-> Content-Disposition: inline; filename=dump-stack-serialize.patch
+> On Wed, May 8, 2013 at 5:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, May 07, 2013 at 11:35:28AM +1000, Michael Neuling wrote:
+> >> Peter & Stephane,
+> >>
+> >> We are plumbing the POWER8 Branch History Rolling Buffer (BHRB) into
+> >> struct perf_branch_entry.
+> >>
+> >> Sometimes on POWER8 we may not be able to fill out the "to" address.
+> >
+> > Just because I'm curious.. however does that happen? Surely the CPU knows where
+> > next to fetch instructions?
+> >
+> >> We
+> >> initially thought of just making this 0, but it's feasible that this
+> >> could be a valid address to branch to.
+> >
+> > Right, while highly unlikely, x86 actually has some cases where 0 address is
+> > valid *shudder*..
+> >
+> >> The other logical value to indicate an invalid entry would be all 1s
+> >> which is not possible (on POWER at least).
+> >>
+> >> Do you guys have a preference as to what we should use as an invalid
+> >> entry?  This would have some consequences for the userspace tool also.
+> >>
+> >> The alternative would be to add a flag alongside mispred/predicted to
+> >> indicate the validity of the "to" address.
+> >
+> > Either would work with me I suppose.. Stephane do you have any preference?
 > 
-> This patch adds functionality to serialize the output from dump_stack() to 
-> avoid mangling of the output when dump_stack is called simultaneously from
-> multiple cpus.
-> 
-> ...
->
-> The original discussion regarding this patch can be found in this thread:
-> [PATCH] x86: Avoid intermixing cpu dump_stack output on multi-processor systems
+> But if the 'to' is bogus, why not just drop the sample?
+> That happens on x86 if the HW captured branches which do not correspond to
+> user filter settings (due to bug).
 
-If there was anything useful or interesting in that discussion then it
-should be included in this patch's changelog, please.  Don't send
-everyone off hunting for emails.  Email to which they can't reply in
-the context of this thread...
+We can I guess but it seems useful to log the from address when
+possible.  
 
-> +++ linux/lib/dump_stack.c
-> @@ -7,6 +7,8 @@
->  #include <linux/export.h>
->  #include <linux/sched.h>
->  
-> +static atomic_t dump_lock = ATOMIC_INIT(-1);
-> +
->  /**
->   * dump_stack - dump the current task information and its stack trace
->   *
-> @@ -14,7 +16,30 @@
->   */
->  void dump_stack(void)
->  {
-> +	int was_locked;
-> +	int old;
-> +	int cpu;
-> +
-> +	preempt_disable();
-> +
-> +retry:
-> +	cpu = smp_processor_id();
-> +	old = atomic_cmpxchg(&dump_lock, -1, cpu);
-> +	if (old == -1) {
-> +		was_locked = 0;
-> +	} else if (old == cpu) {
-> +		was_locked = 1;
-> +	} else {
-> +		cpu_relax();
-> +		goto retry;
-> +	}
-> +
->  	dump_stack_print_info(KERN_DEFAULT);
->  	show_stack(NULL, NULL);
-> +
-> +	if (!was_locked)
-> +		atomic_set(&dump_lock, -1);
-> +
-> +	preempt_enable();
+Can we log it and userspace tools can ignore it if it's not useful?
 
-This would benefit from a comment explaining what it's doing and why. 
-"Permit this cpu to perform nested stack dumps while serialising
-against other CPUs".
-
-The patch adds a load of goop which is unneeded on uniprocessor
-kernels.  I guess a non-messy way of avoiding that is to just have two
-versions of dump_stack() in this file.
-
-It would be prudent to toss some more #includes in there.  For
-atomic_foo() and cpu_relax(), for example.
-
+Mikey
