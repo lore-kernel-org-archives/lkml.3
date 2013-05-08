@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab3EHPTH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:19:07 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:57409 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150Ab3EHPTD (ORCPT
+	id S1755639Ab3EHPTT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:19:19 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:35092 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754740Ab3EHPTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:19:03 -0400
+	Wed, 8 May 2013 11:19:16 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,12 +19,10 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Tang Chen <tangchen@cn.fujitsu.com>
-Subject: [PATCH v5, part3 04/15] mm/x86: use free_reserved_area() to simplify code
-Date: Wed,  8 May 2013 23:17:03 +0800
-Message-Id: <1368026235-5976-5-git-send-email-jiang.liu@huawei.com>
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Subject: [PATCH v5, part3 06/15] mm, powertv: use free_reserved_area() to simplify code
+Date: Wed,  8 May 2013 23:17:05 +0800
+Message-Id: <1368026235-5976-7-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1368026235-5976-1-git-send-email-jiang.liu@huawei.com>
 References: <1368026235-5976-1-git-send-email-jiang.liu@huawei.com>
@@ -35,89 +33,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use common help function free_reserved_area() to simplify code.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Jianguo Wu <wujianguo@huawei.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>
+Cc: linux-mips@linux-mips.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/x86/mm/init.c    |   14 +++-----------
- arch/x86/mm/init_64.c |    5 ++---
- 2 files changed, 5 insertions(+), 14 deletions(-)
+ arch/mips/powertv/asic/asic_devices.c |   13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index fdc5dca..6738e1b 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -477,7 +477,6 @@ int devmem_is_allowed(unsigned long pagenr)
- 
- void free_init_pages(char *what, unsigned long begin, unsigned long end)
+diff --git a/arch/mips/powertv/asic/asic_devices.c b/arch/mips/powertv/asic/asic_devices.c
+index d38b095..9f64c23 100644
+--- a/arch/mips/powertv/asic/asic_devices.c
++++ b/arch/mips/powertv/asic/asic_devices.c
+@@ -529,17 +529,8 @@ EXPORT_SYMBOL(asic_resource_get);
+  */
+ void platform_release_memory(void *ptr, int size)
  {
 -	unsigned long addr;
- 	unsigned long begin_aligned, end_aligned;
- 
- 	/* Make sure boundaries are page aligned */
-@@ -492,8 +491,6 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
- 	if (begin >= end)
- 		return;
- 
--	addr = begin;
+-	unsigned long end;
 -
- 	/*
- 	 * If debugging page accesses then do not free this memory but
- 	 * mark them not present - any buggy init-section access will
-@@ -512,18 +509,13 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
- 	set_memory_nx(begin, (end - begin) >> PAGE_SHIFT);
- 	set_memory_rw(begin, (end - begin) >> PAGE_SHIFT);
- 
--	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
+-	addr = ((unsigned long)ptr + (PAGE_SIZE - 1)) & PAGE_MASK;
+-	end = ((unsigned long)ptr + size) & PAGE_MASK;
 -
 -	for (; addr < end; addr += PAGE_SIZE) {
--		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
--		free_reserved_page(virt_to_page(addr));
+-		ClearPageReserved(virt_to_page(__va(addr)));
+-		init_page_count(virt_to_page(__va(addr)));
+-		free_page((unsigned long)__va(addr));
 -	}
-+	free_reserved_area(begin, end, POISON_FREE_INITMEM, what);
- #endif
++	free_reserved_area((unsigned long)ptr, (unsigned long)(ptr + size),
++			   -1, NULL);
  }
+ EXPORT_SYMBOL(platform_release_memory);
  
- void free_initmem(void)
- {
--	free_init_pages("unused kernel memory",
-+	free_init_pages("unused kernel",
- 			(unsigned long)(&__init_begin),
- 			(unsigned long)(&__init_end));
- }
-@@ -549,7 +541,7 @@ void __init free_initrd_mem(unsigned long start, unsigned long end)
- 	 *   - relocate_initrd()
- 	 * So here We can do PAGE_ALIGN() safely to get partial page to be freed
- 	 */
--	free_init_pages("initrd memory", start, PAGE_ALIGN(end));
-+	free_init_pages("initrd", start, PAGE_ALIGN(end));
- }
- #endif
- 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index caad9a0..0c6efb8 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -1165,11 +1165,10 @@ void mark_rodata_ro(void)
- 	set_memory_ro(start, (end-start) >> PAGE_SHIFT);
- #endif
- 
--	free_init_pages("unused kernel memory",
-+	free_init_pages("unused kernel",
- 			(unsigned long) __va(__pa_symbol(text_end)),
- 			(unsigned long) __va(__pa_symbol(rodata_start)));
--
--	free_init_pages("unused kernel memory",
-+	free_init_pages("unused kernel",
- 			(unsigned long) __va(__pa_symbol(rodata_end)),
- 			(unsigned long) __va(__pa_symbol(_sdata)));
- }
 -- 
 1.7.9.5
 
