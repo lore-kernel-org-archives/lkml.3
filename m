@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab3EHPjj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:39:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35890 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754227Ab3EHPji (ORCPT
+	id S1755711Ab3EHPk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:40:56 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:38356 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444Ab3EHPkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:39:38 -0400
-Date: Wed, 8 May 2013 08:39:37 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Yuan-Hsin Chen <yuanlmm@gmail.com>, sarah.a.sharp@linux.intel.com,
-        Felipe Balbi <balbi@ti.com>, Julia.Lawall@lip6.fr,
-        USB list <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Yuan-Hsin Chen <yhchen@faraday-tech.com>,
-        ratbert <ratbert.chuang@gmail.com>,
-        John Feng-Hsin =?utf-8?B?Q2hpYW5nKOaxn+WzsOiIiCk=?= 
-	<john453@faraday-tech.com>
-Subject: Re: [PATCH v4] usb host: Faraday USB2.0 FUSBH200-HCD driver
-Message-ID: <20130508153937.GC17186@kroah.com>
-References: <CADB-Go+9SPt8A7E3FsF0TFcF-yARMYX7QDZTsZU4uNSTZWrgqw@mail.gmail.com>
- <Pine.LNX.4.44L0.1305081039250.1450-100000@iolanthe.rowland.org>
+	Wed, 8 May 2013 11:40:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1305081039250.1450-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACtbSuSDBe33DGfR0LFXCtzRYBaF-JuKBjYWu8QFEdw7nENPSA@mail.gmail.com>
+References: <CACtbSuSDBe33DGfR0LFXCtzRYBaF-JuKBjYWu8QFEdw7nENPSA@mail.gmail.com>
+Date: Wed, 8 May 2013 11:40:54 -0400
+Message-ID: <CA+5PVA5V59N7CaX++=059icOH1-u6a4U+B46LijMn0eeB1UZFw@mail.gmail.com>
+Subject: Re: [PATCH] [SVN] Please Merge 7 VirtualBox Kernel Modules into the
+ Linux Kernel
+From: Josh Boyer <jwboyer@gmail.com>
+To: quickbooks office <quickbooks.office@gmail.com>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        vbox-dev@virtualbox.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 10:40:08AM -0400, Alan Stern wrote:
-> On Wed, 8 May 2013, Yuan-Hsin Chen wrote:
-> 
-> > Hi,
-> > 
-> > Are there any advice?
-> > Thanks.
-> > 
-> > On Fri, Apr 26, 2013 at 5:37 PM, Yuan-Hsin Chen <yuanlmm@gmail.com> wrote:
-> > > FUSBH200-HCD is an USB2.0 hcd for Faraday FUSBH200.
-> > > FUSBH200 is an ehci-like controller with some differences.
-> > > First, register layout of FUSBH200 is incompatible with EHCI.
-> > > Furthermore, FUSBH200 is lack of siTDs which means iTDs
-> > > are used for both HS and FS ISO transfer.
-> 
-> As far as I'm concerned, this can be merged.
+On Wed, May 8, 2013 at 12:09 AM, quickbooks office
+<quickbooks.office@gmail.com> wrote:
+> Please Merge VirtualBox Kernel Modules into the Kernel.
+>
+> -----------------------------------------------------------------------------------------------------------
+>
+> svn co http://www.virtualbox.org/svn/vbox/trunk vbox
+> sh '/home/user/vbox/src/VBox/Additions/linux/export_modules'
+> VBoxGuestModules.tar.gz
+>
+> Extracting VBoxGuestModules.tar.gz will give the Source Code for 3
+> modules (used in a Linux Guest):
+>
+> 1. vboxguest (VirtualBox guest kernel module)
+>
+> 2. vboxsf (VirtualBox guest kernel module for shared folders)
+>
+> 3. vboxvideo (VirtualBox guest kernel module for drm support)
 
-Ok, I'll queue it up after 3.10-rc1 is out.
+That's not how this works.  The vbox developers need to submit them as
+patches to the appropriate maintainers and they need to go through
+proper review.  As far as I can tell, that hasn't been done because
+they don't want to settle on a single API/ABI between the kernel and
+userspace interfaces for vbox.
 
-greg k-h
+josh
