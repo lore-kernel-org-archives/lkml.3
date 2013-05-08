@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758122Ab3EHUhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 16:37:19 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:54593 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757893Ab3EHUhS (ORCPT
+	id S1758214Ab3EHUh7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 16:37:59 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:41056 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757502Ab3EHUh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 16:37:18 -0400
-Message-ID: <518AB77A.6090201@hurleysoftware.com>
-Date: Wed, 08 May 2013 16:37:14 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 8 May 2013 16:37:59 -0400
+Message-ID: <518AB7A6.30602@candelatech.com>
+Date: Wed, 08 May 2013 13:37:58 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Wang YanQing <udknight@gmail.com>, airlied@redhat.com,
-        linux-kernel@vger.kernel.org, jslaby@suse.cz, alan@linux.intel.com
-Subject: Re: [PATCH 3/9] vt: delete unneeded functions register_con_driver|take_over_console
-References: <20130508181359.GD12344@udknight> <518AAE01.2010005@hurleysoftware.com> <20130508201412.GA17401@kroah.com>
-In-Reply-To: <20130508201412.GA17401@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: relayfs question related to removing parent directory.
+References: <518AB646.1000406@candelatech.com> <20130508203547.GX25399@ZenIV.linux.org.uk>
+In-Reply-To: <20130508203547.GX25399@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2013 04:14 PM, Greg KH wrote:
-> On Wed, May 08, 2013 at 03:56:49PM -0400, Peter Hurley wrote:
->> On 05/08/2013 02:13 PM, Wang YanQing wrote:
->>> Now there is no place use register_con_driver|take_over_console,
->>> and we can achieve their function with do_register_con_driver|
->>> do_take_over_console easily, so just delete them to reduce code duplication.
->>>
->>> Signed-off-by: Wang YanQing <udknight@gmail.com>
->>> ---
->>>   drivers/tty/vt/vt.c     | 45 ---------------------------------------------
->>>   include/linux/console.h |  2 --
->>>   2 files changed, 47 deletions(-)
->>>
->>> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
->>> index fbd447b..852d470 100644
->>> --- a/drivers/tty/vt/vt.c
->>> +++ b/drivers/tty/vt/vt.c
->>> @@ -3576,26 +3576,6 @@ err:
->>>   	return retval;
->>>   }
->>>
->>> -/**
->>> - * register_con_driver - register console driver to console layer
->>> - * @csw: console driver
->>> - * @first: the first console to take over, minimum value is 0
->>> - * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
->>> - *
->>> - * DESCRIPTION: This function registers a console driver which can later
->>> - * bind to a range of consoles specified by @first and @last. It will
->>> - * also initialize the console driver by calling con_startup().
->>> - */
->>> -int register_con_driver(const struct consw *csw, int first, int last)
->>> -{
->>> -	int retval;
->>> -
->>> -	console_lock();
->>> -	retval = do_register_con_driver(csw, first, last);
->>> -	console_unlock();
->>> -	return retval;
->>> -}
->>> -EXPORT_SYMBOL(register_con_driver);
+On 05/08/2013 01:35 PM, Al Viro wrote:
+> On Wed, May 08, 2013 at 01:32:06PM -0700, Ben Greear wrote:
+>> I'm seeing a crash when unloading the ath9k module.
 >>
->> Maybe register_con_driver() should print a deprecated warning
->> for a release or two before we remove it.
+>> It seems relay_close() is being passed bad memory.
+>>
+>> The relay_open call uses an ath9k debugfs directory, so
+>> that may be removed before the call to relay_close()
+>> is called.
+>>
+>> Does relayfs automatically close files when the parent
+>> directory is removed?
 >
-> If there are no in-kernel users, why do we need to keep it around?
+> Why and how the hell would it possibly manage such a miracle?
+>
 
-Well, it's not my position that we *need* to keep previously exported
-symbols around, but I do think a release or two is enough of a
-heads-up for out-of-tree drivers to transition.
+No idea..I'm just trying to figure out why it is crashing
+....don't see anything obvious in ath9k itself, but still looking.
 
-That said, you're the maintainer, so I'll defer to your requirements
-here.
+Thanks,
+Ben
 
-Regards,
-Peter Hurley
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
