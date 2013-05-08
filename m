@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757954Ab3EHSUt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:20:49 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46789 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757751Ab3EHSUs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:20:48 -0400
-Date: Wed, 8 May 2013 19:20:07 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Russ Anderson <rja@sgi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH -v8 11/11] Move arch/x86 reboot= handling to generic
-	kernel.
-Message-ID: <20130508182007.GO18614@n2100.arm.linux.org.uk>
-References: <1367937595-32241-1-git-send-email-holt@sgi.com> <1367937595-32241-12-git-send-email-holt@sgi.com> <20130508103956.GA7677@gmail.com>
+	id S1758021Ab3EHSVL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:21:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56009 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757701Ab3EHSVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 14:21:08 -0400
+Date: Wed, 8 May 2013 20:22:35 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, hpa@zytor.com,
+        mingo@redhat.com, fenghua.yu@intel.com, tglx@linutronix.de,
+        xen-devel@lists.xensource.com, stable@vger.kernel.org
+Subject: Re: [PATCH] x86, microcode: Add local mutex to not hit a deadlock.
+Message-ID: <20130508182235.GE30955@pd.tnic>
+References: <1368029583-23337-1-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130508103956.GA7677@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1368029583-23337-1-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 12:39:56PM +0200, Ingo Molnar wrote:
-> To generalize it, firstly here's a summary of the existing reboot option 
-> mappings:
+On Wed, May 08, 2013 at 12:13:03PM -0400, Konrad Rzeszutek Wilk wrote:
+> This can easily be triggered if a new CPU is added (via
+> ACPI hotplug mechanism) and from user-space do:
 > 
->  x86-only:  w, c, s
->  non-x86:         s, h, g
->  generic:                  b, a, k, t, e, p, f
+> echo 1 > /sys/devices/system/cpu/cpu3/online
 > 
+> (or wait for UDEV to do it) on a newly appeared CPU.
 > 
-> it appears that 'w', 'c', 'h', and 'g' could be made generic straight 
-> away.
+> The deadlock is that the "store_online" in drivers/base/cpu.c
+> takes the cpu_hotplug_driver_lock() lock, then calls "cpu_up".
+> "cpu_up" eventually ends up calling "save_mc_for_early"
+> which also takes the cpu_hotplug_driver_lock() lock.
 > 
-> Which leaves 's' as the only truly problematic option:
+> And here is that kernel thinks of it:
 > 
->  - it means REBOOT_WARM on some non-x86 platform(s?)
->  - while it means the SMP-cpu on x86.
+> smpboot: Stack at about ffff880075c39f44
+> smpboot: CPU3: has booted.
+> microcode: CPU3 sig=0x206a7, pf=0x2, revision=0x25
 > 
-> Stupid question: which non-x86 platform(s) use 's'?
+> =============================================
+> [ INFO: possible recursive locking detected ]
+> 3.9.0upstream-10129-g167af0e #1 Not tainted
+> ---------------------------------------------
+> sh/2487 is trying to acquire lock:
+>  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
+> 
+> but task is already holding lock:
+>  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
+> 
+> other info that might help us debug this:
+>  Possible unsafe locking scenario:
+> 
+>        CPU0
+>        ----
+>   lock(x86_cpu_hotplug_driver_mutex);
+>   lock(x86_cpu_hotplug_driver_mutex);
+> 
+>  *** DEADLOCK ***
 
-Let's try to get the meaning back.  On ARM, these are taken from the first
-letter of the 'reboot=' command line argument, which was initially either
-"hard" or "soft".  This refers to whether we hit some bit of hardware
-which physically asserts some reset line in the system, or merely vector
-the CPU via the reset vector (for some systems, this is the only
-possibility.)
+Ok, just for my own understanding: is this something which can actually
+happen now?
 
-Then PXA happened, and there was a need for some platforms there to do
-a hardware restart via toggling a GPIO output, which would then ultimately
-assert the system reset line.  So we then added the "gpio" mode as well.
-reboot via toggling a GPIO output.  So we then ended up with "gpio" as
-well.
+Judging by the presence of traces, it can be triggered in a guest,
+correct?
 
-So, on ARM, the modes are: hard, soft, gpio, which get translated to a
-single letter by the simple parsing code:
+Thanks.
 
-static char reboot_mode = 'h';
+-- 
+Regards/Gruss,
+    Boris.
 
-int __init reboot_setup(char *str)
-{
-        reboot_mode = str[0];
-        return 1;
-}
-
-__setup("reboot=", reboot_setup);
-
-Now, arguably, "hard" and "soft" have an entirely different meaning to
-"warm" and "cold" in the normal parlence.  A "warm" reboot involves the
-system doing less tasks at restart than a "cold" reboot.  This is not
-necessarily the case between 'hard' and 'soft'.
-
-So, while I don't entirely agree with mapping "hard" to "cold" and
-"soft" to "warm", I guess for the sake of generalisation it's okay.
-However, thinking about the future, if ARM becomes more server-like,
-we might also want "cold" and "warm" reboot identifiers too.
-
-I think the solution to this would be to have the new generic code
-parse the entire argument, not just the first letter - certainly for
-the 's' case.  If it's the x86 version, it'll be "s<number>".  If
-it's the ARM version, it should be "soft".
+Sent from a fat crate under my desk. Formatting is fine.
+--
