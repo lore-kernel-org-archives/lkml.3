@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab3EHMXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 08:23:19 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:36017 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312Ab3EHMXS (ORCPT
+	id S1755384Ab3EHM0M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 08:26:12 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:56273 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403Ab3EHM0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 08:23:18 -0400
+	Wed, 8 May 2013 08:26:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <5188C18D.10103@arm.com>
-References: <1367905910-30913-1-git-send-email-giridhar.m@samsung.com>
-	<CAHuqX+HUWcX_sTXKCjSQ9pR1K8obLc+T7vYK_zTn_gqO8ULPVQ@mail.gmail.com>
-	<5188C18D.10103@arm.com>
-Date: Wed, 8 May 2013 17:53:04 +0530
-Message-ID: <CAHuqX+GOLO_H81B3bwcqF7Sp0srctBn+6J9mbRF_kbPRTXC-ng@mail.gmail.com>
-Subject: Re: [RFC PATCH V2] ARM: EXYNOS: Fix hotplug when CPUs boot in HYP mode
-From: Giridhar Maruthy <giridhar.maruthy@linaro.org>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        Christoffer Dall <cdall@cs.columbia.edu>
+In-Reply-To: <518A3DDC.1090905@parallels.com>
+References: <alpine.LFD.2.03.1305070936320.2383@kernel.org>
+	<20130508003022.GS28721@atomide.com>
+	<20130508042422.GU28721@atomide.com>
+	<20130508051602.GV28721@atomide.com>
+	<CAOJsxLEB2gSWefNHNeKfxv9Hp=H9PG0bGgTcUPE4abz3fv_fxw@mail.gmail.com>
+	<518A3DDC.1090905@parallels.com>
+Date: Wed, 8 May 2013 15:26:09 +0300
+X-Google-Sender-Auth: Shfu9VeP-YjA_Vg_zdLajhcDGWI
+Message-ID: <CAOJsxLEjqNA1wbZta568McFnEb_nbnGF1_9kEhOJkFTX-CobaA@mail.gmail.com>
+Subject: Re: [GIT PULL] SLAB changes for v3.10
+From: Pekka Enberg <penberg@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 May 2013 14:25, Marc Zyngier <marc.zyngier@arm.com> wrote:
-> On 07/05/13 06:54, Giridhar Maruthy wrote:
->> This patch is a modification from the Christoffer Dall's u-boot
->> patch. This is required to put the secondary processors in hyp
->> mode during cpu hotplug when u-boot is no longer alive.
->>
->> Marc Zyngier suggested this logic to go into firmware or, u-boot
->> putting a trampoline code into a page /memreserve/d by DT. But
->> this seemed to have a problem. Once the cpu is hotplugged in
->> runtime, the control is in ROM code and waits for event.
->> Kernel provides a return address in kernel to which the processor
->> jumps once it gets an event. If the control branches to the
->> trampoline code here, this trampoline code has no kernel return
->> address.
->>
->> Someone with better logic or better placement of this logic
->> elsewhere is welcome.
+On Wed, May 8, 2013 at 2:58 PM, Glauber Costa <glommer@parallels.com> wrote:
+> My first guess is that it hit a NULL cache. Being a NULL pointer
+> dereference, the thing among all that has the biggest chances of being
+> NULL and accessed unconditionally is the cache pointer itself.
 >
-> What prevents you from writing the kernel address in the memreserved
-> page? Some obvious location, like the last word of the page? You only
-> have to do it once (from the boot CPU, for example).
+> Due to the size being too big. But if that were the case, he would have
+> hit the WARN_ON recently introduced:
 >
-> Or did I miss something else?
+>                 if (WARN_ON_ONCE(size > KMALLOC_MAX_SIZE))
+>                         return NULL;
+>
+>
+> Is this WARN hit ?
 
-Thanks Marc, I think I understand now.
+I doubt it:
 
-I guess I also need to put the primary cpu boot mode into a temporary location.
+[    0.000000] r7 : 00000000  r6 : 600001d3  r5 : 00000000  r4 : 00008000
+[    0.000000] r3 : 00000050  r2 : c06ec000  r1 : c06f77c8  r0 : c00eda9c
 
--Giridhar
+[    0.000000] [<c00edab4>] (kmem_cache_alloc_trace+0x50/0x178) from
+[<c0086958>] (alloc_desc+0x24/0xb4)
+
+It's the kzalloc_node() in kernel/irq/irqdesc.c::alloc_desc() and
+AFAICT based on r4 it's a 32 KB allocation. It's more likely that
+KMALLOC_SHIFT_HIGH is less than 25 and because kmalloc_index() doesn't
+respect it, we return a pointer to an uninitialized kmalloc cache.
+
+                          Pekka
