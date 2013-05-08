@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab3EHN4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 09:56:10 -0400
-Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:57331 "EHLO
-	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755406Ab3EHN4I (ORCPT
+	id S1755990Ab3EHN53 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 09:57:29 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:48433 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755383Ab3EHN51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 09:56:08 -0400
-Date: Wed, 8 May 2013 13:56:06 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Tony Lindgren <tony@atomide.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] SLAB changes for v3.10
-In-Reply-To: <20130508042422.GU28721@atomide.com>
-Message-ID: <0000013e846d76c8-d376963d-e953-4eff-92ea-742ba09cdb98-000000@email.amazonses.com>
-References: <alpine.LFD.2.03.1305070936320.2383@kernel.org> <20130508003022.GS28721@atomide.com> <20130508042422.GU28721@atomide.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 8 May 2013 09:57:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.05.08-54.240.9.78
+In-Reply-To: <1367491790-9727-2-git-send-email-lee.jones@linaro.org>
+References: <1367491790-9727-1-git-send-email-lee.jones@linaro.org>
+	<1367491790-9727-2-git-send-email-lee.jones@linaro.org>
+Date: Wed, 8 May 2013 15:57:26 +0200
+Message-ID: <CAPDyKFrJsGhB9yRtF2a09Ob5_4Jz-gaBQxeuriCGaXqYwkSyeg@mail.gmail.com>
+Subject: Re: [PATCH 1/8] crypto: ux500/hash - Prepare clock before enabling it
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andreas Westin <andreas.westin@stericsson.com>,
+        linux-crypto@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 May 2013, Tony Lindgren wrote:
-
-> OK got it narrowed down to CONFIG_DEBUG_SPINLOCK=y causing the problem
-> with commit 8a965b3b. Ain't nothing like bisecting and booting and then
-> diffing .config files on top of that.
+On 2 May 2013 12:49, Lee Jones <lee.jones@linaro.org> wrote:
+> If we fail to prepare the ux500-hash clock before enabling it the
+> platform will fail to boot. Here we insure this happens.
 >
-> > Without reverting 8a965b3b I'm getting:
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Andreas Westin <andreas.westin@stericsson.com>
+> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> Cc: linux-crypto@vger.kernel.org
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/crypto/ux500/hash/hash_core.c |   12 +++++++++++-
+>  1 file changed, 11 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
+> index 632c333..1e8b2f3 100644
+> --- a/drivers/crypto/ux500/hash/hash_core.c
+> +++ b/drivers/crypto/ux500/hash/hash_core.c
+> @@ -1727,11 +1727,17 @@ static int ux500_hash_probe(struct platform_device *pdev)
+>                 goto out_regulator;
+>         }
+>
+> +       ret = clk_prepare(device_data->clk);
+> +       if (ret) {
+> +               dev_err(dev, "[%s] clk_prepare() failed!", __func__);
+> +               goto out_clk;
+> +       }
+> +
+>         /* Enable device power (and clock) */
+>         ret = hash_enable_power(device_data, false);
+>         if (ret) {
+>                 dev_err(dev, "[%s]: hash_enable_power() failed!", __func__);
+> -               goto out_clk;
+> +               goto out_clk_unprepare;
+>         }
+>
+>         ret = hash_check_hw(device_data);
+> @@ -1763,6 +1769,9 @@ static int ux500_hash_probe(struct platform_device *pdev)
+>  out_power:
+>         hash_disable_power(device_data, false);
+>
+> +out_clk_unprepare:
+> +       clk_unprepare(device_data->clk);
+> +
+>  out_clk:
+>         clk_put(device_data->clk);
+>
+> @@ -1827,6 +1836,7 @@ static int ux500_hash_remove(struct platform_device *pdev)
+>                 dev_err(dev, "[%s]: hash_disable_power() failed",
+>                         __func__);
+>
+> +       clk_unprepare(device_data->clk);
+>         clk_put(device_data->clk);
+>         regulator_put(device_data->regulator);
+>
+> --
+> 1.7.10.4
+>
 
-The patch (commit 8a965b3baa89ffedc73c0fbc750006c631012ced) merely changed the sequence of
-slab creation to address an issue in SLAB.
-
-Hmmm.. But if KMALLOC_SHIFT_LOW is higher than 6 or 7 then the creation of
-the non-power of two slab could be skipped as a result of the patch. But
-we should not need them in those cases.
-
-Can I see the kernel config?
-
-What is the value of KMALLOC_SHIFT_LOW?
-
-Can you figure out which kernel slab the function is trying to access?
-
-
+Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
