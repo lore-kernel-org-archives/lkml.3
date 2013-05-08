@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab3EHCd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 22:33:59 -0400
-Received: from [213.199.154.184] ([213.199.154.184]:56851 "EHLO
-	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752368Ab3EHCd5 (ORCPT
+	id S1752537Ab3EHCfJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 22:35:09 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:49789 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab3EHCfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 22:33:57 -0400
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: PS-2(zz98dI936eIzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2fh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Qiaowei Ren <qiaowei.ren@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        Xiaoyan Zhang <xiaoyan.zhang@intel.com>, Gang Wei <gang.wei@intel.com>
-Subject: Re: [PATCH 1/4] driver: add TXT driver in kernel
-Thread-Topic: [PATCH 1/4] driver: add TXT driver in kernel
-Thread-Index: AQHOSvE9AcunBqr7IUa9oxQD3ESIK5j6kqOA
-Date: Wed, 8 May 2013 02:32:19 +0000
-Message-ID: <1367980339.2425.7.camel@x230>
-References: <1367938519-840-1-git-send-email-qiaowei.ren@intel.com>
-	 <1367938519-840-2-git-send-email-qiaowei.ren@intel.com>
-In-Reply-To: <1367938519-840-2-git-send-email-qiaowei.ren@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <E76B48CC4F8F0F46BE86747DC3B95E5C@namprd05.prod.outlook.com>
+	Tue, 7 May 2013 22:35:07 -0400
+X-IronPort-AV: E=Sophos;i="4.87,631,1363158000"; 
+   d="scan'208";a="45225124"
+Date: Tue, 7 May 2013 21:34:45 -0500
+From: rkuo <rkuo@codeaurora.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Subject: [GIT PULL] Hexagon fix/cleanup
+Message-ID: <20130508023404.GA776@codeaurora.org>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r482Y5gc006565
 
-On Tue, 2013-05-07 at 22:55 +0800, Qiaowei Ren wrote:
-> TXT driver is expected to be a better tool to access below resources:
-> TXT config space, TXT log and SMX parameter.
+Hello Linus,
 
-Please explain what these things are in the commit log, the config help
-and the comment at the top of the driver - it'll make things easier for
-people later.
+Please pull the following changes for Hexagon; it includes a bug fix and a
+Kconfig cleanup.
 
-> +         To compile this driver as a module, choose M here; the module will be
-> +         called txt.
 
-That's an awfully generic name. intel_txt would be better.
+Thanks,
+Richard Kuo
 
-> + * This module is expected to be a better tool to access below resources
 
-Expected to be or is? :)
 
-> + * Data is currently found below
+The following changes since commit 426d29ccb2a8d44c18d3167327ee82b38287e7bf:
 
-You're adding it to ABI, so it shouldn't just be current - are you
-planning on moving it at any point? Is this functionality that should be
-under securityfs instead?
+  Hexagon: add v4 CS regs to core copyout macro (2013-04-30 19:40:29 -0500)
 
-> +	txt_pdev = platform_device_register_simple(DEV_NAME, -1, NULL, 0);
+are available in the git repository at:
 
-This will register even if there's no TXT support on the platform,
-right? Is there no mechanism for determining whether a platform has TXT
-support before registering a device?
+  git://git.kernel.org/pub/scm/linux/kernel/git/rkuo/linux-hexagon-kernel.git for-linus
 
-> +module_init(txt_sysfs_init);
-> +module_exit(txt_sysfs_exit);
+for you to fetch changes up to de44443a45e36b7467af2518d3bf7ec6ec909549:
 
-And you've got no module aliases, so this will never be autoloaded. How
-does the OS know that the platform implements TXT?
+  HEXAGON: Remove non existent reference to GENERIC_KERNEL_EXECVE & GENERIC_KERNEL_THREAD (2013-05-07 11:38:12 -0500)
+
+----------------------------------------------------------------
+Alexander Shiyan (1):
+      HEXAGON: Remove non existent reference to GENERIC_KERNEL_EXECVE & GENERIC_KERNEL_THREAD
+
+Richard Kuo (1):
+      Hexagon: fix register used to call do_work_pending
+
+ arch/hexagon/Kconfig           |    2 --
+ arch/hexagon/kernel/vm_entry.S |   12 ++++++------
+ 2 files changed, 6 insertions(+), 8 deletions(-)
+
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
