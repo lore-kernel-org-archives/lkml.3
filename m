@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab3EHJHE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 05:07:04 -0400
-Received: from mx2.mendoza-conicet.gob.ar ([200.69.149.90]:40948 "EHLO
-	mx2.mendoza-conicet.gob.ar" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751190Ab3EHJG6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 05:06:58 -0400
-X-Greylist: delayed 683 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 May 2013 05:06:56 EDT
-Date: Wed, 8 May 2013 05:46:28 -0300 (ART)
-From: "John P. Goldman" <gliceaga@mendoza-conicet.gob.ar>
-Reply-To: "John P. Goldman" <johnp.goldman@yahoo.com>
-Message-ID: <351326728.69416.1368002788604.JavaMail.root@correo.mendoza-conicet.gob.ar>
-Subject: dringender Vorschlag
+	id S1754451Ab3EHJHU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 05:07:20 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58157 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754342Ab3EHJHQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 05:07:16 -0400
+Date: Wed, 8 May 2013 10:06:44 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/2] ARM: Remove any correlation between IPC and
+ BogoMips value
+Message-ID: <20130508090644.GA15692@mudshark.cambridge.arm.com>
+References: <1367602547-19322-1-git-send-email-will.deacon@arm.com>
+ <5187EFF3.6010005@codeaurora.org>
+ <20130507090849.GC25387@mudshark.cambridge.arm.com>
+ <5189224A.70501@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [79.141.164.13]
-X-Mailer: Zimbra 6.0.10_GA_2692 (zclient/6.0.10_GA_2692)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5189224A.70501@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Christopher,
 
+On Tue, May 07, 2013 at 04:48:26PM +0100, Christopher Covington wrote:
+> On 05/07/2013 05:08 AM, Will Deacon wrote:
+> > That seems like a lot of effort in order to preserve something that isn't
+> > even meaningful. We might be better just zeroing the value, but then we'll
+> > inevitably get bug reports of it being `wrong'.
+> 
+> If I were in to filing bug reports about bogomips values, I would be just as
+> likely to do it for 1, 10000, 99999, and get_random_bytes(...) as for 0.
 
-Entschuldigungen für kommen in Ihre Privatsphäre! Ich bin Rechtsanwalt
-Werner Erich Zeller; Ich habe einen meiner einflussreichen und
-wohlhabenden Kunden zum Tode; und er hatte eine sehr geheime und private
-Investitionen von €15,000,000.00 bei einer privaten Bank in Großbritannien
-hier zu Lebzeiten. Diese Investition wurde ohne einen deklarierten
-nächsten Angehörigen und begünstigte. Jetzt brauche ich Sie arbeiten mit
-mir als mein Partner zu erholen und zu je 50 % Aktienfonds. Alle Dokumente
-werden rechtlich beantragt und beschafft, und in 5 Werktage, wird diese
-Transaktion auftreten. Aber ich brauche einen ernsten, treuen und
-glaubwürdigen Partner.
+That's a fair point, and one of the reasons I posted this as an RFC. I'd
+basically like an `obviously bogus' value so that people don't think `hey,
+my CPU sure it slow' and instead think `looks like this really is a bogus
+value after all'.
 
-Bitte senden Sie mir eine vertrauliche Antwort, wenn Sie denken, Sie
-vertraut werden können und sind von den Qualitäten! Ich warte auf Ihre
-schnelle Antwort.
+However, you're probably right that there isn't a number which can convey
+that information properly, so how about we just put a string in there along
+the lines of "not reported" and leave it at that?
 
-Werner Erich Zeller (Rechtsanwalt)
-Rufen Sie + 44-702-409-0820 (Office)
+Will
