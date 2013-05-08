@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab3EHWUf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 18:20:35 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:40761 "EHLO e8.ny.us.ibm.com"
+	id S1752863Ab3EHW0d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 18:26:33 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53565 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751195Ab3EHWUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 18:20:34 -0400
-Date: Wed, 8 May 2013 15:20:29 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: fweisbec@gmail.com
-Subject: Re: rcu_preempt running flat out on idle desktop.
-Message-ID: <20130508222029.GR3648@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130508203042.GA18895@redhat.com>
- <20130508205258.GN3648@linux.vnet.ibm.com>
- <20130508205633.GB18895@redhat.com>
- <20130508211634.GP3648@linux.vnet.ibm.com>
- <20130508211759.GA6808@redhat.com>
+	id S1750830Ab3EHW0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 18:26:31 -0400
+Date: Thu, 9 May 2013 00:28:45 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
+        lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
+        rostedt@goodmis.org, mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] aerdrv: Move cper_print_pcie() out of interrupt context
+Message-ID: <20130508222845.GL30955@pd.tnic>
+References: <20130508171519.26724.63307.stgit@grignak.americas.hpqcorp.net>
+ <2598827.AVAqMcfGuF@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130508211759.GA6808@redhat.com>
+In-Reply-To: <2598827.AVAqMcfGuF@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050822-9360-0000-0000-00001217AEAD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 05:17:59PM -0400, Dave Jones wrote:
-> On Wed, May 08, 2013 at 02:16:35PM -0700, Paul E. McKenney wrote:
->  > On Wed, May 08, 2013 at 04:56:33PM -0400, Dave Jones wrote:
->  > > On Wed, May 08, 2013 at 01:52:58PM -0700, Paul E. McKenney wrote:
->  > >  > On Wed, May 08, 2013 at 04:30:42PM -0400, Dave Jones wrote:
->  > > 
->  > >  > >   PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND 
->  > >  > >    10 root      20   0     0    0    0 S 200.0  0.0 185301:36 rcu_preempt
->  > >  > >   553 root      20   0  268m  76m 6764 S 200.0  2.6 144579:53 Xorg
->  > >  > >  1199 root      20   0     0    0    0 S 200.0  0.0 306:17.85 kworker/1:0
->  > >  > >   501 root      20   0     0    0    0 S 200.0  0.0   4471:03 kworker/0:2
->  > >  > >    12 root      20   0     0    0    0 S 200.0  0.0  67277:16 rcuop/1
->  > >  > >  1237 davej     20   0  535m  15m 8484 S 200.0  0.5   3645:16 Terminal
->  > >  > >   859 davej     20   0  117m 3036 1336 S 200.0  0.1   1986:55 htop
->  > >  > > 
->  > >  > > There are a lot of processes allegedly using "200%" of CPU time, a handful
->  > >  > > in the "196%" range, and then a bunch at 0.
->  > >  > 
->  > >  > Yow!!!  185301 minutes is 128 days, which is a truly impressive amount of
->  > >  > CPU time to accumulate in a few short hours.
->  > > 
->  > > perf top doesn't show anything out of the ordinary. Just as an idle desktop
->  > > should behave, it's spending a bunch of time in delay_tsc.
->  > > 
->  > >  > This is 3.9, or Linus's current tree?  I am guessing the latter, but
->  > >  > figured I should ask.
->  > > 
->  > > Yeah, the latter. (v3.9-11572-g5af43c2)
->  > 
->  > Do you have CONFIG_NO_HZ_FULL=y?  We just might have a bug in tickless
->  > CPU-time accounting...
+On Thu, May 09, 2013 at 12:01:21AM +0200, Rafael J. Wysocki wrote:
+> On Wednesday, May 08, 2013 11:15:19 AM Lance Ortiz wrote:
+> > The following warning was seen on 3.9 when a corrected PCIe error was being
+> > handled by the AER subsystem.
+> > 
+> > WARNING: at .../drivers/pci/search.c:214 pci_get_dev_by_id+0x8a/0x90()
+> > 
+> > This occurred because code was added to the function cper_print_pcie() that
+> > calls the pci_get_domain_bus_and_slot() function.
 > 
-> I never saw a new config option I didn't like.
+> Do you know which commit added that code?
 
-;-) ;-) ;-)
+1d5210008bd3a26daf4b06aed9d6c330dd4c83e2
 
-> CONFIG_NO_HZ_FULL=y
-> CONFIG_NO_HZ_FULL_ALL=y
+> > cper_print_pcie() is called
+> > in an interrupt context and pci_get* functions are not supposed to be called
+> > in that context hence the warning.
+> > 
+> > The solution is to move the call to cper_print_aer() out of the interrupt
+> > context and into aer_recover_queue() to avoid any warnings when calling
+> > pci_get* functions.
+> 
+> The way the changes are described here isn't particularly clear to me.  I'd say
+> something like
+> 
+>   If cper_print_aer() is called by aer_recover_work_func(), there won't be any
+>   reason to call it from cper_print_pcie() any more, in which case all of the
+>   problematic code needed only to prepare for the cper_print_aer() call,
+>   including the invocation of pci_get_domain_bus_and_slot() causing the warning
+>   to be printed, may be removed from there.  Make that happen."
+> 
+> Also, since aer_recover_work_func() is going to be the only existing caller of
+> cper_print_aer() after this change, as far as I can say, and it doesn't use the
+> function's first argument, that argument should be dropped entirely.
 
-Adding Frederic on CC...
+Hmm, that needs more diddling: AFAICT __ghes_print_estatus() figures out
+what the prefix is depending on the ->error_severity coming from the
+acpi_hest_generic_status thing so it probably needs to be handed down or
+similar...
 
-							Thanx, Paul
+Fun.
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
