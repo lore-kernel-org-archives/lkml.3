@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab3EHL5d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 07:57:33 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:46753 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755251Ab3EHL5c (ORCPT
+	id S1755295Ab3EHL7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 07:59:09 -0400
+Received: from mail-ob0-f193.google.com ([209.85.214.193]:33653 "EHLO
+	mail-ob0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754241Ab3EHL7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 07:57:32 -0400
-Message-ID: <518A3DDC.1090905@parallels.com>
-Date: Wed, 8 May 2013 15:58:20 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Wed, 8 May 2013 07:59:07 -0400
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Tony Lindgren <tony@atomide.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Subject: Re: [GIT PULL] SLAB changes for v3.10
-References: <alpine.LFD.2.03.1305070936320.2383@kernel.org> <20130508003022.GS28721@atomide.com> <20130508042422.GU28721@atomide.com> <20130508051602.GV28721@atomide.com> <CAOJsxLEB2gSWefNHNeKfxv9Hp=H9PG0bGgTcUPE4abz3fv_fxw@mail.gmail.com>
-In-Reply-To: <CAOJsxLEB2gSWefNHNeKfxv9Hp=H9PG0bGgTcUPE4abz3fv_fxw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.206.15.35]
+Date: Wed, 8 May 2013 07:59:05 -0400
+Message-ID: <CADMeM8wCP5sutYiTboY0d_1ZQyWzrJBN5MAeL0HsFwUOBiBZJQ@mail.gmail.com>
+Subject: GET BACK TO ME
+From: Denis Wilfred <vdwilfred53@zambia.co.zm>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2013 10:20 AM, Pekka Enberg wrote:
->> > Hmm it's actually CONFIG_PROVE_LOCKING=y that causes the problem,
->> > not CONFIG_DEBUG_SPINLOCK=y. CONFIG_DEBUG_SPINLOCK=y was just selected
->> > by CONFIG_PROVE_LOCKING=y in my non-booting .config. I can now fix my
->> > non-booting .config by removing PROVE_LOCKING and DEBUG_SPINLOCK,
->> > but I cannot break my other working .config by adding PROVE_LOCKING
->> > and DEBUG_SPINLOCK. Hmm.
-> That's almost certainly a slab bootstrap issue. Lockdep et al just
-> change struct sizes which is why the problem shows up. Is this with
-> SLAB or SLUB? Christoph, Glauber, care to take a look?
-> 
->>>> >> > 
+RE: UN COMPENSATION GRANT
+VALUE: US$500,000.00
+VALIDATION NO: UN/CG/IMF/WB/TD/013C
 
-My first guess is that it hit a NULL cache. Being a NULL pointer
-dereference, the thing among all that has the biggest chances of being
-NULL and accessed unconditionally is the cache pointer itself.
+The United Nations through our monitoring works uncovered that you
+have sent so much with Western Union, Money gram, Bank to Bank
+Transfers in the pursuit of your Contract - Inheritance Project,
+Lotto/Lottery(s). As a result we have resolved at aiding you with the
+sum of US$500,000.00 to enable patch up with your life again.
 
-Due to the size being too big. But if that were the case, he would have
-hit the WARN_ON recently introduced:
+As a result, you are required to fill out the followings:
 
-                if (WARN_ON_ONCE(size > KMALLOC_MAX_SIZE))
-                        return NULL;
+1: FULL NAME:
+2: HOUSE ADDRESS :
+3: MOBILE/CELL PHONE NUMBER:
+4: MODE OF PAYMENT:
+5. OCCUPATION:
+6. DATE OF BIRTH:
+7. MARITAL STATUS;
+8. NUMBER OF CHILDREN:
 
+Let me hear from you immediately you have received this mail. Reply me
+on (vdwilfred@gmail.com)
 
-Is this WARN hit ?
+Yours faithfully,
+Denis Wilfred
+Coordinator
+UN Compensation Grant Agency
