@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757693Ab3EHSNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:13:06 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:45914 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757010Ab3EHSNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:13:04 -0400
-X-IronPort-AV: E=Sophos;i="4.87,636,1363132800"; 
-   d="scan'208";a="24083910"
-Date: Wed, 8 May 2013 19:13:00 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>
-Subject: Re: [PATCH v3 1/4] xen: move xen_setup_runstate_info and
- get_runstate_snapshot to drivers/xen/time.c
-In-Reply-To: <20130508175444.GB2800@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1305081858220.18865@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305081446580.18865@kaball.uk.xensource.com> <1368027714-14506-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130508175444.GB2800@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757792Ab3EHSNR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:13:17 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:62776 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757583Ab3EHSNO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 14:13:14 -0400
+Date: Thu, 9 May 2013 02:13:04 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: jslaby@suse.cz, alan@linux.intel.com, airlied@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/9] Convert all to the caller hold lock version
+Message-ID: <20130508181304.GA12344@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	gregkh@linuxfoundation.org, jslaby@suse.cz, alan@linux.intel.com,
+	airlied@redhat.com, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 May 2013, Konrad Rzeszutek Wilk wrote:
-> On Wed, May 08, 2013 at 04:41:51PM +0100, Stefano Stabellini wrote:
-> > Changes in v2:
-> > - leave do_stolen_accounting in arch/x86/xen/time.c;
-> > - use the new common functions in arch/ia64/xen/time.c.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> > CC: konrad.wilk@oracle.com
-> 
-> On the generic and x86 side it looks OK to me. I presume you did a sanity
-> check on x86 to make sure nothing was off?
+After commit 50e244cc793d511b86adea24972f3a7264cae114 
+     (fb: rework locking to fix lock ordering on takeover)
+and 
+     commit e93a9a868792ad71cdd09d75e5a02d8067473c4e
+     (fb: Yet another band-aid for fixing lockdep mess)
 
-Yep, it seems to work.
-However I couldn't even compile test the ia64 code.
+We have two version functions implement almost the same function,
+except the caller/callee hold lock.
+
+fbcon_takeover vs do_fbcon_takeover
+register_con_driver vs do_register_con_driver
+take_over_console vs do_take_over_console
+unbind_con_driver vs do_unbind_con_driver
+bind_con_driver vs do_bind_con_driver
+unregister_con_driver vs do_unregister_con_driver
+
+This issue bring us much code duplication,
+like do_fbcon_takeover and fbcon_takeover,
+they have almost the same.
+
+Although some of them had been re-written 
+as a wrapper for another, but the wrapper
+is so trivial, we can just throw them away.
+
+Also those two versions of almost the same
+functions will confuse API's user.
+
+After all, I think this issue is not good
+for long time maintain.
+
+This series patch convert all to the
+new version which caller hold the lock,
+and then delete the old version away.
+
+Thanks
+
+
