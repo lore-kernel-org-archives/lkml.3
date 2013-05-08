@@ -1,108 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab3EHPy2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:54:28 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:45344 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756351Ab3EHPyY (ORCPT
+	id S1757576Ab3EHQNu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 12:13:50 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:27583 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757552Ab3EHQNs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:54:24 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, fuse-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org
-Subject: [PATCH v5, part4 09/41] mm: use totalram_pages instead of num_physpages at runtime
-Date: Wed,  8 May 2013 23:51:06 +0800
-Message-Id: <1368028298-7401-10-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
-References: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
+	Wed, 8 May 2013 12:13:48 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, x86@kernel.org, hpa@zytor.com, bp@alien8.de,
+        mingo@redhat.com, fenghua.yu@intel.com, tglx@linutronix.de,
+        xen-devel@lists.xensource.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@vger.kernel.org,
+        konrad.wilk@oracle.com, konrad.wilk@oracle.com, konrad.wilk@oracle.com
+Subject: [PATCH] x86, microcode: Add local mutex to not hit a deadlock.
+Date: Wed,  8 May 2013 12:13:03 -0400
+Message-Id: <1368029583-23337-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The global variable num_physpages is scheduled to be removed, so use
-totalram_pages instead of num_physpages at runtime.
+This can easily be triggered if a new CPU is added (via
+ACPI hotplug mechanism) and from user-space do:
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: fuse-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
+echo 1 > /sys/devices/system/cpu/cpu3/online
+
+(or wait for UDEV to do it) on a newly appeared CPU.
+
+The deadlock is that the "store_online" in drivers/base/cpu.c
+takes the cpu_hotplug_driver_lock() lock, then calls "cpu_up".
+"cpu_up" eventually ends up calling "save_mc_for_early"
+which also takes the cpu_hotplug_driver_lock() lock.
+
+And here is that kernel thinks of it:
+
+smpboot: Stack at about ffff880075c39f44
+smpboot: CPU3: has booted.
+microcode: CPU3 sig=0x206a7, pf=0x2, revision=0x25
+
+=============================================
+[ INFO: possible recursive locking detected ]
+3.9.0upstream-10129-g167af0e #1 Not tainted
+---------------------------------------------
+sh/2487 is trying to acquire lock:
+ (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
+
+but task is already holding lock:
+ (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
+
+other info that might help us debug this:
+ Possible unsafe locking scenario:
+
+       CPU0
+       ----
+  lock(x86_cpu_hotplug_driver_mutex);
+  lock(x86_cpu_hotplug_driver_mutex);
+
+ *** DEADLOCK ***
+
+ May be due to missing lock nesting notation
+
+6 locks held by sh/2487:
+ #0:  (sb_writers#5){.+.+.+}, at: [<ffffffff811ca48d>] vfs_write+0x17d/0x190
+ #1:  (&buffer->mutex){+.+.+.}, at: [<ffffffff812464ef>] sysfs_write_file+0x3f/0x160
+ #2:  (s_active#20){.+.+.+}, at: [<ffffffff81246578>] sysfs_write_file+0xc8/0x160
+ #3:  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
+ #4:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff810961c2>] cpu_maps_update_begin+0x12/0x20
+ #5:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff810962a7>] cpu_hotplug_begin+0x27/0x60
+
+Suggested-by: Borislav Petkov <bp@alien8.de>
+CC: stable@vger.kernel.org # for v3.9
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- fs/fuse/inode.c          |    2 +-
- kernel/power/snapshot.c  |    4 ++--
- net/ipv4/inet_fragment.c |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kernel/microcode_intel_early.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index 17ec1f7..cd6dc27 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -785,7 +785,7 @@ static const struct super_operations fuse_super_operations = {
- static void sanitize_global_limit(unsigned *limit)
- {
- 	if (*limit == 0)
--		*limit = ((num_physpages << PAGE_SHIFT) >> 13) /
-+		*limit = ((totalram_pages << PAGE_SHIFT) >> 13) /
- 			 sizeof(struct fuse_req);
+diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
+index d893e8e..2e9e128 100644
+--- a/arch/x86/kernel/microcode_intel_early.c
++++ b/arch/x86/kernel/microcode_intel_early.c
+@@ -487,6 +487,7 @@ static inline void show_saved_mc(void)
+ #endif
  
- 	if (*limit >= 1 << 16)
-diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
-index 0de2857..8b5d1cd 100644
---- a/kernel/power/snapshot.c
-+++ b/kernel/power/snapshot.c
-@@ -1651,7 +1651,7 @@ unsigned long snapshot_get_image_size(void)
- static int init_header(struct swsusp_info *info)
- {
- 	memset(info, 0, sizeof(struct swsusp_info));
--	info->num_physpages = num_physpages;
-+	info->num_physpages = get_num_physpages();
- 	info->image_pages = nr_copy_pages;
- 	info->pages = snapshot_get_image_size();
- 	info->size = info->pages;
-@@ -1795,7 +1795,7 @@ static int check_header(struct swsusp_info *info)
- 	char *reason;
+ #if defined(CONFIG_MICROCODE_INTEL_EARLY) && defined(CONFIG_HOTPLUG_CPU)
++static DEFINE_MUTEX(x86_cpu_microcode_mutex);
+ /*
+  * Save this mc into mc_saved_data. So it will be loaded early when a CPU is
+  * hot added or resumes.
+@@ -507,7 +508,7 @@ int save_mc_for_early(u8 *mc)
+ 	 * Hold hotplug lock so mc_saved_data is not accessed by a CPU in
+ 	 * hotplug.
+ 	 */
+-	cpu_hotplug_driver_lock();
++	mutex_lock(&x86_cpu_microcode_mutex);
  
- 	reason = check_image_kernel(info);
--	if (!reason && info->num_physpages != num_physpages)
-+	if (!reason && info->num_physpages != get_num_physpages())
- 		reason = "memory size";
- 	if (reason) {
- 		printk(KERN_ERR "PM: Image mismatch: %s\n", reason);
-diff --git a/net/ipv4/inet_fragment.c b/net/ipv4/inet_fragment.c
-index e97d66a..f90079d 100644
---- a/net/ipv4/inet_fragment.c
-+++ b/net/ipv4/inet_fragment.c
-@@ -93,7 +93,7 @@ void inet_frags_init(struct inet_frags *f)
+ 	mc_saved_count_init = mc_saved_data.mc_saved_count;
+ 	mc_saved_count = mc_saved_data.mc_saved_count;
+@@ -544,7 +545,7 @@ int save_mc_for_early(u8 *mc)
  	}
- 	rwlock_init(&f->lock);
  
--	f->rnd = (u32) ((num_physpages ^ (num_physpages>>7)) ^
-+	f->rnd = (u32) ((totalram_pages ^ (totalram_pages >> 7)) ^
- 				   (jiffies ^ (jiffies >> 6)));
+ out:
+-	cpu_hotplug_driver_unlock();
++	mutex_unlock(&x86_cpu_microcode_mutex);
  
- 	setup_timer(&f->secret_timer, inet_frag_secret_rebuild,
+ 	return ret;
+ }
 -- 
-1.7.9.5
+1.7.7.6
 
