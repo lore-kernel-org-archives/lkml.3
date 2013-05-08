@@ -1,315 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312Ab3EHQFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 12:05:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37231 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757290Ab3EHQDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 12:03:23 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-MM <linux-mm@kvack.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Dave Hansen <dave@sr71.net>,
-        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 18/22] mm: page allocator: Split magazine lock in two to reduce contention
-Date: Wed,  8 May 2013 17:03:03 +0100
-Message-Id: <1368028987-8369-19-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1368028987-8369-1-git-send-email-mgorman@suse.de>
-References: <1368028987-8369-1-git-send-email-mgorman@suse.de>
+	id S1758378Ab3EHQFr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 12:05:47 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:33021 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758361Ab3EHQFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 12:05:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFweu3tVnt-1=G8cx_Xi+_3X7DFvPv0qHbdBptD3Tm6ztg@mail.gmail.com>
+References: <20130508145023.GN7800@kernel.dk>
+	<CA+55aFy1z6bcEt5pOd3O58Mx9dk00uDxROcDCS+QUybLbMMh4Q@mail.gmail.com>
+	<20130508151126.GP7800@kernel.dk>
+	<CA+55aFweu3tVnt-1=G8cx_Xi+_3X7DFvPv0qHbdBptD3Tm6ztg@mail.gmail.com>
+Date: Wed, 8 May 2013 09:05:45 -0700
+X-Google-Sender-Auth: 2pqibRZALNOnUttJvSZg7jdOEtA
+Message-ID: <CA+55aFwKUVW4xe5eVToORXYkJ0bkACdcwfE=g8oaZeYPxAjUoA@mail.gmail.com>
+Subject: Re: [GIT PULL] Block IO core changes for 3.10
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the simpliest example of how the lock can be split arbitrarily
-on a boundary. Ideally it would be based on SMT characteristics but lets
-just split it in two to start with and prefer a magazine based on the
-processor ID.
+On Wed, May 8, 2013 at 9:03 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, May 8, 2013 at 8:11 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>>
+>> Frankly the pull is just late since I have been busy with that and
+>> company bits. If you look at the history, there's been no changes in
+>> more than a week.
+>
+> Ok, good. The timing made me nervous..
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/mmzone.h |  12 ++++--
- mm/page_alloc.c        | 114 +++++++++++++++++++++++++++++++++++--------------
- mm/vmstat.c            |   8 ++--
- 3 files changed, 95 insertions(+), 39 deletions(-)
+Oh, and should I made BIO_RESET_BITS and BIO_OWNS_VEC be 13? We have a
+new BIO_SNAP_STABLE that is 12, and I'm really hoping these values
+aren't exposed anywhere to users..
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 4eb5151..c0a8958 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -90,6 +90,11 @@ struct free_area_magazine {
- 	unsigned long		nr_free;
- };
- 
-+struct free_magazine {
-+	spinlock_t			lock;
-+	struct free_area_magazine	area;
-+};
-+
- struct pglist_data;
- 
- /*
-@@ -305,6 +310,8 @@ enum zone_type {
- 
- #ifndef __GENERATING_BOUNDS_H
- 
-+#define NR_MAGAZINES 2
-+
- struct zone {
- 	/* Fields commonly accessed by the page allocator */
- 
-@@ -368,10 +375,9 @@ struct zone {
- 
- 	/*
- 	 * Keep some order-0 pages on a separate free list
--	 * protected by an irq-unsafe lock
-+	 * protected by an irq-unsafe lock.
- 	 */
--	spinlock_t			_magazine_lock;
--	struct free_area_magazine	_noirq_magazine;
-+	struct free_magazine	noirq_magazine[NR_MAGAZINES];
- 
- #ifndef CONFIG_SPARSEMEM
- 	/*
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 36ffff0..63952f6 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1074,33 +1074,76 @@ void mark_free_pages(struct zone *zone)
- #define MAGAZINE_ALLOC_BATCH (384)
- #define MAGAZINE_FREE_BATCH (64)
- 
--static inline struct free_area_magazine *find_lock_magazine(struct zone *zone)
-+static inline struct free_magazine *lock_magazine(struct zone *zone)
- {
--	struct free_area_magazine *area = &zone->_noirq_magazine;
--	spin_lock(&zone->_magazine_lock);
--	return area;
-+	int i = (raw_smp_processor_id() >> 1) & (NR_MAGAZINES-1);
-+	spin_lock(&zone->noirq_magazine[i].lock);
-+	return &zone->noirq_magazine[i];
- }
- 
--static inline struct free_area_magazine *find_lock_filled_magazine(struct zone *zone)
-+static inline struct free_magazine *find_lock_magazine(struct zone *zone)
- {
--	struct free_area_magazine *area = &zone->_noirq_magazine;
--	if (!area->nr_free)
-+	int i = (raw_smp_processor_id() >> 1) & (NR_MAGAZINES-1);
-+	int start = i;
-+
-+	do {
-+		if (spin_trylock(&zone->noirq_magazine[i].lock))
-+			goto out;
-+		i = (i + 1) & (NR_MAGAZINES-1);
-+	} while (i != start);
-+
-+	spin_lock(&zone->noirq_magazine[i].lock);
-+out:
-+	return &zone->noirq_magazine[i];
-+}
-+
-+static struct free_magazine *find_lock_filled_magazine(struct zone *zone)
-+{
-+	int i = (raw_smp_processor_id() >> 1) & (NR_MAGAZINES-1);
-+	int start = i;
-+	bool all_empty = true;
-+
-+	/* Pass 1. Find an unlocked magazine with free pages */
-+	do {
-+		if (zone->noirq_magazine[i].area.nr_free) {
-+			all_empty = false;
-+			if (spin_trylock(&zone->noirq_magazine[i].lock))
-+				goto out;
-+		}
-+		i = (i + 1) & (NR_MAGAZINES-1);
-+	} while (i != start);
-+
-+	/* If all area empty then a second pass is pointness */
-+	if (all_empty)
- 		return NULL;
--	spin_lock(&zone->_magazine_lock);
--	return area;
-+
-+	/* Pass 2. Find a magazine with pages and wait on it */
-+	do {
-+		if (zone->noirq_magazine[i].area.nr_free) {
-+			spin_lock(&zone->noirq_magazine[i].lock);
-+			goto out;
-+		}
-+		i = (i + 1) & (NR_MAGAZINES-1);
-+	} while (i != start);
-+
-+	/* Lock holder emptied the last magazine or raced */
-+	return NULL;
-+
-+out:
-+	return &zone->noirq_magazine[i];
- }
- 
--static inline void unlock_magazine(struct free_area_magazine *area)
-+static inline void unlock_magazine(struct free_magazine *mag)
- {
--	struct zone *zone = container_of(area, struct zone, _noirq_magazine);
--	spin_unlock(&zone->_magazine_lock);
-+	spin_unlock(&mag->lock);
- }
- 
- static
--struct page *__rmqueue_magazine(struct free_area_magazine *area,
-+struct page *__rmqueue_magazine(struct free_magazine *mag,
- 				int migratetype)
- {
- 	struct page *page;
-+	struct free_area_magazine *area = &mag->area;
- 
- 	if (list_empty(&area->free_list[migratetype]))
- 		return NULL;
-@@ -1114,7 +1157,7 @@ struct page *__rmqueue_magazine(struct free_area_magazine *area,
- 	return page;
- }
- 
--static void magazine_drain(struct zone *zone, struct free_area_magazine *area,
-+static void magazine_drain(struct zone *zone, struct free_magazine *mag,
- 			   int migratetype)
- {
- 	struct list_head *list;
-@@ -1123,10 +1166,11 @@ static void magazine_drain(struct zone *zone, struct free_area_magazine *area,
- 	unsigned int to_free = MAGAZINE_FREE_BATCH;
- 	unsigned int nr_freed_cma = 0;
- 	unsigned long flags;
-+	struct free_area_magazine *area = &mag->area;
- 	LIST_HEAD(free_list);
- 
- 	if (area->nr_free < MAGAZINE_LIMIT) {
--		unlock_magazine(area);
-+		unlock_magazine(mag);
- 		return;
- 	}
- 
-@@ -1161,7 +1205,7 @@ static void magazine_drain(struct zone *zone, struct free_area_magazine *area,
- 	}
- 
- 	/* Free the list of pages to the buddy allocator */
--	unlock_magazine(area);
-+	unlock_magazine(mag);
- 	spin_lock_irqsave(&zone->lock, flags);
- 	while (!list_empty(&free_list)) {
- 		page = list_entry(free_list.prev, struct page, lru);
-@@ -1179,8 +1223,8 @@ static void magazine_drain(struct zone *zone, struct free_area_magazine *area,
- void free_base_page(struct page *page)
- {
- 	struct zone *zone = page_zone(page);
-+	struct free_magazine *mag;
- 	int migratetype;
--	struct free_area_magazine *area;
- 
- 	if (!free_pages_prepare(page, 0))
- 		return;
-@@ -1210,12 +1254,12 @@ void free_base_page(struct page *page)
- 	}
- 
- 	/* Put the free page on the magazine list */
--	area = find_lock_magazine(zone);
--	list_add(&page->lru, &area->free_list[migratetype]);
--	area->nr_free++;
-+	mag = lock_magazine(zone);
-+	list_add(&page->lru, &mag->area.free_list[migratetype]);
-+	mag->area.nr_free++;
- 
- 	/* Drain the magazine if necessary, releases the magazine lock */
--	magazine_drain(zone, area, migratetype);
-+	magazine_drain(zone, mag, migratetype);
- }
- 
- /* Free a list of 0-order pages */
-@@ -1328,12 +1372,12 @@ static
- struct page *rmqueue_magazine(struct zone *zone, int migratetype)
- {
- 	struct page *page = NULL;
--	struct free_area_magazine *area = find_lock_filled_magazine(zone);
-+	struct free_magazine *mag = find_lock_filled_magazine(zone);
- 
- retry:
--	if (area) {
--		page = __rmqueue_magazine(area, migratetype);
--		unlock_magazine(area);
-+	if (mag) {
-+		page = __rmqueue_magazine(mag, migratetype);
-+		unlock_magazine(mag);
- 	}
- 
- 	/* Try refilling the magazine on allocaion failure */
-@@ -1359,9 +1403,9 @@ retry:
- 		if (!nr_alloced)
- 			return NULL;
- 
--		area = find_lock_magazine(zone);
--		list_splice(&alloc_list, &area->free_list[migratetype]);
--		area->nr_free += nr_alloced;
-+		mag = find_lock_magazine(zone);
-+		list_splice(&alloc_list, &mag->area.free_list[migratetype]);
-+		mag->area.nr_free += nr_alloced;
- 		goto retry;
- 	}
- 
-@@ -3797,12 +3841,14 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
- 
- static void __meminit zone_init_free_lists(struct zone *zone)
- {
--	unsigned int order, t;
-+	unsigned int order, t, i;
- 	for_each_migratetype_order(order, t) {
- 		INIT_LIST_HEAD(&zone->free_area[order].free_list[t]);
- 		zone->free_area[order].nr_free = 0;
--		INIT_LIST_HEAD(&zone->_noirq_magazine.free_list[t]);
--		zone->_noirq_magazine.nr_free = 0;
-+		for (i = 0; i < NR_MAGAZINES && t < MIGRATE_PCPTYPES; i++) {
-+			INIT_LIST_HEAD(&zone->noirq_magazine[i].area.free_list[t]);
-+			zone->noirq_magazine[i].area.nr_free = 0;
-+		}
- 	}
- }
- 
-@@ -4284,7 +4330,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 	enum zone_type j;
- 	int nid = pgdat->node_id;
- 	unsigned long zone_start_pfn = pgdat->node_start_pfn;
--	int ret;
-+	int ret, i;
- 
- 	pgdat_resize_init(pgdat);
- #ifdef CONFIG_NUMA_BALANCING
-@@ -4352,7 +4398,9 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 		zone->name = zone_names[j];
- 		spin_lock_init(&zone->lock);
- 		spin_lock_init(&zone->lru_lock);
--		spin_lock_init(&zone->_magazine_lock);
-+		
-+		for (i = 0; i < NR_MAGAZINES; i++)
-+			spin_lock_init(&zone->noirq_magazine[i].lock);
- 		zone_seqlock_init(zone);
- 		zone->zone_pgdat = pgdat;
- 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 3db0d52..1374f92 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -1002,9 +1002,11 @@ static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
- 	seq_printf(m,
- 		   ")"
- 		   "\n  noirq magazine");
--	seq_printf(m,
--		"\n              count: %lu",
--		zone->_noirq_magazine.nr_free);
-+	for (i = 0; i < NR_MAGAZINES; i++) {
-+		seq_printf(m,
-+			"\n              count: %lu",
-+			zone->noirq_magazine[i].area.nr_free);
-+	}
- 
- #ifdef CONFIG_SMP
- 	for_each_online_cpu(i) {
--- 
-1.8.1.4
-
+            Linus
