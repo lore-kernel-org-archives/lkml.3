@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758192Ab3EHSOk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:14:40 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:54709 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757655Ab3EHSOi (ORCPT
+	id S1758073Ab3EHSOW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:14:22 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:40622 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758011Ab3EHSOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:14:38 -0400
-Date: Thu, 9 May 2013 02:14:29 +0800
+	Wed, 8 May 2013 14:14:20 -0400
+Date: Thu, 9 May 2013 02:14:07 +0800
 From: Wang YanQing <udknight@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: jslaby@suse.cz, alan@linux.intel.com, airlied@redhat.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 7/9] vt: delete unneeded function bind_con_driver
-Message-ID: <20130508181429.GH12344@udknight>
+Subject: [PATCH 4/9] vt: convert last unbind_con_driver call to
+ do_unbind_con_driver
+Message-ID: <20130508181407.GE12344@udknight>
 Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
 	gregkh@linuxfoundation.org, jslaby@suse.cz, alan@linux.intel.com,
 	airlied@redhat.com, linux-kernel@vger.kernel.org
@@ -25,37 +26,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now there is no place use bind_con_driver,
-and do_bind_con_driver can achieve bind_con_driver's
-function easily, so just delete it to reduce code size and
-duplication.
+There is only one place use unbind_con_driver, this patch
+convert it to do_unbind_con_driver too, then we can delete
+unbind_con_driver to reduce code size and duplication.
 
 Signed-off-by: Wang YanQing <udknight@gmail.com>
 ---
- drivers/tty/vt/vt.c | 11 -----------
- 1 file changed, 11 deletions(-)
+ drivers/tty/vt/vt.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 7e0953c..d5bfa86 100644
+index 852d470..a422322 100644
 --- a/drivers/tty/vt/vt.c
 +++ b/drivers/tty/vt/vt.c
-@@ -3088,17 +3088,6 @@ err:
- };
+@@ -3303,8 +3303,11 @@ static int vt_unbind(struct con_driver *con)
+ 		if (first == 0 && last == MAX_NR_CONSOLES -1)
+ 			deflt = 1;
  
+-		if (first != -1)
+-			unbind_con_driver(csw, first, last, deflt);
++		if (first != -1) {
++			console_lock();
++			do_unbind_con_driver(csw, first, last, deflt);
++			console_unlock();
++		}
  
--static int bind_con_driver(const struct consw *csw, int first, int last,
--			   int deflt)
--{
--	int ret;
--
--	console_lock();
--	ret = do_bind_con_driver(csw, first, last, deflt);
--	console_unlock();
--	return ret;
--}
--
- #ifdef CONFIG_VT_HW_CONSOLE_BINDING
- static int con_is_graphics(const struct consw *csw, int first, int last)
- {
+ 		first = -1;
+ 		last = -1;
 -- 
 1.7.12.4.dirty
