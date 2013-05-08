@@ -1,168 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab3EHPmz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:42:55 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:34622 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756062Ab3EHPmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:42:09 -0400
-X-IronPort-AV: E=Sophos;i="4.87,635,1363132800"; 
-   d="scan'208";a="24043605"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <konrad.wilk@oracle.com>, <marc.zyngier@arm.com>,
-        <will.deacon@arm.com>, <Stefano.Stabellini@eu.citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <linux@arm.linux.org.uk>, <nico@linaro.org>, <cov@codeaurora.org>,
-        <arnd@arndb.de>, <olof@lixom.net>
-Subject: [PATCH v3 3/4] arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
-Date: Wed, 8 May 2013 16:41:53 +0100
-Message-ID: <1368027714-14506-3-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1305081446580.18865@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305081446580.18865@kaball.uk.xensource.com>
+	id S1756964Ab3EHPnF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:43:05 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:45973 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755912Ab3EHPnA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 11:43:00 -0400
+Message-ID: <518A7284.4000504@cogentembedded.com>
+Date: Wed, 08 May 2013 19:43:00 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jongsung Kim <neidhard.kim@lge.com>
+CC: davem@davemloft.net, peppe.cavallaro@st.com, chohnstaedt@innominate.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: net: phy: realtek: add rtl8201f driver
+References: <201305081910.27203.neidhard.kim@lge.com>
+In-Reply-To: <201305081910.27203.neidhard.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce CONFIG_PARAVIRT and PARAVIRT_TIME_ACCOUNTING on ARM.
+Hello.
 
-The only paravirt interface supported is pv_time_ops.steal_clock, so no
-runtime pvops patching needed.
+On 08-05-2013 14:10, Jongsung Kim wrote:
 
-This allows us to make use of steal_account_process_tick for stolen
-ticks accounting.
+> This patch adds the minimal driver to manage the
+> Realtek RTL8201F 10/100Mbps Transceivers.
 
-Changes in v3:
-- improve commit description and Kconfig help text;
-- no need to initialize pv_time_ops;
-- add PARAVIRT_TIME_ACCOUNTING.
+> Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
+> ---
+>   drivers/net/phy/realtek.c |   60 +++++++++++++++++++++++++++++++++++++++-----
+>   1 files changed, 53 insertions(+), 7 deletions(-)
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: linux@arm.linux.org.uk
-CC: will.deacon@arm.com
-CC: nico@linaro.org
-CC: marc.zyngier@arm.com
-CC: cov@codeaurora.org
-CC: arnd@arndb.de
-CC: olof@lixom.net
----
- arch/arm/Kconfig                |   20 ++++++++++++++++++++
- arch/arm/include/asm/paravirt.h |   19 +++++++++++++++++++
- arch/arm/kernel/Makefile        |    1 +
- arch/arm/kernel/paravirt.c      |   25 +++++++++++++++++++++++++
- 4 files changed, 65 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/include/asm/paravirt.h
- create mode 100644 arch/arm/kernel/paravirt.c
+> diff --git a/drivers/net/phy/realtek.c b/drivers/net/phy/realtek.c
+> index 8e7af83..27847ca 100644
+> --- a/drivers/net/phy/realtek.c
+> +++ b/drivers/net/phy/realtek.c
+> @@ -16,9 +16,13 @@
+>   #include <linux/phy.h>
+>   #include <linux/module.h>
+>
+> -#define RTL821x_PHYSR		0x11
+> -#define RTL821x_PHYSR_DUPLEX	0x2000
+> -#define RTL821x_PHYSR_SPEED	0xc000
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 344e299..89ee2f1 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1887,12 +1887,32 @@ config XEN_DOM0
- 	def_bool y
- 	depends on XEN
- 
-+config PARAVIRT
-+	bool "Enable paravirtualization code"
-+	---help---
-+	  This changes the kernel so it can modify itself when it is run
-+	  under a hypervisor, potentially improving performance significantly
-+	  over full virtualization.
-+
-+config PARAVIRT_TIME_ACCOUNTING
-+	bool "Paravirtual steal time accounting"
-+	select PARAVIRT
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task steal time
-+	  accounting. Time spent executing other tasks in parallel with
-+	  the current vCPU is discounted from the vCPU power. To account for
-+	  that, there can be a small performance impact.
-+
-+	  If in doubt, say N here.
-+
- config XEN
- 	bool "Xen guest support on ARM (EXPERIMENTAL)"
- 	depends on ARM && AEABI && OF
- 	depends on CPU_V7 && !CPU_V6
- 	depends on !GENERIC_ATOMIC64
- 	select ARM_PSCI
-+	select PARAVIRT
- 	help
- 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
- 
-diff --git a/arch/arm/include/asm/paravirt.h b/arch/arm/include/asm/paravirt.h
-new file mode 100644
-index 0000000..3b95bc6
---- /dev/null
-+++ b/arch/arm/include/asm/paravirt.h
-@@ -0,0 +1,19 @@
-+#ifndef _ASM_ARM_PARAVIRT_H
-+#define _ASM_ARM_PARAVIRT_H
-+
-+struct static_key;
-+extern struct static_key paravirt_steal_enabled;
-+extern struct static_key paravirt_steal_rq_enabled;
-+
-+struct pv_time_ops {
-+	unsigned long long (*steal_clock)(int cpu);
-+};
-+extern struct pv_time_ops pv_time_ops;
-+
-+static inline u64 paravirt_steal_clock(int cpu)
-+{
-+	return pv_time_ops.steal_clock(cpu);
-+}
-+
-+
-+#endif
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 5f3338e..d911db6 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -76,6 +76,7 @@ obj-$(CONFIG_ARM_CPU_TOPOLOGY)  += topology.o
- ifneq ($(CONFIG_ARCH_EBSA110),y)
-   obj-y		+= io.o
- endif
-+obj-$(CONFIG_PARAVIRT)	+= paravirt.o
- 
- head-y			:= head$(MMUEXT).o
- obj-$(CONFIG_DEBUG_LL)	+= debug.o
-diff --git a/arch/arm/kernel/paravirt.c b/arch/arm/kernel/paravirt.c
-new file mode 100644
-index 0000000..53f371e
---- /dev/null
-+++ b/arch/arm/kernel/paravirt.c
-@@ -0,0 +1,25 @@
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * Copyright (C) 2013 Citrix Systems
-+ *
-+ * Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/jump_label.h>
-+#include <linux/types.h>
-+#include <asm/paravirt.h>
-+
-+struct static_key paravirt_steal_enabled;
-+struct static_key paravirt_steal_rq_enabled;
-+
-+struct pv_time_ops pv_time_ops;
-+EXPORT_SYMBOL_GPL(pv_time_ops);
--- 
-1.7.2.5
+     Removal of unused #define's is a matter of a separate cleanup patch...
+
+> +/* page 0 register 30 - interrupt indicators and SNR display register */
+> +#define RTL8201F_ISR		0x1e
+> +/* page 0 register 31 - page select register */
+> +#define RTL8201F_PSR		0x1f
+> +/* page 7 register 19 - interrupt, WOL enable, and LEDs function register */
+> +#define RTL8201F_IER		0x13
+> +
+>   #define RTL821x_INER		0x12
+>   #define RTL821x_INER_INIT	0x6400
+>   #define RTL821x_INSR		0x13
+> @@ -29,6 +33,15 @@ MODULE_DESCRIPTION("Realtek PHY driver");
+>   MODULE_AUTHOR("Johnson Leung");
+>   MODULE_LICENSE("GPL");
+>
+> +static int rtl8201f_ack_interrupt(struct phy_device *phydev)
+> +{
+> +	int err;
+> +
+> +	err = phy_read(phydev, RTL8201F_ISR);
+
+    This could be an initializer and so make the function shorter.
+
+> +
+> +	return (err < 0) ? err : 0;
+> +}
+> +
+>   static int rtl821x_ack_interrupt(struct phy_device *phydev)
+>   {
+>   	int err;
+[...]
+> @@ -96,16 +141,16 @@ static struct phy_driver rtl8211e_driver = {
+>
+>   static int __init realtek_init(void)
+>   {
+> -	int ret;
+> -
+> -	ret = phy_driver_register(&rtl8211b_driver);
+> -	if (ret < 0)
+> +	if(phy_driver_register(&rtl8201f_driver) < 0)
+> +		return -ENODEV;
+> +	if(phy_driver_register(&rtl8211b_driver) < 0)
+
+     You haven't run this patch thru scripts/checkpatch.pl -- there 
+should be a space between *if* and (.
+
+WBR, Sergei
 
