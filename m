@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab3EHCaF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 22:30:05 -0400
-Received: from [213.199.154.187] ([213.199.154.187]:5421 "EHLO
-	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751592Ab3EHCaD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 22:30:03 -0400
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT002.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: PS-2(zz98dI936eIda00hdc73hzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2fh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Qiaowei Ren <qiaowei.ren@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Intel TXT driver
-Thread-Topic: [PATCH 0/4] Intel TXT driver
-Thread-Index: AQHOS5PFgzEwU6db/EypzzlKvzNy6A==
-Date: Wed, 8 May 2013 02:28:48 +0000
-Message-ID: <1367980128.2425.3.camel@x230>
-References: <1367938519-840-1-git-send-email-qiaowei.ren@intel.com>
-In-Reply-To: <1367938519-840-1-git-send-email-qiaowei.ren@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <B743D2BC84A7794DA093428C865C444C@namprd05.prod.outlook.com>
+	id S1752641Ab3EHCc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 22:32:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34308 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750881Ab3EHCc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 22:32:56 -0400
+Message-ID: <5189B939.4010905@zytor.com>
+Date: Tue, 07 May 2013 19:32:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+To: Larry Finger <Larry.Finger@lwfinger.net>
+CC: linux-wireless <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Dan Williams <dcbw@redhat.com>,
+        "'George0505'" <george0505@realtek.com>,
+        Joon Ro <joonhyoung.ro@gmail.com>,
+        Greg KH <gregkh@linux-foundation.org>
+Subject: Re: Linux driver for Realtek RTL8723AU devices with USB ID 0bda:1724
+ such as found in Lenovo IdeaPad Yoga 13
+References: <5159B52D.3050601@lwfinger.net>
+In-Reply-To: <5159B52D.3050601@lwfinger.net>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r482UC0f006551
 
-On Tue, 2013-05-07 at 22:55 +0800, Qiaowei Ren wrote:
-> This module is expected to be a better tool to access below resources
->   - TXT config space
->   - Tboot log mem
->   - SMX parameter
+On 04/01/2013 09:26 AM, Larry Finger wrote:
+> 
+> My plan is to evolve this driver into a form that is suitable for
+> inclusion in the staging tree of the kernel; however, that will take
+> some effort and time, which is why I am making the intermediate results
+> available now. As that work proceeds, the git version will evolve into
+> code that can be submitted to the kernel with only small changes.
+> 
+> Please be aware that I do not have any hardware that uses this driver,
+> thus I can only guarantee that the code compiles; however, Joon Ro has
+> tested the driver and he assures me that it works. Together we have been
+> eliminating spurious log entries.
+> 
+> The 8723a chip also includes Bluetooth hardware. I have not received any
+> indication that it is active in the RTL8723AU, but it certainly is in
+> the RTL8723AE, the PCIe version. In a separate activity, I am working
+> with Realtek to prepare a kernel driver for this portion of the device.
+> 
 
-What's SMX?
+So I can verify that this driver works against 3.8.11 (not against
+current -linus because of a build failure), and yes, there is Bluetooth
+in this device.  In fact, it seems to work better than some in-tree
+drivers I have seen in the past.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+However, I'm confused as to the above and what it implies for the
+purpose of the staging tree.  Wasn't the whole point of the staging tree
+to have a working-but-ugly driver upstream and have the work to clean it
+up happen in the mainline tree instead of off somewhere.
+
+	-hpa
+
