@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab3EHPXO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:23:14 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:58900 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755018Ab3EHPSz (ORCPT
+	id S1754388Ab3EHPZF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:25:05 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:54454 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab3EHPZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:18:55 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v5, part3 03/15] mm/ARM64: kill poison_init_mem()
-Date: Wed,  8 May 2013 23:17:02 +0800
-Message-Id: <1368026235-5976-4-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1368026235-5976-1-git-send-email-jiang.liu@huawei.com>
-References: <1368026235-5976-1-git-send-email-jiang.liu@huawei.com>
+	Wed, 8 May 2013 11:25:04 -0400
+Date: Wed, 8 May 2013 16:24:58 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
+Subject: Re: [PATCH 21/63] dmaengine: ste_dma40: Don't configure runtime
+ configurable setup during allocate
+Message-ID: <20130508152458.GM3459@gmail.com>
+References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
+ <1367591569-32197-22-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbZmzJhZuST+T+qomK_q3q9wt34CGS6sqk0JkZV-Q6O7A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbZmzJhZuST+T+qomK_q3q9wt34CGS6sqk0JkZV-Q6O7A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use free_reserved_area() to poison initmem memory pages and kill
-poison_init_mem() on ARM64.
+On Fri, 03 May 2013, Linus Walleij wrote:
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm64/mm/init.c |   17 +++--------------
- 1 file changed, 3 insertions(+), 14 deletions(-)
+> On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > Using the dmaengine API, allocating and configuring a channel are two
+> > separate actions. Here we're removing logical channel configuration from
+> > the channel allocating routines.
+> >
+> > Cc: Vinod Koul <vinod.koul@intel.com>
+> > Cc: Dan Williams <djbw@fb.com>
+> > Cc: Per Forlin <per.forlin@stericsson.com>
+> > Cc: Rabin Vincent <rabin@rab.in>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> (...)
+> 
+> > @@ -2024,6 +2024,9 @@ static int d40_config_memcpy(struct d40_chan *d40c)
+> >                 d40c->dma_cfg = dma40_memcpy_conf_log;
+> >                 d40c->dma_cfg.dev_type = dma40_memcpy_channels[d40c->chan.chan_id];
+> >
+> > +               d40_log_cfg(&d40c->dma_cfg,
+> > +                           &d40c->log_def.lcsp1, &d40c->log_def.lcsp3);
+> > +
+> 
+> So it only gets configured for memcpy now?
+> 
+> What happens if you use a logical channel for a device transfer?
+> 
+> Where will that be configured?
 
-diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
-index e58dd7f..b87bdb8 100644
---- a/arch/arm64/mm/init.c
-+++ b/arch/arm64/mm/init.c
-@@ -197,14 +197,6 @@ void __init bootmem_init(void)
- 	max_pfn = max_low_pfn = max;
- }
- 
--/*
-- * Poison init memory with an undefined instruction (0x0).
-- */
--static inline void poison_init_mem(void *s, size_t count)
--{
--	memset(s, 0, count);
--}
--
- #ifndef CONFIG_SPARSEMEM_VMEMMAP
- static inline void free_memmap(unsigned long start_pfn, unsigned long end_pfn)
- {
-@@ -386,8 +378,7 @@ void __init mem_init(void)
- 
- void free_initmem(void)
- {
--	poison_init_mem(__init_begin, __init_end - __init_begin);
--	free_initmem_default(-1);
-+	free_initmem_default(0);
- }
- 
- #ifdef CONFIG_BLK_DEV_INITRD
-@@ -396,10 +387,8 @@ static int keep_initrd;
- 
- void free_initrd_mem(unsigned long start, unsigned long end)
- {
--	if (!keep_initrd) {
--		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
--		free_reserved_area(start, end, -1, "initrd");
--	}
-+	if (!keep_initrd)
-+		free_reserved_area(start, end, 0, "initrd");
- }
- 
- static int __init keepinitrd_setup(char *__unused)
+In d40_set_runtime_config()
+
+> /* Fill in register values */
+> if (chan_is_logical(d40c))
+> 	d40_log_cfg(cfg, &d40c->log_def.lcsp1, &d40c->log_def.lcsp3);
+> else
+> 	d40_phy_cfg(cfg, &d40c->src_def_cfg, &d40c->dst_def_cfg);
+
+> Have you tested this combo?
+
+Yes. All ux500 based DMA use logical channels.
+
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
