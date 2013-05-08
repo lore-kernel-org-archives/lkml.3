@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293Ab3EHQD2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 12:03:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37243 "EHLO mx2.suse.de"
+	id S1758274Ab3EHQD1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 12:03:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37238 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932126Ab3EHQDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 12:03:25 -0400
+	id S932212Ab3EHQDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 12:03:24 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, Dave Hansen <dave@sr71.net>,
         Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 21/22] mm: compaction: Release free page list under a batched magazine lock
-Date: Wed,  8 May 2013 17:03:06 +0100
-Message-Id: <1368028987-8369-22-git-send-email-mgorman@suse.de>
+Subject: [PATCH 20/22] mm: page allocator: Hold magazine lock for a batch of pages
+Date: Wed,  8 May 2013 17:03:05 +0100
+Message-Id: <1368028987-8369-21-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1368028987-8369-1-git-send-email-mgorman@suse.de>
 References: <1368028987-8369-1-git-send-email-mgorman@suse.de>
@@ -21,123 +21,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compaction can reuse the vast bulk of free_base_page() to batch
-hold the magazine lock.
+free_base_page_list() frees a list of pages. This patch will batch
+the magazine lock for the list of pages if possible.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/gfp.h |  1 +
- mm/compaction.c     | 18 ++----------------
- mm/page_alloc.c     | 21 +++++++++++++++++++--
- 3 files changed, 22 insertions(+), 18 deletions(-)
+ mm/page_alloc.c | 75 ++++++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 61 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 45cbc43..53844b4 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -366,6 +366,7 @@ extern void __free_pages(struct page *page, unsigned int order);
- extern void free_pages(unsigned long addr, unsigned int order);
- extern void free_base_page(struct page *page);
- extern void free_base_page_list(struct list_head *list);
-+extern unsigned long release_free_page_list(struct list_head *list);
- 
- extern void __free_memcg_kmem_pages(struct page *page, unsigned int order);
- extern void free_memcg_kmem_pages(unsigned long addr, unsigned int order);
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 05ccb4c..e415d92 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -38,20 +38,6 @@ static inline void count_compact_events(enum vm_event_item item, long delta)
- #define CREATE_TRACE_POINTS
- #include <trace/events/compaction.h>
- 
--static unsigned long release_freepages(struct list_head *freelist)
--{
--	struct page *page, *next;
--	unsigned long count = 0;
--
--	list_for_each_entry_safe(page, next, freelist, lru) {
--		list_del(&page->lru);
--		__free_page(page);
--		count++;
--	}
--
--	return count;
--}
--
- static void map_pages(struct list_head *list)
- {
- 	struct page *page;
-@@ -382,7 +368,7 @@ isolate_freepages_range(struct compact_control *cc,
- 
- 	if (pfn < end_pfn) {
- 		/* Loop terminated early, cleanup. */
--		release_freepages(&freelist);
-+		release_free_page_list(&freelist);
- 		return 0;
- 	}
- 
-@@ -1002,7 +988,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 
- out:
- 	/* Release free pages and check accounting */
--	cc->nr_freepages -= release_freepages(&cc->freepages);
-+	cc->nr_freepages -= release_free_page_list(&cc->freepages);
- 	VM_BUG_ON(cc->nr_freepages != 0);
- 
- 	return ret;
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index cf31191..374adf8 100644
+index 727c8d3..cf31191 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1300,20 +1300,24 @@ void free_base_page(struct page *page)
+@@ -1236,15 +1236,13 @@ static void magazine_drain(struct zone *zone, struct free_magazine *mag,
+ 	spin_unlock_irqrestore(&zone->lock, flags);
  }
  
- /* Free a list of 0-order pages */
--void free_base_page_list(struct list_head *list)
-+static unsigned long __free_base_page_list(struct list_head *list, bool release)
+-/* Free a 0-order page */
+-void free_base_page(struct page *page)
++/* Prepare a page for freeing and return its migratetype */
++static inline int free_base_page_prep(struct page *page)
  {
- 	struct page *page, *next;
- 	struct zone *locked_zone = NULL;
- 	struct free_magazine *mag = NULL;
- 	bool use_magazine = (!in_interrupt() && !irqs_disabled());
- 	int migratetype = MIGRATE_UNMOVABLE;
-+	unsigned long count = 0;
+-	struct zone *zone = page_zone(page);
+-	struct free_magazine *mag;
+ 	int migratetype;
  
--	/* Similar to free_hot_cold_page except magazine lock is batched */
-+	/* Similar to free_base_page except magazine lock is batched */
- 	list_for_each_entry_safe(page, next, list, lru) {
- 		struct zone *zone = page_zone(page);
- 		int migratetype;
+ 	if (!free_pages_prepare(page, 0))
+-		return;
++		return -1;
  
- 		trace_mm_page_free_batched(page);
-+		if (release)
-+			BUG_ON(!put_page_testzero(page));
+ 	migratetype = get_pageblock_migratetype(page);
+ 
+@@ -1256,24 +1254,46 @@ void free_base_page(struct page *page)
+ 	 * excessively into the page allocator
+ 	 */
+ 	if (migratetype >= MIGRATE_PCPTYPES) {
+-		if (unlikely(is_migrate_isolate(migratetype))) {
+-			free_one_page(zone, page, 0, migratetype);
+-			return;
+-		}
+-		migratetype = MIGRATE_MOVABLE;
++		if (likely(!is_migrate_isolate(migratetype)))
++			migratetype = MIGRATE_MOVABLE;
+ 	}
 +
- 		migratetype = free_base_page_prep(page);
- 		if (migratetype == -1)
- 			continue;
-@@ -1331,10 +1335,23 @@ void free_base_page_list(struct list_head *list)
- 			locked_zone = zone;
- 		}
- 		__free_base_page(zone, &mag->area, page, migratetype);
-+		count++;
++	set_freepage_migratetype(page, migratetype);
++
++	return migratetype;
++}
++
++/* Put the free page on the magazine list with magazine lock held */
++static inline void __free_base_page(struct zone *zone,
++				struct free_area_magazine *area,
++				struct page *page, int migratetype)
++{
++	list_add(&page->lru, &area->free_list[migratetype]);
++	area->nr_free++;
++}
++
++/* Free a 0-order page */
++void free_base_page(struct page *page)
++{
++	struct zone *zone = page_zone(page);
++	struct free_magazine *mag;
++	int migratetype;
++
++	migratetype = free_base_page_prep(page);
++	if (migratetype == -1)
++		return;
+ 	set_freepage_migratetype(page, migratetype);
+ 
+ 	/* magazine_lock is not safe against IRQs */
+-	if (in_interrupt() || irqs_disabled()) {
++	if (migratetype >= MIGRATE_PCPTYPES || in_interrupt() ||
++					       irqs_disabled()) {
+ 		free_one_page(zone, page, 0, migratetype);
+ 		return;
  	}
  
- 	if (locked_zone)
- 		magazine_drain(locked_zone, mag, migratetype);
+ 	/* Put the free page on the magazine list */
+ 	mag = lock_magazine(zone);
+-	list_add(&page->lru, &mag->area.free_list[migratetype]);
+-	mag->area.nr_free++;
++	__free_base_page(zone, &mag->area, page, migratetype);
+ 
+ 	/* Drain the magazine if necessary, releases the magazine lock */
+ 	magazine_drain(zone, mag, migratetype);
+@@ -1283,11 +1303,38 @@ void free_base_page(struct page *page)
+ void free_base_page_list(struct list_head *list)
+ {
+ 	struct page *page, *next;
++	struct zone *locked_zone = NULL;
++	struct free_magazine *mag = NULL;
++	bool use_magazine = (!in_interrupt() && !irqs_disabled());
++	int migratetype = MIGRATE_UNMOVABLE;
+ 
++	/* Similar to free_hot_cold_page except magazine lock is batched */
+ 	list_for_each_entry_safe(page, next, list, lru) {
++		struct zone *zone = page_zone(page);
++		int migratetype;
 +
-+	return count;
-+}
+ 		trace_mm_page_free_batched(page);
+-		free_base_page(page);
++		migratetype = free_base_page_prep(page);
++		if (migratetype == -1)
++			continue;
 +
-+void free_base_page_list(struct list_head *list)
-+{
-+	__free_base_page_list(list, false);
-+}
++		if (!use_magazine || migratetype >= MIGRATE_PCPTYPES) {
++			free_one_page(zone, page, 0, migratetype);
++			continue;
++		}
 +
-+unsigned long release_free_page_list(struct list_head *list)
-+{
-+	return __free_base_page_list(list, true);
++		if (zone != locked_zone) {
++			/* Drain unlocks magazine lock */
++			if (locked_zone)
++				magazine_drain(locked_zone, mag, migratetype);
++			mag = lock_magazine(zone);
++			locked_zone = zone;
++		}
++		__free_base_page(zone, &mag->area, page, migratetype);
+ 	}
++
++	if (locked_zone)
++		magazine_drain(locked_zone, mag, migratetype);
  }
  
  /*
