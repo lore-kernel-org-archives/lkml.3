@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab3EHAvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 20:51:10 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:56402 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833Ab3EHAvJ (ORCPT
+	id S1756468Ab3EHAvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 20:51:16 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:44199 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833Ab3EHAvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 20:51:09 -0400
+	Tue, 7 May 2013 20:51:14 -0400
+Message-ID: <5189A166.9080301@huawei.com>
+Date: Wed, 8 May 2013 08:50:46 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <CAHGf_=ofADKRCgDN5Tanx4PyvoJFF9r=cHYMd+VRc=N3=4FGuA@mail.gmail.com>
-References: <1367967522-3934-1-git-send-email-j.glisse@gmail.com>
-	<CAHGf_=ofADKRCgDN5Tanx4PyvoJFF9r=cHYMd+VRc=N3=4FGuA@mail.gmail.com>
-Date: Tue, 7 May 2013 20:51:08 -0400
-Message-ID: <CAH3drwbt_YX-jWrwsp0X2CH3t9ms65fX40cvumr4FyRhKBcbyw@mail.gmail.com>
-Subject: Re: [PATCH] mm: honor FOLL_GET flag in follow_hugetlb_page v2
-From: Jerome Glisse <j.glisse@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jerome Glisse <jglisse@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Chen Gang <gang.chen@asianux.com>
+CC: <tj@kernel.org>, <containers@lists.linux-foundation.org>,
+        <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] kernel/cgroup.c: about kfree after 'get_new_cssid'
+References: <5188DB93.2080504@asianux.com> <5188DF27.4080000@huawei.com> <5188E391.6040505@asianux.com>
+In-Reply-To: <5188E391.6040505@asianux.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 7, 2013 at 8:47 PM, KOSAKI Motohiro
-<kosaki.motohiro@gmail.com> wrote:
-> On Tue, May 7, 2013 at 6:58 PM,  <j.glisse@gmail.com> wrote:
->> From: Jerome Glisse <jglisse@redhat.com>
+>> There's a bug in cgroup_unload_subsys() that idr_destroy() should be called after
+>> ss->css_free(). That said, given there's no modular cgroup subsystem using css_id,
+>> and the whole css_id thing will be eliminated in 3.11, why bother fixing it.
 >>
->> Do not increase page count if FOLL_GET is not set. None of the
->> current user can trigger the issue because none of the current
->> user call __get_user_pages with both the pages array ptr non
->> NULL and the FOLL_GET flags non set in other word all caller
->> of __get_user_pages that don't set the FOLL_GET flags also call
->> with pages == NULL.
->
-> Because, __get_user_pages() doesn't allow pages==NULL and FOLL_GET is on.
+> 
+> I just find it by reading code (I also want to learn about kernel).
+> 
+> I guess, for some stable versions, may focus on it, they are the
+> different branches from the latest version.
+> 
+> So, is it suitable to send related patch for the bug ?
+> 
 
-Yes but this allow pages != NULL and FOLL_GET not set and as i said
-there is no such user of that yet and this is exactly what i was
-trying to use.
+As I said, there's no modular cgroup subsystem using css_id, so the bug
+doesn't exist in real world.
 
-Cheers,
-Jerome
-
->
-> long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
-> {
-> (snip)
->     VM_BUG_ON(!!pages != !!(gup_flags & FOLL_GET));
