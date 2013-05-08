@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738Ab3EHPBs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:01:48 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45612 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756490Ab3EHPBp (ORCPT
+	id S1756652Ab3EHPDD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:03:03 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:42621 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756196Ab3EHPDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:01:45 -0400
-Date: Wed, 8 May 2013 16:01:41 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>, dong.aisheng@linaro.org,
-        sameo@linux.intel.com, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Stuart Menefy <stuart.menefy@st.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
-Subject: Re: [RFC 3/8] mfd:syscon: Introduce claim/read/write/release APIs
-Message-ID: <20130508150141.GA5057@opensource.wolfsonmicro.com>
-References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
- <1368022272-2241-1-git-send-email-srinivas.kandagatla@st.com>
- <201305081650.23264.arnd@arndb.de>
+	Wed, 8 May 2013 11:03:01 -0400
+Date: Wed, 8 May 2013 16:02:55 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
+Subject: Re: [PATCH 19/63] dmaengine: ste_dma40: Separate Logical Global
+ Interrupt Mask (GIM) unmasking
+Message-ID: <20130508150255.GJ3459@gmail.com>
+References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
+ <1367591569-32197-20-git-send-email-lee.jones@linaro.org>
+ <CACRpkdZexk6a7yaWEzzOkihcHNGY_UQN3hYiz45LK1cuy0ob=g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <201305081650.23264.arnd@arndb.de>
-X-Cookie: Condense soup, not books!
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZexk6a7yaWEzzOkihcHNGY_UQN3hYiz45LK1cuy0ob=g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 03 May 2013, Linus Walleij wrote:
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > During the initial setup of a logical channel, it is necessary to unmask
+> > the GIM in order to receive generated terminal count and error interrupts.
+> > We're separating out this required code so it will be possible to move
+> > the remaining code in d40_phy_cfg(), which is mostly runtime configuration
+> > into the runtime_config() routine.
+> >
+> > Cc: Vinod Koul <vinod.koul@intel.com>
+> > Cc: Dan Williams <djbw@fb.com>
+> > Cc: Per Forlin <per.forlin@stericsson.com>
+> > Cc: Rabin Vincent <rabin@rab.in>
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> These review comments are only partially accounted for:
+> http://marc.info/?l=linux-kernel&m=136688761708399&w=2
+> 
+> Please supply a short changelog in the next submission
+> so I know what was changed and why some things were not
+> changed and if you split out other changes to other patches
+> etc etc.
 
-On Wed, May 08, 2013 at 04:50:22PM +0200, Arnd Bergmann wrote:
+All of the comments are accounted for. The is_log argument is actually
+removed in patch 20, as it's still used to only run the code within
+the clause if the channel is physical.
 
-> > In many cases a single syconf register contains bits related to multiple
-> > devices, and therefore it need to be shared across multiple drivers at
-> > bit level. The same IP block can have different syscon mappings on
-> > different SOCs.
+... and yes, the dmatest works perfectly on patch 19.
 
-> My feeling is that syscon is the wrong place for this functionality,
-> since regmap already handles (some of?) these issues. If you need
-> additional synchronization, it's probably best to extend regmap
-> as needed so other code besides syscon can take advantage of that
-> as well.
-
-This sounds like regmap_update_bits() ought to be all that's needed.
-
---rwEMma7ioTxnRzrJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRimjBAAoJELSic+t+oim9JfgP/05p2QINT4gcE3xlw0POhT+t
-ooCGqpfqk+GX9+3iH8YqnuEqrYp5oy6k3vhNF2IG3mvvIfQyqMEqe3HzEKqsfmDz
-skR3HKrZA43R0D+Mn1tWM6q36vC6Ylgf5YsigpvCIjDK7J3iNi23hmhiHpwtRILj
-Bgh3gzYS/JA+Xrl6ZMZ0ZnVPTRS5PMhPU8wNMlVJRd0MVxl52vdhbl2cAIFHs3NA
-bYOXs90Tpq0PyGQ59q4Y1GR0njyCuUon2Gw9C/HlYRIFmvcQoeXpqjKYySTgk+3o
-2UB8tS1Sec9Gwg3MZCcvVamP9Cy7EPMXi9ftU2Ct+UYmJQs4vf9STDiSLKBMX/Cn
-wJgweJmHzksT+iYczffIiPC8SSiFnAxHKg0kcNPvpDbPithowWhbc2hqP28XzMFL
-o3ACBrl1GXzS6BOkaOgeNI2CvFqffKyShdr1fn/tMaSDlY04S0iB/YFGAi/yCZ+f
-y5kSy2vOj71tjc/LrV44ihFiwkjeespp9lPF5ItsmMfM55c4Wsh1RvghUVtyXmyf
-XCU+76xc6e6KHudmsxYVrUdhqjwQMHZc8OfrWS6u/Nt1Y6X6xxob0vBk8EO7DvpX
-AViDm+ksWz0OiSTooPq3n1f1Jf2Tj6iTUIzbnS0NuNx8yrayzRFZp8JdxsG7AhvG
-7pZYm9YXNFPP/Vapr6ZS
-=oPWe
------END PGP SIGNATURE-----
-
---rwEMma7ioTxnRzrJ--
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
