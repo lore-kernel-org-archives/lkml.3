@@ -1,186 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab3EHORc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 10:17:32 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:49966 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754585Ab3EHOR3 (ORCPT
+	id S1756261Ab3EHORf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 10:17:35 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:61556 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585Ab3EHORd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 10:17:29 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: arnd@arndb.de, linux@arm.linux.org.uk, olof@lixom.net
-Cc: Rob Landley <rob@landley.net>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        Stephen Gallimore <stephen.gallimore@st.com>
-Subject: [RFC 8/8] ARM:stih41x: Add B2020 board support
-Date: Wed,  8 May 2013 15:12:19 +0100
-Message-Id: <1368022339-2468-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
+	Wed, 8 May 2013 10:17:33 -0400
+Date: Wed, 8 May 2013 16:17:23 +0200
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Subject: Re: [PATCH 3/6] ASoC: ux500: Drop pinctrl sleep support
+Message-ID: <20130508141723.GA12155@balto.lan>
+References: <1367997261-32048-1-git-send-email-fabio.baltieri@linaro.org>
+ <1367997261-32048-4-git-send-email-fabio.baltieri@linaro.org>
+ <20130508105124.GA7478@sirena.org.uk>
+ <20130508114216.GB29130@balto.lan>
+ <20130508123225.GK7478@sirena.org.uk>
+ <20130508131020.GA30503@balto.lan>
+ <20130508135413.GR7478@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130508135413.GR7478@sirena.org.uk>
+X-Operating-System: Linux balto 3.9.0-rc8-00030-g4cbbd1d x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+On Wed, May 08, 2013 at 02:54:13PM +0100, Mark Brown wrote:
+> On Wed, May 08, 2013 at 03:10:20PM +0200, Fabio Baltieri wrote:
+> > On Wed, May 08, 2013 at 01:32:25PM +0100, Mark Brown wrote:
+> 
+> > > I'm saying that if functions like enable_msp() don't work reliably then
+> > > removing some but not all of their functionality isn't an obviously good
+> > > approach to fixing that.  Why does the other functionality work well but
+> > > not this bit?  It sounds like there's some reference counting bug here
+> > > is all...
+> 
+> > Yes, it started as a reference counting bug, due to the actual counter
+> > not being shared between ux500-msp-i2s instances.
+> 
+> > That said, the actual fork of this driver deployed by STE internally
+> > does not handle I2S pin sleep state, and I was not able to find any
+> > other ASoC driver that does that, which seems reasonable to me as I
+> > can't come up with a reason to put those pins in hi-z anyway.
+> 
+> But why does the rest of the code work well if the reference counting is
+> wrong, it's in the middle of a big block of code?  This all smells like
+> this change is papering over a specific symptom of some underlying issue
+> - if that's not the case then it needs to be clearer why.
 
-B2020 ADI board is reference board for STIH415/416 SOCs, it has 2 x
-UART, 4x USB, 1 x Ethernet, 1 x SATA, 1 x PCIe, and 2GB RAM  with
-standard set-top box IPs.
+Well, the counting by itself is not wrong, it's just that the same pins
+are used by both driver instances (ux500-msp-i2s.1 and ux500-msp-i2s.3)
+but the actual counter is specific of each instance
+(msp->pinctrl_rxtx_ref, if I'm not mistaken msp is different between the
+capture and playback interfaces).
 
-This patch adds initial support to B2020 with STiH415/416 with SBC_UART1
-as console and a heard beat LED.
+Also, right now the pins are only associated with the first instance,
+as in:
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-CC: Stephen Gallimore <stephen.gallimore@st.com>
-CC: Stuart Menefy <stuart.menefy@st.com>
----
- arch/arm/boot/dts/Makefile           |    4 ++-
- arch/arm/boot/dts/stih415-b2020.dtsp |   15 ++++++++++++
- arch/arm/boot/dts/stih416-b2020.dtsp |   16 +++++++++++++
- arch/arm/boot/dts/stih41x-b2020.dtsi |   42 ++++++++++++++++++++++++++++++++++
- arch/arm/mach-stih41x/board-dt.c     |    2 +
- 5 files changed, 78 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/boot/dts/stih415-b2020.dtsp
- create mode 100644 arch/arm/boot/dts/stih416-b2020.dtsp
- create mode 100644 arch/arm/boot/dts/stih41x-b2020.dtsi
+DB8500_PIN("GPIO33_AF2", out_lo_slpm_nowkup, "ux500-msp-i2s.1"),
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 78b0271..2e69b90 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -148,7 +148,9 @@ dtb-$(CONFIG_ARCH_SPEAR3XX)+= spear300-evb.dtb \
- 	spear320-hmi.dtb
- dtb-$(CONFIG_ARCH_SPEAR6XX)+= spear600-evb.dtb
- dtb-$(CONFIG_ARCH_STIH41X)+= stih415-b2000.dtb \
--	stih416-b2000.dtb
-+	stih416-b2000.dtb \
-+	stih415-b2020.dtb \
-+	stih416-b2020.dtb
- dtb-$(CONFIG_ARCH_SUNXI) += sun4i-a10-cubieboard.dtb \
- 	sun4i-a10-hackberry.dtb \
- 	sun5i-a13-olinuxino.dtb
-diff --git a/arch/arm/boot/dts/stih415-b2020.dtsp b/arch/arm/boot/dts/stih415-b2020.dtsp
-new file mode 100644
-index 0000000..442b019
---- /dev/null
-+++ b/arch/arm/boot/dts/stih415-b2020.dtsp
-@@ -0,0 +1,15 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+#include "stih415.dtsi"
-+#include "stih41x-b2020.dtsi"
-+/ {
-+	model = "STiH415 B2020 Board";
-+	compatible = "st,stih415", "st,stih415-b2020";
-+};
-diff --git a/arch/arm/boot/dts/stih416-b2020.dtsp b/arch/arm/boot/dts/stih416-b2020.dtsp
-new file mode 100644
-index 0000000..276f28d
---- /dev/null
-+++ b/arch/arm/boot/dts/stih416-b2020.dtsp
-@@ -0,0 +1,16 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+#include "stih416.dtsi"
-+#include "stih41x-b2020.dtsi"
-+/ {
-+	model = "STiH416 B2020";
-+	compatible = "st,stih416", "st,stih416-b2020";
-+
-+};
-diff --git a/arch/arm/boot/dts/stih41x-b2020.dtsi b/arch/arm/boot/dts/stih41x-b2020.dtsi
-new file mode 100644
-index 0000000..855b583
---- /dev/null
-+++ b/arch/arm/boot/dts/stih41x-b2020.dtsi
-@@ -0,0 +1,42 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+/ {
-+	memory{
-+		device_type = "memory";
-+		reg = <0x40000000 0x80000000>;
-+	};
-+
-+	chosen {
-+		bootargs = "console=ttyAS0,115200";
-+		linux,stdout-path = &sbc_uart1;
-+	};
-+
-+	aliases {
-+		ttyAS0 = &sbc_uart1;
-+	};
-+	soc {
-+		sbc_uart1: uart@fe531000 {
-+			status = "okay";
-+		};
-+
-+		leds {
-+			compatible	= "gpio-leds";
-+			red {
-+				#gpio-cells = <1>;
-+				label	= "Front Panel LED";
-+				gpios	= <&PIO4 1>;
-+				linux,default-trigger	= "heartbeat";
-+			};
-+			green {
-+				gpios	= <&PIO4 7>;
-+				default-state = "off";
-+			};
-+		};
-+	};
-+};
-diff --git a/arch/arm/mach-stih41x/board-dt.c b/arch/arm/mach-stih41x/board-dt.c
-index 1f23aca..ed0ccae 100644
---- a/arch/arm/mach-stih41x/board-dt.c
-+++ b/arch/arm/mach-stih41x/board-dt.c
-@@ -65,6 +65,8 @@ void __init stih41x_dt_init(void)
- static const char *stih41x_dt_match[] __initdata = {
- 	"st,stih415-b2000",
- 	"st,stih416-b2000",
-+	"st,stih415-b2020",
-+	"st,stih416-b2020",
- 	NULL
- };
- 
+which does not seems to be correct as these are used also by
+ux500-msp-i2s.3, hence why I sent the patch to set the pin as a hog.
+
+> > If I understood the problem correctly you do that when you want to cut
+> > power completely to some peripherals to avoid spurious current paths,
+> > and that should not be the case for the audio codec, especially in this
+> > case where it's part of a big multifuntion IC.
+> 
+> Being a MFD should have nothing to do with this?
+
+Ok, what I'm trying to say is that the codec used in this platform
+should be able to handle sleep modes without requiring any
+reconfiguration of the digital interface on the SoC side.  In support of
+this the fact that the STE fork of the driver does not do that, and the
+same goes for all other ASoC drivers currently in mainline.
+
+Fabio
+
 -- 
-1.7.6.5
-
+Fabio Baltieri
