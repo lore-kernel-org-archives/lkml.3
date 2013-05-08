@@ -1,87 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab3EHXrw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 19:47:52 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:41226 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750830Ab3EHXrv (ORCPT
+	id S1756004Ab3EHXsH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 19:48:07 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40318 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab3EHXrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 19:47:51 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+rQA/3leNK7urAGwAwlAUH
-Date: Wed, 8 May 2013 16:47:46 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Dan Murphy <dmurphy@ti.com>
-Cc: Vincent =?utf-8?Q?Stehl=C3=A9?= <v-stehle@ti.com>, b-cousson@ti.com,
-        linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] ARM:dts:omap4-panda:Update the LED support for the
- panda DTS
-Message-ID: <20130508234745.GV32546@atomide.com>
-References: <1366229760-4808-1-git-send-email-dmurphy@ti.com>
- <516FBD18.3060501@ti.com>
- <51703BEF.6050804@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51703BEF.6050804@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 8 May 2013 19:47:52 -0400
+Date: Thu, 9 May 2013 09:47:45 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Teigland <teigland@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cluster-devel@redhat.com, Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: linux-next: Tree for May 8 (dlm)
+Message-Id: <20130509094745.049e46fff25f357e7eb50123@canb.auug.org.au>
+In-Reply-To: <518A93BD.3020300@infradead.org>
+References: <20130508140122.e4747b58be4333060b7a248a@canb.auug.org.au>
+	<518A93BD.3020300@infradead.org>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__9_May_2013_09_47_45_+1000_CVvkeDkwbZD5=G9Z"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dan Murphy <dmurphy@ti.com> [130418 11:35]:
-> On 04/18/2013 04:30 AM, Vincent Stehlé wrote:
-> >On 04/17/2013 10:16 PM, Dan Murphy wrote:
-> >>The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
-> >>are different.
-> >(..)
-> >>diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-> >>index 03bd60d..0c48f6b 100644
-> >>--- a/arch/arm/boot/dts/omap4-panda-common.dtsi
-> >>+++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
-> >(..)
-> >>@@ -135,6 +136,25 @@
-> >>  			0xf0 0x118     /* i2c4_sda PULLUP | INPUTENABLE | MODE0 */
-> >>  		>;
-> >>  	};
-> >>+
-> >>+	led_gpio_pins: pinmux_leds_pins {
-> >>+		pinctrl-single,pins = <
-> >>+		>;
-> >>+	};
-> >>+};
-> >Hi,
-> >
-> >FYI, there was a recent discussion precisely on this topic, where Tomy
-> >suggested to remove the empty section:
-> >http://marc.info/?l=linux-omap&m=136546635409232&w=2
-> >
-> >Apart from that, I just tested your patch on top of Tomy's
-> >omap-for-v3.10/dt branch and it is working fine for me on PandaBoards
-> >EA3, A4 and ES.
-> >
-> >Tested-by: Vincent Stehlé <v-stehle@ti.com>
-> >
-> >Best regards,
-> >
-> >V.
-> >
-> Thanks for testing Vincent
-> 
-> Is there a way to append the data to an already existing node?
-> I do not see a clean way.
+--Signature=_Thu__9_May_2013_09_47_45_+1000_CVvkeDkwbZD5=G9Z
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If you have something in omap4-panda-common.dtsi and the same entry
-in the omap4-panda-es.dts, the entries in omap4-panda-es.dts will
-override and append the entries in omap4-panda-common.dtsi.
+[Just forwarding to David ...]
 
-So I think you can avoid the empty entry that way.
+On Wed, 08 May 2013 11:04:45 -0700 Randy Dunlap <rdunlap@infradead.org> wro=
+te:
+>
+> on x86_64:
+>=20
+> when CONFIG_GFS2_FS_LOCKING_DLM=3Dy and CONFIG_DLM=3Dm:
+>=20
+> fs/built-in.o: In function `gfs2_lock':
+> file.c:(.text+0xa512c): undefined reference to `dlm_posix_get'
+> file.c:(.text+0xa5140): undefined reference to `dlm_posix_unlock'
+> file.c:(.text+0xa514a): undefined reference to `dlm_posix_lock'
+> fs/built-in.o: In function `gdlm_cancel':
+> lock_dlm.c:(.text+0xb3f57): undefined reference to `dlm_unlock'
+> fs/built-in.o: In function `gdlm_unmount':
+> lock_dlm.c:(.text+0xb40ff): undefined reference to `dlm_release_lockspace'
+> fs/built-in.o: In function `sync_unlock.isra.4':
+> lock_dlm.c:(.text+0xb420d): undefined reference to `dlm_unlock'
+> fs/built-in.o: In function `sync_lock.isra.5':
+> lock_dlm.c:(.text+0xb42d9): undefined reference to `dlm_lock'
+> fs/built-in.o: In function `gdlm_put_lock':
+> lock_dlm.c:(.text+0xb45e7): undefined reference to `dlm_unlock'
+> fs/built-in.o: In function `gdlm_mount':
+> lock_dlm.c:(.text+0xb4928): undefined reference to `dlm_new_lockspace'
+> lock_dlm.c:(.text+0xb4c75): undefined reference to `dlm_release_lockspace'
+> fs/built-in.o: In function `gdlm_lock':
+> lock_dlm.c:(.text+0xb529f): undefined reference to `dlm_lock'
 
-Regards,
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Tony
+--Signature=_Thu__9_May_2013_09_47_45_+1000_CVvkeDkwbZD5=G9Z
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRiuQhAAoJEECxmPOUX5FEz98P/2YGNmnmwmAx1aEorXAFPlX4
+5srNezqIPSE8xj2ZWPT/EyLnWsj+axdSdrqgnjMgMuN2WiVx8rakmM628DmcTQXN
+pknk53y2LBDUqHW3gesJC0c4FbGVjUsFDLxUlsngy0FPJqCCmM3o4eWdnreMyLTj
+cfwt4UPc1ndnQru5mXYjdc2YdMbUIVl8E1m8Sb9TyYyVRmq4ufa/OSLtQLa/1eJZ
+kjFbkEPRuslaqO4u3tyhoYQcDG3leE6WquwvXoMVAfGs7YQargdxlwVaXTbM3AP1
+/cqxiMXQ2RR4G3Ogk1H9+6VEdE99Pgs4YEW8Dudfi1kXD7PJVRBrq0yFN5OjlHO+
+RcaAdIHM7ehk7Rek4aOV953U3YtlZaUM55BroLpDdGEx46HYGOmx63pHZMWu8jMc
+6OEICYAgxwro+iXjNxT6UpV0pAYf2OJqJlvoSJi07E93Dp3/aZ/5lFtP87C2Afnm
+Zi4pUbaiJGR2YI6Ujm37rWuQ7ZQZD7GT8hNYT8nwdtjlpiaF5ZYemGELMkc7NTC8
+J/o1JfXTcNjjLjDZ+IBV+uux5uW6mUqtgWR5tqL+FKqevCMgINoAm7c97VdcHBIx
+hIbfhm/XlIwcfJJY8bezfmUkfp82hkOJZPDRZWmPv+VfDoVvnv5NaOoE0BbtaJaA
+i5tQKqxx6EVlT3yLawL6
+=IAV4
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__9_May_2013_09_47_45_+1000_CVvkeDkwbZD5=G9Z--
