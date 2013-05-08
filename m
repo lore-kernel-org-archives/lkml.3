@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342Ab3EHCZi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 22:25:38 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:52945 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab3EHCZh (ORCPT
+	id S1752598Ab3EHCaF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 22:30:05 -0400
+Received: from [213.199.154.187] ([213.199.154.187]:5421 "EHLO
+	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751592Ab3EHCaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 22:25:37 -0400
-X-Spam-Score: -100.8
-Message-ID: <5189B76C.9050606@asianux.com>
-Date: Wed, 08 May 2013 10:24:44 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 7 May 2013 22:30:03 -0400
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT002.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: PS-2(zz98dI936eIda00hdc73hzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2fh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Intel TXT driver
+Thread-Topic: [PATCH 0/4] Intel TXT driver
+Thread-Index: AQHOS5PFgzEwU6db/EypzzlKvzNy6A==
+Date: Wed, 8 May 2013 02:28:48 +0000
+Message-ID: <1367980128.2425.3.camel@x230>
+References: <1367938519-840-1-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1367938519-840-1-git-send-email-qiaowei.ren@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <B743D2BC84A7794DA093428C865C444C@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] Drivers: Misc: fix warnings, unsigned long will never
- < 0
-References: <5160E37C.3020007@asianux.com> <5160E7EA.3050406@asianux.com>
-In-Reply-To: <5160E7EA.3050406@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r482UC0f006551
 
-Hello Maintainers:
+On Tue, 2013-05-07 at 22:55 +0800, Qiaowei Ren wrote:
+> This module is expected to be a better tool to access below resources
+>   - TXT config space
+>   - Tboot log mem
+>   - SMX parameter
 
-Please help check, when you have time.
-
-Thanks.
-
-On 2013å¹´04æœˆ07æ—¥ 11:28, Chen Gang wrote:
-> 
->   val is unsigned long which never < 0
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  drivers/misc/tsl2550.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/misc/tsl2550.c b/drivers/misc/tsl2550.c
-> index 1e7bc0e..5bf9448 100644
-> --- a/drivers/misc/tsl2550.c
-> +++ b/drivers/misc/tsl2550.c
-> @@ -204,7 +204,7 @@ static ssize_t tsl2550_store_power_state(struct device *dev,
->  	unsigned long val = simple_strtoul(buf, NULL, 10);
->  	int ret;
->  
-> -	if (val < 0 || val > 1)
-> +	if (val > 1)
->  		return -EINVAL;
->  
->  	mutex_lock(&data->update_lock);
-> @@ -236,7 +236,7 @@ static ssize_t tsl2550_store_operating_mode(struct device *dev,
->  	unsigned long val = simple_strtoul(buf, NULL, 10);
->  	int ret;
->  
-> -	if (val < 0 || val > 1)
-> +	if (val > 1)
->  		return -EINVAL;
->  
->  	if (data->power_state == 0)
-> 
-
+What's SMX?
 
 -- 
-Chen Gang
-
-Asianux Corporation
+Matthew Garrett | mjg59@srcf.ucam.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
