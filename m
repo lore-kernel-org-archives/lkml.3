@@ -1,85 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab3EHLsW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 07:48:22 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:26636 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753729Ab3EHLsU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 07:48:20 -0400
+	id S1755237Ab3EHLto (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 07:49:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8614 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754323Ab3EHLtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 07:49:42 -0400
+X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,634,1363158000"; 
-   d="scan'208";a="45318400"
-Message-ID: <518A3B81.3080308@codeaurora.org>
-Date: Wed, 08 May 2013 07:48:17 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+   d="scan'208";a="333692066"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Fabio Estevam <fabio.estevam@freescale.com>, shawn.guo@linaro.org
+Cc: kernel@pengutronix.de, festevam@gmail.com,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/13] pwm: pwm-mxs: Let device core handle pinctrl
+In-Reply-To: <1367863561-11534-6-git-send-email-fabio.estevam@freescale.com>
+References: <1367863561-11534-1-git-send-email-fabio.estevam@freescale.com> <1367863561-11534-6-git-send-email-fabio.estevam@freescale.com>
+User-Agent: Notmuch/0.12+187~ga2502b0 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Wed, 08 May 2013 14:51:33 +0300
+Message-ID: <87d2t1n0ze.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH 1/3] arm_arch_timer: introduce arch_timer_stolen_ticks
-References: <alpine.DEB.2.02.1305011939180.5398@kaball.uk.xensource.com> <1367436460-10183-1-git-send-email-stefano.stabellini@eu.citrix.com> <51817CBE.4050003@codeaurora.org> <1367482772.21869.26.camel@zakaz.uk.xensource.com> <5182DBA9.9080609@codeaurora.org> <20130506143533.GF15278@phenom.dumpdata.com> <51892933.7090405@codeaurora.org> <alpine.DEB.2.02.1305081217010.18865@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1305081217010.18865@kaball.uk.xensource.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2013 07:19 AM, Stefano Stabellini wrote:
-> On Tue, 7 May 2013, Christopher Covington wrote:
->> Hi Konrad,
->>
->> On 05/06/2013 10:35 AM, Konrad Rzeszutek Wilk wrote:
->>>>> e.g. if a VCPU sets a timer for NOW+5, but 3 are stolen in the middle it
->>>>> would not make sense (from the guests PoV) for NOW'==NOW+2 at the point
->>>>> where the timer goes off. Nor does it make sense to require that the
->>>>> guest actually be running for 5 before injecting the timer because that
->>>>> would mean real time elapsed time for the timer would be 5+3 in the case
->>>>> where 3 are stolen.
->>>>
->>>> This is a bit of an aside, but I think that hiding time spent at higher
->>>> privilege levels can be a quite sensible approach to timekeeping in a
->>>> virtualized environment, but I understand that it's not the approach taken
->>>> with Xen, and as you pointed out above, adjusting the Virtual Offset Register
->>>> by itself isn't enough to implement that approach.
->>>
->>> This is the approach taken by Xen and KVM. Look in CONFIG_PARAVIRT_CLOCK for
->>> implementation. In the user-space, the entry in 'top' of "stolen" (%st)
->>> is for this exact value.
->>
->> I may have been unclear with my terms, sorry. When I refer to time being
->> "hidden", I mean that kernel level software (supervisor mode, EL1) cannot
->> detect the passage of that time at all. I don't know whether this would really
->> work, but I imagine one might be able to get close with the current
->> virtualization facilities for ARM.
->>
->> Am I correct in interpreting that what you're referring to is the deployment
->> of paravirtualization code that ensures (observable) "stolen" time is factored
->> into kernel decision-making?
-> 
-> Although it might be possible to hide the real time flow from the VM, it
-> is inadvisable: what would happen when the VM needs to deal with a real
-> hardware device? Or just send packets over the network?  This is why it
-> is much safer and more reliable to expose the stolen ticks to the VM.
+Fabio Estevam <fabio.estevam@freescale.com> writes:
 
-One would probably have to emulate all the hardware. I don't mean to imply
-that I think this is useful for everyday virtualization, but I speculate that
-such an approach might enable the analysis of kernels infected with
-VM-detecting malware or other niche use-cases.
+> Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
+> we can rely on device core for handling pinctrl.
+>
+> So remove devm_pinctrl_get_select_default() from the driver. 
+>
+> Cc: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: <linux-kernel@vger.kernel.org>
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> ---
+>  drivers/pwm/pwm-mxs.c |    6 ------
+>  1 file changed, 6 deletions(-)
 
-Christopher
+Looks good, can we have some tested-by from imx guys?
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+Regards,
+--
+Alex
