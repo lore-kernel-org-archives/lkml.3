@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199Ab3EHP5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:57:31 -0400
-Received: from mail-da0-f49.google.com ([209.85.210.49]:33649 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758217Ab3EHP50 (ORCPT
+	id S1758263Ab3EHP5t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:57:49 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:34886 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757600Ab3EHP5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:57:26 -0400
+	Wed, 8 May 2013 11:57:46 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,10 +19,12 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: [PATCH v5, part4 38/41] mm/unicore32: prepare for removing num_physpages and simplify mem_init()
-Date: Wed,  8 May 2013 23:51:35 +0800
-Message-Id: <1368028298-7401-39-git-send-email-jiang.liu@huawei.com>
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: [PATCH v5, part4 41/41] mm: kill global variable num_physpages
+Date: Wed,  8 May 2013 23:51:38 +0800
+Message-Id: <1368028298-7401-42-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
 References: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
@@ -30,91 +32,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for removing num_physpages and simplify mem_init().
+Now all references to num_physpages have been removed, so kill it.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>
+Cc: Hugh Dickins <hughd@google.com>
 Cc: David Rientjes <rientjes@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/unicore32/mm/init.c |   49 ++--------------------------------------------
- 1 file changed, 2 insertions(+), 47 deletions(-)
+ include/linux/mm.h |    1 -
+ mm/memory.c        |    2 --
+ mm/nommu.c         |    2 --
+ 3 files changed, 5 deletions(-)
 
-diff --git a/arch/unicore32/mm/init.c b/arch/unicore32/mm/init.c
-index 119b9e8..39a967a 100644
---- a/arch/unicore32/mm/init.c
-+++ b/arch/unicore32/mm/init.c
-@@ -383,10 +383,6 @@ static void __init free_unused_memmap(struct meminfo *mi)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 66e5fb8..f02b34f 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -29,7 +29,6 @@ struct writeback_control;
+ extern unsigned long max_mapnr;
+ #endif
+ 
+-extern unsigned long num_physpages;
+ extern unsigned long totalram_pages;
+ extern void * high_memory;
+ extern int page_cluster;
+diff --git a/mm/memory.c b/mm/memory.c
+index f7a1fba..0022366 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -82,7 +82,6 @@ EXPORT_SYMBOL(max_mapnr);
+ EXPORT_SYMBOL(mem_map);
+ #endif
+ 
+-unsigned long num_physpages;
+ /*
+  * A number of key systems in x86 including ioremap() rely on the assumption
+  * that high_memory defines the upper bound on direct map memory, then end
+@@ -92,7 +91,6 @@ unsigned long num_physpages;
   */
- void __init mem_init(void)
- {
--	unsigned long reserved_pages, free_pages;
--	struct memblock_region *reg;
--	int i;
--
- 	max_mapnr   = pfn_to_page(max_pfn + PHYS_PFN_OFFSET) - mem_map;
+ void * high_memory;
  
- 	free_unused_memmap(&meminfo);
-@@ -394,48 +390,7 @@ void __init mem_init(void)
- 	/* this will put all unused low memory onto the freelists */
- 	free_all_bootmem();
+-EXPORT_SYMBOL(num_physpages);
+ EXPORT_SYMBOL(high_memory);
  
--	reserved_pages = free_pages = 0;
--
--	for_each_bank(i, &meminfo) {
--		struct membank *bank = &meminfo.bank[i];
--		unsigned int pfn1, pfn2;
--		struct page *page, *end;
--
--		pfn1 = bank_pfn_start(bank);
--		pfn2 = bank_pfn_end(bank);
--
--		page = pfn_to_page(pfn1);
--		end  = pfn_to_page(pfn2 - 1) + 1;
--
--		do {
--			if (PageReserved(page))
--				reserved_pages++;
--			else if (!page_count(page))
--				free_pages++;
--			page++;
--		} while (page < end);
--	}
--
--	/*
--	 * Since our memory may not be contiguous, calculate the
--	 * real number of pages we have in this system
--	 */
--	printk(KERN_INFO "Memory:");
--	num_physpages = 0;
--	for_each_memblock(memory, reg) {
--		unsigned long pages = memblock_region_memory_end_pfn(reg) -
--			memblock_region_memory_base_pfn(reg);
--		num_physpages += pages;
--		printk(" %ldMB", pages >> (20 - PAGE_SHIFT));
--	}
--	printk(" = %luMB total\n", num_physpages >> (20 - PAGE_SHIFT));
--
--	printk(KERN_NOTICE "Memory: %luk/%luk available, %luk reserved, %luK highmem\n",
--		nr_free_pages() << (PAGE_SHIFT-10),
--		free_pages << (PAGE_SHIFT-10),
--		reserved_pages << (PAGE_SHIFT-10),
--		totalhigh_pages << (PAGE_SHIFT-10));
--
-+	mem_init_print_info(NULL);
- 	printk(KERN_NOTICE "Virtual kernel memory layout:\n"
- 		"    vector  : 0x%08lx - 0x%08lx   (%4ld kB)\n"
- 		"    vmalloc : 0x%08lx - 0x%08lx   (%4ld MB)\n"
-@@ -464,7 +419,7 @@ void __init mem_init(void)
- 	BUILD_BUG_ON(TASK_SIZE				> MODULES_VADDR);
- 	BUG_ON(TASK_SIZE				> MODULES_VADDR);
+ /*
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 247ef84..09cfde8 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -56,7 +56,6 @@
+ void *high_memory;
+ struct page *mem_map;
+ unsigned long max_mapnr;
+-unsigned long num_physpages;
+ unsigned long highest_memmap_pfn;
+ struct percpu_counter vm_committed_as;
+ int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
+@@ -85,7 +84,6 @@ unsigned long vm_memory_committed(void)
+ EXPORT_SYMBOL_GPL(vm_memory_committed);
  
--	if (PAGE_SIZE >= 16384 && num_physpages <= 128) {
-+	if (PAGE_SIZE >= 16384 && get_num_physpages() <= 128) {
- 		/*
- 		 * On a machine this small we won't get
- 		 * anywhere without overcommit, so turn
+ EXPORT_SYMBOL(mem_map);
+-EXPORT_SYMBOL(num_physpages);
+ 
+ /* list of mapped, potentially shareable regions */
+ static struct kmem_cache *vm_region_jar;
 -- 
 1.7.9.5
 
