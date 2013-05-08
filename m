@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab3EHKYy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 06:24:54 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:38708 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754046Ab3EHKYx (ORCPT
+	id S1753997Ab3EHKee (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 06:34:34 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60149 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327Ab3EHKed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 06:24:53 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: broonie@kernel.org
-Cc: srinivas.kandagatla@st.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] regmap: debugfs: Fix start_reg calculation (v2)
-Date: Wed,  8 May 2013 11:20:09 +0100
-Message-Id: <1368008409-15250-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
+	Wed, 8 May 2013 06:34:33 -0400
+Date: Wed, 8 May 2013 11:34:01 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Message-ID: <20130508103401.GX7478@sirena.org.uk>
+References: <20130508080448.GG3102@gmail.com>
+ <1368002354-15471-1-git-send-email-fabio.baltieri@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="b/3kIrr+SWblMf9a"
+Content-Disposition: inline
+In-Reply-To: <1368002354-15471-1-git-send-email-fabio.baltieri@linaro.org>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 212.183.132.60
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/6] ASoC: ux500: Do not clear state if already idle
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-If we dump syscon regmap registers via debugfs you will notice that the
-dump contains lot of XXXXXXXX values.
+--b/3kIrr+SWblMf9a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-An example configuration is:
-syscon@fdde0000{
-	compatible      = "syscon";
-	reg		= <0xfdde0000 0x15c>;
-};
+On Wed, May 08, 2013 at 10:39:14AM +0200, Fabio Baltieri wrote:
+> As enable_msp gets called only after some audio data has been received,
+> if the userspace closes the device before sending any data it causes
+> ux500_msp_i2s_close to clear device state even if it was not previously
+> initialized.
 
-example dump:
-cat  /sys/kernel/debug/regmap/myregmap/registers
-...
-154: 001c1dff
-158: 00000003
-05a: XXXXXXXX
-05e: XXXXXXXX
-...
+Ugh, please don't do stuff like this - you're posting an individual
+revision of a patch buried in the middle of a thread.  This just makes
+things hard to follow and error prone.  Repost the patch series or wait
+until what can be applied is applied then repost.
 
-regmap_debugfs_get_dump_start should return the offset of the register
-it should start reading from, However in the current code it does not
-consider stride while calculating this. If we use the return value to
-dump the registers we can endup with wrong start address, in the example
-case for the second loop the code ends up with start_reg = 0x56. Which
-is incorrect. Also this keeps incremeting by stride, which can than
-result in unaligned address
+--b/3kIrr+SWblMf9a
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-This patch fixes this issue by considering the stride value at all
-required places in regmap_debugfs_get_dump_start function.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
----
- drivers/base/regmap/regmap-debugfs.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+iQIcBAEBAgAGBQJRiioWAAoJELSic+t+oim9fkoP/0xYvB8xWrJTr9Wnopic7yX4
+DvARISDa6cKnn6qKnNegFqr0apH8/MiwlAXHPgZmD3Of3UDoipb9b/66bsh8wDJQ
+eMI1sqiC9i+8iaT4k1uEJuuYab1584MNfqzrFofSLIs/i3B+T/ghhQdUbaQYaZa8
+2ghDAmjT18GV1s4MXAqCk9Jy1AyGnw5sCoeqRR6ZZEiDQDQ66p+S2zyk+ebI4EvI
+dMY8T89b1AJKFSJws+0whkGO0Is64aOF2tgOxM8iGXBvVlca0fOGWdM70cY/BFE7
+7a349XwtWZ4CdDf3TSlHI3+iWQ5qf8PBkO9XnOZvxt4jJNrAaZLd3OBVmjuOG4E9
+8iWXbP2g5yGdWn2onS1NAwX2MttsA84ZeGtoA5xiIsHtFlNMzwExC0KGda8z9V1N
+UnN2H8L4rJ8wCTEbT3p6RM3BIxW0Ft4AnWbOIWpA1v/F85nsbZ9w2+kUz5KQzC2s
+OwT6q0MxpMI08e1Xfq4OTAsQ3/FMT4zWMq5MVpurOcDcSSPA36XEi2GNeviOE3e1
+qwxekcegJFt/GkExopADjdKo9p53NqvNUVWfsiuAZN5Uc6mcYOEaBtX1gSVJ0+gY
+iQC5F3GQ4zZDccm3VpiTTXHSm4VCiH1ps7dpwowOCkIHfCCVNXtxAtEm0xGQmOdL
+VeQ6zeEizImF8gnjYP+V
+=xVuL
+-----END PGP SIGNATURE-----
 
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 81d6f60..6cd1b78a 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -97,7 +97,8 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
- 					c->max = p - 1;
- 					fpos_offset = c->max - c->min;
- 					reg_offset = fpos_offset / map->debugfs_tot_len;
--					c->max_reg = c->base_reg + reg_offset;
-+					c->max_reg = c->base_reg +
-+						(reg_offset * map->reg_stride);
- 					list_add_tail(&c->list,
- 						      &map->debugfs_off_cache);
- 					c = NULL;
-@@ -126,7 +127,7 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
- 		c->max = p - 1;
- 		fpos_offset = c->max - c->min;
- 		reg_offset = fpos_offset / map->debugfs_tot_len;
--		c->max_reg = c->base_reg + reg_offset;
-+		c->max_reg = c->base_reg + (reg_offset * map->reg_stride);
- 		list_add_tail(&c->list,
- 			      &map->debugfs_off_cache);
- 	}
-@@ -145,7 +146,7 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
- 			fpos_offset = from - c->min;
- 			reg_offset = fpos_offset / map->debugfs_tot_len;
- 			*pos = c->min + (reg_offset * map->debugfs_tot_len);
--			return c->base_reg + reg_offset;
-+			return c->base_reg + (reg_offset * map->reg_stride);
- 		}
- 
- 		*pos = c->max;
--- 
-1.7.6.5
-
+--b/3kIrr+SWblMf9a--
