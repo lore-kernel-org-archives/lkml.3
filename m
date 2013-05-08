@@ -1,161 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab3EHOEd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 10:04:33 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33382 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756353Ab3EHOEa (ORCPT
+	id S1756740Ab3EHOG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 10:06:29 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:34435 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329Ab3EHOG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 10:04:30 -0400
-Date: Wed, 8 May 2013 10:03:42 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, fenghua.yu@intel.com,
-        xen-devel@lists.xensource.com
-Subject: Re: v3.9 - CPU hotplug and microcode earlier loading hits a mutex
- deadlock (x86_cpu_hotplug_driver_mutex)
-Message-ID: <20130508140342.GA8152@phenom.dumpdata.com>
-References: <20130506125937.GA14036@phenom.dumpdata.com>
- <20130507190024.GA4303@phenom.dumpdata.com>
- <20130508125414.GB30955@pd.tnic>
+	Wed, 8 May 2013 10:06:28 -0400
+Date: Wed, 8 May 2013 15:06:18 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Subject: Re: [PATCH v2 2/6] ASoC: ux500: Do not clear state if already idle
+Message-ID: <20130508140618.GI3459@gmail.com>
+References: <20130508080448.GG3102@gmail.com>
+ <1368002354-15471-1-git-send-email-fabio.baltieri@linaro.org>
+ <20130508103401.GX7478@sirena.org.uk>
+ <20130508110451.GC3459@gmail.com>
+ <20130508113124.GH7478@sirena.org.uk>
+ <20130508120326.GF3459@gmail.com>
+ <20130508123902.GL7478@sirena.org.uk>
+ <20130508130554.GG3459@gmail.com>
+ <20130508134814.GQ7478@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130508125414.GB30955@pd.tnic>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130508134814.GQ7478@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 02:54:14PM +0200, Borislav Petkov wrote:
-> On Tue, May 07, 2013 at 03:00:24PM -0400, Konrad Rzeszutek Wilk wrote:
-> > I dug deeper in how QEMU does it and it looks to be actually doing
-> > the right thing. It triggers the ACPI SCI, the method that figures
-> > out the CPU online/offline bits kicks off the right OSPM notification
-> > and everything is going through ACPI (so _STA is on the processor is
-> > checked, returns 0x2 (ACPI_STA_DEVICE_PRESENT), MADT has now the CPU
-> > marked as enabled).
+On Wed, 08 May 2013, Mark Brown wrote:
+
+> On Wed, May 08, 2013 at 02:05:54PM +0100, Lee Jones wrote:
 > 
-> AFAIUC, you mean physical hotplug here which is done with ACPI, right?
-
-Yes.
-
-> And, if so, we actually need an x86 machine which supports that to test
-> it on. Also, is this how physical hotplug is done? Put the number of
-> max. supported CPUs in MADT and those which are not present are marked
-> as disabled?
+> > I'm saying, from experience, from the developer side, that if a
+> > reviewer goes though a patch-set taking the ones s/he likes leaving
+> > the rest behind, there are bound to be merge conflicts and semantic
+> > issues which the developer will then have to resolve. Stuff that I
+> > believe is added, unnecessary burden which would be easily avoided if
+> > the set is firstly reviewed and _then_ applied after the Acks have
+> > been awarded.
 > 
-> Then, when they're physically hotplugged, ACPI marks them as enabled?
-
-Yes. The GPE is raised (by QEMU), the ACPI Method PRSC is invoked:
-
- Scope (_GPE)                                                                
-    {                                                                           
-        Method (_L02, 0, NotSerialized)                                         
-        {                                                                       
-            Return (\_SB.PRSC ())                                               
-        }                                                                       
-    }                                                                           
-                                
-
-Which iterates over the AXF00 (32 bytes) and checks each bit to see if
-it is enabled (so CPU is on) or disabled. Then if it is different
-from the MADT.FLG entry (so the 'flags' entry in the MADT), it updates
-the MADT entry to have one (or zero if it has been disabled). And then
-Notifies the Processor. Here is what the Processor entry looks like:
-
-  Processor (PR02, 0x02, 0x0000B010, 0x06)                                
-        {                                                                       
-            Name (_HID, "ACPI0007")                                             
-            OperationRegion (MATR, SystemMemory, Add (MAPA, 0x10), 0x08)        
-
-[MAPA is the physical address to the MADT, the 0x10 increases by eight
-bytes for each CPU]
-
-            Field (MATR, ByteAcc, NoLock, Preserve)                             
-            {                                                                   
-                MAT,    64                                                      
-            }                                                                   
-
-[so it is 64 bits, the MAT is used in the '_STA' method to return the whole
-contents of said memory location]
-                                                                                
-            Field (MATR, ByteAcc, NoLock, Preserve)                             
-            {                                                                   
-                        Offset (0x04),                                          
-                FLG,    1                                                       
-            }     
-[and FLG is at offset 4 (out of 8 bytes), which means it lands on the
-lapic->flags entry]                                                              
-                                       
-The PRSC method does what I mentioned above.
-                                                                           
-        OperationRegion (PRST, SystemIO, 0xAF00, 0x20)                          
-        Field (PRST, ByteAcc, NoLock, Preserve)                                 
-        {                                                                       
-            PRS,    15                                                          
-        }                                                                       
-                                                                                
-        Method (PRSC, 0, NotSerialized)                                         
-        {                                                                       
-            Store (ToBuffer (PRS), Local0)                                      
-[Local0 has now the 32 bytes of data]
-
-            Store (DerefOf (Index (Local0, Zero)), Local1)                      
-
-[Local1 has now the zero-th byte of the 32-bytes. Each bit is one CPU, so
-it contains the value of eight CPUs]
-
-            And (Local1, One, Local2)                                           
-
-[Local2 = gpe_state.cpu_sts[i] & 1, aka first CPU]
-
-            If (LNotEqual (Local2, ^PR00.FLG))                                  
-            {                                                                   
-                Store (Local2, ^PR00.FLG)                                       
-
-[Write the bit in the PR00.FLG, so at offset four in the MADT]
-
-                If (LEqual (Local2, One))                                       
-                {                                                               
-[If it was enabled, and now is disabled, then notify with 1]
-                    Notify (PR00, One)                                          
-                    Subtract (MSU, One, MSU)                                    
-[fix up the checksum]
-                }                                                               
-                Else                                                            
-                {                                                               
-                    Notify (PR00, 0x03)                                         
-[if it was disabled, and now enabled, then notify with 0x3]
-                    Add (MSU, One, MSU)                    
-[again, fix up the checksum]
-                     
-                }                                                               
-            }                                                                   
-                                                                                
-            ShiftRight (Local1, One, Local1)              
-
-[here it shifts and continues on testing each CPU bit]
-
-> Questions over questions...?
-
-I probably went overboard with my answers :-)
+> So, you have to assume a bit of taste on the part of the people applying
+> the patches here.  If you're seeing merge conflicts that's probably an
+> issue, but then it's very surprising that the patches would apply
+> successfully in the first place since the conflicts generally come up
+> when the patches are applied too.
 > 
-> > I am now 99% sure you would be able to reproduce this on baremetal with
-> > ACPI hotplug where the CPUs at bootup are marked as disabled in MADT.
-> > (lapic->lapic_flags == 0).
-> > 
-> > The comment for calling save_mc_for_early says:
+> The other thing to bear in mind here is that a patch series which is
+> "here's a bunch of random changes to this driver" isn't the same as a
+> patch series which builds something up through a series of changes.
+> This series is a good example of the former - there's a few related
+> things but really there's no visible relationship between most of the
+> changes except that they happen to be for the same driver and sent at
+> the same time.
 > 
-> Looks like save_mc_for_early would need another, local mutex to fix that.
+> The big downsides of not applying patches are that it takes longer to
+> get the benefit of the bits that are good out to people and the big
+> increase in reviewer fatigue from having to re-read the same patches
+> over and over again.  This is one of the major ways problematic code
+> gets in, reviewers eyes glaze over and they just start missing things.
+> There's also the fact that serieses often end up having separate bugfix
+> and development components which need to be routed differently anyway.
 
-Let me try that. Thanks for the suggestion.
-> 
-> -- 
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+I understand your points and certainly sympathise with a great many of
+them. I also understand the difference between random changes, which
+aren't related in any systematic way and changes which are build upon
+each other. It was the latter type to which I was referring to having
+issues with.
+
+Bringing this back on subject, whilst trying not to drag this out for
+longer than we have to. I think replying to one's first patch with a
+subsequent version has its merits. And as long as the thread hasn't
+become too overgrown I see it as a useful tool to obtain an Ack or
+further comment easily and without churn overhead. This also aids in
+your quest to save maintainers from reviewing the same code
+repeatedly, as once the Ack is in place it's easy to see which patches
+are in need of further review and which ones can be skipped.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
