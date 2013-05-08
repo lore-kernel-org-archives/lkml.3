@@ -1,96 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab3EHPUg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:20:36 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:51877 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480Ab3EHPUa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:20:30 -0400
-Date: Wed, 8 May 2013 16:20:25 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH 20/63] dmaengine: ste_dma40: Remove unnecessary call to
- d40_phy_cfg()
-Message-ID: <20130508152025.GL3459@gmail.com>
-References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
- <1367591569-32197-21-git-send-email-lee.jones@linaro.org>
- <CACRpkdbx_-wcatRaUpRw5LJY6qsoqDc3iqwk+UVmoBWR1M35KQ@mail.gmail.com>
+	id S1756970Ab3EHPVC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:21:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41142 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756359Ab3EHPU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 11:20:59 -0400
+Message-ID: <518A6D3F.4040405@zytor.com>
+Date: Wed, 08 May 2013 08:20:31 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Borislav Petkov <bp@alien8.de>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, fenghua.yu@intel.com, xen-devel@lists.xensource.com
+Subject: Re: v3.9 - CPU hotplug and microcode earlier loading hits a mutex
+ deadlock (x86_cpu_hotplug_driver_mutex)
+References: <20130506125937.GA14036@phenom.dumpdata.com> <20130507190024.GA4303@phenom.dumpdata.com> <20130508125414.GB30955@pd.tnic> <20130508140342.GA8152@phenom.dumpdata.com> <20130508142949.GC30955@pd.tnic>
+In-Reply-To: <20130508142949.GC30955@pd.tnic>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbx_-wcatRaUpRw5LJY6qsoqDc3iqwk+UVmoBWR1M35KQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 03 May 2013, Linus Walleij wrote:
-
-> On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On 05/08/2013 07:29 AM, Borislav Petkov wrote:
+> On Wed, May 08, 2013 at 10:03:42AM -0400, Konrad Rzeszutek Wilk wrote:
 > 
-> > All configuration left in d40_phy_cfg() is runtime configurable and
-> > there is already a call into it from d40_runtime_config(), so let's
-> > rely on that.
-> >
-> > Acked-by: Vinod Koul <vnod.koul@intel.com>
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> (...)
+> [ … snip some funky BIOS code ]
 > 
-> > @@ -2027,6 +2027,14 @@ static int d40_config_memcpy(struct d40_chan *d40c)
-> >         } else if (dma_has_cap(DMA_MEMCPY, cap) &&
-> >                    dma_has_cap(DMA_SLAVE, cap)) {
-> >                 d40c->dma_cfg = dma40_memcpy_conf_phy;
-> > +
-> > +               /* Generate interrrupt at end of transfer or relink. */
-> > +               d40c->dst_def_cfg |= BIT(D40_SREG_CFG_TIM_POS);
-> > +
-> > +               /* Generate interrupt on error. */
-> > +               d40c->src_def_cfg |= BIT(D40_SREG_CFG_EIM_POS);
-> > +               d40c->dst_def_cfg |= BIT(D40_SREG_CFG_EIM_POS);
-> > +
+>> [here it shifts and continues on testing each CPU bit]
+>>
+>>> Questions over questions...?
+>>
+>> I probably went overboard with my answers :-)
 > 
-> This hunk looks like it's fixing a bug introduced in patch 19/63.
-
-What makes you say that?
-
-This patch is removing the d40_phy_cfg() invocation from the channel
-allocation code, as all slaves now call dmaengine_slave_config(),
-where this should happen. The ramification is that memcpy channels
-won't be configured correctly, as they do not call the runtime
-configuration code. Hence this hunk. It's taking the only important
-bit which is relevant for physical memcpy channels and placing it
-here instead. It has nothing to do with a bugfix from patch 19.
-
-> Do you try to run a memcpy test after patch 19?
-
-Yes, it works fine.
-
-> Breaking the drive in one patch and fixing it in the next is
-> a no-no because of bisection.
-
-We're not doing that.
-
-> Maybe things work fine if you just move this hunk of the
-> patch over to 19/63?
-
-That makes no sense.
-
-> Apart from this the patch looks fine.
+> Konrad, you're killing me! :-) You actually went and looked at the
+> BIOS disassembly voluntarily. You must be insane, I think you should
+> immediately go to the doctor now for a thorough checkup. :-)
 > 
-> Yours,
-> Linus Walleij
+> I think I know who I can sling BIOS issues now to.
+> 
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Nah, that was just the ACPI AML.  Real BIOS code is much scarier.
+
+	-hpa
+
