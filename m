@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601Ab3EHA7X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 20:59:23 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49356 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab3EHA7W (ORCPT
+	id S1754132Ab3EHA76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 20:59:58 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:61686 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab3EHA74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 20:59:22 -0400
-X-AuditID: 9c93016f-b7ba0ae000004cc2-5f-5189a367c1e6
-In-Reply-To: <1367914553-1999-1-git-send-email-chanho.min@lge.com>
-References: <1367914553-1999-1-git-send-email-chanho.min@lge.com>
-Subject: Re : Re: [PATCH RESEND v3] bitmap: speed up bitmap_find_free_region
-X-Brightmail-Tracker: AAAAAA==
-Reply-To: "Chanho Min" <chanho.min@lge.com>
-X-Priority: 3 (Normal)
-From: "Chanho Min" <chanho.min@lge.com>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Nadia Yvette Chambers <nyc@holomorphy.com>,
-        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>
-Message-ID: <OF9884F33D.464250EE-ON49257B65.00056B4D-49257B65.00056B4F@lge.com>
-Date: Wed, 8 May 2013 09:59:11 +0900
-X-MIMETrack: Serialize by Router on LGEKRHQMS17/LGE/LG Group(Release 6.5.5FP3HF116 | July
- 11, 2008) at 2013/05/08 09:59:19
+	Tue, 7 May 2013 20:59:56 -0400
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+In-Reply-To: <20130507231925.GR28721@atomide.com>
+References: <1367947574-2934383-1-git-send-email-arnd@arndb.de>
+	<1367947574-2934383-5-git-send-email-arnd@arndb.de>
+	<20130507231925.GR28721@atomide.com>
+Date: Tue, 7 May 2013 17:59:56 -0700
+X-Google-Sender-Auth: v3ptzDVlHhrDD5NLnfQppJjcFLc
+Message-ID: <CA+55aFxHZSYV3UZMf+ezADX5z2psLm5a9Wpp6qcDQho7n2J6SA@mail.gmail.com>
+Subject: Re: [GIT PULL 4/5] ARM: arm-soc: late cleanups
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: ARM SoC <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 7, 2013 at 4:19 PM, Tony Lindgren <tony@atomide.com> wrote:
+>
+>> Vaibhav Hiremath (1):
+>>       ARM: OMAP2+: Fix mismerge for timer.c between ff931c82 and da4a686a
+>
+> Turns out this urgent boot fix got undone in the merge somehow.
 
->> Test case 1: order is 0. all bits are one except that last one bit is zero.
->>  before patch: 29727 ns
->>  after patch: 2349 ns
->How did you find out this time?Can  you please post your code
->for that?
-I used local_clock(), But, It may be more proper way for each system.
+Those lines actually disappeared already much earlier in my merge 6fa52ed33bea:
 
- before = local_clock();
- bitmap_find_free_region(bitmap, 1024,0);
- after = local_clock();
+    Merge tag 'drivers-for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
 
-Chanho Min,
+last Saturday.
 
+And it's my bad. I even know how it happened: I ended up doing that
+merge twice (because I had to go back and fix something else), and
+then I "optimized" it the second time. With all the omap2 conflicts
+from that tree came from duplicate commits from the ARM tree, and I
+ended up just taking the drivers-for-linus side for
+arch/arm/mach-omap2. Which was correct for the other two files in
+there (gpmc.c and gpmc-onenand.c). but the timer.c file had changes
+from the arm tree.
+
+Sorry about that one.
+
+                 Linus
