@@ -1,185 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758366Ab3EHQM2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 12:12:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37159 "EHLO mx2.suse.de"
+	id S1758540Ab3EHQMu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 12:12:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18372 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757805Ab3EHQDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 12:03:12 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-MM <linux-mm@kvack.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Dave Hansen <dave@sr71.net>,
-        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 03/22] mm: page allocator: Use unsigned int for order in more places
-Date: Wed,  8 May 2013 17:02:48 +0100
-Message-Id: <1368028987-8369-4-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1368028987-8369-1-git-send-email-mgorman@suse.de>
-References: <1368028987-8369-1-git-send-email-mgorman@suse.de>
+	id S1757872Ab3EHQMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 12:12:48 -0400
+Date: Wed, 08 May 2013 12:12:32 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Message-ID: <1368029552-dzvitovl-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130508143411.GD30955@pd.tnic>
+References: <20130508143411.GD30955@pd.tnic>
+Subject: =?UTF-8?Q?Re:_ipc/shm.c:494:18:_warning:_unused_variable?=
+ =?UTF-8?Q?_=E2=80=98hs=E2=80=99_[-Wunused-variable]?=
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <20130508143411.GD30955@pd.tnic>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-X86 prefers the use of unsigned types for iterators and there is a
-tendency to mix whether a signed or unsigned type if used for page
-order. This converts a number of sites in mm/page_alloc.c to use
-unsigned int for order where possible.
+Hi Borislav,
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+On Wed, May 08, 2013 at 04:34:11PM +0200, Borislav Petkov wrote:
+> Hi,
+> 
+> looks like this warning came in with
+> af73e4d9506d3b797509f3c030e7dcd554f7d9c4 and fires in the
+> 
+> # CONFIG_HUGETLB_PAGE is not set
+> 
+> case because
+> 
+> 	struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
+>                                         & SHM_HUGE_MASK);
+> 
+> becomes
+> 
+> 	struct hstate *hs = ((void *)0)
+> 
+> due to
+> 
+> #define hstate_sizelog(s) NULL
+> 
+> Hmmm, I don't have a quick solution off the top of my head from staring
+> at the code.
+
+Thank you for the report.
+I believe we can fix it with this one.
 ---
- include/linux/mmzone.h |  8 ++++----
- mm/page_alloc.c        | 35 +++++++++++++++++++----------------
- 2 files changed, 23 insertions(+), 20 deletions(-)
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Wed, 8 May 2013 11:48:01 -0400
+Subject: [PATCH] ipc/shm.c: don't use auto variable hs in newseg()
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index c74092e..e71e3a6 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -773,10 +773,10 @@ static inline bool pgdat_is_empty(pg_data_t *pgdat)
- extern struct mutex zonelists_mutex;
- void build_all_zonelists(pg_data_t *pgdat, struct zone *zone);
- void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx);
--bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
--		int classzone_idx, int alloc_flags);
--bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
--		int classzone_idx, int alloc_flags);
-+bool zone_watermark_ok(struct zone *z, unsigned int order,
-+		unsigned long mark, int classzone_idx, int alloc_flags);
-+bool zone_watermark_ok_safe(struct zone *z, unsigned int order,
-+		unsigned long mark, int classzone_idx, int alloc_flags);
- enum memmap_context {
- 	MEMMAP_EARLY,
- 	MEMMAP_HOTPLUG,
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 50c9315..4a07771 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -392,7 +392,8 @@ static int destroy_compound_page(struct page *page, unsigned long order)
- 	return bad;
- }
+This patch fixes "warning: unused variable 'hs'" when !CONFIG_HUGETLB_PAGE
+introduced by commit af73e4d9506d "hugetlbfs: fix mmap failure in unaligned
+size request".
+
+Reported-by: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ ipc/shm.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/ipc/shm.c b/ipc/shm.c
+index e316cb9..9ff741a 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -491,9 +491,8 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
  
--static inline void prep_zero_page(struct page *page, int order, gfp_t gfp_flags)
-+static inline void prep_zero_page(struct page *page, unsigned int order,
-+							gfp_t gfp_flags)
- {
- 	int i;
+ 	sprintf (name, "SYSV%08x", key);
+ 	if (shmflg & SHM_HUGETLB) {
+-		struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
+-						& SHM_HUGE_MASK);
+-		size_t hugesize = ALIGN(size, huge_page_size(hs));
++		size_t hugesize = ALIGN(size, huge_page_size(hstate_sizelog(
++				(shmflg >> SHM_HUGE_SHIFT) & SHM_HUGE_MASK)));
  
-@@ -436,7 +437,7 @@ static inline void set_page_guard_flag(struct page *page) { }
- static inline void clear_page_guard_flag(struct page *page) { }
- #endif
- 
--static inline void set_page_order(struct page *page, int order)
-+static inline void set_page_order(struct page *page, unsigned int order)
- {
- 	set_page_private(page, order);
- 	__SetPageBuddy(page);
-@@ -485,7 +486,7 @@ __find_buddy_index(unsigned long page_idx, unsigned int order)
-  * For recording page's order, we use page_private(page).
-  */
- static inline int page_is_buddy(struct page *page, struct page *buddy,
--								int order)
-+							unsigned int order)
- {
- 	if (!pfn_valid_within(page_to_pfn(buddy)))
- 		return 0;
-@@ -683,7 +684,8 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 	spin_unlock(&zone->lock);
- }
- 
--static void free_one_page(struct zone *zone, struct page *page, int order,
-+static void free_one_page(struct zone *zone, struct page *page,
-+				unsigned int order,
- 				int migratetype)
- {
- 	unsigned long flags;
-@@ -853,7 +855,7 @@ static inline int check_new_page(struct page *page)
- 	return 0;
- }
- 
--static int prep_new_page(struct page *page, int order, gfp_t gfp_flags)
-+static int prep_new_page(struct page *page, unsigned int order, gfp_t gfp_flags)
- {
- 	int i;
- 
-@@ -1278,7 +1280,7 @@ void mark_free_pages(struct zone *zone)
- {
- 	unsigned long pfn, max_zone_pfn;
- 	unsigned long flags;
--	int order, t;
-+	unsigned int order, t;
- 	struct list_head *curr;
- 
- 	if (!zone->spanned_pages)
-@@ -1471,8 +1473,8 @@ int split_free_page(struct page *page)
-  */
- static inline
- struct page *buffered_rmqueue(struct zone *preferred_zone,
--			struct zone *zone, int order, gfp_t gfp_flags,
--			int migratetype)
-+			struct zone *zone, unsigned int order,
-+			gfp_t gfp_flags, int migratetype)
- {
- 	unsigned long flags;
- 	struct page *page;
-@@ -1619,8 +1621,9 @@ static inline bool should_fail_alloc_page(gfp_t gfp_mask, unsigned int order)
-  * Return true if free pages are above 'mark'. This takes into account the order
-  * of the allocation.
-  */
--static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
--		      int classzone_idx, int alloc_flags, long free_pages)
-+static bool __zone_watermark_ok(struct zone *z, unsigned int order,
-+			unsigned long mark, int classzone_idx, int alloc_flags,
-+			long free_pages)
- {
- 	/* free_pages my go negative - that's OK */
- 	long min = mark;
-@@ -1652,15 +1655,15 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
- 	return true;
- }
- 
--bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
-+bool zone_watermark_ok(struct zone *z, unsigned int order, unsigned long mark,
- 		      int classzone_idx, int alloc_flags)
- {
- 	return __zone_watermark_ok(z, order, mark, classzone_idx, alloc_flags,
- 					zone_page_state(z, NR_FREE_PAGES));
- }
- 
--bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
--		      int classzone_idx, int alloc_flags)
-+bool zone_watermark_ok_safe(struct zone *z, unsigned int order,
-+			unsigned long mark, int classzone_idx, int alloc_flags)
- {
- 	long free_pages = zone_page_state(z, NR_FREE_PAGES);
- 
-@@ -3942,7 +3945,7 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
- 
- static void __meminit zone_init_free_lists(struct zone *zone)
- {
--	int order, t;
-+	unsigned int order, t;
- 	for_each_migratetype_order(order, t) {
- 		INIT_LIST_HEAD(&zone->free_area[order].free_list[t]);
- 		zone->free_area[order].nr_free = 0;
-@@ -6038,7 +6041,7 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
- {
- 	struct page *page;
- 	struct zone *zone;
--	int order, i;
-+	unsigned int order, i;
- 	unsigned long pfn;
- 	unsigned long flags;
- 	/* find the first valid pfn */
-@@ -6090,7 +6093,7 @@ bool is_free_buddy_page(struct page *page)
- 	struct zone *zone = page_zone(page);
- 	unsigned long pfn = page_to_pfn(page);
- 	unsigned long flags;
--	int order;
-+	unsigned int order;
- 
- 	spin_lock_irqsave(&zone->lock, flags);
- 	for (order = 0; order < MAX_ORDER; order++) {
+ 		/* hugetlb_file_setup applies strict accounting */
+ 		if (shmflg & SHM_NORESERVE)
 -- 
-1.8.1.4
-
+1.7.11.7
