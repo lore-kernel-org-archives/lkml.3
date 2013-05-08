@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750860Ab3EHEAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 00:00:05 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:24813 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714Ab3EHEAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 00:00:04 -0400
-X-IronPort-AV: E=Sophos;i="4.87,632,1363104000"; 
-   d="scan'208";a="7212742"
-Message-ID: <5189C88B.4030409@cn.fujitsu.com>
-Date: Wed, 08 May 2013 11:37:47 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	id S1751109Ab3EHEA1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 00:00:27 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:51577 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab3EHEAX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 00:00:23 -0400
+Date: Wed, 8 May 2013 09:54:26 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-sh@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH/RFC 0/6] DMA: shdma: add Device Tree support
+Message-ID: <20130508005426.GA23419@verge.net.au>
+References: <1365632389-2249-1-git-send-email-g.liakhovetski@gmx.de>
+ <Pine.LNX.4.64.1305020936400.17181@axis700.grange>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: mm: Remove the alwalys zero if test
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/08 11:38:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/08 11:39:41,
-	Serialize complete at 2013/05/08 11:39:41
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1305020936400.17181@axis700.grange>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This if test seems useless now, so remove it. 
+On Thu, May 02, 2013 at 09:47:52AM +0200, Guennadi Liakhovetski wrote:
+> Hi Chris, Simon, Vinod (in alphabetical order :-) )
+> 
+> On Thu, 11 Apr 2013, Guennadi Liakhovetski wrote:
+> 
+> > This patch series adds Device Tree support to the shdma dmaengine driver 
+> > and illustraits its use with the kzm9g-reference board's MMCIF interface.
+> 
+> Formally patches in this series belong to your 3 trees: 1-3 and 7 
+> (documentation, sent later separately) to DMA, 4 and 6 to ARM/shmobile, 5 
+> to MMC. However, they can actually be safely applied in any order, as long 
+> as per-tree patches are kept together. Even if the DMA portion is applied 
+> last, the MMC driver will find DMA DT bindings in the DT, will request 
+> channels, but no DMA channels will be found, then the driver will fall 
+> back to PIO.
+> 
+> So, it's up to you to decide, whether to pull these patches separately via 
+> respective trees, or have some of them acked and push all of them via one 
+> tree.
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- arch/x86/mm/init_64.c |    3 --- 
- 1 files changed, 0 insertions(+), 3 deletions(-)
+Hi Guennadi, Hi all,
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index bb00c46..d1238fe 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -431,9 +431,6 @@ phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
-                        continue;
-                }   
- 
--               if (0)
--                       printk("   pte=%p addr=%lx pte=%016lx\n",
--                              pte, addr, pfn_pte(addr >> PAGE_SHIFT, PAGE_KERNEL).pte);
-                pages++;
-                set_pte(pte, pfn_pte(addr >> PAGE_SHIFT, prot));
-                last_map_addr = (addr & PAGE_MASK) + PAGE_SIZE;
--- 
-1.7.1
+I apologise for not replying earlier.
 
+I am happy to take these changes through my renesas tree and
+request they be pulled into the arm-soc tree provided that there
+are acks from Vinod and Chris on the relevant patches.
+
+I am also happy for either Chris or Vinod to take the patches.
+
+To that end, for the two smhobile patches below:
+
+Acked-by: Simon Horman <horms+renesas@verge.net.au>
+
+> Thanks
+> Guennadi
+> 
+> > Cc: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+> > 
+> > Guennadi Liakhovetski (6):
+> >   DMA: shdma: (cosmetic) don't re-calculate a pointer
+> >   DMA: shdma: shdma_chan_filter() has to be in shdma-base.h
+> >   DMA: shdma: add DT support
+> >   ARM: shmobile: sh73a0: add support for the DMA0 controller in DT
+> >   mmc: sh_mmcif: add support for Device Tree DMA bindings
+> >   ARM: shmobile: kzm9g-reference: add DMA channels to the MMCIF DT
+> > 
+> >  arch/arm/boot/dts/sh73a0-kzm9g-reference.dts |    3 ++
+> >  arch/arm/boot/dts/sh73a0.dtsi                |   36 ++++++++++++++++++
+> >  arch/arm/mach-shmobile/setup-sh73a0.c        |    4 ++
+> >  drivers/dma/sh/shdma-base.c                  |   51 +++++++++++++++++++++++---
+> >  drivers/dma/sh/shdma.c                       |   46 ++++++++++++++++++++----
+> >  drivers/mmc/host/sh_mmcif.c                  |   29 +++++++++------
+> >  include/linux/sh_dma.h                       |    2 -
+> >  include/linux/shdma-base.h                   |    6 +++
+> >  8 files changed, 151 insertions(+), 26 deletions(-)
+> > 
+> > -- 
+> > 1.7.2.5
+> > 
+> > Thanks
+> > Guennadi
+> > ---
+> > Guennadi Liakhovetski, Ph.D.
+> > Freelance Open-Source Software Developer
+> > http://www.open-technology.de/
+> > 
+> 
+> ---
+> Guennadi Liakhovetski, Ph.D.
+> Freelance Open-Source Software Developer
+> http://www.open-technology.de/
+> 
