@@ -1,116 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab3EHXXM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 19:23:12 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:26528 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752986Ab3EHXXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753701Ab3EHXXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 19:23:11 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:33455 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752823Ab3EHXXJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 May 2013 19:23:09 -0400
-X-IronPort-AV: E=Sophos;i="4.87,636,1363158000"; 
-   d="asc'?scan'208";a="50975681"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Linux linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT Pull] Please pull more NFS client bug fixes
-Thread-Topic: [GIT Pull] Please pull more NFS client bug fixes
-Thread-Index: AQHOTEL/pVlJc1gxLUGZtz2DTYSojw==
-Date: Wed, 8 May 2013 23:23:07 +0000
-Message-ID: <1368055385.3282.25.camel@leira.trondhjem.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-sYvO21jkWTjQruE2rVGt"
+Date: Wed, 8 May 2013 16:23:01 -0700
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Joe Thornber <thornber@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: dm-cache not writing out cache metadata at reboot?
+Message-ID: <20130508232301.GB8371@blackbox.djwong.org>
+References: <20130508214845.GA7729@blackbox.djwong.org>
+ <20130508220526.GA24132@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130508220526.GA24132@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-sYvO21jkWTjQruE2rVGt
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 08, 2013 at 06:05:26PM -0400, Mike Snitzer wrote:
+> On Wed, May 08 2013 at  5:48pm -0400,
+> Darrick J. Wong <darrick.wong@oracle.com> wrote:
+> 
+> > Hi,
+> > 
+> > So I've been watching the hit/miss counters in dmcache and I've noticed a
+> > couple of things that look like errors to me:
+> > 
+> > First, I noticed that if I reboot the system, neither cache_postsuspend nor
+> > cache_dtr get called.  This might simply be expected behavior, but it means
+> > that the in-memory superblock structure doesn't get written out to disk upon
+> > reboot.  Just to be sure, I put a printk into __commit_transaction.  It prints
+> > out for 'dmsetup info' and 'dmsetup remove' but nothing at reboot.
+> 
+> We don't have reboot notifiers that auto-magically tear down an
+> artbitrary DM stack.  Typically the device shutdown includes unmounting
+> filesystems, stopping LVM (which tears down DM devices, etc).
+> 
+> So given that we don't have any userspace LVM2 support for dm-cache yet
+> I'm not surprised by this.  In fact it is expected.
 
-The following changes since commit 721ccfb79b6f74f4052de70236d24047e73682d4=
-:
+Hmm, I wasn't aware that the lvm2 package had any teardown scripts.  It doesn't
+seem to have any in RHEL5.8 or Ubuntu...
 
-  NFSv4: Warn once about servers that incorrectly apply open mode to setatt=
-r (2013-04-29 11:11:58 -0400)
+> > Second, cache_status calls dm_cache_commit, which writes out a superblock to
+> > the metadata device.  However, there's no call to save_stats to copy the
+> > current values of the counters out to the disk's copy prior to calling
+> > dm_cache_commit.  Therefore, we seem to be writing out stale copies of
+> > superblock fields.
+> > 
+> > The second one seems fixable with the attached patch
+> 
+> I'll defer to Joe on this but I think sync_metadata() is pretty heavy to
+> be doing every 'dmsetup info'.  BTW, with just dm_cache_commit() the
+> superblock fields aren't stale; only the on-disk hints are.
 
-are available in the git repository at:
+How often does dmsetup info run?  I admit that it becomes slower with the
+patch, but I didn't think it was really in anyone's hot path.  But given that
+there's a comment just prior that says:
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.10-=
-2
+/* Commit to ensure statistics aren't out-of-date */
 
-for you to fetch changes up to c23266d532b4de796a346f57a66587c5db17d27e:
+it feels like we ought at least to be calling save_stats() so that we update
+the on-disk statistics.  Though, given that the metadata size should be about
+10MB for a 100GB cache device, I don't mind flushing out 10MB of metadata to
+get the device info.
 
-  NFS4.1 Fix data server connection race (2013-05-08 17:19:32 -0400)
+Really the problem is that with both of these complaints active, the superblock
+counters and tables /never/ seem to get updated, even across multiple reboots.
+(I'm still digging for why I see such weird unreproduceable benchmark numbers.)
 
-----------------------------------------------------------------
-More NFS client bugfixes for 3.10
-
-- Ensure that we match the 'sec=3D' mount flavour against the server list
-- Fix the NFSv4 byte range locking in the presence of delegations
-- Ensure that we conform to the NFSv4.1 spec w.r.t. freeing lock stateids
-- Fix a pNFS data server connection race
-
-----------------------------------------------------------------
-Andy Adamson (1):
-      NFS4.1 Fix data server connection race
-
-Trond Myklebust (4):
-      NFSv4.x: Fix handling of partially delegated locks
-      SUNRPC: Don't spam syslog with "Pseudoflavor not found" messages
-      NFSv4: Convert nfs41_free_stateid to use an asynchronous RPC call
-      NFSv4.1: Ensure that we free the lock stateid on the server
-
-Weston Andros Adamson (1):
-      NFSv3: match sec=3D flavor against server list
-
- fs/nfs/nfs4_fs.h               |   3 +-
- fs/nfs/nfs4filelayout.h        |   2 +
- fs/nfs/nfs4filelayoutdev.c     |  26 ++++++++-
- fs/nfs/nfs4proc.c              | 119 +++++++++++++++++++++++++++++++------=
-----
- fs/nfs/nfs4state.c             |  11 ++--
- fs/nfs/nfs4xdr.c               |   2 +-
- fs/nfs/super.c                 |  48 ++++++++++++++---
- include/linux/nfs_xdr.h        |   2 +-
- net/sunrpc/auth_gss/auth_gss.c |   3 +-
- net/sunrpc/clnt.c              |   2 +-
- 10 files changed, 172 insertions(+), 46 deletions(-)
-
---=20
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
---=-sYvO21jkWTjQruE2rVGt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAABAgAGBQJRit5ZAAoJEGcL54qWCgDyXccP/1/tl4G611j6yR7tGypCIkmR
-viZUQEe9kLVJiNRu/GbO/jlqHxa14SWpx0R07A48EXE41VmPsG4Pu27pRGf9o8vx
-3k7kxo9YihA1Kyhsrdyuifdhu5xu6NGsLXseUC1o72t5uQyrvVac3rEVsTqTlXvq
-E1/AImpQAxpbT/j2nThJCN5MfTKvUe+U0QXmHdOA7iBna+avFzrRs4ynJAEycNhl
-S+g4JfYQnH/YtffqsSNAQGC8OoeG4Wr1QBOBcQ6h9Sv6NalF5o81UfpuVqv67fCR
-4LeYooCEji3PlAyK42JZKBXZB/5VSh/iuf2lEIPxvbPfzWHtIxcIBgCRHh3ZNGh3
-82LdSFJDWGDg2kidph/i5VlX+BSb+tWSjYEk9iL8B7N7jR9BgYFZ6UW1BZQr6eJF
-nLvnTHsCR31934DhjFME69nKT0590o97IKD5iLPGjDR+vcu7cAex2DreIOPP+MWx
-gdpJaFnuvMWX83ybfLdQz5UiN0PvA2DkCQ+NaNGtvDgCfXtnXrjGh6sGYcNUdvQc
-DN9d0rspTCJdyVs+/A7RxYwYp+8CEumctizeT21EAt0fTNZq6ONYmznAOzbpyfaa
-lMrP8b5geV9Ilv8OaoRxMR0z5rAyp7Dg/JtXms7+ydXLLaLMrbaHOD29eqmQG5PR
-ovG2seXMAmW5sX+CI6TN
-=H4sS
------END PGP SIGNATURE-----
-
---=-sYvO21jkWTjQruE2rVGt--
+--D
