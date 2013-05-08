@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab3EHUMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 16:12:14 -0400
-Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:39536
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753269Ab3EHUMN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 16:12:13 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dIc89bh1432I4015I1447Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz177df4h17326ah8275bh8275dhz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh906i1155h)
-Date: Wed, 8 May 2013 13:12:05 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [REGRESSION] SLAB allocator (on Zynq)
-References: <9d9b2266-e09e-4366-80ef-3df5db775f25@TX2EHSMHS033.ehs.local>
- <20130508193906.GC32546@atomide.com>
+	id S1755986Ab3EHUOP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 16:14:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37346 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab3EHUOO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 16:14:14 -0400
+Date: Wed, 8 May 2013 13:14:12 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Wang YanQing <udknight@gmail.com>, airlied@redhat.com,
+        linux-kernel@vger.kernel.org, jslaby@suse.cz, alan@linux.intel.com
+Subject: Re: [PATCH 3/9] vt: delete unneeded functions
+ register_con_driver|take_over_console
+Message-ID: <20130508201412.GA17401@kroah.com>
+References: <20130508181359.GD12344@udknight>
+ <518AAE01.2010005@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130508193906.GC32546@atomide.com>
+In-Reply-To: <518AAE01.2010005@hurleysoftware.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <35a77b0e-59cc-4fee-81cf-20c059462d12@DB8EHSMHS016.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 12:39:07PM -0700, Tony Lindgren wrote:
-> Hi,
+On Wed, May 08, 2013 at 03:56:49PM -0400, Peter Hurley wrote:
+> On 05/08/2013 02:13 PM, Wang YanQing wrote:
+> >Now there is no place use register_con_driver|take_over_console,
+> >and we can achieve their function with do_register_con_driver|
+> >do_take_over_console easily, so just delete them to reduce code duplication.
+> >
+> >Signed-off-by: Wang YanQing <udknight@gmail.com>
+> >---
+> >  drivers/tty/vt/vt.c     | 45 ---------------------------------------------
+> >  include/linux/console.h |  2 --
+> >  2 files changed, 47 deletions(-)
+> >
+> >diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+> >index fbd447b..852d470 100644
+> >--- a/drivers/tty/vt/vt.c
+> >+++ b/drivers/tty/vt/vt.c
+> >@@ -3576,26 +3576,6 @@ err:
+> >  	return retval;
+> >  }
+> >
+> >-/**
+> >- * register_con_driver - register console driver to console layer
+> >- * @csw: console driver
+> >- * @first: the first console to take over, minimum value is 0
+> >- * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
+> >- *
+> >- * DESCRIPTION: This function registers a console driver which can later
+> >- * bind to a range of consoles specified by @first and @last. It will
+> >- * also initialize the console driver by calling con_startup().
+> >- */
+> >-int register_con_driver(const struct consw *csw, int first, int last)
+> >-{
+> >-	int retval;
+> >-
+> >-	console_lock();
+> >-	retval = do_register_con_driver(csw, first, last);
+> >-	console_unlock();
+> >-	return retval;
+> >-}
+> >-EXPORT_SYMBOL(register_con_driver);
 > 
-> * Sören Brinkmann <soren.brinkmann@xilinx.com> [130508 12:26]:
-> > Hi,
-> > 
-> > I compiled the latest kernel for Zynq and ran into issues when the SLAB
-> > allocator is selected. Booting crashes early with a NULL pointer
-> > dereference (boot log attached).
-> > Switching to the SLUB allocator resolves the issue (boot log attached).
-> 
-> There's a fix for this now in lkml thread
-> "[GIT PULL] SLAB changes for v3.10":
-> 
-> http://lkml.org/lkml/2013/5/8/374#
-Thanks for the quick response and apologies for not having it found
-myself earlier.
-With that patch it works again.
+> Maybe register_con_driver() should print a deprecated warning
+> for a release or two before we remove it.
 
-	Thanks,
-	Sören
+If there are no in-kernel users, why do we need to keep it around?
 
+thanks,
 
+greg k-h
