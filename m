@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab3EHM0M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 08:26:12 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56273 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403Ab3EHM0L (ORCPT
+	id S1755257Ab3EHM33 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 08:29:29 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:37184 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354Ab3EHM32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 08:26:11 -0400
+	Wed, 8 May 2013 08:29:28 -0400
+Date: Wed, 8 May 2013 13:28:54 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Message-ID: <20130508122854.GI7478@sirena.org.uk>
+References: <1367997261-32048-1-git-send-email-fabio.baltieri@linaro.org>
+ <1367997261-32048-5-git-send-email-fabio.baltieri@linaro.org>
+ <20130508110149.GF7478@sirena.org.uk>
+ <20130508111110.GD3459@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <518A3DDC.1090905@parallels.com>
-References: <alpine.LFD.2.03.1305070936320.2383@kernel.org>
-	<20130508003022.GS28721@atomide.com>
-	<20130508042422.GU28721@atomide.com>
-	<20130508051602.GV28721@atomide.com>
-	<CAOJsxLEB2gSWefNHNeKfxv9Hp=H9PG0bGgTcUPE4abz3fv_fxw@mail.gmail.com>
-	<518A3DDC.1090905@parallels.com>
-Date: Wed, 8 May 2013 15:26:09 +0300
-X-Google-Sender-Auth: Shfu9VeP-YjA_Vg_zdLajhcDGWI
-Message-ID: <CAOJsxLEjqNA1wbZta568McFnEb_nbnGF1_9kEhOJkFTX-CobaA@mail.gmail.com>
-Subject: Re: [GIT PULL] SLAB changes for v3.10
-From: Pekka Enberg <penberg@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KCBbHYs95wY/7dOt"
+Content-Disposition: inline
+In-Reply-To: <20130508111110.GD3459@gmail.com>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 212.183.132.60
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 4/6] ASoC: ux500: Update tx tdm slots configuration
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 8, 2013 at 2:58 PM, Glauber Costa <glommer@parallels.com> wrote:
-> My first guess is that it hit a NULL cache. Being a NULL pointer
-> dereference, the thing among all that has the biggest chances of being
-> NULL and accessed unconditionally is the cache pointer itself.
->
-> Due to the size being too big. But if that were the case, he would have
-> hit the WARN_ON recently introduced:
->
->                 if (WARN_ON_ONCE(size > KMALLOC_MAX_SIZE))
->                         return NULL;
->
->
-> Is this WARN hit ?
 
-I doubt it:
+--KCBbHYs95wY/7dOt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-[    0.000000] r7 : 00000000  r6 : 600001d3  r5 : 00000000  r4 : 00008000
-[    0.000000] r3 : 00000050  r2 : c06ec000  r1 : c06f77c8  r0 : c00eda9c
+On Wed, May 08, 2013 at 12:11:10PM +0100, Lee Jones wrote:
+> On Wed, 08 May 2013, Mark Brown wrote:
 
-[    0.000000] [<c00edab4>] (kmem_cache_alloc_trace+0x50/0x178) from
-[<c0086958>] (alloc_desc+0x24/0xb4)
+> > On Wed, May 08, 2013 at 09:14:19AM +0200, Fabio Baltieri wrote:
+> > > Update ab8500-codec and mop500_ab8500 tx slot configuration to reflect
+> > > the actual one used by STE.  Also update a wrong comment in the process.
 
-It's the kzalloc_node() in kernel/irq/irqdesc.c::alloc_desc() and
-AFAICT based on r4 it's a 32 KB allocation. It's more likely that
-KMALLOC_SHIFT_HIGH is less than 25 and because kmalloc_index() doesn't
-respect it, we return a pointer to an uninitialized kmalloc cache.
+> > This seems wrong, the individual chip drivers should just be doing
+> > whatever they're being told by the machine driver.  Sounds like there's
+> > two fixes needed here - one is to change the TDM API so that the chip
+> > drivers are just implementing configuration supplied by the machine
+> > driver and the other is to change the configuration being done to
+> > whatever is desired.
 
-                          Pekka
+> Do you mean that the original implementation is incorrect, or that
+> this patch is doing the wrong thing? I think this patch is a bugfix
+> rather than a opportunity to refactor the driver.
+
+I mean that the original implementation is incorrect and this is just
+continuing the problem - the reason that we don't want to have this
+stuff hard coded in the device drivers is that we should be doing this
+sort of configuration in the machine drivers so only the relevant
+systems are affected by configuration updates.  Putting this in the
+drivers tends to lead to a series of configuration changes like this.
+
+--KCBbHYs95wY/7dOt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRikUDAAoJELSic+t+oim95FoP/jV2Uye2IXWcPyVxswowul26
+66agqrFgjMpIewaIZiwwMQB4zNSs/g17WUrIBYoUSF25lPePoisJ2FWYoqyssA8Q
+T4g5agv8VcBAb3vHXF81TiuPr5ixn0t2hf4Heeo9xpZjAUItrE+6VNX4itzZcNkQ
+CoDszaM1u1MXH88Wqx6E5rqdYfOH0dHwb1tryIPrhvqPNLJCFSEGjRGoprGi4u3+
+Vyt4p0mxfBU8iXtWoDbkO5kKuOY0yH5Z7QjI0bq9DTl0pFZ6bbU9om6uXncBROZw
+mBlybUyd9sJUd6mrofoQa99YkpZS1rxUp89f8UUhVhq+k1fmr2pJCAMYpZlrpQ1Y
+tbaOQcgNHypo6tv1zIbmRSknsMDQ+ckU/9LCXC5yxndMVvjDrV5aoGt2kRp5AkCc
+22N/WlthZ2Ls2EbZJ39i1p+FeufcAHGXzjOYtSW6FoHNnKlCBx8XaeeqA3Lvep9h
+d8VfuToltl9QeLo+W3fC90+0P8wYjF7AJcxQXQa6UcC+yZWzDQPOeLgi+I9+wcGM
+qgz7yvqC2VI0TF+9w6w052gScqbQaDPnTO8zhwIiGaoIF41ZMc+t9vx0UMbrWFTQ
+yJckS5roV6bqiXZyaIOxwVe2u3DMKco3CTMHQVwdYFEGh0L7WftFW+2XTRwgfIlj
+rr/5DceMMf8YUR8z/S4g
+=F7As
+-----END PGP SIGNATURE-----
+
+--KCBbHYs95wY/7dOt--
