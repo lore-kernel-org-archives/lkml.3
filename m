@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab3EHPDD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:03:03 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:42621 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756196Ab3EHPDB (ORCPT
+	id S1756898Ab3EHPDI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:03:08 -0400
+Received: from drsnuggles.stderr.nl ([94.142.244.14]:56284 "EHLO
+	drsnuggles.stderr.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756196Ab3EHPDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:03:01 -0400
-Date: Wed, 8 May 2013 16:02:55 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH 19/63] dmaengine: ste_dma40: Separate Logical Global
- Interrupt Mask (GIM) unmasking
-Message-ID: <20130508150255.GJ3459@gmail.com>
-References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
- <1367591569-32197-20-git-send-email-lee.jones@linaro.org>
- <CACRpkdZexk6a7yaWEzzOkihcHNGY_UQN3hYiz45LK1cuy0ob=g@mail.gmail.com>
+	Wed, 8 May 2013 11:03:04 -0400
+Date: Wed, 8 May 2013 17:02:54 +0200
+From: Matthijs Kooijman <matthijs@stdin.nl>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Michal Marek <mmarek@suse.cz>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kbuild@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] kbuild: Don't assume dts files live in arch/*/boot/dts
+Message-ID: <20130508150254.GW25742@login.drsnuggles.stderr.nl>
+Mail-Followup-To: Stephen Warren <swarren@wwwdotorg.org>,
+	Michal Marek <mmarek@suse.cz>,
+	Grant Likely <grant.likely@linaro.org>,
+	Rob Herring <rob.herring@calxeda.com>, linux-kbuild@vger.kernel.org,
+	devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+	linux-mips@linux-mips.org, Stephen Warren <swarren@nvidia.com>
+References: <1368010744-11281-1-git-send-email-matthijs@stdin.nl>
+ <518A6649.1020501@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdZexk6a7yaWEzzOkihcHNGY_UQN3hYiz45LK1cuy0ob=g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <518A6649.1020501@wwwdotorg.org>
+X-PGP-Fingerprint: 7F6A 9F44 2820 18E2 18DE  24AA CF49 D0E6 8A2F AFBC
+X-PGP-Key: http://www.stderr.nl/static/files/gpg_pubkey.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-Score: -2.6 (--)
+X-Spam-Report: Spamchecked on "mail.drsnuggles.stderr.nl"
+	pts  rule name              description
+	---- ---------------------- -------------------------------------------
+	-2.6 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 03 May 2013, Linus Walleij wrote:
+Hey Stephen,
 
-> On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > During the initial setup of a logical channel, it is necessary to unmask
-> > the GIM in order to receive generated terminal count and error interrupts.
-> > We're separating out this required code so it will be possible to move
-> > the remaining code in d40_phy_cfg(), which is mostly runtime configuration
-> > into the runtime_config() routine.
-> >
-> > Cc: Vinod Koul <vinod.koul@intel.com>
-> > Cc: Dan Williams <djbw@fb.com>
-> > Cc: Per Forlin <per.forlin@stericsson.com>
-> > Cc: Rabin Vincent <rabin@rab.in>
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> These review comments are only partially accounted for:
-> http://marc.info/?l=linux-kernel&m=136688761708399&w=2
-> 
-> Please supply a short changelog in the next submission
-> so I know what was changed and why some things were not
-> changed and if you split out other changes to other patches
-> etc etc.
+On Wed, May 08, 2013 at 08:50:49AM -0600, Stephen Warren wrote:
+> On 05/08/2013 04:59 AM, Matthijs Kooijman wrote:
+> > ...
+> > The commit referenced above tried to fix this by passing arch/*/boot/dts
+> > as an include path to dtc. However, for mips, the .dts files are not in
+> > this directory, so dts compilation on mips breaks for some targets.
+> > ...
+>
+> (although I wonder if the .dts files shouldn't be in a standard location?)
 
-All of the comments are accounted for. The is_log argument is actually
-removed in patch 20, as it's still used to only run the code within
-the clause if the channel is physical.
+On mips, I think the dts files are stored together with the soc code in
+per-manufacturer directories, which probably works for them.
 
-... and yes, the dmatest works perfectly on patch 19.
+Regardless of that discussion, I think my patch makes the dts handling
+code more generic, so it's probably a good idea to include it anyway.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
