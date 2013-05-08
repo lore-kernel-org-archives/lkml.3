@@ -1,55 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360Ab3EHLIm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 07:08:42 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:51586 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab3EHLIl (ORCPT
+	id S1754923Ab3EHLJB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 07:09:01 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:58099 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754732Ab3EHLJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 07:08:41 -0400
-Date: Wed, 8 May 2013 13:08:36 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-kernel@vger.kernel.org
-cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: 3.9.1: x86_64 configuration failing to build
-In-Reply-To: <Pine.LNX.4.64.1305081147230.9647@axis700.grange>
-Message-ID: <Pine.LNX.4.64.1305081307430.11398@axis700.grange>
-References: <Pine.LNX.4.64.1305081147230.9647@axis700.grange>
+	Wed, 8 May 2013 07:09:00 -0400
+Message-ID: <518A324A.8000000@linaro.org>
+Date: Wed, 08 May 2013 13:08:58 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:rPuWMOS8mcPmagKn/KCm6IKLNA7ZTpRH+fQ0DCksSU4
- SSelask+jXMHPyhQ0FZY8u60ANKc+wvDQ0gMqTmfhDA6w92C87
- oQm624Ty99bHmY0Iux1OjFJMwZKx1SOE9xH+F/noN5CPskK9ty
- rrOKXeZBlmG5+IhUNML8R7jD/pBwFRUKGz+ayN+uradM6qZA+T
- 2nmhW/HoOjV77trgPh6tvhNcOa+BJSM6j59m7qORfbP6p667j9
- vD0++v4WhzxZ2apwjMn5jTuNHQYEc6z9foxHeiDHHhtizXf2j8
- NjljXJafY16YC1Fyja5tMnqa7NUAMfaIE0Oby5iUePKHQt5lpJ
- 8iEzo12Al7uH9jOzgpiJLGxyBvkBNXW7b/fDwfOJHIDH/m/NFm
- 0Qvp1UbX3Kuhg==
+To: Lianwei Wang <lianwei.wang@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Subject: Re: [linux-pm] [PATCH] cpuidle: don't wakeup processor when set a
+ longer latency
+References: <CAJFUiJiMMAgLGF3tiG1V59dx+KOpTBCEL3ctHUosjMDkBagbJg@mail.gmail.com>
+In-Reply-To: <CAJFUiJiMMAgLGF3tiG1V59dx+KOpTBCEL3ctHUosjMDkBagbJg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 May 2013, Guennadi Liakhovetski wrote:
+On 05/08/2013 04:44 AM, Lianwei Wang wrote:
+> When a PM-Qos is updated, the cpuidle driver will wakeup all the CPUs
+> no matter what a latency is set. But actually it only need to wakeup
+> the CPUs when a shorter latency is set. In this way we can reduce the
+> cpu wakeup count and save battery.
 
-> Hi
+I am curious, how many times could the pm_qos be changed in a system
+live cycle to measure an improvement with this patch ?
+
+Do you have a scenario where you measured a noticeable power saving ?
+
+> So we can pass the prev_value to the notifier callback and check the
+> latency curr_value and prev_value in the cpuidle latency notifier
+> callback. It modify a common interface(dummy --> prev_value) but shall
+> be safe since no one use the dummy parameter currently.
 > 
-> Based on an old (2.6.35) configuration for my PC I updated to 3.9.1 and 
-> went through make config, automatically called by make bzImage, the 
-> resulted configuration couldn't be built:
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index e1f6860..1e1758c 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -498,7 +498,11 @@ static void smp_callback(void *v)
+>  static int cpuidle_latency_notify(struct notifier_block *b,
+>                 unsigned long l, void *v)
+>  {
+> -       smp_call_function(smp_callback, NULL, 1);
+> +       unsigned long prev_value = (unsigned long) v;
+> +
+> +       /* Dont't waktup processor when set a longer latency */
 
-A "make distclean" fixed it.
+                    ^^^^^^
+                    wakeup
 
-Thanks
-Guennadi
+Instead of passing prev and curr, using the dummy variable, why don't
+you pass the result of (curr - prev) ?
 
-> scripts/kconfig/conf --silentoldconfig Kconfig
-> include/config/auto.conf:8:warning: symbol value 'm' invalid for INTEL_IDLE
-> include/config/auto.conf:420:warning: symbol value 'm' invalid for RTC_CLASS
-> include/config/auto.conf:514:warning: symbol value 'm' invalid for RTC_LIB
-> include/config/auto.conf:883:warning: symbol value 'm' invalid for ACPI_CONTAINER
+A negative value means, the latency is smaller and positive is bigger.
+
+Also, may be the optimization could be more improved: if the latency is
+bigger than the next wakeup event, it is not necessary to wakeup the cpus.
+
+> +       if (l < prev_value)
+> +               smp_call_function(smp_callback, NULL, 1);
+>         return NOTIFY_OK;
+>  }
 > 
-> *** Error during update of the configuration.
+> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+> index 9322ff7..533b8bc 100644
+> --- a/kernel/power/qos.c
+> +++ b/kernel/power/qos.c
+> @@ -205,7 +205,7 @@ int pm_qos_update_target(struct pm_qos_constraints
+> *c, struct plist_node *node,
+>         if (prev_value != curr_value) {
+>                 blocking_notifier_call_chain(c->notifiers,
+>                                              (unsigned long)curr_value,
+> -                                            NULL);
+> +                                            (void *)prev_value);
+>                 return 1;
+>         } else {
+>                 return 0;
 > 
-> Updating the configuration per "make menuconfig" doesn't help either.
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
