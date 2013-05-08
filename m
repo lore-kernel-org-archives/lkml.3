@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab3EHTjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 15:39:13 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:46554 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219Ab3EHTjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 15:39:12 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX186y1DL2wfTmYr0K/Lwu37L
-Date: Wed, 8 May 2013 12:39:07 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org
-Subject: Re: [REGRESSION] SLAB allocator (on Zynq)
-Message-ID: <20130508193906.GC32546@atomide.com>
-References: <9d9b2266-e09e-4366-80ef-3df5db775f25@TX2EHSMHS033.ehs.local>
+	id S1755326Ab3EHTpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 15:45:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28916 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751453Ab3EHTpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 15:45:51 -0400
+Date: Wed, 8 May 2013 15:45:47 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, pwouters@redhat.com
+Subject: [PATCH] if_cablemodem.h: Add parenthesis around ioctl macros
+Message-ID: <20130508194547.GE16269@hansolo.jdub.homelinux.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <9d9b2266-e09e-4366-80ef-3df5db775f25@TX2EHSMHS033.ehs.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Protect the SIOCGCM* ioctl macros with parenthesis.
 
-* Sören Brinkmann <soren.brinkmann@xilinx.com> [130508 12:26]:
-> Hi,
-> 
-> I compiled the latest kernel for Zynq and ran into issues when the SLAB
-> allocator is selected. Booting crashes early with a NULL pointer
-> dereference (boot log attached).
-> Switching to the SLUB allocator resolves the issue (boot log attached).
+Reported-by: Paul Wouters <pwouters@redhat.com>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+---
+ include/uapi/linux/if_cablemodem.h | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-There's a fix for this now in lkml thread
-"[GIT PULL] SLAB changes for v3.10":
+diff --git a/include/uapi/linux/if_cablemodem.h b/include/uapi/linux/if_cablemodem.h
+index 9ca1007..ee6b3c4 100644
+--- a/include/uapi/linux/if_cablemodem.h
++++ b/include/uapi/linux/if_cablemodem.h
+@@ -12,11 +12,11 @@
+  */
+ 
+ /* some useful defines for sb1000.c e cmconfig.c - fv */
+-#define SIOCGCMSTATS		SIOCDEVPRIVATE+0	/* get cable modem stats */
+-#define SIOCGCMFIRMWARE		SIOCDEVPRIVATE+1	/* get cm firmware version */
+-#define SIOCGCMFREQUENCY	SIOCDEVPRIVATE+2	/* get cable modem frequency */
+-#define SIOCSCMFREQUENCY	SIOCDEVPRIVATE+3	/* set cable modem frequency */
+-#define SIOCGCMPIDS			SIOCDEVPRIVATE+4	/* get cable modem PIDs */
+-#define SIOCSCMPIDS			SIOCDEVPRIVATE+5	/* set cable modem PIDs */
++#define SIOCGCMSTATS		(SIOCDEVPRIVATE+0)	/* get cable modem stats */
++#define SIOCGCMFIRMWARE		(SIOCDEVPRIVATE+1)	/* get cm firmware version */
++#define SIOCGCMFREQUENCY	(SIOCDEVPRIVATE+2)	/* get cable modem frequency */
++#define SIOCSCMFREQUENCY	(SIOCDEVPRIVATE+3)	/* set cable modem frequency */
++#define SIOCGCMPIDS			(SIOCDEVPRIVATE+4)	/* get cable modem PIDs */
++#define SIOCSCMPIDS			(SIOCDEVPRIVATE+5)	/* set cable modem PIDs */
+ 
+ #endif
+-- 
+1.8.1.4
 
-http://lkml.org/lkml/2013/5/8/374#
 
-Regards,
-
-Tony
