@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab3EHSOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:14:32 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:58244 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758011Ab3EHSOa (ORCPT
+	id S1758222Ab3EHSOr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:14:47 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:45993 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757655Ab3EHSOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:14:30 -0400
-Date: Thu, 9 May 2013 02:14:21 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: jslaby@suse.cz, alan@linux.intel.com, airlied@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/9] vt: convert last bind_con_driver call to
- do_bind_con_driver
-Message-ID: <20130508181421.GG12344@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	gregkh@linuxfoundation.org, jslaby@suse.cz, alan@linux.intel.com,
-	airlied@redhat.com, linux-kernel@vger.kernel.org
+	Wed, 8 May 2013 14:14:45 -0400
+Message-ID: <518A9614.2010805@tilera.com>
+Date: Wed, 8 May 2013 14:14:44 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Paul McKenney <paulmck@linux.vnet.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL, RFC] Full dynticks, CONFIG_NO_HZ_FULL feature
+References: <20130505110351.GA4768@gmail.com>	<CA+55aFzPHkCH7CVZ4tkaF91+=GLZAxxncTq0J9d6AKpSPqovZw@mail.gmail.com>	<20130505212511.GC3659@linux.vnet.ibm.com>	<20130506092537.GA8879@gmail.com>	<20130506153517.GA3501@linux.vnet.ibm.com> <CA+55aFxYRDZvisB7iZ5a-bcp5_2pkvcC9Opk6=yJtjfK57EWTw@mail.gmail.com>
+In-Reply-To: <CA+55aFxYRDZvisB7iZ5a-bcp5_2pkvcC9Opk6=yJtjfK57EWTw@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is only one place use bind_con_driver now, this patch
-convert it to do_bind_con_driver too, then we can delete
-bind_con_driver whos function can be replaced by do_bind_con_driver
-easily to reduce code size and duplication.
+On 5/6/2013 3:32 PM, Linus Torvalds wrote:
+> On Mon, May 6, 2013 at 8:35 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+>>>
+>>> I think Linus might have referred to my 'future plans' entry:
+> 
+> Indeed. I feel that HPC is entirely irrelevant to anybody,
+> *especially* HPC benchmarks. In real life, even HPC doesn't tend to
+> have the nice behavior their much-touted benchmarks have.
+> 
+> So as long as the NOHZ is for HPC-style loads, then quite frankly, I
+> don't feel it is worth it. The _only_ thing that makes it worth it is
+> that "future plans" part where it would actually help real loads.
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/tty/vt/vt.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+The work is very relevant to a lot of the actual customer applications
+that Tilera chips are sold into: running very low latency userspace
+applications that handle packet processing (or, to a lesser extent,
+video frame processing).  For packet processing in particular, you really
+want to be able to guarantee that you can set up a core handling packets
+in userspace and get NO INTERRUPTS at all, ever.  If you do get an
+interrupt, you end up dropping a bunch of packets on the floor.
 
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 164cbef..7e0953c 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -3236,8 +3236,11 @@ static int vt_bind(struct con_driver *con)
- 		if (first == 0 && last == MAX_NR_CONSOLES -1)
- 			deflt = 1;
- 
--		if (first != -1)
--			bind_con_driver(csw, first, last, deflt);
-+		if (first != -1) {
-+			console_lock();
-+			do_bind_con_driver(csw, first, last, deflt);
-+			console_unlock();
-+		}
- 
- 		first = -1;
- 		last = -1;
+We are still using code I developed internally for this (for the curious,
+in my dataplane branch on kernel.org), but I expect in the relatively near
+future we will be trying to switch to the NOHZ stuff instead.  I'm
+really pleased to see it start getting merged up.
 -- 
-1.7.12.4.dirty
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
