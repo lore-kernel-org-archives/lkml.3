@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499Ab3EHSml (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:42:41 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:48984 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab3EHSmj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:42:39 -0400
-Date: Wed, 8 May 2013 14:42:06 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Borislav Petkov <bp@alien8.de>, prarit@redhat.com,
-        rafael.j.wysocki@intel.com, isimatu.yasuaki@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, fenghua.yu@intel.com,
-        xen-devel@lists.xensource.com
-Subject: Re: v3.9 - CPU hotplug and microcode earlier loading hits a mutex
- deadlock (x86_cpu_hotplug_driver_mutex)
-Message-ID: <20130508184206.GD11906@phenom.dumpdata.com>
-References: <20130506125937.GA14036@phenom.dumpdata.com>
- <20130507190024.GA4303@phenom.dumpdata.com>
- <20130508125414.GB30955@pd.tnic>
- <20130508140342.GA8152@phenom.dumpdata.com>
- <20130508142949.GC30955@pd.tnic>
- <20130508163249.GB369@phenom.dumpdata.com>
- <1368037185.30363.58.camel@misato.fc.hp.com>
+	id S1752088Ab3EHSny (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:43:54 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33467 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750830Ab3EHSnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 14:43:53 -0400
+Date: Wed, 8 May 2013 20:45:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: ipc/shm.c:494:18: warning: =?utf-8?Q?u?=
+ =?utf-8?B?bnVzZWQgdmFyaWFibGUg4oCYaHPigJk=?= [-Wunused-variable]
+Message-ID: <20130508184524.GF30955@pd.tnic>
+References: <20130508143411.GD30955@pd.tnic>
+ <1368029552-dzvitovl-mutt-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1368037185.30363.58.camel@misato.fc.hp.com>
+In-Reply-To: <1368029552-dzvitovl-mutt-n-horiguchi@ah.jp.nec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 12:19:45PM -0600, Toshi Kani wrote:
-> On Wed, 2013-05-08 at 12:32 -0400, Konrad Rzeszutek Wilk wrote:
-> > On Wed, May 08, 2013 at 04:29:49PM +0200, Borislav Petkov wrote:
-> > > On Wed, May 08, 2013 at 10:03:42AM -0400, Konrad Rzeszutek Wilk wrote:
-> > > 
-> > > [ … snip some funky BIOS code ]
-> > > 
-> > > > [here it shifts and continues on testing each CPU bit]
-> > > > 
-> > > > > Questions over questions...?
-> > > > 
-> > > > I probably went overboard with my answers :-)
-> > > 
-> > > Konrad, you're killing me! :-) You actually went and looked at the
-> > > BIOS disassembly voluntarily. You must be insane, I think you should
-> > > immediately go to the doctor now for a thorough checkup. :-)
-> > > 
-> > > I think I know who I can sling BIOS issues now to.
-> > 
-> > Great .. :-)
-> > > 
-> > > > > Looks like save_mc_for_early would need another, local mutex to fix that.
-> > > > 
-> > > > Let me try that. Thanks for the suggestion.
-> > > 
-> > > Ok, seriously now: yeah, this was just an idea, it should at least get
-> > > the nesting out of the way.
-> > > 
-> > > About the BIOS deal: you're probably staring at some BIOS out there
-> > > but is this the way that it is actually going to be implemented on
-> > > the physical hotplug BIOS? I mean, I've only heard rumors about IVB
-> > > supporting physical hotplug but do you even have access to such BIOS to
-> > > verify?
-> > 
-> > Unfortunatly not. I am getting an IvyTown box so hopefully that has this
-> > support. But I thought that Fenghua did since he mentioned in the patch.
-> > 
-> > Besides that I think this can also appear on VMWare if one is doing 
-> > CPU hotplug and on some HP machines - let me CC the relevant people
-> > extracted from drivers/acpi/processor_driver.c.
-> > (see  https://lkml.org/lkml/2013/5/7/588 for the thread)
+On Wed, May 08, 2013 at 12:12:32PM -0400, Naoya Horiguchi wrote:
+> Thank you for the report.
+> I believe we can fix it with this one.
+> ---
+> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Date: Wed, 8 May 2013 11:48:01 -0400
+> Subject: [PATCH] ipc/shm.c: don't use auto variable hs in newseg()
 > 
-> >From the stack trace, it looks like a bug in save_mc_for_early().  This
-> function may not call cpu_hotplug_driver_lock() during CPU online.  I
-> suppose it intends to protect from CPU offline when microcode is updated
-> outside of the boot/CPU online context.  If it indeed supports updating
-> the microcode without using reboot/cpu hotplug, the lock should be held
-> when such update request is made.
-
-
-Hey Toshi,
-
-The fix for this I have posted, but I am more curious whether you have
-seen on baremetal this issue? Meaning using CPU ACPI hotplug on v3.9?
-
+> This patch fixes "warning: unused variable 'hs'" when !CONFIG_HUGETLB_PAGE
+> introduced by commit af73e4d9506d "hugetlbfs: fix mmap failure in unaligned
+> size request".
 > 
-> Thanks,
-> -Toshi
+> Reported-by: Borislav Petkov <bp@alien8.de>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  ipc/shm.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
 > 
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index e316cb9..9ff741a 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -491,9 +491,8 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+>  
+>  	sprintf (name, "SYSV%08x", key);
+>  	if (shmflg & SHM_HUGETLB) {
+> -		struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
+> -						& SHM_HUGE_MASK);
+> -		size_t hugesize = ALIGN(size, huge_page_size(hs));
+> +		size_t hugesize = ALIGN(size, huge_page_size(hstate_sizelog(
+> +				(shmflg >> SHM_HUGE_SHIFT) & SHM_HUGE_MASK)));
+
+Yeah, it fixes the warning alright but makes the code more unreadable.
+Which makes me wonder which is worse - to have an innocuous warning or
+have unreadable code.
+
+You could also do the below. The line sticks out but it kills the
+warning. Readability is hmm, not optimal still though. :)
+
+--
+diff --git a/ipc/shm.c b/ipc/shm.c
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -491,9 +491,8 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ 
+ 	sprintf (name, "SYSV%08x", key);
+ 	if (shmflg & SHM_HUGETLB) {
+-		struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
+-						& SHM_HUGE_MASK);
+-		size_t hugesize = ALIGN(size, huge_page_size(hs));
++		unsigned long hsz = huge_page_size(hstate_sizelog((shmflg >> SHM_HUGE_SHIFT) & SHM_HUGE_MASK));
++		size_t hugesize = ALIGN(size, hsz);
+ 
+ 		/* hugetlb_file_setup applies strict accounting */
+ 		if (shmflg & SHM_NORESERVE)
+--
+
+Yeah, you decide.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
