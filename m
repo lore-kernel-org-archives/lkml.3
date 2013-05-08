@@ -1,182 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359Ab3EHOSk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 10:18:40 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:46907 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755272Ab3EHORV (ORCPT
+	id S1755555Ab3EHOUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 10:20:45 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:43158 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585Ab3EHOUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 10:17:21 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: linux@arm.linux.org.uk, arnd@arndb.de, olof@lixom.net
-Cc: Rob Landley <rob@landley.net>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        Stephen Gallimore <stephen.gallimore@st.com>
-Subject: [RFC 7/8] ARM:stih41x: Add B2000 board support
-Date: Wed,  8 May 2013 15:12:09 +0100
-Message-Id: <1368022329-2424-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
+	Wed, 8 May 2013 10:20:43 -0400
+X-IronPort-AV: E=Sophos;i="4.87,635,1363158000"; 
+   d="scan'208";a="45367773"
+From: Dolev Raviv <draviv@codeaurora.org>
+To: linux-scsi@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Dolev Raviv <draviv@codeaurora.org>,
+        Sujit Reddy Thumma <sthumma@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH V2] scsi: ufs: Add fDeviceInit set flag during initialization
+Date: Wed,  8 May 2013 17:19:41 +0300
+Message-Id: <1368022782-27178-1-git-send-email-draviv@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Send fDeviceInit flag during device initialization. Than poll until the
+device clears the flag. This step is required during the device
+initialization process.
+The flag set is used to communicate to the UFS device that it can complete
+its initialization. The UFS device will then move from Boot W-LU READY
+state to Device Initialization IN PROGRESS state. When the initialization
+is complete the device will reset the fDeviceInit flag.
 
-B2000 board is reference board for STIH415/416 SOCs, it has
-2 x UART, 4x USB, 2 x Ethernet, 1 x SATA, 1 x PCIe, and 1GB RAM.
+Signed-off-by: Dolev Raviv <draviv@codeaurora.org>
+Signed-off-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
 
-This patch add initial support to b2000 with STiH415/416 with UART2 as
-console and a heard beat LED.
+--- 
+Changes for V2:
+- Add the query sending api via SCSI from the original query patch
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-CC: Stephen Gallimore <stephen.gallimore@st.com>
-CC: Stuart Menefy <stuart.menefy@st.com>
----
- arch/arm/boot/dts/Makefile           |    2 +
- arch/arm/boot/dts/stih415-b2000.dtsp |   15 ++++++++++++
- arch/arm/boot/dts/stih416-b2000.dtsp |   16 +++++++++++++
- arch/arm/boot/dts/stih41x-b2000.dtsi |   41 ++++++++++++++++++++++++++++++++++
- arch/arm/mach-stih41x/board-dt.c     |    2 +
- 5 files changed, 76 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/boot/dts/stih415-b2000.dtsp
- create mode 100644 arch/arm/boot/dts/stih416-b2000.dtsp
- create mode 100644 arch/arm/boot/dts/stih41x-b2000.dtsi
-
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 9c62558..78b0271 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -147,6 +147,8 @@ dtb-$(CONFIG_ARCH_SPEAR3XX)+= spear300-evb.dtb \
- 	spear320-evb.dtb \
- 	spear320-hmi.dtb
- dtb-$(CONFIG_ARCH_SPEAR6XX)+= spear600-evb.dtb
-+dtb-$(CONFIG_ARCH_STIH41X)+= stih415-b2000.dtb \
-+	stih416-b2000.dtb
- dtb-$(CONFIG_ARCH_SUNXI) += sun4i-a10-cubieboard.dtb \
- 	sun4i-a10-hackberry.dtb \
- 	sun5i-a13-olinuxino.dtb
-diff --git a/arch/arm/boot/dts/stih415-b2000.dtsp b/arch/arm/boot/dts/stih415-b2000.dtsp
-new file mode 100644
-index 0000000..d4af531
---- /dev/null
-+++ b/arch/arm/boot/dts/stih415-b2000.dtsp
-@@ -0,0 +1,15 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+#include "stih415.dtsi"
-+#include "stih41x-b2000.dtsi"
-+/ {
-+	model = "STiH415 B2000 Board";
-+	compatible = "st,stih415", "st,stih415-b2000";
-+};
-diff --git a/arch/arm/boot/dts/stih416-b2000.dtsp b/arch/arm/boot/dts/stih416-b2000.dtsp
-new file mode 100644
-index 0000000..a5eb6ee
---- /dev/null
-+++ b/arch/arm/boot/dts/stih416-b2000.dtsp
-@@ -0,0 +1,16 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+#include "stih416.dtsi"
-+#include "stih41x-b2000.dtsi"
-+
-+/ {
-+	compatible = "st,stih416", "st,stih416-b2000";
-+	model = "STiH416 B2000";
-+};
-diff --git a/arch/arm/boot/dts/stih41x-b2000.dtsi b/arch/arm/boot/dts/stih41x-b2000.dtsi
-new file mode 100644
-index 0000000..8c17e4a
---- /dev/null
-+++ b/arch/arm/boot/dts/stih41x-b2000.dtsi
-@@ -0,0 +1,41 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
-+ */
-+/ {
-+
-+	memory{
-+		device_type = "memory";
-+		reg = <0x60000000 0x40000000>;
-+	};
-+
-+	chosen {
-+		bootargs = "console=ttyAS0,115200";
-+		linux,stdout-path = &uart2;
-+	};
-+
-+	aliases {
-+		ttyAS0 = &uart2;
-+	};
-+
-+	soc {
-+		uart2: uart@fed32000 {
-+			status = "okay";
-+		};
-+
-+		leds {
-+			compatible	= "gpio-leds";
-+			fp_led {
-+				#gpio-cells = <1>;
-+				label	= "Front Panel LED";
-+				gpios	= <&PIO105 7>;
-+				linux,default-trigger	= "heartbeat";
-+			};
-+		};
-+
-+	};
-+};
-diff --git a/arch/arm/mach-stih41x/board-dt.c b/arch/arm/mach-stih41x/board-dt.c
-index 8005f71..1f23aca 100644
---- a/arch/arm/mach-stih41x/board-dt.c
-+++ b/arch/arm/mach-stih41x/board-dt.c
-@@ -63,6 +63,8 @@ void __init stih41x_dt_init(void)
- }
- 
- static const char *stih41x_dt_match[] __initdata = {
-+	"st,stih415-b2000",
-+	"st,stih416-b2000",
- 	NULL
+diff --git a/drivers/scsi/ufs/ufs.h b/drivers/scsi/ufs/ufs.h
+index 086ff03..742363d 100644
+--- a/drivers/scsi/ufs/ufs.h
++++ b/drivers/scsi/ufs/ufs.h
+@@ -107,8 +107,13 @@ enum {
+ 	UPIU_QUERY_FUNC_STANDARD_WRITE_REQUEST = 0x81,
  };
  
++/* Flag idn for Query Requests*/
++enum flag_idn {
++	QUERY_FLAG_IDN_FDEVICEINIT = 0x01,
++};
++
+ /* UTP QUERY Transaction Specific Fields OpCode */
+-enum {
++enum query_opcode {
+ 	UPIU_QUERY_OPCODE_NOP		= 0x0,
+ 	UPIU_QUERY_OPCODE_READ_DESC	= 0x1,
+ 	UPIU_QUERY_OPCODE_WRITE_DESC	= 0x2,
+@@ -208,6 +213,9 @@ struct utp_upiu_query {
+ 	u32 reserved[2];
+ };
+ 
++/* Expose the flag value from utp_upiu_query.value */
++#define MASK_QUERY_UPIU_FLAG_LOC 0xFF
++
+ /**
+  * struct utp_upiu_req - general upiu request structure
+  * @header:UPIU header structure DW-0 to DW-2
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index bcdc576..7036550 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -51,6 +51,15 @@
+ /* Reserved tag for internal commands */
+ #define INTERNAL_CMD_TAG   0
+ 
++/* Query request standart retries */
++#define QUERY_REQ_RETRIES 10
++/* Query request standart timeout  in seconds */
++#define QUERY_REQ_TIMEOUT 5
++/* Send Query Requst with default parameters */
++#define send_query_request(ARG1, ARG2, ARG3, ARG4)	\
++	ufshcd_query_request(ARG1, ARG2, ARG3, ARG4,	\
++			QUERY_REQ_TIMEOUT, QUERY_REQ_RETRIES)
++
+ enum {
+ 	UFSHCD_MAX_CHANNEL	= 0,
+ 	UFSHCD_MAX_ID		= 1,
+@@ -887,6 +896,161 @@ out:
+ }
+ 
+ /**
++ *  ufshcd_query_request() - Entry point for issuing query request to a
++ *  ufs device.
++ *  @hba: ufs driver context
++ *  @query: params for query request
++ *  @descriptor: buffer for sending/receiving descriptor
++ *  @response: pointer to a buffer that will contain the response code and
++ *           response upiu
++ *  @timeout: time limit for the command in seconds
++ *  @retries: number of times to try executing the command
++ *
++ *  The query request is submitted to the same request queue as the rest of
++ *  the scsi commands passed to the UFS controller. In order to use this
++ *  queue, we need to receive a tag, same as all other commands. The tags
++ *  are issued from the block layer. To simulate a request from the block
++ *  layer, we use the same interface as the SCSI layer does when it issues
++ *  commands not generated by users. To distinguish a query request from
++ *  the SCSI commands, we use a vendor specific unused SCSI command
++ *  op-code. This op-code is not part of the SCSI command subset used in
++ *  UFS. In such way it is easy to check the command in the driver and
++ *  handle it appropriately.
++ *
++ *  All necessary fields for issuing a query and receiving its response are
++ *  stored in the UFS hba struct. We can use this method since we know
++ *  there is only one active query request at all times.
++ *
++ *  The request that will pass to the device is stored in "query" argument
++ *  passed to this function, while the "response" argument (which is output
++ *  field) will hold the query response from the device along with the
++ *  response code.
++ */
++int ufshcd_query_request(struct ufs_hba *hba,
++			struct ufs_query_req *query,
++			u8 *descriptor,
++			struct ufs_query_res *response,
++			int timeout,
++			int retries)
++{
++	struct scsi_device *sdev;
++	u8 cmd[UFS_QUERY_CMD_SIZE] = {0};
++	int result;
++	bool sdev_lookup = true;
++
++	if (!hba || !query || !response) {
++		dev_err(hba->dev,
++			"%s: NULL pointer hba = %p, query = %p response = %p\n",
++			__func__, hba, query, response);
++		return -EINVAL;
++	}
++
++	/*
++	 * A SCSI command structure is composed from opcode at the
++	 * begining and 0 at the end.
++	 */
++	cmd[0] = UFS_QUERY_RESERVED_SCSI_CMD;
++
++	/* extracting the SCSI Device */
++	sdev = scsi_device_lookup(hba->host, 0, 0, 0);
++	if (!sdev) {
++		/**
++		 * There are some Query Requests that are sent during device
++		 * initialization, this happens before the scsi device was
++		 * initialized. If there is no scsi device, we generate a
++		 * temporary device to allow the Query Request flow.
++		 */
++		sdev_lookup = false;
++		sdev = scsi_get_host_dev(hba->host);
++	}
++
++	if (!sdev) {
++		dev_err(hba->dev, "%s: Could not fetch scsi device\n",
++			__func__);
++		return -ENODEV;
++	}
++
++	mutex_lock(&hba->query.lock_ufs_query);
++	hba->query.request = query;
++	hba->query.descriptor = descriptor;
++	hba->query.response = response;
++
++	/* wait until request is completed */
++	result = scsi_execute(sdev, cmd, DMA_NONE, NULL, 0, NULL,
++				timeout, retries, 0, NULL);
++	if (result) {
++		dev_err(hba->dev,
++			"%s: Query with opcode 0x%x, failed with result %d\n",
++			__func__, query->upiu_req.opcode, result);
++		result = -EIO;
++	}
++
++	hba->query.request = NULL;
++	hba->query.descriptor = NULL;
++	hba->query.response = NULL;
++	mutex_unlock(&hba->query.lock_ufs_query);
++
++	/* Releasing scsi device resource */
++	if (sdev_lookup)
++		scsi_device_put(sdev);
++	else
++		scsi_free_host_dev(sdev);
++
++	return result;
++}
++
++/**
++ * ufshcd_query_flag() - Helper function for composing flag query requests
++ * hba: per-adapter instance
++ * query_opcode: flag query to perform
++ * idn: flag idn to access
++ * flag_res: the flag value after the query request completes
++ *
++ * Returns 0 for success, non-zero in case of failure
++ */
++int ufshcd_query_flag(struct ufs_hba *hba, enum query_opcode opcode,
++			enum flag_idn idn, bool *flag_res)
++{
++	struct ufs_query_req query = {0};
++	struct ufs_query_res response = {0};
++	int err;
++
++	switch (opcode) {
++	case UPIU_QUERY_OPCODE_SET_FLAG:
++	case UPIU_QUERY_OPCODE_CLEAR_FLAG:
++	case UPIU_QUERY_OPCODE_TOGGLE_FLAG:
++		query.query_func = UPIU_QUERY_FUNC_STANDARD_WRITE_REQUEST;
++		break;
++	case UPIU_QUERY_OPCODE_READ_FLAG:
++		query.query_func = UPIU_QUERY_FUNC_STANDARD_READ_REQUEST;
++		break;
++	default:
++		dev_err(hba->dev,
++			"%s: Expected query flag opcode but got = %d\n",
++			__func__, opcode);
++		err = -EINVAL;
++		goto out;
++	}
++	query.upiu_req.opcode = opcode;
++	query.upiu_req.idn = idn;
++
++	/* Send query request */
++	err = send_query_request(hba, &query, NULL, &response);
++
++	if (err) {
++		dev_err(hba->dev,
++			"%s: Sending flag query for idn %d failed, err = %d\n",
++			__func__, idn, err);
++		goto out;
++	}
++
++	*flag_res = (response.upiu_res.value & MASK_QUERY_UPIU_FLAG_LOC) & 0x1;
++
++out:
++	return err;
++}
++
++/**
+  * ufshcd_memory_alloc - allocate memory for host memory space data structures
+  * @hba: per adapter instance
+  *
+@@ -1324,6 +1488,44 @@ out:
+ }
+ 
+ /**
++ * ufshcd_validate_device_init() - checks device readines
++ * hba: per-adapter instance
++ *
++ * Set fDeviceInit flag, than, query the flag untill the device clears the
++ * flag.
++ */
++static int ufshcd_validate_device_init(struct ufs_hba *hba)
++{
++	int i, err;
++	bool flag_res = 0;
++
++	err = ufshcd_query_flag(hba, UPIU_QUERY_OPCODE_SET_FLAG,
++				QUERY_FLAG_IDN_FDEVICEINIT, &flag_res);
++	if (err) {
++		dev_err(hba->dev,
++			"%s setting fDeviceInit flag failed with error %d\n",
++			__func__, err);
++		goto out;
++	}
++
++	for (i = 0; i < QUERY_REQ_RETRIES && !err && flag_res; i++) {
++		err = ufshcd_query_flag(hba, UPIU_QUERY_OPCODE_READ_FLAG,
++				QUERY_FLAG_IDN_FDEVICEINIT, &flag_res);
++	}
++	if (err)
++		dev_err(hba->dev,
++			"%s reading fDeviceInit flag failed with error %d\n",
++			__func__, err);
++	else if (flag_res)
++		dev_err(hba->dev,
++			"%s fDeviceInit was not cleared by the device\n",
++			__func__);
++
++out:
++	return err;
++}
++
++/**
+  * ufshcd_make_hba_operational - Make UFS controller operational
+  * @hba: per adapter instance
+  *
+@@ -2153,6 +2355,10 @@ static void ufshcd_async_scan(void *data, async_cookie_t cookie)
+ 	if (ret)
+ 		goto out;
+ 
++	ret = ufshcd_validate_device_init(hba);
++	if (ret)
++		goto out;
++
+ 	scsi_scan_host(hba->host);
+ out:
+ 	return;
+diff --git a/drivers/scsi/ufs/ufshcd.h b/drivers/scsi/ufs/ufshcd.h
+index a91c558..76485da 100644
+--- a/drivers/scsi/ufs/ufshcd.h
++++ b/drivers/scsi/ufs/ufshcd.h
+@@ -286,4 +286,11 @@ static inline int ufshcd_dme_hibern8_exit(struct ufs_hba *hba)
+ 	return ufshcd_dme_hibern8_ctrl(hba, 0);
+ }
+ 
++int ufs_query_request(struct ufs_hba *hba,
++			struct ufs_query_req *query,
++			u8 *descriptor,
++			struct ufs_query_res *response,
++			int timeout,
++			int retries);
++
+ #endif /* End of Header */
 -- 
-1.7.6.5
-
+1.7.6
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
