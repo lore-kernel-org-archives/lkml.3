@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab3EHOAG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 10:00:06 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:46974 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755477Ab3EHOAE (ORCPT
+	id S1756749Ab3EHOAU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 10:00:20 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:10362 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756715Ab3EHOAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 10:00:04 -0400
+	Wed, 8 May 2013 10:00:15 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h1151h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 8 May 2013 22:00:06 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        <linux-fbdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ARM: dts: cfa10036: Change the OLED display to
+ SSD1306
+Message-ID: <20130508140004.GC26072@S2101-09.ap.freescale.net>
+References: <1366624555-5616-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1366624555-5616-3-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <1368019749-19455-4-git-send-email-lee.jones@linaro.org>
-References: <1368019749-19455-1-git-send-email-lee.jones@linaro.org>
-	<1368019749-19455-4-git-send-email-lee.jones@linaro.org>
-Date: Wed, 8 May 2013 16:00:03 +0200
-Message-ID: <CAPDyKFqsZ=z6OcRs45_DUO1Zpp_C1qUeZ2tsGCjD08H_b4L-jg@mail.gmail.com>
-Subject: Re: [PATCH 3/9] clk: ux500: Provide device enumeration number suffix
- for SMSC911x
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com,
-        Mike Turquette <mturquette@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1366624555-5616-3-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 May 2013 15:29, Lee Jones <lee.jones@linaro.org> wrote:
-> First Ethernet device has a ".0" appended onto the device name. It
-> appears that we need this in order to obtain the correct clock.
->
-> Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/clk/ux500/u8500_clk.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/clk/ux500/u8500_clk.c b/drivers/clk/ux500/u8500_clk.c
-> index 0b4f35a..80069c3 100644
-> --- a/drivers/clk/ux500/u8500_clk.c
-> +++ b/drivers/clk/ux500/u8500_clk.c
-> @@ -325,7 +325,7 @@ void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
->         clk = clk_reg_prcc_pclk("p3_pclk0", "per3clk", clkrst3_base,
->                                 BIT(0), 0);
->         clk_register_clkdev(clk, "fsmc", NULL);
-> -       clk_register_clkdev(clk, NULL, "smsc911x");
-> +       clk_register_clkdev(clk, NULL, "smsc911x.0");
->
->         clk = clk_reg_prcc_pclk("p3_pclk1", "per3clk", clkrst3_base,
->                                 BIT(1), 0);
-> --
-> 1.7.10.4
->
+On Mon, Apr 22, 2013 at 11:55:55AM +0200, Maxime Ripard wrote:
+> The SSD1307 was used in an early prototype that will never get
+> distributed. The final board now has a SSD1306 instead, that has its own
+> power generation unit and thus doesn't need any PWM. The panel attached
+> to it also changed.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+Applied, thanks.
+
