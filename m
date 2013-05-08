@@ -1,93 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab3EHSny (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:43:54 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33467 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750830Ab3EHSnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:43:53 -0400
-Date: Wed, 8 May 2013 20:45:24 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: ipc/shm.c:494:18: warning: =?utf-8?Q?u?=
- =?utf-8?B?bnVzZWQgdmFyaWFibGUg4oCYaHPigJk=?= [-Wunused-variable]
-Message-ID: <20130508184524.GF30955@pd.tnic>
-References: <20130508143411.GD30955@pd.tnic>
- <1368029552-dzvitovl-mutt-n-horiguchi@ah.jp.nec.com>
+	id S1752346Ab3EHSrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 14:47:04 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46836 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab3EHSrC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 14:47:02 -0400
+Date: Wed, 8 May 2013 19:45:55 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Howells <dhowells@redhat.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, Mark Salter <msalter@redhat.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: Re: [PATCH v5, part3 01/15] mm: fix build warnings caused by
+	free_reserved_area()
+Message-ID: <20130508184555.GR18614@n2100.arm.linux.org.uk>
+References: <1368026235-5976-1-git-send-email-jiang.liu@huawei.com> <1368026235-5976-2-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368029552-dzvitovl-mutt-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1368026235-5976-2-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 12:12:32PM -0400, Naoya Horiguchi wrote:
-> Thank you for the report.
-> I believe we can fix it with this one.
+On Wed, May 08, 2013 at 11:17:00PM +0800, Jiang Liu wrote:
+> Fix following build warnings cuased by free_reserved_area():
+> 
+> arch/arm/mm/init.c: In function 'mem_init':
+> arch/arm/mm/init.c:603:2: warning: passing argument 1 of 'free_reserved_area' makes integer from pointer without a cast [enabled by default]
+>   free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
+>   ^
+> In file included from include/linux/mman.h:4:0,
+>                  from arch/arm/mm/init.c:15:
+> include/linux/mm.h:1301:22: note: expected 'long unsigned int' but argument is of type 'void *'
+>  extern unsigned long free_reserved_area(unsigned long start, unsigned long end,
+> 
+>    mm/page_alloc.c: In function 'free_reserved_area':
+> >> mm/page_alloc.c:5134:3: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast [enabled by default]
+>    In file included from arch/mips/include/asm/page.h:49:0,
+>                     from include/linux/mmzone.h:20,
+>                     from include/linux/gfp.h:4,
+>                     from include/linux/mm.h:8,
+>                     from mm/page_alloc.c:18:
+>    arch/mips/include/asm/io.h:119:29: note: expected 'const volatile void *' but argument is of type 'long unsigned int'
+>    mm/page_alloc.c: In function 'free_area_init_nodes':
+>    mm/page_alloc.c:5030:34: warning: array subscript is below array bounds [-Warray-bounds]
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Reported-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-mm@kvack.org
 > ---
-> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Date: Wed, 8 May 2013 11:48:01 -0400
-> Subject: [PATCH] ipc/shm.c: don't use auto variable hs in newseg()
+>  arch/arm/mm/init.c |    6 ++++--
+>  mm/page_alloc.c    |    2 +-
+>  2 files changed, 5 insertions(+), 3 deletions(-)
 > 
-> This patch fixes "warning: unused variable 'hs'" when !CONFIG_HUGETLB_PAGE
-> introduced by commit af73e4d9506d "hugetlbfs: fix mmap failure in unaligned
-> size request".
-> 
-> Reported-by: Borislav Petkov <bp@alien8.de>
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  ipc/shm.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/ipc/shm.c b/ipc/shm.c
-> index e316cb9..9ff741a 100644
-> --- a/ipc/shm.c
-> +++ b/ipc/shm.c
-> @@ -491,9 +491,8 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> index 9a5cdc0..7a82fcd 100644
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -600,7 +600,8 @@ void __init mem_init(void)
 >  
->  	sprintf (name, "SYSV%08x", key);
->  	if (shmflg & SHM_HUGETLB) {
-> -		struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
-> -						& SHM_HUGE_MASK);
-> -		size_t hugesize = ALIGN(size, huge_page_size(hs));
-> +		size_t hugesize = ALIGN(size, huge_page_size(hstate_sizelog(
-> +				(shmflg >> SHM_HUGE_SHIFT) & SHM_HUGE_MASK)));
+>  #ifdef CONFIG_SA1111
+>  	/* now that our DMA memory is actually so designated, we can free it */
+> -	free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
+> +	free_reserved_area((unsigned long)__va(PHYS_PFN_OFFSET),
+> +			   (unsigned long)swapper_pg_dir, 0, NULL);
 
-Yeah, it fixes the warning alright but makes the code more unreadable.
-Which makes me wonder which is worse - to have an innocuous warning or
-have unreadable code.
+*YUCK*.
 
-You could also do the below. The line sticks out but it kills the
-warning. Readability is hmm, not optimal still though. :)
+As I've said before, fixing the arguments on free_reserved_area() would
+be much better than throwing these horrid casts all over the code.
 
---
-diff --git a/ipc/shm.c b/ipc/shm.c
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -491,9 +491,8 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
- 
- 	sprintf (name, "SYSV%08x", key);
- 	if (shmflg & SHM_HUGETLB) {
--		struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
--						& SHM_HUGE_MASK);
--		size_t hugesize = ALIGN(size, huge_page_size(hs));
-+		unsigned long hsz = huge_page_size(hstate_sizelog((shmflg >> SHM_HUGE_SHIFT) & SHM_HUGE_MASK));
-+		size_t hugesize = ALIGN(size, hsz);
- 
- 		/* hugetlb_file_setup applies strict accounting */
- 		if (shmflg & SHM_NORESERVE)
---
-
-Yeah, you decide.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+You're casting pointers to integers, and then immediately casting them
+back to pointers in free_reserved_area().  Please fix the function
+argument types to be sane.
