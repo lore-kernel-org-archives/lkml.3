@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab3EHAQT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 20:16:19 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37759 "EHLO hydra.sisk.pl"
+	id S1755019Ab3EHASM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 20:18:12 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:37766 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310Ab3EHAQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 20:16:17 -0400
+	id S1754068Ab3EHASK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 May 2013 20:18:10 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        Len Brown <lenb@kernel.org>, linux-mm@kvack.org, wency@cn.fujitsu.com
-Subject: Re: [PATCH 2/2 v2, RFC] Driver core: Introduce offline/online callbacks for memory blocks
-Date: Wed, 08 May 2013 02:24:40 +0200
-Message-ID: <1738385.YBsAESXG5F@vostro.rjw.lan>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH, RFC 02/22] cpufreq: ARM_DT_BL_CPUFREQ needs ARM_CPU_TOPOLOGY
+Date: Wed, 08 May 2013 02:26:34 +0200
+Message-ID: <2500374.5Hpjds0B3f@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1367971156.30363.32.camel@misato.fc.hp.com>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <228012439.MgiLXSqjLd@vostro.rjw.lan> <1367971156.30363.32.camel@misato.fc.hp.com>
+In-Reply-To: <CAKohponuYRm+D-FU5_7Ny1PPmwUhFLm9DkAR9iHURur+GFq_kA@mail.gmail.com>
+References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <1367507786-505303-3-git-send-email-arnd@arndb.de> <CAKohponuYRm+D-FU5_7Ny1PPmwUhFLm9DkAR9iHURur+GFq_kA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,159 +24,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 07, 2013 05:59:16 PM Toshi Kani wrote:
-> On Wed, 2013-05-08 at 01:17 +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, May 07, 2013 04:45:40 PM Toshi Kani wrote:
-> > > On Wed, 2013-05-08 at 00:10 +0200, Rafael J. Wysocki wrote:
-> > > > On Tuesday, May 07, 2013 03:03:49 PM Toshi Kani wrote:
-> > > > > On Tue, 2013-05-07 at 14:11 +0200, Rafael J. Wysocki wrote:
-> > > > > > On Tuesday, May 07, 2013 12:59:45 PM Vasilis Liaskovitis wrote:
-> > > > > 
-> > > > >  :
-> > > > > 
-> > > > > > Updated patch is appended for completness.
-> > > > > 
-> > > > > Yes, this updated patch solved the locking issue.
-> > > > > 
-> > > > > > > > > A more general issue is that there are now two memory offlining efforts:
-> > > > > > > > > 
-> > > > > > > > > 1) from acpi_bus_offline_companions during device offline
-> > > > > > > > > 2) from mm: remove_memory during device detach (offline_memory_block_cb)
-> > > > > > > > > 
-> > > > > > > > > The 2nd is only called if the device offline operation was already succesful, so
-> > > > > > > > > it seems ineffective or redundant now, at least for x86_64/acpi_memhotplug machine
-> > > > > > > > > (unless the blocks were re-onlined in between).
-> > > > > > > > 
-> > > > > > > > Sure, and that should be OK for now.  Changing the detach behavior is not
-> > > > > > > > essential from the patch [2/2] perspective, we can do it later.
-> > > > > > > 
-> > > > > > > yes, ok.
-> > > > > > > 
-> > > > > > > > 
-> > > > > > > > > On the other hand, the 2nd effort has some more intelligence in offlining, as it
-> > > > > > > > > tries to offline twice in the precense of memcg, see commits df3e1b91 or
-> > > > > > > > > reworked 0baeab16. Maybe we need to consolidate the logic.
-> > > > > > > > 
-> > > > > > > > Hmm.  Perhaps it would make sense to implement that logic in
-> > > > > > > > memory_subsys_offline(), then?
-> > > > > > > 
-> > > > > > > the logic tries to offline the memory blocks of the device twice, because the
-> > > > > > > first memory block might be storing information for the subsequent memblocks.
-> > > > > > > 
-> > > > > > > memory_subsys_offline operates on one memory block at a time. Perhaps we can get
-> > > > > > > the same effect if we do an acpi_walk of acpi_bus_offline_companions twice in
-> > > > > > > acpi_scan_hot_remove but it's probably not a good idea, since that would
-> > > > > > > affect non-memory devices as well. 
-> > > > > > > 
-> > > > > > > I am not sure how important this intelligence is in practice (I am not using
-> > > > > > > mem cgroups in my guest kernel tests yet).  Maybe Wen (original author) has
-> > > > > > > more details on 2-pass offlining effectiveness.
-> > > > > > 
-> > > > > > OK
-> > > > > > 
-> > > > > > It may be added in a separate patch in any case.
-> > > > > 
-> > > > > I had the same comment as Vasilis.  And, I agree with you that we can
-> > > > > enhance it in separate patches.
-> > > > > 
-> > > > >  :
-> > > > > 
-> > > > > > +static int memory_subsys_offline(struct device *dev)
-> > > > > > +{
-> > > > > > +	struct memory_block *mem = container_of(dev, struct memory_block, dev);
-> > > > > > +	int ret;
-> > > > > > +
-> > > > > > +	mutex_lock(&mem->state_mutex);
-> > > > > > +	ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
-> > > > > 
-> > > > > This function needs to check mem->state just like
-> > > > > offline_memory_block().  That is:
-> > > > > 
-> > > > > 	int ret = 0;
-> > > > > 		:
-> > > > > 	if (mem->state != MEM_OFFLINE)
-> > > > > 		ret = __memory_block_change_state(...);
-> > > > > 
-> > > > > Otherwise, memory hot-delete to an off-lined memory fails in
-> > > > > __memory_block_change_state() since mem->state is already set to
-> > > > > MEM_OFFLINE.
-> > > > > 
-> > > > > With that change, for the series:
-> > > > > Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> > > > 
-> > > > OK, one more update, then (appended).
-> > > > 
-> > > > That said I thought that the check against dev->offline in device_offline()
-> > > > would be sufficient to guard agaist that.  Is there any "offline" code path
-> > > > I didn't take into account?
-> > > 
-> > > Oh, you are right about that.  The real problem is that dev->offline is
-> > > set to false (0) when a new memory is hot-added in off-line state.  So,
-> > > instead, dev->offline needs to be set properly.  
-> > 
-> > OK, where does that happen?
+On Saturday, May 04, 2013 12:09:40 PM Viresh Kumar wrote:
+> On 2 May 2013 20:46, Arnd Bergmann <arnd@arndb.de> wrote:
+> > The big.LITTLE cpufreq driver uses the CPU topology API, which
+> > needs to be reflected in Kconfig to prevent broken configurations.
+> >
+> > warning: (ARM_DT_BL_CPUFREQ) selects ARM_BIG_LITTLE_CPUFREQ which
+> > has unmet direct dependencies (ARCH_HAS_CPUFREQ && CPU_FREQ && ARM && ARM_CPU_TOPOLOGY)
+> >
+> > Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> > Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> > Cc: cpufreq@vger.kernel.org
+> > Cc: linux-pm@vger.kernel.org
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > ---
+> >  drivers/cpufreq/Kconfig.arm | 1 +
+> >  1 file changed, 1 insertion(+)
 > 
-> It's a bit messy, but the following change seems to work.  A tricky part
-> is that online() is not called during boot, so I needed to update the
-> offline flag in __memory_block_change_state().
-
-I wonder why? ->
-
-> ---
->  drivers/base/memory.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
+> With all the discussions we had, please see if you can replace your
+> patch with this one (Attached too for applying, copy/paste in gmail
+> will break it):
 > 
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> index b9dfd34..1c8d781 100644
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -294,8 +294,10 @@ static int __memory_block_change_state(struct
-> memory_block *mem,
->  		mem->state = from_state_req;
->  	} else {
->  		mem->state = to_state;
-> -		if (to_state == MEM_ONLINE)
-> +		if (to_state == MEM_ONLINE) {
->  			mem->last_online = online_type;
-> +			mem->dev.offline = false;
-> +		}
+> From: Viresh Kumar <viresh.kumar@linaro.org>
+> Date: Sat, 4 May 2013 12:03:54 +0530
+> Subject: [PATCH] cpufreq: ARM big LITTLE: Fix Kconfig entries
+> 
+> This fixes usage of "depends on" and "select" options in Kconfig for ARM big
+> LITTLE cpufreq driver. Otherwise we get these warnings:
+> 
+> warning: (ARM_DT_BL_CPUFREQ) selects ARM_BIG_LITTLE_CPUFREQ which
+> has unmet direct dependencies (ARCH_HAS_CPUFREQ && CPU_FREQ && ARM &&
+> ARM_CPU_TOPOLOGY)
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-->
-
-__memory_block_change_state() is called by memory_subsys_online/offline()
-and by __memory_block_change_state_uevent() only, so it should be sufficient
-to do this under the switch () in the latter.
-
-Still, though, __memory_block_change_state_uevent() is only called (indirectly)
-from store_mem_state() and by offline_memory_block() the both of which update
-dev->offline.
-
-What's the exact scenario you needed this for?
-
->  	}
->  	return ret;
->  }
-> @@ -613,6 +615,7 @@ static int init_memory_block(struct memory_block
-> **memory,
->  	mem->state = state;
->  	mem->last_online = ONLINE_KEEP;
->  	mem->section_count++;
-> +	mem->dev.offline = (state == MEM_OFFLINE) ? true : false; 
-
-You could write this as
-
-+	mem->dev.offline = state == MEM_OFFLINE; 
-
-Moreover, it'd be better to do it in register_memory(), I think.
-
->  	mutex_init(&mem->state_mutex);
->  	start_pfn = section_nr_to_pfn(mem->start_section_nr);
->  	mem->phys_device = arch_get_memory_phys_device(start_pfn);
+Queued up as a fix for v3.10.
 
 Thanks,
 Rafael
 
 
+> ---
+>  drivers/cpufreq/Kconfig.arm | 16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+> index 634e992..a924408 100644
+> --- a/drivers/cpufreq/Kconfig.arm
+> +++ b/drivers/cpufreq/Kconfig.arm
+> @@ -3,17 +3,17 @@
+>  #
+> 
+>  config ARM_BIG_LITTLE_CPUFREQ
+> -	tristate
+> -	depends on ARM_CPU_TOPOLOGY
+> -	select PM_OPP
+> +	tristate "Generic ARM big LITTLE CPUfreq driver"
+> +	depends on ARM_CPU_TOPOLOGY && PM_OPP && HAVE_CLK
+> +	help
+> +	  This enables the Generic CPUfreq driver for ARM big.LITTLE platforms.
+> 
+>  config ARM_DT_BL_CPUFREQ
+> -	tristate "Generic ARM big LITTLE CPUfreq driver probed via DT"
+> -	select ARM_BIG_LITTLE_CPUFREQ
+> -	depends on OF && HAVE_CLK
+> +	tristate "Generic probing via DT for ARM big LITTLE CPUfreq driver"
+> +	depends on ARM_BIG_LITTLE_CPUFREQ && OF
+>  	help
+> -	  This enables the Generic CPUfreq driver for ARM big.LITTLE platform.
+> -	  This gets frequency tables from DT.
+> +	  This enables probing via DT for Generic CPUfreq driver for ARM
+> +	  big.LITTLE platform. This gets frequency tables from DT.
+> 
+>  config ARM_EXYNOS_CPUFREQ
+>  	bool "SAMSUNG EXYNOS SoCs"
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
