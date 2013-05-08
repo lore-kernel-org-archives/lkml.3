@@ -1,154 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab3EHRDe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 13:03:34 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:52714 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757089Ab3EHRDd (ORCPT
+	id S1757530Ab3EHRE3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 13:04:29 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44985 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756924Ab3EHRE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 13:03:33 -0400
-From: Reilly Grant <grantr@vmware.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Reilly Grant <grantr@vmware.com>
-Subject: [PATCH] xhci: Compute last_ctx from complete set of endpoints.
-Date: Wed,  8 May 2013 10:03:05 -0700
-Message-Id: <1368032585-16496-1-git-send-email-grantr@vmware.com>
-X-Mailer: git-send-email 1.8.1.5
+	Wed, 8 May 2013 13:04:27 -0400
+Message-ID: <518A8596.7070702@wwwdotorg.org>
+Date: Wed, 08 May 2013 11:04:22 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Jay Agarwal <jagarwal@nvidia.com>
+CC: linux@arm.linux.org.uk, thierry.reding@avionic-design.de,
+        ldewangan@nvidia.com, bhelgaas@google.com, olof@lixom.net,
+        hdoyu@nvidia.com, pgaikwad@nvidia.com, mturquette@linaro.org,
+        pdeschrijver@nvidia.com, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, jtukkinen@nvidia.com, kthota@nvidia.com
+Subject: Re: [PATCH 4/4] ARM: tegra: pcie: Enable PCIe controller on Cardhu
+References: <1368010660-31465-1-git-send-email-jagarwal@nvidia.com> <1368010660-31465-4-git-send-email-jagarwal@nvidia.com>
+In-Reply-To: <1368010660-31465-4-git-send-email-jagarwal@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The context entries field of the slot context must be set to one more
-than the highest endpoint index currently active. The previous logic
-only included the set of endpoints currently being added, meaning that
-if an endpoint where dropped then the field would be reset to 1,
-deactivating all configured endpoints.
+On 05/08/2013 04:57 AM, Jay Agarwal wrote:
+> - Enable PCIe controller on Cardhu
+> - Only port 2 is connected on this board
+> - Add regulators required for Tegra30
+> - Patch is based on remotes/gitorious_thierryreding_linux/tegra/next
+> - and should be applied on top of this.
 
-The xHCI spec is decidedly unclear on whether this field includes all
-configured endpoints or only those being modified by a configure
-endpoint command. My interpretation is the former and is the behavior
-observed in the Apple's xHCI driver.
----
- drivers/usb/host/xhci.c | 52 +++++++++++++++++--------------------------------
- 1 file changed, 18 insertions(+), 34 deletions(-)
+> diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 53b8f89..5c40d3e 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -1557,12 +1557,10 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 	struct xhci_hcd *xhci;
- 	struct xhci_container_ctx *in_ctx, *out_ctx;
- 	struct xhci_input_control_ctx *ctrl_ctx;
--	struct xhci_slot_ctx *slot_ctx;
--	unsigned int last_ctx;
- 	unsigned int ep_index;
- 	struct xhci_ep_ctx *ep_ctx;
- 	u32 drop_flag;
--	u32 new_add_flags, new_drop_flags, new_slot_info;
-+	u32 new_add_flags, new_drop_flags;
- 	int ret;
- 
- 	ret = xhci_check_args(hcd, udev, ep, 1, true, __func__);
-@@ -1603,24 +1601,13 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 	ctrl_ctx->add_flags &= cpu_to_le32(~drop_flag);
- 	new_add_flags = le32_to_cpu(ctrl_ctx->add_flags);
- 
--	last_ctx = xhci_last_valid_endpoint(le32_to_cpu(ctrl_ctx->add_flags));
--	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
--	/* Update the last valid endpoint context, if we deleted the last one */
--	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) >
--	    LAST_CTX(last_ctx)) {
--		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
--		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
--	}
--	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
--
- 	xhci_endpoint_zero(xhci, xhci->devs[udev->slot_id], ep);
- 
--	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
-+	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
- 			(unsigned int) ep->desc.bEndpointAddress,
- 			udev->slot_id,
- 			(unsigned int) new_drop_flags,
--			(unsigned int) new_add_flags,
--			(unsigned int) new_slot_info);
-+			(unsigned int) new_add_flags);
- 	return 0;
- }
- 
-@@ -1643,11 +1630,9 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 	struct xhci_hcd *xhci;
- 	struct xhci_container_ctx *in_ctx, *out_ctx;
- 	unsigned int ep_index;
--	struct xhci_slot_ctx *slot_ctx;
- 	struct xhci_input_control_ctx *ctrl_ctx;
- 	u32 added_ctxs;
--	unsigned int last_ctx;
--	u32 new_add_flags, new_drop_flags, new_slot_info;
-+	u32 new_add_flags, new_drop_flags;
- 	struct xhci_virt_device *virt_dev;
- 	int ret = 0;
- 
-@@ -1662,7 +1647,6 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 		return -ENODEV;
- 
- 	added_ctxs = xhci_get_endpoint_flag(&ep->desc);
--	last_ctx = xhci_last_valid_endpoint(added_ctxs);
- 	if (added_ctxs == SLOT_FLAG || added_ctxs == EP0_FLAG) {
- 		/* FIXME when we have to issue an evaluate endpoint command to
- 		 * deal with ep0 max packet size changing once we get the
-@@ -1723,24 +1707,14 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 	 */
- 	new_drop_flags = le32_to_cpu(ctrl_ctx->drop_flags);
- 
--	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
--	/* Update the last valid endpoint context, if we just added one past */
--	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) <
--	    LAST_CTX(last_ctx)) {
--		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
--		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
--	}
--	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
--
- 	/* Store the usb_device pointer for later use */
- 	ep->hcpriv = udev;
- 
--	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
-+	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
- 			(unsigned int) ep->desc.bEndpointAddress,
- 			udev->slot_id,
- 			(unsigned int) new_drop_flags,
--			(unsigned int) new_add_flags,
--			(unsigned int) new_slot_info);
-+			(unsigned int) new_add_flags);
- 	return 0;
- }
- 
-@@ -2684,10 +2658,20 @@ int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)
- 			ctrl_ctx->drop_flags == 0)
- 		return 0;
- 
--	xhci_dbg(xhci, "New Input Control Context:\n");
-+	/* Update the last valid endpoint context. */
- 	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->in_ctx);
-+	for (i = ARRAY_SIZE(virt_dev->eps) - 1; i >= 0; --i) {
-+		if ((virt_dev->eps[i].ring &&
-+		     !(le32_to_cpu(ctrl_ctx->drop_flags) & (1 << (i + 1)))) ||
-+		    (le32_to_cpu(ctrl_ctx->add_flags) & (1 << (i + 1))))
-+			break;
-+	}
-+	slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
-+	slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(i + 1));
-+
-+	xhci_dbg(xhci, "New Input Control Context:\n");
- 	xhci_dbg_ctx(xhci, virt_dev->in_ctx,
--		     LAST_CTX_TO_EP_NUM(le32_to_cpu(slot_ctx->dev_info)));
-+		     xhci_last_valid_endpoint(ctrl_ctx->add_flags));
- 
- 	ret = xhci_configure_endpoint(xhci, udev, NULL,
- 			false, false);
--- 
-1.8.1.5
+> +	pcie-controller {
+> +		status = "okay";
+> +		pex-clk-supply = <&pex_hvdd_3v3_reg>;
+> +		vdd-supply = <&ldo1_reg>;
+> +		avdd-supply = <&ldo2_reg>;
+> +
+> +		pci@3,0 {
+> +			status = "okay";
+> +		};
+> +	};
+
+So, if I apply this series, I do see the PCIe bridge and Ethernet device
+get enumerated, but I don't see the USB3 controller get enumerated. I
+believe that is a PCIe device behind the same bridge on the same Tegra
+PCIe port. Shouldn't this device show up?
+
+The Ethernet interface gets an IP address by DHCP, so some amount of
+data must be flowing. However, I cannot ping anything. If I run the same
+kernel on a Tegra20 TrimSlice board, which has the same Ethernet chip,
+then everything works as expected. Have you fully tested network
+connectivity with these patches applied? Perhaps this is related to the
+next problem:
+
+According to the Cardhu schematics, the PCIe link to the dock is a
+single lane. Hence, I believe that the Cardhu DT should describe a 411
+port configuration. However, the Cardhu DT doesn't describe any
+particular link configuration, but just inherits the default from
+tegra30.dtsi, which describes a 222 link configuration. I would have
+expected the following in the Cardhu DT:
+
+		pci@1,0 {
+			nvidia,num-lanes = <4>;
+		};
+
+		pci@2,0 {
+			nvidia,num-lanes = <1>;
+		};
+
+		pci@3,0 {
+			status = "okay";
+			nvidia,num-lanes = <1>;
+		};
+
+However, if I put that there, no PCIe links are detected at all. Why
+does the driver work with the wrong link configuration, but fail with
+the correct one?
+
+Related, I notice that in Thierry's patches which you're building on,
+tegra_pcie_get_xbar_config() still has a bug where a zero return value
+is treated as an error, even though it's a valid HW register value.
+Perhaps this is related?
