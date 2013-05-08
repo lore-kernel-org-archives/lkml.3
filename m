@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326Ab3EHNxx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 09:53:53 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:30140 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753996Ab3EHNxw (ORCPT
+	id S1755541Ab3EHNy1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 09:54:27 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40033 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755383Ab3EHNy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 09:53:52 -0400
-Message-ID: <518A58C0.9030304@oracle.com>
-Date: Wed, 08 May 2013 09:53:04 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130429 Thunderbird/17.0.5
+	Wed, 8 May 2013 09:54:26 -0400
+Date: Wed, 8 May 2013 14:54:13 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Message-ID: <20130508135413.GR7478@sirena.org.uk>
+References: <1367997261-32048-1-git-send-email-fabio.baltieri@linaro.org>
+ <1367997261-32048-4-git-send-email-fabio.baltieri@linaro.org>
+ <20130508105124.GA7478@sirena.org.uk>
+ <20130508114216.GB29130@balto.lan>
+ <20130508123225.GK7478@sirena.org.uk>
+ <20130508131020.GA30503@balto.lan>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: torvalds@linux-foundation.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/9] liblockdep: Wrap kernel/lockdep.c to allow usage
- from userspace
-References: <1367348080-4680-1-git-send-email-sasha.levin@oracle.com> <1367348080-4680-3-git-send-email-sasha.levin@oracle.com> <20130508100143.GA6131@dyad.programming.kicks-ass.net> <518A52D2.4050505@oracle.com> <20130508133547.GA8386@dyad.programming.kicks-ass.net>
-In-Reply-To: <20130508133547.GA8386@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="azZrKF05zqlgub2L"
+Content-Disposition: inline
+In-Reply-To: <20130508131020.GA30503@balto.lan>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 212.183.132.60
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/6] ASoC: ux500: Drop pinctrl sleep support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2013 09:35 AM, Peter Zijlstra wrote:
-> On Wed, May 08, 2013 at 09:27:46AM -0400, Sasha Levin wrote:
->> [snip]
->>
->> Hi Peter,
->>
->> You're right - I broke multithreading for some odd reason (mostly me being stupid)
->> after having it working :/
->>
->> It's enough to set the __thread flag on current_obj:
->>
->> 	diff --git a/tools/lib/lockdep/common.c b/tools/lib/lockdep/common.c
->> 	index eb5e481..8ef602f 100644
->> 	--- a/tools/lib/lockdep/common.c
->> 	+++ b/tools/lib/lockdep/common.c
->> 	@@ -5,7 +5,7 @@
->> 	 #include <unistd.h>
->> 	 #include <sys/syscall.h>
->> 	
->> 	-static struct task_struct current_obj;
->> 	+static __thread struct task_struct current_obj;
->> 	
->> 	 /* lockdep wants these */
->> 	 bool debug_locks = true;
->>
->> Since we don't need any special initialization of the struct at any point. This
->> means that the patch above is enough and we don't need to hook pthread_create.
->>
-> 
-> I tried googling but failed to find the TLS initialization rules. Are they
-> zero'd for each thread or copied about or what? And is this documented or
-> implementation behaviour?
-> 
-> If its consistently zero'd then I suppose you're right and we can get away with
-> just adding __thread; *phew*.
 
-I assumed that they are zero'd because it is a global variable, and those are
-supposed to be zero'd.
+--azZrKF05zqlgub2L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Running a quick test confirmed that they are indeed zero'd for each thread, so
-we're safe to just add that __thread.
+On Wed, May 08, 2013 at 03:10:20PM +0200, Fabio Baltieri wrote:
+> On Wed, May 08, 2013 at 01:32:25PM +0100, Mark Brown wrote:
 
+> > I'm saying that if functions like enable_msp() don't work reliably then
+> > removing some but not all of their functionality isn't an obviously good
+> > approach to fixing that.  Why does the other functionality work well but
+> > not this bit?  It sounds like there's some reference counting bug here
+> > is all...
 
-Thanks,
-Sasha
+> Yes, it started as a reference counting bug, due to the actual counter
+> not being shared between ux500-msp-i2s instances.
 
+> That said, the actual fork of this driver deployed by STE internally
+> does not handle I2S pin sleep state, and I was not able to find any
+> other ASoC driver that does that, which seems reasonable to me as I
+> can't come up with a reason to put those pins in hi-z anyway.
+
+But why does the rest of the code work well if the reference counting is
+wrong, it's in the middle of a big block of code?  This all smells like
+this change is papering over a specific symptom of some underlying issue
+- if that's not the case then it needs to be clearer why.
+
+> If I understood the problem correctly you do that when you want to cut
+> power completely to some peripherals to avoid spurious current paths,
+> and that should not be the case for the audio codec, especially in this
+> case where it's part of a big multifuntion IC.
+
+Being a MFD should have nothing to do with this?
+
+--azZrKF05zqlgub2L
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRilkCAAoJELSic+t+oim9RxMP/iNvYxtpQOGX2VZRTtYh+LBJ
++LQ2wJ3ENPH9heZQZ4caOQnEACpV4+tMUgfORw3lSwBibtHzkGK0Sdz2fDFiUB6i
+0fvQbH3KE2Q/0ScjnEPlNxtIJJOTLAd684yu0oQeO7fS4OIpA2a/6WAaFLpabYr0
+1ShScZ/yxdD5u5bLvJFZy50AtHGfw0aSv3p5iL2MGgKY8JtNo3kX2m5KE3pj4CkF
+ECzr8a/N69YnMuLrTJ/QkHqfK48xquNHfZ+WJ/hLdVyEcz9BnbtSut8riIbbs3YU
+eca1VPoLH3eGgMGoCRNC1GxzSNCUTWulorRqhEhT8bfO38fXU7l3Xxkf3vU1zeEt
+6MGbqaAliu9IYcGqVL9ugjqy8hs+qLI9DOfxyx7KkYUgaEM7aL5HUT1ie4tvdWzH
+rCJ6L05vh6wWjPfcHeX1fKtiNHrmlL8t+/1EorGPiThuyNOXFPF4StDbWhM7W9OS
+x7QLTSmW9x3zYxA7cBnA7lDPJhDIVvPkyEaamvSaw3sQAh2s/gyh/jwVfGBXZkIK
+ScwIvUbtepEduK7/TVXK2hpPLzMCTLtWLtDsN2DGzPvct+exKNeluogj3mD2Zb3q
+Xye6Iaip6HeRCX4hsXRyg1Of6JlbRXBVTCgXIWvZ7FIzSbiiUdffu3yTr8Vuqb6g
+FRTco79dRbD72vBrlSo/
+=Y8+r
+-----END PGP SIGNATURE-----
+
+--azZrKF05zqlgub2L--
