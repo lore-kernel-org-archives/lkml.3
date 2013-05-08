@@ -1,92 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab3EHCks (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 22:40:48 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53932 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752133Ab3EHCkq (ORCPT
+	id S1753562Ab3EHClj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 22:41:39 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:49986 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab3EHCli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 22:40:46 -0400
-X-Sasl-enc: vmVQgMJFeaZwIniDaYzIlSePm4pDfgS09ogegV8t1oCJ 1367980845
-Subject: [PATCH] autofs4: translate pids to the right namespace for the
- daemon
-To: Linus Torvalds <torvalds@linux-foundation.org>
-From: Ian Kent <raven@themaw.net>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sukadev Bhattiprolu <sukadev@us.ibm.com>,
-        Eric Biederman <ebiederm@xmission.com>
-Date: Wed, 08 May 2013 10:40:42 +0800
-Message-ID: <20130508024041.4314.4134.stgit@perseus.fritz.box>
-User-Agent: StGit/0.16
+	Tue, 7 May 2013 22:41:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAH3drwbt_YX-jWrwsp0X2CH3t9ms65fX40cvumr4FyRhKBcbyw@mail.gmail.com>
+References: <1367967522-3934-1-git-send-email-j.glisse@gmail.com>
+ <CAHGf_=ofADKRCgDN5Tanx4PyvoJFF9r=cHYMd+VRc=N3=4FGuA@mail.gmail.com> <CAH3drwbt_YX-jWrwsp0X2CH3t9ms65fX40cvumr4FyRhKBcbyw@mail.gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 7 May 2013 22:41:17 -0400
+Message-ID: <CAHGf_=rFd7xktoom2kg_1QgoCrqsVwdo2gzVR6UDzvm53ngjgw@mail.gmail.com>
+Subject: Re: [PATCH] mm: honor FOLL_GET flag in follow_hugetlb_page v2
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jerome Glisse <jglisse@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On Tue, May 7, 2013 at 8:51 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+> On Tue, May 7, 2013 at 8:47 PM, KOSAKI Motohiro
+> <kosaki.motohiro@gmail.com> wrote:
+>> On Tue, May 7, 2013 at 6:58 PM,  <j.glisse@gmail.com> wrote:
+>>> From: Jerome Glisse <jglisse@redhat.com>
+>>>
+>>> Do not increase page count if FOLL_GET is not set. None of the
+>>> current user can trigger the issue because none of the current
+>>> user call __get_user_pages with both the pages array ptr non
+>>> NULL and the FOLL_GET flags non set in other word all caller
+>>> of __get_user_pages that don't set the FOLL_GET flags also call
+>>> with pages == NULL.
+>>
+>> Because, __get_user_pages() doesn't allow pages==NULL and FOLL_GET is on.
+>
+> Yes but this allow pages != NULL and FOLL_GET not set and as i said
+> there is no such user of that yet and this is exactly what i was
+> trying to use.
 
-The PID and the TGID of the process tringgering the mount are sent to the
-daemon.  Currently the global pid values are sent (ones valid in the initial pid
-namespace) but this is wrong if the autofs daemon itself is not running in the
-initial pid namespace.
+Why? The following bug_on inhibit both case.
 
-So send the pid values that are valid in the namespace of the autofs daemon.
-
-The namespace to use is taken from the oz_pgrp pid pointer, which was set at
-mount time to the mounting process' pid namespace.
-
-If the pid translation fails (the triggering process is in an unrelated pid
-namespace) then the automount fails with ENOENT.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Eric Biederman <ebiederm@xmission.com>
----
- fs/autofs4/waitq.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
-
-diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
-index 3db70da..309ca6b 100644
---- a/fs/autofs4/waitq.c
-+++ b/fs/autofs4/waitq.c
-@@ -353,11 +353,23 @@ int autofs4_wait(struct autofs_sb_info *sbi, struct dentry *dentry,
- 	struct qstr qstr;
- 	char *name;
- 	int status, ret, type;
-+	pid_t pid;
-+	pid_t tgid;
- 
- 	/* In catatonic mode, we don't wait for nobody */
- 	if (sbi->catatonic)
- 		return -ENOENT;
- 
-+	/*
-+	 * Try translating pids to the namespace of the daemon.
-+	 *
-+	 * Zero means failure: we are in an unrelated pid namespace.
-+	 */
-+	pid = task_pid_nr_ns(current, ns_of_pid(sbi->oz_pgrp));
-+	tgid = task_tgid_nr_ns(current, ns_of_pid(sbi->oz_pgrp));
-+	if (pid == 0 || tgid == 0)
-+		return -ENOENT;
-+
- 	if (!dentry->d_inode) {
- 		/*
- 		 * A wait for a negative dentry is invalid for certain
-@@ -423,8 +435,8 @@ int autofs4_wait(struct autofs_sb_info *sbi, struct dentry *dentry,
- 		wq->ino = autofs4_get_ino(sbi);
- 		wq->uid = current_uid();
- 		wq->gid = current_gid();
--		wq->pid = current->pid;
--		wq->tgid = current->tgid;
-+		wq->pid = pid;
-+		wq->tgid = tgid;
- 		wq->status = -EINTR; /* Status return if interrupted */
- 		wq->wait_ctr = 2;
- 		mutex_unlock(&sbi->wq_mutex);
-
+>>     VM_BUG_ON(!!pages != !!(gup_flags & FOLL_GET));
