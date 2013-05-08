@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab3EHOeh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 10:34:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33282 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755740Ab3EHOeg (ORCPT
+	id S1756287Ab3EHOfQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 10:35:16 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:53003 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832Ab3EHOfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 10:34:36 -0400
-Date: Wed, 8 May 2013 16:34:27 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Pavel Machek <pavel@ucw.cz>
-cc: Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Feng Tang <feng.tang@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Fwd: [GIT PULL] timer changes for v3.10
-In-Reply-To: <20130508105542.GA22703@amd.pavel.ucw.cz>
-Message-ID: <alpine.LFD.2.02.1305081626110.2863@ionos>
-References: <20130430074322.GA20110@gmail.com> <20130506230137.GA16801@amd.pavel.ucw.cz> <CA++bM2scosWgBpC3_LzcKYOjG4EQQzN5Vf4rZFds-5qRVRwvDQ@mail.gmail.com> <20130507023853.GA2945@feng-snb> <20130507065348.GF17705@gmail.com> <51892560.7090202@linaro.org>
- <20130507213142.GA10061@amd.pavel.ucw.cz> <51897497.7040806@linaro.org> <20130507215151.GB10061@amd.pavel.ucw.cz> <20130508064419.GA5378@gmail.com> <20130508105542.GA22703@amd.pavel.ucw.cz>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 8 May 2013 10:35:12 -0400
+Date: Wed, 8 May 2013 10:35:08 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Andy Lutomirski <luto@amacapital.net>, stefan.bader@canonical.com
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: WT memory type on x86_64?
+Message-ID: <20130508143505.GA8599@phenom.dumpdata.com>
+References: <CALCETrVBor6fKwxP=+0mtJ4SjKn2YrFczSdXhazw3m8E5Sxx6A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVBor6fKwxP=+0mtJ4SjKn2YrFczSdXhazw3m8E5Sxx6A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel,
-
-On Wed, 8 May 2013, Pavel Machek wrote:
-> > > > Sorry. You seem to not like the merged change, but I guess I'm not
-> > > > quite sure what exactly your objection is here.
-> > > 
-> > > I'm not exactly sure what my objections are.
-> > > 
-> > > TSC was not designed for long-term precise timekeeping. [...]
-> > 
-> > The TSC is just a 64-bit counter that can be read very cheaply.
-> > 
-> > If the TSC is _implemented_ precisely in hardware and is kept in sync over 
-> > CPUs then it's obviously fit for long-term precise timekeeping from that 
-> > point on.
+On Wed, Apr 24, 2013 at 12:33:33PM -0700, Andy Lutomirski wrote:
+> For an upcoming (and, sadly, NDA'd [1]) project, I may need to use
+> write-through memory.  I'd like to gauge how unpleasant this will be.
 > 
-> Yes. But the clock for TSC is not being generated in CPU (right?) and
-> AFAICT, the code said "if the CPU is new enough, assume TSC is good
-> timesource". You need good clock for good timesource.
-
-TSC is a good clock source if:
-
-    - Frequency constant (>= Core2)
-    - Not affected by C-States (>= Nehalem)
-    - Running during Suspend (>= Haswell)
-
-So we only use TSC across Suspend for Haswell and newer. On older
-systems we use RTC during suspend, but we still use the TSC as a
-clocksource during normal operation.
-
-> > > [...] but some people suspend their machines for longer than that. Plus 
-> > > I wonder how it will interfere with /etc/adjtime.
-> > 
-> > If it's precise then why should it interfere?
-> > 
-> > The history of the TSC being problematic can be ignored the moment CPU 
-> > makers fix it completely - and apparently that is happening...
+> AFAICT, modern CPUs allow the WT type to be set using MTRR or a PAT
+> entry.  Sadly, MTRRs are in short supply, and the four fully-usable
+> PAT slots are used for UC, UC-, WB, and WC.  I can keep my fingers
+> crossed and hope that there are enough free MTRRs, or I could try to
+> free up a PAT entry.
 > 
-> AFAICT we normally use RTC/PIT during runtime. If we switch to TSC
+> How nasty will the latter be?  I just looked at two rather different
+> modern Sandy Bridge machines, and BIOS doesn't appear to set up any
+> MTRRs in the WC or WP states.  As long as those MTRR types aren't
+> used, I think the UC- PAT entry is useless -- it behaves identically
+> to UC.  Lots of DRM drivers, though, seen to add a WC MTRR to cover
+> video memory.  Is there any need for this on modern machines?  That
+> is, are there any drivers that actually need the mtrr_add call to
+> succeed on a machine that has a working PAT?
+> 
+> If not, then here's a proposal:  At startup, if there are no WC or WP
+> MTRRs and the CPU is new enough, then set a flag for an alternative
+> PAT.  In alternative PAT mode, UC- is replaced with WT in the PAT and
+> mtrr_add fails when attempting to add a WC or WP entry.  Add
+> set_memory_wt, etc.  They fail in non-alternative-PAT mode.  This gets
+> a bit unpleasant, since _PAGE_CACHE_UC_MINUS will have a different
+> meaning depending on the mode.
+> 
+> A less conservative proposal would be to stop using UC- in the PAT
+> entirely.  The memtype code could learn to emulate UC- when there's an
+> overlapping WC or WP MTRR.
+> 
+> Any thoughts?  Are there known errata here?  Is there a good reason
+> why the kernel needs UC-?  Will this be such a big can of worms that I
+> should just hope there's an available MTRR?
 
-No, we do NOT use RTC/PIT during runtime. That's the worst choice one
-could make. If TSC is non frequency constant or affected by C-States
-we use HPET or PM-Timer, and we only ever use the PIT if nothing else
-is available.
+Stefan Bader (CC-ed here) was looking in making a "black-box" type
+code wherein for any types but WC it would lookup in the PAT index
+the right bit and provide that for the page_attr_set functions.
 
-RTC is not used at all for timekeeping. RTC is only used at system
-start and when we resume and the TSC stopped during that time, which
-is true for hibernation even on Haswell and newer.
+If I recall he had run in a bit of issue with of the hard-coded values
+set by the macros.
 
-> during suspend, surely /etc/adjtime will be confused. (RTC has its own
-> timesource, so it is unlikely to have same error as TSC).
-
-Nothing gets confused. It's all handled proper in the core code and
-the clock source drivers.
-
-Thanks,
-
-	tglx
+> 
+> --Andy
+> 
+> [1]  I hope to be able to upstream all kernel code related to this
+> project.  It will be neat -- I promise.  It will depend on convincing
+> the people on the other end of the NDA that they should let me.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
