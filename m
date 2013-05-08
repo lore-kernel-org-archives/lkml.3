@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab3EHKhS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 06:37:18 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:57576 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab3EHKhQ (ORCPT
+	id S1754342Ab3EHKjV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 06:39:21 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47570 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390Ab3EHKjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 06:37:16 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <s.hauer@pengutronix.de>,
-        LMML <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH RFC v3] media: i2c: mt9p031: add OF support
-Date: Wed, 08 May 2013 12:37:29 +0200
-Message-ID: <5750435.WVYuIYMX2V@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo-r1; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <CA+V-a8sknnoq7M-HJUW6aW8jtf7T0qxA8OpPjsXdmxO22ic7og@mail.gmail.com>
-References: <1367563919-2880-1-git-send-email-prabhakar.csengg@gmail.com> <124364082.ILKsvVk9ro@avalon> <CA+V-a8sknnoq7M-HJUW6aW8jtf7T0qxA8OpPjsXdmxO22ic7og@mail.gmail.com>
+	Wed, 8 May 2013 06:39:19 -0400
+Message-ID: <518A2B4B.4040509@linux.vnet.ibm.com>
+Date: Wed, 08 May 2013 18:39:07 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Robert Richter <rric@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org,
+        Robert Richter <robert.richter@calxeda.com>,
+        SH-Run Zhen RZ Wang <rzwang@cn.ibm.com>
+Subject: Re: [PATCH] perf tools: Fix perf version generation
+References: <1368006214-12912-1-git-send-email-rric@kernel.org>
+In-Reply-To: <1368006214-12912-1-git-send-email-rric@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050810-5490-0000-0000-0000036B7C43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
-
-On Wednesday 08 May 2013 10:19:57 Prabhakar Lad wrote:
-> On Wed, May 8, 2013 at 7:32 AM, Laurent Pinchart wrote:
-> > On Tuesday 07 May 2013 15:10:36 Prabhakar Lad wrote:
-> >> On Mon, May 6, 2013 at 8:29 PM, Prabhakar Lad wrote:
-> >> > On Fri, May 3, 2013 at 8:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >> >> On Friday 03 May 2013, Prabhakar Lad wrote:
-> >> > [snip]
-> >> > 
-> >> >>> +}
-> >> >> 
-> >> >> Ok, good.
-> >> >> 
-> >> >>> @@ -955,7 +998,17 @@ static int mt9p031_probe(struct i2c_client
-> >> >>> *client,
-> >> >>> 
-> >> >>>         mt9p031->pdata = pdata;
-> >> >>>         mt9p031->output_control = MT9P031_OUTPUT_CONTROL_DEF;
-> >> >>>         mt9p031->mode2 = MT9P031_READ_MODE_2_ROW_BLC;
-> >> >>> 
-> >> >>> -       mt9p031->model = did->driver_data;
-> >> >>> +
-> >> >>> +       if (!client->dev.of_node) {
-> >> >>> +               mt9p031->model = (enum
-> >> >>> mt9p031_model)did->driver_data;
-> >> >>> +       } else {
-> >> >>> +               const struct of_device_id *of_id;
-> >> >>> +
-> >> >>> +               of_id =
-> >> >>> of_match_device(of_match_ptr(mt9p031_of_match),
-> >> >>> +                                       &client->dev);
-> >> >>> +               if (of_id)
-> >> >>> +                       mt9p031->model = (enum
-> >> >>> mt9p031_model)of_id->data;
-> >> >>> +       }
-> >> >>> 
-> >> >>>         mt9p031->reset = -1;
-> >> >> 
-> >> >> Is this actually required? I thought the i2c core just compared the
-> >> >> part of the "compatible" value after the first comma to the string, so
-> >> >> "mt9p031->model = (enum mt9p031_model)did->driver_data" should work
-> >> >> in both cases.
-> >> > 
-> >> > I am OK with "mt9p031->model = (enum mt9p031_model)did->driver_data"
-> >> > but I see still few drivers doing this, I am not sure for what reason.
-> >> > If everyone is OK with it I can drop the above change.
-> >> 
-> >> My bad, while booting with DT the i2c_device_id ie did in this case will
-> >> be NULL, so the above changes are required :-)
-> > 
-> > I've just tested your patch, and did isn't NULL when booting my
-> > Beagleboard with DT (on v3.9-rc5).
+On 05/08/2013 05:43 PM, Robert Richter wrote:
+> From: Robert Richter <robert.richter@calxeda.com>
 > 
-> I am pretty much sure you tested it compatible property as "aptina,mt9p031"
-> if the compatible property is set to "aptina,mt9p031m" the did will be NULL.
+> The tag of the perf version is wrongly determined, always the latest
+> tag is taken regardless of the HEAD commit:
+> 
+>  $ perf --version
+>  perf version 3.9.rc8.gd7f5d3
+>  $ git describe d7f5d3
+>  v3.9-rc7-154-gd7f5d33
+>  $ head -n 4 Makefile
+>  VERSION = 3
+>  PATCHLEVEL = 9
+>  SUBLEVEL = 0
+>  EXTRAVERSION = -rc7
+> 
+> In other cases no tag might be found.
+> 
+> This patch fixes this.
+> 
+> This new implementation handles also the case if there are no tags at
+> all found in the git repo but there is a commit id.
 
-I've tested both :-)
+I remember that Wang has posted a similar patch to fix this bug several
+weeks ago:
+	http://lkml.org/lkml/2013/4/24/70
 
--- 
-Regards,
-
-Laurent Pinchart
+But have no response yet.
 
