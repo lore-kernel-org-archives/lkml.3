@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab3EHGZE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 02:25:04 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5482 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751031Ab3EHGZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 02:25:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,632,1363158000"; 
-   d="scan'208";a="334259163"
-Date: Wed, 8 May 2013 14:24:55 +0800
-From: Haicheng Li <haicheng.li@linux.intel.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Haicheng Li <haicheng.lee@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [PATCH 4/4] f2fs: optimize build_free_nids()
-Message-ID: <20130508062455.GB8705@hli22-desktop>
-References: <1367853344-28938-1-git-send-email-haicheng.li@linux.intel.com>
- <1367853344-28938-5-git-send-email-haicheng.li@linux.intel.com>
- <1367922839.16581.42.camel@kjgkr>
+	id S1752702Ab3EHGoY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 02:44:24 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:59705 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab3EHGoX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 02:44:23 -0400
+Date: Wed, 8 May 2013 08:44:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: John Stultz <john.stultz@linaro.org>, Feng Tang <feng.tang@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Fwd: [GIT PULL] timer changes for v3.10
+Message-ID: <20130508064419.GA5378@gmail.com>
+References: <20130430074322.GA20110@gmail.com>
+ <20130506230137.GA16801@amd.pavel.ucw.cz>
+ <CA++bM2scosWgBpC3_LzcKYOjG4EQQzN5Vf4rZFds-5qRVRwvDQ@mail.gmail.com>
+ <20130507023853.GA2945@feng-snb>
+ <20130507065348.GF17705@gmail.com>
+ <51892560.7090202@linaro.org>
+ <20130507213142.GA10061@amd.pavel.ucw.cz>
+ <51897497.7040806@linaro.org>
+ <20130507215151.GB10061@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1367922839.16581.42.camel@kjgkr>
+In-Reply-To: <20130507215151.GB10061@amd.pavel.ucw.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 07:33:59PM +0900, Jaegeuk Kim wrote:
-> 2013-05-06 (월), 23:15 +0800, Haicheng Li:
-> > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> > index 1fe3fe2..3136224 100644
-> > --- a/fs/f2fs/node.c
-> > +++ b/fs/f2fs/node.c
-> > @@ -1342,6 +1342,8 @@ static void build_free_nids(struct f2fs_sb_info *sbi)
-> >  		if (nid >= nm_i->max_nid)
-> >  			nid = 0;
-> >  
-> > +		if (nm_i->fcnt > 2 * MAX_FREE_NIDS)
-> > +			break;
+
+* Pavel Machek <pavel@ucw.cz> wrote:
+
+> > Sorry. You seem to not like the merged change, but I guess I'm not
+> > quite sure what exactly your objection is here.
 > 
-> Could you explain when this can happen?
-
-I'm thinking of this possible scenario:
-
-as we don't hold any spinlock to protect the context, add_free_nid() could be 
-called by other thread anytime, e.g. by the gc_thread_func() in background.
-
-then nm_i->fcnt could be increased as 2 * MAX_FREE_NIDS while i < FREE_NID_PAGES.
-
-Anything I misconsidered?
-
-> IMO, this is an unnecessary condition check, since the below condition
-> that includes FREE_NID_PAGES already limits the number of free nids.
-> Thanks,
-
-hmm, the pros is that this check may possibly avoid some (< 4) unnecessary while-loop,
-the cons is that too many checks of (nm_i->fcnt > 2 * MAX_FREE_NIDS)
-would make the code looking messy and fragmentary...
- 
-> >  		if (i++ == FREE_NID_PAGES)
-> >  			break;
-> >  	}
+> I'm not exactly sure what my objections are.
 > 
-> -- 
-> Jaegeuk Kim
-> Samsung
+> TSC was not designed for long-term precise timekeeping. [...]
 
+The TSC is just a 64-bit counter that can be read very cheaply.
 
+If the TSC is _implemented_ precisely in hardware and is kept in sync over 
+CPUs then it's obviously fit for long-term precise timekeeping from that 
+point on.
+
+> [...] I guess it may work ok for short naps, [...]
+
+Historically the TSC was not very precise nor kept in sync, but see the 
+measurements from Feng Tang, it's very precise now on good hardware - and 
+it's also a very cheap to read clocksource.
+
+> [...] but some people suspend their machines for longer than that. Plus 
+> I wonder how it will interfere with /etc/adjtime.
+
+If it's precise then why should it interfere?
+
+The history of the TSC being problematic can be ignored the moment CPU 
+makers fix it completely - and apparently that is happening...
+
+Thanks,
+
+	Ingo
