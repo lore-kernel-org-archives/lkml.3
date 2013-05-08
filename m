@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab3EHMMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 08:12:24 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57603 "EHLO
+	id S1755102Ab3EHMQM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 08:16:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54735 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754227Ab3EHMMW (ORCPT
+	with ESMTP id S1754354Ab3EHMQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 08:12:22 -0400
+	Wed, 8 May 2013 08:16:10 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: Re: [PATCH v2] thermal: cpu_cooling: fix stub function
-Date: Wed, 8 May 2013 14:12:13 +0200
+To: Simon Horman <horms@verge.net.au>
+Subject: Re: [PATCH 03/21] ARM: shmobile: don't call irqchip_init unconditionally
+Date: Wed, 8 May 2013 14:16:06 +0200
 User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Zhang Rui <rui.zhang@intel.com>,
-        Amit Daniel kachhap <amit.daniel@samsung.com>
-References: <1367507786-505303-1-git-send-email-arnd@arndb.de> <201305021829.37343.arnd@arndb.de> <51829A45.7040307@ti.com>
-In-Reply-To: <51829A45.7040307@ti.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Bastian Hecht <hechtb+renesas@gmail.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de> <CAL_JsqJWJvxezXy0RGFutxzvBhca-8=uRH2GxdJgzbEGw+OL0A@mail.gmail.com> <20130501225748.GD6517@verge.net.au>
+In-Reply-To: <20130501225748.GD6517@verge.net.au>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-15"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201305081412.14201.arnd@arndb.de>
-X-Provags-ID: V02:K0:ljBbV7rc19IQE9Y9+d+blbKUumOrHzvaqfzxIandEbd
- hIdmpElqT3MjOH1yCYl/rHBDXn1vx3p1snHxnQxSu0LD95Map3
- z5Twh5RP5FwkeH9sBeUNwP0/LRMqNqZe14XEaHoAaTKpNlfyBR
- q8Bynj9V+cIQCK3jXHoYg1fU0fGurAzDtCM2lZB6E4dHlHAswU
- 8JVw/HOSTZb31yC0vqR3DzYMmiLS6E+CNO2duSUUN6U246DQEv
- 6Cg4EdfP2KWwfuHVZdFmQZMFyLY0pq3puDYgt6oqESkMDqnEXb
- /Q7GWWRj+nmeNzbHCIOHa9V5IIo6ZIvtV1H0DL07dvwGMhqeSH
- kp7RYm29fAHdqqrVOHNU=
+Message-Id: <201305081416.06611.arnd@arndb.de>
+X-Provags-ID: V02:K0:V6SfgmSMFRi0TxGBMo3cAblLQTYmWA88FyoCo5PUTCa
+ jXCwSjftaP05JMAiNJgfBPv/96nU7lMaJvjYg8Cs/5KVy4G/Ua
+ G9fT8+a4a3hQrZgW+QhDYhyyPyWfTxv8lbZPitR33BVArdAowU
+ qyiL1fBwQrEQcSIl3L+NiBo7VJeuq91RzZlxz8v5VYXZxB1pmV
+ TbXczIjys3i+28t/J2x7tlGLjnNwGkof3bh2M1Kp92Dl55ls3C
+ nrtNBN9g0oUTAYJb3jztBNe4MKvZ05XQAYQa4FSbFH1oOVZSsX
+ Qix1BrkX1s+gEqzWs8oiky/pj5ykfQDjjNXmO+JqdtoShIntUC
+ DhekbSH7PPBnoDgWUb58=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 May 2013, Eduardo Valentin wrote:
-> Rui, Arnd,
-> 
-> On 02-05-2013 12:29, Arnd Bergmann wrote:
-> > The function stub for cpufreq_cooling_get_level introduced
-> > in 57df81069 "Thermal: exynos: fix cooling state translation"
-> > is not syntactically correct C and needs to be fixed to avoid
-> > this error:
+On Thursday 02 May 2013, Simon Horman wrote:
+> > > diff --git a/arch/arm/mach-shmobile/intc-r8a7740.c b/arch/arm/mach-shmobile/intc-r8a7740.c
+> > > index 8871f77..5dc57f1 100644
+> > > --- a/arch/arm/mach-shmobile/intc-r8a7740.c
+> > > +++ b/arch/arm/mach-shmobile/intc-r8a7740.c
+> > > @@ -53,14 +53,23 @@ static void __init r8a7740_init_irq_common(void)
+> > >
+> > >  void __init r8a7740_init_irq_of(void)
+> > >  {
+> > > +       if (!IS_ENABLED(CONFIG_OF))
+> > > +               return;
+> > > +
+> > >         irqchip_init();
 > > 
-> > In file included from drivers/thermal/db8500_thermal.c:20:0:
-> >  include/linux/cpu_cooling.h: In function 'cpufreq_cooling_get_level':
-> > include/linux/cpu_cooling.h:57:1:
-> >  error: parameter name omitted  unsigned long cpufreq_cooling_get_level(unsigned int, unsigned int)  ^
-> >  include/linux/cpu_cooling.h:57:1: error: parameter name omitted
-> > 
-> > Cc: Eduardo Valentin <eduardo.valentin@ti.com>
-> > Cc: Zhang Rui <rui.zhang@intel.com>
-> > Cc: Amit Daniel kachhap <amit.daniel@samsung.com>
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > Why not have an empty irqchip_init? I'd guess we'll need this on other
+> > platforms and your default mach.
 > 
-> Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> Thanks, I think that could work.
+> 
+> I will see about making it so.
 
-Rui,
+Ping
 
-Could you please merge that into your thermal/next tree?  Right now,
-linux-next fails to build because of this, and you probably don't
-want to send the current version to Linus without fixing it.
+Linux-next is still broken for me. There is also anothe shmobile build bug,
+I'll send a separate patch for that, which also needs to go into your tree.
 
 	Arnd
