@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab3EHMnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 08:43:20 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40725 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754169Ab3EHMnT (ORCPT
+	id S1755181Ab3EHMna (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 08:43:30 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:48342 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755545Ab3EHMn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 08:43:19 -0400
-Date: Wed, 8 May 2013 13:42:46 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com,
-        sundar.iyer@stericsson.com
-Message-ID: <20130508124246.GP7478@sirena.org.uk>
-References: <1368011110-4049-1-git-send-email-sachin.kamat@linaro.org>
+	Wed, 8 May 2013 08:43:26 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MXXuyh5iveicsfl4"
-Content-Disposition: inline
-In-Reply-To: <1368011110-4049-1-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 212.183.132.60
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/1] regulator: dbx500: Make local symbol static
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <5750435.WVYuIYMX2V@avalon>
+References: <1367563919-2880-1-git-send-email-prabhakar.csengg@gmail.com>
+ <124364082.ILKsvVk9ro@avalon> <CA+V-a8sknnoq7M-HJUW6aW8jtf7T0qxA8OpPjsXdmxO22ic7og@mail.gmail.com>
+ <5750435.WVYuIYMX2V@avalon>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Wed, 8 May 2013 18:13:03 +0530
+Message-ID: <CA+V-a8sfPSEWJz1XAuGv7aPTWDjUpPTmU_Z8372tqjS8O0CCWQ@mail.gmail.com>
+Subject: Re: [PATCH RFC v3] media: i2c: mt9p031: add OF support
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <s.hauer@pengutronix.de>,
+        LMML <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Laurent,
 
---MXXuyh5iveicsfl4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Wed, May 8, 2013 at 4:07 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Prabhakar,
+>
+> On Wednesday 08 May 2013 10:19:57 Prabhakar Lad wrote:
+>> On Wed, May 8, 2013 at 7:32 AM, Laurent Pinchart wrote:
+>> > On Tuesday 07 May 2013 15:10:36 Prabhakar Lad wrote:
+>> >> On Mon, May 6, 2013 at 8:29 PM, Prabhakar Lad wrote:
+>> >> > On Fri, May 3, 2013 at 8:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> >> >> On Friday 03 May 2013, Prabhakar Lad wrote:
+>> >> > [snip]
+>> >> >
+>> >> >>> +}
+>> >> >>
+>> >> >> Ok, good.
+>> >> >>
+>> >> >>> @@ -955,7 +998,17 @@ static int mt9p031_probe(struct i2c_client
+>> >> >>> *client,
+>> >> >>>
+>> >> >>>         mt9p031->pdata = pdata;
+>> >> >>>         mt9p031->output_control = MT9P031_OUTPUT_CONTROL_DEF;
+>> >> >>>         mt9p031->mode2 = MT9P031_READ_MODE_2_ROW_BLC;
+>> >> >>>
+>> >> >>> -       mt9p031->model = did->driver_data;
+>> >> >>> +
+>> >> >>> +       if (!client->dev.of_node) {
+>> >> >>> +               mt9p031->model = (enum
+>> >> >>> mt9p031_model)did->driver_data;
+>> >> >>> +       } else {
+>> >> >>> +               const struct of_device_id *of_id;
+>> >> >>> +
+>> >> >>> +               of_id =
+>> >> >>> of_match_device(of_match_ptr(mt9p031_of_match),
+>> >> >>> +                                       &client->dev);
+>> >> >>> +               if (of_id)
+>> >> >>> +                       mt9p031->model = (enum
+>> >> >>> mt9p031_model)of_id->data;
+>> >> >>> +       }
+>> >> >>>
+>> >> >>>         mt9p031->reset = -1;
+>> >> >>
+>> >> >> Is this actually required? I thought the i2c core just compared the
+>> >> >> part of the "compatible" value after the first comma to the string, so
+>> >> >> "mt9p031->model = (enum mt9p031_model)did->driver_data" should work
+>> >> >> in both cases.
+>> >> >
+>> >> > I am OK with "mt9p031->model = (enum mt9p031_model)did->driver_data"
+>> >> > but I see still few drivers doing this, I am not sure for what reason.
+>> >> > If everyone is OK with it I can drop the above change.
+>> >>
+>> >> My bad, while booting with DT the i2c_device_id ie did in this case will
+>> >> be NULL, so the above changes are required :-)
+>> >
+>> > I've just tested your patch, and did isn't NULL when booting my
+>> > Beagleboard with DT (on v3.9-rc5).
+>>
+>> I am pretty much sure you tested it compatible property as "aptina,mt9p031"
+>> if the compatible property is set to "aptina,mt9p031m" the did will be NULL.
+>
+> I've tested both :-)
+>
+Thanks for the testing :-) I'll remove this changes in the next version.
 
-On Wed, May 08, 2013 at 04:35:10PM +0530, Sachin Kamat wrote:
-> power_state_active_get is used only in this file. Make it static.
-> While at it also move this function definition inside the
-> CONFIG_REGULATOR_DEBUG macro as it is called only from within it.
-> This also avoids further build warning related to unused definition.
-
-Applied, thanks.
-
---MXXuyh5iveicsfl4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRikhCAAoJELSic+t+oim9p+oP/j9td+Xmtg+CCBRLGMA6v9Ki
-oGGHa0jNJNxZJQxYFSOXucZYTQnZKtkUH5RXjDtHfU18oV6Mx8pOMjs4zmnNFxZP
-mnYMPnPXGEVAyV3zGIsDvf0lmaMO/1J7xtkg0NRSFx8UWBazuoL05QGgRqgQQt3r
-6oY3wPrBHdrNqxY83cqce4aNuJ9Y65goY39MZyiKdPMyj5YvG7xO8Kc18q2Qc4J1
-N2rxu2qZChMyk63ws8lijmxKKsOtcxmV5jN39yxYUj4wx+UOYB7HaBpfLmaynOjq
-kar7FCtnSIS/oaj2lHFdUoVeaJ75QkXqPXdDZ4RpI6wXliA+CYHoojDlLf1TakeP
-/i3baAtL3wxpGUj141aOuuTZElT8F7oRnYLZK1j0M9+vtBttd9KSshiKLhbcZxr9
-tUC9yfCTUbbwJAFbhvKKB1znnlk8QHgzNcMuXgHN4L1abxWIJu0GjWqRh5LWGtpl
-PtnU9qW8g214zP9RVrUG4ee9b/sxOX6YKN2bHJ5vY+VZE3qxJbIwkGeQhPX+SVeE
-mICBJYscagOqJWeYh10OiqUXl7aiA5zP/GgqvRN9E7w7EKTOXL/gdgmBv5CmqG1u
-kVINjf7sbsNdkcEsKGM3rBF0XzKwvkuaChj7C/1Uj8wIb4YiFFlzBk0kKrepKLkf
-Mz5Lhd15a6WFniw+y3oP
-=0dPd
------END PGP SIGNATURE-----
-
---MXXuyh5iveicsfl4--
+Regards,
+--Prabhakar Lad
