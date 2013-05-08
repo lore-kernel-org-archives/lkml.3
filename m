@@ -1,91 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530Ab3EHRE3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 13:04:29 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44985 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756924Ab3EHRE1 (ORCPT
+	id S1757198Ab3EHRIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 13:08:50 -0400
+Received: from eu1sys200aog122.obsmtp.com ([207.126.144.153]:38548 "EHLO
+	eu1sys200aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753803Ab3EHRIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 13:04:27 -0400
-Message-ID: <518A8596.7070702@wwwdotorg.org>
-Date: Wed, 08 May 2013 11:04:22 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 8 May 2013 13:08:48 -0400
+Message-ID: <518A855B.50500@st.com>
+Date: Wed, 08 May 2013 18:03:23 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Jay Agarwal <jagarwal@nvidia.com>
-CC: linux@arm.linux.org.uk, thierry.reding@avionic-design.de,
-        ldewangan@nvidia.com, bhelgaas@google.com, olof@lixom.net,
-        hdoyu@nvidia.com, pgaikwad@nvidia.com, mturquette@linaro.org,
-        pdeschrijver@nvidia.com, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, jtukkinen@nvidia.com, kthota@nvidia.com
-Subject: Re: [PATCH 4/4] ARM: tegra: pcie: Enable PCIe controller on Cardhu
-References: <1368010660-31465-1-git-send-email-jagarwal@nvidia.com> <1368010660-31465-4-git-send-email-jagarwal@nvidia.com>
-In-Reply-To: <1368010660-31465-4-git-send-email-jagarwal@nvidia.com>
-X-Enigmail-Version: 1.4.6
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux@arm.linux.org.uk, olof@lixom.net, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Stuart Menefy <stuart.menefy@st.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Jason Cooper <jason@lakedaemon.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Dave Martin <dave.martin@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        Stephen Gallimore <stephen.gallimore@st.com>
+Subject: Re: [RFC 5/8] ARM:stih41x: Add STiH415 SOC support
+References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <1368022297-2334-1-git-send-email-srinivas.kandagatla@st.com> <201305081818.01927.arnd@arndb.de>
+In-Reply-To: <201305081818.01927.arnd@arndb.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2013 04:57 AM, Jay Agarwal wrote:
-> - Enable PCIe controller on Cardhu
-> - Only port 2 is connected on this board
-> - Add regulators required for Tegra30
-> - Patch is based on remotes/gitorious_thierryreding_linux/tegra/next
-> - and should be applied on top of this.
+Thankyou for the comments.
+On 08/05/13 17:18, Arnd Bergmann wrote:
+> On Wednesday 08 May 2013, Srinivas KANDAGATLA wrote:
+>> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>>
+>> The STiH415 is the next generation of HD, AVC set-top box processors for
+>> satellite, cable, terrestrial and IP-STB markets. It is an ARM Cortex-A9
+>> 1.0 GHz, dual-core CPU.
+>>
+>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>> CC: Stephen Gallimore <stephen.gallimore@st.com>
+>> CC: Stuart Menefy <stuart.menefy@st.com>
+>> ---
+>>  Documentation/arm/STiH41x/overview.txt         |   39 ++
+>>  Documentation/arm/STiH41x/stih415-overview.txt |   12 +
+>>  arch/arm/Kconfig                               |    3 +
+>>  arch/arm/Kconfig.debug                         |   38 ++
+>>  arch/arm/Makefile                              |    2 +
+>>  arch/arm/boot/dts/stih415-clock.dtsi           |   38 ++
+>>  arch/arm/boot/dts/stih415-pinctrl.dtsi         |  480 ++++++++++++++++++++++++
+>>  arch/arm/boot/dts/stih415.dtsi                 |   94 +++++
+>>  arch/arm/boot/dts/stih415.h                    |   20 +
+>>  arch/arm/boot/dts/stih41x.dtsi                 |   30 ++
+>>  arch/arm/boot/dts/stixxxx-pincfg.h             |   95 +++++
+>>  arch/arm/configs/stih41x_defconfig             |   94 +++++
+>>  arch/arm/include/debug/stixxxx.S               |   61 +++
+>>  arch/arm/mach-stih41x/Kconfig                  |   35 ++
+>>  arch/arm/mach-stih41x/Makefile                 |    4 +
+>>  arch/arm/mach-stih41x/board-dt.c               |   76 ++++
+>>  arch/arm/mach-stih41x/stih41x.c                |   82 ++++
+>>  arch/arm/mach-stih41x/stih41x.h                |    7 +
+>>  arch/arm/plat-stixxxx/Kconfig                  |    2 +
+>>  arch/arm/plat-stixxxx/Makefile                 |    2 +
+>>  arch/arm/plat-stixxxx/headsmp.S                |   44 +++
+>>  arch/arm/plat-stixxxx/include/plat/hardware.h  |   20 +
+>>  arch/arm/plat-stixxxx/include/plat/smp.h       |   19 +
+>>  arch/arm/plat-stixxxx/platsmp.c                |  144 +++++++
+> I think there is no point in having a separate mach- and plat- directory
+> here, given that modern machines require very little code. You can probably
+> fold the three files in mach-stih41x (board-dt.c, stih41x.c and stih41x.h)
+> into a single file and rename plat-stixxxx to mach-stixxxx
+Yep, sounds good.
+>
+>> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+>> index 9b31f43..42a5193 100644
+>> --- a/arch/arm/Kconfig.debug
+>> +++ b/arch/arm/Kconfig.debug
+>> @@ -447,6 +447,16 @@ choice
+>>  		  This option selects UART0 on VIA/Wondermedia System-on-a-chip
+>>  		  devices, including VT8500, WM8505, WM8650 and WM8850.
+>>  
+>> +	config DEBUG_STIH41X_UART
+>> +		depends on ARCH_STIH41X
+>> +		bool "Use StiH415/416 ASC for low-level debug"
+>> +		help
+>> +		  Say Y here if you want kernel low-level debugging support
+>> +		  on StiH415/416 based platforms like B2000, B2020.
+>> +		  It support UART2 and SBC_UART1.
+>> +
+>> +		  If unsure, say N.
+>> +
+>>  	config DEBUG_LL_UART_NONE
+>>  		bool "No low-level debugging UART"
+>>  		depends on !ARCH_MULTIPLATFORM
+> I would split out the debug code into a separate patch though.
+Will do this in next version.
+>
+>> @@ -600,6 +637,7 @@ config DEBUG_LL_INCLUDE
+>>  	default "debug/vt8500.S" if DEBUG_VT8500_UART0
+>>  	default "debug/tegra.S" if DEBUG_TEGRA_UART
+>>  	default "debug/zynq.S" if DEBUG_ZYNQ_UART0 || DEBUG_ZYNQ_UART1
+>> +	default "debug/stixxxx.S" if DEBUG_STIH41X_UART
+>>  	default "mach/debug-macro.S"
+> Please keep this in alphabetical order.
+Yes.
+>
+>> +	soc {
+>> +		#address-cells = <1>;
+>> +		#size-cells = <1>;
+>> +		#interrupt-cells = <3>;
+>> +		interrupt-parent = <&intc>;
+> The "#interrupt-cells" property doesn't belong here I think.
+>
+>> +
+>> +		uart2: uart@fed32000 {
+>> +			compatible	= "st,asc";
+>> +			status 		= "disabled";
+>> +			reg		= <0xfed32000 0x2c>;
+>> +			interrupts	= <0 197 0>;
+>> +			pinctrl-names 	= "default";
+>> +			pinctrl-0 	= <&pinctrl_uart2>;
+>> +			clocks		= <&CLKS_ICN_REG_0>;
+>> +		};
+>> +
+>> +		/* SBC comms block ASCs in SASG1 */
+>> +		sbc_uart1: uart@fe531000 {
+>> +			compatible	= "st,asc";
+>> +			status 		= "disabled";
+>> +			reg		= <0xfe531000 0x2c>;
+>> +			interrupts	= <0 210 0>;
+>> +			clocks		= <&CLK_SYSIN>;
+>> +			pinctrl-names 	= "default";
+>> +			pinctrl-0	= <&pinctrl_sbc_uart1>;
+>> +		};
+>> +	};
+> Please name these devices "serial", not "uart".
+Ok, I will rename them to serial.
+>> diff --git a/arch/arm/configs/stih41x_defconfig b/arch/arm/configs/stih41x_defconfig
+>> new file mode 100644
+>> index 0000000..dd9268b
+>> --- /dev/null
+>> +++ b/arch/arm/configs/stih41x_defconfig
+> I would prefer to have this be part of multi_v7_defconfig, unless
+> you have strong reason why it can't be.
+I think we can move this to multi_v7_defconfig.
+>> diff --git a/arch/arm/mach-stih41x/Kconfig b/arch/arm/mach-stih41x/Kconfig
+>> new file mode 100644
+>> index 0000000..9c40540
+>> --- /dev/null
+>> +++ b/arch/arm/mach-stih41x/Kconfig
+>> @@ -0,0 +1,35 @@
+>> +config ARCH_STIH41X
+>> +	bool "STMicroelectronics STiH41x SOCs with Flattened Device Tree" if ARCH_MULTI_V7
+>> +	select GENERIC_CLOCKEVENTS
+>> +	select CLKDEV_LOOKUP
+>> +	select ARM_GIC
+>
+>> +if ARCH_STIH41X
+>> +menu "STMicroelectronics Consumer Electronics SOCs"
+> You can use 'menuconfig' to combine these two.
+Thats a nice one.. Will use it.
+>> +static void __init stih41x_timer_init(void)
+>> +{
+>> +	of_clk_init(NULL);
+>> +	clocksource_of_init();
+>> +	stih41x_l2x0_init();
+>> +}
+> I'm hoping we can kill make the clk and l2x0 init work by default in 3.11,
+> as clocksource_of_init already does, so you won't need this function
+> any more.
+Ok.
+>
+>> +/*
+>> + * A basic implementation of irq_set_wake that ensures wakeup source
+>> + * interrupts are not disabled during PM_SUSPEND_FREEZE.
+>> + */
+>> +static int stih41x_set_wake(struct irq_data *d, unsigned int on)
+>> +{
+>> +	struct irq_desc *desc = irq_to_desc(d->irq);
+>> +
+>> +	if (on) {
+>> +		if (desc->action)
+>> +			desc->action->flags |= IRQF_NO_SUSPEND;
+>> +	} else {
+>> +		if (desc->action)
+>> +			desc->action->flags &= ~IRQF_NO_SUSPEND;
+>> +	}
+>> +	return 0;
+>> +}
+>> +
+>> +static void __init stih41x_irq_init(void)
+>> +{
+>> +	gic_arch_extn.irq_set_wake = stih41x_set_wake;
+>> +	gic_arch_extn.flags = IRQCHIP_MASK_ON_SUSPEND;
+>> +
+>> +	irqchip_init();
+>> +}
+> This looks like it should be generic. Why do you need this?
 
-> diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
+>
+>> +void __init stih41x_dt_init(void)
+>> +{
+>> +	of_platform_populate(NULL, of_default_bus_match_table,
+>> +				NULL, NULL);
+>> +	return;
+>> +}
+> This is already not needed in 3.10.
+Ok, cool... will get rid of this..
+>
+>> +static struct map_desc stih41x_io_desc[] __initdata = {
+>> +#ifdef CONFIG_SMP
+>> +	{
+>> +		.virtual	= IO_ADDRESS(MPE41_SCU_BASE),
+>> +		.pfn		= __phys_to_pfn(MPE41_SCU_BASE),
+>> +		.length		= SZ_4K,
+>> +		.type		= MT_DEVICE,
+>> +	},
+>> +#endif
+>> +void __init stih41x_map_io(void)
+>> +{
+>> +#ifdef CONFIG_SMP
+>> +	stixxxx_scu_base_addr = ((void __iomem *)IO_ADDRESS(MPE41_SCU_BASE));
+>> +#endif
+>> +	iotable_init(stih41x_io_desc, ARRAY_SIZE(stih41x_io_desc));
+>> +}
+> IIRC the SCU no longer needs to be mapped this early, so you can use
+> ioremap these days.
+yep, I agree.
+>
+>> +void __init stih41x_l2x0_init(void)
+>> +{
+>> +	u32 way_size = 0x4;
+>> +	u32 aux_ctrl;
+>> +
+>> +	aux_ctrl = (0x1 << L2X0_AUX_CTRL_SHARE_OVERRIDE_SHIFT) |
+>> +		(0x1 << L2X0_AUX_CTRL_DATA_PREFETCH_SHIFT) |
+>> +		(0x1 << L2X0_AUX_CTRL_INSTR_PREFETCH_SHIFT) |
+>> +		(way_size << L2X0_AUX_CTRL_WAY_SIZE_SHIFT);
+>> +
+>> +	l2x0_of_init(aux_ctrl, L2X0_AUX_CTRL_MASK);
+>> +}
+> I don't know where we stand on this, but I think we should kill all
+> calls like these.
+I agree, but we don't have other ways as of today..
+>
+> 	Arnd
+>
 
-> +	pcie-controller {
-> +		status = "okay";
-> +		pex-clk-supply = <&pex_hvdd_3v3_reg>;
-> +		vdd-supply = <&ldo1_reg>;
-> +		avdd-supply = <&ldo2_reg>;
-> +
-> +		pci@3,0 {
-> +			status = "okay";
-> +		};
-> +	};
-
-So, if I apply this series, I do see the PCIe bridge and Ethernet device
-get enumerated, but I don't see the USB3 controller get enumerated. I
-believe that is a PCIe device behind the same bridge on the same Tegra
-PCIe port. Shouldn't this device show up?
-
-The Ethernet interface gets an IP address by DHCP, so some amount of
-data must be flowing. However, I cannot ping anything. If I run the same
-kernel on a Tegra20 TrimSlice board, which has the same Ethernet chip,
-then everything works as expected. Have you fully tested network
-connectivity with these patches applied? Perhaps this is related to the
-next problem:
-
-According to the Cardhu schematics, the PCIe link to the dock is a
-single lane. Hence, I believe that the Cardhu DT should describe a 411
-port configuration. However, the Cardhu DT doesn't describe any
-particular link configuration, but just inherits the default from
-tegra30.dtsi, which describes a 222 link configuration. I would have
-expected the following in the Cardhu DT:
-
-		pci@1,0 {
-			nvidia,num-lanes = <4>;
-		};
-
-		pci@2,0 {
-			nvidia,num-lanes = <1>;
-		};
-
-		pci@3,0 {
-			status = "okay";
-			nvidia,num-lanes = <1>;
-		};
-
-However, if I put that there, no PCIe links are detected at all. Why
-does the driver work with the wrong link configuration, but fail with
-the correct one?
-
-Related, I notice that in Thierry's patches which you're building on,
-tegra_pcie_get_xbar_config() still has a bug where a zero return value
-is treated as an error, even though it's a valid HW register value.
-Perhaps this is related?
