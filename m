@@ -1,101 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab3EHIh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 04:37:59 -0400
-Received: from smtprelay0147.b.hostedemail.com ([64.98.42.147]:33091 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752394Ab3EHIhz (ORCPT
+	id S1752955Ab3EHIiU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 04:38:20 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35456 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394Ab3EHIiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 04:37:55 -0400
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Panda: scanned!
-X-Spam-Summary: 40,2.5,0,,d41d8cd98f00b204,t.artem@lycos.com,:::::::::::::::::,RULES_HIT:152:355:379:582:599:967:973:988:989:1152:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2525:2553:2561:2564:2682:2685:2859:2896:2902:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4470:5007:6117:6261:7903:8531:9025:9036:9388:10011:10030:10049:10400:10848:11658:11914:12043:12517:12519:12660:12663:12740:13091:13160:13229,0,RBL:none,CacheIP:none,Bay
-X-HE-Tag: twig60_27c87e51c5f56
-X-Filterd-Recvd-Size: 4788
-Date: Wed, 8 May 2013 08:37:53 +0000 (UTC)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: patrik.r.jakobsson@gmail.com
-Cc: bhelgaas@google.com, hancockrwd@gmail.com, stern@rowland.harvard.edu,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, rjw@sisk.pl, psusi@ubuntu.com
-Message-ID: <1786821921.88859.1368002273356.JavaMail.mail@webmail05>
-References: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
- <Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
- <CAErSpo7NZoOQZyW76HEoOTVgdqL2CgbVScAeF6HGLAVaNCq0=w@mail.gmail.com>
- <337833384.57445.1361860509194.JavaMail.mail@webmail08>
- <CAErSpo6CbO5KYXiErv6J_Dnm1u694C5fQPP2_cZL8VKDEnZa9A@mail.gmail.com>
- <569718148.80620.1361906088301.JavaMail.mail@webmail13>
- <CAErSpo6UkVhSf+nFW4zwJLBQw_0RQ5H9Bv-UuQRb6zdwsFPw4g@mail.gmail.com>
- <CAErSpo4X+XXKvWDfqh2CKZAtJ9WMQk91OcsWwdxwYv2MfEM_zQ@mail.gmail.com>
- <771333906.75854.1367057440028.JavaMail.mail@webmail08>
- <CAErSpo4B4sRco-nuqgXiYtGQxBcbEB6ArQjHD0A9cj4TRE+qQw@mail.gmail.com>
- <518097B8.4020402@gmail.com>
- <CAErSpo7KWPRVEnw+n068pUZz+=WSTwno6m6t7N6dunuhnFC8EA@mail.gmail.com>
- <384171828.66802.1367942365492.JavaMail.mail@webmail05>
- <CADLC3L3bdTP8-X3ftMq1qxnL=LVDf7d5gbu2ZMH0pXg2AU8xjw@mail.gmail.com>
- <CAErSpo50iyEbCer+-K8uXUdnsG_EzFe_ZjKnrtfq5x0Zw3Yd6w@mail.gmail.com>
- <CAMeQTsZEpRE_bv6o9mBpqNrbf36SZVscxy+JS72=BOzA1ey-XQ@mail.gmail.com>
- <CAErSpo75SETEe-OKhY2-NW3csaxt=f09JcheHx95bzkCcGO6yg@mail.gmail.com><CAMeQTsY1jc99boFC_KDTL=-Pt-W1q5ZiS+r89QkPE+vAk386UQ@mail.gmail.com>
-Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
+	Wed, 8 May 2013 04:38:16 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <518A0EE8.1060005@jp.fujitsu.com>
+Date: Wed, 08 May 2013 17:38:00 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: ddutile@redhat.com
+CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        bhelgaas@google.com, iommu@lists.linux-foundation.org,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH] Reset PCIe devices to stop ongoing DMA
+References: <1366779539-3584-1-git-send-email-indou.takao@jp.fujitsu.com> <51783987.2040604@redhat.com> <5178BAFB.9060100@jp.fujitsu.com> <51796F77.1040108@redhat.com>
+In-Reply-To: <51796F77.1040108@redhat.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [92.255.128.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-May 8, 2013 04:25:43 AM, Patrik Jakobsson wrote:
-On Wed, May 8, 2013 at 12:02 AM, Bjorn Helgaas wrote:
->> On Tue, May 7, 2013 at 2:48 PM, Patrik Jakobsson wrote:
->>> On Tue, May 7, 2013 at 10:20 PM, Bjorn Helgaas  wrote:
->>>>> I'm not sure if reading /proc/mtrr actually reads the registers out of
->>>>> the CPU each time, or whether we just return the cached values we read
->>>>> out during initial boot-up. If the latter, then this output isn't
->>>>> really useful as there's no guarantee the values are still intact.
+(2013/04/26 3:01), Don Dutile wrote:
+> On 04/25/2013 01:11 AM, Takao Indoh wrote:
+>> (2013/04/25 4:59), Don Dutile wrote:
+>>> On 04/24/2013 12:58 AM, Takao Indoh wrote:
+>>>> This patch resets PCIe devices on boot to stop ongoing DMA. When
+>>>> "pci=pcie_reset_devices" is specified, a hot reset is triggered on each
+>>>> PCIe root port and downstream port to reset its downstream endpoint.
 >>>>
->>>> Good point.  From what I can tell, on Artem's system with "CPU0:
->>>> Intel(R) Core(TM) i5-2500 CPU @ 3.30GHz," we would be using
->>>> generic_mtrr_ops, and generic_get_mtrr() appears to read from the
->>>> MSRs, so I think it should be useful.
->>>
->>> FWIW, that motherboard suffers from a PCI to PCIE bridge problem. It might
->>> have been fixed by bios upgrades by now but not sure.
->>>
->>> It might also suffer (depending on the revision) from the Sandy bridge SATA
->>> issue. So if affected, SATA controller is a ticking bomb.
->>>
->>> I have a P8H67-V motherboard but I haven't seen any suspend related issues.
->>>
->>> If this is totally unrelated I'm sorry for wasting your time. Just thought it
->>> might be good to know.
+>>>> Problem:
+>>>> This patch solves the problem that kdump can fail when intel_iommu=on is
+>>>> specified. When intel_iommu=on is specified, many dma-remapping errors
+>>>> occur in second kernel and it causes problems like driver error or PCI
+>>>> SERR, at last kdump fails. This problem is caused as follows.
+>>>> 1) Devices are working on first kernel.
+>>>> 2) Switch to second kernel(kdump kernel). The devices are still working
+>>>>       and its DMA continues during this switch.
+>>>> 3) iommu is initialized during second kernel boot and ongoing DMA causes
+>>>>       dma-remapping errors.
+>>>>
+>>>> Solution:
+>>>> All DMA transactions have to be stopped before iommu is initialized. By
+>>>> this patch devices are reset and in-flight DMA is stopped before
+>>>> pci_iommu_init.
+>>>>
+>>>> To invoke hot reset on an endpoint, its upstream link need to be reset.
+>>>> reset_pcie_devices() is called from fs_initcall_sync, and it finds root
+>>>> port/downstream port whose child is PCIe endpoint, and then reset link
+>>>> between them. If the endpoint is VGA device, it is skipped because the
+>>>> monitor blacks out if VGA controller is reset.
+>>>>
+>>> Couple questions wrt VGA device:
+>>> (1) Many graphics devices are multi-function, one function being VGA;
+>>>        is the VGA always function 0, so this scan sees it first&  doesn't
+>>>        do a reset on that PCIe link?  if the VGA is not function 0, won't
+>>>        this logic break (will reset b/c function 0 is non-VGA graphics) ?
 >>
->> Thanks for chiming in.  I'm not familiar with either of the issues you
->> mentioned.  Do you have any references where I could read up on them?
->
->I think this is the official statement from Intel on the SATA issue:
->http://newsroom.intel.com/community/intel_newsroom/blog/2011/01/31/intel-identifies-chipset-design-error-implementing-solution
+>> VGA is not reset irrespective of its function number. The logic of this
+>> patch is:
+>>
+>> for_each_pci_dev(dev) {
+>>       if (dev is not PCIe)
+>>          continue;
+>>       if (dev is not root port/downstream port) ---(1)
+>>          continue;
+>>       list_for_each_entry(child,&dev->subordinate->devices, bus_list) {
+>>           if (child is upstream port or bridge or VGA) ---(2)
+>>               continue;
+>>       }
+>>       do_reset_its_child(dev);
+>> }
+>>
+>> Therefore VGA itself is skipped by (1), and upstream device(root port or
+>> downstream port) of VGA is also skipped by (2).
+>>
+>>
+>>> (2) I'm hearing VGA will soon not be the a required console; this logic
+>>>        assumes it is, and why it isn't blanked.
+>>>        Q: Should the filter be based on a device having a device-class of display ?
+>>
+>> I want to avoid the situation that user's monitor blacks out and user
+>> cannot know what's going on. That's reason why I introduced the logic to
+>> skip VGA. As far as I tested the logic based on device-class works well,
+> sorry, I read your description, which said VGA, but your are filtering on display class,
+> which includes non-VGA as well. So, all set ... but large, (x16) non-VGA display devices
+> are probably one of the most aggressive DMA engines on a system.... and will grow as
+> asymmetric processing using GPUs gets architected into a device-agnostic manner.
+> So, this may work well for servers, which is the primary consumer/user of this feature,
+> and they typically have built-in graphics that are generally used in simple VGA mode,
+> so this may be sufficient for now.
+>   
+> 
+>> but I would appreciate it if there are better ways.
+>>
+> You probably don't want to hear it but....
+> a) only turn off cmd-reg master enable bit
+> b) only do reset based on a list of devices known not to
+>     obey their cmd-reg master enable bit, and only do reset to those devices.
+> But, given the testing you've done so far, this optional (need cmdline) feature,
+> let's start here.
+> 
+>>>
+>>>> Actually this is v8 patch but quite different from v7 and it's been so
+>>>> long since previous post, so I start over again.
+>>> Thanks for this re-start.  I need to continue reviewing the rest.
+>>
+>> Thank you for your review!
+>>
+>>>
+>>> Q: Why not force IOMMU off when re-booting a kexec kernel to perform a crash
+>>>       dump?  After the crash dump, the system is rebooting to previous (iommu=on) setting.
+>>>       That logic, along w/your previous patch to disable the IOMMU if iommu=off
+>>>       is set, would remove this (relatively slow) PCI init sequencing ?
+>>
+>> To force iommu off, all ongoing DMA have to be stopped before that since
+>> they are accessing the device address, not physical address. If we disable
+>> iommu without stopping in-flihgt DMA, devices access invalid memory area
+>> and it causes memory corruption or PCI-SERR due to DMA error.
+> Right, that's a 'duh' on my part.
+> I thought 'disable iommu' == 'block all dma' and it just turns it off &
+> let's the ongoing DMA run...
+> Please ignore this question... sigh.
+> 
+>>
+>> So, whether we use iommu or not in second kernel, we have to stop DMA in
+>> second kernel if iommu is used in first kernel.
+>>
+>> Thanks,
+>> Takao Indoh
+>>
+>>
+>>>
+>>>> Previous post:
+>>>> [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump
+>>>> https://lkml.org/lkml/2012/11/26/814
+>>>>
+>>>> Signed-off-by: Takao Indoh<indou.takao@jp.fujitsu.com>
+>>>> ---
+>>>>     Documentation/kernel-parameters.txt |    2 +
+>>>>     drivers/pci/pci.c                   |  103 +++++++++++++++++++++++++++++++++++
+>>>>     2 files changed, 105 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>>>> index 4609e81..2a31ade 100644
+>>>> --- a/Documentation/kernel-parameters.txt
+>>>> +++ b/Documentation/kernel-parameters.txt
+>>>> @@ -2250,6 +2250,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>>>                     any pair of devices, possibly at the cost of
+>>>>                     reduced performance.  This also guarantees
+>>>>                     that hot-added devices will work.
+>>>> +        pcie_reset_devices    Reset PCIe endpoint on boot by hot
+>>>> +                reset
+>>>>             cbiosize=nn[KMG]    The fixed amount of bus space which is
+>>>>                     reserved for the CardBus bridge's IO window.
+>>>>                     The default value is 256 bytes.
+>>>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+>>>> index b099e00..42385c9 100644
+>>>> --- a/drivers/pci/pci.c
+>>>> +++ b/drivers/pci/pci.c
+>>>> @@ -3878,6 +3878,107 @@ void __weak pci_fixup_cardbus(struct pci_bus *bus)
+>>>>     }
+>>>>     EXPORT_SYMBOL(pci_fixup_cardbus);
+>>>>
+>>>> +/*
+>>>> + * Return true if dev is PCIe root port or downstream port whose child is PCIe
+>>>> + * endpoint except VGA device.
+>>>> + */
+>>>> +static int __init need_reset(struct pci_dev *dev)
+>>>> +{
+>>>> +    struct pci_bus *subordinate;
+>>>> +    struct pci_dev *child;
+>>>> +
+>>>> +    if (!pci_is_pcie(dev) || !dev->subordinate ||
+>>>> +        list_empty(&dev->subordinate->devices) ||
+>>>> +        ((pci_pcie_type(dev) != PCI_EXP_TYPE_ROOT_PORT)&&
+>>>> +         (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM)))
+>>>> +        return 0;
+>>>> +
+>>>> +    subordinate = dev->subordinate;
+>>>> +    list_for_each_entry(child,&subordinate->devices, bus_list) {
+>>>> +        if ((pci_pcie_type(child) == PCI_EXP_TYPE_UPSTREAM) ||
+>>>> +            (pci_pcie_type(child) == PCI_EXP_TYPE_PCI_BRIDGE) ||
+>>>> +            ((child->class>>   16) == PCI_BASE_CLASS_DISPLAY))
+>>>> +            /* Don't reset switch, bridge, VGA device */
+>>>> +            return 0;
+>>>> +    }
+>>>> +
+>>>> +    return 1;
+>>>> +}
+>>>> +
+>>>> +static void __init save_config(struct pci_dev *dev)
+> This should be renamed.  it implies it is saving the config of the pdev passed in,
+> when in reality, it is saving the config of all the devices attached to this pdev.
+> i.e., save_downstream_configs()
+> 
+>>>> +{
+>>>> +    struct pci_bus *subordinate;
+>>>> +    struct pci_dev *child;
+>>>> +
+>>>> +    if (!need_reset(dev))
+>>>> +        return;
+>>>> +
+>>>> +    subordinate = dev->subordinate;
+>>>> +    list_for_each_entry(child,&subordinate->devices, bus_list) {
+>>>> +        dev_info(&child->dev, "save state\n");
+>>>> +        pci_save_state(child);
+>>>> +    }
+>>>> +}
+>>>> +
+>>>> +static void __init restore_config(struct pci_dev *dev)
+> inverse of above: restore_downstream_configs()
+>>>> +{
+>>>> +    struct pci_bus *subordinate;
+>>>> +    struct pci_dev *child;
+>>>> +
+>>>> +    if (!need_reset(dev))
+>>>> +        return;
+>>>> +
+>>>> +    subordinate = dev->subordinate;
+>>>> +    list_for_each_entry(child,&subordinate->devices, bus_list) {
+>>>> +        dev_info(&child->dev, "restore state\n");
+>>>> +        pci_restore_state(child);
+>>>> +    }
+>>>> +}
+>>>> +
+>>>> +static void __init do_device_reset(struct pci_dev *dev)
+> do_downstream_device_reset() -- it's not resetting this pdev,
+> but the pdev's of the devices attached to it.
+> 
+>>>> +{
+>>>> +    u16 ctrl;
+>>>> +
+>>>> +    if (!need_reset(dev))
+>>>> +        return;
+>>>> +
+>>>> +    dev_info(&dev->dev, "Reset Secondary bus\n");
+>>>> +
+>>>> +    /* Assert Secondary Bus Reset */
+>>>> +    pci_read_config_word(dev, PCI_BRIDGE_CONTROL,&ctrl);
+>>>> +    ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
+>>>> +    pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
+>>>> +
+>>>> +    msleep(2);
+>>>> +
+> This works well for x86, which uses ioport registers to access
+> these <256-offset registers, b/c the write() function can't return
+> until the write is actually completed, but for a non-x86 system,
+> with fully mmconf'd PCI space, a write() may still be a write & run
+> (sitting in CPU write-merge) buffer, so if you need a full 2ms,
+> you ought to do another read_config() to the device, to flush the write,
+> before starting the msleep(2) clock.
+> 
+>>>> +    /* De-assert Secondary Bus Reset */
+>>>> +    ctrl&= ~PCI_BRIDGE_CTL_BUS_RESET;
+>>>> +    pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
+>>>> +}
+>>>> +
+>>>> +static int __initdata pcie_reset_devices;
+>>>> +static int __init reset_pcie_devices(void)
+> this should be reset_pcie_endpoints() ... it's not resetting all pcie devices
+>>>> +{
+>>>> +    struct pci_dev *dev = NULL;
+>>>> +
+>>>> +    if (!pcie_reset_devices)
+>>>> +        return 0;
+>>>> +
+>>>> +    for_each_pci_dev(dev)
+>>>> +        save_config(dev);
+>>>> +
+>>>> +    for_each_pci_dev(dev)
+>>>> +        do_device_reset(dev);
+>>>> +
+>>>> +    msleep(1000);
+>>>> +
+>>>> +    for_each_pci_dev(dev)
+>>>> +        restore_config(dev);
+>>>> +
+> My apologies if past thread covered this sequence...
+> Why three loops through all PCIe devices on the system?
+> why not have the first for-each-pci-dev() loop filter devices
+> to be reset, and save_config those pdev's,
+> return a list of saved_pdev's;  feed that list into the do_device_reset();
+> then mpsleep(), then restore the list.
+> in fact, once you create a link list of pdev's to reset,
+> just loop that list doing save, then reset; rtn the list, do msleep(),
+> then restore the config of pdevs in the list.
+> Otherwise, doing much more traversing than what's needed.
+> Doing a great deal more config-saving then needed right now as well
+> (saving all non-endpt devices that aren't reset).
 
-My motherboard has a new fixed B3 revision so this issue doesn't affect me.
-Besides this SATA ports degradation issue is constantly present - it has no
-relationship to suspend.
+One question, do you mean we should have two lists? For example,
 
->
->And here's a link to a discussion about the PCIe-to-PCI bridge stuff:
->https://lkml.org/lkml/2012/1/30/216
->
->> Artem's system has a PCIe-to-PCI bridge (not a PCI-to-PCIe bridge) at
->> 05:00.0, but it leads to [bus 06] and there's nothing on bus 06, so I
->> don't think that's the problem.
->
->I meant what you said ;) and yes, it seems unrelated. Both my P8H67 and a
->P8P67 I've built behave nicely if nothing is connected.
+LIST_HEAD(pci_reset_list); /* pdev list to reset */
+LIST_HEAD(pci_saved_list); /* pdev list to save/restore config */
 
-Have you tried suspending more than three times? In the absence of UEFI
-boot this bug emerges only on a third or even fourth resume attempt. UEFI
-boot triggers it immediately on a first resume though.
+Or simply making one list and just loop it like this:
 
->> And the issue affects both USB and a hard drive, so I suspect it's
->> more than just SATA.  Artem, did you identify the PCI devices leading
->> to your USB and hard drive?  I can't remember if I've actually seen
->> that.
+    LIST_HEAD(pdev_list);
+
+    for_each_pci_dev(pdev)
+        if (need_reset(pdev))
+            /* Add pdev to pdev_list */
+
+    list_for_each_entry(pdev, &pdev_list)
+        save_downstream_configs(pdev);
+
+    list_for_each_entry(pdev, &pdev_list)
+        do_downstream_device_reset(pdev);
+
+    list_for_each_entry(pdev, &pdev_list)
+        restore_downstream_configs(pdev);
+
+Thanks,
+Takao Indoh
+
+> 
+>>>> +    return 0;
+>>>> +}
+>>>> +fs_initcall_sync(reset_pcie_devices);
+>>>> +
+>>>>     static int __init pci_setup(char *str)
+>>>>     {
+>>>>         while (str) {
+>>>> @@ -3920,6 +4021,8 @@ static int __init pci_setup(char *str)
+>>>>                     pcie_bus_config = PCIE_BUS_PEER2PEER;
+>>>>                 } else if (!strncmp(str, "pcie_scan_all", 13)) {
+>>>>                     pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
+>>>> +            } else if (!strncmp(str, "pcie_reset_devices", 18)) {
+> pcie_reset_endpoint_devices
+>>>> +                pcie_reset_devices = 1;
+> pcie_reset_endpoint_devices
+>>>>                 } else {
+>>>>                     printk(KERN_ERR "PCI: Unknown option `%s'\n",
+>>>>                             str);
+>>>
+>>>
+>>>
+>>
+> 
+> 
+> 
+
