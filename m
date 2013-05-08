@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab3EHTKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 15:10:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43727 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752402Ab3EHTKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 15:10:49 -0400
-Message-ID: <518AA321.6070900@zytor.com>
-Date: Wed, 08 May 2013 12:10:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1754894Ab3EHTLT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 15:11:19 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:28660 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753328Ab3EHTLS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 15:11:18 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+OEuyMl2QDw/GTU0z47zDU
+Date: Wed, 8 May 2013 12:11:09 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Chris Mason <clmason@fusionio.com>, Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] SLAB changes for v3.10
+Message-ID: <20130508191109.GB32546@atomide.com>
+References: <alpine.LFD.2.03.1305070936320.2383@kernel.org>
+ <20130508003022.GS28721@atomide.com>
+ <20130508042422.GU28721@atomide.com>
+ <20130508181353.23991.17852@localhost.localdomain>
+ <0000013e856463fa-9a895b58-ef76-42fa-a33d-778b89f97cf2-000000@email.amazonses.com>
+ <20130508184817.4271.72594@localhost.localdomain>
+ <0000013e85852607-fd84223c-112e-46b9-a60f-73d9597d90ac-000000@email.amazonses.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        sonnyrao@chromium.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: IO regression after ab8fabd46f on x86 kernels with high memory
-References: <517B1153.8000401@valvesoftware.com> <517B2FB4.30605@redhat.com> <20130427024248.GA1229@cmpxchg.org> <517EEBD1.503@valvesoftware.com> <CA+55aFxcq44JsrrR5KKuT=DZQHCfOE3KHQrcD215T+deYesW2g@mail.gmail.com>
-In-Reply-To: <CA+55aFxcq44JsrrR5KKuT=DZQHCfOE3KHQrcD215T+deYesW2g@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0000013e85852607-fd84223c-112e-46b9-a60f-73d9597d90ac-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2013 03:03 PM, Linus Torvalds wrote:
-> On Mon, Apr 29, 2013 at 2:53 PM, Pierre-Loup A. Griffais
-> <pgriffais@valvesoftware.com> wrote:
->>
->> Other than this particular concern, what's the high-level take-away? Is PAE
->> support in the Linux kernel a false promise than distros should not be
->> shipping by default, if at all? Should it be removed from the kernel
->> entirely if these configurations are knowingly broken by commits like this?
+* Christoph Lameter <cl@linux.com> [130508 12:06]:
+> On Wed, 8 May 2013, Chris Mason wrote:
 > 
-> PAE is "make it barely work". The whole concept is fundamentally
-> flawed, and anybody who runs a 32-bit kernel with 16GB or RAM doesn't
-> even understand *how* flawed and stupid that is.
+> > > You correctly moved the checks out of the if (!kmalloc_cacheS())
+> > > condition so that the caches are created properly.
+> >
+> > But if the ordering is required at all, why is it ok to create cache 2
+> > after cache 6 instead of after cache 7?
 > 
+> The power of two caches are 2^x beginning with KMALLOC_MIN_SHIFT. The non
+> power of two caches were folded into number 1 + 2 since they do not fit
+> into the scheme and they are special cased throughout. This works since
+> the minimal slab cache size is 8 bytes.
+> 
+> > IOW if we can safely do cache 2 after cache 6, why can't we just do both
+> > cache 1 and cache 2 after the loop?
+> 
+> Because the cache creation in SLAB can cause the use of a fractional slab
+> size if kmem_cache_create() thinks its better to put the metadata on a
+> different slab cache (OFF_SLAB type) because data will align better that
+> way. Its weird I know but its due to the way that SLAB aligns data in the
+> page frame.
 
-Let's be straight... the problem isn't PAE per se, the problem is
-*HIGHMEM*.  PAE just allows HIGHMEM to stretch further into problematic
-territory.
+Hmm OK so kmalloc_caches[7] got created earlier with INDEX_AC != INDEX_NODE,
+and those are defined as:
 
-Distros install PAE kernels by default because it is required to support
-NX.  That is fine.
+#define INDEX_AC kmalloc_index(sizeof(struct arraycache_init))
+#define INDEX_NODE kmalloc_index(sizeof(struct kmem_cache_node))
 
-The problem is that once your memory crosses the HIGHMEM threshold
--- 896 MiB in the normal configuration -- then you are in "this is going
-to hurt" territory.  I have seen HIGHMEM devastate performance without
-even crossing the 4 GiB threshold where PAE is required.
+So the different sizes for the structs can trigger it like Pekka was
+speculating earlier.
 
-We kernel guys have been asking the distros to ship 64-bit kernels even
-in their 32-bit distros for many years, but concerns of compat issues
-and the desire to deprecate 32-bit userspace seems to have kept that
-from happening.
+Regards,
 
-	-hpa
-
-
+Tony
