@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757606Ab3EHRr0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 13:47:26 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:44384 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757059Ab3EHRrZ (ORCPT
+	id S1757634Ab3EHRuX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 13:50:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36749 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757381Ab3EHRuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 13:47:25 -0400
-Message-ID: <518A8E6C.6070907@st.com>
-Date: Wed, 08 May 2013 18:42:04 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Wed, 8 May 2013 13:50:22 -0400
+Date: Wed, 8 May 2013 10:50:20 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.9.1
+Message-ID: <20130508175020.GA17950@kroah.com>
+References: <20130508041010.GA17374@kroah.com>
+ <20130508072245.GB4169@fysh.org>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, dong.aisheng@linaro.org,
-        sameo@linux.intel.com, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Stuart Menefy <stuart.menefy@st.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
-Subject: Re: [RFC 3/8] mfd:syscon: Introduce claim/read/write/release APIs
-References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <1368022272-2241-1-git-send-email-srinivas.kandagatla@st.com> <201305081650.23264.arnd@arndb.de> <20130508150141.GA5057@opensource.wolfsonmicro.com>
-In-Reply-To: <20130508150141.GA5057@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130508072245.GB4169@fysh.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thankyou for the comments.
-On 08/05/13 16:01, Mark Brown wrote:
-> On Wed, May 08, 2013 at 04:50:22PM +0200, Arnd Bergmann wrote:
->
->>> In many cases a single syconf register contains bits related to multiple
->>> devices, and therefore it need to be shared across multiple drivers at
->>> bit level. The same IP block can have different syscon mappings on
->>> different SOCs.
->> My feeling is that syscon is the wrong place for this functionality,
->> since regmap already handles (some of?) these issues. If you need
->> additional synchronization, it's probably best to extend regmap
->> as needed so other code besides syscon can take advantage of that
->> as well.
-> This sounds like regmap_update_bits() ought to be all that's needed.
+On Wed, May 08, 2013 at 08:22:45AM +0100, Athanasius wrote:
+> On Tue, May 07, 2013 at 09:10:10PM -0700, Greg KH wrote:
+> > I'm announcing the release of the 3.9.1 kernel.
+> > 
+> > All users of the 3.9 kernel series must upgrade.
+> > 
+> > The updated 3.9.y git tree can be found at:
+> > 	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.9.y
+> 
+>   Usually I can:
+> 
+> 	git pull git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git master
 
-Ultimately the syscon_write use the regmap_update_bits, however we really want is the flexibility in using/referring the syscon registers/bits in both device-trees and non-device tree cases.
+If you do that, you only get the master branch updated locally.  Which
+tracks Linus's tree, not the different stable releases.
 
-The reason for these APIs, is the extent of syscon usage is very high in ST set-top-box parts.
+> which means not having to update scripts/commandline history on each
+> major verison change, but this time I did indeed need to:
+> 
+> 	git pull git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.9.y
+> 
+> is this an intended change, or did you do something like forgetting to
+> merge into master on linux-stable ?
 
-Without these new APIs, its very difficult to pass this information to
-the drivers.
+No, I have not changed anything on my end, perhaps you never really were
+updating the different stable branches?
 
-Thanks,
-srini
+thanks,
+
+greg k-h
