@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab3EHWM0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 18:12:26 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39593 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750774Ab3EHWMY (ORCPT
+	id S1752619Ab3EHWQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 18:16:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38173 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab3EHWQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 18:12:24 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+g9H84DYQYotNlrFvkAs3F
-Date: Wed, 8 May 2013 15:12:22 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: balbi@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP3: Beagle: Fix USB Host on beagle xM Ax/Bx
-Message-ID: <20130508221221.GJ32546@atomide.com>
-References: <1366024808-4691-1-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366024808-4691-1-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 8 May 2013 18:16:25 -0400
+Date: Wed, 8 May 2013 15:16:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Christopher Li <sparse@chrisli.org>
+Subject: Re: [patch] err.h: IS_ERR() can accept __user pointers
+Message-Id: <20130508151622.87bde6d58f96ddca9561541f@linux-foundation.org>
+In-Reply-To: <20130508074221.GA5024@elgon.mountain>
+References: <CANeU7QnO8MzqT+9BDsXj3=nkKOBKumOwEKGnT=BL_cS0wiPPmw@mail.gmail.com>
+	<20130508074221.GA5024@elgon.mountain>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [130415 04:25]:
-> On Beagle xM Rev. Ax/Bx, the USB power enable GPIO logic is
-> reversed when compared to other revisions i.e. it is
-> active high instead of active low.
+On Wed, 8 May 2013 10:42:22 +0300 Dan Carpenter <dan.carpenter@oracle.com> wrote:
+
+> Sparse generates a false positive when you pass a __user or __iomem
+> pointer to the IS_ERR() functions.
 > 
-> Use the beagle_config.usb_pwr_level flag correctly so that
-> the power regulator can be configured at runtime.
+> drivers/rtc/rtc-ds1286.c:344:36: sparse: incorrect type in argument 1 (different address spaces)
+> drivers/rtc/rtc-ds1286.c:344:36:    expected void const *ptr
+> drivers/rtc/rtc-ds1286.c:344:36:    got unsigned int [noderef] [usertype] <asn:2>*rtcregs
 > 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-
-Thanks applying into omap-for-v3.10/fixes.
-
-Regards,
-
-Tony
-
+> We can silence these by adding a __force here and upgrading to the
+> latest git release of Sparse.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 > ---
->  arch/arm/mach-omap2/board-omap3beagle.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-omap3beagle.c b/arch/arm/mach-omap2/board-omap3beagle.c
-> index 5382215..21136b2 100644
-> --- a/arch/arm/mach-omap2/board-omap3beagle.c
-> +++ b/arch/arm/mach-omap2/board-omap3beagle.c
-> @@ -112,13 +112,13 @@ static u8 omap3_beagle_version;
->   */
->  static struct {
->  	int mmc1_gpio_wp;
-> -	int usb_pwr_level;
-> +	bool usb_pwr_level;	/* 0 - Active Low, 1 - Active High */
->  	int dvi_pd_gpio;
->  	int usr_button_gpio;
->  	int mmc_caps;
->  } beagle_config = {
->  	.mmc1_gpio_wp = -EINVAL,
-> -	.usb_pwr_level = GPIOF_OUT_INIT_LOW,
-> +	.usb_pwr_level = 0,
->  	.dvi_pd_gpio = -EINVAL,
->  	.usr_button_gpio = 4,
->  	.mmc_caps = MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA,
-> @@ -178,7 +178,7 @@ static void __init omap3_beagle_init_rev(void)
->  	case 0:
->  		printk(KERN_INFO "OMAP3 Beagle Rev: xM Ax/Bx\n");
->  		omap3_beagle_version = OMAP3BEAGLE_BOARD_XM;
-> -		beagle_config.usb_pwr_level = GPIOF_OUT_INIT_HIGH;
-> +		beagle_config.usb_pwr_level = 1;
->  		beagle_config.mmc_caps &= ~MMC_CAP_8_BIT_DATA;
->  		break;
->  	case 2:
-> -- 
-> 1.7.4.1
-> 
+> This change has no effect when using current Sparse releases.
+
+You often put really important stuff after the ^--- and I always move
+it to before the ^--- :)
+
