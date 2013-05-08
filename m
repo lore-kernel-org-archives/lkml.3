@@ -1,103 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab3EHS7n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 14:59:43 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:37637 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab3EHS7m (ORCPT
+	id S1753196Ab3EHTBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 15:01:38 -0400
+Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:36103 "EHLO
+	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752243Ab3EHTBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 14:59:42 -0400
-Message-ID: <1368039578.30363.71.camel@misato.fc.hp.com>
-Subject: Re: v3.9 - CPU hotplug and microcode earlier loading hits a mutex
- deadlock (x86_cpu_hotplug_driver_mutex)
-From: Toshi Kani <toshi.kani@hp.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Borislav Petkov <bp@alien8.de>, prarit@redhat.com,
-        rafael.j.wysocki@intel.com, isimatu.yasuaki@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, fenghua.yu@intel.com,
-        xen-devel@lists.xensource.com
-Date: Wed, 08 May 2013 12:59:38 -0600
-In-Reply-To: <20130508184206.GD11906@phenom.dumpdata.com>
-References: <20130506125937.GA14036@phenom.dumpdata.com>
-	 <20130507190024.GA4303@phenom.dumpdata.com>
-	 <20130508125414.GB30955@pd.tnic>
-	 <20130508140342.GA8152@phenom.dumpdata.com>
-	 <20130508142949.GC30955@pd.tnic> <20130508163249.GB369@phenom.dumpdata.com>
-	 <1368037185.30363.58.camel@misato.fc.hp.com>
-	 <20130508184206.GD11906@phenom.dumpdata.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 8 May 2013 15:01:37 -0400
+Date: Wed, 8 May 2013 19:01:35 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Chris Mason <clmason@fusionio.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [GIT PULL] SLAB changes for v3.10
+In-Reply-To: <20130508184817.4271.72594@localhost.localdomain>
+Message-ID: <0000013e85852607-fd84223c-112e-46b9-a60f-73d9597d90ac-000000@email.amazonses.com>
+References: <alpine.LFD.2.03.1305070936320.2383@kernel.org> <20130508003022.GS28721@atomide.com> <20130508042422.GU28721@atomide.com> <20130508181353.23991.17852@localhost.localdomain> <0000013e856463fa-9a895b58-ef76-42fa-a33d-778b89f97cf2-000000@email.amazonses.com>
+ <20130508184817.4271.72594@localhost.localdomain>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.05.08-54.240.9.70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-08 at 14:42 -0400, Konrad Rzeszutek Wilk wrote:
-> On Wed, May 08, 2013 at 12:19:45PM -0600, Toshi Kani wrote:
-> > On Wed, 2013-05-08 at 12:32 -0400, Konrad Rzeszutek Wilk wrote:
-> > > On Wed, May 08, 2013 at 04:29:49PM +0200, Borislav Petkov wrote:
-> > > > On Wed, May 08, 2013 at 10:03:42AM -0400, Konrad Rzeszutek Wilk wrote:
-> > > > 
-> > > > [ … snip some funky BIOS code ]
-> > > > 
-> > > > > [here it shifts and continues on testing each CPU bit]
-> > > > > 
-> > > > > > Questions over questions...?
-> > > > > 
-> > > > > I probably went overboard with my answers :-)
-> > > > 
-> > > > Konrad, you're killing me! :-) You actually went and looked at the
-> > > > BIOS disassembly voluntarily. You must be insane, I think you should
-> > > > immediately go to the doctor now for a thorough checkup. :-)
-> > > > 
-> > > > I think I know who I can sling BIOS issues now to.
-> > > 
-> > > Great .. :-)
-> > > > 
-> > > > > > Looks like save_mc_for_early would need another, local mutex to fix that.
-> > > > > 
-> > > > > Let me try that. Thanks for the suggestion.
-> > > > 
-> > > > Ok, seriously now: yeah, this was just an idea, it should at least get
-> > > > the nesting out of the way.
-> > > > 
-> > > > About the BIOS deal: you're probably staring at some BIOS out there
-> > > > but is this the way that it is actually going to be implemented on
-> > > > the physical hotplug BIOS? I mean, I've only heard rumors about IVB
-> > > > supporting physical hotplug but do you even have access to such BIOS to
-> > > > verify?
-> > > 
-> > > Unfortunatly not. I am getting an IvyTown box so hopefully that has this
-> > > support. But I thought that Fenghua did since he mentioned in the patch.
-> > > 
-> > > Besides that I think this can also appear on VMWare if one is doing 
-> > > CPU hotplug and on some HP machines - let me CC the relevant people
-> > > extracted from drivers/acpi/processor_driver.c.
-> > > (see  https://lkml.org/lkml/2013/5/7/588 for the thread)
-> > 
-> > >From the stack trace, it looks like a bug in save_mc_for_early().  This
-> > function may not call cpu_hotplug_driver_lock() during CPU online.  I
-> > suppose it intends to protect from CPU offline when microcode is updated
-> > outside of the boot/CPU online context.  If it indeed supports updating
-> > the microcode without using reboot/cpu hotplug, the lock should be held
-> > when such update request is made.
-> 
-> 
-> Hey Toshi,
-> 
-> The fix for this I have posted, but I am more curious whether you have
-> seen on baremetal this issue? Meaning using CPU ACPI hotplug on v3.9?
+On Wed, 8 May 2013, Chris Mason wrote:
 
-Oh, I see.  No, I do not have a beremetal test machine that supports CPU
-hotplug yet.  My initial target is to support CPU hotplug on VMs.  I did
-not hit this issue since my test env was limited to CPU hot-delete
-followed by CPU hot-add.  In such case, uci->valid is still set during
-CPU hot-add and does not get into this code path.  I am not sure if
-uci->valid is supposed to be set after CPU hot-delete, though.
+> > You correctly moved the checks out of the if (!kmalloc_cacheS())
+> > condition so that the caches are created properly.
+>
+> But if the ordering is required at all, why is it ok to create cache 2
+> after cache 6 instead of after cache 7?
 
-Thanks,
--Toshi
+The power of two caches are 2^x beginning with KMALLOC_MIN_SHIFT. The non
+power of two caches were folded into number 1 + 2 since they do not fit
+into the scheme and they are special cased throughout. This works since
+the minimal slab cache size is 8 bytes.
 
+> IOW if we can safely do cache 2 after cache 6, why can't we just do both
+> cache 1 and cache 2 after the loop?
+
+Because the cache creation in SLAB can cause the use of a fractional slab
+size if kmem_cache_create() thinks its better to put the metadata on a
+different slab cache (OFF_SLAB type) because data will align better that
+way. Its weird I know but its due to the way that SLAB aligns data in the
+page frame.
 
