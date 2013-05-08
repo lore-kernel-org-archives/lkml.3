@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab3EHCfJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 22:35:09 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:49789 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab3EHCfH (ORCPT
+	id S1753190Ab3EHCiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 22:38:08 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:61895 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312Ab3EHCiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 22:35:07 -0400
-X-IronPort-AV: E=Sophos;i="4.87,631,1363158000"; 
-   d="scan'208";a="45225124"
-Date: Tue, 7 May 2013 21:34:45 -0500
-From: rkuo <rkuo@codeaurora.org>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Subject: [GIT PULL] Hexagon fix/cleanup
-Message-ID: <20130508023404.GA776@codeaurora.org>
+	Tue, 7 May 2013 22:38:06 -0400
+Date: Tue, 7 May 2013 19:38:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] Drivers: Misc: fix warnings, unsigned long will never
+ < 0
+Message-ID: <20130508023803.GB19842@kroah.com>
+References: <5160E37C.3020007@asianux.com>
+ <5160E7EA.3050406@asianux.com>
+ <5189B76C.9050606@asianux.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5189B76C.9050606@asianux.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+On Wed, May 08, 2013 at 10:24:44AM +0800, Chen Gang wrote:
+> Hello Maintainers:
+> 
+> Please help check, when you have time.
+> 
+> Thanks.
+> 
+> On 2013年04月07日 11:28, Chen Gang wrote:
 
-Please pull the following changes for Hexagon; it includes a bug fix and a
-Kconfig cleanup.
+<snip>
 
+You sent a cleanup patch in the middle of the merge window, when we
+can't take any patches at the moment due to other work, and expect a
+review in less than 24 hours?
 
-Thanks,
-Richard Kuo
+Please be realistic, I'll get to this eventually (i.e. next week at the
+earliest.)
 
+Patience is a virtue.
 
-
-The following changes since commit 426d29ccb2a8d44c18d3167327ee82b38287e7bf:
-
-  Hexagon: add v4 CS regs to core copyout macro (2013-04-30 19:40:29 -0500)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rkuo/linux-hexagon-kernel.git for-linus
-
-for you to fetch changes up to de44443a45e36b7467af2518d3bf7ec6ec909549:
-
-  HEXAGON: Remove non existent reference to GENERIC_KERNEL_EXECVE & GENERIC_KERNEL_THREAD (2013-05-07 11:38:12 -0500)
-
-----------------------------------------------------------------
-Alexander Shiyan (1):
-      HEXAGON: Remove non existent reference to GENERIC_KERNEL_EXECVE & GENERIC_KERNEL_THREAD
-
-Richard Kuo (1):
-      Hexagon: fix register used to call do_work_pending
-
- arch/hexagon/Kconfig           |    2 --
- arch/hexagon/kernel/vm_entry.S |   12 ++++++------
- 2 files changed, 6 insertions(+), 8 deletions(-)
-
-
--- 
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+greg "someone owes me some virtue" k-h
