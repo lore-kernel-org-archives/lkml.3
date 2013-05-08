@@ -1,91 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126Ab3EHVBt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 17:01:49 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:36370 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932098Ab3EHVBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 17:01:47 -0400
-Message-Id: <20130508210144.090393535@asylum.americas.sgi.com>
-User-Agent: quilt/0.47-15.17.1
-Date: Wed, 08 May 2013 16:01:03 -0500
-From: athorlton@sgi.com
-To: linux-kernel@vger.kernel.org
-Cc: Alex Thorlton <athorlton@sgi.com>, Vineet Gupta <vgupta@synopsys.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Robin Holt <holt@sgi.com>
-Subject: [patch 1/2] dump_stack: serialize the output from dump_stack()
+	id S1758111Ab3EHVDN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 17:03:13 -0400
+Received: from smtpx.feld.cvut.cz ([147.32.192.33]:57946 "EHLO
+	smtpx.feld.cvut.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756972Ab3EHVDM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 17:03:12 -0400
+Date: Wed, 08 May 2013 23:03:08 +0200
+Message-ID: <20130508230308.Horde.hkDwg5wWGGBzmzKnqIjUhg1@wimap.feld.cvut.cz>
+From: strnape1@fel.cvut.cz
+To: kernel-janitors@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, cocci@systeme.lip6.fr, mmarek@suse.cz,
+        julia.lawall@lip6.fr
+Subject: [PATCH] scripts: Coccinelle script for pci_free_consistent()
+User-Agent: Internet Messaging Program (IMP) H5 (6.0.4)
+Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
+MIME-Version: 1.0
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches fix up issues with interspersed output from multiple
-simultaneous calls to warn or dump_stack on multi-cpu systems.
-References: <20130508210102.898396979@asylum.americas.sgi.com>
-Content-Disposition: inline; filename=dump-stack-serialize.patch
+Created coccinelle script for reporting missing pci_free_consistent() calls.
 
-This patch adds functionality to serialize the output from dump_stack() to 
-avoid mangling of the output when dump_stack is called simultaneously from
-multiple cpus.
-
-Cc: Vineet Gupta <vgupta@synopsys.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Richard Kuo <rkuo@codeaurora.org>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Reported-by: Russ Anderson <rja@sgi.com>
-Reviewed-by: Robin Holt <holt@sgi.com>
-Signed-off-by: Alex Thorlton <athorlton@sgi.com>
+Signed-off-by: Petr Strnad <strnape1@fel.cvut.cz>
 ---
-The original discussion regarding this patch can be found in this thread:
-[PATCH] x86: Avoid intermixing cpu dump_stack output on multi-processor systems
-
- lib/dump_stack.c |   25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
-
---- linux.orig/lib/dump_stack.c
-+++ linux/lib/dump_stack.c
-@@ -7,6 +7,8 @@
- #include <linux/export.h>
- #include <linux/sched.h>
- 
-+static atomic_t dump_lock = ATOMIC_INIT(-1);
+diff --git a/scripts/coccinelle/free/pci_free_consistent.cocci  
+b/scripts/coccinelle/free/pci_free_consistent.cocci
+new file mode 100644
+index 0000000..43600cc
+--- /dev/null
++++ b/scripts/coccinelle/free/pci_free_consistent.cocci
+@@ -0,0 +1,52 @@
++/// Find missing pci_free_consistent for every pci_alloc_consistent.
++///
++// Confidence: Moderate
++// Copyright: (C) 2013 Petr Strnad.  GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Keywords: pci_free_consistent, pci_alloc_consistent
++// Options: --no-includes --include-headers
 +
- /**
-  * dump_stack - dump the current task information and its stack trace
-  *
-@@ -14,7 +16,30 @@
-  */
- void dump_stack(void)
- {
-+	int was_locked;
-+	int old;
-+	int cpu;
++virtual report
++virtual org
 +
-+	preempt_disable();
++@search@
++local idexpression id;
++expression x,y,z,e;
++position p1,p2;
++type T;
++@@
 +
-+retry:
-+	cpu = smp_processor_id();
-+	old = atomic_cmpxchg(&dump_lock, -1, cpu);
-+	if (old == -1) {
-+		was_locked = 0;
-+	} else if (old == cpu) {
-+		was_locked = 1;
-+	} else {
-+		cpu_relax();
-+		goto retry;
-+	}
++id = pci_alloc_consistent@p1(x,y,&z)
++... when != e = id
++if (id == NULL || ...) { ... return ...; }
++... when != pci_free_consistent(x,y,id,z)
++    when != if (id) { ... pci_free_consistent(x,y,id,z) ... }
++    when != if (y) { ... pci_free_consistent(x,y,id,z) ... }
++    when != e = (T)id
++    when exists
++(
++return 0;
++|
++return 1;
++|
++return id;
++|
++return@p2 ...;
++)
 +
- 	dump_stack_print_info(KERN_DEFAULT);
- 	show_stack(NULL, NULL);
++@script:python depends on report@
++p1 << search.p1;
++p2 << search.p2;
++@@
 +
-+	if (!was_locked)
-+		atomic_set(&dump_lock, -1);
++msg = "ERROR: missing pci_free_consistent; pci_alloc_consistent on  
+line %s and return without freeing on line %s" % (p1[0].line,p2[0].line)
++coccilib.report.print_report(p2[0],msg)
 +
-+	preempt_enable();
- }
- EXPORT_SYMBOL(dump_stack);
++@script:python depends on org@
++p1 << search.p1;
++p2 << search.p2;
++@@
++
++msg = "ERROR: missing pci_free_consistent; pci_alloc_consistent on  
+line %s and return without freeing on line %s" % (p1[0].line,p2[0].line)
++cocci.print_main(msg,p1)
++cocci.print_secs("",p2)
 
