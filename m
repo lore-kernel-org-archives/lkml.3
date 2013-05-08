@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579Ab3EHPyj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 11:54:39 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:42117 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756351Ab3EHPyf (ORCPT
+	id S1757609Ab3EHPyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 11:54:44 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:44290 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756351Ab3EHPyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 11:54:35 -0400
+	Wed, 8 May 2013 11:54:41 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,12 +19,12 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org
-Subject: [PATCH v5, part4 11/41] mm/alpha: prepare for removing num_physpages and simplify mem_init()
-Date: Wed,  8 May 2013 23:51:08 +0800
-Message-Id: <1368028298-7401-12-git-send-email-jiang.liu@huawei.com>
+        Vineet Gupta <vgupta@synopsys.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v5, part4 12/41] mm/ARC: prepare for removing num_physpages and simplify mem_init()
+Date: Wed,  8 May 2013 23:51:09 +0800
+Message-Id: <1368028298-7401-13-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
 References: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com>
@@ -35,119 +35,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Prepare for removing num_physpages and simplify mem_init().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: linux-alpha@vger.kernel.org
+Cc: Vineet Gupta <vgupta@synopsys.com>
+Cc: James Hogan <james.hogan@imgtec.com>
+Cc: Rob Herring <rob.herring@calxeda.com>
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/alpha/mm/init.c |   32 ++------------------------------
- arch/alpha/mm/numa.c |   34 ++--------------------------------
- 2 files changed, 4 insertions(+), 62 deletions(-)
+ arch/arc/mm/init.c |   36 +++---------------------------------
+ 1 file changed, 3 insertions(+), 33 deletions(-)
 
-diff --git a/arch/alpha/mm/init.c b/arch/alpha/mm/init.c
-index ca07a97..04c933c 100644
---- a/arch/alpha/mm/init.c
-+++ b/arch/alpha/mm/init.c
-@@ -277,42 +277,14 @@ srm_paging_stop (void)
- #endif
+diff --git a/arch/arc/mm/init.c b/arch/arc/mm/init.c
+index 78d8c31..8ba6562 100644
+--- a/arch/arc/mm/init.c
++++ b/arch/arc/mm/init.c
+@@ -74,7 +74,7 @@ void __init setup_arch_memory(void)
+ 	/* Last usable page of low mem (no HIGHMEM yet for ARC port) */
+ 	max_low_pfn = max_pfn = PFN_DOWN(end_mem);
  
- #ifndef CONFIG_DISCONTIGMEM
--static void __init
--printk_memory_info(void)
--{
--	unsigned long codesize, reservedpages, datasize, initsize, tmp;
--	extern int page_is_ram(unsigned long) __init;
--
--	/* printk all informations */
--	reservedpages = 0;
--	for (tmp = 0; tmp < max_low_pfn; tmp++)
--		/*
--		 * Only count reserved RAM pages
--		 */
--		if (page_is_ram(tmp) && PageReserved(mem_map+tmp))
--			reservedpages++;
--
--	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
--	datasize =  (unsigned long) &_edata - (unsigned long) &_data;
--	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
--
--	printk("Memory: %luk/%luk available (%luk kernel code, %luk reserved, %luk data, %luk init)\n",
--	       nr_free_pages() << (PAGE_SHIFT-10),
--	       max_mapnr << (PAGE_SHIFT-10),
--	       codesize >> 10,
--	       reservedpages << (PAGE_SHIFT-10),
--	       datasize >> 10,
--	       initsize >> 10);
--}
--
- void __init
- mem_init(void)
- {
--	max_mapnr = num_physpages = max_low_pfn;
-+	max_mapnr = max_low_pfn;
- 	free_all_bootmem();
- 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE);
+-	max_mapnr = num_physpages = max_low_pfn - min_low_pfn;
++	max_mapnr = max_low_pfn - min_low_pfn;
  
--	printk_memory_info();
-+	mem_init_print_info(NULL);
- }
- #endif /* CONFIG_DISCONTIGMEM */
+ 	/*------------- reserve kernel image -----------------------*/
+ 	memblock_reserve(CONFIG_LINUX_LINK_BASE,
+@@ -84,7 +84,7 @@ void __init setup_arch_memory(void)
  
-diff --git a/arch/alpha/mm/numa.c b/arch/alpha/mm/numa.c
-index 857452c..0894b3a8 100644
---- a/arch/alpha/mm/numa.c
-+++ b/arch/alpha/mm/numa.c
-@@ -129,8 +129,6 @@ setup_memory_node(int nid, void *kernel_end)
- 	if (node_max_pfn > max_low_pfn)
- 		max_pfn = max_low_pfn = node_max_pfn;
+ 	/*-------------- node setup --------------------------------*/
+ 	memset(zones_size, 0, sizeof(zones_size));
+-	zones_size[ZONE_NORMAL] = num_physpages;
++	zones_size[ZONE_NORMAL] = max_low_pfn - min_low_pfn;
  
--	num_physpages += node_max_pfn - node_min_pfn;
--
- #if 0 /* we'll try this one again in a little while */
- 	/* Cute trick to make sure our local node data is on local memory */
- 	node_data[nid] = (pg_data_t *)(__va(node_min_pfn << PAGE_SHIFT));
-@@ -324,37 +322,9 @@ void __init paging_init(void)
- 
+ 	/*
+ 	 * We can't use the helper free_area_init(zones[]) because it uses
+@@ -106,39 +106,9 @@ void __init setup_arch_memory(void)
+  */
  void __init mem_init(void)
  {
--	unsigned long codesize, reservedpages, datasize, initsize, pfn;
--	extern int page_is_ram(unsigned long) __init;
--	unsigned long nid, i;
- 	high_memory = (void *) __va(max_low_pfn << PAGE_SHIFT);
+-	int codesize, datasize, initsize, reserved_pages, free_pages;
+-	int tmp;
 -
--	reservedpages = 0;
--	for_each_online_node(nid) {
--		/*
--		 * This will free up the bootmem, ie, slot 0 memory
--		 */
--		free_all_bootmem_node(NODE_DATA(nid));
+ 	high_memory = (void *)(CONFIG_LINUX_LINK_BASE + arc_mem_sz);
 -
--		pfn = NODE_DATA(nid)->node_start_pfn;
--		for (i = 0; i < node_spanned_pages(nid); i++, pfn++)
--			if (page_is_ram(pfn) &&
--			    PageReserved(nid_page_nr(nid, i)))
--				reservedpages++;
--	}
+ 	free_all_bootmem();
 -
--	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
--	datasize =  (unsigned long) &_edata - (unsigned long) &_data;
--	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
+-	/* count all reserved pages [kernel code/data/mem_map..] */
+-	reserved_pages = 0;
+-	for (tmp = 0; tmp < max_mapnr; tmp++)
+-		if (PageReserved(mem_map + tmp))
+-			reserved_pages++;
 -
--	printk("Memory: %luk/%luk available (%luk kernel code, %luk reserved, "
--	       "%luk data, %luk init)\n",
--	       nr_free_pages() << (PAGE_SHIFT-10),
--	       num_physpages << (PAGE_SHIFT-10),
--	       codesize >> 10,
--	       reservedpages << (PAGE_SHIFT-10),
--	       datasize >> 10,
--	       initsize >> 10);
-+	free_all_bootmem();
+-	/* XXX: nr_free_pages() is equivalent */
+-	free_pages = max_mapnr - reserved_pages;
+-
+-	/*
+-	 * For the purpose of display below, split the "reserve mem"
+-	 * kernel code/data is already shown explicitly,
+-	 * Show any other reservations (mem_map[ ] et al)
+-	 */
+-	reserved_pages -= (((unsigned int)_end - CONFIG_LINUX_LINK_BASE) >>
+-								PAGE_SHIFT);
+-
+-	codesize = _etext - _text;
+-	datasize = _end - _etext;
+-	initsize = __init_end - __init_begin;
+-
+-	pr_info("Memory Available: %dM / %ldM (%dK code, %dK data, %dK init, %dK reserv)\n",
+-		PAGES_TO_MB(free_pages),
+-		TO_MB(arc_mem_sz),
+-		TO_KB(codesize), TO_KB(datasize), TO_KB(initsize),
+-		PAGES_TO_KB(reserved_pages));
 +	mem_init_print_info(NULL);
- #if 0
- 	mem_stress();
- #endif
+ }
+ 
+ /*
 -- 
 1.7.9.5
 
