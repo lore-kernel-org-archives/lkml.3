@@ -1,151 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249Ab3EHQzV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 12:55:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51242 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755356Ab3EHQzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 12:55:20 -0400
-Message-ID: <1368032112.2139.0.camel@localhost>
-Subject: Re: [PATCH RFC 00/48] Add namespace support for audit
-From: Eric Paris <eparis@redhat.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com
-Date: Wed, 08 May 2013 12:55:12 -0400
-In-Reply-To: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
-References: <1367893269-9308-1-git-send-email-gaofeng@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1757147Ab3EHQ4l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 12:56:41 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42715 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846Ab3EHQ4j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 12:56:39 -0400
+Message-ID: <518A83C2.3070709@wwwdotorg.org>
+Date: Wed, 08 May 2013 10:56:34 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Jay Agarwal <jagarwal@nvidia.com>
+CC: linux@arm.linux.org.uk, thierry.reding@avionic-design.de,
+        ldewangan@nvidia.com, bhelgaas@google.com, olof@lixom.net,
+        hdoyu@nvidia.com, pgaikwad@nvidia.com, mturquette@linaro.org,
+        pdeschrijver@nvidia.com, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, jtukkinen@nvidia.com, kthota@nvidia.com
+Subject: Re: [PATCH 3/4] ARM: dts: tegra: Correct PCIe entry
+References: <1368010660-31465-1-git-send-email-jagarwal@nvidia.com> <1368010660-31465-3-git-send-email-jagarwal@nvidia.com>
+In-Reply-To: <1368010660-31465-3-git-send-email-jagarwal@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What kernel are these patches against?
+On 05/08/2013 04:57 AM, Jay Agarwal wrote:
+> - Add interrupt-names property
+> - Correct downstream I/O size
+> - Correct cml clock name for Tegra30
+> - Patch is based on remotes/gitorious_thierryreding_linux/tegra/next
+> - and should be applied on top of this.
 
+Another change that needs to be made to this file (probably as a
+separate change that Thierry can squash into one of his earlier changes)
+is to move the pcie-controller node; it is currently not in the correct
+place in the .dtsi file; it's not sorted by reg addresss.
 
-On Tue, 2013-05-07 at 10:20 +0800, Gao feng wrote:
-> This patchset try to add namespace support for audit.
-> 
-> I choose to assign audit to the user namespace.
-> Right now,there are six kinds of namespaces, such as
-> net, mount, ipc, pid, uts and user. the first five
-> namespaces have special usage. the audit isn't suitable to
-> belong to these five namespaces, so the user namespace
-> may be the best choice.
-> 
-> Through I decide to make audit related resources per user
-> namespace, but audit uses netlink to communicate between kernel
-> space and user space, and the netlink is a private resource
-> of per net namespace. So we need the capability to allow the
-> netlink sockets to communicate with each other in the same user
-> namespace even they are in different net namespace. [PATCH 2/48]
-> does this job, it adds a new function "compare" for per netlink
-> table to compare two sockets. it means the netlink protocols can
-> has its own compare fuction, For other protocols, two netlink
-> sockets are different if they belong to the different net namespace.
-> For audit protocol, two sockets can be the same even they in different
-> net namespace,we use user namespace not net namespace to make the
-> decision.
-> 
-> There is one point that some people may dislike,in [PATCH 1/48],
-> the kernel side audit netlink socket is created only when we create
-> the first netns for the userns, and this userns will hold the netns
-> until we destroy this userns.
-> 
-> The other patches just make the audit related resources per
-> user namespace.
-> 
-> This patchset is sent as an RFC,any comments are welcome.
-> 
-> Gao feng (48):
->   Audit: make audit kernel side netlink sock per userns
->   netlink: Add compare function for netlink_table
->   Audit: implement audit self-defined compare function
->   Audit: make audit_skb_queue per user namespace
->   Audit: make audit_skb_hold_queue per user namespace
->   Audit: make kauditd_task per user namespace
->   Audit: make audit_pid per user namespace
->   Audit: make audit_nlk_portid per user namesapce
->   Audit: make audit_enabled per user namespace
->   Audit: change type of audit_ever_enabled to bool
->   Audit: make audit_ever_enabled per user namespace
->   Audit: make audit_initialized per user namespace
->   Audit: only allow init user namespace to change audit_rate_limit
->   Audit: only allow init user namespace to change audit_failure
->   Audit: allow to send netlink message to auditd in uninit user
->     namespace
->   Audit: user proper user namespace in audit_log_config_change
->   Audit: make kauditd_wait per user namespace
->   Audit: make audit_backlog_wait per user namespace
->   Audit: remove duplicate comments
->   Audit: introduce new audit logging interface for user namespace
->   Audit: pass proper user namespace to audit_log_common_recv_msg
->   Audit: Log audit config change in uninit user namespace
->   Audit: netfilter: Log xt table replace behavior in proper user
->     namespace
->   Audit: xt_AUDIT: Log audit message in proper user namespace
->   Audit: send reply message to the auditd in proper user namespace
->   Audit: make audit_inode_hash per user namespace
->   Audit: make tree_list per user namespace
->   Audit: make audit filter list per user namespace
->   Audit: make audit_krule belongs to user namespace
->   Audit: reply audit filter list request to proper user namespace
->   Audit: pass proper user namespace to audit_filter_syscall
->   Audit: pass proper user namespace to audit_filter_inode_name
->   Audit: Log filter related audit message to proper user namespace
->   Log audit tree related message in proper user namespace
->   Audit: Log task related audit message to proper user namespace
->   Audit: Log watch related audit message to proper user namespace
->   Audit: translate audit_log_start to audit_log_start_ns
->   Audit: tty: translate audit_log_start to audit_log_start_ns
->   Audit: netlabel: translate audit_log_start to audit_log_start_ns
->   Audit: ima: translate audit_log_start to audit_log_start_ns
->   Audit: lsm: translate audit_log_start to audit_log_start_ns
->   Audit: selinux: translate audit_log_start to audit_log_start_ns
->   Audit: xfrm: translate audit_log_start to audit_log_start_ns
->   Audit: rename audit_log_start_ns to audit_log_start
->   Audit: user audit_enabled_ns to replace audit_enabled
->   Audit: rename audit_enabled_ns to audit_enabled
->   Audit: make audit_log user namespace awared
->   Audit: allow root user of un-init user namespace to set audit
-> 
->  drivers/tty/tty_audit.c             |   9 +-
->  include/linux/audit.h               |  44 ++--
->  include/linux/netlink.h             |   1 +
->  include/linux/user_namespace.h      |  25 +++
->  include/net/xfrm.h                  |   7 +-
->  kernel/audit.c                      | 393 +++++++++++++++++++++---------------
->  kernel/audit.h                      |  24 +--
->  kernel/audit_tree.c                 |  49 ++---
->  kernel/audit_watch.c                |  23 ++-
->  kernel/auditfilter.c                |  76 +++----
->  kernel/auditsc.c                    | 156 ++++++++------
->  kernel/user.c                       |  19 ++
->  kernel/user_namespace.c             |   3 +
->  net/core/dev.c                      |  12 +-
->  net/ipv4/cipso_ipv4.c               |   4 +-
->  net/netfilter/x_tables.c            |   9 +-
->  net/netfilter/xt_AUDIT.c            |   8 +-
->  net/netlabel/netlabel_domainhash.c  |   4 +-
->  net/netlabel/netlabel_unlabeled.c   |   8 +-
->  net/netlabel/netlabel_user.c        |   8 +-
->  net/netlink/af_netlink.c            |  26 ++-
->  net/netlink/af_netlink.h            |   1 +
->  net/xfrm/xfrm_policy.c              |   4 +-
->  net/xfrm/xfrm_state.c               |  14 +-
->  security/apparmor/lib.c             |   2 +-
->  security/integrity/ima/ima_api.c    |   5 +-
->  security/integrity/ima/ima_audit.c  |  11 +-
->  security/integrity/ima/ima_policy.c |   5 +-
->  security/lsm_audit.c                |   8 +-
->  security/selinux/avc.c              |   3 +-
->  security/selinux/hooks.c            |  17 +-
->  security/selinux/selinuxfs.c        |   9 +-
->  security/selinux/ss/services.c      |  30 ++-
->  security/smack/smack_lsm.c          |   3 +-
->  34 files changed, 630 insertions(+), 390 deletions(-)
-> 
+> diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
 
+>  		clocks = <&tegra_car 70>, <&tegra_car 72>, <&tegra_car 74>,
+>  			 <&tegra_car 118>, <&tegra_car 215>;
+> -		clock-names = "pex", "afi", "pcie_xclk", "pll_e", "cml";
+> +		clock-names = "pex", "afi", "pcie_xclk", "pll_e", "cml0";
 
+You could drop that change if the driver named the clock "cml" rather
+than "cml0", which as I explained in my previous email seems like a good
+idea anyway.
+
+Applying the same reasoning, I wonder if for Tegra 20 too, the PCIe
+driver shouldn't expect clock names of just "xclk" and "pll" rather than
+"pcie_xclk" and "pll_e".
