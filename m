@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab3EHAWF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 May 2013 20:22:05 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:38692 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755110Ab3EHAWD (ORCPT
+	id S1756571Ab3EHAYY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 May 2013 20:24:24 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:44365 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756015Ab3EHAYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 May 2013 20:22:03 -0400
-Message-ID: <51899AA7.4030106@gmail.com>
-Date: Tue, 07 May 2013 17:21:59 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 7 May 2013 20:24:22 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: dirk.brandewie@gmail.com, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Intel pstate driver update
-References: <1367940030-19311-1-git-send-email-dirk.j.brandewie@gmail.com> <4686510.A1KmKYg1tS@vostro.rjw.lan>
-In-Reply-To: <4686510.A1KmKYg1tS@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130506102534.GC22348@linutronix.de>
+References: <20130506102534.GC22348@linutronix.de>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Tue, 7 May 2013 20:23:51 -0400
+X-Google-Sender-Auth: fB41EgGZfMSCV2QkJuLdWPLrAOI
+Message-ID: <CAP=VYLpx1=2_pSar65y1g5Y=0f8gLVA0noOoJcfUg76cmVq0Jg@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 3.8.11-rt8
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/2013 05:07 PM, Rafael J. Wysocki wrote:
-> On Tuesday, May 07, 2013 08:20:24 AM dirk.brandewie@gmail.com wrote:
->> From: dirk <dirk.brandewie@gmail.com>
->>
-> All queued up for a post-3.10-rc1 push as 3.10 material, but I have a couple
-> of comments.
+On Mon, May 6, 2013 at 6:25 AM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
+> Dear RT Folks,
 >
-> First, the patches didn't apply for me cleanly.  I needed to fix up one of
-> them manually to make it apply and patch [5/6] didn't appear to be necessary
-> at all (it made changes that had been made previously).  Please check the
-> bleeding-edge branch of my tree to see if the code is what you wanted and
-> let me know (either way).
+> I'm pleased to announce the 3.8.11-rt8 release.
 >
-Srinivas's commit d1b6848 collided with my 5/6 patch. my patches were based off 
-of v3.9. Which branch of yours should I base my submissions on?
+> changes since v3.8.11-rt7:
+> - suspend / resume related fix has been fixed
+> - don't wakeup blocked workers (Steven Rostedt)
 
-linux-pm/bleeding-edge is correct.
+As per the 3.6.x RT releases[1], there was value in tracking the
+per release changes for those people who were using the plain old
+linear patch queues, and integrating that into their work.
 
-> Second, can you please CC your cpufreq submissions to linux-pm@vger.kernel.org?
-> That will allow me to use Patchwork for managing them, which is much more
-> convenient than plain email.
->
+So this repo continues that for the v3.8.x RT patch queue.  This is
+done in the same way that the stable releases have been done,
+which is also done in the same way as I did the 3.6.x-RT git
+tracking repo.  Meaning that it tracks the changes within a
+repository of patches.
 
-No problem
+You can see the per-release changes in RT-3.8.x by browsing the
+history in this patch repository:
 
---Dirk
+http://git.kernel.org/cgit/linux/kernel/git/paulg/3.8-rt-patches.git/
 
-> Thanks,
-> Rafael
->
->
+The idea is that you can get the 3.8.x updates by cloning this
+repo, and then issuing a "git pull" on it as updates are added by
+Sebastian (and hence mirrored to this kernel.org repo by me)
 
+Paul.
+--
+
+[1]  http://git.kernel.org/cgit/linux/kernel/git/paulg/3.6-rt-patches.git/
