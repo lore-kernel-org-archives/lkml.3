@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab3EHIjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 04:39:25 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:42462 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab3EHIjX (ORCPT
+	id S1753545Ab3EHIjd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 04:39:33 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:42553 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537Ab3EHIj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 04:39:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130508074221.GA5024@elgon.mountain>
-References: <CANeU7QnO8MzqT+9BDsXj3=nkKOBKumOwEKGnT=BL_cS0wiPPmw@mail.gmail.com>
-	<20130508074221.GA5024@elgon.mountain>
-Date: Wed, 8 May 2013 01:39:22 -0700
-X-Google-Sender-Auth: Jl5UeJjvispPi5PvmihsTl_Vm9Y
-Message-ID: <CANeU7QmvYsWXVdhvttN0xV-PBga6ro1_Qne7vGbb7hZ8Fhw-aA@mail.gmail.com>
-Subject: Re: [patch] err.h: IS_ERR() can accept __user pointers
-From: Christopher Li <sparse@chrisli.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 8 May 2013 04:39:29 -0400
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH v2 2/6] ASoC: ux500: Do not clear state if already idle
+Date: Wed,  8 May 2013 10:39:14 +0200
+Message-Id: <1368002354-15471-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.8.2
+In-Reply-To: <20130508080448.GG3102@gmail.com>
+References: <20130508080448.GG3102@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 8, 2013 at 12:42 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> Sparse generates a false positive when you pass a __user or __iomem
-> pointer to the IS_ERR() functions.
->
-> drivers/rtc/rtc-ds1286.c:344:36: sparse: incorrect type in argument 1 (different address spaces)
-> drivers/rtc/rtc-ds1286.c:344:36:    expected void const *ptr
-> drivers/rtc/rtc-ds1286.c:344:36:    got unsigned int [noderef] [usertype] <asn:2>*rtcregs
->
-> We can silence these by adding a __force here and upgrading to the
-> latest git release of Sparse.
->
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> ---
-> This change has no effect when using current Sparse releases.
+As enable_msp gets called only after some audio data has been received,
+if the userspace closes the device before sending any data it causes
+ux500_msp_i2s_close to clear device state even if it was not previously
+initialized.
 
-Acked.
+This in turn leads to some non necessary but harmless writel, but also
+to decrementing the pinctrl usage counter (pinctrl_rxtx_ref) below zero.
 
-Chris
+To prevent this from happening add a condition to skip register and
+pinctrl clear if current msp state is already MSP_STATE_IDLE.
+
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+---
+
+Changes from v1:
+- fix grammatical error in commit message
+
+Thanks,
+Fabio
+
+ sound/soc/ux500/ux500_msp_i2s.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sound/soc/ux500/ux500_msp_i2s.c b/sound/soc/ux500/ux500_msp_i2s.c
+index a26c6bf..964cfd6 100644
+--- a/sound/soc/ux500/ux500_msp_i2s.c
++++ b/sound/soc/ux500/ux500_msp_i2s.c
+@@ -638,7 +638,7 @@ int ux500_msp_i2s_close(struct ux500_msp *msp, unsigned int dir)
+ 	dev_dbg(msp->dev, "%s: Enter (dir = 0x%01x).\n", __func__, dir);
+ 
+ 	status = disable_msp(msp, dir);
+-	if (msp->dir_busy == 0) {
++	if (msp->dir_busy == 0 && msp->msp_state != MSP_STATE_IDLE) {
+ 		/* disable sample rate and frame generators */
+ 		msp->msp_state = MSP_STATE_IDLE;
+ 		writel((readl(msp->registers + MSP_GCR) &
+-- 
+1.8.2
+
