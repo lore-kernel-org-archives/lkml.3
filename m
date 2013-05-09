@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751816Ab3EIHt0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 03:49:26 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:49163 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab3EIHtZ (ORCPT
+	id S1751753Ab3EIH5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 03:57:45 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:47780 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab3EIH5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 03:49:25 -0400
-Message-ID: <1368085759.3454.0.camel@phoenix>
-Subject: [PATCH v3] iio: dac: Fix build error when CONFIG_SPI_MASTER=y &&
- CONFIG_I2C=m
-From: Axel Lin <axel.lin@ingics.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wu Fengguang <fengguang.wu@intel.com>
-Date: Thu, 09 May 2013 15:49:19 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 9 May 2013 03:57:44 -0400
+From: Denis Efremov <yefremov.denis@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Denis Efremov <yefremov.denis@gmail.com>, davem@davemloft.net,
+        gregkh@linuxfoundation.org, mingo@redhat.com, trivial@kernel.org,
+        ldv-project@linuxtesting.org
+Subject: [PATCH 00/21] Exported funtions that are marked inline
+Date: Thu,  9 May 2013 11:57:21 +0400
+Message-Id: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes below build error when CONFIG_SPI_MASTER=y && CONFIG_I2C=m:
+Hello everyone,
+this is a patchset to remove inline marking of exported functions.
+Patchset is motivated by
+https://lkml.org/lkml/2012/5/10/545 (af3b56289)
 
-drivers/built-in.o: In function `ad5064_i2c_write':
-drivers/iio/dac/ad5064.c:608: undefined reference to `i2c_master_send'
-drivers/built-in.o: In function `ad5064_i2c_register_driver':
-drivers/iio/dac/ad5064.c:646: undefined reference to `i2c_register_driver'
-drivers/built-in.o: In function `ad5064_i2c_unregister_driver':
-drivers/iio/dac/ad5064.c:651: undefined reference to `i2c_del_driver'
-make: *** [vmlinux] Error 1
+I run some tests and inspect the binaries. (You can find the tests
+here: https://bitbucket.org/evdenis/tests/src) And it seems (at least
+on my configuration) that EXPORT_SYMBOL completely revokes inline
+directive. GCC can handle this, but other compilers may be confused
+by these two directives. Anyway, you can't inline function that you
+expect not to be available for modules with incompatible license and
+to be available for the rest.
 
-When CONFIG_I2C=m, meaning we can't build the drivers in with I2C support.
-Thus don't allow the drivers to be compiled as built-in when CONFIG_I2C=m.
+The tool I use to check the sources:
+https://bitbucket.org/evdenis/export_checking.git
 
-The real fix though is to break the driver apart into a SPI part, an I2C part
-and a common part. But that's something for 3.11 while this is something for
-3.10/stable.
-
-Reported-by: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-v3: Update comment
-
- drivers/iio/dac/Kconfig | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
-index f4a6f08..b61160b 100644
---- a/drivers/iio/dac/Kconfig
-+++ b/drivers/iio/dac/Kconfig
-@@ -5,7 +5,7 @@ menu "Digital to analog converters"
- 
- config AD5064
- 	tristate "Analog Devices AD5064 and similar multi-channel DAC driver"
--	depends on (SPI_MASTER || I2C)
-+	depends on (SPI_MASTER && I2C!=m) || I2C
- 	help
- 	  Say yes here to build support for Analog Devices AD5024, AD5025, AD5044,
- 	  AD5045, AD5064, AD5064-1, AD5065, AD5628, AD5629R, AD5648, AD5666, AD5668,
-@@ -27,7 +27,7 @@ config AD5360
- 
- config AD5380
- 	tristate "Analog Devices AD5380/81/82/83/84/90/91/92 DAC driver"
--	depends on (SPI_MASTER || I2C)
-+	depends on (SPI_MASTER && I2C!=m) || I2C
- 	select REGMAP_I2C if I2C
- 	select REGMAP_SPI if SPI_MASTER
- 	help
-@@ -57,7 +57,7 @@ config AD5624R_SPI
- 
- config AD5446
- 	tristate "Analog Devices AD5446 and similar single channel DACs driver"
--	depends on (SPI_MASTER || I2C)
-+	depends on (SPI_MASTER && I2C!=m) || I2C
- 	help
- 	  Say yes here to build support for Analog Devices AD5300, AD5301, AD5310,
- 	  AD5311, AD5320, AD5321, AD5444, AD5446, AD5450, AD5451, AD5452, AD5453,
--- 
-1.8.1.2
-
-
-
+arch/arm/mach-sa1100/jornada720_ssp.c  |  2 +-
+arch/arm64/lib/delay.c                 |  2 +-
+arch/cris/arch-v32/kernel/cache.c      |  2 +-
+arch/m68k/sun3/sun3dvma.c              |  2 +-
+arch/metag/lib/delay.c                 |  2 +-
+arch/mips/pmcs-msp71xx/msp_prom.c      |  2 +-
+arch/openrisc/lib/delay.c              |  2 +-
+arch/powerpc/platforms/ps3/spu.c       |  2 +-
+arch/sparc/prom/tree_64.c              | 14 +++++++-------
+arch/tile/lib/spinlock_32.c            |  2 +-
+arch/x86/lib/delay.c                   |  2 +-
+arch/x86/um/delay.c                    |  2 +-
+drivers/dma/dw_dmac.c                  |  4 ++--
+drivers/net/wireless/iwlegacy/common.c |  2 +-
+drivers/scsi/libiscsi.c                |  2 +-
+drivers/scsi/libiscsi_tcp.c            |  8 ++++----
+drivers/staging/nvec/nvec.c            |  2 +-
+fs/bio.c                               |  2 +-
+fs/block_dev.c                         |  2 +-
+fs/buffer.c                            |  2 +-
+mm/filemap.c                           |  2 +-
+net/9p/client.c                        |  4 ++--
+net/ipv4/ip_output.c                   |  2 +-
+net/netfilter/nf_nat_core.c            |  2 +-
+net/nfc/core.c                         |  2 +-
+25 files changed, 36 insertions(+), 36 deletions(-)
