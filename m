@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758848Ab3EIXBA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:01:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45980 "EHLO
+	id S1759329Ab3EIXBa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:01:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45973 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757464Ab3EIWcp (ORCPT
+	with ESMTP id S1757182Ab3EIWco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:32:45 -0400
+	Thu, 9 May 2013 18:32:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Jeffery <djeffery@redhat.com>, Ian Kent <raven@themaw.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 05/73] autofs - remove autofs dentry mount check
-Date: Thu,  9 May 2013 15:31:28 -0700
-Message-Id: <20130509222758.524543706@linuxfoundation.org>
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 09/73] perf/x86/intel: Add support for IvyBridge model 58 Uncore
+Date: Thu,  9 May 2013 15:31:32 -0700
+Message-Id: <20130509222758.963020164@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -27,48 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Jeffery <djeffery@redhat.com>
+From: Vince Weaver <vincent.weaver@maine.edu>
 
-commit ce8a5dbdf9e709bdaf4618d7ef8cceb91e8adc69 upstream.
+commit 9a6bc14350b130427725f33e371e86212fa56c85 upstream.
 
-When checking if an autofs mount point is busy it isn't sufficient to
-only check if it's a mount point.
+According to Intel Vol3b 18.9, the IvyBridge model 58 uncore is
+the same as that of SandyBridge.
 
-For example, if the mount of an offset mountpoint in a tree is denied
-for this host by its export and the dentry becomes a process working
-directory the check incorrectly returns the mount as not in use at
-expire.
+I've done some simple tests and with this patch things seem to
+work on my mac-mini.
 
-This can happen since the default when mounting within a tree is
-nostrict, which means ingnore mount fails on mounts within the tree and
-continue.  The nostrict option is meant to allow mounting in this case.
-
-Signed-off-by: David Jeffery <djeffery@redhat.com>
-Signed-off-by: Ian Kent <raven@themaw.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Stephane Eranian <eranian@gmail.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1304291549320.15827@vincent-weaver-1.um.maine.edu
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/autofs4/expire.c |    9 ---------
- 1 file changed, 9 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/autofs4/expire.c
-+++ b/fs/autofs4/expire.c
-@@ -61,15 +61,6 @@ static int autofs4_mount_busy(struct vfs
- 		/* This is an autofs submount, we can't expire it */
- 		if (autofs_type_indirect(sbi->type))
- 			goto done;
--
--		/*
--		 * Otherwise it's an offset mount and we need to check
--		 * if we can umount its mount, if there is one.
--		 */
--		if (!d_mountpoint(path.dentry)) {
--			status = 0;
--			goto done;
--		}
- 	}
- 
- 	/* Update the expiry counter if fs is busy */
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2853,6 +2853,7 @@ static int __init uncore_cpu_init(void)
+ 		msr_uncores = nhm_msr_uncores;
+ 		break;
+ 	case 42: /* Sandy Bridge */
++	case 58: /* Ivy Bridge */
+ 		if (snb_uncore_cbox.num_boxes > max_cores)
+ 			snb_uncore_cbox.num_boxes = max_cores;
+ 		msr_uncores = snb_msr_uncores;
 
 
