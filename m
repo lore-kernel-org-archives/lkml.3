@@ -1,183 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab3EIOmh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 10:42:37 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:34001 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787Ab3EIOmg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 10:42:36 -0400
-From: Anthony Olech <Anthony.Olech@diasemi.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-CC: Krystian Garbaciak <Krystian.Garbaciak@diasemi.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Jean Delvare <khali@linux-fr.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: RE: [RFC PATCH 2/8] regulator: Add Dialog DA906x voltage regulators
- support.
-Thread-Topic: [RFC PATCH 2/8] regulator: Add Dialog DA906x voltage
- regulators support.
-Thread-Index: AQHNggDJCbKDkEukGkOTb3GbGbUGI5dqgfMAgAZDpQCAAcP2AIABD60AgYq91ACAACOuAP//4sCAgAAiCeA=
-Date: Thu, 9 May 2013 14:42:32 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB5141924983@NB-EX-MBX02.diasemi.com>
-References: <201208241450@sw-eng-lt-dc-vm2> <201208241455@sw-eng-lt-dc-vm2>
- <20120825151020.GB6520@opensource.wolfsonmicro.com>
- <201208291550@sw-eng-lt-dc-vm2>
- <20120830174738.GH4356@opensource.wolfsonmicro.com>
- <201208311100@sw-eng-lt-dc-vm2>
- <Pine.LNX.4.64.1305091549300.22179@axis700.grange>
- <24DF37198A1E704D9811D8F72B87EB514192495F@NB-EX-MBX02.diasemi.com>
- <Pine.LNX.4.64.1305091623050.22179@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1305091623050.22179@axis700.grange>
-Accept-Language: en-GB, de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754093Ab3EIOmn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 10:42:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21356 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753794Ab3EIOmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 10:42:39 -0400
+Date: Thu, 09 May 2013 10:42:31 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, davidlohr.bueso@hp.com,
+        riel@redhat.com, viro@zeniv.linux.org.uk
+Message-ID: <1368110551-vhgsegi9-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <518B4B5F.9040900@huawei.com>
+References: <20130509043532.GA28235@redhat.com>
+ <518B4B5F.9040900@huawei.com>
+Subject: Re: SHM oops in newseg()
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <518B4B5F.9040900@huawei.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guennadi,
+On Thu, May 09, 2013 at 03:08:15PM +0800, Li Zefan wrote:
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> 
+> On 2013/5/9 12:35, Dave Jones wrote:
+> > Just saw this on v3.9-11789-ge0fd9af while fuzz-testing.
+> > 
+> > [  163.917836] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+> > [  163.918984] IP: [<ffffffff812c48ed>] newseg+0x10d/0x390
+> 
+> The patch below should fix it.
+> 
+> ===========================
+> 
+> [PATCH] shm: fix null pointer deref when userspace specifies invalid hugepage size
+> 
+> Dave reported an oops triggered by trinity:
+> 
+> [  163.917836] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+> [  163.918984] IP: [<ffffffff812c48ed>] newseg+0x10d/0x390
+> [  163.919705] PGD cf8c1067 PUD cf8c2067 PMD 0
+> [  163.920326] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  163.929949] CPU: 2 PID: 7636 Comm: trinity-child2 Not tainted 3.9.0+#67
+> ...
+> [  163.953629] Call Trace:
+> [  163.957706]  [<ffffffff812be322>] ipcget+0x182/0x380
+> [  163.962123]  [<ffffffff810b99a5>] ?trace_hardirqs_on_caller+0x115/0x1e0
+> [  163.966752]  [<ffffffff812c559a>] SyS_shmget+0x5a/0x60
+> [  163.971163]  [<ffffffff812c47e0>] ? shm_close+0x140/0x140
+> [  163.975590]  [<ffffffff812c3e60>] ? shm_release+0x50/0x50
+> [  163.979991]  [<ffffffff812c3df0>] ? shm_get_unmapped_area+0x20/0x20
+> [  163.984499]  [<ffffffff816caa14>] tracesys+0xdd/0xe2
+> 
+> This bug was introduced by commit af73e4d9506d3b797509f3c030e7dcd554f7d9c4
+> ("hugetlbfs: fix mmap failure in unaligned size request").
+> 
+> Reported-by: Dave Jones <davej@redhat.com>
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Li Zefan <lizfan@huawei.com>
 
-without trying to step on our marketing department's toes, I can only suggest that you slurp the online archives of the LKML and ALSA mailing list.
-The Linux Kernel Mailing List archive that I use is: http://lkml.indiana.edu/hypermail/linux/kernel
-The ALSA mailing list archive that I use is: http://mailman.alsa-project.org/pipermail/alsa-devel
+Thank you.
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-I usually run a perl/bash/wget script to download stuff of interest.
-
-I can answer questions about our Open Source submission (because they are open source), but for definitive product information our marketing department is the first place to try.
-
-Do you mean the da7210 (audio CODEC)? I don't offhand recognise the da9210 part number.
-
-Best regards,
-
-Tony Olech
-
-
-> -----Original Message-----
-> From: Guennadi Liakhovetski [mailto:g.liakhovetski@gmx.de] 
-> Sent: 09 May 2013 15:29
-> To: Anthony Olech
-> Cc: Krystian Garbaciak; Mark Brown; linux-kernel@vger.kernel.org; Samuel
-> Ortiz; Alessandro Zummo; Jean Delvare; Dmitry Torokhov; Richard Purdie
-> Subject: RE: [RFC PATCH 2/8] regulator: Add Dialog DA906x voltage regulators
-> support.
-> 
-> Hi Tony
-> 
-> On Thu, 9 May 2013, Anthony Olech wrote:
-> 
-> > Hi Guennadi Liakhovetski,
-> >
-> > Now that Krystian no longer works for Dialog I think that I might be
-> > your best contact.
-> > As far as I am aware without doing any checking, the DA906x driver
-> > should possibly cover the DA9063.
-> 
-> Good!
-> 
-> > If you need a driver, that would imply that you have some chips. Have
-> > you tried our marketting department?
-> 
-> Yes, this (and a da9210) PMICs are used on one of the boards, I'm working with.
-> I asked your marketing department for a da9210 datasheet, they tried to check
-> with the board vendor, who is also my customer for this project, and so far they
-> haven't been able to establish my involvement in this development. Have you
-> also got a da9210 Linux driver? Do I have to wait for your marketing
-> department clarifying my affiliation or could you make that driver available to
-> me too? Or do you mean you might have a newer version of this driver
-> available internally too?
-> 
-> Thanks
-> Guennadi
-> 
-> > Best regards,
-> >
-> > Tony Olech
-> >
-> >
-> > > -----Original Message-----
-> > > From: Guennadi Liakhovetski [mailto:g.liakhovetski@gmx.de]
-> > > Sent: 09 May 2013 15:06
-> > > To: Krystian Garbaciak
-> > > Cc: Mark Brown; linux-kernel@vger.kernel.org; Samuel Ortiz; Alessandro
-> > > Zummo; Jean Delvare; Dmitry Torokhov; Richard Purdie; Anthony Olech
-> > > Subject: Re: [RFC PATCH 2/8] regulator: Add Dialog DA906x voltage
-> regulators
-> > > support.
-> > >
-> > > (trimmed the CC a bit)
-> > >
-> > > Hi Krystian
-> > >
-> > > On Fri, 31 Aug 2012, Krystian Garbaciak wrote:
-> > >
-> > > > > On Wed, Aug 29, 2012 at 03:50:00PM +0100, Krystian Garbaciak wrote:
-> > >
-> > > Sorry for picking up a random mail from this old thread, unfortunately, I
-> don't
-> > > have "0/8" in my archive.
-> > >
-> > > I have to write a driver for the da9063 PMIC. Do you have an idea, whether
-> it'd
-> > > be compatible with this driver? Do you plan to continue your work on this
-> driver
-> > > or would you mind if I try to use these your patches and mainline them,
-> > > preserving your authorship and copyright, of course?
-> > >
-> > > Thanks
-> > > Guennadi
-> > >
-> > > > > > Because, for some regulators, this is required: val +=
-> > > > > > fvol->offset, I was only able to reduce it to the following form.
-> > > > >
-> > > > > What on earth makes you say this?  The above is obviously linear.
-> > > > >
-> > > > > Besides, you're missing several points here.  One is that you should
-> > > > > be using the framework features, another is that you should be
-> > > > > implementing _sel.
-> > > >
-> > > > Sorry, I've missed an obvious thing here. Instead of adding selector
-> > > > offset at runtime, I can substract apropriate voltage from .min_uV.
-> > > > Thanks for pointing this out.
-> > > >
-> > > > --
-> > > > To unsubscribe from this list: send the line "unsubscribe
-> > > > linux-kernel" in the body of a message to majordomo@vger.kernel.org
-> > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > > Please read the FAQ at  http://www.tux.org/lkml/
-> > > >
-> > >
-> > > ---
-> > > Guennadi Liakhovetski, Ph.D.
-> > > Freelance Open-Source Software Developer http://www.open-
-> technology.de/
-> > Legal Disclaimer: This e-mail communication (and any attachment/s) is
-> confidential and contains proprietary information,
-> > some or all of which may be legally privileged. It is intended solely for the use
-> of the individual or entity to which it
-> > is addressed. Access to this email by anyone else is unauthorized. If you are
-> not the intended recipient, any disclosure,
-> > copying, distribution or any action taken or omitted to be taken in reliance on
-> it, is prohibited and may be unlawful.
-> >
-> > Please consider the environment before printing this e-mail
-> >
-> 
 > ---
-> Guennadi Liakhovetski, Ph.D.
-> Freelance Open-Source Software Developer
-> http://www.open-technology.de/
-Legal Disclaimer: This e-mail communication (and any attachment/s) is confidential and contains proprietary information, 
-some or all of which may be legally privileged. It is intended solely for the use of the individual or entity to which it
-is addressed. Access to this email by anyone else is unauthorized. If you are not the intended recipient, any disclosure, 
-copying, distribution or any action taken or omitted to be taken in reliance on it, is prohibited and may be unlawful.
+> 
+> Previously it would return -ENODEV, but seems -EINVAL is more appropriate.
 
-Please consider the environment before printing this e-mail
+Agreed.
+
+Thanks,
+Naoya
+
+> ---
+>  ipc/shm.c | 8 +++++++-
+>  mm/mmap.c | 8 ++++++--
+>  2 files changed, 13 insertions(+), 3 deletions(-)
+> 
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 34af1fe..7e199fa 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -493,7 +493,13 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+>  	if (shmflg & SHM_HUGETLB) {
+>  		struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
+>  						& SHM_HUGE_MASK);
+> -		size_t hugesize = ALIGN(size, huge_page_size(hs));
+> +		size_t hugesize;
+> +
+> +		if (!hs) {
+> +			error = -EINVAL;
+> +			goto no_file;
+> +		}
+> +		hugesize = ALIGN(size, huge_page_size(hs));
+>  
+>  		/* hugetlb_file_setup applies strict accounting */
+>  		if (shmflg & SHM_NORESERVE)
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 1ae21d6..f681e18 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -1367,9 +1367,13 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+>  			len = ALIGN(len, huge_page_size(hstate_file(file)));
+>  	} else if (flags & MAP_HUGETLB) {
+>  		struct user_struct *user = NULL;
+> +		struct hstate *hs = hstate_sizelog((flags >> MAP_HUGE_SHIFT) &
+> +						   SHM_HUGE_MASK);
+>  
+> -		len = ALIGN(len, huge_page_size(hstate_sizelog(
+> -			(flags >> MAP_HUGE_SHIFT) & MAP_HUGE_MASK)));
+> +		if (!hs)
+> +			return -EINVAL;
+> +
+> +		len = ALIGN(len, huge_page_size(hs));
+>  		/*
+>  		 * VM_NORESERVE is used because the reservations will be
+>  		 * taken when vm_ops->mmap() is called
+> -- 
+> 1.8.0.2
+> 
+> 
+>
