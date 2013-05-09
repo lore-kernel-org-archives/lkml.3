@@ -1,78 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab3EITi5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 15:38:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15805 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751761Ab3EITi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 15:38:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,642,1363158000"; 
-   d="scan'208";a="310901318"
-From: James Ralston <james.d.ralston@intel.com>
-To: Peter Tyser <ptyser@xes-inc.com>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, James Ralston <james.d.ralston@intel.com>,
-        Seth Heasley <seth.heasley@intel.com>
-Subject: [PATCH v2] lpc_ich: Watchdog/GPIO patch for Intel Avoton SoC
-Date: Thu,  9 May 2013 12:38:53 -0700
-Message-Id: <1368128333-1765-1-git-send-email-james.d.ralston@intel.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1752281Ab3EITnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 15:43:51 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:59154 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419Ab3EITnu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 15:43:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1361319761-23873-5-git-send-email-koverstreet@google.com>
+References: <1361319761-23873-1-git-send-email-koverstreet@google.com> <1361319761-23873-5-git-send-email-koverstreet@google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 9 May 2013 12:43:29 -0700
+Message-ID: <CAErSpo5-wVvBivB4pr8_hg2WdzW_yxodcTkSfssJcfEB6Cyd9Q@mail.gmail.com>
+Subject: Re: [PATCH 04/27] block: Convert integrity to bvec_alloc_bs()
+To: Kent Overstreet <koverstreet@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        axboe@kernel.dk, "Martin K. Petersen" <martin.petersen@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the LPC Controller Device IDs for Watchdog and GPIO for the Intel Avoton SoC.
+On Tue, Feb 19, 2013 at 4:22 PM, Kent Overstreet <koverstreet@google.com> wrote:
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
----
-Change notes for v2:
-*corrected version number
+> diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+> index 94fa1c5..8c4c604 100644
+> --- a/fs/bio-integrity.c
+> +++ b/fs/bio-integrity.c
+> ...
+> @@ -766,13 +733,14 @@ void bioset_integrity_free(struct bio_set *bs)
+>  {
+>         if (bs->bio_integrity_pool)
+>                 mempool_destroy(bs->bio_integrity_pool);
+> +
+> +       if (bs->bvec_integrity_pool)
+> +               mempool_destroy(bs->bio_integrity_pool);
 
- drivers/mfd/lpc_ich.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+I think this is a copy-and-paste error that results in using
+bs->bio_integrity_pool after it has been freed.  Found by Coverity
+(CID 1020654).
 
-diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-index 9f12f91..140bf38 100644
---- a/drivers/mfd/lpc_ich.c
-+++ b/drivers/mfd/lpc_ich.c
-@@ -51,6 +51,7 @@
-  *	document number TBD : Lynx Point
-  *	document number TBD : Lynx Point-LP
-  *	document number TBD : Wellsburg
-+ *	document number TBD : Avoton SoC
-  */
- 
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-@@ -207,6 +208,7 @@ enum lpc_chipsets {
- 	LPC_LPT,	/* Lynx Point */
- 	LPC_LPT_LP,	/* Lynx Point-LP */
- 	LPC_WBG,	/* Wellsburg */
-+	LPC_AVN,	/* Avoton SoC */
- };
- 
- struct lpc_ich_info lpc_chipset_info[] = {
-@@ -491,6 +493,10 @@ struct lpc_ich_info lpc_chipset_info[] = {
- 		.name = "Wellsburg",
- 		.iTCO_version = 2,
- 	},
-+	[LPC_AVN] = {
-+		.name = "Avoton SoC",
-+		.iTCO_version = 1,
-+	},
- };
- 
- /*
-@@ -704,6 +710,10 @@ static DEFINE_PCI_DEVICE_TABLE(lpc_ich_ids) = {
- 	{ PCI_VDEVICE(INTEL, 0x8d5d), LPC_WBG},
- 	{ PCI_VDEVICE(INTEL, 0x8d5e), LPC_WBG},
- 	{ PCI_VDEVICE(INTEL, 0x8d5f), LPC_WBG},
-+	{ PCI_VDEVICE(INTEL, 0x1f38), LPC_AVN},
-+	{ PCI_VDEVICE(INTEL, 0x1f39), LPC_AVN},
-+	{ PCI_VDEVICE(INTEL, 0x1f3a), LPC_AVN},
-+	{ PCI_VDEVICE(INTEL, 0x1f3b), LPC_AVN},
- 	{ 0, },			/* End of list */
- };
- MODULE_DEVICE_TABLE(pci, lpc_ich_ids);
--- 
-1.7.7.6
-
+>  }
+>  EXPORT_SYMBOL(bioset_integrity_free);
