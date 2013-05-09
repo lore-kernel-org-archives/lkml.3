@@ -1,100 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab3EIBBY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 21:01:24 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45586 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755012Ab3EIBBX (ORCPT
+	id S1754585Ab3EIBT4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 21:19:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55275 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752490Ab3EIBTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 21:01:23 -0400
-Date: Wed, 08 May 2013 18:01:21 -0700 (PDT)
-Message-Id: <20130508.180121.2184743580101786921.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 08 May 2013 18:01:22 -0700 (PDT)
+	Wed, 8 May 2013 21:19:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <s5hehdhwiqi.wl%tiwai@suse.de>
+References: <1367996197-32748-1-git-send-email-tiwai@suse.de>
+	<1367996197-32748-3-git-send-email-tiwai@suse.de>
+	<CACVXFVMRC2L9nBgxTv+20L2gPsRkkkraFTSL19u+KFnunoix6w@mail.gmail.com>
+	<s5hehdhwiqi.wl%tiwai@suse.de>
+Date: Thu, 9 May 2013 09:19:47 +0800
+Message-ID: <CACVXFVPWi78eeJXiEx3c2=h378kPVO=zt7qz5JPAXxDOOcogNg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] firmware: Avoid deadlock of usermodehelper lock at shutdown
+From: Ming Lei <ming.lei@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 9, 2013 at 12:15 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Wed, 8 May 2013 23:56:51 +0800,
+> Ming Lei wrote:
+>>
+>> On Wed, May 8, 2013 at 2:56 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > When a system goes to reboot/shutdown, it tries to disable the
+>> > usermode helper via usermodehelper_disable().  This might be blocked
+>> > when a driver tries to load a firmware beforehand and it's stuck by
+>> > some reason.
+>>
+>> IMO, it is better to find why the loading is stuck. Also we already provides
+>> the timeout sysfs file to help to deal with the situation.
+>
+> The loading is done manually in the case of dell_rbu driver, so it may
+> happen at any time that the f/w loading doesn't finish properly.
+>
+>
+>> > In this patch, the firmware class driver registers a reboot notifier
+>> > so that it can abort all pending f/w bufs.  Also enable a flag for
+>> > avoiding the call of usermodehelper after the reboot/shutdown starts.
+>>
+>> With this patch, maybe we only hide the real problem.
+>
+> No, you can simulate the hang easily.  Try the below (you can run it
+> on every x86 machine; it just loads the data onto the memory.)
+>
+> - modprobe dell_rbu
+>
+> - echo init > /sys/devices/platform/dell_rbu/image_type
+>
+>   (... now /sys/class/firmware/dell_rbu/* appear)
+>
+> - echo 1 > /sys/class/firmware/dell_rbu/loading
+>
+> - halt -p
+>
+> Now the machine gets stuck.
+>
+> Yes, the real problem is obvious: you didn't finish the f/w loading in
+> the above, and it will never happen.  This doesn't justify that the
+> machine can be stalled at shutdown, though.
 
-1) Propagate return error values properly in irda, spider_net, sfc,
-   and bfin_mac.  From Wei Yongjun.
+OK, got it, thanks for your explanation, but anyway the stall is caused
+by not concluding the load in userspace(we have document about it),
+not by firmware loader itself.
 
-2) Fix fec driver OOPS on rapid link up/down, from Frank Li.
+I think there is no reason to disable the loading timeout for !event, could
+you test the below patch to see if it may avoid the stall?
 
-3) FIX VF resource allocation and chip message payload length errors
-   in be2net driver, from Sathya Perla.
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 4b1f926..caf399e 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -848,11 +848,12 @@ static int _request_firmware_load(struct
+firmware_priv *fw_priv, bool uevent,
+ 		goto err_del_bin_attr;
+ 	}
 
-4) Fix inner protocol inspection during GSO from Pravin B Shelar.
++	if (timeout != MAX_SCHEDULE_TIMEOUT)
++		schedule_delayed_work(&fw_priv->timeout_work, timeout);
++
+ 	if (uevent) {
+ 		dev_set_uevent_suppress(f_dev, false);
+ 		dev_dbg(f_dev, "firmware: requesting %s\n", buf->fw_id);
+-		if (timeout != MAX_SCHEDULE_TIMEOUT)
+-			schedule_delayed_work(&fw_priv->timeout_work, timeout);
 
-Please pull, thanks a lot!
-
-The following changes since commit de9c9f86be0dc3495de98dc65c80abe6e7c7d643:
-
-  Merge tag 'remoteproc-3.10' of git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc (2013-05-07 14:04:56 -0700)
-
-are available in the git repository at:
+ 		kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
+ 	}
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to 4f924b2aa4d3cb30f07e57d6b608838edcbc0d88:
-
-  if_cablemodem.h: Add parenthesis around ioctl macros (2013-05-08 13:13:30 -0700)
-
-----------------------------------------------------------------
-Dan Williams (3):
-      qmi_wwan/cdc_ether: add device IDs for Dell 5804 (Novatel E371) WWAN card
-      usbnet: allow status interrupt URB to always be active
-      sierra_net: keep status interrupt URB active
-
-Frank Li (1):
-      net: fec: fix kernel oops when plug/unplug cable many times
-
-Josh Boyer (1):
-      if_cablemodem.h: Add parenthesis around ioctl macros
-
-Pravin B Shelar (1):
-      gso: Handle Trans-Ether-Bridging protocol in skb_network_protocol()
-
-Sathya Perla (4):
-      be2net: provision VF resources before enabling SR-IOV
-      be2net: fix payload_len value for GET_MAC_LIST cmd req
-      be2net: fix EQ from getting full while cleaning RX CQ
-      be2net: disable TX in be_close()
-
-Sebastian Hesselbarth (1):
-      net: of_mdio: fix behavior on missing phy device
-
-Wei Yongjun (4):
-      net/irda: fix error return code in bfin_sir_open()
-      net/spider_net: fix error return code in spider_net_open()
-      sfc: fix return value check in efx_ptp_probe_channel()
-      bfin_mac: fix error return code in bfin_mac_probe()
-
- drivers/net/ethernet/adi/bfin_mac.c         |  3 ++-
- drivers/net/ethernet/emulex/benet/be_cmds.c |  5 ++---
- drivers/net/ethernet/emulex/benet/be_main.c | 30 +++++++++++++++-------------
- drivers/net/ethernet/freescale/fec.h        | 10 ++++++----
- drivers/net/ethernet/freescale/fec_main.c   | 44 ++++++++++++++++++++++++++++++-----------
- drivers/net/ethernet/sfc/ptp.c              |  4 +++-
- drivers/net/ethernet/toshiba/spider_net.c   |  3 ++-
- drivers/net/irda/bfin_sir.c                 |  6 ++++--
- drivers/net/usb/cdc_ether.c                 |  7 +++++++
- drivers/net/usb/qmi_wwan.c                  |  7 +++++++
- drivers/net/usb/sierra_net.c                | 38 ++++++++++++++++++++++++++++-------
- drivers/net/usb/usbnet.c                    | 77 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------
- drivers/of/of_mdio.c                        | 11 ++++-------
- include/linux/usb/usbnet.h                  |  5 +++++
- include/uapi/linux/if_cablemodem.h          | 12 +++++------
- net/core/dev.c                              | 11 +++++++++++
- net/ipv4/gre.c                              |  8 +-------
- net/ipv4/udp.c                              |  4 +---
- 18 files changed, 212 insertions(+), 73 deletions(-)
+Thanks,
+--
+Ming Lei
