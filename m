@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab3EIADB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 20:03:01 -0400
-Received: from ozlabs.org ([203.10.76.45]:60190 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752317Ab3EIAC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 20:02:59 -0400
-Message-ID: <1368057766.17894.3.camel@concordia>
-Subject: Re: Invalid perf_branch_entry.to entries question
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Anshuman Khandual <anshuman.khandual@in.ibm.com>
-Date: Thu, 09 May 2013 10:02:46 +1000
-In-Reply-To: <15099.1368053151@ale.ozlabs.ibm.com>
-References: <25394.1367890528@ale.ozlabs.ibm.com>
-	 <20130508155929.GA8459@dyad.programming.kicks-ass.net>
-	 <CABPqkBRSMxQK8LJWhD39yo8EQZBd3-dRkeMqvwhWwLiHa6m66g@mail.gmail.com>
-	 <15099.1368053151@ale.ozlabs.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753444Ab3EIAQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 20:16:18 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:35446 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab3EIAQR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 20:16:17 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19iSmIsQ3WKgQcz+6dnGvA0
+Date: Wed, 8 May 2013 17:16:07 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: "Gupta, Pekon" <pekon@ti.com>
+Cc: linux-mtd@lists.infradead.org, b-cousson@ti.com, linux@arm.linux.org.uk,
+        "Philip, Avinash" <avinashphilip@ti.com>, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        nsekhar@ti.com, gururaja.hebbar@ti.com, hvaibhav@ti.com,
+        zonque@gmail.com, jacmet@sunsite.dk
+Subject: Re: [PATCH v3,2/3] ARM: dts: AM33XX: Add GPMC node
+Message-ID: <20130509001606.GZ32546@atomide.com>
+References: <2645efefa3d36388ff1d4b64255d880b6587770f.1359007746.git.avinashphilip@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2645efefa3d36388ff1d4b64255d880b6587770f.1359007746.git.avinashphilip@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-09 at 08:45 +1000, Michael Neuling wrote:
-> Stephane Eranian <eranian@google.com> wrote:
+* Gupta, Pekon <pekon@ti.com> [130502 02:49]:
+> From: "Philip, Avinash" <avinashphilip@ti.com>
 > 
-> > On Wed, May 8, 2013 at 5:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > On Tue, May 07, 2013 at 11:35:28AM +1000, Michael Neuling wrote:
-> > >> Peter & Stephane,
-> > >>
-> > >> We are plumbing the POWER8 Branch History Rolling Buffer (BHRB) into
-> > >> struct perf_branch_entry.
-> > >>
-> > >> Sometimes on POWER8 we may not be able to fill out the "to" address.
-> > >
-> > > Just because I'm curious.. however does that happen? Surely the CPU knows where
-> > > next to fetch instructions?
-> > >
-> > >> We
-> > >> initially thought of just making this 0, but it's feasible that this
-> > >> could be a valid address to branch to.
-> > >
-> > > Right, while highly unlikely, x86 actually has some cases where 0 address is
-> > > valid *shudder*..
-> > >
-> > >> The other logical value to indicate an invalid entry would be all 1s
-> > >> which is not possible (on POWER at least).
-> > >>
-> > >> Do you guys have a preference as to what we should use as an invalid
-> > >> entry?  This would have some consequences for the userspace tool also.
-> > >>
-> > >> The alternative would be to add a flag alongside mispred/predicted to
-> > >> indicate the validity of the "to" address.
-> > >
-> > > Either would work with me I suppose.. Stephane do you have any preference?
-> > 
-> > But if the 'to' is bogus, why not just drop the sample?
-> > That happens on x86 if the HW captured branches which do not correspond to
-> > user filter settings (due to bug).
+> Add GPMC data node to AM33XX device tree file.
 > 
-> We can I guess but it seems useful to log the from address when
-> possible.  
+> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+> Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
+> Signed-off-by: Pekon Gupta <pekon@ti.com>
 
-Yeah I think it is useful. Knowing that you were there, but the to
-address is invalid, is better than wondering why you never hit the code
-at all.
+Thanks adding into omap-for-v3.10/dt-fixes.
 
-cheers
-
+Tony
+ 
+> ---
+> Changes in v2:
+> 	- Change number of chip select to 7
+> 
+>  arch/arm/boot/dts/am33xx.dtsi |   12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> index 24fc835..1048795 100644
+> --- a/arch/arm/boot/dts/am33xx.dtsi
+> +++ b/arch/arm/boot/dts/am33xx.dtsi
+> @@ -407,5 +407,17 @@
+>  			ti,hwmods = "elm";
+>  			status = "disabled";
+>  		};
+> +
+> +		gpmc: gpmc@50000000 {
+> +			compatible = "ti,am3352-gpmc";
+> +			ti,hwmods = "gpmc";
+> +			reg = <0x50000000 0x2000>;
+> +			interrupts = <100>;
+> +			num-cs = <7>;
+> +			num-waitpins = <2>;
+> +			#address-cells = <2>;
+> +			#size-cells = <1>;
+> +			status = "disabled";
+> +		};
+>  	};
+>  };
