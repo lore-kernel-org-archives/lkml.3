@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab3EIVxo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 17:53:44 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:65491 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab3EIVxm (ORCPT
+	id S1754143Ab3EIVyQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 17:54:16 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:59569 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561Ab3EIVyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 17:53:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <1368098909-919-1-git-send-email-realmz6@gmail.com>
-References: <1368098909-919-1-git-send-email-realmz6@gmail.com>
-Date: Thu, 9 May 2013 14:53:42 -0700
-X-Google-Sender-Auth: b57fn8WHMh8734jcrzY_Xzh-Pyw
-Message-ID: <CA+55aFyQVZ622dH-e+V77B6LKuYeXS+QfnYYQK77=0T82-MkAA@mail.gmail.com>
-Subject: Re: [uclinux-dist-devel] [GIT PULL] Blackfin updates for 3.10
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Steven Miao (Steven Miao)" <realmz6@gmail.com>,
-        Bob Liu <lliubbo@gmail.com>
-Cc: uclinux-dist-devel@blackfin.uclinux.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 9 May 2013 17:54:15 -0400
+X-Nat-Received: from [202.181.97.72]:57118 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1368136446.16343
+To: cl@linux.com
+Cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <0000013e564e0e5a-121c52f9-e489-470f-99d5-67a5ad42eb75-000000@email.amazonses.com>
+	<201304300028.IAD13051.OHOVMJSLFFFQOt@I-love.SAKURA.ne.jp>
+	<201304300116.FGJ56210.FMSOJHFOtFQVOL@I-love.SAKURA.ne.jp>
+	<201305092125.FGG13076.LFOtVOFMSFQJHO@I-love.SAKURA.ne.jp>
+	<0000013e89a4ae3c-f2abd075-e096-42b5-891d-e2e5e2af9ecb-000000@email.amazonses.com>
+In-Reply-To: <0000013e89a4ae3c-f2abd075-e096-42b5-891d-e2e5e2af9ecb-000000@email.amazonses.com>
+Message-Id: <201305100654.FCI28926.HOtMVOJLFFFSQO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Fri, 10 May 2013 06:54:04 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 09052013 #9931519, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm. I'm used to pull blackfin updates from Bob Liu. I see that he has
-signed your gpg key, so this all looks fine, but quite frankly, Id'
-much rather be told ahead of time that "oh, expect pulls from another
-person".
+Christoph Lameter wrote:
+> -	for (i = 1; i < PAGE_SHIFT + MAX_ORDER; i++) {
+> +	for (i = 1; i =< KMALLOC_SHIFT_HIGH; i++) {
 
-I do *not* want to end up in some kind of fight over who maintains
-what. Bob? Am I supposed to expect blackfin pulls to come from Steven
-now? Or is this a one-off? Or what?
+  mm/slab.c: In function 'init_node_lock_keys':
+  mm/slab.c:568:17: error: expected expression before '<' token
 
-I'll delay pulling waiting for explanations..
+What I'm worrying is:
 
-            Linus
+  /*
+   * The largest kmalloc size supported by the SLAB allocators is
+   * 32 megabyte (2^25) or the maximum allocatable page order if that is
+   * less than 32 MB.
+   *
+   * WARNING: Its not easy to increase this value since the allocators have
+   * to do various tricks to work around compiler limitations in order to
+   * ensure proper constant folding.
+   */
+  #define KMALLOC_SHIFT_HIGH      ((MAX_ORDER + PAGE_SHIFT - 1) <= 25 ? \
+                                  (MAX_ORDER + PAGE_SHIFT - 1) : 25)
 
-On Thu, May 9, 2013 at 4:28 AM, Steven Miao (Steven Miao)
-<realmz6@gmail.com> wrote:
-> Hi Linus,
->
-> please pull blackfin updates for Linux 3.10, some minor changes for performance and bug fixes.
+  extern struct kmem_cache *kmalloc_caches[KMALLOC_SHIFT_HIGH + 1];
+
+Can we manage with allocating only 26 elements when MAX_ORDER + PAGE_SHIFT > 26
+(e.g. PAGE_SIZE == 256 * 1024) ?
+
+Can kmalloc_index()/kmalloc_size()/kmalloc_slab() etc. work correctly when
+MAX_ORDER + PAGE_SHIFT > 26 (e.g. PAGE_SIZE == 256 * 1024) ?
