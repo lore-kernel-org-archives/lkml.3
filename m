@@ -1,150 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab3EIOXH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 10:23:07 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:44642 "EHLO mxout1.idt.com"
+	id S1755158Ab3EIOXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 10:23:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41224 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752821Ab3EIOXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 10:23:05 -0400
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>
-Subject: [PATCH] rapidio/switches: remove tsi500 driver
-Date: Thu,  9 May 2013 10:20:47 -0400
-Message-Id: <1368109247-16914-1-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.8.4
+	id S1754166Ab3EIOXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 10:23:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,641,1363158000"; 
+   d="scan'208";a="334954055"
+Message-ID: <518BB14D.6050707@intel.com>
+Date: Thu, 09 May 2013 22:23:09 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Paul Turner <pjt@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 3/7] sched: set initial value of runnable avg for new
+ forked task
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-4-git-send-email-alex.shi@intel.com> <CAPM31RJg7t8f1H-dZwzP1c-0HHb_=8twidX74gS2NfyQhHUhCw@mail.gmail.com> <5187760D.8060900@intel.com> <CAPM31RKiCfSZ=hJ9P7WOH6AC8uj6b06mEM6K0WCTYXC7OJAq7A@mail.gmail.com> <51886460.3020009@intel.com> <CAPM31RLsip-PMY73oq58gyi42EQ+-upmPpMQFkukVBX6LTwtCw@mail.gmail.com> <51887404.4060102@intel.com> <51888B2D.30901@intel.com> <518B5EC9.1030605@intel.com> <CAPM31RJ-t-WzgzFy6t8MbD4hXd2o+S8d=UTASJ0=NVhNCjsQLg@mail.gmail.com>
+In-Reply-To: <CAPM31RJ-t-WzgzFy6t8MbD4hXd2o+S8d=UTASJ0=NVhNCjsQLg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the driver for Tsi500 Parallel RapidIO switch because this device is
-not available for several years. Since the first introduction of Tsi500,
-the parallel RapidIO interface was replaced by the serial RapidIO (sRIO)
-and therefore there is no value in keeping this driver.
+On 05/09/2013 05:30 PM, Paul Turner wrote:
+>> > With sched_slice, we need to set the runnable avg sum/period after new
+>> > task assigned to a specific CPU.
+>> > So, set them __sched_fork is meaningless. and then
+> This is still a reasonable choice.
+> 
+> Assuming the system is well balanced, sched_slice() on the current CPU
+> should be reasonably indicative of the slice wherever we end up.  The
+> alternative is still to pick a constant.  We should do one of these.
+> 
+>> > __update_task_entity_contrib(&p->se) also no reason to use.
+> Surely we'd still want it so that the right load is added by
+> enqueue_entity_load_avg()?
+> 
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
+thanks for comments! 
+the new patch attached, hope it is your liked this time. :)
+
 ---
- drivers/rapidio/switches/Kconfig  |    7 ---
- drivers/rapidio/switches/Makefile |    1 -
- drivers/rapidio/switches/tsi500.c |   78 -------------------------------------
- 3 files changed, 0 insertions(+), 86 deletions(-)
- delete mode 100644 drivers/rapidio/switches/tsi500.c
+>From 5606df1e46e83e64b0ade30522096c00448a97be Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Mon, 3 Dec 2012 17:30:39 +0800
+Subject: [PATCH 3/7] sched: set initial value of runnable avg for new forked
+ task
 
-diff --git a/drivers/rapidio/switches/Kconfig b/drivers/rapidio/switches/Kconfig
-index f47fee5..62d4a06 100644
---- a/drivers/rapidio/switches/Kconfig
-+++ b/drivers/rapidio/switches/Kconfig
-@@ -26,10 +26,3 @@ config RAPIDIO_CPS_GEN2
- 	default n
- 	---help---
- 	  Includes support for ITD CPS Gen.2 serial RapidIO switches.
--
--config RAPIDIO_TSI500
--	bool "Tsi500 Parallel RapidIO switch support"
--	depends on RAPIDIO
--	default n
--	---help---
--	  Includes support for IDT Tsi500 parallel RapidIO switch.
-diff --git a/drivers/rapidio/switches/Makefile b/drivers/rapidio/switches/Makefile
-index c4d3acc..051cc6b 100644
---- a/drivers/rapidio/switches/Makefile
-+++ b/drivers/rapidio/switches/Makefile
-@@ -5,5 +5,4 @@
- obj-$(CONFIG_RAPIDIO_TSI57X)	+= tsi57x.o
- obj-$(CONFIG_RAPIDIO_CPS_XX)	+= idtcps.o
- obj-$(CONFIG_RAPIDIO_TSI568)	+= tsi568.o
--obj-$(CONFIG_RAPIDIO_TSI500)	+= tsi500.o
- obj-$(CONFIG_RAPIDIO_CPS_GEN2)	+= idt_gen2.o
-diff --git a/drivers/rapidio/switches/tsi500.c b/drivers/rapidio/switches/tsi500.c
-deleted file mode 100644
-index 914eddd..0000000
---- a/drivers/rapidio/switches/tsi500.c
-+++ /dev/null
-@@ -1,78 +0,0 @@
--/*
-- * RapidIO Tsi500 switch support
-- *
-- * Copyright 2009-2010 Integrated Device Technology, Inc.
-- * Alexandre Bounine <alexandre.bounine@idt.com>
-- *  - Modified switch operations initialization.
-- *
-- * Copyright 2005 MontaVista Software, Inc.
-- * Matt Porter <mporter@kernel.crashing.org>
-- *
-- * This program is free software; you can redistribute  it and/or modify it
-- * under  the terms of  the GNU General  Public License as published by the
-- * Free Software Foundation;  either version 2 of the  License, or (at your
-- * option) any later version.
-- */
--
--#include <linux/rio.h>
--#include <linux/rio_drv.h>
--#include <linux/rio_ids.h>
--#include "../rio.h"
--
--static int
--tsi500_route_add_entry(struct rio_mport *mport, u16 destid, u8 hopcount, u16 table, u16 route_destid, u8 route_port)
--{
--	int i;
--	u32 offset = 0x10000 + 0xa00 + ((route_destid / 2)&~0x3);
--	u32 result;
--
--	if (table == 0xff) {
--		rio_mport_read_config_32(mport, destid, hopcount, offset, &result);
--		result &= ~(0xf << (4*(route_destid & 0x7)));
--		for (i=0;i<4;i++)
--			rio_mport_write_config_32(mport, destid, hopcount, offset + (0x20000*i), result | (route_port << (4*(route_destid & 0x7))));
--	}
--	else {
--		rio_mport_read_config_32(mport, destid, hopcount, offset + (0x20000*table), &result);
--		result &= ~(0xf << (4*(route_destid & 0x7)));
--		rio_mport_write_config_32(mport, destid, hopcount, offset + (0x20000*table), result | (route_port << (4*(route_destid & 0x7))));
--	}
--
--	return 0;
--}
--
--static int
--tsi500_route_get_entry(struct rio_mport *mport, u16 destid, u8 hopcount, u16 table, u16 route_destid, u8 *route_port)
--{
--	int ret = 0;
--	u32 offset = 0x10000 + 0xa00 + ((route_destid / 2)&~0x3);
--	u32 result;
--
--	if (table == 0xff)
--		rio_mport_read_config_32(mport, destid, hopcount, offset, &result);
--	else
--		rio_mport_read_config_32(mport, destid, hopcount, offset + (0x20000*table), &result);
--
--	result &= 0xf << (4*(route_destid & 0x7));
--	*route_port = result >> (4*(route_destid & 0x7));
--	if (*route_port > 3)
--		ret = -1;
--
--	return ret;
--}
--
--static int tsi500_switch_init(struct rio_dev *rdev, int do_enum)
--{
--	pr_debug("RIO: %s for %s\n", __func__, rio_name(rdev));
--	rdev->rswitch->add_entry = tsi500_route_add_entry;
--	rdev->rswitch->get_entry = tsi500_route_get_entry;
--	rdev->rswitch->clr_table = NULL;
--	rdev->rswitch->set_domain = NULL;
--	rdev->rswitch->get_domain = NULL;
--	rdev->rswitch->em_init = NULL;
--	rdev->rswitch->em_handle = NULL;
--
--	return 0;
--}
--
--DECLARE_RIO_SWITCH_INIT(RIO_VID_TUNDRA, RIO_DID_TSI500, tsi500_switch_init);
+We need initialize the se.avg.{decay_count, load_avg_contrib} for a
+new forked task.
+Otherwise random values of above variables cause mess when do new task
+enqueue:
+    enqueue_task_fair
+        enqueue_entity
+            enqueue_entity_load_avg
+
+and make forking balancing imbalance since incorrect load_avg_contrib.
+
+Further more, Morten Rasmussen notice some tasks were not launched at
+once after created. So Paul and Peter suggest giving a start value for
+new task runnable avg time same as sched_slice().
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ kernel/sched/core.c  |    6 ++----
+ kernel/sched/fair.c  |   23 +++++++++++++++++++++++
+ kernel/sched/sched.h |    2 ++
+ 3 files changed, 27 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c8db984..866c05a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1563,10 +1563,6 @@ static void __sched_fork(struct task_struct *p)
+ 	p->se.vruntime			= 0;
+ 	INIT_LIST_HEAD(&p->se.group_node);
+ 
+-#ifdef CONFIG_SMP
+-	p->se.avg.runnable_avg_period = 0;
+-	p->se.avg.runnable_avg_sum = 0;
+-#endif
+ #ifdef CONFIG_SCHEDSTATS
+ 	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
+ #endif
+@@ -1710,6 +1706,8 @@ void wake_up_new_task(struct task_struct *p)
+ 	set_task_cpu(p, select_task_rq(p, SD_BALANCE_FORK, 0));
+ #endif
+ 
++	/* Give new task start runnable values */
++	set_task_runnable_avg(p);
+ 	rq = __task_rq_lock(p);
+ 	activate_task(rq, p, 0);
+ 	p->on_rq = 1;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9c2f726..203f236 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -661,6 +661,26 @@ static u64 sched_vslice(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	return calc_delta_fair(sched_slice(cfs_rq, se), se);
+ }
+ 
++#ifdef CONFIG_SMP
++static inline void __update_task_entity_contrib(struct sched_entity *se);
++
++/* Give new task start runnable values to heavy its load in infant time */
++void set_task_runnable_avg(struct task_struct *p)
++{
++	u32 slice;
++
++	p->se.avg.decay_count = 0;
++	slice = sched_slice(task_cfs_rq(p), &p->se) >> 10;
++	p->se.avg.runnable_avg_sum = slice;
++	p->se.avg.runnable_avg_period = slice;
++	__update_task_entity_contrib(&p->se);
++}
++#else
++void set_task_runnable_avg(struct task_struct *p)
++{
++}
++#endif
++
+ /*
+  * Update the current task's runtime statistics. Skip current tasks that
+  * are not in our scheduling class.
+@@ -1508,6 +1528,9 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 	 * We track migrations using entity decay_count <= 0, on a wake-up
+ 	 * migration we use a negative decay count to track the remote decays
+ 	 * accumulated while sleeping.
++	 *
++	 * When enqueue a new forked task, the se->avg.decay_count == 0, so
++	 * we bypass update_entity_load_avg(), use avg.load_avg_contrib direct.
+ 	 */
+ 	if (unlikely(se->avg.decay_count <= 0)) {
+ 		se->avg.last_runnable_update = rq_of(cfs_rq)->clock_task;
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index c6634f1..518f3d8a 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -900,6 +900,8 @@ extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime
+ 
+ extern void update_idle_cpu_load(struct rq *this_rq);
+ 
++extern void set_task_runnable_avg(struct task_struct *p);
++
+ #ifdef CONFIG_CGROUP_CPUACCT
+ #include <linux/cgroup.h>
+ /* track cpu usage of a group of tasks and its child groups */
 -- 
-1.7.8.4
+1.7.5.4
 
+
+-- 
+Thanks
+    Alex
