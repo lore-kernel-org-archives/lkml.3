@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab3EITZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 15:25:29 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:59154 "EHLO relay.sgi.com"
+	id S1753398Ab3EITZx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 15:25:53 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:59145 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753213Ab3EITYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 15:24:01 -0400
+	id S1753046Ab3EITX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 15:23:56 -0400
 From: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robin Holt <holt@sgi.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Russ Anderson <rja@sgi.com>, Russell King <linux@arm.linux.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         the arch/x86 maintainers <x86@kernel.org>,
         Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH -v9 07/11] unicore32, prepare reboot_mode for moving to generic kernel code.
-Date: Thu,  9 May 2013 14:23:21 -0500
-Message-Id: <1368127405-112717-8-git-send-email-holt@sgi.com>
+Subject: [PATCH -v9 05/11] checkpatch.pl the new kernel/reboot.c file.
+Date: Thu,  9 May 2013 14:23:19 -0500
+Message-Id: <1368127405-112717-6-git-send-email-holt@sgi.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1368127405-112717-1-git-send-email-holt@sgi.com>
 References: <1368127405-112717-1-git-send-email-holt@sgi.com>
@@ -24,110 +24,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prepares for the moving the parsing of reboot= to the generic
-kernel code by making reboot_mode into a more generic form.
+Get the new file to pass scripts/checkpatch.pl
 
 Signed-off-by: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: H. Peter Anvin <hpa@zytor.com>
 Cc: Russ Anderson <rja@sgi.com>
 Cc: Robin Holt <holt@sgi.com>
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: the arch/x86 maintainers <x86@kernel.org>
 Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
 
 ---
 
-Changes since -v8
- - Switched from using REBOOT_WARM/COLD to HARD/SOFT.
+Changes since v6:
+ - Removed last remaining line length warning.
 ---
- arch/unicore32/kernel/process.c | 10 +++++-----
- arch/unicore32/kernel/setup.h   |  2 +-
- arch/unicore32/mm/mmu.c         |  2 +-
- include/linux/reboot.h          |  2 ++
- 4 files changed, 9 insertions(+), 7 deletions(-)
+ include/linux/reboot.h |  2 +-
+ kernel/reboot.c        | 28 +++++++++++++---------------
+ 2 files changed, 14 insertions(+), 16 deletions(-)
 
-diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
-index c944769..93dd035 100644
---- a/arch/unicore32/kernel/process.c
-+++ b/arch/unicore32/kernel/process.c
-@@ -51,14 +51,14 @@ void arch_cpu_idle(void)
- 	local_irq_enable();
- }
- 
--static char reboot_mode = 'h';
-+static enum reboot_mode reboot_mode = REBOOT_HARD;
- 
- int __init reboot_setup(char *str)
- {
--	reboot_mode = str[0];
-+	if ('s' == str[0])
-+		reboot_mode = REBOOT_SOFT;
- 	return 1;
- }
--
- __setup("reboot=", reboot_setup);
- 
- void machine_halt(void)
-@@ -88,7 +88,7 @@ void machine_restart(char *cmd)
- 	 * we may need it to insert some 1:1 mappings so that
- 	 * soft boot works.
- 	 */
--	setup_mm_for_reboot(reboot_mode);
-+	setup_mm_for_reboot();
- 
- 	/* Clean and invalidate caches */
- 	flush_cache_all();
-@@ -102,7 +102,7 @@ void machine_restart(char *cmd)
- 	/*
- 	 * Now handle reboot code.
- 	 */
--	if (reboot_mode == 's') {
-+	if (reboot_mode == REBOOT_SOFT) {
- 		/* Jump into ROM at address 0xffff0000 */
- 		cpu_reset(VECTORS_BASE);
- 	} else {
-diff --git a/arch/unicore32/kernel/setup.h b/arch/unicore32/kernel/setup.h
-index 30f749d..f5c51b8 100644
---- a/arch/unicore32/kernel/setup.h
-+++ b/arch/unicore32/kernel/setup.h
-@@ -22,7 +22,7 @@ extern void puv3_ps2_init(void);
- extern void pci_puv3_preinit(void);
- extern void __init puv3_init_gpio(void);
- 
--extern void setup_mm_for_reboot(char mode);
-+extern void setup_mm_for_reboot(void);
- 
- extern char __stubs_start[], __stubs_end[];
- extern char __vectors_start[], __vectors_end[];
-diff --git a/arch/unicore32/mm/mmu.c b/arch/unicore32/mm/mmu.c
-index 43c20b4..4f5a532 100644
---- a/arch/unicore32/mm/mmu.c
-+++ b/arch/unicore32/mm/mmu.c
-@@ -445,7 +445,7 @@ void __init paging_init(void)
-  * the user-mode pages.  This will then ensure that we have predictable
-  * results when turning the mmu off
-  */
--void setup_mm_for_reboot(char mode)
-+void setup_mm_for_reboot(void)
- {
- 	unsigned long base_pmdval;
- 	pgd_t *pgd;
 diff --git a/include/linux/reboot.h b/include/linux/reboot.h
-index 37d56c3..ca29a6f 100644
+index 23b3630..c6eba21 100644
 --- a/include/linux/reboot.h
 +++ b/include/linux/reboot.h
-@@ -13,6 +13,8 @@
- enum reboot_mode {
- 	REBOOT_COLD = 0,
- 	REBOOT_WARM,
-+	REBOOT_HARD,
-+	REBOOT_SOFT,
- };
+@@ -26,7 +26,7 @@ extern void machine_shutdown(void);
+ struct pt_regs;
+ extern void machine_crash_shutdown(struct pt_regs *);
  
- extern int register_reboot_notifier(struct notifier_block *);
+-/* 
++/*
+  * Architecture independent implemenations of sys_reboot commands.
+  */
+ 
+diff --git a/kernel/reboot.c b/kernel/reboot.c
+index 0616483..abb6a04 100644
+--- a/kernel/reboot.c
++++ b/kernel/reboot.c
+@@ -4,6 +4,8 @@
+  *  Copyright (C) 2013  Linus Torvalds
+  */
+ 
++#define pr_fmt(fmt)	"reboot: " fmt
++
+ #include <linux/export.h>
+ #include <linux/kexec.h>
+ #include <linux/kmod.h>
+@@ -114,9 +116,9 @@ void kernel_restart(char *cmd)
+ 	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	if (!cmd)
+-		printk(KERN_EMERG "Restarting system.\n");
++		pr_emerg("Restarting system\n");
+ 	else
+-		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
++		pr_emerg("Restarting system with command '%s'\n", cmd);
+ 	kmsg_dump(KMSG_DUMP_RESTART);
+ 	machine_restart(cmd);
+ }
+@@ -125,7 +127,7 @@ EXPORT_SYMBOL_GPL(kernel_restart);
+ static void kernel_shutdown_prepare(enum system_states state)
+ {
+ 	blocking_notifier_call_chain(&reboot_notifier_list,
+-		(state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
++		(state == SYSTEM_HALT) ? SYS_HALT : SYS_POWER_OFF, NULL);
+ 	system_state = state;
+ 	usermodehelper_disable();
+ 	device_shutdown();
+@@ -140,11 +142,10 @@ void kernel_halt(void)
+ 	kernel_shutdown_prepare(SYSTEM_HALT);
+ 	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+-	printk(KERN_EMERG "System halted.\n");
++	pr_emerg("System halted\n");
+ 	kmsg_dump(KMSG_DUMP_HALT);
+ 	machine_halt();
+ }
+-
+ EXPORT_SYMBOL_GPL(kernel_halt);
+ 
+ /**
+@@ -159,7 +160,7 @@ void kernel_power_off(void)
+ 		pm_power_off_prepare();
+ 	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+-	printk(KERN_EMERG "Power down.\n");
++	pr_emerg("Power down\n");
+ 	kmsg_dump(KMSG_DUMP_POWEROFF);
+ 	machine_power_off();
+ }
+@@ -188,10 +189,10 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 
+ 	/* For safety, we require "magic" arguments. */
+ 	if (magic1 != LINUX_REBOOT_MAGIC1 ||
+-	    (magic2 != LINUX_REBOOT_MAGIC2 &&
+-	                magic2 != LINUX_REBOOT_MAGIC2A &&
++			(magic2 != LINUX_REBOOT_MAGIC2 &&
++			magic2 != LINUX_REBOOT_MAGIC2A &&
+ 			magic2 != LINUX_REBOOT_MAGIC2B &&
+-	                magic2 != LINUX_REBOOT_MAGIC2C))
++			magic2 != LINUX_REBOOT_MAGIC2C))
+ 		return -EINVAL;
+ 
+ 	/*
+@@ -234,7 +235,8 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 		break;
+ 
+ 	case LINUX_REBOOT_CMD_RESTART2:
+-		if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
++		ret = strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1);
++		if (ret < 0) {
+ 			ret = -EFAULT;
+ 			break;
+ 		}
+@@ -282,7 +284,6 @@ void ctrl_alt_del(void)
+ 	else
+ 		kill_cad_pid(SIGINT, 1);
+ }
+-	
+ 
+ char poweroff_cmd[POWEROFF_CMD_PATH_LEN] = "/sbin/poweroff";
+ 
+@@ -301,14 +302,11 @@ static int __orderly_poweroff(bool force)
+ 		ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+ 		argv_free(argv);
+ 	} else {
+-		printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
+-					 __func__, poweroff_cmd);
+ 		ret = -ENOMEM;
+ 	}
+ 
+ 	if (ret && force) {
+-		printk(KERN_WARNING "Failed to start orderly shutdown: "
+-					"forcing the issue\n");
++		pr_warn("Failed to start orderly shutdown: forcing the issue\n");
+ 		/*
+ 		 * I guess this should try to kick off some daemon to sync and
+ 		 * poweroff asap.  Or not even bother syncing if we're doing an
 -- 
 1.8.2.1
 
