@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078Ab3EIWvl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:51:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46147 "EHLO
+	id S1759291Ab3EIWwC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:52:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46132 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757938Ab3EIWdL (ORCPT
+	with ESMTP id S1757908Ab3EIWdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:11 -0400
+	Thu, 9 May 2013 18:33:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jani Nikula <jani.nikula@intel.com>,
-        Peter Verthez <peter.verthez@skynet.be>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jon Bloomfield <jon.bloomfield@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 43/73] drm/i915: ensure single initialization and cleanup of backlight device
-Date: Thu,  9 May 2013 15:32:06 -0700
-Message-Id: <20130509222802.624752373@linuxfoundation.org>
+Subject: [ 40/73] drm/i915: Workaround incoherence between fences and LLC across multiple CPUs
+Date: Thu,  9 May 2013 15:32:03 -0700
+Message-Id: <20130509222802.317214242@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -28,99 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit dc652f90e088798bfa31f496ba994ddadd5d5680 upstream.
+commit 25ff1195f8a0b3724541ae7bbe331b4296de9c06 upstream.
 
-Backlight cleanup in the eDP connector destroy callback caused the
-backlight device to be removed on some systems that first initialized LVDS
-and then attempted to initialize eDP. Prevent multiple backlight
-initializations, and ensure backlight cleanup is only done once by moving
-it to modeset cleanup.
+In order to fully serialize access to the fenced region and the update
+to the fence register we need to take extreme measures on SNB+, and
+manually flush writes to memory prior to writing the fence register in
+conjunction with the memory barriers placed around the register write.
 
-A small wrinkle is the introduced asymmetry in backlight
-setup/cleanup. This could be solved by adding refcounting, but it seems
-overkill considering that there should only ever be one backlight device.
+Fixes i-g-t/gem_fence_thrash
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=55701
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Tested-by: Peter Verthez <peter.verthez@skynet.be>
+v2: Bring a bigger gun
+v3: Switch the bigger gun for heavier bullets (Arjan van de Ven)
+v4: Remove changes for working generations.
+v5: Reduce to a per-cpu wbinvd() call prior to updating the fences.
+v6: Rewrite comments to ellide forgotten history.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=62191
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Jon Bloomfield <jon.bloomfield@intel.com>
+Tested-by: Jon Bloomfield <jon.bloomfield@intel.com> (v2)
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    3 +++
- drivers/gpu/drm/i915/intel_dp.c      |    5 +----
- drivers/gpu/drm/i915/intel_lvds.c    |    1 -
- drivers/gpu/drm/i915/intel_panel.c   |    7 ++++++-
- 4 files changed, 10 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |   26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9388,6 +9388,9 @@ void intel_modeset_cleanup(struct drm_de
- 	/* flush any delayed tasks or pending work */
- 	flush_scheduled_work();
- 
-+	/* destroy backlight, if any, before the connectors */
-+	intel_panel_destroy_backlight(dev);
-+
- 	drm_mode_config_cleanup(dev);
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2662,17 +2662,35 @@ static inline int fence_number(struct dr
+ 	return fence - dev_priv->fence_regs;
  }
  
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -2467,17 +2467,14 @@ done:
- static void
- intel_dp_destroy(struct drm_connector *connector)
- {
--	struct drm_device *dev = connector->dev;
- 	struct intel_dp *intel_dp = intel_attached_dp(connector);
- 	struct intel_connector *intel_connector = to_intel_connector(connector);
- 
- 	if (!IS_ERR_OR_NULL(intel_connector->edid))
- 		kfree(intel_connector->edid);
- 
--	if (is_edp(intel_dp)) {
--		intel_panel_destroy_backlight(dev);
-+	if (is_edp(intel_dp))
- 		intel_panel_fini(&intel_connector->panel);
--	}
- 
- 	drm_sysfs_connector_remove(connector);
- 	drm_connector_cleanup(connector);
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -556,7 +556,6 @@ static void intel_lvds_destroy(struct dr
- 	if (!IS_ERR_OR_NULL(lvds_connector->base.edid))
- 		kfree(lvds_connector->base.edid);
- 
--	intel_panel_destroy_backlight(connector->dev);
- 	intel_panel_fini(&lvds_connector->base.panel);
- 
- 	drm_sysfs_connector_remove(connector);
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -422,6 +422,9 @@ int intel_panel_setup_backlight(struct d
- 
- 	intel_panel_init_backlight(dev);
- 
-+	if (WARN_ON(dev_priv->backlight))
-+		return -ENODEV;
++static void i915_gem_write_fence__ipi(void *data)
++{
++	wbinvd();
++}
 +
- 	memset(&props, 0, sizeof(props));
- 	props.type = BACKLIGHT_RAW;
- 	props.max_brightness = _intel_panel_get_max_backlight(dev);
-@@ -447,8 +450,10 @@ int intel_panel_setup_backlight(struct d
- void intel_panel_destroy_backlight(struct drm_device *dev)
+ static void i915_gem_object_update_fence(struct drm_i915_gem_object *obj,
+ 					 struct drm_i915_fence_reg *fence,
+ 					 bool enable)
  {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
--	if (dev_priv->backlight)
-+	if (dev_priv->backlight) {
- 		backlight_device_unregister(dev_priv->backlight);
-+		dev_priv->backlight = NULL;
-+	}
- }
- #else
- int intel_panel_setup_backlight(struct drm_connector *connector)
+-	struct drm_i915_private *dev_priv = obj->base.dev->dev_private;
+-	int reg = fence_number(dev_priv, fence);
++	struct drm_device *dev = obj->base.dev;
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	int fence_reg = fence_number(dev_priv, fence);
+ 
+-	i915_gem_write_fence(obj->base.dev, reg, enable ? obj : NULL);
++	/* In order to fully serialize access to the fenced region and
++	 * the update to the fence register we need to take extreme
++	 * measures on SNB+. In theory, the write to the fence register
++	 * flushes all memory transactions before, and coupled with the
++	 * mb() placed around the register write we serialise all memory
++	 * operations with respect to the changes in the tiler. Yet, on
++	 * SNB+ we need to take a step further and emit an explicit wbinvd()
++	 * on each processor in order to manually flush all memory
++	 * transactions before updating the fence register.
++	 */
++	if (HAS_LLC(obj->base.dev))
++		on_each_cpu(i915_gem_write_fence__ipi, NULL, 1);
++	i915_gem_write_fence(dev, fence_reg, enable ? obj : NULL);
+ 
+ 	if (enable) {
+-		obj->fence_reg = reg;
++		obj->fence_reg = fence_reg;
+ 		fence->obj = obj;
+ 		list_move_tail(&fence->lru_list, &dev_priv->mm.fence_list);
+ 	} else {
 
 
