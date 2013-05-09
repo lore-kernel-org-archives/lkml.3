@@ -1,85 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3EILIo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 07:08:44 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:36488 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936Ab3EILIn (ORCPT
+	id S1754248Ab3EILJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 07:09:20 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:54392 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314Ab3EILJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 07:08:43 -0400
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH] mfd: ab8500-sysctrl: Always enable pm_power_off handler
-Date: Thu,  9 May 2013 13:08:08 +0200
-Message-Id: <1368097688-17858-1-git-send-email-fabio.baltieri@linaro.org>
-X-Mailer: git-send-email 1.8.2
+	Thu, 9 May 2013 07:09:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <1368095819-11011-7-git-send-email-yefremov.denis@gmail.com>
+References: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
+	<1368095819-11011-7-git-send-email-yefremov.denis@gmail.com>
+Date: Thu, 9 May 2013 13:09:18 +0200
+X-Google-Sender-Auth: DwRMshReVWZo-kVQQsQL96-RV3U
+Message-ID: <CAMuHMdX9BiVKHm3ZdMjP1H0DVtGacAahztr+Rn+3epse8EWXZA@mail.gmail.com>
+Subject: Re: [PATCH 18/21] m68k/sun3/: remove inline marking of EXPORT_SYMBOL functions
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Denis Efremov <yefremov.denis@gmail.com>
+Cc: Sam Creasey <sammy@sammy.net>, linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <trivial@kernel.org>, ldv-project@linuxtesting.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AB8500 sysctrl driver implements a pm_power_off handler, but that is
-currently not registered until a specific platform data field is
-enabled.
+On Thu, May 9, 2013 at 12:36 PM, Denis Efremov <yefremov.denis@gmail.com> wrote:
+> EXPORT_SYMBOL and inline directives are contradictory to each other.
+> The patch fixes this inconsistency.
+>
+> Found by Linux Driver Verification project (linuxtesting.org).
+>
+> Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
 
-This patch drops the platform data field and always registers
-ab8500_power_off if no other pm_power_off handler was defined before,
-and also introduces the necessary cleanup code in the driver's remove
-function.
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
----
- drivers/mfd/ab8500-sysctrl.c      | 6 +++++-
- include/linux/mfd/abx500/ab8500.h | 2 --
- 2 files changed, 5 insertions(+), 3 deletions(-)
+Do you want me to queue this in the m68k tree?
 
-diff --git a/drivers/mfd/ab8500-sysctrl.c b/drivers/mfd/ab8500-sysctrl.c
-index eadae4d..8e0dae5 100644
---- a/drivers/mfd/ab8500-sysctrl.c
-+++ b/drivers/mfd/ab8500-sysctrl.c
-@@ -193,7 +193,7 @@ static int ab8500_sysctrl_probe(struct platform_device *pdev)
- 
- 	sysctrl_dev = &pdev->dev;
- 
--	if (plat->pm_power_off)
-+	if (!pm_power_off)
- 		pm_power_off = ab8500_power_off;
- 
- 	pdata = plat->sysctrl;
-@@ -227,6 +227,10 @@ static int ab8500_sysctrl_probe(struct platform_device *pdev)
- static int ab8500_sysctrl_remove(struct platform_device *pdev)
- {
- 	sysctrl_dev = NULL;
-+
-+	if (pm_power_off == ab8500_power_off)
-+		pm_power_off = NULL;
-+
- 	return 0;
- }
- 
-diff --git a/include/linux/mfd/abx500/ab8500.h b/include/linux/mfd/abx500/ab8500.h
-index b5780fd..6c119b5 100644
---- a/include/linux/mfd/abx500/ab8500.h
-+++ b/include/linux/mfd/abx500/ab8500.h
-@@ -374,7 +374,6 @@ struct ab8500_sysctrl_platform_data;
- /**
-  * struct ab8500_platform_data - AB8500 platform data
-  * @irq_base: start of AB8500 IRQs, AB8500_NR_IRQS will be used
-- * @pm_power_off: Should machine pm power off hook be registered or not
-  * @init: board-specific initialization after detection of ab8500
-  * @num_regulator_reg_init: number of regulator init registers
-  * @regulator_reg_init: regulator init registers
-@@ -383,7 +382,6 @@ struct ab8500_sysctrl_platform_data;
-  */
- struct ab8500_platform_data {
- 	int irq_base;
--	bool pm_power_off;
- 	void (*init) (struct ab8500 *);
- 	int num_regulator_reg_init;
- 	struct ab8500_regulator_reg_init *regulator_reg_init;
--- 
-1.8.2
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
