@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab3EIUjq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 16:39:46 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:44865 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753790Ab3EIUjn (ORCPT
+	id S1753194Ab3EIUog (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 16:44:36 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:46077 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab3EIUoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 16:39:43 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: koverstreet@google.com, neilb@suse.de
-Cc: linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] bcache: Fix incompatible pointer type warning
-Date: Thu,  9 May 2013 22:39:26 +0200
-Message-Id: <1368131966-17512-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 9 May 2013 16:44:34 -0400
+Date: Thu, 9 May 2013 13:44:34 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Christian Daudt <csd@broadcom.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Will Deacon <will.deacon@arm.com>, "arm@kernel.org" <arm@kernel.org>,
+        linux-arm-kernel@lists.infradead.org, csd_b@daudt.org,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] ARM: bcm281xx: Add L2 support for Rev A2 chips
+Message-ID: <20130509204434.GA16724@quad.lixom.net>
+References: <1367542653-955-1-git-send-email-csd@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367542653-955-1-git-send-email-csd@broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function pointer release in struct block_device_operations
-should point to functions declared as void.
+On Thu, May 02, 2013 at 05:57:33PM -0700, Christian Daudt wrote:
+> Rev A2 SoCs have an unorthodox memory re-mapping and this needs
+> to be reflected in the cache operations.
+> This patch adds new outer cache functions for the l2x0 driver
+> to support this SoC revision. It also adds a new compatible
+> value for the cache to enable this functionality.
+> 
+> Updates from V1:
+> - remove section 1 altogether and note that in comments
+> - simplify section selection caused by section 1 removal
+> - BUG_ON just in case section 1 shows up
+> 
+> Signed-off-by: Christian Daudt <csd@broadcom.com>
 
-Sparse warnings:
+This patch mostly covers code that is on Russells plate, so please feed
+this to his tracker to be picked up by him. Feel free to add:
 
-drivers/md/bcache/super.c:656:27: warning:
-	incorrect type in initializer (different base types)
-	drivers/md/bcache/super.c:656:27:
-	expected void ( *release )( ... )
-	drivers/md/bcache/super.c:656:27:
-	got int ( static [toplevel] *<noident> )( ... )
+Acked-by: Olof Johansson <olof@lixom.net>
 
-drivers/md/bcache/super.c:656:2: warning:
-	initialization from incompatible pointer type [enabled by default]
 
-drivers/md/bcache/super.c:656:2: warning:
-	(near initialization for ‘bcache_ops.release’) [enabled by default]
+Thanks,
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- drivers/md/bcache/super.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 76c7f6c..938bbff 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -637,11 +637,10 @@ static int open_dev(struct block_device *b, fmode_t mode)
- 	return 0;
- }
- 
--static int release_dev(struct gendisk *b, fmode_t mode)
-+static void release_dev(struct gendisk *b, fmode_t mode)
- {
- 	struct bcache_device *d = b->private_data;
- 	closure_put(&d->cl);
--	return 0;
- }
- 
- static int ioctl_dev(struct block_device *b, fmode_t mode,
--- 
-1.7.10.4
-
+-Olof
