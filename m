@@ -1,96 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab3EIOlX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 10:41:23 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49105 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554Ab3EIOlT (ORCPT
+	id S1753643Ab3EIOmh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 10:42:37 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:34001 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab3EIOmg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 10:41:19 -0400
-Date: Thu, 9 May 2013 15:40:55 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, dong.aisheng@linaro.org,
-        sameo@linux.intel.com, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Stuart Menefy <stuart.menefy@st.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
-Message-ID: <20130509144055.GF3200@sirena.org.uk>
-References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
- <1368022272-2241-1-git-send-email-srinivas.kandagatla@st.com>
- <201305081650.23264.arnd@arndb.de>
- <20130508150141.GA5057@opensource.wolfsonmicro.com>
- <518A8E6C.6070907@st.com>
- <20130509095143.GB7478@sirena.org.uk>
- <518B8F49.5020902@st.com>
- <20130509132600.GA3200@sirena.org.uk>
- <518BABF0.7040201@st.com>
+	Thu, 9 May 2013 10:42:36 -0400
+From: Anthony Olech <Anthony.Olech@diasemi.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+CC: Krystian Garbaciak <Krystian.Garbaciak@diasemi.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Jean Delvare <khali@linux-fr.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>
+Subject: RE: [RFC PATCH 2/8] regulator: Add Dialog DA906x voltage regulators
+ support.
+Thread-Topic: [RFC PATCH 2/8] regulator: Add Dialog DA906x voltage
+ regulators support.
+Thread-Index: AQHNggDJCbKDkEukGkOTb3GbGbUGI5dqgfMAgAZDpQCAAcP2AIABD60AgYq91ACAACOuAP//4sCAgAAiCeA=
+Date: Thu, 9 May 2013 14:42:32 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB5141924983@NB-EX-MBX02.diasemi.com>
+References: <201208241450@sw-eng-lt-dc-vm2> <201208241455@sw-eng-lt-dc-vm2>
+ <20120825151020.GB6520@opensource.wolfsonmicro.com>
+ <201208291550@sw-eng-lt-dc-vm2>
+ <20120830174738.GH4356@opensource.wolfsonmicro.com>
+ <201208311100@sw-eng-lt-dc-vm2>
+ <Pine.LNX.4.64.1305091549300.22179@axis700.grange>
+ <24DF37198A1E704D9811D8F72B87EB514192495F@NB-EX-MBX02.diasemi.com>
+ <Pine.LNX.4.64.1305091623050.22179@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1305091623050.22179@axis700.grange>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="E7i4zwmWs5DOuDSH"
-Content-Disposition: inline
-In-Reply-To: <518BABF0.7040201@st.com>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC 3/8] mfd:syscon: Introduce claim/read/write/release APIs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Guennadi,
 
---E7i4zwmWs5DOuDSH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+without trying to step on our marketing department's toes, I can only suggest that you slurp the online archives of the LKML and ALSA mailing list.
+The Linux Kernel Mailing List archive that I use is: http://lkml.indiana.edu/hypermail/linux/kernel
+The ALSA mailing list archive that I use is: http://mailman.alsa-project.org/pipermail/alsa-devel
 
-On Thu, May 09, 2013 at 03:00:16PM +0100, Srinivas KANDAGATLA wrote:
+I usually run a perl/bash/wget script to download stuff of interest.
 
-> Some of layouts of the sysconf registers are totally changed for each SOC.
+I can answer questions about our Open Source submission (because they are open source), but for definitive product information our marketing department is the first place to try.
 
-> Looking at driver by driver maybe some drivers can take advantage of the
-> patterns, but Am not sure if this will be a sustainable solution for all
-> the drivers.
+Do you mean the da7210 (audio CODEC)? I don't offhand recognise the da9210 part number.
 
-So what exactly is the driver doing then?  If the register maps look
-nothing like each other then what's the common functionality the driver
-is providing?
+Best regards,
 
---E7i4zwmWs5DOuDSH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Tony Olech
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRi7V0AAoJELSic+t+oim9QEsP/3PYTETaOGDXGkLb5WdAC/6K
-SvMEIrDDS3EjA9oc8PED996LqrB0X3KfzDjKI4dV62g+0syOEuMbLu4QvyLjB83v
-Vsq6VsO0wZ9p++4QljCBThb1opO4Ot+VkLtQuavEHTjd2ejxigxpG0wBQkNxwiYu
-MmXVVXgO+HqEAcjwLyy1Uz26Y46VupNkaKmNNF/IW50h2+dSkH5vMZBQEl9UTfkg
-yadmMVbtep9MFRRUrt4gZ5uY59/15CXgjnaO/bUJq/23ycTwaSsh0YYb+6MV7A6X
-VRXEWSpz0d8b+BbKMtZl/iwWN4Raoi+fOamwFz1rJ1BslEXekK6g4ydE/ODtb0Vx
-JavId06SA+YZ+DNGiLGXSe6XrLGDlXQesiH8EMPXYiDxtDkDmDalFlksmfWgFuu0
-UvjJGe2zqaYPFvWBTyFqxagDNC+FkZOkcRqzWq5ka3Q39bNsFiuAO86kxKKxisX5
-e7/RbskUxqddaQZmtWJj0zrU8dZ+hY2YA5a1j+Nx/m9+PrRbMsIQ6wA6DZZJIooX
-6+qccSLZlxTm1MtCVbupWqorWDWcpPdw9u+a+bpkbjZITrqe8X9jKOXzbg6BWsb8
-cgQi30E2YhO1NdLz1TgyPNt2vA4HqE9fZLNg2DK4PDXZMeMFEncmtZeaQYV8dtQj
-udqBvOSjKXhsRrb82mCb
-=SzXK
------END PGP SIGNATURE-----
+> -----Original Message-----
+> From: Guennadi Liakhovetski [mailto:g.liakhovetski@gmx.de] 
+> Sent: 09 May 2013 15:29
+> To: Anthony Olech
+> Cc: Krystian Garbaciak; Mark Brown; linux-kernel@vger.kernel.org; Samuel
+> Ortiz; Alessandro Zummo; Jean Delvare; Dmitry Torokhov; Richard Purdie
+> Subject: RE: [RFC PATCH 2/8] regulator: Add Dialog DA906x voltage regulators
+> support.
+> 
+> Hi Tony
+> 
+> On Thu, 9 May 2013, Anthony Olech wrote:
+> 
+> > Hi Guennadi Liakhovetski,
+> >
+> > Now that Krystian no longer works for Dialog I think that I might be
+> > your best contact.
+> > As far as I am aware without doing any checking, the DA906x driver
+> > should possibly cover the DA9063.
+> 
+> Good!
+> 
+> > If you need a driver, that would imply that you have some chips. Have
+> > you tried our marketting department?
+> 
+> Yes, this (and a da9210) PMICs are used on one of the boards, I'm working with.
+> I asked your marketing department for a da9210 datasheet, they tried to check
+> with the board vendor, who is also my customer for this project, and so far they
+> haven't been able to establish my involvement in this development. Have you
+> also got a da9210 Linux driver? Do I have to wait for your marketing
+> department clarifying my affiliation or could you make that driver available to
+> me too? Or do you mean you might have a newer version of this driver
+> available internally too?
+> 
+> Thanks
+> Guennadi
+> 
+> > Best regards,
+> >
+> > Tony Olech
+> >
+> >
+> > > -----Original Message-----
+> > > From: Guennadi Liakhovetski [mailto:g.liakhovetski@gmx.de]
+> > > Sent: 09 May 2013 15:06
+> > > To: Krystian Garbaciak
+> > > Cc: Mark Brown; linux-kernel@vger.kernel.org; Samuel Ortiz; Alessandro
+> > > Zummo; Jean Delvare; Dmitry Torokhov; Richard Purdie; Anthony Olech
+> > > Subject: Re: [RFC PATCH 2/8] regulator: Add Dialog DA906x voltage
+> regulators
+> > > support.
+> > >
+> > > (trimmed the CC a bit)
+> > >
+> > > Hi Krystian
+> > >
+> > > On Fri, 31 Aug 2012, Krystian Garbaciak wrote:
+> > >
+> > > > > On Wed, Aug 29, 2012 at 03:50:00PM +0100, Krystian Garbaciak wrote:
+> > >
+> > > Sorry for picking up a random mail from this old thread, unfortunately, I
+> don't
+> > > have "0/8" in my archive.
+> > >
+> > > I have to write a driver for the da9063 PMIC. Do you have an idea, whether
+> it'd
+> > > be compatible with this driver? Do you plan to continue your work on this
+> driver
+> > > or would you mind if I try to use these your patches and mainline them,
+> > > preserving your authorship and copyright, of course?
+> > >
+> > > Thanks
+> > > Guennadi
+> > >
+> > > > > > Because, for some regulators, this is required: val +=
+> > > > > > fvol->offset, I was only able to reduce it to the following form.
+> > > > >
+> > > > > What on earth makes you say this?  The above is obviously linear.
+> > > > >
+> > > > > Besides, you're missing several points here.  One is that you should
+> > > > > be using the framework features, another is that you should be
+> > > > > implementing _sel.
+> > > >
+> > > > Sorry, I've missed an obvious thing here. Instead of adding selector
+> > > > offset at runtime, I can substract apropriate voltage from .min_uV.
+> > > > Thanks for pointing this out.
+> > > >
+> > > > --
+> > > > To unsubscribe from this list: send the line "unsubscribe
+> > > > linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > > Please read the FAQ at  http://www.tux.org/lkml/
+> > > >
+> > >
+> > > ---
+> > > Guennadi Liakhovetski, Ph.D.
+> > > Freelance Open-Source Software Developer http://www.open-
+> technology.de/
+> > Legal Disclaimer: This e-mail communication (and any attachment/s) is
+> confidential and contains proprietary information,
+> > some or all of which may be legally privileged. It is intended solely for the use
+> of the individual or entity to which it
+> > is addressed. Access to this email by anyone else is unauthorized. If you are
+> not the intended recipient, any disclosure,
+> > copying, distribution or any action taken or omitted to be taken in reliance on
+> it, is prohibited and may be unlawful.
+> >
+> > Please consider the environment before printing this e-mail
+> >
+> 
+> ---
+> Guennadi Liakhovetski, Ph.D.
+> Freelance Open-Source Software Developer
+> http://www.open-technology.de/
+Legal Disclaimer: This e-mail communication (and any attachment/s) is confidential and contains proprietary information, 
+some or all of which may be legally privileged. It is intended solely for the use of the individual or entity to which it
+is addressed. Access to this email by anyone else is unauthorized. If you are not the intended recipient, any disclosure, 
+copying, distribution or any action taken or omitted to be taken in reliance on it, is prohibited and may be unlawful.
 
---E7i4zwmWs5DOuDSH--
+Please consider the environment before printing this e-mail
