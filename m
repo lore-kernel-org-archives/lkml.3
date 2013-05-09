@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab3EIUeb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 16:34:31 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34332 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab3EIUea (ORCPT
+	id S1753619Ab3EIUfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 16:35:37 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:49956 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393Ab3EIUff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 16:34:30 -0400
-Date: Thu, 9 May 2013 21:34:29 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [git pull] more vfs.git stuff
-Message-ID: <20130509203428.GI25399@ZenIV.linux.org.uk>
-References: <20130509192655.GG25399@ZenIV.linux.org.uk>
- <CA+55aFyCuksrVPwO=R_xX2An8qavo17aCZ5bfN=FWo1gZZfAsQ@mail.gmail.com>
- <20130509202815.GH25399@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130509202815.GH25399@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 May 2013 16:35:35 -0400
+Message-ID: <1368131733.13473.103.camel@edumazet-glaptop>
+Subject: Re: [patch net] macvlan: fix passthru mode race between dev removal
+ and rx path
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jiri Pirko <jiri@resnulli.us>
+Cc: netdev@vger.kernel.org, davem@davemloft.net, sri@us.ibm.com,
+        kaber@trash.net, linux-kernel@vger.kernel.org, mtesar@redhat.com
+Date: Thu, 09 May 2013 13:35:33 -0700
+In-Reply-To: <1368109420-14199-1-git-send-email-jiri@resnulli.us>
+References: <1368109420-14199-1-git-send-email-jiri@resnulli.us>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 09:28:15PM +0100, Al Viro wrote:
+On Thu, 2013-05-09 at 16:23 +0200, Jiri Pirko wrote:
+> Currently, if macvlan in passthru mode is created and data are rxed and
+> you remove this device, following panic happens:
+> 
+> NULL pointer dereference at 0000000000000198
+> IP: [<ffffffffa0196058>] macvlan_handle_frame+0x153/0x1f7 [macvlan]
+> 
+...
+> 
+> Reason of the panic is that list_first_entry() is blindly called in
+> macvlan_handle_frame() even if the list was empty. vlan is set to
+> incorrect pointer which leads to the crash.
+> 
+> I'm fixing this by protecting port->vlans list by rcu and by preventing
+> from getting incorrect pointer in case the list is empty.
+> 
+> Introduced by: commit eb06acdc85585f2 "macvlan: Introduce 'passthru' mode to takeover the underlying device"
+> 
+> Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+> ---
 
-> The only place checking that sucker is in a fairly large area protected by
-> ->b_lock (in mon_bin_event()); I really don't want to dig deep enough to
-> tell if having it changed right after it had been checked is safe.  OTOH,
-> from a cursory look through that code it appears that the whole map_count
-> thing is completely misguided - it seems to assume that ->open() is called for
-> each VMA, including the one created by mmap(2).  Sigh...
+Acked-by: Eric Dumazet <edumazet@google.com>
 
-Less cursory one shows that they do call their ->open() from their ->mmap().
-OTOH, the code looking and ->mmap_active looks fishy - what happens if we
-do allocation before mmap() happens?
 
-Anyway, let's just drop that commit for now; it clearly needs more RTFS.
-Could you pull for-linus^?
