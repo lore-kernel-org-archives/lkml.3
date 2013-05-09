@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967Ab3EINdJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 09:33:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44717 "EHLO mx1.redhat.com"
+	id S1755085Ab3EINdN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 09:33:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17653 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754679Ab3EINdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 09:33:06 -0400
+	id S1754679Ab3EINdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 09:33:10 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -15,17 +15,22 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 8/9] perf: Document the ABI for 'precise' sysfs attribute
-Date: Thu,  9 May 2013 15:32:23 +0200
-Message-Id: <1368106344-23383-9-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 1/9] perf x86: Add precise sysfs cpu pmu attribute
+Date: Thu,  9 May 2013 15:32:16 +0200
+Message-Id: <1368106344-23383-2-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1368106344-23383-1-git-send-email-jolsa@redhat.com>
 References: <1368106344-23383-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding ABI documentation for newly added 'precise' sysfs
-attribute.  It's added under the testing section.
+Adding sysfs 'precise' attribute for cpu device
+(/sys/devices/cpu/precise) to show the maximum
+value for perf event precise_ip attribute.
+
+This will be used to put proper precise_ip when
+configuring an event and and to automatically test
+precise stuff to some extend.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -39,26 +44,75 @@ Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- .../ABI/testing/sysfs-bus-event_source-devices-cpu-precise     | 10 ++++++++++
- 1 file changed, 10 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-event_source-devices-cpu-precise
+ arch/x86/kernel/cpu/perf_event.c | 34 +++++++++++++++++++++++++---------
+ 1 file changed, 25 insertions(+), 9 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-cpu-precise b/Documentation/ABI/testing/sysfs-bus-event_source-devices-cpu-precise
-new file mode 100644
-index 0000000..f3ed378
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-cpu-precise
-@@ -0,0 +1,10 @@
-+Where:		/sys/bus/event_source/devices/cpu/precise
-+Date:		January 2013
-+Kernel Version:	3.7
-+Contact:	Jiri Olsa <jolsa@redhat.com>
-+		Linux kernel mailing list <linux-kernel@vger.kernel.org>
-+Description:
-+		X86 specific attribute
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 5ed7a4c..d38c9ea 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -377,19 +377,26 @@ static inline int precise_br_compat(struct perf_event *event)
+ 	return m == b;
+ }
+ 
+-int x86_pmu_hw_config(struct perf_event *event)
++static int x86_get_precise(void)
+ {
+-	if (event->attr.precise_ip) {
+-		int precise = 0;
++	int precise = 0;
+ 
+-		/* Support for constant skid */
+-		if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
++	/* Support for constant skid */
++	if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
++		precise++;
 +
-+		Attribute to specify the maximum allowed value
-+		for perf_event_attr:precise_ip field.
++		/* Support for IP fixup */
++		if (x86_pmu.lbr_nr)
+ 			precise++;
++	}
+ 
+-			/* Support for IP fixup */
+-			if (x86_pmu.lbr_nr)
+-				precise++;
+-		}
++	return precise;
++}
++
++int x86_pmu_hw_config(struct perf_event *event)
++{
++	if (event->attr.precise_ip) {
++		int precise = x86_get_precise();
+ 
+ 		if (event->attr.precise_ip > precise)
+ 			return -EOPNOTSUPP;
+@@ -1734,6 +1741,13 @@ static int x86_pmu_event_init(struct perf_event *event)
+ 	return err;
+ }
+ 
++static ssize_t get_attr_precise(struct device *cdev,
++				struct device_attribute *attr,
++				char *buf)
++{
++	return snprintf(buf, 10, "%d\n", x86_get_precise());
++}
++
+ static int x86_pmu_event_idx(struct perf_event *event)
+ {
+ 	int idx = event->hw.idx;
+@@ -1786,9 +1800,11 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
+ }
+ 
+ static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
++static DEVICE_ATTR(precise, S_IRUGO, get_attr_precise, NULL);
+ 
+ static struct attribute *x86_pmu_attrs[] = {
+ 	&dev_attr_rdpmc.attr,
++	&dev_attr_precise.attr,
+ 	NULL,
+ };
+ 
 -- 
 1.7.11.7
 
