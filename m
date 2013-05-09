@@ -1,105 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab3EIGGg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 02:06:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41797 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab3EIGGb (ORCPT
+	id S1752624Ab3EIGGe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 02:06:34 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:43044 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403Ab3EIGGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 May 2013 02:06:31 -0400
-From: Francis Deslauriers <fdeslaur@gmail.com>
-To: linux-mm@kvack.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, rostedt@goodmis.org, fweisbec@gmail.com
-Cc: raphael.beamonte@gmail.com, mathieu.desnoyers@efficios.com,
-        linux-kernel@vger.kernel.org, Francis Deslauriers <fdeslaur@gmail.com>
-Subject: [page fault tracepoint 2/2] x86:Instruments page fault trace event
-Date: Thu,  9 May 2013 02:05:20 -0400
-Message-Id: <1368079520-11015-2-git-send-email-fdeslaur@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368079520-11015-1-git-send-email-fdeslaur@gmail.com>
-References: <1368079520-11015-1-git-send-email-fdeslaur@gmail.com>
+From: Libo Chen <libo.chen@huawei.com>
+To: <stern@rowland.harvard.edu>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <akpm@linux-foundation.org>, <lizefan@huawei.com>,
+        Libo Chen <libo.chen@huawei.com>
+Subject: [PATCH RESEND 0/4] usb: fix four memleak 
+Date: Thu, 9 May 2013 14:05:33 +0800
+Message-ID: <1368079537-15328-1-git-send-email-libo.chen@huawei.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Francis Deslauriers <fdeslaur@gmail.com>
-Reviewed-by: Raphaël Beamonte <raphael.beamonte@gmail.com>
----
- arch/x86/mm/fault.c |   11 +++++++++++
- mm/memory.c         |    5 +++++
- 2 files changed, 16 insertions(+)
+change address from "Libo Chen <chenlibo.3@gmail.com>"  to "Libo Chen <libo.chen@huawei.com>"
 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 654be4a..e227828 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -20,6 +20,9 @@
- #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
- #include <asm/fixmap.h>			/* VSYSCALL_START		*/
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/fault.h>		/* trace_page_fault_*(), ...	*/
-+
- /*
-  * Page fault error code bits:
-  *
-@@ -756,12 +759,18 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
- 
- 		if (likely(show_unhandled_signals))
- 			show_signal_msg(regs, error_code, address, tsk);
-+		trace_page_fault_entry(regs, address, error_code & PF_WRITE);
- 
- 		tsk->thread.cr2		= address;
- 		tsk->thread.error_code	= error_code;
- 		tsk->thread.trap_nr	= X86_TRAP_PF;
- 
- 		force_sig_info_fault(SIGSEGV, si_code, address, tsk, 0);
-+		/*
-+		 * Using -1 here, since there is no VM_FAULT flag to identify
-+		 * user accesses triggering SIGSEGV.
-+		 */
-+		trace_page_fault_exit(-1);
- 
- 		return;
- 	}
-@@ -1185,7 +1194,9 @@ good_area:
- 	 * make sure we exit gracefully rather than endlessly redo
- 	 * the fault:
- 	 */
-+	trace_page_fault_entry(regs, address, write);
- 	fault = handle_mm_fault(mm, vma, address, flags);
-+	trace_page_fault_exit(fault);
- 
- 	if (unlikely(fault & (VM_FAULT_RETRY|VM_FAULT_ERROR))) {
- 		if (mm_fault_error(regs, error_code, address, fault))
-diff --git a/mm/memory.c b/mm/memory.c
-index 6dc1882..0bd86f8 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -67,6 +67,8 @@
- #include <asm/tlbflush.h>
- #include <asm/pgtable.h>
- 
-+#include <trace/events/fault.h>
-+
- #include "internal.h"
- 
- #ifdef LAST_NID_NOT_IN_PAGE_FLAGS
-@@ -1829,8 +1831,11 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 				if (foll_flags & FOLL_NOWAIT)
- 					fault_flags |= (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_RETRY_NOWAIT);
- 
-+				trace_page_fault_entry(0, start,
-+						foll_flags & FOLL_WRITE);
- 				ret = handle_mm_fault(mm, vma, start,
- 							fault_flags);
-+				trace_page_fault_exit(ret);
- 
- 				if (ret & VM_FAULT_ERROR) {
- 					if (ret & VM_FAULT_OOM)
--- 
-1.7.10.4
+fix four goto wrong tag, avoid memleak 
+
+Libo Chen (4):
+  usb: ehci-s5p: fix memleak when devm_usb_get_phy fail
+  usb: isp1760-if: fix memleak when platform_get_resource fail
+  usb: ohci: fix goto wrong tag in err case
+  usb: tilegx: fix memleak when create hcd fail
+
+ drivers/usb/host/ehci-s5p.c    |    1 +
+ drivers/usb/host/isp1760-if.c  |    4 +++-
+ drivers/usb/host/ohci-nxp.c    |   12 ++++++------
+ drivers/usb/host/ohci-tilegx.c |    7 +++++--
+ 4 files changed, 15 insertions(+), 9 deletions(-)
+
 
