@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab3EIWw6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:52:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46121 "EHLO
+	id S1757871Ab3EIWdG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:33:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46096 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757881Ab3EIWdH (ORCPT
+	with ESMTP id S1757800Ab3EIWdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:07 -0400
+	Thu, 9 May 2013 18:33:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 49/73] drm/radeon/dce6: add missing display reg for tiling setup
-Date: Thu,  9 May 2013 15:32:12 -0700
-Message-Id: <20130509222803.299628083@linuxfoundation.org>
+        Anisse Astier <anisse@astier.eu>,
+        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Subject: [ 33/73] drm/gma500: fix backlight hotkeys behaviour on netbooks
+Date: Thu,  9 May 2013 15:31:56 -0700
+Message-Id: <20130509222801.554753171@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -26,71 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Anisse Astier <anisse@astier.eu>
 
-commit 7c1c7c18fc752b2a1d07597286467ef186312463 upstream.
+commit e127dc28cc3057575da0216cde85687153ca180f upstream.
 
-A new tiling config register for the display blocks was
-added on DCE6.
+Backlight hotkeys weren't working before on certain cedartrail laptops.
 
-May fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=62889
-https://bugs.freedesktop.org/show_bug.cgi?id=57919
+The source of this problem is that the hotkeys' ASLE opregion interrupts
+were simply ignored. Driver seemed to expect the interrupt to be
+associated with a pipe, but it wasn't.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Accepting the ASLE interrupt without an associated pipe event flag fixes
+the issue, the backlight code is called when needed, making the
+brightness keys work properly.
+
+[patrik: This patch affects irq handling on any netbook with opregion support]
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=833597
+Reference: http://lists.freedesktop.org/archives/dri-devel/2012-July/025279.html
+Signed-off-by: Anisse Astier <anisse@astier.eu>
+Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/ni.c  |    2 ++
- drivers/gpu/drm/radeon/nid.h |    4 ++++
- drivers/gpu/drm/radeon/si.c  |    1 +
- drivers/gpu/drm/radeon/sid.h |    2 ++
- 4 files changed, 9 insertions(+)
+ drivers/gpu/drm/gma500/psb_irq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -619,6 +619,8 @@ static void cayman_gpu_init(struct radeo
+--- a/drivers/gpu/drm/gma500/psb_irq.c
++++ b/drivers/gpu/drm/gma500/psb_irq.c
+@@ -211,7 +211,7 @@ irqreturn_t psb_irq_handler(DRM_IRQ_ARGS
  
- 	WREG32(GB_ADDR_CONFIG, gb_addr_config);
- 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
-+	if (ASIC_IS_DCE6(rdev))
-+		WREG32(DMIF_ADDR_CALC, gb_addr_config);
- 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
- 	WREG32(DMA_TILING_CONFIG + DMA0_REGISTER_OFFSET, gb_addr_config);
- 	WREG32(DMA_TILING_CONFIG + DMA1_REGISTER_OFFSET, gb_addr_config);
---- a/drivers/gpu/drm/radeon/nid.h
-+++ b/drivers/gpu/drm/radeon/nid.h
-@@ -45,6 +45,10 @@
- #define ARUBA_GB_ADDR_CONFIG_GOLDEN        0x12010001
+ 	vdc_stat = PSB_RVDC32(PSB_INT_IDENTITY_R);
  
- #define DMIF_ADDR_CONFIG  				0xBD4
-+
-+/* DCE6 only */
-+#define DMIF_ADDR_CALC  				0xC00
-+
- #define	SRBM_GFX_CNTL				        0x0E44
- #define		RINGID(x)					(((x) & 0x3) << 0)
- #define		VMID(x)						(((x) & 0x7) << 0)
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -1659,6 +1659,7 @@ static void si_gpu_init(struct radeon_de
+-	if (vdc_stat & _PSB_PIPE_EVENT_FLAG)
++	if (vdc_stat & (_PSB_PIPE_EVENT_FLAG|_PSB_IRQ_ASLE))
+ 		dsp_int = 1;
  
- 	WREG32(GB_ADDR_CONFIG, gb_addr_config);
- 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
-+	WREG32(DMIF_ADDR_CALC, gb_addr_config);
- 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
- 	WREG32(DMA_TILING_CONFIG + DMA0_REGISTER_OFFSET, gb_addr_config);
- 	WREG32(DMA_TILING_CONFIG + DMA1_REGISTER_OFFSET, gb_addr_config);
---- a/drivers/gpu/drm/radeon/sid.h
-+++ b/drivers/gpu/drm/radeon/sid.h
-@@ -60,6 +60,8 @@
- 
- #define DMIF_ADDR_CONFIG  				0xBD4
- 
-+#define DMIF_ADDR_CALC  				0xC00
-+
- #define	SRBM_STATUS				        0xE50
- 
- #define	SRBM_SOFT_RESET				        0x0E60
+ 	/* FIXME: Handle Medfield
 
 
