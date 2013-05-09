@@ -1,56 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab3EIGG1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 02:06:27 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:34176 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237Ab3EIGGY (ORCPT
+	id S1752766Ab3EIGGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 02:06:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41797 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab3EIGGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 02:06:24 -0400
-From: Libo Chen <libo.chen@huawei.com>
-To: <stern@rowland.harvard.edu>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <akpm@linux-foundation.org>, <lizefan@huawei.com>,
-        Libo Chen <libo.chen@huawei.com>
-Subject: [PATCH RESEND 2/4] usb: isp1760-if: fix memleak when platform_get_resource fail
-Date: Thu, 9 May 2013 14:05:35 +0800
-Message-ID: <1368079537-15328-3-git-send-email-libo.chen@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
-In-Reply-To: <1368079537-15328-1-git-send-email-libo.chen@huawei.com>
-References: <1368079537-15328-1-git-send-email-libo.chen@huawei.com>
+	Thu, 9 May 2013 02:06:31 -0400
+From: Francis Deslauriers <fdeslaur@gmail.com>
+To: linux-mm@kvack.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, rostedt@goodmis.org, fweisbec@gmail.com
+Cc: raphael.beamonte@gmail.com, mathieu.desnoyers@efficios.com,
+        linux-kernel@vger.kernel.org, Francis Deslauriers <fdeslaur@gmail.com>
+Subject: [page fault tracepoint 2/2] x86:Instruments page fault trace event
+Date: Thu,  9 May 2013 02:05:20 -0400
+Message-Id: <1368079520-11015-2-git-send-email-fdeslaur@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1368079520-11015-1-git-send-email-fdeslaur@gmail.com>
+References: <1368079520-11015-1-git-send-email-fdeslaur@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When platform_get_resource fail, we should release_mem_region
-
-Signed-off-by: Libo Chen <libo.chen@huawei.com>
+Signed-off-by: Francis Deslauriers <fdeslaur@gmail.com>
+Reviewed-by: Raphaël Beamonte <raphael.beamonte@gmail.com>
 ---
- drivers/usb/host/isp1760-if.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ arch/x86/mm/fault.c |   11 +++++++++++
+ mm/memory.c         |    5 +++++
+ 2 files changed, 16 insertions(+)
 
-diff --git a/drivers/usb/host/isp1760-if.c b/drivers/usb/host/isp1760-if.c
-index bbb791b..a13709e 100644
---- a/drivers/usb/host/isp1760-if.c
-+++ b/drivers/usb/host/isp1760-if.c
-@@ -373,8 +373,10 @@ static int isp1760_plat_probe(struct platform_device *pdev)
- 	irq_res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	if (!irq_res) {
- 		pr_warning("isp1760: IRQ resource not available\n");
--		return -ENODEV;
-+		ret = -ENODEV;
-+		goto cleanup;
- 	}
-+
- 	irqflags |= irq_res->flags & IRQF_TRIGGER_MASK;
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 654be4a..e227828 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -20,6 +20,9 @@
+ #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
+ #include <asm/fixmap.h>			/* VSYSCALL_START		*/
  
- 	if (priv) {
++#define CREATE_TRACE_POINTS
++#include <trace/events/fault.h>		/* trace_page_fault_*(), ...	*/
++
+ /*
+  * Page fault error code bits:
+  *
+@@ -756,12 +759,18 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
+ 
+ 		if (likely(show_unhandled_signals))
+ 			show_signal_msg(regs, error_code, address, tsk);
++		trace_page_fault_entry(regs, address, error_code & PF_WRITE);
+ 
+ 		tsk->thread.cr2		= address;
+ 		tsk->thread.error_code	= error_code;
+ 		tsk->thread.trap_nr	= X86_TRAP_PF;
+ 
+ 		force_sig_info_fault(SIGSEGV, si_code, address, tsk, 0);
++		/*
++		 * Using -1 here, since there is no VM_FAULT flag to identify
++		 * user accesses triggering SIGSEGV.
++		 */
++		trace_page_fault_exit(-1);
+ 
+ 		return;
+ 	}
+@@ -1185,7 +1194,9 @@ good_area:
+ 	 * make sure we exit gracefully rather than endlessly redo
+ 	 * the fault:
+ 	 */
++	trace_page_fault_entry(regs, address, write);
+ 	fault = handle_mm_fault(mm, vma, address, flags);
++	trace_page_fault_exit(fault);
+ 
+ 	if (unlikely(fault & (VM_FAULT_RETRY|VM_FAULT_ERROR))) {
+ 		if (mm_fault_error(regs, error_code, address, fault))
+diff --git a/mm/memory.c b/mm/memory.c
+index 6dc1882..0bd86f8 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -67,6 +67,8 @@
+ #include <asm/tlbflush.h>
+ #include <asm/pgtable.h>
+ 
++#include <trace/events/fault.h>
++
+ #include "internal.h"
+ 
+ #ifdef LAST_NID_NOT_IN_PAGE_FLAGS
+@@ -1829,8 +1831,11 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 				if (foll_flags & FOLL_NOWAIT)
+ 					fault_flags |= (FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_RETRY_NOWAIT);
+ 
++				trace_page_fault_entry(0, start,
++						foll_flags & FOLL_WRITE);
+ 				ret = handle_mm_fault(mm, vma, start,
+ 							fault_flags);
++				trace_page_fault_exit(ret);
+ 
+ 				if (ret & VM_FAULT_ERROR) {
+ 					if (ret & VM_FAULT_OOM)
 -- 
-1.7.1
-
+1.7.10.4
 
