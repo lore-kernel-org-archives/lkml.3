@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758899Ab3EIXFC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:05:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45826 "EHLO
+	id S932284Ab3EIXFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:05:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45820 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756147Ab3EIW0j (ORCPT
+	with ESMTP id S1756097Ab3EIW0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:39 -0400
+	Thu, 9 May 2013 18:26:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 46/73] drm/radeon: fix typo in rv515_mc_resume()
-Date: Thu,  9 May 2013 15:25:36 -0700
-Message-Id: <20130509222531.104659050@linuxfoundation.org>
+Subject: [ 44/73] drm/radeon: dont use get_engine_clock() on APUs
+Date: Thu,  9 May 2013 15:25:34 -0700
+Message-Id: <20130509222530.913563920@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -28,28 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 367cbe2fec9b57b72605e2ac4cfd4f2fa823a256 upstream.
+commit bf05d9985111f85ed6922c134567b96eb789283b upstream.
 
-Doesn't affect anything as the same address gets written
-in both cases.
+It doesn't work reliably.  Just report back the currently
+selected engine clock.
+
+Partially fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=62493
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/rv515.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_pm.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/rv515.c
-+++ b/drivers/gpu/drm/radeon/rv515.c
-@@ -348,7 +348,7 @@ void rv515_mc_resume(struct radeon_devic
- 	/* update crtc base addresses */
- 	for (i = 0; i < rdev->num_crtc; i++) {
- 		if (rdev->family >= CHIP_RV770) {
--			if (i == 1) {
-+			if (i == 0) {
- 				WREG32(R700_D1GRPH_PRIMARY_SURFACE_ADDRESS_HIGH,
- 				       upper_32_bits(rdev->mc.vram_start));
- 				WREG32(R700_D1GRPH_SECONDARY_SURFACE_ADDRESS_HIGH,
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -843,7 +843,11 @@ static int radeon_debugfs_pm_info(struct
+ 	struct radeon_device *rdev = dev->dev_private;
+ 
+ 	seq_printf(m, "default engine clock: %u0 kHz\n", rdev->pm.default_sclk);
+-	seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
++	/* radeon_get_engine_clock is not reliable on APUs so just print the current clock */
++	if ((rdev->family >= CHIP_PALM) && (rdev->flags & RADEON_IS_IGP))
++		seq_printf(m, "current engine clock: %u0 kHz\n", rdev->pm.current_sclk);
++	else
++		seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
+ 	seq_printf(m, "default memory clock: %u0 kHz\n", rdev->pm.default_mclk);
+ 	if (rdev->asic->pm.get_memory_clock)
+ 		seq_printf(m, "current memory clock: %u0 kHz\n", radeon_get_memory_clock(rdev));
 
 
