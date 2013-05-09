@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758871Ab3EIWl5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:41:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46365 "EHLO
+	id S1756631Ab3EIWmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:42:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46362 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758451Ab3EIWez (ORCPT
+	with ESMTP id S1758447Ab3EIWez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 May 2013 18:34:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 17/26] drm/radeon: disable the crtcs in mc_stop (evergreen+) (v2)
-Date: Thu,  9 May 2013 15:34:31 -0700
-Message-Id: <20130509223424.242342323@linuxfoundation.org>
+Subject: [ 16/26] drm/radeon: properly lock disp in mc_stop/resume for evergreen+
+Date: Thu,  9 May 2013 15:34:30 -0700
+Message-Id: <20130509223424.139429000@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
 References: <20130509223422.368544659@linuxfoundation.org>
@@ -28,61 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit abf1457bbbe4c62066bd03c6d31837dea28644dc upstream.
+commit 968c01664ccbe0e46c19a1af662c4c266a904203 upstream.
 
-Just disabling the mem requests should be enough, but
-that doesn't seem to work correctly on efi systems.
-
-May fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=57567
-https://bugs.freedesktop.org/show_bug.cgi?id=43655
-https://bugzilla.kernel.org/show_bug.cgi?id=56441
-
-v2: blank displays first, then disable.
+Need to wait for the new addresses to take affect before
+re-enabling the MC.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/gpu/drm/radeon/evergreen.c     |   47 ++++++++++++++++++++++++++++++---
+ drivers/gpu/drm/radeon/evergreen_reg.h |    2 +
+ 2 files changed, 45 insertions(+), 4 deletions(-)
 
 --- a/drivers/gpu/drm/radeon/evergreen.c
 +++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1146,6 +1146,7 @@ void evergreen_mc_stop(struct radeon_dev
- 				tmp = RREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i]);
+@@ -1147,18 +1147,14 @@ void evergreen_mc_stop(struct radeon_dev
  				if (!(tmp & EVERGREEN_CRTC_BLANK_DATA_EN)) {
  					radeon_wait_for_vblank(rdev, i);
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
  					tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
+-					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
  					WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
+-					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
  				}
-@@ -1153,8 +1154,10 @@ void evergreen_mc_stop(struct radeon_dev
+ 			} else {
  				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
  				if (!(tmp & EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE)) {
  					radeon_wait_for_vblank(rdev, i);
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
  					tmp |= EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
+-					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
  					WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
+-					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
  				}
  			}
  			/* wait for the next frame */
-@@ -1164,6 +1167,15 @@ void evergreen_mc_stop(struct radeon_dev
- 					break;
- 				udelay(1);
- 			}
+@@ -1185,6 +1181,22 @@ void evergreen_mc_stop(struct radeon_dev
+ 	}
+ 	/* wait for the MC to settle */
+ 	udelay(100);
 +
-+			/* XXX this is a hack to avoid strange behavior with EFI on certain systems */
-+			WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
-+			tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
-+			tmp &= ~EVERGREEN_CRTC_MASTER_EN;
-+			WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
-+			WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
-+			save->crtc_enabled[i] = false;
-+			/* ***** */
- 		} else {
- 			save->crtc_enabled[i] = false;
- 		}
++	/* lock double buffered regs */
++	for (i = 0; i < rdev->num_crtc; i++) {
++		if (save->crtc_enabled[i]) {
++			tmp = RREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i]);
++			if (!(tmp & EVERGREEN_GRPH_UPDATE_LOCK)) {
++				tmp |= EVERGREEN_GRPH_UPDATE_LOCK;
++				WREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i], tmp);
++			}
++			tmp = RREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i]);
++			if (!(tmp & 1)) {
++				tmp |= 1;
++				WREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i], tmp);
++			}
++		}
++	}
+ }
+ 
+ void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *save)
+@@ -1206,6 +1218,33 @@ void evergreen_mc_resume(struct radeon_d
+ 	WREG32(EVERGREEN_VGA_MEMORY_BASE_ADDRESS_HIGH, upper_32_bits(rdev->mc.vram_start));
+ 	WREG32(EVERGREEN_VGA_MEMORY_BASE_ADDRESS, (u32)rdev->mc.vram_start);
+ 
++	/* unlock regs and wait for update */
++	for (i = 0; i < rdev->num_crtc; i++) {
++		if (save->crtc_enabled[i]) {
++			tmp = RREG32(EVERGREEN_MASTER_UPDATE_MODE + crtc_offsets[i]);
++			if ((tmp & 0x3) != 0) {
++				tmp &= ~0x3;
++				WREG32(EVERGREEN_MASTER_UPDATE_MODE + crtc_offsets[i], tmp);
++			}
++			tmp = RREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i]);
++			if (tmp & EVERGREEN_GRPH_UPDATE_LOCK) {
++				tmp &= ~EVERGREEN_GRPH_UPDATE_LOCK;
++				WREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i], tmp);
++			}
++			tmp = RREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i]);
++			if (tmp & 1) {
++				tmp &= ~1;
++				WREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i], tmp);
++			}
++			for (j = 0; j < rdev->usec_timeout; j++) {
++				tmp = RREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i]);
++				if ((tmp & EVERGREEN_GRPH_SURFACE_UPDATE_PENDING) == 0)
++					break;
++				udelay(1);
++			}
++		}
++	}
++
+ 	/* unblackout the MC */
+ 	tmp = RREG32(MC_SHARED_BLACKOUT_CNTL);
+ 	tmp &= ~BLACKOUT_MODE_MASK;
+--- a/drivers/gpu/drm/radeon/evergreen_reg.h
++++ b/drivers/gpu/drm/radeon/evergreen_reg.h
+@@ -225,6 +225,8 @@
+ #define EVERGREEN_CRTC_STATUS_POSITION                  0x6e90
+ #define EVERGREEN_MASTER_UPDATE_MODE                    0x6ef8
+ #define EVERGREEN_CRTC_UPDATE_LOCK                      0x6ed4
++#define EVERGREEN_MASTER_UPDATE_LOCK                    0x6ef4
++#define EVERGREEN_MASTER_UPDATE_MODE                    0x6ef8
+ 
+ #define EVERGREEN_DC_GPIO_HPD_MASK                      0x64b0
+ #define EVERGREEN_DC_GPIO_HPD_A                         0x64b4
 
 
