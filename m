@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932578Ab3EIW5U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:57:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46048 "EHLO
+	id S1756724Ab3EIW5m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:57:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46039 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757657Ab3EIWcy (ORCPT
+	with ESMTP id S1757538Ab3EIWcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:32:54 -0400
+	Thu, 9 May 2013 18:32:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
         Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 21/73] netfilter: ipset: "Directory not empty" error message
-Date: Thu,  9 May 2013 15:31:44 -0700
-Message-Id: <20130509222800.275985767@linuxfoundation.org>
+Subject: [ 19/73] netfilter: ipset: list:set: fix reference counter update
+Date: Thu,  9 May 2013 15:31:42 -0700
+Message-Id: <20130509222800.036026577@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -29,35 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
 
-commit dd82088dab3646ed28e4aa43d1a5b5d5ffc2afba upstream.
+commit 02f815cb6d3f57914228be84df9613ee5a01c2e6 upstream.
 
-When an entry flagged with "nomatch" was tested by ipset, it
-returned the error message "Kernel error received:
-Directory not empty" instead of "<element> is NOT in set <setname>"
-(reported by John Brendler).
-
-The internal error code was not properly transformed before returning
-to userspace, fixed.
+The last element can be replaced or pushed off and in both
+cases the reference counter must be updated.
 
 Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipset/ip_set_core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/netfilter/ipset/ip_set_list_set.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/net/netfilter/ipset/ip_set_core.c
-+++ b/net/netfilter/ipset/ip_set_core.c
-@@ -1470,7 +1470,8 @@ ip_set_utest(struct sock *ctnl, struct s
- 	if (ret == -EAGAIN)
- 		ret = 1;
+--- a/net/netfilter/ipset/ip_set_list_set.c
++++ b/net/netfilter/ipset/ip_set_list_set.c
+@@ -174,9 +174,13 @@ list_set_add(struct list_set *map, u32 i
+ {
+ 	const struct set_elem *e = list_set_elem(map, i);
  
--	return ret < 0 ? ret : ret > 0 ? 0 : -IPSET_ERR_EXIST;
-+	return (ret < 0 && ret != -ENOTEMPTY) ? ret :
-+		ret > 0 ? 0 : -IPSET_ERR_EXIST;
- }
- 
- /* Get headed data of a set */
+-	if (i == map->size - 1 && e->id != IPSET_INVALID_ID)
+-		/* Last element replaced: e.g. add new,before,last */
+-		ip_set_put_byindex(e->id);
++	if (e->id != IPSET_INVALID_ID) {
++		const struct set_elem *x = list_set_elem(map, map->size - 1);
++
++		/* Last element replaced or pushed off */
++		if (x->id != IPSET_INVALID_ID)
++			ip_set_put_byindex(x->id);
++	}
+ 	if (with_timeout(map->timeout))
+ 		list_elem_tadd(map, i, id, ip_set_timeout_set(timeout));
+ 	else
 
 
