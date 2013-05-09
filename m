@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab3EIWzZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:55:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46081 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757778Ab3EIWdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757763Ab3EIWdA (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 9 May 2013 18:33:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46050 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757674Ab3EIWcz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 18:32:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Tim Northover <Tim.Northover@arm.com>
-Subject: [ 29/73] arm64: Ignore the write ESR flag on cache maintenance faults
-Date: Thu,  9 May 2013 15:31:52 -0700
-Message-Id: <20130509222801.151723687@linuxfoundation.org>
+        Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@gnumonks.org>
+Subject: [ 22/73] netfilter: nf_ct_helper: dont discard helper if it is actually the same
+Date: Thu,  9 May 2013 15:31:45 -0700
+Message-Id: <20130509222800.385566595@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -27,43 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Florian Westphal <fw@strlen.de>
 
-commit 0e7f7bcc3fc87489cda5aa6aff8ce40eed912279 upstream.
+commit 6e2f0aa8cf8892868bf2c19349cb5d7c407f690d upstream.
 
-ESR.WnR bit is always set on data cache maintenance faults even though
-the page is not required to have write permission. If a translation
-fault (page not yet mapped) happens for read-only user address range,
-Linux incorrectly assumes a permission fault. This patch adds the check
-of the ESR.CM bit during the page fault handling to ignore the 'write'
-flag.
+commit (32f5376 netfilter: nf_ct_helper: disable automatic helper
+re-assignment of different type) broke transparent proxy scenarios.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Reported-by: Tim Northover <Tim.Northover@arm.com>
+For example, initial helper lookup might yield "ftp" (dport 21),
+while re-lookup after REDIRECT yields "ftp-2121".
+
+This causes the autoassign code to toss the ftp helper, even
+though these are just different instances of the same helper.
+
+Change the test to check for the helper function address instead
+of the helper address, as suggested by Pablo.
+
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Pablo Neira Ayuso <pablo@gnumonks.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/mm/fault.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/netfilter/nf_conntrack_helper.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/arm64/mm/fault.c
-+++ b/arch/arm64/mm/fault.c
-@@ -148,6 +148,7 @@ void do_bad_area(unsigned long addr, uns
- #define VM_FAULT_BADACCESS	0x020000
- 
- #define ESR_WRITE		(1 << 6)
-+#define ESR_CM			(1 << 8)
- #define ESR_LNX_EXEC		(1 << 24)
- 
- /*
-@@ -206,7 +207,7 @@ static int __kprobes do_page_fault(unsig
- 	struct task_struct *tsk;
- 	struct mm_struct *mm;
- 	int fault, sig, code;
--	int write = esr & ESR_WRITE;
-+	bool write = (esr & ESR_WRITE) && !(esr & ESR_CM);
- 	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
- 		(write ? FAULT_FLAG_WRITE : 0);
- 
+--- a/net/netfilter/nf_conntrack_helper.c
++++ b/net/netfilter/nf_conntrack_helper.c
+@@ -236,7 +236,9 @@ int __nf_ct_try_assign_helper(struct nf_
+ 		/* We only allow helper re-assignment of the same sort since
+ 		 * we cannot reallocate the helper extension area.
+ 		 */
+-		if (help->helper != helper) {
++		struct nf_conntrack_helper *tmp = rcu_dereference(help->helper);
++
++		if (tmp && tmp->help != helper->help) {
+ 			RCU_INIT_POINTER(help->helper, NULL);
+ 			goto out;
+ 		}
 
 
