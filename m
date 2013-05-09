@@ -1,108 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab3EIQLq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 12:11:46 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:51674 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab3EIQLp (ORCPT
+	id S1752590Ab3EIQMl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 12:12:41 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:63575 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab3EIQMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 12:11:45 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, EUNBONG SONG <eunb.song@samsung.com>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mm, MIPS: fix a bug caused by free_initmem_default()
-Date: Fri, 10 May 2013 00:10:04 +0800
-Message-Id: <1368115804-22220-1-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 9 May 2013 12:12:40 -0400
+Date: Thu, 9 May 2013 18:12:17 +0200
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Wang YanQing <udknight@gmail.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jean Delvare <jdelvare@suse.de>,
+        Michal Marek <mmarek@suse.cz>,
+        Roland Eggner <edvx1@systemanalysen.net>
+Subject: Re: [PATCH v3] kconfig: sort found symbols by relevance
+Message-ID: <20130509161217.GA2948@free.fr>
+References: <1367826629.4494.30.camel@chaos.site>
+ <1367874931-6251-1-git-send-email-yann.morin.1998@free.fr>
+ <20130509152731.GA3355@udknight>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130509152731.GA3355@udknight>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EUNBONG SONG <eunb.song@samsung.com> reported a bug on MIPS64 platforms
-caused by free_initmem() as below:
-[  132.134719] CPU: 0 PID: 1 Comm: swapper/0 Tainted: G        W    3.9.0+ #29
-[  132.141678] Stack : 0000000000000004 000000000000003f ffffffff80fa0000 ffffffff802924a8
-          0000000000000000 ffffffff80fa0000 00000000000000ff ffffffff80293760
-          0000000000000000 0000000000000000 ffffffff81080000 ffffffff81080000
-          ffffffff80e2baf0 ffffffff80f93977 a80000004146cbb8 0000000000000020
-          0000000000000003 0000000000000020 a800000041473da8 ffffffff810f0000
-          a800000041473a10 ffffffff806ef910 a800000041473828 ffffffff80290920
-          0000000000000000 ffffffff80293b90 000000000000000a ffffffff80e2baf0
-          0000000000000000 a800000041473750 000000004146cef8 ffffffff805e7794
-          0000000000000000 0000000000000000 0000000000000000 0000000000000000
-          0000000000000000 ffffffff80272498 0000000000000000 0000000000000000
-          ...
-[  132.207201] Call Trace:
-[  132.209655] [<ffffffff80272498>] show_stack+0x68/0x80
-[  132.225943] [<ffffffff802bd4ac>] notifier_call_chain+0x5c/0xa8
-[  132.231776] [<ffffffff802bdb84>] __atomic_notifier_call_chain+0x3c/0x58
-[  132.238391] [<ffffffff802bdbe8>] notify_die+0x38/0x48
-[  132.243442] [<ffffffff802716cc>] die+0x4c/0x148
-[  132.247974] [<ffffffff8027f998>] do_page_fault+0x4b8/0x500
-[  132.253461] [<ffffffff8026c764>] resume_userspace_check+0x0/0x10
-[  132.259469] [<ffffffff80324a54>] free_reserved_area+0x8c/0x178
-[  132.265304] [<ffffffff806e0dc8>] kernel_init+0x20/0x100
-[  132.270529] [<ffffffff8026c7e0>] ret_from_kernel_thread+0x10/0x18
+Wang, All,
 
-The root cause is that virt_to_page()/virt_to_phys() can't be used to
-handle virtual address from compatible segments on MIPS64 because
-virt_to_phys() is defined as:
-static inline unsigned long virt_to_phys(volatile const void *address)
-{
-        return (unsigned long)address - PAGE_OFFSET + PHYS_OFFSET;
-}
+On Thu, May 09, 2013 at 11:27:31PM +0800, Wang YanQing wrote:
+> On Mon, May 06, 2013 at 11:15:31PM +0200, Yann E. MORIN wrote:
+> > From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+> > 
+> > When searching for symbols, return the symbols sorted by relevance.
+> > 
+> > Sorting is done as thus:
+> >   - first, symbols with a prompt,   [1]
+> >   - then, smallest offset,          [2]
+> >   - then, shortest match,           [3]
+> >   - then, highest relative match,   [4]
+> >   - finally, alphabetical sort      [5]
+> > 
+> > So, searching (eg.) for 'P.*CI' :
+> > 
+> > [1] Symbols of interest are probably those with a prompt, as they can be
+> >     changed, while symbols with no prompt are only for info. Thus:
+> >         PCIEASPM comes before PCI_ATS
+> 
+> Search the value of symbols with no prompt are useful too
 
-x86_64 platforms have a similar situation, but __pa() has been enhanced
-to handle virtual address space used for kernel code and data segments.
-static inline unsigned long __phys_addr_nodebug(unsigned long x)
-{
-        unsigned long y = x - __START_KERNEL_map;
+My reasonning here is that often I need to toggle a symbol, but am not
+sure what menu it's in, so I search for it.
 
-        /* use the carry flag to determine if x was < __START_KERNEL_map */
-        x = y + ((x > y) ? phys_base : (__START_KERNEL_map - PAGE_OFFSET));
+Sometime, I also need to search for prompt-less symbols, too, to see why
+a symbol I want is not visible. But that's not the most common use-case.
 
-        return x;
-}
+Also, the examples provided were with a very verbose search: 'P.*CI'
+which is expected to return a hell of a lot of symbols. More precise
+searches will yield substancially fewer symbols, so the search results
+will probably fit in 1 or 2 pages, not 10+ like 'P.*CI'
 
-So we have two possible solutions here. The quick solution is to revert
-to the original implementation by using __pa_symbal(). The long term
-solution is to enhance virt_to_phys() to correctly handle virtual
-address from compatible segments.
+> > [2] Symbols that match earlier in the name are to be preferred over
+> >     symbols which match later. Thus:
+> >         PCI_MSI comes before WDTPCI
+> 
+> We can achieve this with ^PCI regular search
 
-This patch adopts the quick solution to fix the bug for v3.10, and we
-need guidance from MIPS64 experts on whether we should go with the long
-term solution.
+Yes, but I expect users do enter the begining of symbols, not a string
+in the middle or at the end.
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: EUNBONG SONG <eunb.song@samsung.com>
-Cc: David Daney <ddaney.cavm@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/mips/mm/init.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Also, as Jean and Thomas have proven, not many people know that searches
+can be regular expressions.
 
-diff --git a/arch/mips/mm/init.c b/arch/mips/mm/init.c
-index 3d0346d..3648768 100644
---- a/arch/mips/mm/init.c
-+++ b/arch/mips/mm/init.c
-@@ -446,7 +446,9 @@ void free_initrd_mem(unsigned long start, unsigned long end)
- void __init_refok free_initmem(void)
- {
- 	prom_free_prom_memory();
--	free_initmem_default(POISON_FREE_INITMEM);
-+	free_init_pages("unused kernel memory",
-+			__pa_symbol(&__init_begin),
-+			__pa_symbol(&__init_end));
- }
- 
- #ifndef CONFIG_MIPS_PGD_C0_CONTEXT
+> > [3] The shortest match is (IMHO) more interesting than a longer one.
+> >     Thus:
+> >         PCI comes before PCMCIA
+> 
+> We can achieve this with ^PCI regular search plus your previous heuristic
+
+This one is not about location of the match, it's about the length of
+the match: the shortest the match, the more interesting it is (IMHO). So
+we'd prefer FOO_PCI_BAR_BUZ over A_PACI_B  (when searching for 'P.*CI').
+
+> > [4] The relative match is the ratio of the length of the match against
+> >     the length of the symbol. The more of a symbol name we match, the
+> >     more instersting that symbol is. Thus:
+> >         PCIEAER comes before PCIEASPM
+> 
+> This is what your first heuristic
+> 
+> > [5] As fallback, sort symbols alphabetically
+> This is in your first heuristic too.
+> 
+> > This heuristic tries hard to get interesting symbols first in the list.
+> I don't mean your this heuristic is bad, but
+
+This heuristic is just that: a heuristic. It kicks in only if the user
+dit not provide an anchored regexp (ie with start- or end-of-line).
+
+For the ten-or-so tests I did, the sorting was rather appropriate,
+though that's only ten-or-so tests and is not exhaustive (and probably
+subject to testing bias, too).
+
+What I'm trying to achieve here is come up with a way to sort symbols
+for searches of *non-anchored* regexps. Anchored regexps will always
+provide the results they used to provide so far.
+
+Maybe we can emphasize in the UI the fact that regexps, and especially
+anchored regexps, can be used.
+
+> maybe provide mechanism to user will make guesser life easier.
+
+Sorry, I can't make sense of this sentence. :-( Can you elaborate a bit
+what you meant, please?
+
+Regards,
+Yann E. MORIN.
+
 -- 
-1.7.9.5
-
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
