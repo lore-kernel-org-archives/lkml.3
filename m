@@ -1,52 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab3EIIT7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 04:19:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62855 "EHLO mga02.intel.com"
+	id S1752418Ab3EIIWq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 04:22:46 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52097 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751305Ab3EIIT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 04:19:56 -0400
+	id S1752322Ab3EIIWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 04:22:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,639,1363158000"; 
-   d="scan'208";a="334185135"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: RE: [PATCH 0/4] Intel TXT driver
-Thread-Topic: [PATCH 0/4] Intel TXT driver
-Thread-Index: AQHOS5PFgzEwU6db/EypzzlKvzNy6Jj8gqQQ
-Date: Thu, 9 May 2013 08:19:51 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE9AAC26@SHSMSX102.ccr.corp.intel.com>
-References: <1367938519-840-1-git-send-email-qiaowei.ren@intel.com>
- <1367980128.2425.3.camel@x230>
-In-Reply-To: <1367980128.2425.3.camel@x230>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+   d="scan'208";a="331280983"
+Message-ID: <518B5CC8.6070601@intel.com>
+Date: Thu, 09 May 2013 16:22:32 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Paul Turner <pjt@google.com>, Morten Rasmussen <morten.rasmussen@arm.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 3/7] sched: set initial value of runnable avg for new
+ forked task
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-4-git-send-email-alex.shi@intel.com> <CAPM31RJg7t8f1H-dZwzP1c-0HHb_=8twidX74gS2NfyQhHUhCw@mail.gmail.com> <5187760D.8060900@intel.com> <CAPM31RKiCfSZ=hJ9P7WOH6AC8uj6b06mEM6K0WCTYXC7OJAq7A@mail.gmail.com> <51886460.3020009@intel.com> <CAPM31RLsip-PMY73oq58gyi42EQ+-upmPpMQFkukVBX6LTwtCw@mail.gmail.com> <20130507095715.GE4068@e103034-lin> <5188DFEF.6010403@intel.com> <CAPM31R+x3h0b_r4uFkg_SMnkp0AWA6QRAQuDRducycHnFdG5Xw@mail.gmail.com> <20130508113442.GB6803@dyad.programming.kicks-ass.net>
+In-Reply-To: <20130508113442.GB6803@dyad.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r498K9vN014034
 
-On 2013-05-08, Matthew Garrett wrote:
-> On Tue, 2013-05-07 at 22:55 +0800, Qiaowei Ren wrote:
->> This module is expected to be a better tool to access below resources
->>   - TXT config space
->>   - Tboot log mem
->>   - SMX parameter
+On 05/08/2013 07:34 PM, Peter Zijlstra wrote:
+>> > If we wanted to be more exacting about it we could just give them a
+>> > sched_slice() worth; this would have a few obvious "nice" properties
+>> > (pun intended).
+> Oh I see I misunderstood again :/ Its not about the effective load but weight
+> of the initial effective load wrt adjustment.
 > 
-> What's SMX?
+> Previous schedulers didn't have this aspect at all, so no experience from me
+> here. Paul would be the one, since he's ran longest with this stuff.
+> 
+> That said, I would tend to keep it shorter rather than longer so that it would
+> adjust quicker to whatever it really wanted to be.
+> 
+> Morten says the load is unstable specifically on loaded systems. I would think
+> this is because we'd experience scheduling latency, we're runnable more pushing
+> things up. But if we're really an idle task at heart we'd not run again for a
+> long while, pushing things down again.
+> 
+> So on that point Paul's suggestion of maybe starting with __sched_slice() might
+> make sense because it increases the weight of the initial avg with nr_running.
+> 
+> Not sure really, we'll have to play and see what works best for a number of
+> workloads.
 
-Safer Mode Extensions (SMX) provide a programming interface for system software to establish a measured environment within the platform to support trust decisions by end users. SMX functionality is provided in an Intel 64 processor through the GETSEC instruction via leaf functions.
 
-Thanks,
-Qiaowei
+The patch of using sched_slice for review, I am testing the benchmarks
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+---
+>From da40ffa90ec1de520bd7e92f5653734a964e3bb2 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Thu, 9 May 2013 15:28:34 +0800
+Subject: [PATCH 4/8] sched: set initial runnable avg for new task
+
+---
+ kernel/sched/core.c  |  2 ++
+ kernel/sched/fair.c  | 15 +++++++++++++++
+ kernel/sched/sched.h |  2 ++
+ 3 files changed, 19 insertions(+)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ecec7f1..c17925b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1716,6 +1716,8 @@ void wake_up_new_task(struct task_struct *p)
+ 	set_task_cpu(p, select_task_rq(p, SD_BALANCE_FORK, 0));
+ #endif
+ 
++	/* Give new task a start runnable time */
++	set_task_runnable_avg(p);
+ 	rq = __task_rq_lock(p);
+ 	activate_task(rq, p, 0);
+ 	p->on_rq = 1;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 2881d42..4ec5f29 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -661,6 +661,21 @@ static u64 sched_vslice(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	return calc_delta_fair(sched_slice(cfs_rq, se), se);
+ }
+ 
++#ifdef CONFIG_SMP
++void set_task_runnable_avg(struct task_struct *p)
++{
++	u64 slice;
++
++	slice = sched_slice(task_cfs_rq(p), &p->se);
++	p->se.avg.runnable_avg_sum = slice;
++	p->se.avg.runnable_avg_period = slice;
++}
++#else
++void set_task_runnable_avg(struct task_struct *p)
++{
++}
++#endif
++
+ /*
+  * Update the current task's runtime statistics. Skip current tasks that
+  * are not in our scheduling class.
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index c6634f1..518f3d8a 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -900,6 +900,8 @@ extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime
+ 
+ extern void update_idle_cpu_load(struct rq *this_rq);
+ 
++extern void set_task_runnable_avg(struct task_struct *p);
++
+ #ifdef CONFIG_CGROUP_CPUACCT
+ #include <linux/cgroup.h>
+ /* track cpu usage of a group of tasks and its child groups */
+-- 
+1.7.12
+
+-- 
+Thanks
+    Alex
