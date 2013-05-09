@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751093Ab3EIEJR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 00:09:17 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:51360 "EHLO smtp.infotech.no"
+	id S1751086Ab3EIEKl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 00:10:41 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:58634 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821Ab3EIEJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 00:09:15 -0400
-Message-ID: <518B2120.9040607@interlog.com>
-Date: Thu, 09 May 2013 00:08:00 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1750841Ab3EIEKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 00:10:40 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86: make stat/statfs 64-bit for x86_64 kernels
+Date: Thu, 9 May 2013 00:10:43 -0400
+User-Agent: KMail/1.13.7 (Linux/3.8.3; KDE/4.6.5; x86_64; ; )
+Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+References: <1368072057-7832-1-git-send-email-vapier@gentoo.org> <518B204C.4080501@zytor.com>
+In-Reply-To: <518B204C.4080501@zytor.com>
 MIME-Version: 1.0
-To: SCSI development list <linux-scsi@vger.kernel.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Dan_Hor?= =?ISO-8859-1?Q?=E1k?= 
-	<dhorak@redhat.com>,
-        Bart Van Assche <bvanassche@acm.org>, Hannes Reinecke <hare@suse.de>
-Subject: [ANNOUNCE] lsscsi version 0.27 released
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: multipart/signed;
+  boundary="nextPart1553551.zqerYWfPDu";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201305090010.45701.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lsscsi is a command line utility that probes sysfs in Linux
-2.6 and 3 series kernels in order to list information about
-SCSI devices and SCSI hosts. Both a compact format which is
-one line per device and a "classic" format (like the output
-of 'cat /proc/scsi/scsi') are supported.
+--nextPart1553551.zqerYWfPDu
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-Version 0.27 is available at:
-     http://sg.danny.cz/scsi/lsscsi.html
-More information can be found on that page including examples
-plus a Download and Build information section containing
-tarballs, rpm and deb packages.
+On Thursday 09 May 2013 00:04:28 H. Peter Anvin wrote:
+> On 05/08/2013 09:00 PM, Mike Frysinger wrote:
+> > --- a/arch/x86/include/uapi/asm/statfs.h
+> > +++ b/arch/x86/include/uapi/asm/statfs.h
+> > +/* For x86-64, both the 64bit and x32 ABIs have 64bit fields. */
+> > +#ifdef __x86_64__
+> > +#define __statfs_word __u64
+> > +#endif
+> > +
+> >=20
+> >  #include <asm-generic/statfs.h>
+> >  #endif /* _ASM_X86_STATFS_H */
+>=20
+> ... or is this what you meant to use?
 
+i didn't intend to use this for stat.  that macro is a hook the common asm-
+generic/statfs.h header provides for arches.
 
-ChangeLog:
-Version 0.27 2013/05/08 [svn: r111]
-   - rework buffer handling for systems with many disks
-   - add --lunhex option for displaying LUNs in hex
-   - accept LUNs from sysfs as large as a 64 bit unsigned
-     decimal number (largest was signed 32 bit decimal)
-   - accept LSSCSI_LUNHEX_OPT environment variable
-   - add --scsi_id option for /dev/disk/by-id/scsi*
+although maybe the better fix for statfs.h is to do:
+=2D-- a/include/uapi/asm-generic/statfs.h
++++ b/include/uapi/asm-generic/statfs.h
+@@ -13,7 +13,7 @@
+  */
+ #ifndef __statfs_word
+ #if __BITS_PER_LONG =3D=3D 64
+=2D#define __statfs_word long
++#define __statfs_word __u64
+ #else
+ #define __statfs_word __u32
+ #endif
+=2Dmike
 
-Version 0.26 2012/01/31 [svn: r97]
-....
+--nextPart1553551.zqerYWfPDu
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Doug Gilbert
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJRiyHFAAoJEEFjO5/oN/WBwO8QAIjXXnkx0yjZt4394X8W9cS+
+smyauqrPZxATeRcPqY/R6+IlMTEIF7nvsJ261KliTxY8A2nkJbfY3ACyrVDBfiV6
+4cyS/ie3wau20OT6fxERZPYdlIIdEYWxN5osRd44xEWax/RnKXSxmbWRepuenfmO
+Bbf8WdOemac6c/AVZUjef/F3SttA3gHKeDAPNj2PA3Tb9NYVqp7UeJYCKgbgAkIS
+z/15XzhAHOW6Oxkzu1wC7CCU2/u4G+syZ5YfPRQBHeBS9+cBl/302NQ6qcTsplOC
+wxIaGrYB9GhSBIv9esgotSfgdzcbWRmi4zO8DQnJJ3Dn1MWSE3fDF9UHFyXxz0yE
+MwnTArfz28KauV58h8F7uk9U0yuG/QXBwRv0tsu0azWLn4+Al0/qjJfbA1/nkZJ4
+5Ih7zsjO5MGXYfkZQvU4NszJly5FRtH5SZ/aV9KLmHBVMXQsa8d2PgJvDgK7PMwr
+hQrelxspIrolIYpUO4kzKSgDV+Cpz/196mFbmgVq8MpNjguCa9L1bqGl77ubiEs7
+gGNhh4qiy7oA7iltt+QN4MuU8W3vVx8x+g5FTw+kf1KveS9zOZxOHCoAb9LxYcVe
+2u/H7bXaZLSwz+V2rI57XCgMJWLhSnPq9bKcjvWGTH/XEweyQtCj08i2agTLh8ua
+H9MQo8G7OvqZ+bfu5gcc
+=n8zd
+-----END PGP SIGNATURE-----
+
+--nextPart1553551.zqerYWfPDu--
