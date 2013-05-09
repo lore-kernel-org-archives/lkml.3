@@ -1,432 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab3EIP65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 11:58:57 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44258 "EHLO
+	id S1756295Ab3EIP7K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 11:59:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44297 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756193Ab3EIP6y (ORCPT
+	with ESMTP id S1756212Ab3EIP64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 11:58:54 -0400
+	Thu, 9 May 2013 11:58:56 -0400
 From: Sasha Levin <sasha.levin@oracle.com>
 To: torvalds@linux-foundation.org
 Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
         Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v3 7/9] liblockdep: Support using LD_PRELOAD
-Date: Thu,  9 May 2013 11:58:07 -0400
-Message-Id: <1368115089-8909-8-git-send-email-sasha.levin@oracle.com>
+Subject: [PATCH v3 5/9] liblockdep: Add public headers for pthread_rwlock_t implementation
+Date: Thu,  9 May 2013 11:58:05 -0400
+Message-Id: <1368115089-8909-6-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1368115089-8909-1-git-send-email-sasha.levin@oracle.com>
 References: <1368115089-8909-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows lockdep to be used without being compiled in the
-original program.
-
-Usage is quite simple:
-
-	LD_PRELOAD=/path/to/liblockdep.so /path/to/my/program
-
-And magically, you'll have lockdep checking in your program!
+Both pthreads and lockdep support dealing with rwlocks, so
+here's the liblockdep implementation for those.
 
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- tools/lib/lockdep/preload.c | 384 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 384 insertions(+)
- create mode 100644 tools/lib/lockdep/preload.c
+ tools/lib/lockdep/include/liblockdep/rwlock.h | 91 +++++++++++++++++++++++++++
+ 1 file changed, 91 insertions(+)
+ create mode 100644 tools/lib/lockdep/include/liblockdep/rwlock.h
 
-diff --git a/tools/lib/lockdep/preload.c b/tools/lib/lockdep/preload.c
+diff --git a/tools/lib/lockdep/include/liblockdep/rwlock.h b/tools/lib/lockdep/include/liblockdep/rwlock.h
 new file mode 100644
-index 0000000..025cce0
+index 0000000..a1d820b
 --- /dev/null
-+++ b/tools/lib/lockdep/preload.c
-@@ -0,0 +1,384 @@
-+#define _GNU_SOURCE
-+#include <pthread.h>
-+#include <stdio.h>
-+#include <dlfcn.h>
-+#include <stdlib.h>
-+#include "include/liblockdep/mutex.h"
-+#include "../../../include/linux/rbtree.h"
++++ b/tools/lib/lockdep/include/liblockdep/rwlock.h
+@@ -0,0 +1,91 @@
++#ifndef _LIBLOCKDEP_RWLOCK_H
++#define _LIBLOCKDEP_RWLOCK_H
 +
-+/**
-+ * struct lock_lookup - liblockdep's view of a single unique lock
-+ * @orig: pointer to the original pthread lock, used for lookups
-+ * @dep_map: lockdep's dep_map structure
-+ * @key: lockdep's key structure
-+ * @node: rb-tree node used to store the lock in a global tree
-+ * @name: a unique name for the lock
-+ */
-+struct lock_lookup {
-+	void *orig; /* Original pthread lock, used for lookups */
-+	struct lockdep_map dep_map; /* Since all locks are dynamic, we need
-+				     * a dep_map and a key for each lock */
-+	struct lock_class_key key;
-+	struct rb_node node;
-+#define LIBLOCKDEP_MAX_LOCK_NAME 22
-+	char name[LIBLOCKDEP_MAX_LOCK_NAME];
++#include <pthread.h>
++#include "common.h"
++
++struct liblockdep_pthread_rwlock {
++	pthread_rwlock_t rwlock;
++	struct lockdep_map dep_map;
 +};
 +
-+/* This is where we store our locks */
-+static struct rb_root locks = RB_ROOT;
-+static pthread_rwlock_t locks_rwlock = PTHREAD_RWLOCK_INITIALIZER;
++typedef struct liblockdep_pthread_rwlock liblockdep_pthread_rwlock_t;
 +
-+/* pthread mutex API */
-+static int (*ll_pthread_mutex_init)(pthread_mutex_t *mutex,
-+			const pthread_mutexattr_t *attr);
-+static int (*ll_pthread_mutex_lock)(pthread_mutex_t *mutex);
-+static int (*ll_pthread_mutex_trylock)(pthread_mutex_t *mutex);
-+static int (*ll_pthread_mutex_unlock)(pthread_mutex_t *mutex);
-+static int (*ll_pthread_mutex_destroy)(pthread_mutex_t *mutex);
-+
-+/* pthread rwlock API */
-+static int (*ll_pthread_rwlock_init)(pthread_rwlock_t *rwlock,
-+			const pthread_rwlockattr_t *attr);
-+static int (*ll_pthread_rwlock_destroy)(pthread_rwlock_t *rwlock);
-+static int (*ll_pthread_rwlock_rdlock)(pthread_rwlock_t *rwlock);
-+static int (*ll_pthread_rwlock_tryrdlock)(pthread_rwlock_t *rwlock);
-+static int (*ll_pthread_rwlock_trywrlock)(pthread_rwlock_t *rwlock);
-+static int (*ll_pthread_rwlock_wrlock)(pthread_rwlock_t *rwlock);
-+static int (*ll_pthread_rwlock_unlock)(pthread_rwlock_t *rwlock);
-+
-+static bool preload_done;
-+static void init_preload(void);
-+static void try_init_preload(void)
-+{
-+	if (!preload_done)
-+		init_preload();
++#define LIBLOCKDEP_PTHREAD_RWLOCK_INITIALIZER(rwl)			\
++		(struct liblockdep_pthread_rwlock) {			\
++	.rwlock = PTHREAD_RWLOCK_INITIALIZER,				\
++	.dep_map = STATIC_LOCKDEP_MAP_INIT(#rwl, &((&(rwl))->dep_map)),	\
 +}
 +
-+static struct rb_node **__get_lock_node(void *lock, struct rb_node **parent)
++static inline int __rwlock_init(liblockdep_pthread_rwlock_t *lock,
++				const char *name,
++				struct lock_class_key *key,
++				const pthread_rwlockattr_t *attr)
 +{
-+	struct rb_node **node = &locks.rb_node;
-+	struct lock_lookup *l;
++	lockdep_init_map(&lock->dep_map, name, key, 0);
 +
-+	*parent = NULL;
-+
-+	while (*node) {
-+		l = rb_entry(*node, struct lock_lookup, node);
-+
-+		*parent = *node;
-+		if (lock < l->orig)
-+			node = &l->node.rb_left;
-+		else if (lock > l->orig)
-+			node = &l->node.rb_right;
-+		else
-+			return node;
-+	}
-+
-+	return node;
++	return pthread_rwlock_init(&lock->rwlock, attr);
 +}
 +
-+/**
-+ * __get_lock - find or create a lock instance
-+ * @lock: pointer to a pthread lock function
-+ *
-+ * Try to find an existing lock in the rbtree using the provided pointer. If
-+ * one wasn't found - create it.
-+ */
-+static struct lock_lookup *__get_lock(void *lock)
++#define liblockdep_pthread_rwlock_init(lock, attr)		\
++({							\
++	static struct lock_class_key __key;		\
++							\
++	__rwlock_init((lock), #lock, &__key, (attr));	\
++})
++
++static inline int liblockdep_pthread_rwlock_rdlock(liblockdep_pthread_rwlock_t *lock)
 +{
-+	struct rb_node **node, *parent;
-+	struct lock_lookup *l;
++	void *ip = _THIS_IP_;
++	lock_acquire(&lock->dep_map, 0, 0, 2, 2, NULL, (unsigned long)ip);
++	return pthread_rwlock_rdlock(&lock->rwlock);
 +
-+	ll_pthread_rwlock_rdlock(&locks_rwlock);
-+	node = __get_lock_node(lock, &parent);
-+	ll_pthread_rwlock_unlock(&locks_rwlock);
-+	if (*node) {
-+		return rb_entry(*node, struct lock_lookup, node);
-+	}
-+
-+	/* We didn't find the lock, let's create it */
-+	l = malloc(sizeof(*l));
-+	if (l == NULL)
-+		return NULL;
-+
-+	l->orig = lock;
-+	/*
-+	 * Currently the name of the lock is the ptr value of the pthread lock,
-+	 * while not optimal, it makes debugging a bit easier.
-+	 *
-+	 * TODO: Get the real name of the lock using libdwarf
-+	 */
-+	sprintf(l->name, "%p", lock);
-+	lockdep_init_map(&l->dep_map, l->name, &l->key, 0);
-+
-+	ll_pthread_rwlock_wrlock(&locks_rwlock);
-+	/* This might have changed since the last time we fetched it */
-+	node = __get_lock_node(lock, &parent);
-+	rb_link_node(&l->node, parent, node);
-+	rb_insert_color(&l->node, &locks);
-+	ll_pthread_rwlock_unlock(&locks_rwlock);
-+
-+	return l;
 +}
 +
-+static void __del_lock(struct lock_lookup *lock)
++static inline int liblockdep_pthread_rwlock_unlock(liblockdep_pthread_rwlock_t *lock)
 +{
-+	ll_pthread_rwlock_wrlock(&locks_rwlock);
-+	rb_erase(&lock->node, &locks);
-+	ll_pthread_rwlock_unlock(&locks_rwlock);
-+	free(lock);
++	void *ip = _THIS_IP_;
++	lock_release(&lock->dep_map, 0, (unsigned long)ip);
++	return pthread_rwlock_unlock(&lock->rwlock);
 +}
 +
-+int pthread_mutex_init(pthread_mutex_t *mutex,
-+			const pthread_mutexattr_t *attr)
++static inline int liblockdep_pthread_rwlock_wrlock(liblockdep_pthread_rwlock_t *lock)
 +{
-+	int r;
-+
-+	/*
-+	 * We keep trying to init our preload module because there might be
-+	 * code in init sections that tries to touch locks before we are
-+	 * initialized, in that case we'll need to manually call preload
-+	 * to get us going.
-+	 *
-+	 * Funny enough, kernel's lockdep had the same issue, and used
-+	 * (almost) the same solution. See look_up_lock_class() in
-+	 * kernel/lockdep.c for details.
-+	 */
-+	try_init_preload();
-+
-+	r = ll_pthread_mutex_init(mutex, attr);
-+	if (r == 0)
-+		/*
-+		 * We do a dummy initialization here so that lockdep could
-+		 * warn us if something fishy is going on - such as
-+		 * initializing a held lock.
-+		 */
-+		__get_lock(mutex);
-+
-+	return r;
++	void *ip = _THIS_IP_;
++	lock_acquire(&lock->dep_map, 0, 0, 0, 2, NULL, (unsigned long)ip);
++	return pthread_rwlock_wrlock(&lock->rwlock);
 +}
 +
-+int pthread_mutex_lock(pthread_mutex_t *mutex)
++static inline int liblockdep_pthread_rwlock_tryrdlock(liblockdep_pthread_rwlock_t *lock)
 +{
-+	int r;
-+
-+	try_init_preload();
-+
-+	lock_acquire(&__get_lock(mutex)->dep_map, 0, 0, 0, 2, NULL,
-+			(unsigned long)_THIS_IP_);
-+	/*
-+	 * Here's the thing with pthread mutexes: unlike the kernel variant,
-+	 * they can fail.
-+	 *
-+	 * This means that the behaviour here is a bit different from what's
-+	 * going on in the kernel: there we just tell lockdep that we took the
-+	 * lock before actually taking it, but here we must deal with the case
-+	 * that locking failed.
-+	 *
-+	 * To do that we'll "release" the lock if locking failed - this way
-+	 * we'll get lockdep doing the correct checks when we try to take
-+	 * the lock, and if that fails - we'll be back to the correct
-+	 * state by releasing it.
-+	 */
-+	r = ll_pthread_mutex_lock(mutex);
-+	if (r)
-+		lock_release(&__get_lock(mutex)->dep_map, 0, (unsigned long)_THIS_IP_);
-+
-+	return r;
++	void *ip = _THIS_IP_;
++	lock_acquire(&lock->dep_map, 0, 1, 2, 2, NULL, (unsigned long)ip);
++	return pthread_rwlock_tryrdlock(&lock->rwlock) == 0 ? 1 : 0;
 +}
 +
-+int pthread_mutex_trylock(pthread_mutex_t *mutex)
++static inline int liblockdep_pthread_rwlock_trywlock(liblockdep_pthread_rwlock_t *lock)
 +{
-+	int r;
-+
-+	try_init_preload();
-+
-+	lock_acquire(&__get_lock(mutex)->dep_map, 0, 1, 0, 2, NULL, (unsigned long)_THIS_IP_);
-+	r = ll_pthread_mutex_trylock(mutex);
-+	if (r)
-+		lock_release(&__get_lock(mutex)->dep_map, 0, (unsigned long)_THIS_IP_);
-+
-+	return r;
++	void *ip = _THIS_IP_;
++	lock_acquire(&lock->dep_map, 0, 1, 0, 2, NULL, (unsigned long)ip);
++	return pthread_rwlock_trywlock(&lock->rwlock) == 0 ? 1 : 0;
 +}
 +
-+int pthread_mutex_unlock(pthread_mutex_t *mutex)
++static inline int liblockdep_rwlock_destroy(liblockdep_pthread_rwlock_t *lock)
 +{
-+	int r;
-+
-+	try_init_preload();
-+
-+	lock_release(&__get_lock(mutex)->dep_map, 0, (unsigned long)_THIS_IP_);
-+	/*
-+	 * Just like taking a lock, only in reverse!
-+	 *
-+	 * If we fail releasing the lock, tell lockdep we're holding it again.
-+	 */
-+	r = ll_pthread_mutex_unlock(mutex);
-+	if (r)
-+		lock_acquire(&__get_lock(mutex)->dep_map, 0, 0, 0, 2, NULL, (unsigned long)_THIS_IP_);
-+
-+	return r;
++	return pthread_rwlock_destroy(&lock->rwlock);
 +}
 +
-+int pthread_mutex_destroy(pthread_mutex_t *mutex)
-+{
-+	try_init_preload();
++#ifdef __USE_LIBLOCKDEP
 +
-+	/*
-+	 * Let's see if we're releasing a lock that's held.
-+	 * 
-+	 * TODO: Hook into free() and add that check there as well.
-+	 */
-+	debug_check_no_locks_freed(mutex, mutex + sizeof(*mutex));
-+	__del_lock(__get_lock(mutex));
-+	return ll_pthread_mutex_destroy(mutex);
-+}
++#define pthread_rwlock_t		liblockdep_pthread_rwlock_t
++#define pthread_rwlock_init		liblockdep_pthread_rwlock_init
++#define pthread_rwlock_rdlock		liblockdep_pthread_rwlock_rdlock
++#define pthread_rwlock_unlock		liblockdep_pthread_rwlock_unlock
++#define pthread_rwlock_wrlock		liblockdep_pthread_rwlock_wrlock
++#define pthread_rwlock_tryrdlock	liblockdep_pthread_rwlock_tryrdlock
++#define pthread_rwlock_trywlock		liblockdep_pthread_rwlock_trywlock
++#define pthread_rwlock_destroy		liblockdep_rwlock_destroy
 +
-+/* This is the rwlock part, very similar to what happened with mutex above */
-+int pthread_rwlock_init(pthread_rwlock_t *rwlock,
-+			const pthread_rwlockattr_t *attr)
-+{
-+	int r;
++#endif
 +
-+	try_init_preload();
-+
-+	r = ll_pthread_rwlock_init(rwlock, attr);
-+	if (r == 0)
-+		__get_lock(rwlock);
-+
-+	return r;
-+}
-+
-+int pthread_rwlock_destroy(pthread_rwlock_t *rwlock)
-+{
-+	try_init_preload();
-+
-+	debug_check_no_locks_freed(rwlock, rwlock + sizeof(*rwlock));
-+	__del_lock(__get_lock(rwlock));
-+	return ll_pthread_rwlock_destroy(rwlock);
-+}
-+
-+int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock)
-+{
-+	int r;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 0, 2, 2, NULL, (unsigned long)_THIS_IP_);
-+	r = ll_pthread_rwlock_rdlock(rwlock);
-+	if (r)
-+		lock_release(&__get_lock(rwlock)->dep_map, 0, (unsigned long)_THIS_IP_);
-+
-+	return r;
-+}
-+
-+int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock)
-+{
-+	int r;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 1, 2, 2, NULL, (unsigned long)_THIS_IP_);
-+	r = ll_pthread_rwlock_tryrdlock(rwlock);
-+	if (r)
-+		lock_release(&__get_lock(rwlock)->dep_map, 0, (unsigned long)_THIS_IP_);
-+
-+	return r;
-+}
-+
-+int pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock)
-+{
-+	int r;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 1, 0, 2, NULL, (unsigned long)_THIS_IP_);
-+	r = ll_pthread_rwlock_trywrlock(rwlock);
-+	if (r)
-+                lock_release(&__get_lock(rwlock)->dep_map, 0, (unsigned long)_THIS_IP_);
-+
-+	return r;
-+}
-+
-+int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock)
-+{
-+	int r;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 0, 0, 2, NULL, (unsigned long)_THIS_IP_);
-+	r = ll_pthread_rwlock_wrlock(rwlock);
-+	if (r)
-+		lock_release(&__get_lock(rwlock)->dep_map, 0, (unsigned long)_THIS_IP_);
-+
-+	return r;
-+}
-+
-+int pthread_rwlock_unlock(pthread_rwlock_t *rwlock)
-+{
-+	int r;
-+
-+        init_preload();
-+
-+	lock_release(&__get_lock(rwlock)->dep_map, 0, (unsigned long)_THIS_IP_);
-+	r = ll_pthread_rwlock_unlock(rwlock);
-+	if (r)
-+		lock_acquire(&__get_lock(rwlock)->dep_map, 0, 0, 0, 2, NULL, (unsigned long)_THIS_IP_);
-+
-+	return r;
-+}
-+
-+__attribute__((constructor)) static void init_preload(void)
-+{
-+	static bool preload_started;
-+
-+	if (preload_done)
-+		return;
-+
-+	/*
-+	 * Some programs attempt to initialize and use locks in their
-+	 * allocation path. This means that a call to malloc() would
-+	 * result in locks being initialized and locked.
-+	 *
-+	 * Why is it an issue for us? dlsym() below will try allocating to
-+	 * give us the original function. Since this allocation will result
-+	 * in a locking operations, we have to let pthread deal with it,
-+	 * but we can't! we don't have the pointer to the original API
-+	 * since we're inside dlsym() trying to get it :(
-+	 *
-+	 * We can work around it by telling the program that locking was
-+	 * really okay, and just initialize those locks when we're fully
-+	 * up and running (this is ok because this all happens during
-+	 * initialization phase, when we have just one thread). But
-+	 * this is a big TODO at this point.
-+	 */
-+	if (preload_started) {
-+		printf(
-+		"LOCKDEP error: It seems that the program you are trying to "
-+		"debug is initializing locks in it's allocation path.\n"
-+		"This means that liblockdep cannot reliably analyze this "
-+		"program since we need the allocator to work before we can "
-+		"debug locks.\nSorry!\n");
-+
-+		exit(1);
-+	}
-+
-+	preload_started = true;
-+
-+	ll_pthread_mutex_init = dlsym(RTLD_NEXT, "pthread_mutex_init");
-+	ll_pthread_mutex_lock = dlsym(RTLD_NEXT, "pthread_mutex_lock");
-+	ll_pthread_mutex_trylock = dlsym(RTLD_NEXT, "pthread_mutex_trylock");
-+	ll_pthread_mutex_unlock = dlsym(RTLD_NEXT, "pthread_mutex_unlock");
-+	ll_pthread_mutex_destroy = dlsym(RTLD_NEXT, "pthread_mutex_destroy");
-+
-+	ll_pthread_rwlock_init = dlsym(RTLD_NEXT, "pthread_rwlock_init");
-+	ll_pthread_rwlock_destroy = dlsym(RTLD_NEXT, "pthread_rwlock_destroy");
-+	ll_pthread_rwlock_rdlock = dlsym(RTLD_NEXT, "pthread_rwlock_rdlock");
-+	ll_pthread_rwlock_tryrdlock = dlsym(RTLD_NEXT, "pthread_rwlock_tryrdlock");
-+	ll_pthread_rwlock_wrlock = dlsym(RTLD_NEXT, "pthread_rwlock_wrlock");
-+	ll_pthread_rwlock_trywrlock = dlsym(RTLD_NEXT, "pthread_rwlock_trywrlock");
-+	ll_pthread_rwlock_unlock = dlsym(RTLD_NEXT, "pthread_rwlock_unlock");
-+
-+	lockdep_init();
-+
-+	preload_done = true;
-+}
++#endif
 -- 
 1.8.2.1
 
