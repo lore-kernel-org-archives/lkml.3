@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759358Ab3EIXHU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:07:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45775 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755966Ab3EIW0c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755973Ab3EIW0c (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 9 May 2013 18:26:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45754 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755812Ab3EIW01 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 18:26:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Imre Deak <imre.deak@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Dave Airlie <airlied@redhat.com>
-Subject: [ 27/73] drm/mgag200: deal with bo reserve fail in dirty update path
-Date: Thu,  9 May 2013 15:25:17 -0700
-Message-Id: <20130509222529.239217741@linuxfoundation.org>
+Subject: [ 29/73] drm: prime: fix refcounting on the dmabuf import error path
+Date: Thu,  9 May 2013 15:25:19 -0700
+Message-Id: <20130509222529.429805155@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -26,129 +28,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Imre Deak <imre.deak@intel.com>
 
-commit 641719599528d806e00de8ae8c8453361266a312 upstream.
+commit 011c2282c74db120f01a8414edc66c3f217f5511 upstream.
 
-On F19 testing, it was noticed we get a lot of errors in dmesg
-about being unable to reserve the buffer when plymouth starts,
-this is due to the buffer being in the process of migrating,
-so it makes sense we can't reserve it.
+In commit be8a42ae60 we inroduced a refcount problem, where on the
+drm_gem_prime_fd_to_handle() error path we'll call dma_buf_put() for
+self imported dma buffers.
 
-In order to deal with it, this adds delayed updates for the dirty
-updates, when the bo is unreservable, in the normal console case
-this shouldn't ever happen, its just when plymouth or X is
-pushing the console bo to system memory.
+Fix this by taking a reference on the dma buffer in the .gem_import
+hook instead of assuming the caller had taken one. Besides fixing the
+bug this is also more logical.
 
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/mgag200/mgag200_drv.h |    2 +
- drivers/gpu/drm/mgag200/mgag200_fb.c  |   43 +++++++++++++++++++++++++++++++---
- drivers/gpu/drm/mgag200/mgag200_ttm.c |    4 +--
- 3 files changed, 44 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/drm_prime.c                |    8 +++++++-
+ drivers/gpu/drm/exynos/exynos_drm_dmabuf.c |    4 +++-
+ drivers/gpu/drm/i915/i915_gem_dmabuf.c     |    5 ++++-
+ drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c  |    1 -
+ drivers/gpu/drm/udl/udl_gem.c              |    4 ++++
+ 5 files changed, 18 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/mgag200/mgag200_drv.h
-+++ b/drivers/gpu/drm/mgag200/mgag200_drv.h
-@@ -115,6 +115,8 @@ struct mga_fbdev {
- 	void *sysram;
- 	int size;
- 	struct ttm_bo_kmap_obj mapping;
-+	int x1, y1, x2, y2; /* dirty rect */
-+	spinlock_t dirty_lock;
- };
- 
- struct mga_crtc {
---- a/drivers/gpu/drm/mgag200/mgag200_fb.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_fb.c
-@@ -29,16 +29,52 @@ static void mga_dirty_update(struct mga_
- 	int bpp = (mfbdev->mfb.base.bits_per_pixel + 7)/8;
- 	int ret;
- 	bool unmap = false;
-+	bool store_for_later = false;
-+	int x2, y2;
-+	unsigned long flags;
- 
- 	obj = mfbdev->mfb.obj;
- 	bo = gem_to_mga_bo(obj);
- 
-+	/*
-+	 * try and reserve the BO, if we fail with busy
-+	 * then the BO is being moved and we should
-+	 * store up the damage until later.
-+	 */
- 	ret = mgag200_bo_reserve(bo, true);
- 	if (ret) {
--		DRM_ERROR("failed to reserve fb bo\n");
-+		if (ret != -EBUSY)
-+			return;
-+
-+		store_for_later = true;
-+	}
-+
-+	x2 = x + width - 1;
-+	y2 = y + height - 1;
-+	spin_lock_irqsave(&mfbdev->dirty_lock, flags);
-+
-+	if (mfbdev->y1 < y)
-+		y = mfbdev->y1;
-+	if (mfbdev->y2 > y2)
-+		y2 = mfbdev->y2;
-+	if (mfbdev->x1 < x)
-+		x = mfbdev->x1;
-+	if (mfbdev->x2 > x2)
-+		x2 = mfbdev->x2;
-+
-+	if (store_for_later) {
-+		mfbdev->x1 = x;
-+		mfbdev->x2 = x2;
-+		mfbdev->y1 = y;
-+		mfbdev->y2 = y2;
-+		spin_unlock_irqrestore(&mfbdev->dirty_lock, flags);
- 		return;
- 	}
- 
-+	mfbdev->x1 = mfbdev->y1 = INT_MAX;
-+	mfbdev->x2 = mfbdev->y2 = 0;
-+	spin_unlock_irqrestore(&mfbdev->dirty_lock, flags);
-+
- 	if (!bo->kmap.virtual) {
- 		ret = ttm_bo_kmap(&bo->bo, 0, bo->bo.num_pages, &bo->kmap);
- 		if (ret) {
-@@ -48,10 +84,10 @@ static void mga_dirty_update(struct mga_
+--- a/drivers/gpu/drm/drm_prime.c
++++ b/drivers/gpu/drm/drm_prime.c
+@@ -268,7 +268,6 @@ struct drm_gem_object *drm_gem_prime_imp
+ 			 * refcount on gem itself instead of f_count of dmabuf.
+ 			 */
+ 			drm_gem_object_reference(obj);
+-			dma_buf_put(dma_buf);
+ 			return obj;
  		}
- 		unmap = true;
  	}
--	for (i = y; i < y + height; i++) {
-+	for (i = y; i <= y2; i++) {
- 		/* assume equal stride for now */
- 		src_offset = dst_offset = i * mfbdev->mfb.base.pitches[0] + (x * bpp);
--		memcpy_toio(bo->kmap.virtual + src_offset, mfbdev->sysram + src_offset, width * bpp);
-+		memcpy_toio(bo->kmap.virtual + src_offset, mfbdev->sysram + src_offset, (x2 - x + 1) * bpp);
+@@ -277,6 +276,8 @@ struct drm_gem_object *drm_gem_prime_imp
+ 	if (IS_ERR(attach))
+ 		return ERR_PTR(PTR_ERR(attach));
  
- 	}
- 	if (unmap)
-@@ -255,6 +291,7 @@ int mgag200_fbdev_init(struct mga_device
++	get_dma_buf(dma_buf);
++
+ 	sgt = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
+ 	if (IS_ERR_OR_NULL(sgt)) {
+ 		ret = PTR_ERR(sgt);
+@@ -297,6 +298,8 @@ fail_unmap:
+ 	dma_buf_unmap_attachment(attach, sgt, DMA_BIDIRECTIONAL);
+ fail_detach:
+ 	dma_buf_detach(dma_buf, attach);
++	dma_buf_put(dma_buf);
++
+ 	return ERR_PTR(ret);
+ }
+ EXPORT_SYMBOL(drm_gem_prime_import);
+@@ -339,6 +342,9 @@ int drm_gem_prime_fd_to_handle(struct dr
+ 		goto fail;
  
- 	mdev->mfbdev = mfbdev;
- 	mfbdev->helper.funcs = &mga_fb_helper_funcs;
-+	spin_lock_init(&mfbdev->dirty_lock);
- 
- 	ret = drm_fb_helper_init(mdev->dev, &mfbdev->helper,
- 				 mdev->num_crtc, MGAG200FB_CONN_LIMIT);
---- a/drivers/gpu/drm/mgag200/mgag200_ttm.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_ttm.c
-@@ -315,8 +315,8 @@ int mgag200_bo_reserve(struct mgag200_bo
- 
- 	ret = ttm_bo_reserve(&bo->bo, true, no_wait, false, 0);
- 	if (ret) {
--		if (ret != -ERESTARTSYS)
--			DRM_ERROR("reserve failed %p\n", bo);
-+		if (ret != -ERESTARTSYS && ret != -EBUSY)
-+			DRM_ERROR("reserve failed %p %d\n", bo, ret);
- 		return ret;
- 	}
+ 	mutex_unlock(&file_priv->prime.lock);
++
++	dma_buf_put(dma_buf);
++
  	return 0;
+ 
+ fail:
+--- a/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
+@@ -235,7 +235,6 @@ struct drm_gem_object *exynos_dmabuf_pri
+ 			 * refcount on gem itself instead of f_count of dmabuf.
+ 			 */
+ 			drm_gem_object_reference(obj);
+-			dma_buf_put(dma_buf);
+ 			return obj;
+ 		}
+ 	}
+@@ -244,6 +243,7 @@ struct drm_gem_object *exynos_dmabuf_pri
+ 	if (IS_ERR(attach))
+ 		return ERR_PTR(-EINVAL);
+ 
++	get_dma_buf(dma_buf);
+ 
+ 	sgt = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
+ 	if (IS_ERR_OR_NULL(sgt)) {
+@@ -298,6 +298,8 @@ err_unmap_attach:
+ 	dma_buf_unmap_attachment(attach, sgt, DMA_BIDIRECTIONAL);
+ err_buf_detach:
+ 	dma_buf_detach(dma_buf, attach);
++	dma_buf_put(dma_buf);
++
+ 	return ERR_PTR(ret);
+ }
+ 
+--- a/drivers/gpu/drm/i915/i915_gem_dmabuf.c
++++ b/drivers/gpu/drm/i915/i915_gem_dmabuf.c
+@@ -271,7 +271,6 @@ struct drm_gem_object *i915_gem_prime_im
+ 			 * refcount on gem itself instead of f_count of dmabuf.
+ 			 */
+ 			drm_gem_object_reference(&obj->base);
+-			dma_buf_put(dma_buf);
+ 			return &obj->base;
+ 		}
+ 	}
+@@ -281,6 +280,8 @@ struct drm_gem_object *i915_gem_prime_im
+ 	if (IS_ERR(attach))
+ 		return ERR_CAST(attach);
+ 
++	get_dma_buf(dma_buf);
++
+ 	obj = i915_gem_object_alloc(dev);
+ 	if (obj == NULL) {
+ 		ret = -ENOMEM;
+@@ -300,5 +301,7 @@ struct drm_gem_object *i915_gem_prime_im
+ 
+ fail_detach:
+ 	dma_buf_detach(dma_buf, attach);
++	dma_buf_put(dma_buf);
++
+ 	return ERR_PTR(ret);
+ }
+--- a/drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c
++++ b/drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c
+@@ -212,7 +212,6 @@ struct drm_gem_object *omap_gem_prime_im
+ 			 * refcount on gem itself instead of f_count of dmabuf.
+ 			 */
+ 			drm_gem_object_reference(obj);
+-			dma_buf_put(buffer);
+ 			return obj;
+ 		}
+ 	}
+--- a/drivers/gpu/drm/udl/udl_gem.c
++++ b/drivers/gpu/drm/udl/udl_gem.c
+@@ -303,6 +303,8 @@ struct drm_gem_object *udl_gem_prime_imp
+ 	if (IS_ERR(attach))
+ 		return ERR_CAST(attach);
+ 
++	get_dma_buf(dma_buf);
++
+ 	sg = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
+ 	if (IS_ERR(sg)) {
+ 		ret = PTR_ERR(sg);
+@@ -322,5 +324,7 @@ fail_unmap:
+ 	dma_buf_unmap_attachment(attach, sg, DMA_BIDIRECTIONAL);
+ fail_detach:
+ 	dma_buf_detach(dma_buf, attach);
++	dma_buf_put(dma_buf);
++
+ 	return ERR_PTR(ret);
+ }
 
 
