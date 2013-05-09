@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab3EIDjM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 23:39:12 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:41288 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755354Ab3EIDjL (ORCPT
+	id S1756057Ab3EIDuZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 23:50:25 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:58381 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353Ab3EIDuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 23:39:11 -0400
-Date: Thu, 9 May 2013 12:38:19 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Bastian Hecht <hechtb@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>,
-        Bastian Hecht <hechtb+renesas@gmail.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/21] ARM: shmobile: don't call irqchip_init
- unconditionally
-Message-ID: <20130509033819.GC13994@verge.net.au>
-References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
- <CAL_JsqJWJvxezXy0RGFutxzvBhca-8=uRH2GxdJgzbEGw+OL0A@mail.gmail.com>
- <20130501225748.GD6517@verge.net.au>
- <201305081416.06611.arnd@arndb.de>
- <CABYn4sxrcGmnTAJcQR23nMGy8JvqyDrgPOXF4yBFFU_4C8Pc_g@mail.gmail.com>
+	Wed, 8 May 2013 23:50:24 -0400
+X-IronPort-AV: E=Sophos;i="4.87,638,1363158000"; 
+   d="scan'208";a="45604574"
+Message-ID: <518B1D00.5030700@codeaurora.org>
+Date: Wed, 08 May 2013 20:50:24 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABYn4sxrcGmnTAJcQR23nMGy8JvqyDrgPOXF4yBFFU_4C8Pc_g@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: James Hogan <james.hogan@imgtec.com>,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 0/3] clk: implement remuxing during set_rate
+References: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com> <518AE16D.5060501@codeaurora.org>
+In-Reply-To: <518AE16D.5060501@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 03:22:22PM +0200, Bastian Hecht wrote:
-> Hi,
-> 
-> 2013/5/8 Arnd Bergmann <arnd@arndb.de>:
-> > On Thursday 02 May 2013, Simon Horman wrote:
-> >> > > diff --git a/arch/arm/mach-shmobile/intc-r8a7740.c b/arch/arm/mach-shmobile/intc-r8a7740.c
-> >> > > index 8871f77..5dc57f1 100644
-> >> > > --- a/arch/arm/mach-shmobile/intc-r8a7740.c
-> >> > > +++ b/arch/arm/mach-shmobile/intc-r8a7740.c
-> >> > > @@ -53,14 +53,23 @@ static void __init r8a7740_init_irq_common(void)
-> >> > >
-> >> > >  void __init r8a7740_init_irq_of(void)
-> >> > >  {
-> >> > > +       if (!IS_ENABLED(CONFIG_OF))
-> >> > > +               return;
-> >> > > +
-> >> > >         irqchip_init();
-> >> >
-> >> > Why not have an empty irqchip_init? I'd guess we'll need this on other
-> >> > platforms and your default mach.
-> >>
-> >> Thanks, I think that could work.
-> >>
-> >> I will see about making it so.
-> >
-> > Ping
-> 
-> I have sent out a patch adding an empty irqchip_init() when
-> CONFIG_IRQCHIP is not set with the subject
-> [PATCH] irqchip: Add irqchip_init dummy function
+On 05/08/2013 04:36 PM, Stephen Boyd wrote:
+> On 04/19/13 09:28, James Hogan wrote:
+>> This patchset adds support for automatic selection of the best parent
+>> for a clock mux, i.e. the one which can provide the closest clock rate
+>> to that requested. It can be controlled by a new CLK_SET_RATE_REMUX flag
+>> so that it doesn't happen unless explicitly allowed.
+>>
+>> This works by way of adding a new op, determine_rate, similar to
+>> round_rate but with an extra parameter to allow the clock driver to
+>> optionally select a different parent clock. This is used in
+>> clk_calc_new_rates to decide whether to initiate a set_parent operation.
+>
+> Which tree is this based on? I get failures with git am on patch 2.
+>
 
-Thanks.
+Mike's clk-for-3.10 branch.
 
-> > Linux-next is still broken for me. There is also anothe shmobile build bug,
-> > I'll send a separate patch for that, which also needs to go into your tree.
+-Saravana
 
-Sorry about that. I though I had pushed your fix (the first hunk of the
-patch that started this thread), but it seems that I did not.
-
-> Oh thanks Arnd for this fix!
-> 
-> Cheers,
-> 
->  Bastian
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
