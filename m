@@ -1,120 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601Ab3EIHIz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 03:08:55 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:29351 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198Ab3EIHIw (ORCPT
+	id S1751729Ab3EIHPE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 03:15:04 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:43166 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab3EIHPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 03:08:52 -0400
-Message-ID: <518B4B5F.9040900@huawei.com>
-Date: Thu, 9 May 2013 15:08:15 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Thu, 9 May 2013 03:15:02 -0400
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, <davidlohr.bueso@hp.com>,
-        <riel@redhat.com>, <viro@zeniv.linux.org.uk>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: Re: SHM oops in newseg()
-References: <20130509043532.GA28235@redhat.com>
-In-Reply-To: <20130509043532.GA28235@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <518A324A.8000000@linaro.org>
+References: <CAJFUiJiMMAgLGF3tiG1V59dx+KOpTBCEL3ctHUosjMDkBagbJg@mail.gmail.com>
+ <518A324A.8000000@linaro.org>
+From: Lianwei Wang <lianwei.wang@gmail.com>
+Date: Thu, 9 May 2013 15:14:41 +0800
+Message-ID: <CAJFUiJio8jHtGwGo=-FSm6_E9LATSkyUx_iWsuFddmA9+PXCJA@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH] cpuidle: don't wakeup processor when set a
+ longer latency
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Content-Type: multipart/mixed; boundary=089e0149ca961104d704dc43cf41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+--089e0149ca961104d704dc43cf41
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On 2013/5/9 12:35, Dave Jones wrote:
-> Just saw this on v3.9-11789-ge0fd9af while fuzz-testing.
-> 
-> [  163.917836] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-> [  163.918984] IP: [<ffffffff812c48ed>] newseg+0x10d/0x390
+Thank you very much. I have a quick updated patch based on your comments.
 
-The patch below should fix it.
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 2f0083a..cd1af4b 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -18,6 +18,7 @@
+ #include <linux/ktime.h>
+ #include <linux/hrtimer.h>
+ #include <linux/module.h>
++#include <linux/tick.h>
+ #include <trace/events/power.h>
 
-===========================
-
-[PATCH] shm: fix null pointer deref when userspace specifies invalid hugepage size
-
-Dave reported an oops triggered by trinity:
-
-[  163.917836] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-[  163.918984] IP: [<ffffffff812c48ed>] newseg+0x10d/0x390
-[  163.919705] PGD cf8c1067 PUD cf8c2067 PMD 0
-[  163.920326] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  163.929949] CPU: 2 PID: 7636 Comm: trinity-child2 Not tainted 3.9.0+#67
-...
-[  163.953629] Call Trace:
-[  163.957706]  [<ffffffff812be322>] ipcget+0x182/0x380
-[  163.962123]  [<ffffffff810b99a5>] ?trace_hardirqs_on_caller+0x115/0x1e0
-[  163.966752]  [<ffffffff812c559a>] SyS_shmget+0x5a/0x60
-[  163.971163]  [<ffffffff812c47e0>] ? shm_close+0x140/0x140
-[  163.975590]  [<ffffffff812c3e60>] ? shm_release+0x50/0x50
-[  163.979991]  [<ffffffff812c3df0>] ? shm_get_unmapped_area+0x20/0x20
-[  163.984499]  [<ffffffff816caa14>] tracesys+0xdd/0xe2
-
-This bug was introduced by commit af73e4d9506d3b797509f3c030e7dcd554f7d9c4
-("hugetlbfs: fix mmap failure in unaligned size request").
-
-Reported-by: Dave Jones <davej@redhat.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Li Zefan <lizfan@huawei.com>
----
-
-Previously it would return -ENODEV, but seems -EINVAL is more appropriate.
-
----
- ipc/shm.c | 8 +++++++-
- mm/mmap.c | 8 ++++++--
- 2 files changed, 13 insertions(+), 3 deletions(-)
-
-diff --git a/ipc/shm.c b/ipc/shm.c
-index 34af1fe..7e199fa 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -493,7 +493,13 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
- 	if (shmflg & SHM_HUGETLB) {
- 		struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
- 						& SHM_HUGE_MASK);
--		size_t hugesize = ALIGN(size, huge_page_size(hs));
-+		size_t hugesize;
+ #include "cpuidle.h"
+@@ -466,7 +467,20 @@ static void smp_callback(void *v)
+ static int cpuidle_latency_notify(struct notifier_block *b,
+                unsigned long l, void *v)
+ {
+-       smp_call_function(smp_callback, NULL, 1);
++       int cpu, rcpu =3D smp_processor_id();
++       s64 s;
++       struct tick_device *td;
 +
-+		if (!hs) {
-+			error = -EINVAL;
-+			goto no_file;
-+		}
-+		hugesize = ALIGN(size, huge_page_size(hs));
- 
- 		/* hugetlb_file_setup applies strict accounting */
- 		if (shmflg & SHM_NORESERVE)
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 1ae21d6..f681e18 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1367,9 +1367,13 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
- 			len = ALIGN(len, huge_page_size(hstate_file(file)));
- 	} else if (flags & MAP_HUGETLB) {
- 		struct user_struct *user = NULL;
-+		struct hstate *hs = hstate_sizelog((flags >> MAP_HUGE_SHIFT) &
-+						   SHM_HUGE_MASK);
- 
--		len = ALIGN(len, huge_page_size(hstate_sizelog(
--			(flags >> MAP_HUGE_SHIFT) & MAP_HUGE_MASK)));
-+		if (!hs)
-+			return -EINVAL;
++       for_each_online_cpu(cpu) {
++               if (cpu =3D=3D rcpu)
++                       continue;
++               td =3D tick_get_device(cpu);
++               s =3D ktime_us_delta(td->evtdev->next_event, ktime_get());
++               if ((long)l < (long)s) {
++                       smp_call_function_single(cpu, smp_callback, NULL, 1=
+);
++               }
++       }
 +
-+		len = ALIGN(len, huge_page_size(hs));
- 		/*
- 		 * VM_NORESERVE is used because the reservations will be
- 		 * taken when vm_ops->mmap() is called
--- 
-1.8.0.2
+        return NOTIFY_OK;
+ }
 
+Thanks,
+Lianwei
 
+2013/5/8 Daniel Lezcano <daniel.lezcano@linaro.org>:
+> On 05/08/2013 04:44 AM, Lianwei Wang wrote:
+>> When a PM-Qos is updated, the cpuidle driver will wakeup all the CPUs
+>> no matter what a latency is set. But actually it only need to wakeup
+>> the CPUs when a shorter latency is set. In this way we can reduce the
+>> cpu wakeup count and save battery.
+>
+> I am curious, how many times could the pm_qos be changed in a system
+> live cycle to measure an improvement with this patch ?
+>
+> Do you have a scenario where you measured a noticeable power saving ?
+>
+The PM-Qos is not updated most of time, especially for home idle case.
+ But for some specific case, the PM-Qos may update too frequently.
+(E.g. my measurement show that it is changed frequently between
+2us/3us/200us/200s for bootup and usb case.) The battery current drain
+is measured from PMIC or battery eliminator. Although this is just a
+little saving, it is still reasonable to improve it.
 
+>> So we can pass the prev_value to the notifier callback and check the
+>> latency curr_value and prev_value in the cpuidle latency notifier
+>> callback. It modify a common interface(dummy --> prev_value) but shall
+>> be safe since no one use the dummy parameter currently.
+>>
+>> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+>> index e1f6860..1e1758c 100644
+>> --- a/drivers/cpuidle/cpuidle.c
+>> +++ b/drivers/cpuidle/cpuidle.c
+>> @@ -498,7 +498,11 @@ static void smp_callback(void *v)
+>>  static int cpuidle_latency_notify(struct notifier_block *b,
+>>                 unsigned long l, void *v)
+>>  {
+>> -       smp_call_function(smp_callback, NULL, 1);
+>> +       unsigned long prev_value =3D (unsigned long) v;
+>> +
+>> +       /* Dont't waktup processor when set a longer latency */
+>
+>                     ^^^^^^
+>                     wakeup
+>
+> Instead of passing prev and curr, using the dummy variable, why don't
+> you pass the result of (curr - prev) ?
+>
+> A negative value means, the latency is smaller and positive is bigger.
+>
+> Also, may be the optimization could be more improved: if the latency is
+> bigger than the next wakeup event, it is not necessary to wakeup the cpus=
+.
+>
+This is good idea. So it need to check the next_event on each CPU and
+wakeup the cpu if the requested latency is smaller than it. A quick
+patch is attached.
+
+>> +       if (l < prev_value)
+>> +               smp_call_function(smp_callback, NULL, 1);
+>>         return NOTIFY_OK;
+>>  }
+>>
+>> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+>> index 9322ff7..533b8bc 100644
+>> --- a/kernel/power/qos.c
+>> +++ b/kernel/power/qos.c
+>> @@ -205,7 +205,7 @@ int pm_qos_update_target(struct pm_qos_constraints
+>> *c, struct plist_node *node,
+>>         if (prev_value !=3D curr_value) {
+>>                 blocking_notifier_call_chain(c->notifiers,
+>>                                              (unsigned long)curr_value,
+>> -                                            NULL);
+>> +                                            (void *)prev_value);
+>>                 return 1;
+>>         } else {
+>>                 return 0;
+>>
+>
+>
+> --
+>  <http://www.linaro.org/> Linaro.org =E2=94=82 Open source software for A=
+RM SoCs
+>
+> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+> <http://twitter.com/#!/linaroorg> Twitter |
+> <http://www.linaro.org/linaro-blog/> Blog
+>
+
+--089e0149ca961104d704dc43cf41
+Content-Type: application/octet-stream; 
+	name="0001-cpuidle-wakeup-processor-on-a-smaller-latency.patch"
+Content-Disposition: attachment; 
+	filename="0001-cpuidle-wakeup-processor-on-a-smaller-latency.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hghl8w470
+
+RnJvbSAwN2EzZjMyOTM0MDk3NWEzZjNlODMwZDM0M2Y3YTJjNmU4M2E0NDFmIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBMaWFud2VpIFdhbmcgPGxpYW53ZWkud2FuZ0BnbWFpbC5jb20+
+CkRhdGU6IEZyaSwgMjYgQXByIDIwMTMgMTA6NTk6MjQgKzA4MDAKU3ViamVjdDogW1BBVENIXSBj
+cHVpZGxlOiB3YWtldXAgcHJvY2Vzc29yIG9uIGEgc21hbGxlciBsYXRlbmN5CgpDaGVja2luZyB0
+aGUgUE0tUW9zIGxhdGVuY3kgYW5kIGNwdSBpZGxlIHNsZWVwIGxhdGVuY3ksIGFuZCBvbmx5Cndh
+a2V1cCB0aGUgY3B1IGlmIHRoZSByZXF1ZXN0ZWQgUE0tUW9zIGxhdGVuY3kgaXMgc21hbGxlciB0
+aGFuIGl0cwppZGxlIHNsZWVwIGxhdGVuY3kuCgpDaGFuZ2UtSWQ6IElmNTY0ZmQwZDljNTNjZjEw
+MGJkODUyNDdiZmQ1MDlkZmVhZjU0YzEzClNpZ25lZC1vZmYtYnk6IExpYW53ZWkgV2FuZyA8bGlh
+bndlaS53YW5nQGdtYWlsLmNvbT4KLS0tCiBkcml2ZXJzL2NwdWlkbGUvY3B1aWRsZS5jIHwgICAx
+NiArKysrKysrKysrKysrKystCiAxIGZpbGVzIGNoYW5nZWQsIDE1IGluc2VydGlvbnMoKyksIDEg
+ZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9jcHVpZGxlL2NwdWlkbGUuYyBiL2Ry
+aXZlcnMvY3B1aWRsZS9jcHVpZGxlLmMKaW5kZXggMmYwMDgzYS4uY2QxYWY0YiAxMDA2NDQKLS0t
+IGEvZHJpdmVycy9jcHVpZGxlL2NwdWlkbGUuYworKysgYi9kcml2ZXJzL2NwdWlkbGUvY3B1aWRs
+ZS5jCkBAIC0xOCw2ICsxOCw3IEBACiAjaW5jbHVkZSA8bGludXgva3RpbWUuaD4KICNpbmNsdWRl
+IDxsaW51eC9ocnRpbWVyLmg+CiAjaW5jbHVkZSA8bGludXgvbW9kdWxlLmg+CisjaW5jbHVkZSA8
+bGludXgvdGljay5oPgogI2luY2x1ZGUgPHRyYWNlL2V2ZW50cy9wb3dlci5oPgogCiAjaW5jbHVk
+ZSAiY3B1aWRsZS5oIgpAQCAtNDY2LDcgKzQ2NywyMCBAQCBzdGF0aWMgdm9pZCBzbXBfY2FsbGJh
+Y2sodm9pZCAqdikKIHN0YXRpYyBpbnQgY3B1aWRsZV9sYXRlbmN5X25vdGlmeShzdHJ1Y3Qgbm90
+aWZpZXJfYmxvY2sgKmIsCiAJCXVuc2lnbmVkIGxvbmcgbCwgdm9pZCAqdikKIHsKLQlzbXBfY2Fs
+bF9mdW5jdGlvbihzbXBfY2FsbGJhY2ssIE5VTEwsIDEpOworCWludCBjcHUsIHJjcHUgPSBzbXBf
+cHJvY2Vzc29yX2lkKCk7CisJczY0IHM7CisJc3RydWN0IHRpY2tfZGV2aWNlICp0ZDsKKworCWZv
+cl9lYWNoX29ubGluZV9jcHUoY3B1KSB7CisJCWlmIChjcHUgPT0gcmNwdSkKKwkJCWNvbnRpbnVl
+OworCQl0ZCA9IHRpY2tfZ2V0X2RldmljZShjcHUpOworCQlzID0ga3RpbWVfdXNfZGVsdGEodGQt
+PmV2dGRldi0+bmV4dF9ldmVudCwga3RpbWVfZ2V0KCkpOworCQlpZiAoKGxvbmcpbCA8IChsb25n
+KXMpIHsKKwkJCXNtcF9jYWxsX2Z1bmN0aW9uX3NpbmdsZShjcHUsIHNtcF9jYWxsYmFjaywgTlVM
+TCwgMSk7CisJCX0KKwl9CisKIAlyZXR1cm4gTk9USUZZX09LOwogfQogCi0tIAoxLjcuNC4xCgo=
+--089e0149ca961104d704dc43cf41--
