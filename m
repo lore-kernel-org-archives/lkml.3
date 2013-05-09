@@ -1,91 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349Ab3EILbY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 07:31:24 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:36988 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753918Ab3EILbX (ORCPT
+	id S1754465Ab3EILgI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 07:36:08 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52401
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754373Ab3EILgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 07:31:23 -0400
-Message-ID: <518B8906.2040407@hurleysoftware.com>
-Date: Thu, 09 May 2013 07:31:18 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Wang YanQing <udknight@gmail.com>, airlied@redhat.com,
-        linux-kernel@vger.kernel.org, jslaby@suse.cz, alan@linux.intel.com
-Subject: Re: [PATCH 3/9] vt: delete unneeded functions register_con_driver|take_over_console
-References: <20130508181359.GD12344@udknight> <518AAE01.2010005@hurleysoftware.com> <20130508201412.GA17401@kroah.com> <518AB77A.6090201@hurleysoftware.com> <20130508204500.GA16930@kroah.com>
-In-Reply-To: <20130508204500.GA16930@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Thu, 9 May 2013 07:36:07 -0400
+Message-ID: <1368099347.3453.1.camel@clam>
+Subject: Re: [PATCH 20/21] powerpc/ps3: remove inline marking of
+ EXPORT_SYMBOL functions
+From: Geoff Levand <geoff@infradead.org>
+To: Denis Efremov <yefremov.denis@gmail.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        trivial@kernel.org, ldv-project@linuxtesting.org
+Date: Thu, 09 May 2013 19:35:47 +0800
+In-Reply-To: <1368095819-11011-9-git-send-email-yefremov.denis@gmail.com>
+References: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
+	 <1368095819-11011-9-git-send-email-yefremov.denis@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2013 04:45 PM, Greg KH wrote:
-> On Wed, May 08, 2013 at 04:37:14PM -0400, Peter Hurley wrote:
->> On 05/08/2013 04:14 PM, Greg KH wrote:
->>> On Wed, May 08, 2013 at 03:56:49PM -0400, Peter Hurley wrote:
->>>> On 05/08/2013 02:13 PM, Wang YanQing wrote:
->>>>> Now there is no place use register_con_driver|take_over_console,
->>>>> and we can achieve their function with do_register_con_driver|
->>>>> do_take_over_console easily, so just delete them to reduce code duplication.
->>>>>
->>>>> Signed-off-by: Wang YanQing <udknight@gmail.com>
->>>>> ---
->>>>>   drivers/tty/vt/vt.c     | 45 ---------------------------------------------
->>>>>   include/linux/console.h |  2 --
->>>>>   2 files changed, 47 deletions(-)
->>>>>
->>>>> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
->>>>> index fbd447b..852d470 100644
->>>>> --- a/drivers/tty/vt/vt.c
->>>>> +++ b/drivers/tty/vt/vt.c
->>>>> @@ -3576,26 +3576,6 @@ err:
->>>>>   	return retval;
->>>>>   }
->>>>>
->>>>> -/**
->>>>> - * register_con_driver - register console driver to console layer
->>>>> - * @csw: console driver
->>>>> - * @first: the first console to take over, minimum value is 0
->>>>> - * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
->>>>> - *
->>>>> - * DESCRIPTION: This function registers a console driver which can later
->>>>> - * bind to a range of consoles specified by @first and @last. It will
->>>>> - * also initialize the console driver by calling con_startup().
->>>>> - */
->>>>> -int register_con_driver(const struct consw *csw, int first, int last)
->>>>> -{
->>>>> -	int retval;
->>>>> -
->>>>> -	console_lock();
->>>>> -	retval = do_register_con_driver(csw, first, last);
->>>>> -	console_unlock();
->>>>> -	return retval;
->>>>> -}
->>>>> -EXPORT_SYMBOL(register_con_driver);
->>>>
->>>> Maybe register_con_driver() should print a deprecated warning
->>>> for a release or two before we remove it.
->>>
->>> If there are no in-kernel users, why do we need to keep it around?
->>
->> Well, it's not my position that we *need* to keep previously exported
->> symbols around, but I do think a release or two is enough of a
->> heads-up for out-of-tree drivers to transition.
->
-> I don't care about out-of-tree drivers, as we have no insight into what
-> they do, but they can see everything we can do, it's up to them to keep
-> up with us.
->
-> Or even better yet, get merged into the tree, and then these types of
-> things aren't even an issue.
+On Thu, 2013-05-09 at 14:36 +0400, Denis Efremov wrote:
+> EXPORT_SYMBOL and inline directives are contradictory to each other.
+> The patch fixes this inconsistency.
+> 
+> Found by Linux Driver Verification project (linuxtesting.org).
+> 
+> Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
+> ---
+>  arch/powerpc/platforms/ps3/spu.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-So now that no in-tree driver declares TTY_HW_COOK_IN/OUT, you're ok
-with patches for their removal?
+Looks good, thanks.
+
+Acked-by: Geoff Levand <geoff@infradead.org>
+
 
