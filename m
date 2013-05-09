@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab3EILsK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 07:48:10 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:50715 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab3EILsJ (ORCPT
+	id S1754765Ab3EILvK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 07:51:10 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:38583 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754226Ab3EILvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 07:48:09 -0400
-Message-ID: <518B8C45.7000504@linux.vnet.ibm.com>
-Date: Thu, 09 May 2013 17:15:09 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 9 May 2013 07:51:08 -0400
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: CAI Qian <caiqian@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Greg KH <gregkh@linuxfoundation.org>,
-        balbi@ti.com, dyoung@redhat.com
-Subject: Re: 3.9.0: WARNING: at drivers/base/core.c:575
-References: <1732336275.8141054.1367911558572.JavaMail.root@redhat.com> <518B7B6A.1090407@linux.vnet.ibm.com> <1368096355.25488.178.camel@pasglop>
-In-Reply-To: <1368096355.25488.178.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13050911-7014-0000-0000-000002FF87C5
+In-Reply-To: <CACVXFVMd_iRtEM8ZLK6Ps66gZO6SCp1mXSgY6JbWtRJjJUh+ag@mail.gmail.com>
+References: <1368076726-11492-1-git-send-email-skannan@codeaurora.org>
+ <1368076726-11492-2-git-send-email-skannan@codeaurora.org> <CACVXFVMd_iRtEM8ZLK6Ps66gZO6SCp1mXSgY6JbWtRJjJUh+ag@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 9 May 2013 12:50:46 +0100
+X-Google-Sender-Auth: bJ23cYLhT8sY1hiiLZv_T7ZUKCE
+Message-ID: <CACxGe6uHBNUcbD9SeRP5c3E8NN-Z2yjVV+9VAhuoJnXoBtTu2w@mail.gmail.com>
+Subject: Re: [PATCH 1/3] driver core: Add API to wait for deferred probe to
+ complete during init
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mike Turquette <mturquette@linaro.org>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2013 04:15 PM, Benjamin Herrenschmidt wrote:
-> On Thu, 2013-05-09 at 16:03 +0530, Srivatsa S. Bhat wrote:
->> Can you check if the patch posted here fixes it?
+On Thu, May 9, 2013 at 11:07 AM, Ming Lei <tom.leiming@gmail.com> wrote:
+> On Thu, May 9, 2013 at 1:18 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
 >>
->> http://marc.info/?l=linux-kernel&m=136791823608013&w=2
-> 
-> I believe I've already merged a patch for that unless I did something
-> wrong ...
-> 
+>> The most obvious fallback of using late_initcall_sync() also doesn't work
+>> since the deferred probing work initated during late_initcall() is done in
+>> a workqueue. So, frameworks that want to wait for all devices to finish
+>> probing during init will now have to wait for the deferred workqueue to
+>> finish it's work. This patch adds a wait_for_init_deferred_probe_done() API
+>
+> flush_workqueue() has been added in deferred_probe_initcall(), so looks it
+> should be OK for your problem, doesn't it?
 
-Sorry, I hadn't checked your -next branch. Sorry for the noise!
+It looks like Saravana is using a kernel that already does that based
+on object bb5645e from the diff. So if he is still having problem,
+then there is probably another deferred probe that is triggered after
+the deferred probe lateinitcall is executed. It would be good to know
+what driver is getting deferred past clearing the queue. Or has this
+been rebased from an earlier kernel? It may no longer be necessary.
 
-Regards,
-Srivatsa S. Bhat
+However, if a device that shuts down resources after init has
+completed and then cannot turn those resources back on when another
+driver requests them then it sounds like there is a bigger design
+problem. We're in a hotplug world and most of the time a driver cannot
+assume that a resource will never get requested after initcalls have
+completed. It sounds like a design bug in the driver if it cannot
+handle that use case.
 
+g.
