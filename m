@@ -1,96 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab3EIKDU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 06:03:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54634 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752615Ab3EIKDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 06:03:18 -0400
-Date: Thu, 9 May 2013 13:03:14 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, j-nomura@ce.jp.nec.com,
-        stable@vger.kernel.org.#.3.9
-Subject: Re: [PATCH v2 2/3] KVM: emulator: emulate XLAT
-Message-ID: <20130509100314.GD32023@redhat.com>
-References: <1368091971-5071-1-git-send-email-pbonzini@redhat.com>
- <1368091971-5071-3-git-send-email-pbonzini@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368091971-5071-3-git-send-email-pbonzini@redhat.com>
+	id S1753588Ab3EIKHA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 06:07:00 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:24958 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300Ab3EIKG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 06:06:58 -0400
+X-IronPort-AV: E=Sophos;i="4.87,639,1363158000"; 
+   d="scan'208";a="45665145"
+From: Dolev Raviv <draviv@codeaurora.org>
+To: linux-scsi@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Dolev Raviv <draviv@codeaurora.org>,
+        Sujit Reddy Thumma <sthumma@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH V4] scsi: ufs: Set fDeviceInit flag to initiate device initialization
+Date: Thu,  9 May 2013 13:06:30 +0300
+Message-Id: <1368093990-20654-1-git-send-email-draviv@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 11:32:50AM +0200, Paolo Bonzini wrote:
-> This is used by SGABIOS, KVM breaks with emulate_invalid_guest_state=1.
-> It is just a MOV in disguise, with a funny source address.
-> 
-> Reported-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-> Cc: stable@vger.kernel.org # 3.9
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  arch/x86/kvm/emulate.c | 16 +++++++++++++++-
->  1 file changed, 15 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-> index 709ba03..210bb4e 100644
-> --- a/arch/x86/kvm/emulate.c
-> +++ b/arch/x86/kvm/emulate.c
-> @@ -60,6 +60,7 @@
->  #define OpGS              25ull  /* GS */
->  #define OpMem8            26ull  /* 8-bit zero extended memory operand */
->  #define OpImm64           27ull  /* Sign extended 16/32/64-bit immediate */
-> +#define OpXLat            28ull  /* memory at BX/EBX/RBX + zero-extended AL */
->  
->  #define OpBits             5  /* Width of operand field */
->  #define OpMask             ((1ull << OpBits) - 1)
-> @@ -99,6 +100,7 @@
->  #define SrcImmUByte (OpImmUByte << SrcShift)
->  #define SrcImmU     (OpImmU << SrcShift)
->  #define SrcSI       (OpSI << SrcShift)
-> +#define SrcXLat     (OpXLat << SrcShift)
->  #define SrcImmFAddr (OpImmFAddr << SrcShift)
->  #define SrcMemFAddr (OpMemFAddr << SrcShift)
->  #define SrcAcc      (OpAcc << SrcShift)
-> @@ -3949,7 +3951,8 @@ static const struct opcode opcode_table[256] = {
->  	G(Src2One | ByteOp, group2), G(Src2One, group2),
->  	G(Src2CL | ByteOp, group2), G(Src2CL, group2),
->  	I(DstAcc | SrcImmUByte | No64, em_aam),
-> -	I(DstAcc | SrcImmUByte | No64, em_aad), N, N,
-> +	I(DstAcc | SrcImmUByte | No64, em_aad), N,
-> +	I(DstAcc | SrcXLat | ByteOp, em_mov),
->  	/* 0xD8 - 0xDF */
->  	N, E(0, &escape_d9), N, E(0, &escape_db), N, E(0, &escape_dd), N, N,
->  	/* 0xE0 - 0xE7 */
-> @@ -4207,6 +4210,17 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
->  		op->val = 0;
->  		op->count = 1;
->  		break;
-> +	case OpXLat:
-Sigh, obviously this is not reusable by any other instruction. So many
-waisted transistor :(
+Allow UFS device to complete its initialization and accept
+SCSI commands by setting fDeviceInit flag. The device may take
+time for this operation and hence the host should poll until
+fDeviceInit flag is toggled to zero. This step is mandated by
+UFS device specification for device initialization completion.
 
-> +		op->type = OP_MEM;
-> +		op->bytes = (ctxt->d & ByteOp) ? 1 : ctxt->op_bytes;
-> +		op->addr.mem.ea =
-> +			register_address(ctxt,
-> +				reg_read(ctxt, VCPU_REGS_RBX) +
-> +				(reg_read(ctxt, VCPU_REGS_RAX) & 0xff));
-> +		op->addr.mem.seg = seg_override(ctxt);
-> +		op->val = 0;
-> +		op->count = 1;
-The count is set only for decoding that is used by string instructions.
-I can drop it while applying.
-
-> +		break;
->  	case OpImmFAddr:
->  		op->type = OP_IMM;
->  		op->addr.mem.ea = ctxt->_eip;
-> -- 
-> 1.8.1.4
-> 
+Signed-off-by: Dolev Raviv <draviv@codeaurora.org>
+Signed-off-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
 
 --
-			Gleb.
+Changes for V4:
+- Add NULL pointer check
+- Changed fix from v3 to bug on since hba can't be null
+Changes for V3:
+- Fix static checker error
+Changes for V2:
+- Add the query sending api via SCSI from the original query patch
+
+diff --git a/drivers/scsi/ufs/ufs.h b/drivers/scsi/ufs/ufs.h
+index 086ff03..742363d 100644
+--- a/drivers/scsi/ufs/ufs.h
++++ b/drivers/scsi/ufs/ufs.h
+@@ -107,8 +107,13 @@ enum {
+ 	UPIU_QUERY_FUNC_STANDARD_WRITE_REQUEST = 0x81,
+ };
+ 
++/* Flag idn for Query Requests*/
++enum flag_idn {
++	QUERY_FLAG_IDN_FDEVICEINIT = 0x01,
++};
++
+ /* UTP QUERY Transaction Specific Fields OpCode */
+-enum {
++enum query_opcode {
+ 	UPIU_QUERY_OPCODE_NOP		= 0x0,
+ 	UPIU_QUERY_OPCODE_READ_DESC	= 0x1,
+ 	UPIU_QUERY_OPCODE_WRITE_DESC	= 0x2,
+@@ -208,6 +213,9 @@ struct utp_upiu_query {
+ 	u32 reserved[2];
+ };
+ 
++/* Expose the flag value from utp_upiu_query.value */
++#define MASK_QUERY_UPIU_FLAG_LOC 0xFF
++
+ /**
+  * struct utp_upiu_req - general upiu request structure
+  * @header:UPIU header structure DW-0 to DW-2
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index bcdc576..2248189 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -51,6 +51,15 @@
+ /* Reserved tag for internal commands */
+ #define INTERNAL_CMD_TAG   0
+ 
++/* Query request standart retries */
++#define QUERY_REQ_RETRIES 10
++/* Query request standart timeout  in seconds */
++#define QUERY_REQ_TIMEOUT 5
++/* Send Query Requst with default parameters */
++#define send_query_request(ARG1, ARG2, ARG3, ARG4)	\
++	ufshcd_query_request(ARG1, ARG2, ARG3, ARG4,	\
++			QUERY_REQ_TIMEOUT, QUERY_REQ_RETRIES)
++
+ enum {
+ 	UFSHCD_MAX_CHANNEL	= 0,
+ 	UFSHCD_MAX_ID		= 1,
+@@ -887,6 +896,164 @@ out:
+ }
+ 
+ /**
++ *  ufshcd_query_request() - Entry point for issuing query request to a
++ *  ufs device.
++ *  @hba: ufs driver context
++ *  @query: params for query request
++ *  @descriptor: buffer for sending/receiving descriptor
++ *  @response: pointer to a buffer that will contain the response code and
++ *           response upiu
++ *  @timeout: time limit for the command in seconds
++ *  @retries: number of times to try executing the command
++ *
++ *  The query request is submitted to the same request queue as the rest of
++ *  the scsi commands passed to the UFS controller. In order to use this
++ *  queue, we need to receive a tag, same as all other commands. The tags
++ *  are issued from the block layer. To simulate a request from the block
++ *  layer, we use the same interface as the SCSI layer does when it issues
++ *  commands not generated by users. To distinguish a query request from
++ *  the SCSI commands, we use a vendor specific unused SCSI command
++ *  op-code. This op-code is not part of the SCSI command subset used in
++ *  UFS. In such way it is easy to check the command in the driver and
++ *  handle it appropriately.
++ *
++ *  All necessary fields for issuing a query and receiving its response are
++ *  stored in the UFS hba struct. We can use this method since we know
++ *  there is only one active query request at all times.
++ *
++ *  The request that will pass to the device is stored in "query" argument
++ *  passed to this function, while the "response" argument (which is output
++ *  field) will hold the query response from the device along with the
++ *  response code.
++ */
++int ufshcd_query_request(struct ufs_hba *hba,
++			struct ufs_query_req *query,
++			u8 *descriptor,
++			struct ufs_query_res *response,
++			int timeout,
++			int retries)
++{
++	struct scsi_device *sdev;
++	u8 cmd[UFS_QUERY_CMD_SIZE] = {0};
++	int result;
++	bool sdev_lookup = true;
++
++	BUG_ON(!hba);
++	if (!query || !response) {
++		dev_err(hba->dev,
++		"%s: NULL pointer hba = %p, query = %p response = %p\n",
++		__func__, hba, query, response);
++		return -EINVAL;
++	}
++
++	/*
++	 * A SCSI command structure is composed from opcode at the
++	 * begining and 0 at the end.
++	 */
++	cmd[0] = UFS_QUERY_RESERVED_SCSI_CMD;
++
++	/* extracting the SCSI Device */
++	sdev = scsi_device_lookup(hba->host, 0, 0, 0);
++	if (!sdev) {
++		/**
++		 * There are some Query Requests that are sent during device
++		 * initialization, this happens before the scsi device was
++		 * initialized. If there is no scsi device, we generate a
++		 * temporary device to allow the Query Request flow.
++		 */
++		sdev_lookup = false;
++		sdev = scsi_get_host_dev(hba->host);
++	}
++
++	if (!sdev) {
++		dev_err(hba->dev, "%s: Could not fetch scsi device\n",
++			__func__);
++		return -ENODEV;
++	}
++
++	mutex_lock(&hba->query.lock_ufs_query);
++	hba->query.request = query;
++	hba->query.descriptor = descriptor;
++	hba->query.response = response;
++
++	/* wait until request is completed */
++	result = scsi_execute(sdev, cmd, DMA_NONE, NULL, 0, NULL,
++				timeout, retries, 0, NULL);
++	if (result) {
++		dev_err(hba->dev,
++			"%s: Query with opcode 0x%x, failed with result %d\n",
++			__func__, query->upiu_req.opcode, result);
++		result = -EIO;
++	}
++
++	hba->query.request = NULL;
++	hba->query.descriptor = NULL;
++	hba->query.response = NULL;
++	mutex_unlock(&hba->query.lock_ufs_query);
++
++	/* Releasing scsi device resource */
++	if (sdev_lookup)
++		scsi_device_put(sdev);
++	else
++		scsi_free_host_dev(sdev);
++
++	return result;
++}
++
++/**
++ * ufshcd_query_flag() - Helper function for composing flag query requests
++ * hba: per-adapter instance
++ * query_opcode: flag query to perform
++ * idn: flag idn to access
++ * flag_res: the flag value after the query request completes
++ *
++ * Returns 0 for success, non-zero in case of failure
++ */
++int ufshcd_query_flag(struct ufs_hba *hba, enum query_opcode opcode,
++			enum flag_idn idn, bool *flag_res)
++{
++	struct ufs_query_req query = {0};
++	struct ufs_query_res response = {0};
++	int err;
++
++	switch (opcode) {
++	case UPIU_QUERY_OPCODE_SET_FLAG:
++	case UPIU_QUERY_OPCODE_CLEAR_FLAG:
++	case UPIU_QUERY_OPCODE_TOGGLE_FLAG:
++		query.query_func = UPIU_QUERY_FUNC_STANDARD_WRITE_REQUEST;
++		break;
++	case UPIU_QUERY_OPCODE_READ_FLAG:
++		query.query_func = UPIU_QUERY_FUNC_STANDARD_READ_REQUEST;
++		break;
++	default:
++		dev_err(hba->dev,
++			"%s: Expected query flag opcode but got = %d\n",
++			__func__, opcode);
++		err = -EINVAL;
++		goto out;
++	}
++	query.upiu_req.opcode = opcode;
++	query.upiu_req.idn = idn;
++
++	/* Send query request */
++	err = send_query_request(hba, &query, NULL, &response);
++
++	if (err) {
++		dev_err(hba->dev,
++			"%s: Sending flag query for idn %d failed, err = %d\n",
++			__func__, idn, err);
++		goto out;
++	}
++
++	if (flag_res)
++		*flag_res = (response.upiu_res.value &
++				MASK_QUERY_UPIU_FLAG_LOC) & 0x1;
++
++out:
++	return err;
++}
++
++/**
+  * ufshcd_memory_alloc - allocate memory for host memory space data structures
+  * @hba: per adapter instance
+  *
+@@ -1324,6 +1491,44 @@ out:
+ }
+ 
+ /**
++ * ufshcd_validate_device_init() - checks device readines
++ * hba: per-adapter instance
++ *
++ * Set fDeviceInit flag, than, query the flag untill the device clears the
++ * flag.
++ */
++static int ufshcd_validate_device_init(struct ufs_hba *hba)
++{
++	int i, err;
++	bool flag_res = 0;
++
++	err = ufshcd_query_flag(hba, UPIU_QUERY_OPCODE_SET_FLAG,
++				QUERY_FLAG_IDN_FDEVICEINIT, &flag_res);
++	if (err) {
++		dev_err(hba->dev,
++			"%s setting fDeviceInit flag failed with error %d\n",
++			__func__, err);
++		goto out;
++	}
++
++	for (i = 0; i < QUERY_REQ_RETRIES && !err && flag_res; i++) {
++		err = ufshcd_query_flag(hba, UPIU_QUERY_OPCODE_READ_FLAG,
++				QUERY_FLAG_IDN_FDEVICEINIT, &flag_res);
++	}
++	if (err)
++		dev_err(hba->dev,
++			"%s reading fDeviceInit flag failed with error %d\n",
++			__func__, err);
++	else if (flag_res)
++		dev_err(hba->dev,
++			"%s fDeviceInit was not cleared by the device\n",
++			__func__);
++
++out:
++	return err;
++}
++
++/**
+  * ufshcd_make_hba_operational - Make UFS controller operational
+  * @hba: per adapter instance
+  *
+@@ -2153,6 +2358,10 @@ static void ufshcd_async_scan(void *data, async_cookie_t cookie)
+ 	if (ret)
+ 		goto out;
+ 
++	ret = ufshcd_validate_device_init(hba);
++	if (ret)
++		goto out;
++
+ 	scsi_scan_host(hba->host);
+ out:
+ 	return;
+diff --git a/drivers/scsi/ufs/ufshcd.h b/drivers/scsi/ufs/ufshcd.h
+index a91c558..76485da 100644
+--- a/drivers/scsi/ufs/ufshcd.h
++++ b/drivers/scsi/ufs/ufshcd.h
+@@ -286,4 +286,11 @@ static inline int ufshcd_dme_hibern8_exit(struct ufs_hba *hba)
+ 	return ufshcd_dme_hibern8_ctrl(hba, 0);
+ }
+ 
++int ufs_query_request(struct ufs_hba *hba,
++			struct ufs_query_req *query,
++			u8 *descriptor,
++			struct ufs_query_res *response,
++			int timeout,
++			int retries);
++
+ #endif /* End of Header */
+-- 
+1.7.6
+
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
