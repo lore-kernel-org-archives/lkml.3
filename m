@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab3EIDuZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 23:50:25 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:58381 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353Ab3EIDuY (ORCPT
+	id S1756158Ab3EIDzR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 23:55:17 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41067 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353Ab3EIDzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 23:50:24 -0400
-X-IronPort-AV: E=Sophos;i="4.87,638,1363158000"; 
-   d="scan'208";a="45604574"
-Message-ID: <518B1D00.5030700@codeaurora.org>
-Date: Wed, 08 May 2013 20:50:24 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: James Hogan <james.hogan@imgtec.com>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 0/3] clk: implement remuxing during set_rate
-References: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com> <518AE16D.5060501@codeaurora.org>
-In-Reply-To: <518AE16D.5060501@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 8 May 2013 23:55:15 -0400
+Date: Thu, 9 May 2013 13:55:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: linux-next: build warning after merge of the final tree (Linus'
+ tree related)
+Message-Id: <20130509135504.2b6598d3a52fdd367da1cbb4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__9_May_2013_13_55_04_+1000_sKqPcT2=8ox_d5uN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2013 04:36 PM, Stephen Boyd wrote:
-> On 04/19/13 09:28, James Hogan wrote:
->> This patchset adds support for automatic selection of the best parent
->> for a clock mux, i.e. the one which can provide the closest clock rate
->> to that requested. It can be controlled by a new CLK_SET_RATE_REMUX flag
->> so that it doesn't happen unless explicitly allowed.
->>
->> This works by way of adding a new op, determine_rate, similar to
->> round_rate but with an extra parameter to allow the clock driver to
->> optionally select a different parent clock. This is used in
->> clk_calc_new_rates to decide whether to initiate a set_parent operation.
->
-> Which tree is this based on? I get failures with git am on patch 2.
->
+--Signature=_Thu__9_May_2013_13_55_04_+1000_sKqPcT2=8ox_d5uN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Mike's clk-for-3.10 branch.
+Hi all,
 
--Saravana
+After merging the final tree, today's linux-next build (arm defconfig)
+produced this warning:
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+ipc/shm.c: In function 'newseg':
+ipc/shm.c:494:18: warning: unused variable 'hs' [-Wunused-variable]
+
+Introduced by commit af73e4d9506d ("hugetlbfs: fix mmap failure in
+unaligned size request") in Linus' tree.
+
+Did the "[akpm@linux-foundation.org: fix warning when
+CONFIG_HUGETLB_PAGE=3Dn]" part get dropped?  Or was that something else?
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__9_May_2013_13_55_04_+1000_sKqPcT2=8ox_d5uN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRix4YAAoJEECxmPOUX5FEbogP/0z+zR5ouBjrCkz+2kIx9I7b
+AKT/0d4oXNB6DRPKonbVahdkKczn0WhuPutuywI7Fkh5dHkf0iPCxmaAfmQY+RlD
+Mv4a4KBNm0NVJ8rRfEioOPiMuW3oz3/ImgQ91KwUqxM3mG/cw5BGmSFe+l7ZFQGs
+UfT5HP5xqD36nXNJ86SM1FAVjGXf7cF7TZV3d3T4gHaS1461BAwpAyCJTqy9UknP
+4tD8+FWmIt6dOY87LwhK0elNn4HdFQD92O7w8YBTa4bnneCbfG/EIoRbhHkcDsqV
+qUWkV/3cQmTaeXlxHNuqHboKF6tr5zC6suBCd03oQWYe9Cfal9YHXNkn4wfSd2N7
+W9fpS+USlp1NOQ7v7HJWiNafOmsAsvpzNX63oEQpz0d8wTQ32g5NtcgYZTMvBFSj
+064ja6qBVyUvKvLGi2r8cXJGGNpuF8gu0eFXTn5eFsBTtWz6c7mXvPDuN3szCWUi
+FJdPIDoUiDLH+dhhimH1X6jJRBMBSZTQcdbi1Z7/apJrynLc4X3f7a1cmZsAF3HS
+KFbfy+WMmZqlGF/X4euR64jH7wZpfwog9KuzlyzZNfGEL53DsURU3mhPWn68W03Y
+22+3HlWBfR4VdvFoVDPaCkYCdJ18vqrGV1lY2t+/5TB7SbrNgZLyYn2kdoITnkD7
++z3Sc9+ZGhptfsYBTE6v
+=iu06
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__9_May_2013_13_55_04_+1000_sKqPcT2=8ox_d5uN--
