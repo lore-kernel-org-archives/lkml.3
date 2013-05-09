@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab3EITn4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 15:43:56 -0400
-Received: from mail-da0-f48.google.com ([209.85.210.48]:60657 "EHLO
+	id S1753284Ab3EITqu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 15:46:50 -0400
+Received: from mail-da0-f48.google.com ([209.85.210.48]:38673 "EHLO
 	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab3EITnx (ORCPT
+	with ESMTP id S1752250Ab3EITqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 15:43:53 -0400
-Message-ID: <518BFC78.2000308@gmail.com>
-Date: Thu, 09 May 2013 13:43:52 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 5/9] perf tools: Set maximum precise value for event 'p'
- modifier
-References: <1368106344-23383-1-git-send-email-jolsa@redhat.com> <1368106344-23383-6-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1368106344-23383-6-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 9 May 2013 15:46:48 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-fbdev@vger.kernel.org
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Jerome Glisse <j.glisse@gmail.com>,
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [RFC/PATCH v2 0/8] Clean up write-combining MTRR addition
+Date: Thu,  9 May 2013 12:46:19 -0700
+Message-Id: <cover.1368128020.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/9/13 7:32 AM, Jiri Olsa wrote:
-> +static int precise_default(void)
-> +{
-> +	int precise = perf_precise__get();
-> +	static int warned;
-> +
-> +	/*
-> +	 * Precise info not supported by by this kernel,
-> +	 * set 1 as the precise value.
-> +	 */
-> +	if (precise == -1)
-> +		precise = 1;
-> +
-> +	/* PEBS is not supported here, display warning. */
-> +	if (precise == 0 && !warned++)
-> +		pr_warning("warning: no precise support, "
-> +			   "using non-precise event(s)\n");
+A fair number of drivers (mostly graphics) add write-combining MTRRs.
+Most ignore errors and most add the MTRR even on PAT systems which don't
+need to use MTRRs.
 
-WARN_ONCE().
+This series adds new functions arch_phys_wc_{add,del} that, on PAT-less
+x86 systems with MTRRs, add MTRRs and report errors, and that do nothing
+otherwise.  (Other architectures, if any, with a similar mechanism could
+implement them.)
 
-David
+I've only tested the radeon driver, since I don't have test hardware
+easily available for the other drivers.
+
+Benefits include:
+ - Simpler code
+ - No more complaints about MTRR conflict warnings on PAT systems
+ - Eventual unexporting of the MTRR API?
+
+This series eliminates about half of the mtrr_add calls in drivers/.
+
+Changes from v1:
+ - Helpers renamed
+ - Lots of bugs fixed
+
+The series is also at:
+https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=mtrr_cleanup/rfc_v2
+
+Andy Lutomirski (8):
+  Add arch_phys_wc_{add,del} to manipulate WC MTRRs if needed
+  drm (ast,cirrus,mgag200,nouveau,savage,vmwgfx): Remove
+    drm_mtrr_{add,del}
+  drm: Update drm_addmap and drm_mmap to use PAT WC instead of MTRRs
+  drm,agpgart: Use pgprot_writecombine for AGP maps and make the MTRR
+    optional
+  i915: Use arch_phys_wc_{add,del}
+  radeon: Switch to arch_phys_wc_add and add a missing ..._del
+  uvesafb: Clean up MTRR code
+  drm: Remove mtrr_add and mtrr_del fallback hack for non-MTRR systems
+
+ Documentation/fb/uvesafb.txt           | 16 +++-----
+ arch/x86/include/asm/io.h              |  7 ++++
+ arch/x86/include/asm/mtrr.h            |  5 ++-
+ arch/x86/kernel/cpu/mtrr/main.c        | 48 +++++++++++++++++++++++
+ drivers/char/agp/frontend.c            |  8 ++--
+ drivers/gpu/drm/ast/ast_ttm.c          | 13 ++-----
+ drivers/gpu/drm/cirrus/cirrus_ttm.c    | 15 ++------
+ drivers/gpu/drm/drm_bufs.c             | 17 +++++----
+ drivers/gpu/drm/drm_pci.c              |  8 ++--
+ drivers/gpu/drm/drm_stub.c             | 10 +----
+ drivers/gpu/drm/drm_vm.c               | 22 +++++------
+ drivers/gpu/drm/i915/i915_dma.c        | 44 +++------------------
+ drivers/gpu/drm/mgag200/mgag200_ttm.c  | 14 ++-----
+ drivers/gpu/drm/nouveau/nouveau_ttm.c  | 13 ++-----
+ drivers/gpu/drm/radeon/radeon_object.c |  5 ++-
+ drivers/gpu/drm/savage/savage_bci.c    | 43 ++++++++-------------
+ drivers/gpu/drm/savage/savage_drv.h    |  5 +--
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c    | 10 ++---
+ drivers/video/uvesafb.c                | 70 +++++++++-------------------------
+ include/drm/drmP.h                     | 34 +----------------
+ include/drm/drm_os_linux.h             | 16 --------
+ include/linux/io.h                     | 25 ++++++++++++
+ include/video/uvesafb.h                |  1 +
+ 23 files changed, 181 insertions(+), 268 deletions(-)
+
+-- 
+1.8.1.4
+
