@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758725Ab3EIWjF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:39:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46448 "EHLO
+	id S1758754Ab3EIWj0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:39:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46444 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932142Ab3EIWhd (ORCPT
+	with ESMTP id S932121Ab3EIWhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:37:33 -0400
+	Thu, 9 May 2013 18:37:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Michael Ellerman <michael@ellerman.id.au>
-Subject: [ 01/12] powerpc: fix numa distance for form0 device tree
-Date: Thu,  9 May 2013 15:37:14 -0700
-Message-Id: <20130509223611.574980673@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 09/12] drm/radeon: fix possible segfault when parsing pm tables
+Date: Thu,  9 May 2013 15:37:22 -0700
+Message-Id: <20130509223612.411796994@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223611.432377360@linuxfoundation.org>
 References: <20130509223611.432377360@linuxfoundation.org>
@@ -27,51 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 7122beeee7bc1757682049780179d7c216dd1c83 upstream.
+commit f8e6bfc2ce162855fa4f9822a45659f4b542c960 upstream.
 
-The following commit breaks numa distance setup for old powerpc
-systems that use form0 encoding in device tree.
+If we have a empty power table, bail early and allocate
+the default power state.
 
-commit 41eab6f88f24124df89e38067b3766b7bef06ddb
-powerpc/numa: Use form 1 affinity to setup node distance
+Should fix:
+https://bugs.freedesktop.org/show_bug.cgi?id=63865
 
-Device tree node /rtas/ibm,associativity-reference-points would
-index into /cpus/PowerPCxxxx/ibm,associativity based on form0 or
-form1 encoding detected by ibm,architecture-vec-5 property.
-
-All modern systems use form1 and current kernel code is correct.
-However, on older systems with form0 encoding, the numa distance
-will get hard coded as LOCAL_DISTANCE for all nodes.  This causes
-task scheduling anomaly since scheduler will skip building numa
-level domain (topmost domain with all cpus) if all numa distances
-are same.  (value of 'level' in sched_init_numa() will remain 0)
-
-Prior to the above commit:
-((from) == (to) ? LOCAL_DISTANCE : REMOTE_DISTANCE)
-
-Restoring compatible behavior with this patch for old powerpc systems
-with device tree where numa distance are encoded as form0.
-
-Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/mm/numa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -221,7 +221,7 @@ int __node_distance(int a, int b)
- 	int distance = LOCAL_DISTANCE;
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -2031,6 +2031,8 @@ static int radeon_atombios_parse_power_t
+ 	num_modes = power_info->info.ucNumOfPowerModeEntries;
+ 	if (num_modes > ATOM_MAX_NUMBEROF_POWER_BLOCK)
+ 		num_modes = ATOM_MAX_NUMBEROF_POWER_BLOCK;
++	if (num_modes == 0)
++		return state_index;
+ 	rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state) * num_modes, GFP_KERNEL);
+ 	if (!rdev->pm.power_state)
+ 		return state_index;
+@@ -2401,6 +2403,8 @@ static int radeon_atombios_parse_power_t
+ 	power_info = (union power_info *)(mode_info->atom_context->bios + data_offset);
  
- 	if (!form1_affinity)
--		return distance;
-+		return ((a == b) ? LOCAL_DISTANCE : REMOTE_DISTANCE);
- 
- 	for (i = 0; i < distance_ref_points_depth; i++) {
- 		if (distance_lookup_table[a][i] == distance_lookup_table[b][i])
+ 	radeon_atombios_add_pplib_thermal_controller(rdev, &power_info->pplib.sThermalController);
++	if (power_info->pplib.ucNumStates == 0)
++		return state_index;
+ 	rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state) *
+ 				       power_info->pplib.ucNumStates, GFP_KERNEL);
+ 	if (!rdev->pm.power_state)
+@@ -2485,6 +2489,8 @@ static int radeon_atombios_parse_power_t
+ 	non_clock_info_array = (struct NonClockInfoArray *)
+ 		(mode_info->atom_context->bios + data_offset +
+ 		 le16_to_cpu(power_info->pplib.usNonClockInfoArrayOffset));
++	if (state_array->ucNumEntries == 0)
++		return state_index;
+ 	rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state) *
+ 				       state_array->ucNumEntries, GFP_KERNEL);
+ 	if (!rdev->pm.power_state)
+@@ -2561,7 +2567,9 @@ void radeon_atombios_get_power_modes(str
+ 		default:
+ 			break;
+ 		}
+-	} else {
++	}
++
++	if (state_index == 0) {
+ 		rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state), GFP_KERNEL);
+ 		if (rdev->pm.power_state) {
+ 			/* add the default mode */
 
 
