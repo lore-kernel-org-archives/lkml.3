@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab3EISfK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 14:35:10 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:6128 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab3EISfH (ORCPT
+	id S1751875Ab3EISqA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 14:46:00 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:12211 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab3EISp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 14:35:07 -0400
-X-IronPort-AV: E=Sophos;i="4.87,642,1363158000"; 
-   d="scan'208";a="45690419"
-From: Saravana Kannan <skannan@codeaurora.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mike Turquette <mturquette@linaro.org>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH v2 1/2] clk: Disable unused clocks after deferred probing is done
-Date: Thu,  9 May 2013 11:35:01 -0700
-Message-Id: <1368124502-18830-1-git-send-email-skannan@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1368076726-11492-1-git-send-email-skannan@codeaurora.org>
+	Thu, 9 May 2013 14:45:59 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+cAx1/jo3WPribfdlj6Mae
+Date: Thu, 9 May 2013 11:45:48 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Dan Murphy <dmurphy@ti.com>
+Cc: Vincent =?utf-8?Q?Stehl=C3=A9?= <v-stehle@ti.com>, b-cousson@ti.com,
+        linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] ARM:dts:omap4-panda:Update the LED support for the
+ panda DTS
+Message-ID: <20130509184548.GH31554@atomide.com>
+References: <1366229760-4808-1-git-send-email-dmurphy@ti.com>
+ <516FBD18.3060501@ti.com>
+ <51703BEF.6050804@ti.com>
+ <20130508234745.GV32546@atomide.com>
+ <518BE617.1080509@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <518BE617.1080509@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With deferred probing, late_initcall() is too soon to declare a clock as
-unused. Wait for deferred probing to finish before declaring a clock as
-unused. Since deferred probing is done in late_initcall(), do the unused
-check to late_initcall_sync.
+* Dan Murphy <dmurphy@ti.com> [130509 11:13]:
+>
+> Can we cleanly append to omap4_pmx_core without overriding the whole node?
+> I don't want to recreate the pmx_core node in the es file.
 
-Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
----
- drivers/clk/clk.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yes that should work just fine.
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index fe4055f..5ecb64c 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -534,7 +534,7 @@ static int clk_disable_unused(void)
- 
- 	return 0;
- }
--late_initcall(clk_disable_unused);
-+late_initcall_sync(clk_disable_unused);
- 
- /***    helper functions   ***/
- 
--- 
-1.7.8.3
+Regards,
 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Tony
