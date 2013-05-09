@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758756Ab3EIXLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:11:21 -0400
+	id S932463Ab3EIXL4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:11:56 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755682Ab3EIW0W (ORCPT
+	with ESMTP id S1755654Ab3EIW0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:22 -0400
+	Thu, 9 May 2013 18:26:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Tim Northover <Tim.Northover@arm.com>
-Subject: [ 23/73] arm64: Ignore the write ESR flag on cache maintenance faults
-Date: Thu,  9 May 2013 15:25:13 -0700
-Message-Id: <20130509222528.840584177@linuxfoundation.org>
+        Stefan Bader <stefan.bader@canonical.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        hayeswang <hayeswang@realtek.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 21/73] r8169: fix 8168evl frame padding.
+Date: Thu,  9 May 2013 15:25:11 -0700
+Message-Id: <20130509222528.647901578@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -27,43 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Stefan Bader <stefan.bader@canonical.com>
 
-commit 0e7f7bcc3fc87489cda5aa6aff8ce40eed912279 upstream.
+commit e5195c1f31f399289347e043d6abf3ffa80f0005 upstream.
 
-ESR.WnR bit is always set on data cache maintenance faults even though
-the page is not required to have write permission. If a translation
-fault (page not yet mapped) happens for read-only user address range,
-Linux incorrectly assumes a permission fault. This patch adds the check
-of the ESR.CM bit during the page fault handling to ignore the 'write'
-flag.
-
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Reported-by: Tim Northover <Tim.Northover@arm.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+Cc: hayeswang <hayeswang@realtek.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/mm/fault.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/realtek/r8169.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/arch/arm64/mm/fault.c
-+++ b/arch/arm64/mm/fault.c
-@@ -148,6 +148,7 @@ void do_bad_area(unsigned long addr, uns
- #define VM_FAULT_BADACCESS	0x020000
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -5787,6 +5787,14 @@ static netdev_tx_t rtl8169_start_xmit(st
+ 		goto err_stop_0;
+ 	}
  
- #define ESR_WRITE		(1 << 6)
-+#define ESR_CM			(1 << 8)
- #define ESR_LNX_EXEC		(1 << 24)
++	/* 8168evl does not automatically pad to minimum length. */
++	if (unlikely(tp->mac_version == RTL_GIGA_MAC_VER_34 &&
++		     skb->len < ETH_ZLEN)) {
++		if (skb_padto(skb, ETH_ZLEN))
++			goto err_update_stats;
++		skb_put(skb, ETH_ZLEN - skb->len);
++	}
++
+ 	if (unlikely(le32_to_cpu(txd->opts1) & DescOwn))
+ 		goto err_stop_0;
  
- /*
-@@ -206,7 +207,7 @@ static int __kprobes do_page_fault(unsig
- 	struct task_struct *tsk;
- 	struct mm_struct *mm;
- 	int fault, sig, code;
--	int write = esr & ESR_WRITE;
-+	bool write = (esr & ESR_WRITE) && !(esr & ESR_CM);
- 	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
- 		(write ? FAULT_FLAG_WRITE : 0);
+@@ -5858,6 +5866,7 @@ err_dma_1:
+ 	rtl8169_unmap_tx_skb(d, tp->tx_skb + entry, txd);
+ err_dma_0:
+ 	dev_kfree_skb(skb);
++err_update_stats:
+ 	dev->stats.tx_dropped++;
+ 	return NETDEV_TX_OK;
  
 
 
