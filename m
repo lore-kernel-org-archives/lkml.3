@@ -1,143 +1,793 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab3EISTe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 14:19:34 -0400
-Received: from mail-qe0-f74.google.com ([209.85.128.74]:45856 "EHLO
-	mail-qe0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab3EISTd (ORCPT
+	id S1751594Ab3EISYF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 14:24:05 -0400
+Received: from mailout.micron.com ([137.201.242.129]:47231 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab3EISYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 14:19:33 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] ARM: exynos: Select PINCTRL_EXYNOS for exynos4/5 at chip level
-Date: Thu,  9 May 2013 11:12:50 -0700
-Message-Id: <1368123170-22906-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1368039168-24447-1-git-send-email-dianders@chromium.org>
-References: <1368039168-24447-1-git-send-email-dianders@chromium.org>
+	Thu, 9 May 2013 14:24:03 -0400
+X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 May 2013 14:24:02 EDT
+Message-ID: <518BE87F.3080201@micron.com>
+Date: Thu, 9 May 2013 23:48:39 +0530
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Jens Axboe <axboe@kernel.dk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Sam Bradshaw" <sbradshaw@micron.com>
+Subject: [PATCH] mtip32xx: Add SRSI support
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19854.000
+X-TM-AS-Result: No--25.420400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously if you had MACH_EXYNOS5_DT but not MACH_EXYNOS4_DT you'd be
-missing the pincontrol definitions.  Move PINCTRL selects to the arch
-level since we should be enabling the code for all exynos variants.
 
-Update the PINCTRL descriptions to indicate that PINCTRL_EXYNOS is not
-for exynos5440.  Also add basic dependencies for the PINCTRL_EXYNOS
-kernel config.
+This patch add support for SRSI(Surprise Removal Surprise Insertion).
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
+Approach:
+---------
+Surprise Removal:
+-----------------
+On surprise removal of the device, gendisk, request queue, device index, sysfs
+entries, etc are retained as long as device is in use - mounted filesystem,
+device opened by an application, etc. The service thread breaks out of the main
+while loop, waits for pci remove to exit, and then waits for device to become
+free. When there no holders of the device, service thread cleans up the block
+and device related stuff and returns.
+
+Surprise Insertion:
+-------------------
+No change, this scenario follows the normal pci probe() function flow.
+
+Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
 ---
-Changes in v3:
-- Moved to chip level as per Tomasz.
-- Update PINCTRL Kconfig for exynos.
+ drivers/block/mtip32xx/mtip32xx.c |  453 ++++++++++++++++++++++---------------
+ drivers/block/mtip32xx/mtip32xx.h |   18 +-
+ 2 files changed, 289 insertions(+), 182 deletions(-)
 
-Changes in v2:
-- Moved to the arch level as suggested by Olof.
-
- arch/arm/mach-exynos/Kconfig | 9 ++++++---
- drivers/pinctrl/Kconfig      | 5 +++--
- 2 files changed, 9 insertions(+), 5 deletions(-)
-
-diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-index 6e77432..4139d7f 100644
---- a/arch/arm/mach-exynos/Kconfig
-+++ b/arch/arm/mach-exynos/Kconfig
-@@ -17,6 +17,7 @@ config ARCH_EXYNOS4
- 	select HAVE_ARM_SCU if SMP
- 	select HAVE_SMP
- 	select MIGHT_HAVE_CACHE_L2X0
-+	select PINCTRL
- 	help
- 	  Samsung EXYNOS4 SoCs based systems
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index 847107e..aab28a4 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -126,64 +126,30 @@ struct mtip_compat_ide_task_request_s {
+ static bool mtip_check_surprise_removal(struct pci_dev *pdev)
+ {
+ 	u16 vendor_id = 0;
++	struct driver_data *dd = pci_get_drvdata(pdev);
++
++	if (dd->sr)
++		return true;
  
-@@ -24,6 +25,7 @@ config ARCH_EXYNOS5
- 	bool "SAMSUNG EXYNOS5"
- 	select HAVE_ARM_SCU if SMP
- 	select HAVE_SMP
-+	select PINCTRL
- 	help
- 	  Samsung EXYNOS5 (Cortex-A15) SoC based systems
+        /* Read the vendorID from the configuration space */
+ 	pci_read_config_word(pdev, 0x00, &vendor_id);
+-	if (vendor_id == 0xFFFF)
++	if (vendor_id == 0xFFFF) {
++		dd->sr = true;
++		if (dd->queue)
++			set_bit(QUEUE_FLAG_DEAD, &dd->queue->queue_flags);
++		else
++			dev_warn(&dd->pdev->dev,
++				"%s: dd->queue is NULL\n", __func__);
++		if (dd->port) {
++			set_bit(MTIP_PF_SR_CLEANUP_BIT, &dd->port->flags);
++			wake_up_interruptible(&dd->port->svc_wait);
++		} else
++			dev_warn(&dd->pdev->dev,
++				"%s: dd->port is NULL\n", __func__);
+ 		return true; /* device removed */
+-
+-	return false; /* device present */
+-}
+-
+-/*
+- * This function is called for clean the pending command in the
+- * command slot during the surprise removal of device and return
+- * error to the upper layer.
+- *
+- * @dd Pointer to the DRIVER_DATA structure.
+- *
+- * return value
+- *	None
+- */
+-static void mtip_command_cleanup(struct driver_data *dd)
+-{
+-	int group = 0, commandslot = 0, commandindex = 0;
+-	struct mtip_cmd *command;
+-	struct mtip_port *port = dd->port;
+-	static int in_progress;
+-
+-	if (in_progress)
+-		return;
+-
+-	in_progress = 1;
+-
+-	for (group = 0; group < 4; group++) {
+-		for (commandslot = 0; commandslot < 32; commandslot++) {
+-			if (!(port->allocated[group] & (1 << commandslot)))
+-				continue;
+-
+-			commandindex = group << 5 | commandslot;
+-			command = &port->commands[commandindex];
+-
+-			if (atomic_read(&command->active)
+-			    && (command->async_callback)) {
+-				command->async_callback(command->async_data,
+-					-ENODEV);
+-				command->async_callback = NULL;
+-				command->async_data = NULL;
+-			}
+-
+-			dma_unmap_sg(&port->dd->pdev->dev,
+-				command->sg,
+-				command->scatter_ents,
+-				command->direction);
+-		}
+ 	}
  
-@@ -34,6 +36,7 @@ config CPU_EXYNOS4210
- 	default y
- 	depends on ARCH_EXYNOS4
- 	select ARM_CPU_SUSPEND if PM
-+	select PINCTRL_EXYNOS
- 	select PM_GENERIC_DOMAINS
- 	select S5P_PM if PM
- 	select S5P_SLEEP if PM
-@@ -45,6 +48,7 @@ config SOC_EXYNOS4212
- 	bool "SAMSUNG EXYNOS4212"
- 	default y
- 	depends on ARCH_EXYNOS4
-+	select PINCTRL_EXYNOS
- 	select S5P_PM if PM
- 	select S5P_SLEEP if PM
- 	select SAMSUNG_DMADEV
-@@ -55,6 +59,7 @@ config SOC_EXYNOS4412
- 	bool "SAMSUNG EXYNOS4412"
- 	default y
- 	depends on ARCH_EXYNOS4
-+	select PINCTRL_EXYNOS
- 	select SAMSUNG_DMADEV
- 	help
- 	  Enable EXYNOS4412 SoC support
-@@ -63,6 +68,7 @@ config SOC_EXYNOS5250
- 	bool "SAMSUNG EXYNOS5250"
- 	default y
- 	depends on ARCH_EXYNOS5
-+	select PINCTRL_EXYNOS
- 	select PM_GENERIC_DOMAINS if PM
- 	select S5P_PM if PM
- 	select S5P_SLEEP if PM
-@@ -78,7 +84,6 @@ config SOC_EXYNOS5440
- 	select ARCH_HAS_OPP
- 	select ARM_ARCH_TIMER
- 	select AUTO_ZRELADDR
--	select PINCTRL
- 	select PINCTRL_EXYNOS5440
- 	select PM_OPP
- 	help
-@@ -412,8 +417,6 @@ config MACH_EXYNOS4_DT
- 	select CLKSRC_OF
- 	select CPU_EXYNOS4210
- 	select KEYBOARD_SAMSUNG if INPUT_KEYBOARD
--	select PINCTRL
--	select PINCTRL_EXYNOS
- 	select S5P_DEV_MFC
- 	select USE_OF
- 	help
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index 8f66924..a1c6dd3 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -207,12 +207,13 @@ config PINCTRL_SAMSUNG
- 	select PINCONF
+-	up(&port->cmd_slot);
+-
+-	set_bit(MTIP_DDF_CLEANUP_BIT, &dd->dd_flag);
+-	in_progress = 0;
++	return false; /* device present */
+ }
  
- config PINCTRL_EXYNOS
--	bool "Pinctrl driver data for Samsung EXYNOS SoCs"
--	depends on OF && GPIOLIB
-+	bool "Pinctrl driver data for Samsung EXYNOS SoCs other than 5440"
-+	depends on OF && GPIOLIB && ARCH_EXYNOS
- 	select PINCTRL_SAMSUNG
+ /*
+@@ -222,10 +188,7 @@ static int get_slot(struct mtip_port *port)
+ 	}
+ 	dev_warn(&port->dd->pdev->dev, "Failed to get a tag.\n");
  
- config PINCTRL_EXYNOS5440
- 	bool "Samsung EXYNOS5440 SoC pinctrl driver"
-+	depends on SOC_EXYNOS5440
- 	select PINMUX
- 	select PINCONF
+-	if (mtip_check_surprise_removal(port->dd->pdev)) {
+-		/* Device not present, clean outstanding commands */
+-		mtip_command_cleanup(port->dd);
+-	}
++	mtip_check_surprise_removal(port->dd->pdev);
+ 	return -1;
+ }
  
+@@ -246,6 +209,107 @@ static inline void release_slot(struct mtip_port *port, int tag)
+ }
+ 
+ /*
++ * IO completion function.
++ *
++ * This completion function is called by the driver ISR when a
++ * command that was issued by the kernel completes. It first calls the
++ * asynchronous completion function which normally calls back into the block
++ * layer passing the asynchronous callback data, then unmaps the
++ * scatter list associated with the completed command, and finally
++ * clears the allocated bit associated with the completed command.
++ *
++ * @port   Pointer to the port data structure.
++ * @tag    Tag of the command.
++ * @data   Pointer to driver_data.
++ * @status Completion status.
++ *
++ * return value
++ *	None
++ */
++static void mtip_async_complete(struct mtip_port *port,
++				int tag,
++				void *data,
++				int status)
++{
++	struct mtip_cmd *command;
++	struct driver_data *dd = data;
++	int cb_status = status ? -EIO : 0;
++
++	if (unlikely(!dd) || unlikely(!port))
++		return;
++
++	command = &port->commands[tag];
++
++	if (unlikely(status == PORT_IRQ_TF_ERR)) {
++		dev_warn(&port->dd->pdev->dev,
++			"Command tag %d failed due to TFE\n", tag);
++	}
++
++	/* Upper layer callback */
++	if (likely(command->async_callback))
++		command->async_callback(command->async_data, cb_status);
++
++	command->async_callback = NULL;
++	command->comp_func = NULL;
++
++	/* Unmap the DMA scatter list entries */
++	dma_unmap_sg(&dd->pdev->dev,
++		command->sg,
++		command->scatter_ents,
++		command->direction);
++
++	/* Clear the allocated and active bits for the command */
++	atomic_set(&port->commands[tag].active, 0);
++	release_slot(port, tag);
++
++	up(&port->cmd_slot);
++}
++
++/*
++ * This function is called for clean the pending command in the
++ * command slot during the surprise removal of device and return
++ * error to the upper layer.
++ *
++ * @dd Pointer to the DRIVER_DATA structure.
++ *
++ * return value
++ *	None
++ */
++static void mtip_command_cleanup(struct driver_data *dd)
++{
++	int tag = 0;
++	struct mtip_cmd *cmd;
++	struct mtip_port *port = dd->port;
++	unsigned int num_cmd_slots = dd->slot_groups * 32;
++
++	if (!test_bit(MTIP_DDF_INIT_DONE_BIT, &dd->dd_flag))
++		return;
++
++	if (!port)
++		return;
++
++	cmd = &port->commands[MTIP_TAG_INTERNAL];
++	if (atomic_read(&cmd->active))
++		if (readl(port->cmd_issue[MTIP_TAG_INTERNAL]) &
++					(1 << MTIP_TAG_INTERNAL))
++			if (cmd->comp_func)
++				cmd->comp_func(port, MTIP_TAG_INTERNAL,
++					 cmd->comp_data, -ENODEV);
++
++	while (1) {
++		tag = find_next_bit(port->allocated, num_cmd_slots, tag);
++		if (tag >= num_cmd_slots)
++			break;
++
++		cmd = &port->commands[tag];
++		if (atomic_read(&cmd->active))
++			mtip_async_complete(port, tag, dd, -ENODEV);
++	}
++
++	set_bit(MTIP_DDF_CLEANUP_BIT, &dd->dd_flag);
++}
++
++/*
+  * Reset the HBA (without sleeping)
+  *
+  * @dd Pointer to the driver data structure.
+@@ -584,6 +648,9 @@ static void mtip_timeout_function(unsigned long int data)
+ 	if (unlikely(!port))
+ 		return;
+ 
++	if (unlikely(port->dd->sr))
++		return;
++
+ 	if (test_bit(MTIP_DDF_RESUME_BIT, &port->dd->dd_flag)) {
+ 		mod_timer(&port->cmd_timer,
+ 			jiffies + msecs_to_jiffies(30000));
+@@ -675,66 +742,6 @@ static void mtip_timeout_function(unsigned long int data)
+ }
+ 
+ /*
+- * IO completion function.
+- *
+- * This completion function is called by the driver ISR when a
+- * command that was issued by the kernel completes. It first calls the
+- * asynchronous completion function which normally calls back into the block
+- * layer passing the asynchronous callback data, then unmaps the
+- * scatter list associated with the completed command, and finally
+- * clears the allocated bit associated with the completed command.
+- *
+- * @port   Pointer to the port data structure.
+- * @tag    Tag of the command.
+- * @data   Pointer to driver_data.
+- * @status Completion status.
+- *
+- * return value
+- *	None
+- */
+-static void mtip_async_complete(struct mtip_port *port,
+-				int tag,
+-				void *data,
+-				int status)
+-{
+-	struct mtip_cmd *command;
+-	struct driver_data *dd = data;
+-	int cb_status = status ? -EIO : 0;
+-
+-	if (unlikely(!dd) || unlikely(!port))
+-		return;
+-
+-	command = &port->commands[tag];
+-
+-	if (unlikely(status == PORT_IRQ_TF_ERR)) {
+-		dev_warn(&port->dd->pdev->dev,
+-			"Command tag %d failed due to TFE\n", tag);
+-	}
+-
+-	/* Upper layer callback */
+-	if (likely(command->async_callback))
+-		command->async_callback(command->async_data, cb_status);
+-
+-	command->async_callback = NULL;
+-	command->comp_func = NULL;
+-
+-	/* Unmap the DMA scatter list entries */
+-	dma_unmap_sg(&dd->pdev->dev,
+-		command->sg,
+-		command->scatter_ents,
+-		command->direction);
+-
+-	/* Clear the allocated and active bits for the command */
+-	atomic_set(&port->commands[tag].active, 0);
+-	release_slot(port, tag);
+-
+-	if (unlikely(command->unaligned))
+-		up(&port->cmd_slot_unal);
+-	else
+-		up(&port->cmd_slot);
+-}
+-
+-/*
+  * Internal command completion callback function.
+  *
+  * This function is normally called by the driver ISR when an internal
+@@ -854,7 +861,6 @@ static void mtip_handle_tfe(struct driver_data *dd)
+ 					"Missing completion func for tag %d",
+ 					tag);
+ 				if (mtip_check_surprise_removal(dd->pdev)) {
+-					mtip_command_cleanup(dd);
+ 					/* don't proceed further */
+ 					return;
+ 				}
+@@ -1018,14 +1024,12 @@ static inline void mtip_workq_sdbfx(struct mtip_port *port, int group,
+ 					command->comp_data,
+ 					0);
+ 			} else {
+-				dev_warn(&dd->pdev->dev,
+-					"Null completion "
+-					"for tag %d",
++				dev_dbg(&dd->pdev->dev,
++					"Null completion for tag %d",
+ 					tag);
+ 
+ 				if (mtip_check_surprise_removal(
+ 					dd->pdev)) {
+-					mtip_command_cleanup(dd);
+ 					return;
+ 				}
+ 			}
+@@ -1145,7 +1149,6 @@ static inline irqreturn_t mtip_handle_irq(struct driver_data *data)
+ 
+ 		if (unlikely(port_stat & PORT_IRQ_ERR)) {
+ 			if (unlikely(mtip_check_surprise_removal(dd->pdev))) {
+-				mtip_command_cleanup(dd);
+ 				/* don't proceed further */
+ 				return IRQ_HANDLED;
+ 			}
+@@ -3005,6 +3008,46 @@ static void mtip_hw_debugfs_exit(struct driver_data *dd)
+ 	debugfs_remove_recursive(dd->dfs_node);
+ }
+ 
++static int mtip_free_orphan(struct driver_data *dd)
++{
++	struct kobject *kobj;
++
++	if (dd->bdev) {
++		if (dd->bdev->bd_holders >= 1)
++			return -2;
++
++		bdput(dd->bdev);
++		dd->bdev = NULL;
++	}
++
++	mtip_hw_debugfs_exit(dd);
++
++	spin_lock(&rssd_index_lock);
++	ida_remove(&rssd_index_ida, dd->index);
++	spin_unlock(&rssd_index_lock);
++
++	if (!test_bit(MTIP_DDF_INIT_DONE_BIT, &dd->dd_flag) &&
++			test_bit(MTIP_DDF_REBUILD_FAILED_BIT, &dd->dd_flag)) {
++		put_disk(dd->disk);
++	} else {
++		if (dd->disk) {
++			kobj = kobject_get(&disk_to_dev(dd->disk)->kobj);
++			if (kobj) {
++				mtip_hw_sysfs_exit(dd, kobj);
++				kobject_put(kobj);
++			}
++			del_gendisk(dd->disk);
++			dd->disk = NULL;
++		}
++		if (dd->queue) {
++			dd->queue->queuedata = NULL;
++			blk_cleanup_queue(dd->queue);
++			dd->queue = NULL;
++		}
++	}
++	kfree(dd);
++	return 0;
++}
+ 
+ /*
+  * Perform any init/resume time hardware setup
+@@ -3153,6 +3196,7 @@ static int mtip_service_thread(void *data)
+ 	unsigned long slot, slot_start, slot_wrap;
+ 	unsigned int num_cmd_slots = dd->slot_groups * 32;
+ 	struct mtip_port *port = dd->port;
++	int ret;
+ 
+ 	while (1) {
+ 		/*
+@@ -3163,13 +3207,18 @@ static int mtip_service_thread(void *data)
+ 			!(port->flags & MTIP_PF_PAUSE_IO));
+ 
+ 		if (kthread_should_stop())
++			goto st_out;
++
++		set_bit(MTIP_PF_SVC_THD_ACTIVE_BIT, &port->flags);
++
++		/* If I am an orphan, start self cleanup */
++		if (test_bit(MTIP_PF_SR_CLEANUP_BIT, &port->flags))
+ 			break;
+ 
+ 		if (unlikely(test_bit(MTIP_DDF_REMOVE_PENDING_BIT,
+ 				&dd->dd_flag)))
+-			break;
++			goto st_out;
+ 
+-		set_bit(MTIP_PF_SVC_THD_ACTIVE_BIT, &port->flags);
+ 		if (test_bit(MTIP_PF_ISSUE_CMDS_BIT, &port->flags)) {
+ 			slot = 1;
+ 			/* used to restrict the loop to one iteration */
+@@ -3200,7 +3249,7 @@ static int mtip_service_thread(void *data)
+ 
+ 			clear_bit(MTIP_PF_ISSUE_CMDS_BIT, &port->flags);
+ 		} else if (test_bit(MTIP_PF_REBUILD_BIT, &port->flags)) {
+-			if (!mtip_ftl_rebuild_poll(dd))
++			if (mtip_ftl_rebuild_poll(dd) < 0)
+ 				set_bit(MTIP_DDF_REBUILD_FAILED_BIT,
+ 							&dd->dd_flag);
+ 			clear_bit(MTIP_PF_REBUILD_BIT, &port->flags);
+@@ -3208,8 +3257,30 @@ static int mtip_service_thread(void *data)
+ 		clear_bit(MTIP_PF_SVC_THD_ACTIVE_BIT, &port->flags);
+ 
+ 		if (test_bit(MTIP_PF_SVC_THD_STOP_BIT, &port->flags))
++			goto st_out;
++	}
++
++	/* wait for pci remove to exit */
++	while (1) {
++		if (test_bit(MTIP_DDF_REMOVE_DONE_BIT, &dd->dd_flag))
+ 			break;
++		msleep_interruptible(1000);
++		if (kthread_should_stop())
++			goto st_out;
+ 	}
++
++	while (1) {
++		ret = mtip_free_orphan(dd);
++		if (!ret) {
++			/* NOTE: All data structures are invalid, do not
++			 * access any here */
++			return 0;
++		}
++		msleep_interruptible(1000);
++		if (kthread_should_stop())
++			goto st_out;
++	}
++st_out:
+ 	return 0;
+ }
+ 
+@@ -3436,13 +3507,13 @@ static int mtip_hw_init(struct driver_data *dd)
+ 		rv = -EFAULT;
+ 		goto out3;
+ 	}
++	mtip_dump_identify(dd->port);
+ 
+ 	if (*(dd->port->identify + MTIP_FTL_REBUILD_OFFSET) ==
+ 		MTIP_FTL_REBUILD_MAGIC) {
+ 		set_bit(MTIP_PF_REBUILD_BIT, &dd->port->flags);
+ 		return MTIP_FTL_REBUILD_MAGIC;
+ 	}
+-	mtip_dump_identify(dd->port);
+ 
+ 	/* check write protect, over temp and rebuild statuses */
+ 	rv = mtip_read_log_page(dd->port, ATA_LOG_SATA_NCQ,
+@@ -3466,8 +3537,8 @@ static int mtip_hw_init(struct driver_data *dd)
+ 		}
+ 		if (buf[288] == 0xBF) {
+ 			dev_info(&dd->pdev->dev,
+-				"Drive indicates rebuild has failed.\n");
+-			/* TODO */
++				"Drive is in security locked state.\n");
++			set_bit(MTIP_DDF_SEC_LOCK_BIT, &dd->dd_flag);
+ 		}
+ 	}
+ 
+@@ -3522,9 +3593,8 @@ static int mtip_hw_exit(struct driver_data *dd)
+ 	 * Send standby immediate (E0h) to the drive so that it
+ 	 * saves its state.
+ 	 */
+-	if (!test_bit(MTIP_DDF_CLEANUP_BIT, &dd->dd_flag)) {
+-
+-		if (!test_bit(MTIP_PF_REBUILD_BIT, &dd->port->flags))
++	if (!dd->sr) {
++		if (!test_bit(MTIP_DDF_REBUILD_FAILED_BIT, &dd->dd_flag))
+ 			if (mtip_standby_immediate(dd->port))
+ 				dev_warn(&dd->pdev->dev,
+ 					"STANDBY IMMEDIATE failed\n");
+@@ -3550,6 +3620,7 @@ static int mtip_hw_exit(struct driver_data *dd)
+ 			dd->port->command_list_dma);
+ 	/* Free the memory allocated for the for structure. */
+ 	kfree(dd->port);
++	dd->port = NULL;
+ 
+ 	return 0;
+ }
+@@ -3571,7 +3642,8 @@ static int mtip_hw_shutdown(struct driver_data *dd)
+ 	 * Send standby immediate (E0h) to the drive so that it
+ 	 * saves its state.
+ 	 */
+-	mtip_standby_immediate(dd->port);
++	if (!dd->sr && dd->port)
++		mtip_standby_immediate(dd->port);
+ 
+ 	return 0;
+ }
+@@ -3886,6 +3958,10 @@ static void mtip_make_request(struct request_queue *queue, struct bio *bio)
+ 			bio_endio(bio, -ENODATA);
+ 			return;
+ 		}
++		if (test_bit(MTIP_DDF_REBUILD_FAILED_BIT, &dd->dd_flag)) {
++			bio_endio(bio, -ENXIO);
++			return;
++		}
+ 	}
+ 
+ 	if (unlikely(bio->bi_rw & REQ_DISCARD)) {
+@@ -4008,6 +4084,8 @@ static int mtip_block_initialize(struct driver_data *dd)
+ 	dd->disk->private_data	= dd;
+ 	dd->index		= index;
+ 
++	mtip_hw_debugfs_init(dd);
++
+ 	/*
+ 	 * if rebuild pending, start the service thread, and delay the block
+ 	 * queue creation and add_disk()
+@@ -4066,6 +4144,7 @@ skip_create_disk:
+ 	/* Enable the block device and add it to /dev */
+ 	add_disk(dd->disk);
+ 
++	dd->bdev = bdget_disk(dd->disk, 0);
+ 	/*
+ 	 * Now that the disk is active, initialize any sysfs attributes
+ 	 * managed by the protocol layer.
+@@ -4075,7 +4154,6 @@ skip_create_disk:
+ 		mtip_hw_sysfs_init(dd, kobj);
+ 		kobject_put(kobj);
+ 	}
+-	mtip_hw_debugfs_init(dd);
+ 
+ 	if (dd->mtip_svc_handler) {
+ 		set_bit(MTIP_DDF_INIT_DONE_BIT, &dd->dd_flag);
+@@ -4100,7 +4178,8 @@ start_service_thread:
+ 	return rv;
+ 
+ kthread_run_error:
+-	mtip_hw_debugfs_exit(dd);
++	bdput(dd->bdev);
++	dd->bdev = NULL;
+ 
+ 	/* Delete our gendisk. This also removes the device from /dev */
+ 	del_gendisk(dd->disk);
+@@ -4109,6 +4188,7 @@ read_capacity_error:
+ 	blk_cleanup_queue(dd->queue);
+ 
+ block_queue_alloc_init_error:
++	mtip_hw_debugfs_exit(dd);
+ disk_index_error:
+ 	spin_lock(&rssd_index_lock);
+ 	ida_remove(&rssd_index_ida, index);
+@@ -4138,40 +4218,48 @@ static int mtip_block_remove(struct driver_data *dd)
+ {
+ 	struct kobject *kobj;
+ 
+-	if (dd->mtip_svc_handler) {
+-		set_bit(MTIP_PF_SVC_THD_STOP_BIT, &dd->port->flags);
+-		wake_up_interruptible(&dd->port->svc_wait);
+-		kthread_stop(dd->mtip_svc_handler);
+-	}
++	if (!dd->sr) {
++		mtip_hw_debugfs_exit(dd);
+ 
+-	/* Clean up the sysfs attributes, if created */
+-	if (test_bit(MTIP_DDF_INIT_DONE_BIT, &dd->dd_flag)) {
+-		kobj = kobject_get(&disk_to_dev(dd->disk)->kobj);
+-		if (kobj) {
+-			mtip_hw_sysfs_exit(dd, kobj);
+-			kobject_put(kobj);
++		if (dd->mtip_svc_handler) {
++			set_bit(MTIP_PF_SVC_THD_STOP_BIT, &dd->port->flags);
++			wake_up_interruptible(&dd->port->svc_wait);
++			kthread_stop(dd->mtip_svc_handler);
+ 		}
+-	}
+-	mtip_hw_debugfs_exit(dd);
+ 
+-	/*
+-	 * Delete our gendisk structure. This also removes the device
+-	 * from /dev
+-	 */
+-	if (dd->disk) {
+-		if (dd->disk->queue)
+-			del_gendisk(dd->disk);
+-		else
+-			put_disk(dd->disk);
+-	}
+-
+-	spin_lock(&rssd_index_lock);
+-	ida_remove(&rssd_index_ida, dd->index);
+-	spin_unlock(&rssd_index_lock);
++		/* Clean up the sysfs attributes, if created */
++		if (test_bit(MTIP_DDF_INIT_DONE_BIT, &dd->dd_flag)) {
++			kobj = kobject_get(&disk_to_dev(dd->disk)->kobj);
++			if (kobj) {
++				mtip_hw_sysfs_exit(dd, kobj);
++				kobject_put(kobj);
++			}
++		}
++		/*
++		 * Delete our gendisk structure. This also removes the device
++		 * from /dev
++		 */
++		if (dd->bdev) {
++			bdput(dd->bdev);
++			dd->bdev = NULL;
++		}
++		if (dd->disk) {
++			if (dd->disk->queue) {
++				del_gendisk(dd->disk);
++				blk_cleanup_queue(dd->queue);
++				dd->queue = NULL;
++			} else
++				put_disk(dd->disk);
++		}
++		dd->disk  = NULL;
+ 
+-	blk_cleanup_queue(dd->queue);
+-	dd->disk  = NULL;
+-	dd->queue = NULL;
++		spin_lock(&rssd_index_lock);
++		ida_remove(&rssd_index_ida, dd->index);
++		spin_unlock(&rssd_index_lock);
++	} else {
++		dev_info(&dd->pdev->dev, "device %s surprise removal\n",
++						dd->disk->disk_name);
++	}
+ 
+ 	/* De-initialize the protocol layer. */
+ 	mtip_hw_exit(dd);
+@@ -4487,8 +4575,7 @@ done:
+ static void mtip_pci_remove(struct pci_dev *pdev)
+ {
+ 	struct driver_data *dd = pci_get_drvdata(pdev);
+-	int counter = 0;
+-	unsigned long flags;
++	unsigned long flags, to;
+ 
+ 	set_bit(MTIP_DDF_REMOVE_PENDING_BIT, &dd->dd_flag);
+ 
+@@ -4497,17 +4584,22 @@ static void mtip_pci_remove(struct pci_dev *pdev)
+ 	list_add(&dd->remove_list, &removing_list);
+ 	spin_unlock_irqrestore(&dev_lock, flags);
+ 
+-	if (mtip_check_surprise_removal(pdev)) {
+-		while (!test_bit(MTIP_DDF_CLEANUP_BIT, &dd->dd_flag)) {
+-			counter++;
+-			msleep(20);
+-			if (counter == 10) {
+-				/* Cleanup the outstanding commands */
+-				mtip_command_cleanup(dd);
+-				break;
+-			}
+-		}
++	mtip_check_surprise_removal(pdev);
++	synchronize_irq(dd->pdev->irq);
++
++	/* Spin until workers are done */
++	to = jiffies + msecs_to_jiffies(4000);
++	do {
++		msleep(20);
++	} while (atomic_read(&dd->irq_workers_active) != 0 &&
++		time_before(jiffies, to));
++
++	if (atomic_read(&dd->irq_workers_active) != 0) {
++		dev_warn(&dd->pdev->dev,
++			"Completion workers still active!\n");
+ 	}
++	/* Cleanup the outstanding commands */
++	mtip_command_cleanup(dd);
+ 
+ 	/* Clean up the block layer. */
+ 	mtip_block_remove(dd);
+@@ -4526,8 +4618,15 @@ static void mtip_pci_remove(struct pci_dev *pdev)
+ 	list_del_init(&dd->remove_list);
+ 	spin_unlock_irqrestore(&dev_lock, flags);
+ 
+-	kfree(dd);
++	if (!dd->sr)
++		kfree(dd);
++	else
++		set_bit(MTIP_DDF_REMOVE_DONE_BIT, &dd->dd_flag);
++
+ 	pcim_iounmap_regions(pdev, 1 << MTIP_ABAR);
++	pci_set_drvdata(pdev, NULL);
++	pci_dev_put(pdev);
++
+ }
+ 
+ /*
+diff --git a/drivers/block/mtip32xx/mtip32xx.h b/drivers/block/mtip32xx/mtip32xx.h
+index 3bb8a29..9be7a15 100644
+--- a/drivers/block/mtip32xx/mtip32xx.h
++++ b/drivers/block/mtip32xx/mtip32xx.h
+@@ -140,6 +140,7 @@ enum {
+ 	MTIP_PF_SVC_THD_ACTIVE_BIT  = 4,
+ 	MTIP_PF_ISSUE_CMDS_BIT      = 5,
+ 	MTIP_PF_REBUILD_BIT         = 6,
++	MTIP_PF_SR_CLEANUP_BIT      = 7,
+ 	MTIP_PF_SVC_THD_STOP_BIT    = 8,
+ 
+ 	/* below are bit numbers in 'dd_flag' defined in driver_data */
+@@ -147,15 +148,18 @@ enum {
+ 	MTIP_DDF_REMOVE_PENDING_BIT = 1,
+ 	MTIP_DDF_OVER_TEMP_BIT      = 2,
+ 	MTIP_DDF_WRITE_PROTECT_BIT  = 3,
+-	MTIP_DDF_STOP_IO      = ((1 << MTIP_DDF_REMOVE_PENDING_BIT) |
+-				(1 << MTIP_DDF_SEC_LOCK_BIT) |
+-				(1 << MTIP_DDF_OVER_TEMP_BIT) |
+-				(1 << MTIP_DDF_WRITE_PROTECT_BIT)),
+-
++	MTIP_DDF_REMOVE_DONE_BIT    = 4,
+ 	MTIP_DDF_CLEANUP_BIT        = 5,
+ 	MTIP_DDF_RESUME_BIT         = 6,
+ 	MTIP_DDF_INIT_DONE_BIT      = 7,
+ 	MTIP_DDF_REBUILD_FAILED_BIT = 8,
++
++	MTIP_DDF_STOP_IO      = ((1 << MTIP_DDF_REMOVE_PENDING_BIT) |
++				(1 << MTIP_DDF_SEC_LOCK_BIT) |
++				(1 << MTIP_DDF_OVER_TEMP_BIT) |
++				(1 << MTIP_DDF_WRITE_PROTECT_BIT) |
++				(1 << MTIP_DDF_REBUILD_FAILED_BIT)),
++
+ };
+ 
+ struct smart_attr {
+@@ -499,6 +503,8 @@ struct driver_data {
+ 
+ 	bool trim_supp; /* flag indicating trim support */
+ 
++	bool sr;
++
+ 	int numa_node; /* NUMA support */
+ 
+ 	char workq_name[32];
+@@ -511,6 +517,8 @@ struct driver_data {
+ 
+ 	int isr_binding;
+ 
++	struct block_device *bdev;
++
+ 	int unal_qdepth; /* qdepth of unaligned IO queue */
+ 
+ 	struct list_head online_list; /* linkage for online list */
 -- 
-1.8.2.1
+1.7.1
 
