@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248Ab3EIWme (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:42:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46359 "EHLO
+	id S1758573Ab3EIWmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:42:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46300 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758441Ab3EIWey (ORCPT
+	with ESMTP id S1758406Ab3EIWev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:34:54 -0400
+	Thu, 9 May 2013 18:34:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 15/26] drm/radeon/dce6: add missing display reg for tiling setup
-Date: Thu,  9 May 2013 15:34:29 -0700
-Message-Id: <20130509223424.027627391@linuxfoundation.org>
+        =?UTF-8?q?Rafa=C5=82=20Bilski?= <rafalbilski@interia.pl>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 11/26] cpufreq / Longhaul: Disable driver by default
+Date: Thu,  9 May 2013 15:34:25 -0700
+Message-Id: <20130509223423.608549561@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
 References: <20130509223422.368544659@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,71 +31,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Rafał Bilski <rafalbilski@interia.pl>
 
-commit 7c1c7c18fc752b2a1d07597286467ef186312463 upstream.
+commit b5811bc469c0dbebb4f947800b9b234a9c0a68dc upstream.
 
-A new tiling config register for the display blocks was
-added on DCE6.
+This is only solution I can think of. User decides if he wants this
+driver on his machine. I don't have enough knowledge and time to find
+the reason why same code works on some machines and doesn't on others
+which use the same, or very similar, chipset and processor.
 
-May fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=62889
-https://bugs.freedesktop.org/show_bug.cgi?id=57919
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Rafał Bilski <rafalbilski@interia.pl>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/ni.c  |    2 ++
- drivers/gpu/drm/radeon/nid.h |    4 ++++
- drivers/gpu/drm/radeon/si.c  |    1 +
- drivers/gpu/drm/radeon/sid.h |    2 ++
- 4 files changed, 9 insertions(+)
+ drivers/cpufreq/longhaul.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -911,6 +911,8 @@ static void cayman_gpu_init(struct radeo
- 	WREG32(GB_BACKEND_MAP, gb_backend_map);
- 	WREG32(GB_ADDR_CONFIG, gb_addr_config);
- 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
-+	if (ASIC_IS_DCE6(rdev))
-+		WREG32(DMIF_ADDR_CALC, gb_addr_config);
- 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
+--- a/drivers/cpufreq/longhaul.c
++++ b/drivers/cpufreq/longhaul.c
+@@ -77,7 +77,7 @@ static unsigned int longhaul_index;
+ static int scale_voltage;
+ static int disable_acpi_c3;
+ static int revid_errata;
+-
++static int enable;
  
- 	/* primary versions */
---- a/drivers/gpu/drm/radeon/nid.h
-+++ b/drivers/gpu/drm/radeon/nid.h
-@@ -42,6 +42,10 @@
- #define CAYMAN_MAX_TCC_MASK          0xFF
+ /* Clock ratios multiplied by 10 */
+ static int mults[32];
+@@ -965,6 +965,10 @@ static int __init longhaul_init(void)
+ 	if (!x86_match_cpu(longhaul_id))
+ 		return -ENODEV;
  
- #define DMIF_ADDR_CONFIG  				0xBD4
-+
-+/* DCE6 only */
-+#define DMIF_ADDR_CALC  				0xC00
-+
- #define	SRBM_GFX_CNTL				        0x0E44
- #define		RINGID(x)					(((x) & 0x3) << 0)
- #define		VMID(x)						(((x) & 0x7) << 0)
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -1799,6 +1799,7 @@ static void si_gpu_init(struct radeon_de
- 	rdev->config.si.backend_map = gb_backend_map;
- 	WREG32(GB_ADDR_CONFIG, gb_addr_config);
- 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
-+	WREG32(DMIF_ADDR_CALC, gb_addr_config);
- 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
++	if (!enable) {
++		printk(KERN_ERR PFX "Option \"enable\" not set. Aborting.\n");
++		return -ENODEV;
++	}
+ #ifdef CONFIG_SMP
+ 	if (num_online_cpus() > 1) {
+ 		printk(KERN_ERR PFX "More than 1 CPU detected, "
+@@ -1021,6 +1025,10 @@ MODULE_PARM_DESC(scale_voltage, "Scale v
+  * such. */
+ module_param(revid_errata, int, 0644);
+ MODULE_PARM_DESC(revid_errata, "Ignore CPU Revision ID");
++/* By default driver is disabled to prevent incompatible
++ * system freeze. */
++module_param(enable, int, 0644);
++MODULE_PARM_DESC(enable, "Enable driver");
  
- 	/* primary versions */
---- a/drivers/gpu/drm/radeon/sid.h
-+++ b/drivers/gpu/drm/radeon/sid.h
-@@ -55,6 +55,8 @@
- 
- #define DMIF_ADDR_CONFIG  				0xBD4
- 
-+#define DMIF_ADDR_CALC  				0xC00
-+
- #define	SRBM_STATUS				        0xE50
- 
- #define	CC_SYS_RB_BACKEND_DISABLE			0xe80
+ MODULE_AUTHOR("Dave Jones <davej@redhat.com>");
+ MODULE_DESCRIPTION("Longhaul driver for VIA Cyrix processors.");
 
 
