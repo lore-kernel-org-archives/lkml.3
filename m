@@ -1,148 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab3EIUPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 16:15:47 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:36410 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238Ab3EIUPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 16:15:46 -0400
-Date: Thu, 9 May 2013 16:15:42 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>, Shaohua Li <shli@kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: Re: [PATCH v3] mm: remove compressed copy from zram in-memory
-Message-ID: <20130509201540.GB5273@localhost.localdomain>
-References: <1368056517-31065-1-git-send-email-minchan@kernel.org>
+	id S1752964Ab3EIUQO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 16:16:14 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:41596 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752071Ab3EIUQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 16:16:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Lance Ortiz <lance.ortiz@hp.com>
+Cc: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
+        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
+        mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] aerdrv: Move cper_print_aer() call out of interrupt context
+Date: Thu, 09 May 2013 22:24:37 +0200
+Message-ID: <2787560.ZE29Z7LhAi@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130509195135.16108.70845.stgit@grignak.americas.hpqcorp.net>
+References: <20130509195135.16108.70845.stgit@grignak.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368056517-31065-1-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 08:41:57AM +0900, Minchan Kim wrote:
+On Thursday, May 09, 2013 01:51:35 PM Lance Ortiz wrote:
+> The following warning was seen on 3.9 when a corrected PCIe error was being
+> handled by the AER subsystem.
+> 
+> WARNING: at .../drivers/pci/search.c:214 pci_get_dev_by_id+0x8a/0x90()
+> 
+> This occurred because a call to pci_get_domain_bus_and_slot() was added to
+> cper_print_pcie() to setup for the call to cper_print_aer().  The warning
+> showed up because cper_print_pcie() is called in an interrupt context and
+> pci_get* functions are not supposed to be called in that context.
+> 
+> The solution is to move the cper_print_aer() call out of the interrupt
+> context and into aer_recover_work_func() to avoid any warnings when calling
+> pci_get* functions.
+> 
+> v2 - Re-worded header text.  Removed prefix arg from cper_print_aer().
+>      Added TODO message in cper_print_aer().
 
-Hey Michan,
-Just a couple of syntax corrections. The code comment could also
-benefit from this.
+That's fine by me.
 
-Otherwise it looks OK to me.
+Thanks,
+Rafael
 
-> Swap subsystem does lazy swap slot free with expecting the page
-                     ^-a                       ^- the expectation that
-> would be swapped out again so we can avoid unnecessary write.
-                                ^--that it
-> 
-> But the problem in in-memory swap(ex, zram) is that it consumes
-                  ^^-with
-> memory space until vm_swap_full(ie, used half of all of swap device)
-> condition meet. It could be bad if we use multiple swap device,
-           ^- 'is'   ^^^^^ - 'would'                       ^^^^^-devices                    
-> small in-memory swap and big storage swap or in-memory swap alone.
-                      ^-,                   ^-,
-> 
-> This patch makes swap subsystem free swap slot as soon as swap-read
-> is completed and make the swapcache page dirty so the page should
-                       ^-makes                      ^-'that the'
-> be written out the swap device to reclaim it.
-> It means we never lose it.
-> 
-> I tested this patch with kernel compile workload.
-                          ^-a
-> 
-> 1. before
-> 
-> compile time : 9882.42
-> zram max wasted space by fragmentation: 13471881 byte
-> memory space consumed by zram: 174227456 byte
-> the number of slot free notify: 206684
-> 
-> 2. after
-> 
-> compile time : 9653.90
-> zram max wasted space by fragmentation: 11805932 byte
-> memory space consumed by zram: 154001408 byte
-> the number of slot free notify: 426972
-> 
-> * changelog from v3
->   * Rebased on next-20130508
-> 
-> * changelog from v1
->   * Add more comment
-> 
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> Cc: Nitin Gupta <ngupta@vflare.org>
-> Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-> Cc: Shaohua Li <shli@kernel.org>
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+
+> Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+> Acked-by: Borislav Petkov <bp@suse.de>
 > ---
->  mm/page_io.c | 35 +++++++++++++++++++++++++++++++++++
->  1 file changed, 35 insertions(+)
 > 
-> diff --git a/mm/page_io.c b/mm/page_io.c
-> index a294076..527db57 100644
-> --- a/mm/page_io.c
-> +++ b/mm/page_io.c
-> @@ -21,6 +21,7 @@
->  #include <linux/writeback.h>
->  #include <linux/frontswap.h>
->  #include <linux/aio.h>
-> +#include <linux/blkdev.h>
->  #include <asm/pgtable.h>
->  
->  static struct bio *get_swap_bio(gfp_t gfp_flags,
-> @@ -82,8 +83,42 @@ void end_swap_bio_read(struct bio *bio, int err, struct batch_complete *batch)
->  				iminor(bio->bi_bdev->bd_inode),
->  				(unsigned long long)bio->bi_sector);
->  	} else {
-> +		struct swap_info_struct *sis;
-> +
->  		SetPageUptodate(page);
-> +		sis = page_swap_info(page);
-> +		if (sis->flags & SWP_BLKDEV) {
-> +			/*
-> +			 * Swap subsystem does lazy swap slot free with
-> +			 * expecting the page would be swapped out again
-> +			 * so we can avoid unnecessary write if the page
-> +			 * isn't redirty.
-> +			 * It's good for real swap storage  because we can
-> +			 * reduce unnecessary I/O and enhance wear-leveling
-> +			 * if you use SSD as swap device.
-> +			 * But if you use in-memory swap device(ex, zram),
-> +			 * it causes duplicated copy between uncompressed
-> +			 * data in VM-owned memory and compressed data in
-> +			 * zram-owned memory. So let's free zram-owned memory
-> +			 * and make the VM-owned decompressed page *dirty*
-> +			 * so the page should be swap out somewhere again if
-> +			 * we want to reclaim it, again.
-> +			 */
-> +			struct gendisk *disk = sis->bdev->bd_disk;
-> +			if (disk->fops->swap_slot_free_notify) {
-> +				swp_entry_t entry;
-> +				unsigned long offset;
-> +
-> +				entry.val = page_private(page);
-> +				offset = swp_offset(entry);
-> +
-> +				SetPageDirty(page);
-> +				disk->fops->swap_slot_free_notify(sis->bdev,
-> +						offset);
-> +			}
-> +		}
->  	}
-> +
->  	unlock_page(page);
->  	bio_put(bio);
+>  drivers/acpi/apei/cper.c               |   18 ------------------
+>  drivers/acpi/apei/ghes.c               |    3 ++-
+>  drivers/pci/pcie/aer/aerdrv_core.c     |    6 +++++-
+>  drivers/pci/pcie/aer/aerdrv_errprint.c |   10 ++++++++--
+>  include/linux/aer.h                    |    4 ++--
+>  5 files changed, 17 insertions(+), 24 deletions(-)
+> 
+> diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
+> index 1e5d8a4..8713229 100644
+> --- a/drivers/acpi/apei/cper.c
+> +++ b/drivers/acpi/apei/cper.c
+> @@ -250,10 +250,6 @@ static const char *cper_pcie_port_type_strs[] = {
+>  static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
+>  			    const struct acpi_hest_generic_data *gdata)
+>  {
+> -#ifdef CONFIG_ACPI_APEI_PCIEAER
+> -	struct pci_dev *dev;
+> -#endif
+> -
+>  	if (pcie->validation_bits & CPER_PCIE_VALID_PORT_TYPE)
+>  		printk("%s""port_type: %d, %s\n", pfx, pcie->port_type,
+>  		       pcie->port_type < ARRAY_SIZE(cper_pcie_port_type_strs) ?
+> @@ -285,20 +281,6 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
+>  		printk(
+>  	"%s""bridge: secondary_status: 0x%04x, control: 0x%04x\n",
+>  	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
+> -#ifdef CONFIG_ACPI_APEI_PCIEAER
+> -	dev = pci_get_domain_bus_and_slot(pcie->device_id.segment,
+> -			pcie->device_id.bus, pcie->device_id.function);
+> -	if (!dev) {
+> -		pr_err("PCI AER Cannot get PCI device %04x:%02x:%02x.%d\n",
+> -			pcie->device_id.segment, pcie->device_id.bus,
+> -			pcie->device_id.slot, pcie->device_id.function);
+> -		return;
+> -	}
+> -	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO)
+> -		cper_print_aer(pfx, dev, gdata->error_severity,
+> -				(struct aer_capability_regs *) pcie->aer_info);
+> -	pci_dev_put(dev);
+> -#endif
 >  }
-> -- 
-> 1.8.2.1
+>  
+>  static const char *apei_estatus_section_flag_strs[] = {
+> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+> index d668a8a..f2084b5 100644
+> --- a/drivers/acpi/apei/ghes.c
+> +++ b/drivers/acpi/apei/ghes.c
+> @@ -454,7 +454,8 @@ static void ghes_do_proc(struct ghes *ghes,
+>  				aer_severity = cper_severity_to_aer(sev);
+>  				aer_recover_queue(pcie_err->device_id.segment,
+>  						  pcie_err->device_id.bus,
+> -						  devfn, aer_severity);
+> +						  devfn, aer_severity,
+> +						  pcie_err->aer_info);
+>  			}
+>  
+>  		}
+> diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+> index 564d97f..ceba124 100644
+> --- a/drivers/pci/pcie/aer/aerdrv_core.c
+> +++ b/drivers/pci/pcie/aer/aerdrv_core.c
+> @@ -582,6 +582,7 @@ struct aer_recover_entry
+>  	u8	devfn;
+>  	u16	domain;
+>  	int	severity;
+> +	u8	*regs;
+>  };
+>  
+>  static DEFINE_KFIFO(aer_recover_ring, struct aer_recover_entry,
+> @@ -595,7 +596,7 @@ static DEFINE_SPINLOCK(aer_recover_ring_lock);
+>  static DECLARE_WORK(aer_recover_work, aer_recover_work_func);
+>  
+>  void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
+> -		       int severity)
+> +		       int severity, u8 *aer_regs)
+>  {
+>  	unsigned long flags;
+>  	struct aer_recover_entry entry = {
+> @@ -603,6 +604,7 @@ void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
+>  		.devfn		= devfn,
+>  		.domain		= domain,
+>  		.severity	= severity,
+> +		.regs		= aer_regs,
+>  	};
+>  
+>  	spin_lock_irqsave(&aer_recover_ring_lock, flags);
+> @@ -629,6 +631,8 @@ static void aer_recover_work_func(struct work_struct *work)
+>  			       PCI_SLOT(entry.devfn), PCI_FUNC(entry.devfn));
+>  			continue;
+>  		}
+> +		cper_print_aer(pdev, entry.severity,
+> +				(struct aer_capability_regs *)entry.regs);
+>  		do_recovery(pdev, entry.severity);
+>  		pci_dev_put(pdev);
+>  	}
+> diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
+> index 5ab1425..f277dc3 100644
+> --- a/drivers/pci/pcie/aer/aerdrv_errprint.c
+> +++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
+> @@ -220,13 +220,19 @@ int cper_severity_to_aer(int cper_severity)
+>  }
+>  EXPORT_SYMBOL_GPL(cper_severity_to_aer);
+>  
+> -void cper_print_aer(const char *prefix, struct pci_dev *dev, int cper_severity,
+> +void cper_print_aer(struct pci_dev *dev, int cper_severity,
+>  		    struct aer_capability_regs *aer)
+>  {
+>  	int aer_severity, layer, agent, status_strs_size, tlp_header_valid = 0;
+>  	u32 status, mask;
+>  	const char **status_strs;
+>  
+> +	/*
+> +	 * TODO: This function needs to be re-written so that it's output
+> +	 * matches the output of aer_print_error().  Right now, the output
+> +	 * is formatted very differently.
+> +	 */
+> +
+>  	aer_severity = cper_severity_to_aer(cper_severity);
+>  	if (aer_severity == AER_CORRECTABLE) {
+>  		status = aer->cor_status;
+> @@ -244,7 +250,7 @@ void cper_print_aer(const char *prefix, struct pci_dev *dev, int cper_severity,
+>  	agent = AER_GET_AGENT(aer_severity, status);
+>  	dev_err(&dev->dev, "aer_status: 0x%08x, aer_mask: 0x%08x\n",
+>  	       status, mask);
+> -	cper_print_bits(prefix, status, status_strs, status_strs_size);
+> +	cper_print_bits("", status, status_strs, status_strs_size);
+>  	dev_err(&dev->dev, "aer_layer=%s, aer_agent=%s\n",
+>  	       aer_error_layer[layer], aer_agent_string[agent]);
+>  	if (aer_severity != AER_CORRECTABLE)
+> diff --git a/include/linux/aer.h b/include/linux/aer.h
+> index ec10e1b..d8cf12b 100644
+> --- a/include/linux/aer.h
+> +++ b/include/linux/aer.h
+> @@ -49,10 +49,10 @@ static inline int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev)
+>  }
+>  #endif
+>  
+> -extern void cper_print_aer(const char *prefix, struct pci_dev *dev,
+> +extern void cper_print_aer(struct pci_dev *dev,
+>  			   int cper_severity, struct aer_capability_regs *aer);
+>  extern int cper_severity_to_aer(int cper_severity);
+>  extern void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
+> -			      int severity);
+> +			      int severity,  u8 *aer_regs);
+>  #endif //_AER_H_
+>  
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
