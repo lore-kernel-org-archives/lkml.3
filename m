@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab3EIW0X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:26:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45689 "EHLO
+	id S1759444Ab3EIXLX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:11:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45721 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755601Ab3EIW0R (ORCPT
+	with ESMTP id S1754203Ab3EIW0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:17 -0400
+	Thu, 9 May 2013 18:26:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, eranian@google.com
-Subject: [ 15/73] perf/x86: Blacklist all MEM_*_RETIRED events for Ivy Bridge
-Date: Thu,  9 May 2013 15:25:05 -0700
-Message-Id: <20130509222528.040795498@linuxfoundation.org>
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Emil Goode <emilgoode@gmail.com>,
+        Steve Wise <swise@opengridcomputing.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 22/73] RDMA/cxgb4: Fix SQ allocation when on-chip SQ is disabled
+Date: Thu,  9 May 2013 15:25:12 -0700
+Message-Id: <20130509222528.740842057@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -28,47 +29,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-commit 741a698f420c34c458294a6accecfbad702a7c52 upstream.
+commit 5b0c275926b8149c555da874bb4ec258ea3292aa upstream.
 
-Errata BV98 states that all MEM_*_RETIRED events corrupt the
-counter value of the SMT sibling's counters. Blacklist these
-events
+Commit c079c28714e4 ("RDMA/cxgb4: Fix error handling in create_qp()")
+broke SQ allocation.  Instead of falling back to host allocation when
+on-chip allocation fails, it tries to allocate both.  And when it
+does, and we try to free the address from the genpool using the host
+address, we hit a BUG and the system crashes as below.
 
-Reported-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: eranian@google.com
-Link: http://lkml.kernel.org/r/20130503121256.083340271@chello.nl
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/n/tip-jwra43mujrv1oq9xk6mfe57v@git.kernel.org
+We create a new function that has the previous behavior and properly
+propagate the error, as intended.
+
+    kernel BUG at /usr/src/packages/BUILD/kernel-ppc64-3.0.68/linux-3.0/lib/genalloc.c:340!
+    Oops: Exception in kernel mode, sig: 5 [#1]
+    SMP NR_CPUS=1024 NUMA pSeries
+    Modules linked in: rdma_ucm rdma_cm ib_addr ib_cm iw_cm ib_sa ib_mad ib_uverbs iw_cxgb4 ib_core ip6t_LOG xt_tcpudp xt_pkttype ipt_LOG xt_limit ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_raw xt_NOTRACK ipt_REJECT xt_state iptable_raw iptable_filter ip6table_mangle nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 ip_tables ip6table_filter ip6_tables x_tables fuse loop dm_mod ipv6 ipv6_lib sr_mod cdrom ibmveth(X) cxgb4 sg ext3 jbd mbcache sd_mod crc_t10dif scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh ibmvscsic(X) scsi_transport_srp scsi_tgt scsi_mod
+    Supported: Yes
+    NIP: c00000000037d41c LR: d000000003913824 CTR: c00000000037d3b0
+    REGS: c0000001f350ae50 TRAP: 0700   Tainted: G            X  (3.0.68-0.9-ppc64)
+    MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 24042482  XER: 00000001
+    TASK = c0000001f6f2a840[3616] 'rping' THREAD: c0000001f3508000 CPU: 0
+    GPR00: c0000001f6e875c8 c0000001f350b0d0 c000000000fc9690 c0000001f6e875c0
+    GPR04: 00000000000c0000 0000000000010000 0000000000000000 c0000000009d482a
+    GPR08: 000000006a170000 0000000000100000 c0000001f350b140 c0000001f6e875c8
+    GPR12: d000000003915dd0 c000000003f40000 000000003e3ecfa8 c0000001f350bea0
+    GPR16: c0000001f350bcd0 00000000003c0000 0000000000040100 c0000001f6e74a80
+    GPR20: d00000000399a898 c0000001f6e74ac8 c0000001fad91600 c0000001f6e74ab0
+    GPR24: c0000001f7d23f80 0000000000000000 0000000000000002 000000006a170000
+    GPR28: 000000000000000c c0000001f584c8d0 d000000003925180 c0000001f6e875c8
+    NIP [c00000000037d41c] .gen_pool_free+0x6c/0xf8
+    LR [d000000003913824] .c4iw_ocqp_pool_free+0x8c/0xd8 [iw_cxgb4]
+    Call Trace:
+    [c0000001f350b0d0] [c0000001f350b180] 0xc0000001f350b180 (unreliable)
+    [c0000001f350b170] [d000000003913824] .c4iw_ocqp_pool_free+0x8c/0xd8 [iw_cxgb4]
+    [c0000001f350b210] [d00000000390fd70] .dealloc_sq+0x90/0xb0 [iw_cxgb4]
+    [c0000001f350b280] [d00000000390fe08] .destroy_qp+0x78/0xf8 [iw_cxgb4]
+    [c0000001f350b310] [d000000003912738] .c4iw_destroy_qp+0x208/0x2d0 [iw_cxgb4]
+    [c0000001f350b460] [d000000003861874] .ib_destroy_qp+0x5c/0x130 [ib_core]
+    [c0000001f350b510] [d0000000039911bc] .ib_uverbs_cleanup_ucontext+0x174/0x4f8 [ib_uverbs]
+    [c0000001f350b5f0] [d000000003991568] .ib_uverbs_close+0x28/0x70 [ib_uverbs]
+    [c0000001f350b670] [c0000000001e7b2c] .__fput+0xdc/0x278
+    [c0000001f350b720] [c0000000001a9590] .remove_vma+0x68/0xd8
+    [c0000001f350b7b0] [c0000000001a9720] .exit_mmap+0x120/0x160
+    [c0000001f350b8d0] [c0000000000af330] .mmput+0x80/0x160
+    [c0000001f350b960] [c0000000000b5d0c] .exit_mm+0x1ac/0x1e8
+    [c0000001f350ba10] [c0000000000b8154] .do_exit+0x1b4/0x4b8
+    [c0000001f350bad0] [c0000000000b84b0] .do_group_exit+0x58/0xf8
+    [c0000001f350bb60] [c0000000000ce9f4] .get_signal_to_deliver+0x2f4/0x5d0
+    [c0000001f350bc60] [c000000000017ee4] .do_signal_pending+0x6c/0x3e0
+    [c0000001f350bdb0] [c0000000000182cc] .do_signal+0x74/0x78
+    [c0000001f350be30] [c000000000009e74] do_work+0x24/0x28
+
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: Emil Goode <emilgoode@gmail.com>
+Acked-by: Steve Wise <swise@opengridcomputing.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/infiniband/hw/cxgb4/qp.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -125,10 +125,15 @@ static struct event_constraint intel_ivb
- 	INTEL_UEVENT_CONSTRAINT(0x08a3, 0x4), /* CYCLE_ACTIVITY.CYCLES_L1D_PENDING */
- 	INTEL_UEVENT_CONSTRAINT(0x0ca3, 0x4), /* CYCLE_ACTIVITY.STALLS_L1D_PENDING */
- 	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
--	INTEL_EVENT_CONSTRAINT(0xd0, 0xf), /* MEM_UOPS_RETIRED.* */
--	INTEL_EVENT_CONSTRAINT(0xd1, 0xf), /* MEM_LOAD_UOPS_RETIRED.* */
--	INTEL_EVENT_CONSTRAINT(0xd2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
--	INTEL_EVENT_CONSTRAINT(0xd3, 0xf), /*  MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
-+	/*
-+	 * Errata BV98 -- MEM_*_RETIRED events can leak between counters of SMT
-+	 * siblings; disable these events because they can corrupt unrelated
-+	 * counters.
-+	 */
-+	INTEL_EVENT_CONSTRAINT(0xd0, 0x0), /* MEM_UOPS_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xd1, 0x0), /* MEM_LOAD_UOPS_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xd2, 0x0), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xd3, 0x0), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
- 	EVENT_CONSTRAINT_END
- };
+--- a/drivers/infiniband/hw/cxgb4/qp.c
++++ b/drivers/infiniband/hw/cxgb4/qp.c
+@@ -100,6 +100,16 @@ static int alloc_host_sq(struct c4iw_rde
+ 	return 0;
+ }
+ 
++static int alloc_sq(struct c4iw_rdev *rdev, struct t4_sq *sq, int user)
++{
++	int ret = -ENOSYS;
++	if (user)
++		ret = alloc_oc_sq(rdev, sq);
++	if (ret)
++		ret = alloc_host_sq(rdev, sq);
++	return ret;
++}
++
+ static int destroy_qp(struct c4iw_rdev *rdev, struct t4_wq *wq,
+ 		      struct c4iw_dev_ucontext *uctx)
+ {
+@@ -168,18 +178,9 @@ static int create_qp(struct c4iw_rdev *r
+ 		goto free_sw_rq;
+ 	}
+ 
+-	if (user) {
+-		ret = alloc_oc_sq(rdev, &wq->sq);
+-		if (ret)
+-			goto free_hwaddr;
+-
+-		ret = alloc_host_sq(rdev, &wq->sq);
+-		if (ret)
+-			goto free_sq;
+-	} else
+-		ret = alloc_host_sq(rdev, &wq->sq);
+-		if (ret)
+-			goto free_hwaddr;
++	ret = alloc_sq(rdev, &wq->sq, user);
++	if (ret)
++		goto free_hwaddr;
+ 	memset(wq->sq.queue, 0, wq->sq.memsize);
+ 	dma_unmap_addr_set(&wq->sq, mapping, wq->sq.dma_addr);
  
 
 
