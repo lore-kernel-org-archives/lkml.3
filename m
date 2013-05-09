@@ -1,74 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab3EIEfk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 00:35:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36368 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733Ab3EIEfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 00:35:38 -0400
-Date: Thu, 9 May 2013 00:35:32 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, davidlohr.bueso@hp.com,
-        riel@redhat.com, viro@zeniv.linux.org.uk
-Subject: SHM oops in newseg()
-Message-ID: <20130509043532.GA28235@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, davidlohr.bueso@hp.com,
-	riel@redhat.com, viro@zeniv.linux.org.uk
+	id S1751814Ab3EIEwI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 00:52:08 -0400
+Received: from vaxjo.synopsys.com ([198.182.60.75]:50116 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab3EIEwH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 00:52:07 -0400
+Message-ID: <518B2B62.9090309@synopsys.com>
+Date: Thu, 9 May 2013 10:21:46 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: lkml <linux-kernel@vger.kernel.org>, Alexander Shiyan <shc_work@mail.ru>,
+        "christian.ruppert@abilis.com" <christian.ruppert@abilis.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Noam Camus <noamc@ezchip.com>, Paul Bolle <pebolle@tiscali.nl>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Subject: [GIT PULL] arch/arc for 3.10
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just saw this on v3.9-11789-ge0fd9af while fuzz-testing.
+Hi Linus,
 
-[  163.917836] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-[  163.918984] IP: [<ffffffff812c48ed>] newseg+0x10d/0x390
-[  163.919705] PGD cf8c1067 PUD cf8c2067 PMD 0 
-[  163.920326] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  163.921096] Modules linked in: hidp bnep l2tp_ppp l2tp_netlink l2tp_core ipt_ULOG rfcomm can_bcm cmtp kernelcapi nfnetlink scsi_transport_iscsi can_raw ipx p8023 pppoe p8022 phonet af_rxrpc pppox caif_socket ppp_generic caif rose af_802154 slhc llc2 nfc appletalk decnet atm rds psnap llc can netrom af_key x25 ax25 irda crc_ccitt lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables snd_hda_codec_realtek snd_hda_intel raid0 snd_hda_codec kvm_amd snd_pcm kvm btusb bluetooth microcode serio_raw snd_page_alloc snd_timer pcspkr snd rfkill edac_core soundcore r8169 mii radeon backlight drm_kms_helper ttm
-[  163.929949] CPU: 2 PID: 7636 Comm: trinity-child2 Not tainted 3.9.0+ #67
-[  163.931276] Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
-[  163.932551] task: ffff88011bc04a00 ti: ffff8800cf920000 task.ti: ffff8800cf920000
-[  163.933541] RIP: 0010:[<ffffffff812c48ed>]  [<ffffffff812c48ed>] newseg+0x10d/0x390
-[  163.934573] RSP: 0018:ffff8800cf921e78  EFLAGS: 00010246
-[  163.935281] RAX: 0000000000000000 RBX: ffffffff81c77a20 RCX: 0000000000000009
-[  163.936225] RDX: ffffffff82ab62b8 RSI: 0000000000001000 RDI: 0000000000008000
-[  163.937169] RBP: ffff8800cf921ec8 R08: 0000000000000010 R09: 000000000000000f
-[  163.938113] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000001fff
-[  163.939057] R13: ffff8800cfa30b80 R14: 000000003f43df5b R15: 0000000000000000
-[  163.940005] FS:  00007f8391182740(0000) GS:ffff88012aa00000(0000) knlGS:0000000000000000
-[  163.941077] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  163.941843] CR2: 0000000000000008 CR3: 00000000cf8c0000 CR4: 00000000000007e0
-[  163.942789] Stack:
-[  163.943067]  0000000f81c77c50 0000000000000002 3056535953c77c50 0030303030303030
-[  163.944115]  00000000bf3b8607 0000000000000000 0000000000000010 ffffffff81c77c50
-[  163.948881]  00000000000000e8 0000000000000002 ffff8800cf921f40 ffffffff812be322
-[  163.953629] Call Trace:
-[  163.957706]  [<ffffffff812be322>] ipcget+0x182/0x380
-[  163.962123]  [<ffffffff810b99a5>] ? trace_hardirqs_on_caller+0x115/0x1e0
-[  163.966752]  [<ffffffff812c559a>] SyS_shmget+0x5a/0x60
-[  163.971163]  [<ffffffff812c47e0>] ? shm_close+0x140/0x140
-[  163.975590]  [<ffffffff812c3e60>] ? shm_release+0x50/0x50
-[  163.979991]  [<ffffffff812c3df0>] ? shm_get_unmapped_area+0x20/0x20
-[  163.984499]  [<ffffffff816caa14>] tracesys+0xdd/0xe2
-[  163.988868] Code: c6 00 08 00 00 0f 84 f3 00 00 00 45 89 f1 41 c1 e9 1a 0f 85 2e 01 00 00 8b 05 70 1e 7f 01 48 69 c0 98 04 00 00 48 05 20 5e ab 82 <8b> 48 08 b8 00 10 00 00 4c 89 f2 48 c1 e2 09 48 8d 7d c3 41 b8 
-[  164.000083] RIP  [<ffffffff812c48ed>] newseg+0x10d/0x390
-[  164.004681]  RSP <ffff8800cf921e78>
-[  164.009000] CR2: 0000000000000008
-[  164.064784] ---[ end trace e74858ae5e89f4a7 ]---
+Please consider pulling ARC changes for 3.10 (shortlog below).
+
+Note that the base-point is not a well known 3.9-rcX because of the PREEMPT_COUNT
++ compiler barrier fiasco - and I didn't bother to rebase after that. However the
+series applies cleanly on top your tree as of today.
+
+Also, I'm in the final stages of testing the d-cache aliasing support, so those
+would follow in a day or two.
+
+Thanks,
+Vineet
+
+The following changes since commit f011a08c804d50eeff4abf2d308cdce492f015aa:
+
+  Merge tag 'for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/sfr/next-fixes (2013-04-08 16:10:43
+-0700)
+
+are available in the git repository at:
 
 
-That Code: line decoded seems to point at..
+  git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc.git/
+tags/arc-v3.10-rc1-part1
 
-static inline unsigned long huge_page_size(struct hstate *h)
-{
-        return (unsigned long)PAGE_SIZE << h->order;
-     bfd:       8b 48 08                mov    0x8(%rax),%ecx
-     c00:       b8 00 10 00 00          mov    $0x1000,%eax
+for you to fetch changes up to eacd0e950dc2100af54f2a94ae29105bf48ab921:
 
+  ARC: [mm] Lazy D-cache flush (non aliasing VIPT) (2013-05-07 19:08:15 +0530)
+
+----------------------------------------------------------------
+ARC port updates for Linux 3.10 (part 1)
+
+* Support for two new platforms based on ARC700
+ - Abilis TB10x SoC [Chritisian/Pierrick]
+ - Simulator only System-C Model [Mischa]
+
+* ARC specific MM improvements
+ - Avoid full TLB flush (ASID increment) on munmap (even single page)
+ - VIPT Cache Flushing improvements
+   + Delayed dcache flush for non-aliasing dcache (big performance boost)
+   + icache flush aliasing agnostic (no need to kill all possible aliases)
+
+* Others
+ - Avoid needless rebuild of DTB files for every kernel build
+ - Remove builtin cmdline as that is already provided by DeviceTree/bootargs
+ - Fixing unaligned access emulation corner case
+ - checkpatch fixes [Sachin]
+ - Various fixlets [Noam]
+ - Minor build failures/cleanups
+
+----------------------------------------------------------------
+Alexander Shiyan (1):
+      ARC: Remove non existent refs to GENERIC_KERNEL_EXECVE & GENERIC_KERNEL_THREAD
+
+Christian Ruppert (5):
+      ARC: [build] Build failure with !KPROBES
+      ARC: Prepare interrupt code for external controllers
+      ARC: [TB10x] Device tree of TB100 and TB101 Development Kits
+      ARC: [TB10x] Add support for TB10x platform
+      ARC: [TB10x] Adapt device tree to new compatible string
+
+Mischa Jonker (1):
+      ARC: Add support for nSIM OSCI System C model
+
+Noam Camus (2):
+      ARC: Respect the cpu_id passed for fetching correct cpu info
+      ARC: fix typo with clock speed
+
+Paul Bolle (1):
+      ARC: remove #ifdef-ed out include of dead header
+
+Sachin Kamat (4):
+      ARC: Remove unneeded version.h header include
+      ARC: Use <linux/*> headers instead of <asm/*>
+      ARC: Fix coding style issues
+      ARC: Remove duplicate inclusion of header files
+
+Vineet Gupta (21):
+      ARC: [build] silence make defconfig warnings with host gcc 4.7
+      ARC: [build] cleanup Makefile a bit
+      ARC: [build] Allow uncompressed uImage
+      ARC: [build] Fix warnings with CONFIG_DEBUG_SECTION_MISMATCH
+      ARC: [kbuild] Allow platforms to disable LLSC for !SMP as well
+      ARC: [kbuild] Include Kconfig.binfmt
+      ARC: [kbuild] Avoid DTB rebuilds if DTS are untouched
+      ARC: Debug/crash-printing Improvements
+      ARC: unaligned access emulation error handling consolidation
+      ARC: unaligned access emulation broken if callee-reg dest of LD/ST
+      ARC: [plat-arcfpga] defconfig update
+      ARC: [cmdline] Remove CONFIG_CMDLINE
+      ARC: [cmdline] Don't overwrite u-boot provided bootargs
+      ARC: Allow embedded arc-intc to be properly placed in DT intc hierarchy
+      ARC: [mm] optimize needless full mm TLB flush on munmap
+      ARC: [mm] optimise icache flush for user mappings
+      ARC: [mm] optimise icache flush for kernel mappings
+      ARC: [mm] consolidate icache/dcache sync code
+      ARC: [mm] remove the pessimistic all-alias-invalidate icache helpers
+      ARC: [mm] micro-optimize page size icache invalidate
+      ARC: [mm] Lazy D-cache flush (non aliasing VIPT)
+
+ arch/arc/Kconfig                       |   31 +--
+ arch/arc/Makefile                      |   15 +-
+ arch/arc/boot/Makefile                 |   19 +-
+ arch/arc/boot/dts/Makefile             |    4 +-
+ arch/arc/boot/dts/abilis_tb100.dtsi    |  340 +++++++++++++++++++++++++++++++
+ arch/arc/boot/dts/abilis_tb100_dvk.dts |  127 ++++++++++++
+ arch/arc/boot/dts/abilis_tb101.dtsi    |  349 ++++++++++++++++++++++++++++++++
+ arch/arc/boot/dts/abilis_tb101_dvk.dts |  127 ++++++++++++
+ arch/arc/boot/dts/abilis_tb10x.dtsi    |  247 ++++++++++++++++++++++
+ arch/arc/boot/dts/nsimosci.dts         |   77 +++++++
+ arch/arc/configs/fpga_defconfig        |    3 +-
+ arch/arc/configs/nsimosci_defconfig    |   75 +++++++
+ arch/arc/configs/tb10x_defconfig       |  117 +++++++++++
+ arch/arc/include/asm/cacheflush.h      |   16 +-
+ arch/arc/include/asm/irq.h             |    3 +-
+ arch/arc/include/asm/serial.h          |   10 +
+ arch/arc/include/asm/tlb.h             |   16 +-
+ arch/arc/kernel/asm-offsets.c          |    2 +-
+ arch/arc/kernel/clk.c                  |    2 +-
+ arch/arc/kernel/disasm.c               |    2 +-
+ arch/arc/kernel/entry.S                |    8 +-
+ arch/arc/kernel/irq.c                  |   25 ++-
+ arch/arc/kernel/kprobes.c              |    1 -
+ arch/arc/kernel/module.c               |    4 +-
+ arch/arc/kernel/setup.c                |   36 ++--
+ arch/arc/kernel/time.c                 |    1 -
+ arch/arc/kernel/traps.c                |   24 +--
+ arch/arc/kernel/troubleshoot.c         |   50 +++--
+ arch/arc/mm/cache_arc700.c             |  269 ++++++------------------
+ arch/arc/mm/extable.c                  |    4 +-
+ arch/arc/mm/fault.c                    |    1 -
+ arch/arc/mm/init.c                     |    3 -
+ arch/arc/mm/ioremap.c                  |    2 +-
+ arch/arc/mm/tlb.c                      |   32 ++-
+ arch/arc/plat-arcfpga/platform.c       |   12 ++
+ arch/arc/plat-tb10x/Kconfig            |   36 ++++
+ arch/arc/plat-tb10x/Makefile           |   21 ++
+ arch/arc/plat-tb10x/tb10x.c            |   71 +++++++
+ 38 files changed, 1840 insertions(+), 342 deletions(-)
+ create mode 100644 arch/arc/boot/dts/abilis_tb100.dtsi
+ create mode 100644 arch/arc/boot/dts/abilis_tb100_dvk.dts
+ create mode 100644 arch/arc/boot/dts/abilis_tb101.dtsi
+ create mode 100644 arch/arc/boot/dts/abilis_tb101_dvk.dts
+ create mode 100644 arch/arc/boot/dts/abilis_tb10x.dtsi
+ create mode 100644 arch/arc/boot/dts/nsimosci.dts
+ create mode 100644 arch/arc/configs/nsimosci_defconfig
+ create mode 100644 arch/arc/configs/tb10x_defconfig
+ create mode 100644 arch/arc/plat-tb10x/Kconfig
+ create mode 100644 arch/arc/plat-tb10x/Makefile
+ create mode 100644 arch/arc/plat-tb10x/tb10x.c
