@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab3EIWxV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:53:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46118 "EHLO
+	id S932392Ab3EIWxr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:53:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46109 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757800Ab3EIWdG (ORCPT
+	with ESMTP id S1757801Ab3EIWdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:06 -0400
+	Thu, 9 May 2013 18:33:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 48/73] drm/radeon: fix typo in rv515_mc_resume()
-Date: Thu,  9 May 2013 15:32:11 -0700
-Message-Id: <20130509222803.182490970@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 36/73] drm/i915: Fix detection of base of stolen memory
+Date: Thu,  9 May 2013 15:31:59 -0700
+Message-Id: <20130509222801.886958201@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -26,30 +27,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 367cbe2fec9b57b72605e2ac4cfd4f2fa823a256 upstream.
+commit e12a2d53ae45a69aea499b64f75e7222cca0f12f upstream.
 
-Doesn't affect anything as the same address gets written
-in both cases.
+The routine to query the base of stolen memory was using the wrong
+registers and the wrong encodings on virtually every platform.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+It was not until the G33 refresh, that a PCI config register was
+introduced that explicitly said where the stolen memory was. Prior to
+865G there was not even a register that said where the end of usable
+low memory was and where the stolen memory began (or ended depending
+upon chipset). Before then, one has to look at the BIOS memory maps to
+find the Top of Memory. Alas that is not exported by arch/x86 and so we
+have to resort to disabling stolen memory on gen2 for the time being.
+
+Then SandyBridge enlarged the PCI register to a full 32-bits and change
+the encoding of the address, so even though we happened to be querying
+the right register, we read the wrong bits and ended up using address 0
+for our stolen data, i.e. notably FBC.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/rv515.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_drv.h        |    1 
+ drivers/gpu/drm/i915/i915_gem_stolen.c |   81 ++++++++++++++++-----------------
+ 2 files changed, 42 insertions(+), 40 deletions(-)
 
---- a/drivers/gpu/drm/radeon/rv515.c
-+++ b/drivers/gpu/drm/radeon/rv515.c
-@@ -348,7 +348,7 @@ void rv515_mc_resume(struct radeon_devic
- 	/* update crtc base addresses */
- 	for (i = 0; i < rdev->num_crtc; i++) {
- 		if (rdev->family >= CHIP_RV770) {
--			if (i == 1) {
-+			if (i == 0) {
- 				WREG32(R700_D1GRPH_PRIMARY_SURFACE_ADDRESS_HIGH,
- 				       upper_32_bits(rdev->mc.vram_start));
- 				WREG32(R700_D1GRPH_SECONDARY_SURFACE_ADDRESS_HIGH,
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -774,6 +774,7 @@ typedef struct drm_i915_private {
+ 		unsigned long gtt_start;
+ 		unsigned long gtt_mappable_end;
+ 		unsigned long gtt_end;
++		unsigned long stolen_base; /* limited to low memory (32-bit) */
+ 
+ 		struct io_mapping *gtt_mapping;
+ 		phys_addr_t gtt_base_addr;
+--- a/drivers/gpu/drm/i915/i915_gem_stolen.c
++++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+@@ -42,56 +42,50 @@
+  * for is a boon.
+  */
+ 
+-#define PTE_ADDRESS_MASK		0xfffff000
+-#define PTE_ADDRESS_MASK_HIGH		0x000000f0 /* i915+ */
+-#define PTE_MAPPING_TYPE_UNCACHED	(0 << 1)
+-#define PTE_MAPPING_TYPE_DCACHE		(1 << 1) /* i830 only */
+-#define PTE_MAPPING_TYPE_CACHED		(3 << 1)
+-#define PTE_MAPPING_TYPE_MASK		(3 << 1)
+-#define PTE_VALID			(1 << 0)
+-
+-/**
+- * i915_stolen_to_phys - take an offset into stolen memory and turn it into
+- *                       a physical one
+- * @dev: drm device
+- * @offset: address to translate
+- *
+- * Some chip functions require allocations from stolen space and need the
+- * physical address of the memory in question.
+- */
+-static unsigned long i915_stolen_to_phys(struct drm_device *dev, u32 offset)
++static unsigned long i915_stolen_to_physical(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct pci_dev *pdev = dev_priv->bridge_dev;
+ 	u32 base;
+ 
+-#if 0
+ 	/* On the machines I have tested the Graphics Base of Stolen Memory
+-	 * is unreliable, so compute the base by subtracting the stolen memory
+-	 * from the Top of Low Usable DRAM which is where the BIOS places
+-	 * the graphics stolen memory.
++	 * is unreliable, so on those compute the base by subtracting the
++	 * stolen memory from the Top of Low Usable DRAM which is where the
++	 * BIOS places the graphics stolen memory.
++	 *
++	 * On gen2, the layout is slightly different with the Graphics Segment
++	 * immediately following Top of Memory (or Top of Usable DRAM). Note
++	 * it appears that TOUD is only reported by 865g, so we just use the
++	 * top of memory as determined by the e820 probe.
++	 *
++	 * XXX gen2 requires an unavailable symbol and 945gm fails with
++	 * its value of TOLUD.
+ 	 */
+-	if (INTEL_INFO(dev)->gen > 3 || IS_G33(dev)) {
+-		/* top 32bits are reserved = 0 */
++	base = 0;
++	if (INTEL_INFO(dev)->gen >= 6) {
++		/* Read Base Data of Stolen Memory Register (BDSM) directly.
++		 * Note that there is also a MCHBAR miror at 0x1080c0 or
++		 * we could use device 2:0x5c instead.
++		*/
++		pci_read_config_dword(pdev, 0xB0, &base);
++		base &= ~4095; /* lower bits used for locking register */
++	} else if (INTEL_INFO(dev)->gen > 3 || IS_G33(dev)) {
++		/* Read Graphics Base of Stolen Memory directly */
+ 		pci_read_config_dword(pdev, 0xA4, &base);
+-	} else {
+-		/* XXX presume 8xx is the same as i915 */
+-		pci_bus_read_config_dword(pdev->bus, 2, 0x5C, &base);
+-	}
+-#else
+-	if (INTEL_INFO(dev)->gen > 3 || IS_G33(dev)) {
+-		u16 val;
+-		pci_read_config_word(pdev, 0xb0, &val);
+-		base = val >> 4 << 20;
+-	} else {
++#if 0
++	} else if (IS_GEN3(dev)) {
+ 		u8 val;
++		/* Stolen is immediately below Top of Low Usable DRAM */
+ 		pci_read_config_byte(pdev, 0x9c, &val);
+ 		base = val >> 3 << 27;
+-	}
+-	base -= dev_priv->mm.gtt->stolen_size;
++		base -= dev_priv->mm.gtt->stolen_size;
++	} else {
++		/* Stolen is immediately above Top of Memory */
++		base = max_low_pfn_mapped << PAGE_SHIFT;
+ #endif
++	}
+ 
+-	return base + offset;
++	return base;
+ }
+ 
+ static void i915_warn_stolen(struct drm_device *dev)
+@@ -116,7 +110,7 @@ static void i915_setup_compression(struc
+ 	if (!compressed_fb)
+ 		goto err;
+ 
+-	cfb_base = i915_stolen_to_phys(dev, compressed_fb->start);
++	cfb_base = dev_priv->mm.stolen_base + compressed_fb->start;
+ 	if (!cfb_base)
+ 		goto err_fb;
+ 
+@@ -129,7 +123,7 @@ static void i915_setup_compression(struc
+ 		if (!compressed_llb)
+ 			goto err_fb;
+ 
+-		ll_base = i915_stolen_to_phys(dev, compressed_llb->start);
++		ll_base = dev_priv->mm.stolen_base + compressed_llb->start;
+ 		if (!ll_base)
+ 			goto err_llb;
+ 	}
+@@ -148,7 +142,7 @@ static void i915_setup_compression(struc
+ 	}
+ 
+ 	DRM_DEBUG_KMS("FBC base 0x%08lx, ll base 0x%08lx, size %dM\n",
+-		      cfb_base, ll_base, size >> 20);
++		      (long)cfb_base, (long)ll_base, size >> 20);
+ 	return;
+ 
+ err_llb:
+@@ -180,6 +174,13 @@ int i915_gem_init_stolen(struct drm_devi
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	unsigned long prealloc_size = dev_priv->mm.gtt->stolen_size;
+ 
++	dev_priv->mm.stolen_base = i915_stolen_to_physical(dev);
++	if (dev_priv->mm.stolen_base == 0)
++		return 0;
++
++	DRM_DEBUG_KMS("found %d bytes of stolen memory at %08lx\n",
++		      dev_priv->mm.gtt->stolen_size, dev_priv->mm.stolen_base);
++
+ 	/* Basic memrange allocator for stolen space */
+ 	drm_mm_init(&dev_priv->mm.stolen, 0, prealloc_size);
+ 
 
 
