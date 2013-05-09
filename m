@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759003Ab3EIWok (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:44:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46261 "EHLO
+	id S932086Ab3EIWoy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:44:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46256 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758310Ab3EIWen (ORCPT
+	with ESMTP id S1758309Ab3EIWem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:34:43 -0400
+	Thu, 9 May 2013 18:34:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Jeffery <djeffery@redhat.com>, Ian Kent <raven@themaw.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 03/26] autofs - remove autofs dentry mount check
-Date: Thu,  9 May 2013 15:34:17 -0700
-Message-Id: <20130509223422.781223002@linuxfoundation.org>
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Michael Ellerman <michael@ellerman.id.au>
+Subject: [ 02/26] powerpc: fix numa distance for form0 device tree
+Date: Thu,  9 May 2013 15:34:16 -0700
+Message-Id: <20130509223422.662175413@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
 References: <20130509223422.368544659@linuxfoundation.org>
@@ -27,48 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Jeffery <djeffery@redhat.com>
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 
-commit ce8a5dbdf9e709bdaf4618d7ef8cceb91e8adc69 upstream.
+commit 7122beeee7bc1757682049780179d7c216dd1c83 upstream.
 
-When checking if an autofs mount point is busy it isn't sufficient to
-only check if it's a mount point.
+The following commit breaks numa distance setup for old powerpc
+systems that use form0 encoding in device tree.
 
-For example, if the mount of an offset mountpoint in a tree is denied
-for this host by its export and the dentry becomes a process working
-directory the check incorrectly returns the mount as not in use at
-expire.
+commit 41eab6f88f24124df89e38067b3766b7bef06ddb
+powerpc/numa: Use form 1 affinity to setup node distance
 
-This can happen since the default when mounting within a tree is
-nostrict, which means ingnore mount fails on mounts within the tree and
-continue.  The nostrict option is meant to allow mounting in this case.
+Device tree node /rtas/ibm,associativity-reference-points would
+index into /cpus/PowerPCxxxx/ibm,associativity based on form0 or
+form1 encoding detected by ibm,architecture-vec-5 property.
 
-Signed-off-by: David Jeffery <djeffery@redhat.com>
-Signed-off-by: Ian Kent <raven@themaw.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+All modern systems use form1 and current kernel code is correct.
+However, on older systems with form0 encoding, the numa distance
+will get hard coded as LOCAL_DISTANCE for all nodes.  This causes
+task scheduling anomaly since scheduler will skip building numa
+level domain (topmost domain with all cpus) if all numa distances
+are same.  (value of 'level' in sched_init_numa() will remain 0)
+
+Prior to the above commit:
+((from) == (to) ? LOCAL_DISTANCE : REMOTE_DISTANCE)
+
+Restoring compatible behavior with this patch for old powerpc systems
+with device tree where numa distance are encoded as form0.
+
+Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/autofs4/expire.c |    9 ---------
- 1 file changed, 9 deletions(-)
+ arch/powerpc/mm/numa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/autofs4/expire.c
-+++ b/fs/autofs4/expire.c
-@@ -61,15 +61,6 @@ static int autofs4_mount_busy(struct vfs
- 		/* This is an autofs submount, we can't expire it */
- 		if (autofs_type_indirect(sbi->type))
- 			goto done;
--
--		/*
--		 * Otherwise it's an offset mount and we need to check
--		 * if we can umount its mount, if there is one.
--		 */
--		if (!d_mountpoint(path.dentry)) {
--			status = 0;
--			goto done;
--		}
- 	}
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -201,7 +201,7 @@ int __node_distance(int a, int b)
+ 	int distance = LOCAL_DISTANCE;
  
- 	/* Update the expiry counter if fs is busy */
+ 	if (!form1_affinity)
+-		return distance;
++		return ((a == b) ? LOCAL_DISTANCE : REMOTE_DISTANCE);
+ 
+ 	for (i = 0; i < distance_ref_points_depth; i++) {
+ 		if (distance_lookup_table[a][i] == distance_lookup_table[b][i])
 
 
