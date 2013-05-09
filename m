@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759374Ab3EIXHo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:07:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45785 "EHLO
+	id S1759393Ab3EIXIK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:08:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45778 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755937Ab3EIW0c (ORCPT
+	with ESMTP id S1755592Ab3EIW0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:32 -0400
+	Thu, 9 May 2013 18:26:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Chris Wilson <chris@chris-wilson.co.uk>,
-        Ben Widawsky <ben@bwidawsk.net>,
-        Kenneth Graunke <kenneth@whitecape.org>,
+        Jon Bloomfield <jon.bloomfield@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 36/73] drm/i915: Use MLC (l3$) for context objects
-Date: Thu,  9 May 2013 15:25:26 -0700
-Message-Id: <20130509222530.139358758@linuxfoundation.org>
+Subject: [ 35/73] drm/i915: Workaround incoherence between fences and LLC across multiple CPUs
+Date: Thu,  9 May 2013 15:25:25 -0700
+Message-Id: <20130509222530.036522208@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -31,48 +31,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 4615d4c9e27eda42c3e965f208a4b4065841498c upstream.
+commit 25ff1195f8a0b3724541ae7bbe331b4296de9c06 upstream.
 
-Enabling context support increases SwapBuffers latency by about 20%
-(measured on an i7-3720qm). We can offset that loss slightly by enabling
-faster caching for the contexts. As they are not backed by any
-particular cache (such as the sampler or render caches) our only option
-is to select the generic mid-level cache. This reduces the latency of
-the swap by about 5%.
+In order to fully serialize access to the fenced region and the update
+to the fence register we need to take extreme measures on SNB+, and
+manually flush writes to memory prior to writing the fence register in
+conjunction with the memory barriers placed around the register write.
 
-Oddly this effect can be observed running smokin-guns on IVB at
-1280x1024:
-Using BLT copies for swaps: 151.67 fps
-Using Render copies for swaps (unpatched):  141.70 fps
-With contexts disabled: 150.23 fps
-With contexts in L3$: 150.77 fps
+Fixes i-g-t/gem_fence_thrash
 
+v2: Bring a bigger gun
+v3: Switch the bigger gun for heavier bullets (Arjan van de Ven)
+v4: Remove changes for working generations.
+v5: Reduce to a per-cpu wbinvd() call prior to updating the fences.
+v6: Rewrite comments to ellide forgotten history.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=62191
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Ben Widawsky <ben@bwidawsk.net>
-Cc: Kenneth Graunke <kenneth@whitecape.org>
-Reviewed-by: Kenneth Graunke <kenneth@whitecape.org>
+Cc: Jon Bloomfield <jon.bloomfield@intel.com>
+Tested-by: Jon Bloomfield <jon.bloomfield@intel.com> (v2)
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem_context.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/gpu/drm/i915/i915_gem.c |   26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem_context.c
-+++ b/drivers/gpu/drm/i915/i915_gem_context.c
-@@ -152,6 +152,13 @@ create_hw_context(struct drm_device *dev
- 		return ERR_PTR(-ENOMEM);
- 	}
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2678,17 +2678,35 @@ static inline int fence_number(struct dr
+ 	return fence - dev_priv->fence_regs;
+ }
  
-+	if (INTEL_INFO(dev)->gen >= 7) {
-+		ret = i915_gem_object_set_cache_level(ctx->obj,
-+						      I915_CACHE_LLC_MLC);
-+		if (ret)
-+			goto err_out;
-+	}
++static void i915_gem_write_fence__ipi(void *data)
++{
++	wbinvd();
++}
 +
- 	/* The ring associated with the context object is handled by the normal
- 	 * object tracking code. We give an initial ring value simple to pass an
- 	 * assertion in the context switch code.
+ static void i915_gem_object_update_fence(struct drm_i915_gem_object *obj,
+ 					 struct drm_i915_fence_reg *fence,
+ 					 bool enable)
+ {
+-	struct drm_i915_private *dev_priv = obj->base.dev->dev_private;
+-	int reg = fence_number(dev_priv, fence);
++	struct drm_device *dev = obj->base.dev;
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	int fence_reg = fence_number(dev_priv, fence);
+ 
+-	i915_gem_write_fence(obj->base.dev, reg, enable ? obj : NULL);
++	/* In order to fully serialize access to the fenced region and
++	 * the update to the fence register we need to take extreme
++	 * measures on SNB+. In theory, the write to the fence register
++	 * flushes all memory transactions before, and coupled with the
++	 * mb() placed around the register write we serialise all memory
++	 * operations with respect to the changes in the tiler. Yet, on
++	 * SNB+ we need to take a step further and emit an explicit wbinvd()
++	 * on each processor in order to manually flush all memory
++	 * transactions before updating the fence register.
++	 */
++	if (HAS_LLC(obj->base.dev))
++		on_each_cpu(i915_gem_write_fence__ipi, NULL, 1);
++	i915_gem_write_fence(dev, fence_reg, enable ? obj : NULL);
+ 
+ 	if (enable) {
+-		obj->fence_reg = reg;
++		obj->fence_reg = fence_reg;
+ 		fence->obj = obj;
+ 		list_move_tail(&fence->lru_list, &dev_priv->mm.fence_list);
+ 	} else {
 
 
