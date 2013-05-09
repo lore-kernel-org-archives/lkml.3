@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005Ab3EIMzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 08:55:38 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53609 "EHLO mail.skyhub.de"
+	id S1753891Ab3EIM6O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 08:58:14 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:52700 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752556Ab3EIMzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 08:55:37 -0400
-Date: Thu, 9 May 2013 14:58:59 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123
- native_smp_send_reschedule
-Message-ID: <20130509125859.GG27333@pd.tnic>
-References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
- <20130509125040.GF27333@pd.tnic>
+	id S1751260Ab3EIM6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 08:58:12 -0400
+Message-ID: <518B9D61.4090406@imgtec.com>
+Date: Thu, 9 May 2013 13:58:09 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130509125040.GF27333@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: James Hogan <james.hogan@imgtec.com>, <linux-serial@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        "Rob Herring" <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: [PATCH] serial: 8250_dw: set clock rate
+References: <1368095356-21081-1-git-send-email-james.hogan@imgtec.com>
+In-Reply-To: <1368095356-21081-1-git-send-email-james.hogan@imgtec.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_05_09_13_58_10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 02:50:40PM +0200, Borislav Petkov wrote:
-> Looks like we're sending a resched IPI to a cpu which is not online
-> yet in order to start the MCE polling timer. So the rcu* options are
-> kinda unlikely to be related, AFAICT.
+On 09/05/13 11:29, James Hogan wrote:
+> If the uart clock provided to the 8250_dw driver is adjustable it may
+> not be set to the desired rate. Therefore if both a uart clock and a
+> clock frequency is specified (e.g. via device tree), try and update the
+> clock to match the frequency.
+> 
+> Unfortunately if the resulting frequency is rounded down (which is the
+> default behaviour of the generic clk-divider), the 8250 core won't allow
+> the highest baud rate to be used, so if an explicit frequency is
+> specified we always report that to the 8250 core.
 
-On a second thought, they must be somehow indirectly related because I
-had "rcu_nocbs=4-7" on the command line and have the warning on the same
-CPUs: 4 - 7.
+Hi,
 
-Actually, NO_HZ_FULL_ALL makes all CPUs full dynticks so I'd guess the
-RCU callback offloading happens on all of them, thus the warning can
-happen on every CPU which is in full dynticks mode but not online yet.
+Sorry, please ignore this patch.
 
--- 
-Regards/Gruss,
-    Boris.
+I've realised that a larger (e.g. non-divided) source clock can just be
+provided directly to the uart and it appears to have enough of an
+internal divider for the driver to do the right thing without changing
+the input clock rate, although of course that clock rate still needs
+setting somewhere. I'm not sure why we didn't do this all along as it
+gives a closer frequency anyway.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks
+James
+
