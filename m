@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab3EIWco (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:32:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45943 "EHLO
+	id S1759337Ab3EIXBr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:01:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45969 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757182Ab3EIWck (ORCPT
+	with ESMTP id S1757435Ab3EIWco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:32:40 -0400
+	Thu, 9 May 2013 18:32:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 02/73] powerpc: Emulate non privileged DSCR read and write
-Date: Thu,  9 May 2013 15:31:25 -0700
-Message-Id: <20130509222758.194456243@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 08/73] net/eth/ibmveth: Fixup retrieval of MAC address
+Date: Thu,  9 May 2013 15:31:31 -0700
+Message-Id: <20130509222758.861665955@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -27,71 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 73d2fb758e678c93bc76d40876c2359f0729b0ef upstream.
+commit 13f85203e1060da83d9ec1c1c5a63343eaab8de4 upstream.
 
-POWER8 allows read and write of the DSCR in userspace. We added
-kernel emulation so applications could always use the instructions
-regardless of the CPU type.
+Some ancient pHyp versions used to create a 8 bytes local-mac-address
+property in the device-tree instead of a 6 bytes one for veth.
 
-Unfortunately there are two SPRs for the DSCR and we only added
-emulation for the privileged one. Add code to match the non
-privileged one.
+The Linux driver code to deal with that is an insane hack which also
+happens to break with some choices of MAC addresses in qemu by testing
+for a bit in the address rather than just looking at the size of the
+property.
 
-A simple test was created to verify the fix:
+Sanitize this by doing the latter instead.
 
-http://ozlabs.org/~anton/junkcode/user_dscr_test.c
-
-Without the patch we get a SIGILL and it passes with the patch.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/ppc-opcode.h |    4 ++++
- arch/powerpc/kernel/traps.c           |   10 ++++++++--
- 2 files changed, 12 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/ibm/ibmveth.c |   23 ++++++++++-------------
+ 1 file changed, 10 insertions(+), 13 deletions(-)
 
---- a/arch/powerpc/include/asm/ppc-opcode.h
-+++ b/arch/powerpc/include/asm/ppc-opcode.h
-@@ -112,6 +112,10 @@
- #define PPC_INST_MFSPR_DSCR_MASK	0xfc1fffff
- #define PPC_INST_MTSPR_DSCR		0x7c1103a6
- #define PPC_INST_MTSPR_DSCR_MASK	0xfc1fffff
-+#define PPC_INST_MFSPR_DSCR_USER	0x7c0302a6
-+#define PPC_INST_MFSPR_DSCR_USER_MASK	0xfc1fffff
-+#define PPC_INST_MTSPR_DSCR_USER	0x7c0303a6
-+#define PPC_INST_MTSPR_DSCR_USER_MASK	0xfc1fffff
- #define PPC_INST_SLBFEE			0x7c0007a7
+--- a/drivers/net/ethernet/ibm/ibmveth.c
++++ b/drivers/net/ethernet/ibm/ibmveth.c
+@@ -1326,7 +1326,7 @@ static const struct net_device_ops ibmve
  
- #define PPC_INST_STRING			0x7c00042a
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -961,7 +961,10 @@ static int emulate_instruction(struct pt
+ static int ibmveth_probe(struct vio_dev *dev, const struct vio_device_id *id)
+ {
+-	int rc, i;
++	int rc, i, mac_len;
+ 	struct net_device *netdev;
+ 	struct ibmveth_adapter *adapter;
+ 	unsigned char *mac_addr_p;
+@@ -1336,11 +1336,19 @@ static int ibmveth_probe(struct vio_dev
+ 		dev->unit_address);
  
- #ifdef CONFIG_PPC64
- 	/* Emulate the mfspr rD, DSCR. */
--	if (((instword & PPC_INST_MFSPR_DSCR_MASK) == PPC_INST_MFSPR_DSCR) &&
-+	if ((((instword & PPC_INST_MFSPR_DSCR_USER_MASK) ==
-+		PPC_INST_MFSPR_DSCR_USER) ||
-+	     ((instword & PPC_INST_MFSPR_DSCR_MASK) ==
-+		PPC_INST_MFSPR_DSCR)) &&
- 			cpu_has_feature(CPU_FTR_DSCR)) {
- 		PPC_WARN_EMULATED(mfdscr, regs);
- 		rd = (instword >> 21) & 0x1f;
-@@ -969,7 +972,10 @@ static int emulate_instruction(struct pt
- 		return 0;
+ 	mac_addr_p = (unsigned char *)vio_get_attribute(dev, VETH_MAC_ADDR,
+-							NULL);
++							&mac_len);
+ 	if (!mac_addr_p) {
+ 		dev_err(&dev->dev, "Can't find VETH_MAC_ADDR attribute\n");
+ 		return -EINVAL;
  	}
- 	/* Emulate the mtspr DSCR, rD. */
--	if (((instword & PPC_INST_MTSPR_DSCR_MASK) == PPC_INST_MTSPR_DSCR) &&
-+	if ((((instword & PPC_INST_MTSPR_DSCR_USER_MASK) ==
-+		PPC_INST_MTSPR_DSCR_USER) ||
-+	     ((instword & PPC_INST_MTSPR_DSCR_MASK) ==
-+		PPC_INST_MTSPR_DSCR)) &&
- 			cpu_has_feature(CPU_FTR_DSCR)) {
- 		PPC_WARN_EMULATED(mtdscr, regs);
- 		rd = (instword >> 21) & 0x1f;
++	/* Workaround for old/broken pHyp */
++	if (mac_len == 8)
++		mac_addr_p += 2;
++	else if (mac_len != 6) {
++		dev_err(&dev->dev, "VETH_MAC_ADDR attribute wrong len %d\n",
++			mac_len);
++		return -EINVAL;
++	}
+ 
+ 	mcastFilterSize_p = (unsigned int *)vio_get_attribute(dev,
+ 						VETH_MCAST_FILTER_SIZE, NULL);
+@@ -1365,17 +1373,6 @@ static int ibmveth_probe(struct vio_dev
+ 
+ 	netif_napi_add(netdev, &adapter->napi, ibmveth_poll, 16);
+ 
+-	/*
+-	 * Some older boxes running PHYP non-natively have an OF that returns
+-	 * a 8-byte local-mac-address field (and the first 2 bytes have to be
+-	 * ignored) while newer boxes' OF return a 6-byte field. Note that
+-	 * IEEE 1275 specifies that local-mac-address must be a 6-byte field.
+-	 * The RPA doc specifies that the first byte must be 10b, so we'll
+-	 * just look for it to solve this 8 vs. 6 byte field issue
+-	 */
+-	if ((*mac_addr_p & 0x3) != 0x02)
+-		mac_addr_p += 2;
+-
+ 	adapter->mac_addr = 0;
+ 	memcpy(&adapter->mac_addr, mac_addr_p, 6);
+ 
 
 
