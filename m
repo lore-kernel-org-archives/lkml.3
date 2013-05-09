@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab3EIIfY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 04:35:24 -0400
-Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:16111
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751249Ab3EIIfW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 04:35:22 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(z5105h2005kz9371I542I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1155h)
-From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-To: "Zhang, Sonic" <Sonic.Zhang@analog.com>, Libo Chen <libo.chen@huawei.com>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>
-CC: "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "lizefan@huawei.com" <lizefan@huawei.com>
-Subject: RE: [PATCH v2 1/2] i2c: i2c-bfin-twi: don`t free peripheral before
- it init successful
-Thread-Topic: [PATCH v2 1/2] i2c: i2c-bfin-twi: don`t free peripheral before
- it init successful
-Thread-Index: AQHOTI9QZNJIiFu0Q0GUTG2PZMAtGZj8he6ggAAAxCA=
-Date: Thu, 9 May 2013 08:34:17 +0000
-Message-ID: <B168F8A49F4BCF4C84FD23DA5F6363EEAD64@NWD2MBX7.ad.analog.com>
-References: <1368088044-20408-1-git-send-email-libo.chen@huawei.com>
- <1368088044-20408-2-git-send-email-libo.chen@huawei.com> 
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.64.72.242]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752200Ab3EIIkK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 04:40:10 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60235 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260Ab3EIIkI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 04:40:08 -0400
+X-AuditID: 9c930197-b7c1fae000001854-aa-518b60e3b833
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@kernel.org,
+        fweisbec@gmail.com, peterz@infradead.org, jolsa@redhat.com,
+        xiaoguangrong@linux.vnet.ibm.com
+Subject: Re: [PATCH 03/13] perf evlist: add initialzation function for tracepoints
+References: <1368073909-8825-1-git-send-email-dsahern@gmail.com>
+	<1368073909-8825-4-git-send-email-dsahern@gmail.com>
+Date: Thu, 09 May 2013 17:40:03 +0900
+In-Reply-To: <1368073909-8825-4-git-send-email-dsahern@gmail.com> (David
+	Ahern's message of "Wed, 8 May 2013 22:31:39 -0600")
+Message-ID: <87sj1w7di4.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore my Ack.
+Hi David,
 
-Sonic
-
->-----Original Message-----
->From: Zhang, Sonic
->Sent: Thursday, May 09, 2013 4:31 PM
->To: 'Libo Chen'; wsa@the-dreams.de
->Cc: uclinux-dist-devel@blackfin.uclinux.org; linux-kernel@vger.kernel.org; linux-
->i2c@vger.kernel.org; lizefan@huawei.com
->Subject: RE: [PATCH v2 1/2] i2c: i2c-bfin-twi: don`t free peripheral before it init
->successful
+On Wed,  8 May 2013 22:31:39 -0600, David Ahern wrote:
+> Handles initializations typically done as part of processing the file
+> header and HEADER_TRACING_DATA event.
 >
->Acked-by: Sonic Zhang <sonic.zhang@analog.com>
->
->>-----Original Message-----
->>From: Libo Chen [mailto:libo.chen@huawei.com]
->>Sent: Thursday, May 09, 2013 4:27 PM
->>To: Zhang, Sonic; wsa@the-dreams.de
->>Cc: uclinux-dist-devel@blackfin.uclinux.org;
->>linux-kernel@vger.kernel.org; linux- i2c@vger.kernel.org;
->>lizefan@huawei.com; Libo Chen
->>Subject: [PATCH v2 1/2] i2c: i2c-bfin-twi: don`t free peripheral before
->>it init successful
->>
->>down out_error_no_irq. When platform_get_irq fail, no need to free
->>peripheral
->>
->>Signed-off-by: Libo Chen <libo.chen@huawei.com>
->>---
->> drivers/i2c/busses/i2c-bfin-twi.c |    2 +-
->> 1 files changed, 1 insertions(+), 1 deletions(-)
->>
->>diff --git a/drivers/i2c/busses/i2c-bfin-twi.c
->>b/drivers/i2c/busses/i2c-bfin-twi.c
->>index 05080c4..6617645 100644
->>--- a/drivers/i2c/busses/i2c-bfin-twi.c
->>+++ b/drivers/i2c/busses/i2c-bfin-twi.c
->>@@ -709,9 +709,9 @@ static int i2c_bfin_twi_probe(struct
->>platform_device *pdev)
->> out_error_add_adapter:
->>      free_irq(iface->irq, iface);
->> out_error_req_irq:
->>-out_error_no_irq:
->>      peripheral_free_list((unsigned short *)pdev->dev.platform_data);
->> out_error_pin_mux:
->>+out_error_no_irq:
->>      iounmap(iface->regs_base);
->> out_error_ioremap:
->> out_error_get_res:
->>--
->>1.7.1
->>
->>
+[SNIP]
+> +int perf_evlist__trace_init(struct perf_evlist *evlist,
+> +			    struct perf_session *session)
+> +{
+> +	struct tracing_data *tdata;
+> +	char temp_file[] = "/tmp/perf-XXXXXXXX";
+> +	int fd;
+> +
+> +	fd = mkstemp(temp_file);
+> +	if (fd < 0) {
+> +		pr_err("mkstemp failed\n");
+> +		return -1;
+> +	}
+> +	unlink(temp_file);
+> +
+> +	tdata = tracing_data_get(&evlist->entries, fd, false);
+> +	if (!tdata)
+> +		return -1;
+> +
+> +	lseek(fd, 0, SEEK_SET);
+> +	(void) trace_report(fd, &session->pevent, false);
+> +	tracing_data_put(tdata);
 
+I guess you need to close the fd here.
 
+> +
+> +	return perf_evlist__prepare_tracepoint_events(evlist, session->pevent);
+> +}
+
+Thanks,
+Namhyung
