@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758497Ab3EIWe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:34:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46349 "EHLO
+	id S932066Ab3EIWg7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:36:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46380 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758435Ab3EIWex (ORCPT
+	with ESMTP id S1758499Ab3EIWe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:34:53 -0400
+	Thu, 9 May 2013 18:34:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?David=20M=C3=BCller?= <d.mueller@elsoft.ch>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 13/26] drm/i915: Fall back to bit banging mode for DVO transmitter detection
-Date: Thu,  9 May 2013 15:34:27 -0700
-Message-Id: <20130509223423.820785089@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 21/26] drm/radeon: fix possible segfault when parsing pm tables
+Date: Thu,  9 May 2013 15:34:35 -0700
+Message-Id: <20130509223424.677931742@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
 References: <20130509223422.368544659@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,55 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Müller <d.mueller@elsoft.ch>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit e4bfff54ed3f5de88f5358504c78c2cb037813aa upstream.
+commit f8e6bfc2ce162855fa4f9822a45659f4b542c960 upstream.
 
-As discussed in this thread
-http://lists.freedesktop.org/archives/dri-devel/2013-April/037411.html
-GMBUS based DVO transmitter detection seems to be unreliable which could
-result in an unusable DVO port.
+If we have a empty power table, bail early and allocate
+the default power state.
 
-The attached patch fixes this by falling back to bit banging mode for
-the time DVO transmitter detection is in progress.
+Should fix:
+https://bugs.freedesktop.org/show_bug.cgi?id=63865
 
-Signed-off-by: David Müller <d.mueller@elsoft.ch>
-Tested-by: David Müller <d.mueller@elsoft.ch>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_dvo.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_dvo.c
-+++ b/drivers/gpu/drm/i915/intel_dvo.c
-@@ -370,6 +370,7 @@ void intel_dvo_init(struct drm_device *d
- 		const struct intel_dvo_device *dvo = &intel_dvo_devices[i];
- 		struct i2c_adapter *i2c;
- 		int gpio;
-+		bool dvoinit;
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -1998,6 +1998,8 @@ static int radeon_atombios_parse_power_t
+ 	num_modes = power_info->info.ucNumOfPowerModeEntries;
+ 	if (num_modes > ATOM_MAX_NUMBEROF_POWER_BLOCK)
+ 		num_modes = ATOM_MAX_NUMBEROF_POWER_BLOCK;
++	if (num_modes == 0)
++		return state_index;
+ 	rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state) * num_modes, GFP_KERNEL);
+ 	if (!rdev->pm.power_state)
+ 		return state_index;
+@@ -2396,6 +2398,8 @@ static int radeon_atombios_parse_power_t
+ 	power_info = (union power_info *)(mode_info->atom_context->bios + data_offset);
  
- 		/* Allow the I2C driver info to specify the GPIO to be used in
- 		 * special cases, but otherwise default to what's defined
-@@ -389,7 +390,17 @@ void intel_dvo_init(struct drm_device *d
- 		i2c = &dev_priv->gmbus[gpio].adapter;
- 
- 		intel_dvo->dev = *dvo;
--		if (!dvo->dev_ops->init(&intel_dvo->dev, i2c))
+ 	radeon_atombios_add_pplib_thermal_controller(rdev, &power_info->pplib.sThermalController);
++	if (power_info->pplib.ucNumStates == 0)
++		return state_index;
+ 	rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state) *
+ 				       power_info->pplib.ucNumStates, GFP_KERNEL);
+ 	if (!rdev->pm.power_state)
+@@ -2494,6 +2498,8 @@ static int radeon_atombios_parse_power_t
+ 	non_clock_info_array = (struct _NonClockInfoArray *)
+ 		(mode_info->atom_context->bios + data_offset +
+ 		 le16_to_cpu(power_info->pplib.usNonClockInfoArrayOffset));
++	if (state_array->ucNumEntries == 0)
++		return state_index;
+ 	rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state) *
+ 				       state_array->ucNumEntries, GFP_KERNEL);
+ 	if (!rdev->pm.power_state)
+@@ -2584,7 +2590,9 @@ void radeon_atombios_get_power_modes(str
+ 		default:
+ 			break;
+ 		}
+-	} else {
++	}
 +
-+		/* GMBUS NAK handling seems to be unstable, hence let the
-+		 * transmitter detection run in bit banging mode for now.
-+		 */
-+		intel_gmbus_force_bit(i2c, true);
-+
-+		dvoinit = dvo->dev_ops->init(&intel_dvo->dev, i2c);
-+
-+		intel_gmbus_force_bit(i2c, false);
-+
-+		if (!dvoinit)
- 			continue;
- 
- 		intel_encoder->type = INTEL_OUTPUT_DVO;
++	if (state_index == 0) {
+ 		rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state), GFP_KERNEL);
+ 		if (rdev->pm.power_state) {
+ 			rdev->pm.power_state[0].clock_info =
 
 
