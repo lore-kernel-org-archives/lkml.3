@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654Ab3EIPVc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 11:21:32 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:53533 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755577Ab3EIPV1 (ORCPT
+	id S1755737Ab3EIPVt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 11:21:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18389 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755399Ab3EIPVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 11:21:27 -0400
-From: David Hauweele <david@hauweele.net>
-To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-zigbee-devel@lists.sourceforge.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Hauweele <david@hauweele.net>
-Subject: [PATCH 2/2] mrf24j40: Keep the interrupt line enabled
-Date: Thu,  9 May 2013 17:19:47 +0200
-Message-Id: <1368112788-25701-2-git-send-email-david@hauweele.net>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368112788-25701-1-git-send-email-david@hauweele.net>
-References: <1368112788-25701-1-git-send-email-david@hauweele.net>
+	Thu, 9 May 2013 11:21:17 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=OF0BmyLs-1YA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=Kfn0_i_Y4z8A:10 a=5d5xEF6ljmCuXMl4LVQA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1368112875.7373.108.camel@gandalf.local.home>
+Subject: Re: [PATCH 01/11] [BUGFIX] tracing: Return 0 if event_enable_func
+ succeeded
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
+Date: Thu, 09 May 2013 11:21:15 -0400
+In-Reply-To: <20130509054413.30398.55650.stgit@mhiramat-M0-7522>
+References: <20130509054405.30398.73831.stgit@mhiramat-M0-7522>
+	 <20130509054413.30398.55650.stgit@mhiramat-M0-7522>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disabling the interrupt line could miss an IRQ and leave the line into a
-low state hence locking the driver.
+On Thu, 2013-05-09 at 14:44 +0900, Masami Hiramatsu wrote:
+> Return 0 instead of the number of activated ftrace if
+> event_enable_func succeeded and return an error code if failed,
+> beacuse 0 is success code at caller (ftrace_regex_write).
+> 
+> Without this fix, writing enable_event trigger on set_ftrace_filter
+> always doesn't work, since event_enable_func returns 1 to
+> ftrace_regex_write, it consumes 1 byte and pass input string
+> without the first character again. This makes event_enable_func
+> fail and disables event entry.
+> 
 
-Signed-off-by: David Hauweele <david@hauweele.net>
----
- drivers/net/ieee802154/mrf24j40.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+Ah, this actually fixes two bugs! :-)
 
-diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
-index 1e3ddf3..6ef32f7 100644
---- a/drivers/net/ieee802154/mrf24j40.c
-+++ b/drivers/net/ieee802154/mrf24j40.c
-@@ -603,8 +603,6 @@ static irqreturn_t mrf24j40_isr(int irq, void *data)
- {
- 	struct mrf24j40 *devrec = data;
- 
--	disable_irq_nosync(irq);
--
- 	schedule_work(&devrec->irqwork);
- 
- 	return IRQ_HANDLED;
-@@ -619,7 +617,7 @@ static void mrf24j40_isrwork(struct work_struct *work)
- 	/* Read the interrupt status */
- 	ret = read_short_reg(devrec, REG_INTSTAT, &intstat);
- 	if (ret)
--		goto out;
-+		return;
- 
- 	/* Check for TX complete */
- 	if (intstat & 0x1)
-@@ -628,9 +626,6 @@ static void mrf24j40_isrwork(struct work_struct *work)
- 	/* Check for Rx */
- 	if (intstat & 0x8)
- 		schedule_work(&devrec->rxwork);
--
--out:
--	enable_irq(devrec->spi->irq);
- }
- 
- static void mrf24j40_rxwork(struct work_struct *work)
--- 
-1.7.10.4
+A typo will be considered success, but it also sends back to the user
+that it only wrote one byte!
+
+-- Steve
+
 
