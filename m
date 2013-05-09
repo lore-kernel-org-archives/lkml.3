@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758958Ab3EIWoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:44:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46266 "EHLO
+	id S1759003Ab3EIWok (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:44:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46261 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758327Ab3EIWeo (ORCPT
+	with ESMTP id S1758310Ab3EIWen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:34:44 -0400
+	Thu, 9 May 2013 18:34:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 04/26] net/eth/ibmveth: Fixup retrieval of MAC address
-Date: Thu,  9 May 2013 15:34:18 -0700
-Message-Id: <20130509223422.882358710@linuxfoundation.org>
+        David Jeffery <djeffery@redhat.com>, Ian Kent <raven@themaw.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 03/26] autofs - remove autofs dentry mount check
+Date: Thu,  9 May 2013 15:34:17 -0700
+Message-Id: <20130509223422.781223002@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
 References: <20130509223422.368544659@linuxfoundation.org>
@@ -27,77 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: David Jeffery <djeffery@redhat.com>
 
-commit 13f85203e1060da83d9ec1c1c5a63343eaab8de4 upstream.
+commit ce8a5dbdf9e709bdaf4618d7ef8cceb91e8adc69 upstream.
 
-Some ancient pHyp versions used to create a 8 bytes local-mac-address
-property in the device-tree instead of a 6 bytes one for veth.
+When checking if an autofs mount point is busy it isn't sufficient to
+only check if it's a mount point.
 
-The Linux driver code to deal with that is an insane hack which also
-happens to break with some choices of MAC addresses in qemu by testing
-for a bit in the address rather than just looking at the size of the
-property.
+For example, if the mount of an offset mountpoint in a tree is denied
+for this host by its export and the dentry becomes a process working
+directory the check incorrectly returns the mount as not in use at
+expire.
 
-Sanitize this by doing the latter instead.
+This can happen since the default when mounting within a tree is
+nostrict, which means ingnore mount fails on mounts within the tree and
+continue.  The nostrict option is meant to allow mounting in this case.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: David Jeffery <djeffery@redhat.com>
+Signed-off-by: Ian Kent <raven@themaw.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ibm/ibmveth.c |   23 ++++++++++-------------
- 1 file changed, 10 insertions(+), 13 deletions(-)
+ fs/autofs4/expire.c |    9 ---------
+ 1 file changed, 9 deletions(-)
 
---- a/drivers/net/ethernet/ibm/ibmveth.c
-+++ b/drivers/net/ethernet/ibm/ibmveth.c
-@@ -1327,7 +1327,7 @@ static const struct net_device_ops ibmve
- static int __devinit ibmveth_probe(struct vio_dev *dev,
- 				   const struct vio_device_id *id)
- {
--	int rc, i;
-+	int rc, i, mac_len;
- 	struct net_device *netdev;
- 	struct ibmveth_adapter *adapter;
- 	unsigned char *mac_addr_p;
-@@ -1337,11 +1337,19 @@ static int __devinit ibmveth_probe(struc
- 		dev->unit_address);
- 
- 	mac_addr_p = (unsigned char *)vio_get_attribute(dev, VETH_MAC_ADDR,
--							NULL);
-+							&mac_len);
- 	if (!mac_addr_p) {
- 		dev_err(&dev->dev, "Can't find VETH_MAC_ADDR attribute\n");
- 		return -EINVAL;
- 	}
-+	/* Workaround for old/broken pHyp */
-+	if (mac_len == 8)
-+		mac_addr_p += 2;
-+	else if (mac_len != 6) {
-+		dev_err(&dev->dev, "VETH_MAC_ADDR attribute wrong len %d\n",
-+			mac_len);
-+		return -EINVAL;
-+	}
- 
- 	mcastFilterSize_p = (unsigned int *)vio_get_attribute(dev,
- 						VETH_MCAST_FILTER_SIZE, NULL);
-@@ -1366,17 +1374,6 @@ static int __devinit ibmveth_probe(struc
- 
- 	netif_napi_add(netdev, &adapter->napi, ibmveth_poll, 16);
- 
--	/*
--	 * Some older boxes running PHYP non-natively have an OF that returns
--	 * a 8-byte local-mac-address field (and the first 2 bytes have to be
--	 * ignored) while newer boxes' OF return a 6-byte field. Note that
--	 * IEEE 1275 specifies that local-mac-address must be a 6-byte field.
--	 * The RPA doc specifies that the first byte must be 10b, so we'll
--	 * just look for it to solve this 8 vs. 6 byte field issue
--	 */
--	if ((*mac_addr_p & 0x3) != 0x02)
--		mac_addr_p += 2;
+--- a/fs/autofs4/expire.c
++++ b/fs/autofs4/expire.c
+@@ -61,15 +61,6 @@ static int autofs4_mount_busy(struct vfs
+ 		/* This is an autofs submount, we can't expire it */
+ 		if (autofs_type_indirect(sbi->type))
+ 			goto done;
 -
- 	adapter->mac_addr = 0;
- 	memcpy(&adapter->mac_addr, mac_addr_p, 6);
+-		/*
+-		 * Otherwise it's an offset mount and we need to check
+-		 * if we can umount its mount, if there is one.
+-		 */
+-		if (!d_mountpoint(path.dentry)) {
+-			status = 0;
+-			goto done;
+-		}
+ 	}
  
+ 	/* Update the expiry counter if fs is busy */
 
 
