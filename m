@@ -1,197 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab3EINwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 09:52:41 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36733 "EHLO arroyo.ext.ti.com"
+	id S1755702Ab3EINwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 09:52:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18124 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754364Ab3EINwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 09:52:39 -0400
-Message-ID: <518BAA18.901@ti.com>
-Date: Thu, 9 May 2013 09:52:24 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1754882Ab3EINwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 09:52:53 -0400
+Date: Thu, 9 May 2013 09:52:47 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: linux-audit@redhat.com, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Eric Paris <eparis@redhat.com>
+Subject: Re: [PATCH] [BZ905179] audit: omit check for uid and gid validity in
+ audit rules and data
+Message-ID: <20130509135247.GF7402@madcap2.tricolour.ca>
+References: <1363807097-13073-1-git-send-email-rgb@redhat.com>
+ <87ip3w59gr.fsf@xmission.com>
+ <20130416193823.GH6530@madcap2.tricolour.ca>
+ <3133489.jB2ld18Orb@x2>
 MIME-Version: 1.0
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-CC: <linux-pm@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <amit.kachhap@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: Re: [PATCH V3 06/21] thermal: exynos: Add missing definations and
- code cleanup
-References: <1367931671-3906-1-git-send-email-amit.daniel@samsung.com> <1367931671-3906-7-git-send-email-amit.daniel@samsung.com>
-In-Reply-To: <1367931671-3906-7-git-send-email-amit.daniel@samsung.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2UPBXBOUCUHPBAIVFIHJV"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3133489.jB2ld18Orb@x2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2UPBXBOUCUHPBAIVFIHJV
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 09, 2013 at 09:29:18AM -0400, Steve Grubb wrote:
+> On Tuesday, April 16, 2013 03:38:23 PM Richard Guy Briggs wrote:
+> > On Tue, Apr 09, 2013 at 02:39:32AM -0700, Eric W. Biederman wrote:
+> > > Andrew Morton <akpm@linux-foundation.org> writes:
+> > > > On Wed, 20 Mar 2013 15:18:17 -0400 Richard Guy Briggs <rgb@redhat.com> 
+> wrote:
+> > > >> audit rule additions containing "-F auid!=4294967295" were failing with
+> > > >> EINVAL.> 
+> > > The only case where this appears to make the least little bit of sense
+> > > is if the goal of the test is to test to see if an audit logloginuid
+> > > has been set at all.  In which case depending on a test against
+> > > 4294967295 is bogus because you are depending on an intimate internal
+> > > kernel implementation detail.
+> > > 
+> > > How about something like my untested patch below that add an explicit
+> > > operation to test if loginuid has been set?
+> > 
+> > Sorry for the delay in testing this, I had another urgent bug and a
+> > belligerent test box...
+> > 
+> > I like this approach better than mine now that I understand it.  I've
+> > tested the patch below without any changes.  It works as expected with
+> > my previous test case.  I don't know if a Signed-off-by: is appropriate
+> > for me in this case, but I'll throw in a:
+> > 
+> > Tested-by: Richard Guy Briggs <rbriggs@redhat.com>
+> > 
+> > and recommend a:
+> > 
+> > Reported-By: Steve Grubb <sbrubb@redhat.com>
+> 
+> If this is the approved patch, can it be put in stable? The audit system 
+> hasn't worked as intended since January.
 
-Amit,
+Most certainly.  I should have added that.  I only thought about that
+after sending.
 
-On 07-05-2013 09:00, Amit Daniel Kachhap wrote:
-> This patch adds some extra register bitfield definations and cleans
-> up the code to prepare for moving register macros and definations insid=
-e
-> the TMU data section.
->=20
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> ---
->  drivers/thermal/samsung/exynos_tmu.c |   62 +++++++++++++++++++++++++-=
---------
->  1 files changed, 46 insertions(+), 16 deletions(-)
->=20
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/sam=
-sung/exynos_tmu.c
-> index 05b5068..a43afc4 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -47,9 +47,12 @@
-> =20
->  #define EXYNOS_TMU_TRIM_TEMP_MASK	0xff
->  #define EXYNOS_TMU_GAIN_SHIFT		8
-> +#define EXYNOS_TMU_GAIN_MASK		0xf
->  #define EXYNOS_TMU_REF_VOLTAGE_SHIFT	24
-> -#define EXYNOS_TMU_CORE_ON		3
-> -#define EXYNOS_TMU_CORE_OFF		2
-> +#define EXYNOS_TMU_REF_VOLTAGE_MASK	0x1f
-> +#define EXYNOS_TMU_BUF_SLOPE_SEL_MASK	0xf
-> +#define EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT	8
-> +#define EXYNOS_TMU_CORE_EN_SHIFT	0
->  #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET	50
-> =20
->  /* Exynos4210 specific registers */
-> @@ -67,6 +70,7 @@
->  #define EXYNOS4210_TMU_TRIG_LEVEL1_MASK	0x10
->  #define EXYNOS4210_TMU_TRIG_LEVEL2_MASK	0x100
->  #define EXYNOS4210_TMU_TRIG_LEVEL3_MASK	0x1000
-> +#define EXYNOS4210_TMU_TRIG_LEVEL_MASK	0x1111
->  #define EXYNOS4210_TMU_INTCLEAR_VAL	0x1111
-> =20
->  /* Exynos5250 and Exynos4412 specific registers */
-> @@ -76,17 +80,30 @@
->  #define EXYNOS_EMUL_CON		0x80
-> =20
->  #define EXYNOS_TRIMINFO_RELOAD		0x1
-> +#define EXYNOS_TRIMINFO_SHIFT		0x0
-> +#define EXYNOS_TMU_RISE_INT_MASK	0x111
-> +#define EXYNOS_TMU_RISE_INT_SHIFT	0
-> +#define EXYNOS_TMU_FALL_INT_MASK	0x111
-> +#define EXYNOS_TMU_FALL_INT_SHIFT	12
->  #define EXYNOS_TMU_CLEAR_RISE_INT	0x111
->  #define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
-> -#define EXYNOS_MUX_ADDR_VALUE		6
-> -#define EXYNOS_MUX_ADDR_SHIFT		20
->  #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
-> +#define EXYNOS_TMU_TRIP_MODE_MASK	0x7
-> +
-> +#define EXYNOS_TMU_INTEN_RISE0_SHIFT	0
-> +#define EXYNOS_TMU_INTEN_RISE1_SHIFT	4
-> +#define EXYNOS_TMU_INTEN_RISE2_SHIFT	8
-> +#define EXYNOS_TMU_INTEN_RISE3_SHIFT	12
-> +#define EXYNOS_TMU_INTEN_FALL0_SHIFT	16
-> +#define EXYNOS_TMU_INTEN_FALL1_SHIFT	20
-> +#define EXYNOS_TMU_INTEN_FALL2_SHIFT	24
-> =20
->  #define EFUSE_MIN_VALUE 40
->  #define EFUSE_MAX_VALUE 100
-> =20
->  #ifdef CONFIG_THERMAL_EMULATION
->  #define EXYNOS_EMUL_TIME	0x57F0
-> +#define EXYNOS_EMUL_TIME_MASK	0xffff
->  #define EXYNOS_EMUL_TIME_SHIFT	16
->  #define EXYNOS_EMUL_DATA_SHIFT	8
->  #define EXYNOS_EMUL_DATA_MASK	0xFF
+> Thanks,
+> -Steve
+> 
+> > > From: "Eric W. Biederman" <ebiederm@xmission.com>
+> > > Date: Tue, 9 Apr 2013 02:22:10 -0700
+> > > Subject: [PATCH] audit: Make testing for a valid loginuid explicit.
+> > > 
+> > > audit rule additions containing "-F auid!=4294967295" were failing
+> > > with EINVAL.
+> > > 
+> > > Apparently some userland audit rule sets want to know if loginuid uid
+> > > has been set and are using a test for auid != 4294967295 to determine
+> > > that.
+> > > 
+> > > In practice that is a horrible way to ask if a value has been set,
+> > > because it relies on subtle implementation details and will break
+> > > every time the uid implementation in the kernel changes.
+> > > 
+> > > So add a clean way to test if the audit loginuid has been set, and
+> > > silently convert the old idiom to the cleaner and more comprehensible
+> > > new idiom.
+> > > 
+> > > Reported-By: Richard Guy Briggs <rgb@redhat.com> wrote:
+> > > Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> > > ---
+> > > 
+> > >  include/linux/audit.h      |    5 +++++
+> > >  include/uapi/linux/audit.h |    1 +
+> > >  kernel/auditfilter.c       |   29 +++++++++++++++++++++++++++++
+> > >  kernel/auditsc.c           |    5 ++++-
+> > >  4 files changed, 39 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/include/linux/audit.h b/include/linux/audit.h
+> > > index a9fefe2..8a1ddde 100644
+> > > --- a/include/linux/audit.h
+> > > +++ b/include/linux/audit.h
+> > > @@ -390,6 +390,11 @@ static inline void audit_ptrace(struct task_struct
+> > > *t)
+> > > 
+> > >  #define audit_signals 0
+> > >  #endif /* CONFIG_AUDITSYSCALL */
+> > > 
+> > > +static inline bool audit_loginuid_set(struct task_struct *tsk)
+> > > +{
+> > > +	return uid_valid(audit_get_loginuid(tsk));
+> > > +}
+> > > +
+> > > 
+> > >  #ifdef CONFIG_AUDIT
+> > >  /* These are defined in audit.c */
+> > >  
+> > >  				/* Public API */
+> > > 
+> > > diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> > > index 9f096f1..9554a19 100644
+> > > --- a/include/uapi/linux/audit.h
+> > > +++ b/include/uapi/linux/audit.h
+> > > @@ -246,6 +246,7 @@
+> > > 
+> > >  #define AUDIT_OBJ_TYPE	21
+> > >  #define AUDIT_OBJ_LEV_LOW	22
+> > >  #define AUDIT_OBJ_LEV_HIGH	23
+> > > 
+> > > +#define AUDIT_LOGINUID_SET	24
+> > > 
+> > >  				/* These are ONLY useful when checking
+> > >  				
+> > >  				 * at syscall exit time (AUDIT_AT_EXIT). */
+> > > 
+> > > diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+> > > index 540f986..6381d17 100644
+> > > --- a/kernel/auditfilter.c
+> > > +++ b/kernel/auditfilter.c
+> > > @@ -349,6 +349,12 @@ static struct audit_entry *audit_rule_to_entry(struct
+> > > audit_rule *rule)> 
+> > >  		if (f->op == Audit_bad)
+> > >  		
+> > >  			goto exit_free;
+> > > 
+> > > +		/* Support legacy tests for a valid loginuid */
+> > > +		if ((f->type == AUDIT_LOGINUID) && (f->val == 4294967295)) {
+> > > +			f->type = AUDIT_LOGINUID_SET;
+> > > +			f->val = 0;
+> > > +		}
+> > > +
+> > > 
+> > >  		switch(f->type) {
+> > >  		
+> > >  		default:
+> > >  			goto exit_free;
+> > > 
+> > > @@ -377,6 +383,12 @@ static struct audit_entry *audit_rule_to_entry(struct
+> > > audit_rule *rule)> 
+> > >  			if (!gid_valid(f->gid))
+> > >  			
+> > >  				goto exit_free;
+> > >  			
+> > >  			break;
+> > > 
+> > > +		case AUDIT_LOGINUID_SET:
+> > > +			if ((f->op != Audit_not_equal) && (f->op != Audit_equal))
+> > > +				goto exit_free;
+> > > +			if ((f->val != 0) && (f->val != 1))
+> > > +				goto exit_free;
+> > > +			break;
+> > > 
+> > >  		case AUDIT_PID:
+> > >  		case AUDIT_PERS:
+> > > 
+> > >  		case AUDIT_MSGTYPE:
+> > > @@ -459,6 +471,13 @@ static struct audit_entry *audit_data_to_entry(struct
+> > > audit_rule_data *data,> 
+> > >  		f->gid = INVALID_GID;
+> > >  		f->lsm_str = NULL;
+> > >  		f->lsm_rule = NULL;
+> > > 
+> > > +
+> > > +		/* Support legacy tests for a valid loginuid */
+> > > +		if ((f->type == AUDIT_LOGINUID) && (f->val == 4294967295)) {
+> > > +			f->type = AUDIT_LOGINUID_SET;
+> > > +			f->val = 0;
+> > > +		}
+> > > +
+> > > 
+> > >  		switch(f->type) {
+> > >  		case AUDIT_UID:
+> > > 
+> > >  		case AUDIT_EUID:
+> > > @@ -487,6 +506,12 @@ static struct audit_entry *audit_data_to_entry(struct
+> > > audit_rule_data *data,> 
+> > >  			if (!gid_valid(f->gid))
+> > >  			
+> > >  				goto exit_free;
+> > >  			
+> > >  			break;
+> > > 
+> > > +		case AUDIT_LOGINUID_SET:
+> > > +			if ((f->op != Audit_not_equal) && (f->op != Audit_equal))
+> > > +				goto exit_free;
+> > > +			if ((f->val != 0) && (f->val != 1))
+> > > +				goto exit_free;
+> > > +			break;
+> > > 
+> > >  		case AUDIT_PID:
+> > >  		case AUDIT_PERS:
+> > > 
+> > >  		case AUDIT_MSGTYPE:
+> > > @@ -1380,6 +1405,10 @@ static int audit_filter_user_rules(struct
+> > > audit_krule *rule,> 
+> > >  			result = audit_uid_comparator(audit_get_loginuid(current),
+> > >  			
+> > >  						  f->op, f->uid);
+> > >  			
+> > >  			break;
+> > > 
+> > > +		case AUDIT_LOGINUID_SET:
+> > > +			result = audit_comparator(audit_loginuid_set(current),
+> > > +						  f->op, f->val);
+> > > +			break;
+> > > 
+> > >  		case AUDIT_SUBJ_USER:
+> > >  		case AUDIT_SUBJ_ROLE:
+> > > 
+> > >  		case AUDIT_SUBJ_TYPE:
+> > > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> > > index 3a11d34..27d0a50 100644
+> > > --- a/kernel/auditsc.c
+> > > +++ b/kernel/auditsc.c
+> > > @@ -750,6 +750,9 @@ static int audit_filter_rules(struct task_struct *tsk,
+> > > 
+> > >  			if (ctx)
+> > >  			
+> > >  				result = audit_uid_comparator(tsk->loginuid, f->op, 
+> f->uid);
+> > >  			
+> > >  			break;
+> > > 
+> > > +		case AUDIT_LOGINUID_SET:
+> > > +			result = audit_comparator(audit_loginuid_set(tsk), f->op, 
+> f->val);
+> > > +			break;
+> > > 
+> > >  		case AUDIT_SUBJ_USER:
+> > >  		case AUDIT_SUBJ_ROLE:
+> > > 
+> > >  		case AUDIT_SUBJ_TYPE:
+> > > @@ -2317,7 +2320,7 @@ int audit_set_loginuid(kuid_t loginuid)
+> > > 
+> > >  	unsigned int sessionid;
+> > >  
+> > >  #ifdef CONFIG_AUDIT_LOGINUID_IMMUTABLE
+> > > 
+> > > -	if (uid_valid(task->loginuid))
+> > > +	if (audit_loginuid_set(task))
+> > > 
+> > >  		return -EPERM;
+> > >  
+> > >  #else /* CONFIG_AUDIT_LOGINUID_IMMUTABLE */
+> > >  
+> > >  	if (!capable(CAP_AUDIT_CONTROL))
+> > 
+> > - RGB
+> > 
+> > --
+> > Richard Guy Briggs <rbriggs@redhat.com>
+> > Senior Software Engineer
+> > AMER ENG Base Operating Systems
+> > Remote, Canada, Ottawa
+> > Voice: 1.647.777.2635
+> > Internal: (81) 32635
+> > 
+> > --
+> > Linux-audit mailing list
+> > Linux-audit@redhat.com
+> > https://www.redhat.com/mailman/listinfo/linux-audit
 
+- RGB
 
-What is the pattern above? Sometimes you use decimal notation sometimes
-you use hex notation. On a quick look I could not see a pattern..
-
-> @@ -265,24 +282,37 @@ static void exynos_tmu_control(struct platform_de=
-vice *pdev, bool on)
->  	mutex_lock(&data->lock);
->  	clk_enable(data->clk);
-> =20
-> -	con =3D pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
-> -		pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
-> +	con =3D readl(data->base + EXYNOS_TMU_REG_CONTROL);
-> =20
-
-You have a important change here. Before you would just apply a value
-based on your local configuration. Now you are considering what is
-present in your ctrl register. Is this really a code cleanup required
-for moving the register definitions?
-
-> -	if (data->soc =3D=3D SOC_ARCH_EXYNOS) {
-> -		con |=3D pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
-> -		con |=3D (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
-> +	if (pdata->reference_voltage) {
-> +		con &=3D ~(EXYNOS_TMU_REF_VOLTAGE_MASK <<
-> +				EXYNOS_TMU_REF_VOLTAGE_SHIFT);
-> +		con |=3D pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT;
-> +	}
-> +
-> +	if (pdata->gain) {
-> +		con &=3D ~(EXYNOS_TMU_GAIN_MASK << EXYNOS_TMU_GAIN_SHIFT);
-> +		con |=3D (pdata->gain << EXYNOS_TMU_GAIN_SHIFT);
-> +	}
-> +
-> +	if (pdata->noise_cancel_mode) {
-> +		con &=3D ~(EXYNOS_TMU_TRIP_MODE_MASK <<
-> +					EXYNOS_TMU_TRIP_MODE_SHIFT);
-> +		con |=3D (pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT);
-
-For all the above ifs: Dont you want to clear those bits in case the
-pdata config says those flags are not set? For instance, if pdata->gain
-=3D=3D 0, do you need to con &=3D ~(EXYNOS_TMU_GAIN_MASK <<
-EXYNOS_TMU_GAIN_SHIFT); ??
-
->  	}
-> =20
->  	if (on) {
-> -		con |=3D EXYNOS_TMU_CORE_ON;
-> -		interrupt_en =3D pdata->trigger_level3_en << 12 |
-> -			pdata->trigger_level2_en << 8 |
-> -			pdata->trigger_level1_en << 4 |
-> -			pdata->trigger_level0_en;
-> +		con |=3D (1 << EXYNOS_TMU_CORE_EN_SHIFT);
-> +		interrupt_en =3D
-> +		pdata->trigger_level3_en << EXYNOS_TMU_INTEN_RISE3_SHIFT |
-> +		pdata->trigger_level2_en << EXYNOS_TMU_INTEN_RISE2_SHIFT |
-> +		pdata->trigger_level1_en << EXYNOS_TMU_INTEN_RISE1_SHIFT |
-> +		pdata->trigger_level0_en << EXYNOS_TMU_INTEN_RISE0_SHIFT;
->  		if (pdata->threshold_falling)
-> -			interrupt_en |=3D interrupt_en << 16;
-> +			interrupt_en |=3D
-> +				interrupt_en << EXYNOS_TMU_INTEN_FALL0_SHIFT;
->  	} else {
-> -		con |=3D EXYNOS_TMU_CORE_OFF;
-> +		con &=3D ~(1 << EXYNOS_TMU_CORE_EN_SHIFT);
->  		interrupt_en =3D 0; /* Disable all interrupts */
->  	}
->  	writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
->=20
-
-
-
-------enig2UPBXBOUCUHPBAIVFIHJV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlGLqhgACgkQCXcVR3XQvP0dVQD+L1f5qdmUAD08l4i6yvv8lY1D
-2LUBGHm3W2r9yWsRJXIBAMeehm6c9Ge2XydDCCns3HdFEK19gYUvy/efbrLHSLTR
-=4+kc
------END PGP SIGNATURE-----
-
-------enig2UPBXBOUCUHPBAIVFIHJV--
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer
+AMER ENG Base Operating Systems
+Remote, Ottawa, Canada
+Voice: 1.647.777.2635
+Internal: (81) 32635
