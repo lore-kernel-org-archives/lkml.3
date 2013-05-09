@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235Ab3EIWpr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:45:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46225 "EHLO
+	id S1758477Ab3EIWqH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:46:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46220 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758145Ab3EIWd1 (ORCPT
+	with ESMTP id S1757980Ab3EIWd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:27 -0400
+	Thu, 9 May 2013 18:33:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roman Mamedov <rm@romanrm.ru>, Josef Bacik <jbacik@fusionio.com>
-Subject: [ 68/73] Btrfs: compare relevant parts of delayed tree refs
-Date: Thu,  9 May 2013 15:32:31 -0700
-Message-Id: <20130509222805.232304362@linuxfoundation.org>
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 67/73] tracing: Fix ftrace_dump()
+Date: Thu,  9 May 2013 15:32:30 -0700
+Message-Id: <20130509222805.133238625@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -26,93 +30,180 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 41b0fc42800569f63e029549b75c4c9cb63f2dfd upstream.
+commit 7fe70b579c9e3daba71635e31b6189394e7b79d3 upstream.
 
-A user reported a panic while running a balance.  What was happening was he was
-relocating a block, which added the reference to the relocation tree.  Then
-relocation would walk through the relocation tree and drop that reference and
-free that block, and then it would walk down a snapshot which referenced the
-same block and add another ref to the block.  The problem is this was all
-happening in the same transaction, so the parent block was free'ed up when we
-drop our reference which was immediately available for allocation, and then it
-was used _again_ to add a reference for the same block from a different
-snapshot.  This resulted in something like this in the delayed ref tree
+ftrace_dump() had a lot of issues. What ftrace_dump() does, is when
+ftrace_dump_on_oops is set (via a kernel parameter or sysctl), it
+will dump out the ftrace buffers to the console when either a oops,
+panic, or a sysrq-z occurs.
 
-add ref to 90234880, parent=2067398656, ref_root 1766, level 1
-del ref to 90234880, parent=2067398656, ref_root 18446744073709551608, level 1
-add ref to 90234880, parent=2067398656, ref_root 1767, level 1
+This was written a long time ago when ftrace was fragile to recursion.
+But it wasn't written well even for that.
 
-as you can see the ref_root's don't match, because when we inc the ref we use
-the header owner, which is the original tree the block belonged to, instead of
-the data reloc tree.  Then when we remove the extent we use the reloc tree
-objectid.  But none of this matters, since it is a shared reference which means
-only the parent matters.  When the delayed ref stuff runs it adds all the
-increments first, and then does all the drops, to make sure that we don't delete
-the ref if we net a positive ref count.  But tree blocks aren't allowed to have
-multiple refs from the same block, so this panics when it tries to add the
-second ref.  We need the add and the drop to cancel each other out in memory so
-we only do the final add.
+There's a possible deadlock that can occur if a ftrace_dump() is happening
+and an NMI triggers another dump. This is because it grabs a lock
+before checking if the dump ran.
 
-So to fix this we need to adjust how the delayed refs are added to the tree.
-Only the ref_root matters when it is a normal backref, and only the parent
-matters when it is a shared backref.  So make our decision based on what ref
-type we have.  This allows us to keep the ref_root in memory in case anybody
-wants to use it for something else, and it allows the delayed refs to be merged
-properly so we don't end up with this panic.
+It also totally disables ftrace, and tracing for no good reasons.
 
-With this patch the users image no longer panics on mount, and it has a clean
-fsck after a normal mount/umount cycle.  Thanks,
+As the ring_buffer now checks if it is read via a oops or NMI, where
+there's a chance that the buffer gets corrupted, it will disable
+itself. No need to have ftrace_dump() do the same.
 
-Reported-by: Roman Mamedov <rm@romanrm.ru>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+ftrace_dump() is now cleaned up where it uses an atomic counter to
+make sure only one dump happens at a time. A simple atomic_inc_return()
+is enough that is needed for both other CPUs and NMIs. No need for
+a spinlock, as if one CPU is running the dump, no other CPU needs
+to do it too.
+
+The tracing_on variable is turned off and not turned on. The original
+code did this, but it wasn't pretty. By just disabling this variable
+we get the result of not seeing traces that happen between crashes.
+
+For sysrq-z, it doesn't get turned on, but the user can always write
+a '1' to the tracing_on file. If they are using sysrq-z, then they should
+know about tracing_on.
+
+The new code is much easier to read and less error prone. No more
+deadlock possibility when an NMI triggers here.
+
+Reported-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/delayed-ref.c |   24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
+ kernel/trace/trace.c          |   62 +++++++++++++++++-------------------------
+ kernel/trace/trace_selftest.c |    9 +++---
+ 2 files changed, 31 insertions(+), 40 deletions(-)
 
---- a/fs/btrfs/delayed-ref.c
-+++ b/fs/btrfs/delayed-ref.c
-@@ -36,16 +36,19 @@
-  * compare two delayed tree backrefs with same bytenr and type
-  */
- static int comp_tree_refs(struct btrfs_delayed_tree_ref *ref2,
--			  struct btrfs_delayed_tree_ref *ref1)
-+			  struct btrfs_delayed_tree_ref *ref1, int type)
- {
--	if (ref1->root < ref2->root)
--		return -1;
--	if (ref1->root > ref2->root)
--		return 1;
--	if (ref1->parent < ref2->parent)
--		return -1;
--	if (ref1->parent > ref2->parent)
--		return 1;
-+	if (type == BTRFS_TREE_BLOCK_REF_KEY) {
-+		if (ref1->root < ref2->root)
-+			return -1;
-+		if (ref1->root > ref2->root)
-+			return 1;
-+	} else {
-+		if (ref1->parent < ref2->parent)
-+			return -1;
-+		if (ref1->parent > ref2->parent)
-+			return 1;
-+	}
- 	return 0;
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -5020,36 +5020,32 @@ void trace_init_global_iter(struct trace
+ 	iter->cpu_file = TRACE_PIPE_ALL_CPU;
  }
  
-@@ -109,7 +112,8 @@ static int comp_entry(struct btrfs_delay
- 	if (ref1->type == BTRFS_TREE_BLOCK_REF_KEY ||
- 	    ref1->type == BTRFS_SHARED_BLOCK_REF_KEY) {
- 		return comp_tree_refs(btrfs_delayed_node_to_tree_ref(ref2),
--				      btrfs_delayed_node_to_tree_ref(ref1));
-+				      btrfs_delayed_node_to_tree_ref(ref1),
-+				      ref1->type);
- 	} else if (ref1->type == BTRFS_EXTENT_DATA_REF_KEY ||
- 		   ref1->type == BTRFS_SHARED_DATA_REF_KEY) {
- 		return comp_data_refs(btrfs_delayed_node_to_data_ref(ref2),
+-static void
+-__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode)
++void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
+ {
+-	static arch_spinlock_t ftrace_dump_lock =
+-		(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+ 	/* use static because iter can be a bit big for the stack */
+ 	static struct trace_iterator iter;
++	static atomic_t dump_running;
+ 	unsigned int old_userobj;
+-	static int dump_ran;
+ 	unsigned long flags;
+ 	int cnt = 0, cpu;
+ 
+-	/* only one dump */
+-	local_irq_save(flags);
+-	arch_spin_lock(&ftrace_dump_lock);
+-	if (dump_ran)
+-		goto out;
+-
+-	dump_ran = 1;
++	/* Only allow one dump user at a time. */
++	if (atomic_inc_return(&dump_running) != 1) {
++		atomic_dec(&dump_running);
++		return;
++	}
+ 
++	/*
++	 * Always turn off tracing when we dump.
++	 * We don't need to show trace output of what happens
++	 * between multiple crashes.
++	 *
++	 * If the user does a sysrq-z, then they can re-enable
++	 * tracing with echo 1 > tracing_on.
++	 */
+ 	tracing_off();
+ 
+-	/* Did function tracer already get disabled? */
+-	if (ftrace_is_dead()) {
+-		printk("# WARNING: FUNCTION TRACING IS CORRUPTED\n");
+-		printk("#          MAY BE MISSING FUNCTION EVENTS\n");
+-	}
+-
+-	if (disable_tracing)
+-		ftrace_kill();
++	local_irq_save(flags);
+ 
+ 	trace_init_global_iter(&iter);
+ 
+@@ -5082,6 +5078,12 @@ __ftrace_dump(bool disable_tracing, enum
+ 
+ 	printk(KERN_TRACE "Dumping ftrace buffer:\n");
+ 
++	/* Did function tracer already get disabled? */
++	if (ftrace_is_dead()) {
++		printk("# WARNING: FUNCTION TRACING IS CORRUPTED\n");
++		printk("#          MAY BE MISSING FUNCTION EVENTS\n");
++	}
++
+ 	/*
+ 	 * We need to stop all tracing on all CPUS to read the
+ 	 * the next buffer. This is a bit expensive, but is
+@@ -5121,26 +5123,14 @@ __ftrace_dump(bool disable_tracing, enum
+ 		printk(KERN_TRACE "---------------------------------\n");
+ 
+  out_enable:
+-	/* Re-enable tracing if requested */
+-	if (!disable_tracing) {
+-		trace_flags |= old_userobj;
++	trace_flags |= old_userobj;
+ 
+-		for_each_tracing_cpu(cpu) {
+-			atomic_dec(&iter.tr->data[cpu]->disabled);
+-		}
+-		tracing_on();
++	for_each_tracing_cpu(cpu) {
++		atomic_dec(&iter.tr->data[cpu]->disabled);
+ 	}
+-
+- out:
+-	arch_spin_unlock(&ftrace_dump_lock);
++ 	atomic_dec(&dump_running);
+ 	local_irq_restore(flags);
+ }
+-
+-/* By default: disable tracing after the dump */
+-void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
+-{
+-	__ftrace_dump(true, oops_dump_mode);
+-}
+ EXPORT_SYMBOL_GPL(ftrace_dump);
+ 
+ __init static int tracer_alloc_buffers(void)
+--- a/kernel/trace/trace_selftest.c
++++ b/kernel/trace/trace_selftest.c
+@@ -702,8 +702,6 @@ trace_selftest_startup_function(struct t
+ /* Maximum number of functions to trace before diagnosing a hang */
+ #define GRAPH_MAX_FUNC_TEST	100000000
+ 
+-static void
+-__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode);
+ static unsigned int graph_hang_thresh;
+ 
+ /* Wrap the real function entry probe to avoid possible hanging */
+@@ -713,8 +711,11 @@ static int trace_graph_entry_watchdog(st
+ 	if (unlikely(++graph_hang_thresh > GRAPH_MAX_FUNC_TEST)) {
+ 		ftrace_graph_stop();
+ 		printk(KERN_WARNING "BUG: Function graph tracer hang!\n");
+-		if (ftrace_dump_on_oops)
+-			__ftrace_dump(false, DUMP_ALL);
++		if (ftrace_dump_on_oops) {
++			ftrace_dump(DUMP_ALL);
++			/* ftrace_dump() disables tracing */
++			tracing_on();
++		}
+ 		return 0;
+ 	}
+ 
 
 
