@@ -1,95 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab3EITXt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 15:23:49 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:51589 "EHLO relay.sgi.com"
+	id S1753307Ab3EITYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 15:24:04 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:36316 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751854Ab3EITXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 15:23:44 -0400
+	id S1753208Ab3EITX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 15:23:59 -0400
 From: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Russ Anderson <rja@sgi.com>,
-        Robin Holt <holt@sgi.com>, Russell King <linux@arm.linux.org.uk>,
+Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Miguel Boton <mboton.lkml@gmail.com>, Russ Anderson <rja@sgi.com>,
+        Russell King <linux@arm.linux.org.uk>,
         Guan Xuetao <gxt@mprc.pku.edu.cn>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         the arch/x86 maintainers <x86@kernel.org>,
         Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH -v8 00/11] Shutdown from reboot_cpuid without stopping other cpus.
-Date: Thu,  9 May 2013 14:23:14 -0500
-Message-Id: <1368127405-112717-1-git-send-email-holt@sgi.com>
+Subject: [PATCH -v9 06/11] x86, prepare reboot_mode for moving to generic kernel code.
+Date: Thu,  9 May 2013 14:23:20 -0500
+Message-Id: <1368127405-112717-7-git-send-email-holt@sgi.com>
 X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1368127405-112717-1-git-send-email-holt@sgi.com>
+References: <1368127405-112717-1-git-send-email-holt@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We recently noticed that reboot of a 1024 cpu machine takes approx 16
-minutes of just stopping the cpus.  The slowdown was tracked to commit
-f96972f.
+This patch prepares for the moving the parsing of reboot= to the generic
+kernel code by making reboot_mode into a more generic form.
 
-The current implementation does all the work of hot removing the cpus
-before halting the system.  We are switching to just migrating to the
-reboot_cpu and then continuing with shutdown/reboot.
-
-The patch set is broken into eleven parts.  The first two are planned for
-the stable release.  The others move the halt/shutdown/reboot related
-functions to their own kernel/reboot.c file and then move the handling
-of the kernel reboot= kernel parameter to generic kernel code.
-
-
-Changes since -v8
- - Changes reboot_cpu on stack to cpu to fix bug noticed by Russell King.
-
- - Switched unicore32 and arm from using REBOOT_WARM/COLD to HARD/SOFT.
-
- - Fixed case statement bug.
-
- - Went to using simple_strtoul for parsing reboot_cpu=smp###.
-
- - Made parsing of reboot= not use any #ifdef'd code.
-
-Changes since -v7.
- - Fixed authorship for first patch.
-
- - Rebased to Linus' current tree (51a26ae7a).
-
-Changes since -v6.
- - Cross compiled all arm architectures (using v3.9 kernel.  Fails with
-   current).
-
- - Added a #define for non-hotplug case.
-
- - Add #define for PF_THREAD_BOUND as compatibility to make stable easier.
-
- - Fixup s/reboot_cpu_id/reboot_cpu/
-
- - Add include of linux/uaccess.h to allow building on arm.
-
- - Removed last remaining checkpatch.pl line length warning on
-   kernel/reboot.c.
-
- - Fixed the duplicate handling or the reboot= kernel parameter.
-
-Changes since -v5.
- - Moved the arch/x86 reboot= up to the generic kernel code.
-
-Changes since -v4.
- - Integrated Srivatsa S. Bhat creating cpu_hotplug_disable()
-   function
-
- - Integrated comments by Srivatsa S. Bhat.
-
- - Made one more comment consistent with others in function.
-
-Changes since -v3.
- - Added a tested-by for the original reporter.
-
- - Fix compile failure found by Joe Perches.
-
- - Integrated comments by Joe Perches.
-
-
+Signed-off-by: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Miguel Boton <mboton.lkml@gmail.com>
 Cc: Russ Anderson <rja@sgi.com>
 Cc: Robin Holt <holt@sgi.com>
 Cc: Russell King <linux@arm.linux.org.uk>
@@ -97,3 +39,81 @@ Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: the arch/x86 maintainers <x86@kernel.org>
 Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+---
+ arch/x86/kernel/reboot.c | 12 +++++++-----
+ include/linux/reboot.h   |  5 +++++
+ 2 files changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 76fa1e9..f770340 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -36,7 +36,7 @@ void (*pm_power_off)(void);
+ EXPORT_SYMBOL(pm_power_off);
+ 
+ static const struct desc_ptr no_idt = {};
+-static int reboot_mode;
++static enum reboot_mode reboot_mode;
+ enum reboot_type reboot_type = BOOT_ACPI;
+ int reboot_force;
+ 
+@@ -88,11 +88,11 @@ static int __init reboot_setup(char *str)
+ 
+ 		switch (*str) {
+ 		case 'w':
+-			reboot_mode = 0x1234;
++			reboot_mode = REBOOT_WARM;
+ 			break;
+ 
+ 		case 'c':
+-			reboot_mode = 0;
++			reboot_mode = REBOOT_COLD;
+ 			break;
+ 
+ #ifdef CONFIG_SMP
+@@ -536,6 +536,7 @@ static void native_machine_emergency_restart(void)
+ 	int i;
+ 	int attempt = 0;
+ 	int orig_reboot_type = reboot_type;
++	unsigned short mode;
+ 
+ 	if (reboot_emergency)
+ 		emergency_vmx_disable_all();
+@@ -543,7 +544,8 @@ static void native_machine_emergency_restart(void)
+ 	tboot_shutdown(TB_SHUTDOWN_REBOOT);
+ 
+ 	/* Tell the BIOS if we want cold or warm reboot */
+-	*((unsigned short *)__va(0x472)) = reboot_mode;
++	mode = reboot_mode == REBOOT_WARM ? 0x1234 : 0;
++	*((unsigned short *)__va(0x472)) = mode;
+ 
+ 	for (;;) {
+ 		/* Could also try the reset bit in the Hammer NB */
+@@ -585,7 +587,7 @@ static void native_machine_emergency_restart(void)
+ 
+ 		case BOOT_EFI:
+ 			if (efi_enabled(EFI_RUNTIME_SERVICES))
+-				efi.reset_system(reboot_mode ?
++				efi.reset_system(reboot_mode == REBOOT_WARM ?
+ 						 EFI_RESET_WARM :
+ 						 EFI_RESET_COLD,
+ 						 EFI_SUCCESS, 0, NULL);
+diff --git a/include/linux/reboot.h b/include/linux/reboot.h
+index c6eba21..37d56c3 100644
+--- a/include/linux/reboot.h
++++ b/include/linux/reboot.h
+@@ -10,6 +10,11 @@
+ #define SYS_HALT	0x0002	/* Notify of system halt */
+ #define SYS_POWER_OFF	0x0003	/* Notify of system power off */
+ 
++enum reboot_mode {
++	REBOOT_COLD = 0,
++	REBOOT_WARM,
++};
++
+ extern int register_reboot_notifier(struct notifier_block *);
+ extern int unregister_reboot_notifier(struct notifier_block *);
+ 
+-- 
+1.8.2.1
+
