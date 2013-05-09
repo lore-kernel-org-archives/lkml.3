@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab3EIJUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 05:20:19 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:42450 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab3EIJUR (ORCPT
+	id S1753094Ab3EIJUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 05:20:50 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:64812 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab3EIJUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 05:20:17 -0400
-Date: Thu, 9 May 2013 11:20:13 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_preempt running flat out on idle desktop.
-Message-ID: <20130509092013.GA21620@gmail.com>
-References: <20130508203042.GA18895@redhat.com>
- <20130508205258.GN3648@linux.vnet.ibm.com>
- <20130508205633.GB18895@redhat.com>
- <CAFTL4hws3q2k9rc0Trh5v9DxNVT575GfV0wZFRg6k7htF+VSyg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hws3q2k9rc0Trh5v9DxNVT575GfV0wZFRg6k7htF+VSyg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 May 2013 05:20:49 -0400
+From: Denis Efremov <yefremov.denis@gmail.com>
+To: Julian Andres Klode <jak@jak-linux.org>
+Cc: Denis Efremov <yefremov.denis@gmail.com>, Marc Dietrich <marvin24@gmx.de>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        trivial@kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH 06/21] staging: nvec: remove inline marking of EXPORT_SYMBOL functions
+Date: Thu,  9 May 2013 13:19:37 +0400
+Message-Id: <1368091192-10245-1-git-send-email-yefremov.denis@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
+References: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+EXPORT_SYMBOL and inline directives are contradictory to each other.
+The patch fixes this inconsistency.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Found by Linux Driver Verification project (linuxtesting.org).
 
-> 2013/5/8 Dave Jones <davej@redhat.com>:
-> > On Wed, May 08, 2013 at 01:52:58PM -0700, Paul E. McKenney wrote:
-> >  > On Wed, May 08, 2013 at 04:30:42PM -0400, Dave Jones wrote:
-> >
-> >  > >   PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND
-> >  > >    10 root      20   0     0    0    0 S 200.0  0.0 185301:36 rcu_preempt
-> >  > >   553 root      20   0  268m  76m 6764 S 200.0  2.6 144579:53 Xorg
-> >  > >  1199 root      20   0     0    0    0 S 200.0  0.0 306:17.85 kworker/1:0
-> >  > >   501 root      20   0     0    0    0 S 200.0  0.0   4471:03 kworker/0:2
-> >  > >    12 root      20   0     0    0    0 S 200.0  0.0  67277:16 rcuop/1
-> >  > >  1237 davej     20   0  535m  15m 8484 S 200.0  0.5   3645:16 Terminal
-> >  > >   859 davej     20   0  117m 3036 1336 S 200.0  0.1   1986:55 htop
-> >  > >
-> >  > > There are a lot of processes allegedly using "200%" of CPU time, a handful
-> >  > > in the "196%" range, and then a bunch at 0.
-> >  >
-> >  > Yow!!!  185301 minutes is 128 days, which is a truly impressive amount of
-> >  > CPU time to accumulate in a few short hours.
-> 
-> Right, Ingo has reported something about strange high numbers in top
-> too. I need to investigate that.
+Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
+---
+ drivers/staging/nvec/nvec.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-For CPU-intense loops I have seen a small anomaly with "slightly higher 
-CPU usage numbers" - sometimes going to 101% or so but still converging to 
-around 99.9% in the long run.
+diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
+index a88959f..954c992 100644
+--- a/drivers/staging/nvec/nvec.c
++++ b/drivers/staging/nvec/nvec.c
+@@ -185,7 +185,7 @@ static struct nvec_msg *nvec_msg_alloc(struct nvec_chip *nvec,
+  *
+  * Free the given message
+  */
+-inline void nvec_msg_free(struct nvec_chip *nvec, struct nvec_msg *msg)
++void nvec_msg_free(struct nvec_chip *nvec, struct nvec_msg *msg)
+ {
+ 	if (msg != &nvec->tx_scratch)
+ 		dev_vdbg(nvec->dev, "INFO: Free %ti\n", msg - nvec->msg_pool);
+-- 
+1.8.1.4
 
-The 200% bug pasted by Dave here seems to be very big and seems to affect 
-all tasks not just true CPU-loopers. So I'd suggest reproducing and fixing 
-Dave's bug first - that might fix the small anomaly I've seen.
-
-Thanks,
-
-	Ingo
