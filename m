@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab3EILqp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 07:46:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35158 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754345Ab3EILqo (ORCPT
+	id S1754578Ab3EILsK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 07:48:10 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:50715 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754037Ab3EILsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 07:46:44 -0400
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH] regmap: debugfs: Check return value of regmap_write()
-Date: Thu,  9 May 2013 12:46:41 +0100
-Message-Id: <1368100001-14900-1-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.8.2.2
+	Thu, 9 May 2013 07:48:09 -0400
+Message-ID: <518B8C45.7000504@linux.vnet.ibm.com>
+Date: Thu, 09 May 2013 17:15:09 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: CAI Qian <caiqian@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Greg KH <gregkh@linuxfoundation.org>,
+        balbi@ti.com, dyoung@redhat.com
+Subject: Re: 3.9.0: WARNING: at drivers/base/core.c:575
+References: <1732336275.8141054.1367911558572.JavaMail.root@redhat.com> <518B7B6A.1090407@linux.vnet.ibm.com> <1368096355.25488.178.camel@pasglop>
+In-Reply-To: <1368096355.25488.178.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050911-7014-0000-0000-000002FF87C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regmap-debugfs.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+On 05/09/2013 04:15 PM, Benjamin Herrenschmidt wrote:
+> On Thu, 2013-05-09 at 16:03 +0530, Srivatsa S. Bhat wrote:
+>> Can you check if the patch posted here fixes it?
+>>
+>> http://marc.info/?l=linux-kernel&m=136791823608013&w=2
+> 
+> I believe I've already merged a patch for that unless I did something
+> wrong ...
+> 
 
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 6cd1b78a..ee81635 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -265,6 +265,7 @@ static ssize_t regmap_map_write_file(struct file *file,
- 	char *start = buf;
- 	unsigned long reg, value;
- 	struct regmap *map = file->private_data;
-+	int ret;
- 
- 	buf_size = min(count, (sizeof(buf)-1));
- 	if (copy_from_user(buf, user_buf, buf_size))
-@@ -282,7 +283,9 @@ static ssize_t regmap_map_write_file(struct file *file,
- 	/* Userspace has been fiddling around behind the kernel's back */
- 	add_taint(TAINT_USER, LOCKDEP_NOW_UNRELIABLE);
- 
--	regmap_write(map, reg, value);
-+	ret = regmap_write(map, reg, value);
-+	if (ret < 0)
-+		return ret;
- 	return buf_size;
- }
- #else
--- 
-1.8.2.2
+Sorry, I hadn't checked your -next branch. Sorry for the noise!
+
+Regards,
+Srivatsa S. Bhat
 
