@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab3EIW04 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:26:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45893 "EHLO
+	id S1755324Ab3EIW2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:28:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45898 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756372Ab3EIW0x (ORCPT
+	with ESMTP id S1756536Ab3EIW0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:53 -0400
+	Thu, 9 May 2013 18:26:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roman Mamedov <rm@romanrm.ru>, Josef Bacik <jbacik@fusionio.com>
-Subject: [ 67/73] Btrfs: compare relevant parts of delayed tree refs
-Date: Thu,  9 May 2013 15:25:57 -0700
-Message-Id: <20130509222533.224063331@linuxfoundation.org>
+        David Bulkow <David.Bulkow@stratus.com>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 70/73] PCI: Delay final fixups until resources are assigned
+Date: Thu,  9 May 2013 15:26:00 -0700
+Message-Id: <20130509222533.509798069@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -26,93 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit 41b0fc42800569f63e029549b75c4c9cb63f2dfd upstream.
+commit e253aaf0af51c1e4dc7dd3b26ea8e666bf9a2d8d upstream.
 
-A user reported a panic while running a balance.  What was happening was he was
-relocating a block, which added the reference to the relocation tree.  Then
-relocation would walk through the relocation tree and drop that reference and
-free that block, and then it would walk down a snapshot which referenced the
-same block and add another ref to the block.  The problem is this was all
-happening in the same transaction, so the parent block was free'ed up when we
-drop our reference which was immediately available for allocation, and then it
-was used _again_ to add a reference for the same block from a different
-snapshot.  This resulted in something like this in the delayed ref tree
+Commit 4f535093cf "PCI: Put pci_dev in device tree as early as possible"
+moved final fixups from pci_bus_add_device() to pci_device_add().  But
+pci_device_add() happens before resource assignment, so BARs may not be
+valid yet.
 
-add ref to 90234880, parent=2067398656, ref_root 1766, level 1
-del ref to 90234880, parent=2067398656, ref_root 18446744073709551608, level 1
-add ref to 90234880, parent=2067398656, ref_root 1767, level 1
+Typical flow for hot-add:
 
-as you can see the ref_root's don't match, because when we inc the ref we use
-the header owner, which is the original tree the block belonged to, instead of
-the data reloc tree.  Then when we remove the extent we use the reloc tree
-objectid.  But none of this matters, since it is a shared reference which means
-only the parent matters.  When the delayed ref stuff runs it adds all the
-increments first, and then does all the drops, to make sure that we don't delete
-the ref if we net a positive ref count.  But tree blocks aren't allowed to have
-multiple refs from the same block, so this panics when it tries to add the
-second ref.  We need the add and the drop to cancel each other out in memory so
-we only do the final add.
+    pciehp_configure_device
+      pci_scan_slot
+        pci_scan_single_device
+          pci_device_add
+            pci_fixup_device(pci_fixup_final, dev)  # previous location
+      # resource assignment happens here
+      pci_bus_add_devices
+        pci_bus_add_device
+          pci_fixup_device(pci_fixup_final, dev)    # new location
 
-So to fix this we need to adjust how the delayed refs are added to the tree.
-Only the ref_root matters when it is a normal backref, and only the parent
-matters when it is a shared backref.  So make our decision based on what ref
-type we have.  This allows us to keep the ref_root in memory in case anybody
-wants to use it for something else, and it allows the delayed refs to be merged
-properly so we don't end up with this panic.
-
-With this patch the users image no longer panics on mount, and it has a clean
-fsck after a normal mount/umount cycle.  Thanks,
-
-Reported-by: Roman Mamedov <rm@romanrm.ru>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+[bhelgaas: changelog, move fixups to pci_bus_add_device()]
+Reference: https://lkml.kernel.org/r/20130415182614.GB9224@xanatos
+Reported-by: David Bulkow <David.Bulkow@stratus.com>
+Tested-by: David Bulkow <David.Bulkow@stratus.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/delayed-ref.c |   24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
+ drivers/pci/bus.c   |    1 +
+ drivers/pci/probe.c |    1 -
+ 2 files changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/btrfs/delayed-ref.c
-+++ b/fs/btrfs/delayed-ref.c
-@@ -40,16 +40,19 @@ struct kmem_cache *btrfs_delayed_extent_
-  * compare two delayed tree backrefs with same bytenr and type
-  */
- static int comp_tree_refs(struct btrfs_delayed_tree_ref *ref2,
--			  struct btrfs_delayed_tree_ref *ref1)
-+			  struct btrfs_delayed_tree_ref *ref1, int type)
- {
--	if (ref1->root < ref2->root)
--		return -1;
--	if (ref1->root > ref2->root)
--		return 1;
--	if (ref1->parent < ref2->parent)
--		return -1;
--	if (ref1->parent > ref2->parent)
--		return 1;
-+	if (type == BTRFS_TREE_BLOCK_REF_KEY) {
-+		if (ref1->root < ref2->root)
-+			return -1;
-+		if (ref1->root > ref2->root)
-+			return 1;
-+	} else {
-+		if (ref1->parent < ref2->parent)
-+			return -1;
-+		if (ref1->parent > ref2->parent)
-+			return 1;
-+	}
- 	return 0;
- }
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -174,6 +174,7 @@ int pci_bus_add_device(struct pci_dev *d
+ 	 * Can not put in pci_device_add yet because resources
+ 	 * are not assigned yet for some devices.
+ 	 */
++	pci_fixup_device(pci_fixup_final, dev);
+ 	pci_create_sysfs_dev_files(dev);
  
-@@ -113,7 +116,8 @@ static int comp_entry(struct btrfs_delay
- 	if (ref1->type == BTRFS_TREE_BLOCK_REF_KEY ||
- 	    ref1->type == BTRFS_SHARED_BLOCK_REF_KEY) {
- 		return comp_tree_refs(btrfs_delayed_node_to_tree_ref(ref2),
--				      btrfs_delayed_node_to_tree_ref(ref1));
-+				      btrfs_delayed_node_to_tree_ref(ref1),
-+				      ref1->type);
- 	} else if (ref1->type == BTRFS_EXTENT_DATA_REF_KEY ||
- 		   ref1->type == BTRFS_SHARED_DATA_REF_KEY) {
- 		return comp_data_refs(btrfs_delayed_node_to_data_ref(ref2),
+ 	dev->match_driver = true;
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1339,7 +1339,6 @@ void pci_device_add(struct pci_dev *dev,
+ 	list_add_tail(&dev->bus_list, &bus->devices);
+ 	up_write(&pci_bus_sem);
+ 
+-	pci_fixup_device(pci_fixup_final, dev);
+ 	ret = pcibios_add_device(dev);
+ 	WARN_ON(ret < 0);
+ 
 
 
