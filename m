@@ -1,88 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab3EIStd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 14:49:33 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:51422 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab3EIStc (ORCPT
+	id S1752207Ab3EIS6y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 14:58:54 -0400
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:47755 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab3EIS6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 14:49:32 -0400
+	Thu, 9 May 2013 14:58:52 -0400
+From: Greg Thelen <gthelen@google.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv10 1/4] debugfs: add get/set for atomic types
+References: <1368052661-27143-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	<1368052661-27143-2-git-send-email-sjenning@linux.vnet.ibm.com>
+Date: Thu, 09 May 2013 11:58:49 -0700
+In-Reply-To: <1368052661-27143-2-git-send-email-sjenning@linux.vnet.ibm.com>
+	(Seth Jennings's message of "Wed, 8 May 2013 17:37:38 -0500")
+Message-ID: <xr934necrndi.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <518BE566.5090504@ti.com>
-References: <1367824946-6160-1-git-send-email-jaswinder.singh@linaro.org>
-	<1367825046-6229-1-git-send-email-jaswinder.singh@linaro.org>
-	<518BCF4B.1060504@ti.com>
-	<CAJe_Zhd=FDV3YP=XR8Yay1iy_geAt3tqj+diUxrVkd2BFSfb-g@mail.gmail.com>
-	<518BD197.2030502@ti.com>
-	<CABb+yY2CnO5RiQNdcB_L5ZiGi829Ys0ODH2UmhtZxj=aJo3ioQ@mail.gmail.com>
-	<518BE566.5090504@ti.com>
-Date: Fri, 10 May 2013 00:19:31 +0530
-Message-ID: <CAJe_Zhffm9FOk83dAdX194gN3r5JnG78sdcWNv6WnWCsTF3YuA@mail.gmail.com>
-Subject: Re: [PATCHv2 2/4] mailbox: Introduce a new common API
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Suman Anna <s-anna@ti.com>
-Cc: Jassi Brar <jassisinghbrar@gmail.com>,
-        "Loic PALLARDY (loic.pallardy@st.com)" <loic.pallardy@st.com>,
-        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 May 2013 23:35, Suman Anna <s-anna@ti.com> wrote:
+On Wed, May 08 2013, Seth Jennings wrote:
 
->>
->> Perhaps we should change the following
->>
->>    void ipc_link_txdone(struct ipc_link *link, enum xfer_result r)
->> to
->>    void ipc_link_txdone(struct ipc_link *link, enum xfer_result r, void *data)
->>
->> So that the API could pass that onto clients ?
+> debugfs currently lack the ability to create attributes
+> that set/get atomic_t values.
 >
-> That's if the controller needs to pass some data back to client. I am
-> fine with that as well,
-No, I misunderstood you wanted request_token_t to be replaced with the
-pointer of request that was executed.
-
-> but I am talking mainly about providing a client
-> user data ptr back to it during callbacks.
+> This patch adds support for this through a new
+> debugfs_create_atomic_t() function.
 >
-> struct ipc_client {
->         char *chan_name;
-> +       void *cl_data; /* store it to ipc_chan as well */
-> -       void (*rxcb)(void *data);
-> -       void (*txcb)(request_token_t t, enum xfer_result r);
-> +       void (*rxcb)(void *cl_data, void *data);
-> +       void (*txcb)(request_token_t t, enum xfer_result r, void *cl_data);
->         ...
-> }
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Acked-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  fs/debugfs/file.c       | 42 ++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/debugfs.h |  2 ++
+>  2 files changed, 44 insertions(+)
 >
-> I am obviously interested in the rxcb. The controller implementations do
-> not see the cl_data.
->
-OK I see what you mean. However the API storing and passing back
-ad-hoc data to clients doesn't seem very neat.
+> diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+> index c5ca6ae..fa26d5b 100644
+> --- a/fs/debugfs/file.c
+> +++ b/fs/debugfs/file.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/debugfs.h>
+>  #include <linux/io.h>
+>  #include <linux/slab.h>
+> +#include <linux/atomic.h>
+>  
+>  static ssize_t default_read_file(struct file *file, char __user *buf,
+>  				 size_t count, loff_t *ppos)
+> @@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+>  }
+>  EXPORT_SYMBOL_GPL(debugfs_create_size_t);
+>  
+> +static int debugfs_atomic_t_set(void *data, u64 val)
+> +{
+> +	atomic_set((atomic_t *)data, val);
+> +	return 0;
+> +}
+> +static int debugfs_atomic_t_get(void *data, u64 *val)
+> +{
+> +	*val = atomic_read((atomic_t *)data);
+> +	return 0;
+> +}
+> +DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
+> +			debugfs_atomic_t_set, "%llu\n");
+> +DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%llu\n");
+> +DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%llu\n");
+> +
+> +/**
+> + * debugfs_create_atomic_t - create a debugfs file that is used to read and
+> + * write an atomic_t value
+> + * @name: a pointer to a string containing the name of the file to create.
+> + * @mode: the permission that the file should have
+> + * @parent: a pointer to the parent dentry for this file.  This should be a
+> + *          directory dentry if set.  If this parameter is %NULL, then the
+> + *          file will be created in the root of the debugfs filesystem.
+> + * @value: a pointer to the variable that the file should read to and write
+> + *         from.
+> + */
+> +struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
+> +				 struct dentry *parent, atomic_t *value)
+> +{
+> +	/* if there are no write bits set, make read only */
+> +	if (!(mode & S_IWUGO))
+> +		return debugfs_create_file(name, mode, parent, value,
+> +					&fops_atomic_t_ro);
+> +	/* if there are no read bits set, make write only */
+> +	if (!(mode & S_IRUGO))
+> +		return debugfs_create_file(name, mode, parent, value,
+> +					&fops_atomic_t_wo);
+> +
+> +	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
+> +}
+> +EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
+>  
+>  static ssize_t read_file_bool(struct file *file, char __user *user_buf,
+>  			      size_t count, loff_t *ppos)
+> diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
+> index 63f2465..d68b4ea 100644
+> --- a/include/linux/debugfs.h
+> +++ b/include/linux/debugfs.h
+> @@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
+>  				  struct dentry *parent, u64 *value);
+>  struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+>  				     struct dentry *parent, size_t *value);
+> +struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
+> +				     struct dentry *parent, atomic_t *value);
+>  struct dentry *debugfs_create_bool(const char *name, umode_t mode,
+>  				  struct dentry *parent, u32 *value);
 
-Such purposes are usually served by :
+Looking at v3.9 I see a conflicting definition of
+debugfs_create_atomic_t() in lib/fault-inject.c.  A kernel with this
+patch and CONFIG_FAULT_INJECTION=y and CONFIG_FAULT_INJECTION_DEBUG_FS=y
+will not build:
 
-- void (*rxcb)(void *data);
-+ void (*rxcb)(struct ipc_client *cl, void *data);  /* client for
-which data was received */
-
-- void (*txcb)(request_token_t t, enum xfer_result r);
-+ void (*txcb)(struct ipc_client *cl, request_token_t t, enum
-xfer_result r); /* client whose data was sent */
-
-You could then get relevant omap_rproc using container_of() on 'cl',
-in rxcb() and txcb().
-
-
-Apart from this, in txcb, perhaps we should drop request_token_t in
-favor of the request's pointer (void *data) that was last executed.
-That should make things easier for clients.
-
-regards,
--jassi
+    lib/fault-inject.c:196:23: error: static declaration of 'debugfs_create_atomic_t' follows non-static declaration
+    include/linux/debugfs.h:87:16: note: previous declaration of 'debugfs_create_atomic_t' was here
