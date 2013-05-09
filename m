@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586Ab3EIWcv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:32:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45998 "EHLO
+	id S1758190Ab3EIW7J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:59:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46020 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757330Ab3EIWcs (ORCPT
+	with ESMTP id S1757576Ab3EIWcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:32:48 -0400
+	Thu, 9 May 2013 18:32:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, eranian@google.com
-Subject: [ 11/73] perf/x86/intel/lbr: Fix LBR filter
-Date: Thu,  9 May 2013 15:31:34 -0700
-Message-Id: <20130509222759.169070330@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
+        Carlos Maiolino <cmaiolino@redhat.com>,
+        Lingzhu Xiang <lxiang@redhat.com>
+Subject: [ 26/73] ext4: add check for inodes_count overflow in new resize ioctl
+Date: Thu,  9 May 2013 15:31:49 -0700
+Message-Id: <20130509222800.839163408@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -28,51 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 6e15eb3ba6c0249c9e8c783517d131b47db995ca upstream.
+commit 3f8a6411fbada1fa482276591e037f3b1adcf55b upstream.
 
-The LBR 'from' adddress is under full userspace control; ensure
-we validate it before reading from it.
+Addresses-Red-Hat-Bugzilla: #913245
 
-Note: is_module_text_address() can potentially be quite
-expensive; for those running into that with high overhead
-in modules optimize it using an RCU backed rb-tree.
-
-Reported-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: eranian@google.com
-Link: http://lkml.kernel.org/r/20130503121256.158211806@chello.nl
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/n/tip-mk8i82ffzax01cnqo829iy1q@git.kernel.org
+Reported-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Carlos Maiolino <cmaiolino@redhat.com>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ fs/ext4/resize.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -442,8 +442,18 @@ static int branch_type(unsigned long fro
- 			return X86_BR_NONE;
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -1880,6 +1880,10 @@ retry:
+ 		return 0;
  
- 		addr = buf;
--	} else
--		addr = (void *)from;
-+	} else {
-+		/*
-+		 * The LBR logs any address in the IP, even if the IP just
-+		 * faulted. This means userspace can control the from address.
-+		 * Ensure we don't blindy read any address by validating it is
-+		 * a known text address.
-+		 */
-+		if (kernel_text_address(from))
-+			addr = (void *)from;
-+		else
-+			return X86_BR_NONE;
+ 	ext4_get_group_no_and_offset(sb, n_blocks_count - 1, &n_group, &offset);
++	if (n_group > (0xFFFFFFFFUL / EXT4_INODES_PER_GROUP(sb))) {
++		ext4_warning(sb, "resize would cause inodes_count overflow");
++		return -EINVAL;
 +	}
+ 	ext4_get_group_no_and_offset(sb, o_blocks_count - 1, &o_group, &offset);
  
- 	/*
- 	 * decoder needs to know the ABI especially
+ 	n_desc_blocks = num_desc_blocks(sb, n_group + 1);
 
 
