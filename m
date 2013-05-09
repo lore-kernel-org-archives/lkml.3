@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759425Ab3EIXIx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:08:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45765 "EHLO
+	id S1755832Ab3EIW01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:26:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45745 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755085Ab3EIW03 (ORCPT
+	with ESMTP id S1755592Ab3EIW0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:29 -0400
+	Thu, 9 May 2013 18:26:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Egbert Eich <eich@pdx.freedesktop.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 32/73] drm/i915: Fix sdvo connector get_hw_state function
-Date: Thu,  9 May 2013 15:25:22 -0700
-Message-Id: <20130509222529.718191953@linuxfoundation.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        eranian@google.com
+Subject: [ 17/73] perf/x86/intel/lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
+Date: Thu,  9 May 2013 15:25:07 -0700
+Message-Id: <20130509222528.251880018@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -28,45 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit bd6946e87a98fea11907b2a47368e13044458a35 upstream.
+commit 7cc23cd6c0c7d7f4bee057607e7ce01568925717 upstream.
 
-The active output is only the currently selected one, which does not
-imply that it's actually enabled. Since we don't use the sdvo encoder
-side dpms support, we need to check whether the chip-side sdvo port is
-enabled instead.
+We should always have proper privileges when requesting kernel
+data.
 
-v2: Fix up Bugzilla links.
-
-v3: Simplify logic a bit (Chris).
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=60138
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=63031
-Cc: Egbert Eich <eich@pdx.freedesktop.org>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Tested-by: Egbert Eich <eich@pdx.freedesktop.org> (v2)
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: eranian@google.com
+Link: http://lkml.kernel.org/r/20130503121256.230745028@chello.nl
+[ Fix build error reported by fengguang.wu@intel.com, propagate error code back. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/n/tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -1219,8 +1219,12 @@ static bool intel_sdvo_connector_get_hw_
- 	struct intel_sdvo_connector *intel_sdvo_connector =
- 		to_intel_sdvo_connector(&connector->base);
- 	struct intel_sdvo *intel_sdvo = intel_attached_sdvo(&connector->base);
-+	struct drm_i915_private *dev_priv = intel_sdvo->base.base.dev->dev_private;
- 	u16 active_outputs;
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -310,7 +310,7 @@ void intel_pmu_lbr_read(void)
+  * - in case there is no HW filter
+  * - in case the HW filter has errata or limitations
+  */
+-static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
++static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
+ {
+ 	u64 br_type = event->attr.branch_sample_type;
+ 	int mask = 0;
+@@ -318,8 +318,11 @@ static void intel_pmu_setup_sw_lbr_filte
+ 	if (br_type & PERF_SAMPLE_BRANCH_USER)
+ 		mask |= X86_BR_USER;
  
-+	if (!(I915_READ(intel_sdvo->sdvo_reg) & SDVO_ENABLE))
-+		return false;
+-	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
++	if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
++		if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
++			return -EACCES;
+ 		mask |= X86_BR_KERNEL;
++	}
+ 
+ 	/* we ignore BRANCH_HV here */
+ 
+@@ -339,6 +342,8 @@ static void intel_pmu_setup_sw_lbr_filte
+ 	 * be used by fixup code for some CPU
+ 	 */
+ 	event->hw.branch_reg.reg = mask;
 +
- 	intel_sdvo_get_active_outputs(intel_sdvo, &active_outputs);
++	return 0;
+ }
  
- 	if (active_outputs & intel_sdvo_connector->output_flag)
+ /*
+@@ -386,7 +391,9 @@ int intel_pmu_setup_lbr_filter(struct pe
+ 	/*
+ 	 * setup SW LBR filter
+ 	 */
+-	intel_pmu_setup_sw_lbr_filter(event);
++	ret = intel_pmu_setup_sw_lbr_filter(event);
++	if (ret)
++		return ret;
+ 
+ 	/*
+ 	 * setup HW LBR filter, if any
 
 
