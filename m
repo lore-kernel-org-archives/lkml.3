@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758603Ab3EIWgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:36:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46387 "EHLO
+	id S1758638Ab3EIWgo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:36:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46383 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758511Ab3EIWfA (ORCPT
+	with ESMTP id S1758435Ab3EIWe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:35:00 -0400
+	Thu, 9 May 2013 18:34:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sylvain BERTRAND <sylware@legeek.net>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 23/26] drm/radeon: fix handling of v6 power tables
-Date: Thu,  9 May 2013 15:34:37 -0700
-Message-Id: <20130509223424.863136547@linuxfoundation.org>
+Subject: [ 22/26] drm/radeon: add new richland pci ids
+Date: Thu,  9 May 2013 15:34:36 -0700
+Message-Id: <20130509223424.771746547@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
 References: <20130509223422.368544659@linuxfoundation.org>
@@ -29,60 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 441e76ca83ac604eaf0f046def96d8e3a27eea28 upstream.
+commit 62d1f92e06aef9665d71ca7e986b3047ecf0b3c7 upstream.
 
-The code was mis-handling variable sized arrays.
-
-Reported-by: Sylvain BERTRAND <sylware@legeek.net>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/radeon/ni.c |    6 ++++--
+ include/drm/drm_pciids.h    |    2 ++
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -2482,6 +2482,7 @@ static int radeon_atombios_parse_power_t
- 	int index = GetIndexIntoMasterTable(DATA, PowerPlayInfo);
-         u16 data_offset;
- 	u8 frev, crev;
-+	u8 *power_state_offset;
- 
- 	if (!atom_parse_data_header(mode_info->atom_context, index, NULL,
- 				   &frev, &crev, &data_offset))
-@@ -2504,11 +2505,11 @@ static int radeon_atombios_parse_power_t
- 				       state_array->ucNumEntries, GFP_KERNEL);
- 	if (!rdev->pm.power_state)
- 		return state_index;
-+	power_state_offset = (u8 *)state_array->states;
- 	for (i = 0; i < state_array->ucNumEntries; i++) {
- 		mode_index = 0;
--		power_state = (union pplib_power_state *)&state_array->states[i];
--		/* XXX this might be an inagua bug... */
--		non_clock_array_index = i; /* power_state->v2.nonClockInfoIndex */
-+		power_state = (union pplib_power_state *)power_state_offset;
-+		non_clock_array_index = power_state->v2.nonClockInfoIndex;
- 		non_clock_info = (struct _ATOM_PPLIB_NONCLOCK_INFO *)
- 			&non_clock_info_array->nonClockInfo[non_clock_array_index];
- 		rdev->pm.power_state[i].clock_info = kzalloc(sizeof(struct radeon_pm_clock_info) *
-@@ -2520,9 +2521,6 @@ static int radeon_atombios_parse_power_t
- 		if (power_state->v2.ucNumDPMLevels) {
- 			for (j = 0; j < power_state->v2.ucNumDPMLevels; j++) {
- 				clock_array_index = power_state->v2.clockInfoIndex[j];
--				/* XXX this might be an inagua bug... */
--				if (clock_array_index >= clock_info_array->ucNumEntries)
--					continue;
- 				clock_info = (union pplib_clock_info *)
- 					&clock_info_array->clockInfo[clock_array_index * clock_info_array->ucEntrySize];
- 				valid = radeon_atombios_parse_pplib_clock_info(rdev,
-@@ -2544,6 +2542,7 @@ static int radeon_atombios_parse_power_t
- 								   non_clock_info);
- 			state_index++;
- 		}
-+		power_state_offset += 2 + power_state->v2.ucNumDPMLevels;
- 	}
- 	/* if multiple clock modes, mark the lowest as no display */
- 	for (i = 0; i < state_index; i++) {
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -668,7 +668,8 @@ static void cayman_gpu_init(struct radeo
+ 		    (rdev->pdev->device == 0x990F) ||
+ 		    (rdev->pdev->device == 0x9910) ||
+ 		    (rdev->pdev->device == 0x9917) ||
+-		    (rdev->pdev->device == 0x9999)) {
++		    (rdev->pdev->device == 0x9999) ||
++		    (rdev->pdev->device == 0x999C)) {
+ 			rdev->config.cayman.max_simds_per_se = 6;
+ 			rdev->config.cayman.max_backends_per_se = 2;
+ 		} else if ((rdev->pdev->device == 0x9903) ||
+@@ -677,7 +678,8 @@ static void cayman_gpu_init(struct radeo
+ 			   (rdev->pdev->device == 0x990D) ||
+ 			   (rdev->pdev->device == 0x990E) ||
+ 			   (rdev->pdev->device == 0x9913) ||
+-			   (rdev->pdev->device == 0x9918)) {
++			   (rdev->pdev->device == 0x9918) ||
++			   (rdev->pdev->device == 0x999D)) {
+ 			rdev->config.cayman.max_simds_per_se = 4;
+ 			rdev->config.cayman.max_backends_per_se = 2;
+ 		} else if ((rdev->pdev->device == 0x9919) ||
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -597,6 +597,8 @@
+ 	{0x1002, 0x9999, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x999A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x999B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x999C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x999D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x99A0, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x99A2, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x99A4, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
 
 
