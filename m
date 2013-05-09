@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab3EICfJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 22:35:09 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49983 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353Ab3EICfI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 22:35:08 -0400
-X-AuditID: 9c93016f-b7ba0ae000004cc2-b4-518b0b574e77
-From: "Jongsung Kim" <neidhard.kim@lge.com>
-To: "'Sergei Shtylyov'" <sergei.shtylyov@cogentembedded.com>
-Cc: <davem@davemloft.net>, <peppe.cavallaro@st.com>,
-        <chohnstaedt@innominate.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-References: <201305081910.27203.neidhard.kim@lge.com> <518A7284.4000504@cogentembedded.com>
-In-Reply-To: <518A7284.4000504@cogentembedded.com>
-Subject: RE: net: phy: realtek: add rtl8201f driver
-Date: Thu, 9 May 2013 11:35:03 +0900
-Organization: LG Electronics
-Message-ID: <008d01ce4c5d$cfd36410$6f7a2c30$@lge.com>
+	id S1755495Ab3EIDTB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 23:19:01 -0400
+Received: from ozlabs.org ([203.10.76.45]:39549 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750774Ab3EIDTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 May 2013 23:19:00 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        <linux-kbuild@vger.kernel.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: Build failures due to commit ea4054a2384 (handle huge number of modules)
+In-Reply-To: <20130508213007.GA11946@roeck-us.net>
+References: <20130508213007.GA11946@roeck-us.net>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 09 May 2013 10:26:00 +0930
+Message-ID: <8761ytnf8f.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQILzE7k3gwnUuinRntsvs0Ef4B24gGRQ1u7mHSWaQA=
-Content-Language: ko
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sergei Shtylyov <sergei.shtylyov@cogentembedded.com> :
->     Removal of unused #define's is a matter of a separate cleanup patch...
-
-Sorry. I won't touch them.
-
->> +static int rtl8201f_ack_interrupt(struct phy_device *phydev) {
->> +	int err;
->> +
->> +	err = phy_read(phydev, RTL8201F_ISR);
+Guenter Roeck <linux@roeck-us.net> writes:
+> Hi all,
 >
->    This could be an initializer and so make the function shorter.
+> I started seeing build failures such as the following in the last week or so.
 >
-
-Agreed. I just thought it's better to make it similar to the
-rtl821x_ack_interrupt. Then, may I make shorter the rtl821x_ack_interrupt as
-well as rtl8201f_ack_interrupt?
-
+> make[2]: [__modpost] Error 1
 >
->     You haven't run this patch thru scripts/checkpatch.pl -- there should
-be a space between *if* and (.
+> followed by lots of messages such as
 >
+> gcc: error: arch/x86/crypto/ablk_helper.mod.c: No such file or directory
+> gcc: fatal error: no input files
+>
+> (at least if I run make -i)
 
-Sorry.. what a mistake..
+Hmm, weird!  Looks like __modules contains something it shouldn't.  We
+changed from:
 
+        __modules := $(sort $(shell grep -h '\.ko$$' /dev/null $(wildcard $(MODVERDIR)/*.mod)))
 
+To:
+
+        MODLISTCMD := find $(MODVERDIR) -name '*.mod' | xargs -r grep -h '\.ko$$' | sort -u
+        __modules := $(shell $(MODLISTCMD))
+
+They give the same results for me:
+
+diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
+index 8dcdca2..1ca358d 100644
+--- a/scripts/Makefile.modpost
++++ b/scripts/Makefile.modpost
+@@ -62,8 +62,14 @@ modulesymfile := $(firstword $(KBUILD_EXTMOD))/Module.symvers
+ # Step 1), find all modules listed in $(MODVERDIR)/
+ MODLISTCMD := find $(MODVERDIR) -name '*.mod' | xargs -r grep -h '\.ko$$' | sort -u
+ __modules := $(shell $(MODLISTCMD))
++__old_modules := $(sort $(shell grep -h '\.ko$$' /dev/null $(wildcard $(MODVERDIR)/*.mod)))
+ modules   := $(patsubst %.o,%.ko, $(wildcard $(__modules:.ko=.o)))
+ 
++.PHONY: dump_modules
++dump_modules:
++	@echo $(__modules) > __modules.list
++	@echo $(__old_modules) > __old_modules.list
++
+ # Stop after building .o files if NOFINAL is set. Makes compile tests quicker
+ _modpost: $(if $(KBUILD_MODPOST_NOFINAL), $(modules:.ko:.o),$(modules))
+ 
+@@ -84,7 +90,7 @@ quiet_cmd_modpost = MODPOST $(words $(filter-out vmlinux FORCE, $^)) modules
+       cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$$/.o/' | $(modpost) -s -T -
+ 
+ PHONY += __modpost
+-__modpost: $(modules:.ko=.o) FORCE
++__modpost: $(modules:.ko=.o) dump_modules FORCE
+ 	$(call cmd,modpost) $(wildcard vmlinux)
+ 
+ quiet_cmd_kernel-mod = MODPOST $@
+
+> After reverting commit ea4054a238 (modpost: handle huge numbers of modules)
+> everything is fine.
+>
+> This happens with multiple gcc versions and target platforms (arm, x86_64,
+> i386, powerpc). Host kernel version is 3.8.10, system is Ubuntu 12.10.
+>
+> Does anyone else see this problem ? Any idea what might be wrong ?
+
+Assuming it happens with a clean tree, please send the .config, and I'll
+see if I can reproduce...
+
+Thanks,
+Rusty.
