@@ -1,209 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab3EIUQO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 16:16:14 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:41596 "EHLO hydra.sisk.pl"
+	id S1752982Ab3EIUUS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 16:20:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13440 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752071Ab3EIUQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 16:16:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lance Ortiz <lance.ortiz@hp.com>
-Cc: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
-        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
-        mchehab@redhat.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] aerdrv: Move cper_print_aer() call out of interrupt context
-Date: Thu, 09 May 2013 22:24:37 +0200
-Message-ID: <2787560.ZE29Z7LhAi@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130509195135.16108.70845.stgit@grignak.americas.hpqcorp.net>
-References: <20130509195135.16108.70845.stgit@grignak.americas.hpqcorp.net>
+	id S1752049Ab3EIUUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 16:20:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,642,1363158000"; 
+   d="scan'208";a="334480019"
+Date: Thu, 9 May 2013 16:20:15 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PULL REQUEST] NVMe driver updates
+Message-ID: <20130509202015.GJ6057@linux.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 09, 2013 01:51:35 PM Lance Ortiz wrote:
-> The following warning was seen on 3.9 when a corrected PCIe error was being
-> handled by the AER subsystem.
-> 
-> WARNING: at .../drivers/pci/search.c:214 pci_get_dev_by_id+0x8a/0x90()
-> 
-> This occurred because a call to pci_get_domain_bus_and_slot() was added to
-> cper_print_pcie() to setup for the call to cper_print_aer().  The warning
-> showed up because cper_print_pcie() is called in an interrupt context and
-> pci_get* functions are not supposed to be called in that context.
-> 
-> The solution is to move the cper_print_aer() call out of the interrupt
-> context and into aer_recover_work_func() to avoid any warnings when calling
-> pci_get* functions.
-> 
-> v2 - Re-worded header text.  Removed prefix arg from cper_print_aer().
->      Added TODO message in cper_print_aer().
 
-That's fine by me.
+Hi Linus,
 
-Thanks,
-Rafael
+Lots of exciting new features in the NVM Express driver this time,
+including support for emulating SCSI commands, discard support and the
+ability to submit per-sector metadata with I/Os.  It's still mostly
+bugfixes though!
+
+The following changes since commit a12183c62717ac4579319189a00f5883a18dff08:
+
+  Merge branch 'timers-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2013-03-25 18:03:34 -0700)
+
+are available in the git repository at:
 
 
-> Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
-> Acked-by: Borislav Petkov <bp@suse.de>
-> ---
-> 
->  drivers/acpi/apei/cper.c               |   18 ------------------
->  drivers/acpi/apei/ghes.c               |    3 ++-
->  drivers/pci/pcie/aer/aerdrv_core.c     |    6 +++++-
->  drivers/pci/pcie/aer/aerdrv_errprint.c |   10 ++++++++--
->  include/linux/aer.h                    |    4 ++--
->  5 files changed, 17 insertions(+), 24 deletions(-)
-> 
-> diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
-> index 1e5d8a4..8713229 100644
-> --- a/drivers/acpi/apei/cper.c
-> +++ b/drivers/acpi/apei/cper.c
-> @@ -250,10 +250,6 @@ static const char *cper_pcie_port_type_strs[] = {
->  static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
->  			    const struct acpi_hest_generic_data *gdata)
->  {
-> -#ifdef CONFIG_ACPI_APEI_PCIEAER
-> -	struct pci_dev *dev;
-> -#endif
-> -
->  	if (pcie->validation_bits & CPER_PCIE_VALID_PORT_TYPE)
->  		printk("%s""port_type: %d, %s\n", pfx, pcie->port_type,
->  		       pcie->port_type < ARRAY_SIZE(cper_pcie_port_type_strs) ?
-> @@ -285,20 +281,6 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
->  		printk(
->  	"%s""bridge: secondary_status: 0x%04x, control: 0x%04x\n",
->  	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
-> -#ifdef CONFIG_ACPI_APEI_PCIEAER
-> -	dev = pci_get_domain_bus_and_slot(pcie->device_id.segment,
-> -			pcie->device_id.bus, pcie->device_id.function);
-> -	if (!dev) {
-> -		pr_err("PCI AER Cannot get PCI device %04x:%02x:%02x.%d\n",
-> -			pcie->device_id.segment, pcie->device_id.bus,
-> -			pcie->device_id.slot, pcie->device_id.function);
-> -		return;
-> -	}
-> -	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO)
-> -		cper_print_aer(pfx, dev, gdata->error_severity,
-> -				(struct aer_capability_regs *) pcie->aer_info);
-> -	pci_dev_put(dev);
-> -#endif
->  }
->  
->  static const char *apei_estatus_section_flag_strs[] = {
-> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-> index d668a8a..f2084b5 100644
-> --- a/drivers/acpi/apei/ghes.c
-> +++ b/drivers/acpi/apei/ghes.c
-> @@ -454,7 +454,8 @@ static void ghes_do_proc(struct ghes *ghes,
->  				aer_severity = cper_severity_to_aer(sev);
->  				aer_recover_queue(pcie_err->device_id.segment,
->  						  pcie_err->device_id.bus,
-> -						  devfn, aer_severity);
-> +						  devfn, aer_severity,
-> +						  pcie_err->aer_info);
->  			}
->  
->  		}
-> diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
-> index 564d97f..ceba124 100644
-> --- a/drivers/pci/pcie/aer/aerdrv_core.c
-> +++ b/drivers/pci/pcie/aer/aerdrv_core.c
-> @@ -582,6 +582,7 @@ struct aer_recover_entry
->  	u8	devfn;
->  	u16	domain;
->  	int	severity;
-> +	u8	*regs;
->  };
->  
->  static DEFINE_KFIFO(aer_recover_ring, struct aer_recover_entry,
-> @@ -595,7 +596,7 @@ static DEFINE_SPINLOCK(aer_recover_ring_lock);
->  static DECLARE_WORK(aer_recover_work, aer_recover_work_func);
->  
->  void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
-> -		       int severity)
-> +		       int severity, u8 *aer_regs)
->  {
->  	unsigned long flags;
->  	struct aer_recover_entry entry = {
-> @@ -603,6 +604,7 @@ void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
->  		.devfn		= devfn,
->  		.domain		= domain,
->  		.severity	= severity,
-> +		.regs		= aer_regs,
->  	};
->  
->  	spin_lock_irqsave(&aer_recover_ring_lock, flags);
-> @@ -629,6 +631,8 @@ static void aer_recover_work_func(struct work_struct *work)
->  			       PCI_SLOT(entry.devfn), PCI_FUNC(entry.devfn));
->  			continue;
->  		}
-> +		cper_print_aer(pdev, entry.severity,
-> +				(struct aer_capability_regs *)entry.regs);
->  		do_recovery(pdev, entry.severity);
->  		pci_dev_put(pdev);
->  	}
-> diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
-> index 5ab1425..f277dc3 100644
-> --- a/drivers/pci/pcie/aer/aerdrv_errprint.c
-> +++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
-> @@ -220,13 +220,19 @@ int cper_severity_to_aer(int cper_severity)
->  }
->  EXPORT_SYMBOL_GPL(cper_severity_to_aer);
->  
-> -void cper_print_aer(const char *prefix, struct pci_dev *dev, int cper_severity,
-> +void cper_print_aer(struct pci_dev *dev, int cper_severity,
->  		    struct aer_capability_regs *aer)
->  {
->  	int aer_severity, layer, agent, status_strs_size, tlp_header_valid = 0;
->  	u32 status, mask;
->  	const char **status_strs;
->  
-> +	/*
-> +	 * TODO: This function needs to be re-written so that it's output
-> +	 * matches the output of aer_print_error().  Right now, the output
-> +	 * is formatted very differently.
-> +	 */
-> +
->  	aer_severity = cper_severity_to_aer(cper_severity);
->  	if (aer_severity == AER_CORRECTABLE) {
->  		status = aer->cor_status;
-> @@ -244,7 +250,7 @@ void cper_print_aer(const char *prefix, struct pci_dev *dev, int cper_severity,
->  	agent = AER_GET_AGENT(aer_severity, status);
->  	dev_err(&dev->dev, "aer_status: 0x%08x, aer_mask: 0x%08x\n",
->  	       status, mask);
-> -	cper_print_bits(prefix, status, status_strs, status_strs_size);
-> +	cper_print_bits("", status, status_strs, status_strs_size);
->  	dev_err(&dev->dev, "aer_layer=%s, aer_agent=%s\n",
->  	       aer_error_layer[layer], aer_agent_string[agent]);
->  	if (aer_severity != AER_CORRECTABLE)
-> diff --git a/include/linux/aer.h b/include/linux/aer.h
-> index ec10e1b..d8cf12b 100644
-> --- a/include/linux/aer.h
-> +++ b/include/linux/aer.h
-> @@ -49,10 +49,10 @@ static inline int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev)
->  }
->  #endif
->  
-> -extern void cper_print_aer(const char *prefix, struct pci_dev *dev,
-> +extern void cper_print_aer(struct pci_dev *dev,
->  			   int cper_severity, struct aer_capability_regs *aer);
->  extern int cper_severity_to_aer(int cper_severity);
->  extern void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
-> -			      int severity);
-> +			      int severity,  u8 *aer_regs);
->  #endif //_AER_H_
->  
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+  git://git.infradead.org/users/willy/linux-nvme.git master
+
+for you to fetch changes up to 94f370cab6e5ac514b658c6b2b3aa308cefc5c7a:
+
+  NVMe: Use user defined admin ioctl timeout (2013-05-09 16:03:50 -0400)
+
+----------------------------------------------------------------
+Arjan van de Ven (2):
+      NVMe: Use round_jiffies_relative() for the periodic, once-per-second timer
+      NVMe: Set TASK_INTERRUPTIBLE before processing queues
+
+Keith Busch (13):
+      NVMe: Add discard support for capable devices
+      NVMe: Add a character device for each nvme device
+      NVMe: queue usage fixes in nvme-scsi
+      NVMe: Add scsi unmap to SG_IO
+      NVMe: Free admin queue on request_irq error
+      NVMe: Fix error clean-up on nvme_alloc_queue
+      NVMe: Check for NULL memory in nvme_dev_add
+      NVMe: Remove dead code in nvme_dev_add
+      NVMe: Split non-mergeable bio requests
+      NVMe: Device specific stripe size handling
+      NVMe: Meta-data support in NVME_IOCTL_SUBMIT_IO
+      NVMe: Schedule timeout for sync commands
+      NVMe: Use user defined admin ioctl timeout
+
+Matthew Wilcox (7):
+      NVMe: Abstract out sector to block number conversion
+      NVMe: Don't fail initialisation unnecessarily
+      NVMe: Fix I/O cancellation status on big-endian machines
+      NVMe: Fix endian-related problems in user I/O submission path
+      NVMe: Wait for device to acknowledge shutdown
+      NVMe: Only clear the enable bit when disabling controller
+      NVMe: Simplify Firmware Activate code slightly
+
+Vishal Verma (5):
+      NVMe: Rename nvme.c to nvme-core.c
+      NVMe: Move structures & definitions to header file
+      NVMe: Add definitions for format command
+      NVMe: Add nvme-scsi.c
+      NVMe: Fix sparse warnings in scsi emulation
+
+ drivers/block/Makefile                |    1 +
+ drivers/block/{nvme.c => nvme-core.c} |  594 +++++--
+ drivers/block/nvme-scsi.c             | 3053 +++++++++++++++++++++++++++++++++
+ include/linux/nvme.h                  |  158 +-
+ 4 files changed, 3640 insertions(+), 166 deletions(-)
+ rename drivers/block/{nvme.c => nvme-core.c} (79%)
+ create mode 100644 drivers/block/nvme-scsi.c
+
+
