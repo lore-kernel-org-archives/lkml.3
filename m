@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab3EIW3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:29:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45882 "EHLO
+	id S1756888Ab3EIW3i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:29:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45876 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756456Ab3EIW0w (ORCPT
+	with ESMTP id S1756373Ab3EIW0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:52 -0400
+	Thu, 9 May 2013 18:26:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@redhat.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 65/73] drm/tilcdc: Fix an incorrect condition
-Date: Thu,  9 May 2013 15:25:55 -0700
-Message-Id: <20130509222533.032455663@linuxfoundation.org>
+        Sylvain BERTRAND <sylware@legeek.net>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 64/73] drm/radeon: fix handling of v6 power tables
+Date: Thu,  9 May 2013 15:25:54 -0700
+Message-Id: <20130509222532.932880384@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -28,33 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Kamat <sachin.kamat@linaro.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 9e48854c58ca9a0f39e716dcb18247bfc21e2022 upstream.
+commit 441e76ca83ac604eaf0f046def96d8e3a27eea28 upstream.
 
-Instead of checking if num_encoders is zero, it is being assigned 0.
-Convert the assignment to a check.
+The code was mis-handling variable sized arrays.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Acked-by: Rob Clark <robdclark@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Reported-by: Sylvain BERTRAND <sylware@legeek.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/tilcdc/tilcdc_drv.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-@@ -75,7 +75,7 @@ static int modeset_init(struct drm_devic
- 		mod->funcs->modeset_init(mod, dev);
- 	}
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -2518,6 +2518,7 @@ static int radeon_atombios_parse_power_t
+ 	int index = GetIndexIntoMasterTable(DATA, PowerPlayInfo);
+         u16 data_offset;
+ 	u8 frev, crev;
++	u8 *power_state_offset;
  
--	if ((priv->num_encoders = 0) || (priv->num_connectors == 0)) {
-+	if ((priv->num_encoders == 0) || (priv->num_connectors == 0)) {
- 		/* oh nos! */
- 		dev_err(dev->dev, "no encoders/connectors found\n");
- 		return -ENXIO;
+ 	if (!atom_parse_data_header(mode_info->atom_context, index, NULL,
+ 				   &frev, &crev, &data_offset))
+@@ -2540,11 +2541,11 @@ static int radeon_atombios_parse_power_t
+ 				       state_array->ucNumEntries, GFP_KERNEL);
+ 	if (!rdev->pm.power_state)
+ 		return state_index;
++	power_state_offset = (u8 *)state_array->states;
+ 	for (i = 0; i < state_array->ucNumEntries; i++) {
+ 		mode_index = 0;
+-		power_state = (union pplib_power_state *)&state_array->states[i];
+-		/* XXX this might be an inagua bug... */
+-		non_clock_array_index = i; /* power_state->v2.nonClockInfoIndex */
++		power_state = (union pplib_power_state *)power_state_offset;
++		non_clock_array_index = power_state->v2.nonClockInfoIndex;
+ 		non_clock_info = (struct _ATOM_PPLIB_NONCLOCK_INFO *)
+ 			&non_clock_info_array->nonClockInfo[non_clock_array_index];
+ 		rdev->pm.power_state[i].clock_info = kzalloc(sizeof(struct radeon_pm_clock_info) *
+@@ -2556,9 +2557,6 @@ static int radeon_atombios_parse_power_t
+ 		if (power_state->v2.ucNumDPMLevels) {
+ 			for (j = 0; j < power_state->v2.ucNumDPMLevels; j++) {
+ 				clock_array_index = power_state->v2.clockInfoIndex[j];
+-				/* XXX this might be an inagua bug... */
+-				if (clock_array_index >= clock_info_array->ucNumEntries)
+-					continue;
+ 				clock_info = (union pplib_clock_info *)
+ 					&clock_info_array->clockInfo[clock_array_index * clock_info_array->ucEntrySize];
+ 				valid = radeon_atombios_parse_pplib_clock_info(rdev,
+@@ -2580,6 +2578,7 @@ static int radeon_atombios_parse_power_t
+ 								   non_clock_info);
+ 			state_index++;
+ 		}
++		power_state_offset += 2 + power_state->v2.ucNumDPMLevels;
+ 	}
+ 	/* if multiple clock modes, mark the lowest as no display */
+ 	for (i = 0; i < state_index; i++) {
 
 
