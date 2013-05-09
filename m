@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758822Ab3EIWlQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:41:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46371 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758436Ab3EIWe5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758475Ab3EIWe5 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 9 May 2013 18:34:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46352 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758436Ab3EIWex (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 18:34:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 19/26] drm/radeon/evergreen+: dont enable HPD interrupts on eDP/LVDS
-Date: Thu,  9 May 2013 15:34:33 -0700
-Message-Id: <20130509223424.448977523@linuxfoundation.org>
+Subject: [ 14/26] drm/radeon: dont use get_engine_clock() on APUs
+Date: Thu,  9 May 2013 15:34:28 -0700
+Message-Id: <20130509223423.927520868@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
 References: <20130509223422.368544659@linuxfoundation.org>
@@ -28,38 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 2e97be73e5f74a317232740ae82eb8f95326a660 upstream.
+commit bf05d9985111f85ed6922c134567b96eb789283b upstream.
 
-Avoids potential interrupt storms when the display is disabled.
+It doesn't work reliably.  Just report back the currently
+selected engine clock.
 
-May fix:
-https://bugzilla.kernel.org/show_bug.cgi?id=56041
+Partially fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=62493
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/gpu/drm/radeon/radeon_pm.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -445,6 +445,16 @@ void evergreen_hpd_init(struct radeon_de
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -872,7 +872,11 @@ static int radeon_debugfs_pm_info(struct
+ 	struct radeon_device *rdev = dev->dev_private;
  
- 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
- 		struct radeon_connector *radeon_connector = to_radeon_connector(connector);
-+
-+		if (connector->connector_type == DRM_MODE_CONNECTOR_eDP ||
-+		    connector->connector_type == DRM_MODE_CONNECTOR_LVDS) {
-+			/* don't try to enable hpd on eDP or LVDS avoid breaking the
-+			 * aux dp channel on imac and help (but not completely fix)
-+			 * https://bugzilla.redhat.com/show_bug.cgi?id=726143
-+			 * also avoid interrupt storms during dpms.
-+			 */
-+			continue;
-+		}
- 		switch (radeon_connector->hpd.hpd) {
- 		case RADEON_HPD_1:
- 			WREG32(DC_HPD1_CONTROL, tmp);
+ 	seq_printf(m, "default engine clock: %u0 kHz\n", rdev->pm.default_sclk);
+-	seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
++	/* radeon_get_engine_clock is not reliable on APUs so just print the current clock */
++	if ((rdev->family >= CHIP_PALM) && (rdev->flags & RADEON_IS_IGP))
++		seq_printf(m, "current engine clock: %u0 kHz\n", rdev->pm.current_sclk);
++	else
++		seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
+ 	seq_printf(m, "default memory clock: %u0 kHz\n", rdev->pm.default_mclk);
+ 	if (rdev->asic->pm.get_memory_clock)
+ 		seq_printf(m, "current memory clock: %u0 kHz\n", radeon_get_memory_clock(rdev));
 
 
