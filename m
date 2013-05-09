@@ -1,141 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab3EIO2u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 10:28:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:49555 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170Ab3EIO2t (ORCPT
+	id S1754927Ab3EIObs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 10:31:48 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11972 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab3EIObr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 10:28:49 -0400
-Date: Thu, 9 May 2013 16:28:45 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Anthony Olech <Anthony.Olech@diasemi.com>
-cc: Krystian Garbaciak <Krystian.Garbaciak@diasemi.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Jean Delvare <khali@linux-fr.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: RE: [RFC PATCH 2/8] regulator: Add Dialog DA906x voltage regulators
- support.
-In-Reply-To: <24DF37198A1E704D9811D8F72B87EB514192495F@NB-EX-MBX02.diasemi.com>
-Message-ID: <Pine.LNX.4.64.1305091623050.22179@axis700.grange>
-References: <201208241450@sw-eng-lt-dc-vm2> <201208241455@sw-eng-lt-dc-vm2>
- <20120825151020.GB6520@opensource.wolfsonmicro.com> <201208291550@sw-eng-lt-dc-vm2>
- <20120830174738.GH4356@opensource.wolfsonmicro.com> <201208311100@sw-eng-lt-dc-vm2>
- <Pine.LNX.4.64.1305091549300.22179@axis700.grange>
- <24DF37198A1E704D9811D8F72B87EB514192495F@NB-EX-MBX02.diasemi.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:fkEU5vwL/nfL6c4OUTA2p/ZR9AHVBUA3Ha/H9CbUBAk
- 9aXj5eW5nB0L6QjAP1v7GuMf75iikAEuxfEOtZkv1mBRJrZPuI
- hsRDAkOZsd1YYjral0nxSzMkp6TvaknyR9eJ4t83BlYfYJlN9X
- k2LEWuQvDyRegvwBuMEhjT48jL/LKnQOh7MqvSj+Bxyup62obi
- p87gbIMdYBM12+X2+Z5f1YxPdBwxTNE+YQBqtmbvmcQIzwwbr0
- qvn214xfTlCyAyT9A++2YkdehdmYC7sEUIb1zkfcwaCkHIHz3E
- xImNEVN0METLN4iuPHIDrYPH3PTi9IcwgeW9NsxINH6vZTzuV7
- EDvMrnRPhzSh5xPvyIh3J6pRrU50GCi/B+ZQRNfSAYUPonyMlF
- rvQOGlmXl071g==
+	Thu, 9 May 2013 10:31:47 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=OF0BmyLs-1YA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=Kfn0_i_Y4z8A:10 a=3nbZYyFuAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=QyXUC8HyAAAA:8 a=0P8YjRj644Lh5uG7nk8A:9 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=dGJ0OcVc7YAA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1368109905.7373.99.camel@gandalf.local.home>
+Subject: Re: [PATCH 01/11] [BUGFIX] tracing: Return 0 if event_enable_func
+ succeeded
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
+Date: Thu, 09 May 2013 10:31:45 -0400
+In-Reply-To: <20130509054413.30398.55650.stgit@mhiramat-M0-7522>
+References: <20130509054405.30398.73831.stgit@mhiramat-M0-7522>
+	 <20130509054413.30398.55650.stgit@mhiramat-M0-7522>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony
-
-On Thu, 9 May 2013, Anthony Olech wrote:
-
-> Hi Guennadi Liakhovetski,
+On Thu, 2013-05-09 at 14:44 +0900, Masami Hiramatsu wrote:
+> Return 0 instead of the number of activated ftrace if
+> event_enable_func succeeded and return an error code if failed,
+> beacuse 0 is success code at caller (ftrace_regex_write).
 > 
-> Now that Krystian no longer works for Dialog I think that I might be 
-> your best contact.
-> As far as I am aware without doing any checking, the DA906x driver 
-> should possibly cover the DA9063.
-
-Good!
-
-> If you need a driver, that would imply that you have some chips. Have 
-> you tried our marketting department?
-
-Yes, this (and a da9210) PMICs are used on one of the boards, I'm working 
-with. I asked your marketing department for a da9210 datasheet, they tried 
-to check with the board vendor, who is also my customer for this project, 
-and so far they haven't been able to establish my involvement in this 
-development. Have you also got a da9210 Linux driver? Do I have to wait 
-for your marketing department clarifying my affiliation or could you make 
-that driver available to me too? Or do you mean you might have a newer 
-version of this driver available internally too?
-
-Thanks
-Guennadi
-
-> Best regards,
+> Without this fix, writing enable_event trigger on set_ftrace_filter
+> always doesn't work, since event_enable_func returns 1 to
+> ftrace_regex_write, it consumes 1 byte and pass input string
+> without the first character again. This makes event_enable_func
+> fail and disables event entry.
 > 
-> Tony Olech
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Tom Zanussi <tom.zanussi@intel.com>
+> ---
+>  kernel/trace/trace_events.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
-> 
-> > -----Original Message-----
-> > From: Guennadi Liakhovetski [mailto:g.liakhovetski@gmx.de]
-> > Sent: 09 May 2013 15:06
-> > To: Krystian Garbaciak
-> > Cc: Mark Brown; linux-kernel@vger.kernel.org; Samuel Ortiz; Alessandro
-> > Zummo; Jean Delvare; Dmitry Torokhov; Richard Purdie; Anthony Olech
-> > Subject: Re: [RFC PATCH 2/8] regulator: Add Dialog DA906x voltage regulators
-> > support.
-> > 
-> > (trimmed the CC a bit)
-> > 
-> > Hi Krystian
-> > 
-> > On Fri, 31 Aug 2012, Krystian Garbaciak wrote:
-> > 
-> > > > On Wed, Aug 29, 2012 at 03:50:00PM +0100, Krystian Garbaciak wrote:
-> > 
-> > Sorry for picking up a random mail from this old thread, unfortunately, I don't
-> > have "0/8" in my archive.
-> > 
-> > I have to write a driver for the da9063 PMIC. Do you have an idea, whether it'd
-> > be compatible with this driver? Do you plan to continue your work on this driver
-> > or would you mind if I try to use these your patches and mainline them,
-> > preserving your authorship and copyright, of course?
-> > 
-> > Thanks
-> > Guennadi
-> > 
-> > > > > Because, for some regulators, this is required: val +=
-> > > > > fvol->offset, I was only able to reduce it to the following form.
-> > > >
-> > > > What on earth makes you say this?  The above is obviously linear.
-> > > >
-> > > > Besides, you're missing several points here.  One is that you should
-> > > > be using the framework features, another is that you should be
-> > > > implementing _sel.
-> > >
-> > > Sorry, I've missed an obvious thing here. Instead of adding selector
-> > > offset at runtime, I can substract apropriate voltage from .min_uV.
-> > > Thanks for pointing this out.
-> > >
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe
-> > > linux-kernel" in the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
-> > >
-> > 
-> > ---
-> > Guennadi Liakhovetski, Ph.D.
-> > Freelance Open-Source Software Developer http://www.open-technology.de/
-> Legal Disclaimer: This e-mail communication (and any attachment/s) is confidential and contains proprietary information, 
-> some or all of which may be legally privileged. It is intended solely for the use of the individual or entity to which it
-> is addressed. Access to this email by anyone else is unauthorized. If you are not the intended recipient, any disclosure, 
-> copying, distribution or any action taken or omitted to be taken in reliance on it, is prohibited and may be unlawful.
-> 
-> Please consider the environment before printing this e-mail
-> 
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index 53582e9..44ac836 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -2061,8 +2061,11 @@ event_enable_func(struct ftrace_hash *hash,
+>  	if (ret < 0)
+>  		goto out_put;
+>  	ret = register_ftrace_function_probe(glob, ops, data);
+> -	if (!ret)
+> +	if (!ret) {
+> +		ret = -ENOENT;
+>  		goto out_disable;
+> +	} else
+> +		ret = 0;
 
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+I think you meant:
+
+	if (ret < 0)
+		goto out_disable;
+	ret = 0;
+
+Otherwise, I don't see how you fixed anything, as you still return error
+if ret is something other than zero.
+
+Or am I missing something?
+
+-- Steve
+
+>   out:
+>  	mutex_unlock(&event_mutex);
+>  	return ret;
+
+
