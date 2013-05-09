@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758216Ab3EIWde (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:33:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46229 "EHLO
+	id S1758198Ab3EIWdc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:33:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758136Ab3EIWd3 (ORCPT
+	with ESMTP id S1758171Ab3EIWd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:29 -0400
+	Thu, 9 May 2013 18:33:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chuck Lever <Chuck.Lever@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 71/73] NFSv4.x: Fix handling of partially delegated locks
-Date: Thu,  9 May 2013 15:32:34 -0700
-Message-Id: <20130509222805.527528613@linuxfoundation.org>
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [ 70/73] EDAC: Dont give write permission to read-only files
+Date: Thu,  9 May 2013 15:32:33 -0700
+Message-Id: <20130509222805.430034286@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -27,40 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-commit c5a2a15f8146fdfe45078df7873a6dc1006b3869 upstream.
+commit c8c64d165ccfd2274058ac84e0c680f9b48c4ec1 upstream.
 
-If a NFS client receives a delegation for a file after it has taken
-a lock on that file, we can currently end up in a situation where
-we mistakenly skip unlocking that file.
+I get the following warning on boot:
 
-The following patch swaps an erroneous check in nfs4_proc_unlck for
-whether or not the file has a delegation to one which checks whether
-or not we hold a lock stateid for that file.
+------------[ cut here ]------------
+WARNING: at drivers/base/core.c:575 device_create_file+0x9a/0xa0()
+Hardware name:  -[8737R2A]-
+Write permission without 'store'
+...
+</snip>
 
-Reported-by: Chuck Lever <Chuck.Lever@oracle.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Chuck Lever <Chuck.Lever@oracle.com>
+Drilling down, this is related to dynamic channel ce_count attribute
+files sporting a S_IWUSR mode without a ->store() function. Looking
+around, it appears that they aren't supposed to have a ->store()
+function. So remove the bogus write permission to get rid of the
+warning.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+[ shorten commit message ]
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/edac/edac_mc_sysfs.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4513,9 +4513,9 @@ static int nfs4_proc_unlck(struct nfs4_s
- 	if (status != 0)
- 		goto out;
- 	/* Is this a delegated lock? */
--	if (test_bit(NFS_DELEGATED_STATE, &state->flags))
--		goto out;
- 	lsp = request->fl_u.nfs4_fl.owner;
-+	if (test_bit(NFS_LOCK_INITIALIZED, &lsp->ls_flags) == 0)
-+		goto out;
- 	seqid = nfs_alloc_seqid(&lsp->ls_seqid, GFP_KERNEL);
- 	status = -ENOMEM;
- 	if (seqid == NULL)
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -330,17 +330,17 @@ static struct device_attribute *dynamic_
+ };
+ 
+ /* possible dynamic channel ce_count attribute files */
+-DEVICE_CHANNEL(ch0_ce_count, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch0_ce_count, S_IRUGO,
+ 		   channel_ce_count_show, NULL, 0);
+-DEVICE_CHANNEL(ch1_ce_count, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch1_ce_count, S_IRUGO,
+ 		   channel_ce_count_show, NULL, 1);
+-DEVICE_CHANNEL(ch2_ce_count, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch2_ce_count, S_IRUGO,
+ 		   channel_ce_count_show, NULL, 2);
+-DEVICE_CHANNEL(ch3_ce_count, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch3_ce_count, S_IRUGO,
+ 		   channel_ce_count_show, NULL, 3);
+-DEVICE_CHANNEL(ch4_ce_count, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch4_ce_count, S_IRUGO,
+ 		   channel_ce_count_show, NULL, 4);
+-DEVICE_CHANNEL(ch5_ce_count, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch5_ce_count, S_IRUGO,
+ 		   channel_ce_count_show, NULL, 5);
+ 
+ /* Total possible dynamic ce_count attribute file table */
 
 
