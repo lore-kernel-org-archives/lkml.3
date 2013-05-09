@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758395Ab3EIWes (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:34:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46287 "EHLO
+	id S1758430Ab3EIWew (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:34:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46294 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758304Ab3EIWer (ORCPT
+	with ESMTP id S1758402Ab3EIWeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:34:47 -0400
+	Thu, 9 May 2013 18:34:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 01/26] powerpc: Emulate non privileged DSCR read and write
-Date: Thu,  9 May 2013 15:34:15 -0700
-Message-Id: <20130509223422.559522997@linuxfoundation.org>
+        Hans Schillstrom <hans@schillstrom.com>, Julian Anastasov <ja@ssi.bg>,
+        Simon Horman <horms@verge.net.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [ 08/26] ipvs: ip_vs_sip_fill_param() BUG: bad check of return value
+Date: Thu,  9 May 2013 15:34:22 -0700
+Message-Id: <20130509223423.316112273@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
 References: <20130509223422.368544659@linuxfoundation.org>
@@ -27,71 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Hans Schillstrom <hans@schillstrom.com>
 
-commit 73d2fb758e678c93bc76d40876c2359f0729b0ef upstream.
+commit f7a1dd6e3ad59f0cfd51da29dfdbfd54122c5916 upstream.
 
-POWER8 allows read and write of the DSCR in userspace. We added
-kernel emulation so applications could always use the instructions
-regardless of the CPU type.
+The reason for this patch is crash in kmemdup
+caused by returning from get_callid with uniialized
+matchoff and matchlen.
 
-Unfortunately there are two SPRs for the DSCR and we only added
-emulation for the privileged one. Add code to match the non
-privileged one.
+Removing Zero check of matchlen since it's done by ct_sip_get_header()
 
-A simple test was created to verify the fix:
+BUG: unable to handle kernel paging request at ffff880457b5763f
+IP: [<ffffffff810df7fc>] kmemdup+0x2e/0x35
+PGD 27f6067 PUD 0
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in: xt_state xt_helper nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_mangle xt_connmark xt_conntrack ip6_tables nf_conntrack_ftp ip_vs_ftp nf_nat xt_tcpudp iptable_mangle xt_mark ip_tables x_tables ip_vs_rr ip_vs_lblcr ip_vs_pe_sip ip_vs nf_conntrack_sip nf_conntrack bonding igb i2c_algo_bit i2c_core
+CPU 5
+Pid: 0, comm: swapper/5 Not tainted 3.9.0-rc5+ #5                  /S1200KP
+RIP: 0010:[<ffffffff810df7fc>]  [<ffffffff810df7fc>] kmemdup+0x2e/0x35
+RSP: 0018:ffff8803fea03648  EFLAGS: 00010282
+RAX: ffff8803d61063e0 RBX: 0000000000000003 RCX: 0000000000000003
+RDX: 0000000000000003 RSI: ffff880457b5763f RDI: ffff8803d61063e0
+RBP: ffff8803fea03658 R08: 0000000000000008 R09: 0000000000000011
+R10: 0000000000000011 R11: 00ffffffff81a8a3 R12: ffff880457b5763f
+R13: ffff8803d67f786a R14: ffff8803fea03730 R15: ffffffffa0098e90
+FS:  0000000000000000(0000) GS:ffff8803fea00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: ffff880457b5763f CR3: 0000000001a0c000 CR4: 00000000001407e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process swapper/5 (pid: 0, threadinfo ffff8803ee18c000, task ffff8803ee18a480)
+Stack:
+ ffff8803d822a080 000000000000001c ffff8803fea036c8 ffffffffa000937a
+ ffffffff81f0d8a0 000000038135fdd5 ffff880300000014 ffff880300110000
+ ffffffff150118ac ffff8803d7e8a000 ffff88031e0118ac 0000000000000000
+Call Trace:
+ <IRQ>
 
-http://ozlabs.org/~anton/junkcode/user_dscr_test.c
+ [<ffffffffa000937a>] ip_vs_sip_fill_param+0x13a/0x187 [ip_vs_pe_sip]
+ [<ffffffffa007b209>] ip_vs_sched_persist+0x2c6/0x9c3 [ip_vs]
+ [<ffffffff8107dc53>] ? __lock_acquire+0x677/0x1697
+ [<ffffffff8100972e>] ? native_sched_clock+0x3c/0x7d
+ [<ffffffff8100972e>] ? native_sched_clock+0x3c/0x7d
+ [<ffffffff810649bc>] ? sched_clock_cpu+0x43/0xcf
+ [<ffffffffa007bb1e>] ip_vs_schedule+0x181/0x4ba [ip_vs]
+...
 
-Without the patch we get a SIGILL and it passes with the patch.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
+Acked-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Simon Horman <horms@verge.net.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/ppc-opcode.h |    4 ++++
- arch/powerpc/kernel/traps.c           |   10 ++++++++--
- 2 files changed, 12 insertions(+), 2 deletions(-)
+ net/netfilter/ipvs/ip_vs_pe_sip.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/arch/powerpc/include/asm/ppc-opcode.h
-+++ b/arch/powerpc/include/asm/ppc-opcode.h
-@@ -45,6 +45,10 @@
- #define PPC_INST_MFSPR_DSCR_MASK	0xfc1fffff
- #define PPC_INST_MTSPR_DSCR		0x7c1103a6
- #define PPC_INST_MTSPR_DSCR_MASK	0xfc1fffff
-+#define PPC_INST_MFSPR_DSCR_USER	0x7c0302a6
-+#define PPC_INST_MFSPR_DSCR_USER_MASK	0xfc1fffff
-+#define PPC_INST_MTSPR_DSCR_USER	0x7c0303a6
-+#define PPC_INST_MTSPR_DSCR_USER_MASK	0xfc1fffff
- #define PPC_INST_SLBFEE			0x7c0007a7
- 
- #define PPC_INST_STRING			0x7c00042a
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -960,7 +960,10 @@ static int emulate_instruction(struct pt
- 
- #ifdef CONFIG_PPC64
- 	/* Emulate the mfspr rD, DSCR. */
--	if (((instword & PPC_INST_MFSPR_DSCR_MASK) == PPC_INST_MFSPR_DSCR) &&
-+	if ((((instword & PPC_INST_MFSPR_DSCR_USER_MASK) ==
-+		PPC_INST_MFSPR_DSCR_USER) ||
-+	     ((instword & PPC_INST_MFSPR_DSCR_MASK) ==
-+		PPC_INST_MFSPR_DSCR)) &&
- 			cpu_has_feature(CPU_FTR_DSCR)) {
- 		PPC_WARN_EMULATED(mfdscr, regs);
- 		rd = (instword >> 21) & 0x1f;
-@@ -968,7 +971,10 @@ static int emulate_instruction(struct pt
- 		return 0;
+--- a/net/netfilter/ipvs/ip_vs_pe_sip.c
++++ b/net/netfilter/ipvs/ip_vs_pe_sip.c
+@@ -37,14 +37,10 @@ static int get_callid(const char *dptr,
+ 		if (ret > 0)
+ 			break;
+ 		if (!ret)
+-			return 0;
++			return -EINVAL;
+ 		dataoff += *matchoff;
  	}
- 	/* Emulate the mtspr DSCR, rD. */
--	if (((instword & PPC_INST_MTSPR_DSCR_MASK) == PPC_INST_MTSPR_DSCR) &&
-+	if ((((instword & PPC_INST_MTSPR_DSCR_USER_MASK) ==
-+		PPC_INST_MTSPR_DSCR_USER) ||
-+	     ((instword & PPC_INST_MTSPR_DSCR_MASK) ==
-+		PPC_INST_MTSPR_DSCR)) &&
- 			cpu_has_feature(CPU_FTR_DSCR)) {
- 		PPC_WARN_EMULATED(mtdscr, regs);
- 		rd = (instword >> 21) & 0x1f;
+ 
+-	/* Empty callid is useless */
+-	if (!*matchlen)
+-		return -EINVAL;
+-
+ 	/* Too large is useless */
+ 	if (*matchlen > IP_VS_PEDATA_MAXLEN)
+ 		return -EINVAL;
 
 
