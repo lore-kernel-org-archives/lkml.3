@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab3EILJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 07:09:56 -0400
-Received: from eu1sys200aog121.obsmtp.com ([207.126.144.151]:43449 "EHLO
-	eu1sys200aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753541Ab3EILJz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 07:09:55 -0400
-X-Greylist: delayed 68318 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 May 2013 07:09:54 EDT
-From: Stephen GALLIMORE <stephen.gallimore@st.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        Stuart MENEFY <stuart.menefy@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 9 May 2013 13:09:25 +0200
-Subject: RE: [RFC 5/8] ARM:stih41x: Add STiH415 SOC support
-Thread-Topic: [RFC 5/8] ARM:stih41x: Add STiH415 SOC support
-Thread-Index: Ac5MHa60H2QxRWCVR3+Yjen+hQeWogAfpQ6w
-Message-ID: <A3BF01DB4A606149A4C20C4C4C808F6C3189F99E90@SAFEX1MAIL1.st.com>
-References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
- <201305081818.01927.arnd@arndb.de>
- <A3BF01DB4A606149A4C20C4C4C808F6C3189E576E2@SAFEX1MAIL1.st.com>
- <201305082055.31081.arnd@arndb.de>
-In-Reply-To: <201305082055.31081.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754272Ab3EILMM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 07:12:12 -0400
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:28807
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753936Ab3EILMK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 07:12:10 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-SpamScore: 6
+X-BigFish: VS6(zz936eIzz1f42h1ee6h1ce5h1fdah1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz8275bhz2ei87h2a8h668h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fhff4m129fi1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: "Steven Miao (Steven Miao)" <realmz6@gmail.com>
+To: <torvalds@linux-foundation.org>
+CC: <uclinux-dist-devel@blackfin.uclinux.org>, <linux-kernel@vger.kernel.org>
+Subject: [uclinux-dist-devel] [GIT PULL] Blackfin updates for 3.10
+Date: Thu, 9 May 2013 19:14:21 +0800
+Message-ID: <1368098061-666-1-git-send-email-realmz6@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If you have a better solution, or a way to generalize this that would 
-> make sense for the ARM architecture as a whole, then we are more than 
-> happy to change.
->
->No idea, sorry. Upon closer inspection I wonder if your code actually does anything to the hardware that causes it to wake up on an interrupt.
+Hi Linus,
 
-You are correct that it does not affect the hardware and as such it may be entirely the wrong approach to put this code here. However, as drivers or subsystems are expected to call enable/disable_irq_ wake() when appropriate it seemed a reasonable place to do it and of course in the future when we add in support for the other suspend states this is also expected to do something with the system standby controller, as is the case on other platforms. But we concede that in this first minimal version that it may look a little out of place.
+please pull blackfin updates for Linux 3.10, some minor changes for performance and bug fixes.
 
-To quickly summarize the issue we were trying to address, the new freeze state suspends the drivers but then rather than calling the arch suspend code simply goes to sleep on a wake queue. It is relying on wakeup source interrupt handlers actually being run (this is not the case in the other "traditional" suspend states) and that the driver or some subsystem code called as part of the driver's interrupt processing will call pm_wakeup_event() which signals the freeze wake queue and causes the generic suspend code to start going through its wakeup path. But the driver suspend code will suspend the calling of IRQ handlers, dpm_suspend_noirq() calls suspend_device_irqs(), except for those with the NO_SUSPEND flag set.
+The following changes since commit c1be5a5b1b355d40e6cf79cc979eb66dafa24ad1:
 
-Now it is possible that we have simply tried to finesse the solution too much and that using the ASC serial device as a wakeup source was an unfortunate place to start, because most wakeup devices on a set top box have a single instance, e.g. the IR device for the remote control and you probably always want them to be a wakeup source. Maybe it would not have really mattered that much in the end if the ASC driver simply installed the interrupts for all UART ports with the flag, regardless of if the port was going to be used to wake up or not; but as I said in my previous response that solution left us feeling a bit uncomfortable which is why we went looking for another approach that was independent of the device driver and hooking into enable/disable_irq_wake() at the architecture level seemed more appropriate once we noticed it being used elsewhere. However, until you put it out there for comment it is hard to know if you have backed the right horse.
+  Linux 3.9 (2013-04-28 17:36:01 -0700)
 
-Regards,
--stephen
+are available in the git repository at:
+
+  https://github.com/realmz/blackfin-linux.git tags/for-linus
+
+for you to fetch changes up to 5ae89ee043ce96e3790e6c75f3807c8e37d98634:
+
+  bfin cache: dcplb map: add 16M dcplb map for BF60x (2013-05-09 18:22:45 +0800)
+
+----------------------------------------------------------------
+blackfin updates for Linux 3.9
+
+----------------------------------------------------------------
+Aaron Wu (1):
+      Platform Nand: Set the GPIO for NAND read as input
+
+Geert Uytterhoeven (1):
+      blackfin: twi: Remove bogus #endif
+
+James Cosin (1):
+      blackfin: fix bootup core clock and system clock display
+
+Sonic Zhang (3):
+      blackfin: dmc: Improve DDR2 write through in DMC effict controller.
+      bf609: rsi: Add bf609 rsi MMR macro and board platform data.
+      blackfin: rename vmImage to uImage after we move to buildroot
+
+Steven Miao (2):
+      blackfin: smp: fix smp build after drop asm/system.h
+      bfin cache: dcplb map: add 16M dcplb map for BF60x
+
+ arch/blackfin/Makefile                             |    6 ++--
+ arch/blackfin/boot/Makefile                        |   16 +++++-----
+ arch/blackfin/include/asm/atomic.h                 |    2 ++
+ arch/blackfin/include/asm/bfin_sdh.h               |   31 ++++++++++++++++++--
+ arch/blackfin/include/asm/bitops.h                 |    1 +
+ arch/blackfin/include/asm/def_LPBlackfin.h         |    2 ++
+ arch/blackfin/include/asm/mem_init.h               |    9 ++++++
+ arch/blackfin/kernel/cplb-nompu/cplbinit.c         |   16 ++++++++--
+ arch/blackfin/kernel/cplb-nompu/cplbmgr.c          |   27 ++++++++++++++---
+ arch/blackfin/kernel/cplbinfo.c                    |    9 ++++--
+ arch/blackfin/kernel/setup.c                       |    2 +-
+ arch/blackfin/mach-bf537/boards/stamp.c            |    1 +
+ arch/blackfin/mach-bf538/boards/ezkit.c            |    1 -
+ .../mach-bf609/include/mach/cdefBF60x_base.h       |    2 ++
+ 14 files changed, 101 insertions(+), 24 deletions(-)
 
