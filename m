@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758106Ab3EIWdX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:33:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46184 "EHLO
+	id S1759062Ab3EIWrV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:47:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46204 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758039Ab3EIWdS (ORCPT
+	with ESMTP id S1758100Ab3EIWdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:18 -0400
+	Thu, 9 May 2013 18:33:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 65/73] drm/radeon: add new richland pci ids
-Date: Thu,  9 May 2013 15:32:28 -0700
-Message-Id: <20130509222804.930600555@linuxfoundation.org>
+Subject: [ 58/73] drm/radeon: cleanup properly if mmio mapping fails
+Date: Thu,  9 May 2013 15:32:21 -0700
+Message-Id: <20130509222804.204991021@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -28,48 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 62d1f92e06aef9665d71ca7e986b3047ecf0b3c7 upstream.
+commit 0cd9cb76ae26a19df21abc6f94f5fff141e689c7 upstream.
+
+If we fail to map the mmio BAR, skip driver tear down
+that requires mmio.
+
+Should fix:
+https://bugzilla.kernel.org/show_bug.cgi?id=56541
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/ni.c |    6 ++++--
- include/drm/drm_pciids.h    |    2 ++
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_kms.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -471,7 +471,8 @@ static void cayman_gpu_init(struct radeo
- 		    (rdev->pdev->device == 0x990F) ||
- 		    (rdev->pdev->device == 0x9910) ||
- 		    (rdev->pdev->device == 0x9917) ||
--		    (rdev->pdev->device == 0x9999)) {
-+		    (rdev->pdev->device == 0x9999) ||
-+		    (rdev->pdev->device == 0x999C)) {
- 			rdev->config.cayman.max_simds_per_se = 6;
- 			rdev->config.cayman.max_backends_per_se = 2;
- 		} else if ((rdev->pdev->device == 0x9903) ||
-@@ -480,7 +481,8 @@ static void cayman_gpu_init(struct radeo
- 			   (rdev->pdev->device == 0x990D) ||
- 			   (rdev->pdev->device == 0x990E) ||
- 			   (rdev->pdev->device == 0x9913) ||
--			   (rdev->pdev->device == 0x9918)) {
-+			   (rdev->pdev->device == 0x9918) ||
-+			   (rdev->pdev->device == 0x999D)) {
- 			rdev->config.cayman.max_simds_per_se = 4;
- 			rdev->config.cayman.max_backends_per_se = 2;
- 		} else if ((rdev->pdev->device == 0x9919) ||
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -593,6 +593,8 @@
- 	{0x1002, 0x9999, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x999A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x999B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x999C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x999D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x99A0, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x99A2, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x99A4, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+--- a/drivers/gpu/drm/radeon/radeon_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_kms.c
+@@ -50,9 +50,13 @@ int radeon_driver_unload_kms(struct drm_
+ 
+ 	if (rdev == NULL)
+ 		return 0;
++	if (rdev->rmmio == NULL)
++		goto done_free;
+ 	radeon_acpi_fini(rdev);
+ 	radeon_modeset_fini(rdev);
+ 	radeon_device_fini(rdev);
++
++done_free:
+ 	kfree(rdev);
+ 	dev->dev_private = NULL;
+ 	return 0;
 
 
