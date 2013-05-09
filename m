@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab3EIHVf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 03:21:35 -0400
+	id S1752556Ab3EIHWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 03:22:34 -0400
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58264 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab3EIHVd (ORCPT
+	with ESMTP id S1750874Ab3EIHVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 03:21:33 -0400
-X-AuditID: 9c93016f-b7ba0ae000004cc2-68-518b4e7b975f
+	Thu, 9 May 2013 03:21:36 -0400
+X-AuditID: 9c93016f-b7ba0ae000004cc2-75-518b4e7c6733
 From: Minchan Kim <minchan@kernel.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
@@ -15,12 +15,10 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Michael Kerrisk <mtk.manpages@gmail.com>,
         Dave Hansen <dave.hansen@intel.com>,
         Namhyung Kim <namhyung@kernel.org>, Minkyung Kim <minkyung88@lge.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH v5 1/7] mm: prevent to write out dirty page in CMA by may_writepage
-Date: Thu,  9 May 2013 16:21:23 +0900
-Message-Id: <1368084089-24576-2-git-send-email-minchan@kernel.org>
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v5 4/7] mm: Remove shrink_page
+Date: Thu,  9 May 2013 16:21:26 +0900
+Message-Id: <1368084089-24576-5-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1368084089-24576-1-git-send-email-minchan@kernel.org>
 References: <1368084089-24576-1-git-send-email-minchan@kernel.org>
@@ -29,50 +27,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, local variable references in shrink_page_list is
-PAGEREF_RECLAIM_CLEAN as default. It is for preventing to reclaim
-dirty pages when CMA try to migrate pages.
-Strictly speaking, we don't need it because CMA already didn't allow
-to write out by .may_writepage = 0 in reclaim_clean_pages_from_list.
+By previous patch, shrink_page_list can handle pages from
+multiple zone so let's remove shrink_page.
 
-Morever, it has a problem to prevent anonymous pages's swap out when
-we use force_reclaim = true in shrink_page_list(ex, per process reclaim
-can do it)
-
-So this patch makes references's default value to PAGEREF_RECLAIM
-and declare .may_writepage = 0 of scan_control in CMA part to make
-code more clear.
-
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Reported-by: Minkyung Kim <minkyung88@lge.com>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- mm/vmscan.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/vmscan.c | 47 ++++++++++++++---------------------------------
+ 1 file changed, 14 insertions(+), 33 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index fa6a853..c22f9c1 100644
+index d69bfce..3243705 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -695,7 +695,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		struct address_space *mapping;
- 		struct page *page;
- 		int may_enter_fs;
--		enum page_references references = PAGEREF_RECLAIM_CLEAN;
-+		enum page_references references = PAGEREF_RECLAIM;
+@@ -924,6 +924,13 @@ free_it:
+ 		 * appear not as the counts should be low
+ 		 */
+ 		list_add(&page->lru, &free_pages);
++		/*
++		 * If pagelist are from multiple zones, we should decrease
++		 * NR_ISOLATED_ANON + x on freed pages in here.
++		 */
++		if (!zone)
++			dec_zone_page_state(page, NR_ISOLATED_ANON +
++					page_is_file_cache(page));
+ 		continue;
  
- 		cond_resched();
+ cull_mlocked:
+@@ -996,28 +1003,6 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+ }
  
-@@ -972,6 +972,8 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
- 		.gfp_mask = GFP_KERNEL,
- 		.priority = DEF_PRIORITY,
- 		.may_unmap = 1,
-+		/* Doesn't allow to write out dirty page */
-+		.may_writepage = 0,
+ #ifdef CONFIG_PROCESS_RECLAIM
+-static unsigned long shrink_page(struct page *page,
+-					struct zone *zone,
+-					struct scan_control *sc,
+-					enum ttu_flags ttu_flags,
+-					unsigned long *ret_nr_dirty,
+-					unsigned long *ret_nr_writeback,
+-					bool force_reclaim,
+-					struct list_head *ret_pages)
+-{
+-	int reclaimed;
+-	LIST_HEAD(page_list);
+-	list_add(&page->lru, &page_list);
+-
+-	reclaimed = shrink_page_list(&page_list, zone, sc, ttu_flags,
+-				ret_nr_dirty, ret_nr_writeback,
+-				force_reclaim);
+-	if (!reclaimed)
+-		list_splice(&page_list, ret_pages);
+-
+-	return reclaimed;
+-}
+-
+ unsigned long reclaim_pages_from_list(struct list_head *page_list)
+ {
+ 	struct scan_control sc = {
+@@ -1028,23 +1013,19 @@ unsigned long reclaim_pages_from_list(struct list_head *page_list)
+ 		.may_swap = 1,
  	};
- 	unsigned long ret, dummy1, dummy2;
- 	struct page *page, *next;
+ 
+-	LIST_HEAD(ret_pages);
++	unsigned long nr_reclaimed;
+ 	struct page *page;
+ 	unsigned long dummy1, dummy2;
+-	unsigned long nr_reclaimed = 0;
+-
+-	while (!list_empty(page_list)) {
+-		page = lru_to_page(page_list);
+-		list_del(&page->lru);
+ 
++	list_for_each_entry(page, page_list, lru)
+ 		ClearPageActive(page);
+-		nr_reclaimed += shrink_page(page, page_zone(page), &sc,
++
++	nr_reclaimed = shrink_page_list(page_list, NULL, &sc,
+ 				TTU_UNMAP|TTU_IGNORE_ACCESS,
+-				&dummy1, &dummy2, true, &ret_pages);
+-	}
++				&dummy1, &dummy2, true);
+ 
+-	while (!list_empty(&ret_pages)) {
+-		page = lru_to_page(&ret_pages);
++	while (!list_empty(page_list)) {
++		page = lru_to_page(page_list);
+ 		list_del(&page->lru);
+ 		dec_zone_page_state(page, NR_ISOLATED_ANON +
+ 				page_is_file_cache(page));
 -- 
 1.8.2.1
 
