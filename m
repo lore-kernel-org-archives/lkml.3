@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3EIWhx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:37:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46463 "EHLO
+	id S1758690Ab3EIWiI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:38:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46458 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932194Ab3EIWhg (ORCPT
+	with ESMTP id S932189Ab3EIWhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:37:36 -0400
+	Thu, 9 May 2013 18:37:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 10/12] tracing: Fix ftrace_dump()
-Date: Thu,  9 May 2013 15:37:23 -0700
-Message-Id: <20130509223612.521509171@linuxfoundation.org>
+        Jerry Hoemann <jerry.hoemann@hp.com>
+Subject: [ 12/12] x86/mm: account for PGDIR_SIZE alignment
+Date: Thu,  9 May 2013 15:37:25 -0700
+Message-Id: <20130509223612.711787446@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223611.432377360@linuxfoundation.org>
 References: <20130509223611.432377360@linuxfoundation.org>
@@ -30,162 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Jerry Hoemann <jerry.hoemann@hp.com>
 
-commit 7fe70b579c9e3daba71635e31b6189394e7b79d3 upstream.
+Patch for -stable.  Function find_early_table_space removed upstream.
 
-ftrace_dump() had a lot of issues. What ftrace_dump() does, is when
-ftrace_dump_on_oops is set (via a kernel parameter or sysctl), it
-will dump out the ftrace buffers to the console when either a oops,
-panic, or a sysrq-z occurs.
+Fixes panic in alloc_low_page due to pgt_buf overflow during
+init_memory_mapping.
 
-This was written a long time ago when ftrace was fragile to recursion.
-But it wasn't written well even for that.
+find_early_table_space sizes pgt_buf based upon the size of the
+memory being mapped, but it does not take into account the alignment
+of the memory.  When the region being mapped spans a 512GB (PGDIR_SIZE)
+alignment, a panic from alloc_low_pages occurs.
 
-There's a possible deadlock that can occur if a ftrace_dump() is happening
-and an NMI triggers another dump. This is because it grabs a lock
-before checking if the dump ran.
+kernel_physical_mapping_init takes into account PGDIR_SIZE alignment.
+This causes an extra call to alloc_low_page to be made.  This extra call
+isn't accounted for by find_early_table_space and causes a kernel panic.
 
-It also totally disables ftrace, and tracing for no good reasons.
+Change is to take into account PGDIR_SIZE alignment in find_early_table_space.
 
-As the ring_buffer now checks if it is read via a oops or NMI, where
-there's a chance that the buffer gets corrupted, it will disable
-itself. No need to have ftrace_dump() do the same.
-
-ftrace_dump() is now cleaned up where it uses an atomic counter to
-make sure only one dump happens at a time. A simple atomic_inc_return()
-is enough that is needed for both other CPUs and NMIs. No need for
-a spinlock, as if one CPU is running the dump, no other CPU needs
-to do it too.
-
-The tracing_on variable is turned off and not turned on. The original
-code did this, but it wasn't pretty. By just disabling this variable
-we get the result of not seeing traces that happen between crashes.
-
-For sysrq-z, it doesn't get turned on, but the user can always write
-a '1' to the tracing_on file. If they are using sysrq-z, then they should
-know about tracing_on.
-
-The new code is much easier to read and less error prone. No more
-deadlock possibility when an NMI triggers here.
-
-Reported-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c          |   51 +++++++++++++++++-------------------------
- kernel/trace/trace_selftest.c |    9 ++++---
- 2 files changed, 26 insertions(+), 34 deletions(-)
+ arch/x86/mm/init.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4489,30 +4489,32 @@ void trace_init_global_iter(struct trace
- 	iter->cpu_file = TRACE_PIPE_ALL_CPU;
- }
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -44,11 +44,15 @@ static void __init find_early_table_spac
+ 	int i;
+ 	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
+ 	unsigned long start = 0, good_end;
++	unsigned long pgd_extra = 0;
+ 	phys_addr_t base;
  
--static void
--__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode)
-+void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
- {
--	static arch_spinlock_t ftrace_dump_lock =
--		(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
- 	/* use static because iter can be a bit big for the stack */
- 	static struct trace_iterator iter;
-+	static atomic_t dump_running;
- 	unsigned int old_userobj;
--	static int dump_ran;
- 	unsigned long flags;
- 	int cnt = 0, cpu;
+ 	for (i = 0; i < nr_range; i++) {
+ 		unsigned long range, extra;
  
--	/* only one dump */
--	local_irq_save(flags);
--	arch_spin_lock(&ftrace_dump_lock);
--	if (dump_ran)
--		goto out;
--
--	dump_ran = 1;
-+	/* Only allow one dump user at a time. */
-+	if (atomic_inc_return(&dump_running) != 1) {
-+		atomic_dec(&dump_running);
-+		return;
-+	}
++		if ((mr[i].end >> PGDIR_SHIFT) - (mr[i].start >> PGDIR_SHIFT))
++			pgd_extra++;
++
+ 		range = mr[i].end - mr[i].start;
+ 		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
  
-+	/*
-+	 * Always turn off tracing when we dump.
-+	 * We don't need to show trace output of what happens
-+	 * between multiple crashes.
-+	 *
-+	 * If the user does a sysrq-z, then they can re-enable
-+	 * tracing with echo 1 > tracing_on.
-+	 */
- 	tracing_off();
+@@ -73,6 +77,7 @@ static void __init find_early_table_spac
+ 	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
+ 	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
+ 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
++	tables += (pgd_extra * PAGE_SIZE);
  
--	if (disable_tracing)
--		ftrace_kill();
-+	local_irq_save(flags);
- 
- 	trace_init_global_iter(&iter);
- 
-@@ -4583,26 +4585,15 @@ __ftrace_dump(bool disable_tracing, enum
- 		printk(KERN_TRACE "---------------------------------\n");
- 
-  out_enable:
--	/* Re-enable tracing if requested */
--	if (!disable_tracing) {
--		trace_flags |= old_userobj;
-+	trace_flags |= old_userobj;
- 
--		for_each_tracing_cpu(cpu) {
--			atomic_dec(&iter.tr->data[cpu]->disabled);
--		}
--		tracing_on();
-+	for_each_tracing_cpu(cpu) {
-+		atomic_dec(&iter.tr->data[cpu]->disabled);
- 	}
--
-- out:
--	arch_spin_unlock(&ftrace_dump_lock);
-+ 	atomic_dec(&dump_running);
- 	local_irq_restore(flags);
- }
--
--/* By default: disable tracing after the dump */
--void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
--{
--	__ftrace_dump(true, oops_dump_mode);
--}
-+EXPORT_SYMBOL_GPL(ftrace_dump);
- 
- __init static int tracer_alloc_buffers(void)
- {
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -461,8 +461,6 @@ trace_selftest_startup_function(struct t
- /* Maximum number of functions to trace before diagnosing a hang */
- #define GRAPH_MAX_FUNC_TEST	100000000
- 
--static void
--__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode);
- static unsigned int graph_hang_thresh;
- 
- /* Wrap the real function entry probe to avoid possible hanging */
-@@ -472,8 +470,11 @@ static int trace_graph_entry_watchdog(st
- 	if (unlikely(++graph_hang_thresh > GRAPH_MAX_FUNC_TEST)) {
- 		ftrace_graph_stop();
- 		printk(KERN_WARNING "BUG: Function graph tracer hang!\n");
--		if (ftrace_dump_on_oops)
--			__ftrace_dump(false, DUMP_ALL);
-+		if (ftrace_dump_on_oops) {
-+			ftrace_dump(DUMP_ALL);
-+			/* ftrace_dump() disables tracing */
-+			tracing_on();
-+		}
- 		return 0;
- 	}
- 
+ #ifdef CONFIG_X86_32
+ 	/* for fixmap */
 
 
