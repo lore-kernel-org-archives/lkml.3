@@ -1,41 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab3EIIqH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 04:46:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35136 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751240Ab3EIIqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 04:46:00 -0400
-Date: Thu, 9 May 2013 10:45:57 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: HID: protect hid_debug_list
-In-Reply-To: <alpine.DEB.2.02.1305081431300.7947@parag-iMac>
-Message-ID: <alpine.LNX.2.00.1305091045030.23038@pobox.suse.cz>
-References: <alpine.DEB.2.02.1305081431300.7947@parag-iMac>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752815Ab3EIIvo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 04:51:44 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:32997 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab3EIIvl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 04:51:41 -0400
+Date: Thu, 9 May 2013 10:51:37 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, fweisbec@gmail.com,
+        peterz@infradead.org, jolsa@redhat.com, namhyung@kernel.org,
+        xiaoguangrong@linux.vnet.ibm.com
+Subject: Re: [PATCH 10/13] perf kvm: add live mode
+Message-ID: <20130509085137.GA8813@gmail.com>
+References: <1368073909-8825-1-git-send-email-dsahern@gmail.com>
+ <1368073909-8825-11-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368073909-8825-11-git-send-email-dsahern@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 May 2013, Parag Warudkar wrote:
 
-> Hi Jiri
+* David Ahern <dsahern@gmail.com> wrote:
+
+> perf kvm stat currently requires back to back record and report
+> commands to see stats. e.g,.
 > 
-> Commit 2353f2bea307390e015493118e425152b8a5a431 HID: protect 
-> hid_debug_list causes the below BUG due to mutex_lock being called in 
-> atomic context - does this need to be converted to a spin lock?
+>   perf kvm stat record -p $pid -- sleep 1
+>   perf kvm stat report
+> 
+> This is inconvenvient for on box monitoring of a VM. This patch
+> introduces a 'live' mode that in effect combines the record plus
+> report into one command. e.g., to monitor a single VM:
+> 
+>   perf kvm stat live -p $pid
+> 
+> or all VMs:
+> 
+>   perf kvm stat live
+> 
+> Same stats options for the record+report path work with the live mode.
+> Display rate defaults to 1 second and can be changed using the -d option.
 
-Hi Parag,
+Nice!
 
-I already have fix for that queued [1] and will be pushing it to Linus 
-shortly.
+1)
 
-[1] https://git.kernel.org/cgit/linux/kernel/git/jikos/hid.git/commit/?h=for-3.10/upstream-fixes&id=1deb9d341d475ff84262e927d6c0e36fecb9942e
+Regarding the basic syntax - is the 'perf stat kvm' command already used 
+up? If not then it might make sense to alias 'perf kvm stat live' to 'perf 
+kvm stat', making it really easy to use:
 
--- 
-Jiri Kosina
-SUSE Labs
+  perf kvm stat
+  perf kvm stat -p <pid>
+
+etc. I'd expect most 'perf kvm stat' users to utilize this syntax - so it 
+makes sense to make 'live' the default and main command.
+
+2)
+
+Another suggestion: it would be nice to allow a "--repeat <n>" option as 
+well, for a limited number of iterations - similar to what the 'top' tool 
+allows:
+
+  top -b -d <delay> -n <iterations>
+
+--repeat 0 means infinite repeats, --repeat 1 means a single step.
+
+3)
+
+It might make sense to create 'perf kvm stat top' which is a small 
+variation to 'perf kvm stat live': it outputs a perf stat output per 
+second, but also outputs a clear-screen sequence before the output.
+
+To keep it simple you could do this with plain console text output, not 
+libslang, the C code to generate a clear screen sequence can be generated 
+via this shell oneliner:
+
+  echo 'prinf("'$(clear)'");' > clearscreen.c
+
+This way people could see constantly updating top-alike KVM statistics.
+
+Thanks,
+
+	Ingo
