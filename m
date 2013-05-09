@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab3EIXKi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:10:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45721 "EHLO
+	id S1759486Ab3EIXKy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:10:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45732 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755601Ab3EIW0Y (ORCPT
+	with ESMTP id S1755737Ab3EIW0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:24 -0400
+	Thu, 9 May 2013 18:26:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [ 25/73] block: fix max discard sectors limit
-Date: Thu,  9 May 2013 15:25:15 -0700
-Message-Id: <20130509222529.054344046@linuxfoundation.org>
+        Junichi Nomura <j-nomura@ce.jp.nec.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Alasdair G Kergon <agk@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Subject: [ 24/73] blkcg: fix "scheduling while atomic" in blk_queue_bypass_start
+Date: Thu,  9 May 2013 15:25:14 -0700
+Message-Id: <20130509222528.932119737@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -28,66 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
 
-commit 871dd9286e25330c8a581e5dacfa8b1dfe1dd641 upstream.
+commit e5072664f8237cf53b0bd68a51aa1a7bc69061c5 upstream.
 
-linux-v3.8-rc1 and later support for plug for blkdev_issue_discard with
-commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9
-(block: add plug for blkdev_issue_discard )
+Since 749fefe677 in v3.7 ("block: lift the initial queue bypass mode
+on blk_register_queue() instead of blk_init_allocated_queue()"),
+the following warning appears when multipath is used with CONFIG_PREEMPT=y.
 
-For example,
-1) DISCARD rq-1 with size size 4GB
-2) DISCARD rq-2 with size size 1GB
+This patch moves blk_queue_bypass_start() before radix_tree_preload()
+to avoid the sleeping call while preemption is disabled.
 
-If these 2 discard requests get merged, final request size will be 5GB.
+  BUG: scheduling while atomic: multipath/2460/0x00000002
+  1 lock held by multipath/2460:
+   #0:  (&md->type_lock){......}, at: [<ffffffffa019fb05>] dm_lock_md_type+0x17/0x19 [dm_mod]
+  Modules linked in: ...
+  Pid: 2460, comm: multipath Tainted: G        W    3.7.0-rc2 #1
+  Call Trace:
+   [<ffffffff810723ae>] __schedule_bug+0x6a/0x78
+   [<ffffffff81428ba2>] __schedule+0xb4/0x5e0
+   [<ffffffff814291e6>] schedule+0x64/0x66
+   [<ffffffff8142773a>] schedule_timeout+0x39/0xf8
+   [<ffffffff8108ad5f>] ? put_lock_stats+0xe/0x29
+   [<ffffffff8108ae30>] ? lock_release_holdtime+0xb6/0xbb
+   [<ffffffff814289e3>] wait_for_common+0x9d/0xee
+   [<ffffffff8107526c>] ? try_to_wake_up+0x206/0x206
+   [<ffffffff810c0eb8>] ? kfree_call_rcu+0x1c/0x1c
+   [<ffffffff81428aec>] wait_for_completion+0x1d/0x1f
+   [<ffffffff810611f9>] wait_rcu_gp+0x5d/0x7a
+   [<ffffffff81061216>] ? wait_rcu_gp+0x7a/0x7a
+   [<ffffffff8106fb18>] ? complete+0x21/0x53
+   [<ffffffff810c0556>] synchronize_rcu+0x1e/0x20
+   [<ffffffff811dd903>] blk_queue_bypass_start+0x5d/0x62
+   [<ffffffff811ee109>] blkcg_activate_policy+0x73/0x270
+   [<ffffffff81130521>] ? kmem_cache_alloc_node_trace+0xc7/0x108
+   [<ffffffff811f04b3>] cfq_init_queue+0x80/0x28e
+   [<ffffffffa01a1600>] ? dm_blk_ioctl+0xa7/0xa7 [dm_mod]
+   [<ffffffff811d8c41>] elevator_init+0xe1/0x115
+   [<ffffffff811e229f>] ? blk_queue_make_request+0x54/0x59
+   [<ffffffff811dd743>] blk_init_allocated_queue+0x8c/0x9e
+   [<ffffffffa019ffcd>] dm_setup_md_queue+0x36/0xaa [dm_mod]
+   [<ffffffffa01a60e6>] table_load+0x1bd/0x2c8 [dm_mod]
+   [<ffffffffa01a7026>] ctl_ioctl+0x1d6/0x236 [dm_mod]
+   [<ffffffffa01a5f29>] ? table_clear+0xaa/0xaa [dm_mod]
+   [<ffffffffa01a7099>] dm_ctl_ioctl+0x13/0x17 [dm_mod]
+   [<ffffffff811479fc>] do_vfs_ioctl+0x3fb/0x441
+   [<ffffffff811b643c>] ? file_has_perm+0x8a/0x99
+   [<ffffffff81147aa0>] sys_ioctl+0x5e/0x82
+   [<ffffffff812010be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+   [<ffffffff814310d9>] system_call_fastpath+0x16/0x1b
 
-In this case, request's __data_len field may overflow as it can store
-max 4GB(unsigned int).
-
-This issue was observed while doing mkfs.f2fs on 5GB SD card:
-https://lkml.org/lkml/2013/4/1/292
-
-Info: sector size = 512
-Info: total sectors = 11370496 (in 512bytes)
-Info: zone aligned segment0 blkaddr: 512
-[  257.789764] blk_update_request: bio idx 0 >= vcnt 0
-
-mkfs process gets stuck in D state and I see the following in the dmesg:
-
-[  257.789733] __end_that: dev mmcblk0: type=1, flags=122c8081
-[  257.789764]   sector 4194304, nr/cnr 2981888/4294959104
-[  257.789764]   bio df3840c0, biotail df3848c0, buffer   (null), len
-1526726656
-[  257.789764] blk_update_request: bio idx 0 >= vcnt 0
-[  257.794921] request botched: dev mmcblk0: type=1, flags=122c8081
-[  257.794921]   sector 4194304, nr/cnr 2981888/4294959104
-[  257.794921]   bio df3840c0, biotail df3848c0, buffer   (null), len
-1526726656
-
-This patch fixes this issue.
-
-Reported-by: Max Filippov <jcmvbkbc@gmail.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Tested-by: Max Filippov <jcmvbkbc@gmail.com>
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Cc: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/blkdev.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ block/blk-cgroup.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -838,7 +838,7 @@ static inline unsigned int blk_queue_get
- 						     unsigned int cmd_flags)
- {
- 	if (unlikely(cmd_flags & REQ_DISCARD))
--		return q->limits.max_discard_sectors;
-+		return min(q->limits.max_discard_sectors, UINT_MAX >> 9);
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -972,10 +972,10 @@ int blkcg_activate_policy(struct request
+ 	if (!new_blkg)
+ 		return -ENOMEM;
  
- 	if (unlikely(cmd_flags & REQ_WRITE_SAME))
- 		return q->limits.max_write_same_sectors;
+-	preloaded = !radix_tree_preload(GFP_KERNEL);
+-
+ 	blk_queue_bypass_start(q);
+ 
++	preloaded = !radix_tree_preload(GFP_KERNEL);
++
+ 	/*
+ 	 * Make sure the root blkg exists and count the existing blkgs.  As
+ 	 * @q is bypassing at this point, blkg_lookup_create() can't be
 
 
