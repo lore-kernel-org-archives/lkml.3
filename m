@@ -1,81 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab3EISKK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 14:10:10 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:48528 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424Ab3EISKI (ORCPT
+	id S1752984Ab3EISLH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 14:11:07 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33872 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752909Ab3EISLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 14:10:08 -0400
+	Thu, 9 May 2013 14:11:06 -0400
+Message-ID: <518BE566.5090504@ti.com>
+Date: Thu, 9 May 2013 13:05:26 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <518BD453.2010602@codeaurora.org>
-References: <1368076726-11492-1-git-send-email-skannan@codeaurora.org>
- <1368076726-11492-2-git-send-email-skannan@codeaurora.org>
- <CACVXFVMd_iRtEM8ZLK6Ps66gZO6SCp1mXSgY6JbWtRJjJUh+ag@mail.gmail.com>
- <CACxGe6uHBNUcbD9SeRP5c3E8NN-Z2yjVV+9VAhuoJnXoBtTu2w@mail.gmail.com> <518BD453.2010602@codeaurora.org>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 9 May 2013 19:09:47 +0100
-X-Google-Sender-Auth: 4aLwJwEUx5rICL3OtadwnGbdHZU
-Message-ID: <CACxGe6vPHsyacOkyJb9UGCdqPsYbW90sGG8HcZOZ0mJrV7QWkA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] driver core: Add API to wait for deferred probe to
- complete during init
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Ming Lei <tom.leiming@gmail.com>, Mike Turquette <mturquette@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Liam Girdwood <lrg@ti.com>,
+To: Jassi Brar <jassisinghbrar@gmail.com>
+CC: Jassi Brar <jaswinder.singh@linaro.org>,
+        "Loic PALLARDY (loic.pallardy@st.com)" <loic.pallardy@st.com>,
+        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCHv2 2/4] mailbox: Introduce a new common API
+References: <1367824946-6160-1-git-send-email-jaswinder.singh@linaro.org> <1367825046-6229-1-git-send-email-jaswinder.singh@linaro.org> <518BCF4B.1060504@ti.com> <CAJe_Zhd=FDV3YP=XR8Yay1iy_geAt3tqj+diUxrVkd2BFSfb-g@mail.gmail.com> <518BD197.2030502@ti.com> <CABb+yY2CnO5RiQNdcB_L5ZiGi829Ys0ODH2UmhtZxj=aJo3ioQ@mail.gmail.com>
+In-Reply-To: <CABb+yY2CnO5RiQNdcB_L5ZiGi829Ys0ODH2UmhtZxj=aJo3ioQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 9, 2013 at 5:52 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
-> On 05/09/2013 04:50 AM, Grant Likely wrote:
->>
->> On Thu, May 9, 2013 at 11:07 AM, Ming Lei <tom.leiming@gmail.com> wrote:
->>>
->>> On Thu, May 9, 2013 at 1:18 PM, Saravana Kannan <skannan@codeaurora.org>
->>> wrote:
->>>>
->>>>
->>>> The most obvious fallback of using late_initcall_sync() also doesn't
->>>> work
->>>> since the deferred probing work initated during late_initcall() is done
->>>> in
->>>> a workqueue. So, frameworks that want to wait for all devices to finish
->>>> probing during init will now have to wait for the deferred workqueue to
->>>> finish it's work. This patch adds a wait_for_init_deferred_probe_done()
->>>> API
->>>
->>>
->>> flush_workqueue() has been added in deferred_probe_initcall(), so looks
->>> it
->>> should be OK for your problem, doesn't it?
->>
->>
->> It looks like Saravana is using a kernel that already does that based
->> on object bb5645e from the diff. So if he is still having problem,
->> then there is probably another deferred probe that is triggered after
->> the deferred probe lateinitcall is executed. It would be good to know
->> what driver is getting deferred past clearing the queue. Or has this
->> been rebased from an earlier kernel? It may no longer be necessary.
->
->
-> Sorry, it was mindless rebase late at night. I missed the addition of the
-> flush_workqueue(). That takes care of my immediate needs. Sorry for wasting
-> your time.
->
-> But the other patches to move clock and regulator calls to late_init_sync
-> should still be necessary. Right? Or are we going to depend on the Makefile
-> ordering to determine the order of the lateinit calls? (I would rather not).
+Jassi,
 
-You'll need to make sure the regulator and clocks defer to after all
-the late initcalls are complete. That will ensure that the deferred
-queue has been processed.
+On 05/09/2013 12:48 PM, Jassi Brar wrote:
+> On Thu, May 9, 2013 at 10:10 PM, Suman Anna <s-anna@ti.com> wrote:
+>> On 05/09/2013 11:41 AM, Jassi Brar wrote:
+>>> On 9 May 2013 22:01, Suman Anna <s-anna@ti.com> wrote:
+>>>> Hi Jassi,
+>>>>
+>>>> On 05/06/2013 02:24 AM, Jassi Brar wrote:
+>>>>> +++ b/include/linux/mailbox_client.h
+>>>>> @@ -0,0 +1,85 @@
+>>>>> +/*
+>>>>> + * This program is free software; you can redistribute it and/or modify
+>>>>> + * it under the terms of the GNU General Public License version 2 as
+>>>>> + * published by the Free Software Foundation.
+>>>>> + */
+>>>>> +
+>>>>> +#ifndef __MAILBOX_CLIENT_H
+>>>>> +#define __MAILBOX_CLIENT_H
+>>>>> +
+>>>>> +#include <linux/mailbox.h>
+>>>>> +
+>>>>> +/**
+>>>>> + * struct ipc_client - User of a mailbox
+>>>>> + * @chan_name: the "controller:channel" this client wants
+>>>>> + * @rxcb: atomic callback to provide client the data received
+>>>>> + * @txcb: atomic callback to tell client of data transmission
+>>>>> + * @tx_block: if the ipc_send_message should block until data is transmitted
+>>>>> + * @tx_tout: Max block period in ms before TX is assumed failure
+>>>>> + * @knows_txdone: if the client could run the TX state machine. Usually if
+>>>>> + *    the client receives some ACK packet for transmission. Unused if the
+>>>>> + *    controller already has TX_Done/RTR IRQ.
+>>>>> + * @cntlr_data: Optional controller specific parameters during channel request
+>>>>> + */
+>>>>> +struct ipc_client {
+>>>>> +     char *chan_name;
+>>>>> +     void (*rxcb)(void *data);
+>>>>> +     void (*txcb)(request_token_t t, enum xfer_result r);
+>>>>
+>>>> We have to introduce a callback data pointer, so that the calling
+>>>> clients can retrieve a context object variable or some other useful
+>>>> data within the callback functions, just like most normal callback
+>>>> function declarations and registrations do.
+>>>>
+>>> I meant the request_token_t for the purpose. That's how we do with DMAEngine.
+>>
+>> I faced this issue on the rxcb while adopting the
+>> omap_rproc_mbox_callback. omap_remoteproc is a common driver for all the
+>> OMAP co-processors and there can be multiple instances, providing the
+>> same set of features. Look at the code in
+>> drivers/remoteproc/omap_remoteproc.c and you will get the idea. But in
+>> general, the users registering callback functions would prefer to get
+>> some context pointer back.
+>>
+> Of course they do. The request_token_t returned corresponds to the
+> request they submit via ipc_send_message.
+> 
+> Perhaps we should change the following
+> 
+>    void ipc_link_txdone(struct ipc_link *link, enum xfer_result r)
+> to
+>    void ipc_link_txdone(struct ipc_link *link, enum xfer_result r, void *data)
+> 
+> So that the API could pass that onto clients ?
 
-g.
+That's if the controller needs to pass some data back to client. I am
+fine with that as well, but I am talking mainly about providing a client
+user data ptr back to it during callbacks.
+
+struct ipc_client {
+	char *chan_name;
++	void *cl_data; /* store it to ipc_chan as well */
+-	void (*rxcb)(void *data);
+-	void (*txcb)(request_token_t t, enum xfer_result r);
++	void (*rxcb)(void *cl_data, void *data);
++	void (*txcb)(request_token_t t, enum xfer_result r, void *cl_data);
+	...
+}
+
+I am obviously interested in the rxcb. The controller implementations do
+not see the cl_data.
+
+regards
+Suman
