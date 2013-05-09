@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759221Ab3EIWuQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:50:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46167 "EHLO
+	id S1759238Ab3EIWun (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:50:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46161 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757995Ab3EIWdP (ORCPT
+	with ESMTP id S1757856Ab3EIWdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:15 -0400
+	Thu, 9 May 2013 18:33:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 38/73] drm/i915: Add no-lvds quirk for Fujitsu Esprimo Q900
-Date: Thu,  9 May 2013 15:32:01 -0700
-Message-Id: <20130509222802.105247912@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 46/73] drm/radeon: dont use get_engine_clock() on APUs
+Date: Thu,  9 May 2013 15:32:09 -0700
+Message-Id: <20130509222802.944533627@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -27,39 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 9e9dd0e889c76c786e8f2e164c825c3c06dea30c upstream.
+commit bf05d9985111f85ed6922c134567b96eb789283b upstream.
 
-The "Mobile Sandy Bridge CPUs" in the Fujitsu Esprimo Q900
-mini desktop PCs are probably misleading the LVDS detection
-code in intel_lvds_supported. Nothing is connected to the
-LVDS ports in these systems.
+It doesn't work reliably.  Just report back the currently
+selected engine clock.
 
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Partially fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=62493
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/gpu/drm/radeon/radeon_pm.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -790,6 +790,14 @@ static const struct dmi_system_id intel_
- 			DMI_MATCH(DMI_PRODUCT_NAME, "X7SPA-H"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Fujitsu Esprimo Q900",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "ESPRIMO Q900"),
-+		},
-+	},
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -843,7 +843,11 @@ static int radeon_debugfs_pm_info(struct
+ 	struct radeon_device *rdev = dev->dev_private;
  
- 	{ }	/* terminating entry */
- };
+ 	seq_printf(m, "default engine clock: %u0 kHz\n", rdev->pm.default_sclk);
+-	seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
++	/* radeon_get_engine_clock is not reliable on APUs so just print the current clock */
++	if ((rdev->family >= CHIP_PALM) && (rdev->flags & RADEON_IS_IGP))
++		seq_printf(m, "current engine clock: %u0 kHz\n", rdev->pm.current_sclk);
++	else
++		seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
+ 	seq_printf(m, "default memory clock: %u0 kHz\n", rdev->pm.default_mclk);
+ 	if (rdev->asic->pm.get_memory_clock)
+ 		seq_printf(m, "current memory clock: %u0 kHz\n", radeon_get_memory_clock(rdev));
 
 
