@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab3EIEcq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 00:32:46 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:58823 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682Ab3EIEcd (ORCPT
+	id S1753473Ab3EIEdB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 00:33:01 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:60429 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753166Ab3EIEc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 00:32:33 -0400
+	Thu, 9 May 2013 00:32:27 -0400
 From: David Ahern <dsahern@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: acme@ghostprotocols.net, mingo@kernel.org, fweisbec@gmail.com,
         peterz@infradead.org, jolsa@redhat.com, namhyung@kernel.org,
         xiaoguangrong@linux.vnet.ibm.com, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 13/13] perf kvm: debug for missing vmexit/vmentry event
-Date: Wed,  8 May 2013 22:31:49 -0600
-Message-Id: <1368073909-8825-14-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 11/13] perf kvm: add min and max stats to display
+Date: Wed,  8 May 2013 22:31:47 -0600
+Message-Id: <1368073909-8825-12-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1368073909-8825-1-git-send-email-dsahern@gmail.com>
 References: <1368073909-8825-1-git-send-email-dsahern@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Expected to have missing events for each vcpu when perf is
-started. After that should not have missing events.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -34,38 +31,72 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- tools/perf/builtin-kvm.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ tools/perf/builtin-kvm.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index d4e9124..9402c70 100644
+index 6071998..905aa75 100644
 --- a/tools/perf/builtin-kvm.c
 +++ b/tools/perf/builtin-kvm.c
-@@ -568,11 +568,22 @@ static bool handle_kvm_event(struct perf_kvm_stat *kvm,
- 	    (kvm->trace_vcpu != vcpu_record->vcpu_id))
- 		return true;
+@@ -337,14 +337,19 @@ static void clear_events_cache_stats(struct list_head *kvm_events_cache)
+ 	struct list_head *head;
+ 	struct kvm_event *event;
+ 	unsigned int i;
++	int j;
  
--	if (kvm->events_ops->is_begin_event(evsel, sample, &key))
-+	if (kvm->events_ops->is_begin_event(evsel, sample, &key)) {
-+		if (vcpu_record->start_time) {
-+			pr_debug("consecutive begin events (%s) for pid %d, vcpu %d\n",
-+				 evsel->name, sample->pid, vcpu_record->vcpu_id);
-+		}
- 		return handle_begin_event(kvm, vcpu_record, &key, sample->time);
-+	}
+ 	for (i = 0; i < EVENTS_CACHE_SIZE; i++) {
+ 		head = &kvm_events_cache[i];
+ 		list_for_each_entry(event, head, hash_entry) {
+ 			/* reset stats for event */
+-			memset(&event->total, 0, sizeof(event->total));
+-			memset(event->vcpu, 0,
+-			       event->max_vcpu * sizeof(*event->vcpu));
++			event->total.time = 0;
++			init_stats(&event->total.stats);
 +
- 
--	if (kvm->events_ops->is_end_event(evsel, sample, &key))
-+	if (kvm->events_ops->is_end_event(evsel, sample, &key)) {
-+		if (vcpu_record->start_time == 0) {
-+			pr_debug("consecutive end events (%s) for pid %d, vcpu %d\n",
-+				 evsel->name, sample->pid, vcpu_record->vcpu_id);
-+		}
- 		return handle_end_event(kvm, vcpu_record, &key, sample);
-+	}
- 
- 	return true;
++			for (j = 0; j < event->max_vcpu; ++j) {
++				event->vcpu[j].time = 0;
++				init_stats(&event->vcpu[j].stats);
++			}
+ 		}
+ 	}
  }
+@@ -718,6 +723,7 @@ static void print_result(struct perf_kvm_stat *kvm)
+ 	char decode[20];
+ 	struct kvm_event *event;
+ 	int vcpu = kvm->trace_vcpu;
++	struct kvm_event_stats *kvm_stats;
+ 
+ 	if (kvm->live) {
+ 		puts(CONSOLE_CLEAR);
+@@ -731,6 +737,8 @@ static void print_result(struct perf_kvm_stat *kvm)
+ 	pr_info("%9s ", "Samples%");
+ 
+ 	pr_info("%9s ", "Time%");
++	pr_info("%10s ", "Min Time");
++	pr_info("%10s ", "Max Time");
+ 	pr_info("%16s ", "Avg time");
+ 	pr_info("\n\n");
+ 
+@@ -740,11 +748,18 @@ static void print_result(struct perf_kvm_stat *kvm)
+ 		ecount = get_event_count(event, vcpu);
+ 		etime = get_event_time(event, vcpu);
+ 
++		if (vcpu == -1)
++			kvm_stats = &event->total;
++		else
++			kvm_stats = &event->vcpu[vcpu];
++
+ 		kvm->events_ops->decode_key(kvm, &event->key, decode);
+ 		pr_info("%20s ", decode);
+ 		pr_info("%10llu ", (unsigned long long)ecount);
+ 		pr_info("%8.2f%% ", (double)ecount / kvm->total_count * 100);
+ 		pr_info("%8.2f%% ", (double)etime / kvm->total_time * 100);
++		pr_info("%8" PRIu64 "us ", kvm_stats->stats.min / 1000);
++		pr_info("%8" PRIu64 "us ", kvm_stats->stats.max / 1000);
+ 		pr_info("%9.2fus ( +-%7.2f%% )", (double)etime / ecount/1e3,
+ 			kvm_event_rel_stddev(vcpu, event));
+ 		pr_info("\n");
 -- 
 1.7.10.1
 
