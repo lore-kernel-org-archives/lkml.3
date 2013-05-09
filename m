@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758573Ab3EIWmu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:42:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46300 "EHLO
+	id S1758909Ab3EIWnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:43:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46297 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758406Ab3EIWev (ORCPT
+	with ESMTP id S1758404Ab3EIWeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:34:51 -0400
+	Thu, 9 May 2013 18:34:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Rafa=C5=82=20Bilski?= <rafalbilski@interia.pl>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 11/26] cpufreq / Longhaul: Disable driver by default
-Date: Thu,  9 May 2013 15:34:25 -0700
-Message-Id: <20130509223423.608549561@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
+        Carlos Maiolino <cmaiolino@redhat.com>,
+        Lingzhu Xiang <lxiang@redhat.com>
+Subject: [ 09/26] ext4: add check for inodes_count overflow in new resize ioctl
+Date: Thu,  9 May 2013 15:34:23 -0700
+Message-Id: <20130509223423.413283929@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
 References: <20130509223422.368544659@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,56 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rafał Bilski <rafalbilski@interia.pl>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit b5811bc469c0dbebb4f947800b9b234a9c0a68dc upstream.
+commit 3f8a6411fbada1fa482276591e037f3b1adcf55b upstream.
 
-This is only solution I can think of. User decides if he wants this
-driver on his machine. I don't have enough knowledge and time to find
-the reason why same code works on some machines and doesn't on others
-which use the same, or very similar, chipset and processor.
+Addresses-Red-Hat-Bugzilla: #913245
 
-Signed-off-by: Rafał Bilski <rafalbilski@interia.pl>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Carlos Maiolino <cmaiolino@redhat.com>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/longhaul.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ fs/ext4/resize.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/cpufreq/longhaul.c
-+++ b/drivers/cpufreq/longhaul.c
-@@ -77,7 +77,7 @@ static unsigned int longhaul_index;
- static int scale_voltage;
- static int disable_acpi_c3;
- static int revid_errata;
--
-+static int enable;
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -1630,6 +1630,10 @@ int ext4_resize_fs(struct super_block *s
+ 		return 0;
  
- /* Clock ratios multiplied by 10 */
- static int mults[32];
-@@ -965,6 +965,10 @@ static int __init longhaul_init(void)
- 	if (!x86_match_cpu(longhaul_id))
- 		return -ENODEV;
- 
-+	if (!enable) {
-+		printk(KERN_ERR PFX "Option \"enable\" not set. Aborting.\n");
-+		return -ENODEV;
+ 	ext4_get_group_no_and_offset(sb, n_blocks_count - 1, &n_group, &offset);
++	if (n_group > (0xFFFFFFFFUL / EXT4_INODES_PER_GROUP(sb))) {
++		ext4_warning(sb, "resize would cause inodes_count overflow");
++		return -EINVAL;
 +	}
- #ifdef CONFIG_SMP
- 	if (num_online_cpus() > 1) {
- 		printk(KERN_ERR PFX "More than 1 CPU detected, "
-@@ -1021,6 +1025,10 @@ MODULE_PARM_DESC(scale_voltage, "Scale v
-  * such. */
- module_param(revid_errata, int, 0644);
- MODULE_PARM_DESC(revid_errata, "Ignore CPU Revision ID");
-+/* By default driver is disabled to prevent incompatible
-+ * system freeze. */
-+module_param(enable, int, 0644);
-+MODULE_PARM_DESC(enable, "Enable driver");
+ 	ext4_get_group_no_and_offset(sb, o_blocks_count - 1, &o_group, &offset);
  
- MODULE_AUTHOR("Dave Jones <davej@redhat.com>");
- MODULE_DESCRIPTION("Longhaul driver for VIA Cyrix processors.");
+ 	n_desc_blocks = (n_group + EXT4_DESC_PER_BLOCK(sb)) /
 
 
