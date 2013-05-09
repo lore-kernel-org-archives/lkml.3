@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab3EIW0Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:26:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45671 "EHLO
+	id S1759459Ab3EIXJs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:09:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755592Ab3EIW0R (ORCPT
+	with ESMTP id S1755783Ab3EIW00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:17 -0400
+	Thu, 9 May 2013 18:26:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Ingo Molnar <mingo@kernel.org>, rostedt@goodmis.org,
-        a.p.zijlstra@chello.nl, paulus@samba.org, acme@ghostprotocols.net
-Subject: [ 14/73] perf/x86/intel: Fix unintended variable name reuse
-Date: Thu,  9 May 2013 15:25:04 -0700
-Message-Id: <20130509222527.944954382@linuxfoundation.org>
+        Anisse Astier <anisse@astier.eu>,
+        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Subject: [ 28/73] drm/gma500: fix backlight hotkeys behaviour on netbooks
+Date: Thu,  9 May 2013 15:25:18 -0700
+Message-Id: <20130509222529.331634307@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,67 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+From: Anisse Astier <anisse@astier.eu>
 
-commit 1b0dac2ac6debdbf1541e15f2cede03613cf4465 upstream.
+commit e127dc28cc3057575da0216cde85687153ca180f upstream.
 
-The variable name events_group is already in used and led to a
-compilation error when using clang to build the Linux Kernel .
-The fix is just to rename the var. No functional change. Please
-apply.
+Backlight hotkeys weren't working before on certain cedartrail laptops.
 
-Fix suggested in discussion by PaX Team <pageexec@freemail.hu>
+The source of this problem is that the hotkeys' ASLE opregion interrupts
+were simply ignored. Driver seemed to expect the interrupt to be
+associated with a pipe, but it wasn't.
 
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Cc: rostedt@goodmis.org
-Cc: a.p.zijlstra@chello.nl
-Cc: paulus@samba.org
-Cc: acme@ghostprotocols.net
-Link: http://lkml.kernel.org/r/1367316153-14808-1-git-send-email-dl9pf@gmx.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Accepting the ASLE interrupt without an associated pipe event flag fixes
+the issue, the backlight code is called when needed, making the
+brightness keys work properly.
+
+[patrik: This patch affects irq handling on any netbook with opregion support]
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=833597
+Reference: http://lists.freedesktop.org/archives/dri-devel/2012-July/025279.html
+Signed-off-by: Anisse Astier <anisse@astier.eu>
+Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/gma500/psb_irq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2428,7 +2428,7 @@ static void __init uncore_types_exit(str
- static int __init uncore_type_init(struct intel_uncore_type *type)
- {
- 	struct intel_uncore_pmu *pmus;
--	struct attribute_group *events_group;
-+	struct attribute_group *attr_group;
- 	struct attribute **attrs;
- 	int i, j;
+--- a/drivers/gpu/drm/gma500/psb_irq.c
++++ b/drivers/gpu/drm/gma500/psb_irq.c
+@@ -211,7 +211,7 @@ irqreturn_t psb_irq_handler(DRM_IRQ_ARGS
  
-@@ -2455,19 +2455,19 @@ static int __init uncore_type_init(struc
- 		while (type->event_descs[i].attr.attr.name)
- 			i++;
+ 	vdc_stat = PSB_RVDC32(PSB_INT_IDENTITY_R);
  
--		events_group = kzalloc(sizeof(struct attribute *) * (i + 1) +
--					sizeof(*events_group), GFP_KERNEL);
--		if (!events_group)
-+		attr_group = kzalloc(sizeof(struct attribute *) * (i + 1) +
-+					sizeof(*attr_group), GFP_KERNEL);
-+		if (!attr_group)
- 			goto fail;
+-	if (vdc_stat & _PSB_PIPE_EVENT_FLAG)
++	if (vdc_stat & (_PSB_PIPE_EVENT_FLAG|_PSB_IRQ_ASLE))
+ 		dsp_int = 1;
  
--		attrs = (struct attribute **)(events_group + 1);
--		events_group->name = "events";
--		events_group->attrs = attrs;
-+		attrs = (struct attribute **)(attr_group + 1);
-+		attr_group->name = "events";
-+		attr_group->attrs = attrs;
- 
- 		for (j = 0; j < i; j++)
- 			attrs[j] = &type->event_descs[j].attr.attr;
- 
--		type->events_group = events_group;
-+		type->events_group = attr_group;
- 	}
- 
- 	type->pmu_group = &uncore_pmu_attr_group;
+ 	/* FIXME: Handle Medfield
 
 
