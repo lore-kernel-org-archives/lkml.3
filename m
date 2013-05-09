@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab3EIXL4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:11:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755654Ab3EIW0V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755668Ab3EIW0V (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 9 May 2013 18:26:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45696 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610Ab3EIW0S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 18:26:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        hayeswang <hayeswang@realtek.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 21/73] r8169: fix 8168evl frame padding.
-Date: Thu,  9 May 2013 15:25:11 -0700
-Message-Id: <20130509222528.647901578@linuxfoundation.org>
+        Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, eranian@google.com
+Subject: [ 16/73] perf/x86/intel/lbr: Fix LBR filter
+Date: Thu,  9 May 2013 15:25:06 -0700
+Message-Id: <20130509222528.153348556@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -29,44 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Bader <stefan.bader@canonical.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit e5195c1f31f399289347e043d6abf3ffa80f0005 upstream.
+commit 6e15eb3ba6c0249c9e8c783517d131b47db995ca upstream.
 
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Cc: hayeswang <hayeswang@realtek.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The LBR 'from' adddress is under full userspace control; ensure
+we validate it before reading from it.
+
+Note: is_module_text_address() can potentially be quite
+expensive; for those running into that with high overhead
+in modules optimize it using an RCU backed rb-tree.
+
+Reported-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: eranian@google.com
+Link: http://lkml.kernel.org/r/20130503121256.158211806@chello.nl
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/n/tip-mk8i82ffzax01cnqo829iy1q@git.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/realtek/r8169.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -5787,6 +5787,14 @@ static netdev_tx_t rtl8169_start_xmit(st
- 		goto err_stop_0;
- 	}
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -442,8 +442,18 @@ static int branch_type(unsigned long fro
+ 			return X86_BR_NONE;
  
-+	/* 8168evl does not automatically pad to minimum length. */
-+	if (unlikely(tp->mac_version == RTL_GIGA_MAC_VER_34 &&
-+		     skb->len < ETH_ZLEN)) {
-+		if (skb_padto(skb, ETH_ZLEN))
-+			goto err_update_stats;
-+		skb_put(skb, ETH_ZLEN - skb->len);
+ 		addr = buf;
+-	} else
+-		addr = (void *)from;
++	} else {
++		/*
++		 * The LBR logs any address in the IP, even if the IP just
++		 * faulted. This means userspace can control the from address.
++		 * Ensure we don't blindy read any address by validating it is
++		 * a known text address.
++		 */
++		if (kernel_text_address(from))
++			addr = (void *)from;
++		else
++			return X86_BR_NONE;
 +	}
-+
- 	if (unlikely(le32_to_cpu(txd->opts1) & DescOwn))
- 		goto err_stop_0;
  
-@@ -5858,6 +5866,7 @@ err_dma_1:
- 	rtl8169_unmap_tx_skb(d, tp->tx_skb + entry, txd);
- err_dma_0:
- 	dev_kfree_skb(skb);
-+err_update_stats:
- 	dev->stats.tx_dropped++;
- 	return NETDEV_TX_OK;
- 
+ 	/*
+ 	 * decoder needs to know the ABI especially
 
 
