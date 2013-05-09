@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373Ab3EIFpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 01:45:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47782 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981Ab3EIFpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 01:45:12 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <201305090113.19684.vapier@gentoo.org>
-References: <1368072057-7832-1-git-send-email-vapier@gentoo.org> <201305090008.47432.vapier@gentoo.org> <518B2387.9030408@zytor.com> <201305090113.19684.vapier@gentoo.org>
+	id S1751682Ab3EIFqw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 01:46:52 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:42603 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325Ab3EIFqv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 01:46:51 -0400
+X-AuditID: 85900ec0-d1ac5b900000151e-89-518b384880c2
+Subject: [PATCH 00/11] tracing: bugfix and kprobe-based dynamic event updates
+To: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
+Date: Thu, 09 May 2013 14:44:05 +0900
+Message-ID: <20130509054405.30398.73831.stgit@mhiramat-M0-7522>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] x86: make stat/statfs 64-bit for x86_64 kernels
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 08 May 2013 22:44:48 -0700
-To: Mike Frysinger <vapier@gentoo.org>
-CC: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Message-ID: <c63a3480-11e7-4966-ae11-628ef8f1eca5@email.android.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hm... Okay, I'm mistaken then.  I guess it doesn't matter.
+Hi,
 
-Mike Frysinger <vapier@gentoo.org> wrote:
+Here is a series of updating kprobe-based dynamic event for
+supporting soft-disabling mode and multiple buffers.
+This also has some bugfixes of ftrace which I found
+including an important deadlock fix.
 
->On Thursday 09 May 2013 00:18:15 H. Peter Anvin wrote:
->> On 05/08/2013 09:08 PM, Mike Frysinger wrote:
->> > On Thursday 09 May 2013 00:04:03 H. Peter Anvin wrote:
->> >> On 05/08/2013 09:00 PM, Mike Frysinger wrote:
->> >>> When including these headers in the x32 ABI, the structs get
->> >>> declared with 32bit sizes which is incorrect.  Use long long
->> >>> and such to make it work both with x32 and x86_64.
->> >> 
->> >> I'm not sure if it is okay to change the types, even within the
->> >> same size.  Perhaps use __u64/__s64?
->> > 
->> > sorry, i don't follow.  changing types isn't ok (unsigned long to
->> > unsigned long long), but changing to __u64 is ok (unsigned long to
->> > __u64 which is typedefed to unsigned long long) ?
->> > 
->> > i don't have a problem using __u64/__s64, i just don't understand
->> > your logic.
->> 
->> In userspace, __u64 is often defined as "unsigned long" on 64 bits.
->
->my tests would seem to indicate otherwise, at least for x86:
->$ gcc -E - <<<"#include <linux/types.h>" | grep '__u64;'
->__extension__ typedef unsigned long long __u64;
->
->$ gcc -m32 -E - <<<"#include <linux/types.h>" | grep '__u64;'
->__extension__ typedef unsigned long long __u64;
->
->$ gcc -mx32 -E - <<<"#include <linux/types.h>" | grep '__u64;'
->__extension__ typedef unsigned long long __u64;
->
->and doing a printf("%i\n", sizeof(__u64)) shows 8 for each of the above
->builds
->-mike
+I think uprobe-based events can also support multi-buffer
+and soft-disabling as I did in this series.
+
+---
+
+Masami Hiramatsu (11):
+      [BUGFIX] tracing: Return 0 if event_enable_func succeeded
+      [BUGFIX] ftrace, kprobes: Fix a deadlock on ftrace_regex_lock
+      ftrace: Cleanup regex_lock and ftrace_lock around hash updating
+      [BUGFIX] tracing/kprobes: Fix to increment return event probe hit-count
+      tracing: Indicate enabled soft-mode in enable file
+      [BUGFIX] tracing: Modify soft-mode only if no other referrer
+      [TRIVIAL] tracing/kprobes: Use bool for retprobe checker
+      tracing/kprobes: Increment probe hit-count even if it is used by perf
+      tracing/kprobes: Pass trace_probe directly from dispatcher
+      tracing/kprobes: Support ftrace_event_file base multibuffer
+      tracing/kprobes: Support soft-mode disabling
+
+
+ include/linux/ftrace.h       |    1 
+ include/linux/ftrace_event.h |    1 
+ kernel/kprobes.c             |    1 
+ kernel/trace/ftrace.c        |   82 +++++++-----
+ kernel/trace/trace_events.c  |   19 ++-
+ kernel/trace/trace_kprobe.c  |  289 ++++++++++++++++++++++++++++++++++--------
+ 6 files changed, 305 insertions(+), 88 deletions(-)
 
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+IT Management Research Dept. and Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
