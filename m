@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab3EITPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 15:15:51 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:41502 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751419Ab3EITPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 15:15:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Ortiz, Lance E" <lance.oritz@hp.com>
-Cc: "bhelgaas@google.com" <bhelgaas@google.com>,
-        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "bp@alien8.de" <bp@alien8.de>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] aerdrv: Move cper_print_pcie() out of interrupt context
-Date: Thu, 09 May 2013 21:24:12 +0200
-Message-ID: <2958841.JugbRneiDu@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <A961433CDFF2F640A2866803152E61F95177AFA9@G4W3219.americas.hpqcorp.net>
-References: <20130508171519.26724.63307.stgit@grignak.americas.hpqcorp.net> <2598827.AVAqMcfGuF@vostro.rjw.lan> <A961433CDFF2F640A2866803152E61F95177AFA9@G4W3219.americas.hpqcorp.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752590Ab3EITXm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 15:23:42 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:36287 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751854Ab3EITXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 15:23:41 -0400
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS updates (#2) for 3.10-rc1
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20130509192336.EB1A7500B4B@whiskey.americas.sgi.com>
+Date: Thu,  9 May 2013 14:23:36 -0500 (CDT)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 09, 2013 07:10:36 PM Ortiz, Lance E wrote:
-> Rafael,  
-> 
-> Thanks for your feedback.
-> 
-> > The way the changes are described here isn't particularly clear to me.
-> 
-> I will try to make it a little more clear.
+Hi Linus,
 
-Cool, thanks!
-
-> > Also, since aer_recover_work_func() is going to be the only existing
-> > caller of
-> > cper_print_aer() after this change, as far as I can say, and it doesn't
-> > use the
-> > function's first argument, that argument should be dropped entirely.
-> 
-> The truth is, the function cper_print_aer() really needs to be re-written so
-> it is consistent with aer_print_error() in how it outputs information.
-> Right now, the output is formatted very differently.  I was planning on doing
-> that at a later date, but fix the warning now.  I might add a TODO comment in
-> the code for this.
-
-Yes, I think that would be OK, depending on the amount of changes actually
-needed to rework it (if that's not too much, I'd just go straight for the
-rework, honestly).
-
-> The reason I did not remove the argument in cper_print_aer() is because
-> 'prefix' is used in the call to cper_print_bits(), and I passed through an
-> empty string to make sure that function worked correctly.  I can try to clean
-> it up.
-
-Please do.
+Please pull these three stragglers for 3.10-rc1.  CONFIG_XFS_WARN will be
+helpful in environments which are having trouble, and where full
+CONFIG_XFS_DEBUG isn't appropriate.  There are two fixes for issues with
+extended attribtues seen with xfsdump.
 
 Thanks,
-Rafael
+	Ben
 
+The following changes since commit cab09a81fbefcb21db5213a84461d421946f6eb8:
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+  xfs: fix da node magic number mismatches (2013-05-01 14:48:30 -0500)
+
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs tags/for-linus-v3.10-rc1-2
+
+for you to fetch changes up to 7dfbcbefad4b24d9822d04dbd7b5dd5c3fd45076:
+
+  xfs: fallback to vmalloc for large buffers in xfs_compat_attrlist_by_handle (2013-05-07 19:00:10 -0500)
+
+----------------------------------------------------------------
+xfs: update (#2) for v3.10-rc1
+
+* add CONFIG_XFS_WARN, a step between zero debugging and CONFIG_XFS_DEBUG.
+* fix attrmulti and attrlist to fall back to vmalloc when kmalloc fails.
+
+----------------------------------------------------------------
+Dave Chinner (1):
+      xfs: introduce CONFIG_XFS_WARN
+
+Eric Sandeen (2):
+      xfs: fallback to vmalloc for large buffers in xfs_attrlist_by_handle
+      xfs: fallback to vmalloc for large buffers in xfs_compat_attrlist_by_handle
+
+ fs/xfs/Kconfig            |   13 +++++++++++++
+ fs/xfs/mrlock.h           |   12 ++++++------
+ fs/xfs/xfs.h              |    5 +++++
+ fs/xfs/xfs_alloc_btree.c  |    4 ++--
+ fs/xfs/xfs_bmap_btree.c   |    4 ++--
+ fs/xfs/xfs_btree.h        |    2 +-
+ fs/xfs/xfs_dir2_node.c    |    4 ++--
+ fs/xfs/xfs_ialloc_btree.c |    4 ++--
+ fs/xfs/xfs_inode.c        |    2 +-
+ fs/xfs/xfs_ioctl.c        |   14 ++++++++++----
+ fs/xfs/xfs_ioctl32.c      |   14 ++++++++++----
+ fs/xfs/xfs_linux.h        |   24 ++++++++++++++++++------
+ fs/xfs/xfs_message.c      |    8 ++++++++
+ fs/xfs/xfs_message.h      |    1 +
+ fs/xfs/xfs_trans.h        |    4 ++--
+ 15 files changed, 83 insertions(+), 32 deletions(-)
