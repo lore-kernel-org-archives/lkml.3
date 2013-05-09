@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759393Ab3EIXIK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:08:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45778 "EHLO
+	id S1755894Ab3EIW0a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:26:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45759 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755592Ab3EIW0b (ORCPT
+	with ESMTP id S1755592Ab3EIW01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:31 -0400
+	Thu, 9 May 2013 18:26:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jon Bloomfield <jon.bloomfield@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 35/73] drm/i915: Workaround incoherence between fences and LLC across multiple CPUs
-Date: Thu,  9 May 2013 15:25:25 -0700
-Message-Id: <20130509222530.036522208@linuxfoundation.org>
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 30/73] drm/prime: keep a reference from the handle to exported dma-buf (v6)
+Date: Thu,  9 May 2013 15:25:20 -0700
+Message-Id: <20130509222529.534649073@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -29,76 +27,253 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Dave Airlie <airlied@gmail.com>
 
-commit 25ff1195f8a0b3724541ae7bbe331b4296de9c06 upstream.
+commit 219b47339ced80ca580bb6ce7d1636166984afa7 upstream.
 
-In order to fully serialize access to the fenced region and the update
-to the fence register we need to take extreme measures on SNB+, and
-manually flush writes to memory prior to writing the fence register in
-conjunction with the memory barriers placed around the register write.
+Currently we have a problem with this:
+1. i915: create gem object
+2. i915: export gem object to prime
+3. radeon: import gem object
+4. close prime fd
+5. radeon: unref object
+6. i915: unref object
 
-Fixes i-g-t/gem_fence_thrash
+i915 has an imported object reference in its file priv, that isn't
+cleaned up properly until fd close. The reference gets added at step 2,
+but at step 6 we don't have enough info to clean it up.
 
-v2: Bring a bigger gun
-v3: Switch the bigger gun for heavier bullets (Arjan van de Ven)
-v4: Remove changes for working generations.
-v5: Reduce to a per-cpu wbinvd() call prior to updating the fences.
-v6: Rewrite comments to ellide forgotten history.
+The solution is to take a reference on the dma-buf when we export it,
+and drop the reference when the gem handle goes away.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=62191
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jon Bloomfield <jon.bloomfield@intel.com>
-Tested-by: Jon Bloomfield <jon.bloomfield@intel.com> (v2)
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+So when we export a dma_buf from a gem object, we keep track of it
+with the handle, we take a reference to the dma_buf. When we close
+the handle (i.e. userspace is finished with the buffer), we drop
+the reference to the dma_buf, and it gets collected.
+
+This patch isn't meant to fix any other problem or bikesheds, and it doesn't
+fix any races with other scenarios.
+
+v1.1: move export symbol line back up.
+
+v2: okay I had to do a bit more, as the first patch showed a leak
+on one of my tests, that I found using the dma-buf debugfs support,
+the problem case is exporting a buffer twice with the same handle,
+we'd add another export handle for it unnecessarily, however
+we now fail if we try to export the same object with a different gem handle,
+however I'm not sure if that is a case I want to support, and I've
+gotten the code to WARN_ON if we hit something like that.
+
+v2.1: rebase this patch, write better commit msg.
+v3: cleanup error handling, track import vs export in linked list,
+these two patches were separate previously, but seem to work better
+like this.
+v4: danvet is correct, this code is no longer useful, since the buffer
+better exist, so remove it.
+v5: always take a reference to the dma buf object, import or export.
+(Imre Deak contributed this originally)
+v6: square the circle, remove import vs export tracking now
+that there is no difference
+
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/drm_gem.c   |    4 +-
+ drivers/gpu/drm/drm_prime.c |   76 +++++++++++++++++++++++---------------------
+ include/drm/drmP.h          |    5 +-
+ 3 files changed, 44 insertions(+), 41 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -2678,17 +2678,35 @@ static inline int fence_number(struct dr
- 	return fence - dev_priv->fence_regs;
- }
- 
-+static void i915_gem_write_fence__ipi(void *data)
-+{
-+	wbinvd();
-+}
-+
- static void i915_gem_object_update_fence(struct drm_i915_gem_object *obj,
- 					 struct drm_i915_fence_reg *fence,
- 					 bool enable)
+--- a/drivers/gpu/drm/drm_gem.c
++++ b/drivers/gpu/drm/drm_gem.c
+@@ -205,11 +205,11 @@ static void
+ drm_gem_remove_prime_handles(struct drm_gem_object *obj, struct drm_file *filp)
  {
--	struct drm_i915_private *dev_priv = obj->base.dev->dev_private;
--	int reg = fence_number(dev_priv, fence);
-+	struct drm_device *dev = obj->base.dev;
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	int fence_reg = fence_number(dev_priv, fence);
+ 	if (obj->import_attach) {
+-		drm_prime_remove_imported_buf_handle(&filp->prime,
++		drm_prime_remove_buf_handle(&filp->prime,
+ 				obj->import_attach->dmabuf);
+ 	}
+ 	if (obj->export_dma_buf) {
+-		drm_prime_remove_imported_buf_handle(&filp->prime,
++		drm_prime_remove_buf_handle(&filp->prime,
+ 				obj->export_dma_buf);
+ 	}
+ }
+--- a/drivers/gpu/drm/drm_prime.c
++++ b/drivers/gpu/drm/drm_prime.c
+@@ -62,6 +62,7 @@ struct drm_prime_member {
+ 	struct dma_buf *dma_buf;
+ 	uint32_t handle;
+ };
++static int drm_prime_add_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t handle);
  
--	i915_gem_write_fence(obj->base.dev, reg, enable ? obj : NULL);
-+	/* In order to fully serialize access to the fenced region and
-+	 * the update to the fence register we need to take extreme
-+	 * measures on SNB+. In theory, the write to the fence register
-+	 * flushes all memory transactions before, and coupled with the
-+	 * mb() placed around the register write we serialise all memory
-+	 * operations with respect to the changes in the tiler. Yet, on
-+	 * SNB+ we need to take a step further and emit an explicit wbinvd()
-+	 * on each processor in order to manually flush all memory
-+	 * transactions before updating the fence register.
-+	 */
-+	if (HAS_LLC(obj->base.dev))
-+		on_each_cpu(i915_gem_write_fence__ipi, NULL, 1);
-+	i915_gem_write_fence(dev, fence_reg, enable ? obj : NULL);
+ static struct sg_table *drm_gem_map_dma_buf(struct dma_buf_attachment *attach,
+ 		enum dma_data_direction dir)
+@@ -200,7 +201,8 @@ int drm_gem_prime_handle_to_fd(struct dr
+ {
+ 	struct drm_gem_object *obj;
+ 	void *buf;
+-	int ret;
++	int ret = 0;
++	struct dma_buf *dmabuf;
  
- 	if (enable) {
--		obj->fence_reg = reg;
-+		obj->fence_reg = fence_reg;
- 		fence->obj = obj;
- 		list_move_tail(&fence->lru_list, &dev_priv->mm.fence_list);
- 	} else {
+ 	obj = drm_gem_object_lookup(dev, file_priv, handle);
+ 	if (!obj)
+@@ -209,43 +211,44 @@ int drm_gem_prime_handle_to_fd(struct dr
+ 	mutex_lock(&file_priv->prime.lock);
+ 	/* re-export the original imported object */
+ 	if (obj->import_attach) {
+-		get_dma_buf(obj->import_attach->dmabuf);
+-		*prime_fd = dma_buf_fd(obj->import_attach->dmabuf, flags);
+-		drm_gem_object_unreference_unlocked(obj);
+-		mutex_unlock(&file_priv->prime.lock);
+-		return 0;
++		dmabuf = obj->import_attach->dmabuf;
++		goto out_have_obj;
+ 	}
+ 
+ 	if (obj->export_dma_buf) {
+-		get_dma_buf(obj->export_dma_buf);
+-		*prime_fd = dma_buf_fd(obj->export_dma_buf, flags);
+-		drm_gem_object_unreference_unlocked(obj);
+-	} else {
+-		buf = dev->driver->gem_prime_export(dev, obj, flags);
+-		if (IS_ERR(buf)) {
+-			/* normally the created dma-buf takes ownership of the ref,
+-			 * but if that fails then drop the ref
+-			 */
+-			drm_gem_object_unreference_unlocked(obj);
+-			mutex_unlock(&file_priv->prime.lock);
+-			return PTR_ERR(buf);
+-		}
+-		obj->export_dma_buf = buf;
+-		*prime_fd = dma_buf_fd(buf, flags);
++		dmabuf = obj->export_dma_buf;
++		goto out_have_obj;
+ 	}
++
++	buf = dev->driver->gem_prime_export(dev, obj, flags);
++	if (IS_ERR(buf)) {
++		/* normally the created dma-buf takes ownership of the ref,
++		 * but if that fails then drop the ref
++		 */
++		ret = PTR_ERR(buf);
++		goto out;
++	}
++	obj->export_dma_buf = buf;
++
+ 	/* if we've exported this buffer the cheat and add it to the import list
+ 	 * so we get the correct handle back
+ 	 */
+-	ret = drm_prime_add_imported_buf_handle(&file_priv->prime,
+-			obj->export_dma_buf, handle);
+-	if (ret) {
+-		drm_gem_object_unreference_unlocked(obj);
+-		mutex_unlock(&file_priv->prime.lock);
+-		return ret;
+-	}
++	ret = drm_prime_add_buf_handle(&file_priv->prime,
++				       obj->export_dma_buf, handle);
++	if (ret)
++		goto out;
+ 
++	*prime_fd = dma_buf_fd(buf, flags);
+ 	mutex_unlock(&file_priv->prime.lock);
+ 	return 0;
++
++out_have_obj:
++	get_dma_buf(dmabuf);
++	*prime_fd = dma_buf_fd(dmabuf, flags);
++out:
++	drm_gem_object_unreference_unlocked(obj);
++	mutex_unlock(&file_priv->prime.lock);
++	return ret;
+ }
+ EXPORT_SYMBOL(drm_gem_prime_handle_to_fd);
+ 
+@@ -317,7 +320,7 @@ int drm_gem_prime_fd_to_handle(struct dr
+ 
+ 	mutex_lock(&file_priv->prime.lock);
+ 
+-	ret = drm_prime_lookup_imported_buf_handle(&file_priv->prime,
++	ret = drm_prime_lookup_buf_handle(&file_priv->prime,
+ 			dma_buf, handle);
+ 	if (!ret) {
+ 		ret = 0;
+@@ -336,7 +339,7 @@ int drm_gem_prime_fd_to_handle(struct dr
+ 	if (ret)
+ 		goto out_put;
+ 
+-	ret = drm_prime_add_imported_buf_handle(&file_priv->prime,
++	ret = drm_prime_add_buf_handle(&file_priv->prime,
+ 			dma_buf, *handle);
+ 	if (ret)
+ 		goto fail;
+@@ -497,7 +500,7 @@ void drm_prime_destroy_file_private(stru
+ }
+ EXPORT_SYMBOL(drm_prime_destroy_file_private);
+ 
+-int drm_prime_add_imported_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t handle)
++static int drm_prime_add_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t handle)
+ {
+ 	struct drm_prime_member *member;
+ 
+@@ -505,14 +508,14 @@ int drm_prime_add_imported_buf_handle(st
+ 	if (!member)
+ 		return -ENOMEM;
+ 
++	get_dma_buf(dma_buf);
+ 	member->dma_buf = dma_buf;
+ 	member->handle = handle;
+ 	list_add(&member->entry, &prime_fpriv->head);
+ 	return 0;
+ }
+-EXPORT_SYMBOL(drm_prime_add_imported_buf_handle);
+ 
+-int drm_prime_lookup_imported_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t *handle)
++int drm_prime_lookup_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t *handle)
+ {
+ 	struct drm_prime_member *member;
+ 
+@@ -524,19 +527,20 @@ int drm_prime_lookup_imported_buf_handle
+ 	}
+ 	return -ENOENT;
+ }
+-EXPORT_SYMBOL(drm_prime_lookup_imported_buf_handle);
++EXPORT_SYMBOL(drm_prime_lookup_buf_handle);
+ 
+-void drm_prime_remove_imported_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf)
++void drm_prime_remove_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf)
+ {
+ 	struct drm_prime_member *member, *safe;
+ 
+ 	mutex_lock(&prime_fpriv->lock);
+ 	list_for_each_entry_safe(member, safe, &prime_fpriv->head, entry) {
+ 		if (member->dma_buf == dma_buf) {
++			dma_buf_put(dma_buf);
+ 			list_del(&member->entry);
+ 			kfree(member);
+ 		}
+ 	}
+ 	mutex_unlock(&prime_fpriv->lock);
+ }
+-EXPORT_SYMBOL(drm_prime_remove_imported_buf_handle);
++EXPORT_SYMBOL(drm_prime_remove_buf_handle);
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1593,9 +1593,8 @@ extern void drm_prime_gem_destroy(struct
+ 
+ void drm_prime_init_file_private(struct drm_prime_file_private *prime_fpriv);
+ void drm_prime_destroy_file_private(struct drm_prime_file_private *prime_fpriv);
+-int drm_prime_add_imported_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t handle);
+-int drm_prime_lookup_imported_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t *handle);
+-void drm_prime_remove_imported_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf);
++int drm_prime_lookup_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t *handle);
++void drm_prime_remove_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf);
+ 
+ int drm_prime_add_dma_buf(struct drm_device *dev, struct drm_gem_object *obj);
+ int drm_prime_lookup_obj(struct drm_device *dev, struct dma_buf *buf,
 
 
