@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759257Ab3EIWu5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:50:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46158 "EHLO
+	id S1759268Ab3EIWvW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:51:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46153 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757973Ab3EIWdN (ORCPT
+	with ESMTP id S1757952Ab3EIWdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:13 -0400
+	Thu, 9 May 2013 18:33:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?David=20M=C3=BCller?= <d.mueller@elsoft.ch>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 45/73] drm/i915: Fall back to bit banging mode for DVO transmitter detection
-Date: Thu,  9 May 2013 15:32:08 -0700
-Message-Id: <20130509222802.841725853@linuxfoundation.org>
+Subject: [ 44/73] drm/i915: Fixup Oops in the pipe config computation
+Date: Thu,  9 May 2013 15:32:07 -0700
+Message-Id: <20130509222802.738696021@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,55 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Müller <d.mueller@elsoft.ch>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit e4bfff54ed3f5de88f5358504c78c2cb037813aa upstream.
+commit b6c5164d7bf624f3e1b750787ddb983150c5117c upstream.
 
-As discussed in this thread
-http://lists.freedesktop.org/archives/dri-devel/2013-April/037411.html
-GMBUS based DVO transmitter detection seems to be unreliable which could
-result in an unusable DVO port.
+Yet again our current confusion between doing the modeset globally,
+but only having the new parameters for one crtc at a time.
 
-The attached patch fixes this by falling back to bit banging mode for
-the time DVO transmitter detection is in progress.
+So that intel_set_mode essentially already does a global modeset:
+intel_modeset_affected_pipes compares the current state with where we
+want to go to (which is carefully set up by intel_crtc_set_config) and
+then goes through the modeset sequence for any crtc which needs
+updating.
 
-Signed-off-by: David Müller <d.mueller@elsoft.ch>
-Tested-by: David Müller <d.mueller@elsoft.ch>
+Now the issue is that the actual interface with the remaining code
+still only works on one crtc, and so we only pass in one fb and one
+mode. In intel_set_mode we also only compute one intel_crtc_config
+(which should be the one for the crtc we're doing a modeset on).
+
+The reason for that mismatch is twofold:
+- We want to eventually do all modeset as global state changes, so
+it's just infrastructure prep.
+- But even the old semantics can change more than one crtc when you
+e.g. move a connector from crtc A to crtc B, then both crtc A and B
+need to be updated. Usually that means one pipe is disabled and the
+other enabled. This is also the reason why the hack doesn't touch the
+disable_pipes mask.
+
+Now hilarity ensued in our kms config restore paths when we actually
+try to do a modeset on all crtcs: If the first crtc should be off and
+the second should be on, then the call on the first crtc will notice
+that the 2nd one should be switched on and so tries to compute the
+pipe_config. But due to a lack of passed-in fb (crtc 1 should be off
+after all) it only results in tears.
+
+This case is ridiculously easy to hit on gen2/3 where the lvds output
+is restricted to pipe B. Note that before the pipe_config bpp rework
+gen2/3 didn't care really about the fb->depth, so this is a regression
+brought to light with
+
+commit 4e53c2e010e531b4a014692199e978482d471c7e
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Wed Mar 27 00:44:58 2013 +0100
+
+    drm/i915: precompute pipe bpp before touching the hw
+
+But apparently Ajax also managed to blow up pch platforms, probably
+with some randomized configs, and pch platforms trip up over the lack
+of an fb even in the old code. So this actually goes back to the first
+introduction of the new modeset restore code in
+
+commit 45e2b5f640b3766da3eda48f6c35f088155c06f3
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Fri Nov 23 18:16:34 2012 +0100
+
+    drm/i915: force restore on lid open
+
+Fix this mess by now by justing shunting all the cool new global
+modeset logic in intel_modeset_affected_pipes.
+
+v2: Improve commit message and clean up all the comments in
+intel_modeset_affected_pipes - since the introduction of the modeset
+restore code they've been a bit outdated.
+
+Bugzill: https://bugzilla.redhat.com/show_bug.cgi?id=917725
+References: http://www.mail-archive.com/stable@vger.kernel.org/msg38084.html
+Tested-by: Richard Cochran <richardcochran@gmail.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_dvo.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_display.c |   23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_dvo.c
-+++ b/drivers/gpu/drm/i915/intel_dvo.c
-@@ -449,6 +449,7 @@ void intel_dvo_init(struct drm_device *d
- 		const struct intel_dvo_device *dvo = &intel_dvo_devices[i];
- 		struct i2c_adapter *i2c;
- 		int gpio;
-+		bool dvoinit;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7732,22 +7732,25 @@ intel_modeset_affected_pipes(struct drm_
+ 	if (crtc->enabled)
+ 		*prepare_pipes |= 1 << intel_crtc->pipe;
  
- 		/* Allow the I2C driver info to specify the GPIO to be used in
- 		 * special cases, but otherwise default to what's defined
-@@ -468,7 +469,17 @@ void intel_dvo_init(struct drm_device *d
- 		i2c = intel_gmbus_get_adapter(dev_priv, gpio);
+-	/* We only support modeset on one single crtc, hence we need to do that
+-	 * only for the passed in crtc iff we change anything else than just
+-	 * disable crtcs.
+-	 *
+-	 * This is actually not true, to be fully compatible with the old crtc
+-	 * helper we automatically disable _any_ output (i.e. doesn't need to be
+-	 * connected to the crtc we're modesetting on) if it's disconnected.
+-	 * Which is a rather nutty api (since changed the output configuration
+-	 * without userspace's explicit request can lead to confusion), but
+-	 * alas. Hence we currently need to modeset on all pipes we prepare. */
++	/*
++	 * For simplicity do a full modeset on any pipe where the output routing
++	 * changed. We could be more clever, but that would require us to be
++	 * more careful with calling the relevant encoder->mode_set functions.
++	 */
+ 	if (*prepare_pipes)
+ 		*modeset_pipes = *prepare_pipes;
  
- 		intel_dvo->dev = *dvo;
--		if (!dvo->dev_ops->init(&intel_dvo->dev, i2c))
+ 	/* ... and mask these out. */
+ 	*modeset_pipes &= ~(*disable_pipes);
+ 	*prepare_pipes &= ~(*disable_pipes);
 +
-+		/* GMBUS NAK handling seems to be unstable, hence let the
-+		 * transmitter detection run in bit banging mode for now.
-+		 */
-+		intel_gmbus_force_bit(i2c, true);
-+
-+		dvoinit = dvo->dev_ops->init(&intel_dvo->dev, i2c);
-+
-+		intel_gmbus_force_bit(i2c, false);
-+
-+		if (!dvoinit)
- 			continue;
++	/*
++	 * HACK: We don't (yet) fully support global modesets. intel_set_config
++	 * obies this rule, but the modeset restore mode of
++	 * intel_modeset_setup_hw_state does not.
++	 */
++	*modeset_pipes &= 1 << intel_crtc->pipe;
++	*prepare_pipes &= 1 << intel_crtc->pipe;
+ }
  
- 		intel_encoder->type = INTEL_OUTPUT_DVO;
+ static bool intel_crtc_in_use(struct drm_crtc *crtc)
 
 
