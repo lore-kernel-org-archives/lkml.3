@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab3EIGJM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 02:09:12 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:63957 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab3EIGJH (ORCPT
+	id S1751666Ab3EIGRL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 02:17:11 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:61456 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045Ab3EIGRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 02:09:07 -0400
-Message-ID: <518b3d7f.0269440a.345f.7293@mx.google.com>
-From: "chris@zankel.net" <chris@zankel.net>
-Date: Wed, 08 May 2013 23:09:01 -0700
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 9 May 2013 02:17:09 -0400
+Date: Thu, 9 May 2013 14:16:47 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: peter@hurleysoftware.com, jslaby@suse.cz, linux-kernel@vger.kernel.org
+Subject: [PATCH v3] TTY: Fix tty miss restart after we turn off flow-control
+Message-ID: <20130509061647.GA3011@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	gregkh@linuxfoundation.org, peter@hurleysoftware.com,
+	jslaby@suse.cz, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 0f47c9423c0fe468d0b5b153f9b9d6e8e20707eb: 
-X-Gm-Message-State: ALoCoQmwQtwfG0E5lTKt+B78CvyUtc1yxfaj87QJ4RQm3SnSXv8iREq/WbEKSWwcG7TUg7tr17OO
+I meet emacs hang in start if I do the operation below:
+  1: echo 3 > /proc/sys/vm/drop_caches
+  2: emacs BigFile
+  3: Press CTRL-S follow 2 immediately
 
-  Merge branch 'slab/for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux (2013-05-07 08:42:20 -0700)
+Then emacs hang on, CTRL-Q can't resume, the terminal
+hang on, you can do nothing with this terminal except
+close it.
 
-are available in the git repository at:
+The reason is before emacs takeover control the tty,
+we use CTRL-S to XOFF it. Then when emacs takeover the
+control, it may don't use the flow-control, so emacs hang.
+This patch fix it.
 
+This patch will fix a kind of strange tty relation hang problem,
+I believe I meet it with vim in ssh, and also see below bug report:
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=465823
 
-  git://github.com/czankel/xtensa-linux.git tags/xtensa-next-0508
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ Changes v1-v2:
+ 1: move the fix into n_tty_set_termios instead of change TCXONC's behavior suggested by Peter Hurley
+ 2: rewrite some ChangeLog and use more reasonable subject.
+ Changes v2-v3:
+ 1: Fix potential NULL pointer dereference.
 
-for you to fetch changes up to 67ddeb406fc062a442afcb7d486cd573b2a6fbc9:
+ drivers/tty/n_tty.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-  xtensa: Switch to asm-generic/linkage.h (2013-05-08 22:45:44 -0700)
-
-----------------------------------------------------------------
-Xtensa patchset for 3.10rc1
-
-----------------------------------------------------------------
-Chris Zankel (1):
-      xtensa: fix redboot load address
-
-Geert Uytterhoeven (1):
-      xtensa: Switch to asm-generic/linkage.h
-
-Max Filippov (15):
-      xtensa: fix oprofile building as module
-      xtensa: fix ibreakenable register update
-      xtensa: add MMU v3 support
-      xtensa: document MMUv3 setup sequence
-      xtensa: provide default platform_pcibios_init implementation
-      xtensa: don't attempt to use unconfigured timers
-      xtensa: don't use a7 in simcalls
-      xtensa: clean up stpill_registers
-      xtensa: add stacktrace support
-      xtensa: provide custom CALLER_ADDR* implementations
-      xtensa: add irq flags trace support
-      xtensa: fix arch_irqs_disabled_flags implementation
-      xtensa: enable lockdep support
-      xtensa: disable IRQs while IRQ handler is running
-      xtensa: ISS: fix timer_lock usage in rs_open
-
-Paul Bolle (1):
-      xtensa: remove KCORE_ELF again
-
- Documentation/xtensa/mmu.txt                       |   46 +++++++
- arch/xtensa/Kconfig                                |   57 ++++++---
- arch/xtensa/boot/boot-elf/Makefile                 |    1 +
- arch/xtensa/boot/boot-elf/boot.lds.S               |   64 ++++------
- arch/xtensa/boot/boot-elf/bootstrap.S              |  101 +++++++++++++---
- arch/xtensa/boot/boot-redboot/boot.ld              |    2 +-
- arch/xtensa/boot/boot-uboot/Makefile               |    6 +-
- arch/xtensa/include/asm/Kbuild                     |    1 +
- arch/xtensa/include/asm/ftrace.h                   |   34 +++++-
- arch/xtensa/include/asm/initialize_mmu.h           |  107 +++++++++++++++++
- arch/xtensa/include/asm/irqflags.h                 |    5 +-
- arch/xtensa/include/asm/linkage.h                  |   16 ---
- arch/xtensa/include/asm/stacktrace.h               |   36 ++++++
- arch/xtensa/include/asm/timex.h                    |    9 +-
- arch/xtensa/include/asm/traps.h                    |    5 +-
- arch/xtensa/include/asm/vectors.h                  |  125 ++++++++++++++++++++
- arch/xtensa/kernel/Makefile                        |    8 +-
- arch/xtensa/kernel/entry.S                         |   84 ++++++-------
- arch/xtensa/kernel/head.S                          |   39 ++++--
- arch/xtensa/kernel/platform.c                      |    1 +
- arch/xtensa/kernel/stacktrace.c                    |  120 +++++++++++++++++++
- arch/xtensa/kernel/traps.c                         |   67 ++++-------
- arch/xtensa/kernel/vectors.S                       |   16 +--
- arch/xtensa/kernel/vmlinux.lds.S                   |   48 +++++---
- arch/xtensa/kernel/xtensa_ksyms.c                  |    5 +
- arch/xtensa/mm/mmu.c                               |   14 ++-
- arch/xtensa/oprofile/backtrace.c                   |    4 +-
- arch/xtensa/platforms/iss/console.c                |   12 +-
- .../platforms/iss/include/platform/simcall.h       |   24 ++--
- arch/xtensa/platforms/iss/setup.c                  |    8 +-
- arch/xtensa/platforms/iss/simdisk.c                |    4 +-
- arch/xtensa/platforms/xt2000/setup.c               |    2 +
- arch/xtensa/platforms/xtfpga/setup.c               |    2 +
- 33 files changed, 819 insertions(+), 254 deletions(-)
- create mode 100644 Documentation/xtensa/mmu.txt
- delete mode 100644 arch/xtensa/include/asm/linkage.h
- create mode 100644 arch/xtensa/include/asm/stacktrace.h
- create mode 100644 arch/xtensa/include/asm/vectors.h
- create mode 100644 arch/xtensa/kernel/stacktrace.c
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 19083ef..9365978 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1587,6 +1587,14 @@ static void n_tty_set_termios(struct tty_struct *tty, struct ktermios *old)
+ 			ldata->real_raw = 0;
+ 	}
+ 	n_tty_set_room(tty);
++	/*
++	 * Fix tty hang when I_IXON(tty) is cleared, but the tty
++	 * been stopped by STOP_CHAR(tty) before it.
++	 */
++	if (!I_IXON(tty) && old && (old->c_iflag & IXON) && !tty->flow_stopped) {
++		start_tty(tty);
++	}
++
+ 	/* The termios change make the tty ready for I/O */
+ 	wake_up_interruptible(&tty->write_wait);
+ 	wake_up_interruptible(&tty->read_wait);
+-- 
+1.7.12.4.dirty
