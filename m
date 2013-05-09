@@ -1,44 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab3EIKR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 06:17:58 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34317 "EHLO mail.skyhub.de"
+	id S1753630Ab3EIKTi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 06:19:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10392 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751522Ab3EIKR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 06:17:57 -0400
-Date: Thu, 9 May 2013 12:20:48 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: CAI Qian <caiqian@redhat.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, mchehab@redhat.com,
-        Greg KH <gregkh@linuxfoundation.org>, balbi@ti.com
-Subject: Re: 3.9.0: WARNING: at drivers/base/core.c:575
-Message-ID: <20130509102048.GA27333@pd.tnic>
-References: <1732336275.8141054.1367911558572.JavaMail.root@redhat.com>
- <1066765392.8155999.1367913293110.JavaMail.root@redhat.com>
- <5188B9DE.5030009@linux.vnet.ibm.com>
- <20130507132829.GD7633@pd.tnic>
- <1907813193.9461401.1368086471911.JavaMail.root@redhat.com>
+	id S1753237Ab3EIKTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 06:19:37 -0400
+Date: Thu, 9 May 2013 12:19:15 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH] perf: fix symbol processing bug and greatly improve
+ performance
+Message-ID: <20130509101915.GC1628@krava.brq.redhat.com>
+References: <1367847833-4932-1-git-send-email-Waiman.Long@hp.com>
+ <20130507093031.GA1076@krava.brq.redhat.com>
+ <518A72E3.6070606@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1907813193.9461401.1368086471911.JavaMail.root@redhat.com>
+In-Reply-To: <518A72E3.6070606@hp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 04:01:11AM -0400, CAI Qian wrote:
-> Sure, and the system is allocated to someone else at the moment, so
-> I'll test it out as soon as possible.
+On Wed, May 08, 2013 at 11:44:35AM -0400, Waiman Long wrote:
+> On 05/07/2013 05:30 AM, Jiri Olsa wrote:
+> >On Mon, May 06, 2013 at 09:43:53AM -0400, Waiman Long wrote:
+> >>When "perf record" was used on a large machine with a lot of CPUs,
+> >>the perf post-processing time could take a lot of minutes and even
+> >>hours depending on how large the resulting perf.data file was.
+> >>
+> >>While running AIM7 1500-user high_systime workload on a 80-core x86-64
+> >>system with a 3.9 kernel, the workload itself took about 2 minutes
+> >>to run and the perf.data file had a size of 1108.746 MB. However,
+> >>the post-processing step took more than 10 minutes.
+> >>
+> >>With a gprof-profiled perf binary, the time spent by perf was as
+> >>follows:
+> >>
+> >>   %   cumulative   self              self     total
+> >>  time   seconds   seconds    calls   s/call   s/call  name
+> >>  96.90    822.10   822.10   192156     0.00     0.00  dsos__find
+> >>   0.81    828.96     6.86 172089958     0.00     0.00  rb_next
+> >>   0.41    832.44     3.48 48539289     0.00     0.00  rb_erase
+> >>
+> >>So 97% (822 seconds) of the time was spent in a single dsos_find()
+> >>function. After analyzing the call-graph data below:
+> >>
+> >>-----------------------------------------------
+> >>                 0.00  822.12  192156/192156      map__new [6]
+> >>[7]     96.9    0.00  822.12  192156         vdso__dso_findnew [7]
+> >>               822.10    0.00  192156/192156      dsos__find [8]
+> >>                 0.01    0.00  192156/192156      dsos__add [62]
+> >>                 0.01    0.00  192156/192366      dso__new [61]
+> >>                 0.00    0.00       1/45282525     memdup [31]
+> >>                 0.00    0.00  192156/192230      dso__set_long_name [91]
+> >>-----------------------------------------------
+> >>               822.10    0.00  192156/192156      vdso__dso_findnew [7]
+> >>[8]     96.9  822.10    0.00  192156         dsos__find [8]
+> >>-----------------------------------------------
+> >>
+> >>It was found that the vdso__dso_findnew() function failed to locate
+> >>VDSO__MAP_NAME ("[vdso]") in the dso list and have to insert a new
+> >>entry at the end for 192156 times. This problem is due to the fact that
+> >>there are 2 types of name in the dso entry - short name and long name.
+> >>The initial dso__new() adds "[vdso]" to both the short and long names.
+> >>After that, vdso__dso_findnew() modifies the long name to something
+> >>like /tmp/perf-vdso.so-NoXkDj. The dsos__find() function only compares
+> >>the long name. As a result, the same vdso entry is duplicated many
+> >>time in the dso list. This bug increases memory consumption as well
+> >>as slows the symbol processing time to a crawl.
+> >hi,
+> >the issue is there and fix looks ok, thanks!
+> >
+> >though I'm not able to get vdso callchains to pop out
+> >even by investigating report with vdso heavy workload.
+> >
+> >I'll have a closer look..
+> 
+> Is there a chance that the fix will go to v3.10 or have to wait for v3.11?
 
-Nevermind, I was able to trigger it here too so I took it.
+I got this from scripts/checkpatch.pl:
 
-Thanks.
+WARNING: line over 80 characters
+#104: FILE: tools/perf/util/dso.h:136:
++struct dso *dsos__find(struct list_head *head, const char *name, bool
+cmp_short);
 
--- 
-Regards/Gruss,
-    Boris.
+otherwise it looks ok:
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+
+thanks,
+jirka
