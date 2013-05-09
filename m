@@ -1,39 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755637Ab3EIDZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 May 2013 23:25:58 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:58053 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183Ab3EIDZ4 convert rfc822-to-8bit (ORCPT
+	id S1756017Ab3EIDjM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 May 2013 23:39:12 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:41288 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755354Ab3EIDjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 May 2013 23:25:56 -0400
+	Wed, 8 May 2013 23:39:11 -0400
+Date: Thu, 9 May 2013 12:38:19 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Bastian Hecht <hechtb@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>,
+        Bastian Hecht <hechtb+renesas@gmail.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/21] ARM: shmobile: don't call irqchip_init
+ unconditionally
+Message-ID: <20130509033819.GC13994@verge.net.au>
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
+ <CAL_JsqJWJvxezXy0RGFutxzvBhca-8=uRH2GxdJgzbEGw+OL0A@mail.gmail.com>
+ <20130501225748.GD6517@verge.net.au>
+ <201305081416.06611.arnd@arndb.de>
+ <CABYn4sxrcGmnTAJcQR23nMGy8JvqyDrgPOXF4yBFFU_4C8Pc_g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1368049529-8168-1-git-send-email-geert@linux-m68k.org>
-References: <1368049529-8168-1-git-send-email-geert@linux-m68k.org>
-Date: Wed, 8 May 2013 21:25:56 -0600
-X-Google-Sender-Auth: zhdke8K9ljsbsP7vfIipJHkD-t4
-Message-ID: <CAPnjgZ3Akf0+LKBt4c5HQX5c8PhL+zuvvHWrDpVj0W++GiOanA@mail.gmail.com>
-Subject: Re: [PATCH] input: cros_ec_keyb_clear_keyboard() depends on CONFIG_PM_SLEEP
-From: Simon Glass <sjg@chromium.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        lk <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABYn4sxrcGmnTAJcQR23nMGy8JvqyDrgPOXF4yBFFU_4C8Pc_g@mail.gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 8, 2013 at 3:45 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> If CONFIG_PM_SLEEP is not set:
->
-> drivers/input/keyboard/cros_ec_keyb.c:211: warning: ‘cros_ec_keyb_clear_keyboard’ defined but not used
->
-> Move the definition of cros_ec_keyb_clear_keyboard() inside the section
-> protected by #ifdef CONFIG_PM_SLEEP to fix this.
->
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+On Wed, May 08, 2013 at 03:22:22PM +0200, Bastian Hecht wrote:
+> Hi,
+> 
+> 2013/5/8 Arnd Bergmann <arnd@arndb.de>:
+> > On Thursday 02 May 2013, Simon Horman wrote:
+> >> > > diff --git a/arch/arm/mach-shmobile/intc-r8a7740.c b/arch/arm/mach-shmobile/intc-r8a7740.c
+> >> > > index 8871f77..5dc57f1 100644
+> >> > > --- a/arch/arm/mach-shmobile/intc-r8a7740.c
+> >> > > +++ b/arch/arm/mach-shmobile/intc-r8a7740.c
+> >> > > @@ -53,14 +53,23 @@ static void __init r8a7740_init_irq_common(void)
+> >> > >
+> >> > >  void __init r8a7740_init_irq_of(void)
+> >> > >  {
+> >> > > +       if (!IS_ENABLED(CONFIG_OF))
+> >> > > +               return;
+> >> > > +
+> >> > >         irqchip_init();
+> >> >
+> >> > Why not have an empty irqchip_init? I'd guess we'll need this on other
+> >> > platforms and your default mach.
+> >>
+> >> Thanks, I think that could work.
+> >>
+> >> I will see about making it so.
+> >
+> > Ping
+> 
+> I have sent out a patch adding an empty irqchip_init() when
+> CONFIG_IRQCHIP is not set with the subject
+> [PATCH] irqchip: Add irqchip_init dummy function
 
-Acked-by: Simon Glass <sjg@chromium.org>
+Thanks.
+
+> > Linux-next is still broken for me. There is also anothe shmobile build bug,
+> > I'll send a separate patch for that, which also needs to go into your tree.
+
+Sorry about that. I though I had pushed your fix (the first hunk of the
+patch that started this thread), but it seems that I did not.
+
+> Oh thanks Arnd for this fix!
+> 
+> Cheers,
+> 
+>  Bastian
