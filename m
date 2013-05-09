@@ -1,137 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab3EIS6y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 14:58:54 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:47755 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab3EIS6w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 14:58:52 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv10 1/4] debugfs: add get/set for atomic types
-References: <1368052661-27143-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	<1368052661-27143-2-git-send-email-sjenning@linux.vnet.ibm.com>
-Date: Thu, 09 May 2013 11:58:49 -0700
-In-Reply-To: <1368052661-27143-2-git-send-email-sjenning@linux.vnet.ibm.com>
-	(Seth Jennings's message of "Wed, 8 May 2013 17:37:38 -0500")
-Message-ID: <xr934necrndi.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1752304Ab3EITER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 15:04:17 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:41451 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751844Ab3EITEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 15:04:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>, Guenter Roeck <linux@roeck-us.net>
+Cc: Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH 0/3] pm: Introduce __pm to mark power management code
+Date: Thu, 09 May 2013 21:12:40 +0200
+Message-ID: <7892029.RG9lO6NoN5@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1305091426070.1796-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1305091426070.1796-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08 2013, Seth Jennings wrote:
+On Thursday, May 09, 2013 02:31:46 PM Alan Stern wrote:
+> On Thu, 9 May 2013, Guenter Roeck wrote:
+> 
+> > On Thu, May 09, 2013 at 01:38:36PM -0400, Alan Stern wrote:
+> > > On Thu, 9 May 2013, Guenter Roeck wrote:
+> > > 
+> > > > The following patch series introduces a marker for power management functions
+> > > > and data. This this marker, #ifdef CONFIG_PM and #ifdef CONFIG_PM_SLEEP
+> > > > can be removed from most of the code. This ensures that the conditional code
+> > > > still compiles but is not included in the object file.
+> > > > 
+> > > > As a side effect, drivers declaring struct dev_pm_ops unconditionally
+> > > > get a bit smaller if CONFIG_PM_SLEEP is not configured.
+> > > 
+> > > What about code that depends on CONFIG_PM_RUNTIME?  Or code that 
+> > > depends on CONFIG_PM_SLEEP but not on CONFIG_PM_RUNTIME?
+> > > 
+> > Should we also introduce __pm_sleep and __pm_runtime ?
+> 
+> If you want to implement this correctly, I think you have to.
+> 
+> As for whether the additional complication is desirable ... I'll leave 
+> that up to Rafael to decide.
 
-> debugfs currently lack the ability to create attributes
-> that set/get atomic_t values.
->
-> This patch adds support for this through a new
-> debugfs_create_atomic_t() function.
->
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Acked-by: Mel Gorman <mgorman@suse.de>
-> ---
->  fs/debugfs/file.c       | 42 ++++++++++++++++++++++++++++++++++++++++++
->  include/linux/debugfs.h |  2 ++
->  2 files changed, 44 insertions(+)
->
-> diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-> index c5ca6ae..fa26d5b 100644
-> --- a/fs/debugfs/file.c
-> +++ b/fs/debugfs/file.c
-> @@ -21,6 +21,7 @@
->  #include <linux/debugfs.h>
->  #include <linux/io.h>
->  #include <linux/slab.h>
-> +#include <linux/atomic.h>
->  
->  static ssize_t default_read_file(struct file *file, char __user *buf,
->  				 size_t count, loff_t *ppos)
-> @@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
->  }
->  EXPORT_SYMBOL_GPL(debugfs_create_size_t);
->  
-> +static int debugfs_atomic_t_set(void *data, u64 val)
-> +{
-> +	atomic_set((atomic_t *)data, val);
-> +	return 0;
-> +}
-> +static int debugfs_atomic_t_get(void *data, u64 *val)
-> +{
-> +	*val = atomic_read((atomic_t *)data);
-> +	return 0;
-> +}
-> +DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
-> +			debugfs_atomic_t_set, "%llu\n");
-> +DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%llu\n");
-> +DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%llu\n");
-> +
-> +/**
-> + * debugfs_create_atomic_t - create a debugfs file that is used to read and
-> + * write an atomic_t value
-> + * @name: a pointer to a string containing the name of the file to create.
-> + * @mode: the permission that the file should have
-> + * @parent: a pointer to the parent dentry for this file.  This should be a
-> + *          directory dentry if set.  If this parameter is %NULL, then the
-> + *          file will be created in the root of the debugfs filesystem.
-> + * @value: a pointer to the variable that the file should read to and write
-> + *         from.
-> + */
-> +struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-> +				 struct dentry *parent, atomic_t *value)
-> +{
-> +	/* if there are no write bits set, make read only */
-> +	if (!(mode & S_IWUGO))
-> +		return debugfs_create_file(name, mode, parent, value,
-> +					&fops_atomic_t_ro);
-> +	/* if there are no read bits set, make write only */
-> +	if (!(mode & S_IRUGO))
-> +		return debugfs_create_file(name, mode, parent, value,
-> +					&fops_atomic_t_wo);
-> +
-> +	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
-> +}
-> +EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
->  
->  static ssize_t read_file_bool(struct file *file, char __user *user_buf,
->  			      size_t count, loff_t *ppos)
-> diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-> index 63f2465..d68b4ea 100644
-> --- a/include/linux/debugfs.h
-> +++ b/include/linux/debugfs.h
-> @@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
->  				  struct dentry *parent, u64 *value);
->  struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
->  				     struct dentry *parent, size_t *value);
-> +struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-> +				     struct dentry *parent, atomic_t *value);
->  struct dentry *debugfs_create_bool(const char *name, umode_t mode,
->  				  struct dentry *parent, u32 *value);
+Well, if that had been so easy to do, we would have done it already before.
 
-Looking at v3.9 I see a conflicting definition of
-debugfs_create_atomic_t() in lib/fault-inject.c.  A kernel with this
-patch and CONFIG_FAULT_INJECTION=y and CONFIG_FAULT_INJECTION_DEBUG_FS=y
-will not build:
+I think that we first should try to combine PM_SLEEP with PM_RUNTIME (plus
+some other power management options related to CPU PM) and then introduce
+something like __pm.  Otherwise, it's going to be a mess.
 
-    lib/fault-inject.c:196:23: error: static declaration of 'debugfs_create_atomic_t' follows non-static declaration
-    include/linux/debugfs.h:87:16: note: previous declaration of 'debugfs_create_atomic_t' was here
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
