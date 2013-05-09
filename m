@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab3EIJVx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 05:21:53 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:60392 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946Ab3EIJVv (ORCPT
+	id S1753424Ab3EIJWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 05:22:17 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:42067 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753066Ab3EIJWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 05:21:51 -0400
+	Thu, 9 May 2013 05:22:15 -0400
 From: Denis Efremov <yefremov.denis@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
+To: "David S. Miller" <davem@davemloft.net>
 Cc: Denis Efremov <yefremov.denis@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, trivial@kernel.org,
         ldv-project@linuxtesting.org
-Subject: [PATCH 10/21] mm: filemap: remove inline marking of EXPORT_SYMBOL functions
-Date: Thu,  9 May 2013 13:19:41 +0400
-Message-Id: <1368091192-10245-5-git-send-email-yefremov.denis@gmail.com>
+Subject: [PATCH 11/21] ipv4: ip_output: remove inline marking of EXPORT_SYMBOL functions
+Date: Thu,  9 May 2013 13:19:42 +0400
+Message-Id: <1368091192-10245-6-git-send-email-yefremov.denis@gmail.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
 References: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
@@ -30,22 +33,22 @@ Found by Linux Driver Verification project (linuxtesting.org).
 
 Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
 ---
- mm/filemap.c | 2 +-
+ net/ipv4/ip_output.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 7905fe7..6aca7a2 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2092,7 +2092,7 @@ EXPORT_SYMBOL(iov_iter_single_seg_count);
-  * Returns appropriate error code that caller should return or
-  * zero in case that write should be allowed.
-  */
--inline int generic_write_checks(struct file *file, loff_t *pos, size_t *count, int isblk)
-+int generic_write_checks(struct file *file, loff_t *pos, size_t *count, int isblk)
+diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+index 147abf5..4bcabf3 100644
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -84,7 +84,7 @@ int sysctl_ip_default_ttl __read_mostly = IPDEFTTL;
+ EXPORT_SYMBOL(sysctl_ip_default_ttl);
+ 
+ /* Generate a checksum for an outgoing IP datagram. */
+-__inline__ void ip_send_check(struct iphdr *iph)
++void ip_send_check(struct iphdr *iph)
  {
- 	struct inode *inode = file->f_mapping->host;
- 	unsigned long limit = rlimit(RLIMIT_FSIZE);
+ 	iph->check = 0;
+ 	iph->check = ip_fast_csum((unsigned char *)iph, iph->ihl);
 -- 
 1.8.1.4
 
