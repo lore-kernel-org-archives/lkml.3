@@ -1,92 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab3EIO2W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 10:28:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56659 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753202Ab3EIO2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 10:28:21 -0400
-Message-ID: <518BB278.7060505@redhat.com>
-Date: Thu, 09 May 2013 11:28:08 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1755396Ab3EIO2u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 10:28:50 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:49555 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754170Ab3EIO2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 10:28:49 -0400
+Date: Thu, 9 May 2013 16:28:45 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Anthony Olech <Anthony.Olech@diasemi.com>
+cc: Krystian Garbaciak <Krystian.Garbaciak@diasemi.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Jean Delvare <khali@linux-fr.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>
+Subject: RE: [RFC PATCH 2/8] regulator: Add Dialog DA906x voltage regulators
+ support.
+In-Reply-To: <24DF37198A1E704D9811D8F72B87EB514192495F@NB-EX-MBX02.diasemi.com>
+Message-ID: <Pine.LNX.4.64.1305091623050.22179@axis700.grange>
+References: <201208241450@sw-eng-lt-dc-vm2> <201208241455@sw-eng-lt-dc-vm2>
+ <20120825151020.GB6520@opensource.wolfsonmicro.com> <201208291550@sw-eng-lt-dc-vm2>
+ <20120830174738.GH4356@opensource.wolfsonmicro.com> <201208311100@sw-eng-lt-dc-vm2>
+ <Pine.LNX.4.64.1305091549300.22179@axis700.grange>
+ <24DF37198A1E704D9811D8F72B87EB514192495F@NB-EX-MBX02.diasemi.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: linux-edac <linux-edac@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: lockdep: BUG: key ffff880436f00330 not in .data!
-References: <20130509110101.GD27333@pd.tnic>
-In-Reply-To: <20130509110101.GD27333@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:fkEU5vwL/nfL6c4OUTA2p/ZR9AHVBUA3Ha/H9CbUBAk
+ 9aXj5eW5nB0L6QjAP1v7GuMf75iikAEuxfEOtZkv1mBRJrZPuI
+ hsRDAkOZsd1YYjral0nxSzMkp6TvaknyR9eJ4t83BlYfYJlN9X
+ k2LEWuQvDyRegvwBuMEhjT48jL/LKnQOh7MqvSj+Bxyup62obi
+ p87gbIMdYBM12+X2+Z5f1YxPdBwxTNE+YQBqtmbvmcQIzwwbr0
+ qvn214xfTlCyAyT9A++2YkdehdmYC7sEUIb1zkfcwaCkHIHz3E
+ xImNEVN0METLN4iuPHIDrYPH3PTi9IcwgeW9NsxINH6vZTzuV7
+ EDvMrnRPhzSh5xPvyIh3J6pRrU50GCi/B+ZQRNfSAYUPonyMlF
+ rvQOGlmXl071g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+Hi Tony
 
-Em 09-05-2013 08:01, Borislav Petkov escreveu:
-> This is on current linus:
->
-> [    3.806733] EDAC sbridge: Seeking for: dev 0d.6 PCI ID 8086:3cf5
-> [    3.807455] EDAC sbridge: Seeking for: dev 0d.6 PCI ID 8086:3cf5
-> [    3.808317] BUG: key ffff880436f00330 not in .data!
-> [    3.808843] ------------[ cut here ]------------
-> [    3.809571] WARNING: at kernel/lockdep.c:2987 lockdep_init_map+0x555/0x590()
-> [    3.810274] DEBUG_LOCKS_WARN_ON(1)
-> [    3.810279] Modules linked in: sb_edac(+) edac_core acpi_cpufreq mperf ehci_hcd gf128mul ablk_helper iTCO_wdt iTCO_vendor_support evdev l
-> pc_ich button pcspkr usbcore snd cryptd mfd_core usb_common soundcore processor microcode
-> [    3.811776] CPU: 7 PID: 718 Comm: modprobe Not tainted 3.9.0+ #5
-> [    3.812516] Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
-> [    3.813271]  0000000000000009 ffff880434421858 ffffffff815e97c6 ffff880434421898
-> [    3.814009]  ffffffff8103e210 ffff880434421888 ffff88043b200110 ffffffff8181062e
-> [    3.814758]  0000000000000000 ffff880436f00330 0000000000000000 ffff8804344218f8
-> [    3.815518] Call Trace:
-> [    3.816249]  [<ffffffff815e97c6>] dump_stack+0x19/0x1b
-> [    3.816977]  [<ffffffff8103e210>] warn_slowpath_common+0x70/0xa0
-> [    3.817675]  [<ffffffff8103e2f6>] warn_slowpath_fmt+0x46/0x50
-> [    3.818394]  [<ffffffff810954c5>] lockdep_init_map+0x555/0x590
-> [    3.819119]  [<ffffffff810998ed>] ? trace_hardirqs_on_caller+0x10d/0x1d0
-> [    3.819837]  [<ffffffff810999bd>] ? trace_hardirqs_on+0xd/0x10
-> [    3.820536]  [<ffffffff81093ea8>] debug_mutex_init+0x38/0x50
-> [    3.821223]  [<ffffffff81068b91>] __mutex_init+0x61/0x70
-> [    3.821916]  [<ffffffff8142a495>] bus_register+0x175/0x2e0
-> [    3.822579]  [<ffffffffa00ce645>] edac_create_sysfs_mci_device+0x55/0x540 [edac_core]
+On Thu, 9 May 2013, Anthony Olech wrote:
 
-This is likely on this part of edac_mc_sysfs.c:
-	mci->bus.name = kasprintf(GFP_KERNEL, "mc%d", mci->mc_idx);
-         if (!mci->bus.name)
-                 return -ENOMEM;
-         edac_dbg(0, "creating bus %s\n", mci->bus.name);
-         err = bus_register(&mci->bus);
-         if (err < 0)
-                 return err;
+> Hi Guennadi Liakhovetski,
+> 
+> Now that Krystian no longer works for Dialog I think that I might be 
+> your best contact.
+> As far as I am aware without doing any checking, the DA906x driver 
+> should possibly cover the DA9063.
 
+Good!
 
-> [    3.823249]  [<ffffffff810999bd>] ? trace_hardirqs_on+0xd/0x10
-> [    3.823938]  [<ffffffffa00cc5e3>] edac_mc_add_mc+0x103/0x270 [edac_core]
+> If you need a driver, that would imply that you have some chips. Have 
+> you tried our marketting department?
 
-This is likely at this part of sb_edac.c driver:
+Yes, this (and a da9210) PMICs are used on one of the boards, I'm working 
+with. I asked your marketing department for a da9210 datasheet, they tried 
+to check with the board vendor, who is also my customer for this project, 
+and so far they haven't been able to establish my involvement in this 
+development. Have you also got a da9210 Linux driver? Do I have to wait 
+for your marketing department clarifying my affiliation or could you make 
+that driver available to me too? Or do you mean you might have a newer 
+version of this driver available internally too?
 
-         /* add this new MC control structure to EDAC's list of MCs */
-         if (unlikely(edac_mc_add_mc(mci))) {
-                 edac_dbg(0, "MC: failed edac_mc_add_mc()\n");
-                 rc = -EINVAL;
-                 goto fail0;
-         }
+Thanks
+Guennadi
 
-What I suspect is that it is trying to create more than one bus with the
-same name.
+> Best regards,
+> 
+> Tony Olech
+> 
+> 
+> > -----Original Message-----
+> > From: Guennadi Liakhovetski [mailto:g.liakhovetski@gmx.de]
+> > Sent: 09 May 2013 15:06
+> > To: Krystian Garbaciak
+> > Cc: Mark Brown; linux-kernel@vger.kernel.org; Samuel Ortiz; Alessandro
+> > Zummo; Jean Delvare; Dmitry Torokhov; Richard Purdie; Anthony Olech
+> > Subject: Re: [RFC PATCH 2/8] regulator: Add Dialog DA906x voltage regulators
+> > support.
+> > 
+> > (trimmed the CC a bit)
+> > 
+> > Hi Krystian
+> > 
+> > On Fri, 31 Aug 2012, Krystian Garbaciak wrote:
+> > 
+> > > > On Wed, Aug 29, 2012 at 03:50:00PM +0100, Krystian Garbaciak wrote:
+> > 
+> > Sorry for picking up a random mail from this old thread, unfortunately, I don't
+> > have "0/8" in my archive.
+> > 
+> > I have to write a driver for the da9063 PMIC. Do you have an idea, whether it'd
+> > be compatible with this driver? Do you plan to continue your work on this driver
+> > or would you mind if I try to use these your patches and mainline them,
+> > preserving your authorship and copyright, of course?
+> > 
+> > Thanks
+> > Guennadi
+> > 
+> > > > > Because, for some regulators, this is required: val +=
+> > > > > fvol->offset, I was only able to reduce it to the following form.
+> > > >
+> > > > What on earth makes you say this?  The above is obviously linear.
+> > > >
+> > > > Besides, you're missing several points here.  One is that you should
+> > > > be using the framework features, another is that you should be
+> > > > implementing _sel.
+> > >
+> > > Sorry, I've missed an obvious thing here. Instead of adding selector
+> > > offset at runtime, I can substract apropriate voltage from .min_uV.
+> > > Thanks for pointing this out.
+> > >
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe
+> > > linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > >
+> > 
+> > ---
+> > Guennadi Liakhovetski, Ph.D.
+> > Freelance Open-Source Software Developer http://www.open-technology.de/
+> Legal Disclaimer: This e-mail communication (and any attachment/s) is confidential and contains proprietary information, 
+> some or all of which may be legally privileged. It is intended solely for the use of the individual or entity to which it
+> is addressed. Access to this email by anyone else is unauthorized. If you are not the intended recipient, any disclosure, 
+> copying, distribution or any action taken or omitted to be taken in reliance on it, is prohibited and may be unlawful.
+> 
+> Please consider the environment before printing this e-mail
+> 
 
-So, either there are two EDAC drivers trying to register at the edac core,
-or sb_edac is not incrementing mci->mc_idx.
-
-I suspect that it is the former condition, like having both ghes_edac
-and sb_edac trying to register.
-
-In thesis, changeset 80cc7d8 should be preventing it to happen.
-
-Could you please check if ghes_edac also got registered there?
-
-Thanks!
-Mauro
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
