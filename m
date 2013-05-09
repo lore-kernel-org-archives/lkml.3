@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758518Ab3EIWfA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:35:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46318 "EHLO
+	id S1758603Ab3EIWgW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:36:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46387 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758425Ab3EIWew (ORCPT
+	with ESMTP id S1758511Ab3EIWfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:34:52 -0400
+	Thu, 9 May 2013 18:35:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 12/26] drm/i915: Add no-lvds quirk for Fujitsu Esprimo Q900
-Date: Thu,  9 May 2013 15:34:26 -0700
-Message-Id: <20130509223423.705659913@linuxfoundation.org>
+        Sylvain BERTRAND <sylware@legeek.net>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 23/26] drm/radeon: fix handling of v6 power tables
+Date: Thu,  9 May 2013 15:34:37 -0700
+Message-Id: <20130509223424.863136547@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
 References: <20130509223422.368544659@linuxfoundation.org>
@@ -27,39 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 9e9dd0e889c76c786e8f2e164c825c3c06dea30c upstream.
+commit 441e76ca83ac604eaf0f046def96d8e3a27eea28 upstream.
 
-The "Mobile Sandy Bridge CPUs" in the Fujitsu Esprimo Q900
-mini desktop PCs are probably misleading the LVDS detection
-code in intel_lvds_supported. Nothing is connected to the
-LVDS ports in these systems.
+The code was mis-handling variable sized arrays.
 
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reported-by: Sylvain BERTRAND <sylware@legeek.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/gpu/drm/radeon/radeon_atombios.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -793,6 +793,14 @@ static const struct dmi_system_id intel_
- 			DMI_MATCH(DMI_PRODUCT_NAME, "X7SPA-H"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Fujitsu Esprimo Q900",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "ESPRIMO Q900"),
-+		},
-+	},
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -2482,6 +2482,7 @@ static int radeon_atombios_parse_power_t
+ 	int index = GetIndexIntoMasterTable(DATA, PowerPlayInfo);
+         u16 data_offset;
+ 	u8 frev, crev;
++	u8 *power_state_offset;
  
- 	{ }	/* terminating entry */
- };
+ 	if (!atom_parse_data_header(mode_info->atom_context, index, NULL,
+ 				   &frev, &crev, &data_offset))
+@@ -2504,11 +2505,11 @@ static int radeon_atombios_parse_power_t
+ 				       state_array->ucNumEntries, GFP_KERNEL);
+ 	if (!rdev->pm.power_state)
+ 		return state_index;
++	power_state_offset = (u8 *)state_array->states;
+ 	for (i = 0; i < state_array->ucNumEntries; i++) {
+ 		mode_index = 0;
+-		power_state = (union pplib_power_state *)&state_array->states[i];
+-		/* XXX this might be an inagua bug... */
+-		non_clock_array_index = i; /* power_state->v2.nonClockInfoIndex */
++		power_state = (union pplib_power_state *)power_state_offset;
++		non_clock_array_index = power_state->v2.nonClockInfoIndex;
+ 		non_clock_info = (struct _ATOM_PPLIB_NONCLOCK_INFO *)
+ 			&non_clock_info_array->nonClockInfo[non_clock_array_index];
+ 		rdev->pm.power_state[i].clock_info = kzalloc(sizeof(struct radeon_pm_clock_info) *
+@@ -2520,9 +2521,6 @@ static int radeon_atombios_parse_power_t
+ 		if (power_state->v2.ucNumDPMLevels) {
+ 			for (j = 0; j < power_state->v2.ucNumDPMLevels; j++) {
+ 				clock_array_index = power_state->v2.clockInfoIndex[j];
+-				/* XXX this might be an inagua bug... */
+-				if (clock_array_index >= clock_info_array->ucNumEntries)
+-					continue;
+ 				clock_info = (union pplib_clock_info *)
+ 					&clock_info_array->clockInfo[clock_array_index * clock_info_array->ucEntrySize];
+ 				valid = radeon_atombios_parse_pplib_clock_info(rdev,
+@@ -2544,6 +2542,7 @@ static int radeon_atombios_parse_power_t
+ 								   non_clock_info);
+ 			state_index++;
+ 		}
++		power_state_offset += 2 + power_state->v2.ucNumDPMLevels;
+ 	}
+ 	/* if multiple clock modes, mark the lowest as no display */
+ 	for (i = 0; i < state_index; i++) {
 
 
