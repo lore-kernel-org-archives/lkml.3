@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab3EIUog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 16:44:36 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:46077 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab3EIUoe (ORCPT
+	id S1753634Ab3EIUoq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 16:44:46 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:33151 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab3EIUon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 16:44:34 -0400
-Date: Thu, 9 May 2013 13:44:34 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Christian Daudt <csd@broadcom.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Will Deacon <will.deacon@arm.com>, "arm@kernel.org" <arm@kernel.org>,
-        linux-arm-kernel@lists.infradead.org, csd_b@daudt.org,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] ARM: bcm281xx: Add L2 support for Rev A2 chips
-Message-ID: <20130509204434.GA16724@quad.lixom.net>
-References: <1367542653-955-1-git-send-email-csd@broadcom.com>
+	Thu, 9 May 2013 16:44:43 -0400
+Date: Thu, 9 May 2013 13:44:38 -0700
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        Joe Thornber <thornber@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] dmcache: flush superblock stats when retrieving status
+ info
+Message-ID: <20130509204437.GA5712@blackbox.djwong.org>
+References: <20130508214845.GA7729@blackbox.djwong.org>
+ <20130508220526.GA24132@redhat.com>
+ <20130509203616.GA5713@blackbox.djwong.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1367542653-955-1-git-send-email-csd@broadcom.com>
+In-Reply-To: <20130509203616.GA5713@blackbox.djwong.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 05:57:33PM -0700, Christian Daudt wrote:
-> Rev A2 SoCs have an unorthodox memory re-mapping and this needs
-> to be reflected in the cache operations.
-> This patch adds new outer cache functions for the l2x0 driver
-> to support this SoC revision. It also adds a new compatible
-> value for the cache to enable this functionality.
-> 
-> Updates from V1:
-> - remove section 1 altogether and note that in comments
-> - simplify section selection caused by section 1 removal
-> - BUG_ON just in case section 1 shows up
-> 
-> Signed-off-by: Christian Daudt <csd@broadcom.com>
+When userspace queries dmcache for stats info, we should ensure that all the
+metadata gets flushed out of memory to disk.  The current code neglects to
+update the disk copy of the hit/miss counters.
 
-This patch mostly covers code that is on Russells plate, so please feed
-this to his tracker to be picked up by him. Feel free to add:
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+---
+ drivers/md/dm-cache-target.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Acked-by: Olof Johansson <olof@lixom.net>
-
-
-Thanks,
-
--Olof
+diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+index 1074409..4fb7b4c 100644
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -2451,6 +2451,7 @@ static void cache_status(struct dm_target *ti, status_type_t type,
+ 	case STATUSTYPE_INFO:
+ 		/* Commit to ensure statistics aren't out-of-date */
+ 		if (!(status_flags & DM_STATUS_NOFLUSH_FLAG) && !dm_suspended(ti)) {
++			save_stats(cache);
+ 			r = dm_cache_commit(cache->cmd, false);
+ 			if (r)
+ 				DMERR("could not commit metadata for accurate status");
