@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab3EIW3i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:29:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45876 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756373Ab3EIW0v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756430Ab3EIW0v (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 9 May 2013 18:26:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45868 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756373Ab3EIW0t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 18:26:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sylvain BERTRAND <sylware@legeek.net>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 64/73] drm/radeon: fix handling of v6 power tables
-Date: Thu,  9 May 2013 15:25:54 -0700
-Message-Id: <20130509222532.932880384@linuxfoundation.org>
+Subject: [ 60/73] drm/radeon: disable the crtcs in mc_stop (r5xx-r7xx) (v2)
+Date: Thu,  9 May 2013 15:25:50 -0700
+Message-Id: <20130509222532.500105434@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -29,60 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 441e76ca83ac604eaf0f046def96d8e3a27eea28 upstream.
+commit e884fc640ccbdb6f94b9bdb57cfb8464b6688f4c upstream.
 
-The code was mis-handling variable sized arrays.
+Just disabling the mem requests should be enough, but
+that doesn't seem to work correctly on efi systems.
 
-Reported-by: Sylvain BERTRAND <sylware@legeek.net>
+v2: blank displays first, then disable.
+
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/radeon/r500_reg.h |    1 +
+ drivers/gpu/drm/radeon/rv515.c    |   11 +++++++++++
+ 2 files changed, 12 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -2518,6 +2518,7 @@ static int radeon_atombios_parse_power_t
- 	int index = GetIndexIntoMasterTable(DATA, PowerPlayInfo);
-         u16 data_offset;
- 	u8 frev, crev;
-+	u8 *power_state_offset;
+--- a/drivers/gpu/drm/radeon/r500_reg.h
++++ b/drivers/gpu/drm/radeon/r500_reg.h
+@@ -360,6 +360,7 @@
  
- 	if (!atom_parse_data_header(mode_info->atom_context, index, NULL,
- 				   &frev, &crev, &data_offset))
-@@ -2540,11 +2541,11 @@ static int radeon_atombios_parse_power_t
- 				       state_array->ucNumEntries, GFP_KERNEL);
- 	if (!rdev->pm.power_state)
- 		return state_index;
-+	power_state_offset = (u8 *)state_array->states;
- 	for (i = 0; i < state_array->ucNumEntries; i++) {
- 		mode_index = 0;
--		power_state = (union pplib_power_state *)&state_array->states[i];
--		/* XXX this might be an inagua bug... */
--		non_clock_array_index = i; /* power_state->v2.nonClockInfoIndex */
-+		power_state = (union pplib_power_state *)power_state_offset;
-+		non_clock_array_index = power_state->v2.nonClockInfoIndex;
- 		non_clock_info = (struct _ATOM_PPLIB_NONCLOCK_INFO *)
- 			&non_clock_info_array->nonClockInfo[non_clock_array_index];
- 		rdev->pm.power_state[i].clock_info = kzalloc(sizeof(struct radeon_pm_clock_info) *
-@@ -2556,9 +2557,6 @@ static int radeon_atombios_parse_power_t
- 		if (power_state->v2.ucNumDPMLevels) {
- 			for (j = 0; j < power_state->v2.ucNumDPMLevels; j++) {
- 				clock_array_index = power_state->v2.clockInfoIndex[j];
--				/* XXX this might be an inagua bug... */
--				if (clock_array_index >= clock_info_array->ucNumEntries)
--					continue;
- 				clock_info = (union pplib_clock_info *)
- 					&clock_info_array->clockInfo[clock_array_index * clock_info_array->ucEntrySize];
- 				valid = radeon_atombios_parse_pplib_clock_info(rdev,
-@@ -2580,6 +2578,7 @@ static int radeon_atombios_parse_power_t
- 								   non_clock_info);
- 			state_index++;
+ #define AVIVO_D1MODE_MASTER_UPDATE_LOCK                         0x60e0
+ #define AVIVO_D1MODE_MASTER_UPDATE_MODE                         0x60e4
++#define AVIVO_D1CRTC_UPDATE_LOCK                                0x60e8
+ 
+ /* master controls */
+ #define AVIVO_DC_CRTC_MASTER_EN                                 0x60f8
+--- a/drivers/gpu/drm/radeon/rv515.c
++++ b/drivers/gpu/drm/radeon/rv515.c
+@@ -303,8 +303,10 @@ void rv515_mc_stop(struct radeon_device
+ 			tmp = RREG32(AVIVO_D1CRTC_CONTROL + crtc_offsets[i]);
+ 			if (!(tmp & AVIVO_CRTC_DISP_READ_REQUEST_DISABLE)) {
+ 				radeon_wait_for_vblank(rdev, i);
++				WREG32(AVIVO_D1CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
+ 				tmp |= AVIVO_CRTC_DISP_READ_REQUEST_DISABLE;
+ 				WREG32(AVIVO_D1CRTC_CONTROL + crtc_offsets[i], tmp);
++				WREG32(AVIVO_D1CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
+ 			}
+ 			/* wait for the next frame */
+ 			frame_count = radeon_get_vblank_counter(rdev, i);
+@@ -313,6 +315,15 @@ void rv515_mc_stop(struct radeon_device
+ 					break;
+ 				udelay(1);
+ 			}
++
++			/* XXX this is a hack to avoid strange behavior with EFI on certain systems */
++			WREG32(AVIVO_D1CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
++			tmp = RREG32(AVIVO_D1CRTC_CONTROL + crtc_offsets[i]);
++			tmp &= ~AVIVO_CRTC_EN;
++			WREG32(AVIVO_D1CRTC_CONTROL + crtc_offsets[i], tmp);
++			WREG32(AVIVO_D1CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
++			save->crtc_enabled[i] = false;
++			/* ***** */
+ 		} else {
+ 			save->crtc_enabled[i] = false;
  		}
-+		power_state_offset += 2 + power_state->v2.ucNumDPMLevels;
- 	}
- 	/* if multiple clock modes, mark the lowest as no display */
- 	for (i = 0; i < state_index; i++) {
 
 
