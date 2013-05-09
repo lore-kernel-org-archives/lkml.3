@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab3EIPVQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 11:21:16 -0400
-Received: from www.sr71.net ([198.145.64.142]:58559 "EHLO blackbird.sr71.net"
+	id S1755436Ab3EIPXE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 11:23:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29463 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753729Ab3EIPVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 11:21:15 -0400
-Message-ID: <518BBEE9.7060800@sr71.net>
-Date: Thu, 09 May 2013 08:21:13 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Linux-MM <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 18/22] mm: page allocator: Split magazine lock in two
- to reduce contention
-References: <1368028987-8369-1-git-send-email-mgorman@suse.de> <1368028987-8369-19-git-send-email-mgorman@suse.de>
-In-Reply-To: <1368028987-8369-19-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754121Ab3EIPXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 11:23:02 -0400
+Date: Thu, 09 May 2013 11:22:55 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <1368112975-65m57crd-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130509135504.2b6598d3a52fdd367da1cbb4@canb.auug.org.au>
+References: <20130509135504.2b6598d3a52fdd367da1cbb4@canb.auug.org.au>
+Subject: Re: linux-next: build warning after merge of the final tree (Linus'
+ tree related)
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <20130509135504.2b6598d3a52fdd367da1cbb4@canb.auug.org.au>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2013 09:03 AM, Mel Gorman wrote:
-> @@ -368,10 +375,9 @@ struct zone {
->  
->  	/*
->  	 * Keep some order-0 pages on a separate free list
-> -	 * protected by an irq-unsafe lock
-> +	 * protected by an irq-unsafe lock.
->  	 */
-> -	spinlock_t			_magazine_lock;
-> -	struct free_area_magazine	_noirq_magazine;
-> +	struct free_magazine	noirq_magazine[NR_MAGAZINES];
+On Thu, May 09, 2013 at 01:55:04PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (arm defconfig)
+> produced this warning:
+> 
+> ipc/shm.c: In function 'newseg':
+> ipc/shm.c:494:18: warning: unused variable 'hs' [-Wunused-variable]
+> 
+> Introduced by commit af73e4d9506d ("hugetlbfs: fix mmap failure in
+> unaligned size request") in Linus' tree.
+> 
+> Did the "[akpm@linux-foundation.org: fix warning when
+> CONFIG_HUGETLB_PAGE=n]" part get dropped?  Or was that something else?
 
-Looks like pretty cool stuff!
+In my original post, 2 auto variables hs were used both in newseg() and
+sys_mmap_pgoff(), and Andrew fixed only one in sys_mmap_pgoff().
+hs remains in newseg(), so it fires warning in linux-next.
+Hours ago Li suggested another fix of af73e4d9506d and it implicitly
+fixes this warning.
+http://marc.info/?l=linux-kernel&m=136808335431220&w=2
 
-The old per-cpu-pages stuff was all hung off alloc_percpu(), which
-surely wasted lots of memory with many NUMA nodes.  It's nice to see
-this decoupled a bit from the online cpu count.
-
-That said, the alloc_percpu() stuff is nice in how much it hides from
-you when doing cpu hotplug.  We'll _probably_ need this to be
-dynamically-sized at some point, right?
-
-> -static inline struct free_area_magazine *find_lock_magazine(struct zone *zone)
-> +static inline struct free_magazine *lock_magazine(struct zone *zone)
->  {
-> -	struct free_area_magazine *area = &zone->_noirq_magazine;
-> -	spin_lock(&zone->_magazine_lock);
-> -	return area;
-> +	int i = (raw_smp_processor_id() >> 1) & (NR_MAGAZINES-1);
-> +	spin_lock(&zone->noirq_magazine[i].lock);
-> +	return &zone->noirq_magazine[i];
->  }
-
-I bet this logic will be fun to play with once we have more magazines
-around.  For instance, on my system processors 0/80 are HT twins, so
-they'd always be going after the same magazine.  I guess that's a good
-thing.
+Thanks,
+Naoya
