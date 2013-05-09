@@ -1,353 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab3EITsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 15:48:39 -0400
-Received: from mail-da0-f52.google.com ([209.85.210.52]:37756 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab3EITqy (ORCPT
+	id S1753361Ab3EITsp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 15:48:45 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:12588 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab3EITsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 15:46:54 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-fbdev@vger.kernel.org
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Jerome Glisse <j.glisse@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC/PATCH v2 2/8] drm (ast,cirrus,mgag200,nouveau,savage,vmwgfx): Remove drm_mtrr_{add,del}
-Date: Thu,  9 May 2013 12:46:21 -0700
-Message-Id: <07b3ea46b2f21f8c1702929e6cc3b0fa25200758.1368128020.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <cover.1368128020.git.luto@amacapital.net>
-References: <cover.1368128020.git.luto@amacapital.net>
-In-Reply-To: <cover.1368128020.git.luto@amacapital.net>
-References: <cover.1368128020.git.luto@amacapital.net>
+	Thu, 9 May 2013 15:48:42 -0400
+X-IronPort-AV: E=Sophos;i="4.87,642,1363158000"; 
+   d="scan'208";a="45847438"
+Message-ID: <518BFD99.2010208@codeaurora.org>
+Date: Thu, 09 May 2013 12:48:41 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: James Hogan <james.hogan@imgtec.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: Re: [PATCH v2 0/3] clk: implement remuxing during set_rate
+References: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com> <518AE16D.5060501@codeaurora.org> <518B663D.60806@imgtec.com>
+In-Reply-To: <518B663D.60806@imgtec.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This replaces drm_mtrr_{add,del} with arch_phys_wc_{add,del}.  The
-interface is simplified (because the base and size parameters to
-drm_mtrr_del never did anything), and it no longer adds MTRRs on
-systems that don't need them.
+On 05/09/13 02:02, James Hogan wrote:
+> On 09/05/13 00:36, Stephen Boyd wrote:
+>> On 04/19/13 09:28, James Hogan wrote:
+>>> This patchset adds support for automatic selection of the best parent
+>>> for a clock mux, i.e. the one which can provide the closest clock rate
+>>> to that requested. It can be controlled by a new CLK_SET_RATE_REMUX flag
+>>> so that it doesn't happen unless explicitly allowed.
+>>>
+>>> This works by way of adding a new op, determine_rate, similar to
+>>> round_rate but with an extra parameter to allow the clock driver to
+>>> optionally select a different parent clock. This is used in
+>>> clk_calc_new_rates to decide whether to initiate a set_parent operation.
+>> Which tree is this based on? I get failures with git am on patch 2.
+>>
+> It was based on v3.9-rc4.
+>
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- drivers/gpu/drm/ast/ast_ttm.c         | 13 +++--------
- drivers/gpu/drm/cirrus/cirrus_ttm.c   | 15 ++++--------
- drivers/gpu/drm/mgag200/mgag200_ttm.c | 14 ++++--------
- drivers/gpu/drm/nouveau/nouveau_ttm.c | 13 ++++-------
- drivers/gpu/drm/savage/savage_bci.c   | 43 ++++++++++++-----------------------
- drivers/gpu/drm/savage/savage_drv.h   |  5 +---
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c   | 10 ++++----
- include/drm/drmP.h                    | 29 -----------------------
- 8 files changed, 35 insertions(+), 107 deletions(-)
+Thanks. Would it be possible for you to update to Mike's for-next
+branch? I've done the rebase myself for now and it seems to work well
+enough. I'll need to add the set_rate_and_parent() op on top.
 
-diff --git a/drivers/gpu/drm/ast/ast_ttm.c b/drivers/gpu/drm/ast/ast_ttm.c
-index 3602731..c4574fd 100644
---- a/drivers/gpu/drm/ast/ast_ttm.c
-+++ b/drivers/gpu/drm/ast/ast_ttm.c
-@@ -271,26 +271,19 @@ int ast_mm_init(struct ast_private *ast)
- 		return ret;
- 	}
- 
--	ast->fb_mtrr = drm_mtrr_add(pci_resource_start(dev->pdev, 0),
--				    pci_resource_len(dev->pdev, 0),
--				    DRM_MTRR_WC);
-+	ast->fb_mtrr = arch_phys_wc_add(pci_resource_start(dev->pdev, 0),
-+					pci_resource_len(dev->pdev, 0));
- 
- 	return 0;
- }
- 
- void ast_mm_fini(struct ast_private *ast)
- {
--	struct drm_device *dev = ast->dev;
- 	ttm_bo_device_release(&ast->ttm.bdev);
- 
- 	ast_ttm_global_release(ast);
- 
--	if (ast->fb_mtrr >= 0) {
--		drm_mtrr_del(ast->fb_mtrr,
--			     pci_resource_start(dev->pdev, 0),
--			     pci_resource_len(dev->pdev, 0), DRM_MTRR_WC);
--		ast->fb_mtrr = -1;
--	}
-+	arch_phys_wc_del(ast->fb_mtrr);
- }
- 
- void ast_ttm_placement(struct ast_bo *bo, int domain)
-diff --git a/drivers/gpu/drm/cirrus/cirrus_ttm.c b/drivers/gpu/drm/cirrus/cirrus_ttm.c
-index 1413a26..09f06d3 100644
---- a/drivers/gpu/drm/cirrus/cirrus_ttm.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_ttm.c
-@@ -271,9 +271,8 @@ int cirrus_mm_init(struct cirrus_device *cirrus)
- 		return ret;
- 	}
- 
--	cirrus->fb_mtrr = drm_mtrr_add(pci_resource_start(dev->pdev, 0),
--				    pci_resource_len(dev->pdev, 0),
--				    DRM_MTRR_WC);
-+	cirrus->fb_mtrr = arch_phys_wc_add(pci_resource_start(dev->pdev, 0),
-+					   pci_resource_len(dev->pdev, 0));
- 
- 	cirrus->mm_inited = true;
- 	return 0;
-@@ -281,8 +280,6 @@ int cirrus_mm_init(struct cirrus_device *cirrus)
- 
- void cirrus_mm_fini(struct cirrus_device *cirrus)
- {
--	struct drm_device *dev = cirrus->dev;
--
- 	if (!cirrus->mm_inited)
- 		return;
- 
-@@ -290,12 +287,8 @@ void cirrus_mm_fini(struct cirrus_device *cirrus)
- 
- 	cirrus_ttm_global_release(cirrus);
- 
--	if (cirrus->fb_mtrr >= 0) {
--		drm_mtrr_del(cirrus->fb_mtrr,
--			     pci_resource_start(dev->pdev, 0),
--			     pci_resource_len(dev->pdev, 0), DRM_MTRR_WC);
--		cirrus->fb_mtrr = -1;
--	}
-+	arch_phys_wc_del(cirrus->fb_mtrr);
-+	cirrus->fb_mtrr = 0;
- }
- 
- void cirrus_ttm_placement(struct cirrus_bo *bo, int domain)
-diff --git a/drivers/gpu/drm/mgag200/mgag200_ttm.c b/drivers/gpu/drm/mgag200/mgag200_ttm.c
-index 8fc9d92..5c6f3c8 100644
---- a/drivers/gpu/drm/mgag200/mgag200_ttm.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_ttm.c
-@@ -270,26 +270,20 @@ int mgag200_mm_init(struct mga_device *mdev)
- 		return ret;
- 	}
- 
--	mdev->fb_mtrr = drm_mtrr_add(pci_resource_start(dev->pdev, 0),
--				    pci_resource_len(dev->pdev, 0),
--				    DRM_MTRR_WC);
-+	mdev->fb_mtrr = arch_phys_wc_add(pci_resource_start(dev->pdev, 0),
-+					 pci_resource_len(dev->pdev, 0));
- 
- 	return 0;
- }
- 
- void mgag200_mm_fini(struct mga_device *mdev)
- {
--	struct drm_device *dev = mdev->dev;
- 	ttm_bo_device_release(&mdev->ttm.bdev);
- 
- 	mgag200_ttm_global_release(mdev);
- 
--	if (mdev->fb_mtrr >= 0) {
--		drm_mtrr_del(mdev->fb_mtrr,
--			     pci_resource_start(dev->pdev, 0),
--			     pci_resource_len(dev->pdev, 0), DRM_MTRR_WC);
--		mdev->fb_mtrr = -1;
--	}
-+	arch_phys_wc_del(mdev->fb_mtrr);
-+	mdev->fb_mtrr = 0;
- }
- 
- void mgag200_ttm_placement(struct mgag200_bo *bo, int domain)
-diff --git a/drivers/gpu/drm/nouveau/nouveau_ttm.c b/drivers/gpu/drm/nouveau/nouveau_ttm.c
-index 9be9cb5..63fa6a5 100644
---- a/drivers/gpu/drm/nouveau/nouveau_ttm.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_ttm.c
-@@ -377,9 +377,8 @@ nouveau_ttm_init(struct nouveau_drm *drm)
- 		return ret;
- 	}
- 
--	drm->ttm.mtrr = drm_mtrr_add(pci_resource_start(dev->pdev, 1),
--				     pci_resource_len(dev->pdev, 1),
--				     DRM_MTRR_WC);
-+	drm->ttm.mtrr = arch_phys_wc_add(pci_resource_start(dev->pdev, 1),
-+					 pci_resource_len(dev->pdev, 1));
- 
- 	/* GART init */
- 	if (drm->agp.stat != ENABLED) {
-@@ -414,10 +413,6 @@ nouveau_ttm_fini(struct nouveau_drm *drm)
- 
- 	nouveau_ttm_global_release(drm);
- 
--	if (drm->ttm.mtrr >= 0) {
--		drm_mtrr_del(drm->ttm.mtrr,
--			     pci_resource_start(drm->dev->pdev, 1),
--			     pci_resource_len(drm->dev->pdev, 1), DRM_MTRR_WC);
--		drm->ttm.mtrr = -1;
--	}
-+	arch_phys_wc_del(drm->ttm.mtrr);
-+	drm->ttm.mtrr = 0;
- }
-diff --git a/drivers/gpu/drm/savage/savage_bci.c b/drivers/gpu/drm/savage/savage_bci.c
-index b55c1d6..bd6b2cf 100644
---- a/drivers/gpu/drm/savage/savage_bci.c
-+++ b/drivers/gpu/drm/savage/savage_bci.c
-@@ -570,9 +570,6 @@ int savage_driver_firstopen(struct drm_device *dev)
- 	unsigned int fb_rsrc, aper_rsrc;
- 	int ret = 0;
- 
--	dev_priv->mtrr[0].handle = -1;
--	dev_priv->mtrr[1].handle = -1;
--	dev_priv->mtrr[2].handle = -1;
- 	if (S3_SAVAGE3D_SERIES(dev_priv->chipset)) {
- 		fb_rsrc = 0;
- 		fb_base = pci_resource_start(dev->pdev, 0);
-@@ -584,21 +581,14 @@ int savage_driver_firstopen(struct drm_device *dev)
- 		if (pci_resource_len(dev->pdev, 0) == 0x08000000) {
- 			/* Don't make MMIO write-cobining! We need 3
- 			 * MTRRs. */
--			dev_priv->mtrr[0].base = fb_base;
--			dev_priv->mtrr[0].size = 0x01000000;
--			dev_priv->mtrr[0].handle =
--			    drm_mtrr_add(dev_priv->mtrr[0].base,
--				         dev_priv->mtrr[0].size, DRM_MTRR_WC);
--			dev_priv->mtrr[1].base = fb_base + 0x02000000;
--			dev_priv->mtrr[1].size = 0x02000000;
--			dev_priv->mtrr[1].handle =
--			    drm_mtrr_add(dev_priv->mtrr[1].base,
--					 dev_priv->mtrr[1].size, DRM_MTRR_WC);
--			dev_priv->mtrr[2].base = fb_base + 0x04000000;
--			dev_priv->mtrr[2].size = 0x04000000;
--			dev_priv->mtrr[2].handle =
--			    drm_mtrr_add(dev_priv->mtrr[2].base,
--					 dev_priv->mtrr[2].size, DRM_MTRR_WC);
-+			dev_priv->mtrr_handles[0] =
-+				arch_phys_wc_add(fb_base, 0x01000000);
-+			dev_priv->mtrr_handles[1] =
-+				arch_phys_wc_add(fb_base + 0x02000000,
-+						 0x02000000);
-+			dev_priv->mtrr_handles[2] =
-+				arch_phys_wc_add(fb_base + 0x04000000,
-+						0x04000000);
- 		} else {
- 			DRM_ERROR("strange pci_resource_len %08llx\n",
- 				  (unsigned long long)
-@@ -616,11 +606,9 @@ int savage_driver_firstopen(struct drm_device *dev)
- 		if (pci_resource_len(dev->pdev, 1) == 0x08000000) {
- 			/* Can use one MTRR to cover both fb and
- 			 * aperture. */
--			dev_priv->mtrr[0].base = fb_base;
--			dev_priv->mtrr[0].size = 0x08000000;
--			dev_priv->mtrr[0].handle =
--			    drm_mtrr_add(dev_priv->mtrr[0].base,
--					 dev_priv->mtrr[0].size, DRM_MTRR_WC);
-+			dev_priv->mtrr_handles[0] =
-+				arch_phys_wc_add(fb_base,
-+						 0x08000000);
- 		} else {
- 			DRM_ERROR("strange pci_resource_len %08llx\n",
- 				  (unsigned long long)
-@@ -660,11 +648,10 @@ void savage_driver_lastclose(struct drm_device *dev)
- 	drm_savage_private_t *dev_priv = dev->dev_private;
- 	int i;
- 
--	for (i = 0; i < 3; ++i)
--		if (dev_priv->mtrr[i].handle >= 0)
--			drm_mtrr_del(dev_priv->mtrr[i].handle,
--				 dev_priv->mtrr[i].base,
--				 dev_priv->mtrr[i].size, DRM_MTRR_WC);
-+	for (i = 0; i < 3; ++i) {
-+		arch_phys_wc_del(dev_priv->mtrr_handles[i]);
-+		dev_priv->mtrr_handles[i] = 0;
-+	}
- }
- 
- int savage_driver_unload(struct drm_device *dev)
-diff --git a/drivers/gpu/drm/savage/savage_drv.h b/drivers/gpu/drm/savage/savage_drv.h
-index df2aac6..c05082a 100644
---- a/drivers/gpu/drm/savage/savage_drv.h
-+++ b/drivers/gpu/drm/savage/savage_drv.h
-@@ -160,10 +160,7 @@ typedef struct drm_savage_private {
- 	drm_local_map_t *cmd_dma;
- 	drm_local_map_t fake_dma;
- 
--	struct {
--		int handle;
--		unsigned long base, size;
--	} mtrr[3];
-+	int mtrr_handles[3];
- 
- 	/* BCI and status-related stuff */
- 	volatile uint32_t *status_ptr, *bci_ptr;
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-index 07dfd82..78e2164 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-@@ -565,8 +565,8 @@ static int vmw_driver_load(struct drm_device *dev, unsigned long chipset)
- 		dev_priv->has_gmr = false;
- 	}
- 
--	dev_priv->mmio_mtrr = drm_mtrr_add(dev_priv->mmio_start,
--					   dev_priv->mmio_size, DRM_MTRR_WC);
-+	dev_priv->mmio_mtrr = arch_phys_wc_add(dev_priv->mmio_start,
-+					       dev_priv->mmio_size);
- 
- 	dev_priv->mmio_virt = ioremap_wc(dev_priv->mmio_start,
- 					 dev_priv->mmio_size);
-@@ -664,8 +664,7 @@ out_no_device:
- out_err4:
- 	iounmap(dev_priv->mmio_virt);
- out_err3:
--	drm_mtrr_del(dev_priv->mmio_mtrr, dev_priv->mmio_start,
--		     dev_priv->mmio_size, DRM_MTRR_WC);
-+	arch_phys_wc_del(dev_priv->mmio_mtrr);
- 	if (dev_priv->has_gmr)
- 		(void) ttm_bo_clean_mm(&dev_priv->bdev, VMW_PL_GMR);
- 	(void)ttm_bo_clean_mm(&dev_priv->bdev, TTM_PL_VRAM);
-@@ -709,8 +708,7 @@ static int vmw_driver_unload(struct drm_device *dev)
- 
- 	ttm_object_device_release(&dev_priv->tdev);
- 	iounmap(dev_priv->mmio_virt);
--	drm_mtrr_del(dev_priv->mmio_mtrr, dev_priv->mmio_start,
--		     dev_priv->mmio_size, DRM_MTRR_WC);
-+	arch_phys_wc_del(dev_priv->mmio_mtrr);
- 	if (dev_priv->has_gmr)
- 		(void)ttm_bo_clean_mm(&dev_priv->bdev, VMW_PL_GMR);
- 	(void)ttm_bo_clean_mm(&dev_priv->bdev, TTM_PL_VRAM);
-diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-index 2d94d74..3e6cfa0 100644
---- a/include/drm/drmP.h
-+++ b/include/drm/drmP.h
-@@ -1249,37 +1249,8 @@ static inline int drm_core_has_MTRR(struct drm_device *dev)
- {
- 	return drm_core_check_feature(dev, DRIVER_USE_MTRR);
- }
--
--#define DRM_MTRR_WC		MTRR_TYPE_WRCOMB
--
--static inline int drm_mtrr_add(unsigned long offset, unsigned long size,
--			       unsigned int flags)
--{
--	return mtrr_add(offset, size, flags, 1);
--}
--
--static inline int drm_mtrr_del(int handle, unsigned long offset,
--			       unsigned long size, unsigned int flags)
--{
--	return mtrr_del(handle, offset, size);
--}
--
- #else
- #define drm_core_has_MTRR(dev) (0)
--
--#define DRM_MTRR_WC		0
--
--static inline int drm_mtrr_add(unsigned long offset, unsigned long size,
--			       unsigned int flags)
--{
--	return 0;
--}
--
--static inline int drm_mtrr_del(int handle, unsigned long offset,
--			       unsigned long size, unsigned int flags)
--{
--	return 0;
--}
- #endif
- 
- static inline void drm_device_set_unplugged(struct drm_device *dev)
 -- 
-1.8.1.4
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
