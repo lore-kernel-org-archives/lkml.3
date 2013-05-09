@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab3EIW36 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:29:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45868 "EHLO
+	id S1756948Ab3EIWaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:30:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45871 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756409Ab3EIW0u (ORCPT
+	with ESMTP id S1756397Ab3EIW0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 May 2013 18:26:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 63/73] drm/radeon: add new richland pci ids
-Date: Thu,  9 May 2013 15:25:53 -0700
-Message-Id: <20130509222532.812163007@linuxfoundation.org>
+Subject: [ 62/73] drm/radeon: fix possible segfault when parsing pm tables
+Date: Thu,  9 May 2013 15:25:52 -0700
+Message-Id: <20130509222532.711119168@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -28,48 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 62d1f92e06aef9665d71ca7e986b3047ecf0b3c7 upstream.
+commit f8e6bfc2ce162855fa4f9822a45659f4b542c960 upstream.
+
+If we have a empty power table, bail early and allocate
+the default power state.
+
+Should fix:
+https://bugs.freedesktop.org/show_bug.cgi?id=63865
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/ni.c |    6 ++++--
- include/drm/drm_pciids.h    |    2 ++
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -473,7 +473,8 @@ static void cayman_gpu_init(struct radeo
- 		    (rdev->pdev->device == 0x990F) ||
- 		    (rdev->pdev->device == 0x9910) ||
- 		    (rdev->pdev->device == 0x9917) ||
--		    (rdev->pdev->device == 0x9999)) {
-+		    (rdev->pdev->device == 0x9999) ||
-+		    (rdev->pdev->device == 0x999C)) {
- 			rdev->config.cayman.max_simds_per_se = 6;
- 			rdev->config.cayman.max_backends_per_se = 2;
- 		} else if ((rdev->pdev->device == 0x9903) ||
-@@ -482,7 +483,8 @@ static void cayman_gpu_init(struct radeo
- 			   (rdev->pdev->device == 0x990D) ||
- 			   (rdev->pdev->device == 0x990E) ||
- 			   (rdev->pdev->device == 0x9913) ||
--			   (rdev->pdev->device == 0x9918)) {
-+			   (rdev->pdev->device == 0x9918) ||
-+			   (rdev->pdev->device == 0x999D)) {
- 			rdev->config.cayman.max_simds_per_se = 4;
- 			rdev->config.cayman.max_backends_per_se = 2;
- 		} else if ((rdev->pdev->device == 0x9919) ||
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -606,6 +606,8 @@
- 	{0x1002, 0x9999, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x999A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x999B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x999C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x999D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x99A0, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x99A2, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x99A4, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -2028,6 +2028,8 @@ static int radeon_atombios_parse_power_t
+ 	num_modes = power_info->info.ucNumOfPowerModeEntries;
+ 	if (num_modes > ATOM_MAX_NUMBEROF_POWER_BLOCK)
+ 		num_modes = ATOM_MAX_NUMBEROF_POWER_BLOCK;
++	if (num_modes == 0)
++		return state_index;
+ 	rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state) * num_modes, GFP_KERNEL);
+ 	if (!rdev->pm.power_state)
+ 		return state_index;
+@@ -2432,6 +2434,8 @@ static int radeon_atombios_parse_power_t
+ 	power_info = (union power_info *)(mode_info->atom_context->bios + data_offset);
+ 
+ 	radeon_atombios_add_pplib_thermal_controller(rdev, &power_info->pplib.sThermalController);
++	if (power_info->pplib.ucNumStates == 0)
++		return state_index;
+ 	rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state) *
+ 				       power_info->pplib.ucNumStates, GFP_KERNEL);
+ 	if (!rdev->pm.power_state)
+@@ -2530,6 +2534,8 @@ static int radeon_atombios_parse_power_t
+ 	non_clock_info_array = (struct _NonClockInfoArray *)
+ 		(mode_info->atom_context->bios + data_offset +
+ 		 le16_to_cpu(power_info->pplib.usNonClockInfoArrayOffset));
++	if (state_array->ucNumEntries == 0)
++		return state_index;
+ 	rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state) *
+ 				       state_array->ucNumEntries, GFP_KERNEL);
+ 	if (!rdev->pm.power_state)
+@@ -2620,7 +2626,9 @@ void radeon_atombios_get_power_modes(str
+ 		default:
+ 			break;
+ 		}
+-	} else {
++	}
++
++	if (state_index == 0) {
+ 		rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state), GFP_KERNEL);
+ 		if (rdev->pm.power_state) {
+ 			rdev->pm.power_state[0].clock_info =
 
 
