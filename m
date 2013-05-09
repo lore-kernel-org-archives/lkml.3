@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab3EIIch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 04:32:37 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:36978
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751194Ab3EIIce convert rfc822-to-8bit
+	id S1751717Ab3EIIeK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 04:34:10 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:53082
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751194Ab3EIIeI convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 04:32:34 -0400
+	Thu, 9 May 2013 04:34:08 -0400
 X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(z5105h2005kz9371I542I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1155h)
@@ -21,9 +21,9 @@ Subject: RE: [PATCH v2 1/2] i2c: i2c-bfin-twi: don`t free peripheral before
  it init successful
 Thread-Topic: [PATCH v2 1/2] i2c: i2c-bfin-twi: don`t free peripheral before
  it init successful
-Thread-Index: AQHOTI9QZNJIiFu0Q0GUTG2PZMAtGZj8he6g
-Date: Thu, 9 May 2013 08:31:33 +0000
-Message-ID: <B168F8A49F4BCF4C84FD23DA5F6363EEAD4A@NWD2MBX7.ad.analog.com>
+Thread-Index: AQHOTI9QZNJIiFu0Q0GUTG2PZMAtGZj8hiKw
+Date: Thu, 9 May 2013 08:33:17 +0000
+Message-ID: <B168F8A49F4BCF4C84FD23DA5F6363EEAD57@NWD2MBX7.ad.analog.com>
 References: <1368088044-20408-1-git-send-email-libo.chen@huawei.com>
  <1368088044-20408-2-git-send-email-libo.chen@huawei.com>
 In-Reply-To: <1368088044-20408-2-git-send-email-libo.chen@huawei.com>
@@ -40,7 +40,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Sonic Zhang <sonic.zhang@analog.com>
+Hi Libo,
 
 >-----Original Message-----
 >From: Libo Chen [mailto:libo.chen@huawei.com]
@@ -74,8 +74,19 @@ Acked-by: Sonic Zhang <sonic.zhang@analog.com>
 > out_error_ioremap:
 > out_error_get_res:
 >--
->1.7.1
->
->
 
+Sorry, but you didn't exchange as I suggested.
+Should be
+
+> out_error_req_irq:
+>-out_error_no_irq:
+>+out_error_pin_mux:
+>       peripheral_free_list((unsigned short *)pdev->dev.platform_data);
+>-out_error_pin_mux:
+>+out_error_no_irq:
+
+
+Regards,
+
+Sonic
 
