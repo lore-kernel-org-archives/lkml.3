@@ -1,35 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab3EIUMp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 16:12:45 -0400
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:49815 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab3EIUMo (ORCPT
+	id S1752772Ab3EIUPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 16:15:47 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:36410 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238Ab3EIUPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 16:12:44 -0400
+	Thu, 9 May 2013 16:15:46 -0400
+Date: Thu, 9 May 2013 16:15:42 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>, Shaohua Li <shli@kernel.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>
+Subject: Re: [PATCH v3] mm: remove compressed copy from zram in-memory
+Message-ID: <20130509201540.GB5273@localhost.localdomain>
+References: <1368056517-31065-1-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20130509192655.GG25399@ZenIV.linux.org.uk>
-References: <20130509192655.GG25399@ZenIV.linux.org.uk>
-Date: Thu, 9 May 2013 13:12:43 -0700
-X-Google-Sender-Auth: QNJLp-M1YQoVsCbtGzSAN_C1km8
-Message-ID: <CA+55aFyCuksrVPwO=R_xX2An8qavo17aCZ5bfN=FWo1gZZfAsQ@mail.gmail.com>
-Subject: Re: [git pull] more vfs.git stuff
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368056517-31065-1-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 9, 2013 at 12:26 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->         Regression fix from Geert + yet another open-coded kernel_read().
+On Thu, May 09, 2013 at 08:41:57AM +0900, Minchan Kim wrote:
 
-Hmm. I get one more commit - a racy usbmon thing. Which looks fine per
-se, but would look even better if it just made mmap_active an atomic_t
-instead, wouldn't you say?
+Hey Michan,
+Just a couple of syntax corrections. The code comment could also
+benefit from this.
 
-So I didn't pull, waiting for clarification.
+Otherwise it looks OK to me.
 
-         Linus
+> Swap subsystem does lazy swap slot free with expecting the page
+                     ^-a                       ^- the expectation that
+> would be swapped out again so we can avoid unnecessary write.
+                                ^--that it
+> 
+> But the problem in in-memory swap(ex, zram) is that it consumes
+                  ^^-with
+> memory space until vm_swap_full(ie, used half of all of swap device)
+> condition meet. It could be bad if we use multiple swap device,
+           ^- 'is'   ^^^^^ - 'would'                       ^^^^^-devices                    
+> small in-memory swap and big storage swap or in-memory swap alone.
+                      ^-,                   ^-,
+> 
+> This patch makes swap subsystem free swap slot as soon as swap-read
+> is completed and make the swapcache page dirty so the page should
+                       ^-makes                      ^-'that the'
+> be written out the swap device to reclaim it.
+> It means we never lose it.
+> 
+> I tested this patch with kernel compile workload.
+                          ^-a
+> 
+> 1. before
+> 
+> compile time : 9882.42
+> zram max wasted space by fragmentation: 13471881 byte
+> memory space consumed by zram: 174227456 byte
+> the number of slot free notify: 206684
+> 
+> 2. after
+> 
+> compile time : 9653.90
+> zram max wasted space by fragmentation: 11805932 byte
+> memory space consumed by zram: 154001408 byte
+> the number of slot free notify: 426972
+> 
+> * changelog from v3
+>   * Rebased on next-20130508
+> 
+> * changelog from v1
+>   * Add more comment
+> 
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
+> Cc: Shaohua Li <shli@kernel.org>
+> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  mm/page_io.c | 35 +++++++++++++++++++++++++++++++++++
+>  1 file changed, 35 insertions(+)
+> 
+> diff --git a/mm/page_io.c b/mm/page_io.c
+> index a294076..527db57 100644
+> --- a/mm/page_io.c
+> +++ b/mm/page_io.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/writeback.h>
+>  #include <linux/frontswap.h>
+>  #include <linux/aio.h>
+> +#include <linux/blkdev.h>
+>  #include <asm/pgtable.h>
+>  
+>  static struct bio *get_swap_bio(gfp_t gfp_flags,
+> @@ -82,8 +83,42 @@ void end_swap_bio_read(struct bio *bio, int err, struct batch_complete *batch)
+>  				iminor(bio->bi_bdev->bd_inode),
+>  				(unsigned long long)bio->bi_sector);
+>  	} else {
+> +		struct swap_info_struct *sis;
+> +
+>  		SetPageUptodate(page);
+> +		sis = page_swap_info(page);
+> +		if (sis->flags & SWP_BLKDEV) {
+> +			/*
+> +			 * Swap subsystem does lazy swap slot free with
+> +			 * expecting the page would be swapped out again
+> +			 * so we can avoid unnecessary write if the page
+> +			 * isn't redirty.
+> +			 * It's good for real swap storage  because we can
+> +			 * reduce unnecessary I/O and enhance wear-leveling
+> +			 * if you use SSD as swap device.
+> +			 * But if you use in-memory swap device(ex, zram),
+> +			 * it causes duplicated copy between uncompressed
+> +			 * data in VM-owned memory and compressed data in
+> +			 * zram-owned memory. So let's free zram-owned memory
+> +			 * and make the VM-owned decompressed page *dirty*
+> +			 * so the page should be swap out somewhere again if
+> +			 * we want to reclaim it, again.
+> +			 */
+> +			struct gendisk *disk = sis->bdev->bd_disk;
+> +			if (disk->fops->swap_slot_free_notify) {
+> +				swp_entry_t entry;
+> +				unsigned long offset;
+> +
+> +				entry.val = page_private(page);
+> +				offset = swp_offset(entry);
+> +
+> +				SetPageDirty(page);
+> +				disk->fops->swap_slot_free_notify(sis->bdev,
+> +						offset);
+> +			}
+> +		}
+>  	}
+> +
+>  	unlock_page(page);
+>  	bio_put(bio);
+>  }
+> -- 
+> 1.8.2.1
+> 
