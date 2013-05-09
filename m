@@ -1,230 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab3EIO07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 10:26:59 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:58437 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab3EIO05 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 10:26:57 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-CC: "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Subject: RE: [PATCH v12 0/3] trace,x86: irq vector tracepoint support
-Thread-Topic: [PATCH v12 0/3] trace,x86: irq vector tracepoint support
-Thread-Index: Ac4yMSIzHaVSYi1ARLmlBmZO4QF7aAaj6ZOg
-Date: Thu, 9 May 2013 14:25:44 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41AFEFD2B@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF8622B@USINDEM103.corp.hds.com>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF8622B@USINDEM103.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755303Ab3EIO2W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 10:28:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56659 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753202Ab3EIO2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 10:28:21 -0400
+Message-ID: <518BB278.7060505@redhat.com>
+Date: Thu, 09 May 2013 11:28:08 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
- definitions=2013-05-09_05:2013-05-09,2013-05-09,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=2 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1305090120
+To: Borislav Petkov <bp@alien8.de>
+CC: linux-edac <linux-edac@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: lockdep: BUG: key ffff880436f00330 not in .data!
+References: <20130509110101.GD27333@pd.tnic>
+In-Reply-To: <20130509110101.GD27333@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven, Peter
+Hi Boris,
 
-When can I get feedback?
+Em 09-05-2013 08:01, Borislav Petkov escreveu:
+> This is on current linus:
+>
+> [    3.806733] EDAC sbridge: Seeking for: dev 0d.6 PCI ID 8086:3cf5
+> [    3.807455] EDAC sbridge: Seeking for: dev 0d.6 PCI ID 8086:3cf5
+> [    3.808317] BUG: key ffff880436f00330 not in .data!
+> [    3.808843] ------------[ cut here ]------------
+> [    3.809571] WARNING: at kernel/lockdep.c:2987 lockdep_init_map+0x555/0x590()
+> [    3.810274] DEBUG_LOCKS_WARN_ON(1)
+> [    3.810279] Modules linked in: sb_edac(+) edac_core acpi_cpufreq mperf ehci_hcd gf128mul ablk_helper iTCO_wdt iTCO_vendor_support evdev l
+> pc_ich button pcspkr usbcore snd cryptd mfd_core usb_common soundcore processor microcode
+> [    3.811776] CPU: 7 PID: 718 Comm: modprobe Not tainted 3.9.0+ #5
+> [    3.812516] Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
+> [    3.813271]  0000000000000009 ffff880434421858 ffffffff815e97c6 ffff880434421898
+> [    3.814009]  ffffffff8103e210 ffff880434421888 ffff88043b200110 ffffffff8181062e
+> [    3.814758]  0000000000000000 ffff880436f00330 0000000000000000 ffff8804344218f8
+> [    3.815518] Call Trace:
+> [    3.816249]  [<ffffffff815e97c6>] dump_stack+0x19/0x1b
+> [    3.816977]  [<ffffffff8103e210>] warn_slowpath_common+0x70/0xa0
+> [    3.817675]  [<ffffffff8103e2f6>] warn_slowpath_fmt+0x46/0x50
+> [    3.818394]  [<ffffffff810954c5>] lockdep_init_map+0x555/0x590
+> [    3.819119]  [<ffffffff810998ed>] ? trace_hardirqs_on_caller+0x10d/0x1d0
+> [    3.819837]  [<ffffffff810999bd>] ? trace_hardirqs_on+0xd/0x10
+> [    3.820536]  [<ffffffff81093ea8>] debug_mutex_init+0x38/0x50
+> [    3.821223]  [<ffffffff81068b91>] __mutex_init+0x61/0x70
+> [    3.821916]  [<ffffffff8142a495>] bus_register+0x175/0x2e0
+> [    3.822579]  [<ffffffffa00ce645>] edac_create_sysfs_mci_device+0x55/0x540 [edac_core]
 
-Seiji
+This is likely on this part of edac_mc_sysfs.c:
+	mci->bus.name = kasprintf(GFP_KERNEL, "mc%d", mci->mc_idx);
+         if (!mci->bus.name)
+                 return -ENOMEM;
+         edac_dbg(0, "creating bus %s\n", mci->bus.name);
+         err = bus_register(&mci->bus);
+         if (err < 0)
+                 return err;
 
-> -----Original Message-----
-> From: Seiji Aguchi
-> Sent: Friday, April 05, 2013 3:16 PM
-> To: linux-kernel@vger.kernel.org; x86@kernel.org; rostedt@goodmis.org; hpa@zytor.com
-> Cc: Thomas Gleixner (tglx@linutronix.de); 'mingo@elte.hu' (mingo@elte.hu); Borislav Petkov (bp@alien8.de); linux-
-> edac@vger.kernel.org; Luck, Tony (tony.luck@intel.com); dle-develop@lists.sourceforge.net; Tomoki Sekiyama
-> Subject: [PATCH v12 0/3] trace,x86: irq vector tracepoint support
-> 
-> Change log
->  v11 -> v12
->  - Rebase to 3.9-rc5
-> 
->  v10 -> v11
->  - Rebase to 3.9-rc2
->  - Add a modification for hyperv_callback vector. (patch 2/3)
->  - Change a way to switch idt to check the table in use instead of saving/restoring it,
->    because saving/restoring functions will break if we have to add another one. (patch 2/3)
-> 
->  v9 -> v10
->  - Add an explanation the reason why tracepoints has to place inside irq enter/exit handling. (patch 3/3)
-> 
->  v8 -> v9
->  - Rebase to 3.8-rc6
->  - Add Steven's email address at the top of the message and
->    move my signed-off-by below Steven's one because it is
->    originally created by Steven. (patch 1/3)
->  - Introduce a irq_vector_mutex to avoid a race at registering/unregistering
->    time. (patch 2/3)
->  - Use a per_cpu data to orig_idt_descr because IDT descritor is needed to each cpu
->    and the appropriate data type is per_cpu data. It is suggested by Steven.
->    (patch 2/3)
-> 
->  v7 -> v8
->  - Rebase to 3.8-rc4
->  - Add a patch 1 introducing DEFINE_EVENT_FN() macro.
->  - Rename original patches 1 and 2 to 2 and 3.
->  - Change a definition of tracepoint to use DEFINE_EVENT_FN(). (patch 2)
->  - Change alloc_intr_gate() to use do{}while(0) to avoid a warning
->    of checkpatch.pl. (patch 2)
->  - Move entering_irq()/exiting_irq() to arch/x86/include/asm/apic.h (patch 3)
-> 
->  v6 -> v7
->  - Divide into two patches to make a code review easier.
->    Summery of each patch is as follows.
->     - Patch 1/2
->       - Add an irq_vector tracing infrastructure.
->       - Create idt_table for tracing. It is refactored to avoid duplicating
->         existing logic.
->       - Duplicate new irq handlers inserted tracepoints.
-> 
->     - Patch 2/2
->       - Share a common logic among irq handlers to make them
->         manageable and readable.
-> 
->  v5 -> v6
->  - Rebased to 3.7
-> 
->  v4 -> v5
->  - Rebased to 3.6.0
-> 
->  - Introduce a logic switching IDT at enabling/disabling TP time
->    so that a time penalty makes a zero when tracepoints are disabled.
->    This IDT is created only when CONFIG_TRACEPOINTS is enabled.
-> 
->  - Remove arch_irq_vector_entry/exit and add followings again
->    so that we can add each tracepoint in a generic way.
->    - error_apic_vector
->    - thermal_apic_vector
->    - threshold_apic_vector
->    - spurious_apic_vector
->    - x86_platform_ipi_vector
-> 
->  - Drop nmi tracepoints to begin with apic interrupts and discuss a logic switching
->    IDT first.
-> 
->  - Move irq_vectors.h in the directory of arch/x86/include/asm/trace because
->    I'm not sure if a logic switching IDT is sharable with other architectures.
-> 
->  v3 -> v4
->  - Add a latency measurement of each tracepoint
->  - Rebased to 3.6-rc6
-> 
->  v2 -> v3
->  - Remove an invalidate_tlb_vector event because it was replaced by a call function vector
->    in a following commit.
->    http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=52aec3308db85f4e9f5c8b9f5dc4fbd0138c6fa4
-> 
->  v1 -> v2
->  - Modify variable name from irq to vector.
->  - Merge arch-specific tracepoints below to an arch_irq_vector_entry/exit.
->    - error_apic_vector
->    - thermal_apic_vector
->    - threshold_apic_vector
->    - spurious_apic_vector
->    - x86_platform_ipi_vector
-> 
-> [Purpose of this patch]
-> 
-> As Vaibhav explained in the thread below, tracepoints for irq vectors are useful.
-> 
-> http://www.spinics.net/lists/mm-commits/msg85707.html
-> 
-> <snip>
-> The current interrupt traces from irq_handler_entry and irq_handler_exit provide when an interrupt is handled.
-> They provide good data about when the system has switched to kernel space and how it affects the currently running processes.
-> 
-> There are some IRQ vectors which trigger the system into kernel space, which are not handled in generic IRQ handlers.
-> Tracing such events gives us the information about IRQ interaction with other system events.
-> 
-> The trace also tells where the system is spending its time.  We want to know which cores are handling interrupts and
-> how they are affecting other processes in the system.  Also, the trace provides information about when the cores are
-> idle and which interrupts are changing that state.
-> <snip>
-> 
-> On the other hand, my usecase is tracing just local timer event and getting a value of instruction pointer.
-> 
-> I suggested to add an argument local timer event to get instruction pointer before.
-> But there is another way to get it with external module like systemtap.
-> So, I don't need to add any argument to irq vector tracepoints now.
-> 
-> [Patch Description]
-> 
-> Vaibhav's patch shared a trace point ,irq_vector_entry/irq_vector_exit, in all events.
-> But there is an above use case to trace specific irq_vector rather than tracing all events.
-> In this case, we are concerned about overhead due to unwanted events.
-> 
-> This patch adds following tracepoints instead of introducing irq_vector_entry/exit.
-> so that we can enable them independently.
->    - local_timer_vector
->    - reschedule_vector
->    - call_function_vector
->    - call_function_single_vector
->    - irq_work_entry_vector
->    - error_apic_vector
->    - thermal_apic_vector
->    - threshold_apic_vector
->    - spurious_apic_vector
->    - x86_platform_ipi_vector
-> 
-> Please see descriptions in each patch.
-> 
-> Seiji Aguchi (2):
->   trace,x86: add x86 irq vector tracepoints
->   trace,x86: code-sharing between non-trace and trace irq handlers
-> 
-> Steven Rostedt (1):
->   tracing: Add DEFINE_EVENT_FN() macro
-> 
->  arch/x86/include/asm/apic.h              |   27 +++++
->  arch/x86/include/asm/desc.h              |   36 +++++++-
->  arch/x86/include/asm/entry_arch.h        |    5 +-
->  arch/x86/include/asm/hw_irq.h            |   16 +++
->  arch/x86/include/asm/mshyperv.h          |    1 +
->  arch/x86/include/asm/trace/irq_vectors.h |  159 ++++++++++++++++++++++++++++++
->  arch/x86/kernel/Makefile                 |    1 +
->  arch/x86/kernel/apic/apic.c              |   71 +++++++++++---
->  arch/x86/kernel/cpu/common.c             |   12 ++-
->  arch/x86/kernel/cpu/mcheck/therm_throt.c |   24 ++++-
->  arch/x86/kernel/cpu/mcheck/threshold.c   |   24 ++++-
->  arch/x86/kernel/entry_32.S               |   12 ++-
->  arch/x86/kernel/entry_64.S               |   29 +++++-
->  arch/x86/kernel/head_64.S                |    6 +
->  arch/x86/kernel/irq.c                    |   31 ++++--
->  arch/x86/kernel/irq_work.c               |   24 ++++-
->  arch/x86/kernel/smp.c                    |   65 +++++++++++--
->  arch/x86/kernel/tracepoint.c             |   71 +++++++++++++
->  include/linux/tracepoint.h               |    2 +
->  include/trace/define_trace.h             |    5 +
->  include/trace/ftrace.h                   |    4 +
->  include/xen/events.h                     |    3 +
->  22 files changed, 570 insertions(+), 58 deletions(-)
->  create mode 100644 arch/x86/include/asm/trace/irq_vectors.h
->  create mode 100644 arch/x86/kernel/tracepoint.c
 
+> [    3.823249]  [<ffffffff810999bd>] ? trace_hardirqs_on+0xd/0x10
+> [    3.823938]  [<ffffffffa00cc5e3>] edac_mc_add_mc+0x103/0x270 [edac_core]
+
+This is likely at this part of sb_edac.c driver:
+
+         /* add this new MC control structure to EDAC's list of MCs */
+         if (unlikely(edac_mc_add_mc(mci))) {
+                 edac_dbg(0, "MC: failed edac_mc_add_mc()\n");
+                 rc = -EINVAL;
+                 goto fail0;
+         }
+
+What I suspect is that it is trying to create more than one bus with the
+same name.
+
+So, either there are two EDAC drivers trying to register at the edac core,
+or sb_edac is not incrementing mci->mc_idx.
+
+I suspect that it is the former condition, like having both ghes_edac
+and sb_edac trying to register.
+
+In thesis, changeset 80cc7d8 should be preventing it to happen.
+
+Could you please check if ghes_edac also got registered there?
+
+Thanks!
+Mauro
