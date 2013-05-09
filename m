@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab3EIXNQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:13:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45675 "EHLO
+	id S932630Ab3EIXNk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:13:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45671 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555Ab3EIW0Q (ORCPT
+	with ESMTP id S1755558Ab3EIW0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:16 -0400
+	Thu, 9 May 2013 18:26:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 13/73] perf/x86/intel: Add support for IvyBridge model 58 Uncore
-Date: Thu,  9 May 2013 15:25:03 -0700
-Message-Id: <20130509222527.852449849@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 12/73] net/eth/ibmveth: Fixup retrieval of MAC address
+Date: Thu,  9 May 2013 15:25:02 -0700
+Message-Id: <20130509222527.758274651@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -30,38 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vince Weaver <vincent.weaver@maine.edu>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 9a6bc14350b130427725f33e371e86212fa56c85 upstream.
+commit 13f85203e1060da83d9ec1c1c5a63343eaab8de4 upstream.
 
-According to Intel Vol3b 18.9, the IvyBridge model 58 uncore is
-the same as that of SandyBridge.
+Some ancient pHyp versions used to create a 8 bytes local-mac-address
+property in the device-tree instead of a 6 bytes one for veth.
 
-I've done some simple tests and with this patch things seem to
-work on my mac-mini.
+The Linux driver code to deal with that is an insane hack which also
+happens to break with some choices of MAC addresses in qemu by testing
+for a bit in the address rather than just looking at the size of the
+property.
 
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Stephane Eranian <eranian@gmail.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1304291549320.15827@vincent-weaver-1.um.maine.edu
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Sanitize this by doing the latter instead.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/ibm/ibmveth.c |   23 ++++++++++-------------
+ 1 file changed, 10 insertions(+), 13 deletions(-)
 
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2853,6 +2853,7 @@ static int __init uncore_cpu_init(void)
- 		msr_uncores = nhm_msr_uncores;
- 		break;
- 	case 42: /* Sandy Bridge */
-+	case 58: /* Ivy Bridge */
- 		if (snb_uncore_cbox.num_boxes > max_cores)
- 			snb_uncore_cbox.num_boxes = max_cores;
- 		msr_uncores = snb_msr_uncores;
+--- a/drivers/net/ethernet/ibm/ibmveth.c
++++ b/drivers/net/ethernet/ibm/ibmveth.c
+@@ -1324,7 +1324,7 @@ static const struct net_device_ops ibmve
+ 
+ static int ibmveth_probe(struct vio_dev *dev, const struct vio_device_id *id)
+ {
+-	int rc, i;
++	int rc, i, mac_len;
+ 	struct net_device *netdev;
+ 	struct ibmveth_adapter *adapter;
+ 	unsigned char *mac_addr_p;
+@@ -1334,11 +1334,19 @@ static int ibmveth_probe(struct vio_dev
+ 		dev->unit_address);
+ 
+ 	mac_addr_p = (unsigned char *)vio_get_attribute(dev, VETH_MAC_ADDR,
+-							NULL);
++							&mac_len);
+ 	if (!mac_addr_p) {
+ 		dev_err(&dev->dev, "Can't find VETH_MAC_ADDR attribute\n");
+ 		return -EINVAL;
+ 	}
++	/* Workaround for old/broken pHyp */
++	if (mac_len == 8)
++		mac_addr_p += 2;
++	else if (mac_len != 6) {
++		dev_err(&dev->dev, "VETH_MAC_ADDR attribute wrong len %d\n",
++			mac_len);
++		return -EINVAL;
++	}
+ 
+ 	mcastFilterSize_p = (unsigned int *)vio_get_attribute(dev,
+ 						VETH_MCAST_FILTER_SIZE, NULL);
+@@ -1363,17 +1371,6 @@ static int ibmveth_probe(struct vio_dev
+ 
+ 	netif_napi_add(netdev, &adapter->napi, ibmveth_poll, 16);
+ 
+-	/*
+-	 * Some older boxes running PHYP non-natively have an OF that returns
+-	 * a 8-byte local-mac-address field (and the first 2 bytes have to be
+-	 * ignored) while newer boxes' OF return a 6-byte field. Note that
+-	 * IEEE 1275 specifies that local-mac-address must be a 6-byte field.
+-	 * The RPA doc specifies that the first byte must be 10b, so we'll
+-	 * just look for it to solve this 8 vs. 6 byte field issue
+-	 */
+-	if ((*mac_addr_p & 0x3) != 0x02)
+-		mac_addr_p += 2;
+-
+ 	adapter->mac_addr = 0;
+ 	memcpy(&adapter->mac_addr, mac_addr_p, 6);
+ 
 
 
