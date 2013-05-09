@@ -1,73 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758838Ab3EIXDB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:03:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45950 "EHLO
+	id S1758406Ab3EIXDg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:03:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45842 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757385Ab3EIWcl (ORCPT
+	with ESMTP id S1756021Ab3EIW0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:32:41 -0400
+	Thu, 9 May 2013 18:26:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Viresh Kumar <viresh.kumar@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: [ 04/73] pwm: spear: Fix checking return value of clk_enable() and clk_prepare()
-Date: Thu,  9 May 2013 15:31:27 -0700
-Message-Id: <20130509222758.421449193@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 49/73] drm/radeon: update wait_for_vblank for evergreen+
+Date: Thu,  9 May 2013 15:25:39 -0700
+Message-Id: <20130509222531.402436616@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
-References: <20130509222757.917088509@linuxfoundation.org>
+In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
+References: <20130509222526.480204972@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 563861cd633ae52932843477bb6ca3f1c9e2f78b upstream.
+commit 10257a6d8359c41407eb26b7ad7bf710a7e00155 upstream.
 
-The logic to check return value of clk_enable() and clk_prepare() is reversed,
-fix it.
+Properly wait for the next vblank region.  The previous
+code didn't always wait long enough depending on the timing.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pwm/pwm-spear.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c |   44 ++++++++++++++++++++++++++++++-------
+ 1 file changed, 36 insertions(+), 8 deletions(-)
 
---- a/drivers/pwm/pwm-spear.c
-+++ b/drivers/pwm/pwm-spear.c
-@@ -143,7 +143,7 @@ static int spear_pwm_enable(struct pwm_c
- 	u32 val;
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -105,6 +105,27 @@ void evergreen_fix_pci_max_read_req_size
+ 	}
+ }
  
- 	rc = clk_enable(pc->clk);
--	if (!rc)
-+	if (rc)
- 		return rc;
++static bool dce4_is_in_vblank(struct radeon_device *rdev, int crtc)
++{
++	if (RREG32(EVERGREEN_CRTC_STATUS + crtc_offsets[crtc]) & EVERGREEN_CRTC_V_BLANK)
++		return true;
++	else
++		return false;
++}
++
++static bool dce4_is_counter_moving(struct radeon_device *rdev, int crtc)
++{
++	u32 pos1, pos2;
++
++	pos1 = RREG32(EVERGREEN_CRTC_STATUS_POSITION + crtc_offsets[crtc]);
++	pos2 = RREG32(EVERGREEN_CRTC_STATUS_POSITION + crtc_offsets[crtc]);
++
++	if (pos1 != pos2)
++		return true;
++	else
++		return false;
++}
++
+ /**
+  * dce4_wait_for_vblank - vblank wait asic callback.
+  *
+@@ -115,21 +136,28 @@ void evergreen_fix_pci_max_read_req_size
+  */
+ void dce4_wait_for_vblank(struct radeon_device *rdev, int crtc)
+ {
+-	int i;
++	unsigned i = 0;
  
- 	val = spear_pwm_readl(pc, pwm->hwpwm, PWMCR);
-@@ -209,12 +209,12 @@ static int spear_pwm_probe(struct platfo
- 	pc->chip.npwm = NUM_PWM;
+ 	if (crtc >= rdev->num_crtc)
+ 		return;
  
- 	ret = clk_prepare(pc->clk);
--	if (!ret)
-+	if (ret)
- 		return ret;
- 
- 	if (of_device_is_compatible(np, "st,spear1340-pwm")) {
- 		ret = clk_enable(pc->clk);
--		if (!ret) {
-+		if (ret) {
- 			clk_unprepare(pc->clk);
- 			return ret;
+-	if (RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[crtc]) & EVERGREEN_CRTC_MASTER_EN) {
+-		for (i = 0; i < rdev->usec_timeout; i++) {
+-			if (!(RREG32(EVERGREEN_CRTC_STATUS + crtc_offsets[crtc]) & EVERGREEN_CRTC_V_BLANK))
++	if (!(RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[crtc]) & EVERGREEN_CRTC_MASTER_EN))
++		return;
++
++	/* depending on when we hit vblank, we may be close to active; if so,
++	 * wait for another frame.
++	 */
++	while (dce4_is_in_vblank(rdev, crtc)) {
++		if (i++ % 100 == 0) {
++			if (!dce4_is_counter_moving(rdev, crtc))
+ 				break;
+-			udelay(1);
  		}
+-		for (i = 0; i < rdev->usec_timeout; i++) {
+-			if (RREG32(EVERGREEN_CRTC_STATUS + crtc_offsets[crtc]) & EVERGREEN_CRTC_V_BLANK)
++	}
++
++	while (!dce4_is_in_vblank(rdev, crtc)) {
++		if (i++ % 100 == 0) {
++			if (!dce4_is_counter_moving(rdev, crtc))
+ 				break;
+-			udelay(1);
+ 		}
+ 	}
+ }
 
 
