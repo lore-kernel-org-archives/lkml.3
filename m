@@ -1,122 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab3EIOeP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 10:34:15 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51484 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab3EIOeN (ORCPT
+	id S1755498Ab3EIOhK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 10:37:10 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55967 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753411Ab3EIOhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 10:34:13 -0400
-Message-ID: <518BB3D7.3010205@ti.com>
-Date: Thu, 9 May 2013 10:33:59 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Thu, 9 May 2013 10:37:07 -0400
+Date: Thu, 9 May 2013 15:37:02 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ming Lei <tom.leiming@gmail.com>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Liam Girdwood <lrg@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Message-ID: <20130509143702.GE3200@sirena.org.uk>
+References: <1368076726-11492-1-git-send-email-skannan@codeaurora.org>
+ <1368076726-11492-2-git-send-email-skannan@codeaurora.org>
+ <CACVXFVMd_iRtEM8ZLK6Ps66gZO6SCp1mXSgY6JbWtRJjJUh+ag@mail.gmail.com>
+ <CACxGe6uHBNUcbD9SeRP5c3E8NN-Z2yjVV+9VAhuoJnXoBtTu2w@mail.gmail.com>
+ <20130509135017.GD3200@sirena.org.uk>
+ <20130509141444.GV18614@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-CC: <linux-pm@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <amit.kachhap@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: Re: [PATCH V3 10/21] thermal: exynos: Fix to clear only the generated
- interrupts
-References: <1367931671-3906-1-git-send-email-amit.daniel@samsung.com> <1367931671-3906-11-git-send-email-amit.daniel@samsung.com>
-In-Reply-To: <1367931671-3906-11-git-send-email-amit.daniel@samsung.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2BRCKLKSBSBFKIRPVUSWS"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gDGSpKKIBgtShtf+"
+Content-Disposition: inline
+In-Reply-To: <20130509141444.GV18614@n2100.arm.linux.org.uk>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] driver core: Add API to wait for deferred probe to
+ complete during init
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2BRCKLKSBSBFKIRPVUSWS
-Content-Type: text/plain; charset=ISO-8859-1
+
+--gDGSpKKIBgtShtf+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 07-05-2013 09:01, Amit Daniel Kachhap wrote:
-> This patch uses the TMU status register to know the generated interrupt=
-s
-> and only clear them in the interrupt handler.
->=20
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> ---
->  drivers/thermal/samsung/exynos_tmu.c      |   10 ++++------
->  drivers/thermal/samsung/exynos_tmu_data.c |    2 ++
->  2 files changed, 6 insertions(+), 6 deletions(-)
->=20
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/sam=
-sung/exynos_tmu.c
-> index 97b87aa..082d5a2 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -325,17 +325,15 @@ static void exynos_tmu_work(struct work_struct *w=
-ork)
->  			struct exynos_tmu_data, irq_work);
->  	struct exynos_tmu_platform_data *pdata =3D data->pdata;
->  	struct exynos_tmu_registers *reg =3D pdata->registers;
-> +	unsigned int val_irq;
-> =20
->  	exynos_report_trigger();
->  	mutex_lock(&data->lock);
->  	clk_enable(data->clk);
-> =20
-> -	if (data->soc =3D=3D SOC_ARCH_EXYNOS)
-> -		writel((reg->inten_rise_mask << reg->inten_rise_shift) |
-> -			(reg->inten_fall_mask << reg->inten_fall_shift),
-> -				data->base + reg->tmu_intclear);
-> -	else
-> -		writel(reg->inten_rise_mask, data->base + reg->tmu_intclear);
-> +	val_irq =3D readl(data->base + reg->tmu_intstat);
-> +	/* clear the interrupts */
-> +	writel(val_irq, data->base + reg->tmu_intclear);
-> =20
+On Thu, May 09, 2013 at 03:14:45PM +0100, Russell King - ARM Linux wrote:
+> On Thu, May 09, 2013 at 02:50:17PM +0100, Mark Brown wrote:
 
-hmmm.. Don t you need to act accordingly depending on what is in your
-int status?
+> > Even if the driver copes fine it can still be desirable to avoid the
+> > power down/up cycle if it involves some user visible effect - things
+> > like blinking the display off then on for example.  That said I am a
+> > little suspicious about this approach, it doesn't feel as robust as it
+> > should to go round individual callers.
 
->  	clk_disable(data->clk);
->  	mutex_unlock(&data->lock);
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/therma=
-l/samsung/exynos_tmu_data.c
-> index 3a1ded1..7322597 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.c
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-> @@ -45,6 +45,7 @@ static struct exynos_tmu_registers exynos4210_tmu_reg=
-isters =3D {
->  	.inten_rise1_shift =3D EXYNOS_TMU_INTEN_RISE1_SHIFT,
->  	.inten_rise2_shift =3D EXYNOS_TMU_INTEN_RISE2_SHIFT,
->  	.inten_rise3_shift =3D EXYNOS_TMU_INTEN_RISE3_SHIFT,
-> +	.tmu_intstat =3D EXYNOS_TMU_REG_INTSTAT,
->  	.tmu_intclear =3D EXYNOS_TMU_REG_INTCLEAR,
->  };
->  struct exynos_tmu_platform_data const exynos4210_default_tmu_data =3D =
-{
-> @@ -111,6 +112,7 @@ static struct exynos_tmu_registers exynos5250_tmu_r=
-egisters =3D {
->  	.inten_rise2_shift =3D EXYNOS_TMU_INTEN_RISE2_SHIFT,
->  	.inten_rise3_shift =3D EXYNOS_TMU_INTEN_RISE3_SHIFT,
->  	.inten_fall0_shift =3D EXYNOS_TMU_INTEN_FALL0_SHIFT,
-> +	.tmu_intstat =3D EXYNOS_TMU_REG_INTSTAT,
->  	.tmu_intclear =3D EXYNOS_TMU_REG_INTCLEAR,
->  	.emul_con =3D EXYNOS_EMUL_CON,
->  	.emul_temp_shift =3D EXYNOS_EMUL_DATA_SHIFT,
->=20
+> What if the driver for something like your display is a module which
+> needs to be loaded from userland?
 
+That's clearly a "don't do that then" sort of thing; while we don't want
+to be unhelpful there's no guarantees with this approach.
 
+> Where the design bug lies is in the "lets probe all the drivers and then
+> shut down resources which drivers haven't claimed".  That contains an
+> implied assumption: that all drivers have been loaded and probed at the
+> point where you shut down those resources.
 
-------enig2BRCKLKSBSBFKIRPVUSWS
+Well, that's not really the intention - it's not a strong guarantee,
+it never has been given things like the module case you mention.
+
+> So, trying to solve the problem may be totally fruitless because you
+> can't actually solve it - you can only put a sticky plaster over it and
+> hope that it catches most of the problem.  But reality is that you can't
+> have both a shutdown of unused resources _and_ avoid the down/up cycle.
+
+Yes, exactly - all we're trying to do here is cover the 90% case, not
+solve all the possible problems since as you say that's not achievable. =20
+There's a clear and reasonable desire to turn off resources we know
+aren't in use at the current time, but equally well doing so as soon as
+we start controlling the resources is pretty much guranteed to introduce
+user visible issues on some systems so it's a question of picking some
+reasonable point after that.
+
+Another option here which is more in tune with deferred probing and
+hotplugging would be to switch the delay over to be time based rather
+than initcall based; do the shutdown at some point based on the time the
+last resource was registered.  That still won't cover everything
+though we could make the delay tunable.
+
+--gDGSpKKIBgtShtf+
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-iF4EAREIAAYFAlGLs9cACgkQCXcVR3XQvP2MVgD/RJdxxs+P25ePJ5UFje6aV4oB
-460DQqwP3w1nj2SXH9IBAP4GgY9f+VOQpKSgaonWttsWPn0aKS4bshbW6PfMp8pm
-=BDKx
+iQIcBAEBAgAGBQJRi7SKAAoJELSic+t+oim9eW8P/R0gWGkMddPr1BW0cG5twZmR
+BKXAPMEvbtAM/NVhFvDoxC/Wvr/Tmpi1hFCv5BvkZQWt8T2NnXzhJZRL+fd6JRuH
+ek2BFm8+hqKQimHE6cb4nua3WFj6d/A/XXqokoldEnazsQSZMo4sIcThb3/6za/9
+k38xz0k0Lf8F2MTDaAVJ06abay1K4Q+UZB4Z8NbkrfVjxwCRWVMo6/4+sEqg3Rxy
+8ciD1FdcILKygR8TzXC21/XL/4qY9U5HKS3hEjcm93PZyIyDsG5/iPJ9JImwXRUR
+KcVC3S+cy2dzMTNeqZx4QoS6GahJt8+BwunTu/YYJSmi28+J+pgDNt1LvO6Zm8go
+OJBFzuQz5MYc23mumSB6EJi+nUVtsM72+YIG9Fvq2x0f84c8IM87qI1+ekVt+ast
+MbD6HEGPIG76ivDLfssLWmQTX/zXMEnXofpI7MYVFIRHmg/OHU1uWOwFniTY419G
+3CioHSC27WskjRb694kjPgA6WSYfyBWTRXmNnN9892bquqjejB1zz9xr8IPOg1g/
+5uzaPa2LHorrWAom04JKWtY/4LsymRi/htiypP1Ls+SUJqK6QDjoQ1xgSoFGfLZ4
+59CcQl5sUKZBdH6Rcluu4do2H/bxVUje7Aest+zEOi9kBPNcEvs8cq59QPmzy26E
+eTwrL2ftLWGbnC8TOjb5
+=43dd
 -----END PGP SIGNATURE-----
 
-------enig2BRCKLKSBSBFKIRPVUSWS--
+--gDGSpKKIBgtShtf+--
