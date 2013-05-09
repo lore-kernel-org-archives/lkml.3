@@ -1,34 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab3EIIHs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 04:07:48 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:32906 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044Ab3EIIHp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 04:07:45 -0400
-Date: Thu, 9 May 2013 09:07:42 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Denis Efremov <yefremov.denis@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        trivial@kernel.org, ldv-project@linuxtesting.org
-Subject: Re: [PATCH 02/21] fs: remove inline marking of EXPORT_SYMBOL
- functions
-Message-ID: <20130509080742.GE25399@ZenIV.linux.org.uk>
-References: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
- <1368086323-9412-2-git-send-email-yefremov.denis@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368086323-9412-2-git-send-email-yefremov.denis@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752015Ab3EIIKB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 04:10:01 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57289 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751194Ab3EIIJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 04:09:56 -0400
+Message-ID: <1368086982.25488.165.camel@pasglop>
+Subject: Masked MSIs expectations
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: linux-pci@vger.kernel.org
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>
+Date: Thu, 09 May 2013 18:09:42 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 11:58:24AM +0400, Denis Efremov wrote:
-> EXPORT_SYMBOL and inline directives are contradictory to each other.
-> The patch fixes this inconsistency.
+Hi folks !
 
-What makes them contradictory, in your opinion?  With references to
-relevant parts of C99, please.
+Do we provide drivers any guarantee to what happen if an MSI is shot
+while masked with disable_irq() or while not yet request_irq()'ed ?
+
+Do we guarantee delivery (latched while masked), non-delivery, or
+undefined ?
+
+I'm bringing up a piece of HW where if it happened, it won't be
+automatically sent to the CPU and can block further MSIs unless I
+explicitly either ditch it or force a resend when unmasking (at the PCI
+Express controller PIC level).
+
+I'm tempted to just ditch anything that happened while masked, it would
+make everything easier on my side, but maybe drivers have different
+expectations (and of course an LSI would still shoot, that's not an
+issue, only MSIs are in question here).
+
+I have cases of devices continuing to shoot one or two MSIs after kexec
+and before the new kernel takes over, causing a "loss" of any subsequent
+one unless I deal with that case one way or another.
+
+Cheers,
+Ben.
+
+
+
