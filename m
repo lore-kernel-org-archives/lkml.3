@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab3EIWoy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:44:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46256 "EHLO
+	id S1758275Ab3EIWeg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:34:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46245 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758309Ab3EIWem (ORCPT
+	with ESMTP id S1758175Ab3EIWda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:34:42 -0400
+	Thu, 9 May 2013 18:33:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Michael Ellerman <michael@ellerman.id.au>
-Subject: [ 02/26] powerpc: fix numa distance for form0 device tree
-Date: Thu,  9 May 2013 15:34:16 -0700
-Message-Id: <20130509223422.662175413@linuxfoundation.org>
+        Jerry Hoemann <jerry.hoemann@hp.com>
+Subject: [ 73/73] x86/mm: account for PGDIR_SIZE alignment
+Date: Thu,  9 May 2013 15:32:36 -0700
+Message-Id: <20130509222805.731031383@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
-References: <20130509223422.368544659@linuxfoundation.org>
+In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
+References: <20130509222757.917088509@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+From: Jerry Hoemann <jerry.hoemann@hp.com>
 
-commit 7122beeee7bc1757682049780179d7c216dd1c83 upstream.
+Patch for -stable.  Function find_early_table_space removed upstream.
 
-The following commit breaks numa distance setup for old powerpc
-systems that use form0 encoding in device tree.
+Fixes panic in alloc_low_page due to pgt_buf overflow during
+init_memory_mapping.
 
-commit 41eab6f88f24124df89e38067b3766b7bef06ddb
-powerpc/numa: Use form 1 affinity to setup node distance
+find_early_table_space sizes pgt_buf based upon the size of the
+memory being mapped, but it does not take into account the alignment
+of the memory.  When the region being mapped spans a 512GB (PGDIR_SIZE)
+alignment, a panic from alloc_low_pages occurs.
 
-Device tree node /rtas/ibm,associativity-reference-points would
-index into /cpus/PowerPCxxxx/ibm,associativity based on form0 or
-form1 encoding detected by ibm,architecture-vec-5 property.
+kernel_physical_mapping_init takes into account PGDIR_SIZE alignment.
+This causes an extra call to alloc_low_page to be made.  This extra call
+isn't accounted for by find_early_table_space and causes a kernel panic.
 
-All modern systems use form1 and current kernel code is correct.
-However, on older systems with form0 encoding, the numa distance
-will get hard coded as LOCAL_DISTANCE for all nodes.  This causes
-task scheduling anomaly since scheduler will skip building numa
-level domain (topmost domain with all cpus) if all numa distances
-are same.  (value of 'level' in sched_init_numa() will remain 0)
+Change is to take into account PGDIR_SIZE alignment in find_early_table_space.
 
-Prior to the above commit:
-((from) == (to) ? LOCAL_DISTANCE : REMOTE_DISTANCE)
-
-Restoring compatible behavior with this patch for old powerpc systems
-with device tree where numa distance are encoded as form0.
-
-Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/mm/numa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/mm/init.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -201,7 +201,7 @@ int __node_distance(int a, int b)
- 	int distance = LOCAL_DISTANCE;
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -45,11 +45,15 @@ static void __init find_early_table_spac
+ 	int i;
+ 	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
+ 	unsigned long start = 0, good_end;
++	unsigned long pgd_extra = 0;
+ 	phys_addr_t base;
  
- 	if (!form1_affinity)
--		return distance;
-+		return ((a == b) ? LOCAL_DISTANCE : REMOTE_DISTANCE);
+ 	for (i = 0; i < nr_range; i++) {
+ 		unsigned long range, extra;
  
- 	for (i = 0; i < distance_ref_points_depth; i++) {
- 		if (distance_lookup_table[a][i] == distance_lookup_table[b][i])
++		if ((mr[i].end >> PGDIR_SHIFT) - (mr[i].start >> PGDIR_SHIFT))
++			pgd_extra++;
++
+ 		range = mr[i].end - mr[i].start;
+ 		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
+ 
+@@ -74,6 +78,7 @@ static void __init find_early_table_spac
+ 	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
+ 	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
+ 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
++	tables += (pgd_extra * PAGE_SIZE);
+ 
+ #ifdef CONFIG_X86_32
+ 	/* for fixmap */
 
 
