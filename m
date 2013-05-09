@@ -1,118 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab3EIONa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 10:13:30 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:47250 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753562Ab3EION2 (ORCPT
+	id S1754990Ab3EIOOe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 10:14:34 -0400
+Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:46047 "EHLO
+	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753562Ab3EIOOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 10:13:28 -0400
-Message-ID: <518BADBF.4070303@st.com>
-Date: Thu, 09 May 2013 15:07:59 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 9 May 2013 10:14:33 -0400
+Date: Thu, 9 May 2013 14:14:31 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+In-Reply-To: <201305092125.FGG13076.LFOtVOFMSFQJHO@I-love.SAKURA.ne.jp>
+Message-ID: <0000013e89a4ae3c-f2abd075-e096-42b5-891d-e2e5e2af9ecb-000000@email.amazonses.com>
+References: <CAOJsxLFYDC+EDdJrXVnc1qfEyd56bhFLeGE+6Mbhwiq73KQQLQ@mail.gmail.com> <517E8758.9040803@parallels.com> <0000013e564e0e5a-121c52f9-e489-470f-99d5-67a5ad42eb75-000000@email.amazonses.com> <201304300028.IAD13051.OHOVMJSLFFFQOt@I-love.SAKURA.ne.jp>
+ <201304300116.FGJ56210.FMSOJHFOtFQVOL@I-love.SAKURA.ne.jp> <201305092125.FGG13076.LFOtVOFMSFQJHO@I-love.SAKURA.ne.jp>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Dave Martin <dave.martin@linaro.org>, linux-doc@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, will.deacon@arm.com,
-        Grant Likely <grant.likely@secretlab.ca>, Jiri Slaby <jslaby@suse.cz>,
-        linux@arm.linux.org.uk, Samuel Ortiz <sameo@linux.intel.com>,
-        Nicolas Pitre <nico@linaro.org>, linux-serial@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Olof Johansson <olof@lixom.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [RFC 2/8] ARM:global_timer: Add ARM global timer support.
-References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <1368022260-2197-1-git-send-email-srinivas.kandagatla@st.com> <201305081638.23100.arnd@arndb.de>
-In-Reply-To: <201305081638.23100.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.05.09-54.240.9.42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/13 15:38, Arnd Bergmann wrote:
-> On Wednesday 08 May 2013, Srinivas KANDAGATLA wrote:
->> From: Stuart Menefy <stuart.menefy@st.com>
->>
->> This is a simple driver for the global timer module found in the Cortex
->> A9-MP cores from revision r1p0 onwards. This should be able to perform
->> the functions of the system timer and the local timer in an SMP system.
->>
->> The global timer has the following features:
->>     The global timer is a 64-bit incrementing counter with an
->> auto-incrementing feature. It continues incrementing after sending
->> interrupts. The global timer is memory mapped in the private memory
->> region.
->>     The global timer is accessible to all Cortex-A9 processors in the
->> cluster. Each Cortex-A9 processor has a private 64-bit comparator that
->> is used to assert a private interrupt when the global timer has reached
->> the comparator value. All the Cortex-A9 processors in a design use the
->> banked ID, ID27, for this interrupt. ID27 is sent to the Interrupt
->> Controller as a Private Peripheral Interrupt. The global timer is
->> clocked by PERIPHCLK.
->>
->> Signed-off-by: Stuart Menefy <stuart.menefy@st.com>
->> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->>
-> 
-> Are you sure we don't already have a driver for this? It sounds unlikely
-> that you are the first one to do this when the hardware is so common.
+On Thu, 9 May 2013, Tetsuo Handa wrote:
 
-Yes, in mainline we do not have support to this.
+> +       BUILD_BUG_ON(PAGE_SHIFT + MAX_ORDER != KMALLOC_SHIFT_HIGH + 1);
+>         for (i = 1; i < PAGE_SHIFT + MAX_ORDER; i++) {
 
-> 
->>  Documentation/devicetree/bindings/arm/gt.txt |   21 ++
->>  arch/arm/Kconfig                             |    6 +
->>  arch/arm/include/asm/global_timer.h          |   12 +
->>  arch/arm/kernel/Makefile                     |    1 +
->>  arch/arm/kernel/global_timer.c               |  325 ++++++++++++++++++++++++++
->>  5 files changed, 365 insertions(+), 0 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/arm/gt.txt
->>  create mode 100644 arch/arm/include/asm/global_timer.h
->>  create mode 100644 arch/arm/kernel/global_timer.c
-> 
-> Move it into drivers/clocksource?
+Yea looping to PAGE_SHIFT + MAX_ORDER is fundamentally wrong.
 
-Sure, I will move this in the next version.
 
->  
->> diff --git a/arch/arm/include/asm/global_timer.h b/arch/arm/include/asm/global_timer.h
->> new file mode 100644
->> index 0000000..46f9188
->> --- /dev/null
->> +++ b/arch/arm/include/asm/global_timer.h
->> @@ -0,0 +1,12 @@
->> +int __init global_timer_init(void __iomem *base, unsigned int timer_irq);
-> 
-> I don't see a need to call this from platform code for non-DT platforms, it
-> can easily be used with CLOCKSOURCE_OF_DECLARE() all the time I think.
+Subject: SLAB: Fix init_lock_keys()
 
-sorry Am confused here.
-How would this work for non-DT?
+init_lock_keys goes too far in initializing values in kmalloc_caches because
+it assumed that the size of the kmalloc array goes up to MAX_ORDER. However, the size
+of the kmalloc array for SLAB may be restricted due to increased page sizes or CONFIG_FORCE_MAX_ZONEORDER.
 
-Looking at the code in clocksource_of_init it just goes through the
-of_device_id table, which is not used in case of non-DT.
-> 
-> 	Arnd
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
-> 
+Reported-by: Tetsuo Handa <penguin-kernel@I-Love.SAKURA.ne.jp>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/mm/slab.c
+===================================================================
+--- linux.orig/mm/slab.c	2013-05-09 09:06:20.000000000 -0500
++++ linux/mm/slab.c	2013-05-09 09:08:08.338606055 -0500
+@@ -565,7 +565,7 @@ static void init_node_lock_keys(int q)
+ 	if (slab_state < UP)
+ 		return;
+
+-	for (i = 1; i < PAGE_SHIFT + MAX_ORDER; i++) {
++	for (i = 1; i =< KMALLOC_SHIFT_HIGH; i++) {
+ 		struct kmem_cache_node *n;
+ 		struct kmem_cache *cache = kmalloc_caches[i];
 
