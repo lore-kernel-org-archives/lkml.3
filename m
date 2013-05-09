@@ -1,67 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab3EIIkK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 04:40:10 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60235 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab3EIIkI (ORCPT
+	id S1752641Ab3EIIma (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 04:42:30 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:55713 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab3EIImV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 04:40:08 -0400
-X-AuditID: 9c930197-b7c1fae000001854-aa-518b60e3b833
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@kernel.org,
-        fweisbec@gmail.com, peterz@infradead.org, jolsa@redhat.com,
-        xiaoguangrong@linux.vnet.ibm.com
-Subject: Re: [PATCH 03/13] perf evlist: add initialzation function for tracepoints
-References: <1368073909-8825-1-git-send-email-dsahern@gmail.com>
-	<1368073909-8825-4-git-send-email-dsahern@gmail.com>
-Date: Thu, 09 May 2013 17:40:03 +0900
-In-Reply-To: <1368073909-8825-4-git-send-email-dsahern@gmail.com> (David
-	Ahern's message of "Wed, 8 May 2013 22:31:39 -0600")
-Message-ID: <87sj1w7di4.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 9 May 2013 04:42:21 -0400
+Message-ID: <518B6164.6040707@gmail.com>
+Date: Thu, 09 May 2013 12:42:12 +0400
+From: Denis <yefremov.denis@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        trivial@kernel.org, ldv-project@linuxtesting.org
+Subject: Re: [PATCH 02/21] fs: remove inline marking of EXPORT_SYMBOL functions
+References: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com> <1368086323-9412-2-git-send-email-yefremov.denis@gmail.com> <20130509080742.GE25399@ZenIV.linux.org.uk>
+In-Reply-To: <20130509080742.GE25399@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On 09.05.2013 12:07, Al Viro wrote:
+> On Thu, May 09, 2013 at 11:58:24AM +0400, Denis Efremov wrote:
+>> EXPORT_SYMBOL and inline directives are contradictory to each other.
+>> The patch fixes this inconsistency.
+> What makes them contradictory, in your opinion?  With references to
+> relevant parts of C99, please.
+Looks like the introductory message was rejected by mailing list.
+Will try to do something with this. You can find it here:
+http://linuxtesting.org/pipermail/ldv-project/2013-May/000101.html
 
-On Wed,  8 May 2013 22:31:39 -0600, David Ahern wrote:
-> Handles initializations typically done as part of processing the file
-> header and HEADER_TRACING_DATA event.
->
-[SNIP]
-> +int perf_evlist__trace_init(struct perf_evlist *evlist,
-> +			    struct perf_session *session)
-> +{
-> +	struct tracing_data *tdata;
-> +	char temp_file[] = "/tmp/perf-XXXXXXXX";
-> +	int fd;
-> +
-> +	fd = mkstemp(temp_file);
-> +	if (fd < 0) {
-> +		pr_err("mkstemp failed\n");
-> +		return -1;
-> +	}
-> +	unlink(temp_file);
-> +
-> +	tdata = tracing_data_get(&evlist->entries, fd, false);
-> +	if (!tdata)
-> +		return -1;
-> +
-> +	lseek(fd, 0, SEEK_SET);
-> +	(void) trace_report(fd, &session->pevent, false);
-> +	tracing_data_put(tdata);
-
-I guess you need to close the fd here.
-
-> +
-> +	return perf_evlist__prepare_tracepoint_events(evlist, session->pevent);
-> +}
-
-Thanks,
-Namhyung
+Patchset is based on previous fixes.
