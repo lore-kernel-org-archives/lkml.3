@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab3EIVHv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 17:07:51 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:34591 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905Ab3EIVFJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 17:05:09 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH 10/12] caif: CAIF_VIRTIO should depend on HAS_DMA
-Date: Thu,  9 May 2013 23:04:52 +0200
-Message-Id: <1368133494-22198-10-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1368133494-22198-1-git-send-email-geert@linux-m68k.org>
-References: <1368133494-22198-1-git-send-email-geert@linux-m68k.org>
+	id S1753805Ab3EIVKy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 17:10:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25850 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752071Ab3EIVKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 17:10:53 -0400
+Date: Thu, 9 May 2013 17:10:26 -0400
+From: Dave Jones <davej@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: rcu_preempt running flat out on idle desktop.
+Message-ID: <20130509211026.GA22723@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	paulmck@linux.vnet.ibm.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Ingo Molnar <mingo@kernel.org>
+References: <20130508203042.GA18895@redhat.com>
+ <CAFTL4hwB3XZG+C9pQ0JD4h=n_ObNH6mCBRfLW3JaxohwwRDWRA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hwB3XZG+C9pQ0JD4h=n_ObNH6mCBRfLW3JaxohwwRDWRA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If NO_DMA=y:
+On Thu, May 09, 2013 at 11:02:08PM +0200, Frederic Weisbecker wrote:
 
-drivers/built-in.o: In function `cfv_destroy_genpool':
-drivers/net/caif/caif_virtio.c:364: undefined reference to `dma_free_coherent'
-drivers/built-in.o: In function `cfv_create_genpool':
-drivers/net/caif/caif_virtio.c:397: undefined reference to `dma_alloc_coherent'
+ > > RCU options for this build are..
+ > >
+ > I can't reproduce that issue even with the above setting. Could you
+ > please send me your whole config?
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
----
- drivers/net/caif/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+http://paste.fedoraproject.org/11363/36813375/raw/
 
-diff --git a/drivers/net/caif/Kconfig b/drivers/net/caif/Kconfig
-index 7ffc756..5470980 100644
---- a/drivers/net/caif/Kconfig
-+++ b/drivers/net/caif/Kconfig
-@@ -43,7 +43,7 @@ config CAIF_HSI
- 
- config CAIF_VIRTIO
- 	tristate "CAIF virtio transport driver"
--	depends on CAIF
-+	depends on CAIF && HAS_DMA
- 	select VHOST_RING
- 	select VIRTIO
- 	select GENERIC_ALLOCATOR
--- 
-1.7.0.4
+	Dave
 
