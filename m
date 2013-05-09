@@ -1,111 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424Ab3EIERt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 00:17:49 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:58797 "EHLO smtp.gentoo.org"
+	id S1751578Ab3EIESX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 00:18:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47282 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294Ab3EIERq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 00:17:46 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Mike Frysinger <vapier@chromium.org>
-Subject: [PATCH] perf tools: fix -ldw/-lelf link test when static linking
-Date: Thu,  9 May 2013 00:17:44 -0400
-Message-Id: <1368073064-18276-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.8.2.1
+	id S1751291Ab3EIESW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 00:18:22 -0400
+Message-ID: <518B2387.9030408@zytor.com>
+Date: Wed, 08 May 2013 21:18:15 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Mike Frysinger <vapier@gentoo.org>
+CC: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: make stat/statfs 64-bit for x86_64 kernels
+References: <1368072057-7832-1-git-send-email-vapier@gentoo.org> <518B2033.80300@zytor.com> <201305090008.47432.vapier@gentoo.org>
+In-Reply-To: <201305090008.47432.vapier@gentoo.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Frysinger <vapier@chromium.org>
+On 05/08/2013 09:08 PM, Mike Frysinger wrote:
+> On Thursday 09 May 2013 00:04:03 H. Peter Anvin wrote:
+>> On 05/08/2013 09:00 PM, Mike Frysinger wrote:
+>>> When including these headers in the x32 ABI, the structs get
+>>> declared with 32bit sizes which is incorrect.  Use long long
+>>> and such to make it work both with x32 and x86_64.
+>> 
+>> I'm not sure if it is okay to change the types, even within the
+>> same size.  Perhaps use __u64/__s64?
+> 
+> sorry, i don't follow.  changing types isn't ok (unsigned long to
+> unsigned long long), but changing to __u64 is ok (unsigned long to
+> __u64 which is typedefed to unsigned long long) ?
+> 
+> i don't have a problem using __u64/__s64, i just don't understand
+> your logic.
+> 
 
-Since libelf sometimes uses libpthread, we have to list that after -lelf
-when someone tries to build statically.  Else things go boom:
-Makefile:479: *** No libelf.h/libelf found, please install \
-	libelf-dev/elfutils-libelf-devel.  Stop.
+In userspace, __u64 is often defined as "unsigned long" on 64 bits.
 
-Similarly, the -ldw test fails as it often uses -lz:
-Makefile:462: No libdw.h found or old libdw.h found or elfutils is older \
-	than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev
-
-And if we add debugging to try-cc, we see:
-+ echo '#include <dwarf.h>
-
-int main(void)
-{
-        Dwarf *dbg = dwarf_begin(0, DWARF_C_READ);
-        return (long)dbg;
-}'
-+ i686-pc-linux-gnu-gcc -x c - -O2 -pipe -march=atom -mtune=atom -mfpmath=sse -g \
-	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE \
-	-ldw -lelf -static -lpthread -lrt -lelf -lm -o .24368
-/usr/lib/libdw.a(dwarf_begin_elf.o):function check_section.isra.1: error: undefined reference to 'inflateInit_'
-/usr/lib/libdw.a(dwarf_begin_elf.o):function check_section.isra.1: error: undefined reference to 'inflate'
-/usr/lib/libdw.a(dwarf_begin_elf.o):function check_section.isra.1: error: undefined reference to 'inflateReset'
-/usr/lib/libdw.a(dwarf_begin_elf.o):function check_section.isra.1: error: undefined reference to 'inflateEnd'
-
-+ echo '#include <libelf.h>
-
-int main(void)
-{
-        Elf *elf = elf_begin(0, ELF_C_READ, 0);
-        return (long)elf;
-}'
-+ i686-pc-linux-gnu-gcc -x c - -O2 -pipe -march=atom -mtune=atom -mfpmath=sse -g \
-	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE \
-	-static -lpthread -lrt -lelf -lm -o .19216
-/usr/lib/libelf.a(elf_begin.o):function file_read_elf: error: undefined reference to 'pthread_rwlock_init'
-/usr/lib/libelf.a(elf_begin.o):function __libelf_read_mmaped_file: error: undefined reference to 'pthread_rwlock_init'
-/usr/lib/libelf.a(elf_begin.o):function __libelf_read_mmaped_file: error: undefined reference to 'pthread_rwlock_init'
-/usr/lib/libelf.a(elf_begin.o):function read_file: error: undefined reference to 'pthread_rwlock_init'
-/usr/lib/libelf.a(elf_begin.o):function lock_dup_elf.8072: error: undefined reference to 'pthread_rwlock_unlock'
-/usr/lib/libelf.a(elf_begin.o):function lock_dup_elf.8072: error: undefined reference to 'pthread_rwlock_wrlock'
-/usr/lib/libelf.a(elf_begin.o):function elf_begin: error: undefined reference to 'pthread_rwlock_rdlock'
-/usr/lib/libelf.a(elf_begin.o):function elf_begin: error: undefined reference to 'pthread_rwlock_unlock'
-
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- tools/lib/lk/Makefile | 2 +-
- tools/perf/Makefile   | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/tools/lib/lk/Makefile b/tools/lib/lk/Makefile
-index 926cbf3..973692a 100644
---- a/tools/lib/lk/Makefile
-+++ b/tools/lib/lk/Makefile
-@@ -11,7 +11,7 @@ LIB_OBJS += $(OUTPUT)debugfs.o
- LIBFILE = liblk.a
- 
- CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
--EXTLIBS = -lpthread -lrt -lelf -lm
-+EXTLIBS = -lelf -lpthread -lrt -lm
- ALL_CFLAGS = $(CFLAGS) $(BASIC_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
- ALL_LDFLAGS = $(LDFLAGS)
- 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index b0f164b..db353e3 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -111,7 +111,7 @@ ifdef NO_NEWT
- endif
- 
- CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
--EXTLIBS = -lpthread -lrt -lelf -lm
-+EXTLIBS = -lelf -lpthread -lrt -lm
- ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- ALL_LDFLAGS = $(LDFLAGS)
- STRIP ?= strip
-@@ -598,7 +598,7 @@ else
- 		LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
- 	endif
- 
--	FLAGS_DWARF=$(ALL_CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
-+	FLAGS_DWARF=$(ALL_CFLAGS) $(LIBDW_CFLAGS) -ldw -lz -lelf $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
- 	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
- 		msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
- 		NO_DWARF := 1
--- 
-1.8.2.1
+	-hpa
 
