@@ -1,106 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab3EIOGb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 10:06:31 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:52996 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752562Ab3EIOG3 (ORCPT
+	id S1754364Ab3EIOHo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 10:07:44 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50084 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab3EIOHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 10:06:29 -0400
-Message-ID: <518BABF0.7040201@st.com>
-Date: Thu, 09 May 2013 15:00:16 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 9 May 2013 10:07:43 -0400
+Date: Thu, 9 May 2013 16:05:44 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Jean Delvare <khali@linux-fr.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Anthony Olech <anthony.olech@diasemi.com>
+Subject: Re: [RFC PATCH 2/8] regulator: Add Dialog DA906x voltage regulators
+ support.
+In-Reply-To: <201208311100@sw-eng-lt-dc-vm2>
+Message-ID: <Pine.LNX.4.64.1305091549300.22179@axis700.grange>
+References: <201208241450@sw-eng-lt-dc-vm2> <201208241455@sw-eng-lt-dc-vm2>
+ <20120825151020.GB6520@opensource.wolfsonmicro.com> <201208291550@sw-eng-lt-dc-vm2>
+ <20120830174738.GH4356@opensource.wolfsonmicro.com> <201208311100@sw-eng-lt-dc-vm2>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, dong.aisheng@linaro.org,
-        sameo@linux.intel.com, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Stuart Menefy <stuart.menefy@st.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
-Subject: Re: [RFC 3/8] mfd:syscon: Introduce claim/read/write/release APIs
-References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <1368022272-2241-1-git-send-email-srinivas.kandagatla@st.com> <201305081650.23264.arnd@arndb.de> <20130508150141.GA5057@opensource.wolfsonmicro.com> <518A8E6C.6070907@st.com> <20130509095143.GB7478@sirena.org.uk> <518B8F49.5020902@st.com> <20130509132600.GA3200@sirena.org.uk>
-In-Reply-To: <20130509132600.GA3200@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:etjCuPlJF2DDexazD+Qvj4lek0qeuGqMJHVLV60kOG0
+ iKQFXc8JdhlpfeoPeayTuTqXr8mfKe+PTpuZiis8pQm1UUKtGI
+ hGI1xtEwm7ULlkX17jcXXDtXsnA9I0XCLpak8yIUikPCLg/27g
+ Yx2NqwPmyk62y5w1E6nWkvwmrSHVDpsRRNtsQl5ca5yMoLFITx
+ YxSK3ylSyq4Ykcdmda+vlzDAsEgZL8Gz1hRRno/3XwtNJrP6ga
+ 5JsyIWw8sBbG+TeixB9lD7vX5xO49ITRdpMu+Kxit99qAZ9UzE
+ yuCsWW4yF+9E790VB260eoijIkvxGZnLYbIYbpjiRAyJWyN8wq
+ oI1zVaQx8SBxy2FHEMiM2zSF5+ZJ7UcaFsHg4tGsxC07skP8+m
+ BUHc3+j8Iomwg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/13 14:26, Mark Brown wrote:
-> On Thu, May 09, 2013 at 12:58:01PM +0100, Srinivas KANDAGATLA wrote:
+(trimmed the CC a bit)
+
+Hi Krystian
+
+On Fri, 31 Aug 2012, Krystian Garbaciak wrote:
+
+> > On Wed, Aug 29, 2012 at 03:50:00PM +0100, Krystian Garbaciak wrote:
+
+Sorry for picking up a random mail from this old thread, unfortunately, I 
+don't have "0/8" in my archive.
+
+I have to write a driver for the da9063 PMIC. Do you have an idea, whether 
+it'd be compatible with this driver? Do you plan to continue your work on 
+this driver or would you mind if I try to use these your patches and 
+mainline them, preserving your authorship and copyright, of course?
+
+Thanks
+Guennadi
+
+> > > Because, for some regulators, this is required: val += fvol->offset,
+> > > I was only able to reduce it to the following form.
+> > 
+> > What on earth makes you say this?  The above is obviously linear.
+> > 
+> > Besides, you're missing several points here.  One is that you should be
+> > using the framework features, another is that you should be implementing
+> > _sel.
 > 
->> Currently, we have two bits of information which come from device trees.
->> 1> The syscon bank/group definition itself.
->> 2> syscon register offsets and bits information to the drivers.
+> Sorry, I've missed an obvious thing here. Instead of adding selector offset at
+> runtime, I can substract apropriate voltage from .min_uV. Thanks for pointing
+> this out.
 > 
->> These are the 2 things which keep changing per each SOC.
-> 
->> There is no other way to pass this information to the drivers other than
->> passing them as part of their own device node and syscon node.
-> 
-> Sure there is, for example the drivers could have this information
-> internally as part of knowing which device they're working with or they
-> could take advantage of some patterns in the register map to store some
-> higher level information that they use to configure.
-> 
-Some of layouts of the sysconf registers are totally changed for each SOC.
-
-Looking at driver by driver maybe some drivers can take advantage of the
-patterns, but Am not sure if this will be a sustainable solution for all
-the drivers.
-
-The big disadvantage of this approach is that
-- Every driver has to be touched for new SOC,
-- Secondly the drivers will end up having more of such information than
-code over a time.
-
->>>  and to the extent that it is sensible it feels like something
->>> which might be useful with any device using register maps, not just
->>> syscon.
-> 
->> If you think this is going to be useful for other drivers, Am happy to
->> move this out of syscon to regmap something like adding
->> of_regmap_field_claim/regmap_field_claim/regmap_field_read/regmap_field_write/regmap_field_release
->> functions.
-> 
->> so any exiting drivers can still use the old syscon API to get the
->> regmap instance.
->> Alternatively they can use the new regmap APIs directly.
-> 
-> Well, I'd need to see the code to decide if it was sane but I do think
-> that if this is a good approach it's not syscon specific.  Anything like
-> this needs to be independent of DT too since not all architectures use
-> DT.
-In the suggested approach, the API supports, both DT and non-DT style.
-
-for DT style user can use.
-of_regmap_field_claim -> regmap_field_read -> regmap_field_write-
-->regmap_field_release
-
-and for NON-DT user can use
-regmap_field_claim  -> regmap_field_read -> regmap_field_write-
-->regmap_field_release
-
-
-thanks,
-srini
-
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
