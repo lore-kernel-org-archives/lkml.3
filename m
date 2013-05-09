@@ -1,188 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729Ab3EIHPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 03:15:04 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:43166 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab3EIHPC (ORCPT
+	id S1751996Ab3EIHVg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 03:21:36 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61789 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab3EIHVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 03:15:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <518A324A.8000000@linaro.org>
-References: <CAJFUiJiMMAgLGF3tiG1V59dx+KOpTBCEL3ctHUosjMDkBagbJg@mail.gmail.com>
- <518A324A.8000000@linaro.org>
-From: Lianwei Wang <lianwei.wang@gmail.com>
-Date: Thu, 9 May 2013 15:14:41 +0800
-Message-ID: <CAJFUiJio8jHtGwGo=-FSm6_E9LATSkyUx_iWsuFddmA9+PXCJA@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH] cpuidle: don't wakeup processor when set a
- longer latency
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Content-Type: multipart/mixed; boundary=089e0149ca961104d704dc43cf41
+	Thu, 9 May 2013 03:21:34 -0400
+X-AuditID: 9c93016f-b7ba0ae000004cc2-6b-518b4e7bfc2b
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Minkyung Kim <minkyung88@lge.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v5 2/7] mm: Per process reclaim
+Date: Thu,  9 May 2013 16:21:24 +0900
+Message-Id: <1368084089-24576-3-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1368084089-24576-1-git-send-email-minchan@kernel.org>
+References: <1368084089-24576-1-git-send-email-minchan@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e0149ca961104d704dc43cf41
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+These day, there are many platforms avaiable in the embedded market
+and they are smarter than kernel which has very limited information
+about working set so they want to involve memory management more heavily
+like android's lowmemory killer and ashmem or recent many lowmemory
+notifier(there was several trial for various company NOKIA, SAMSUNG,
+Linaro, Google ChromeOS, Redhat).
 
-Thank you very much. I have a quick updated patch based on your comments.
+One of the simple imagine scenario about userspace's intelligence is that
+platform can manage tasks as forground and backgroud so it would be
+better to reclaim background's task pages for end-user's *responsibility*
+although it has frequent referenced pages.
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 2f0083a..cd1af4b 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -18,6 +18,7 @@
- #include <linux/ktime.h>
- #include <linux/hrtimer.h>
- #include <linux/module.h>
-+#include <linux/tick.h>
- #include <trace/events/power.h>
+This patch adds new knob "reclaim under proc/<pid>/" so task manager
+can reclaim any target process anytime, anywhere. It could give another
+method to platform for using memory efficiently.
 
- #include "cpuidle.h"
-@@ -466,7 +467,20 @@ static void smp_callback(void *v)
- static int cpuidle_latency_notify(struct notifier_block *b,
-                unsigned long l, void *v)
- {
--       smp_call_function(smp_callback, NULL, 1);
-+       int cpu, rcpu =3D smp_processor_id();
-+       s64 s;
-+       struct tick_device *td;
+It can avoid process killing for getting free memory, which was really
+terrible experience because I lost my best score of game I had ever
+after I switch the phone call while I enjoyed the game.
+
+Reclaim file-backed pages only.
+	echo file > /proc/PID/reclaim
+Reclaim anonymous pages only.
+	echo anon > /proc/PID/reclaim
+Reclaim all pages
+	echo all > /proc/PID/reclaim
+
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ fs/proc/base.c       |   3 ++
+ fs/proc/internal.h   |   1 +
+ fs/proc/task_mmu.c   | 121 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/rmap.h |   4 ++
+ mm/Kconfig           |  13 ++++++
+ mm/vmscan.c          |  60 +++++++++++++++++++++++++
+ 6 files changed, 202 insertions(+)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 4d3ebd6..9286b43 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2669,6 +2669,9 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	REG("mounts",     S_IRUGO, proc_mounts_operations),
+ 	REG("mountinfo",  S_IRUGO, proc_mountinfo_operations),
+ 	REG("mountstats", S_IRUSR, proc_mountstats_operations),
++#ifdef CONFIG_PROCESS_RECLAIM
++	REG("reclaim", S_IWUSR, proc_reclaim_operations),
++#endif
+ #ifdef CONFIG_PROC_PAGE_MONITOR
+ 	REG("clear_refs", S_IWUSR, proc_clear_refs_operations),
+ 	REG("smaps",      S_IRUGO, proc_pid_smaps_operations),
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index f417d43..0c29375 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -204,6 +204,7 @@ struct pde_opener {
+ };
+ 
+ extern const struct inode_operations proc_pid_link_inode_operations;
++extern const struct file_operations proc_reclaim_operations;
+ 
+ extern void proc_init_inodecache(void);
+ extern struct inode *proc_get_inode(struct super_block *, struct proc_dir_entry *);
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 3240a49..cd6bb70 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -11,6 +11,7 @@
+ #include <linux/rmap.h>
+ #include <linux/swap.h>
+ #include <linux/swapops.h>
++#include <linux/mm_inline.h>
+ 
+ #include <asm/elf.h>
+ #include <asm/uaccess.h>
+@@ -1182,6 +1183,126 @@ const struct file_operations proc_pagemap2_operations = {
+ };
+ #endif /* CONFIG_PROC_PAGE_MONITOR */
+ 
++#ifdef CONFIG_PROCESS_RECLAIM
++static int reclaim_pte_range(pmd_t *pmd, unsigned long addr,
++				unsigned long end, struct mm_walk *walk)
++{
++	struct vm_area_struct *vma = walk->private;
++	pte_t *pte, ptent;
++	spinlock_t *ptl;
++	struct page *page;
++	LIST_HEAD(page_list);
++	int isolated;
 +
-+       for_each_online_cpu(cpu) {
-+               if (cpu =3D=3D rcpu)
-+                       continue;
-+               td =3D tick_get_device(cpu);
-+               s =3D ktime_us_delta(td->evtdev->next_event, ktime_get());
-+               if ((long)l < (long)s) {
-+                       smp_call_function_single(cpu, smp_callback, NULL, 1=
-);
-+               }
-+       }
++	split_huge_page_pmd(vma, addr, pmd);
++	if (pmd_trans_unstable(pmd))
++		return 0;
++cont:
++	isolated = 0;
++	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
++	for (; addr != end; pte++, addr += PAGE_SIZE) {
++		ptent = *pte;
++		if (!pte_present(ptent))
++			continue;
 +
-        return NOTIFY_OK;
++		page = vm_normal_page(vma, addr, ptent);
++		if (!page)
++			continue;
++
++		if (isolate_lru_page(page))
++			continue;
++
++		list_add(&page->lru, &page_list);
++		inc_zone_page_state(page, NR_ISOLATED_ANON +
++				page_is_file_cache(page));
++		isolated++;
++		if (isolated >= SWAP_CLUSTER_MAX)
++			break;
++	}
++	pte_unmap_unlock(pte - 1, ptl);
++	reclaim_pages_from_list(&page_list);
++	if (addr != end)
++		goto cont;
++
++	cond_resched();
++	return 0;
++}
++
++enum reclaim_type {
++	RECLAIM_FILE,
++	RECLAIM_ANON,
++	RECLAIM_ALL,
++	RECLAIM_RANGE,
++};
++
++static ssize_t reclaim_write(struct file *file, const char __user *buf,
++				size_t count, loff_t *ppos)
++{
++	struct task_struct *task;
++	char buffer[PROC_NUMBUF];
++	struct mm_struct *mm;
++	struct vm_area_struct *vma;
++	enum reclaim_type type;
++	char *type_buf;
++
++	memset(buffer, 0, sizeof(buffer));
++	if (count > sizeof(buffer) - 1)
++		count = sizeof(buffer) - 1;
++
++	if (copy_from_user(buffer, buf, count))
++		return -EFAULT;
++
++	type_buf = strstrip(buffer);
++	if (!strcmp(type_buf, "file"))
++		type = RECLAIM_FILE;
++	else if (!strcmp(type_buf, "anon"))
++		type = RECLAIM_ANON;
++	else if (!strcmp(type_buf, "all"))
++		type = RECLAIM_ALL;
++	else
++		return -EINVAL;
++
++	task = get_proc_task(file->f_path.dentry->d_inode);
++	if (!task)
++		return -ESRCH;
++
++	mm = get_task_mm(task);
++	if (mm) {
++		struct mm_walk reclaim_walk = {
++			.pmd_entry = reclaim_pte_range,
++			.mm = mm,
++		};
++
++		down_read(&mm->mmap_sem);
++		for (vma = mm->mmap; vma; vma = vma->vm_next) {
++			reclaim_walk.private = vma;
++
++			if (is_vm_hugetlb_page(vma))
++				continue;
++
++			if (type == RECLAIM_ANON && vma->vm_file)
++				continue;
++			if (type == RECLAIM_FILE && !vma->vm_file)
++				continue;
++
++			walk_page_range(vma->vm_start, vma->vm_end,
++					&reclaim_walk);
++		}
++		flush_tlb_mm(mm);
++		up_read(&mm->mmap_sem);
++		mmput(mm);
++	}
++	put_task_struct(task);
++
++	return count;
++}
++
++const struct file_operations proc_reclaim_operations = {
++	.write		= reclaim_write,
++	.llseek		= noop_llseek,
++};
++#endif
++
+ #ifdef CONFIG_NUMA
+ 
+ struct numa_maps {
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 6dacb93..a24e34e 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -10,6 +10,10 @@
+ #include <linux/rwsem.h>
+ #include <linux/memcontrol.h>
+ 
++extern int isolate_lru_page(struct page *page);
++extern void putback_lru_page(struct page *page);
++extern unsigned long reclaim_pages_from_list(struct list_head *page_list);
++
+ /*
+  * The anon_vma heads a list of private "related" vmas, to scan if
+  * an anonymous page pointing to this anon_vma needs to be unmapped:
+diff --git a/mm/Kconfig b/mm/Kconfig
+index b0a7dad..d119b5b 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -489,3 +489,16 @@ config MEM_SOFT_DIRTY
+ 	  it can be cleared by hands.
+ 
+ 	  See Documentation/vm/soft-dirty.txt for more details.
++
++config PROCESS_RECLAIM
++	bool "Enable process reclaim"
++	depends on PROC_FS
++	default n
++	help
++	 It allows to reclaim pages of the process by /proc/pid/reclaim.
++
++	 (echo file > /proc/PID/reclaim) reclaims file-backed pages only.
++	 (echo anon > /proc/PID/reclaim) reclaims anonymous pages only.
++	 (echo all > /proc/PID/reclaim) reclaims all pages.
++
++	 Any other vaule is ignored.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index c22f9c1..93f3b79 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -994,6 +994,66 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+ 	return ret;
  }
+ 
++#ifdef CONFIG_PROCESS_RECLAIM
++static unsigned long shrink_page(struct page *page,
++					struct zone *zone,
++					struct scan_control *sc,
++					enum ttu_flags ttu_flags,
++					unsigned long *ret_nr_dirty,
++					unsigned long *ret_nr_writeback,
++					bool force_reclaim,
++					struct list_head *ret_pages)
++{
++	int reclaimed;
++	LIST_HEAD(page_list);
++	list_add(&page->lru, &page_list);
++
++	reclaimed = shrink_page_list(&page_list, zone, sc, ttu_flags,
++				ret_nr_dirty, ret_nr_writeback,
++				force_reclaim);
++	if (!reclaimed)
++		list_splice(&page_list, ret_pages);
++
++	return reclaimed;
++}
++
++unsigned long reclaim_pages_from_list(struct list_head *page_list)
++{
++	struct scan_control sc = {
++		.gfp_mask = GFP_KERNEL,
++		.priority = DEF_PRIORITY,
++		.may_writepage = 1,
++		.may_unmap = 1,
++		.may_swap = 1,
++	};
++
++	LIST_HEAD(ret_pages);
++	struct page *page;
++	unsigned long dummy1, dummy2;
++	unsigned long nr_reclaimed = 0;
++
++	while (!list_empty(page_list)) {
++		page = lru_to_page(page_list);
++		list_del(&page->lru);
++
++		ClearPageActive(page);
++		nr_reclaimed += shrink_page(page, page_zone(page), &sc,
++				TTU_UNMAP|TTU_IGNORE_ACCESS,
++				&dummy1, &dummy2, true, &ret_pages);
++	}
++
++	while (!list_empty(&ret_pages)) {
++		page = lru_to_page(&ret_pages);
++		list_del(&page->lru);
++		dec_zone_page_state(page, NR_ISOLATED_ANON +
++				page_is_file_cache(page));
++		putback_lru_page(page);
++	}
++
++	return nr_reclaimed;
++}
++#endif
++
+ /*
+  * Attempt to remove the specified page from its LRU.  Only take this page
+  * if it is of the appropriate PageActive status.  Pages which are being
+-- 
+1.8.2.1
 
-Thanks,
-Lianwei
-
-2013/5/8 Daniel Lezcano <daniel.lezcano@linaro.org>:
-> On 05/08/2013 04:44 AM, Lianwei Wang wrote:
->> When a PM-Qos is updated, the cpuidle driver will wakeup all the CPUs
->> no matter what a latency is set. But actually it only need to wakeup
->> the CPUs when a shorter latency is set. In this way we can reduce the
->> cpu wakeup count and save battery.
->
-> I am curious, how many times could the pm_qos be changed in a system
-> live cycle to measure an improvement with this patch ?
->
-> Do you have a scenario where you measured a noticeable power saving ?
->
-The PM-Qos is not updated most of time, especially for home idle case.
- But for some specific case, the PM-Qos may update too frequently.
-(E.g. my measurement show that it is changed frequently between
-2us/3us/200us/200s for bootup and usb case.) The battery current drain
-is measured from PMIC or battery eliminator. Although this is just a
-little saving, it is still reasonable to improve it.
-
->> So we can pass the prev_value to the notifier callback and check the
->> latency curr_value and prev_value in the cpuidle latency notifier
->> callback. It modify a common interface(dummy --> prev_value) but shall
->> be safe since no one use the dummy parameter currently.
->>
->> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
->> index e1f6860..1e1758c 100644
->> --- a/drivers/cpuidle/cpuidle.c
->> +++ b/drivers/cpuidle/cpuidle.c
->> @@ -498,7 +498,11 @@ static void smp_callback(void *v)
->>  static int cpuidle_latency_notify(struct notifier_block *b,
->>                 unsigned long l, void *v)
->>  {
->> -       smp_call_function(smp_callback, NULL, 1);
->> +       unsigned long prev_value =3D (unsigned long) v;
->> +
->> +       /* Dont't waktup processor when set a longer latency */
->
->                     ^^^^^^
->                     wakeup
->
-> Instead of passing prev and curr, using the dummy variable, why don't
-> you pass the result of (curr - prev) ?
->
-> A negative value means, the latency is smaller and positive is bigger.
->
-> Also, may be the optimization could be more improved: if the latency is
-> bigger than the next wakeup event, it is not necessary to wakeup the cpus=
-.
->
-This is good idea. So it need to check the next_event on each CPU and
-wakeup the cpu if the requested latency is smaller than it. A quick
-patch is attached.
-
->> +       if (l < prev_value)
->> +               smp_call_function(smp_callback, NULL, 1);
->>         return NOTIFY_OK;
->>  }
->>
->> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
->> index 9322ff7..533b8bc 100644
->> --- a/kernel/power/qos.c
->> +++ b/kernel/power/qos.c
->> @@ -205,7 +205,7 @@ int pm_qos_update_target(struct pm_qos_constraints
->> *c, struct plist_node *node,
->>         if (prev_value !=3D curr_value) {
->>                 blocking_notifier_call_chain(c->notifiers,
->>                                              (unsigned long)curr_value,
->> -                                            NULL);
->> +                                            (void *)prev_value);
->>                 return 1;
->>         } else {
->>                 return 0;
->>
->
->
-> --
->  <http://www.linaro.org/> Linaro.org =E2=94=82 Open source software for A=
-RM SoCs
->
-> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-> <http://twitter.com/#!/linaroorg> Twitter |
-> <http://www.linaro.org/linaro-blog/> Blog
->
-
---089e0149ca961104d704dc43cf41
-Content-Type: application/octet-stream; 
-	name="0001-cpuidle-wakeup-processor-on-a-smaller-latency.patch"
-Content-Disposition: attachment; 
-	filename="0001-cpuidle-wakeup-processor-on-a-smaller-latency.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hghl8w470
-
-RnJvbSAwN2EzZjMyOTM0MDk3NWEzZjNlODMwZDM0M2Y3YTJjNmU4M2E0NDFmIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaWFud2VpIFdhbmcgPGxpYW53ZWkud2FuZ0BnbWFpbC5jb20+
-CkRhdGU6IEZyaSwgMjYgQXByIDIwMTMgMTA6NTk6MjQgKzA4MDAKU3ViamVjdDogW1BBVENIXSBj
-cHVpZGxlOiB3YWtldXAgcHJvY2Vzc29yIG9uIGEgc21hbGxlciBsYXRlbmN5CgpDaGVja2luZyB0
-aGUgUE0tUW9zIGxhdGVuY3kgYW5kIGNwdSBpZGxlIHNsZWVwIGxhdGVuY3ksIGFuZCBvbmx5Cndh
-a2V1cCB0aGUgY3B1IGlmIHRoZSByZXF1ZXN0ZWQgUE0tUW9zIGxhdGVuY3kgaXMgc21hbGxlciB0
-aGFuIGl0cwppZGxlIHNsZWVwIGxhdGVuY3kuCgpDaGFuZ2UtSWQ6IElmNTY0ZmQwZDljNTNjZjEw
-MGJkODUyNDdiZmQ1MDlkZmVhZjU0YzEzClNpZ25lZC1vZmYtYnk6IExpYW53ZWkgV2FuZyA8bGlh
-bndlaS53YW5nQGdtYWlsLmNvbT4KLS0tCiBkcml2ZXJzL2NwdWlkbGUvY3B1aWRsZS5jIHwgICAx
-NiArKysrKysrKysrKysrKystCiAxIGZpbGVzIGNoYW5nZWQsIDE1IGluc2VydGlvbnMoKyksIDEg
-ZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9jcHVpZGxlL2NwdWlkbGUuYyBiL2Ry
-aXZlcnMvY3B1aWRsZS9jcHVpZGxlLmMKaW5kZXggMmYwMDgzYS4uY2QxYWY0YiAxMDA2NDQKLS0t
-IGEvZHJpdmVycy9jcHVpZGxlL2NwdWlkbGUuYworKysgYi9kcml2ZXJzL2NwdWlkbGUvY3B1aWRs
-ZS5jCkBAIC0xOCw2ICsxOCw3IEBACiAjaW5jbHVkZSA8bGludXgva3RpbWUuaD4KICNpbmNsdWRl
-IDxsaW51eC9ocnRpbWVyLmg+CiAjaW5jbHVkZSA8bGludXgvbW9kdWxlLmg+CisjaW5jbHVkZSA8
-bGludXgvdGljay5oPgogI2luY2x1ZGUgPHRyYWNlL2V2ZW50cy9wb3dlci5oPgogCiAjaW5jbHVk
-ZSAiY3B1aWRsZS5oIgpAQCAtNDY2LDcgKzQ2NywyMCBAQCBzdGF0aWMgdm9pZCBzbXBfY2FsbGJh
-Y2sodm9pZCAqdikKIHN0YXRpYyBpbnQgY3B1aWRsZV9sYXRlbmN5X25vdGlmeShzdHJ1Y3Qgbm90
-aWZpZXJfYmxvY2sgKmIsCiAJCXVuc2lnbmVkIGxvbmcgbCwgdm9pZCAqdikKIHsKLQlzbXBfY2Fs
-bF9mdW5jdGlvbihzbXBfY2FsbGJhY2ssIE5VTEwsIDEpOworCWludCBjcHUsIHJjcHUgPSBzbXBf
-cHJvY2Vzc29yX2lkKCk7CisJczY0IHM7CisJc3RydWN0IHRpY2tfZGV2aWNlICp0ZDsKKworCWZv
-cl9lYWNoX29ubGluZV9jcHUoY3B1KSB7CisJCWlmIChjcHUgPT0gcmNwdSkKKwkJCWNvbnRpbnVl
-OworCQl0ZCA9IHRpY2tfZ2V0X2RldmljZShjcHUpOworCQlzID0ga3RpbWVfdXNfZGVsdGEodGQt
-PmV2dGRldi0+bmV4dF9ldmVudCwga3RpbWVfZ2V0KCkpOworCQlpZiAoKGxvbmcpbCA8IChsb25n
-KXMpIHsKKwkJCXNtcF9jYWxsX2Z1bmN0aW9uX3NpbmdsZShjcHUsIHNtcF9jYWxsYmFjaywgTlVM
-TCwgMSk7CisJCX0KKwl9CisKIAlyZXR1cm4gTk9USUZZX09LOwogfQogCi0tIAoxLjcuNC4xCgo=
---089e0149ca961104d704dc43cf41--
