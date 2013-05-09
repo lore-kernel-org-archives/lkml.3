@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab3EIP7K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 11:59:10 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44297 "EHLO
+	id S1756365Ab3EIP71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 11:59:27 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44295 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756212Ab3EIP64 (ORCPT
+	with ESMTP id S1756119Ab3EIP64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 May 2013 11:58:56 -0400
 From: Sasha Levin <sasha.levin@oracle.com>
 To: torvalds@linux-foundation.org
 Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
         Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v3 5/9] liblockdep: Add public headers for pthread_rwlock_t implementation
-Date: Thu,  9 May 2013 11:58:05 -0400
-Message-Id: <1368115089-8909-6-git-send-email-sasha.levin@oracle.com>
+Subject: [PATCH v3 6/9] liblockdep: Add pthread_rwlock_t test suite
+Date: Thu,  9 May 2013 11:58:06 -0400
+Message-Id: <1368115089-8909-7-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1368115089-8909-1-git-send-email-sasha.levin@oracle.com>
 References: <1368115089-8909-1-git-send-email-sasha.levin@oracle.com>
@@ -22,112 +22,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both pthreads and lockdep support dealing with rwlocks, so
-here's the liblockdep implementation for those.
+A simple test to make sure we handle rwlocks correctly.
 
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- tools/lib/lockdep/include/liblockdep/rwlock.h | 91 +++++++++++++++++++++++++++
- 1 file changed, 91 insertions(+)
- create mode 100644 tools/lib/lockdep/include/liblockdep/rwlock.h
+ tools/lib/lockdep/tests/WW.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+ create mode 100644 tools/lib/lockdep/tests/WW.c
 
-diff --git a/tools/lib/lockdep/include/liblockdep/rwlock.h b/tools/lib/lockdep/include/liblockdep/rwlock.h
+diff --git a/tools/lib/lockdep/tests/WW.c b/tools/lib/lockdep/tests/WW.c
 new file mode 100644
-index 0000000..a1d820b
+index 0000000..d44f77d
 --- /dev/null
-+++ b/tools/lib/lockdep/include/liblockdep/rwlock.h
-@@ -0,0 +1,91 @@
-+#ifndef _LIBLOCKDEP_RWLOCK_H
-+#define _LIBLOCKDEP_RWLOCK_H
++++ b/tools/lib/lockdep/tests/WW.c
+@@ -0,0 +1,13 @@
++#include <liblockdep/rwlock.h>
 +
-+#include <pthread.h>
-+#include "common.h"
-+
-+struct liblockdep_pthread_rwlock {
-+	pthread_rwlock_t rwlock;
-+	struct lockdep_map dep_map;
-+};
-+
-+typedef struct liblockdep_pthread_rwlock liblockdep_pthread_rwlock_t;
-+
-+#define LIBLOCKDEP_PTHREAD_RWLOCK_INITIALIZER(rwl)			\
-+		(struct liblockdep_pthread_rwlock) {			\
-+	.rwlock = PTHREAD_RWLOCK_INITIALIZER,				\
-+	.dep_map = STATIC_LOCKDEP_MAP_INIT(#rwl, &((&(rwl))->dep_map)),	\
-+}
-+
-+static inline int __rwlock_init(liblockdep_pthread_rwlock_t *lock,
-+				const char *name,
-+				struct lock_class_key *key,
-+				const pthread_rwlockattr_t *attr)
++void main(void)
 +{
-+	lockdep_init_map(&lock->dep_map, name, key, 0);
++	pthread_rwlock_t a, b;
 +
-+	return pthread_rwlock_init(&lock->rwlock, attr);
++	pthread_rwlock_init(&a, NULL);
++	pthread_rwlock_init(&b, NULL);
++
++	pthread_rwlock_wrlock(&a);
++	pthread_rwlock_rdlock(&b);
++	pthread_rwlock_wrlock(&a);
 +}
-+
-+#define liblockdep_pthread_rwlock_init(lock, attr)		\
-+({							\
-+	static struct lock_class_key __key;		\
-+							\
-+	__rwlock_init((lock), #lock, &__key, (attr));	\
-+})
-+
-+static inline int liblockdep_pthread_rwlock_rdlock(liblockdep_pthread_rwlock_t *lock)
-+{
-+	void *ip = _THIS_IP_;
-+	lock_acquire(&lock->dep_map, 0, 0, 2, 2, NULL, (unsigned long)ip);
-+	return pthread_rwlock_rdlock(&lock->rwlock);
-+
-+}
-+
-+static inline int liblockdep_pthread_rwlock_unlock(liblockdep_pthread_rwlock_t *lock)
-+{
-+	void *ip = _THIS_IP_;
-+	lock_release(&lock->dep_map, 0, (unsigned long)ip);
-+	return pthread_rwlock_unlock(&lock->rwlock);
-+}
-+
-+static inline int liblockdep_pthread_rwlock_wrlock(liblockdep_pthread_rwlock_t *lock)
-+{
-+	void *ip = _THIS_IP_;
-+	lock_acquire(&lock->dep_map, 0, 0, 0, 2, NULL, (unsigned long)ip);
-+	return pthread_rwlock_wrlock(&lock->rwlock);
-+}
-+
-+static inline int liblockdep_pthread_rwlock_tryrdlock(liblockdep_pthread_rwlock_t *lock)
-+{
-+	void *ip = _THIS_IP_;
-+	lock_acquire(&lock->dep_map, 0, 1, 2, 2, NULL, (unsigned long)ip);
-+	return pthread_rwlock_tryrdlock(&lock->rwlock) == 0 ? 1 : 0;
-+}
-+
-+static inline int liblockdep_pthread_rwlock_trywlock(liblockdep_pthread_rwlock_t *lock)
-+{
-+	void *ip = _THIS_IP_;
-+	lock_acquire(&lock->dep_map, 0, 1, 0, 2, NULL, (unsigned long)ip);
-+	return pthread_rwlock_trywlock(&lock->rwlock) == 0 ? 1 : 0;
-+}
-+
-+static inline int liblockdep_rwlock_destroy(liblockdep_pthread_rwlock_t *lock)
-+{
-+	return pthread_rwlock_destroy(&lock->rwlock);
-+}
-+
-+#ifdef __USE_LIBLOCKDEP
-+
-+#define pthread_rwlock_t		liblockdep_pthread_rwlock_t
-+#define pthread_rwlock_init		liblockdep_pthread_rwlock_init
-+#define pthread_rwlock_rdlock		liblockdep_pthread_rwlock_rdlock
-+#define pthread_rwlock_unlock		liblockdep_pthread_rwlock_unlock
-+#define pthread_rwlock_wrlock		liblockdep_pthread_rwlock_wrlock
-+#define pthread_rwlock_tryrdlock	liblockdep_pthread_rwlock_tryrdlock
-+#define pthread_rwlock_trywlock		liblockdep_pthread_rwlock_trywlock
-+#define pthread_rwlock_destroy		liblockdep_rwlock_destroy
-+
-+#endif
-+
-+#endif
 -- 
 1.8.2.1
 
