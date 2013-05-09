@@ -1,125 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab3EIJ7o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 05:59:44 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48247 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752528Ab3EIJ7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 05:59:43 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH] x86: Extend #DF debugging aid to 64-bit
-Date: Thu,  9 May 2013 12:02:29 +0200
-Message-Id: <1368093749-31296-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.3.rc0
+	id S1753446Ab3EIKCP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 06:02:15 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45520 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752698Ab3EIKCO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 06:02:14 -0400
+Date: Thu, 9 May 2013 11:01:49 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Message-ID: <20130509100149.GD7478@sirena.org.uk>
+References: <20130509115659.fed19d305e0b180697060f95@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YTqNa7If1bmePjLb"
+Content-Disposition: inline
+In-Reply-To: <20130509115659.fed19d305e0b180697060f95@canb.auug.org.au>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: manual merge of the regmap tree with Linus' tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
 
-It is sometimes very helpful to be able to pinpoint the location which
-causes a double fault before it turns into a triple fault and the
-machine reboots. We have this for 32-bit already so extend it to 64-bit.
-On 64-bit we get the register snapshot at #DF time and not from the
-first exception which actually causes the #DF. It should be close
-enough, though.
+--YTqNa7If1bmePjLb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/Kconfig.debug                              |  1 -
- arch/x86/include/asm/processor.h                    |  2 +-
- arch/x86/kernel/Makefile                            |  2 +-
- arch/x86/kernel/{doublefault_32.c => doublefault.c} | 15 +++++++++++++++
- arch/x86/kernel/traps.c                             |  3 +++
- 5 files changed, 20 insertions(+), 3 deletions(-)
- rename arch/x86/kernel/{doublefault_32.c => doublefault.c} (84%)
+On Thu, May 09, 2013 at 11:56:59AM +1000, Stephen Rothwell wrote:
 
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index c198b7e13e7b..b6a770132b67 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -122,7 +122,6 @@ config DEBUG_NX_TEST
- config DOUBLEFAULT
- 	default y
- 	bool "Enable doublefault exception handler" if EXPERT
--	depends on X86_32
- 	---help---
- 	  This option allows trapping of rare doublefault exceptions that
- 	  would otherwise cause a system to silently reboot. Disabling this
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 22224b3b43bb..5b87d52eed0b 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -981,5 +981,5 @@ bool xen_set_default_idle(void);
- #endif
- 
- void stop_this_cpu(void *dummy);
--
-+void df_debug(struct pt_regs *regs, long error_code);
- #endif /* _ASM_X86_PROCESSOR_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 7bd3bd310106..acb3b031f711 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -67,7 +67,7 @@ obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
- obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
- obj-y				+= kprobes/
- obj-$(CONFIG_MODULES)		+= module.o
--obj-$(CONFIG_DOUBLEFAULT) 	+= doublefault_32.o
-+obj-$(CONFIG_DOUBLEFAULT) 	+= doublefault.o
- obj-$(CONFIG_KGDB)		+= kgdb.o
- obj-$(CONFIG_VM86)		+= vm86_32.o
- obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
-diff --git a/arch/x86/kernel/doublefault_32.c b/arch/x86/kernel/doublefault.c
-similarity index 84%
-rename from arch/x86/kernel/doublefault_32.c
-rename to arch/x86/kernel/doublefault.c
-index 155a13f33ed8..5d3fe8d36e4a 100644
---- a/arch/x86/kernel/doublefault_32.c
-+++ b/arch/x86/kernel/doublefault.c
-@@ -9,6 +9,8 @@
- #include <asm/processor.h>
- #include <asm/desc.h>
- 
-+#ifdef CONFIG_X86_32
-+
- #define DOUBLEFAULT_STACKSIZE (1024)
- static unsigned long doublefault_stack[DOUBLEFAULT_STACKSIZE];
- #define STACK_START (unsigned long)(doublefault_stack+DOUBLEFAULT_STACKSIZE)
-@@ -67,3 +69,16 @@ struct tss_struct doublefault_tss __cacheline_aligned = {
- 		.__cr3		= __pa_nodebug(swapper_pg_dir),
- 	}
- };
-+
-+/* dummy for do_double_fault() call */
-+void df_debug(struct pt_regs *regs, long error_code) {}
-+
-+#else /* !CONFIG_X86_32 */
-+
-+void df_debug(struct pt_regs *regs, long error_code)
-+{
-+	pr_emerg("PANIC: double fault, error_code: 0x%lx\n", error_code);
-+	show_regs(regs);
-+	panic("Machine halted.");
-+}
-+#endif
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 772e2a846dec..167d481c5fd3 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -254,6 +254,9 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- 	tsk->thread.error_code = error_code;
- 	tsk->thread.trap_nr = X86_TRAP_DF;
- 
-+#ifdef CONFIG_DOUBLEFAULT
-+	df_debug(regs, error_code);
-+#endif
- 	/*
- 	 * This is always a kernel trap and never fixable (and thus must
- 	 * never return).
--- 
-1.8.3.rc0
+> Today's linux-next merge of the regmap tree got a conflict in
+> drivers/base/regmap/regmap-debugfs.c between commit 480738de0e07
+> ("regmap: debugfs: Simplify calculation of `c->max_reg'") from Linus'
+> tree and commit 5e3f5901ac6c ("regmap: debugfs: Fix start_reg
+> calculation") from the regmap tree.
 
+> I am not sure that the latter patch is ever required on top of the
+> former, so for now I just used the former version (except for the last
+> hunk) (see below) and can carry the fix as necessary (no action is
+> required).
+
+> Please let me know if this is the incorrect resolution.
+
+Looks sensible.  I'll resolve everything on top of -rc1 once that's
+released but I think that's the solution.
+
+--YTqNa7If1bmePjLb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRi3QKAAoJELSic+t+oim9sMMQAJyrh9BTsercEfioDhhbMmqf
++E20qzo36QBUeUa1fgiDD8a6D3xbk2qSJHtAMd7rtcAXfRnVyjcl51faQWJuFy5Z
+C8bP39Gz9zBlc/KhnbjHz11jEKZnLIh/ZxqBgVof1c0szERUg9ZE7Sx6wLrW+xyK
+J4U7k7uBJqbIbxFaJoyNFkYLML2hO5q5FT/3dhCMYCpLY93TYJza0UgL4+AT7Y6H
+LSMCpvbBSNlk4PSFvzaEXbhYL5TyCvazpIs1Cc749tjANXFybWjsUp7xGIeAgmTu
+J80l8Qv2vBep45EIJukko93LpPFj+UndRKOdcKi1QOf35d5ePahRjJJvoVxjKQeG
+/ZUWQqr3qbaaO2+W1IBOhVYVN3gHCyQkyCYuAGCwpqP+JzufHYd7GL2VMJsWLdwi
+YM7/1vq7HIM/3mi7KSKY88hVYaxob9HvAXGlazXfu2sgAvqt5QFCv0pMwgNH63+F
+wXhEfE8tdqDTlSGFQwv8LXzQS003aZMG2GJ5XxzJCx970E1glY6iI9AV/bV+d7zB
+UMl7h1GpXk+o4q0ADUNFs9EfX0/WhCqQoNFsvt0N4/guoQuRh/CFegfop7KqzNJF
+vKgK/1XZySXDZcvCGkDybcMb5+AA944/sZEf5NaR2OaL2JmWmfqZHcfKEoJzfXv4
+KWjn5ACZ3WwA8VVJ6DKT
+=S4lo
+-----END PGP SIGNATURE-----
+
+--YTqNa7If1bmePjLb--
