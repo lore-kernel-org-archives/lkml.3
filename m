@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab3EIIne (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 04:43:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57479 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab3EIInb (ORCPT
+	id S1752608Ab3EIIp6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 04:45:58 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58435 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240Ab3EIIp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 04:43:31 -0400
+	Thu, 9 May 2013 04:45:56 -0400
+X-AuditID: 9c93016f-b7ba0ae000004cc2-a1-518b6241b92c
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@kernel.org,
+        fweisbec@gmail.com, peterz@infradead.org, jolsa@redhat.com,
+        xiaoguangrong@linux.vnet.ibm.com
+Subject: Re: [PATCH 10/13] perf kvm: add live mode
+References: <1368073909-8825-1-git-send-email-dsahern@gmail.com>
+	<1368073909-8825-11-git-send-email-dsahern@gmail.com>
+Date: Thu, 09 May 2013 17:45:53 +0900
+In-Reply-To: <1368073909-8825-11-git-send-email-dsahern@gmail.com> (David
+	Ahern's message of "Wed, 8 May 2013 22:31:46 -0600")
+Message-ID: <87obck7d8e.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <s5hmws4y5h7.wl%tiwai@suse.de>
-References: <1367996197-32748-1-git-send-email-tiwai@suse.de>
-	<1367996197-32748-2-git-send-email-tiwai@suse.de>
-	<CACVXFVM2ZFYeJND7nxGhyGU7cG08Hta5qBZMAz+rDhxM1kRWZA@mail.gmail.com>
-	<s5hd2t1wih4.wl%tiwai@suse.de>
-	<s5h38txwhqq.wl%tiwai@suse.de>
-	<s5hsj1xxsv2.wl%tiwai@suse.de>
-	<CACVXFVPH1W8ogaus49WNyU17xcbbZ=_2F2FD4Yv_DJcdDov8EQ@mail.gmail.com>
-	<s5hmws4y5h7.wl%tiwai@suse.de>
-Date: Thu, 9 May 2013 16:43:28 +0800
-Message-ID: <CACVXFVPRLiP3wFL6CZbKxS73JRDybtig83vhjQ6q-yoM8uLPyg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] firmware: Avoid superfluous usermodehelper lock
-From: Ming Lei <ming.lei@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 9, 2013 at 3:31 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Thu, 9 May 2013 09:25:35 +0800,
-> Ming Lei wrote:
->>
->> On Thu, May 9, 2013 at 1:51 AM, Takashi Iwai <tiwai@suse.de> wrote:
->> >> In other words, the first patch is no essential part of the fix.
->> >> I can revisit the second patch without this one and resend if
->> >> preferred.
->> >
->> > FWIW, below is the revised patch.
->> > It's alone without the patch 1 in the previous series.
->>
->> The root cause is that your user space loader doesn't follow the
->> current firmware loader interface.
->
-> There is not necessarily a user space "loader".  It's declared as
-> non-hotplug, thus it can be a manual operation by human.
->
->> IMO, the patch is unnecessary since we already have the timeout
->> abort(just need one patch to enable it for nowait api)
->
-> Well, you cannot know any sane value for such human's operation.
-> If it's a system response, then we can assume something.  But the
-> invocation of request_firmware_nowait() with non-hotplug means that
-> you can never know the actual use case, thus you cannot know any sane
+On Wed,  8 May 2013 22:31:46 -0600, David Ahern wrote:
+[SNIP]
+> +static int perf_kvm__timerfd_create(struct perf_kvm_stat *kvm)
+> +{
+> +	struct itimerspec new_value;
+> +	struct timespec now;
+> +	int rc = -1;
+> +
+> +	kvm->timerfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+> +	if (kvm->timerfd < 0) {
+> +		pr_err("timerfd_create failed\n");
+> +		goto out;
+> +	}
+> +
+> +	if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) {
+> +		pr_err("clock_gettime failed: %d\n", errno);
+> +		close(kvm->timerfd);
+> +		goto out;
+> +	}
+> +
+> +	new_value.it_value.tv_sec = now.tv_sec + kvm->display_time;
+> +	new_value.it_value.tv_nsec = now.tv_nsec;
+> +	new_value.it_interval.tv_sec = kvm->display_time;
+> +	new_value.it_interval.tv_nsec = 0;
+> +
+> +	if (timerfd_settime(kvm->timerfd, TFD_TIMER_ABSTIME,
+> +			    &new_value, NULL) != 0) {
 
-I think the use case should be driver specific, and the loading is triggered
-from user space in dell_rbu(write sysfs file to trigger BIOS update), so the
-user has been ready for loading the image.
-
-For another usage(lattice-ecp3-config.c), it is merged recently and very
-specific(maybe only for personal use), and can be easily to change to
-trigger loading from user space like dell.
-
-I think both the two usages choose FW_ACTION_NOHOTPLUG
-because they have out of tree firmware images.  So looks enabling
-timeout won't be a big deal for them.
-
-> timeout, too.
->
-> And secondly, I don't think it's good to rely on the timeout.  Why
-> does the system have to wait for minute for shutdown?  The system is
-
-It won't if the user space follows the rules.
-
-> in shutdown, and it's triggered by user.  It's more natural to abort
-> the pending f/w loading because you don't want to handle it any
-> longer after the system shuts down.
-
-There is still risk to force killing the loader before shutdown or
-suspend.  Maybe some devices depend its firmware in shutdown
-or suspend callback to configure power setting.
+Looks like no need to use ABSTIME.
 
 Thanks,
---
-Ming Lei
+Namhyung
