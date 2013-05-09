@@ -1,151 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab3EIOnH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 10:43:07 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:2026 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281Ab3EIOnF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 10:43:05 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH v2] perf record: fix symbol processing bug and greatly improve performance
-Date: Thu,  9 May 2013 10:42:48 -0400
-Message-Id: <1368110568-64714-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung@kernel.org>
+	id S1753794Ab3EIOob (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 10:44:31 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39233 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752821Ab3EIOo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 10:44:29 -0400
+Message-ID: <518BB63E.4050006@ti.com>
+Date: Thu, 9 May 2013 10:44:14 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+CC: <linux-pm@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <amit.kachhap@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: Re: [PATCH V3 20/21] thermal: exynos: Support for TMU regulator defined
+ at device tree
+References: <1367931671-3906-1-git-send-email-amit.daniel@samsung.com> <1367931671-3906-21-git-send-email-amit.daniel@samsung.com>
+In-Reply-To: <1367931671-3906-21-git-send-email-amit.daniel@samsung.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2TEQTVBUDMNCGSLQGPGXQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When "perf record" was used on a large machine with a lot of CPUs,
-the perf post-processing time (the time after the workload was done
-until the perf command itself exited) could take a lot of minutes
-and even hours depending on how large the resulting perf.data file was.
+------enig2TEQTVBUDMNCGSLQGPGXQ
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-While running AIM7 1500-user high_systime workload on a 80-core
-x86-64 system with a 3.9 kernel (with only the -s -a options used),
-the workload itself took about 2 minutes to run and the perf.data
-file had a size of 1108.746 MB. However, the post-processing step
-took more than 10 minutes.
+On 07-05-2013 09:01, Amit Daniel Kachhap wrote:
+> TMU probe function now checks for a device tree defined regulator.
+> For compatibility reasons it is allowed to probe driver even without
+> this regulator defined.
+>=20
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> ---
+>  .../devicetree/bindings/thermal/exynos-thermal.txt |    4 ++++
+>  drivers/thermal/samsung/exynos_tmu.c               |   19 ++++++++++++=
++++++++
+>  2 files changed, 23 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.t=
+xt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> index 970eeba..ff62f7a 100644
+> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> @@ -14,6 +14,9 @@
+>  - interrupts : Should contain interrupt for thermal system
+>  - clocks : The main clock for TMU device
+>  - clock-names : Thermal system clock name
+> +- vtmu-supply: This entry is optional and provides the regulator node =
+supplying
+> +		voltage to TMU. If needed this entry can be placed inside
+> +		board/platform specific dts file.
+> =20
+>  Example 1):
+> =20
+> @@ -25,6 +28,7 @@ Example 1):
+>  		clocks =3D <&clock 383>;
+>  		clock-names =3D "tmu_apbif";
+>  		status =3D "disabled";
+> +		vtmu-supply =3D <&tmu_regulator_node>;
+>  	};
+> =20
+>  Example 2):
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/sam=
+sung/exynos_tmu.c
+> index 72446c9..b7c609a 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/of_address.h>
+>  #include <linux/of_irq.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/regulator/consumer.h>
+>  #include <linux/slab.h>
+>  #include <linux/workqueue.h>
+>  #include "exynos_thermal_common.h"
+> @@ -52,6 +53,7 @@
+>   * @clk: pointer to the clock structure.
+>   * @temp_error1: fused value of the first point trim.
+>   * @temp_error2: fused value of the second point trim.
+> + * @regulator: pointer to the TMU regulator structure.
+>   * @reg_conf: pointer to structure to register with core thermal.
+>   */
+>  struct exynos_tmu_data {
+> @@ -65,6 +67,7 @@ struct exynos_tmu_data {
+>  	struct mutex lock;
+>  	struct clk *clk;
+>  	u8 temp_error1, temp_error2;
+> +	struct regulator *regulator;
+>  	struct thermal_sensor_conf *reg_conf;
+>  };
+> =20
+> @@ -501,10 +504,23 @@ static int exynos_map_dt_data(struct platform_dev=
+ice *pdev)
+>  	struct exynos_tmu_data *data =3D platform_get_drvdata(pdev);
+>  	struct exynos_tmu_platform_data *pdata =3D data->pdata;
+>  	struct resource res;
+> +	int ret;
+> =20
+>  	if (!data)
+>  		return -ENODEV;
+> =20
+> +	/* Try enabling the regulator if found */
+> +	data->regulator =3D devm_regulator_get(&pdev->dev, "vtmu");
+> +	if (!IS_ERR(data->regulator)) {
+> +		ret =3D regulator_enable(data->regulator);
+> +		if (ret) {
+> +			dev_err(&pdev->dev, "failed to enable vtmu\n");
+> +			return ret;
+> +		}
+> +	} else {
+> +		dev_info(&pdev->dev, "Regulator node (vtmu) not found\n");
 
-With a gprof-profiled perf binary, the time spent by perf was as
-follows:
+Now that you have a bitfield for your features, shouldnt this become a
+check? If the SoC requires the regulator, then it has to return a valid
+regulator (regulator_get). Meaning, if your SoC version requires this
+feature and the regulator_get returns an error, you must treat as an
+error an not continue gracefuly.
 
-  %   cumulative   self              self     total
- time   seconds   seconds    calls   s/call   s/call  name
- 96.90    822.10   822.10   192156     0.00     0.00  dsos__find
-  0.81    828.96     6.86 172089958     0.00     0.00  rb_next
-  0.41    832.44     3.48 48539289     0.00     0.00  rb_erase
+> +	}
+> +
+>  	data->id =3D of_alias_get_id(pdev->dev.of_node, "tmuctrl");
+>  	if (data->id < 0)
+>  		data->id =3D 0;
+> @@ -669,6 +685,9 @@ static int exynos_tmu_remove(struct platform_device=
+ *pdev)
+> =20
+>  	clk_unprepare(data->clk);
+> =20
+> +	if (!IS_ERR(data->regulator))
+> +		regulator_disable(data->regulator);
+> +
+>  	platform_set_drvdata(pdev, NULL);
+> =20
+>  	return 0;
+>=20
 
-So 97% (822 seconds) of the time was spent in a single dsos_find()
-function. After analyzing the call-graph data below:
 
------------------------------------------------
-                0.00  822.12  192156/192156      map__new [6]
-[7]     96.9    0.00  822.12  192156         vdso__dso_findnew [7]
-              822.10    0.00  192156/192156      dsos__find [8]
-                0.01    0.00  192156/192156      dsos__add [62]
-                0.01    0.00  192156/192366      dso__new [61]
-                0.00    0.00       1/45282525     memdup [31]
-                0.00    0.00  192156/192230      dso__set_long_name [91]
------------------------------------------------
-              822.10    0.00  192156/192156      vdso__dso_findnew [7]
-[8]     96.9  822.10    0.00  192156         dsos__find [8]
------------------------------------------------
 
-It was found that the vdso__dso_findnew() function failed to locate
-VDSO__MAP_NAME ("[vdso]") in the dso list and have to insert a new
-entry at the end for 192156 times. This problem is due to the fact that
-there are 2 types of name in the dso entry - short name and long name.
-The initial dso__new() adds "[vdso]" to both the short and long names.
-After that, vdso__dso_findnew() modifies the long name to something
-like /tmp/perf-vdso.so-NoXkDj. The dsos__find() function only compares
-the long name. As a result, the same vdso entry is duplicated many
-time in the dso list. This bug increases memory consumption as well
-as slows the symbol processing time to a crawl.
+------enig2TEQTVBUDMNCGSLQGPGXQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-To resolve this problem, the dsos__find() function interface was
-modified to enable searching either the long name or the short
-name. The vdso__dso_findnew() will now search only the short name
-while the other call sites search for the long name as before.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-With this change, the cpu time of perf was reduced from 848.38s to
-15.77s and dsos__find() only accounted for 0.06% of the total time.
+iF4EAREIAAYFAlGLtj4ACgkQCXcVR3XQvP02/QD/XjlpNSOeXCJj3+EAMnlwfvOU
+G2rls7XIQ1C+M6K/nK0A/3Imb/eU9VxW9g7M8R6+M0+xcaHsX0PIRQ7UVXHgSVGD
+=OtVT
+-----END PGP SIGNATURE-----
 
-  0.06     15.73     0.01   192151     0.00     0.00  dsos__find
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- tools/perf/util/dso.c  |   10 ++++++++--
- tools/perf/util/dso.h  |    3 ++-
- tools/perf/util/vdso.c |    2 +-
- 3 files changed, 11 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 6f7d5a9..3d80f92 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -513,10 +513,16 @@ void dsos__add(struct list_head *head, struct dso *dso)
- 	list_add_tail(&dso->node, head);
- }
- 
--struct dso *dsos__find(struct list_head *head, const char *name)
-+struct dso *dsos__find(struct list_head *head, const char *name, bool cmp_short)
- {
- 	struct dso *pos;
- 
-+	if (cmp_short) {
-+		list_for_each_entry(pos, head, node)
-+			if (strcmp(pos->short_name, name) == 0)
-+				return pos;
-+		return NULL;
-+	}
- 	list_for_each_entry(pos, head, node)
- 		if (strcmp(pos->long_name, name) == 0)
- 			return pos;
-@@ -525,7 +531,7 @@ struct dso *dsos__find(struct list_head *head, const char *name)
- 
- struct dso *__dsos__findnew(struct list_head *head, const char *name)
- {
--	struct dso *dso = dsos__find(head, name);
-+	struct dso *dso = dsos__find(head, name, FALSE);
- 
- 	if (!dso) {
- 		dso = dso__new(name);
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index 450199a..d51aaf2 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -133,7 +133,8 @@ struct dso *dso__kernel_findnew(struct machine *machine, const char *name,
- 				const char *short_name, int dso_type);
- 
- void dsos__add(struct list_head *head, struct dso *dso);
--struct dso *dsos__find(struct list_head *head, const char *name);
-+struct dso *dsos__find(struct list_head *head, const char *name,
-+		       bool cmp_short);
- struct dso *__dsos__findnew(struct list_head *head, const char *name);
- bool __dsos__read_build_ids(struct list_head *head, bool with_hits);
- 
-diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
-index e60951f..a8fd73d 100644
---- a/tools/perf/util/vdso.c
-+++ b/tools/perf/util/vdso.c
-@@ -91,7 +91,7 @@ void vdso__exit(void)
- 
- struct dso *vdso__dso_findnew(struct list_head *head)
- {
--	struct dso *dso = dsos__find(head, VDSO__MAP_NAME);
-+	struct dso *dso = dsos__find(head, VDSO__MAP_NAME, TRUE);
- 
- 	if (!dso) {
- 		char *file;
--- 
-1.7.1
-
+------enig2TEQTVBUDMNCGSLQGPGXQ--
