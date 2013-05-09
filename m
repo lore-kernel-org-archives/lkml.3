@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832Ab3EIW01 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:26:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45745 "EHLO
+	id S1759441Ab3EIXJM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:09:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755592Ab3EIW0Z (ORCPT
+	with ESMTP id S1754550Ab3EIW02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:25 -0400
+	Thu, 9 May 2013 18:26:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        eranian@google.com
-Subject: [ 17/73] perf/x86/intel/lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
-Date: Thu,  9 May 2013 15:25:07 -0700
-Message-Id: <20130509222528.251880018@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 31/73] drm/ast: deal with bo reserve fail in dirty update path
+Date: Thu,  9 May 2013 15:25:21 -0700
+Message-Id: <20130509222529.623757717@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -28,69 +26,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 7cc23cd6c0c7d7f4bee057607e7ce01568925717 upstream.
+commit 306373b645d80625335b8e684fa09b14ba460cec upstream.
 
-We should always have proper privileges when requesting kernel
-data.
+Port over the mgag200 fix to ast as it suffers the same issue.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: eranian@google.com
-Link: http://lkml.kernel.org/r/20130503121256.230745028@chello.nl
-[ Fix build error reported by fengguang.wu@intel.com, propagate error code back. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/n/tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org
+    On F19 testing, it was noticed we get a lot of errors in dmesg
+    about being unable to reserve the buffer when plymouth starts,
+    this is due to the buffer being in the process of migrating,
+    so it makes sense we can't reserve it.
+
+    In order to deal with it, this adds delayed updates for the dirty
+    updates, when the bo is unreservable, in the normal console case
+    this shouldn't ever happen, its just when plymouth or X is
+    pushing the console bo to system memory.
+
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/ast/ast_drv.h |    2 +
+ drivers/gpu/drm/ast/ast_fb.c  |   43 +++++++++++++++++++++++++++++++++++++++---
+ drivers/gpu/drm/ast/ast_ttm.c |    2 -
+ 3 files changed, 43 insertions(+), 4 deletions(-)
 
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -310,7 +310,7 @@ void intel_pmu_lbr_read(void)
-  * - in case there is no HW filter
-  * - in case the HW filter has errata or limitations
-  */
--static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
-+static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- {
- 	u64 br_type = event->attr.branch_sample_type;
- 	int mask = 0;
-@@ -318,8 +318,11 @@ static void intel_pmu_setup_sw_lbr_filte
- 	if (br_type & PERF_SAMPLE_BRANCH_USER)
- 		mask |= X86_BR_USER;
+--- a/drivers/gpu/drm/ast/ast_drv.h
++++ b/drivers/gpu/drm/ast/ast_drv.h
+@@ -241,6 +241,8 @@ struct ast_fbdev {
+ 	void *sysram;
+ 	int size;
+ 	struct ttm_bo_kmap_obj mapping;
++	int x1, y1, x2, y2; /* dirty rect */
++	spinlock_t dirty_lock;
+ };
  
--	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
-+	if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
-+		if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-+			return -EACCES;
- 		mask |= X86_BR_KERNEL;
-+	}
+ #define to_ast_crtc(x) container_of(x, struct ast_crtc, base)
+--- a/drivers/gpu/drm/ast/ast_fb.c
++++ b/drivers/gpu/drm/ast/ast_fb.c
+@@ -53,16 +53,52 @@ static void ast_dirty_update(struct ast_
+ 	int bpp = (afbdev->afb.base.bits_per_pixel + 7)/8;
+ 	int ret;
+ 	bool unmap = false;
++	bool store_for_later = false;
++	int x2, y2;
++	unsigned long flags;
  
- 	/* we ignore BRANCH_HV here */
+ 	obj = afbdev->afb.obj;
+ 	bo = gem_to_ast_bo(obj);
  
-@@ -339,6 +342,8 @@ static void intel_pmu_setup_sw_lbr_filte
- 	 * be used by fixup code for some CPU
- 	 */
- 	event->hw.branch_reg.reg = mask;
++	/*
++	 * try and reserve the BO, if we fail with busy
++	 * then the BO is being moved and we should
++	 * store up the damage until later.
++	 */
+ 	ret = ast_bo_reserve(bo, true);
+ 	if (ret) {
+-		DRM_ERROR("failed to reserve fb bo\n");
++		if (ret != -EBUSY)
++			return;
 +
-+	return 0;
- }
++		store_for_later = true;
++	}
++
++	x2 = x + width - 1;
++	y2 = y + height - 1;
++	spin_lock_irqsave(&afbdev->dirty_lock, flags);
++
++	if (afbdev->y1 < y)
++		y = afbdev->y1;
++	if (afbdev->y2 > y2)
++		y2 = afbdev->y2;
++	if (afbdev->x1 < x)
++		x = afbdev->x1;
++	if (afbdev->x2 > x2)
++		x2 = afbdev->x2;
++
++	if (store_for_later) {
++		afbdev->x1 = x;
++		afbdev->x2 = x2;
++		afbdev->y1 = y;
++		afbdev->y2 = y2;
++		spin_unlock_irqrestore(&afbdev->dirty_lock, flags);
+ 		return;
+ 	}
  
- /*
-@@ -386,7 +391,9 @@ int intel_pmu_setup_lbr_filter(struct pe
- 	/*
- 	 * setup SW LBR filter
- 	 */
--	intel_pmu_setup_sw_lbr_filter(event);
-+	ret = intel_pmu_setup_sw_lbr_filter(event);
-+	if (ret)
-+		return ret;
++	afbdev->x1 = afbdev->y1 = INT_MAX;
++	afbdev->x2 = afbdev->y2 = 0;
++	spin_unlock_irqrestore(&afbdev->dirty_lock, flags);
++
+ 	if (!bo->kmap.virtual) {
+ 		ret = ttm_bo_kmap(&bo->bo, 0, bo->bo.num_pages, &bo->kmap);
+ 		if (ret) {
+@@ -72,10 +108,10 @@ static void ast_dirty_update(struct ast_
+ 		}
+ 		unmap = true;
+ 	}
+-	for (i = y; i < y + height; i++) {
++	for (i = y; i <= y2; i++) {
+ 		/* assume equal stride for now */
+ 		src_offset = dst_offset = i * afbdev->afb.base.pitches[0] + (x * bpp);
+-		memcpy_toio(bo->kmap.virtual + src_offset, afbdev->sysram + src_offset, width * bpp);
++		memcpy_toio(bo->kmap.virtual + src_offset, afbdev->sysram + src_offset, (x2 - x + 1) * bpp);
  
- 	/*
- 	 * setup HW LBR filter, if any
+ 	}
+ 	if (unmap)
+@@ -292,6 +328,7 @@ int ast_fbdev_init(struct drm_device *de
+ 
+ 	ast->fbdev = afbdev;
+ 	afbdev->helper.funcs = &ast_fb_helper_funcs;
++	spin_lock_init(&afbdev->dirty_lock);
+ 	ret = drm_fb_helper_init(dev, &afbdev->helper,
+ 				 1, 1);
+ 	if (ret) {
+--- a/drivers/gpu/drm/ast/ast_ttm.c
++++ b/drivers/gpu/drm/ast/ast_ttm.c
+@@ -316,7 +316,7 @@ int ast_bo_reserve(struct ast_bo *bo, bo
+ 
+ 	ret = ttm_bo_reserve(&bo->bo, true, no_wait, false, 0);
+ 	if (ret) {
+-		if (ret != -ERESTARTSYS)
++		if (ret != -ERESTARTSYS && ret != -EBUSY)
+ 			DRM_ERROR("reserve failed %p\n", bo);
+ 		return ret;
+ 	}
 
 
