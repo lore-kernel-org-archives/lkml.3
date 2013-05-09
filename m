@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914Ab3EIHbQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 03:31:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33005 "EHLO mx2.suse.de"
+	id S1751881Ab3EIHe2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 03:34:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33055 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750912Ab3EIHbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 03:31:15 -0400
-Date: Thu, 09 May 2013 09:31:16 +0200
-Message-ID: <s5hmws4y5h7.wl%tiwai@suse.de>
+	id S1750879Ab3EIHe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 03:34:27 -0400
+Date: Thu, 09 May 2013 09:34:27 +0200
+Message-ID: <s5hli7oy5bw.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Ming Lei <ming.lei@canonical.com>
 Cc: linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/3] firmware: Avoid superfluous usermodehelper lock
-In-Reply-To: <CACVXFVPH1W8ogaus49WNyU17xcbbZ=_2F2FD4Yv_DJcdDov8EQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] firmware: Avoid deadlock of usermodehelper lock at shutdown
+In-Reply-To: <CACVXFVPWi78eeJXiEx3c2=h378kPVO=zt7qz5JPAXxDOOcogNg@mail.gmail.com>
 References: <1367996197-32748-1-git-send-email-tiwai@suse.de>
-	<1367996197-32748-2-git-send-email-tiwai@suse.de>
-	<CACVXFVM2ZFYeJND7nxGhyGU7cG08Hta5qBZMAz+rDhxM1kRWZA@mail.gmail.com>
-	<s5hd2t1wih4.wl%tiwai@suse.de>
-	<s5h38txwhqq.wl%tiwai@suse.de>
-	<s5hsj1xxsv2.wl%tiwai@suse.de>
-	<CACVXFVPH1W8ogaus49WNyU17xcbbZ=_2F2FD4Yv_DJcdDov8EQ@mail.gmail.com>
+	<1367996197-32748-3-git-send-email-tiwai@suse.de>
+	<CACVXFVMRC2L9nBgxTv+20L2gPsRkkkraFTSL19u+KFnunoix6w@mail.gmail.com>
+	<s5hehdhwiqi.wl%tiwai@suse.de>
+	<CACVXFVPWi78eeJXiEx3c2=h378kPVO=zt7qz5JPAXxDOOcogNg@mail.gmail.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -30,41 +28,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 9 May 2013 09:25:35 +0800,
+At Thu, 9 May 2013 09:19:47 +0800,
 Ming Lei wrote:
 > 
-> On Thu, May 9, 2013 at 1:51 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> >> In other words, the first patch is no essential part of the fix.
-> >> I can revisit the second patch without this one and resend if
-> >> preferred.
+> On Thu, May 9, 2013 at 12:15 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> > At Wed, 8 May 2013 23:56:51 +0800,
+> > Ming Lei wrote:
+> >>
+> >> On Wed, May 8, 2013 at 2:56 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> >> > When a system goes to reboot/shutdown, it tries to disable the
+> >> > usermode helper via usermodehelper_disable().  This might be blocked
+> >> > when a driver tries to load a firmware beforehand and it's stuck by
+> >> > some reason.
+> >>
+> >> IMO, it is better to find why the loading is stuck. Also we already provides
+> >> the timeout sysfs file to help to deal with the situation.
 > >
-> > FWIW, below is the revised patch.
-> > It's alone without the patch 1 in the previous series.
+> > The loading is done manually in the case of dell_rbu driver, so it may
+> > happen at any time that the f/w loading doesn't finish properly.
+> >
+> >
+> >> > In this patch, the firmware class driver registers a reboot notifier
+> >> > so that it can abort all pending f/w bufs.  Also enable a flag for
+> >> > avoiding the call of usermodehelper after the reboot/shutdown starts.
+> >>
+> >> With this patch, maybe we only hide the real problem.
+> >
+> > No, you can simulate the hang easily.  Try the below (you can run it
+> > on every x86 machine; it just loads the data onto the memory.)
+> >
+> > - modprobe dell_rbu
+> >
+> > - echo init > /sys/devices/platform/dell_rbu/image_type
+> >
+> >   (... now /sys/class/firmware/dell_rbu/* appear)
+> >
+> > - echo 1 > /sys/class/firmware/dell_rbu/loading
+> >
+> > - halt -p
+> >
+> > Now the machine gets stuck.
+> >
+> > Yes, the real problem is obvious: you didn't finish the f/w loading in
+> > the above, and it will never happen.  This doesn't justify that the
+> > machine can be stalled at shutdown, though.
 > 
-> The root cause is that your user space loader doesn't follow the
-> current firmware loader interface.
+> OK, got it, thanks for your explanation, but anyway the stall is caused
+> by not concluding the load in userspace(we have document about it),
+> not by firmware loader itself.
 
-There is not necessarily a user space "loader".  It's declared as
-non-hotplug, thus it can be a manual operation by human.
+It's the firmware loader who blocks the usermodelock :)
 
-> IMO, the patch is unnecessary since we already have the timeout
-> abort(just need one patch to enable it for nowait api)
+> I think there is no reason to disable the loading timeout for !event, could
+> you test the below patch to see if it may avoid the stall?
 
-Well, you cannot know any sane value for such human's operation.
-If it's a system response, then we can assume something.  But the
-invocation of request_firmware_nowait() with non-hotplug means that
-you can never know the actual use case, thus you cannot know any sane
-timeout, too.
-
-And secondly, I don't think it's good to rely on the timeout.  Why
-does the system have to wait for minute for shutdown?  The system is
-in shutdown, and it's triggered by user.  It's more natural to abort
-the pending f/w loading because you don't want to handle it any
-longer after the system shuts down.
-
-I guess the same problem remains in the suspend/hibernation.
+Please test on your machine (e.g. on VM).  I'm off today for a
+holiday.
+As mentioned, dell_rbu can run on every machine and it's harmless.
 
 
 thanks,
 
 Takashi
+
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index 4b1f926..caf399e 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -848,11 +848,12 @@ static int _request_firmware_load(struct
+> firmware_priv *fw_priv, bool uevent,
+>  		goto err_del_bin_attr;
+>  	}
+> 
+> +	if (timeout != MAX_SCHEDULE_TIMEOUT)
+> +		schedule_delayed_work(&fw_priv->timeout_work, timeout);
+> +
+>  	if (uevent) {
+>  		dev_set_uevent_suppress(f_dev, false);
+>  		dev_dbg(f_dev, "firmware: requesting %s\n", buf->fw_id);
+> -		if (timeout != MAX_SCHEDULE_TIMEOUT)
+> -			schedule_delayed_work(&fw_priv->timeout_work, timeout);
+> 
+>  		kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
+>  	}
+> 
+> 
+> Thanks,
+> --
+> Ming Lei
+> 
