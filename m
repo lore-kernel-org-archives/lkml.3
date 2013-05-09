@@ -1,77 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab3EIRJg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 13:09:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38247 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab3EIRJf (ORCPT
+	id S1752218Ab3EIRJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 13:09:50 -0400
+Received: from nm16.access.bullet.mail.sp2.yahoo.com ([98.139.44.143]:46664
+	"EHLO nm16.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752076Ab3EIRJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 13:09:35 -0400
-Message-ID: <518BD826.4040403@infradead.org>
-Date: Thu, 09 May 2013 10:08:54 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: David Teigland <teigland@redhat.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, swhiteho@redhat.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cluster-devel@redhat.com
-Subject: Re: linux-next: Tree for May 8 (dlm)
-References: <20130508140122.e4747b58be4333060b7a248a@canb.auug.org.au> <518A93BD.3020300@infradead.org> <20130509094745.049e46fff25f357e7eb50123@canb.auug.org.au> <20130509165028.GA18077@redhat.com>
-In-Reply-To: <20130509165028.GA18077@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 9 May 2013 13:09:48 -0400
+X-Yahoo-Newman-Id: 618246.62117.bm@smtp104.sbc.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 63cK6BwVM1ktUNFF8o528TRLiJsCQIYV0qxv3bAUhbPmKjQ
+ abx1V_iCWzBg1bUQVN_nu2UMJ3_QgZuCDCLZdpKfiBPSIqjpiS4jUqE4L6Gf
+ 5P8XjFpMQC8.l1NTFHLIbGg9guljlKW8.Krz0lh0PRW_It_riVSJaIqwgFsP
+ 75ESHfjfh.83VAx3nq5r_isOrjqY64kjxCQSGVp2VNDu5zrypweZ.uruWLHj
+ a8pnBb_pYr3zXf8xRitILvolsZDB8tvIVbik8L.ZT367YnlfYGbOlqdojXQu
+ drl_9bTN6M5yI1Cra2H92MTzg4GbY49A0aAUn1mRF8o_fmglPelOZiTLe3cf
+ SWGLaMBztVhWc4Xp32ticp96W3wjMKw0FbHSYawSNcaZrD4jlcHEj5StVFn1
+ azIkTv50DP3.tam6Nln3TrQ7xVVUJKkdkn6z78ThEqV8amMu0uLaH2FcOtd8
+ tFhcNmH1IvByP2ymqzFQNGhNzE00AjbaFDijyfnjNF7yKdZEwXSCOa0QQPSb
+ VaYzT6kBIkv2a4agwLBDDWNRHs419bEmurQMCV_VwlqJsoq7z6ui1FJPoK8k
+ sZlmA21Lk6TZ.cG8Xqw--
+X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
+X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
+        by smtp104.sbc.mail.gq1.yahoo.com with SMTP; 09 May 2013 10:09:47 -0700 PDT
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        Jean Delvare <khali@linux-fr.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Jingoo Han <jg1.han@samsung.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 2/3] hwmon: (tmp102) Convert to use __pm instead of #ifdef CONFIG_PM
+Date: Thu,  9 May 2013 10:09:50 -0700
+Message-Id: <1368119391-13837-3-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
+In-Reply-To: <1368119391-13837-1-git-send-email-linux@roeck-us.net>
+References: <1368119391-13837-1-git-send-email-linux@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/13 09:50, David Teigland wrote:
-> On Thu, May 09, 2013 at 09:47:45AM +1000, Stephen Rothwell wrote:
->> [Just forwarding to David ...]
->>
->> On Wed, 08 May 2013 11:04:45 -0700 Randy Dunlap <rdunlap@infradead.org> wrote:
->>>
->>> on x86_64:
->>>
->>> when CONFIG_GFS2_FS_LOCKING_DLM=y and CONFIG_DLM=m:
->>>
->>> fs/built-in.o: In function `gfs2_lock':
->>> file.c:(.text+0xa512c): undefined reference to `dlm_posix_get'
->>> file.c:(.text+0xa5140): undefined reference to `dlm_posix_unlock'
->>> file.c:(.text+0xa514a): undefined reference to `dlm_posix_lock'
-> 
-> gfs2/file.c calls the dlm directly, so I suppose gfs2 itself needs
-> to depend on the dlm.  It's been like this for a long time, so I
-> don't know why it only appeared now.
+With this change, code only needed is power management is active still
+compiles if it is disabled, but does not consume space in the object file.
 
-Agreed to both statements.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/hwmon/tmp102.c |   14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
->>> fs/built-in.o: In function `gdlm_cancel':
->>> lock_dlm.c:(.text+0xb3f57): undefined reference to `dlm_unlock'
->>> fs/built-in.o: In function `gdlm_unmount':
->>> lock_dlm.c:(.text+0xb40ff): undefined reference to `dlm_release_lockspace'
->>> fs/built-in.o: In function `sync_unlock.isra.4':
->>> lock_dlm.c:(.text+0xb420d): undefined reference to `dlm_unlock'
->>> fs/built-in.o: In function `sync_lock.isra.5':
->>> lock_dlm.c:(.text+0xb42d9): undefined reference to `dlm_lock'
->>> fs/built-in.o: In function `gdlm_put_lock':
->>> lock_dlm.c:(.text+0xb45e7): undefined reference to `dlm_unlock'
->>> fs/built-in.o: In function `gdlm_mount':
->>> lock_dlm.c:(.text+0xb4928): undefined reference to `dlm_new_lockspace'
->>> lock_dlm.c:(.text+0xb4c75): undefined reference to `dlm_release_lockspace'
->>> fs/built-in.o: In function `gdlm_lock':
->>> lock_dlm.c:(.text+0xb529f): undefined reference to `dlm_lock'
-> 
-> lock_dlm.c is GFS2_FS_LOCKING_DLM which depends on DLM.
-> Is that not correct?
-
-The problem is that GFS2_FS_LOCKING_DLM is a bool.  It depends on DLM,
-which is a tristate with a value of 'm', so the bool is true (as long
-as DLM != 'n').
-
-One option is to make GFS2_FS_LOCKING_DLM depend on "DLM != n", but a
-better fix is to make GFS2_FS depend on DLM, like you said above.
-
-
+diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
+index 523dd89..8e5d267 100644
+--- a/drivers/hwmon/tmp102.c
++++ b/drivers/hwmon/tmp102.c
+@@ -236,8 +236,7 @@ static int tmp102_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM
+-static int tmp102_suspend(struct device *dev)
++static int __pm tmp102_suspend(struct device *dev)
+ {
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	int config;
+@@ -250,7 +249,7 @@ static int tmp102_suspend(struct device *dev)
+ 	return i2c_smbus_write_word_swapped(client, TMP102_CONF_REG, config);
+ }
+ 
+-static int tmp102_resume(struct device *dev)
++static int __pm tmp102_resume(struct device *dev)
+ {
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	int config;
+@@ -263,16 +262,11 @@ static int tmp102_resume(struct device *dev)
+ 	return i2c_smbus_write_word_swapped(client, TMP102_CONF_REG, config);
+ }
+ 
+-static const struct dev_pm_ops tmp102_dev_pm_ops = {
++static const struct dev_pm_ops __pm tmp102_dev_pm_ops = {
+ 	.suspend	= tmp102_suspend,
+ 	.resume		= tmp102_resume,
+ };
+ 
+-#define TMP102_DEV_PM_OPS (&tmp102_dev_pm_ops)
+-#else
+-#define	TMP102_DEV_PM_OPS NULL
+-#endif /* CONFIG_PM */
+-
+ static const struct i2c_device_id tmp102_id[] = {
+ 	{ "tmp102", 0 },
+ 	{ }
+@@ -281,7 +275,7 @@ MODULE_DEVICE_TABLE(i2c, tmp102_id);
+ 
+ static struct i2c_driver tmp102_driver = {
+ 	.driver.name	= DRIVER_NAME,
+-	.driver.pm	= TMP102_DEV_PM_OPS,
++	.driver.pm	= pm_ops_ptr(&tmp102_dev_pm_ops),
+ 	.probe		= tmp102_probe,
+ 	.remove		= tmp102_remove,
+ 	.id_table	= tmp102_id,
 -- 
-~Randy
+1.7.9.7
+
