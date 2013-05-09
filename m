@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab3EIUVu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 16:21:50 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:39605 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab3EIUVs (ORCPT
+	id S1753008Ab3EIUZe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 16:25:34 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41691 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049Ab3EIUZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 16:21:48 -0400
+	Thu, 9 May 2013 16:25:33 -0400
+Date: Thu, 9 May 2013 13:25:34 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Simon Glass <sjg@chromium.org>, Alim Akhtar <alim.akhtar@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: exynos: dts: Fixed vbus-gpios
+Message-ID: <20130509202534.GB21831@quad.lixom.net>
+References: <1368034636-15865-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyCuksrVPwO=R_xX2An8qavo17aCZ5bfN=FWo1gZZfAsQ@mail.gmail.com>
-References: <20130509192655.GG25399@ZenIV.linux.org.uk>
-	<CA+55aFyCuksrVPwO=R_xX2An8qavo17aCZ5bfN=FWo1gZZfAsQ@mail.gmail.com>
-Date: Thu, 9 May 2013 13:21:47 -0700
-X-Google-Sender-Auth: v3GkXxflPiq63Zqyn7JfWEQ0UhA
-Message-ID: <CA+55aFwfOS0uNrjuB92ntNsOMZYKOAABw+i29BoPLwhMOY+-hA@mail.gmail.com>
-Subject: Re: [git pull] more vfs.git stuff
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368034636-15865-1-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 9, 2013 at 1:12 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Hmm. I get one more commit - a racy usbmon thing. Which looks fine per
-> se, but would look even better if it just made mmap_active an atomic_t
-> instead, wouldn't you say?
+On Wed, May 08, 2013 at 10:37:16AM -0700, Doug Anderson wrote:
+> The 'samsung,vbus-gpio' was submitted before pinmux landed for
+> exynos5250 and uses the old-style gpio specifier.  Fix the two
+> exynos5250 boards that use it.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Oh, I see, the spinlock protects the read too and the logic there. Not
-that I'm at all sure we care, since if that code races with somebody
-else doing an mmap, there's a race at a much higher level anyway. So I
-don't think the spinlock really gives any more serialization between
-the reading/writing of that mmap_active count. You're going to get
-either the old or the new value anyway, and an atomic will do that
-too.
 
-So whatever. I just don't want to pull stuff that gets me unexpected
-patches that weren't in the pull request.
+Applied to arm-soc fixes.
 
-                 Linus
+Thanks,
+
+
+-Olof
