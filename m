@@ -1,70 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab3EITXm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 15:23:42 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:36287 "EHLO relay.sgi.com"
+	id S1752813Ab3EITXt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 15:23:49 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:51589 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751854Ab3EITXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 15:23:41 -0400
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS updates (#2) for 3.10-rc1
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20130509192336.EB1A7500B4B@whiskey.americas.sgi.com>
-Date: Thu,  9 May 2013 14:23:36 -0500 (CDT)
-From: bpm@sgi.com (Ben Myers)
+	id S1751854Ab3EITXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 15:23:44 -0400
+From: Robin Holt <holt@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Russ Anderson <rja@sgi.com>,
+        Robin Holt <holt@sgi.com>, Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH -v8 00/11] Shutdown from reboot_cpuid without stopping other cpus.
+Date: Thu,  9 May 2013 14:23:14 -0500
+Message-Id: <1368127405-112717-1-git-send-email-holt@sgi.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+We recently noticed that reboot of a 1024 cpu machine takes approx 16
+minutes of just stopping the cpus.  The slowdown was tracked to commit
+f96972f.
 
-Please pull these three stragglers for 3.10-rc1.  CONFIG_XFS_WARN will be
-helpful in environments which are having trouble, and where full
-CONFIG_XFS_DEBUG isn't appropriate.  There are two fixes for issues with
-extended attribtues seen with xfsdump.
+The current implementation does all the work of hot removing the cpus
+before halting the system.  We are switching to just migrating to the
+reboot_cpu and then continuing with shutdown/reboot.
 
-Thanks,
-	Ben
+The patch set is broken into eleven parts.  The first two are planned for
+the stable release.  The others move the halt/shutdown/reboot related
+functions to their own kernel/reboot.c file and then move the handling
+of the kernel reboot= kernel parameter to generic kernel code.
 
-The following changes since commit cab09a81fbefcb21db5213a84461d421946f6eb8:
 
-  xfs: fix da node magic number mismatches (2013-05-01 14:48:30 -0500)
+Changes since -v8
+ - Changes reboot_cpu on stack to cpu to fix bug noticed by Russell King.
 
-are available in the git repository at:
+ - Switched unicore32 and arm from using REBOOT_WARM/COLD to HARD/SOFT.
 
-  git://oss.sgi.com/xfs/xfs tags/for-linus-v3.10-rc1-2
+ - Fixed case statement bug.
 
-for you to fetch changes up to 7dfbcbefad4b24d9822d04dbd7b5dd5c3fd45076:
+ - Went to using simple_strtoul for parsing reboot_cpu=smp###.
 
-  xfs: fallback to vmalloc for large buffers in xfs_compat_attrlist_by_handle (2013-05-07 19:00:10 -0500)
+ - Made parsing of reboot= not use any #ifdef'd code.
 
-----------------------------------------------------------------
-xfs: update (#2) for v3.10-rc1
+Changes since -v7.
+ - Fixed authorship for first patch.
 
-* add CONFIG_XFS_WARN, a step between zero debugging and CONFIG_XFS_DEBUG.
-* fix attrmulti and attrlist to fall back to vmalloc when kmalloc fails.
+ - Rebased to Linus' current tree (51a26ae7a).
 
-----------------------------------------------------------------
-Dave Chinner (1):
-      xfs: introduce CONFIG_XFS_WARN
+Changes since -v6.
+ - Cross compiled all arm architectures (using v3.9 kernel.  Fails with
+   current).
 
-Eric Sandeen (2):
-      xfs: fallback to vmalloc for large buffers in xfs_attrlist_by_handle
-      xfs: fallback to vmalloc for large buffers in xfs_compat_attrlist_by_handle
+ - Added a #define for non-hotplug case.
 
- fs/xfs/Kconfig            |   13 +++++++++++++
- fs/xfs/mrlock.h           |   12 ++++++------
- fs/xfs/xfs.h              |    5 +++++
- fs/xfs/xfs_alloc_btree.c  |    4 ++--
- fs/xfs/xfs_bmap_btree.c   |    4 ++--
- fs/xfs/xfs_btree.h        |    2 +-
- fs/xfs/xfs_dir2_node.c    |    4 ++--
- fs/xfs/xfs_ialloc_btree.c |    4 ++--
- fs/xfs/xfs_inode.c        |    2 +-
- fs/xfs/xfs_ioctl.c        |   14 ++++++++++----
- fs/xfs/xfs_ioctl32.c      |   14 ++++++++++----
- fs/xfs/xfs_linux.h        |   24 ++++++++++++++++++------
- fs/xfs/xfs_message.c      |    8 ++++++++
- fs/xfs/xfs_message.h      |    1 +
- fs/xfs/xfs_trans.h        |    4 ++--
- 15 files changed, 83 insertions(+), 32 deletions(-)
+ - Add #define for PF_THREAD_BOUND as compatibility to make stable easier.
+
+ - Fixup s/reboot_cpu_id/reboot_cpu/
+
+ - Add include of linux/uaccess.h to allow building on arm.
+
+ - Removed last remaining checkpatch.pl line length warning on
+   kernel/reboot.c.
+
+ - Fixed the duplicate handling or the reboot= kernel parameter.
+
+Changes since -v5.
+ - Moved the arch/x86 reboot= up to the generic kernel code.
+
+Changes since -v4.
+ - Integrated Srivatsa S. Bhat creating cpu_hotplug_disable()
+   function
+
+ - Integrated comments by Srivatsa S. Bhat.
+
+ - Made one more comment consistent with others in function.
+
+Changes since -v3.
+ - Added a tested-by for the original reporter.
+
+ - Fix compile failure found by Joe Perches.
+
+ - Integrated comments by Joe Perches.
+
+
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: the arch/x86 maintainers <x86@kernel.org>
+Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
