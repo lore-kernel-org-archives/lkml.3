@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab3EIW0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:26:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45840 "EHLO
+	id S1757376Ab3EIWcf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:32:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45845 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756240Ab3EIW0l (ORCPT
+	with ESMTP id S1756266Ab3EIW0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:41 -0400
+	Thu, 9 May 2013 18:26:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 48/73] drm/radeon: update wait_for_vblank for r5xx-r7xx
-Date: Thu,  9 May 2013 15:25:38 -0700
-Message-Id: <20130509222531.305346050@linuxfoundation.org>
+Subject: [ 50/73] drm/radeon: properly lock disp in mc_stop/resume for evergreen+
+Date: Thu,  9 May 2013 15:25:40 -0700
+Message-Id: <20130509222531.495239704@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -28,87 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit bea5497bfc1067620c8c8e9d37a42e0bb6d7d7fa upstream.
+commit 968c01664ccbe0e46c19a1af662c4c266a904203 upstream.
 
-Properly wait for the next vblank region.  The previous
-code didn't always wait long enough depending on the timing.
+Need to wait for the new addresses to take affect before
+re-enabling the MC.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/rs600.c |   52 ++++++++++++++++++++++++++++++++++-------
- 1 file changed, 44 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c     |   47 ++++++++++++++++++++++++++++++---
+ drivers/gpu/drm/radeon/evergreen_reg.h |    2 +
+ 2 files changed, 45 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/rs600.c
-+++ b/drivers/gpu/drm/radeon/rs600.c
-@@ -52,23 +52,59 @@ static const u32 crtc_offsets[2] =
- 	AVIVO_D2CRTC_H_TOTAL - AVIVO_D1CRTC_H_TOTAL
- };
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -1354,18 +1354,14 @@ void evergreen_mc_stop(struct radeon_dev
+ 				if (!(tmp & EVERGREEN_CRTC_BLANK_DATA_EN)) {
+ 					radeon_wait_for_vblank(rdev, i);
+ 					tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
+-					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
+ 					WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
+-					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
+ 				}
+ 			} else {
+ 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
+ 				if (!(tmp & EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE)) {
+ 					radeon_wait_for_vblank(rdev, i);
+ 					tmp |= EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
+-					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
+ 					WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
+-					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
+ 				}
+ 			}
+ 			/* wait for the next frame */
+@@ -1392,6 +1388,22 @@ void evergreen_mc_stop(struct radeon_dev
+ 	}
+ 	/* wait for the MC to settle */
+ 	udelay(100);
++
++	/* lock double buffered regs */
++	for (i = 0; i < rdev->num_crtc; i++) {
++		if (save->crtc_enabled[i]) {
++			tmp = RREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i]);
++			if (!(tmp & EVERGREEN_GRPH_UPDATE_LOCK)) {
++				tmp |= EVERGREEN_GRPH_UPDATE_LOCK;
++				WREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i], tmp);
++			}
++			tmp = RREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i]);
++			if (!(tmp & 1)) {
++				tmp |= 1;
++				WREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i], tmp);
++			}
++		}
++	}
+ }
  
-+static bool avivo_is_in_vblank(struct radeon_device *rdev, int crtc)
-+{
-+	if (RREG32(AVIVO_D1CRTC_STATUS + crtc_offsets[crtc]) & AVIVO_D1CRTC_V_BLANK)
-+		return true;
-+	else
-+		return false;
-+}
-+
-+static bool avivo_is_counter_moving(struct radeon_device *rdev, int crtc)
-+{
-+	u32 pos1, pos2;
-+
-+	pos1 = RREG32(AVIVO_D1CRTC_STATUS_POSITION + crtc_offsets[crtc]);
-+	pos2 = RREG32(AVIVO_D1CRTC_STATUS_POSITION + crtc_offsets[crtc]);
-+
-+	if (pos1 != pos2)
-+		return true;
-+	else
-+		return false;
-+}
-+
-+/**
-+ * avivo_wait_for_vblank - vblank wait asic callback.
-+ *
-+ * @rdev: radeon_device pointer
-+ * @crtc: crtc to wait for vblank on
-+ *
-+ * Wait for vblank on the requested crtc (r5xx-r7xx).
-+ */
- void avivo_wait_for_vblank(struct radeon_device *rdev, int crtc)
- {
--	int i;
-+	unsigned i = 0;
+ void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *save)
+@@ -1413,6 +1425,33 @@ void evergreen_mc_resume(struct radeon_d
+ 	WREG32(EVERGREEN_VGA_MEMORY_BASE_ADDRESS_HIGH, upper_32_bits(rdev->mc.vram_start));
+ 	WREG32(EVERGREEN_VGA_MEMORY_BASE_ADDRESS, (u32)rdev->mc.vram_start);
  
- 	if (crtc >= rdev->num_crtc)
- 		return;
- 
--	if (RREG32(AVIVO_D1CRTC_CONTROL + crtc_offsets[crtc]) & AVIVO_CRTC_EN) {
--		for (i = 0; i < rdev->usec_timeout; i++) {
--			if (!(RREG32(AVIVO_D1CRTC_STATUS + crtc_offsets[crtc]) & AVIVO_D1CRTC_V_BLANK))
-+	if (!(RREG32(AVIVO_D1CRTC_CONTROL + crtc_offsets[crtc]) & AVIVO_CRTC_EN))
-+		return;
-+
-+	/* depending on when we hit vblank, we may be close to active; if so,
-+	 * wait for another frame.
-+	 */
-+	while (avivo_is_in_vblank(rdev, crtc)) {
-+		if (i++ % 100 == 0) {
-+			if (!avivo_is_counter_moving(rdev, crtc))
- 				break;
--			udelay(1);
- 		}
--		for (i = 0; i < rdev->usec_timeout; i++) {
--			if (RREG32(AVIVO_D1CRTC_STATUS + crtc_offsets[crtc]) & AVIVO_D1CRTC_V_BLANK)
++	/* unlock regs and wait for update */
++	for (i = 0; i < rdev->num_crtc; i++) {
++		if (save->crtc_enabled[i]) {
++			tmp = RREG32(EVERGREEN_MASTER_UPDATE_MODE + crtc_offsets[i]);
++			if ((tmp & 0x3) != 0) {
++				tmp &= ~0x3;
++				WREG32(EVERGREEN_MASTER_UPDATE_MODE + crtc_offsets[i], tmp);
++			}
++			tmp = RREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i]);
++			if (tmp & EVERGREEN_GRPH_UPDATE_LOCK) {
++				tmp &= ~EVERGREEN_GRPH_UPDATE_LOCK;
++				WREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i], tmp);
++			}
++			tmp = RREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i]);
++			if (tmp & 1) {
++				tmp &= ~1;
++				WREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i], tmp);
++			}
++			for (j = 0; j < rdev->usec_timeout; j++) {
++				tmp = RREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i]);
++				if ((tmp & EVERGREEN_GRPH_SURFACE_UPDATE_PENDING) == 0)
++					break;
++				udelay(1);
++			}
++		}
 +	}
 +
-+	while (!avivo_is_in_vblank(rdev, crtc)) {
-+		if (i++ % 100 == 0) {
-+			if (!avivo_is_counter_moving(rdev, crtc))
- 				break;
--			udelay(1);
- 		}
- 	}
- }
+ 	/* unblackout the MC */
+ 	tmp = RREG32(MC_SHARED_BLACKOUT_CNTL);
+ 	tmp &= ~BLACKOUT_MODE_MASK;
+--- a/drivers/gpu/drm/radeon/evergreen_reg.h
++++ b/drivers/gpu/drm/radeon/evergreen_reg.h
+@@ -226,6 +226,8 @@
+ #define EVERGREEN_CRTC_STATUS_HV_COUNT                  0x6ea0
+ #define EVERGREEN_MASTER_UPDATE_MODE                    0x6ef8
+ #define EVERGREEN_CRTC_UPDATE_LOCK                      0x6ed4
++#define EVERGREEN_MASTER_UPDATE_LOCK                    0x6ef4
++#define EVERGREEN_MASTER_UPDATE_MODE                    0x6ef8
+ 
+ #define EVERGREEN_DC_GPIO_HPD_MASK                      0x64b0
+ #define EVERGREEN_DC_GPIO_HPD_A                         0x64b4
 
 
