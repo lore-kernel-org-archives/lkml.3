@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab3EIXNz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:13:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45667 "EHLO
+	id S1755544Ab3EIW0O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:26:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45624 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202Ab3EIW0P (ORCPT
+	with ESMTP id S1754202Ab3EIW0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:15 -0400
+	Thu, 9 May 2013 18:26:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Poirier <bpoirier@suse.de>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [ 11/73] menuconfig: Fix memory leak introduced by jump keys feature
-Date: Thu,  9 May 2013 15:25:01 -0700
-Message-Id: <20130509222527.655098101@linuxfoundation.org>
+        Michael Neuling <mikey@neuling.org>,
+        John J Miller <millerjo@us.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 03/73] powerpc/tm: Fix null pointer deference in flush_hash_page
+Date: Thu,  9 May 2013 15:24:53 -0700
+Message-Id: <20130509222526.830697843@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -27,63 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Poirier <bpoirier@suse.de>
+From: Michael Neuling <mikey@neuling.org>
 
-commit edb749f4390b3c1604233dc7c4fb0361f472e712 upstream.
+commit c2fd22df89365df9451d5b91da3b7bfd48122ecd upstream.
 
-Fixes the memory leak of struct jump_key allocated in get_prompt_str()
+Make sure that current->thread.reg exists before we deference it in
+flush_hash_page.
 
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
-Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Reported-by: John J Miller <millerjo@us.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/kconfig/list.h  |   13 +++++++++++++
- scripts/kconfig/mconf.c |    3 +++
- 2 files changed, 16 insertions(+)
+ arch/powerpc/mm/hash_utils_64.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/scripts/kconfig/list.h
-+++ b/scripts/kconfig/list.h
-@@ -51,6 +51,19 @@ struct list_head {
- 	     pos = list_entry(pos->member.next, typeof(*pos), member))
- 
- /**
-+ * list_for_each_entry_safe - iterate over list of given type safe against removal of list entry
-+ * @pos:	the type * to use as a loop cursor.
-+ * @n:		another type * to use as temporary storage
-+ * @head:	the head for your list.
-+ * @member:	the name of the list_struct within the struct.
-+ */
-+#define list_for_each_entry_safe(pos, n, head, member)			\
-+	for (pos = list_entry((head)->next, typeof(*pos), member),	\
-+		n = list_entry(pos->member.next, typeof(*pos), member);	\
-+	     &pos->member != (head);					\
-+	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
-+
-+/**
-  * list_empty - tests whether a list is empty
-  * @head: the list to test.
-  */
---- a/scripts/kconfig/mconf.c
-+++ b/scripts/kconfig/mconf.c
-@@ -389,6 +389,7 @@ again:
- 			.targets = targets,
- 			.keys = keys,
- 		};
-+		struct jump_key *pos, *tmp;
- 
- 		res = get_relations_str(sym_arr, &head);
- 		dres = show_textbox_ext(_("Search Results"), (char *)
-@@ -402,6 +403,8 @@ again:
- 				again = true;
- 			}
- 		str_free(&res);
-+		list_for_each_entry_safe(pos, tmp, &head, entries)
-+			free(pos);
- 	} while (again);
- 	free(sym_arr);
- 	str_free(&title);
+--- a/arch/powerpc/mm/hash_utils_64.c
++++ b/arch/powerpc/mm/hash_utils_64.c
+@@ -1191,6 +1191,7 @@ void flush_hash_page(unsigned long vpn,
+ 	 * unmapping it first, it may see the speculated version.
+ 	 */
+ 	if (local && cpu_has_feature(CPU_FTR_TM) &&
++	    current->thread.regs &&
+ 	    MSR_TM_ACTIVE(current->thread.regs->msr)) {
+ 		tm_enable();
+ 		tm_abort(TM_CAUSE_TLBI);
 
 
