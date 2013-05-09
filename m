@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab3EIMnf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 08:43:35 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:23661 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab3EIMnd (ORCPT
+	id S1753548Ab3EIMq6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 08:46:58 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:54957 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880Ab3EIMq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 08:43:33 -0400
-Message-ID: <518B99C0.9010304@oracle.com>
-Date: Thu, 09 May 2013 08:42:40 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130429 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: torvalds@linux-foundation.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/9] liblockdep: userspace lockdep
-References: <1368073156-27567-1-git-send-email-sasha.levin@oracle.com> <20130509085429.GA3039@dyad.programming.kicks-ass.net>
-In-Reply-To: <20130509085429.GA3039@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 9 May 2013 08:46:57 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Thu, 9 May 2013 14:46:42 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
+Subject: [git pull] FireWire updates post v3.9
+Message-ID: <20130509144642.63d71b97@stein>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2013 04:54 AM, Peter Zijlstra wrote:
-> On Thu, May 09, 2013 at 12:19:07AM -0400, Sasha Levin wrote:
->> liblockdep is a tiny wrapper built around kernel/lockdep.c. The aim is to
->> provide the same functionality the kernel gets from lockdep to userspace.
->>
->> The bulk of the code here is the LD_PRELOAD support which provides users
->> an easy way to test their code without having to integrate liblockdep into
->> said code. Simply doing:
->>
->>         lockdep my_app
->>
->> 	Would provide lockdep support to my_app.
->>
->> 	There is also a small test suite to test both mutexes and rwlocks, it's
->> 	based on the tests in lib/locking-selftest.c.
->>
->> 	This entire patch series was reviewed by lockdep maintainers and accepted to
->> 	the tip tree previously. It was pulled out so that the potential merge of
->> 	liblockdep won't delay the rest of the commits in the tip locking tree.
->>
->> 	For some more background about this entire thing, the folks at LWN did
->> 	an awesome overview: http://lwn.net/Articles/536363/
->>
->>
->> Changes from v1:
->>  - Addressed Peter's comments.
->>
-> 
-> root@twins:/usr/src/linux-2.6/tools/lib/lockdep# make
->   CC FPIC            common.o
-> In file included from ./uinclude/linux/lockdep.h:13:0,
->                  from /usr/src/linux-2.6/tools/lib/lockdep/common.c:4:
-> ./../../../include/linux/lockdep.h:21:27: fatal error: linux/linkage.h: No such file or directory
-> compilation terminated.
-> make: *** [common.o] Error 1
+Linus,
 
-Oh, Ingo had a similar problem - you're using Quilt and that mishandles the
-creation of empty files. You'll need to poke it stronger :)
+please pull from the tag "firewire-updates" at
 
-I did notice a different issue due to a recent commit to kernel/lockdep.c, I'll
-resend it again.
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git firewire-updates
 
+to receive the following IEEE 1394 (FireWire) subsystem changes:
+  - fix controller removal when controller is in suspended state
+  - fix video reception on VIA VT6306 with gstreamer, MythTV, and maybe dv4l
+  - fix a startup issue with Agere/LSI FW643-e2
+  - error logging improvements and other small updates
 
-Thanks,
-Sasha
+Thanks.
+
+Andy Leiserson (1):
+      firewire: ohci: fix VIA VT6306 video reception
+
+Paul Bolle (1):
+      firewire: Remove two unneeded checks for macros
+
+Peter Hurley (6):
+      firewire: ohci: Fix double free_irq()
+      firewire: ohci: Check LPS before register access on pci removal
+      firewire: ohci: Fix 'failed to read phy reg' on FW643 rev8
+      firewire: ohci: Alias dev_* log functions
+      firewire: ohci: Improve bus reset error messages
+      firewire: ohci: dump_stack() for PHY regs read/write failures
+
+Stefan Richter (3):
+      firewire: core: remove an always false test
+      firewire: sbp2: replace BUG_ON by WARN_ON
+      firewire: remove unnecessary alloc/OOM messages
+
+ drivers/firewire/core-cdev.c   |  27 +++---
+ drivers/firewire/core-device.c |   4 +-
+ drivers/firewire/net.c         |   7 +-
+ drivers/firewire/ohci.c        | 270 +++++++++++++++++++++++++++++++++---------------------------
+ drivers/firewire/sbp2.c        |  10 +--
+ 5 files changed, 166 insertions(+), 152 deletions(-)
+-- 
+Stefan Richter
+-=====-===-= -=-= -=--=
+http://arcgraph.de/sr/
