@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295Ab3EIWsS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:48:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46196 "EHLO
+	id S932317Ab3EIWsj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:48:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46193 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758070Ab3EIWdV (ORCPT
+	with ESMTP id S1758050Ab3EIWdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:21 -0400
+	Thu, 9 May 2013 18:33:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 55/73] drm/radeon: disable the crtcs in mc_stop (evergreen+) (v2)
-Date: Thu,  9 May 2013 15:32:18 -0700
-Message-Id: <20130509222803.889778915@linuxfoundation.org>
+Subject: [ 54/73] drm/radeon: update wait_for_vblank for r1xx-r4xx
+Date: Thu,  9 May 2013 15:32:17 -0700
+Message-Id: <20130509222803.792689859@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -28,61 +28,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit abf1457bbbe4c62066bd03c6d31837dea28644dc upstream.
+commit 2b48b968c0d00aa5ab520b65a15a4f374cda7dda upstream.
 
-Just disabling the mem requests should be enough, but
-that doesn't seem to work correctly on efi systems.
-
-May fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=57567
-https://bugs.freedesktop.org/show_bug.cgi?id=43655
-https://bugzilla.kernel.org/show_bug.cgi?id=56441
-
-v2: blank displays first, then disable.
+Properly wait for the next vblank region.  The previous
+code didn't always wait long enough depending on the timing.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/gpu/drm/radeon/r100.c |   77 ++++++++++++++++++++++++++++--------------
+ 1 file changed, 53 insertions(+), 24 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1353,6 +1353,7 @@ void evergreen_mc_stop(struct radeon_dev
- 				tmp = RREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i]);
- 				if (!(tmp & EVERGREEN_CRTC_BLANK_DATA_EN)) {
- 					radeon_wait_for_vblank(rdev, i);
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 					tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
- 					WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
- 				}
-@@ -1360,8 +1361,10 @@ void evergreen_mc_stop(struct radeon_dev
- 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
- 				if (!(tmp & EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE)) {
- 					radeon_wait_for_vblank(rdev, i);
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 					tmp |= EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
- 					WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 				}
- 			}
- 			/* wait for the next frame */
-@@ -1371,6 +1374,15 @@ void evergreen_mc_stop(struct radeon_dev
- 					break;
- 				udelay(1);
- 			}
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -69,6 +69,38 @@ MODULE_FIRMWARE(FIRMWARE_R520);
+  * and others in some cases.
+  */
+ 
++static bool r100_is_in_vblank(struct radeon_device *rdev, int crtc)
++{
++	if (crtc == 0) {
++		if (RREG32(RADEON_CRTC_STATUS) & RADEON_CRTC_VBLANK_CUR)
++			return true;
++		else
++			return false;
++	} else {
++		if (RREG32(RADEON_CRTC2_STATUS) & RADEON_CRTC2_VBLANK_CUR)
++			return true;
++		else
++			return false;
++	}
++}
 +
-+			/* XXX this is a hack to avoid strange behavior with EFI on certain systems */
-+			WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
-+			tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
-+			tmp &= ~EVERGREEN_CRTC_MASTER_EN;
-+			WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
-+			WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
-+			save->crtc_enabled[i] = false;
-+			/* ***** */
- 		} else {
- 			save->crtc_enabled[i] = false;
++static bool r100_is_counter_moving(struct radeon_device *rdev, int crtc)
++{
++	u32 vline1, vline2;
++
++	if (crtc == 0) {
++		vline1 = (RREG32(RADEON_CRTC_VLINE_CRNT_VLINE) >> 16) & RADEON_CRTC_V_TOTAL;
++		vline2 = (RREG32(RADEON_CRTC_VLINE_CRNT_VLINE) >> 16) & RADEON_CRTC_V_TOTAL;
++	} else {
++		vline1 = (RREG32(RADEON_CRTC2_VLINE_CRNT_VLINE) >> 16) & RADEON_CRTC_V_TOTAL;
++		vline2 = (RREG32(RADEON_CRTC2_VLINE_CRNT_VLINE) >> 16) & RADEON_CRTC_V_TOTAL;
++	}
++	if (vline1 != vline2)
++		return true;
++	else
++		return false;
++}
++
+ /**
+  * r100_wait_for_vblank - vblank wait asic callback.
+  *
+@@ -79,36 +111,33 @@ MODULE_FIRMWARE(FIRMWARE_R520);
+  */
+ void r100_wait_for_vblank(struct radeon_device *rdev, int crtc)
+ {
+-	int i;
++	unsigned i = 0;
+ 
+ 	if (crtc >= rdev->num_crtc)
+ 		return;
+ 
+ 	if (crtc == 0) {
+-		if (RREG32(RADEON_CRTC_GEN_CNTL) & RADEON_CRTC_EN) {
+-			for (i = 0; i < rdev->usec_timeout; i++) {
+-				if (!(RREG32(RADEON_CRTC_STATUS) & RADEON_CRTC_VBLANK_CUR))
+-					break;
+-				udelay(1);
+-			}
+-			for (i = 0; i < rdev->usec_timeout; i++) {
+-				if (RREG32(RADEON_CRTC_STATUS) & RADEON_CRTC_VBLANK_CUR)
+-					break;
+-				udelay(1);
+-			}
+-		}
++		if (!(RREG32(RADEON_CRTC_GEN_CNTL) & RADEON_CRTC_EN))
++			return;
+ 	} else {
+-		if (RREG32(RADEON_CRTC2_GEN_CNTL) & RADEON_CRTC2_EN) {
+-			for (i = 0; i < rdev->usec_timeout; i++) {
+-				if (!(RREG32(RADEON_CRTC2_STATUS) & RADEON_CRTC2_VBLANK_CUR))
+-					break;
+-				udelay(1);
+-			}
+-			for (i = 0; i < rdev->usec_timeout; i++) {
+-				if (RREG32(RADEON_CRTC2_STATUS) & RADEON_CRTC2_VBLANK_CUR)
+-					break;
+-				udelay(1);
+-			}
++		if (!(RREG32(RADEON_CRTC2_GEN_CNTL) & RADEON_CRTC2_EN))
++			return;
++	}
++
++	/* depending on when we hit vblank, we may be close to active; if so,
++	 * wait for another frame.
++	 */
++	while (r100_is_in_vblank(rdev, crtc)) {
++		if (i++ % 100 == 0) {
++			if (!r100_is_counter_moving(rdev, crtc))
++				break;
++		}
++	}
++
++	while (!r100_is_in_vblank(rdev, crtc)) {
++		if (i++ % 100 == 0) {
++			if (!r100_is_counter_moving(rdev, crtc))
++				break;
  		}
+ 	}
+ }
 
 
