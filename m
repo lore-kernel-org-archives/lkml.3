@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759104Ab3EIWrl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:47:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46202 "EHLO
+	id S1759137Ab3EIWrz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:47:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46199 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758087Ab3EIWdW (ORCPT
+	with ESMTP id S1758041Ab3EIWdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 May 2013 18:33:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 57/73] drm/radeon/evergreen+: dont enable HPD interrupts on eDP/LVDS
-Date: Thu,  9 May 2013 15:32:20 -0700
-Message-Id: <20130509222804.094519076@linuxfoundation.org>
+Subject: [ 56/73] drm/radeon: add some new SI PCI ids
+Date: Thu,  9 May 2013 15:32:19 -0700
+Message-Id: <20130509222803.991359943@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -28,38 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 2e97be73e5f74a317232740ae82eb8f95326a660 upstream.
-
-Avoids potential interrupt storms when the display is disabled.
-
-May fix:
-https://bugzilla.kernel.org/show_bug.cgi?id=56041
+commit 18932a28419596bc9403770f5d8a108c5433fe59 upstream.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ include/drm/drm_pciids.h |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -636,6 +636,16 @@ void evergreen_hpd_init(struct radeon_de
- 
- 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
- 		struct radeon_connector *radeon_connector = to_radeon_connector(connector);
-+
-+		if (connector->connector_type == DRM_MODE_CONNECTOR_eDP ||
-+		    connector->connector_type == DRM_MODE_CONNECTOR_LVDS) {
-+			/* don't try to enable hpd on eDP or LVDS avoid breaking the
-+			 * aux dp channel on imac and help (but not completely fix)
-+			 * https://bugzilla.redhat.com/show_bug.cgi?id=726143
-+			 * also avoid interrupt storms during dpms.
-+			 */
-+			continue;
-+		}
- 		switch (radeon_connector->hpd.hpd) {
- 		case RADEON_HPD_1:
- 			WREG32(DC_HPD1_CONTROL, tmp);
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -227,6 +227,7 @@
+ 	{0x1002, 0x6819, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PITCAIRN|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6820, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6821, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x6822, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6823, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6824, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6825, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+@@ -234,11 +235,13 @@
+ 	{0x1002, 0x6827, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6828, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6829, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x682A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x682B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x682D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x682F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6830, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6831, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x6835, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6837, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6838, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6839, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
 
 
