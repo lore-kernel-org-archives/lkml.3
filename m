@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759459Ab3EIXJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:09:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45749 "EHLO
+	id S932348Ab3EIXKM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:10:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755783Ab3EIW00 (ORCPT
+	with ESMTP id S1755623Ab3EIW0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:26 -0400
+	Thu, 9 May 2013 18:26:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anisse Astier <anisse@astier.eu>,
-        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Subject: [ 28/73] drm/gma500: fix backlight hotkeys behaviour on netbooks
-Date: Thu,  9 May 2013 15:25:18 -0700
-Message-Id: <20130509222529.331634307@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 26/73] drm/cirrus: deal with bo reserve fail in dirty update path
+Date: Thu,  9 May 2013 15:25:16 -0700
+Message-Id: <20130509222529.150161410@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -27,42 +26,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anisse Astier <anisse@astier.eu>
+From: Dave Airlie <airlied@redhat.com>
 
-commit e127dc28cc3057575da0216cde85687153ca180f upstream.
+commit f3b2bbdc8a87a080ccd23d27fca4b87d61340dd4 upstream.
 
-Backlight hotkeys weren't working before on certain cedartrail laptops.
+Port over the mgag200 fix to cirrus as it suffers the same issue.
 
-The source of this problem is that the hotkeys' ASLE opregion interrupts
-were simply ignored. Driver seemed to expect the interrupt to be
-associated with a pipe, but it wasn't.
+    On F19 testing, it was noticed we get a lot of errors in dmesg
+    about being unable to reserve the buffer when plymouth starts,
+    this is due to the buffer being in the process of migrating,
+    so it makes sense we can't reserve it.
 
-Accepting the ASLE interrupt without an associated pipe event flag fixes
-the issue, the backlight code is called when needed, making the
-brightness keys work properly.
+    In order to deal with it, this adds delayed updates for the dirty
+    updates, when the bo is unreservable, in the normal console case
+    this shouldn't ever happen, its just when plymouth or X is
+    pushing the console bo to system memory.
 
-[patrik: This patch affects irq handling on any netbook with opregion support]
-
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=833597
-Reference: http://lists.freedesktop.org/archives/dri-devel/2012-July/025279.html
-Signed-off-by: Anisse Astier <anisse@astier.eu>
-Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/gma500/psb_irq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/cirrus/cirrus_drv.h   |    2 +
+ drivers/gpu/drm/cirrus/cirrus_fbdev.c |   38 +++++++++++++++++++++++++++++++++-
+ drivers/gpu/drm/cirrus/cirrus_ttm.c   |    2 -
+ 3 files changed, 40 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/gma500/psb_irq.c
-+++ b/drivers/gpu/drm/gma500/psb_irq.c
-@@ -211,7 +211,7 @@ irqreturn_t psb_irq_handler(DRM_IRQ_ARGS
+--- a/drivers/gpu/drm/cirrus/cirrus_drv.h
++++ b/drivers/gpu/drm/cirrus/cirrus_drv.h
+@@ -154,6 +154,8 @@ struct cirrus_fbdev {
+ 	struct list_head fbdev_list;
+ 	void *sysram;
+ 	int size;
++	int x1, y1, x2, y2; /* dirty rect */
++	spinlock_t dirty_lock;
+ };
  
- 	vdc_stat = PSB_RVDC32(PSB_INT_IDENTITY_R);
+ struct cirrus_bo {
+--- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
++++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+@@ -27,16 +27,51 @@ static void cirrus_dirty_update(struct c
+ 	int bpp = (afbdev->gfb.base.bits_per_pixel + 7)/8;
+ 	int ret;
+ 	bool unmap = false;
++	bool store_for_later = false;
++	int x2, y2;
++	unsigned long flags;
  
--	if (vdc_stat & _PSB_PIPE_EVENT_FLAG)
-+	if (vdc_stat & (_PSB_PIPE_EVENT_FLAG|_PSB_IRQ_ASLE))
- 		dsp_int = 1;
+ 	obj = afbdev->gfb.obj;
+ 	bo = gem_to_cirrus_bo(obj);
  
- 	/* FIXME: Handle Medfield
++	/*
++	 * try and reserve the BO, if we fail with busy
++	 * then the BO is being moved and we should
++	 * store up the damage until later.
++	 */
+ 	ret = cirrus_bo_reserve(bo, true);
+ 	if (ret) {
+-		DRM_ERROR("failed to reserve fb bo\n");
++		if (ret != -EBUSY)
++			return;
++		store_for_later = true;
++	}
++
++	x2 = x + width - 1;
++	y2 = y + height - 1;
++	spin_lock_irqsave(&afbdev->dirty_lock, flags);
++
++	if (afbdev->y1 < y)
++		y = afbdev->y1;
++	if (afbdev->y2 > y2)
++		y2 = afbdev->y2;
++	if (afbdev->x1 < x)
++		x = afbdev->x1;
++	if (afbdev->x2 > x2)
++		x2 = afbdev->x2;
++
++	if (store_for_later) {
++		afbdev->x1 = x;
++		afbdev->x2 = x2;
++		afbdev->y1 = y;
++		afbdev->y2 = y2;
++		spin_unlock_irqrestore(&afbdev->dirty_lock, flags);
+ 		return;
+ 	}
+ 
++	afbdev->x1 = afbdev->y1 = INT_MAX;
++	afbdev->x2 = afbdev->y2 = 0;
++	spin_unlock_irqrestore(&afbdev->dirty_lock, flags);
++
+ 	if (!bo->kmap.virtual) {
+ 		ret = ttm_bo_kmap(&bo->bo, 0, bo->bo.num_pages, &bo->kmap);
+ 		if (ret) {
+@@ -268,6 +303,7 @@ int cirrus_fbdev_init(struct cirrus_devi
+ 
+ 	cdev->mode_info.gfbdev = gfbdev;
+ 	gfbdev->helper.funcs = &cirrus_fb_helper_funcs;
++	spin_lock_init(&gfbdev->dirty_lock);
+ 
+ 	ret = drm_fb_helper_init(cdev->dev, &gfbdev->helper,
+ 				 cdev->num_crtc, CIRRUSFB_CONN_LIMIT);
+--- a/drivers/gpu/drm/cirrus/cirrus_ttm.c
++++ b/drivers/gpu/drm/cirrus/cirrus_ttm.c
+@@ -321,7 +321,7 @@ int cirrus_bo_reserve(struct cirrus_bo *
+ 
+ 	ret = ttm_bo_reserve(&bo->bo, true, no_wait, false, 0);
+ 	if (ret) {
+-		if (ret != -ERESTARTSYS)
++		if (ret != -ERESTARTSYS && ret != -EBUSY)
+ 			DRM_ERROR("reserve failed %p\n", bo);
+ 		return ret;
+ 	}
 
 
