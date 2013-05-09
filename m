@@ -1,431 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab3EIEVf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 00:21:35 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33960 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab3EIEUQ (ORCPT
+	id S1752775Ab3EIEVx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 00:21:53 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38592 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674Ab3EIEUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 00:20:16 -0400
+	Thu, 9 May 2013 00:20:14 -0400
 From: Sasha Levin <sasha.levin@oracle.com>
 To: torvalds@linux-foundation.org
 Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
         Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v2 7/9] liblockdep: Support using LD_PRELOAD
-Date: Thu,  9 May 2013 00:19:14 -0400
-Message-Id: <1368073156-27567-8-git-send-email-sasha.levin@oracle.com>
+Subject: [PATCH v2 4/9] liblockdep: Add pthread_mutex_t test suite
+Date: Thu,  9 May 2013 00:19:11 -0400
+Message-Id: <1368073156-27567-5-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1368073156-27567-1-git-send-email-sasha.levin@oracle.com>
 References: <1368073156-27567-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows lockdep to be used without being compiled in the
-original program.
+This is a rather simple and basic test suite to test common
+locking issues.
 
-Usage is quite simple:
-
-	LD_PRELOAD=/path/to/liblockdep.so /path/to/my/program
-
-And magically, you'll have lockdep checking in your program!
+Beyond tests, it also shows how to use the library.
 
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- tools/lib/lockdep/preload.c | 384 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 384 insertions(+)
- create mode 100644 tools/lib/lockdep/preload.c
+ tools/lib/lockdep/run_tests.sh           | 27 +++++++++++++++++++++++++++
+ tools/lib/lockdep/tests/AA.c             | 13 +++++++++++++
+ tools/lib/lockdep/tests/ABBA.c           | 13 +++++++++++++
+ tools/lib/lockdep/tests/ABBCCA.c         | 15 +++++++++++++++
+ tools/lib/lockdep/tests/ABBCCDDA.c       | 17 +++++++++++++++++
+ tools/lib/lockdep/tests/ABCABC.c         | 15 +++++++++++++++
+ tools/lib/lockdep/tests/ABCDBCDA.c       | 17 +++++++++++++++++
+ tools/lib/lockdep/tests/ABCDBDDA.c       | 17 +++++++++++++++++
+ tools/lib/lockdep/tests/common.h         | 12 ++++++++++++
+ tools/lib/lockdep/tests/unlock_balance.c | 12 ++++++++++++
+ 10 files changed, 158 insertions(+)
+ create mode 100755 tools/lib/lockdep/run_tests.sh
+ create mode 100644 tools/lib/lockdep/tests/AA.c
+ create mode 100644 tools/lib/lockdep/tests/ABBA.c
+ create mode 100644 tools/lib/lockdep/tests/ABBCCA.c
+ create mode 100644 tools/lib/lockdep/tests/ABBCCDDA.c
+ create mode 100644 tools/lib/lockdep/tests/ABCABC.c
+ create mode 100644 tools/lib/lockdep/tests/ABCDBCDA.c
+ create mode 100644 tools/lib/lockdep/tests/ABCDBDDA.c
+ create mode 100644 tools/lib/lockdep/tests/common.h
+ create mode 100644 tools/lib/lockdep/tests/unlock_balance.c
 
-diff --git a/tools/lib/lockdep/preload.c b/tools/lib/lockdep/preload.c
-new file mode 100644
-index 0000000..025cce0
+diff --git a/tools/lib/lockdep/run_tests.sh b/tools/lib/lockdep/run_tests.sh
+new file mode 100755
+index 0000000..240a93c
 --- /dev/null
-+++ b/tools/lib/lockdep/preload.c
-@@ -0,0 +1,384 @@
-+#define _GNU_SOURCE
-+#include <pthread.h>
-+#include <stdio.h>
-+#include <dlfcn.h>
-+#include <stdlib.h>
-+#include "include/liblockdep/mutex.h"
-+#include "../../../include/linux/rbtree.h"
++++ b/tools/lib/lockdep/run_tests.sh
+@@ -0,0 +1,27 @@
++#! /bin/bash
 +
-+/**
-+ * struct lock_lookup - liblockdep's view of a single unique lock
-+ * @orig: pointer to the original pthread lock, used for lookups
-+ * @dep_map: lockdep's dep_map structure
-+ * @key: lockdep's key structure
-+ * @node: rb-tree node used to store the lock in a global tree
-+ * @name: a unique name for the lock
-+ */
-+struct lock_lookup {
-+	void *orig; /* Original pthread lock, used for lookups */
-+	struct lockdep_map dep_map; /* Since all locks are dynamic, we need
-+				     * a dep_map and a key for each lock */
-+	struct lock_class_key key;
-+	struct rb_node node;
-+#define LIBLOCKDEP_MAX_LOCK_NAME 22
-+	char name[LIBLOCKDEP_MAX_LOCK_NAME];
-+};
++make &> /dev/null
 +
-+/* This is where we store our locks */
-+static struct rb_root locks = RB_ROOT;
-+static pthread_rwlock_t locks_rwlock = PTHREAD_RWLOCK_INITIALIZER;
++for i in `ls tests/*.c`; do
++	testname=$(basename -s .c "$i")
++	gcc -o tests/$testname -lpthread $i liblockdep.a -Iinclude -D__USE_LIBLOCKDEP &> /dev/null
++	echo -ne "$testname... "
++	if [ $(timeout 1 ./tests/$testname | wc -l) -gt 0 ]; then
++		echo "PASSED!"
++	else
++		echo "FAILED!"
++	fi
++	rm tests/$testname
++done
 +
-+/* pthread mutex API */
-+static int (*ll_pthread_mutex_init)(pthread_mutex_t *mutex,
-+			const pthread_mutexattr_t *attr);
-+static int (*ll_pthread_mutex_lock)(pthread_mutex_t *mutex);
-+static int (*ll_pthread_mutex_trylock)(pthread_mutex_t *mutex);
-+static int (*ll_pthread_mutex_unlock)(pthread_mutex_t *mutex);
-+static int (*ll_pthread_mutex_destroy)(pthread_mutex_t *mutex);
++for i in `ls tests/*.c`; do
++	testname=$(basename -s .c "$i")
++	gcc -o tests/$testname -lpthread -Iinclude $i &> /dev/null
++	echo -ne "(PRELOAD) $testname... "
++	if [ $(timeout 1 ./lockdep ./tests/$testname | wc -l) -gt 0 ]; then
++		echo "PASSED!"
++	else
++		echo "FAILED!"
++	fi
++	rm tests/$testname
++done
+diff --git a/tools/lib/lockdep/tests/AA.c b/tools/lib/lockdep/tests/AA.c
+new file mode 100644
+index 0000000..0f782ff
+--- /dev/null
++++ b/tools/lib/lockdep/tests/AA.c
+@@ -0,0 +1,13 @@
++#include <liblockdep/mutex.h>
 +
-+/* pthread rwlock API */
-+static int (*ll_pthread_rwlock_init)(pthread_rwlock_t *rwlock,
-+			const pthread_rwlockattr_t *attr);
-+static int (*ll_pthread_rwlock_destroy)(pthread_rwlock_t *rwlock);
-+static int (*ll_pthread_rwlock_rdlock)(pthread_rwlock_t *rwlock);
-+static int (*ll_pthread_rwlock_tryrdlock)(pthread_rwlock_t *rwlock);
-+static int (*ll_pthread_rwlock_trywrlock)(pthread_rwlock_t *rwlock);
-+static int (*ll_pthread_rwlock_wrlock)(pthread_rwlock_t *rwlock);
-+static int (*ll_pthread_rwlock_unlock)(pthread_rwlock_t *rwlock);
-+
-+static bool preload_done;
-+static void init_preload(void);
-+static void try_init_preload(void)
++void main(void)
 +{
-+	if (!preload_done)
-+		init_preload();
++	pthread_mutex_t a, b;
++
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++
++	pthread_mutex_lock(&a);
++	pthread_mutex_lock(&b);
++	pthread_mutex_lock(&a);
 +}
+diff --git a/tools/lib/lockdep/tests/ABBA.c b/tools/lib/lockdep/tests/ABBA.c
+new file mode 100644
+index 0000000..07f0e29
+--- /dev/null
++++ b/tools/lib/lockdep/tests/ABBA.c
+@@ -0,0 +1,13 @@
++#include <liblockdep/mutex.h>
++#include "common.h"
 +
-+static struct rb_node **__get_lock_node(void *lock, struct rb_node **parent)
++void main(void)
 +{
-+	struct rb_node **node = &locks.rb_node;
-+	struct lock_lookup *l;
++	pthread_mutex_t a, b;
 +
-+	*parent = NULL;
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
 +
-+	while (*node) {
-+		l = rb_entry(*node, struct lock_lookup, node);
-+
-+		*parent = *node;
-+		if (lock < l->orig)
-+			node = &l->node.rb_left;
-+		else if (lock > l->orig)
-+			node = &l->node.rb_right;
-+		else
-+			return node;
-+	}
-+
-+	return node;
++	LOCK_UNLOCK_2(a, b);
++	LOCK_UNLOCK_2(b, a);
 +}
+diff --git a/tools/lib/lockdep/tests/ABBCCA.c b/tools/lib/lockdep/tests/ABBCCA.c
+new file mode 100644
+index 0000000..843db09
+--- /dev/null
++++ b/tools/lib/lockdep/tests/ABBCCA.c
+@@ -0,0 +1,15 @@
++#include <liblockdep/mutex.h>
++#include "common.h"
 +
-+/**
-+ * __get_lock - find or create a lock instance
-+ * @lock: pointer to a pthread lock function
-+ *
-+ * Try to find an existing lock in the rbtree using the provided pointer. If
-+ * one wasn't found - create it.
-+ */
-+static struct lock_lookup *__get_lock(void *lock)
++void main(void)
 +{
-+	struct rb_node **node, *parent;
-+	struct lock_lookup *l;
++	pthread_mutex_t a, b, c;
 +
-+	ll_pthread_rwlock_rdlock(&locks_rwlock);
-+	node = __get_lock_node(lock, &parent);
-+	ll_pthread_rwlock_unlock(&locks_rwlock);
-+	if (*node) {
-+		return rb_entry(*node, struct lock_lookup, node);
-+	}
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++	pthread_mutex_init(&c, NULL);
 +
-+	/* We didn't find the lock, let's create it */
-+	l = malloc(sizeof(*l));
-+	if (l == NULL)
-+		return NULL;
-+
-+	l->orig = lock;
-+	/*
-+	 * Currently the name of the lock is the ptr value of the pthread lock,
-+	 * while not optimal, it makes debugging a bit easier.
-+	 *
-+	 * TODO: Get the real name of the lock using libdwarf
-+	 */
-+	sprintf(l->name, "%p", lock);
-+	lockdep_init_map(&l->dep_map, l->name, &l->key, 0);
-+
-+	ll_pthread_rwlock_wrlock(&locks_rwlock);
-+	/* This might have changed since the last time we fetched it */
-+	node = __get_lock_node(lock, &parent);
-+	rb_link_node(&l->node, parent, node);
-+	rb_insert_color(&l->node, &locks);
-+	ll_pthread_rwlock_unlock(&locks_rwlock);
-+
-+	return l;
++	LOCK_UNLOCK_2(a, b);
++	LOCK_UNLOCK_2(b, c);
++	LOCK_UNLOCK_2(c, a);
 +}
+diff --git a/tools/lib/lockdep/tests/ABBCCDDA.c b/tools/lib/lockdep/tests/ABBCCDDA.c
+new file mode 100644
+index 0000000..33620e2
+--- /dev/null
++++ b/tools/lib/lockdep/tests/ABBCCDDA.c
+@@ -0,0 +1,17 @@
++#include <liblockdep/mutex.h>
++#include "common.h"
 +
-+static void __del_lock(struct lock_lookup *lock)
++void main(void)
 +{
-+	ll_pthread_rwlock_wrlock(&locks_rwlock);
-+	rb_erase(&lock->node, &locks);
-+	ll_pthread_rwlock_unlock(&locks_rwlock);
-+	free(lock);
++	pthread_mutex_t a, b, c, d;
++
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++	pthread_mutex_init(&c, NULL);
++	pthread_mutex_init(&d, NULL);
++
++	LOCK_UNLOCK_2(a, b);
++	LOCK_UNLOCK_2(b, c);
++	LOCK_UNLOCK_2(c, d);
++	LOCK_UNLOCK_2(d, a);
 +}
+diff --git a/tools/lib/lockdep/tests/ABCABC.c b/tools/lib/lockdep/tests/ABCABC.c
+new file mode 100644
+index 0000000..3fee51e
+--- /dev/null
++++ b/tools/lib/lockdep/tests/ABCABC.c
+@@ -0,0 +1,15 @@
++#include <liblockdep/mutex.h>
++#include "common.h"
 +
-+int pthread_mutex_init(pthread_mutex_t *mutex,
-+			const pthread_mutexattr_t *attr)
++void main(void)
 +{
-+	int r;
++	pthread_mutex_t a, b, c;
 +
-+	/*
-+	 * We keep trying to init our preload module because there might be
-+	 * code in init sections that tries to touch locks before we are
-+	 * initialized, in that case we'll need to manually call preload
-+	 * to get us going.
-+	 *
-+	 * Funny enough, kernel's lockdep had the same issue, and used
-+	 * (almost) the same solution. See look_up_lock_class() in
-+	 * kernel/lockdep.c for details.
-+	 */
-+	try_init_preload();
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++	pthread_mutex_init(&c, NULL);
 +
-+	r = ll_pthread_mutex_init(mutex, attr);
-+	if (r == 0)
-+		/*
-+		 * We do a dummy initialization here so that lockdep could
-+		 * warn us if something fishy is going on - such as
-+		 * initializing a held lock.
-+		 */
-+		__get_lock(mutex);
-+
-+	return r;
++	LOCK_UNLOCK_2(a, b);
++	LOCK_UNLOCK_2(c, a);
++	LOCK_UNLOCK_2(b, c);
 +}
+diff --git a/tools/lib/lockdep/tests/ABCDBCDA.c b/tools/lib/lockdep/tests/ABCDBCDA.c
+new file mode 100644
+index 0000000..427ba56
+--- /dev/null
++++ b/tools/lib/lockdep/tests/ABCDBCDA.c
+@@ -0,0 +1,17 @@
++#include <liblockdep/mutex.h>
++#include "common.h"
 +
-+int pthread_mutex_lock(pthread_mutex_t *mutex)
++void main(void)
 +{
-+	int r;
++	pthread_mutex_t a, b, c, d;
 +
-+	try_init_preload();
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++	pthread_mutex_init(&c, NULL);
++	pthread_mutex_init(&d, NULL);
 +
-+	lock_acquire(&__get_lock(mutex)->dep_map, 0, 0, 0, 2, NULL,
-+			(unsigned long)_THIS_IP_);
-+	/*
-+	 * Here's the thing with pthread mutexes: unlike the kernel variant,
-+	 * they can fail.
-+	 *
-+	 * This means that the behaviour here is a bit different from what's
-+	 * going on in the kernel: there we just tell lockdep that we took the
-+	 * lock before actually taking it, but here we must deal with the case
-+	 * that locking failed.
-+	 *
-+	 * To do that we'll "release" the lock if locking failed - this way
-+	 * we'll get lockdep doing the correct checks when we try to take
-+	 * the lock, and if that fails - we'll be back to the correct
-+	 * state by releasing it.
-+	 */
-+	r = ll_pthread_mutex_lock(mutex);
-+	if (r)
-+		lock_release(&__get_lock(mutex)->dep_map, 0, (unsigned long)_THIS_IP_);
-+
-+	return r;
++	LOCK_UNLOCK_2(a, b);
++	LOCK_UNLOCK_2(c, d);
++	LOCK_UNLOCK_2(b, c);
++	LOCK_UNLOCK_2(d, a);
 +}
+diff --git a/tools/lib/lockdep/tests/ABCDBDDA.c b/tools/lib/lockdep/tests/ABCDBDDA.c
+new file mode 100644
+index 0000000..680c6cf
+--- /dev/null
++++ b/tools/lib/lockdep/tests/ABCDBDDA.c
+@@ -0,0 +1,17 @@
++#include <liblockdep/mutex.h>
++#include "common.h"
 +
-+int pthread_mutex_trylock(pthread_mutex_t *mutex)
++void main(void)
 +{
-+	int r;
++	pthread_mutex_t a, b, c, d;
 +
-+	try_init_preload();
++	pthread_mutex_init(&a, NULL);
++	pthread_mutex_init(&b, NULL);
++	pthread_mutex_init(&c, NULL);
++	pthread_mutex_init(&d, NULL);
 +
-+	lock_acquire(&__get_lock(mutex)->dep_map, 0, 1, 0, 2, NULL, (unsigned long)_THIS_IP_);
-+	r = ll_pthread_mutex_trylock(mutex);
-+	if (r)
-+		lock_release(&__get_lock(mutex)->dep_map, 0, (unsigned long)_THIS_IP_);
-+
-+	return r;
++	LOCK_UNLOCK_2(a, b);
++	LOCK_UNLOCK_2(c, d);
++	LOCK_UNLOCK_2(b, d);
++	LOCK_UNLOCK_2(d, a);
 +}
+diff --git a/tools/lib/lockdep/tests/common.h b/tools/lib/lockdep/tests/common.h
+new file mode 100644
+index 0000000..d89e94d
+--- /dev/null
++++ b/tools/lib/lockdep/tests/common.h
+@@ -0,0 +1,12 @@
++#ifndef _LIBLOCKDEP_TEST_COMMON_H
++#define _LIBLOCKDEP_TEST_COMMON_H
 +
-+int pthread_mutex_unlock(pthread_mutex_t *mutex)
++#define LOCK_UNLOCK_2(a, b)			\
++	do {					\
++		pthread_mutex_lock(&(a));	\
++		pthread_mutex_lock(&(b));	\
++		pthread_mutex_unlock(&(b));	\
++		pthread_mutex_unlock(&(a));	\
++	} while(0)
++
++#endif
+diff --git a/tools/lib/lockdep/tests/unlock_balance.c b/tools/lib/lockdep/tests/unlock_balance.c
+new file mode 100644
+index 0000000..0bc62de
+--- /dev/null
++++ b/tools/lib/lockdep/tests/unlock_balance.c
+@@ -0,0 +1,12 @@
++#include <liblockdep/mutex.h>
++
++void main(void)
 +{
-+	int r;
++	pthread_mutex_t a;
 +
-+	try_init_preload();
++	pthread_mutex_init(&a, NULL);
 +
-+	lock_release(&__get_lock(mutex)->dep_map, 0, (unsigned long)_THIS_IP_);
-+	/*
-+	 * Just like taking a lock, only in reverse!
-+	 *
-+	 * If we fail releasing the lock, tell lockdep we're holding it again.
-+	 */
-+	r = ll_pthread_mutex_unlock(mutex);
-+	if (r)
-+		lock_acquire(&__get_lock(mutex)->dep_map, 0, 0, 0, 2, NULL, (unsigned long)_THIS_IP_);
-+
-+	return r;
-+}
-+
-+int pthread_mutex_destroy(pthread_mutex_t *mutex)
-+{
-+	try_init_preload();
-+
-+	/*
-+	 * Let's see if we're releasing a lock that's held.
-+	 * 
-+	 * TODO: Hook into free() and add that check there as well.
-+	 */
-+	debug_check_no_locks_freed(mutex, mutex + sizeof(*mutex));
-+	__del_lock(__get_lock(mutex));
-+	return ll_pthread_mutex_destroy(mutex);
-+}
-+
-+/* This is the rwlock part, very similar to what happened with mutex above */
-+int pthread_rwlock_init(pthread_rwlock_t *rwlock,
-+			const pthread_rwlockattr_t *attr)
-+{
-+	int r;
-+
-+	try_init_preload();
-+
-+	r = ll_pthread_rwlock_init(rwlock, attr);
-+	if (r == 0)
-+		__get_lock(rwlock);
-+
-+	return r;
-+}
-+
-+int pthread_rwlock_destroy(pthread_rwlock_t *rwlock)
-+{
-+	try_init_preload();
-+
-+	debug_check_no_locks_freed(rwlock, rwlock + sizeof(*rwlock));
-+	__del_lock(__get_lock(rwlock));
-+	return ll_pthread_rwlock_destroy(rwlock);
-+}
-+
-+int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock)
-+{
-+	int r;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 0, 2, 2, NULL, (unsigned long)_THIS_IP_);
-+	r = ll_pthread_rwlock_rdlock(rwlock);
-+	if (r)
-+		lock_release(&__get_lock(rwlock)->dep_map, 0, (unsigned long)_THIS_IP_);
-+
-+	return r;
-+}
-+
-+int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock)
-+{
-+	int r;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 1, 2, 2, NULL, (unsigned long)_THIS_IP_);
-+	r = ll_pthread_rwlock_tryrdlock(rwlock);
-+	if (r)
-+		lock_release(&__get_lock(rwlock)->dep_map, 0, (unsigned long)_THIS_IP_);
-+
-+	return r;
-+}
-+
-+int pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock)
-+{
-+	int r;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 1, 0, 2, NULL, (unsigned long)_THIS_IP_);
-+	r = ll_pthread_rwlock_trywrlock(rwlock);
-+	if (r)
-+                lock_release(&__get_lock(rwlock)->dep_map, 0, (unsigned long)_THIS_IP_);
-+
-+	return r;
-+}
-+
-+int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock)
-+{
-+	int r;
-+
-+        init_preload();
-+
-+	lock_acquire(&__get_lock(rwlock)->dep_map, 0, 0, 0, 2, NULL, (unsigned long)_THIS_IP_);
-+	r = ll_pthread_rwlock_wrlock(rwlock);
-+	if (r)
-+		lock_release(&__get_lock(rwlock)->dep_map, 0, (unsigned long)_THIS_IP_);
-+
-+	return r;
-+}
-+
-+int pthread_rwlock_unlock(pthread_rwlock_t *rwlock)
-+{
-+	int r;
-+
-+        init_preload();
-+
-+	lock_release(&__get_lock(rwlock)->dep_map, 0, (unsigned long)_THIS_IP_);
-+	r = ll_pthread_rwlock_unlock(rwlock);
-+	if (r)
-+		lock_acquire(&__get_lock(rwlock)->dep_map, 0, 0, 0, 2, NULL, (unsigned long)_THIS_IP_);
-+
-+	return r;
-+}
-+
-+__attribute__((constructor)) static void init_preload(void)
-+{
-+	static bool preload_started;
-+
-+	if (preload_done)
-+		return;
-+
-+	/*
-+	 * Some programs attempt to initialize and use locks in their
-+	 * allocation path. This means that a call to malloc() would
-+	 * result in locks being initialized and locked.
-+	 *
-+	 * Why is it an issue for us? dlsym() below will try allocating to
-+	 * give us the original function. Since this allocation will result
-+	 * in a locking operations, we have to let pthread deal with it,
-+	 * but we can't! we don't have the pointer to the original API
-+	 * since we're inside dlsym() trying to get it :(
-+	 *
-+	 * We can work around it by telling the program that locking was
-+	 * really okay, and just initialize those locks when we're fully
-+	 * up and running (this is ok because this all happens during
-+	 * initialization phase, when we have just one thread). But
-+	 * this is a big TODO at this point.
-+	 */
-+	if (preload_started) {
-+		printf(
-+		"LOCKDEP error: It seems that the program you are trying to "
-+		"debug is initializing locks in it's allocation path.\n"
-+		"This means that liblockdep cannot reliably analyze this "
-+		"program since we need the allocator to work before we can "
-+		"debug locks.\nSorry!\n");
-+
-+		exit(1);
-+	}
-+
-+	preload_started = true;
-+
-+	ll_pthread_mutex_init = dlsym(RTLD_NEXT, "pthread_mutex_init");
-+	ll_pthread_mutex_lock = dlsym(RTLD_NEXT, "pthread_mutex_lock");
-+	ll_pthread_mutex_trylock = dlsym(RTLD_NEXT, "pthread_mutex_trylock");
-+	ll_pthread_mutex_unlock = dlsym(RTLD_NEXT, "pthread_mutex_unlock");
-+	ll_pthread_mutex_destroy = dlsym(RTLD_NEXT, "pthread_mutex_destroy");
-+
-+	ll_pthread_rwlock_init = dlsym(RTLD_NEXT, "pthread_rwlock_init");
-+	ll_pthread_rwlock_destroy = dlsym(RTLD_NEXT, "pthread_rwlock_destroy");
-+	ll_pthread_rwlock_rdlock = dlsym(RTLD_NEXT, "pthread_rwlock_rdlock");
-+	ll_pthread_rwlock_tryrdlock = dlsym(RTLD_NEXT, "pthread_rwlock_tryrdlock");
-+	ll_pthread_rwlock_wrlock = dlsym(RTLD_NEXT, "pthread_rwlock_wrlock");
-+	ll_pthread_rwlock_trywrlock = dlsym(RTLD_NEXT, "pthread_rwlock_trywrlock");
-+	ll_pthread_rwlock_unlock = dlsym(RTLD_NEXT, "pthread_rwlock_unlock");
-+
-+	lockdep_init();
-+
-+	preload_done = true;
++	pthread_mutex_lock(&a);
++	pthread_mutex_unlock(&a);
++	pthread_mutex_unlock(&a);
 +}
 -- 
 1.8.2.1
