@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab3EIH7v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 03:59:51 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:35568 "EHLO
+	id S1752338Ab3EIH75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 03:59:57 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:64286 "EHLO
 	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234Ab3EIH7t (ORCPT
+	with ESMTP id S1752238Ab3EIH7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 03:59:49 -0400
+	Thu, 9 May 2013 03:59:54 -0400
 From: Denis Efremov <yefremov.denis@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Denis Efremov <yefremov.denis@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, trivial@kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH 02/21] fs: remove inline marking of EXPORT_SYMBOL functions
-Date: Thu,  9 May 2013 11:58:24 +0400
-Message-Id: <1368086323-9412-2-git-send-email-yefremov.denis@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Denis Efremov <yefremov.denis@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, trivial@kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH 03/21] x86: remove inline marking of EXPORT_SYMBOL functions
+Date: Thu,  9 May 2013 11:58:25 +0400
+Message-Id: <1368086323-9412-3-git-send-email-yefremov.denis@gmail.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
 References: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
@@ -29,50 +29,36 @@ Found by Linux Driver Verification project (linuxtesting.org).
 
 Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
 ---
- fs/bio.c       | 2 +-
- fs/block_dev.c | 2 +-
- fs/buffer.c    | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/lib/delay.c | 2 +-
+ arch/x86/um/delay.c  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/bio.c b/fs/bio.c
-index b96fc6c..4e1235f 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -402,7 +402,7 @@ void bio_put(struct bio *bio)
+diff --git a/arch/x86/lib/delay.c b/arch/x86/lib/delay.c
+index 7c3bee6..6ce3f87 100644
+--- a/arch/x86/lib/delay.c
++++ b/arch/x86/lib/delay.c
+@@ -113,7 +113,7 @@ void __delay(unsigned long loops)
  }
- EXPORT_SYMBOL(bio_put);
+ EXPORT_SYMBOL(__delay);
  
--inline int bio_phys_segments(struct request_queue *q, struct bio *bio)
-+int bio_phys_segments(struct request_queue *q, struct bio *bio)
+-inline void __const_udelay(unsigned long xloops)
++void __const_udelay(unsigned long xloops)
  {
- 	if (unlikely(!bio_flagged(bio, BIO_SEG_VALID)))
- 		blk_recount_segments(q, bio);
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index ce08de7..799d879 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -42,7 +42,7 @@ static inline struct bdev_inode *BDEV_I(struct inode *inode)
- 	return container_of(inode, struct bdev_inode, vfs_inode);
- }
+ 	int d0;
  
--inline struct block_device *I_BDEV(struct inode *inode)
-+struct block_device *I_BDEV(struct inode *inode)
- {
- 	return &BDEV_I(inode)->bdev;
+diff --git a/arch/x86/um/delay.c b/arch/x86/um/delay.c
+index f3fe1a6..6e35993 100644
+--- a/arch/x86/um/delay.c
++++ b/arch/x86/um/delay.c
+@@ -33,7 +33,7 @@ void __delay(unsigned long loops)
  }
-diff --git a/fs/buffer.c b/fs/buffer.c
-index bc1fe14..c3cfe44 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -54,7 +54,7 @@ void init_buffer(struct buffer_head *bh, bh_end_io_t *handler, void *private)
- }
- EXPORT_SYMBOL(init_buffer);
+ EXPORT_SYMBOL(__delay);
  
--inline void touch_buffer(struct buffer_head *bh)
-+void touch_buffer(struct buffer_head *bh)
+-inline void __const_udelay(unsigned long xloops)
++void __const_udelay(unsigned long xloops)
  {
- 	trace_block_touch_buffer(bh);
- 	mark_page_accessed(bh->b_page);
+ 	int d0;
+ 
 -- 
 1.8.1.4
 
