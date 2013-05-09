@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab3EIWsx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:48:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46190 "EHLO
+	id S1759164Ab3EIWtM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:49:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46178 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758043Ab3EIWdU (ORCPT
+	with ESMTP id S1758021Ab3EIWdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:20 -0400
+	Thu, 9 May 2013 18:33:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 53/73] drm/radeon: properly lock disp in mc_stop/resume for r5xx-r7xx
-Date: Thu,  9 May 2013 15:32:16 -0700
-Message-Id: <20130509222803.690370529@linuxfoundation.org>
+Subject: [ 63/73] drm/radeon: fix endian bugs in atom_allocate_fb_scratch()
+Date: Thu,  9 May 2013 15:32:26 -0700
+Message-Id: <20130509222804.729670597@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,87 +31,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 2f86e2ede39a98650c2d465857405ef1c51372b1 upstream.
+commit beb71fc61c2cad64e347f164991b8ef476529e64 upstream.
 
-Need to wait for the new addresses to take affect before
-re-enabling the MC.
-
+Reviwed-by: Michel Dänzer <michel.daenzer@amd.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/r500_reg.h |    1 
- drivers/gpu/drm/radeon/rv515.c    |   43 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 44 insertions(+)
+ drivers/gpu/drm/radeon/atom.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/r500_reg.h
-+++ b/drivers/gpu/drm/radeon/r500_reg.h
-@@ -357,6 +357,7 @@
- #define AVIVO_D1CRTC_FRAME_COUNT                                0x60a4
- #define AVIVO_D1CRTC_STEREO_CONTROL                             0x60c4
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -1389,10 +1389,10 @@ int atom_allocate_fb_scratch(struct atom
+ 		firmware_usage = (struct _ATOM_VRAM_USAGE_BY_FIRMWARE *)(ctx->bios + data_offset);
  
-+#define AVIVO_D1MODE_MASTER_UPDATE_LOCK                         0x60e0
- #define AVIVO_D1MODE_MASTER_UPDATE_MODE                         0x60e4
+ 		DRM_DEBUG("atom firmware requested %08x %dkb\n",
+-			  firmware_usage->asFirmwareVramReserveInfo[0].ulStartAddrUsedByFirmware,
+-			  firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb);
++			  le32_to_cpu(firmware_usage->asFirmwareVramReserveInfo[0].ulStartAddrUsedByFirmware),
++			  le16_to_cpu(firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb));
  
- /* master controls */
---- a/drivers/gpu/drm/radeon/rv515.c
-+++ b/drivers/gpu/drm/radeon/rv515.c
-@@ -338,6 +338,22 @@ void rv515_mc_stop(struct radeon_device
+-		usage_bytes = firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb * 1024;
++		usage_bytes = le16_to_cpu(firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb) * 1024;
  	}
- 	/* wait for the MC to settle */
- 	udelay(100);
-+
-+	/* lock double buffered regs */
-+	for (i = 0; i < rdev->num_crtc; i++) {
-+		if (save->crtc_enabled[i]) {
-+			tmp = RREG32(AVIVO_D1GRPH_UPDATE + crtc_offsets[i]);
-+			if (!(tmp & AVIVO_D1GRPH_UPDATE_LOCK)) {
-+				tmp |= AVIVO_D1GRPH_UPDATE_LOCK;
-+				WREG32(AVIVO_D1GRPH_UPDATE + crtc_offsets[i], tmp);
-+			}
-+			tmp = RREG32(AVIVO_D1MODE_MASTER_UPDATE_LOCK + crtc_offsets[i]);
-+			if (!(tmp & 1)) {
-+				tmp |= 1;
-+				WREG32(AVIVO_D1MODE_MASTER_UPDATE_LOCK + crtc_offsets[i], tmp);
-+			}
-+		}
-+	}
- }
- 
- void rv515_mc_resume(struct radeon_device *rdev, struct rv515_mc_save *save)
-@@ -367,6 +383,33 @@ void rv515_mc_resume(struct radeon_devic
- 	}
- 	WREG32(R_000310_VGA_MEMORY_BASE_ADDRESS, (u32)rdev->mc.vram_start);
- 
-+	/* unlock regs and wait for update */
-+	for (i = 0; i < rdev->num_crtc; i++) {
-+		if (save->crtc_enabled[i]) {
-+			tmp = RREG32(AVIVO_D1MODE_MASTER_UPDATE_MODE + crtc_offsets[i]);
-+			if ((tmp & 0x3) != 0) {
-+				tmp &= ~0x3;
-+				WREG32(AVIVO_D1MODE_MASTER_UPDATE_MODE + crtc_offsets[i], tmp);
-+			}
-+			tmp = RREG32(AVIVO_D1GRPH_UPDATE + crtc_offsets[i]);
-+			if (tmp & AVIVO_D1GRPH_UPDATE_LOCK) {
-+				tmp &= ~AVIVO_D1GRPH_UPDATE_LOCK;
-+				WREG32(AVIVO_D1GRPH_UPDATE + crtc_offsets[i], tmp);
-+			}
-+			tmp = RREG32(AVIVO_D1MODE_MASTER_UPDATE_LOCK + crtc_offsets[i]);
-+			if (tmp & 1) {
-+				tmp &= ~1;
-+				WREG32(AVIVO_D1MODE_MASTER_UPDATE_LOCK + crtc_offsets[i], tmp);
-+			}
-+			for (j = 0; j < rdev->usec_timeout; j++) {
-+				tmp = RREG32(AVIVO_D1GRPH_UPDATE + crtc_offsets[i]);
-+				if ((tmp & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING) == 0)
-+					break;
-+				udelay(1);
-+			}
-+		}
-+	}
-+
- 	if (rdev->family >= CHIP_R600) {
- 		/* unblackout the MC */
- 		if (rdev->family >= CHIP_RV770)
+ 	ctx->scratch_size_bytes = 0;
+ 	if (usage_bytes == 0)
 
 
