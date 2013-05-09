@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758909Ab3EIWnK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:43:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46297 "EHLO
+	id S1758927Ab3EIWne (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:43:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46282 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758404Ab3EIWeu (ORCPT
+	with ESMTP id S1758365Ab3EIWeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:34:50 -0400
+	Thu, 9 May 2013 18:34:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
-        Carlos Maiolino <cmaiolino@redhat.com>,
-        Lingzhu Xiang <lxiang@redhat.com>
-Subject: [ 09/26] ext4: add check for inodes_count overflow in new resize ioctl
-Date: Thu,  9 May 2013 15:34:23 -0700
-Message-Id: <20130509223423.413283929@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [ 07/26] xhci: Dont warn on empty ring for suspended devices.
+Date: Thu,  9 May 2013 15:34:21 -0700
+Message-Id: <20130509223423.209896644@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
 References: <20130509223422.368544659@linuxfoundation.org>
@@ -28,34 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 3f8a6411fbada1fa482276591e037f3b1adcf55b upstream.
+commit a83d6755814e4614ba77e15d82796af0f695c6b8 upstream.
 
-Addresses-Red-Hat-Bugzilla: #913245
+When a device attached to the roothub is suspended, the endpoint rings
+are stopped.  The host may generate a completion event with the
+completion code set to 'Stopped' or 'Stopped Invalid' when the ring is
+halted.  The current xHCI code prints a warning in that case, which can
+be really annoying if the USB device is coming into and out of suspend.
 
-Reported-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Carlos Maiolino <cmaiolino@redhat.com>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+Remove the unnecessary warning.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/resize.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/host/xhci-ring.c |   23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1630,6 +1630,10 @@ int ext4_resize_fs(struct super_block *s
- 		return 0;
- 
- 	ext4_get_group_no_and_offset(sb, n_blocks_count - 1, &n_group, &offset);
-+	if (n_group > (0xFFFFFFFFUL / EXT4_INODES_PER_GROUP(sb))) {
-+		ext4_warning(sb, "resize would cause inodes_count overflow");
-+		return -EINVAL;
-+	}
- 	ext4_get_group_no_and_offset(sb, o_blocks_count - 1, &o_group, &offset);
- 
- 	n_desc_blocks = (n_group + EXT4_DESC_PER_BLOCK(sb)) /
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2459,14 +2459,21 @@ static int handle_tx_event(struct xhci_h
+ 		 * TD list.
+ 		 */
+ 		if (list_empty(&ep_ring->td_list)) {
+-			xhci_warn(xhci, "WARN Event TRB for slot %d ep %d "
+-					"with no TDs queued?\n",
+-				  TRB_TO_SLOT_ID(le32_to_cpu(event->flags)),
+-				  ep_index);
+-			xhci_dbg(xhci, "Event TRB with TRB type ID %u\n",
+-				 (le32_to_cpu(event->flags) &
+-				  TRB_TYPE_BITMASK)>>10);
+-			xhci_print_trb_offsets(xhci, (union xhci_trb *) event);
++			/*
++			 * A stopped endpoint may generate an extra completion
++			 * event if the device was suspended.  Don't print
++			 * warnings.
++			 */
++			if (!(trb_comp_code == COMP_STOP ||
++						trb_comp_code == COMP_STOP_INVAL)) {
++				xhci_warn(xhci, "WARN Event TRB for slot %d ep %d with no TDs queued?\n",
++						TRB_TO_SLOT_ID(le32_to_cpu(event->flags)),
++						ep_index);
++				xhci_dbg(xhci, "Event TRB with TRB type ID %u\n",
++						(le32_to_cpu(event->flags) &
++						 TRB_TYPE_BITMASK)>>10);
++				xhci_print_trb_offsets(xhci, (union xhci_trb *) event);
++			}
+ 			if (ep->skip) {
+ 				ep->skip = false;
+ 				xhci_dbg(xhci, "td_list is empty while skip "
 
 
