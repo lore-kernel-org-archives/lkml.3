@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750944Ab3EIEEX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 00:04:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47153 "EHLO mail.zytor.com"
+	id S1751135Ab3EIEEf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 00:04:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47160 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750704Ab3EIEEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 00:04:22 -0400
-Message-ID: <518B2033.80300@zytor.com>
-Date: Wed, 08 May 2013 21:04:03 -0700
+	id S1751042Ab3EIEEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 00:04:34 -0400
+Message-ID: <518B204C.4080501@zytor.com>
+Date: Wed, 08 May 2013 21:04:28 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
@@ -25,15 +25,24 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 05/08/2013 09:00 PM, Mike Frysinger wrote:
-> When including these headers in the x32 ABI, the structs get declared
-> with 32bit sizes which is incorrect.  Use long long and such to make
-> it work both with x32 and x86_64.
+> diff --git a/arch/x86/include/uapi/asm/statfs.h b/arch/x86/include/uapi/asm/statfs.h
+> index 2d0adbf..3cb5744 100644
+> --- a/arch/x86/include/uapi/asm/statfs.h
+> +++ b/arch/x86/include/uapi/asm/statfs.h
+> @@ -8,5 +8,10 @@
+>   */
+>  #define ARCH_PACK_COMPAT_STATFS64 __attribute__((packed,aligned(4)))
+>  
+> +/* For x86-64, both the 64bit and x32 ABIs have 64bit fields. */
+> +#ifdef __x86_64__
+> +#define __statfs_word __u64
+> +#endif
+> +
+>  #include <asm-generic/statfs.h>
+>  #endif /* _ASM_X86_STATFS_H */
 > 
-> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
 
-I'm not sure if it is okay to change the types, even within the same
-size.  Perhaps use __u64/__s64?
+... or is this what you meant to use?
 
 	-hpa
-
 
