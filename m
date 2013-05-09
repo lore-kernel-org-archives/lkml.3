@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519Ab3EIWzu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:55:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46075 "EHLO
+	id S932547Ab3EIW4L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:56:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46071 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757753Ab3EIWc7 (ORCPT
+	with ESMTP id S1757737Ab3EIWc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:32:59 -0400
+	Thu, 9 May 2013 18:32:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        Emil Goode <emilgoode@gmail.com>,
-        Steve Wise <swise@opengridcomputing.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 28/73] RDMA/cxgb4: Fix SQ allocation when on-chip SQ is disabled
-Date: Thu,  9 May 2013 15:31:51 -0700
-Message-Id: <20130509222801.054832857@linuxfoundation.org>
+        Egbert Eich <eich@pdx.freedesktop.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 37/73] drm/i915: Fix sdvo connector get_hw_state function
+Date: Thu,  9 May 2013 15:32:00 -0700
+Message-Id: <20130509222801.993788425@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -29,109 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 5b0c275926b8149c555da874bb4ec258ea3292aa upstream.
+commit bd6946e87a98fea11907b2a47368e13044458a35 upstream.
 
-Commit c079c28714e4 ("RDMA/cxgb4: Fix error handling in create_qp()")
-broke SQ allocation.  Instead of falling back to host allocation when
-on-chip allocation fails, it tries to allocate both.  And when it
-does, and we try to free the address from the genpool using the host
-address, we hit a BUG and the system crashes as below.
+The active output is only the currently selected one, which does not
+imply that it's actually enabled. Since we don't use the sdvo encoder
+side dpms support, we need to check whether the chip-side sdvo port is
+enabled instead.
 
-We create a new function that has the previous behavior and properly
-propagate the error, as intended.
+v2: Fix up Bugzilla links.
 
-    kernel BUG at /usr/src/packages/BUILD/kernel-ppc64-3.0.68/linux-3.0/lib/genalloc.c:340!
-    Oops: Exception in kernel mode, sig: 5 [#1]
-    SMP NR_CPUS=1024 NUMA pSeries
-    Modules linked in: rdma_ucm rdma_cm ib_addr ib_cm iw_cm ib_sa ib_mad ib_uverbs iw_cxgb4 ib_core ip6t_LOG xt_tcpudp xt_pkttype ipt_LOG xt_limit ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_raw xt_NOTRACK ipt_REJECT xt_state iptable_raw iptable_filter ip6table_mangle nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 ip_tables ip6table_filter ip6_tables x_tables fuse loop dm_mod ipv6 ipv6_lib sr_mod cdrom ibmveth(X) cxgb4 sg ext3 jbd mbcache sd_mod crc_t10dif scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh ibmvscsic(X) scsi_transport_srp scsi_tgt scsi_mod
-    Supported: Yes
-    NIP: c00000000037d41c LR: d000000003913824 CTR: c00000000037d3b0
-    REGS: c0000001f350ae50 TRAP: 0700   Tainted: G            X  (3.0.68-0.9-ppc64)
-    MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 24042482  XER: 00000001
-    TASK = c0000001f6f2a840[3616] 'rping' THREAD: c0000001f3508000 CPU: 0
-    GPR00: c0000001f6e875c8 c0000001f350b0d0 c000000000fc9690 c0000001f6e875c0
-    GPR04: 00000000000c0000 0000000000010000 0000000000000000 c0000000009d482a
-    GPR08: 000000006a170000 0000000000100000 c0000001f350b140 c0000001f6e875c8
-    GPR12: d000000003915dd0 c000000003f40000 000000003e3ecfa8 c0000001f350bea0
-    GPR16: c0000001f350bcd0 00000000003c0000 0000000000040100 c0000001f6e74a80
-    GPR20: d00000000399a898 c0000001f6e74ac8 c0000001fad91600 c0000001f6e74ab0
-    GPR24: c0000001f7d23f80 0000000000000000 0000000000000002 000000006a170000
-    GPR28: 000000000000000c c0000001f584c8d0 d000000003925180 c0000001f6e875c8
-    NIP [c00000000037d41c] .gen_pool_free+0x6c/0xf8
-    LR [d000000003913824] .c4iw_ocqp_pool_free+0x8c/0xd8 [iw_cxgb4]
-    Call Trace:
-    [c0000001f350b0d0] [c0000001f350b180] 0xc0000001f350b180 (unreliable)
-    [c0000001f350b170] [d000000003913824] .c4iw_ocqp_pool_free+0x8c/0xd8 [iw_cxgb4]
-    [c0000001f350b210] [d00000000390fd70] .dealloc_sq+0x90/0xb0 [iw_cxgb4]
-    [c0000001f350b280] [d00000000390fe08] .destroy_qp+0x78/0xf8 [iw_cxgb4]
-    [c0000001f350b310] [d000000003912738] .c4iw_destroy_qp+0x208/0x2d0 [iw_cxgb4]
-    [c0000001f350b460] [d000000003861874] .ib_destroy_qp+0x5c/0x130 [ib_core]
-    [c0000001f350b510] [d0000000039911bc] .ib_uverbs_cleanup_ucontext+0x174/0x4f8 [ib_uverbs]
-    [c0000001f350b5f0] [d000000003991568] .ib_uverbs_close+0x28/0x70 [ib_uverbs]
-    [c0000001f350b670] [c0000000001e7b2c] .__fput+0xdc/0x278
-    [c0000001f350b720] [c0000000001a9590] .remove_vma+0x68/0xd8
-    [c0000001f350b7b0] [c0000000001a9720] .exit_mmap+0x120/0x160
-    [c0000001f350b8d0] [c0000000000af330] .mmput+0x80/0x160
-    [c0000001f350b960] [c0000000000b5d0c] .exit_mm+0x1ac/0x1e8
-    [c0000001f350ba10] [c0000000000b8154] .do_exit+0x1b4/0x4b8
-    [c0000001f350bad0] [c0000000000b84b0] .do_group_exit+0x58/0xf8
-    [c0000001f350bb60] [c0000000000ce9f4] .get_signal_to_deliver+0x2f4/0x5d0
-    [c0000001f350bc60] [c000000000017ee4] .do_signal_pending+0x6c/0x3e0
-    [c0000001f350bdb0] [c0000000000182cc] .do_signal+0x74/0x78
-    [c0000001f350be30] [c000000000009e74] do_work+0x24/0x28
+v3: Simplify logic a bit (Chris).
 
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Cc: Emil Goode <emilgoode@gmail.com>
-Acked-by: Steve Wise <swise@opengridcomputing.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=60138
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=63031
+Cc: Egbert Eich <eich@pdx.freedesktop.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Tested-by: Egbert Eich <eich@pdx.freedesktop.org> (v2)
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/cxgb4/qp.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ drivers/gpu/drm/i915/intel_sdvo.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/infiniband/hw/cxgb4/qp.c
-+++ b/drivers/infiniband/hw/cxgb4/qp.c
-@@ -100,6 +100,16 @@ static int alloc_host_sq(struct c4iw_rde
- 	return 0;
- }
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -1197,8 +1197,12 @@ static bool intel_sdvo_connector_get_hw_
+ 	struct intel_sdvo_connector *intel_sdvo_connector =
+ 		to_intel_sdvo_connector(&connector->base);
+ 	struct intel_sdvo *intel_sdvo = intel_attached_sdvo(&connector->base);
++	struct drm_i915_private *dev_priv = intel_sdvo->base.base.dev->dev_private;
+ 	u16 active_outputs;
  
-+static int alloc_sq(struct c4iw_rdev *rdev, struct t4_sq *sq, int user)
-+{
-+	int ret = -ENOSYS;
-+	if (user)
-+		ret = alloc_oc_sq(rdev, sq);
-+	if (ret)
-+		ret = alloc_host_sq(rdev, sq);
-+	return ret;
-+}
++	if (!(I915_READ(intel_sdvo->sdvo_reg) & SDVO_ENABLE))
++		return false;
 +
- static int destroy_qp(struct c4iw_rdev *rdev, struct t4_wq *wq,
- 		      struct c4iw_dev_ucontext *uctx)
- {
-@@ -168,18 +178,9 @@ static int create_qp(struct c4iw_rdev *r
- 		goto free_sw_rq;
- 	}
+ 	intel_sdvo_get_active_outputs(intel_sdvo, &active_outputs);
  
--	if (user) {
--		ret = alloc_oc_sq(rdev, &wq->sq);
--		if (ret)
--			goto free_hwaddr;
--
--		ret = alloc_host_sq(rdev, &wq->sq);
--		if (ret)
--			goto free_sq;
--	} else
--		ret = alloc_host_sq(rdev, &wq->sq);
--		if (ret)
--			goto free_hwaddr;
-+	ret = alloc_sq(rdev, &wq->sq, user);
-+	if (ret)
-+		goto free_hwaddr;
- 	memset(wq->sq.queue, 0, wq->sq.memsize);
- 	dma_unmap_addr_set(&wq->sq, mapping, wq->sq.dma_addr);
- 
+ 	if (active_outputs & intel_sdvo_connector->output_flag)
 
 
