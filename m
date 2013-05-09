@@ -1,92 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717Ab3EIIeK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 04:34:10 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:53082
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751194Ab3EIIeI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 04:34:08 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(z5105h2005kz9371I542I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1155h)
-From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-To: Libo Chen <libo.chen@huawei.com>, "wsa@the-dreams.de" <wsa@the-dreams.de>
-CC: "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "lizefan@huawei.com" <lizefan@huawei.com>
-Subject: RE: [PATCH v2 1/2] i2c: i2c-bfin-twi: don`t free peripheral before
- it init successful
-Thread-Topic: [PATCH v2 1/2] i2c: i2c-bfin-twi: don`t free peripheral before
- it init successful
-Thread-Index: AQHOTI9QZNJIiFu0Q0GUTG2PZMAtGZj8hiKw
-Date: Thu, 9 May 2013 08:33:17 +0000
-Message-ID: <B168F8A49F4BCF4C84FD23DA5F6363EEAD57@NWD2MBX7.ad.analog.com>
-References: <1368088044-20408-1-git-send-email-libo.chen@huawei.com>
- <1368088044-20408-2-git-send-email-libo.chen@huawei.com>
-In-Reply-To: <1368088044-20408-2-git-send-email-libo.chen@huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.64.72.242]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752279Ab3EIIeb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 04:34:31 -0400
+Received: from smtp-out-110.synserver.de ([212.40.185.110]:1080 "EHLO
+	smtp-out-110.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152Ab3EIIe2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 04:34:28 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 17293
+Message-ID: <518B5F73.4010702@metafoo.de>
+Date: Thu, 09 May 2013 10:33:55 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+To: Axel Lin <axel.lin@ingics.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH v3] iio: dac: Fix build error when CONFIG_SPI_MASTER=y
+ && CONFIG_I2C=m
+References: <1368085759.3454.0.camel@phoenix>
+In-Reply-To: <1368085759.3454.0.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Libo,
+On 05/09/2013 09:49 AM, Axel Lin wrote:
+> This patch fixes below build error when CONFIG_SPI_MASTER=y && CONFIG_I2C=m:
+> 
+> drivers/built-in.o: In function `ad5064_i2c_write':
+> drivers/iio/dac/ad5064.c:608: undefined reference to `i2c_master_send'
+> drivers/built-in.o: In function `ad5064_i2c_register_driver':
+> drivers/iio/dac/ad5064.c:646: undefined reference to `i2c_register_driver'
+> drivers/built-in.o: In function `ad5064_i2c_unregister_driver':
+> drivers/iio/dac/ad5064.c:651: undefined reference to `i2c_del_driver'
+> make: *** [vmlinux] Error 1
+> 
+> When CONFIG_I2C=m, meaning we can't build the drivers in with I2C support.
+> Thus don't allow the drivers to be compiled as built-in when CONFIG_I2C=m.
+> 
+> The real fix though is to break the driver apart into a SPI part, an I2C part
+> and a common part. But that's something for 3.11 while this is something for
+> 3.10/stable.
+> 
+> Reported-by: Wu Fengguang <fengguang.wu@intel.com>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
->-----Original Message-----
->From: Libo Chen [mailto:libo.chen@huawei.com]
->Sent: Thursday, May 09, 2013 4:27 PM
->To: Zhang, Sonic; wsa@the-dreams.de
->Cc: uclinux-dist-devel@blackfin.uclinux.org; linux-kernel@vger.kernel.org; linux-
->i2c@vger.kernel.org; lizefan@huawei.com; Libo Chen
->Subject: [PATCH v2 1/2] i2c: i2c-bfin-twi: don`t free peripheral before it init
->successful
->
->down out_error_no_irq. When platform_get_irq fail, no need to free peripheral
->
->Signed-off-by: Libo Chen <libo.chen@huawei.com>
->---
-> drivers/i2c/busses/i2c-bfin-twi.c |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
->
->diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
->index 05080c4..6617645 100644
->--- a/drivers/i2c/busses/i2c-bfin-twi.c
->+++ b/drivers/i2c/busses/i2c-bfin-twi.c
->@@ -709,9 +709,9 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
-> out_error_add_adapter:
->       free_irq(iface->irq, iface);
-> out_error_req_irq:
->-out_error_no_irq:
->       peripheral_free_list((unsigned short *)pdev->dev.platform_data);
-> out_error_pin_mux:
->+out_error_no_irq:
->       iounmap(iface->regs_base);
-> out_error_ioremap:
-> out_error_get_res:
->--
+Thanks for taking care of this.
 
-Sorry, but you didn't exchange as I suggested.
-Should be
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 
-> out_error_req_irq:
->-out_error_no_irq:
->+out_error_pin_mux:
->       peripheral_free_list((unsigned short *)pdev->dev.platform_data);
->-out_error_pin_mux:
->+out_error_no_irq:
+Jonathan when you apply this please also add:
 
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
 
-Regards,
+since he reported the issue as well
 
-Sonic
+> ---
+> v3: Update comment
+> 
+>  drivers/iio/dac/Kconfig | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
+> index f4a6f08..b61160b 100644
+> --- a/drivers/iio/dac/Kconfig
+> +++ b/drivers/iio/dac/Kconfig
+> @@ -5,7 +5,7 @@ menu "Digital to analog converters"
+>  
+>  config AD5064
+>  	tristate "Analog Devices AD5064 and similar multi-channel DAC driver"
+> -	depends on (SPI_MASTER || I2C)
+> +	depends on (SPI_MASTER && I2C!=m) || I2C
+>  	help
+>  	  Say yes here to build support for Analog Devices AD5024, AD5025, AD5044,
+>  	  AD5045, AD5064, AD5064-1, AD5065, AD5628, AD5629R, AD5648, AD5666, AD5668,
+> @@ -27,7 +27,7 @@ config AD5360
+>  
+>  config AD5380
+>  	tristate "Analog Devices AD5380/81/82/83/84/90/91/92 DAC driver"
+> -	depends on (SPI_MASTER || I2C)
+> +	depends on (SPI_MASTER && I2C!=m) || I2C
+>  	select REGMAP_I2C if I2C
+>  	select REGMAP_SPI if SPI_MASTER
+>  	help
+> @@ -57,7 +57,7 @@ config AD5624R_SPI
+>  
+>  config AD5446
+>  	tristate "Analog Devices AD5446 and similar single channel DACs driver"
+> -	depends on (SPI_MASTER || I2C)
+> +	depends on (SPI_MASTER && I2C!=m) || I2C
+>  	help
+>  	  Say yes here to build support for Analog Devices AD5300, AD5301, AD5310,
+>  	  AD5311, AD5320, AD5321, AD5444, AD5446, AD5450, AD5451, AD5452, AD5453,
 
