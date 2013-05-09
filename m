@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab3EIWhd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:37:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46417 "EHLO
+	id S932218Ab3EIWhh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:37:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46430 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932070Ab3EIWh1 (ORCPT
+	with ESMTP id S932073Ab3EIWh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:37:27 -0400
+	Thu, 9 May 2013 18:37:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Jeffery <djeffery@redhat.com>, Ian Kent <raven@themaw.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 02/12] autofs - remove autofs dentry mount check
-Date: Thu,  9 May 2013 15:37:15 -0700
-Message-Id: <20130509223611.696809242@linuxfoundation.org>
+        Christian Lamparter <chunkeey@googlemail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 04/12] drm/i915: Add no-lvds quirk for Fujitsu Esprimo Q900
+Date: Thu,  9 May 2013 15:37:17 -0700
+Message-Id: <20130509223611.886182599@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223611.432377360@linuxfoundation.org>
 References: <20130509223611.432377360@linuxfoundation.org>
@@ -27,48 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Jeffery <djeffery@redhat.com>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit ce8a5dbdf9e709bdaf4618d7ef8cceb91e8adc69 upstream.
+commit 9e9dd0e889c76c786e8f2e164c825c3c06dea30c upstream.
 
-When checking if an autofs mount point is busy it isn't sufficient to
-only check if it's a mount point.
+The "Mobile Sandy Bridge CPUs" in the Fujitsu Esprimo Q900
+mini desktop PCs are probably misleading the LVDS detection
+code in intel_lvds_supported. Nothing is connected to the
+LVDS ports in these systems.
 
-For example, if the mount of an offset mountpoint in a tree is denied
-for this host by its export and the dentry becomes a process working
-directory the check incorrectly returns the mount as not in use at
-expire.
-
-This can happen since the default when mounting within a tree is
-nostrict, which means ingnore mount fails on mounts within the tree and
-continue.  The nostrict option is meant to allow mounting in this case.
-
-Signed-off-by: David Jeffery <djeffery@redhat.com>
-Signed-off-by: Ian Kent <raven@themaw.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/autofs4/expire.c |    9 ---------
- 1 file changed, 9 deletions(-)
+ drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/fs/autofs4/expire.c
-+++ b/fs/autofs4/expire.c
-@@ -61,15 +61,6 @@ static int autofs4_mount_busy(struct vfs
- 		/* This is an autofs submount, we can't expire it */
- 		if (autofs_type_indirect(sbi->type))
- 			goto done;
--
--		/*
--		 * Otherwise it's an offset mount and we need to check
--		 * if we can umount its mount, if there is one.
--		 */
--		if (!d_mountpoint(path.dentry)) {
--			status = 0;
--			goto done;
--		}
- 	}
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -767,6 +767,14 @@ static const struct dmi_system_id intel_
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "X7SPA-H"),
+ 		},
+ 	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Fujitsu Esprimo Q900",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "ESPRIMO Q900"),
++		},
++	},
  
- 	/* Update the expiry counter if fs is busy */
+ 	{ }	/* terminating entry */
+ };
 
 
