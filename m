@@ -1,80 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab3EIVCN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 17:02:13 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:35813 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753805Ab3EIVCK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 17:02:10 -0400
+	id S1753907Ab3EIVDU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 17:03:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23807 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753213Ab3EIVDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 17:03:19 -0400
+Date: Thu, 9 May 2013 18:03:09 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        riel@redhat.com, mst@redhat.com, amit.shah@redhat.com,
+        anton@enomsg.org
+Subject: Re: [RFC 1/2] virtio_balloon: move balloon_lock mutex to callers
+Message-ID: <20130509210308.GB16446@optiplex.redhat.com>
+References: <1368111229-29847-1-git-send-email-lcapitulino@redhat.com>
+ <1368111229-29847-2-git-send-email-lcapitulino@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130508203042.GA18895@redhat.com>
-References: <20130508203042.GA18895@redhat.com>
-Date: Thu, 9 May 2013 23:02:08 +0200
-Message-ID: <CAFTL4hwB3XZG+C9pQ0JD4h=n_ObNH6mCBRfLW3JaxohwwRDWRA@mail.gmail.com>
-Subject: Re: rcu_preempt running flat out on idle desktop.
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Dave Jones <davej@redhat.com>, paulmck@linux.vnet.ibm.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368111229-29847-2-git-send-email-lcapitulino@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/8 Dave Jones <davej@redhat.com>:
-> On what should be an idle desktop, I'm seeing really strange things.
->
-> The XFCE CPU meter shows both cores are running with no idle time.
->
-> here's the top of the top(1) output..
->
->   PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND
->    10 root      20   0     0    0    0 S 200.0  0.0 185301:36 rcu_preempt
->   553 root      20   0  268m  76m 6764 S 200.0  2.6 144579:53 Xorg
->  1199 root      20   0     0    0    0 S 200.0  0.0 306:17.85 kworker/1:0
->   501 root      20   0     0    0    0 S 200.0  0.0   4471:03 kworker/0:2
->    12 root      20   0     0    0    0 S 200.0  0.0  67277:16 rcuop/1
->  1237 davej     20   0  535m  15m 8484 S 200.0  0.5   3645:16 Terminal
->   859 davej     20   0  117m 3036 1336 S 200.0  0.1   1986:55 htop
->
-> There are a lot of processes allegedly using "200%" of CPU time, a handful
-> in the "196%" range, and then a bunch at 0.
->
-> rcu_preempt is staying at the top of the list while everything else bubbles
-> up the list.
->
-> And what's up with those TIME entries? Box has only been up a few hours,
-> so those numbers look really crazy.
->
-> RCU options for this build are..
->
-> CONFIG_TREE_PREEMPT_RCU=y
-> CONFIG_PREEMPT_RCU=y
-> CONFIG_RCU_STALL_COMMON=y
-> CONFIG_RCU_USER_QS=y
-> CONFIG_RCU_FANOUT=64
-> CONFIG_RCU_FANOUT_LEAF=16
-> # CONFIG_RCU_FANOUT_EXACT is not set
-> # CONFIG_RCU_FAST_NO_HZ is not set
-> CONFIG_TREE_RCU_TRACE=y
-> CONFIG_RCU_BOOST=y
-> CONFIG_RCU_BOOST_PRIO=1
-> CONFIG_RCU_BOOST_DELAY=500
-> CONFIG_RCU_NOCB_CPU=y
-> CONFIG_RCU_NOCB_CPU_ALL=y
-> CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
-> CONFIG_PROVE_RCU=y
-> # CONFIG_PROVE_RCU_REPEATEDLY is not set
-> CONFIG_PROVE_RCU_DELAY=y
-> CONFIG_SPARSE_RCU_POINTER=y
-> # CONFIG_RCU_TORTURE_TEST is not set
-> CONFIG_RCU_CPU_STALL_TIMEOUT=60
-> CONFIG_RCU_CPU_STALL_VERBOSE=y
-> # CONFIG_RCU_CPU_STALL_INFO is not set
-> CONFIG_RCU_TRACE=y
+On Thu, May 09, 2013 at 10:53:48AM -0400, Luiz Capitulino wrote:
+> This commit moves the balloon_lock mutex out of the fill_balloon()
+> and leak_balloon() functions to their callers.
+> 
+> The reason for this change is that the next commit will introduce
+> a shrinker callback for the balloon driver, which will also call
+> leak_balloon() but will require different locking semantics.
+> 
+> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> ---
+>  drivers/virtio/virtio_balloon.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+> index bd3ae32..9d5fe2b 100644
+> --- a/drivers/virtio/virtio_balloon.c
+> +++ b/drivers/virtio/virtio_balloon.c
+> @@ -133,7 +133,6 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+>  	/* We can only do one array worth at a time. */
+>  	num = min(num, ARRAY_SIZE(vb->pfns));
+>  
+> -	mutex_lock(&vb->balloon_lock);
+>  	for (vb->num_pfns = 0; vb->num_pfns < num;
+>  	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+>  		struct page *page = balloon_page_enqueue(vb_dev_info);
+> @@ -154,7 +153,6 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+>  	/* Did we get any? */
+>  	if (vb->num_pfns != 0)
+>  		tell_host(vb, vb->inflate_vq);
+> -	mutex_unlock(&vb->balloon_lock);
+>  }
+>  
+>  static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
+> @@ -176,7 +174,6 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
+>  	/* We can only do one array worth at a time. */
+>  	num = min(num, ARRAY_SIZE(vb->pfns));
+>  
+> -	mutex_lock(&vb->balloon_lock);
+>  	for (vb->num_pfns = 0; vb->num_pfns < num;
+>  	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+>  		page = balloon_page_dequeue(vb_dev_info);
+> @@ -192,7 +189,6 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
+>  	 * is true, we *have* to do it in this order
+>  	 */
+>  	tell_host(vb, vb->deflate_vq);
+> -	mutex_unlock(&vb->balloon_lock);
+>  	release_pages_by_pfn(vb->pfns, vb->num_pfns);
+>  }
+>  
+> @@ -305,11 +301,13 @@ static int balloon(void *_vballoon)
+>  					 || freezing(current));
+>  		if (vb->need_stats_update)
+>  			stats_handle_request(vb);
+> +		mutex_lock(&vb->balloon_lock);
+>  		if (diff > 0)
+>  			fill_balloon(vb, diff);
+>  		else if (diff < 0)
+>  			leak_balloon(vb, -diff);
+>  		update_balloon_size(vb);
+> +		mutex_unlock(&vb->balloon_lock);
+>  	}
+>  	return 0;
+>  }
+> @@ -490,9 +488,11 @@ out:
+>  static void remove_common(struct virtio_balloon *vb)
+>  {
+>  	/* There might be pages left in the balloon: free them. */
+> +	mutex_lock(&vb->balloon_lock);
+>  	while (vb->num_pages)
+>  		leak_balloon(vb, vb->num_pages);
+>  	update_balloon_size(vb);
+> +	mutex_unlock(&vb->balloon_lock);
 
-I can't reproduce that issue even with the above setting. Could you
-please send me your whole config?
+I think you will need to introduce the same change as above to virtballoon_restore()
 
-Thanks.
+
