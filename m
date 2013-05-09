@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759268Ab3EIWvW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:51:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46153 "EHLO
+	id S1757931Ab3EIWdK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:33:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46114 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757952Ab3EIWdM (ORCPT
+	with ESMTP id S1757856Ab3EIWdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:12 -0400
+	Thu, 9 May 2013 18:33:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Cochran <richardcochran@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 44/73] drm/i915: Fixup Oops in the pipe config computation
-Date: Thu,  9 May 2013 15:32:07 -0700
-Message-Id: <20130509222802.738696021@linuxfoundation.org>
+        Stefan Bader <stefan.bader@canonical.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        hayeswang <hayeswang@realtek.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 27/73] r8169: fix 8168evl frame padding.
+Date: Thu,  9 May 2013 15:31:50 -0700
+Message-Id: <20130509222800.933087299@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -28,117 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Stefan Bader <stefan.bader@canonical.com>
 
-commit b6c5164d7bf624f3e1b750787ddb983150c5117c upstream.
+commit e5195c1f31f399289347e043d6abf3ffa80f0005 upstream.
 
-Yet again our current confusion between doing the modeset globally,
-but only having the new parameters for one crtc at a time.
-
-So that intel_set_mode essentially already does a global modeset:
-intel_modeset_affected_pipes compares the current state with where we
-want to go to (which is carefully set up by intel_crtc_set_config) and
-then goes through the modeset sequence for any crtc which needs
-updating.
-
-Now the issue is that the actual interface with the remaining code
-still only works on one crtc, and so we only pass in one fb and one
-mode. In intel_set_mode we also only compute one intel_crtc_config
-(which should be the one for the crtc we're doing a modeset on).
-
-The reason for that mismatch is twofold:
-- We want to eventually do all modeset as global state changes, so
-it's just infrastructure prep.
-- But even the old semantics can change more than one crtc when you
-e.g. move a connector from crtc A to crtc B, then both crtc A and B
-need to be updated. Usually that means one pipe is disabled and the
-other enabled. This is also the reason why the hack doesn't touch the
-disable_pipes mask.
-
-Now hilarity ensued in our kms config restore paths when we actually
-try to do a modeset on all crtcs: If the first crtc should be off and
-the second should be on, then the call on the first crtc will notice
-that the 2nd one should be switched on and so tries to compute the
-pipe_config. But due to a lack of passed-in fb (crtc 1 should be off
-after all) it only results in tears.
-
-This case is ridiculously easy to hit on gen2/3 where the lvds output
-is restricted to pipe B. Note that before the pipe_config bpp rework
-gen2/3 didn't care really about the fb->depth, so this is a regression
-brought to light with
-
-commit 4e53c2e010e531b4a014692199e978482d471c7e
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Wed Mar 27 00:44:58 2013 +0100
-
-    drm/i915: precompute pipe bpp before touching the hw
-
-But apparently Ajax also managed to blow up pch platforms, probably
-with some randomized configs, and pch platforms trip up over the lack
-of an fb even in the old code. So this actually goes back to the first
-introduction of the new modeset restore code in
-
-commit 45e2b5f640b3766da3eda48f6c35f088155c06f3
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Fri Nov 23 18:16:34 2012 +0100
-
-    drm/i915: force restore on lid open
-
-Fix this mess by now by justing shunting all the cool new global
-modeset logic in intel_modeset_affected_pipes.
-
-v2: Improve commit message and clean up all the comments in
-intel_modeset_affected_pipes - since the introduction of the modeset
-restore code they've been a bit outdated.
-
-Bugzill: https://bugzilla.redhat.com/show_bug.cgi?id=917725
-References: http://www.mail-archive.com/stable@vger.kernel.org/msg38084.html
-Tested-by: Richard Cochran <richardcochran@gmail.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+Cc: hayeswang <hayeswang@realtek.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |   23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7732,22 +7732,25 @@ intel_modeset_affected_pipes(struct drm_
- 	if (crtc->enabled)
- 		*prepare_pipes |= 1 << intel_crtc->pipe;
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -5779,6 +5779,14 @@ static netdev_tx_t rtl8169_start_xmit(st
+ 		goto err_stop_0;
+ 	}
  
--	/* We only support modeset on one single crtc, hence we need to do that
--	 * only for the passed in crtc iff we change anything else than just
--	 * disable crtcs.
--	 *
--	 * This is actually not true, to be fully compatible with the old crtc
--	 * helper we automatically disable _any_ output (i.e. doesn't need to be
--	 * connected to the crtc we're modesetting on) if it's disconnected.
--	 * Which is a rather nutty api (since changed the output configuration
--	 * without userspace's explicit request can lead to confusion), but
--	 * alas. Hence we currently need to modeset on all pipes we prepare. */
-+	/*
-+	 * For simplicity do a full modeset on any pipe where the output routing
-+	 * changed. We could be more clever, but that would require us to be
-+	 * more careful with calling the relevant encoder->mode_set functions.
-+	 */
- 	if (*prepare_pipes)
- 		*modeset_pipes = *prepare_pipes;
- 
- 	/* ... and mask these out. */
- 	*modeset_pipes &= ~(*disable_pipes);
- 	*prepare_pipes &= ~(*disable_pipes);
++	/* 8168evl does not automatically pad to minimum length. */
++	if (unlikely(tp->mac_version == RTL_GIGA_MAC_VER_34 &&
++		     skb->len < ETH_ZLEN)) {
++		if (skb_padto(skb, ETH_ZLEN))
++			goto err_update_stats;
++		skb_put(skb, ETH_ZLEN - skb->len);
++	}
 +
-+	/*
-+	 * HACK: We don't (yet) fully support global modesets. intel_set_config
-+	 * obies this rule, but the modeset restore mode of
-+	 * intel_modeset_setup_hw_state does not.
-+	 */
-+	*modeset_pipes &= 1 << intel_crtc->pipe;
-+	*prepare_pipes &= 1 << intel_crtc->pipe;
- }
+ 	if (unlikely(le32_to_cpu(txd->opts1) & DescOwn))
+ 		goto err_stop_0;
  
- static bool intel_crtc_in_use(struct drm_crtc *crtc)
+@@ -5850,6 +5858,7 @@ err_dma_1:
+ 	rtl8169_unmap_tx_skb(d, tp->tx_skb + entry, txd);
+ err_dma_0:
+ 	dev_kfree_skb(skb);
++err_update_stats:
+ 	dev->stats.tx_dropped++;
+ 	return NETDEV_TX_OK;
+ 
 
 
