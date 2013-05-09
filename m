@@ -1,86 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab3EIJ2e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 05:28:34 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52441 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146Ab3EIJ2c (ORCPT
+	id S1753340Ab3EIJab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 05:30:31 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:56982 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752956Ab3EIJa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 05:28:32 -0400
-Date: Thu, 9 May 2013 10:28:25 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Fabio Baltieri <fabio.baltieri@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Ola Lilja <ola.o.lilja@stericsson.com>
-Message-ID: <20130509092825.GX7478@sirena.org.uk>
-References: <20130508080448.GG3102@gmail.com>
- <1368002354-15471-1-git-send-email-fabio.baltieri@linaro.org>
- <20130508103401.GX7478@sirena.org.uk>
- <20130508110451.GC3459@gmail.com>
- <20130508113124.GH7478@sirena.org.uk>
- <20130508120326.GF3459@gmail.com>
- <20130508123902.GL7478@sirena.org.uk>
- <20130508130554.GG3459@gmail.com>
- <20130508134814.GQ7478@sirena.org.uk>
- <20130508140618.GI3459@gmail.com>
+	Thu, 9 May 2013 05:30:29 -0400
+Date: Thu, 9 May 2013 11:30:25 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf: detect loops processing events
+Message-ID: <20130509093025.GA21692@gmail.com>
+References: <1368026327-4741-1-git-send-email-dsahern@gmail.com>
+ <20130509092441.GB21620@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Z1EIi0fvCUyWUKja"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130508140618.GI3459@gmail.com>
-X-Cookie: You have no real enemies.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130509092441.GB21620@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 82.42.102.178
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 2/6] ASoC: ux500: Do not clear state if already idle
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Z1EIi0fvCUyWUKja
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-On Wed, May 08, 2013 at 03:06:18PM +0100, Lee Jones wrote:
+> 
+> * David Ahern <dsahern@gmail.com> wrote:
+> 
+> > Recovery algorithm in __perf_session__process_events attempts to remap
+> > a perf.data file with a different file_offset and try again at a new head
+> > position. Both of these adjustment rely on page_offset. If page_offset is
+> > 0 then file_offset and head never change which means the remap attempt is
+> > the same and the fetch_mmaped_event is the same and the processing just
+> > loops forever.
+> > 
+> > Detect this condition and warn the user.
+> > 
+> > Signed-off-by: David Ahern <dsahern@gmail.com>
+> > Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Jiri Olsa <jolsa@redhat.com>
+> > Cc: Namhyung Kim <namhyung@kernel.org>
+> > Cc: Stephane Eranian <eranian@google.com>
+> > ---
+> >  tools/perf/util/session.c |    6 ++++++
+> >  1 file changed, 6 insertions(+)
+> > 
+> > diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> > index cf1fe01..1c4dc45 100644
+> > --- a/tools/perf/util/session.c
+> > +++ b/tools/perf/util/session.c
+> > @@ -1235,6 +1235,12 @@ more:
+> >  		}
+> >  
+> >  		page_offset = page_size * (head / page_size);
+> > +		/* catch looping where we never make forward progress. */
+> > +		if (page_offset == 0) {
+> > +			pr_err("Loop detection processing events. Is file corrupted?\n");
+> > +			return -1;
+> > +		}
+> > +
+> >  		file_offset += page_offset;
+> >  		head -= page_offset;
+> >  		goto remap;
+> 
+> Ah, nice!
+> 
+> Btw., would it make sense to emit a (once-only) warning and optimistically 
+> fix page_offset up to 1 (or 4096) and let things continue with the next 
+> set of data - can we recover most of the data in that case?
 
-> Bringing this back on subject, whilst trying not to drag this out for
-> longer than we have to. I think replying to one's first patch with a
-> subsequent version has its merits. And as long as the thread hasn't
-> become too overgrown I see it as a useful tool to obtain an Ack or
-> further comment easily and without churn overhead. This also aids in
-> your quest to save maintainers from reviewing the same code
-> repeatedly, as once the Ack is in place it's easy to see which patches
-> are in need of further review and which ones can be skipped.
+Basically, what'd like to do with binary data is similar to what we do 
+with text data if some trace output is corrupted:
 
-If you want to do that what often works better is to post an incremental
-diff rather than the full patch to show exactly what's been done in the
-fix.
+            sshd-15478 [002]  1100.859353:  15478:120:S ==> [002]     0:140:R <idle>
+          <idle>-0     [005]  1100.859378:      0:140:R ==> [005] 20169:120:R cat
+             cat-20169 [005]  1100.860718:  20169:120:R   + [005] 15521:120:S bash
+             ^@¨<81><92>^@^Bª^P^P^D<9c>8@<88>^A^M ;¤0 ^D<90>"ª<81>^B^T)Ò^C$^@^N^@^A
+             cat-20169 [005]  1100.860720:  20169:120:R   + [005]   305:115:S kblockd/5
+             cat-20169 [005]  1100.860722:  20169:120:? ==> [005]   305:115:R kblockd/5
+       kblockd/5-305   [005]  1100.860755:    305:115:S ==> [005] 15521:120:R bash
+            bash-15521 [005]  1100.860792:  15521:120:S   + [002] 15478:120:S sshd
+          <idle>-0     [002]  1100.860853:      0:140:R ==> [002] 15478:120:R sshd
+            sshd-15478 [002]  1100.860895:  15478:120:S ==> [002]     0:140:R <idle>
+            bash-15521 [005]  1100.860925:  15521:120:S   + [002] 15478:120:S sshd
+            bash-15521 [005]  1100.860999:  15521:120:S ==> [005]     0:140:R <idle>
 
---Z1EIi0fvCUyWUKja
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+See that junk in the middle, sign of some sort of file corruption? Instead 
+of detecting it and aborting we just try to skip that line and try to find 
+the next useful looking line, ignoring the junk and bits around it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Is there a perf.data equivalent of intelligently trying to skip to the 
+next plausible looking event record?
 
-iQIcBAEBAgAGBQJRi2wwAAoJELSic+t+oim99moP/RGvAOrhh8aFxyKWikGkO+ua
-vhKRaifTbOYa+C5ISE1pwwGYsIbJaT+bwksVA+MQOEyOy9oEb0+2eFioUif9VLGu
-zzAuoLKrCCgF5uYhllsGLRAlvPzclcvk2OFmjfaN9y7QWCloX3aW8sUfaF3iHdMf
-h/+ooFoR22+S/iShTV1GbHFmest5g9LjnQewawilq0mMLAaxCrg19E/fSi8FaGMR
-a9/T1bDLiBwkD/VR9022O3bfr/w+xKTbXbgP/HvJPWe8ljcDdqTugnwsT1eSI59Q
-/enq17PaXBmlJ3+tZOVTBmR2kvi4Z1Mj5F++TzSNuEbZKNG33gf7B2eeMUtJMn5N
-ZrXqfkTHExdcJXcqZb/1KoOcsQK7chk0d8Vv/Pk0Eg9QolzWf27utrazxsOIiPw2
-i3ieQZQt1g33DDLwhuuwbDXn/81uz/iH63XqaqcKvX4tMGw2hO8QgQk6vsmN2bEU
-2t//hugBOhmhIezmZ3Zg37JIBDLc4JdXUlGdulbUEudkJXdk1kJH6Q4XNZ5p2Z1M
-y/o0zccjiIHC0LtogEaitK9y+IYkQ58/3tK3zbbzKOkQUsfbvJGLEvMFZJ1y42qw
-0gvYxxIfKvNd6RlVYmsPQ5qneRbKL1OfiZTAvCMFDRXYsVMNZ6b7g5qpZxIOF4cB
-xxIAKTJAkGfYQ8RR6R0V
-=Tbpu
------END PGP SIGNATURE-----
+Thanks,
 
---Z1EIi0fvCUyWUKja--
+	Ingo
