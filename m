@@ -1,69 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab3EIOpS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 10:45:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753181Ab3EIOpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 10:45:17 -0400
-Message-ID: <518BB5FA.5080301@redhat.com>
-Date: Thu, 09 May 2013 10:43:06 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754262Ab3EIOqL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 10:46:11 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:42467 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab3EIOqK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 10:46:10 -0400
+Message-ID: <518BB6AF.3020003@hp.com>
+Date: Thu, 09 May 2013 10:46:07 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
 MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>
-CC: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, davidlohr.bueso@hp.com,
-        viro@zeniv.linux.org.uk, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: SHM oops in newseg()
-References: <20130509043532.GA28235@redhat.com> <518B4B5F.9040900@huawei.com>
-In-Reply-To: <518B4B5F.9040900@huawei.com>
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH] perf: fix symbol processing bug and greatly improve performance
+References: <1367847833-4932-1-git-send-email-Waiman.Long@hp.com> <20130507093031.GA1076@krava.brq.redhat.com> <518A72E3.6070606@hp.com> <20130509101915.GC1628@krava.brq.redhat.com>
+In-Reply-To: <20130509101915.GC1628@krava.brq.redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2013 03:08 AM, Li Zefan wrote:
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+On 05/09/2013 06:19 AM, Jiri Olsa wrote:
+> On Wed, May 08, 2013 at 11:44:35AM -0400, Waiman Long wrote:
+>> On 05/07/2013 05:30 AM, Jiri Olsa wrote:
+>>> On Mon, May 06, 2013 at 09:43:53AM -0400, Waiman Long wrote:
+>>>> When "perf record" was used on a large machine with a lot of CPUs,
+>>>> the perf post-processing time could take a lot of minutes and even
+>>>> hours depending on how large the resulting perf.data file was.
+>>>>
+>>>> While running AIM7 1500-user high_systime workload on a 80-core x86-64
+>>>> system with a 3.9 kernel, the workload itself took about 2 minutes
+>>>> to run and the perf.data file had a size of 1108.746 MB. However,
+>>>> the post-processing step took more than 10 minutes.
+>>>>
+>>>> With a gprof-profiled perf binary, the time spent by perf was as
+>>>> follows:
+>>>>
+>>>>    %   cumulative   self              self     total
+>>>>   time   seconds   seconds    calls   s/call   s/call  name
+>>>>   96.90    822.10   822.10   192156     0.00     0.00  dsos__find
+>>>>    0.81    828.96     6.86 172089958     0.00     0.00  rb_next
+>>>>    0.41    832.44     3.48 48539289     0.00     0.00  rb_erase
+>>>>
+>>>> So 97% (822 seconds) of the time was spent in a single dsos_find()
+>>>> function. After analyzing the call-graph data below:
+>>>>
+>>>> -----------------------------------------------
+>>>>                  0.00  822.12  192156/192156      map__new [6]
+>>>> [7]     96.9    0.00  822.12  192156         vdso__dso_findnew [7]
+>>>>                822.10    0.00  192156/192156      dsos__find [8]
+>>>>                  0.01    0.00  192156/192156      dsos__add [62]
+>>>>                  0.01    0.00  192156/192366      dso__new [61]
+>>>>                  0.00    0.00       1/45282525     memdup [31]
+>>>>                  0.00    0.00  192156/192230      dso__set_long_name [91]
+>>>> -----------------------------------------------
+>>>>                822.10    0.00  192156/192156      vdso__dso_findnew [7]
+>>>> [8]     96.9  822.10    0.00  192156         dsos__find [8]
+>>>> -----------------------------------------------
+>>>>
+>>>> It was found that the vdso__dso_findnew() function failed to locate
+>>>> VDSO__MAP_NAME ("[vdso]") in the dso list and have to insert a new
+>>>> entry at the end for 192156 times. This problem is due to the fact that
+>>>> there are 2 types of name in the dso entry - short name and long name.
+>>>> The initial dso__new() adds "[vdso]" to both the short and long names.
+>>>> After that, vdso__dso_findnew() modifies the long name to something
+>>>> like /tmp/perf-vdso.so-NoXkDj. The dsos__find() function only compares
+>>>> the long name. As a result, the same vdso entry is duplicated many
+>>>> time in the dso list. This bug increases memory consumption as well
+>>>> as slows the symbol processing time to a crawl.
+>>> hi,
+>>> the issue is there and fix looks ok, thanks!
+>>>
+>>> though I'm not able to get vdso callchains to pop out
+>>> even by investigating report with vdso heavy workload.
+>>>
+>>> I'll have a closer look..
+>> Is there a chance that the fix will go to v3.10 or have to wait for v3.11?
+> I got this from scripts/checkpatch.pl:
 >
-> On 2013/5/9 12:35, Dave Jones wrote:
->> Just saw this on v3.9-11789-ge0fd9af while fuzz-testing.
->>
->> [  163.917836] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
->> [  163.918984] IP: [<ffffffff812c48ed>] newseg+0x10d/0x390
+> WARNING: line over 80 characters
+> #104: FILE: tools/perf/util/dso.h:136:
+> +struct dso *dsos__find(struct list_head *head, const char *name, bool
+> cmp_short);
 >
-> The patch below should fix it.
+> otherwise it looks ok:
 >
-> ===========================
->
-> [PATCH] shm: fix null pointer deref when userspace specifies invalid hugepage size
->
-> Dave reported an oops triggered by trinity:
->
-> [  163.917836] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-> [  163.918984] IP: [<ffffffff812c48ed>] newseg+0x10d/0x390
-> [  163.919705] PGD cf8c1067 PUD cf8c2067 PMD 0
-> [  163.920326] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  163.929949] CPU: 2 PID: 7636 Comm: trinity-child2 Not tainted 3.9.0+#67
-> ...
-> [  163.953629] Call Trace:
-> [  163.957706]  [<ffffffff812be322>] ipcget+0x182/0x380
-> [  163.962123]  [<ffffffff810b99a5>] ?trace_hardirqs_on_caller+0x115/0x1e0
-> [  163.966752]  [<ffffffff812c559a>] SyS_shmget+0x5a/0x60
-> [  163.971163]  [<ffffffff812c47e0>] ? shm_close+0x140/0x140
-> [  163.975590]  [<ffffffff812c3e60>] ? shm_release+0x50/0x50
-> [  163.979991]  [<ffffffff812c3df0>] ? shm_get_unmapped_area+0x20/0x20
-> [  163.984499]  [<ffffffff816caa14>] tracesys+0xdd/0xe2
->
-> This bug was introduced by commit af73e4d9506d3b797509f3c030e7dcd554f7d9c4
-> ("hugetlbfs: fix mmap failure in unaligned size request").
->
-> Reported-by: Dave Jones <davej@redhat.com>
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Li Zefan <lizfan@huawei.com>
+> Acked-by: Jiri Olsa<jolsa@redhat.com>
 
-Acked-by: Rik van Riel <riel@redhat.com>
+I am sorry that I forgot to rerun checkpatch.pl again after changing the 
+argument type from int to bool. So I missed this warning.
 
+I had resent an updated patch with the warning fixed. I also made some 
+update to the patch description.
+
+Regards,
+Longman
