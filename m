@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab3EIOy7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 10:54:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45754 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755369Ab3EIOyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 10:54:35 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, riel@redhat.com,
-        aquini@redhat.com, mst@redhat.com, amit.shah@redhat.com,
-        anton@enomsg.org
-Subject: [RFC 1/2] virtio_balloon: move balloon_lock mutex to callers
-Date: Thu,  9 May 2013 10:53:48 -0400
-Message-Id: <1368111229-29847-2-git-send-email-lcapitulino@redhat.com>
-In-Reply-To: <1368111229-29847-1-git-send-email-lcapitulino@redhat.com>
-References: <1368111229-29847-1-git-send-email-lcapitulino@redhat.com>
+	id S1755312Ab3EIO4t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 10:56:49 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:39815 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753143Ab3EIO4r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 10:56:47 -0400
+Message-ID: <518BB7E5.4070402@st.com>
+Date: Thu, 09 May 2013 15:51:17 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Dave Martin <dave.martin@linaro.org>, linux-doc@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, will.deacon@arm.com,
+        Grant Likely <grant.likely@secretlab.ca>, Jiri Slaby <jslaby@suse.cz>,
+        linux@arm.linux.org.uk, Samuel Ortiz <sameo@linux.intel.com>,
+        Nicolas Pitre <nico@linaro.org>, linux-serial@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Olof Johansson <olof@lixom.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [RFC 2/8] ARM:global_timer: Add ARM global timer support.
+References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <201305081638.23100.arnd@arndb.de> <518BADBF.4070303@st.com> <201305091651.13896.arnd@arndb.de>
+In-Reply-To: <201305091651.13896.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit moves the balloon_lock mutex out of the fill_balloon()
-and leak_balloon() functions to their callers.
-
-The reason for this change is that the next commit will introduce
-a shrinker callback for the balloon driver, which will also call
-leak_balloon() but will require different locking semantics.
-
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
----
- drivers/virtio/virtio_balloon.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index bd3ae32..9d5fe2b 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -133,7 +133,6 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
- 	/* We can only do one array worth at a time. */
- 	num = min(num, ARRAY_SIZE(vb->pfns));
- 
--	mutex_lock(&vb->balloon_lock);
- 	for (vb->num_pfns = 0; vb->num_pfns < num;
- 	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
- 		struct page *page = balloon_page_enqueue(vb_dev_info);
-@@ -154,7 +153,6 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
- 	/* Did we get any? */
- 	if (vb->num_pfns != 0)
- 		tell_host(vb, vb->inflate_vq);
--	mutex_unlock(&vb->balloon_lock);
- }
- 
- static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
-@@ -176,7 +174,6 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
- 	/* We can only do one array worth at a time. */
- 	num = min(num, ARRAY_SIZE(vb->pfns));
- 
--	mutex_lock(&vb->balloon_lock);
- 	for (vb->num_pfns = 0; vb->num_pfns < num;
- 	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
- 		page = balloon_page_dequeue(vb_dev_info);
-@@ -192,7 +189,6 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
- 	 * is true, we *have* to do it in this order
- 	 */
- 	tell_host(vb, vb->deflate_vq);
--	mutex_unlock(&vb->balloon_lock);
- 	release_pages_by_pfn(vb->pfns, vb->num_pfns);
- }
- 
-@@ -305,11 +301,13 @@ static int balloon(void *_vballoon)
- 					 || freezing(current));
- 		if (vb->need_stats_update)
- 			stats_handle_request(vb);
-+		mutex_lock(&vb->balloon_lock);
- 		if (diff > 0)
- 			fill_balloon(vb, diff);
- 		else if (diff < 0)
- 			leak_balloon(vb, -diff);
- 		update_balloon_size(vb);
-+		mutex_unlock(&vb->balloon_lock);
- 	}
- 	return 0;
- }
-@@ -490,9 +488,11 @@ out:
- static void remove_common(struct virtio_balloon *vb)
- {
- 	/* There might be pages left in the balloon: free them. */
-+	mutex_lock(&vb->balloon_lock);
- 	while (vb->num_pages)
- 		leak_balloon(vb, vb->num_pages);
- 	update_balloon_size(vb);
-+	mutex_unlock(&vb->balloon_lock);
- 
- 	/* Now we reset the device so we can clean up the queues. */
- 	vb->vdev->config->reset(vb->vdev);
--- 
-1.8.1.4
+On 09/05/13 15:51, Arnd Bergmann wrote:
+> It won't.
+> 
+>> > Looking at the code in clocksource_of_init it just goes through the
+>> > of_device_id table, which is not used in case of non-DT.
+> All new platforms are DT-only, and none of the old platforms use this
+> driver, so it does not matter.
+> 
+It makes sense, I will remove the header file.
+> 	Arnd
+> 
 
