@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab3EIPVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 11:21:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18389 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755399Ab3EIPVR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 11:21:17 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=OF0BmyLs-1YA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=Kfn0_i_Y4z8A:10 a=5d5xEF6ljmCuXMl4LVQA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1368112875.7373.108.camel@gandalf.local.home>
-Subject: Re: [PATCH 01/11] [BUGFIX] tracing: Return 0 if event_enable_func
- succeeded
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
-Date: Thu, 09 May 2013 11:21:15 -0400
-In-Reply-To: <20130509054413.30398.55650.stgit@mhiramat-M0-7522>
-References: <20130509054405.30398.73831.stgit@mhiramat-M0-7522>
-	 <20130509054413.30398.55650.stgit@mhiramat-M0-7522>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	id S1755331Ab3EIPVQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 11:21:16 -0400
+Received: from www.sr71.net ([198.145.64.142]:58559 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753729Ab3EIPVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 11:21:15 -0400
+Message-ID: <518BBEE9.7060800@sr71.net>
+Date: Thu, 09 May 2013 08:21:13 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Linux-MM <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 18/22] mm: page allocator: Split magazine lock in two
+ to reduce contention
+References: <1368028987-8369-1-git-send-email-mgorman@suse.de> <1368028987-8369-19-git-send-email-mgorman@suse.de>
+In-Reply-To: <1368028987-8369-19-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-09 at 14:44 +0900, Masami Hiramatsu wrote:
-> Return 0 instead of the number of activated ftrace if
-> event_enable_func succeeded and return an error code if failed,
-> beacuse 0 is success code at caller (ftrace_regex_write).
-> 
-> Without this fix, writing enable_event trigger on set_ftrace_filter
-> always doesn't work, since event_enable_func returns 1 to
-> ftrace_regex_write, it consumes 1 byte and pass input string
-> without the first character again. This makes event_enable_func
-> fail and disables event entry.
-> 
+On 05/08/2013 09:03 AM, Mel Gorman wrote:
+> @@ -368,10 +375,9 @@ struct zone {
+>  
+>  	/*
+>  	 * Keep some order-0 pages on a separate free list
+> -	 * protected by an irq-unsafe lock
+> +	 * protected by an irq-unsafe lock.
+>  	 */
+> -	spinlock_t			_magazine_lock;
+> -	struct free_area_magazine	_noirq_magazine;
+> +	struct free_magazine	noirq_magazine[NR_MAGAZINES];
 
-Ah, this actually fixes two bugs! :-)
+Looks like pretty cool stuff!
 
-A typo will be considered success, but it also sends back to the user
-that it only wrote one byte!
+The old per-cpu-pages stuff was all hung off alloc_percpu(), which
+surely wasted lots of memory with many NUMA nodes.  It's nice to see
+this decoupled a bit from the online cpu count.
 
--- Steve
+That said, the alloc_percpu() stuff is nice in how much it hides from
+you when doing cpu hotplug.  We'll _probably_ need this to be
+dynamically-sized at some point, right?
 
+> -static inline struct free_area_magazine *find_lock_magazine(struct zone *zone)
+> +static inline struct free_magazine *lock_magazine(struct zone *zone)
+>  {
+> -	struct free_area_magazine *area = &zone->_noirq_magazine;
+> -	spin_lock(&zone->_magazine_lock);
+> -	return area;
+> +	int i = (raw_smp_processor_id() >> 1) & (NR_MAGAZINES-1);
+> +	spin_lock(&zone->noirq_magazine[i].lock);
+> +	return &zone->noirq_magazine[i];
+>  }
 
+I bet this logic will be fun to play with once we have more magazines
+around.  For instance, on my system processors 0/80 are HT twins, so
+they'd always be going after the same magazine.  I guess that's a good
+thing.
