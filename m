@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758795Ab3EIWk6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:40:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46434 "EHLO
+	id S1758822Ab3EIWlQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:41:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46371 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932075Ab3EIWh3 (ORCPT
+	with ESMTP id S1758436Ab3EIWe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:37:29 -0400
+	Thu, 9 May 2013 18:34:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?David=20M=C3=BCller?= <d.mueller@elsoft.ch>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 05/12] drm/i915: Fall back to bit banging mode for DVO transmitter detection
-Date: Thu,  9 May 2013 15:37:18 -0700
-Message-Id: <20130509223612.008728899@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 19/26] drm/radeon/evergreen+: dont enable HPD interrupts on eDP/LVDS
+Date: Thu,  9 May 2013 15:34:33 -0700
+Message-Id: <20130509223424.448977523@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130509223611.432377360@linuxfoundation.org>
-References: <20130509223611.432377360@linuxfoundation.org>
+In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
+References: <20130509223422.368544659@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Müller <d.mueller@elsoft.ch>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit e4bfff54ed3f5de88f5358504c78c2cb037813aa upstream.
+commit 2e97be73e5f74a317232740ae82eb8f95326a660 upstream.
 
-As discussed in this thread
-http://lists.freedesktop.org/archives/dri-devel/2013-April/037411.html
-GMBUS based DVO transmitter detection seems to be unreliable which could
-result in an unusable DVO port.
+Avoids potential interrupt storms when the display is disabled.
 
-The attached patch fixes this by falling back to bit banging mode for
-the time DVO transmitter detection is in progress.
+May fix:
+https://bugzilla.kernel.org/show_bug.cgi?id=56041
 
-Signed-off-by: David Müller <d.mueller@elsoft.ch>
-Tested-by: David Müller <d.mueller@elsoft.ch>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_dvo.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/evergreen.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_dvo.c
-+++ b/drivers/gpu/drm/i915/intel_dvo.c
-@@ -371,6 +371,7 @@ void intel_dvo_init(struct drm_device *d
- 		const struct intel_dvo_device *dvo = &intel_dvo_devices[i];
- 		struct i2c_adapter *i2c;
- 		int gpio;
-+		bool dvoinit;
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -445,6 +445,16 @@ void evergreen_hpd_init(struct radeon_de
  
- 		/* Allow the I2C driver info to specify the GPIO to be used in
- 		 * special cases, but otherwise default to what's defined
-@@ -390,7 +391,17 @@ void intel_dvo_init(struct drm_device *d
- 		i2c = &dev_priv->gmbus[gpio].adapter;
- 
- 		intel_dvo->dev = *dvo;
--		if (!dvo->dev_ops->init(&intel_dvo->dev, i2c))
+ 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+ 		struct radeon_connector *radeon_connector = to_radeon_connector(connector);
 +
-+		/* GMBUS NAK handling seems to be unstable, hence let the
-+		 * transmitter detection run in bit banging mode for now.
-+		 */
-+		intel_gmbus_force_bit(i2c, true);
-+
-+		dvoinit = dvo->dev_ops->init(&intel_dvo->dev, i2c);
-+
-+		intel_gmbus_force_bit(i2c, false);
-+
-+		if (!dvoinit)
- 			continue;
- 
- 		intel_encoder->type = INTEL_OUTPUT_DVO;
++		if (connector->connector_type == DRM_MODE_CONNECTOR_eDP ||
++		    connector->connector_type == DRM_MODE_CONNECTOR_LVDS) {
++			/* don't try to enable hpd on eDP or LVDS avoid breaking the
++			 * aux dp channel on imac and help (but not completely fix)
++			 * https://bugzilla.redhat.com/show_bug.cgi?id=726143
++			 * also avoid interrupt storms during dpms.
++			 */
++			continue;
++		}
+ 		switch (radeon_connector->hpd.hpd) {
+ 		case RADEON_HPD_1:
+ 			WREG32(DC_HPD1_CONTROL, tmp);
 
 
