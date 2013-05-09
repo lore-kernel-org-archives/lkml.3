@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757135Ab3EIWax (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:30:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45859 "EHLO
+	id S1757086Ab3EIWaw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:30:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45862 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754364Ab3EIW0q (ORCPT
+	with ESMTP id S1756365Ab3EIW0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:46 -0400
+	Thu, 9 May 2013 18:26:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 55/73] drm/radeon/evergreen+: dont enable HPD interrupts on eDP/LVDS
-Date: Thu,  9 May 2013 15:25:45 -0700
-Message-Id: <20130509222532.021840857@linuxfoundation.org>
+Subject: [ 56/73] drm/radeon: cleanup properly if mmio mapping fails
+Date: Thu,  9 May 2013 15:25:46 -0700
+Message-Id: <20130509222532.120501686@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -28,38 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 2e97be73e5f74a317232740ae82eb8f95326a660 upstream.
+commit 0cd9cb76ae26a19df21abc6f94f5fff141e689c7 upstream.
 
-Avoids potential interrupt storms when the display is disabled.
+If we fail to map the mmio BAR, skip driver tear down
+that requires mmio.
 
-May fix:
-https://bugzilla.kernel.org/show_bug.cgi?id=56041
+Should fix:
+https://bugzilla.kernel.org/show_bug.cgi?id=56541
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/gpu/drm/radeon/radeon_kms.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -636,6 +636,16 @@ void evergreen_hpd_init(struct radeon_de
+--- a/drivers/gpu/drm/radeon/radeon_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_kms.c
+@@ -50,9 +50,13 @@ int radeon_driver_unload_kms(struct drm_
  
- 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
- 		struct radeon_connector *radeon_connector = to_radeon_connector(connector);
+ 	if (rdev == NULL)
+ 		return 0;
++	if (rdev->rmmio == NULL)
++		goto done_free;
+ 	radeon_acpi_fini(rdev);
+ 	radeon_modeset_fini(rdev);
+ 	radeon_device_fini(rdev);
 +
-+		if (connector->connector_type == DRM_MODE_CONNECTOR_eDP ||
-+		    connector->connector_type == DRM_MODE_CONNECTOR_LVDS) {
-+			/* don't try to enable hpd on eDP or LVDS avoid breaking the
-+			 * aux dp channel on imac and help (but not completely fix)
-+			 * https://bugzilla.redhat.com/show_bug.cgi?id=726143
-+			 * also avoid interrupt storms during dpms.
-+			 */
-+			continue;
-+		}
- 		switch (radeon_connector->hpd.hpd) {
- 		case RADEON_HPD_1:
- 			WREG32(DC_HPD1_CONTROL, tmp);
++done_free:
+ 	kfree(rdev);
+ 	dev->dev_private = NULL;
+ 	return 0;
 
 
