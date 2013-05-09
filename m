@@ -1,51 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab3EIUoq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 16:44:46 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:33151 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab3EIUon (ORCPT
+	id S1753532Ab3EIUqX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 16:46:23 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:64756 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab3EIUqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 16:44:43 -0400
-Date: Thu, 9 May 2013 13:44:38 -0700
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        Joe Thornber <thornber@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] dmcache: flush superblock stats when retrieving status
- info
-Message-ID: <20130509204437.GA5712@blackbox.djwong.org>
-References: <20130508214845.GA7729@blackbox.djwong.org>
- <20130508220526.GA24132@redhat.com>
- <20130509203616.GA5713@blackbox.djwong.org>
+	Thu, 9 May 2013 16:46:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130509203616.GA5713@blackbox.djwong.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20130509203428.GI25399@ZenIV.linux.org.uk>
+References: <20130509192655.GG25399@ZenIV.linux.org.uk>
+	<CA+55aFyCuksrVPwO=R_xX2An8qavo17aCZ5bfN=FWo1gZZfAsQ@mail.gmail.com>
+	<20130509202815.GH25399@ZenIV.linux.org.uk>
+	<20130509203428.GI25399@ZenIV.linux.org.uk>
+Date: Thu, 9 May 2013 13:46:20 -0700
+X-Google-Sender-Auth: 3pr0i1uTCfv5yvYIjAFI2VWq98o
+Message-ID: <CA+55aFzAWtrkqeGyUtu0U3TV_YDo+ZVTcstjgQHE+Y7SNxdEfQ@mail.gmail.com>
+Subject: Re: [git pull] more vfs.git stuff
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When userspace queries dmcache for stats info, we should ensure that all the
-metadata gets flushed out of memory to disk.  The current code neglects to
-update the disk copy of the hit/miss counters.
+On Thu, May 9, 2013 at 1:34 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Anyway, let's just drop that commit for now; it clearly needs more RTFS.
+> Could you pull for-linus^?
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
----
- drivers/md/dm-cache-target.c |    1 +
- 1 file changed, 1 insertion(+)
+Done.
 
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index 1074409..4fb7b4c 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -2451,6 +2451,7 @@ static void cache_status(struct dm_target *ti, status_type_t type,
- 	case STATUSTYPE_INFO:
- 		/* Commit to ensure statistics aren't out-of-date */
- 		if (!(status_flags & DM_STATUS_NOFLUSH_FLAG) && !dm_suspended(ti)) {
-+			save_stats(cache);
- 			r = dm_cache_commit(cache->cmd, false);
- 			if (r)
- 				DMERR("could not commit metadata for accurate status");
+         Linus
