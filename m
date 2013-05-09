@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab3EIQnQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 12:43:16 -0400
-Received: from smtp05.smtpout.orange.fr ([80.12.242.127]:17238 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329Ab3EIQnP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 12:43:15 -0400
-X-Greylist: delayed 471 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 May 2013 12:43:14 EDT
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Chao Xie <chao.xie@marvell.com>
-Cc: <haojian.zhuang@gmail.com>, <xiechao.mail@gmail.com>,
-        <linux@arm.linux.org.uk>, <a.zummo@towertech.it>,
-        <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <akpm@linux-foundation.org>,
-        <liangs@marvell.com>
-Subject: Re: [PATCH 1/2] Revert "drivers/rtc/rtc-pxa.c: fix set time sync time issue"
-References: <1367889447-15619-1-git-send-email-chao.xie@marvell.com>
-	<1367889447-15619-2-git-send-email-chao.xie@marvell.com>
-X-URL: http://belgarath.falguerolles.org/
-Date: Thu, 09 May 2013 18:35:12 +0200
-In-Reply-To: <1367889447-15619-2-git-send-email-chao.xie@marvell.com> (Chao
-	Xie's message of "Mon, 6 May 2013 21:17:26 -0400")
-Message-ID: <877gj8i01r.fsf@free.fr>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	id S1753399Ab3EIQqb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 12:46:31 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46280 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751930Ab3EIQqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 12:46:30 -0400
+Message-ID: <518BD197.2030502@ti.com>
+Date: Thu, 9 May 2013 11:40:55 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Jassi Brar <jaswinder.singh@linaro.org>
+CC: Jassi Brar <jassisinghbrar@gmail.com>,
+        "Loic PALLARDY (loic.pallardy@st.com)" <loic.pallardy@st.com>,
+        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv2 2/4] mailbox: Introduce a new common API
+References: <1367824946-6160-1-git-send-email-jaswinder.singh@linaro.org> <1367825046-6229-1-git-send-email-jaswinder.singh@linaro.org> <518BCF4B.1060504@ti.com> <CAJe_Zhd=FDV3YP=XR8Yay1iy_geAt3tqj+diUxrVkd2BFSfb-g@mail.gmail.com>
+In-Reply-To: <CAJe_Zhd=FDV3YP=XR8Yay1iy_geAt3tqj+diUxrVkd2BFSfb-g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chao Xie <chao.xie@marvell.com> writes:
+On 05/09/2013 11:41 AM, Jassi Brar wrote:
+> On 9 May 2013 22:01, Suman Anna <s-anna@ti.com> wrote:
+>> Hi Jassi,
+>>
+>> On 05/06/2013 02:24 AM, Jassi Brar wrote:
+>>> +++ b/include/linux/mailbox_client.h
+>>> @@ -0,0 +1,85 @@
+>>> +/*
+>>> + * This program is free software; you can redistribute it and/or modify
+>>> + * it under the terms of the GNU General Public License version 2 as
+>>> + * published by the Free Software Foundation.
+>>> + */
+>>> +
+>>> +#ifndef __MAILBOX_CLIENT_H
+>>> +#define __MAILBOX_CLIENT_H
+>>> +
+>>> +#include <linux/mailbox.h>
+>>> +
+>>> +/**
+>>> + * struct ipc_client - User of a mailbox
+>>> + * @chan_name: the "controller:channel" this client wants
+>>> + * @rxcb: atomic callback to provide client the data received
+>>> + * @txcb: atomic callback to tell client of data transmission
+>>> + * @tx_block: if the ipc_send_message should block until data is transmitted
+>>> + * @tx_tout: Max block period in ms before TX is assumed failure
+>>> + * @knows_txdone: if the client could run the TX state machine. Usually if
+>>> + *    the client receives some ACK packet for transmission. Unused if the
+>>> + *    controller already has TX_Done/RTR IRQ.
+>>> + * @cntlr_data: Optional controller specific parameters during channel request
+>>> + */
+>>> +struct ipc_client {
+>>> +     char *chan_name;
+>>> +     void (*rxcb)(void *data);
+>>> +     void (*txcb)(request_token_t t, enum xfer_result r);
+>>
+>> We have to introduce a callback data pointer, so that the calling
+>> clients can retrieve a context object variable or some other useful
+>> data within the callback functions, just like most normal callback
+>> function declarations and registrations do.
+>>
+> I meant the request_token_t for the purpose. That's how we do with DMAEngine.
 
-> This patch have something wrong.
-> 1.The pxa_sync_time API is not needed. The RTC sync can be done
-> by user space applications, so in kernel this API is not needed.
-> 2.The pxa_rtc_open can not be deleted. This change has been
-> declined during review at the mail list
-> 3.Based on specification and talked with owner of driver, it
-> does not matter to set WOM and DOW.
->
-> Only need to keep PSBR control for pxa95x
->
-> This reverts commit 57489fabb7f3fc02483df2125fdbfb8b1bb1fcd8.
+I faced this issue on the rxcb while adopting the
+omap_rproc_mbox_callback. omap_remoteproc is a common driver for all the
+OMAP co-processors and there can be multiple instances, providing the
+same set of features. Look at the code in
+drivers/remoteproc/omap_remoteproc.c and you will get the idea. But in
+general, the users registering callback functions would prefer to get
+some context pointer back.
 
-This commit doesn't exist in Linus's tree. Maybe in linux-next ?
+regards
+Suman
 
-Anyway, as you are reverting, please consider this :
-the commit that exists is : c4243de70f7d536d95196b8a31539298bb15238c
-"drivers/rtc/rtc-pxa.c: drivers/rtc/rtc-pxa.c: fix alarm not match issue".
-
-This commit should be reverted :
- - because it's wrong :
-   > tm->tm_wday = ((rycr & RDxR_DOW_MASK) >> RDxR_DOW_S) - 1;
-   See how RYCR is used with a RDCR mask ...
-
- - because as maintainer I have already nacked this kind of patch :
-   https://patchwork.kernel.org/patch/1819851/
-   The reasons given here are still valid AFAIK.
-
-I'm pretty sure I didn't receive this patch in my mailbox. After I refused
-ChaoXie first patch, the second "same approach" patch from Liangs was sent in my
-back. I don't understand how that could happen ...
-
-Liangs, please make sure to add me to the reviewers next time ?
-
-Cheers.
-
---
-Robert
