@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677Ab3EIKIB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 06:08:01 -0400
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:50520 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753619Ab3EIKH7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 06:07:59 -0400
+	id S1753817Ab3EIKR6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 06:17:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34317 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751522Ab3EIKR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 06:17:57 -0400
+Date: Thu, 9 May 2013 12:20:48 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: CAI Qian <caiqian@redhat.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, mchehab@redhat.com,
+        Greg KH <gregkh@linuxfoundation.org>, balbi@ti.com
+Subject: Re: 3.9.0: WARNING: at drivers/base/core.c:575
+Message-ID: <20130509102048.GA27333@pd.tnic>
+References: <1732336275.8141054.1367911558572.JavaMail.root@redhat.com>
+ <1066765392.8155999.1367913293110.JavaMail.root@redhat.com>
+ <5188B9DE.5030009@linux.vnet.ibm.com>
+ <20130507132829.GD7633@pd.tnic>
+ <1907813193.9461401.1368086471911.JavaMail.root@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1368076726-11492-2-git-send-email-skannan@codeaurora.org>
-References: <1368076726-11492-1-git-send-email-skannan@codeaurora.org>
-	<1368076726-11492-2-git-send-email-skannan@codeaurora.org>
-Date: Thu, 9 May 2013 18:07:56 +0800
-Message-ID: <CACVXFVMd_iRtEM8ZLK6Ps66gZO6SCp1mXSgY6JbWtRJjJUh+ag@mail.gmail.com>
-Subject: Re: [PATCH 1/3] driver core: Add API to wait for deferred probe to
- complete during init
-From: Ming Lei <tom.leiming@gmail.com>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mike Turquette <mturquette@linaro.org>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1907813193.9461401.1368086471911.JavaMail.root@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 9, 2013 at 1:18 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
->
-> The most obvious fallback of using late_initcall_sync() also doesn't work
-> since the deferred probing work initated during late_initcall() is done in
-> a workqueue. So, frameworks that want to wait for all devices to finish
-> probing during init will now have to wait for the deferred workqueue to
-> finish it's work. This patch adds a wait_for_init_deferred_probe_done() API
+On Thu, May 09, 2013 at 04:01:11AM -0400, CAI Qian wrote:
+> Sure, and the system is allocated to someone else at the moment, so
+> I'll test it out as soon as possible.
 
-flush_workqueue() has been added in deferred_probe_initcall(), so looks it
-should be OK for your problem, doesn't it?
+Nevermind, I was able to trigger it here too so I took it.
 
+Thanks.
 
-Thanks,
 -- 
-Ming Lei
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
