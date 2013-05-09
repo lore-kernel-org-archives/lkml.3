@@ -1,193 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab3EIT7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 15:59:40 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:8385 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab3EIT7j (ORCPT
+	id S1752918Ab3EIUB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 16:01:29 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:39325 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761Ab3EIUB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 15:59:39 -0400
-From: Lance Ortiz <lance.ortiz@hp.com>
-Subject: [PATCH v2] aerdrv: Move cper_print_aer() call out of interrupt context
-To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
-        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
-        mchehab@redhat.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 09 May 2013 13:51:35 -0600
-Message-ID: <20130509195135.16108.70845.stgit@grignak.americas.hpqcorp.net>
-User-Agent: StGIT/0.14.3
+	Thu, 9 May 2013 16:01:28 -0400
+X-IronPort-AV: E=Sophos;i="4.87,642,1363158000"; 
+   d="scan'208";a="45723556"
+Message-ID: <518C0097.50300@codeaurora.org>
+Date: Thu, 09 May 2013 13:01:27 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: James Hogan <james.hogan@imgtec.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] clk: add support for clock reparent on set_rate
+References: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com> <1366388904-13903-3-git-send-email-james.hogan@imgtec.com>
+In-Reply-To: <1366388904-13903-3-git-send-email-james.hogan@imgtec.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following warning was seen on 3.9 when a corrected PCIe error was being
-handled by the AER subsystem.
+On 04/19/13 09:28, James Hogan wrote:
+> Add core support to allow clock implementations to select the best
+> parent clock when rounding a rate, e.g. the one which can provide the
+> closest clock rate to that requested. This is by way of adding a new
+> clock op, determine_rate(), which is like round_rate() but has an extra
+> parameter to allow the clock implementation to optionally select a
+> different parent clock. The core then takes care of reparenting the
+> clock when setting the rate.
+>
+> The parent change takes place with the help of two new private data
+> members. struct clk::new_parent specifies a clock's new parent (NULL
+> indicates no change), and struct clk::new_child specifies a clock's new
+> child (whose new_parent member points back to it). The purpose of these
+> are to allow correct walking of the future tree for notifications prior
+> to actually reparenting any clocks, specifically to skip child clocks
+> who are being reparented to another clock (they will be notified via the
+> new parent), and to include any new child clock. These pointers are set
+> by clk_calc_subtree(), and the new_child pointer gets cleared when a
+> child is actually reparented to avoid duplicate POST_RATE_CHANGE
+> notifications.
+>
+> Each place where round_rate() is called, determine_rate is checked first
+> and called in preference, passing NULL to the new parent argument if not
+> needed (e.g. in __clk_round_rate). This restructures a few of the call
+> sites to simplify the logic into if/else blocks.
+>
+> A new __clk_set_parent_no_recalc() is created similar to
+> clk_set_parent() but without calling __clk_recalc_rates(). This is for
+> clk_change_rate() to use, where rate recalculation and notifications are
+> already handled.
+>
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
 
-WARNING: at .../drivers/pci/search.c:214 pci_get_dev_by_id+0x8a/0x90()
+I believe we'll need to update the check in __clk_init() to allow you to
+have either a .round_rate or a .determine_rate op if you have a
+.recalc_rate op. Right now it fails to register the clock and then
+oopses later on while setting up clock debugfs.
 
-This occurred because a call to pci_get_domain_bus_and_slot() was added to
-cper_print_pcie() to setup for the call to cper_print_aer().  The warning
-showed up because cper_print_pcie() is called in an interrupt context and
-pci_get* functions are not supposed to be called in that context.
+Here's a (probably whitespace damaged) patch for the first one.
 
-The solution is to move the cper_print_aer() call out of the interrupt
-context and into aer_recover_work_func() to avoid any warnings when calling
-pci_get* functions.
+----8<-----
 
-v2 - Re-worded header text.  Removed prefix arg from cper_print_aer().
-     Added TODO message in cper_print_aer().
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index e6e759e..d56291c 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1668,8 +1668,8 @@ int __clk_init(struct device *dev, struct clk *clk)
+ 
+        /* check that clk_ops are sane.  See Documentation/clk.txt */
+        if (clk->ops->set_rate &&
+-                       !(clk->ops->round_rate && clk->ops->recalc_rate)) {
+-               pr_warning("%s: %s must implement .round_rate & .recalc_rate\n",
++                       !((clk->ops->round_rate || clk->ops->determine_rate) && clk->ops->recalc_rate)) {
++               pr_warning("%s: %s must implement .round_rate or .determine_rate in addition to .recalc_rate\n",
+                                __func__, clk->name);
+                ret = -EINVAL;
+                goto out;
 
-Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
-Acked-by: Borislav Petkov <bp@suse.de>
----
-
- drivers/acpi/apei/cper.c               |   18 ------------------
- drivers/acpi/apei/ghes.c               |    3 ++-
- drivers/pci/pcie/aer/aerdrv_core.c     |    6 +++++-
- drivers/pci/pcie/aer/aerdrv_errprint.c |   10 ++++++++--
- include/linux/aer.h                    |    4 ++--
- 5 files changed, 17 insertions(+), 24 deletions(-)
-
-diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
-index 1e5d8a4..8713229 100644
---- a/drivers/acpi/apei/cper.c
-+++ b/drivers/acpi/apei/cper.c
-@@ -250,10 +250,6 @@ static const char *cper_pcie_port_type_strs[] = {
- static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
- 			    const struct acpi_hest_generic_data *gdata)
- {
--#ifdef CONFIG_ACPI_APEI_PCIEAER
--	struct pci_dev *dev;
--#endif
--
- 	if (pcie->validation_bits & CPER_PCIE_VALID_PORT_TYPE)
- 		printk("%s""port_type: %d, %s\n", pfx, pcie->port_type,
- 		       pcie->port_type < ARRAY_SIZE(cper_pcie_port_type_strs) ?
-@@ -285,20 +281,6 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
- 		printk(
- 	"%s""bridge: secondary_status: 0x%04x, control: 0x%04x\n",
- 	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
--#ifdef CONFIG_ACPI_APEI_PCIEAER
--	dev = pci_get_domain_bus_and_slot(pcie->device_id.segment,
--			pcie->device_id.bus, pcie->device_id.function);
--	if (!dev) {
--		pr_err("PCI AER Cannot get PCI device %04x:%02x:%02x.%d\n",
--			pcie->device_id.segment, pcie->device_id.bus,
--			pcie->device_id.slot, pcie->device_id.function);
--		return;
--	}
--	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO)
--		cper_print_aer(pfx, dev, gdata->error_severity,
--				(struct aer_capability_regs *) pcie->aer_info);
--	pci_dev_put(dev);
--#endif
- }
- 
- static const char *apei_estatus_section_flag_strs[] = {
-diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-index d668a8a..f2084b5 100644
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -454,7 +454,8 @@ static void ghes_do_proc(struct ghes *ghes,
- 				aer_severity = cper_severity_to_aer(sev);
- 				aer_recover_queue(pcie_err->device_id.segment,
- 						  pcie_err->device_id.bus,
--						  devfn, aer_severity);
-+						  devfn, aer_severity,
-+						  pcie_err->aer_info);
- 			}
- 
- 		}
-diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
-index 564d97f..ceba124 100644
---- a/drivers/pci/pcie/aer/aerdrv_core.c
-+++ b/drivers/pci/pcie/aer/aerdrv_core.c
-@@ -582,6 +582,7 @@ struct aer_recover_entry
- 	u8	devfn;
- 	u16	domain;
- 	int	severity;
-+	u8	*regs;
- };
- 
- static DEFINE_KFIFO(aer_recover_ring, struct aer_recover_entry,
-@@ -595,7 +596,7 @@ static DEFINE_SPINLOCK(aer_recover_ring_lock);
- static DECLARE_WORK(aer_recover_work, aer_recover_work_func);
- 
- void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
--		       int severity)
-+		       int severity, u8 *aer_regs)
- {
- 	unsigned long flags;
- 	struct aer_recover_entry entry = {
-@@ -603,6 +604,7 @@ void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
- 		.devfn		= devfn,
- 		.domain		= domain,
- 		.severity	= severity,
-+		.regs		= aer_regs,
- 	};
- 
- 	spin_lock_irqsave(&aer_recover_ring_lock, flags);
-@@ -629,6 +631,8 @@ static void aer_recover_work_func(struct work_struct *work)
- 			       PCI_SLOT(entry.devfn), PCI_FUNC(entry.devfn));
- 			continue;
- 		}
-+		cper_print_aer(pdev, entry.severity,
-+				(struct aer_capability_regs *)entry.regs);
- 		do_recovery(pdev, entry.severity);
- 		pci_dev_put(pdev);
- 	}
-diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
-index 5ab1425..f277dc3 100644
---- a/drivers/pci/pcie/aer/aerdrv_errprint.c
-+++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
-@@ -220,13 +220,19 @@ int cper_severity_to_aer(int cper_severity)
- }
- EXPORT_SYMBOL_GPL(cper_severity_to_aer);
- 
--void cper_print_aer(const char *prefix, struct pci_dev *dev, int cper_severity,
-+void cper_print_aer(struct pci_dev *dev, int cper_severity,
- 		    struct aer_capability_regs *aer)
- {
- 	int aer_severity, layer, agent, status_strs_size, tlp_header_valid = 0;
- 	u32 status, mask;
- 	const char **status_strs;
- 
-+	/*
-+	 * TODO: This function needs to be re-written so that it's output
-+	 * matches the output of aer_print_error().  Right now, the output
-+	 * is formatted very differently.
-+	 */
-+
- 	aer_severity = cper_severity_to_aer(cper_severity);
- 	if (aer_severity == AER_CORRECTABLE) {
- 		status = aer->cor_status;
-@@ -244,7 +250,7 @@ void cper_print_aer(const char *prefix, struct pci_dev *dev, int cper_severity,
- 	agent = AER_GET_AGENT(aer_severity, status);
- 	dev_err(&dev->dev, "aer_status: 0x%08x, aer_mask: 0x%08x\n",
- 	       status, mask);
--	cper_print_bits(prefix, status, status_strs, status_strs_size);
-+	cper_print_bits("", status, status_strs, status_strs_size);
- 	dev_err(&dev->dev, "aer_layer=%s, aer_agent=%s\n",
- 	       aer_error_layer[layer], aer_agent_string[agent]);
- 	if (aer_severity != AER_CORRECTABLE)
-diff --git a/include/linux/aer.h b/include/linux/aer.h
-index ec10e1b..d8cf12b 100644
---- a/include/linux/aer.h
-+++ b/include/linux/aer.h
-@@ -49,10 +49,10 @@ static inline int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev)
- }
- #endif
- 
--extern void cper_print_aer(const char *prefix, struct pci_dev *dev,
-+extern void cper_print_aer(struct pci_dev *dev,
- 			   int cper_severity, struct aer_capability_regs *aer);
- extern int cper_severity_to_aer(int cper_severity);
- extern void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
--			      int severity);
-+			      int severity,  u8 *aer_regs);
- #endif //_AER_H_
- 
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
