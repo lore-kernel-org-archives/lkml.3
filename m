@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab3EIGGV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 02:06:21 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:42747 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab3EIGGT (ORCPT
+	id S1752448Ab3EIGG1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 02:06:27 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:34176 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752237Ab3EIGGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 02:06:19 -0400
+	Thu, 9 May 2013 02:06:24 -0400
 From: Libo Chen <libo.chen@huawei.com>
 To: <stern@rowland.harvard.edu>, <grant.likely@linaro.org>,
         <rob.herring@calxeda.com>
 CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <akpm@linux-foundation.org>, <lizefan@huawei.com>,
         Libo Chen <libo.chen@huawei.com>
-Subject: [PATCH RESEND 1/4] usb: ehci-s5p: fix memleak when devm_usb_get_phy fail
-Date: Thu, 9 May 2013 14:05:34 +0800
-Message-ID: <1368079537-15328-2-git-send-email-libo.chen@huawei.com>
+Subject: [PATCH RESEND 2/4] usb: isp1760-if: fix memleak when platform_get_resource fail
+Date: Thu, 9 May 2013 14:05:35 +0800
+Message-ID: <1368079537-15328-3-git-send-email-libo.chen@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 In-Reply-To: <1368079537-15328-1-git-send-email-libo.chen@huawei.com>
 References: <1368079537-15328-1-git-send-email-libo.chen@huawei.com>
@@ -27,25 +27,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When devm_usb_get_phy fail, we should free hcd
+When platform_get_resource fail, we should release_mem_region
 
 Signed-off-by: Libo Chen <libo.chen@huawei.com>
 ---
- drivers/usb/host/ehci-s5p.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/usb/host/isp1760-if.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
-index 6357752..3fbab58 100644
---- a/drivers/usb/host/ehci-s5p.c
-+++ b/drivers/usb/host/ehci-s5p.c
-@@ -107,6 +107,7 @@ static int s5p_ehci_probe(struct platform_device *pdev)
- 	if (IS_ERR(phy)) {
- 		/* Fallback to pdata */
- 		if (!pdata) {
-+			usb_put_hcd(hcd);
- 			dev_warn(&pdev->dev, "no platform data or transceiver defined\n");
- 			return -EPROBE_DEFER;
- 		} else {
+diff --git a/drivers/usb/host/isp1760-if.c b/drivers/usb/host/isp1760-if.c
+index bbb791b..a13709e 100644
+--- a/drivers/usb/host/isp1760-if.c
++++ b/drivers/usb/host/isp1760-if.c
+@@ -373,8 +373,10 @@ static int isp1760_plat_probe(struct platform_device *pdev)
+ 	irq_res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	if (!irq_res) {
+ 		pr_warning("isp1760: IRQ resource not available\n");
+-		return -ENODEV;
++		ret = -ENODEV;
++		goto cleanup;
+ 	}
++
+ 	irqflags |= irq_res->flags & IRQF_TRIGGER_MASK;
+ 
+ 	if (priv) {
 -- 
 1.7.1
 
