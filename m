@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab3EIKpy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 06:45:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49063 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753198Ab3EIKpx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 06:45:53 -0400
-Date: Thu, 9 May 2013 11:45:44 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Denis Efremov <yefremov.denis@gmail.com>
-Cc: Jonas Bonn <jonas@southpole.se>, "linux@openrisc.net" <linux@openrisc.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "trivial@kernel.org" <trivial@kernel.org>,
-        "ldv-project@linuxtesting.org" <ldv-project@linuxtesting.org>
-Subject: Re: [PATCH 13/21] openrisc: delay: remove inline marking of
- EXPORT_SYMBOL functions
-Message-ID: <20130509104543.GB11889@mudshark.cambridge.arm.com>
-References: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
- <1368095819-11011-2-git-send-email-yefremov.denis@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368095819-11011-2-git-send-email-yefremov.denis@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754014Ab3EIKqZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 06:46:25 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39656 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753165Ab3EIKqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 06:46:24 -0400
+Message-ID: <1368096355.25488.178.camel@pasglop>
+Subject: Re: 3.9.0: WARNING: at drivers/base/core.c:575
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: CAI Qian <caiqian@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Greg KH <gregkh@linuxfoundation.org>,
+        balbi@ti.com, dyoung@redhat.com
+Date: Thu, 09 May 2013 20:45:55 +1000
+In-Reply-To: <518B7B6A.1090407@linux.vnet.ibm.com>
+References: <1732336275.8141054.1367911558572.JavaMail.root@redhat.com>
+	 <518B7B6A.1090407@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 11:36:51AM +0100, Denis Efremov wrote:
-> EXPORT_SYMBOL and inline directives are contradictory to each other.
-> The patch fixes this inconsistency.
+On Thu, 2013-05-09 at 16:03 +0530, Srivatsa S. Bhat wrote:
+> Can you check if the patch posted here fixes it?
 > 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
-> ---
->  arch/openrisc/lib/delay.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/openrisc/lib/delay.c b/arch/openrisc/lib/delay.c
-> index c82b09f..808a55c 100644
-> --- a/arch/openrisc/lib/delay.c
-> +++ b/arch/openrisc/lib/delay.c
-> @@ -37,7 +37,7 @@ void __delay(unsigned long cycles)
->  }
->  EXPORT_SYMBOL(__delay);
->  
-> -inline void __const_udelay(unsigned long xloops)
-> +void __const_udelay(unsigned long xloops)
->  {
->  	unsigned long long loops;
+> http://marc.info/?l=linux-kernel&m=136791823608013&w=2
 
-Acked-by: Will Deacon <will.deacon@arm.com>
+I believe I've already merged a patch for that unless I did something
+wrong ...
 
-Will
+Cheers,
+Ben.
+
+
