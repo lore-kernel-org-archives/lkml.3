@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552Ab3EIWct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:32:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45995 "EHLO
+	id S1758329Ab3EIW76 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:59:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46005 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757519Ab3EIWcr (ORCPT
+	with ESMTP id S1757522Ab3EIWcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:32:47 -0400
+	Thu, 9 May 2013 18:32:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Ingo Molnar <mingo@kernel.org>, rostedt@goodmis.org,
-        a.p.zijlstra@chello.nl, paulus@samba.org, acme@ghostprotocols.net
-Subject: [ 10/73] perf/x86/intel: Fix unintended variable name reuse
-Date: Thu,  9 May 2013 15:31:33 -0700
-Message-Id: <20130509222759.066414439@linuxfoundation.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        eranian@google.com
+Subject: [ 12/73] perf/x86/intel/lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
+Date: Thu,  9 May 2013 15:31:35 -0700
+Message-Id: <20130509222759.277575583@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,67 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 1b0dac2ac6debdbf1541e15f2cede03613cf4465 upstream.
+commit 7cc23cd6c0c7d7f4bee057607e7ce01568925717 upstream.
 
-The variable name events_group is already in used and led to a
-compilation error when using clang to build the Linux Kernel .
-The fix is just to rename the var. No functional change. Please
-apply.
+We should always have proper privileges when requesting kernel
+data.
 
-Fix suggested in discussion by PaX Team <pageexec@freemail.hu>
-
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Cc: rostedt@goodmis.org
-Cc: a.p.zijlstra@chello.nl
-Cc: paulus@samba.org
-Cc: acme@ghostprotocols.net
-Link: http://lkml.kernel.org/r/1367316153-14808-1-git-send-email-dl9pf@gmx.de
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: eranian@google.com
+Link: http://lkml.kernel.org/r/20130503121256.230745028@chello.nl
+[ Fix build error reported by fengguang.wu@intel.com, propagate error code back. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/n/tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2428,7 +2428,7 @@ static void __init uncore_types_exit(str
- static int __init uncore_type_init(struct intel_uncore_type *type)
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -310,7 +310,7 @@ void intel_pmu_lbr_read(void)
+  * - in case there is no HW filter
+  * - in case the HW filter has errata or limitations
+  */
+-static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
++static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
  {
- 	struct intel_uncore_pmu *pmus;
--	struct attribute_group *events_group;
-+	struct attribute_group *attr_group;
- 	struct attribute **attrs;
- 	int i, j;
+ 	u64 br_type = event->attr.branch_sample_type;
+ 	int mask = 0;
+@@ -318,8 +318,11 @@ static void intel_pmu_setup_sw_lbr_filte
+ 	if (br_type & PERF_SAMPLE_BRANCH_USER)
+ 		mask |= X86_BR_USER;
  
-@@ -2455,19 +2455,19 @@ static int __init uncore_type_init(struc
- 		while (type->event_descs[i].attr.attr.name)
- 			i++;
+-	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
++	if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
++		if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
++			return -EACCES;
+ 		mask |= X86_BR_KERNEL;
++	}
  
--		events_group = kzalloc(sizeof(struct attribute *) * (i + 1) +
--					sizeof(*events_group), GFP_KERNEL);
--		if (!events_group)
-+		attr_group = kzalloc(sizeof(struct attribute *) * (i + 1) +
-+					sizeof(*attr_group), GFP_KERNEL);
-+		if (!attr_group)
- 			goto fail;
+ 	/* we ignore BRANCH_HV here */
  
--		attrs = (struct attribute **)(events_group + 1);
--		events_group->name = "events";
--		events_group->attrs = attrs;
-+		attrs = (struct attribute **)(attr_group + 1);
-+		attr_group->name = "events";
-+		attr_group->attrs = attrs;
+@@ -339,6 +342,8 @@ static void intel_pmu_setup_sw_lbr_filte
+ 	 * be used by fixup code for some CPU
+ 	 */
+ 	event->hw.branch_reg.reg = mask;
++
++	return 0;
+ }
  
- 		for (j = 0; j < i; j++)
- 			attrs[j] = &type->event_descs[j].attr.attr;
+ /*
+@@ -386,7 +391,9 @@ int intel_pmu_setup_lbr_filter(struct pe
+ 	/*
+ 	 * setup SW LBR filter
+ 	 */
+-	intel_pmu_setup_sw_lbr_filter(event);
++	ret = intel_pmu_setup_sw_lbr_filter(event);
++	if (ret)
++		return ret;
  
--		type->events_group = events_group;
-+		type->events_group = attr_group;
- 	}
- 
- 	type->pmu_group = &uncore_pmu_attr_group;
+ 	/*
+ 	 * setup HW LBR filter, if any
 
 
