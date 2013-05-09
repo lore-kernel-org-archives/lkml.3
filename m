@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932595Ab3EIXMx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:12:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45701 "EHLO
+	id S932613Ab3EIXNQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:13:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45675 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755615Ab3EIW0T (ORCPT
+	with ESMTP id S1755555Ab3EIW0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:19 -0400
+	Thu, 9 May 2013 18:26:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Schillstrom <hans@schillstrom.com>, Julian Anastasov <ja@ssi.bg>,
-        Simon Horman <horms@verge.net.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 18/73] ipvs: ip_vs_sip_fill_param() BUG: bad check of return value
-Date: Thu,  9 May 2013 15:25:08 -0700
-Message-Id: <20130509222528.348249899@linuxfoundation.org>
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 13/73] perf/x86/intel: Add support for IvyBridge model 58 Uncore
+Date: Thu,  9 May 2013 15:25:03 -0700
+Message-Id: <20130509222527.852449849@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -29,80 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Schillstrom <hans@schillstrom.com>
+From: Vince Weaver <vincent.weaver@maine.edu>
 
-commit f7a1dd6e3ad59f0cfd51da29dfdbfd54122c5916 upstream.
+commit 9a6bc14350b130427725f33e371e86212fa56c85 upstream.
 
-The reason for this patch is crash in kmemdup
-caused by returning from get_callid with uniialized
-matchoff and matchlen.
+According to Intel Vol3b 18.9, the IvyBridge model 58 uncore is
+the same as that of SandyBridge.
 
-Removing Zero check of matchlen since it's done by ct_sip_get_header()
+I've done some simple tests and with this patch things seem to
+work on my mac-mini.
 
-BUG: unable to handle kernel paging request at ffff880457b5763f
-IP: [<ffffffff810df7fc>] kmemdup+0x2e/0x35
-PGD 27f6067 PUD 0
-Oops: 0000 [#1] PREEMPT SMP
-Modules linked in: xt_state xt_helper nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_mangle xt_connmark xt_conntrack ip6_tables nf_conntrack_ftp ip_vs_ftp nf_nat xt_tcpudp iptable_mangle xt_mark ip_tables x_tables ip_vs_rr ip_vs_lblcr ip_vs_pe_sip ip_vs nf_conntrack_sip nf_conntrack bonding igb i2c_algo_bit i2c_core
-CPU 5
-Pid: 0, comm: swapper/5 Not tainted 3.9.0-rc5+ #5                  /S1200KP
-RIP: 0010:[<ffffffff810df7fc>]  [<ffffffff810df7fc>] kmemdup+0x2e/0x35
-RSP: 0018:ffff8803fea03648  EFLAGS: 00010282
-RAX: ffff8803d61063e0 RBX: 0000000000000003 RCX: 0000000000000003
-RDX: 0000000000000003 RSI: ffff880457b5763f RDI: ffff8803d61063e0
-RBP: ffff8803fea03658 R08: 0000000000000008 R09: 0000000000000011
-R10: 0000000000000011 R11: 00ffffffff81a8a3 R12: ffff880457b5763f
-R13: ffff8803d67f786a R14: ffff8803fea03730 R15: ffffffffa0098e90
-FS:  0000000000000000(0000) GS:ffff8803fea00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: ffff880457b5763f CR3: 0000000001a0c000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper/5 (pid: 0, threadinfo ffff8803ee18c000, task ffff8803ee18a480)
-Stack:
- ffff8803d822a080 000000000000001c ffff8803fea036c8 ffffffffa000937a
- ffffffff81f0d8a0 000000038135fdd5 ffff880300000014 ffff880300110000
- ffffffff150118ac ffff8803d7e8a000 ffff88031e0118ac 0000000000000000
-Call Trace:
- <IRQ>
-
- [<ffffffffa000937a>] ip_vs_sip_fill_param+0x13a/0x187 [ip_vs_pe_sip]
- [<ffffffffa007b209>] ip_vs_sched_persist+0x2c6/0x9c3 [ip_vs]
- [<ffffffff8107dc53>] ? __lock_acquire+0x677/0x1697
- [<ffffffff8100972e>] ? native_sched_clock+0x3c/0x7d
- [<ffffffff8100972e>] ? native_sched_clock+0x3c/0x7d
- [<ffffffff810649bc>] ? sched_clock_cpu+0x43/0xcf
- [<ffffffffa007bb1e>] ip_vs_schedule+0x181/0x4ba [ip_vs]
-...
-
-Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
-Acked-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Stephane Eranian <eranian@gmail.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1304291549320.15827@vincent-weaver-1.um.maine.edu
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipvs/ip_vs_pe_sip.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/netfilter/ipvs/ip_vs_pe_sip.c
-+++ b/net/netfilter/ipvs/ip_vs_pe_sip.c
-@@ -37,14 +37,10 @@ static int get_callid(const char *dptr,
- 		if (ret > 0)
- 			break;
- 		if (!ret)
--			return 0;
-+			return -EINVAL;
- 		dataoff += *matchoff;
- 	}
- 
--	/* Empty callid is useless */
--	if (!*matchlen)
--		return -EINVAL;
--
- 	/* Too large is useless */
- 	if (*matchlen > IP_VS_PEDATA_MAXLEN)
- 		return -EINVAL;
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2853,6 +2853,7 @@ static int __init uncore_cpu_init(void)
+ 		msr_uncores = nhm_msr_uncores;
+ 		break;
+ 	case 42: /* Sandy Bridge */
++	case 58: /* Ivy Bridge */
+ 		if (snb_uncore_cbox.num_boxes > max_cores)
+ 			snb_uncore_cbox.num_boxes = max_cores;
+ 		msr_uncores = snb_msr_uncores;
 
 
