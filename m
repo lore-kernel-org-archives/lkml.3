@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab3EIXtf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:49:35 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37740 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755655Ab3EIXte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 19:49:34 -0400
-Message-ID: <518C34BF.7080408@ti.com>
-Date: Thu, 9 May 2013 18:43:59 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1755965Ab3EIXvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:51:52 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:47501 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754999Ab3EIXvv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 19:51:51 -0400
 MIME-Version: 1.0
-To: Jassi Brar <jaswinder.singh@linaro.org>
-CC: Jassi Brar <jassisinghbrar@gmail.com>,
-        "Loic PALLARDY (loic.pallardy@st.com)" <loic.pallardy@st.com>,
-        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv2 2/4] mailbox: Introduce a new common API
-References: <1367824946-6160-1-git-send-email-jaswinder.singh@linaro.org> <1367825046-6229-1-git-send-email-jaswinder.singh@linaro.org> <518BCF4B.1060504@ti.com> <CAJe_Zhd=FDV3YP=XR8Yay1iy_geAt3tqj+diUxrVkd2BFSfb-g@mail.gmail.com> <518BD197.2030502@ti.com> <CABb+yY2CnO5RiQNdcB_L5ZiGi829Ys0ODH2UmhtZxj=aJo3ioQ@mail.gmail.com> <518BE566.5090504@ti.com> <CAJe_Zhffm9FOk83dAdX194gN3r5JnG78sdcWNv6WnWCsTF3YuA@mail.gmail.com>
-In-Reply-To: <CAJe_Zhffm9FOk83dAdX194gN3r5JnG78sdcWNv6WnWCsTF3YuA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CACxGe6uybaWodG_F_=w7fF=w0X008E+HE7PuT=+a4zTG7-ug4A@mail.gmail.com>
+References: <CACxGe6uCJde0vw=zcqJOxdiwOJO8bRe00yzs6UDzup5z-jTRbw@mail.gmail.com>
+ <CA+55aFwU3w2jiA26fCmF3_i+vpf8TMY+8L5=Oso_uMhZX30DQw@mail.gmail.com> <CACxGe6uybaWodG_F_=w7fF=w0X008E+HE7PuT=+a4zTG7-ug4A@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 10 May 2013 08:51:30 +0900
+Message-ID: <CAAVeFuKBn0oyZSJ50pchTwOCsSdyP5ofx3gaf4h_02xYuZDGSg@mail.gmail.com>
+Subject: Re: [git pull] GENERIC_GPIO removal
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jassi,
-
+On Fri, May 10, 2013 at 3:11 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Thu, May 9, 2013 at 6:08 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Wed, May 8, 2013 at 6:48 AM, Grant Likely <grant.likely@linaro.org> wrote:
 >>>
->>> Perhaps we should change the following
->>>
->>>    void ipc_link_txdone(struct ipc_link *link, enum xfer_result r)
->>> to
->>>    void ipc_link_txdone(struct ipc_link *link, enum xfer_result r, void *data)
->>>
->>> So that the API could pass that onto clients ?
+>>> * "git grep '\bGENERIC_GPIO\b'" should return 1 hit in the Chinese
+>>>   documentation.
 >>
->> That's if the controller needs to pass some data back to client. I am
->> fine with that as well,
-> No, I misunderstood you wanted request_token_t to be replaced with the
-> pointer of request that was executed.
-> 
->> but I am talking mainly about providing a client
->> user data ptr back to it during callbacks.
+>> That's the oddest command line I've seen in some time.
 >>
->> struct ipc_client {
->>         char *chan_name;
->> +       void *cl_data; /* store it to ipc_chan as well */
->> -       void (*rxcb)(void *data);
->> -       void (*txcb)(request_token_t t, enum xfer_result r);
->> +       void (*rxcb)(void *cl_data, void *data);
->> +       void (*txcb)(request_token_t t, enum xfer_result r, void *cl_data);
->>         ...
->> }
->>
->> I am obviously interested in the rxcb. The controller implementations do
->> not see the cl_data.
->>
-> OK I see what you mean. However the API storing and passing back
-> ad-hoc data to clients doesn't seem very neat.
-> 
-> Such purposes are usually served by :
-> 
-> - void (*rxcb)(void *data);
-> + void (*rxcb)(struct ipc_client *cl, void *data);  /* client for
-> which data was received */
-> 
-> - void (*txcb)(request_token_t t, enum xfer_result r);
-> + void (*txcb)(struct ipc_client *cl, request_token_t t, enum
-> xfer_result r); /* client whose data was sent */
-> 
-> You could then get relevant omap_rproc using container_of() on 'cl',
-> in rxcb() and txcb().
+>> You do realize that "git grep" is perfectly happy to just take the
+>> "-w" flag exactly like normal grep?
+>
+> Hahaha. That's just what Alexandre passed to me. I didn't really think
+> much about it.  :-)
 
-The reason that I didn't suggest that way is because we do not use
-ipc_client for any runtime API, and we would have to store the returned
-handle anyway. I see ipc_client simply as a ipc_channel_request_info
-structure, a one-time usage perspective. I made the suggestion as it
-seemed in line if you had a xxx_register_callback API wherein you would
-use a void *context if you want something back.
+/me likes regexps. You should see my workaround to using the -i option.
 
-> 
-> Apart from this, in txcb, perhaps we should drop request_token_t in
-> favor of the request's pointer (void *data) that was last executed.
-> That should make things easier for clients.
+Thanks for the merge, it clears the path for more GPIO stuff. arch/arc
+introduced a new dangling definition of GENERIC_GPIO in -next that now
+appears in your tree, the following patch by Vineet takes care of it.
+Either you can merge it directly or Vineet will make sure this patch
+is in his next pull request.
 
-Yes, that would be nice too.
+Alex.
 
-regards
-Suman
+-----8<-----8<-----8<
+From: Vineet Gupta <vgupta@synopsys.com>
+Date: Wed, 17 Apr 2013 17:33:02 +0530
+Subject: [PATCH] ARC: [TB10x] Remove GENERIC_GPIO
 
+This tracks Alexandre Courbot's mainline GPIO rework
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ arch/arc/plat-tb10x/Kconfig |    7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/arch/arc/plat-tb10x/Kconfig b/arch/arc/plat-tb10x/Kconfig
+index 4e12127..1d34521 100644
+--- a/arch/arc/plat-tb10x/Kconfig
++++ b/arch/arc/plat-tb10x/Kconfig
+@@ -27,10 +27,3 @@ menuconfig ARC_PLAT_TB10X
+          Abilis Systems. TB10x is based on the ARC700 CPU architecture.
+          Say Y if you are building a kernel for one of the SOCs in this
+          series (e.g. TB100 or TB101). If in doubt say N.
+-
+-if ARC_PLAT_TB10X
+-
+-config GENERIC_GPIO
+-       def_bool y
+-
+-endif
