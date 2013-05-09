@@ -1,32 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab3EIU5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 16:57:31 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:38863 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752882Ab3EIU53 (ORCPT
+	id S1754090Ab3EIU6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 16:58:38 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:33705 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753692Ab3EIU6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 16:57:29 -0400
-Date: Thu, 9 May 2013 13:57:01 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: neilb@suse.de, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] bcache: Fix incompatible pointer type warning
-Message-ID: <20130509205701.GC15040@moria.home.lan>
-References: <1368131966-17512-1-git-send-email-emilgoode@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368131966-17512-1-git-send-email-emilgoode@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 May 2013 16:58:36 -0400
+From: Olof Johansson <olof@lixom.net>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dianders@chromium.org, Olof Johansson <olof@lixom.net>
+Subject: [PATCH] ARM: exynos: defconfig update
+Date: Thu,  9 May 2013 13:58:19 -0700
+Message-Id: <1368133099-16997-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.8.1.192.gc4361b8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 10:39:26PM +0200, Emil Goode wrote:
-> The function pointer release in struct block_device_operations
-> should point to functions declared as void.
+This turns on a number of configs that are useful on the Chromebook, but also
+good to have on in general:
 
-Looks like .release just changed to returning void in the merge window -
-thanks, applied
+* USB host and MMC drivers(!)
+* I2C GPIO arbitration driver
+* CYAPA trackpad driver
+* simplefb
+* CROS EC and keyboard drivers
+* MAX77686 drivers
+* DEVTMPFS + mount
+* DM_CRYPT (as module)
+* CRYPTOLOOP
+* HIGHMEM
+* PRINTK timestamps
+
+This also turns off DEBUG_LL, and switches the hardcoded Samsung lowlevel
+uart to uart 3 (which is only used to show the "uncompressing kernel"
+message at boot, it seems).
+
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+---
+
+(Note that the simplefb driver is still not merged up for 3.10, but it
+hopefully will be).
+
+ arch/arm/configs/exynos_defconfig | 49 ++++++++++++++++++++++++++++++++-------
+ 1 file changed, 41 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
+index e40b435..469b5cc 100644
+--- a/arch/arm/configs/exynos_defconfig
++++ b/arch/arm/configs/exynos_defconfig
+@@ -1,4 +1,4 @@
+-CONFIG_EXPERIMENTAL=y
++CONFIG_SYSVIPC=y
+ CONFIG_NO_HZ=y
+ CONFIG_HIGH_RES_TIMERS=y
+ CONFIG_BLK_DEV_INITRD=y
+@@ -7,17 +7,18 @@ CONFIG_MODULES=y
+ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
+ CONFIG_PARTITION_ADVANCED=y
+-CONFIG_EFI_PARTITION=y
+ CONFIG_ARCH_EXYNOS=y
+-CONFIG_S3C_LOWLEVEL_UART_PORT=1
++CONFIG_S3C_LOWLEVEL_UART_PORT=3
+ CONFIG_S3C24XX_PWM=y
+ CONFIG_ARCH_EXYNOS5=y
+ CONFIG_MACH_EXYNOS4_DT=y
+-CONFIG_MACH_EXYNOS5_DT=y
+ CONFIG_SMP=y
+ CONFIG_NR_CPUS=2
+ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
++CONFIG_HIGHMEM=y
++CONFIG_ZBOOT_ROM_TEXT=0x0
++CONFIG_ZBOOT_ROM_BSS=0x0
+ CONFIG_ARM_APPENDED_DTB=y
+ CONFIG_ARM_ATAG_DTB_COMPAT=y
+ CONFIG_CMDLINE="root=/dev/ram0 rw ramdisk=8192 initrd=0x41000000,8M console=ttySAC1,115200 init=/linuxrc mem=256M"
+@@ -30,35 +31,54 @@ CONFIG_NET_KEY=y
+ CONFIG_INET=y
+ CONFIG_RFKILL_REGULATOR=y
+ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
+ CONFIG_PROC_DEVICETREE=y
+ CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_CRYPTOLOOP=y
+ CONFIG_BLK_DEV_RAM=y
+ CONFIG_BLK_DEV_RAM_SIZE=8192
+ CONFIG_SCSI=y
+ CONFIG_BLK_DEV_SD=y
+ CONFIG_CHR_DEV_SG=y
++CONFIG_MD=y
++CONFIG_BLK_DEV_DM=y
++CONFIG_DM_CRYPT=m
+ CONFIG_NETDEVICES=y
+ CONFIG_SMSC911X=y
+ CONFIG_USB_USBNET=y
+ CONFIG_USB_NET_SMSC75XX=y
+ CONFIG_USB_NET_SMSC95XX=y
+ CONFIG_INPUT_EVDEV=y
+-# CONFIG_INPUT_KEYBOARD is not set
+-# CONFIG_INPUT_MOUSE is not set
++CONFIG_KEYBOARD_CROS_EC=y
++# CONFIG_MOUSE_PS2 is not set
++CONFIG_MOUSE_CYAPA=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_SERIAL_8250=y
+ CONFIG_SERIAL_SAMSUNG=y
+ CONFIG_SERIAL_SAMSUNG_CONSOLE=y
+ CONFIG_SERIAL_OF_PLATFORM=y
+ CONFIG_HW_RANDOM=y
++CONFIG_TCG_TPM=y
++CONFIG_TCG_TIS_I2C_INFINEON=y
+ CONFIG_I2C=y
++CONFIG_I2C_MUX=y
++CONFIG_I2C_ARB_GPIO_CHALLENGE=y
++CONFIG_I2C_S3C2410=y
++CONFIG_DEBUG_GPIO=y
+ # CONFIG_HWMON is not set
++CONFIG_MFD_CROS_EC=y
++CONFIG_MFD_CROS_EC_I2C=y
++CONFIG_MFD_MAX77686=y
+ CONFIG_MFD_TPS65090=y
+ CONFIG_REGULATOR=y
+ CONFIG_REGULATOR_FIXED_VOLTAGE=y
+ CONFIG_REGULATOR_GPIO=y
++CONFIG_REGULATOR_MAX77686=y
+ CONFIG_REGULATOR_TPS65090=y
+ CONFIG_FB=y
++CONFIG_FB_MODE_HELPERS=y
++CONFIG_FB_SIMPLE=y
+ CONFIG_EXYNOS_VIDEO=y
+ CONFIG_EXYNOS_MIPI_DSI=y
+ CONFIG_EXYNOS_DP=y
+@@ -67,6 +87,19 @@ CONFIG_FONTS=y
+ CONFIG_FONT_7x14=y
+ CONFIG_LOGO=y
+ CONFIG_USB=y
++CONFIG_USB_XHCI_HCD=y
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_S5P=y
++CONFIG_USB_STORAGE=y
++CONFIG_USB_DWC3=y
++CONFIG_USB_PHY=y
++CONFIG_SAMSUNG_USB2PHY=y
++CONFIG_SAMSUNG_USB3PHY=y
++CONFIG_MMC=y
++CONFIG_MMC_DW=y
++CONFIG_MMC_DW_IDMAC=y
++CONFIG_MMC_DW_EXYNOS=y
++CONFIG_COMMON_CLK_MAX77686=y
+ CONFIG_EXT2_FS=y
+ CONFIG_EXT3_FS=y
+ CONFIG_EXT4_FS=y
+@@ -79,6 +112,7 @@ CONFIG_ROMFS_FS=y
+ CONFIG_NLS_CODEPAGE_437=y
+ CONFIG_NLS_ASCII=y
+ CONFIG_NLS_ISO8859_1=y
++CONFIG_PRINTK_TIME=y
+ CONFIG_MAGIC_SYSRQ=y
+ CONFIG_DEBUG_KERNEL=y
+ CONFIG_DETECT_HUNG_TASK=y
+@@ -87,6 +121,5 @@ CONFIG_DEBUG_SPINLOCK=y
+ CONFIG_DEBUG_MUTEXES=y
+ CONFIG_DEBUG_INFO=y
+ CONFIG_DEBUG_USER=y
+-CONFIG_DEBUG_LL=y
+-CONFIG_EARLY_PRINTK=y
++CONFIG_CRYPTO_SHA256=y
+ CONFIG_CRC_CCITT=y
+-- 
+1.8.2.1
+
