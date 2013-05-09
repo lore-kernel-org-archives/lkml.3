@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab3EIW2u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:28:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45904 "EHLO
+	id S1756491Ab3EIW0x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:26:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45865 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521Ab3EIW0z (ORCPT
+	with ESMTP id S1756372Ab3EIW0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:55 -0400
+	Thu, 9 May 2013 18:26:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [ 69/73] EDAC: Dont give write permission to read-only files
-Date: Thu,  9 May 2013 15:25:59 -0700
-Message-Id: <20130509222533.412154112@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 47/73] drm/radeon/dce6: add missing display reg for tiling setup
+Date: Thu,  9 May 2013 15:25:37 -0700
+Message-Id: <20130509222531.204757111@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -28,60 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit c8c64d165ccfd2274058ac84e0c680f9b48c4ec1 upstream.
+commit 7c1c7c18fc752b2a1d07597286467ef186312463 upstream.
 
-I get the following warning on boot:
+A new tiling config register for the display blocks was
+added on DCE6.
 
-------------[ cut here ]------------
-WARNING: at drivers/base/core.c:575 device_create_file+0x9a/0xa0()
-Hardware name:  -[8737R2A]-
-Write permission without 'store'
-...
-</snip>
+May fix:
+https://bugs.freedesktop.org/show_bug.cgi?id=62889
+https://bugs.freedesktop.org/show_bug.cgi?id=57919
 
-Drilling down, this is related to dynamic channel ce_count attribute
-files sporting a S_IWUSR mode without a ->store() function. Looking
-around, it appears that they aren't supposed to have a ->store()
-function. So remove the bogus write permission to get rid of the
-warning.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-[ shorten commit message ]
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/edac_mc_sysfs.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/radeon/ni.c  |    2 ++
+ drivers/gpu/drm/radeon/nid.h |    4 ++++
+ drivers/gpu/drm/radeon/si.c  |    1 +
+ drivers/gpu/drm/radeon/sid.h |    2 ++
+ 4 files changed, 9 insertions(+)
 
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -327,17 +327,17 @@ static struct device_attribute *dynamic_
- };
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -621,6 +621,8 @@ static void cayman_gpu_init(struct radeo
  
- /* possible dynamic channel ce_count attribute files */
--DEVICE_CHANNEL(ch0_ce_count, S_IRUGO | S_IWUSR,
-+DEVICE_CHANNEL(ch0_ce_count, S_IRUGO,
- 		   channel_ce_count_show, NULL, 0);
--DEVICE_CHANNEL(ch1_ce_count, S_IRUGO | S_IWUSR,
-+DEVICE_CHANNEL(ch1_ce_count, S_IRUGO,
- 		   channel_ce_count_show, NULL, 1);
--DEVICE_CHANNEL(ch2_ce_count, S_IRUGO | S_IWUSR,
-+DEVICE_CHANNEL(ch2_ce_count, S_IRUGO,
- 		   channel_ce_count_show, NULL, 2);
--DEVICE_CHANNEL(ch3_ce_count, S_IRUGO | S_IWUSR,
-+DEVICE_CHANNEL(ch3_ce_count, S_IRUGO,
- 		   channel_ce_count_show, NULL, 3);
--DEVICE_CHANNEL(ch4_ce_count, S_IRUGO | S_IWUSR,
-+DEVICE_CHANNEL(ch4_ce_count, S_IRUGO,
- 		   channel_ce_count_show, NULL, 4);
--DEVICE_CHANNEL(ch5_ce_count, S_IRUGO | S_IWUSR,
-+DEVICE_CHANNEL(ch5_ce_count, S_IRUGO,
- 		   channel_ce_count_show, NULL, 5);
+ 	WREG32(GB_ADDR_CONFIG, gb_addr_config);
+ 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
++	if (ASIC_IS_DCE6(rdev))
++		WREG32(DMIF_ADDR_CALC, gb_addr_config);
+ 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
+ 	WREG32(DMA_TILING_CONFIG + DMA0_REGISTER_OFFSET, gb_addr_config);
+ 	WREG32(DMA_TILING_CONFIG + DMA1_REGISTER_OFFSET, gb_addr_config);
+--- a/drivers/gpu/drm/radeon/nid.h
++++ b/drivers/gpu/drm/radeon/nid.h
+@@ -45,6 +45,10 @@
+ #define ARUBA_GB_ADDR_CONFIG_GOLDEN        0x12010001
  
- /* Total possible dynamic ce_count attribute file table */
+ #define DMIF_ADDR_CONFIG  				0xBD4
++
++/* DCE6 only */
++#define DMIF_ADDR_CALC  				0xC00
++
+ #define	SRBM_GFX_CNTL				        0x0E44
+ #define		RINGID(x)					(((x) & 0x3) << 0)
+ #define		VMID(x)						(((x) & 0x7) << 0)
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -1765,6 +1765,7 @@ static void si_gpu_init(struct radeon_de
+ 
+ 	WREG32(GB_ADDR_CONFIG, gb_addr_config);
+ 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
++	WREG32(DMIF_ADDR_CALC, gb_addr_config);
+ 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
+ 	WREG32(DMA_TILING_CONFIG + DMA0_REGISTER_OFFSET, gb_addr_config);
+ 	WREG32(DMA_TILING_CONFIG + DMA1_REGISTER_OFFSET, gb_addr_config);
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -65,6 +65,8 @@
+ 
+ #define DMIF_ADDR_CONFIG  				0xBD4
+ 
++#define DMIF_ADDR_CALC  				0xC00
++
+ #define	SRBM_STATUS				        0xE50
+ #define		GRBM_RQ_PENDING 			(1 << 5)
+ #define		VMC_BUSY 				(1 << 8)
 
 
