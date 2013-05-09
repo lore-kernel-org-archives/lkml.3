@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab3EIUZe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 16:25:34 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:41691 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab3EIUZd (ORCPT
+	id S1753316Ab3EIU2S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 16:28:18 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34322 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab3EIU2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 16:25:33 -0400
-Date: Thu, 9 May 2013 13:25:34 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Simon Glass <sjg@chromium.org>, Alim Akhtar <alim.akhtar@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: exynos: dts: Fixed vbus-gpios
-Message-ID: <20130509202534.GB21831@quad.lixom.net>
-References: <1368034636-15865-1-git-send-email-dianders@chromium.org>
+	Thu, 9 May 2013 16:28:17 -0400
+Date: Thu, 9 May 2013 21:28:15 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [git pull] more vfs.git stuff
+Message-ID: <20130509202815.GH25399@ZenIV.linux.org.uk>
+References: <20130509192655.GG25399@ZenIV.linux.org.uk>
+ <CA+55aFyCuksrVPwO=R_xX2An8qavo17aCZ5bfN=FWo1gZZfAsQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368034636-15865-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <CA+55aFyCuksrVPwO=R_xX2An8qavo17aCZ5bfN=FWo1gZZfAsQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 10:37:16AM -0700, Doug Anderson wrote:
-> The 'samsung,vbus-gpio' was submitted before pinmux landed for
-> exynos5250 and uses the old-style gpio specifier.  Fix the two
-> exynos5250 boards that use it.
+On Thu, May 09, 2013 at 01:12:43PM -0700, Linus Torvalds wrote:
+> On Thu, May 9, 2013 at 12:26 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >         Regression fix from Geert + yet another open-coded kernel_read().
 > 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Hmm. I get one more commit - a racy usbmon thing.
 
+Oops - pull stats not updated...  My apologies.
 
-Applied to arm-soc fixes.
+> Which looks fine per
+> se, but would look even better if it just made mmap_active an atomic_t
+> instead, wouldn't you say?
 
-Thanks,
+The only place checking that sucker is in a fairly large area protected by
+->b_lock (in mon_bin_event()); I really don't want to dig deep enough to
+tell if having it changed right after it had been checked is safe.  OTOH,
+from a cursory look through that code it appears that the whole map_count
+thing is completely misguided - it seems to assume that ->open() is called for
+each VMA, including the one created by mmap(2).  Sigh...
 
-
--Olof
+OK, it might make more sense to drop that last commit for now.  It's obviously
+more broken in mmap-related code than just a buggered locking for counter
+and it probably doesn't make much sense to patch just that one.  And I'll
+have several more fixes of similar turds tomorrow, when mchehab finishes
+testing videobuf ones.  Up to you, really.
