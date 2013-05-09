@@ -1,192 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab3EIHit (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 03:38:49 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42505 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879Ab3EIHir convert rfc822-to-8bit (ORCPT
+	id S1751816Ab3EIHt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 03:49:26 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:49163 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab3EIHtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 03:38:47 -0400
-From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: RE: [PATCH V2 1/2] tps6507x-ts: Add DT support
-Thread-Topic: [PATCH V2 1/2] tps6507x-ts: Add DT support
-Thread-Index: AQHOSLgUlSe/EwLmH0aFER2UEPNVnZj4s3WAgAPJ0zA=
-Date: Thu, 9 May 2013 07:38:29 +0000
-Message-ID: <A4887BF146CD57468F700B415D2F47015924D0@DBDE04.ent.ti.com>
-References: <1367665951-29848-1-git-send-email-manishv.b@ti.com>
- <1367665951-29848-2-git-send-email-manishv.b@ti.com>
- <CA+V-a8ty3CEz5QZKkphD=_Hyjet31Ya59H9nW1nDd1Y1asRbmw@mail.gmail.com>
-In-Reply-To: <CA+V-a8ty3CEz5QZKkphD=_Hyjet31Ya59H9nW1nDd1Y1asRbmw@mail.gmail.com>
-Accept-Language: en-IN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 9 May 2013 03:49:25 -0400
+Message-ID: <1368085759.3454.0.camel@phoenix>
+Subject: [PATCH v3] iio: dac: Fix build error when CONFIG_SPI_MASTER=y &&
+ CONFIG_I2C=m
+From: Axel Lin <axel.lin@ingics.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wu Fengguang <fengguang.wu@intel.com>
+Date: Thu, 09 May 2013 15:49:19 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+This patch fixes below build error when CONFIG_SPI_MASTER=y && CONFIG_I2C=m:
 
-On Tue, May 07, 2013 at 11:11:21, Prabhakar Lad wrote:
-> Hi Manish,
-> 
-> Thanks for the patch, below are few nits.
-> 
-> On Sat, May 4, 2013 at 4:42 PM, Vishwanathrao Badarkhe, Manish <manishv.b@ti.com> wrote:
-> > Add device tree based support for TI's tps6507x touchscreen.
-> [Snip]
-> 
-> > +- tsc: This node specifies touch screen data.
-> > +       ti,poll_period : Time at which touch input is getting sampled in ms.
-> > +       ti,min_pressure: Minimum pressure value to trigger touch.
-> For devicetree properties '-' is preferred over '_'.
+drivers/built-in.o: In function `ad5064_i2c_write':
+drivers/iio/dac/ad5064.c:608: undefined reference to `i2c_master_send'
+drivers/built-in.o: In function `ad5064_i2c_register_driver':
+drivers/iio/dac/ad5064.c:646: undefined reference to `i2c_register_driver'
+drivers/built-in.o: In function `ad5064_i2c_unregister_driver':
+drivers/iio/dac/ad5064.c:651: undefined reference to `i2c_del_driver'
+make: *** [vmlinux] Error 1
 
-Ok, I will use '-' hence forward for device tree properties.
-> 
-> > +       ti,vref        : voltage reference for ADC.
-> > +                     0: Reference voltage for ADC is disabled.
-> > +                     1: Reference voltage for ADC is enabled.
-> >
-> >  Regulator Optional properties:
-> >  - defdcdc_default: It's property of DCDC2 and DCDC3 regulators.
-> > @@ -30,6 +40,14 @@ Regulator Optional properties:
-> >                         1: If defdcdc pin of DCDC2/DCDC3 is driven HIGH.
-> >    If this property is not defined, it defaults to 0 (not enabled).
-> >
-> > +Touchscreen Optional properties:
-> > +- ti,vendor : Touchscreen vendor id to poppulate
-> > +             in sysclass interface.
-> > +- ti,product: Touchscreen product id to poppulate
-> > +             in sysclass interface.
-> > +- ti,version: Touchscreen version id to poppulate
-> > +             in sysclass interface.
-> > +
-> s/poppulate/populate
+When CONFIG_I2C=m, meaning we can't build the drivers in with I2C support.
+Thus don't allow the drivers to be compiled as built-in when CONFIG_I2C=m.
 
-Ok, I will correct this.
-> 
-> >  Example:
-> >
-> >         pmu: tps6507x@48 {
-> > @@ -88,4 +106,12 @@ Example:
-> >                         };
-> >                 };
-> >
-> > +               tsc {
-> > +                       ti,poll_period = <30>;
-> > +                       ti,min_pressure = <0x30>;
-> > +                       ti,vref = <0>;
-> > +                       ti,vendor = <0>;
-> > +                       ti,product = <65070>;
-> > +                       ti,version = <0x100>;
-> > +               };
-> >         };
-> > diff --git a/drivers/input/touchscreen/tps6507x-ts.c 
-> > b/drivers/input/touchscreen/tps6507x-ts.c
-> > index 65e0f9a..d5433d0 100644
-> > --- a/drivers/input/touchscreen/tps6507x-ts.c
-> > +++ b/drivers/input/touchscreen/tps6507x-ts.c
-> > @@ -21,6 +21,8 @@
-> >  #include <linux/mfd/tps6507x.h>
-> >  #include <linux/input/tps6507x-ts.h>
-> >  #include <linux/delay.h>
-> > +#include <linux/of.h>
-> > +#include <linux/of_device.h>
-> >
-> >  #define TSC_DEFAULT_POLL_PERIOD 30 /* ms */  #define 
-> > TPS_DEFAULT_MIN_PRESSURE 0x30 @@ -231,36 +233,83 @@ done:
-> >         ret = tps6507x_adc_standby(tsc);  }
-> >
-> > +static int tsc_init_data(struct tps6507x_dev *tps6507x_dev,
-> > +               struct input_dev *input_dev) {
-> > +       struct device_node *node = tps6507x_dev->dev->of_node;
-> > +       struct tps6507x_board *tps_board =
-> > +               (struct tps6507x_board *)tps6507x_dev->dev->platform_data;
-> > +       struct touchscreen_init_data *init_data = NULL;
-> > +       u32 val32;
-> > +       int err;
-> > +
-> > +       if (node)
-> > +               node = of_find_node_by_name(node, "tsc");
-> > +       if (tps_board)
-> > +               init_data = tps_board->tps6507x_ts_init_data;
-> > +
-> > +       if (init_data) {
-> > +               tps6507x_dev->ts->poll_period = init_data->poll_period;
-> > +               tps6507x_dev->ts->min_pressure = init_data->min_pressure;
-> > +               tps6507x_dev->ts->vref = init_data->vref;
-> > +               input_dev->id.vendor = init_data->vendor;
-> > +               input_dev->id.product = init_data->product;
-> > +               input_dev->id.version = init_data->version;
-> > +       } else if (node) {
-> > +               err = of_property_read_u32(node, "ti,poll_period", 
-> > + &val32);
-> why not pass tps6507x_dev->ts->poll_period instead of val32 and similarly below that would avoid else case.
+The real fix though is to break the driver apart into a SPI part, an I2C part
+and a common part. But that's something for 3.11 while this is something for
+3.10/stable.
 
-Agreed, that will reduce some code.
-> 
-> > +               if (err < 0)
-> > +                       goto error_ret;
-> > +               else
-> > +                       tps6507x_dev->ts->poll_period = val32;
-> > +
-> > +               err = of_property_read_u32(node, "ti,min_pressure", &val32);
-> > +               if (err < 0)
-> > +                       goto error_ret;
-> > +               else
-> > +                       tps6507x_dev->ts->min_pressure = val32;
-> > +
-> > +               err = of_property_read_u32(node, "ti,vref", &val32);
-> > +               if (err < 0)
-> > +                       goto error_ret;
-> > +               else
-> > +                       tps6507x_dev->ts->vref = val32;
-> > +
-> > +               err = of_property_read_u32(node, "ti,vendor", &val32);
-> > +               if (err < 0)
-> > +                       goto error_ret;
-> > +               else
-> > +                       input_dev->id.vendor = val32;
-> > +
-> > +               err = of_property_read_u32(node, "ti,product", &val32);
-> > +               if (err < 0)
-> > +                       goto error_ret;
-> > +               else
-> > +                       input_dev->id.product = val32;
-> > +
-> > +               err = of_property_read_u32(node, "ti,version", &val32);
-> > +               if (err < 0)
-> > +                       goto error_ret;
-> > +               else
-> > +                       input_dev->id.version = val32;
-> > +       } else {
-> > +               err = -EINVAL;
-> > +               goto error_ret;
-> > +       }
-> you can move this check at the top when both are NULL.
+Reported-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+v3: Update comment
 
-Ok, I will move this check at the top.
-> 
-> Regards,
-> --Prabhakar Lad
-> 
+ drivers/iio/dac/Kconfig | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
+index f4a6f08..b61160b 100644
+--- a/drivers/iio/dac/Kconfig
++++ b/drivers/iio/dac/Kconfig
+@@ -5,7 +5,7 @@ menu "Digital to analog converters"
+ 
+ config AD5064
+ 	tristate "Analog Devices AD5064 and similar multi-channel DAC driver"
+-	depends on (SPI_MASTER || I2C)
++	depends on (SPI_MASTER && I2C!=m) || I2C
+ 	help
+ 	  Say yes here to build support for Analog Devices AD5024, AD5025, AD5044,
+ 	  AD5045, AD5064, AD5064-1, AD5065, AD5628, AD5629R, AD5648, AD5666, AD5668,
+@@ -27,7 +27,7 @@ config AD5360
+ 
+ config AD5380
+ 	tristate "Analog Devices AD5380/81/82/83/84/90/91/92 DAC driver"
+-	depends on (SPI_MASTER || I2C)
++	depends on (SPI_MASTER && I2C!=m) || I2C
+ 	select REGMAP_I2C if I2C
+ 	select REGMAP_SPI if SPI_MASTER
+ 	help
+@@ -57,7 +57,7 @@ config AD5624R_SPI
+ 
+ config AD5446
+ 	tristate "Analog Devices AD5446 and similar single channel DACs driver"
+-	depends on (SPI_MASTER || I2C)
++	depends on (SPI_MASTER && I2C!=m) || I2C
+ 	help
+ 	  Say yes here to build support for Analog Devices AD5300, AD5301, AD5310,
+ 	  AD5311, AD5320, AD5321, AD5444, AD5446, AD5450, AD5451, AD5452, AD5453,
+-- 
+1.8.1.2
 
 
-Regards, 
-Manish
+
