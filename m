@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab3EIW0h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:26:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45802 "EHLO
+	id S1759000Ab3EIXGO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:06:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45816 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755901Ab3EIW0e (ORCPT
+	with ESMTP id S1756048Ab3EIW0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:34 -0400
+	Thu, 9 May 2013 18:26:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Xiong Zhang <xiong.y.zhang@intel.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 40/73] drm/i915: dont intel_crt_init on any ULT machines
-Date: Thu,  9 May 2013 15:25:30 -0700
-Message-Id: <20130509222530.535451095@linuxfoundation.org>
+Subject: [ 43/73] drm/i915: correct the calculation of first_pd_entry_in_global_pt
+Date: Thu,  9 May 2013 15:25:33 -0700
+Message-Id: <20130509222530.812551775@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -27,32 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paulo Zanoni <paulo.r.zanoni@intel.com>
+From: "Zhang, Xiong Y" <xiong.y.zhang@intel.com>
 
-commit c40c0f5bd5b0f09e4386d2cf26c96c89c45ee539 upstream.
+commit 43b27290dd42b40f3f23f49677a7faa5a4eb1eff upstream.
 
-We may have DDI_BUF_CTL(PORT_A) configured with 2 lanes and still not
-have CRT, so just check for !IS_ULT. This problem happened on a real
-machine and resulted in a very ugly dmesg.
+When ppgtt is enabled, dev_priv->gtt.total has excluded the gtt space
+occupied by ppgtt table in i915_gem_init_global_gtt() function. So the
+calculation of first_pd_entry_in_global_pt doesn't need to subtract
+I915_PPGTT_PD_ENTRIES again. Or else PPGTT directory table will be
+destroyed by global gtt allocation.
 
-Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+This regression has been introduced in
+
+commit a54c0c279f3864171fe53c66e769d5a137c5c651
+Author: Ben Widawsky <ben@bwidawsk.net>
+Date:   Thu Jan 24 14:45:00 2013 -0800
+
+    drm/i915: remove intel_gtt structure
+
+The breakage is pretty subtile since the old gtt_total_entries
+included the pde range, whereas the new on did not.
+
+Signed-off-by: Xiong Zhang<xiong.y.zhang@intel.com>
+[danvet: Add regression citation and cc: stable. Thanks to Chris for
+correcting my wrong guess about which commit broke things.]
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_gem_gtt.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8326,7 +8326,7 @@ static void intel_setup_outputs(struct d
- 		I915_WRITE(PFIT_CONTROL, 0);
- 	}
+--- a/drivers/gpu/drm/i915/i915_gem_gtt.c
++++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
+@@ -182,8 +182,7 @@ static int gen6_ppgtt_init(struct i915_h
+ 	/* ppgtt PDEs reside in the global gtt pagetable, which has 512*1024
+ 	 * entries. For aliasing ppgtt support we just steal them at the end for
+ 	 * now. */
+-	first_pd_entry_in_global_pt =
+-		gtt_total_entries(dev_priv->gtt) - I915_PPGTT_PD_ENTRIES;
++       first_pd_entry_in_global_pt = gtt_total_entries(dev_priv->gtt);
  
--	if (!(HAS_DDI(dev) && (I915_READ(DDI_BUF_CTL(PORT_A)) & DDI_A_4_LANES)))
-+	if (!IS_ULT(dev))
- 		intel_crt_init(dev);
- 
- 	if (HAS_DDI(dev)) {
+ 	ppgtt->num_pd_entries = I915_PPGTT_PD_ENTRIES;
+ 	ppgtt->clear_range = gen6_ppgtt_clear_range;
 
 
