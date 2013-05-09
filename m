@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab3EIW0Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:26:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45628 "EHLO
+	id S1756355Ab3EIW0p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:26:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45848 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754203Ab3EIW0J (ORCPT
+	with ESMTP id S1756240Ab3EIW0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:09 -0400
+	Thu, 9 May 2013 18:26:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Michael Ellerman <michael@ellerman.id.au>
-Subject: [ 04/73] powerpc: fix numa distance for form0 device tree
-Date: Thu,  9 May 2013 15:24:54 -0700
-Message-Id: <20130509222526.941660259@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 51/73] drm/radeon: properly lock disp in mc_stop/resume for r5xx-r7xx
+Date: Thu,  9 May 2013 15:25:41 -0700
+Message-Id: <20130509222531.616558188@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -27,51 +26,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 7122beeee7bc1757682049780179d7c216dd1c83 upstream.
+commit 2f86e2ede39a98650c2d465857405ef1c51372b1 upstream.
 
-The following commit breaks numa distance setup for old powerpc
-systems that use form0 encoding in device tree.
+Need to wait for the new addresses to take affect before
+re-enabling the MC.
 
-commit 41eab6f88f24124df89e38067b3766b7bef06ddb
-powerpc/numa: Use form 1 affinity to setup node distance
-
-Device tree node /rtas/ibm,associativity-reference-points would
-index into /cpus/PowerPCxxxx/ibm,associativity based on form0 or
-form1 encoding detected by ibm,architecture-vec-5 property.
-
-All modern systems use form1 and current kernel code is correct.
-However, on older systems with form0 encoding, the numa distance
-will get hard coded as LOCAL_DISTANCE for all nodes.  This causes
-task scheduling anomaly since scheduler will skip building numa
-level domain (topmost domain with all cpus) if all numa distances
-are same.  (value of 'level' in sched_init_numa() will remain 0)
-
-Prior to the above commit:
-((from) == (to) ? LOCAL_DISTANCE : REMOTE_DISTANCE)
-
-Restoring compatible behavior with this patch for old powerpc systems
-with device tree where numa distance are encoded as form0.
-
-Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/mm/numa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/r500_reg.h |    1 
+ drivers/gpu/drm/radeon/rv515.c    |   43 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 44 insertions(+)
 
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -201,7 +201,7 @@ int __node_distance(int a, int b)
- 	int distance = LOCAL_DISTANCE;
+--- a/drivers/gpu/drm/radeon/r500_reg.h
++++ b/drivers/gpu/drm/radeon/r500_reg.h
+@@ -358,6 +358,7 @@
+ #define AVIVO_D1CRTC_STATUS_HV_COUNT                            0x60ac
+ #define AVIVO_D1CRTC_STEREO_CONTROL                             0x60c4
  
- 	if (!form1_affinity)
--		return distance;
-+		return ((a == b) ? LOCAL_DISTANCE : REMOTE_DISTANCE);
++#define AVIVO_D1MODE_MASTER_UPDATE_LOCK                         0x60e0
+ #define AVIVO_D1MODE_MASTER_UPDATE_MODE                         0x60e4
  
- 	for (i = 0; i < distance_ref_points_depth; i++) {
- 		if (distance_lookup_table[a][i] == distance_lookup_table[b][i])
+ /* master controls */
+--- a/drivers/gpu/drm/radeon/rv515.c
++++ b/drivers/gpu/drm/radeon/rv515.c
+@@ -338,6 +338,22 @@ void rv515_mc_stop(struct radeon_device
+ 	}
+ 	/* wait for the MC to settle */
+ 	udelay(100);
++
++	/* lock double buffered regs */
++	for (i = 0; i < rdev->num_crtc; i++) {
++		if (save->crtc_enabled[i]) {
++			tmp = RREG32(AVIVO_D1GRPH_UPDATE + crtc_offsets[i]);
++			if (!(tmp & AVIVO_D1GRPH_UPDATE_LOCK)) {
++				tmp |= AVIVO_D1GRPH_UPDATE_LOCK;
++				WREG32(AVIVO_D1GRPH_UPDATE + crtc_offsets[i], tmp);
++			}
++			tmp = RREG32(AVIVO_D1MODE_MASTER_UPDATE_LOCK + crtc_offsets[i]);
++			if (!(tmp & 1)) {
++				tmp |= 1;
++				WREG32(AVIVO_D1MODE_MASTER_UPDATE_LOCK + crtc_offsets[i], tmp);
++			}
++		}
++	}
+ }
+ 
+ void rv515_mc_resume(struct radeon_device *rdev, struct rv515_mc_save *save)
+@@ -367,6 +383,33 @@ void rv515_mc_resume(struct radeon_devic
+ 	}
+ 	WREG32(R_000310_VGA_MEMORY_BASE_ADDRESS, (u32)rdev->mc.vram_start);
+ 
++	/* unlock regs and wait for update */
++	for (i = 0; i < rdev->num_crtc; i++) {
++		if (save->crtc_enabled[i]) {
++			tmp = RREG32(AVIVO_D1MODE_MASTER_UPDATE_MODE + crtc_offsets[i]);
++			if ((tmp & 0x3) != 0) {
++				tmp &= ~0x3;
++				WREG32(AVIVO_D1MODE_MASTER_UPDATE_MODE + crtc_offsets[i], tmp);
++			}
++			tmp = RREG32(AVIVO_D1GRPH_UPDATE + crtc_offsets[i]);
++			if (tmp & AVIVO_D1GRPH_UPDATE_LOCK) {
++				tmp &= ~AVIVO_D1GRPH_UPDATE_LOCK;
++				WREG32(AVIVO_D1GRPH_UPDATE + crtc_offsets[i], tmp);
++			}
++			tmp = RREG32(AVIVO_D1MODE_MASTER_UPDATE_LOCK + crtc_offsets[i]);
++			if (tmp & 1) {
++				tmp &= ~1;
++				WREG32(AVIVO_D1MODE_MASTER_UPDATE_LOCK + crtc_offsets[i], tmp);
++			}
++			for (j = 0; j < rdev->usec_timeout; j++) {
++				tmp = RREG32(AVIVO_D1GRPH_UPDATE + crtc_offsets[i]);
++				if ((tmp & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING) == 0)
++					break;
++				udelay(1);
++			}
++		}
++	}
++
+ 	if (rdev->family >= CHIP_R600) {
+ 		/* unblackout the MC */
+ 		if (rdev->family >= CHIP_RV770)
 
 
