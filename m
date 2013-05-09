@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab3EIEVu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 00:21:50 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33954 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702Ab3EIEUP (ORCPT
+	id S1751715Ab3EIEb6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 00:31:58 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:47930 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327Ab3EIEb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 00:20:15 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: torvalds@linux-foundation.org
-Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v2 9/9] liblockdep: Add a MAINTAINERS entry
-Date: Thu,  9 May 2013 00:19:16 -0400
-Message-Id: <1368073156-27567-10-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1368073156-27567-1-git-send-email-sasha.levin@oracle.com>
-References: <1368073156-27567-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 9 May 2013 00:31:57 -0400
+From: David Ahern <dsahern@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: acme@ghostprotocols.net, mingo@kernel.org, fweisbec@gmail.com,
+        peterz@infradead.org, jolsa@redhat.com, namhyung@kernel.org,
+        xiaoguangrong@linux.vnet.ibm.com, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 00/13] perf: kvm live mode
+Date: Wed,  8 May 2013 22:31:36 -0600
+Message-Id: <1368073909-8825-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- MAINTAINERS | 5 +++++
- 1 file changed, 5 insertions(+)
+With the consolidation of the open counters code in December 2012
+(late to the party figuring that out) I think all of the past
+comments on the live mode for perf-kvm have been resolved.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 8bdd7a7..e39345e 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4784,6 +4784,11 @@ F:	drivers/lguest/
- F:	include/linux/lguest*.h
- F:	tools/lguest/
- 
-+LIBLOCK
-+M:	Sasha Levin <sasha.levin@oracle.com>
-+S:	Maintained
-+F:	tools/lib/lockdep/
-+
- LINUX FOR IBM pSERIES (RS/6000)
- M:	Paul Mackerras <paulus@au.ibm.com>
- W:	http://www.ibm.com/linux/ltc/projects/ppc
+David Ahern (13):
+  perf evlist: restore methods removed in earlier cleanup
+  perf evlist: move tracepoint processing code to evlist.c
+  perf evlist: add initialzation function for tracepoints
+  perf session: export a few functions for event processing
+  perf top: move CONSOLE_CLEAR to header file
+  perf kvm: handle realloc failures
+  perf kvm: split out tracepoints from record args
+  perf stats: fix divide by 0 in variance
+  perf stats: add max and min stats
+  perf kvm: add live mode
+  perf kvm: add min and max stats to results display
+  perf kvm: option to print events that exceed a threshold
+  perf kvm: debug for missing vmexit/vmentry event
+
+ tools/perf/builtin-kvm.c  |  694 ++++++++++++++++++++++++++++++++++++++++++---
+ tools/perf/builtin-top.c  |    2 -
+ tools/perf/util/evlist.c  |  120 ++++++++
+ tools/perf/util/evlist.h  |   10 +
+ tools/perf/util/header.c  |   44 ---
+ tools/perf/util/session.c |   15 +-
+ tools/perf/util/session.h |    9 +
+ tools/perf/util/stat.c    |    8 +-
+ tools/perf/util/stat.h    |    9 +
+ tools/perf/util/top.h     |    2 +
+ 10 files changed, 816 insertions(+), 97 deletions(-)
+
 -- 
-1.8.2.1
+1.7.10.1
 
