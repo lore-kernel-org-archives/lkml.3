@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab3EISNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 14:13:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21700 "EHLO mx1.redhat.com"
+	id S1753313Ab3EISNZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 14:13:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37341 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733Ab3EISNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 14:13:04 -0400
-Date: Thu, 9 May 2013 14:12:54 -0400
-From: Dave Jones <davej@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Dave Hansen <dave@sr71.net>, mmarek@suse.cz, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tj@kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 0/7] Put "Kernel hacking" Kconfig menu on a diet
-Message-ID: <20130509181254.GA20844@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Kent Overstreet <koverstreet@google.com>,
-	Dave Hansen <dave@sr71.net>, mmarek@suse.cz,
-	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-	tj@kernel.org, akpm@linux-foundation.org
-References: <20130507204642.D010DDC1@viggo.jf.intel.com>
- <20130509173130.GA17021@moria.home.lan>
+	id S1753050Ab3EISNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 14:13:23 -0400
+Date: Thu, 9 May 2013 20:10:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Colin Walters <walters@verbum.org>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        systemd-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [systemd-devel] [PATCH 2/2] coredump: Handle programs with
+	spaces in COMM
+Message-ID: <20130509181004.GA15526@redhat.com>
+References: <1367341939.6959.1.camel@localhost> <20130430174731.GC3394@in.waw.pl> <1367349331.6959.80.camel@localhost> <20130501164246.GA7647@redhat.com> <20130503150824.GB24114@tango.0pointer.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130509173130.GA17021@moria.home.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130503150824.GB24114@tango.0pointer.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 10:31:30AM -0700, Kent Overstreet wrote:
+Sorry for delay, vacation.
 
- > > Let's try to introduce some sanity.  This set takes that 120 lines
- > > down to 55 and makes it vastly easier to find some things.  It's a
- > > start.
- > > 
- > Any chance this could go in sooner than later? I spend way too much time
- > hunting down options in kernel hacking and I spend enough time in that
- > menu that I should have the damn thing memorized by now.
+On 05/03, Lennart Poettering wrote:
+>
+> On Wed, 01.05.13 18:42, Oleg Nesterov (oleg@redhat.com) wrote:
+>
+> > I wouldn't say this is bug... at least this is expected.
+> >
+> > Sure, it is possible to rewrite format_corename/argv_split interaction,
+> > but this is a bit painful and I am not sure it worth the trouble.
+>
+> It sounds really wrong to first merge this into one string and then
+> split it up again. It sounds much more sensible to instead just pass the
+> string array around all the time. What's the reason to make this one
+> string first?
 
-+1. I was concerned that Dave had dropped this since the first time
-it got posted a few months ago.  That stuff is long overdue a cleanup.
+!ispipe case.
 
+OK. I have to admit that this doesn't look nice even if this is
+"historical" behaviour. The fix should be simple I guess,
+format_corename() should construct argv by hand, argv_split()
+should be avoided.
 
-	Dave
+But:
+
+	- We do not want to complicate this (ugly) code more than
+	  necessary. In particular we shouldn't forget about ispipe.
+
+	  Oh, and realloc, we can't count argc in advance or we need
+	  more changes to protect against proc_dostring_coredump().
+
+	- We should cleanup format_corename() first. If nothing else,
+	  cn_escape().
+
+	- Hmm. it seems that we also need to fix it, format_corename()
+	  can leak ->corename afaics.
+
+In short: I'll try to do this when I have time.
+
+Oleg.
 
