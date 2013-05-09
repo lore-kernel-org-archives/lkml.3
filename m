@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705Ab3EIMrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 08:47:21 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55231 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751952Ab3EIMrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 08:47:19 -0400
-Date: Thu, 9 May 2013 14:50:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123
- native_smp_send_reschedule
-Message-ID: <20130509125040.GF27333@pd.tnic>
-References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754100Ab3EIMvI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 08:51:08 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:42527 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314Ab3EIMvG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 08:51:06 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
+Subject: [PATCH] serial: pl011: protect attribute read from NULL platform data struct
+Date: Thu,  9 May 2013 13:50:55 +0100
+Message-Id: <1368103855-28363-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 02:29:18PM +0200, Jiri Kosina wrote:
-> Hi,
-> 
-> I just got the warning below when resuming from hibernation with kernel 
-> that has NO_HZ_FULL_ALL=y. This is with topmost commit e0fd9affeb640.
+It's completely feasible that platform data will be empty i.e. when
+booting with Device Tree with no device AUXDATA. So we must protect
+it's use in these use-cases, or risk a kernel Oops.
 
-Did you boot with any of the NO_HZ_FULL options on the command line,
-i.e. rcu_nocbs?
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+*******                                                        *******
+If this issue has not already been fixed, this patch should be applied
+during the v3.10 -rc:s, as it fixes a serious bug which was introduced
+in the merge-window.
+*******                                                        *******
 
-Because I saw the same issue during boot when I was testing the
-NO_HZ_FULL stuff previously:
+ drivers/tty/serial/amba-pl011.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Feb 21 11:13:17 gondor kernel: [    0.093417]  #3
-Feb 21 11:13:17 gondor kernel: [    0.106844] SMP alternatives: lockdep: fixing up alternatives
-Feb 21 11:13:17 gondor kernel: [    0.118060] ------------[ cut here ]------------
-Feb 21 11:13:17 gondor kernel: [    0.118069] WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule+0x58/0x60()
-Feb 21 11:13:17 gondor kernel: [    0.118069] Hardware name: Precision T3600
-Feb 21 11:13:17 gondor kernel: [    0.106955]  #4
-Feb 21 11:13:17 gondor kernel: [    0.118070] Modules linked in:
-Feb 21 11:13:17 gondor kernel: [    0.118073] Pid: 0, comm: swapper/4 Not tainted 3.8.0-rc6+ #4
-Feb 21 11:13:17 gondor kernel: [    0.118074] Call Trace:
-Feb 21 11:13:17 gondor kernel: [    0.118076]  [<ffffffff8103d35f>] warn_slowpath_common+0x7f/0xc0
-Feb 21 11:13:17 gondor kernel: [    0.118079]  [<ffffffff8103d3ba>] warn_slowpath_null+0x1a/0x20
-Feb 21 11:13:17 gondor kernel: [    0.118081]  [<ffffffff81024a58>] native_smp_send_reschedule+0x58/0x60
-Feb 21 11:13:17 gondor kernel: [    0.118083]  [<ffffffff81071ba0>] wake_up_nohz_cpu+0x80/0x90
-Feb 21 11:13:17 gondor kernel: [    0.118086]  [<ffffffff8104e611>] add_timer_on+0x91/0x110
-Feb 21 11:13:17 gondor kernel: [    0.118090]  [<ffffffff8101ccab>] mce_start_timer.isra.12+0x6b/0x80
-Feb 21 11:13:17 gondor kernel: [    0.118092]  [<ffffffff8101cd1d>] __mcheck_cpu_init_timer+0x5d/0x70
-Feb 21 11:13:17 gondor kernel: [    0.118094]  [<ffffffff815cc466>] mcheck_cpu_init+0x36b/0x400
-Feb 21 11:13:17 gondor kernel: [    0.118097]  [<ffffffff815ca15b>] identify_cpu+0x39d/0x3d0
-Feb 21 11:13:17 gondor kernel: [    0.118099]  [<ffffffff815ca1a2>] identify_secondary_cpu+0x14/0x1b
-Feb 21 11:13:17 gondor kernel: [    0.118101]  [<ffffffff815cd008>] smp_store_cpu_info+0x38/0x3a
-Feb 21 11:13:17 gondor kernel: [    0.118103]  [<ffffffff815cd550>] start_secondary+0xfb/0x1f7
-Feb 21 11:13:17 gondor kernel: [    0.118121] ---[ end trace 8ffeaaf1f7048154 ]---
-
-And I *think* I saw this yesterday too on a randbuild kernel.
-
-Looks like we're sending a resched IPI to a cpu which is not online yet
-in order to start the MCE polling timer. So the rcu* options are kinda
-unlikely to be related, AFAICT.
-
-Frederic?
-
-Thanks.
-
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index 8ab70a6..e2774f9 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -332,7 +332,7 @@ static void pl011_dma_probe_initcall(struct device *dev, struct uart_amba_port *
+ 		dmaengine_slave_config(chan, &rx_conf);
+ 		uap->dmarx.chan = chan;
+ 
+-		if (plat->dma_rx_poll_enable) {
++		if (plat && plat->dma_rx_poll_enable) {
+ 			/* Set poll rate if specified. */
+ 			if (plat->dma_rx_poll_rate) {
+ 				uap->dmarx.auto_poll_rate = false;
 -- 
-Regards/Gruss,
-    Boris.
+1.7.10.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
