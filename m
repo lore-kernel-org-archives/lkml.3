@@ -1,120 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab3EIKzF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 06:55:05 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:39188 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab3EIKzD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 06:55:03 -0400
-Date: Thu, 9 May 2013 11:55:16 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Paul Turner <pjt@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>
-Subject: Re: [PATCH v5 3/7] sched: set initial value of runnable avg for new
- forked task
-Message-ID: <20130509105516.GF4068@e103034-lin>
-References: <CAPM31RJg7t8f1H-dZwzP1c-0HHb_=8twidX74gS2NfyQhHUhCw@mail.gmail.com>
- <5187760D.8060900@intel.com>
- <CAPM31RKiCfSZ=hJ9P7WOH6AC8uj6b06mEM6K0WCTYXC7OJAq7A@mail.gmail.com>
- <51886460.3020009@intel.com>
- <CAPM31RLsip-PMY73oq58gyi42EQ+-upmPpMQFkukVBX6LTwtCw@mail.gmail.com>
- <20130507095715.GE4068@e103034-lin>
- <5188DFEF.6010403@intel.com>
- <CAPM31R+x3h0b_r4uFkg_SMnkp0AWA6QRAQuDRducycHnFdG5Xw@mail.gmail.com>
- <20130508113442.GB6803@dyad.programming.kicks-ass.net>
- <CAPM31RK06z9SrwACTCyOg96tza9UxA9ZRZegBDA76pG2oM+m7A@mail.gmail.com>
+	id S1754047Ab3EIK6E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 06:58:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35677 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751327Ab3EIK6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 06:58:02 -0400
+Date: Thu, 9 May 2013 13:01:01 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-edac <linux-edac@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: lockdep: BUG: key ffff880436f00330 not in .data!
+Message-ID: <20130509110101.GD27333@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <CAPM31RK06z9SrwACTCyOg96tza9UxA9ZRZegBDA76pG2oM+m7A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 09 May 2013 10:54:59.0468 (UTC) FILETIME=[A65AECC0:01CE4CA3]
-X-MC-Unique: 113050911550013601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 01:00:34PM +0100, Paul Turner wrote:
-> On Wed, May 8, 2013 at 4:34 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, May 07, 2013 at 04:20:55AM -0700, Paul Turner wrote:
-> >> Yes, 1024 was only intended as a starting point.  We could also
-> >> arbitrarily pick something larger, the key is that we pick
-> >> _something_.
-> >>
-> >> If we wanted to be more exacting about it we could just give them a
-> >> sched_slice() worth; this would have a few obvious "nice" properties
-> >> (pun intended).
-> >
-> > Oh I see I misunderstood again :/ Its not about the effective load but weight
-> > of the initial effective load wrt adjustment.
-> >
-> > Previous schedulers didn't have this aspect at all, so no experience from me
-> > here. Paul would be the one, since he's ran longest with this stuff.
-> >
-> > That said, I would tend to keep it shorter rather than longer so that it would
-> > adjust quicker to whatever it really wanted to be.
-> >
-> > Morten says the load is unstable specifically on loaded systems.
-> 
-> Here, Morten was (I believe) referring to the stability at task startup.
-> 
-> To be clear:
-> Because we have such a small runnable period denominator at this point
-> a single changed observation (for an equivalently behaving thread)
-> could have a very large effect.  e.g. fork/exec -- happen to take a
-> major #pf, observe a "relatively" long initial block.
-> 
-> By associating an initial period (along with our full load_contrib)
-> here, we're making the denominator larger so that these effects are
-> less pronounced; achieving better convergence towards what our load
-> contribution should actually be.
+This is on current linus:
 
-This is exactly what I meant, thanks :)
+[    3.806733] EDAC sbridge: Seeking for: dev 0d.6 PCI ID 8086:3cf5
+[    3.807455] EDAC sbridge: Seeking for: dev 0d.6 PCI ID 8086:3cf5
+[    3.808317] BUG: key ffff880436f00330 not in .data!
+[    3.808843] ------------[ cut here ]------------
+[    3.809571] WARNING: at kernel/lockdep.c:2987 lockdep_init_map+0x555/0x590()
+[    3.810274] DEBUG_LOCKS_WARN_ON(1)
+[    3.810279] Modules linked in: sb_edac(+) edac_core acpi_cpufreq mperf ehci_hcd gf128mul ablk_helper iTCO_wdt iTCO_vendor_support evdev l
+pc_ich button pcspkr usbcore snd cryptd mfd_core usb_common soundcore processor microcode
+[    3.811776] CPU: 7 PID: 718 Comm: modprobe Not tainted 3.9.0+ #5
+[    3.812516] Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
+[    3.813271]  0000000000000009 ffff880434421858 ffffffff815e97c6 ffff880434421898
+[    3.814009]  ffffffff8103e210 ffff880434421888 ffff88043b200110 ffffffff8181062e
+[    3.814758]  0000000000000000 ffff880436f00330 0000000000000000 ffff8804344218f8
+[    3.815518] Call Trace:
+[    3.816249]  [<ffffffff815e97c6>] dump_stack+0x19/0x1b
+[    3.816977]  [<ffffffff8103e210>] warn_slowpath_common+0x70/0xa0
+[    3.817675]  [<ffffffff8103e2f6>] warn_slowpath_fmt+0x46/0x50
+[    3.818394]  [<ffffffff810954c5>] lockdep_init_map+0x555/0x590
+[    3.819119]  [<ffffffff810998ed>] ? trace_hardirqs_on_caller+0x10d/0x1d0
+[    3.819837]  [<ffffffff810999bd>] ? trace_hardirqs_on+0xd/0x10
+[    3.820536]  [<ffffffff81093ea8>] debug_mutex_init+0x38/0x50
+[    3.821223]  [<ffffffff81068b91>] __mutex_init+0x61/0x70
+[    3.821916]  [<ffffffff8142a495>] bus_register+0x175/0x2e0
+[    3.822579]  [<ffffffffa00ce645>] edac_create_sysfs_mci_device+0x55/0x540 [edac_core]
+[    3.823249]  [<ffffffff810999bd>] ? trace_hardirqs_on+0xd/0x10
+[    3.823938]  [<ffffffffa00cc5e3>] edac_mc_add_mc+0x103/0x270 [edac_core]
+[    3.824600]  [<ffffffffa00b2d12>] sbridge_probe+0xc12/0xee0 [sb_edac]
+[    3.825307]  [<ffffffff812abbe6>] pci_device_probe+0x136/0x150
+[    3.825996]  [<ffffffff8142bb96>] driver_probe_device+0x76/0x230
+[    3.826663]  [<ffffffff8142bdfb>] __driver_attach+0xab/0xb0
+[    3.827342]  [<ffffffff8142bd50>] ? driver_probe_device+0x230/0x230
+[    3.828018]  [<ffffffff81429ced>] bus_for_each_dev+0x5d/0xa0
+[    3.828672]  [<ffffffff8142b67e>] driver_attach+0x1e/0x20
+[    3.829329]  [<ffffffff8142b151>] bus_add_driver+0x101/0x260
+[    3.829957]  [<ffffffff8142c4d7>] driver_register+0x77/0x170
+[    3.830559]  [<ffffffff812aab74>] __pci_register_driver+0x64/0x70
+[    3.831156]  [<ffffffffa006a000>] ? 0xffffffffa0069fff
+[    3.831737]  [<ffffffffa006a033>] sbridge_init+0x33/0x1000 [sb_edac]
+[    3.832290]  [<ffffffffa006a000>] ? 0xffffffffa0069fff
+[    3.832868]  [<ffffffff81000312>] do_one_initcall+0x112/0x170
+[    3.833392]  [<ffffffff810a5bb9>] load_module+0x1be9/0x25a0
+[    3.833918]  [<ffffffff810a18e0>] ? unset_module_init_ro_nx+0x80/0x80
+[    3.834426]  [<ffffffff810a662f>] SyS_init_module+0xbf/0xf0
+[    3.834975]  [<ffffffff815f8ec6>] system_call_fastpath+0x1a/0x1f
+[    3.835471] ---[ end trace 4ad6d866311d6e2b ]---
+[    3.836069] EDAC MC0: Giving out device to 'sbridge_edac.c' 'Sandy Bridge Socket#0': DEV 0000:3f:0e.0
 
-For the workloads we are looking at we frequently see tasks that get
-blocked for short amounts of time shortly after the task was created. As
-you already explained, the small denominator causes the tracked load
-change very quickly until the denominator gets larger.
+-- 
+Regards/Gruss,
+    Boris.
 
-I think it makes good sense to initialize the period and sum (to be
-conservative) to some appropriate value to get more a more stable
-tracked load for new tasks.
-
-Morten
-
-> 
-> Also: We do this conservatively, by converging down, not up.
-> 
-> > I would think
-> > this is because we'd experience scheduling latency, we're runnable more pushing
-> > things up. But if we're really an idle task at heart we'd not run again for a
-> > long while, pushing things down again.
-> 
-> Exactly, this is why we must be careful to use instaneous weights
-> about wake-up decisions.  Interactive and background tasks are largely
-> idle.
-> 
-> While this is exactly how we want them to be perceived from a
-> load-balance perspective it's important to keep in mind that while
-> wake-up placement has a very important role in the overall balance of
-> a system, it is not playing quite the same game as the load-balancer.
-> 
-> >
-> > So on that point Paul's suggestion of maybe starting with __sched_slice() might
-> > make sense because it increases the weight of the initial avg with nr_running.
-> > Not sure really, we'll have to play and see what works best for a number of
-> > workloads.
-> 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
