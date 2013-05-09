@@ -1,24 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757515Ab3EIWcr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:32:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45946 "EHLO
+	id S1758503Ab3EIXA1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:00:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45984 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757330Ab3EIWcl (ORCPT
+	with ESMTP id S1757491Ab3EIWcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:32:41 -0400
+	Thu, 9 May 2013 18:32:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Michael Ellerman <michael@ellerman.id.au>
-Subject: [ 03/73] powerpc: fix numa distance for form0 device tree
-Date: Thu,  9 May 2013 15:31:26 -0700
-Message-Id: <20130509222758.303552980@linuxfoundation.org>
+        =?UTF-8?q?T=F3th=20Attila?= <atoth@atoth.sote.hu>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Borislav Petkov <bp@suse.de>, Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [ 15/73] e1000e: fix accessing to suspended device
+Date: Thu,  9 May 2013 15:31:38 -0700
+Message-Id: <20130509222759.611227001@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,51 +34,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-commit 7122beeee7bc1757682049780179d7c216dd1c83 upstream.
+commit e60b22c5b7e59db09a7c9490b1e132c7e49ae904 upstream.
 
-The following commit breaks numa distance setup for old powerpc
-systems that use form0 encoding in device tree.
+This patch fixes some annoying messages like 'Error reading PHY register' and
+'Hardware Erorr' and saves several seconds on reboot.
 
-commit 41eab6f88f24124df89e38067b3766b7bef06ddb
-powerpc/numa: Use form 1 affinity to setup node distance
-
-Device tree node /rtas/ibm,associativity-reference-points would
-index into /cpus/PowerPCxxxx/ibm,associativity based on form0 or
-form1 encoding detected by ibm,architecture-vec-5 property.
-
-All modern systems use form1 and current kernel code is correct.
-However, on older systems with form0 encoding, the numa distance
-will get hard coded as LOCAL_DISTANCE for all nodes.  This causes
-task scheduling anomaly since scheduler will skip building numa
-level domain (topmost domain with all cpus) if all numa distances
-are same.  (value of 'level' in sched_init_numa() will remain 0)
-
-Prior to the above commit:
-((from) == (to) ? LOCAL_DISTANCE : REMOTE_DISTANCE)
-
-Restoring compatible behavior with this patch for old powerpc systems
-with device tree where numa distance are encoded as form0.
-
-Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Bruce Allan <bruce.w.allan@intel.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Tested-by: Borislav Petkov <bp@suse.de>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Tested-by: Tóth Attila <atoth@atoth.sote.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/mm/numa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/intel/e1000e/ethtool.c |   13 +++++++++++++
+ drivers/net/ethernet/intel/e1000e/netdev.c  |    2 ++
+ 2 files changed, 15 insertions(+)
 
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -201,7 +201,7 @@ int __node_distance(int a, int b)
- 	int distance = LOCAL_DISTANCE;
+--- a/drivers/net/ethernet/intel/e1000e/ethtool.c
++++ b/drivers/net/ethernet/intel/e1000e/ethtool.c
+@@ -35,6 +35,7 @@
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+ #include <linux/vmalloc.h>
++#include <linux/pm_runtime.h>
  
- 	if (!form1_affinity)
--		return distance;
-+		return ((a == b) ? LOCAL_DISTANCE : REMOTE_DISTANCE);
+ #include "e1000.h"
  
- 	for (i = 0; i < distance_ref_points_depth; i++) {
- 		if (distance_lookup_table[a][i] == distance_lookup_table[b][i])
+@@ -2053,7 +2054,19 @@ static int e1000_get_rxnfc(struct net_de
+ 	}
+ }
+ 
++static int e1000e_ethtool_begin(struct net_device *netdev)
++{
++	return pm_runtime_get_sync(netdev->dev.parent);
++}
++
++static void e1000e_ethtool_complete(struct net_device *netdev)
++{
++	pm_runtime_put_sync(netdev->dev.parent);
++}
++
+ static const struct ethtool_ops e1000_ethtool_ops = {
++	.begin			= e1000e_ethtool_begin,
++	.complete		= e1000e_ethtool_complete,
+ 	.get_settings		= e1000_get_settings,
+ 	.set_settings		= e1000_set_settings,
+ 	.get_drvinfo		= e1000_get_drvinfo,
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -4313,6 +4313,7 @@ static void e1000_phy_read_status(struct
+ 	    (adapter->hw.phy.media_type == e1000_media_type_copper)) {
+ 		int ret_val;
+ 
++		pm_runtime_get_sync(&adapter->pdev->dev);
+ 		ret_val  = e1e_rphy(hw, PHY_CONTROL, &phy->bmcr);
+ 		ret_val |= e1e_rphy(hw, PHY_STATUS, &phy->bmsr);
+ 		ret_val |= e1e_rphy(hw, PHY_AUTONEG_ADV, &phy->advertise);
+@@ -4323,6 +4324,7 @@ static void e1000_phy_read_status(struct
+ 		ret_val |= e1e_rphy(hw, PHY_EXT_STATUS, &phy->estatus);
+ 		if (ret_val)
+ 			e_warn("Error reading PHY register\n");
++		pm_runtime_put_sync(&adapter->pdev->dev);
+ 	} else {
+ 		/* Do not read PHY registers if link is not up
+ 		 * Set values to typical power-on defaults
 
 
