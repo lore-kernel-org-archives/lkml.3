@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab3EIRL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 13:11:59 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:32125 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab3EIRL6 (ORCPT
+	id S1752049Ab3EIRMT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 13:12:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16759 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab3EIRMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 13:11:58 -0400
-Message-ID: <1368119516.1808.3.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: SHM oops in newseg()
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, riel@redhat.com,
-        viro@zeniv.linux.org.uk, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Date: Thu, 09 May 2013 10:11:56 -0700
-In-Reply-To: <518B4B5F.9040900@huawei.com>
-References: <20130509043532.GA28235@redhat.com>
-	 <518B4B5F.9040900@huawei.com>
+	Thu, 9 May 2013 13:12:17 -0400
+X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=S3IMcBWtOxoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=v5zTX_QIMkQA:10 a=3nbZYyFuAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=QyXUC8HyAAAA:8 a=DKq56BpVKz7YDvQEN2IA:9 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=dGJ0OcVc7YAA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1368119535.7373.125.camel@gandalf.local.home>
+Subject: Re: [PATCH 03/11] ftrace: Cleanup regex_lock and ftrace_lock around
+ hash updating
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
+Date: Thu, 09 May 2013 13:12:15 -0400
+In-Reply-To: <20130509054421.30398.83411.stgit@mhiramat-M0-7522>
+References: <20130509054405.30398.73831.stgit@mhiramat-M0-7522>
+	 <20130509054421.30398.83411.stgit@mhiramat-M0-7522>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+X-Mailer: Evolution 3.4.4-2 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-09 at 15:08 +0800, Li Zefan wrote:
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+On Thu, 2013-05-09 at 14:44 +0900, Masami Hiramatsu wrote:
+> Cleanup regex_lock and ftrace_lock locking points around
+> ftrace_ops hash update code.
 > 
-> On 2013/5/9 12:35, Dave Jones wrote:
-> > Just saw this on v3.9-11789-ge0fd9af while fuzz-testing.
-> > 
-> > [  163.917836] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-> > [  163.918984] IP: [<ffffffff812c48ed>] newseg+0x10d/0x390
+> The new rule is that regex_lock protects ops->*_hash
+> read-update-write code for each ftrace_ops. Usually,
+> hash update is done by following sequence.
 > 
-> The patch below should fix it.
+> 1. allocate a new local hash and copy the original hash.
+> 2. update the local hash.
+> 3. move(actually, copy) back the local hash to ftrace_ops.
+> 4. update ftrace entries if needed.
+> 5. release the local hash.
 > 
-> ===========================
+> This makes regex_lock to protect #1-#4, and ftrace_lock
+> to protect #3 and #4.
+
+Patch looks good, but I don't see how ftrace_lock protects #3. The two
+things that I see ftrace_lock protecting is the update to the ftrace
+entries, and the adding and removing ftrace_ops to the ftrace_ops_list.
+
+-- Steve
+
 > 
-> [PATCH] shm: fix null pointer deref when userspace specifies invalid hugepage size
-> 
-> Dave reported an oops triggered by trinity:
-> 
-> [  163.917836] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-> [  163.918984] IP: [<ffffffff812c48ed>] newseg+0x10d/0x390
-> [  163.919705] PGD cf8c1067 PUD cf8c2067 PMD 0
-> [  163.920326] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  163.929949] CPU: 2 PID: 7636 Comm: trinity-child2 Not tainted 3.9.0+#67
-> ...
-> [  163.953629] Call Trace:
-> [  163.957706]  [<ffffffff812be322>] ipcget+0x182/0x380
-> [  163.962123]  [<ffffffff810b99a5>] ?trace_hardirqs_on_caller+0x115/0x1e0
-> [  163.966752]  [<ffffffff812c559a>] SyS_shmget+0x5a/0x60
-> [  163.971163]  [<ffffffff812c47e0>] ? shm_close+0x140/0x140
-> [  163.975590]  [<ffffffff812c3e60>] ? shm_release+0x50/0x50
-> [  163.979991]  [<ffffffff812c3df0>] ? shm_get_unmapped_area+0x20/0x20
-> [  163.984499]  [<ffffffff816caa14>] tracesys+0xdd/0xe2
-> 
-> This bug was introduced by commit af73e4d9506d3b797509f3c030e7dcd554f7d9c4
-> ("hugetlbfs: fix mmap failure in unaligned size request").
-> 
-> Reported-by: Dave Jones <davej@redhat.com>
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Li Zefan <lizfan@huawei.com>
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Tom Zanussi <tom.zanussi@intel.com>
 > ---
-> 
-> Previously it would return -ENODEV, but seems -EINVAL is more appropriate.
 
-Should the user in fs/hugetlbfs/inode.c be updated as well?
-get_hstate_idx() is just returning -1 and it's only caller,
-hugetlb_file_setup(), returns -ENODEV.
-
-Thanks,
-Davidlohr
 
