@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab3EIP1q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 11:27:46 -0400
-Received: from mail-da0-f45.google.com ([209.85.210.45]:51388 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666Ab3EIP1o (ORCPT
+	id S1755424Ab3EIPbP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 11:31:15 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:41193 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260Ab3EIPbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 11:27:44 -0400
-Date: Thu, 9 May 2013 23:27:31 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jean Delvare <jdelvare@suse.de>, Michal Marek <mmarek@suse.cz>,
-        Roland Eggner <edvx1@systemanalysen.net>
-Subject: Re: [PATCH v3] kconfig: sort found symbols by relevance
-Message-ID: <20130509152731.GA3355@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	"Yann E. MORIN" <yann.morin.1998@free.fr>,
-	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Jean Delvare <jdelvare@suse.de>, Michal Marek <mmarek@suse.cz>,
-	Roland Eggner <edvx1@systemanalysen.net>
-References: <1367826629.4494.30.camel@chaos.site>
- <1367874931-6251-1-git-send-email-yann.morin.1998@free.fr>
+	Thu, 9 May 2013 11:31:14 -0400
+Message-ID: <518BC13F.8040604@hp.com>
+Date: Thu, 09 May 2013 11:31:11 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367874931-6251-1-git-send-email-yann.morin.1998@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Ahern <dsahern@gmail.com>
+CC: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH] perf: fix symbol processing bug and greatly improve performance
+References: <1367847833-4932-1-git-send-email-Waiman.Long@hp.com> <20130507093031.GA1076@krava.brq.redhat.com> <518A72E3.6070606@hp.com> <20130509101915.GC1628@krava.brq.redhat.com> <518BB6AF.3020003@hp.com> <518BBB30.1070003@gmail.com>
+In-Reply-To: <518BBB30.1070003@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 06, 2013 at 11:15:31PM +0200, Yann E. MORIN wrote:
-> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> 
-> When searching for symbols, return the symbols sorted by relevance.
-> 
-> Sorting is done as thus:
->   - first, symbols with a prompt,   [1]
->   - then, smallest offset,          [2]
->   - then, shortest match,           [3]
->   - then, highest relative match,   [4]
->   - finally, alphabetical sort      [5]
-> 
-> So, searching (eg.) for 'P.*CI' :
-> 
-> [1] Symbols of interest are probably those with a prompt, as they can be
->     changed, while symbols with no prompt are only for info. Thus:
->         PCIEASPM comes before PCI_ATS
+On 05/09/2013 11:05 AM, David Ahern wrote:
+> On 5/9/13 8:46 AM, Waiman Long wrote:
+>> I am sorry that I forgot to rerun checkpatch.pl again after changing the
+>> argument type from int to bool.
+>
+> You can edit/create .git/hooks/pre-commit and have it run 
+> checkpatch.pl so you don't forget:
+>
+> #!/bin/bash
+> exec git diff --cached | scripts/checkpatch.pl --no-signoff -q -
+>
+> If it spits out warnings that are ok, add -n to git-commit to bypass.
 
-Search the value of symbols with no prompt are useful too
+Thanks for the tip! I will implement that in my development environment.
 
-> [2] Symbols that match earlier in the name are to be preferred over
->     symbols which match later. Thus:
->         PCI_MSI comes before WDTPCI
-
-We can achieve this with ^PCI regular search
-
-> [3] The shortest match is (IMHO) more interesting than a longer one.
->     Thus:
->         PCI comes before PCMCIA
-
-We can achieve this with ^PCI regular search plus your previous heuristic
-
-> [4] The relative match is the ratio of the length of the match against
->     the length of the symbol. The more of a symbol name we match, the
->     more instersting that symbol is. Thus:
->         PCIEAER comes before PCIEASPM
-
-This is what your first heuristic
-
-> [5] As fallback, sort symbols alphabetically
-This is in your first heuristic too.
-
-> This heuristic tries hard to get interesting symbols first in the list.
-I don't mean your this heuristic is bad, but
-maybe provide mechanism to user will make guesser life easier.
-
-Thanks.
+Regards,
+Longman
