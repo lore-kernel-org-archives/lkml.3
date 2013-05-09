@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990Ab3EIOOe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 10:14:34 -0400
-Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:46047 "EHLO
-	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753562Ab3EIOOd (ORCPT
+	id S1755066Ab3EIOPN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 10:15:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47394 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042Ab3EIOPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 10:14:33 -0400
-Date: Thu, 9 May 2013 14:14:31 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [linux-next-20130422] Bug in SLAB?
-In-Reply-To: <201305092125.FGG13076.LFOtVOFMSFQJHO@I-love.SAKURA.ne.jp>
-Message-ID: <0000013e89a4ae3c-f2abd075-e096-42b5-891d-e2e5e2af9ecb-000000@email.amazonses.com>
-References: <CAOJsxLFYDC+EDdJrXVnc1qfEyd56bhFLeGE+6Mbhwiq73KQQLQ@mail.gmail.com> <517E8758.9040803@parallels.com> <0000013e564e0e5a-121c52f9-e489-470f-99d5-67a5ad42eb75-000000@email.amazonses.com> <201304300028.IAD13051.OHOVMJSLFFFQOt@I-love.SAKURA.ne.jp>
- <201304300116.FGJ56210.FMSOJHFOtFQVOL@I-love.SAKURA.ne.jp> <201305092125.FGG13076.LFOtVOFMSFQJHO@I-love.SAKURA.ne.jp>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 9 May 2013 10:15:11 -0400
+Date: Thu, 9 May 2013 15:14:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ming Lei <tom.leiming@gmail.com>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Liam Girdwood <lrg@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/3] driver core: Add API to wait for deferred probe to
+	complete during init
+Message-ID: <20130509141444.GV18614@n2100.arm.linux.org.uk>
+References: <1368076726-11492-1-git-send-email-skannan@codeaurora.org> <1368076726-11492-2-git-send-email-skannan@codeaurora.org> <CACVXFVMd_iRtEM8ZLK6Ps66gZO6SCp1mXSgY6JbWtRJjJUh+ag@mail.gmail.com> <CACxGe6uHBNUcbD9SeRP5c3E8NN-Z2yjVV+9VAhuoJnXoBtTu2w@mail.gmail.com> <20130509135017.GD3200@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.05.09-54.240.9.42
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130509135017.GD3200@sirena.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 May 2013, Tetsuo Handa wrote:
+On Thu, May 09, 2013 at 02:50:17PM +0100, Mark Brown wrote:
+> On Thu, May 09, 2013 at 12:50:46PM +0100, Grant Likely wrote:
+> 
+> > However, if a device that shuts down resources after init has
+> > completed and then cannot turn those resources back on when another
+> > driver requests them then it sounds like there is a bigger design
+> > problem. We're in a hotplug world and most of the time a driver cannot
+> > assume that a resource will never get requested after initcalls have
+> > completed. It sounds like a design bug in the driver if it cannot
+> > handle that use case.
+> 
+> Even if the driver copes fine it can still be desirable to avoid the
+> power down/up cycle if it involves some user visible effect - things
+> like blinking the display off then on for example.  That said I am a
+> little suspicious about this approach, it doesn't feel as robust as it
+> should to go round individual callers.
 
-> +       BUILD_BUG_ON(PAGE_SHIFT + MAX_ORDER != KMALLOC_SHIFT_HIGH + 1);
->         for (i = 1; i < PAGE_SHIFT + MAX_ORDER; i++) {
+What if the driver for something like your display is a module which
+needs to be loaded from userland?
 
-Yea looping to PAGE_SHIFT + MAX_ORDER is fundamentally wrong.
+Where the design bug lies is in the "lets probe all the drivers and then
+shut down resources which drivers haven't claimed".  That contains an
+implied assumption: that all drivers have been loaded and probed at the
+point where you shut down those resources.
 
+That simply may not be true in todays kernel - it's not true for a start
+if you have modular drivers, and you have built most of the drivers as
+modules (as a distro would want to with single zImage).  It's
+coincidentally not true if you have deferred probing and some drivers
+defer.
 
-Subject: SLAB: Fix init_lock_keys()
+The real problem is this: at what point has the system actually finished
+"booting" in the sense that all drivers for a platform have been
+initialised?  With user loadable modules and deferred probing, that's
+actually a very fuzzy concept.
 
-init_lock_keys goes too far in initializing values in kmalloc_caches because
-it assumed that the size of the kmalloc array goes up to MAX_ORDER. However, the size
-of the kmalloc array for SLAB may be restricted due to increased page sizes or CONFIG_FORCE_MAX_ZONEORDER.
+As you can't really tell when that point has been reached, how can you
+decide to shut down resources which "aren't being used" in a sane way
+without avoiding the down/up cycle?  Basically, you can't.
 
-Reported-by: Tetsuo Handa <penguin-kernel@I-Love.SAKURA.ne.jp>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/mm/slab.c
-===================================================================
---- linux.orig/mm/slab.c	2013-05-09 09:06:20.000000000 -0500
-+++ linux/mm/slab.c	2013-05-09 09:08:08.338606055 -0500
-@@ -565,7 +565,7 @@ static void init_node_lock_keys(int q)
- 	if (slab_state < UP)
- 		return;
-
--	for (i = 1; i < PAGE_SHIFT + MAX_ORDER; i++) {
-+	for (i = 1; i =< KMALLOC_SHIFT_HIGH; i++) {
- 		struct kmem_cache_node *n;
- 		struct kmem_cache *cache = kmalloc_caches[i];
-
+So, trying to solve the problem may be totally fruitless because you
+can't actually solve it - you can only put a sticky plaster over it and
+hope that it catches most of the problem.  But reality is that you can't
+have both a shutdown of unused resources _and_ avoid the down/up cycle.
