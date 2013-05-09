@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab3EITqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 15:46:55 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:50919 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab3EITqv (ORCPT
+	id S1753532Ab3EITrC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 15:47:02 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:53001 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753403Ab3EITq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 15:46:51 -0400
+	Thu, 9 May 2013 15:46:59 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         linux-fbdev@vger.kernel.org
 Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Jerome Glisse <j.glisse@gmail.com>,
         Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC/PATCH v2 1/8] Add arch_phys_wc_{add,del} to manipulate WC MTRRs if needed
-Date: Thu,  9 May 2013 12:46:20 -0700
-Message-Id: <97346b603822ffd8ab446316fc08fbf7686c9d50.1368128020.git.luto@amacapital.net>
+Subject: [RFC/PATCH v2 4/8] drm,agpgart: Use pgprot_writecombine for AGP maps and make the MTRR optional
+Date: Thu,  9 May 2013 12:46:23 -0700
+Message-Id: <3b4e9864e52428a9f73289c92baa37a073a33077.1368128020.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <cover.1368128020.git.luto@amacapital.net>
 References: <cover.1368128020.git.luto@amacapital.net>
@@ -25,160 +25,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several drivers currently use mtrr_add through various #ifdef guards
-and/or drm wrappers.  The vast majority of them want to add WC MTRRs
-on x86 systems and don't actually need the MTRR if PAT (i.e.
-ioremap_wc, etc) are working.
+I'm not sure I understand the intent of the previous behavior.  mmap
+on /dev/agpgart and DRM_AGP maps had no cache flags set, so they
+would be fully cacheable.  But the DRM code (most of the time) would
+add a write-combining MTRR that would change the effective memory
+type to WC.
 
-arch_phys_wc_add and arch_phys_wc_del are new functions, available
-on all architectures and configurations, that add WC MTRRs on x86 if
-needed (and handle errors) and do nothing at all otherwise.  They're
-also easier to use than mtrr_add and mtrr_del, so the call sites can
-be simplified.
+The new behavior just requests WC explicitly for all AGP maps.
 
-As an added benefit, this will avoid wasting MTRRs and possibly
-warning pointlessly on PAT-supporting systems.
+If there is any code out there that expects cacheable access to the
+AGP aperture (because the drm driver doesn't request an MTRR or
+because it's using /dev/agpgart directly), then it will now end up
+with a UC or WC mapping, depending on the architecture and PAT
+availability.  But cacheable access to the aperture seems like it's
+asking for trouble, because, AIUI, the aperture is an alias of RAM.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/include/asm/io.h       |  7 ++++++
- arch/x86/include/asm/mtrr.h     |  5 ++++-
- arch/x86/kernel/cpu/mtrr/main.c | 48 +++++++++++++++++++++++++++++++++++++++++
- include/linux/io.h              | 25 +++++++++++++++++++++
- 4 files changed, 84 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index d8e8eef..34f69cb 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -345,4 +345,11 @@ extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
+It's conceivable that libpciaccess could have issues with this due to
+memtype conflicts, but I think this is unlikely (as long as a WC
+mapping gets there first, I think the conflict resolution rules will
+all work out).  In any case, everything that maps the AGP aperture
+ought to be using /dev/agpgart or the DRM API, in which case
+everything should be okay.
+
+I don't have anything with an AGP slot to test AFAIK.
+
+ drivers/char/agp/frontend.c |  8 +++++---
+ drivers/gpu/drm/drm_pci.c   |  8 ++++----
+ drivers/gpu/drm/drm_stub.c  | 10 ++--------
+ drivers/gpu/drm/drm_vm.c    | 11 ++++-------
+ 4 files changed, 15 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/char/agp/frontend.c b/drivers/char/agp/frontend.c
+index 2e04433..1b19239 100644
+--- a/drivers/char/agp/frontend.c
++++ b/drivers/char/agp/frontend.c
+@@ -603,7 +603,8 @@ static int agp_mmap(struct file *file, struct vm_area_struct *vma)
+ 			vma->vm_ops = kerninfo.vm_ops;
+ 		} else if (io_remap_pfn_range(vma, vma->vm_start,
+ 				(kerninfo.aper_base + offset) >> PAGE_SHIFT,
+-					    size, vma->vm_page_prot)) {
++				size,
++				pgprot_writecombine(vma->vm_page_prot))) {
+ 			goto out_again;
+ 		}
+ 		mutex_unlock(&(agp_fe.agp_mutex));
+@@ -618,8 +619,9 @@ static int agp_mmap(struct file *file, struct vm_area_struct *vma)
+ 		if (kerninfo.vm_ops) {
+ 			vma->vm_ops = kerninfo.vm_ops;
+ 		} else if (io_remap_pfn_range(vma, vma->vm_start,
+-					    kerninfo.aper_base >> PAGE_SHIFT,
+-					    size, vma->vm_page_prot)) {
++				kerninfo.aper_base >> PAGE_SHIFT,
++				size,
++				pgprot_writecombine(vma->vm_page_prot))) {
+ 			goto out_again;
+ 		}
+ 		mutex_unlock(&(agp_fe.agp_mutex));
+diff --git a/drivers/gpu/drm/drm_pci.c b/drivers/gpu/drm/drm_pci.c
+index bd719e9..d0f6699 100644
+--- a/drivers/gpu/drm/drm_pci.c
++++ b/drivers/gpu/drm/drm_pci.c
+@@ -278,10 +278,10 @@ int drm_pci_agp_init(struct drm_device *dev)
+ 		}
+ 		if (drm_core_has_MTRR(dev)) {
+ 			if (dev->agp)
+-				dev->agp->agp_mtrr =
+-					mtrr_add(dev->agp->agp_info.aper_base,
+-						 dev->agp->agp_info.aper_size *
+-						 1024 * 1024, MTRR_TYPE_WRCOMB, 1);
++				dev->agp->agp_mtrr = arch_phys_wc_add(
++					dev->agp->agp_info.aper_base,
++					dev->agp->agp_info.aper_size *
++					1024 * 1024);
+ 		}
+ 	}
+ 	return 0;
+diff --git a/drivers/gpu/drm/drm_stub.c b/drivers/gpu/drm/drm_stub.c
+index 7d30802..9e2acdf 100644
+--- a/drivers/gpu/drm/drm_stub.c
++++ b/drivers/gpu/drm/drm_stub.c
+@@ -451,14 +451,8 @@ void drm_put_dev(struct drm_device *dev)
  
- #define IO_SPACE_LIMIT 0xffff
+ 	drm_lastclose(dev);
  
-+#ifdef CONFIG_MTRR
-+extern int __must_check arch_phys_wc_add(unsigned long base,
-+					 unsigned long size);
-+extern void arch_phys_wc_del(int handle);
-+#define arch_phys_wc_add arch_phys_wc_add
-+#endif
-+
- #endif /* _ASM_X86_IO_H */
-diff --git a/arch/x86/include/asm/mtrr.h b/arch/x86/include/asm/mtrr.h
-index e235582..10d0fba 100644
---- a/arch/x86/include/asm/mtrr.h
-+++ b/arch/x86/include/asm/mtrr.h
-@@ -26,7 +26,10 @@
- #include <uapi/asm/mtrr.h>
+-	if (drm_core_has_MTRR(dev) && drm_core_has_AGP(dev) &&
+-	    dev->agp && dev->agp->agp_mtrr >= 0) {
+-		int retval;
+-		retval = mtrr_del(dev->agp->agp_mtrr,
+-				  dev->agp->agp_info.aper_base,
+-				  dev->agp->agp_info.aper_size * 1024 * 1024);
+-		DRM_DEBUG("mtrr_del=%d\n", retval);
+-	}
++	if (drm_core_has_MTRR(dev) && drm_core_has_AGP(dev) && dev->agp)
++		arch_phys_wc_del(dev->agp->agp_mtrr);
  
+ 	if (dev->driver->unload)
+ 		dev->driver->unload(dev);
+diff --git a/drivers/gpu/drm/drm_vm.c b/drivers/gpu/drm/drm_vm.c
+index 163f436..b1e4ec8 100644
+--- a/drivers/gpu/drm/drm_vm.c
++++ b/drivers/gpu/drm/drm_vm.c
+@@ -49,13 +49,10 @@ static pgprot_t drm_io_prot(struct drm_local_map *map,
+ 	pgprot_t tmp = vm_get_page_prot(vma->vm_flags);
  
--/*  The following functions are for use by other drivers  */
-+/*
-+ * The following functions are for use by other drivers that cannot use
-+ * arch_phys_wc_add and arch_phys_wc_del.
-+ */
- # ifdef CONFIG_MTRR
- extern u8 mtrr_type_lookup(u64 addr, u64 end);
- extern void mtrr_save_fixed_ranges(void *);
-diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-index 726bf96..23bd49a 100644
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -51,6 +51,7 @@
- #include <asm/e820.h>
- #include <asm/mtrr.h>
- #include <asm/msr.h>
-+#include <asm/pat.h>
- 
- #include "mtrr.h"
- 
-@@ -524,6 +525,53 @@ int mtrr_del(int reg, unsigned long base, unsigned long size)
- }
- EXPORT_SYMBOL(mtrr_del);
- 
-+/**
-+ * arch_phys_wc_add - add a WC MTRR and handle errors if PAT is unavailable
-+ * @base: Physical base address
-+ * @size: Size of region
-+ *
-+ * If PAT is available, this does nothing.  If PAT is unavailable, it
-+ * attempts to add a WC MTRR covering size bytes starting at base and
-+ * logs an error if this fails.
-+ *
-+ * Drivers must store the return value to pass to mtrr_del_wc_if_needed,
-+ * but drivers should not try to interpret that return value.
-+ */
-+int arch_phys_wc_add(unsigned long base, unsigned long size)
-+{
-+	int ret;
-+
-+	if (pat_enabled)
-+		return 0;  /* Success!  (We don't need to do anything.) */
-+
-+	ret = mtrr_add(base, size, MTRR_TYPE_WRCOMB, true);
-+	if (ret < 0) {
-+		pr_warn("Failed to add WC MTRR for [%p-%p]; performance may suffer.",
-+			(void *)base, (void *)(base + size - 1));
-+		return ret;
-+	}
-+	return ret + 1000;
-+}
-+EXPORT_SYMBOL(arch_phys_wc_add);
-+
-+/*
-+ * arch_phys_wc_del - undoes arch_phys_wc_add
-+ * @handle: Return value from arch_phys_wc_add
-+ *
-+ * This cleans up after mtrr_add_wc_if_needed.
-+ *
-+ * The API guarantees that mtrr_del_wc_if_needed(error code) and
-+ * mtrr_del_wc_if_needed(0) do nothing.
-+ */
-+extern void arch_phys_wc_del(int handle)
-+{
-+	if (handle >= 1) {
-+		WARN_ON(handle < 1000);
-+		mtrr_del(handle - 1000, 0, 0);
-+	}
-+}
-+EXPORT_SYMBOL(arch_phys_wc_del);
-+
- /*
-  * HACK ALERT!
-  * These should be called implicitly, but we can't yet until all the initcall
-diff --git a/include/linux/io.h b/include/linux/io.h
-index 069e407..f4f42fa 100644
---- a/include/linux/io.h
-+++ b/include/linux/io.h
-@@ -76,4 +76,29 @@ void devm_ioremap_release(struct device *dev, void *res);
- #define arch_has_dev_port()     (1)
- #endif
- 
-+/*
-+ * Some systems (x86 without PAT) have a somewhat reliable way to mark a
-+ * physical address range such that uncached mappings will actually
-+ * end up write-combining.  This facility should be used in conjunction
-+ * with pgprot_writecombine, ioremap-wc, or set_memory_wc, since it has
-+ * no effect if the per-page mechanisms are functional.
-+ * (On x86 without PAT, these functions manipulate MTRRs.)
-+ *
-+ * arch_phys_del_wc(0) or arch_phys_del_wc(any error code) is guaranteed
-+ * to have no effect.
-+ */
-+#ifndef arch_phys_wc_add
-+static inline int __must_check arch_phys_wc_add(unsigned long base,
-+						unsigned long size)
-+{
-+	return 0;  /* It worked (i.e. did nothing). */
-+}
-+
-+static inline void arch_phys_wc_del(int handle)
-+{
-+}
-+
-+#define arch_phys_wc_add arch_phys_wc_add
-+#endif
-+
- #endif /* _LINUX_IO_H */
+ #if defined(__i386__) || defined(__x86_64__)
+-	if (map->type != _DRM_AGP) {
+-		if (map->type == _DRM_FRAME_BUFFER ||
+-		    map->flags & _DRM_WRITE_COMBINING)
+-			tmp = pgprot_writecombine(tmp);
+-		else
+-			tmp = pgprot_noncached(tmp);
+-	}
++	if (map->type == _DRM_REGISTERS && !(map->flags & _DRM_WRITE_COMBINING))
++		tmp = pgprot_noncached(tmp);
++	else
++		tmp = pgprot_writecombine(tmp);
+ #elif defined(__powerpc__)
+ 	pgprot_val(tmp) |= _PAGE_NO_CACHE;
+ 	if (map_type == _DRM_REGISTERS)
 -- 
 1.8.1.4
 
