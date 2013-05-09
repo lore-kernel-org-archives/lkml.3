@@ -1,167 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab3EIKaf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 06:30:35 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:27358 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753662Ab3EIKac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 06:30:32 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-serial@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: [PATCH] serial: 8250_dw: set clock rate
-Date: Thu, 9 May 2013 11:29:16 +0100
-Message-ID: <1368095356-21081-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1753762Ab3EIKgo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 06:36:44 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42009 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753669Ab3EIKgn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 06:36:43 -0400
+Message-ID: <518B7B6A.1090407@linux.vnet.ibm.com>
+Date: Thu, 09 May 2013 16:03:14 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_05_09_11_30_28
+To: CAI Qian <caiqian@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Greg KH <gregkh@linuxfoundation.org>, balbi@ti.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, dyoung@redhat.com
+Subject: Re: 3.9.0: WARNING: at drivers/base/core.c:575
+References: <1732336275.8141054.1367911558572.JavaMail.root@redhat.com>
+In-Reply-To: <1732336275.8141054.1367911558572.JavaMail.root@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13050910-9574-0000-0000-000007C6FE30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the uart clock provided to the 8250_dw driver is adjustable it may
-not be set to the desired rate. Therefore if both a uart clock and a
-clock frequency is specified (e.g. via device tree), try and update the
-clock to match the frequency.
+On 05/07/2013 12:55 PM, CAI Qian wrote:
+> Never saw any of those messages were floating in any of the RC testing, but
+> now happened in 3.9 GA on Power 7 systems.
+>
 
-Unfortunately if the resulting frequency is rounded down (which is the
-default behaviour of the generic clk-divider), the 8250 core won't allow
-the highest baud rate to be used, so if an explicit frequency is
-specified we always report that to the 8250 core.
+Can you check if the patch posted here fixes it?
 
-The device tree bindings document is also updated accordingly.
+http://marc.info/?l=linux-kernel&m=136791823608013&w=2
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Jamie Iles <jamie@jamieiles.com>
-Cc: Bill Pemberton <wfp5p@virginia.edu>
----
- .../bindings/tty/serial/snps-dw-apb-uart.txt       |  4 +-
- drivers/tty/serial/8250/8250_dw.c                  | 47 +++++++++++++++++-----
- 2 files changed, 39 insertions(+), 12 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/tty/serial/snps-dw-apb-uart.txt b/Documentation/devicetree/bindings/tty/serial/snps-dw-apb-uart.txt
-index f13f1c5..e0cfc47 100644
---- a/Documentation/devicetree/bindings/tty/serial/snps-dw-apb-uart.txt
-+++ b/Documentation/devicetree/bindings/tty/serial/snps-dw-apb-uart.txt
-@@ -4,9 +4,11 @@ Required properties:
- - compatible : "snps,dw-apb-uart"
- - reg : offset and length of the register set for the device.
- - interrupts : should contain uart interrupt.
--- clock-frequency : the input clock frequency for the UART.
+Regards,
+Srivatsa S. Bhat
  
- Optional properties:
-+- clock-frequency : the input clock frequency for the UART. If specified in
-+  addition to clocks, the clock rate will be set to this frequency.
-+- clocks : the input clock specifier for the UART.
- - reg-shift : quantity to shift the register offsets by.  If this property is
-   not present then the register offsets are not shifted.
- - reg-io-width : the size (in bytes) of the IO accesses that should be
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index beaa283..85b3b63 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -128,6 +128,7 @@ dw8250_do_pm(struct uart_port *port, unsigned int state, unsigned int old)
- static int dw8250_probe_of(struct uart_port *p)
- {
- 	struct device_node	*np = p->dev->of_node;
-+	struct dw8250_data	*d = p->private_data;
- 	u32			val;
- 
- 	if (!of_property_read_u32(np, "reg-io-width", &val)) {
-@@ -148,16 +149,13 @@ static int dw8250_probe_of(struct uart_port *p)
- 	if (!of_property_read_u32(np, "reg-shift", &val))
- 		p->regshift = val;
- 
--	/* clock got configured through clk api, all done */
--	if (p->uartclk)
--		return 0;
--
--	/* try to find out clock frequency from DT as fallback */
--	if (of_property_read_u32(np, "clock-frequency", &val)) {
-+	/* try to find out clock frequency from DT */
-+	if (!of_property_read_u32(np, "clock-frequency", &val)) {
-+		p->uartclk = val;
-+	} else if (IS_ERR(d->clk)) {
- 		dev_err(p->dev, "clk or clock-frequency not defined\n");
- 		return -EINVAL;
- 	}
--	p->uartclk = val;
- 
- 	return 0;
- }
-@@ -235,6 +233,7 @@ static int dw8250_probe(struct platform_device *pdev)
- 	struct resource *irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	struct dw8250_data *data;
- 	int err;
-+	unsigned long clk_rate;
- 
- 	if (!regs || !irq) {
- 		dev_err(&pdev->dev, "no registers/irq defined\n");
-@@ -260,10 +259,6 @@ static int dw8250_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 
- 	data->clk = devm_clk_get(&pdev->dev, NULL);
--	if (!IS_ERR(data->clk)) {
--		clk_prepare_enable(data->clk);
--		uart.port.uartclk = clk_get_rate(data->clk);
--	}
- 
- 	uart.port.iotype = UPIO_MEM;
- 	uart.port.serial_in = dw8250_serial_in;
-@@ -284,6 +279,36 @@ static int dw8250_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
-+	/* Read the clock rate from the clock */
-+	if (!IS_ERR(data->clk)) {
-+		clk_prepare_enable(data->clk);
-+		clk_rate = clk_get_rate(data->clk);
-+		/*
-+		 * If uartclk hasn't been explicitly specified (e.g. from device
-+		 * tree), use the rate from the clock instead.
-+		 */
-+		if (!uart.port.uartclk)
-+			uart.port.uartclk = clk_rate;
-+		/*
-+		 * If the current clock rate differs from the rate specified,
-+		 * try and set the clock rate.
-+		 */
-+		if (uart.port.uartclk != clk_rate) {
-+			if (!clk_set_rate(data->clk, uart.port.uartclk))
-+				clk_rate = clk_get_rate(data->clk);
-+			dev_info(&pdev->dev,
-+				 "uartclk at %lu Hz (%u Hz requested)\n",
-+				 clk_rate, uart.port.uartclk);
-+			/*
-+			 * Don't update uartclk. If the rate was rounded down by
-+			 * clk_set_rate() the 8250 core won't allow the highest
-+			 * baud rate to be used.
-+			 */
-+		} else {
-+			dev_info(&pdev->dev, "uartclk at %lu Hz\n", clk_rate);
-+		}
-+	}
-+
- 	data->line = serial8250_register_8250_port(&uart);
- 	if (data->line < 0)
- 		return data->line;
--- 
-1.8.1.2
-
+> [    0.329753] EEH: devices created
+> [    0.340203] atomic64 test passed
+> [    0.340407] NET: Registered protocol family 16
+> [    0.340457] EEH: No capable adapters found
+> [    0.340609] IBM eBus Device Driver
+> [    0.358825] Write permission without 'store'
+> [    0.358852] ------------[ cut here ]------------
+> [    0.358859] WARNING: at drivers/base/core.c:575
+> [    0.358866] Modules linked in:
+> [    0.358877] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.9.0+ #1
+> [    0.358887] task: c0000003f8bc0000 ti: c0000003f8c00000 task.ti: c0000003f8c00000
+> [    0.358897] NIP: c0000000004a7f44 LR: c0000000004a7f40 CTR: 0000000001766760
+> [    0.358906] REGS: c0000003f8c03780 TRAP: 0700   Not tainted  (3.9.0+)
+> [    0.358914] MSR: 8000000000029032 <SF,EE,ME,IR,DR,RI>  CR: 28139d24  XER: 00000001
+> [    0.358939] SOFTE: 1
+> [    0.358944] CFAR: c00000000074427c
+> [    0.358950] 
+> GPR00: c0000000004a7f40 c0000003f8c03a00 c000000001117e50 0000000000000020 
+> GPR04: 0000000000000000 0000000000000000 00000000160c9615 0000000000000000 
+> GPR08: c000000001064af0 0000000000000000 0000000000000000 0000000000003fef 
+> GPR12: 0000000028139d22 c000000007f00000 c00000000000bb30 0000000000000000 
+> GPR16: 0000000000000000 0000000000000000 c000000000ff1c78 0000000000000001 
+> GPR20: 0000000000000000 0000000000000000 0000000000000000 c00000000117eb08 
+> GPR24: 00000000000000a6 c000000000af0028 0000000000000000 c000000000ff21a0 
+> GPR28: 0000000000000002 c000000001500030 c0000000011b8200 c000000001500030 
+> [    0.359070] NIP [c0000000004a7f44] .device_create_file+0xa4/0xe0
+> [    0.359080] LR [c0000000004a7f40] .device_create_file+0xa0/0xe0
+> [    0.359088] Call Trace:
+> [    0.359095] [c0000003f8c03a00] [c0000000004a7f40] .device_create_file+0xa0/0xe0 (unreliable)
+> [    0.359112] [c0000003f8c03a90] [c00000000074daf8] .register_cpu_online+0x21c/0x284
+> [    0.359126] [c0000003f8c03b30] [c000000000a78308] .topology_init+0x130/0x200
+> [    0.359138] [c0000003f8c03c10] [c00000000000b4d4] .do_one_initcall+0x144/0x1f0
+> [    0.359150] [c0000003f8c03cd0] [c000000000a746a8] .kernel_init_freeable+0x23c/0x32c
+> [    0.359163] [c0000003f8c03db0] [c00000000000bb4c] .kernel_init+0x1c/0x130
+> [    0.359175] [c0000003f8c03e30] [c00000000000a164] .ret_from_kernel_thread+0x64/0x80
+> [    0.359184] Instruction dump:
+> [    0.359190] 3863e610 4829c2f1 60000000 0fe00000 e8810070 4bffffb0 60000000 3c62ff8c 
+> [    0.359211] f8810070 3863e5e8 4829c2cd 60000000 <0fe00000> e8810070 a1240008 4bffff80 
+> [    0.359241] ---[ end trace c949de754c984735 ]---
+> 
 
