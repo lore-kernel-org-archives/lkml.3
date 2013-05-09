@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab3EIQgs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 12:36:48 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45779 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752232Ab3EIQgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 12:36:47 -0400
-Message-ID: <518BCF4B.1060504@ti.com>
-Date: Thu, 9 May 2013 11:31:07 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1754306Ab3EIQjZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 12:39:25 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:64928 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202Ab3EIQjX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 12:39:23 -0400
 MIME-Version: 1.0
-To: Jassi Brar <jassisinghbrar@gmail.com>
-CC: <loic.pallardy@st.com>, <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Jassi Brar <jaswinder.singh@linaro.org>
-Subject: Re: [PATCHv2 2/4] mailbox: Introduce a new common API
-References: <1367824946-6160-1-git-send-email-jaswinder.singh@linaro.org> <1367825046-6229-1-git-send-email-jaswinder.singh@linaro.org>
-In-Reply-To: <1367825046-6229-1-git-send-email-jaswinder.singh@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130509141444.GV18614@n2100.arm.linux.org.uk>
+References: <1368076726-11492-1-git-send-email-skannan@codeaurora.org>
+ <1368076726-11492-2-git-send-email-skannan@codeaurora.org>
+ <CACVXFVMd_iRtEM8ZLK6Ps66gZO6SCp1mXSgY6JbWtRJjJUh+ag@mail.gmail.com>
+ <CACxGe6uHBNUcbD9SeRP5c3E8NN-Z2yjVV+9VAhuoJnXoBtTu2w@mail.gmail.com>
+ <20130509135017.GD3200@sirena.org.uk> <20130509141444.GV18614@n2100.arm.linux.org.uk>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 9 May 2013 17:39:03 +0100
+X-Google-Sender-Auth: CHGtZpLheUTk8saNg1izAG_uL8c
+Message-ID: <CACxGe6sO7kEZgg6km4bzP1cq+2MqGb=D4cZbuWELoz+yhaO6KQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] driver core: Add API to wait for deferred probe to
+ complete during init
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Ming Lei <tom.leiming@gmail.com>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Liam Girdwood <lrg@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jassi,
+On Thu, May 9, 2013 at 3:14 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Thu, May 09, 2013 at 02:50:17PM +0100, Mark Brown wrote:
+>> On Thu, May 09, 2013 at 12:50:46PM +0100, Grant Likely wrote:
+>>
+>> > However, if a device that shuts down resources after init has
+>> > completed and then cannot turn those resources back on when another
+>> > driver requests them then it sounds like there is a bigger design
+>> > problem. We're in a hotplug world and most of the time a driver cannot
+>> > assume that a resource will never get requested after initcalls have
+>> > completed. It sounds like a design bug in the driver if it cannot
+>> > handle that use case.
+>>
+>> Even if the driver copes fine it can still be desirable to avoid the
+>> power down/up cycle if it involves some user visible effect - things
+>> like blinking the display off then on for example.  That said I am a
+>> little suspicious about this approach, it doesn't feel as robust as it
+>> should to go round individual callers.
+>
+> What if the driver for something like your display is a module which
+> needs to be loaded from userland?
+>
+> Where the design bug lies is in the "lets probe all the drivers and then
+> shut down resources which drivers haven't claimed".  That contains an
+> implied assumption: that all drivers have been loaded and probed at the
+> point where you shut down those resources.
+>
+> That simply may not be true in todays kernel - it's not true for a start
+> if you have modular drivers, and you have built most of the drivers as
+> modules (as a distro would want to with single zImage).  It's
+> coincidentally not true if you have deferred probing and some drivers
+> defer.
+>
+> The real problem is this: at what point has the system actually finished
+> "booting" in the sense that all drivers for a platform have been
+> initialised?  With user loadable modules and deferred probing, that's
+> actually a very fuzzy concept.
+>
+> As you can't really tell when that point has been reached, how can you
+> decide to shut down resources which "aren't being used" in a sane way
+> without avoiding the down/up cycle?  Basically, you can't.
+>
+> So, trying to solve the problem may be totally fruitless because you
+> can't actually solve it - you can only put a sticky plaster over it and
+> hope that it catches most of the problem.  But reality is that you can't
+> have both a shutdown of unused resources _and_ avoid the down/up cycle.
 
-On 05/06/2013 02:24 AM, Jassi Brar wrote:
-> +++ b/include/linux/mailbox_client.h
-> @@ -0,0 +1,85 @@
-> +/*
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#ifndef __MAILBOX_CLIENT_H
-> +#define __MAILBOX_CLIENT_H
-> +
-> +#include <linux/mailbox.h>
-> +
-> +/**
-> + * struct ipc_client - User of a mailbox
-> + * @chan_name: the "controller:channel" this client wants
-> + * @rxcb: atomic callback to provide client the data received
-> + * @txcb: atomic callback to tell client of data transmission
-> + * @tx_block: if the ipc_send_message should block until data is transmitted
-> + * @tx_tout: Max block period in ms before TX is assumed failure
-> + * @knows_txdone: if the client could run the TX state machine. Usually if
-> + *    the client receives some ACK packet for transmission. Unused if the
-> + *    controller already has TX_Done/RTR IRQ.
-> + * @cntlr_data: Optional controller specific parameters during channel request
-> + */
-> +struct ipc_client {
-> +	char *chan_name;
-> +	void (*rxcb)(void *data);
-> +	void (*txcb)(request_token_t t, enum xfer_result r);
++1. You can /minimize/ up-down cycles with the kind of optimization
+that is being attempted here, but the driver still *must* deal with
+bringing resources back up if they get requested "later than you would
+otherwise like".
 
-We have to introduce a callback data pointer, so that the calling
-clients can retrieve a context object variable or some other useful
-data within the callback functions, just like most normal callback
-function declarations and registrations do.
-
-> +	bool tx_block;
-> +	unsigned long tx_tout;
-> +	bool knows_txdone;
-> +	void *cntlr_data;
-> +};
-
-regards
-Suman
+g.
 
 
 
-
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
