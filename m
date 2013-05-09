@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932664Ab3EIXN4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:13:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45662 "EHLO
+	id S932644Ab3EIXNz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:13:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45667 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755445Ab3EIW0O (ORCPT
+	with ESMTP id S1754202Ab3EIW0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:14 -0400
+	Thu, 9 May 2013 18:26:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shuah Khan <shuahkhan@gmail.com>, Joerg Roedel <joro@8bytes.org>
-Subject: [ 10/73] iommu/amd: Properly initialize irq-table lock
-Date: Thu,  9 May 2013 15:25:00 -0700
-Message-Id: <20130509222527.556827656@linuxfoundation.org>
+        Benjamin Poirier <bpoirier@suse.de>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>
+Subject: [ 11/73] menuconfig: Fix memory leak introduced by jump keys feature
+Date: Thu,  9 May 2013 15:25:01 -0700
+Message-Id: <20130509222527.655098101@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -26,31 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joro@8bytes.org>
+From: Benjamin Poirier <bpoirier@suse.de>
 
-commit 197887f03daecdb3ae21bafeb4155412abad3497 upstream.
+commit edb749f4390b3c1604233dc7c4fb0361f472e712 upstream.
 
-Fixes a lockdep warning.
+Fixes the memory leak of struct jump_key allocated in get_prompt_str()
 
-Reviewed-by: Shuah Khan <shuahkhan@gmail.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/amd_iommu.c |    3 +++
- 1 file changed, 3 insertions(+)
+ scripts/kconfig/list.h  |   13 +++++++++++++
+ scripts/kconfig/mconf.c |    3 +++
+ 2 files changed, 16 insertions(+)
 
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -3947,6 +3947,9 @@ static struct irq_remap_table *get_irq_t
- 	if (!table)
- 		goto out;
+--- a/scripts/kconfig/list.h
++++ b/scripts/kconfig/list.h
+@@ -51,6 +51,19 @@ struct list_head {
+ 	     pos = list_entry(pos->member.next, typeof(*pos), member))
  
-+	/* Initialize table spin-lock */
-+	spin_lock_init(&table->lock);
+ /**
++ * list_for_each_entry_safe - iterate over list of given type safe against removal of list entry
++ * @pos:	the type * to use as a loop cursor.
++ * @n:		another type * to use as temporary storage
++ * @head:	the head for your list.
++ * @member:	the name of the list_struct within the struct.
++ */
++#define list_for_each_entry_safe(pos, n, head, member)			\
++	for (pos = list_entry((head)->next, typeof(*pos), member),	\
++		n = list_entry(pos->member.next, typeof(*pos), member);	\
++	     &pos->member != (head);					\
++	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
 +
- 	if (ioapic)
- 		/* Keep the first 32 indexes free for IOAPIC interrupts */
- 		table->min_index = 32;
++/**
+  * list_empty - tests whether a list is empty
+  * @head: the list to test.
+  */
+--- a/scripts/kconfig/mconf.c
++++ b/scripts/kconfig/mconf.c
+@@ -389,6 +389,7 @@ again:
+ 			.targets = targets,
+ 			.keys = keys,
+ 		};
++		struct jump_key *pos, *tmp;
+ 
+ 		res = get_relations_str(sym_arr, &head);
+ 		dres = show_textbox_ext(_("Search Results"), (char *)
+@@ -402,6 +403,8 @@ again:
+ 				again = true;
+ 			}
+ 		str_free(&res);
++		list_for_each_entry_safe(pos, tmp, &head, entries)
++			free(pos);
+ 	} while (again);
+ 	free(sym_arr);
+ 	str_free(&title);
 
 
