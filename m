@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757763Ab3EIWdA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:33:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46050 "EHLO
+	id S932519Ab3EIWzu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:55:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46075 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757674Ab3EIWcz (ORCPT
+	with ESMTP id S1757753Ab3EIWc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:32:55 -0400
+	Thu, 9 May 2013 18:32:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>,
-        Pablo Neira Ayuso <pablo@gnumonks.org>
-Subject: [ 22/73] netfilter: nf_ct_helper: dont discard helper if it is actually the same
-Date: Thu,  9 May 2013 15:31:45 -0700
-Message-Id: <20130509222800.385566595@linuxfoundation.org>
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Emil Goode <emilgoode@gmail.com>,
+        Steve Wise <swise@opengridcomputing.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 28/73] RDMA/cxgb4: Fix SQ allocation when on-chip SQ is disabled
+Date: Thu,  9 May 2013 15:31:51 -0700
+Message-Id: <20130509222801.054832857@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -27,42 +29,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-commit 6e2f0aa8cf8892868bf2c19349cb5d7c407f690d upstream.
+commit 5b0c275926b8149c555da874bb4ec258ea3292aa upstream.
 
-commit (32f5376 netfilter: nf_ct_helper: disable automatic helper
-re-assignment of different type) broke transparent proxy scenarios.
+Commit c079c28714e4 ("RDMA/cxgb4: Fix error handling in create_qp()")
+broke SQ allocation.  Instead of falling back to host allocation when
+on-chip allocation fails, it tries to allocate both.  And when it
+does, and we try to free the address from the genpool using the host
+address, we hit a BUG and the system crashes as below.
 
-For example, initial helper lookup might yield "ftp" (dport 21),
-while re-lookup after REDIRECT yields "ftp-2121".
+We create a new function that has the previous behavior and properly
+propagate the error, as intended.
 
-This causes the autoassign code to toss the ftp helper, even
-though these are just different instances of the same helper.
+    kernel BUG at /usr/src/packages/BUILD/kernel-ppc64-3.0.68/linux-3.0/lib/genalloc.c:340!
+    Oops: Exception in kernel mode, sig: 5 [#1]
+    SMP NR_CPUS=1024 NUMA pSeries
+    Modules linked in: rdma_ucm rdma_cm ib_addr ib_cm iw_cm ib_sa ib_mad ib_uverbs iw_cxgb4 ib_core ip6t_LOG xt_tcpudp xt_pkttype ipt_LOG xt_limit ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_raw xt_NOTRACK ipt_REJECT xt_state iptable_raw iptable_filter ip6table_mangle nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 ip_tables ip6table_filter ip6_tables x_tables fuse loop dm_mod ipv6 ipv6_lib sr_mod cdrom ibmveth(X) cxgb4 sg ext3 jbd mbcache sd_mod crc_t10dif scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh ibmvscsic(X) scsi_transport_srp scsi_tgt scsi_mod
+    Supported: Yes
+    NIP: c00000000037d41c LR: d000000003913824 CTR: c00000000037d3b0
+    REGS: c0000001f350ae50 TRAP: 0700   Tainted: G            X  (3.0.68-0.9-ppc64)
+    MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 24042482  XER: 00000001
+    TASK = c0000001f6f2a840[3616] 'rping' THREAD: c0000001f3508000 CPU: 0
+    GPR00: c0000001f6e875c8 c0000001f350b0d0 c000000000fc9690 c0000001f6e875c0
+    GPR04: 00000000000c0000 0000000000010000 0000000000000000 c0000000009d482a
+    GPR08: 000000006a170000 0000000000100000 c0000001f350b140 c0000001f6e875c8
+    GPR12: d000000003915dd0 c000000003f40000 000000003e3ecfa8 c0000001f350bea0
+    GPR16: c0000001f350bcd0 00000000003c0000 0000000000040100 c0000001f6e74a80
+    GPR20: d00000000399a898 c0000001f6e74ac8 c0000001fad91600 c0000001f6e74ab0
+    GPR24: c0000001f7d23f80 0000000000000000 0000000000000002 000000006a170000
+    GPR28: 000000000000000c c0000001f584c8d0 d000000003925180 c0000001f6e875c8
+    NIP [c00000000037d41c] .gen_pool_free+0x6c/0xf8
+    LR [d000000003913824] .c4iw_ocqp_pool_free+0x8c/0xd8 [iw_cxgb4]
+    Call Trace:
+    [c0000001f350b0d0] [c0000001f350b180] 0xc0000001f350b180 (unreliable)
+    [c0000001f350b170] [d000000003913824] .c4iw_ocqp_pool_free+0x8c/0xd8 [iw_cxgb4]
+    [c0000001f350b210] [d00000000390fd70] .dealloc_sq+0x90/0xb0 [iw_cxgb4]
+    [c0000001f350b280] [d00000000390fe08] .destroy_qp+0x78/0xf8 [iw_cxgb4]
+    [c0000001f350b310] [d000000003912738] .c4iw_destroy_qp+0x208/0x2d0 [iw_cxgb4]
+    [c0000001f350b460] [d000000003861874] .ib_destroy_qp+0x5c/0x130 [ib_core]
+    [c0000001f350b510] [d0000000039911bc] .ib_uverbs_cleanup_ucontext+0x174/0x4f8 [ib_uverbs]
+    [c0000001f350b5f0] [d000000003991568] .ib_uverbs_close+0x28/0x70 [ib_uverbs]
+    [c0000001f350b670] [c0000000001e7b2c] .__fput+0xdc/0x278
+    [c0000001f350b720] [c0000000001a9590] .remove_vma+0x68/0xd8
+    [c0000001f350b7b0] [c0000000001a9720] .exit_mmap+0x120/0x160
+    [c0000001f350b8d0] [c0000000000af330] .mmput+0x80/0x160
+    [c0000001f350b960] [c0000000000b5d0c] .exit_mm+0x1ac/0x1e8
+    [c0000001f350ba10] [c0000000000b8154] .do_exit+0x1b4/0x4b8
+    [c0000001f350bad0] [c0000000000b84b0] .do_group_exit+0x58/0xf8
+    [c0000001f350bb60] [c0000000000ce9f4] .get_signal_to_deliver+0x2f4/0x5d0
+    [c0000001f350bc60] [c000000000017ee4] .do_signal_pending+0x6c/0x3e0
+    [c0000001f350bdb0] [c0000000000182cc] .do_signal+0x74/0x78
+    [c0000001f350be30] [c000000000009e74] do_work+0x24/0x28
 
-Change the test to check for the helper function address instead
-of the helper address, as suggested by Pablo.
-
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Pablo Neira Ayuso <pablo@gnumonks.org>
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: Emil Goode <emilgoode@gmail.com>
+Acked-by: Steve Wise <swise@opengridcomputing.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nf_conntrack_helper.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/infiniband/hw/cxgb4/qp.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
---- a/net/netfilter/nf_conntrack_helper.c
-+++ b/net/netfilter/nf_conntrack_helper.c
-@@ -236,7 +236,9 @@ int __nf_ct_try_assign_helper(struct nf_
- 		/* We only allow helper re-assignment of the same sort since
- 		 * we cannot reallocate the helper extension area.
- 		 */
--		if (help->helper != helper) {
-+		struct nf_conntrack_helper *tmp = rcu_dereference(help->helper);
+--- a/drivers/infiniband/hw/cxgb4/qp.c
++++ b/drivers/infiniband/hw/cxgb4/qp.c
+@@ -100,6 +100,16 @@ static int alloc_host_sq(struct c4iw_rde
+ 	return 0;
+ }
+ 
++static int alloc_sq(struct c4iw_rdev *rdev, struct t4_sq *sq, int user)
++{
++	int ret = -ENOSYS;
++	if (user)
++		ret = alloc_oc_sq(rdev, sq);
++	if (ret)
++		ret = alloc_host_sq(rdev, sq);
++	return ret;
++}
 +
-+		if (tmp && tmp->help != helper->help) {
- 			RCU_INIT_POINTER(help->helper, NULL);
- 			goto out;
- 		}
+ static int destroy_qp(struct c4iw_rdev *rdev, struct t4_wq *wq,
+ 		      struct c4iw_dev_ucontext *uctx)
+ {
+@@ -168,18 +178,9 @@ static int create_qp(struct c4iw_rdev *r
+ 		goto free_sw_rq;
+ 	}
+ 
+-	if (user) {
+-		ret = alloc_oc_sq(rdev, &wq->sq);
+-		if (ret)
+-			goto free_hwaddr;
+-
+-		ret = alloc_host_sq(rdev, &wq->sq);
+-		if (ret)
+-			goto free_sq;
+-	} else
+-		ret = alloc_host_sq(rdev, &wq->sq);
+-		if (ret)
+-			goto free_hwaddr;
++	ret = alloc_sq(rdev, &wq->sq, user);
++	if (ret)
++		goto free_hwaddr;
+ 	memset(wq->sq.queue, 0, wq->sq.memsize);
+ 	dma_unmap_addr_set(&wq->sq, mapping, wq->sq.dma_addr);
+ 
 
 
