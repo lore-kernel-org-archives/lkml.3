@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875Ab3EIRKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 13:10:41 -0400
-Received: from nm17.access.bullet.mail.sp2.yahoo.com ([98.139.44.144]:40576
-	"EHLO nm17.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751731Ab3EIRJr (ORCPT
+	id S1751801Ab3EIRL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 13:11:59 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:32125 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab3EIRL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 13:09:47 -0400
-X-Yahoo-Newman-Id: 785551.73437.bm@smtp102.sbc.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: cykGoBIVM1lxuS7GPkpjfmQUppszFrzkbYcakxDc_1xNjps
- WyzGwbYU731nCUH9hJ3V1r3MfOz1RcaldU0ETvtTWvK0zFKZmZAtVQ.QksOR
- 3D1yZM_QrUhQ03J53nxVeC9VAUXAGdrXMEWz3K.jgFwC8BSzTmi8Z5uUbCKr
- x3VCP7282O1Nb3Ug38IVTdYddQpJ.eF6Tz7Wls1NC.YSuZMAH0wKeM7G4W4s
- 2dCqZce8UgaBfpeAiS1F1yEY7eiCB4KktuknJ0vyBLyLZ9FqVBdbuZPv0XMW
- R5STf7wwUKl0EssCr0SCCog.MdHX9d6z80w4KxEJtbGotnqx3q1U7VLEq5cm
- f51SygxIgrV.Q_SD8UgVTn9FLBW2eXPz94Jj7Q6Ni9FPgrMdMcTBPh21HMay
- qLGLUhOWm4rTYEv_ZRtbrp2mKVG8Lqut0dmDxlrb0lO44feg5ooTOPYPWJas
- dOsMVgoS4caqsI4QXpYUVSZzyQv_i.jdQByLlYaLt_AdE0ZFB0P6B
-X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
-X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
-        by smtp102.sbc.mail.ne1.yahoo.com with SMTP; 09 May 2013 17:09:46 +0000 UTC
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        Jean Delvare <khali@linux-fr.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Jingoo Han <jg1.han@samsung.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 1/3] pm: Introduce __pm to mark power management functions and data
-Date: Thu,  9 May 2013 10:09:49 -0700
-Message-Id: <1368119391-13837-2-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
-In-Reply-To: <1368119391-13837-1-git-send-email-linux@roeck-us.net>
-References: <1368119391-13837-1-git-send-email-linux@roeck-us.net>
+	Thu, 9 May 2013 13:11:58 -0400
+Message-ID: <1368119516.1808.3.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: SHM oops in newseg()
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, riel@redhat.com,
+        viro@zeniv.linux.org.uk, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Thu, 09 May 2013 10:11:56 -0700
+In-Reply-To: <518B4B5F.9040900@huawei.com>
+References: <20130509043532.GA28235@redhat.com>
+	 <518B4B5F.9040900@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By marking power management functions and data with __pm, #ifdef CONFIG_PM
-and #ifdef CONFIG_PM_SLEEP is no longer necessary in most cases.
-This ensures that the power management code still compiles even if power
-management is disabled, but does not consume space in the object file.
-As a side effect, drivers declaring struct dev_pm_ops unconditionally
-get a bit smaller if CONFIG_PM_SLEEP is disabled.
+On Thu, 2013-05-09 at 15:08 +0800, Li Zefan wrote:
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> 
+> On 2013/5/9 12:35, Dave Jones wrote:
+> > Just saw this on v3.9-11789-ge0fd9af while fuzz-testing.
+> > 
+> > [  163.917836] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+> > [  163.918984] IP: [<ffffffff812c48ed>] newseg+0x10d/0x390
+> 
+> The patch below should fix it.
+> 
+> ===========================
+> 
+> [PATCH] shm: fix null pointer deref when userspace specifies invalid hugepage size
+> 
+> Dave reported an oops triggered by trinity:
+> 
+> [  163.917836] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+> [  163.918984] IP: [<ffffffff812c48ed>] newseg+0x10d/0x390
+> [  163.919705] PGD cf8c1067 PUD cf8c2067 PMD 0
+> [  163.920326] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  163.929949] CPU: 2 PID: 7636 Comm: trinity-child2 Not tainted 3.9.0+#67
+> ...
+> [  163.953629] Call Trace:
+> [  163.957706]  [<ffffffff812be322>] ipcget+0x182/0x380
+> [  163.962123]  [<ffffffff810b99a5>] ?trace_hardirqs_on_caller+0x115/0x1e0
+> [  163.966752]  [<ffffffff812c559a>] SyS_shmget+0x5a/0x60
+> [  163.971163]  [<ffffffff812c47e0>] ? shm_close+0x140/0x140
+> [  163.975590]  [<ffffffff812c3e60>] ? shm_release+0x50/0x50
+> [  163.979991]  [<ffffffff812c3df0>] ? shm_get_unmapped_area+0x20/0x20
+> [  163.984499]  [<ffffffff816caa14>] tracesys+0xdd/0xe2
+> 
+> This bug was introduced by commit af73e4d9506d3b797509f3c030e7dcd554f7d9c4
+> ("hugetlbfs: fix mmap failure in unaligned size request").
+> 
+> Reported-by: Dave Jones <davej@redhat.com>
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Li Zefan <lizfan@huawei.com>
+> ---
+> 
+> Previously it would return -ENODEV, but seems -EINVAL is more appropriate.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- include/linux/pm.h |    2 ++
- 1 file changed, 2 insertions(+)
+Should the user in fs/hugetlbfs/inode.c be updated as well?
+get_hstate_idx() is just returning -1 and it's only caller,
+hugetlb_file_setup(), returns -ENODEV.
 
-diff --git a/include/linux/pm.h b/include/linux/pm.h
-index fe70d9b..46df155 100644
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -43,9 +43,11 @@ struct device;
- #ifdef CONFIG_PM
- extern const char power_group_name[];		/* = "power" */
- #define pm_ops_ptr(_ptr)	(_ptr)
-+#define __pm
- #else
- #define power_group_name	NULL
- #define pm_ops_ptr(_ptr)	NULL
-+#define __pm			__section(.discard)
- #endif
- 
- typedef struct pm_message {
--- 
-1.7.9.7
+Thanks,
+Davidlohr
 
