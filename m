@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337Ab3EIXBr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:01:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45969 "EHLO
+	id S1756994Ab3EIXCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:02:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45964 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757435Ab3EIWco (ORCPT
+	with ESMTP id S1757381Ab3EIWcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:32:44 -0400
+	Thu, 9 May 2013 18:32:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 08/73] net/eth/ibmveth: Fixup retrieval of MAC address
-Date: Thu,  9 May 2013 15:31:31 -0700
-Message-Id: <20130509222758.861665955@linuxfoundation.org>
+        Shuah Khan <shuahkhan@gmail.com>, Joerg Roedel <joro@8bytes.org>
+Subject: [ 07/73] iommu/amd: Properly initialize irq-table lock
+Date: Thu,  9 May 2013 15:31:30 -0700
+Message-Id: <20130509222758.767624767@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -27,77 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Joerg Roedel <joro@8bytes.org>
 
-commit 13f85203e1060da83d9ec1c1c5a63343eaab8de4 upstream.
+commit 197887f03daecdb3ae21bafeb4155412abad3497 upstream.
 
-Some ancient pHyp versions used to create a 8 bytes local-mac-address
-property in the device-tree instead of a 6 bytes one for veth.
+Fixes a lockdep warning.
 
-The Linux driver code to deal with that is an insane hack which also
-happens to break with some choices of MAC addresses in qemu by testing
-for a bit in the address rather than just looking at the size of the
-property.
-
-Sanitize this by doing the latter instead.
-
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-by: Shuah Khan <shuahkhan@gmail.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ibm/ibmveth.c |   23 ++++++++++-------------
- 1 file changed, 10 insertions(+), 13 deletions(-)
+ drivers/iommu/amd_iommu.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/ethernet/ibm/ibmveth.c
-+++ b/drivers/net/ethernet/ibm/ibmveth.c
-@@ -1326,7 +1326,7 @@ static const struct net_device_ops ibmve
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -3948,6 +3948,9 @@ static struct irq_remap_table *get_irq_t
+ 	if (!table)
+ 		goto out;
  
- static int ibmveth_probe(struct vio_dev *dev, const struct vio_device_id *id)
- {
--	int rc, i;
-+	int rc, i, mac_len;
- 	struct net_device *netdev;
- 	struct ibmveth_adapter *adapter;
- 	unsigned char *mac_addr_p;
-@@ -1336,11 +1336,19 @@ static int ibmveth_probe(struct vio_dev
- 		dev->unit_address);
- 
- 	mac_addr_p = (unsigned char *)vio_get_attribute(dev, VETH_MAC_ADDR,
--							NULL);
-+							&mac_len);
- 	if (!mac_addr_p) {
- 		dev_err(&dev->dev, "Can't find VETH_MAC_ADDR attribute\n");
- 		return -EINVAL;
- 	}
-+	/* Workaround for old/broken pHyp */
-+	if (mac_len == 8)
-+		mac_addr_p += 2;
-+	else if (mac_len != 6) {
-+		dev_err(&dev->dev, "VETH_MAC_ADDR attribute wrong len %d\n",
-+			mac_len);
-+		return -EINVAL;
-+	}
- 
- 	mcastFilterSize_p = (unsigned int *)vio_get_attribute(dev,
- 						VETH_MCAST_FILTER_SIZE, NULL);
-@@ -1365,17 +1373,6 @@ static int ibmveth_probe(struct vio_dev
- 
- 	netif_napi_add(netdev, &adapter->napi, ibmveth_poll, 16);
- 
--	/*
--	 * Some older boxes running PHYP non-natively have an OF that returns
--	 * a 8-byte local-mac-address field (and the first 2 bytes have to be
--	 * ignored) while newer boxes' OF return a 6-byte field. Note that
--	 * IEEE 1275 specifies that local-mac-address must be a 6-byte field.
--	 * The RPA doc specifies that the first byte must be 10b, so we'll
--	 * just look for it to solve this 8 vs. 6 byte field issue
--	 */
--	if ((*mac_addr_p & 0x3) != 0x02)
--		mac_addr_p += 2;
--
- 	adapter->mac_addr = 0;
- 	memcpy(&adapter->mac_addr, mac_addr_p, 6);
- 
++	/* Initialize table spin-lock */
++	spin_lock_init(&table->lock);
++
+ 	if (ioapic)
+ 		/* Keep the first 32 indexes free for IOAPIC interrupts */
+ 		table->min_index = 32;
 
 
