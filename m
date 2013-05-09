@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab3EIWLx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:11:53 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59078 "EHLO
+	id S1755013Ab3EIWMA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:12:00 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59083 "EHLO
 	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754303Ab3EIWLv (ORCPT
+	with ESMTP id S1754656Ab3EIWL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:11:51 -0400
+	Thu, 9 May 2013 18:11:57 -0400
 From: Joern Engel <joern@logfs.org>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
         Borislav Petkov <bp@alien8.de>, Takashi Iwai <tiwai@suse.de>,
         Joern Engel <joern@logfs.org>
-Subject: [PATCH 01/14] do_mounts: constify name_to_dev_t parameter
-Date: Thu,  9 May 2013 16:42:57 -0400
-Message-Id: <1368132193-25817-2-git-send-email-joern@logfs.org>
+Subject: [PATCH 11/14] blockconsole: Rename device_lock with bc_device_lock
+Date: Thu,  9 May 2013 16:43:09 -0400
+Message-Id: <1368132193-25817-14-git-send-email-joern@logfs.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1368132193-25817-1-git-send-email-joern@logfs.org>
 References: <1368132193-25817-1-git-send-email-joern@logfs.org>
@@ -22,37 +22,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Takashi Iwai <tiwai@suse.de>
+
+Avoid the name conflict with device_lock() defined in linux/device.h.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Joern Engel <joern@logfs.org>
 ---
- include/linux/mount.h |    2 +-
- init/do_mounts.c      |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/blockconsole.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index d7029f4..6b5fa77 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -74,6 +74,6 @@ extern struct vfsmount *vfs_kern_mount(struct file_system_type *type,
- extern void mnt_set_expiry(struct vfsmount *mnt, struct list_head *expiry_list);
- extern void mark_mounts_for_expiry(struct list_head *mounts);
+diff --git a/drivers/block/blockconsole.c b/drivers/block/blockconsole.c
+index c22272f..40cc96e 100644
+--- a/drivers/block/blockconsole.c
++++ b/drivers/block/blockconsole.c
+@@ -546,17 +546,17 @@ static void bcon_create_fuzzy(const char *name)
+ 	}
+ }
  
--extern dev_t name_to_dev_t(char *name);
-+extern dev_t name_to_dev_t(const char *name);
+-static DEFINE_SPINLOCK(device_lock);
++static DEFINE_SPINLOCK(bcon_device_lock);
+ static char scanned_devices[80];
  
- #endif /* _LINUX_MOUNT_H */
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 1d1b634..da96f85 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -202,7 +202,7 @@ done:
-  *	bangs.
-  */
- 
--dev_t name_to_dev_t(char *name)
-+dev_t name_to_dev_t(const char *name)
+ static void bcon_do_add(struct work_struct *work)
  {
- 	char s[32];
- 	char *p;
+ 	char local_devices[80], *name, *remainder = local_devices;
+ 
+-	spin_lock(&device_lock);
++	spin_lock(&bcon_device_lock);
+ 	memcpy(local_devices, scanned_devices, sizeof(local_devices));
+ 	memset(scanned_devices, 0, sizeof(scanned_devices));
+-	spin_unlock(&device_lock);
++	spin_unlock(&bcon_device_lock);
+ 
+ 	while (remainder && remainder[0]) {
+ 		name = strsep(&remainder, ",");
+@@ -573,11 +573,11 @@ void bcon_add(const char *name)
+ 	 * to go pick it up asap.  Once it is picked up, the buffer is empty
+ 	 * again, so hopefully it will suffice for all sane users.
+ 	 */
+-	spin_lock(&device_lock);
++	spin_lock(&bcon_device_lock);
+ 	if (scanned_devices[0])
+ 		strncat(scanned_devices, ",", sizeof(scanned_devices));
+ 	strncat(scanned_devices, name, sizeof(scanned_devices));
+-	spin_unlock(&device_lock);
++	spin_unlock(&bcon_device_lock);
+ 	schedule_work(&bcon_add_work);
+ }
+ 
 -- 
 1.7.10.4
 
