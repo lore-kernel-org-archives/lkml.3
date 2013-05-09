@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759486Ab3EIXKy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:10:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45732 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755737Ab3EIW0X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755739Ab3EIW0X (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 9 May 2013 18:26:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45689 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755601Ab3EIW0R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 18:26:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junichi Nomura <j-nomura@ce.jp.nec.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Alasdair G Kergon <agk@redhat.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [ 24/73] blkcg: fix "scheduling while atomic" in blk_queue_bypass_start
-Date: Thu,  9 May 2013 15:25:14 -0700
-Message-Id: <20130509222528.932119737@linuxfoundation.org>
+        Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, eranian@google.com
+Subject: [ 15/73] perf/x86: Blacklist all MEM_*_RETIRED events for Ivy Bridge
+Date: Thu,  9 May 2013 15:25:05 -0700
+Message-Id: <20130509222528.040795498@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -28,81 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit e5072664f8237cf53b0bd68a51aa1a7bc69061c5 upstream.
+commit 741a698f420c34c458294a6accecfbad702a7c52 upstream.
 
-Since 749fefe677 in v3.7 ("block: lift the initial queue bypass mode
-on blk_register_queue() instead of blk_init_allocated_queue()"),
-the following warning appears when multipath is used with CONFIG_PREEMPT=y.
+Errata BV98 states that all MEM_*_RETIRED events corrupt the
+counter value of the SMT sibling's counters. Blacklist these
+events
 
-This patch moves blk_queue_bypass_start() before radix_tree_preload()
-to avoid the sleeping call while preemption is disabled.
-
-  BUG: scheduling while atomic: multipath/2460/0x00000002
-  1 lock held by multipath/2460:
-   #0:  (&md->type_lock){......}, at: [<ffffffffa019fb05>] dm_lock_md_type+0x17/0x19 [dm_mod]
-  Modules linked in: ...
-  Pid: 2460, comm: multipath Tainted: G        W    3.7.0-rc2 #1
-  Call Trace:
-   [<ffffffff810723ae>] __schedule_bug+0x6a/0x78
-   [<ffffffff81428ba2>] __schedule+0xb4/0x5e0
-   [<ffffffff814291e6>] schedule+0x64/0x66
-   [<ffffffff8142773a>] schedule_timeout+0x39/0xf8
-   [<ffffffff8108ad5f>] ? put_lock_stats+0xe/0x29
-   [<ffffffff8108ae30>] ? lock_release_holdtime+0xb6/0xbb
-   [<ffffffff814289e3>] wait_for_common+0x9d/0xee
-   [<ffffffff8107526c>] ? try_to_wake_up+0x206/0x206
-   [<ffffffff810c0eb8>] ? kfree_call_rcu+0x1c/0x1c
-   [<ffffffff81428aec>] wait_for_completion+0x1d/0x1f
-   [<ffffffff810611f9>] wait_rcu_gp+0x5d/0x7a
-   [<ffffffff81061216>] ? wait_rcu_gp+0x7a/0x7a
-   [<ffffffff8106fb18>] ? complete+0x21/0x53
-   [<ffffffff810c0556>] synchronize_rcu+0x1e/0x20
-   [<ffffffff811dd903>] blk_queue_bypass_start+0x5d/0x62
-   [<ffffffff811ee109>] blkcg_activate_policy+0x73/0x270
-   [<ffffffff81130521>] ? kmem_cache_alloc_node_trace+0xc7/0x108
-   [<ffffffff811f04b3>] cfq_init_queue+0x80/0x28e
-   [<ffffffffa01a1600>] ? dm_blk_ioctl+0xa7/0xa7 [dm_mod]
-   [<ffffffff811d8c41>] elevator_init+0xe1/0x115
-   [<ffffffff811e229f>] ? blk_queue_make_request+0x54/0x59
-   [<ffffffff811dd743>] blk_init_allocated_queue+0x8c/0x9e
-   [<ffffffffa019ffcd>] dm_setup_md_queue+0x36/0xaa [dm_mod]
-   [<ffffffffa01a60e6>] table_load+0x1bd/0x2c8 [dm_mod]
-   [<ffffffffa01a7026>] ctl_ioctl+0x1d6/0x236 [dm_mod]
-   [<ffffffffa01a5f29>] ? table_clear+0xaa/0xaa [dm_mod]
-   [<ffffffffa01a7099>] dm_ctl_ioctl+0x13/0x17 [dm_mod]
-   [<ffffffff811479fc>] do_vfs_ioctl+0x3fb/0x441
-   [<ffffffff811b643c>] ? file_has_perm+0x8a/0x99
-   [<ffffffff81147aa0>] sys_ioctl+0x5e/0x82
-   [<ffffffff812010be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-   [<ffffffff814310d9>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Cc: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Reported-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: eranian@google.com
+Link: http://lkml.kernel.org/r/20130503121256.083340271@chello.nl
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/n/tip-jwra43mujrv1oq9xk6mfe57v@git.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-cgroup.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -972,10 +972,10 @@ int blkcg_activate_policy(struct request
- 	if (!new_blkg)
- 		return -ENOMEM;
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -125,10 +125,15 @@ static struct event_constraint intel_ivb
+ 	INTEL_UEVENT_CONSTRAINT(0x08a3, 0x4), /* CYCLE_ACTIVITY.CYCLES_L1D_PENDING */
+ 	INTEL_UEVENT_CONSTRAINT(0x0ca3, 0x4), /* CYCLE_ACTIVITY.STALLS_L1D_PENDING */
+ 	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
+-	INTEL_EVENT_CONSTRAINT(0xd0, 0xf), /* MEM_UOPS_RETIRED.* */
+-	INTEL_EVENT_CONSTRAINT(0xd1, 0xf), /* MEM_LOAD_UOPS_RETIRED.* */
+-	INTEL_EVENT_CONSTRAINT(0xd2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+-	INTEL_EVENT_CONSTRAINT(0xd3, 0xf), /*  MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
++	/*
++	 * Errata BV98 -- MEM_*_RETIRED events can leak between counters of SMT
++	 * siblings; disable these events because they can corrupt unrelated
++	 * counters.
++	 */
++	INTEL_EVENT_CONSTRAINT(0xd0, 0x0), /* MEM_UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd1, 0x0), /* MEM_LOAD_UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd2, 0x0), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd3, 0x0), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+ 	EVENT_CONSTRAINT_END
+ };
  
--	preloaded = !radix_tree_preload(GFP_KERNEL);
--
- 	blk_queue_bypass_start(q);
- 
-+	preloaded = !radix_tree_preload(GFP_KERNEL);
-+
- 	/*
- 	 * Make sure the root blkg exists and count the existing blkgs.  As
- 	 * @q is bypassing at this point, blkg_lookup_create() can't be
 
 
