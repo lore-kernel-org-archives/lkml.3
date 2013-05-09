@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab3EIPgw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 11:36:52 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:40246 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964Ab3EIPgu (ORCPT
+	id S1755833Ab3EIPlI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 11:41:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28576 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754407Ab3EIPlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 11:36:50 -0400
-Message-ID: <518BC290.2040306@lwfinger.net>
-Date: Thu, 09 May 2013 10:36:48 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Norbert Preining <preining@logic.at>
-CC: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hostap@lists.shmoo.com
-Subject: Re: RTL driver for RTL8191SEvB and/or wpa-supplicant really broken
- at times
-References: <20130509115630.GC5111@gamma.logic.tuwien.ac.at>
-In-Reply-To: <20130509115630.GC5111@gamma.logic.tuwien.ac.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 9 May 2013 11:41:06 -0400
+X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=DN1rENdJRV0A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=CpQRuSp1N3wA:10 a=SBW2huxlqvgepa1BxiMA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1368114064.7373.109.camel@gandalf.local.home>
+Subject: Re: [PATCH 02/11] [BUGFIX] ftrace, kprobes: Fix a deadlock on
+ ftrace_regex_lock
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
+Date: Thu, 09 May 2013 11:41:04 -0400
+In-Reply-To: <1368110829.7373.103.camel@gandalf.local.home>
+References: <20130509054405.30398.73831.stgit@mhiramat-M0-7522>
+	 <20130509054417.30398.84254.stgit@mhiramat-M0-7522>
+	 <1368110829.7373.103.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2013 06:56 AM, Norbert Preining wrote:
+On Thu, 2013-05-09 at 10:47 -0400, Steven Rostedt wrote:
 
-> in the current state, that is release 3.9.0, but the same happened
-> in earlier kernels, this driver and/or NM is completely useless
-> at times. At times it just works, at times it does nothing.
-> In this case, now the 5th day in series ...
+> > sh-2.05b# echo p vfs_symlink > kprobe_events
+> > sh-2.05b# echo vfs_symlink:enable_event:kprobes:p_vfs_symlink_0 > set_ftrace_filter
+> > 
 
-Nice long rant. Too bad we don't have a soapbox.
+> Ouch! I'm surprised I didn't trigger this in my tests. I have lockdep
+> enabled, and I did run kprobe testing. I'll have to look at how this was
+> missed :-/
 
-With all the information you provided, you forgot one detail that is absolutely 
-critical, namely the PCI ID. There are at least three varieties of RTL8191SE 
-chip, and I have no idea which one you have.
+OK, now I know why I missed this. My tests never enabled a kprobe event.
+I'll have to update them to do so.
 
-I also recommend that you try either the wireless-testing git repo or the 
-mainline git repo. There are a lot of changes that cannot be backported.
+Thanks,
 
-Larry
-
+-- Steve
 
 
