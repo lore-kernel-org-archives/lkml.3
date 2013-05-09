@@ -1,144 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab3EINcw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 09:32:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33555 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751933Ab3EINcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 09:32:51 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/9] perf tests: Add precise event automated test
-Date: Thu,  9 May 2013 15:32:18 +0200
-Message-Id: <1368106344-23383-4-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1368106344-23383-1-git-send-email-jolsa@redhat.com>
-References: <1368106344-23383-1-git-send-email-jolsa@redhat.com>
+	id S1754154Ab3EINh3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 09:37:29 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47365 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586Ab3EINh2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 09:37:28 -0400
+Date: Thu, 9 May 2013 14:36:43 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Robin Holt <holt@sgi.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Russ Anderson <rja@sgi.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH -v8 11/11] Move arch/x86 reboot= handling to generic
+	kernel.
+Message-ID: <20130509133643.GU18614@n2100.arm.linux.org.uk>
+References: <1367937595-32241-1-git-send-email-holt@sgi.com> <1367937595-32241-12-git-send-email-holt@sgi.com> <20130508103956.GA7677@gmail.com> <20130508182007.GO18614@n2100.arm.linux.org.uk> <518A9A83.5010306@zytor.com> <20130509112048.GT3672@sgi.com> <20130509130120.GW3672@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130509130120.GW3672@sgi.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The test detects the precise attribute availability and try
-to open perf event with each allowed precise attribute value.
+On Thu, May 09, 2013 at 08:01:20AM -0500, Robin Holt wrote:
+> diff --git a/include/linux/reboot.h b/include/linux/reboot.h
+> index 26cf11b..bc77231 100644
+> --- a/include/linux/reboot.h
+> +++ b/include/linux/reboot.h
+> @@ -15,6 +15,23 @@ enum reboot_mode {
+> +extern enum reboot_type reboot_type;
+> +
+> +extern int reboot_default;
+> +extern int reboot_cpu;
+> +extern int reboot_force;
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/Makefile             |  1 +
- tools/perf/tests/builtin-test.c |  4 ++++
- tools/perf/tests/precise.c      | 49 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |  1 +
- 4 files changed, 55 insertions(+)
- create mode 100644 tools/perf/tests/precise.c
+Okay, these are globals...
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 477e7bf..f96de83 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -391,6 +391,7 @@ LIB_OBJS += $(OUTPUT)tests/bp_signal.o
- LIB_OBJS += $(OUTPUT)tests/bp_signal_overflow.o
- LIB_OBJS += $(OUTPUT)tests/task-exit.o
- LIB_OBJS += $(OUTPUT)tests/sw-clock.o
-+LIB_OBJS += $(OUTPUT)tests/precise.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 0918ada..eda716b 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -94,6 +94,10 @@ static struct test {
- 		.func = test__sw_clock_freq,
- 	},
- 	{
-+		.desc = "Test precise event attribute",
-+		.func = test__precise,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/precise.c b/tools/perf/tests/precise.c
-new file mode 100644
-index 0000000..c548520
---- /dev/null
-+++ b/tools/perf/tests/precise.c
-@@ -0,0 +1,49 @@
-+#include <linux/kernel.h>
-+#include <linux/perf_event.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <unistd.h>
-+#include "perf.h"
-+#include "tests.h"
-+#include "util.h"
-+#include "sysfs.h"
-+
-+static int event_open_precise(int precise)
-+{
-+	struct perf_event_attr attr = {
-+		.type		= PERF_TYPE_HARDWARE,
-+		.config		= PERF_COUNT_HW_CPU_CYCLES,
-+		.precise_ip	= precise,
-+	};
-+	int fd;
-+
-+	pr_debug("open cycles event with precise %d\n", precise);
-+
-+	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
-+	if (fd < 0) {
-+		pr_debug("failed to open event, syscall returned "
-+			 "with %d (%s)\n", fd, strerror(errno));
-+		return -1;
-+	}
-+
-+	close(fd);
-+	return 0;
-+
-+}
-+
-+int test__precise(void)
-+{
-+	int precise = perf_precise__get();
-+	int i;
-+
-+	if (precise <= 0) {
-+		pr_debug("no precise info or support\n");
-+		return TEST_SKIP;
-+	}
-+
-+	for (i = 1; i <= precise; i++)
-+		if (event_open_precise(i))
-+			return TEST_FAIL;
-+
-+	return TEST_OK;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index dd7feae..ff37f54 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -27,5 +27,6 @@ int test__bp_signal(void);
- int test__bp_signal_overflow(void);
- int test__task_exit(void);
- int test__sw_clock_freq(void);
-+int test__precise(void);
- 
- #endif /* TESTS_H */
--- 
-1.7.11.7
+> diff --git a/kernel/reboot.c b/kernel/reboot.c
+> index 0a97794..ff08af2 100644
+> --- a/kernel/reboot.c
+> +++ b/kernel/reboot.c
+> @@ -87,7 +88,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier);
+>  static void migrate_to_reboot_cpu(void)
+>  {
+>  	/* The boot cpu is always logical cpu 0 */
+> -	int reboot_cpu = 0;
+> +	int reboot_cpu = reboot_cpu;
 
+Hmm, are you sure about that?
+
+> @@ -343,3 +344,80 @@ int orderly_poweroff(bool force)
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(orderly_poweroff);
+> +
+> +int reboot_default;
+> +enum reboot_mode reboot_mode = REBOOT_COLD;
+> +int reboot_cpu;
+> +enum reboot_type reboot_type = BOOT_ACPI;
+> +int reboot_force;
+
+As you seem to want to reference these above, wouldn't it make sense to
+move them higher in the file?
+
+> +		case 'c':
+> +		case 'h':
+> +			reboot_mode = REBOOT_COLD;
+> +			break;
+
+I'm still not entirely convinced by making "hard" and "cold" mean the
+same thing, likewise "soft" and "warm".  As I previously explained but
+everyone seems to have ignored, solely focusing on the 's' problem
+instead.
