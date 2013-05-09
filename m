@@ -1,106 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab3EIWhe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:37:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46414 "EHLO
+	id S1758725Ab3EIWjF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:39:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46448 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069Ab3EIWh1 (ORCPT
+	with ESMTP id S932142Ab3EIWhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:37:27 -0400
+	Thu, 9 May 2013 18:37:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 00/12] 3.0.78-stable review
-Date: Thu,  9 May 2013 15:37:13 -0700
-Message-Id: <20130509223611.432377360@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Michael Ellerman <michael@ellerman.id.au>
+Subject: [ 01/12] powerpc: fix numa distance for form0 device tree
+Date: Thu,  9 May 2013 15:37:14 -0700
+Message-Id: <20130509223611.574980673@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130509223611.432377360@linuxfoundation.org>
+References: <20130509223611.432377360@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.78 release.
-There are 12 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sat May 11 22:34:47 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.78-rc1.gz
-and the diffstat can be found below.
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 
-thanks,
+commit 7122beeee7bc1757682049780179d7c216dd1c83 upstream.
 
-greg k-h
+The following commit breaks numa distance setup for old powerpc
+systems that use form0 encoding in device tree.
 
--------------
-Pseudo-Shortlog of commits:
+commit 41eab6f88f24124df89e38067b3766b7bef06ddb
+powerpc/numa: Use form 1 affinity to setup node distance
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.0.78-rc1
+Device tree node /rtas/ibm,associativity-reference-points would
+index into /cpus/PowerPCxxxx/ibm,associativity based on form0 or
+form1 encoding detected by ibm,architecture-vec-5 property.
 
-Jerry Hoemann <jerry.hoemann@hp.com>
-    x86/mm: account for PGDIR_SIZE alignment
+All modern systems use form1 and current kernel code is correct.
+However, on older systems with form0 encoding, the numa distance
+will get hard coded as LOCAL_DISTANCE for all nodes.  This causes
+task scheduling anomaly since scheduler will skip building numa
+level domain (topmost domain with all cpus) if all numa distances
+are same.  (value of 'level' in sched_init_numa() will remain 0)
 
-Chen Gang <gang.chen@asianux.com>
-    kernel/audit_tree.c: tree will leak memory when failure occurs in audit_trim_trees()
+Prior to the above commit:
+((from) == (to) ? LOCAL_DISTANCE : REMOTE_DISTANCE)
 
-Steven Rostedt (Red Hat) <rostedt@goodmis.org>
-    tracing: Fix ftrace_dump()
+Restoring compatible behavior with this patch for old powerpc systems
+with device tree where numa distance are encoded as form0.
 
-Alex Deucher <alexander.deucher@amd.com>
-    drm/radeon: fix possible segfault when parsing pm tables
+Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Alex Deucher <alexander.deucher@amd.com>
-    drm/radeon: fix endian bugs in atom_allocate_fb_scratch()
+---
+ arch/powerpc/mm/numa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Alex Deucher <alexander.deucher@amd.com>
-    drm/radeon/evergreen+: don't enable HPD interrupts on eDP/LVDS
-
-Alex Deucher <alexander.deucher@amd.com>
-    drm/radeon: don't use get_engine_clock() on APUs
-
-David Müller <d.mueller@elsoft.ch>
-    drm/i915: Fall back to bit banging mode for DVO transmitter detection
-
-Christian Lamparter <chunkeey@googlemail.com>
-    drm/i915: Add no-lvds quirk for Fujitsu Esprimo Q900
-
-Hans Schillstrom <hans@schillstrom.com>
-    ipvs: ip_vs_sip_fill_param() BUG: bad check of return value
-
-David Jeffery <djeffery@redhat.com>
-    autofs - remove autofs dentry mount check
-
-Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-    powerpc: fix numa distance for form0 device tree
-
-
--------------
-
-Diffstat:
-
- Makefile                                 |  4 +--
- arch/powerpc/mm/numa.c                   |  2 +-
- arch/x86/mm/init.c                       |  5 ++++
- drivers/gpu/drm/i915/intel_dvo.c         | 13 +++++++-
- drivers/gpu/drm/i915/intel_lvds.c        |  8 +++++
- drivers/gpu/drm/radeon/atom.c            |  6 ++--
- drivers/gpu/drm/radeon/evergreen.c       | 10 +++++++
- drivers/gpu/drm/radeon/radeon_atombios.c | 10 ++++++-
- drivers/gpu/drm/radeon/radeon_pm.c       |  6 +++-
- fs/autofs4/expire.c                      |  9 ------
- kernel/audit_tree.c                      |  2 +-
- kernel/trace/trace.c                     | 51 +++++++++++++-------------------
- kernel/trace/trace_selftest.c            |  9 +++---
- net/netfilter/ipvs/ip_vs_pe_sip.c        |  6 +---
- 14 files changed, 83 insertions(+), 58 deletions(-)
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -221,7 +221,7 @@ int __node_distance(int a, int b)
+ 	int distance = LOCAL_DISTANCE;
+ 
+ 	if (!form1_affinity)
+-		return distance;
++		return ((a == b) ? LOCAL_DISTANCE : REMOTE_DISTANCE);
+ 
+ 	for (i = 0; i < distance_ref_points_depth; i++) {
+ 		if (distance_lookup_table[a][i] == distance_lookup_table[b][i])
 
 
