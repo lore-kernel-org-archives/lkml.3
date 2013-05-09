@@ -1,62 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab3EINNz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 09:13:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8850 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753108Ab3EINNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 09:13:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,641,1363158000"; 
-   d="scan'208";a="334289502"
-Message-ID: <518BA108.8070802@intel.com>
-Date: Thu, 09 May 2013 21:13:44 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1753150Ab3EIN0q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 09:26:46 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56522 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab3EIN0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 09:26:37 -0400
+Date: Thu, 9 May 2013 14:26:00 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, dong.aisheng@linaro.org,
+        sameo@linux.intel.com, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Stuart Menefy <stuart.menefy@st.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Dave Martin <dave.martin@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
+Message-ID: <20130509132600.GA3200@sirena.org.uk>
+References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
+ <1368022272-2241-1-git-send-email-srinivas.kandagatla@st.com>
+ <201305081650.23264.arnd@arndb.de>
+ <20130508150141.GA5057@opensource.wolfsonmicro.com>
+ <518A8E6C.6070907@st.com>
+ <20130509095143.GB7478@sirena.org.uk>
+ <518B8F49.5020902@st.com>
 MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>
-Subject: Re: [PATCH v5 3/7] sched: set initial value of runnable avg for new
- forked task
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-4-git-send-email-alex.shi@intel.com> <CAPM31RJg7t8f1H-dZwzP1c-0HHb_=8twidX74gS2NfyQhHUhCw@mail.gmail.com> <5187760D.8060900@intel.com> <CAPM31RKiCfSZ=hJ9P7WOH6AC8uj6b06mEM6K0WCTYXC7OJAq7A@mail.gmail.com> <51886460.3020009@intel.com> <CAPM31RLsip-PMY73oq58gyi42EQ+-upmPpMQFkukVBX6LTwtCw@mail.gmail.com> <20130507095715.GE4068@e103034-lin> <5188DFEF.6010403@intel.com> <CAPM31R+x3h0b_r4uFkg_SMnkp0AWA6QRAQuDRducycHnFdG5Xw@mail.gmail.com> <20130508113442.GB6803@dyad.programming.kicks-ass.net> <518B5CC8.6070601@intel.com> <CAPM31RKQ0dXTWK6qgMPd6u_0nsQ3jodSo6QdUNEc4T0S9dCu_Q@mail.gmail.com>
-In-Reply-To: <CAPM31RKQ0dXTWK6qgMPd6u_0nsQ3jodSo6QdUNEc4T0S9dCu_Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
+Content-Disposition: inline
+In-Reply-To: <518B8F49.5020902@st.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 82.42.102.178
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC 3/8] mfd:syscon: Introduce claim/read/write/release APIs
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2013 05:24 PM, Paul Turner wrote:
->> >
->> > +#ifdef CONFIG_SMP
->> > +void set_task_runnable_avg(struct task_struct *p)
->> > +{
->> > +       u64 slice;
->> > +
->> > +       slice = sched_slice(task_cfs_rq(p), &p->se);
->> > +       p->se.avg.runnable_avg_sum = slice;
->> > +       p->se.avg.runnable_avg_period = slice;
-> This needs to be >> 10 right?  sched_slice is in ns.
 
-Yes, I omitted this.
-> 
-> We also still want to set load_avg_contrib right?
+--EVF5PPMfhYS0aIcm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-yes, and seem set it here seems better. :)
-> 
+On Thu, May 09, 2013 at 12:58:01PM +0100, Srinivas KANDAGATLA wrote:
 
+> Currently, we have two bits of information which come from device trees.
+> 1> The syscon bank/group definition itself.
+> 2> syscon register offsets and bits information to the drivers.
 
--- 
-Thanks
-    Alex
+> These are the 2 things which keep changing per each SOC.
+
+> There is no other way to pass this information to the drivers other than
+> passing them as part of their own device node and syscon node.
+
+Sure there is, for example the drivers could have this information
+internally as part of knowing which device they're working with or they
+could take advantage of some patterns in the register map to store some
+higher level information that they use to configure.
+
+> >  and to the extent that it is sensible it feels like something
+> > which might be useful with any device using register maps, not just
+> > syscon.
+
+> If you think this is going to be useful for other drivers, Am happy to
+> move this out of syscon to regmap something like adding
+> of_regmap_field_claim/regmap_field_claim/regmap_field_read/regmap_field_write/regmap_field_release
+> functions.
+
+> so any exiting drivers can still use the old syscon API to get the
+> regmap instance.
+> Alternatively they can use the new regmap APIs directly.
+
+Well, I'd need to see the code to decide if it was sane but I do think
+that if this is a good approach it's not syscon specific.  Anything like
+this needs to be independent of DT too since not all architectures use
+DT.
+
+--EVF5PPMfhYS0aIcm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRi6PhAAoJELSic+t+oim9KC8P/RhLDLjfaPiuWOd+fCm5qqXJ
+xKoiS9+Z/JJf3K5eUwFnJAl+3Txm8gjyQxv5xJKT1OGyn83PQ0JbdAW46yelczNW
+vQJaKPUHNPuspRBdQu/g7FNH5U9J40nYtFv3WrmcXisg4jshEP8fuVIi2oZmdyPM
+hXQxWD4xKPG3tR+SBHuKjSp7rOeWVcnQpPph+6wbxTJpZIBYTxj6IvITJr4Zd0mj
+yxeclFHsaxgt+HASw3I7evr/tB8tYfljHRF1dFSthEXwqBddlfAfXvaEMc7YP6Tj
+w4QyBDbGv/2SChRWufr9qzUz4WoLcsQMAO6iFE6JW2m5/PLIfhZ4GHDz23YV1xRB
+7+UXiNJL0iMIztTnkiWiV+3uKcA9R9EnIUbs5JgM5zuAYjSjbj9t3cgRkWQ9uEK9
+2gpUgyvx1Ua55LXgqxX5vYkIrJsxZ72MiLEHr3o/Lm5Ct1K5Zgn6REgvkSxy8KL4
+9J/9+88NGUz47tJfLHL+o7nHKD6OHScDQB77UZRpw4ufgIxaH2HSIY1KHPyqRy/I
+XTMd/UKhmZoLZ5OAEY3Y1WY5dPDihTwpkVQSz7oHbIWZqpHNxKWTW65x06eE69l/
+9B+FAAJb61xoRrTwAfCtHXC9jGCu0Ekg9UNNLd2GDVgQFBsQPry6bfCd6mnvirWS
+C5Oxvj1/9p+THRFSzTHq
+=Pi9l
+-----END PGP SIGNATURE-----
+
+--EVF5PPMfhYS0aIcm--
