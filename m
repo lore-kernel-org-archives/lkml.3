@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759112Ab3EIXGe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:06:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45812 "EHLO
+	id S1756015Ab3EIW0e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:26:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45775 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756026Ab3EIW0g (ORCPT
+	with ESMTP id S1755901Ab3EIW0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:36 -0400
+	Thu, 9 May 2013 18:26:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?David=20M=C3=BCller?= <d.mueller@elsoft.ch>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 42/73] drm/i915: Fall back to bit banging mode for DVO transmitter detection
-Date: Thu,  9 May 2013 15:25:32 -0700
-Message-Id: <20130509222530.723244193@linuxfoundation.org>
+        Egbert Eich <eich@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 34/73] drm/i915: Fix SDVO connector and encoder get_hw_state functions
+Date: Thu,  9 May 2013 15:25:24 -0700
+Message-Id: <20130509222529.934443678@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,55 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Müller <d.mueller@elsoft.ch>
+From: Egbert Eich <eich@suse.de>
 
-commit e4bfff54ed3f5de88f5358504c78c2cb037813aa upstream.
+commit 7a7d1fb79fb581553f4830498045de774a9659f8 upstream.
 
-As discussed in this thread
-http://lists.freedesktop.org/archives/dri-devel/2013-April/037411.html
-GMBUS based DVO transmitter detection seems to be unreliable which could
-result in an unusable DVO port.
+The connector associated with the encoder is considered active when the
+output associtated with this connector is active on the encoder. The
+encoder itself is considered active when either there is an active
+output on  it or the  respective SDVO channel is active.
+Having active outputs when the SDVO channel is inactive seems to be
+inconsistent: such states can be found when intel_modeset_setup_hw_state()
+collects the hardware state set by the BIOS.
+This inconsistency will be fixed in intel_sanitize_crtc()
+(when intel_crtc_update_dpms() is called), this however only happens
+when the encoder is associated with a crtc.
 
-The attached patch fixes this by falling back to bit banging mode for
-the time DVO transmitter detection is in progress.
+This patch also reverts:
 
-Signed-off-by: David Müller <d.mueller@elsoft.ch>
-Tested-by: David Müller <d.mueller@elsoft.ch>
+     commit bd6946e87a98fea11907b2a47368e13044458a35
+     Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+     Date:   Tue Apr 2 21:30:34 2013 +0200
+
+         drm/i915: Fix sdvo connector get_hw_state function
+
+Signed-off-by: Egbert Eich <eich@suse.de>
+Suggested-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=63031
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_dvo.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_sdvo.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_dvo.c
-+++ b/drivers/gpu/drm/i915/intel_dvo.c
-@@ -448,6 +448,7 @@ void intel_dvo_init(struct drm_device *d
- 		const struct intel_dvo_device *dvo = &intel_dvo_devices[i];
- 		struct i2c_adapter *i2c;
- 		int gpio;
-+		bool dvoinit;
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -1219,12 +1219,8 @@ static bool intel_sdvo_connector_get_hw_
+ 	struct intel_sdvo_connector *intel_sdvo_connector =
+ 		to_intel_sdvo_connector(&connector->base);
+ 	struct intel_sdvo *intel_sdvo = intel_attached_sdvo(&connector->base);
+-	struct drm_i915_private *dev_priv = intel_sdvo->base.base.dev->dev_private;
+ 	u16 active_outputs;
  
- 		/* Allow the I2C driver info to specify the GPIO to be used in
- 		 * special cases, but otherwise default to what's defined
-@@ -467,7 +468,17 @@ void intel_dvo_init(struct drm_device *d
- 		i2c = intel_gmbus_get_adapter(dev_priv, gpio);
+-	if (!(I915_READ(intel_sdvo->sdvo_reg) & SDVO_ENABLE))
+-		return false;
+-
+ 	intel_sdvo_get_active_outputs(intel_sdvo, &active_outputs);
  
- 		intel_dvo->dev = *dvo;
--		if (!dvo->dev_ops->init(&intel_dvo->dev, i2c))
-+
-+		/* GMBUS NAK handling seems to be unstable, hence let the
-+		 * transmitter detection run in bit banging mode for now.
-+		 */
-+		intel_gmbus_force_bit(i2c, true);
-+
-+		dvoinit = dvo->dev_ops->init(&intel_dvo->dev, i2c);
-+
-+		intel_gmbus_force_bit(i2c, false);
-+
-+		if (!dvoinit)
- 			continue;
+ 	if (active_outputs & intel_sdvo_connector->output_flag)
+@@ -1239,11 +1235,13 @@ static bool intel_sdvo_get_hw_state(stru
+ 	struct drm_device *dev = encoder->base.dev;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct intel_sdvo *intel_sdvo = to_intel_sdvo(&encoder->base);
++	u16 active_outputs;
+ 	u32 tmp;
  
- 		intel_encoder->type = INTEL_OUTPUT_DVO;
+ 	tmp = I915_READ(intel_sdvo->sdvo_reg);
++	intel_sdvo_get_active_outputs(intel_sdvo, &active_outputs);
+ 
+-	if (!(tmp & SDVO_ENABLE))
++	if (!(tmp & SDVO_ENABLE) && (active_outputs == 0))
+ 		return false;
+ 
+ 	if (HAS_PCH_CPT(dev))
+@@ -2743,7 +2741,6 @@ bool intel_sdvo_init(struct drm_device *
+ 	struct intel_sdvo *intel_sdvo;
+ 	u32 hotplug_mask;
+ 	int i;
+-
+ 	intel_sdvo = kzalloc(sizeof(struct intel_sdvo), GFP_KERNEL);
+ 	if (!intel_sdvo)
+ 		return false;
 
 
