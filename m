@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab3EITJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 15:09:59 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:41474 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751898Ab3EITJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 15:09:57 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] ACPI fixes for v3.10-rc1
-Date: Thu, 09 May 2013 21:18:23 +0200
-Message-ID: <1903378.croiM3Nu8S@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S1752368Ab3EITLv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 15:11:51 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:45465 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab3EITLt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 15:11:49 -0400
+From: "Ortiz, Lance E" <lance.oritz@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "bhelgaas@google.com" <bhelgaas@google.com>,
+        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "bp@alien8.de" <bp@alien8.de>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "mchehab@redhat.com" <mchehab@redhat.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] aerdrv: Move cper_print_pcie() out of interrupt context
+Thread-Topic: [PATCH] aerdrv: Move cper_print_pcie() out of interrupt context
+Thread-Index: AQHOTDeSaY5w5FoPvkaxQxiCMhoJDJj9NrcQ
+Date: Thu, 9 May 2013 19:10:36 +0000
+Message-ID: <A961433CDFF2F640A2866803152E61F95177AFA9@G4W3219.americas.hpqcorp.net>
+References: <20130508171519.26724.63307.stgit@grignak.americas.hpqcorp.net>
+ <2598827.AVAqMcfGuF@vostro.rjw.lan>
+In-Reply-To: <2598827.AVAqMcfGuF@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.31]
 Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r49JBtkD016646
 
-Hi Linus,
+Rafael,  
 
-Please pull from the git repository at
+Thanks for your feedback.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git acpi-fixes-3.10-rc1
+> The way the changes are described here isn't particularly clear to me.
 
-to receive ACPI fixes for v3.10-rc1 with top-most commit
-04a29a15520463e072b1a98d8989f04233ee4a7e
-
-  ACPICA: ACPICA: Fix for _INI regression
-
-on top of commit 371deb9500831ad1afbf9ea00e373f650deaed2f
-
-  Merge branch 'pm-cpufreq'
-
-These are three urgent ACPICA fixes two of which fix regressions introduced
-earlier during this merge window and the third one fixes a potential buffer
-overflow that has been there for quite a while (fortunately, it's not easy
-to trigger).
-
-Thanks!
+I will try to make it a little more clear.
 
 
----------------
+> Also, since aer_recover_work_func() is going to be the only existing
+> caller of
+> cper_print_aer() after this change, as far as I can say, and it doesn't
+> use the
+> function's first argument, that argument should be dropped entirely.
 
-Bob Moore (1):
-      ACPICA: Fix possible buffer overflow during a field unit read operation
+The truth is, the function cper_print_aer() really needs to be re-written so it is consistent with aer_print_error() in how it outputs information.  Right now, the output is formatted very differently.  I was planning on doing that at a later date, but fix the warning now.  I might add a TODO comment in the code for this.
 
-Jung-uk Kim (1):
-      ACPICA: _OSI support: Fix possible memory leak
+The reason I did not remove the argument in cper_print_aer() is because 'prefix' is used in the call to cper_print_bits(), and I passed through an empty string to make sure that function worked correctly.  I can try to clean it up.
 
-Tomasz Nowicki (1):
-      ACPICA: ACPICA: Fix for _INI regression
-
----------------
-
- drivers/acpi/acpica/exfldio.c |   14 +++++++++++++-
- drivers/acpi/acpica/nsinit.c  |    1 +
- drivers/acpi/acpica/utosi.c   |    3 ++-
- 3 files changed, 16 insertions(+), 2 deletions(-)
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Lance
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
