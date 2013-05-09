@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758275Ab3EIWeg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:34:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46245 "EHLO
+	id S932235Ab3EIWpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:45:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46225 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758175Ab3EIWda (ORCPT
+	with ESMTP id S1758145Ab3EIWd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:30 -0400
+	Thu, 9 May 2013 18:33:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jerry Hoemann <jerry.hoemann@hp.com>
-Subject: [ 73/73] x86/mm: account for PGDIR_SIZE alignment
-Date: Thu,  9 May 2013 15:32:36 -0700
-Message-Id: <20130509222805.731031383@linuxfoundation.org>
+        Roman Mamedov <rm@romanrm.ru>, Josef Bacik <jbacik@fusionio.com>
+Subject: [ 68/73] Btrfs: compare relevant parts of delayed tree refs
+Date: Thu,  9 May 2013 15:32:31 -0700
+Message-Id: <20130509222805.232304362@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -26,56 +26,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerry Hoemann <jerry.hoemann@hp.com>
+From: Josef Bacik <jbacik@fusionio.com>
 
-Patch for -stable.  Function find_early_table_space removed upstream.
+commit 41b0fc42800569f63e029549b75c4c9cb63f2dfd upstream.
 
-Fixes panic in alloc_low_page due to pgt_buf overflow during
-init_memory_mapping.
+A user reported a panic while running a balance.  What was happening was he was
+relocating a block, which added the reference to the relocation tree.  Then
+relocation would walk through the relocation tree and drop that reference and
+free that block, and then it would walk down a snapshot which referenced the
+same block and add another ref to the block.  The problem is this was all
+happening in the same transaction, so the parent block was free'ed up when we
+drop our reference which was immediately available for allocation, and then it
+was used _again_ to add a reference for the same block from a different
+snapshot.  This resulted in something like this in the delayed ref tree
 
-find_early_table_space sizes pgt_buf based upon the size of the
-memory being mapped, but it does not take into account the alignment
-of the memory.  When the region being mapped spans a 512GB (PGDIR_SIZE)
-alignment, a panic from alloc_low_pages occurs.
+add ref to 90234880, parent=2067398656, ref_root 1766, level 1
+del ref to 90234880, parent=2067398656, ref_root 18446744073709551608, level 1
+add ref to 90234880, parent=2067398656, ref_root 1767, level 1
 
-kernel_physical_mapping_init takes into account PGDIR_SIZE alignment.
-This causes an extra call to alloc_low_page to be made.  This extra call
-isn't accounted for by find_early_table_space and causes a kernel panic.
+as you can see the ref_root's don't match, because when we inc the ref we use
+the header owner, which is the original tree the block belonged to, instead of
+the data reloc tree.  Then when we remove the extent we use the reloc tree
+objectid.  But none of this matters, since it is a shared reference which means
+only the parent matters.  When the delayed ref stuff runs it adds all the
+increments first, and then does all the drops, to make sure that we don't delete
+the ref if we net a positive ref count.  But tree blocks aren't allowed to have
+multiple refs from the same block, so this panics when it tries to add the
+second ref.  We need the add and the drop to cancel each other out in memory so
+we only do the final add.
 
-Change is to take into account PGDIR_SIZE alignment in find_early_table_space.
+So to fix this we need to adjust how the delayed refs are added to the tree.
+Only the ref_root matters when it is a normal backref, and only the parent
+matters when it is a shared backref.  So make our decision based on what ref
+type we have.  This allows us to keep the ref_root in memory in case anybody
+wants to use it for something else, and it allows the delayed refs to be merged
+properly so we don't end up with this panic.
 
-Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
+With this patch the users image no longer panics on mount, and it has a clean
+fsck after a normal mount/umount cycle.  Thanks,
+
+Reported-by: Roman Mamedov <rm@romanrm.ru>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/mm/init.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ fs/btrfs/delayed-ref.c |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
 
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -45,11 +45,15 @@ static void __init find_early_table_spac
- 	int i;
- 	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
- 	unsigned long start = 0, good_end;
-+	unsigned long pgd_extra = 0;
- 	phys_addr_t base;
+--- a/fs/btrfs/delayed-ref.c
++++ b/fs/btrfs/delayed-ref.c
+@@ -36,16 +36,19 @@
+  * compare two delayed tree backrefs with same bytenr and type
+  */
+ static int comp_tree_refs(struct btrfs_delayed_tree_ref *ref2,
+-			  struct btrfs_delayed_tree_ref *ref1)
++			  struct btrfs_delayed_tree_ref *ref1, int type)
+ {
+-	if (ref1->root < ref2->root)
+-		return -1;
+-	if (ref1->root > ref2->root)
+-		return 1;
+-	if (ref1->parent < ref2->parent)
+-		return -1;
+-	if (ref1->parent > ref2->parent)
+-		return 1;
++	if (type == BTRFS_TREE_BLOCK_REF_KEY) {
++		if (ref1->root < ref2->root)
++			return -1;
++		if (ref1->root > ref2->root)
++			return 1;
++	} else {
++		if (ref1->parent < ref2->parent)
++			return -1;
++		if (ref1->parent > ref2->parent)
++			return 1;
++	}
+ 	return 0;
+ }
  
- 	for (i = 0; i < nr_range; i++) {
- 		unsigned long range, extra;
- 
-+		if ((mr[i].end >> PGDIR_SHIFT) - (mr[i].start >> PGDIR_SHIFT))
-+			pgd_extra++;
-+
- 		range = mr[i].end - mr[i].start;
- 		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
- 
-@@ -74,6 +78,7 @@ static void __init find_early_table_spac
- 	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
- 	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
- 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
-+	tables += (pgd_extra * PAGE_SIZE);
- 
- #ifdef CONFIG_X86_32
- 	/* for fixmap */
+@@ -109,7 +112,8 @@ static int comp_entry(struct btrfs_delay
+ 	if (ref1->type == BTRFS_TREE_BLOCK_REF_KEY ||
+ 	    ref1->type == BTRFS_SHARED_BLOCK_REF_KEY) {
+ 		return comp_tree_refs(btrfs_delayed_node_to_tree_ref(ref2),
+-				      btrfs_delayed_node_to_tree_ref(ref1));
++				      btrfs_delayed_node_to_tree_ref(ref1),
++				      ref1->type);
+ 	} else if (ref1->type == BTRFS_EXTENT_DATA_REF_KEY ||
+ 		   ref1->type == BTRFS_SHARED_DATA_REF_KEY) {
+ 		return comp_data_refs(btrfs_delayed_node_to_data_ref(ref2),
 
 
