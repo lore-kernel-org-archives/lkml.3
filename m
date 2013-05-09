@@ -1,367 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab3EIMSj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 08:18:39 -0400
-Received: from mout.gmx.net ([212.227.15.15]:57954 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752400Ab3EIMSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 08:18:38 -0400
-X-Authenticated: #23875046
-X-Provags-ID: V01U2FsdGVkX18ksWsTq28kIcdqxv5kd9hGll2KZEa+70yHlegFJB
-	QX4YkdNjYyw+b+
-Message-ID: <518B9418.5040301@rempel-privat.de>
-Date: Thu, 09 May 2013 14:18:32 +0200
-From: Oleksij Rempel <linux@rempel-privat.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Norbert Preining <preining@logic.at>
-CC: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hostap@lists.shmoo.com, Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: RTL driver for RTL8191SEvB and/or wpa-supplicant really broken
- at times
-References: <20130509115630.GC5111@gamma.logic.tuwien.ac.at>
-In-Reply-To: <20130509115630.GC5111@gamma.logic.tuwien.ac.at>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1751868Ab3EIMZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 08:25:39 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:60703 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048Ab3EIMZh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 08:25:37 -0400
+X-Nat-Received: from [202.181.97.72]:56288 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1368102323.30385
+To: cl@linux.com, glommer@parallels.com
+Cc: penberg@kernel.org, linux-kernel@vger.kernel.org,
+        penguin-kernel@I-love.SAKURA.ne.jp
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <CAOJsxLFYDC+EDdJrXVnc1qfEyd56bhFLeGE+6Mbhwiq73KQQLQ@mail.gmail.com>
+	<517E8758.9040803@parallels.com>
+	<0000013e564e0e5a-121c52f9-e489-470f-99d5-67a5ad42eb75-000000@email.amazonses.com>
+	<201304300028.IAD13051.OHOVMJSLFFFQOt@I-love.SAKURA.ne.jp>
+	<201304300116.FGJ56210.FMSOJHFOtFQVOL@I-love.SAKURA.ne.jp>
+In-Reply-To: <201304300116.FGJ56210.FMSOJHFOtFQVOL@I-love.SAKURA.ne.jp>
+Message-Id: <201305092125.FGG13076.LFOtVOFMSFQJHO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Thu, 9 May 2013 21:25:22 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 09052013 #9926694, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Norbert,
+Tetsuo Handa wrote:
+> > Christoph Lameter wrote:
+> > > What is MAX_ORDER on the architecture?
+> > 
+> > In my environment (x86_32), the constants are
+> > 
+> >   MAX_ORDER=11 PAGE_SHIFT=12 KMALLOC_SHIFT_HIGH=22 KMALLOC_MAX_SIZE=4194304
+> > 
+> 
+> I don't know if any, but on an architecture with PAGE_SHIFT + MAX_ORDER > 26,
+> 
+>   static void init_node_lock_keys(int q)
+>   {
+>           int i;
+>   
+>           if (slab_state < UP)
+>                   return;
+>   
+>           for (i = 1; i < PAGE_SHIFT + MAX_ORDER; i++) {
+>                   struct kmem_cache_node *n;
+>                   struct kmem_cache *cache = kmalloc_caches[i];
+> 
+> looks like out of bounds access due to
+> 
+>   #define KMALLOC_SHIFT_HIGH      ((MAX_ORDER + PAGE_SHIFT - 1) <= 25 ? \
+>                                   (MAX_ORDER + PAGE_SHIFT - 1) : 25)
+> 
+> and
+> 
+>   struct kmem_cache *kmalloc_caches[KMALLOC_SHIFT_HIGH + 1];
+> 
+> .
+> 
 
-you should contact Larry Finger <Larry.Finger@lwfinger.net> (i CC him), 
-hi is working on RTL devices so far it is possible. And probably he is 
-only person who doing that :(
-You should understand that Realtek provide only closed source firmware 
-and, so far i know, no documentation. This makes it hard to support them.
-Visit this page, and see Hardware_Donations:
-http://wireless.kernel.org/en/users/Drivers/rtl819x#Hardware_Donations
+As of commit e0fd9aff on linux.git#master,
+CONFIG_PPC_256K_PAGES=y (which makes PAGE_SHIFT 18) &&
+CONFIG_FORCE_MAX_ZONEORDER=11 (which makes MAX_ORDER 11) &&
+CONFIG_PROVE_LOCKING=y with below assertion
 
+----------
+diff --git a/mm/slab.c b/mm/slab.c
+index 8ccd296..0401982 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -565,6 +565,7 @@ static void init_node_lock_keys(int q)
+        if (slab_state < UP)
+                return;
 
-Am 09.05.2013 13:56, schrieb Norbert Preining:
-> Dear all,
->
-> here is a short status report on my experiences with:
-> 	kernel 3.9.0
-> 	wpa_supplicant 1.0
-> 	hardware RTL191SEvB
-> 	Debian/sid
->
-> Short summary: broken to the degree that internet connection is impossible
->
-> Sorry for the long mail, I tried to reduce to the essentials only.
->
-> Contents:
-> =========
-> 0) hardware and software description
-> 1) during connection permanent break off
-> 2) connection seems established according to kernel and NM, but nothing works
-> 3) if connection is working, ping times are crazy and connection breaks down suddenly
-> 4) conclusion
->
->
-> 0) hardware and software description
-> ====================================
-> Hardware:
-> Lenovo Thinkpad Edge
-> WLAN:
-> 03:00.0 Network controller: Realtek Semiconductor Co., Ltd. RTL8191SEvB Wireless LAN Controller (rev 10)
-> 	Subsystem: Realtek Semiconductor Co., Ltd. Device e020
-> 	Flags: bus master, fast devsel, latency 0, IRQ 17
-> 	I/O ports at 2000 [size=256]
-> 	Memory at f0500000 (32-bit, non-prefetchable) [size=16K]
-> 	Capabilities: [40] Power Management version 3
-> 	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
-> 	Capabilities: [70] Express Legacy Endpoint, MSI 00
-> 	Capabilities: [100] Advanced Error Reporting
-> 	Capabilities: [140] Virtual Channel
-> 	Capabilities: [160] Device Serial Number 88-55-22-fe-ff-4c-e0-00
-> 	Kernel driver in use: rtl8192se
->
-> Debian unstable up to date
-> kernel 3.9.0
-> # wpa_supplicant -v
-> wpa_supplicant v1.0
-> Copyright (c) 2003-2012, Jouni Malinen <j@w1.fi> and contributors
->
-> Debian version: 1.0-3+b2
->
-> Please note: during all the following experiments at times
-> two other computers (iPhone, WinXP) very connected without
-> any problems (of course on different IPs).
->
->
-> ad 1) during connection permanent break off
-> ============================================
->
-> typical dmesg output:
-> many times:
-> May  8 20:54:59 tofuschnitzel NetworkManager[4878]: <info> (wlan0): supplicant interface state: disconnected -> scanning
-> May  8 20:54:59 tofuschnitzel wpa_supplicant[5513]: wlan0: SME: Trying to authenticate with 00:3a:9d:b4:54:5a (SSID='norbujp' fr
-> eq=2447 MHz)
-> kernel: [19070.021021] wlan0: authenticate with 00:3a:9d:b4:54:5a
-> NetworkManager[4878]: <info> (wlan0): supplicant interface state: scanning -> authenticating
-> kernel: [19070.040313] wlan0: send auth to 00:3a:9d:b4:54:5a (try 1/3)
-> kernel: [19070.144143] wlan0: send auth to 00:3a:9d:b4:54:5a (try 2/3)
-> kernel: [19070.248113] wlan0: send auth to 00:3a:9d:b4:54:5a (try 3/3)
-> wpa_supplicant[5513]: wlan0: Trying to associate with 00:3a:9d:b4:54:5a (SSID='norbujp' freq=2447 MHz)
-> kernel: [19070.286906] wlan0: authenticated
-> kernel: [19070.288224] wlan0: associate with 00:3a:9d:b4:54:5a (try 1/3)
-> NetworkManager[4878]: <info> (wlan0): supplicant interface state: authenticating -> associating
-> kernel: [19070.392185] wlan0: associate with 00:3a:9d:b4:54:5a (try 2/3)
-> kernel: [19070.496204] wlan0: associate with 00:3a:9d:b4:54:5a (try 3/3)
-> kernel: [19070.600253] wlan0: association with 00:3a:9d:b4:54:5a timed out
-> NetworkManager[4878]: <info> (wlan0): supplicant interface state: associating -> disconnected
->
-> after several of these I get one of the following:
-> kernel: [19073.340075] wlan0: associated
-> kernel: [19073.340155] cfg80211: Calling CRDA for country: JP
-> NetworkManager[4878]: <info> (wlan0): supplicant interface state: associating -> 4-way handshake
-> kernel: [19073.347635] cfg80211: Regulatory domain changed to country: JP
-> kernel: [19073.347643] cfg80211:   (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eirp)
-> kernel: [19073.347648] cfg80211:   (2402000 KHz - 2472000 KHz @ 40000 KHz), (N/A, 2000 mBm)
-> kernel: [19073.347652] cfg80211:   (2457000 KHz - 2482000 KHz @ 20000 KHz), (N/A, 2000 mBm)
-> kernel: [19073.347656] cfg80211:   (2474000 KHz - 2494000 KHz @ 20000 KHz), (N/A, 2000 mBm)
-> ...
-> dbus[4074]: [system] Activating service name='org.freedesktop.PackageKit' (using servicehelper)
-> dbus[4074]: [system] Successfully activated service 'org.freedesktop.PackageKit'
-> kernel: [19077.405951] wlan0: deauthenticated from 00:3a:9d:b4:54:5a (Reason: 2)
-> wpa_supplicant[5513]: wlan0: WPA: 4-Way Handshake failed - pre-shared key may be incorrect
-> wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> kernel: [19077.416143] cfg80211: Calling CRDA to update world regulatory domain
-> NetworkManager[4878]: <info> (wlan0): supplicant interface state: 4-way handshake -> disconnected
-> NetworkManager[4878]: <info> Activation (wlan0/wireless): disconnected during association, asking for new key.
->
-> but it is the correct key! Anyway, then the above game restarts ...
->
-> sometimes, after many many many tries, the kernel/NM seems to believe
-> it got a connection:
->
-> 2) connection seems established according to kernel and NM, but nothing works
-> =============================================================================
-> it starts as before, but then succeeds - in some way:
-> wpa_supplicant[5513]: wlan0: WPA: Key negotiation completed with 00:3a:9d:b4:54:5a [PTK=CCMP GTK=CCMP]
-> wpa_supplicant[5513]: wlan0: CTRL-EVENT-CONNECTED - Connection to 00:3a:9d:b4:54:5a completed (reauth) [id=0 id_str=]
-> NetworkManager[4878]: <info> (wlan0): supplicant interface state: 4-way handshake -> completed
-> NetworkManager[4878]: <info> Activation (wlan0/wireless) Stage 2 of 5 (Device Configure) successful.  Connected to wireless network 'norbujp'.
-> NetworkManager[4878]: <info> Activation (wlan0) Stage 3 of 5 (IP Configure Start) scheduled.
-> NetworkManager[4878]: <info> Activation (wlan0) Stage 3 of 5 (IP Configure Start) started...
-> NetworkManager[4878]: <info> (wlan0): device state change: config -> ip-config (reason 'none') [50 70 0]
-> NetworkManager[4878]: <info> Activation (wlan0) Beginning DHCPv4 transaction (timeout in 45 seconds)
-> NetworkManager[4878]: <info> dhclient started with pid 30807
-> NetworkManager[4878]: nm_utils_do_sysctl: assertion `path != NULL' failed
-> NetworkManager[4878]: <info> Activation (wlan0) Beginning IP6 addrconf.
-> NetworkManager[4878]: <warn> sysctl: failed to open '/proc/sys/net/ipv6/conf/wlan0/disable_ipv6': (2) No such file or directory
-> NetworkManager[4878]: <warn> sysctl: failed to open '/proc/sys/net/ipv6/conf/wlan0/disable_ipv6': (2) No such file or directory
-> NetworkManager[4878]: <info> Activation (wlan0) Stage 3 of 5 (IP Configure Start) complete.
-> dhclient: Internet Systems Consortium DHCP Client 4.2.4
-> dhclient: Copyright 2004-2012 Internet Systems Consortium.
-> dhclient: All rights reserved.
-> dhclient: For info, please visit https://www.isc.org/software/dhcp/
-> dhclient:
-> NetworkManager[4878]: <info> (wlan0): DHCPv4 state changed nbi -> preinit
-> dhclient: Listening on LPF/wlan0/88:9f:fa:f9:07:28
-> dhclient: Sending on   LPF/wlan0/88:9f:fa:f9:07:28
-> dhclient: Sending on   Socket/fallback
-> dhclient: DHCPREQUEST on wlan0 to 255.255.255.255 port 67
-> dhclient: DHCPACK from 192.168.0.1
-> dhclient: bound to 192.168.0.5 -- renewal in 37312 seconds.
-> NetworkManager[4878]: <info> (wlan0): DHCPv4 state changed preinit -> reboot
-> NetworkManager[4878]: <info>   address 192.168.0.5
-> NetworkManager[4878]: <info>   prefix 24 (255.255.255.0)
-> NetworkManager[4878]: <info>   gateway 192.168.0.1
-> NetworkManager[4878]: <info>   nameserver '192.168.0.1'
-> NetworkManager[4878]: <info> Activation (wlan0) Stage 5 of 5 (IPv4 Configure Commit) scheduled...
-> NetworkManager[4878]: <info> Activation (wlan0) Stage 5 of 5 (IPv4 Commit) started...
-> NetworkManager[4878]: <info> (wlan0): device state change: ip-config -> secondaries (reason 'none') [70 90 0]
-> NetworkManager[4878]: <info> Activation (wlan0) Stage 5 of 5 (IPv4 Commit) complete.
-> NetworkManager[4878]: <info> (wlan0): device state change: secondaries -> activated (reason 'none') [90 100 0]
-> NetworkManager[4878]: <info> Policy set 'Auto norbujp' (wlan0) as default for IPv4 routing and DNS.
-> NetworkManager[4878]: <info> Activation (wlan0) successful, device activated.
-> dbus[4074]: [system] Activating service name='org.freedesktop.nm_dispatcher' (using servicehelper)
-> dbus[4074]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
-> ntpd[4779]: Listen normally on 5 wlan0 192.168.0.5 UDP 123
-> ntpd[4779]: peers refreshed
-> nm-dispatcher.action: Script '/etc/NetworkManager/dispatcher.d/01ifupdown' took too long; killing it.
-> May  8 20:45:22 tofuschnitzel NetworkManager[4878]: <warn> Dispatcher script timed out: Script '/etc/NetworkManager/dispatcher.d/01ifupdown' timed out.
-> May  8 20:45:37 tofuschnitzel NetworkManager[4878]: <info> (wlan0): IP6 addrconf timed out or failed.
-> May  8 20:45:37 tofuschnitzel NetworkManager[4878]: <info> Activation (wlan0) Stage 4 of 5 (IPv6 Configure Timeout) scheduled...
-> May  8 20:45:37 tofuschnitzel NetworkManager[4878]: <info> Activation (wlan0) Stage 4 of 5 (IPv6 Configure Timeout) started...
-> May  8 20:45:37 tofuschnitzel NetworkManager[4878]: <info> Activation (wlan0) Stage 4 of 5 (IPv6 Configure Timeout) complete.
->
-> But although both kernel as well as NM believe that all is fine:
-> $ ifconfig wlan0
-> wlan0     Link encap:Ethernet  HWaddr 88:9f:fa:f9:07:28
->            inet addr:192.168.0.5  Bcast:192.168.0.255  Mask:255.255.255.0
->            UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
->            RX packets:205848 errors:0 dropped:0 overruns:0 frame:0
->            TX packets:4519 errors:0 dropped:0 overruns:0 carrier:0
->            collisions:0 txqueuelen:1000
->            RX bytes:44049656 (42.0 MiB)  TX bytes:750906 (733.3 KiB)
-> $ iwconfig wlan0
-> wlan0     IEEE 802.11bgn  ESSID:"norbujp"
->            Mode:Managed  Frequency:2.447 GHz  Access Point: 00:3A:9D:B4:54:5A
->            Bit Rate=150 Mb/s   Tx-Power=20 dBm
->            Retry  long limit:7   RTS thr=2347 B   Fragment thr:off
->            Power Management:off
->            Link Quality=70/70  Signal level=-35 dBm
->            Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
->            Tx excessive retries:0  Invalid misc:6   Missed beacon:0
->
-> absolutely nothing works: Examples:
-> [~] ping 192.168.0.1
-> PING 192.168.0.1 (192.168.0.1) 56(84) bytes of data.
->  From 192.168.0.5 icmp_seq=1 Destination Host Unreachable
->  From 192.168.0.5 icmp_seq=2 Destination Host Unreachable
->  From 192.168.0.5 icmp_seq=5 Destination Host Unreachable
->  From 192.168.0.5 icmp_seq=7 Destination Host Unreachable
->  From 192.168.0.5 icmp_seq=39 Destination Host Unreachable
->  From 192.168.0.5 icmp_seq=40 Destination Host Unreachable
->  From 192.168.0.5 icmp_seq=41 Destination Host Unreachable
->  From 192.168.0.5 icmp_seq=42 Destination Host Unreachable
-> ...
-> --- 192.168.0.1 ping statistics ---
-> 88 packets transmitted, 0 received, +43 errors, 100% packet loss, time 87233ms pipe 4
->
-> absolutely nothing goes out - at least it seems so.
->
->
-> Sometimes, though, whoever decided to speak to me, and pings started
-> to get returned, but then ...
->
-> 3) if connection is working, ping times are crazy and connection breaks down suddenly
-> =====================================================================================
->
-> pinging my own gateway results in things like:
-> 64 bytes from 192.168.0.1: icmp_req=35 ttl=255 time=119395 ms
->
-> or
->  From 192.168.0.5 icmp_seq=118 Destination Host Unreachable
->  From 192.168.0.5 icmp_seq=119 Destination Host Unreachable
->  From 192.168.0.5 icmp_seq=120 Destination Host Unreachable
-> 64 bytes from 192.168.0.1: icmp_req=31 ttl=255 time=91863 ms
-> 64 bytes from 192.168.0.1: icmp_req=32 ttl=255 time=91151 ms
->  From 192.168.0.5 icmp_seq=121 Destination Host Unreachable
->  From 192.168.0.5 icmp_seq=122 Destination Host Unreachable
->
-> or
-> [~] ping 192.168.0.1
-> PING 192.168.0.1 (192.168.0.1) 56(84) bytes of data.
-> 64 bytes from 192.168.0.1: icmp_req=3 ttl=255 time=44447 ms
-> 64 bytes from 192.168.0.1: icmp_req=7 ttl=255 time=41123 ms
-> 64 bytes from 192.168.0.1: icmp_req=11 ttl=255 time=55627 ms
-> 64 bytes from 192.168.0.1: icmp_req=14 ttl=255 time=69027 ms
-> 64 bytes from 192.168.0.1: icmp_req=15 ttl=255 time=68046 ms
-> 64 bytes from 192.168.0.1: icmp_req=19 ttl=255 time=75636 ms
-> 64 bytes from 192.168.0.1: icmp_req=24 ttl=255 time=109967 ms
-> ....
->
-> big up and down in ping times:
-> 4 bytes from 192.168.0.1: icmp_req=442 ttl=255 time=1.51 ms
-> 64 bytes from 192.168.0.1: icmp_req=443 ttl=255 time=1.61 ms
-> 64 bytes from 192.168.0.1: icmp_req=444 ttl=255 time=2.77 ms
-> 64 bytes from 192.168.0.1: icmp_req=445 ttl=255 time=37.0 ms
-> 64 bytes from 192.168.0.1: icmp_req=446 ttl=255 time=1.53 ms
-> 64 bytes from 192.168.0.1: icmp_req=447 ttl=255 time=469 ms
-> 64 bytes from 192.168.0.1: icmp_req=448 ttl=255 time=116 ms
-> 64 bytes from 192.168.0.1: icmp_req=449 ttl=255 time=1.73 ms
-> 64 bytes from 192.168.0.1: icmp_req=450 ttl=255 time=1.58 ms
-> 64 bytes from 192.168.0.1: icmp_req=451 ttl=255 time=6916 ms
-> 64 bytes from 192.168.0.1: icmp_req=452 ttl=255 time=6632 ms
-> 64 bytes from 192.168.0.1: icmp_req=453 ttl=255 time=5654 ms
-> 64 bytes from 192.168.0.1: icmp_req=454 ttl=255 time=4716 ms
-> 64 bytes from 192.168.0.1: icmp_req=455 ttl=255 time=3896 ms
-> 64 bytes from 192.168.0.1: icmp_req=456 ttl=255 time=2897 ms
-> 64 bytes from 192.168.0.1: icmp_req=457 ttl=255 time=1899 ms
-> 64 bytes from 192.168.0.1: icmp_req=458 ttl=255 time=901 ms
-> 64 bytes from 192.168.0.1: icmp_req=459 ttl=255 time=1.25 ms
-> 64 bytes from 192.168.0.1: icmp_req=460 ttl=255 time=116 ms
-> 64 bytes from 192.168.0.1: icmp_req=461 ttl=255 time=1.48 ms
-> ...
-> 64 bytes from 192.168.0.1: icmp_req=483 ttl=255 time=1.24 ms
-> 64 bytes from 192.168.0.1: icmp_req=485 ttl=255 time=10910 ms
-> 64 bytes from 192.168.0.1: icmp_req=486 ttl=255 time=9913 ms
-> 64 bytes from 192.168.0.1: icmp_req=487 ttl=255 time=8913 ms
-> 64 bytes from 192.168.0.1: icmp_req=488 ttl=255 time=7913 ms
-> 64 bytes from 192.168.0.1: icmp_req=489 ttl=255 time=6913 ms
-> ...
-> 64 bytes from 192.168.0.1: icmp_req=494 ttl=255 time=1915 ms
-> 64 bytes from 192.168.0.1: icmp_req=495 ttl=255 time=915 ms
->  From 192.168.0.5 icmp_seq=530 Destination Host Unreachable
->  From 192.168.0.5 icmp_seq=531 Destination Host Unreachable
-> ...
->  From 192.168.0.5 icmp_seq=581 Destination Host Unreachable
-> 64 bytes from 192.168.0.1: icmp_req=497 ttl=255 time=87064 ms
->  From 192.168.0.5 icmp_seq=582 Destination Host Unreachable
-> ...
->  From 192.168.0.5 icmp_seq=598 Destination Host Unreachable
-> 64 bytes from 192.168.0.1: icmp_req=498 ttl=255 time=105208 ms
-> ping: sendmsg: No buffer space available
->  From 192.168.0.5 icmp_seq=623 Destination Host Unreachable
-> ...
->
->
-> Looking into the reasons why disconnects happen I see:
-> [~] grep reason= /var/log/syslog
-> May  8 20:43:57 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:44:04 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:45:02 tofuschnitzel kernel: [18472.914329] wlan0: deauthenticating from 00:3a:9d:b4:54:5a by local choice (reason=3)
-> May  8 20:45:02 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:00:00:00:00:00 reason=3
-> May  8 20:47:34 tofuschnitzel kernel: [18624.597387] wlan0: deauthenticating from 00:3a:9d:b4:54:5a by local choice (reason=3)
-> May  8 20:47:34 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:00:00:00:00:00 reason=3
-> May  8 20:48:27 tofuschnitzel kernel: [18677.928400] wlan0: deauthenticating from 00:3a:9d:b4:54:5a by local choice (reason=3)
-> May  8 20:48:27 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:00:00:00:00:00 reason=3
-> May  8 20:48:36 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:48:52 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:49:15 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:49:25 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:49:41 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:49:50 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:49:57 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:53:20 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:53:30 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:53:51 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:54:01 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:54:27 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:54:45 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:55:07 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 20:55:36 tofuschnitzel kernel: [19106.844710] wlan0: deauthenticating from 00:3a:9d:b4:54:5a by local choice (reason=3)
-> May  8 20:55:36 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=3
-> May  8 21:10:07 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
-> May  8 21:10:58 tofuschnitzel kernel: [20029.040231] wlan0: deauthenticating from 00:3a:9d:b4:54:5a by local choice (reason=3)
-> May  8 21:10:58 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:00:00:00:00:00 reason=3
-> May  8 21:23:20 tofuschnitzel wpa_supplicant[5513]: wlan0: CTRL-EVENT-DISCONNECTED bssid=00:3a:9d:b4:54:5a reason=2
->
->
-> My feeling is also that things like
-> wpa_supplicant[5513]: wlan0: WPA: Key negotiation completed with 00:3a:9d:b4:54:5a [PTK=CCMP GTK=CCMP]
-> have a strong effect on the actual connection.
->
->
-> 4) conclusion
-> =============
->
-> in the current state, that is release 3.9.0, but the same happened
-> in earlier kernels, this driver and/or NM is completely useless
-> at times. At times it just works, at times it does nothing.
-> In this case, now the 5th day in series ...
->
->
-> Norbert
->
-> ------------------------------------------------------------------------
-> PREINING, Norbert                               http://www.preining.info
-> JAIST, Japan                                 TeX Live & Debian Developer
-> DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-> ------------------------------------------------------------------------
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
++       BUILD_BUG_ON(PAGE_SHIFT + MAX_ORDER != KMALLOC_SHIFT_HIGH + 1);
+        for (i = 1; i < PAGE_SHIFT + MAX_ORDER; i++) {
+                struct kmem_cache_node *n;
+                struct kmem_cache *cache = kmalloc_caches[i];
+----------
 
+on powerpc triggers below error.
 
--- 
-Regards,
-Oleksij
+  CC      mm/slab.o
+mm/slab.c: In function 'init_node_lock_keys':
+mm/slab.c:568:2: error: call to '__compiletime_assert_568' declared with attribute error: BUILD_BUG_ON failed: PAGE_SHIFT + MAX_ORDER != KMALLOC_SHIFT_HIGH + 1
+make[1]: *** [mm/slab.o] Error 1
+make: *** [mm/slab.o] Error 2
+
+This is an example of overrun at kmalloc_caches[26...PAGE_SHIFT+MAX_ORDER-1]
+range which the compiler may not be able to detect.
