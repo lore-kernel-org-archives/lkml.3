@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757839Ab3EIWdE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:33:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46094 "EHLO
+	id S932424Ab3EIWyK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:54:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46104 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757799Ab3EIWdC (ORCPT
+	with ESMTP id S1757827Ab3EIWdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:02 -0400
+	Thu, 9 May 2013 18:33:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Dave Airlie <airlied@redhat.com>
-Subject: [ 32/73] drm/mgag200: deal with bo reserve fail in dirty update path
-Date: Thu,  9 May 2013 15:31:55 -0700
-Message-Id: <20130509222801.446307215@linuxfoundation.org>
+Subject: [ 35/73] drm/ast: deal with bo reserve fail in dirty update path
+Date: Thu,  9 May 2013 15:31:58 -0700
+Message-Id: <20130509222801.778447289@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -28,30 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Airlie <airlied@redhat.com>
 
-commit 641719599528d806e00de8ae8c8453361266a312 upstream.
+commit 306373b645d80625335b8e684fa09b14ba460cec upstream.
 
-On F19 testing, it was noticed we get a lot of errors in dmesg
-about being unable to reserve the buffer when plymouth starts,
-this is due to the buffer being in the process of migrating,
-so it makes sense we can't reserve it.
+Port over the mgag200 fix to ast as it suffers the same issue.
 
-In order to deal with it, this adds delayed updates for the dirty
-updates, when the bo is unreservable, in the normal console case
-this shouldn't ever happen, its just when plymouth or X is
-pushing the console bo to system memory.
+    On F19 testing, it was noticed we get a lot of errors in dmesg
+    about being unable to reserve the buffer when plymouth starts,
+    this is due to the buffer being in the process of migrating,
+    so it makes sense we can't reserve it.
+
+    In order to deal with it, this adds delayed updates for the dirty
+    updates, when the bo is unreservable, in the normal console case
+    this shouldn't ever happen, its just when plymouth or X is
+    pushing the console bo to system memory.
 
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/mgag200/mgag200_drv.h |    2 +
- drivers/gpu/drm/mgag200/mgag200_fb.c  |   43 +++++++++++++++++++++++++++++++---
- drivers/gpu/drm/mgag200/mgag200_ttm.c |    4 +--
- 3 files changed, 44 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/ast/ast_drv.h |    2 +
+ drivers/gpu/drm/ast/ast_fb.c  |   43 +++++++++++++++++++++++++++++++++++++++---
+ drivers/gpu/drm/ast/ast_ttm.c |    2 -
+ 3 files changed, 43 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/mgag200/mgag200_drv.h
-+++ b/drivers/gpu/drm/mgag200/mgag200_drv.h
-@@ -116,6 +116,8 @@ struct mga_fbdev {
+--- a/drivers/gpu/drm/ast/ast_drv.h
++++ b/drivers/gpu/drm/ast/ast_drv.h
+@@ -239,6 +239,8 @@ struct ast_fbdev {
  	void *sysram;
  	int size;
  	struct ttm_bo_kmap_obj mapping;
@@ -59,26 +61,26 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 +	spinlock_t dirty_lock;
  };
  
- struct mga_crtc {
---- a/drivers/gpu/drm/mgag200/mgag200_fb.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_fb.c
-@@ -28,16 +28,52 @@ static void mga_dirty_update(struct mga_
- 	int bpp = (mfbdev->mfb.base.bits_per_pixel + 7)/8;
+ #define to_ast_crtc(x) container_of(x, struct ast_crtc, base)
+--- a/drivers/gpu/drm/ast/ast_fb.c
++++ b/drivers/gpu/drm/ast/ast_fb.c
+@@ -52,16 +52,52 @@ static void ast_dirty_update(struct ast_
+ 	int bpp = (afbdev->afb.base.bits_per_pixel + 7)/8;
  	int ret;
  	bool unmap = false;
 +	bool store_for_later = false;
 +	int x2, y2;
 +	unsigned long flags;
  
- 	obj = mfbdev->mfb.obj;
- 	bo = gem_to_mga_bo(obj);
+ 	obj = afbdev->afb.obj;
+ 	bo = gem_to_ast_bo(obj);
  
 +	/*
 +	 * try and reserve the BO, if we fail with busy
 +	 * then the BO is being moved and we should
 +	 * store up the damage until later.
 +	 */
- 	ret = mgag200_bo_reserve(bo, true);
+ 	ret = ast_bo_reserve(bo, true);
  	if (ret) {
 -		DRM_ERROR("failed to reserve fb bo\n");
 +		if (ret != -EBUSY)
@@ -89,66 +91,64 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 +
 +	x2 = x + width - 1;
 +	y2 = y + height - 1;
-+	spin_lock_irqsave(&mfbdev->dirty_lock, flags);
++	spin_lock_irqsave(&afbdev->dirty_lock, flags);
 +
-+	if (mfbdev->y1 < y)
-+		y = mfbdev->y1;
-+	if (mfbdev->y2 > y2)
-+		y2 = mfbdev->y2;
-+	if (mfbdev->x1 < x)
-+		x = mfbdev->x1;
-+	if (mfbdev->x2 > x2)
-+		x2 = mfbdev->x2;
++	if (afbdev->y1 < y)
++		y = afbdev->y1;
++	if (afbdev->y2 > y2)
++		y2 = afbdev->y2;
++	if (afbdev->x1 < x)
++		x = afbdev->x1;
++	if (afbdev->x2 > x2)
++		x2 = afbdev->x2;
 +
 +	if (store_for_later) {
-+		mfbdev->x1 = x;
-+		mfbdev->x2 = x2;
-+		mfbdev->y1 = y;
-+		mfbdev->y2 = y2;
-+		spin_unlock_irqrestore(&mfbdev->dirty_lock, flags);
++		afbdev->x1 = x;
++		afbdev->x2 = x2;
++		afbdev->y1 = y;
++		afbdev->y2 = y2;
++		spin_unlock_irqrestore(&afbdev->dirty_lock, flags);
  		return;
  	}
  
-+	mfbdev->x1 = mfbdev->y1 = INT_MAX;
-+	mfbdev->x2 = mfbdev->y2 = 0;
-+	spin_unlock_irqrestore(&mfbdev->dirty_lock, flags);
++	afbdev->x1 = afbdev->y1 = INT_MAX;
++	afbdev->x2 = afbdev->y2 = 0;
++	spin_unlock_irqrestore(&afbdev->dirty_lock, flags);
 +
  	if (!bo->kmap.virtual) {
  		ret = ttm_bo_kmap(&bo->bo, 0, bo->bo.num_pages, &bo->kmap);
  		if (ret) {
-@@ -47,10 +83,10 @@ static void mga_dirty_update(struct mga_
+@@ -71,10 +107,10 @@ static void ast_dirty_update(struct ast_
  		}
  		unmap = true;
  	}
 -	for (i = y; i < y + height; i++) {
 +	for (i = y; i <= y2; i++) {
  		/* assume equal stride for now */
- 		src_offset = dst_offset = i * mfbdev->mfb.base.pitches[0] + (x * bpp);
--		memcpy_toio(bo->kmap.virtual + src_offset, mfbdev->sysram + src_offset, width * bpp);
-+		memcpy_toio(bo->kmap.virtual + src_offset, mfbdev->sysram + src_offset, (x2 - x + 1) * bpp);
+ 		src_offset = dst_offset = i * afbdev->afb.base.pitches[0] + (x * bpp);
+-		memcpy_toio(bo->kmap.virtual + src_offset, afbdev->sysram + src_offset, width * bpp);
++		memcpy_toio(bo->kmap.virtual + src_offset, afbdev->sysram + src_offset, (x2 - x + 1) * bpp);
  
  	}
  	if (unmap)
-@@ -269,6 +305,7 @@ int mgag200_fbdev_init(struct mga_device
+@@ -305,6 +341,7 @@ int ast_fbdev_init(struct drm_device *de
  
- 	mdev->mfbdev = mfbdev;
- 	mfbdev->helper.funcs = &mga_fb_helper_funcs;
-+	spin_lock_init(&mfbdev->dirty_lock);
- 
- 	ret = drm_fb_helper_init(mdev->dev, &mfbdev->helper,
- 				 mdev->num_crtc, MGAG200FB_CONN_LIMIT);
---- a/drivers/gpu/drm/mgag200/mgag200_ttm.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_ttm.c
-@@ -315,8 +315,8 @@ int mgag200_bo_reserve(struct mgag200_bo
+ 	ast->fbdev = afbdev;
+ 	afbdev->helper.funcs = &ast_fb_helper_funcs;
++	spin_lock_init(&afbdev->dirty_lock);
+ 	ret = drm_fb_helper_init(dev, &afbdev->helper,
+ 				 1, 1);
+ 	if (ret) {
+--- a/drivers/gpu/drm/ast/ast_ttm.c
++++ b/drivers/gpu/drm/ast/ast_ttm.c
+@@ -316,7 +316,7 @@ int ast_bo_reserve(struct ast_bo *bo, bo
  
  	ret = ttm_bo_reserve(&bo->bo, true, no_wait, false, 0);
  	if (ret) {
 -		if (ret != -ERESTARTSYS)
--			DRM_ERROR("reserve failed %p\n", bo);
 +		if (ret != -ERESTARTSYS && ret != -EBUSY)
-+			DRM_ERROR("reserve failed %p %d\n", bo, ret);
+ 			DRM_ERROR("reserve failed %p\n", bo);
  		return ret;
  	}
- 	return 0;
 
 
