@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759329Ab3EIXBa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:01:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45973 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757182Ab3EIWco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757444Ab3EIWco (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 9 May 2013 18:32:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45943 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757182Ab3EIWck (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 18:32:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 09/73] perf/x86/intel: Add support for IvyBridge model 58 Uncore
-Date: Thu,  9 May 2013 15:31:32 -0700
-Message-Id: <20130509222758.963020164@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 02/73] powerpc: Emulate non privileged DSCR read and write
+Date: Thu,  9 May 2013 15:31:25 -0700
+Message-Id: <20130509222758.194456243@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -30,38 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vince Weaver <vincent.weaver@maine.edu>
+From: Anton Blanchard <anton@samba.org>
 
-commit 9a6bc14350b130427725f33e371e86212fa56c85 upstream.
+commit 73d2fb758e678c93bc76d40876c2359f0729b0ef upstream.
 
-According to Intel Vol3b 18.9, the IvyBridge model 58 uncore is
-the same as that of SandyBridge.
+POWER8 allows read and write of the DSCR in userspace. We added
+kernel emulation so applications could always use the instructions
+regardless of the CPU type.
 
-I've done some simple tests and with this patch things seem to
-work on my mac-mini.
+Unfortunately there are two SPRs for the DSCR and we only added
+emulation for the privileged one. Add code to match the non
+privileged one.
 
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Stephane Eranian <eranian@gmail.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1304291549320.15827@vincent-weaver-1.um.maine.edu
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+A simple test was created to verify the fix:
+
+http://ozlabs.org/~anton/junkcode/user_dscr_test.c
+
+Without the patch we get a SIGILL and it passes with the patch.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/include/asm/ppc-opcode.h |    4 ++++
+ arch/powerpc/kernel/traps.c           |   10 ++++++++--
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2853,6 +2853,7 @@ static int __init uncore_cpu_init(void)
- 		msr_uncores = nhm_msr_uncores;
- 		break;
- 	case 42: /* Sandy Bridge */
-+	case 58: /* Ivy Bridge */
- 		if (snb_uncore_cbox.num_boxes > max_cores)
- 			snb_uncore_cbox.num_boxes = max_cores;
- 		msr_uncores = snb_msr_uncores;
+--- a/arch/powerpc/include/asm/ppc-opcode.h
++++ b/arch/powerpc/include/asm/ppc-opcode.h
+@@ -112,6 +112,10 @@
+ #define PPC_INST_MFSPR_DSCR_MASK	0xfc1fffff
+ #define PPC_INST_MTSPR_DSCR		0x7c1103a6
+ #define PPC_INST_MTSPR_DSCR_MASK	0xfc1fffff
++#define PPC_INST_MFSPR_DSCR_USER	0x7c0302a6
++#define PPC_INST_MFSPR_DSCR_USER_MASK	0xfc1fffff
++#define PPC_INST_MTSPR_DSCR_USER	0x7c0303a6
++#define PPC_INST_MTSPR_DSCR_USER_MASK	0xfc1fffff
+ #define PPC_INST_SLBFEE			0x7c0007a7
+ 
+ #define PPC_INST_STRING			0x7c00042a
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -961,7 +961,10 @@ static int emulate_instruction(struct pt
+ 
+ #ifdef CONFIG_PPC64
+ 	/* Emulate the mfspr rD, DSCR. */
+-	if (((instword & PPC_INST_MFSPR_DSCR_MASK) == PPC_INST_MFSPR_DSCR) &&
++	if ((((instword & PPC_INST_MFSPR_DSCR_USER_MASK) ==
++		PPC_INST_MFSPR_DSCR_USER) ||
++	     ((instword & PPC_INST_MFSPR_DSCR_MASK) ==
++		PPC_INST_MFSPR_DSCR)) &&
+ 			cpu_has_feature(CPU_FTR_DSCR)) {
+ 		PPC_WARN_EMULATED(mfdscr, regs);
+ 		rd = (instword >> 21) & 0x1f;
+@@ -969,7 +972,10 @@ static int emulate_instruction(struct pt
+ 		return 0;
+ 	}
+ 	/* Emulate the mtspr DSCR, rD. */
+-	if (((instword & PPC_INST_MTSPR_DSCR_MASK) == PPC_INST_MTSPR_DSCR) &&
++	if ((((instword & PPC_INST_MTSPR_DSCR_USER_MASK) ==
++		PPC_INST_MTSPR_DSCR_USER) ||
++	     ((instword & PPC_INST_MTSPR_DSCR_MASK) ==
++		PPC_INST_MTSPR_DSCR)) &&
+ 			cpu_has_feature(CPU_FTR_DSCR)) {
+ 		PPC_WARN_EMULATED(mtdscr, regs);
+ 		rd = (instword >> 21) & 0x1f;
 
 
