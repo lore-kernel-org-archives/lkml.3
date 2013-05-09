@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759441Ab3EIXJM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:09:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45763 "EHLO
+	id S1755774Ab3EIW0Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:26:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45671 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754550Ab3EIW02 (ORCPT
+	with ESMTP id S1755592Ab3EIW0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:26:28 -0400
+	Thu, 9 May 2013 18:26:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 31/73] drm/ast: deal with bo reserve fail in dirty update path
-Date: Thu,  9 May 2013 15:25:21 -0700
-Message-Id: <20130509222529.623757717@linuxfoundation.org>
+        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
+        Ingo Molnar <mingo@kernel.org>, rostedt@goodmis.org,
+        a.p.zijlstra@chello.nl, paulus@samba.org, acme@ghostprotocols.net
+Subject: [ 14/73] perf/x86/intel: Fix unintended variable name reuse
+Date: Thu,  9 May 2013 15:25:04 -0700
+Message-Id: <20130509222527.944954382@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,129 +31,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Jan-Simon Möller <dl9pf@gmx.de>
 
-commit 306373b645d80625335b8e684fa09b14ba460cec upstream.
+commit 1b0dac2ac6debdbf1541e15f2cede03613cf4465 upstream.
 
-Port over the mgag200 fix to ast as it suffers the same issue.
+The variable name events_group is already in used and led to a
+compilation error when using clang to build the Linux Kernel .
+The fix is just to rename the var. No functional change. Please
+apply.
 
-    On F19 testing, it was noticed we get a lot of errors in dmesg
-    about being unable to reserve the buffer when plymouth starts,
-    this is due to the buffer being in the process of migrating,
-    so it makes sense we can't reserve it.
+Fix suggested in discussion by PaX Team <pageexec@freemail.hu>
 
-    In order to deal with it, this adds delayed updates for the dirty
-    updates, when the bo is unreservable, in the normal console case
-    this shouldn't ever happen, its just when plymouth or X is
-    pushing the console bo to system memory.
-
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+Cc: rostedt@goodmis.org
+Cc: a.p.zijlstra@chello.nl
+Cc: paulus@samba.org
+Cc: acme@ghostprotocols.net
+Link: http://lkml.kernel.org/r/1367316153-14808-1-git-send-email-dl9pf@gmx.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ast/ast_drv.h |    2 +
- drivers/gpu/drm/ast/ast_fb.c  |   43 +++++++++++++++++++++++++++++++++++++++---
- drivers/gpu/drm/ast/ast_ttm.c |    2 -
- 3 files changed, 43 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/ast/ast_drv.h
-+++ b/drivers/gpu/drm/ast/ast_drv.h
-@@ -241,6 +241,8 @@ struct ast_fbdev {
- 	void *sysram;
- 	int size;
- 	struct ttm_bo_kmap_obj mapping;
-+	int x1, y1, x2, y2; /* dirty rect */
-+	spinlock_t dirty_lock;
- };
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2428,7 +2428,7 @@ static void __init uncore_types_exit(str
+ static int __init uncore_type_init(struct intel_uncore_type *type)
+ {
+ 	struct intel_uncore_pmu *pmus;
+-	struct attribute_group *events_group;
++	struct attribute_group *attr_group;
+ 	struct attribute **attrs;
+ 	int i, j;
  
- #define to_ast_crtc(x) container_of(x, struct ast_crtc, base)
---- a/drivers/gpu/drm/ast/ast_fb.c
-+++ b/drivers/gpu/drm/ast/ast_fb.c
-@@ -53,16 +53,52 @@ static void ast_dirty_update(struct ast_
- 	int bpp = (afbdev->afb.base.bits_per_pixel + 7)/8;
- 	int ret;
- 	bool unmap = false;
-+	bool store_for_later = false;
-+	int x2, y2;
-+	unsigned long flags;
+@@ -2455,19 +2455,19 @@ static int __init uncore_type_init(struc
+ 		while (type->event_descs[i].attr.attr.name)
+ 			i++;
  
- 	obj = afbdev->afb.obj;
- 	bo = gem_to_ast_bo(obj);
+-		events_group = kzalloc(sizeof(struct attribute *) * (i + 1) +
+-					sizeof(*events_group), GFP_KERNEL);
+-		if (!events_group)
++		attr_group = kzalloc(sizeof(struct attribute *) * (i + 1) +
++					sizeof(*attr_group), GFP_KERNEL);
++		if (!attr_group)
+ 			goto fail;
  
-+	/*
-+	 * try and reserve the BO, if we fail with busy
-+	 * then the BO is being moved and we should
-+	 * store up the damage until later.
-+	 */
- 	ret = ast_bo_reserve(bo, true);
- 	if (ret) {
--		DRM_ERROR("failed to reserve fb bo\n");
-+		if (ret != -EBUSY)
-+			return;
-+
-+		store_for_later = true;
-+	}
-+
-+	x2 = x + width - 1;
-+	y2 = y + height - 1;
-+	spin_lock_irqsave(&afbdev->dirty_lock, flags);
-+
-+	if (afbdev->y1 < y)
-+		y = afbdev->y1;
-+	if (afbdev->y2 > y2)
-+		y2 = afbdev->y2;
-+	if (afbdev->x1 < x)
-+		x = afbdev->x1;
-+	if (afbdev->x2 > x2)
-+		x2 = afbdev->x2;
-+
-+	if (store_for_later) {
-+		afbdev->x1 = x;
-+		afbdev->x2 = x2;
-+		afbdev->y1 = y;
-+		afbdev->y2 = y2;
-+		spin_unlock_irqrestore(&afbdev->dirty_lock, flags);
- 		return;
+-		attrs = (struct attribute **)(events_group + 1);
+-		events_group->name = "events";
+-		events_group->attrs = attrs;
++		attrs = (struct attribute **)(attr_group + 1);
++		attr_group->name = "events";
++		attr_group->attrs = attrs;
+ 
+ 		for (j = 0; j < i; j++)
+ 			attrs[j] = &type->event_descs[j].attr.attr;
+ 
+-		type->events_group = events_group;
++		type->events_group = attr_group;
  	}
  
-+	afbdev->x1 = afbdev->y1 = INT_MAX;
-+	afbdev->x2 = afbdev->y2 = 0;
-+	spin_unlock_irqrestore(&afbdev->dirty_lock, flags);
-+
- 	if (!bo->kmap.virtual) {
- 		ret = ttm_bo_kmap(&bo->bo, 0, bo->bo.num_pages, &bo->kmap);
- 		if (ret) {
-@@ -72,10 +108,10 @@ static void ast_dirty_update(struct ast_
- 		}
- 		unmap = true;
- 	}
--	for (i = y; i < y + height; i++) {
-+	for (i = y; i <= y2; i++) {
- 		/* assume equal stride for now */
- 		src_offset = dst_offset = i * afbdev->afb.base.pitches[0] + (x * bpp);
--		memcpy_toio(bo->kmap.virtual + src_offset, afbdev->sysram + src_offset, width * bpp);
-+		memcpy_toio(bo->kmap.virtual + src_offset, afbdev->sysram + src_offset, (x2 - x + 1) * bpp);
- 
- 	}
- 	if (unmap)
-@@ -292,6 +328,7 @@ int ast_fbdev_init(struct drm_device *de
- 
- 	ast->fbdev = afbdev;
- 	afbdev->helper.funcs = &ast_fb_helper_funcs;
-+	spin_lock_init(&afbdev->dirty_lock);
- 	ret = drm_fb_helper_init(dev, &afbdev->helper,
- 				 1, 1);
- 	if (ret) {
---- a/drivers/gpu/drm/ast/ast_ttm.c
-+++ b/drivers/gpu/drm/ast/ast_ttm.c
-@@ -316,7 +316,7 @@ int ast_bo_reserve(struct ast_bo *bo, bo
- 
- 	ret = ttm_bo_reserve(&bo->bo, true, no_wait, false, 0);
- 	if (ret) {
--		if (ret != -ERESTARTSYS)
-+		if (ret != -ERESTARTSYS && ret != -EBUSY)
- 			DRM_ERROR("reserve failed %p\n", bo);
- 		return ret;
- 	}
+ 	type->pmu_group = &uncore_pmu_attr_group;
 
 
