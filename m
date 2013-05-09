@@ -1,81 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab3EIXvw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 19:51:52 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:47501 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754999Ab3EIXvv (ORCPT
+	id S1756045Ab3EIXwH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:52:07 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:27245 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755725Ab3EIXwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 19:51:51 -0400
+	Thu, 9 May 2013 19:52:05 -0400
+X-IronPort-AV: E=Sophos;i="4.87,643,1363158000"; 
+   d="scan'208";a="45788541"
+Message-ID: <518C369F.2070505@codeaurora.org>
+Date: Thu, 09 May 2013 16:51:59 -0700
+From: hanumant <hanumant@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6uybaWodG_F_=w7fF=w0X008E+HE7PuT=+a4zTG7-ug4A@mail.gmail.com>
-References: <CACxGe6uCJde0vw=zcqJOxdiwOJO8bRe00yzs6UDzup5z-jTRbw@mail.gmail.com>
- <CA+55aFwU3w2jiA26fCmF3_i+vpf8TMY+8L5=Oso_uMhZX30DQw@mail.gmail.com> <CACxGe6uybaWodG_F_=w7fF=w0X008E+HE7PuT=+a4zTG7-ug4A@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Fri, 10 May 2013 08:51:30 +0900
-Message-ID: <CAAVeFuKBn0oyZSJ50pchTwOCsSdyP5ofx3gaf4h_02xYuZDGSg@mail.gmail.com>
-Subject: Re: [git pull] GENERIC_GPIO removal
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: [RFC] pinctrl: Alternative to gpio to pinctrl pin mapping via DT
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 3:11 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Thu, May 9, 2013 at 6:08 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Wed, May 8, 2013 at 6:48 AM, Grant Likely <grant.likely@linaro.org> wrote:
->>>
->>> * "git grep '\bGENERIC_GPIO\b'" should return 1 hit in the Chinese
->>>   documentation.
->>
->> That's the oddest command line I've seen in some time.
->>
->> You do realize that "git grep" is perfectly happy to just take the
->> "-w" flag exactly like normal grep?
->
-> Hahaha. That's just what Alexandre passed to me. I didn't really think
-> much about it.  :-)
+Hi
 
-/me likes regexps. You should see my workaround to using the -i option.
+I have a pincontroller with different pin types
+For example pin type A & B. (There are more but 2 is sufficient to 
+specify here).
+Each pin type has its own register programming semantics
+So each pin type is associated with its own programming vectors.
 
-Thanks for the merge, it clears the path for more GPIO stuff. arch/arc
-introduced a new dangling definition of GENERIC_GPIO in -next that now
-appears in your tree, the following patch by Vineet takes care of it.
-Either you can merge it directly or Vineet will make sure this patch
-is in his next pull request.
+Of this lets say pin type A can support gpio funcitonality as well.
 
-Alex.
+I model this as
 
------8<-----8<-----8<
-From: Vineet Gupta <vgupta@synopsys.com>
-Date: Wed, 17 Apr 2013 17:33:02 +0530
-Subject: [PATCH] ARC: [TB10x] Remove GENERIC_GPIO
+1) total pins exported to pinctrl subsystem = num pins of type A +
+						num pins of type B
 
-This tracks Alexandre Courbot's mainline GPIO rework
+2) Each pin type is a child node of the pinctrl node in device tree.
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Acked-by: Alexandre Courbot <acourbot@nvidia.com>
----
- arch/arc/plat-tb10x/Kconfig |    7 -------
- 1 file changed, 7 deletions(-)
+3) The starting pin number of each pin type on the pinctroller depends 
+on the order in which it occurs in the device tree when the pinctrl 
+driver is parsing the device tree.
 
-diff --git a/arch/arc/plat-tb10x/Kconfig b/arch/arc/plat-tb10x/Kconfig
-index 4e12127..1d34521 100644
---- a/arch/arc/plat-tb10x/Kconfig
-+++ b/arch/arc/plat-tb10x/Kconfig
-@@ -27,10 +27,3 @@ menuconfig ARC_PLAT_TB10X
-          Abilis Systems. TB10x is based on the ARC700 CPU architecture.
-          Say Y if you are building a kernel for one of the SOCs in this
-          series (e.g. TB100 or TB101). If in doubt say N.
--
--if ARC_PLAT_TB10X
--
--config GENERIC_GPIO
--       def_bool y
--
--endif
+4) In this case, if a pintype supports gpio functionality, I could have 
+informed the pinctrl system of the pin range, based on the run time 
+determined start pin of that pin type. (This would have involved the use 
+of the now deprecated pinctrl_add_gpio_range())
+
+5) The current way of notifying the pinctrl system of gpio functionality 
+is by using the gpio-ranges attribute in the gpio chip device tree node. 
+But in my case, this would require me to know run time what pin range is 
+going to correspond to my pin type.
+					
+
+Sample DT node
+
+&pinctrl0: pinctrl@<0xfd110000> {
+....
+..
+	pinA: pinA {
+		pintype = "A";
+		num-pins = <100>;
+		#pin-cells = <1>;
+	};
+	pinB: pinB {
+		pintype = "B"
+		num-pins = <20>;
+		#pin-cells = <1>;
+	};
+	gpio_chip_A: GC_A {
+		pin-type-parent = <&pinA>;
+		gpio-controller
+		#gpio-cells = <2>;
+		interrupt-controller;
+		interrupt-cells = <2>;
+		gpio-ranges = <??????>;	
+	};
+	/* Sample pin use case */
+	uart0_pins {
+		pins = <&pinA 22>, <&pinA 23>;
+		pins-func = <2>;
+
+		uart0_active {
+			pin-drv = <8>;
+			pin-pull = <1>;
+		};
+		uart0_suspend {
+			pin-drv = <2>;
+			pin-pull = <0>;
+		};
+	};
+		
+}
+/* Sample gpio use case */
+lcd@0xAb000000 {
+		gpios = <&gpio_chip_A 33 0>;
+		....
+		...
+};
+
+In the above example, i could assume since the pin type A occurs first
+in order, the gpio-ranges = 0 to 99 for the corresponding. But that 
+would mean ensuring that your pin type occurs at a certain order in 
+Device tree.
+
+The pinctrl_add_gpio_range() would have really helped here in specifying 
+the gpio range at device tree parsing time.
+
+Is there a more elegant option rather then hard coding the order of pin 
+types.?
+
+Thanks
+Hanumant
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora 
+Forum, hosted by The Linux Foundation
+-- 
