@@ -1,131 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab3EIKZB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 06:25:01 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:54057 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753153Ab3EIKY7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 06:24:59 -0400
-Message-ID: <518B77C1.70107@st.com>
-Date: Thu, 09 May 2013 11:17:37 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1753823Ab3EIK3o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 06:29:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10707 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753558Ab3EIK3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 06:29:43 -0400
+Date: Thu, 9 May 2013 18:29:51 +0800
+From: Dave Young <dyoung@redhat.com>
+To: CAI Qian <caiqian@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.9.0: WARNING: at drivers/base/core.c:575
+Message-ID: <20130509102949.GA28545@darkstar.nay.redhat.com>
+References: <148688218.8139723.1367911491024.JavaMail.root@redhat.com>
+ <1732336275.8141054.1367911558572.JavaMail.root@redhat.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: dong.aisheng@linaro.org, sameo@linux.intel.com,
-        Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Stuart Menefy <stuart.menefy@st.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
-Subject: Re: [RFC 3/8] mfd:syscon: Introduce claim/read/write/release APIs
-References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <201305081650.23264.arnd@arndb.de> <518A8C1D.3090600@st.com> <201305082148.10933.arnd@arndb.de>
-In-Reply-To: <201305082148.10933.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1732336275.8141054.1367911558572.JavaMail.root@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-Thankyou for extending the discussion.
+On Tue, May 07, 2013 at 03:25:58AM -0400, CAI Qian wrote:
+> Never saw any of those messages were floating in any of the RC testing, but
+> now happened in 3.9 GA on Power 7 systems.
+> 
+> [    0.329753] EEH: devices created
+> [    0.340203] atomic64 test passed
+> [    0.340407] NET: Registered protocol family 16
+> [    0.340457] EEH: No capable adapters found
+> [    0.340609] IBM eBus Device Driver
+> [    0.358825] Write permission without 'store'
+> [    0.358852] ------------[ cut here ]------------
+> [    0.358859] WARNING: at drivers/base/core.c:575
+> [    0.358866] Modules linked in:
+> [    0.358877] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.9.0+ #1
+> [    0.358887] task: c0000003f8bc0000 ti: c0000003f8c00000 task.ti: c0000003f8c00000
+> [    0.358897] NIP: c0000000004a7f44 LR: c0000000004a7f40 CTR: 0000000001766760
+> [    0.358906] REGS: c0000003f8c03780 TRAP: 0700   Not tainted  (3.9.0+)
+> [    0.358914] MSR: 8000000000029032 <SF,EE,ME,IR,DR,RI>  CR: 28139d24  XER: 00000001
+> [    0.358939] SOFTE: 1
+> [    0.358944] CFAR: c00000000074427c
+> [    0.358950] 
+> GPR00: c0000000004a7f40 c0000003f8c03a00 c000000001117e50 0000000000000020 
+> GPR04: 0000000000000000 0000000000000000 00000000160c9615 0000000000000000 
+> GPR08: c000000001064af0 0000000000000000 0000000000000000 0000000000003fef 
+> GPR12: 0000000028139d22 c000000007f00000 c00000000000bb30 0000000000000000 
+> GPR16: 0000000000000000 0000000000000000 c000000000ff1c78 0000000000000001 
+> GPR20: 0000000000000000 0000000000000000 0000000000000000 c00000000117eb08 
+> GPR24: 00000000000000a6 c000000000af0028 0000000000000000 c000000000ff21a0 
+> GPR28: 0000000000000002 c000000001500030 c0000000011b8200 c000000001500030 
+> [    0.359070] NIP [c0000000004a7f44] .device_create_file+0xa4/0xe0
+> [    0.359080] LR [c0000000004a7f40] .device_create_file+0xa0/0xe0
+> [    0.359088] Call Trace:
+> [    0.359095] [c0000003f8c03a00] [c0000000004a7f40] .device_create_file+0xa0/0xe0 (unreliable)
+> [    0.359112] [c0000003f8c03a90] [c00000000074daf8] .register_cpu_online+0x21c/0x284
+> [    0.359126] [c0000003f8c03b30] [c000000000a78308] .topology_init+0x130/0x200
+> [    0.359138] [c0000003f8c03c10] [c00000000000b4d4] .do_one_initcall+0x144/0x1f0
+> [    0.359150] [c0000003f8c03cd0] [c000000000a746a8] .kernel_init_freeable+0x23c/0x32c
+> [    0.359163] [c0000003f8c03db0] [c00000000000bb4c] .kernel_init+0x1c/0x130
+> [    0.359175] [c0000003f8c03e30] [c00000000000a164] .ret_from_kernel_thread+0x64/0x80
+> [    0.359184] Instruction dump:
+> [    0.359190] 3863e610 4829c2f1 60000000 0fe00000 e8810070 4bffffb0 60000000 3c62ff8c 
+> [    0.359211] f8810070 3863e5e8 4829c2cd 60000000 <0fe00000> e8810070 a1240008 4bffff80 
+> [    0.359241] ---[ end trace c949de754c984735 ]---
+> 
+Hi, Caiqian
 
-On 08/05/13 20:48, Arnd Bergmann wrote:
-> On Wednesday 08 May 2013, Srinivas KANDAGATLA wrote:
->> the pinctrl driver calls syconf_claim(np, "st,alt-control) to get a
->> field and then do a read/write on the field.
->>
->> Just in pinctrl driver we use around 50-100 sysconf registers scatters
->> across different groups.
->>
->> Without these new APIs, its very difficult to pass this information to
->> the drivers.
-> But are those necessarily things you would configure using DT?
-In last comment.
->
-> If there are so many registers that are shared between mutliple
-> subsystems, maybe using drivers/mfd/syscon for that is taking things
-> further than you should, since it is unlike what any of the other
-> SoC families need from syscon.
-I agree, my initial approach was having a dedicated driver specific to
-ST syscon, however syscon seems to do things very much similar to what
-we want, so I have integrated those 3 functions in syscon.
-Am happy to go back with my first approach of adding ST specific syscon
-driver if no one is actually going to benefit with such a change to
-syscon driver.
+Could you try below debug patch to print the attr name?
 
->
-> Can you describe how your syscon registers are laid out?
-On STiH416 SOC we have 9 SYSCONF(aka System Configuration
-Registers)named banks/groups, each bank has its own memory map.
-Each sysconf bank has number of 32 bit registers which vary from bank to
-bank, like sysconf bank "sbc" has range from SYSTEM_CONFIG0 to
-SYSTEM_CONFIG999 where as  sysconf bank "front" has range of
-SYSTEM_CONFIG1000 to SYSTEM_CONFIG1999 and so on.
+---
+print the sysfs attribute file name when we warn about bogus permissions 
 
-Each register is assigned with a unique SYCONF number, example:
-SYSTEM_CONFIG100, SYSTEM_CONFIG101 , .. and so on.
-Each sysconf contains bits of the IP configurations wired-up to the
-sysconf register bits.
+Make it obvious to see what attribute is using bogus permissions.
 
-As example:
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ drivers/base/core.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-- Each pinctrl entry for set of 8 pins uses around 8-10 sysconfig
-register to control pinconf and pin functions.
-- IPs like Ethernet have few bit like Ethernet-Mode selection external
-or internal phyclk wired up to bits in sysconf registers,
-- Few clocks are controlled by sysconf registers.
-- Reset to IPs are wired up to bits of sysconf same registers.
-- ARM core soft reset is wired up to the sysconf registers...
-And most of the IPs have similar requirements ......
-
-Total layout of the sysconf changes per SOC, and the bit arrangements
-aswell, however the core IP(pinctrl, etherenet ...) and logic to drive
-those bits remains exactly same.
-
-As the code remains the same, the information about the hardware
-configuration and offsets to the registers are passed by device trees
-using the node properties.
-
-In general the requirements of the sysconf support to the SOC/driver
-support is.
-1> It should be able to read/write a sysconf register bits without
-having to "if" each SOC in the code. So that code is totally abstracted.
-Which is currently achieved by passing the information from the device
-trees and the driver just uses the property to get it.
-2> The infrastructure should protect the claimed registers from
-over-writing by other drivers. We do this by claim-read/write-release
-style API.
-3> The driver should be able to set a group of sysconf registers bits to
-a particular values before initialises the IP. I was thinking of doing
-this in a same way as pinctrl state.
-
-Any suggestion is most appreciated?
-
-Thanks,
-srini
-
-> Which subsystems beside pinctrl need to directly interact
-> with it? Is there any logical structure in it or do you just
-> have tons of bits scattered around an MMIO area?
->
-> 	Arnd
->
-
+--- linux-2.6.orig/drivers/base/core.c
++++ linux-2.6/drivers/base/core.c
+@@ -572,9 +572,11 @@ int device_create_file(struct device *de
+ 
+ 	if (dev) {
+ 		WARN(((attr->attr.mode & S_IWUGO) && !attr->store),
+-				"Write permission without 'store'\n");
++			"Attribute "%s": write permission without 'store'\n",
++			attr->attr.name);
+ 		WARN(((attr->attr.mode & S_IRUGO) && !attr->show),
+-				"Read permission without 'show'\n");
++			"Attribute "%s": Read permission without 'show'\n",
++			attr->attr.name);
+ 		error = sysfs_create_file(&dev->kobj, &attr->attr);
+ 	}
+ 
