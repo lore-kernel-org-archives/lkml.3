@@ -1,130 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab3EIR10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 13:27:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53130 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821Ab3EIR1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 13:27:25 -0400
-Date: Thu, 9 May 2013 18:27:21 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Linux-MM <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Dave Hansen <dave@sr71.net>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/22] mm: page allocator: Allocate/free order-0 pages
- from a per-zone magazine
-Message-ID: <20130509172721.GG11497@suse.de>
-References: <1368028987-8369-1-git-send-email-mgorman@suse.de>
- <1368028987-8369-10-git-send-email-mgorman@suse.de>
- <0000013e85732d03-05e35c8e-205e-4242-98f5-2ae7bda64c5c-000000@email.amazonses.com>
- <20130509152318.GD11497@suse.de>
- <0000013e8a189d6a-efcf99b5-c620-4882-8faf-8187ec243b2c-000000@email.amazonses.com>
+	id S1754201Ab3EIRb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 13:31:59 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:48682 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab3EIRb5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 13:31:57 -0400
+Date: Thu, 9 May 2013 10:31:30 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tj@kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 0/7] Put "Kernel hacking" Kconfig menu on a diet
+Message-ID: <20130509173130.GA17021@moria.home.lan>
+References: <20130507204642.D010DDC1@viggo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0000013e8a189d6a-efcf99b5-c620-4882-8faf-8187ec243b2c-000000@email.amazonses.com>
+In-Reply-To: <20130507204642.D010DDC1@viggo.jf.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 04:21:09PM +0000, Christoph Lameter wrote:
-> On Thu, 9 May 2013, Mel Gorman wrote:
+On Tue, May 07, 2013 at 01:46:42PM -0700, Dave Hansen wrote:
+> Michal, I figure you're the most logical person for these to go
+> through.
 > 
-> > >
-> > > The per cpu structure access also would not need to disable irq if the
-> > > fast path would be using this_cpu ops.
-> > >
-> >
-> > How does this_cpu protect against preemption due to interrupt?  this_read()
-> > itself only disables preemption and it's explicitly documented that
-> > interrupt that modifies the per-cpu data will not be reliable so the use
-> > of the per-cpu lists is right out. It would require that a race-prone
-> > check be used with cmpxchg which in turn would require arrays, not lists.
+> There is a fair amount of churn in the areas around these patches
+> so I've resolved conflicts a couple of times.  For the patches that
+> are almost purely code move patches, I'm doing this:
 > 
-> this_cpu uses single atomic instructions that cannot be interrupted. The
-> relocation occurs through a segment prefix and therefore is not subject
-> to preemption. The interrupts and rescheduling can occur between this_cpu
-> ops and there races would have to be dealt with. True using cmpxchg (w/o
-> lock semantics) is not that easy. But that is the fastest solution that I
-> know of.
+> 	cat foo.patch | grep '^[-+]' | perl -pe 's/^.//' | sort | uniq -c | sort -n
 > 
-
-And it requires moving to an array so there are going to be strong limits
-on the size of the per-cpu queue.
-
-> > I don't see how as the page allocator does not control the physical location
-> > of any pages freed to it and it's the struct pages it is linking together. On
-> > some systems at least with 1G pages, the struct pages will be backed by
-> > memory mapped with 1G entries so the TLB pressure should be reduced but
-> > the cache pressure from struct page modifications is certainly a problem.
+> and watching for any non-even numbers coming out of uniq.  This
+> helps me make sure I'm not adding/removing code that I should not
+> be.
 > 
-> I would be useful if the allocator would hand out pages from the
-> same physical area first. This would reduce fragmentation as well and
-> since it is likely that numerous pages are allocated for some purpose
-> (given that that the page sizes of 4k are rather tiny compared to the data
-> needs these day) would reduce TLB pressure.
+> The Signed-off-by's in here look funky.  I changed employers
+> while working on this set, so I have signoffs from both email
+> addresses.
 > 
-
-It already does this via the buddy allocator and the treatment of
-migratetypes.
-
-> > > > > 3. The magazine_lock is potentially hot but it can be split to have
-> > > >    one lock per CPU socket to reduce contention. Draining the lists
-> > > >    in this case would acquire multiple locks be acquired.
-> > >
-> > > IMHO the use of per cpu RMV operations would be lower latency than the use
-> > > of spinlocks. There is no "lock" prefix overhead with those. Page
-> > > allocation is a frequent operation that I would think needs to be as fast
-> > > as possible.
-> >
-> > The memory requirements may be large because those per-cpu areas sized are
-> > allocated depending on num_possible_cpus()s. Correct? Regardless of their
+> ---
 > 
-> Yes. But we have lots of memory in machines these days. Why would that be
-> an issue?
+> I think the "Kernel Hacking" menu has gotten a bit out of hand.  It
+> is over 120 lines long on my system with everything enabled and
+> options are scattered around it haphazardly.
 > 
-
-Because the embedded people will have a fit if the page allocator needs
-an additional 1K+ of memory just to turn on.
-
-> > size, it would still be required to deal with cpu hot-plug to avoid memory
-> > leaks and draining them would still require global IPIs so the overall
-> > code complexity would be similar to what exists today. Ultimately all that
-> > changes is that we use an array+cmpxchg instead of a list which will shave
-> > a small amount of latency but it will still be regularly falling back to
-> > the buddy lists and contend on the zone->lock due the limited size of the
-> > per-cpu magazines and hiding the advantage of using cmpxchg in the noise.
+>         http://sr71.net/~dave/linux/kconfig-horror.png
 > 
-> The latency would be an order of magnitude less than the approach that you
-> propose here. The magazine approach and the lockless approach both will
-> require slowpaths that replenish the set of pages to be served next.
+> Let's try to introduce some sanity.  This set takes that 120 lines
+> down to 55 and makes it vastly easier to find some things.  It's a
+> start.
 > 
+> This set stands on its own, but there is plenty of room for follow-up
+> patches.  The arch-specific debug options still end up getting stuck
+> in the top-level "kernel hacking" menu.  OPTIMIZE_INLINING, for
+> instance, could obviously go in to the "compiler options" menu, but
+> the fact that it is defined in arch/ in a separate Kconfig file keeps
+> it on its own for the moment.
 
-With this approach the lock can be made more fine or coarse based on the
-number of CPUs, the queues can be made arbitrarily large and if necessary,
-per-process magazines for heavily contended workloads could be added.
-A fixed-size array like you propose would be only marginally better than
-what is implemented today as far as I can see because it still smacks into
-the irq-safe zone->lock and pages can be pinned in inaccessible per-cpu
-queues unless a global IPI is sent.
+Yes, please!
 
-> The problem with the page allocator is that it can serve various types of
-> pages. If one wants to setup caches for all of those then these caches are
-> replicated for each processor or whatever higher unit we decide to use. I
-> think one of the first moves need to be to identify which types of pages
-> are actually useful to serve in a fast way. Higher order pages are already
-> out but what about the different zone types, migration types etc?
-> 
+I'm sure there's more that could be done but, like you said, it's a
+start - and a significant one.
 
-What tpyes of pages are useful to serve in a fast way is workload
-dependenat and besides the per-cpu allocator as it exists today already
-has separate queues for migration types.
-
-I strongly suspect that your proposal would end up performing roughly the
-same as what exists today except that it'll be more complex because it'll
-have to deal with the race-prone array accesses.
-
--- 
-Mel Gorman
-SUSE Labs
+Any chance this could go in sooner than later? I spend way too much time
+hunting down options in kernel hacking and I spend enough time in that
+menu that I should have the damn thing memorized by now.
