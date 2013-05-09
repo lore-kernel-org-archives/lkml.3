@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab3EIWmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:42:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46362 "EHLO
+	id S1757248Ab3EIWme (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:42:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46359 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758447Ab3EIWez (ORCPT
+	with ESMTP id S1758441Ab3EIWey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:34:55 -0400
+	Thu, 9 May 2013 18:34:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 16/26] drm/radeon: properly lock disp in mc_stop/resume for evergreen+
-Date: Thu,  9 May 2013 15:34:30 -0700
-Message-Id: <20130509223424.139429000@linuxfoundation.org>
+Subject: [ 15/26] drm/radeon/dce6: add missing display reg for tiling setup
+Date: Thu,  9 May 2013 15:34:29 -0700
+Message-Id: <20130509223424.027627391@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509223422.368544659@linuxfoundation.org>
 References: <20130509223422.368544659@linuxfoundation.org>
@@ -28,107 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 968c01664ccbe0e46c19a1af662c4c266a904203 upstream.
+commit 7c1c7c18fc752b2a1d07597286467ef186312463 upstream.
 
-Need to wait for the new addresses to take affect before
-re-enabling the MC.
+A new tiling config register for the display blocks was
+added on DCE6.
+
+May fix:
+https://bugs.freedesktop.org/show_bug.cgi?id=62889
+https://bugs.freedesktop.org/show_bug.cgi?id=57919
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c     |   47 ++++++++++++++++++++++++++++++---
- drivers/gpu/drm/radeon/evergreen_reg.h |    2 +
- 2 files changed, 45 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/ni.c  |    2 ++
+ drivers/gpu/drm/radeon/nid.h |    4 ++++
+ drivers/gpu/drm/radeon/si.c  |    1 +
+ drivers/gpu/drm/radeon/sid.h |    2 ++
+ 4 files changed, 9 insertions(+)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1147,18 +1147,14 @@ void evergreen_mc_stop(struct radeon_dev
- 				if (!(tmp & EVERGREEN_CRTC_BLANK_DATA_EN)) {
- 					radeon_wait_for_vblank(rdev, i);
- 					tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
--					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 					WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
--					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 				}
- 			} else {
- 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
- 				if (!(tmp & EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE)) {
- 					radeon_wait_for_vblank(rdev, i);
- 					tmp |= EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
--					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 					WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
--					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 				}
- 			}
- 			/* wait for the next frame */
-@@ -1185,6 +1181,22 @@ void evergreen_mc_stop(struct radeon_dev
- 	}
- 	/* wait for the MC to settle */
- 	udelay(100);
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -911,6 +911,8 @@ static void cayman_gpu_init(struct radeo
+ 	WREG32(GB_BACKEND_MAP, gb_backend_map);
+ 	WREG32(GB_ADDR_CONFIG, gb_addr_config);
+ 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
++	if (ASIC_IS_DCE6(rdev))
++		WREG32(DMIF_ADDR_CALC, gb_addr_config);
+ 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
+ 
+ 	/* primary versions */
+--- a/drivers/gpu/drm/radeon/nid.h
++++ b/drivers/gpu/drm/radeon/nid.h
+@@ -42,6 +42,10 @@
+ #define CAYMAN_MAX_TCC_MASK          0xFF
+ 
+ #define DMIF_ADDR_CONFIG  				0xBD4
 +
-+	/* lock double buffered regs */
-+	for (i = 0; i < rdev->num_crtc; i++) {
-+		if (save->crtc_enabled[i]) {
-+			tmp = RREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i]);
-+			if (!(tmp & EVERGREEN_GRPH_UPDATE_LOCK)) {
-+				tmp |= EVERGREEN_GRPH_UPDATE_LOCK;
-+				WREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i], tmp);
-+			}
-+			tmp = RREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i]);
-+			if (!(tmp & 1)) {
-+				tmp |= 1;
-+				WREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i], tmp);
-+			}
-+		}
-+	}
- }
- 
- void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *save)
-@@ -1206,6 +1218,33 @@ void evergreen_mc_resume(struct radeon_d
- 	WREG32(EVERGREEN_VGA_MEMORY_BASE_ADDRESS_HIGH, upper_32_bits(rdev->mc.vram_start));
- 	WREG32(EVERGREEN_VGA_MEMORY_BASE_ADDRESS, (u32)rdev->mc.vram_start);
- 
-+	/* unlock regs and wait for update */
-+	for (i = 0; i < rdev->num_crtc; i++) {
-+		if (save->crtc_enabled[i]) {
-+			tmp = RREG32(EVERGREEN_MASTER_UPDATE_MODE + crtc_offsets[i]);
-+			if ((tmp & 0x3) != 0) {
-+				tmp &= ~0x3;
-+				WREG32(EVERGREEN_MASTER_UPDATE_MODE + crtc_offsets[i], tmp);
-+			}
-+			tmp = RREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i]);
-+			if (tmp & EVERGREEN_GRPH_UPDATE_LOCK) {
-+				tmp &= ~EVERGREEN_GRPH_UPDATE_LOCK;
-+				WREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i], tmp);
-+			}
-+			tmp = RREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i]);
-+			if (tmp & 1) {
-+				tmp &= ~1;
-+				WREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i], tmp);
-+			}
-+			for (j = 0; j < rdev->usec_timeout; j++) {
-+				tmp = RREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i]);
-+				if ((tmp & EVERGREEN_GRPH_SURFACE_UPDATE_PENDING) == 0)
-+					break;
-+				udelay(1);
-+			}
-+		}
-+	}
++/* DCE6 only */
++#define DMIF_ADDR_CALC  				0xC00
 +
- 	/* unblackout the MC */
- 	tmp = RREG32(MC_SHARED_BLACKOUT_CNTL);
- 	tmp &= ~BLACKOUT_MODE_MASK;
---- a/drivers/gpu/drm/radeon/evergreen_reg.h
-+++ b/drivers/gpu/drm/radeon/evergreen_reg.h
-@@ -225,6 +225,8 @@
- #define EVERGREEN_CRTC_STATUS_POSITION                  0x6e90
- #define EVERGREEN_MASTER_UPDATE_MODE                    0x6ef8
- #define EVERGREEN_CRTC_UPDATE_LOCK                      0x6ed4
-+#define EVERGREEN_MASTER_UPDATE_LOCK                    0x6ef4
-+#define EVERGREEN_MASTER_UPDATE_MODE                    0x6ef8
+ #define	SRBM_GFX_CNTL				        0x0E44
+ #define		RINGID(x)					(((x) & 0x3) << 0)
+ #define		VMID(x)						(((x) & 0x7) << 0)
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -1799,6 +1799,7 @@ static void si_gpu_init(struct radeon_de
+ 	rdev->config.si.backend_map = gb_backend_map;
+ 	WREG32(GB_ADDR_CONFIG, gb_addr_config);
+ 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
++	WREG32(DMIF_ADDR_CALC, gb_addr_config);
+ 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
  
- #define EVERGREEN_DC_GPIO_HPD_MASK                      0x64b0
- #define EVERGREEN_DC_GPIO_HPD_A                         0x64b4
+ 	/* primary versions */
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -55,6 +55,8 @@
+ 
+ #define DMIF_ADDR_CONFIG  				0xBD4
+ 
++#define DMIF_ADDR_CALC  				0xC00
++
+ #define	SRBM_STATUS				        0xE50
+ 
+ #define	CC_SYS_RB_BACKEND_DISABLE			0xe80
 
 
