@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab3EIW2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:28:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45898 "EHLO
+	id S1756819Ab3EIW2u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:28:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45904 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756536Ab3EIW0z (ORCPT
+	with ESMTP id S1756521Ab3EIW0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 May 2013 18:26:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Bulkow <David.Bulkow@stratus.com>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 70/73] PCI: Delay final fixups until resources are assigned
-Date: Thu,  9 May 2013 15:26:00 -0700
-Message-Id: <20130509222533.509798069@linuxfoundation.org>
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [ 69/73] EDAC: Dont give write permission to read-only files
+Date: Thu,  9 May 2013 15:25:59 -0700
+Message-Id: <20130509222533.412154112@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
 References: <20130509222526.480204972@linuxfoundation.org>
@@ -27,59 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-commit e253aaf0af51c1e4dc7dd3b26ea8e666bf9a2d8d upstream.
+commit c8c64d165ccfd2274058ac84e0c680f9b48c4ec1 upstream.
 
-Commit 4f535093cf "PCI: Put pci_dev in device tree as early as possible"
-moved final fixups from pci_bus_add_device() to pci_device_add().  But
-pci_device_add() happens before resource assignment, so BARs may not be
-valid yet.
+I get the following warning on boot:
 
-Typical flow for hot-add:
+------------[ cut here ]------------
+WARNING: at drivers/base/core.c:575 device_create_file+0x9a/0xa0()
+Hardware name:  -[8737R2A]-
+Write permission without 'store'
+...
+</snip>
 
-    pciehp_configure_device
-      pci_scan_slot
-        pci_scan_single_device
-          pci_device_add
-            pci_fixup_device(pci_fixup_final, dev)  # previous location
-      # resource assignment happens here
-      pci_bus_add_devices
-        pci_bus_add_device
-          pci_fixup_device(pci_fixup_final, dev)    # new location
+Drilling down, this is related to dynamic channel ce_count attribute
+files sporting a S_IWUSR mode without a ->store() function. Looking
+around, it appears that they aren't supposed to have a ->store()
+function. So remove the bogus write permission to get rid of the
+warning.
 
-[bhelgaas: changelog, move fixups to pci_bus_add_device()]
-Reference: https://lkml.kernel.org/r/20130415182614.GB9224@xanatos
-Reported-by: David Bulkow <David.Bulkow@stratus.com>
-Tested-by: David Bulkow <David.Bulkow@stratus.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+[ shorten commit message ]
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/bus.c   |    1 +
- drivers/pci/probe.c |    1 -
- 2 files changed, 1 insertion(+), 1 deletion(-)
+ drivers/edac/edac_mc_sysfs.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -174,6 +174,7 @@ int pci_bus_add_device(struct pci_dev *d
- 	 * Can not put in pci_device_add yet because resources
- 	 * are not assigned yet for some devices.
- 	 */
-+	pci_fixup_device(pci_fixup_final, dev);
- 	pci_create_sysfs_dev_files(dev);
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -327,17 +327,17 @@ static struct device_attribute *dynamic_
+ };
  
- 	dev->match_driver = true;
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1339,7 +1339,6 @@ void pci_device_add(struct pci_dev *dev,
- 	list_add_tail(&dev->bus_list, &bus->devices);
- 	up_write(&pci_bus_sem);
+ /* possible dynamic channel ce_count attribute files */
+-DEVICE_CHANNEL(ch0_ce_count, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch0_ce_count, S_IRUGO,
+ 		   channel_ce_count_show, NULL, 0);
+-DEVICE_CHANNEL(ch1_ce_count, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch1_ce_count, S_IRUGO,
+ 		   channel_ce_count_show, NULL, 1);
+-DEVICE_CHANNEL(ch2_ce_count, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch2_ce_count, S_IRUGO,
+ 		   channel_ce_count_show, NULL, 2);
+-DEVICE_CHANNEL(ch3_ce_count, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch3_ce_count, S_IRUGO,
+ 		   channel_ce_count_show, NULL, 3);
+-DEVICE_CHANNEL(ch4_ce_count, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch4_ce_count, S_IRUGO,
+ 		   channel_ce_count_show, NULL, 4);
+-DEVICE_CHANNEL(ch5_ce_count, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch5_ce_count, S_IRUGO,
+ 		   channel_ce_count_show, NULL, 5);
  
--	pci_fixup_device(pci_fixup_final, dev);
- 	ret = pcibios_add_device(dev);
- 	WARN_ON(ret < 0);
- 
+ /* Total possible dynamic ce_count attribute file table */
 
 
