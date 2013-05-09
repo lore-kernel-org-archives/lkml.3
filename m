@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab3EINcy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 09:32:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40231 "EHLO mx1.redhat.com"
+	id S1754518Ab3EINdC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 09:33:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36350 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752562Ab3EINcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 09:32:51 -0400
+	id S1752562Ab3EINc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 09:32:59 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -15,26 +15,22 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/9] perf tools: Add precise object to interface sysfs precise
-Date: Thu,  9 May 2013 15:32:17 +0200
-Message-Id: <1368106344-23383-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 5/9] perf tools: Set maximum precise value for event 'p' modifier
+Date: Thu,  9 May 2013 15:32:20 +0200
+Message-Id: <1368106344-23383-6-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1368106344-23383-1-git-send-email-jolsa@redhat.com>
 References: <1368106344-23383-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding precise util object to get maximum value for
-perf_event_attr::precise_ip. The value is exported
-via sysfs file '/sys/devices/cpu/precise'.
+If single 'p' modifier is specified for event, set the
+system precise value for perf_events_attr::precise_ip.
 
-The interface is:
-  int perf_precise__get(void)
+If more than a single 'p' is specified keep the intended
+value.
 
-Returns:
-  maximum value allowed for perf_event_attr::precise_ip
-  -1 if we failed to read the sysfs attribute or
-     sysfs attribute is not found (supported)
+If precise is not supported by system, warning is disaplyed.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -48,86 +44,74 @@ Cc: Andi Kleen <ak@linux.intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile       |  1 +
- tools/perf/util/precise.c | 44 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/util.h    |  3 +++
- 3 files changed, 48 insertions(+)
- create mode 100644 tools/perf/util/precise.c
+ tools/perf/util/parse-events.c | 40 ++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 38 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 55b42b2..477e7bf 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -361,6 +361,7 @@ LIB_OBJS += $(OUTPUT)util/rblist.o
- LIB_OBJS += $(OUTPUT)util/intlist.o
- LIB_OBJS += $(OUTPUT)util/vdso.o
- LIB_OBJS += $(OUTPUT)util/stat.o
-+LIB_OBJS += $(OUTPUT)util/precise.o
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 2e3ef10..6be4599 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -533,6 +533,26 @@ int parse_events_add_breakpoint(struct list_head **list, int *idx,
+ 	return add_event(list, idx, &attr, NULL);
+ }
  
- LIB_OBJS += $(OUTPUT)ui/setup.o
- LIB_OBJS += $(OUTPUT)ui/helpline.o
-diff --git a/tools/perf/util/precise.c b/tools/perf/util/precise.c
-new file mode 100644
-index 0000000..70fcba0
---- /dev/null
-+++ b/tools/perf/util/precise.c
-@@ -0,0 +1,44 @@
-+
-+#include <linux/kernel.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <unistd.h>
-+#include <stdio.h>
-+#include "sysfs.h"
-+#include "util.h"
-+
-+/*
-+ * Returns maximum value allowed for
-+ * perf_event_attr::precise_ip, and:
-+ * -1 if we failed to read the sysfs attribute or
-+ *    sysfs attribute is not found (supported)
-+ */
-+int perf_precise__get(void)
++static int precise_default(void)
 +{
-+	static int precise = -1;
-+	struct stat st;
-+	char path[PATH_MAX];
++	int precise = perf_precise__get();
++	static int warned;
 +
-+	if (precise != -1)
-+		return precise;
++	/*
++	 * Precise info not supported by by this kernel,
++	 * set 1 as the precise value.
++	 */
++	if (precise == -1)
++		precise = 1;
 +
-+	scnprintf(path, PATH_MAX, "%s/devices/cpu/precise",
-+		  sysfs_find_mountpoint());
-+
-+	if (!lstat(path, &st)) {
-+		FILE *file;
-+
-+		file = fopen(path, "r");
-+		if (!file)
-+			return -1;
-+
-+		if (1 != fscanf(file, "%d", &precise))
-+			pr_debug("failed to read precise info\n");
-+
-+		fclose(file);
-+	} else
-+		/* Return -1 if there's no sysfs precise support. */
-+		return -1;
++	/* PEBS is not supported here, display warning. */
++	if (precise == 0 && !warned++)
++		pr_warning("warning: no precise support, "
++			   "using non-precise event(s)\n");
 +
 +	return precise;
 +}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 7a484c9..deeeb54 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -276,4 +276,7 @@ extern unsigned int page_size;
++
+ static int config_term(struct perf_event_attr *attr,
+ 		       struct parse_events_term *term)
+ {
+@@ -701,7 +721,12 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
+ 	int eh = evsel ? evsel->attr.exclude_hv : 0;
+ 	int eH = evsel ? evsel->attr.exclude_host : 0;
+ 	int eG = evsel ? evsel->attr.exclude_guest : 0;
+-	int precise = evsel ? evsel->attr.precise_ip : 0;
++	/*
++	 * No previous state setup for precise,
++	 * let's start from 0 and get incremented
++	 * for both (evsel?) cases.
++	 */
++	int precise = 0;
+ 	int sample_read = 0;
  
- struct winsize;
- void get_term_dimensions(struct winsize *ws);
+ 	int exclude = eu | ek | eh;
+@@ -810,7 +835,18 @@ int parse_events__modifier_event(struct list_head *list, char *str, bool add)
+ 		evsel->attr.exclude_user   = mod.eu;
+ 		evsel->attr.exclude_kernel = mod.ek;
+ 		evsel->attr.exclude_hv     = mod.eh;
+-		evsel->attr.precise_ip     = mod.precise;
 +
-+int perf_precise__get(void);
++		/*
++		 * Let the group precise modifier (if any) overwrite the
++		 * event modifier.
++		 */
++		if (mod.precise) {
++			if (mod.precise > 1)
++				evsel->attr.precise_ip = mod.precise;
++			else
++				evsel->attr.precise_ip = precise_default();
++		}
 +
- #endif /* GIT_COMPAT_UTIL_H */
+ 		evsel->attr.exclude_host   = mod.eH;
+ 		evsel->attr.exclude_guest  = mod.eG;
+ 		evsel->exclude_GH          = mod.exclude_GH;
 -- 
 1.7.11.7
 
