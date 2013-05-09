@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759164Ab3EIWtM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:49:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46178 "EHLO
+	id S1759213Ab3EIWtg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 18:49:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46172 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758021Ab3EIWdR (ORCPT
+	with ESMTP id S1758011Ab3EIWdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:33:17 -0400
+	Thu, 9 May 2013 18:33:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jerome Glisse <jglisse@redhat.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 63/73] drm/radeon: fix endian bugs in atom_allocate_fb_scratch()
-Date: Thu,  9 May 2013 15:32:26 -0700
-Message-Id: <20130509222804.729670597@linuxfoundation.org>
+Subject: [ 61/73] drm/radeon: Always flush the VM
+Date: Thu,  9 May 2013 15:32:24 -0700
+Message-Id: <20130509222804.532092898@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -29,33 +31,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit beb71fc61c2cad64e347f164991b8ef476529e64 upstream.
+commit 466476dfdcafbb4286ffa232a3a792731b9dc852 upstream.
 
-Reviwed-by: Michel Dänzer <michel.daenzer@amd.com>
+This is slightly cleaned up version of Jerome's patch.
+There seems to be an issue tracking the last flush of
+the VM which results in hangs in certain cases when
+VM is used.  For now just flush the VM for every IB.
+
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=62959
+https://bugs.freedesktop.org/show_bug.cgi?id=62997
+
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Reviewed-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atom.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_ring.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atom.c
-+++ b/drivers/gpu/drm/radeon/atom.c
-@@ -1389,10 +1389,10 @@ int atom_allocate_fb_scratch(struct atom
- 		firmware_usage = (struct _ATOM_VRAM_USAGE_BY_FIRMWARE *)(ctx->bios + data_offset);
- 
- 		DRM_DEBUG("atom firmware requested %08x %dkb\n",
--			  firmware_usage->asFirmwareVramReserveInfo[0].ulStartAddrUsedByFirmware,
--			  firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb);
-+			  le32_to_cpu(firmware_usage->asFirmwareVramReserveInfo[0].ulStartAddrUsedByFirmware),
-+			  le16_to_cpu(firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb));
- 
--		usage_bytes = firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb * 1024;
-+		usage_bytes = le16_to_cpu(firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb) * 1024;
+--- a/drivers/gpu/drm/radeon/radeon_ring.c
++++ b/drivers/gpu/drm/radeon/radeon_ring.c
+@@ -161,7 +161,8 @@ int radeon_ib_schedule(struct radeon_dev
+ 		radeon_semaphore_free(rdev, &ib->semaphore, NULL);
  	}
- 	ctx->scratch_size_bytes = 0;
- 	if (usage_bytes == 0)
+ 	/* if we can't remember our last VM flush then flush now! */
+-	if (ib->vm && !ib->vm->last_flush) {
++	/* XXX figure out why we have to flush for every IB */
++	if (ib->vm /*&& !ib->vm->last_flush*/) {
+ 		radeon_ring_vm_flush(rdev, ib->ring, ib->vm);
+ 	}
+ 	if (const_ib) {
 
 
