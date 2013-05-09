@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab3EISNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 14:13:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37341 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753050Ab3EISNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 14:13:23 -0400
-Date: Thu, 9 May 2013 20:10:04 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Colin Walters <walters@verbum.org>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        systemd-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [systemd-devel] [PATCH 2/2] coredump: Handle programs with
-	spaces in COMM
-Message-ID: <20130509181004.GA15526@redhat.com>
-References: <1367341939.6959.1.camel@localhost> <20130430174731.GC3394@in.waw.pl> <1367349331.6959.80.camel@localhost> <20130501164246.GA7647@redhat.com> <20130503150824.GB24114@tango.0pointer.de>
+	id S1752783Ab3EISPI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 14:15:08 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:32188 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424Ab3EISPG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 14:15:06 -0400
+Message-ID: <518BE7A9.9010907@tilera.com>
+Date: Thu, 9 May 2013 14:15:05 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130503150824.GB24114@tango.0pointer.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] tile changes for v3.10
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for delay, vacation.
+Linus,
 
-On 05/03, Lennart Poettering wrote:
->
-> On Wed, 01.05.13 18:42, Oleg Nesterov (oleg@redhat.com) wrote:
->
-> > I wouldn't say this is bug... at least this is expected.
-> >
-> > Sure, it is possible to rewrite format_corename/argv_split interaction,
-> > but this is a bit painful and I am not sure it worth the trouble.
->
-> It sounds really wrong to first merge this into one string and then
-> split it up again. It sounds much more sensible to instead just pass the
-> string array around all the time. What's the reason to make this one
-> string first?
+Please pull the following changes for 3.10 from:
 
-!ispipe case.
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git stable
 
-OK. I have to admit that this doesn't look nice even if this is
-"historical" behaviour. The fix should be simple I guess,
-format_corename() should construct argv by hand, argv_split()
-should be avoided.
+These are actually "stable" changes so if the merge window closes, please
+do apply them for -rc2.
 
-But:
+The interesting bug fix is support for the upcoming "4.2" release of
+the Tilera hypervisor, which by default launches Linux at privilege level 2
+instead of 1.  The fix lets new and old hypervisors and Linuxes
+interoperate more smoothly, so I've tagged it for stable@kernel.org so
+that older Linuxes will be able to boot under the newer hypervisor.
 
-	- We do not want to complicate this (ugly) code more than
-	  necessary. In particular we shouldn't forget about ispipe.
+Chris Metcalf (1):
+      tile: support new Tilera hypervisor
 
-	  Oh, and realloc, we can't count argc in advance or we need
-	  more changes to protect against proc_dostring_coredump().
+Denis Efremov (1):
+      arch/tile: remove inline marking of EXPORT_SYMBOL functions
 
-	- We should cleanup format_corename() first. If nothing else,
-	  cn_escape().
+Libo Chen (1):
+      usb: tilegx: fix memleak when create hcd fail
 
-	- Hmm. it seems that we also need to fix it, format_corename()
-	  can leak ->corename afaics.
+Wei Yongjun (1):
+      rtc: rtc-tile: add missing platform_device_unregister() when module exit
 
-In short: I'll try to do this when I have time.
+ arch/tile/Kconfig                  |   14 ++++++++++----
+ arch/tile/include/hv/hypervisor.h  |   27 ++++++++++++++++++++++++---
+ arch/tile/kernel/head_32.S         |    2 +-
+ arch/tile/kernel/head_64.S         |   12 +++++++++---
+ arch/tile/lib/spinlock_32.c        |    2 +-
+ drivers/net/ethernet/tile/tilegx.c |    2 +-
+ drivers/rtc/rtc-tile.c             |    1 +
+ drivers/usb/host/ehci-tilegx.c     |    7 +++++--
+ drivers/usb/host/ohci-tilegx.c     |    7 +++++--
+ 9 files changed, 57 insertions(+), 17 deletions(-)
 
-Oleg.
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
