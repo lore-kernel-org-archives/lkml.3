@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757415Ab3EIWcm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 18:32:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45936 "EHLO
+	id S1758838Ab3EIXDB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 19:03:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45950 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756985Ab3EIWcj (ORCPT
+	with ESMTP id S1757385Ab3EIWcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 18:32:39 -0400
+	Thu, 9 May 2013 18:32:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ian Campbell <ian.camjpbell@citrix.com>
-Subject: [ 01/73] xen/arm: actually pass a non-NULL percpu pointer to request_percpu_irq
-Date: Thu,  9 May 2013 15:31:24 -0700
-Message-Id: <20130509222758.080876896@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: [ 04/73] pwm: spear: Fix checking return value of clk_enable() and clk_prepare()
+Date: Thu,  9 May 2013 15:31:27 -0700
+Message-Id: <20130509222758.421449193@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130509222757.917088509@linuxfoundation.org>
 References: <20130509222757.917088509@linuxfoundation.org>
@@ -27,28 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 2798ba7d19aed645663398a21ec4006bfdbb1ef3 upstream.
+commit 563861cd633ae52932843477bb6ca3f1c9e2f78b upstream.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: Ian Campbell <ian.camjpbell@citrix.com>
+The logic to check return value of clk_enable() and clk_prepare() is reversed,
+fix it.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/xen/enlighten.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pwm/pwm-spear.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -237,7 +237,7 @@ static int __init xen_init_events(void)
- 	xen_init_IRQ();
+--- a/drivers/pwm/pwm-spear.c
++++ b/drivers/pwm/pwm-spear.c
+@@ -143,7 +143,7 @@ static int spear_pwm_enable(struct pwm_c
+ 	u32 val;
  
- 	if (request_percpu_irq(xen_events_irq, xen_arm_callback,
--			"events", xen_vcpu)) {
-+			"events", &xen_vcpu)) {
- 		pr_err("Error requesting IRQ %d\n", xen_events_irq);
- 		return -EINVAL;
- 	}
+ 	rc = clk_enable(pc->clk);
+-	if (!rc)
++	if (rc)
+ 		return rc;
+ 
+ 	val = spear_pwm_readl(pc, pwm->hwpwm, PWMCR);
+@@ -209,12 +209,12 @@ static int spear_pwm_probe(struct platfo
+ 	pc->chip.npwm = NUM_PWM;
+ 
+ 	ret = clk_prepare(pc->clk);
+-	if (!ret)
++	if (ret)
+ 		return ret;
+ 
+ 	if (of_device_is_compatible(np, "st,spear1340-pwm")) {
+ 		ret = clk_enable(pc->clk);
+-		if (!ret) {
++		if (ret) {
+ 			clk_unprepare(pc->clk);
+ 			return ret;
+ 		}
 
 
