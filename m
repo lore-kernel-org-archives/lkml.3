@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab3EINta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 09:49:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53070 "EHLO mail.zytor.com"
+	id S1755618Ab3EINu1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 09:50:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53095 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755015Ab3EINt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 09:49:29 -0400
-Message-ID: <518BA91E.3080406@zytor.com>
-Date: Thu, 09 May 2013 06:48:14 -0700
+	id S1755541Ab3EINuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 09:50:25 -0400
+Message-ID: <518BA997.20401@zytor.com>
+Date: Thu, 09 May 2013 06:50:15 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-CC: Francis Deslauriers <fdeslaur@gmail.com>, linux-mm@kvack.org,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        rostedt@goodmis.org, fweisbec@gmail.com, raphael.beamonte@gmail.com,
-        mathieu.desnoyers@efficios.com, linux-kernel@vger.kernel.org
-Subject: Re: [page fault tracepoint 1/2] Add page fault trace event definitions
-References: <1368079520-11015-1-git-send-email-fdeslaur@gmail.com> <518B464E.6010208@huawei.com>
-In-Reply-To: <518B464E.6010208@huawei.com>
+To: Denis Efremov <yefremov.denis@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org, trivial@kernel.org,
+        ldv-project@linuxtesting.org
+Subject: Re: [PATCH 03/21] x86: remove inline marking of EXPORT_SYMBOL functions
+References: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com> <1368086323-9412-3-git-send-email-yefremov.denis@gmail.com>
+In-Reply-To: <1368086323-9412-3-git-send-email-yefremov.denis@gmail.com>
 X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2013 11:46 PM, zhangwei(Jovi) wrote:
-> On 2013/5/9 14:05, Francis Deslauriers wrote:
->> Add page_fault_entry and page_fault_exit event definitions. It will
->> allow each architecture to instrument their page faults.
+On 05/09/2013 12:58 AM, Denis Efremov wrote:
+> EXPORT_SYMBOL and inline directives are contradictory to each other.
+> The patch fixes this inconsistency.
 > 
-> I'm wondering if this tracepoint could handle other page faults,
-> like faults in kernel memory(vmalloc, kmmio, etc...)
-> 
-> And if we decide to support those faults, add a type annotate in TP_printk
-> would be much helpful for user, to let user know what type of page faults happened.
-> 
+> Found by Linux Driver Verification project (linuxtesting.org).
 
-The plan for x86 was to switch the IDT so that any exception could get a
-trace event without any overhead in normal operation.  This has been in
-the process for quite some time but looks like it was getting very close.
+Nice, but wrong.
+
+They aren't contradictory; in gnu89 syntax this means "this can be
+inline, but also create an out-of-line copy that others can call."
+
+That being said, I haven't looked at the code to see if that makes
+sense, but the statement isn't correct.
 
 	-hpa
-
 
