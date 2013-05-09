@@ -1,181 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589Ab3EIEVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 00:21:52 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33951 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab3EIEUP (ORCPT
+	id S1752875Ab3EIEWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 00:22:16 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:43169 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674Ab3EIEWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 00:20:15 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: torvalds@linux-foundation.org
-Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v2 0/9] liblockdep: userspace lockdep
-Date: Thu,  9 May 2013 00:19:07 -0400
-Message-Id: <1368073156-27567-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.2.1
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 9 May 2013 00:22:12 -0400
+Date: Thu, 9 May 2013 13:22:21 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Bastian Hecht <hechtb@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Bastian Hecht <hechtb+renesas@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 03/21] ARM: shmobile: don't call irqchip_init
+ unconditionally
+Message-ID: <20130509042220.GB7832@verge.net.au>
+References: <1366910944-3033663-1-git-send-email-arnd@arndb.de>
+ <CAL_JsqJWJvxezXy0RGFutxzvBhca-8=uRH2GxdJgzbEGw+OL0A@mail.gmail.com>
+ <20130501225748.GD6517@verge.net.au>
+ <201305081416.06611.arnd@arndb.de>
+ <CABYn4sxrcGmnTAJcQR23nMGy8JvqyDrgPOXF4yBFFU_4C8Pc_g@mail.gmail.com>
+ <20130509033819.GC13994@verge.net.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130509033819.GC13994@verge.net.au>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-liblockdep is a tiny wrapper built around kernel/lockdep.c. The aim is to
-provide the same functionality the kernel gets from lockdep to userspace.
+On Thu, May 09, 2013 at 12:38:19PM +0900, Simon Horman wrote:
+> On Wed, May 08, 2013 at 03:22:22PM +0200, Bastian Hecht wrote:
+> > Hi,
+> > 
+> > 2013/5/8 Arnd Bergmann <arnd@arndb.de>:
+> > > On Thursday 02 May 2013, Simon Horman wrote:
+> > >> > > diff --git a/arch/arm/mach-shmobile/intc-r8a7740.c b/arch/arm/mach-shmobile/intc-r8a7740.c
+> > >> > > index 8871f77..5dc57f1 100644
+> > >> > > --- a/arch/arm/mach-shmobile/intc-r8a7740.c
+> > >> > > +++ b/arch/arm/mach-shmobile/intc-r8a7740.c
+> > >> > > @@ -53,14 +53,23 @@ static void __init r8a7740_init_irq_common(void)
+> > >> > >
+> > >> > >  void __init r8a7740_init_irq_of(void)
+> > >> > >  {
+> > >> > > +       if (!IS_ENABLED(CONFIG_OF))
+> > >> > > +               return;
+> > >> > > +
+> > >> > >         irqchip_init();
+> > >> >
+> > >> > Why not have an empty irqchip_init? I'd guess we'll need this on other
+> > >> > platforms and your default mach.
+> > >>
+> > >> Thanks, I think that could work.
+> > >>
+> > >> I will see about making it so.
+> > >
+> > > Ping
+> > 
+> > I have sent out a patch adding an empty irqchip_init() when
+> > CONFIG_IRQCHIP is not set with the subject
+> > [PATCH] irqchip: Add irqchip_init dummy function
+> 
+> Thanks.
+> 
+> > > Linux-next is still broken for me. There is also anothe shmobile build bug,
+> > > I'll send a separate patch for that, which also needs to go into your tree.
+> 
+> Sorry about that. I though I had pushed your fix (the first hunk of the
+> patch that started this thread), but it seems that I did not.
 
-The bulk of the code here is the LD_PRELOAD support which provides users
-an easy way to test their code without having to integrate liblockdep into
-said code. Simply doing:
+Sorry once again for the delay in addressing this.
+I have pushed a refreshed next branch which includes
+both Bastian's fix for irqchip_init() and the patch
+that Arnd posted relating to symbol renames.
 
-        lockdep my_app
-
-	Would provide lockdep support to my_app.
-
-	There is also a small test suite to test both mutexes and rwlocks, it's
-	based on the tests in lib/locking-selftest.c.
-
-	This entire patch series was reviewed by lockdep maintainers and accepted to
-	the tip tree previously. It was pulled out so that the potential merge of
-	liblockdep won't delay the rest of the commits in the tip locking tree.
-
-	For some more background about this entire thing, the folks at LWN did
-	an awesome overview: http://lwn.net/Articles/536363/
-
-
-Changes from v1:
- - Addressed Peter's comments.
-
-Sasha Levin (9):
-  lockdep: Be nice about building from userspace
-  liblockdep: Wrap kernel/lockdep.c to allow usage from userspace
-  liblockdep: Add public headers for pthread_mutex_t implementation
-  liblockdep: Add pthread_mutex_t test suite
-  liblockdep: Add public headers for pthread_rwlock_t implementation
-  liblockdep: Add pthread_rwlock_t test suite
-  liblockdep: Support using LD_PRELOAD
-  liblockdep: Add the 'lockdep' user-space utility
-  liblockdep: Add a MAINTAINERS entry
-
- MAINTAINERS                                        |   5 +
- kernel/lockdep.c                                   |   4 +
- tools/lib/lockdep/Makefile                         | 251 ++++++++++++++
- tools/lib/lockdep/common.c                         |  33 ++
- tools/lib/lockdep/include/liblockdep/common.h      |  43 +++
- tools/lib/lockdep/include/liblockdep/mutex.h       |  73 ++++
- tools/lib/lockdep/include/liblockdep/rwlock.h      |  91 +++++
- tools/lib/lockdep/lockdep                          |   3 +
- tools/lib/lockdep/lockdep.c                        |   2 +
- tools/lib/lockdep/lockdep_internals.h              |   1 +
- tools/lib/lockdep/lockdep_states.h                 |   1 +
- tools/lib/lockdep/preload.c                        | 384 +++++++++++++++++++++
- tools/lib/lockdep/rbtree.c                         |   1 +
- tools/lib/lockdep/run_tests.sh                     |  27 ++
- tools/lib/lockdep/tests/AA.c                       |  13 +
- tools/lib/lockdep/tests/ABBA.c                     |  13 +
- tools/lib/lockdep/tests/ABBCCA.c                   |  15 +
- tools/lib/lockdep/tests/ABBCCDDA.c                 |  17 +
- tools/lib/lockdep/tests/ABCABC.c                   |  15 +
- tools/lib/lockdep/tests/ABCDBCDA.c                 |  17 +
- tools/lib/lockdep/tests/ABCDBDDA.c                 |  17 +
- tools/lib/lockdep/tests/WW.c                       |  13 +
- tools/lib/lockdep/tests/common.h                   |  12 +
- tools/lib/lockdep/tests/unlock_balance.c           |  12 +
- tools/lib/lockdep/uinclude/asm/hweight.h           |   0
- tools/lib/lockdep/uinclude/asm/sections.h          |   0
- tools/lib/lockdep/uinclude/linux/bitops.h          |   0
- tools/lib/lockdep/uinclude/linux/compiler.h        |   7 +
- tools/lib/lockdep/uinclude/linux/debug_locks.h     |  12 +
- tools/lib/lockdep/uinclude/linux/delay.h           |   0
- tools/lib/lockdep/uinclude/linux/export.h          |   7 +
- tools/lib/lockdep/uinclude/linux/ftrace.h          |   0
- tools/lib/lockdep/uinclude/linux/gfp.h             |   0
- tools/lib/lockdep/uinclude/linux/hardirq.h         |  11 +
- tools/lib/lockdep/uinclude/linux/hash.h            |   1 +
- tools/lib/lockdep/uinclude/linux/interrupt.h       |   0
- tools/lib/lockdep/uinclude/linux/irqflags.h        |  38 ++
- tools/lib/lockdep/uinclude/linux/kallsyms.h        |  32 ++
- tools/lib/lockdep/uinclude/linux/kernel.h          |  36 ++
- tools/lib/lockdep/uinclude/linux/kmemcheck.h       |   8 +
- tools/lib/lockdep/uinclude/linux/linkage.h         |   0
- tools/lib/lockdep/uinclude/linux/list.h            |   1 +
- tools/lib/lockdep/uinclude/linux/lockdep.h         |  58 ++++
- tools/lib/lockdep/uinclude/linux/mm_types.h        |   0
- tools/lib/lockdep/uinclude/linux/module.h          |   6 +
- tools/lib/lockdep/uinclude/linux/mutex.h           |   0
- tools/lib/lockdep/uinclude/linux/poison.h          |   1 +
- tools/lib/lockdep/uinclude/linux/prefetch.h        |   6 +
- tools/lib/lockdep/uinclude/linux/proc_fs.h         |   0
- tools/lib/lockdep/uinclude/linux/rbtree.h          |   1 +
- .../lib/lockdep/uinclude/linux/rbtree_augmented.h  |   2 +
- tools/lib/lockdep/uinclude/linux/rcu.h             |  16 +
- tools/lib/lockdep/uinclude/linux/seq_file.h        |   0
- tools/lib/lockdep/uinclude/linux/spinlock.h        |  25 ++
- tools/lib/lockdep/uinclude/linux/stacktrace.h      |  32 ++
- tools/lib/lockdep/uinclude/linux/stringify.h       |   7 +
- tools/lib/lockdep/uinclude/linux/system.h          |   0
- tools/lib/lockdep/uinclude/linux/types.h           |  58 ++++
- tools/lib/lockdep/uinclude/linux/util.h            |   0
- tools/lib/lockdep/uinclude/trace/events/lock.h     |   0
- 60 files changed, 1428 insertions(+)
- create mode 100644 tools/lib/lockdep/Makefile
- create mode 100644 tools/lib/lockdep/common.c
- create mode 100644 tools/lib/lockdep/include/liblockdep/common.h
- create mode 100644 tools/lib/lockdep/include/liblockdep/mutex.h
- create mode 100644 tools/lib/lockdep/include/liblockdep/rwlock.h
- create mode 100755 tools/lib/lockdep/lockdep
- create mode 100644 tools/lib/lockdep/lockdep.c
- create mode 100644 tools/lib/lockdep/lockdep_internals.h
- create mode 100644 tools/lib/lockdep/lockdep_states.h
- create mode 100644 tools/lib/lockdep/preload.c
- create mode 100644 tools/lib/lockdep/rbtree.c
- create mode 100755 tools/lib/lockdep/run_tests.sh
- create mode 100644 tools/lib/lockdep/tests/AA.c
- create mode 100644 tools/lib/lockdep/tests/ABBA.c
- create mode 100644 tools/lib/lockdep/tests/ABBCCA.c
- create mode 100644 tools/lib/lockdep/tests/ABBCCDDA.c
- create mode 100644 tools/lib/lockdep/tests/ABCABC.c
- create mode 100644 tools/lib/lockdep/tests/ABCDBCDA.c
- create mode 100644 tools/lib/lockdep/tests/ABCDBDDA.c
- create mode 100644 tools/lib/lockdep/tests/WW.c
- create mode 100644 tools/lib/lockdep/tests/common.h
- create mode 100644 tools/lib/lockdep/tests/unlock_balance.c
- create mode 100644 tools/lib/lockdep/uinclude/asm/hweight.h
- create mode 100644 tools/lib/lockdep/uinclude/asm/sections.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/bitops.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/compiler.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/debug_locks.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/delay.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/export.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/ftrace.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/gfp.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/hardirq.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/hash.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/interrupt.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/irqflags.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/kallsyms.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/kernel.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/kmemcheck.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/linkage.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/list.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/lockdep.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/mm_types.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/module.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/mutex.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/poison.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/prefetch.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/proc_fs.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/rbtree.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/rbtree_augmented.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/rcu.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/seq_file.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/spinlock.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/stacktrace.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/stringify.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/system.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/types.h
- create mode 100644 tools/lib/lockdep/uinclude/linux/util.h
- create mode 100644 tools/lib/lockdep/uinclude/trace/events/lock.h
-
--- 
-1.8.2.1
-
+These changes should appear in linux-next in the not to distant future.
