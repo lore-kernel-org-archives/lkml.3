@@ -1,47 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875Ab3EISqA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 14:46:00 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:12211 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab3EISp7 (ORCPT
+	id S1751898Ab3EIStd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 14:49:33 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:51422 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab3EIStc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 14:45:59 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+cAx1/jo3WPribfdlj6Mae
-Date: Thu, 9 May 2013 11:45:48 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Dan Murphy <dmurphy@ti.com>
-Cc: Vincent =?utf-8?Q?Stehl=C3=A9?= <v-stehle@ti.com>, b-cousson@ti.com,
-        linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] ARM:dts:omap4-panda:Update the LED support for the
- panda DTS
-Message-ID: <20130509184548.GH31554@atomide.com>
-References: <1366229760-4808-1-git-send-email-dmurphy@ti.com>
- <516FBD18.3060501@ti.com>
- <51703BEF.6050804@ti.com>
- <20130508234745.GV32546@atomide.com>
- <518BE617.1080509@ti.com>
+	Thu, 9 May 2013 14:49:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <518BE617.1080509@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <518BE566.5090504@ti.com>
+References: <1367824946-6160-1-git-send-email-jaswinder.singh@linaro.org>
+	<1367825046-6229-1-git-send-email-jaswinder.singh@linaro.org>
+	<518BCF4B.1060504@ti.com>
+	<CAJe_Zhd=FDV3YP=XR8Yay1iy_geAt3tqj+diUxrVkd2BFSfb-g@mail.gmail.com>
+	<518BD197.2030502@ti.com>
+	<CABb+yY2CnO5RiQNdcB_L5ZiGi829Ys0ODH2UmhtZxj=aJo3ioQ@mail.gmail.com>
+	<518BE566.5090504@ti.com>
+Date: Fri, 10 May 2013 00:19:31 +0530
+Message-ID: <CAJe_Zhffm9FOk83dAdX194gN3r5JnG78sdcWNv6WnWCsTF3YuA@mail.gmail.com>
+Subject: Re: [PATCHv2 2/4] mailbox: Introduce a new common API
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Suman Anna <s-anna@ti.com>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>,
+        "Loic PALLARDY (loic.pallardy@st.com)" <loic.pallardy@st.com>,
+        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dan Murphy <dmurphy@ti.com> [130509 11:13]:
+On 9 May 2013 23:35, Suman Anna <s-anna@ti.com> wrote:
+
+>>
+>> Perhaps we should change the following
+>>
+>>    void ipc_link_txdone(struct ipc_link *link, enum xfer_result r)
+>> to
+>>    void ipc_link_txdone(struct ipc_link *link, enum xfer_result r, void *data)
+>>
+>> So that the API could pass that onto clients ?
 >
-> Can we cleanly append to omap4_pmx_core without overriding the whole node?
-> I don't want to recreate the pmx_core node in the es file.
+> That's if the controller needs to pass some data back to client. I am
+> fine with that as well,
+No, I misunderstood you wanted request_token_t to be replaced with the
+pointer of request that was executed.
 
-Yes that should work just fine.
+> but I am talking mainly about providing a client
+> user data ptr back to it during callbacks.
+>
+> struct ipc_client {
+>         char *chan_name;
+> +       void *cl_data; /* store it to ipc_chan as well */
+> -       void (*rxcb)(void *data);
+> -       void (*txcb)(request_token_t t, enum xfer_result r);
+> +       void (*rxcb)(void *cl_data, void *data);
+> +       void (*txcb)(request_token_t t, enum xfer_result r, void *cl_data);
+>         ...
+> }
+>
+> I am obviously interested in the rxcb. The controller implementations do
+> not see the cl_data.
+>
+OK I see what you mean. However the API storing and passing back
+ad-hoc data to clients doesn't seem very neat.
 
-Regards,
+Such purposes are usually served by :
 
-Tony
+- void (*rxcb)(void *data);
++ void (*rxcb)(struct ipc_client *cl, void *data);  /* client for
+which data was received */
+
+- void (*txcb)(request_token_t t, enum xfer_result r);
++ void (*txcb)(struct ipc_client *cl, request_token_t t, enum
+xfer_result r); /* client whose data was sent */
+
+You could then get relevant omap_rproc using container_of() on 'cl',
+in rxcb() and txcb().
+
+
+Apart from this, in txcb, perhaps we should drop request_token_t in
+favor of the request's pointer (void *data) that was last executed.
+That should make things easier for clients.
+
+regards,
+-jassi
