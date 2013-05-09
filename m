@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888Ab3EIT1a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 15:27:30 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:57873 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925Ab3EIT11 (ORCPT
+	id S1753095Ab3EIT1h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 15:27:37 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:39813 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752963Ab3EIT1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 15:27:27 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH v2] perf: detect when perf.data file not closed out properly
-Date: Thu,  9 May 2013 13:27:23 -0600
-Message-Id: <1368127643-9913-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Thu, 9 May 2013 15:27:36 -0400
+Date: Thu, 9 May 2013 15:27:35 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Libo Chen <libo.chen@huawei.com>
+cc: grant.likely@linaro.org, <rob.herring@calxeda.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <akpm@linux-foundation.org>, <lizefan@huawei.com>
+Subject: Re: [PATCH RESEND 3/4] usb: ohci: fix goto wrong tag in err case
+In-Reply-To: <1368079537-15328-4-git-send-email-libo.chen@huawei.com>
+Message-ID: <Pine.LNX.4.44L0.1305091525510.1796-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf-record updates the header in the perf.data file at termination.
-Without this update perf-report (and other processing builtins) cannot
-properly read events from the file -- the algorithm in
-__perf_session__process_events depends on the data_size which is read
-from the file header and that function loops if data_size is 0.
+On Thu, 9 May 2013, Libo Chen wrote:
 
-Catch this condition when the file is opened and warn the user.
+> fix goto wrong tag in usb_hcd_nxp_probe
+> 
+> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+> ---
+>  drivers/usb/host/ohci-nxp.c |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ohci-nxp.c b/drivers/usb/host/ohci-nxp.c
+> index f4988fb..eb294a9 100644
+> --- a/drivers/usb/host/ohci-nxp.c
+> +++ b/drivers/usb/host/ohci-nxp.c
+> @@ -234,7 +234,7 @@ static int usb_hcd_nxp_probe(struct platform_device *pdev)
+>  	if (usb_disabled()) {
+>  		dev_err(&pdev->dev, "USB is disabled\n");
+>  		ret = -ENODEV;
+> -		goto out;
+> +		goto out1;
+>  	}
 
-v2: put error message on one line
+Instead of renumbering all these statement labels, it would be better 
+to replace them with names that have a real meaning.  That would 
+simplify future fixes.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/util/header.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+Can you submit a patch to do that instead?
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 326068a..95baef4 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2802,6 +2802,17 @@ int perf_session__read_header(struct perf_session *session, int fd)
- 	if (perf_file_header__read(&f_header, header, fd) < 0)
- 		return -EINVAL;
- 
-+	/*
-+	 * sanity check that perf.data was written cleanly: data size
-+	 * is initialized to 0 and updated only if the on_exit function
-+	 * is run. If data size is still 0 then the file cannot be
-+	 * processed.
-+	 */
-+	if (f_header.data.size == 0) {
-+		pr_err("Data size is 0. Was the record command properly terminated?\n");
-+		return -1;
-+	}
-+
- 	nr_attrs = f_header.attrs.size / f_header.attr_size;
- 	lseek(fd, f_header.attrs.offset, SEEK_SET);
- 
--- 
-1.7.10.1
+Alan Stern
 
