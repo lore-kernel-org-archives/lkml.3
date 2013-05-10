@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab3EJIIh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 04:08:37 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:52105 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab3EJIId (ORCPT
+	id S1752003Ab3EJILY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 04:11:24 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:42178 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519Ab3EJILS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 04:08:33 -0400
-Date: Fri, 10 May 2013 10:08:29 +0200
+	Fri, 10 May 2013 04:11:18 -0400
+Date: Fri, 10 May 2013 10:11:13 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, fweisbec@gmail.com,
-        peterz@infradead.org, jolsa@redhat.com, namhyung@kernel.org,
-        xiaoguangrong@linux.vnet.ibm.com
-Subject: Re: [PATCH 10/13] perf kvm: add live mode
-Message-ID: <20130510080829.GA6700@gmail.com>
-References: <1368073909-8825-1-git-send-email-dsahern@gmail.com>
- <1368073909-8825-11-git-send-email-dsahern@gmail.com>
- <20130509085137.GA8813@gmail.com>
- <518BAA92.2030101@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v2] perf: detect when perf.data file not closed out
+ properly
+Message-ID: <20130510081113.GA6823@gmail.com>
+References: <1368127643-9913-1-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <518BAA92.2030101@gmail.com>
+In-Reply-To: <1368127643-9913-1-git-send-email-dsahern@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,22 +31,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * David Ahern <dsahern@gmail.com> wrote:
 
-> >2)
-> >
-> >Another suggestion: it would be nice to allow a "--repeat <n>" option as
-> >well, for a limited number of iterations - similar to what the 'top' tool
-> >allows:
-> >
-> >   top -b -d <delay> -n <iterations>
-> >
-> >--repeat 0 means infinite repeats, --repeat 1 means a single step.
+> perf-record updates the header in the perf.data file at termination.
+> Without this update perf-report (and other processing builtins) cannot
+> properly read events from the file -- the algorithm in
+> __perf_session__process_events depends on the data_size which is read
+> from the file header and that function loops if data_size is 0.
 > 
-> Missed that option in perf-top. Let me take a look at it.
+> Catch this condition when the file is opened and warn the user.
+> 
+> v2: put error message on one line
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Stephane Eranian <eranian@google.com>
 
--n and -b is a regular /usr/bin/top feature, not perf-top feature :-)
-
-perf-top has no such option AFAICS - but it could be added there as well. 
-Regular perf-stat has a --repeat option and it's very useful there.
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
 Thanks,
 
