@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751625Ab3EJDTb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 23:19:31 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41460 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab3EJDTa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 23:19:30 -0400
-Date: Fri, 10 May 2013 13:19:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kent Overstreet <koverstreet@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: linux-next: build warning after merge of the origintree
-Message-Id: <20130510131926.bbbee7dec35f696c407ac63e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__10_May_2013_13_19_26_+1000_=wR3auU5n/lvVftI"
+	id S1752400Ab3EJDiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 23:38:12 -0400
+Received: from mga14.intel.com ([143.182.124.37]:50288 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042Ab3EJDiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 23:38:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,645,1363158000"; 
+   d="scan'208";a="331750844"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "Wei, Gang" <gang.wei@intel.com>
+Subject: RE: [PATCH 1/4] driver: add TXT driver in kernel
+Thread-Topic: [PATCH 1/4] driver: add TXT driver in kernel
+Thread-Index: AQHOSvE9AcunBqr7IUa9oxQD3ESIK5j6kqOAgAIFqdA=
+Date: Fri, 10 May 2013 03:38:05 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE9AC855@SHSMSX102.ccr.corp.intel.com>
+References: <1367938519-840-1-git-send-email-qiaowei.ren@intel.com>
+	 <1367938519-840-2-git-send-email-qiaowei.ren@intel.com>
+ <1367980339.2425.7.camel@x230>
+In-Reply-To: <1367980339.2425.7.camel@x230>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4A3cKG7020253
 
---Signature=_Fri__10_May_2013_13_19_26_+1000_=wR3auU5n/lvVftI
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2013-05-08, Matthew Garrett wrote:
+> On Tue, 2013-05-07 at 22:55 +0800, Qiaowei Ren wrote:
+> 
+> > + * This module is expected to be a better tool to access below
+> > + resources
+> 
+> Expected to be or is? :)
 
-Hi all,
+"is" :)
 
-After merging the akpm tree, today's linux-next build (x86_64
-allmodconfig) produced this warning:
+> > + * Data is currently found below
+> 
+> You're adding it to ABI, so it shouldn't just be current - are you planning on
+> moving it at any point? Is this functionality that should be under securityfs
+> instead?
+> 
+> > +	txt_pdev = platform_device_register_simple(DEV_NAME, -1, NULL, 0);
+> 
+> This will register even if there's no TXT support on the platform, right? Is there
+> no mechanism for determining whether a platform has TXT support before
+> registering a device?
+> 
+> > +module_init(txt_sysfs_init);
+> > +module_exit(txt_sysfs_exit);
+> 
+> And you've got no module aliases, so this will never be autoloaded. How does
+> the OS know that the platform implements TXT?
 
-drivers/md/bcache/super.c:656:2: warning: initialization from incompatible =
-pointer type [enabled by default]
-drivers/md/bcache/super.c:656:2: warning: (near initialization for 'bcache_=
-ops.release') [enabled by default]
+Currently this driver only depends on CONFIG_INTEL_TXT, which is the kernel option for enabling Intel TXT support. And there is no explicit interface to check whether txt is supported in this txt enabling part of kernel. But since the tboot code will detect whether the platform actually supports Intel TXT, and so tboot_enabled() in include/linux/tboot.h may be used to determine whether a platform has TXT support.
 
-Introduced by commit cafe56359144 ("bcache: A block layer cache")
-interacting with commit db2a144bedd5 ("block_device_operations->release()
-should return void").
+In fact, we may also check CPU feature ECX[6] (SMX) for this purpose.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks,
+Qiaowei
 
---Signature=_Fri__10_May_2013_13_19_26_+1000_=wR3auU5n/lvVftI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRjGc+AAoJEECxmPOUX5FE5GgQAIh/+NNI0KL3IlPhKLm8RBs1
-UkfCbNboDj7AhvQDTSGGvrF8WfO3XqxJUxoNGoMQgPVoIGfdFlk3MOJ/askg9pwV
-m6frTM4Pgs2+okmpL5HeX5/crPkRrTqZNcrtBc81YvRhruURnT5umsMZ4TQQ5zxA
-oAPPZG7GvJDgF2Yhhh34zqb1V8CPc3kjnX23RCk9OzGhpAk8XmKtzB9wIse/Asyo
-SVzhvgiEPqnYOcu+B2tCH7kC4APAVGJbeS9b9Zu8sU2nVbRmolbxni1ty4+jLhq3
-8yKID0jbfx5jtJr07tuwGD8WdiaAC9TG2VF9Eerb2djJp7CL6Y3IAV7Zr/leHLsg
-VEzIExSVUVG2R38M6u/rkGddJ5+UDuKz+9AJvOY6fRDSOlwUM9yHT0LSHR6Xg2Id
-2xa6P8HAeUYwpSXrSJHVYUSP6k0mED/XAmMZL4nlenwkwPIZMommhKEy02KXPxPQ
-Wy+3aaLR9apZgHaoEl8VfuJL3BM65iOgfqyiD0F0ScUHRQP+Evo3rQ5h6CGr7ru0
-s747ar9QByUG0oLRFgXn3YgaeCoa64uGOYSh++bAUkJ1aw86r5VVvUfnJ/fwLhcq
-kcs6mhXWSwcazD5H/jgecJf319rj+BSqIVDcNIX8ubI9Z6/07KIJgDqhxF04U0si
-iuaxplDkyhfI31YBz5Sy
-=r1kO
------END PGP SIGNATURE-----
-
---Signature=_Fri__10_May_2013_13_19_26_+1000_=wR3auU5n/lvVftI--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
