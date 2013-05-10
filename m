@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab3EJOTq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:19:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56846 "EHLO
+	id S1754166Ab3EJOvd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:51:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56861 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753657Ab3EJOTk (ORCPT
+	by vger.kernel.org with ESMTP id S1753839Ab3EJOTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:19:40 -0400
+	Fri, 10 May 2013 10:19:44 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tony Luck" <tony.luck@intel.com>,
-        "Stephan Schreiber" <info@fs-driver.org>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Li Zefan" <lizefan@huawei.com>, "Ming Lei" <ming.lei@canonical.com>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.542487362@decadent.org.uk>
+Message-ID: <lsq.1368193181.524023728@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [007/118] Wrong asm register contraints in the futex implementation
+Subject: [014/118] sysfs: fix use after free in case of concurrent
+ read/write and readdir
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,290 +33,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephan Schreiber <info@fs-driver.org>
+From: Ming Lei <ming.lei@canonical.com>
 
-commit 136f39ddc53db3bcee2befbe323a56d4fbf06da8 upstream.
+commit f7db5e7660b122142410dcf36ba903c73d473250 upstream.
 
-The Linux Kernel contains some inline assembly source code which has
-wrong asm register constraints in arch/ia64/include/asm/futex.h.
+The inode->i_mutex isn't hold when updating filp->f_pos
+in read()/write(), so the filp->f_pos might be read as
+0 or 1 in readdir() when there is concurrent read()/write()
+on this same file, then may cause use after free in readdir().
 
-I observed this on Kernel 3.2.23 but it is also true on the most
-recent Kernel 3.9-rc1.
+The bug can be reproduced with Li Zefan's test code on the
+link:
 
-File arch/ia64/include/asm/futex.h:
+	https://patchwork.kernel.org/patch/2160771/
 
-static inline int
-futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
-			      u32 oldval, u32 newval)
-{
-	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
-		return -EFAULT;
+This patch fixes the use after free under this situation.
 
-	{
-		register unsigned long r8 __asm ("r8");
-		unsigned long prev;
-		__asm__ __volatile__(
-			"	mf;;					\n"
-			"	mov %0=r0				\n"
-			"	mov ar.ccv=%4;;				\n"
-			"[1:]	cmpxchg4.acq %1=[%2],%3,ar.ccv		\n"
-			"	.xdata4 \"__ex_table\", 1b-., 2f-.	\n"
-			"[2:]"
-			: "=r" (r8), "=r" (prev)
-			: "r" (uaddr), "r" (newval),
-			  "rO" ((long) (unsigned) oldval)
-			: "memory");
-		*uval = prev;
-		return r8;
-	}
-}
-
-The list of output registers is
-			: "=r" (r8), "=r" (prev)
-The constraint "=r" means that the GCC has to maintain that these vars
-are in registers and contain valid info when the program flow leaves
-the assembly block (output registers).
-But "=r" also means that GCC can put them in registers that are used
-as input registers. Input registers are uaddr, newval, oldval on the
-example.
-The second assembly instruction
-			"	mov %0=r0				\n"
-is the first one which writes to a register; it sets %0 to 0. %0 means
-the first register operand; it is r8 here. (The r0 is read-only and
-always 0 on the Itanium; it can be used if an immediate zero value is
-needed.)
-This instruction might overwrite one of the other registers which are
-still needed.
-Whether it really happens depends on how GCC decides what registers it
-uses and how it optimizes the code.
-
-The objdump utility can give us disassembly.
-The futex_atomic_cmpxchg_inatomic() function is inline, so we have to
-look for a module that uses the funtion. This is the
-cmpxchg_futex_value_locked() function in
-kernel/futex.c:
-
-static int cmpxchg_futex_value_locked(u32 *curval, u32 __user *uaddr,
-				      u32 uval, u32 newval)
-{
-	int ret;
-
-	pagefault_disable();
-	ret = futex_atomic_cmpxchg_inatomic(curval, uaddr, uval, newval);
-	pagefault_enable();
-
-	return ret;
-}
-
-Now the disassembly. At first from the Kernel package 3.2.23 which has
-been compiled with GCC 4.4, remeber this Kernel seemed to work:
-objdump -d linux-3.2.23/debian/build/build_ia64_none_mckinley/kernel/futex.o
-
-0000000000000230 <cmpxchg_futex_value_locked>:
-      230:	0b 18 80 1b 18 21 	[MMI]       adds r3=3168,r13;;
-      236:	80 40 0d 00 42 00 	            adds r8=40,r3
-      23c:	00 00 04 00       	            nop.i 0x0;;
-      240:	0b 50 00 10 10 10 	[MMI]       ld4 r10=[r8];;
-      246:	90 08 28 00 42 00 	            adds r9=1,r10
-      24c:	00 00 04 00       	            nop.i 0x0;;
-      250:	09 00 00 00 01 00 	[MMI]       nop.m 0x0
-      256:	00 48 20 20 23 00 	            st4 [r8]=r9
-      25c:	00 00 04 00       	            nop.i 0x0;;
-      260:	08 10 80 06 00 21 	[MMI]       adds r2=32,r3
-      266:	00 00 00 02 00 00 	            nop.m 0x0
-      26c:	02 08 f1 52       	            extr.u r16=r33,0,61
-      270:	05 40 88 00 08 e0 	[MLX]       addp4 r8=r34,r0
-      276:	ff ff 0f 00 00 e0 	            movl r15=0xfffffffbfff;;
-      27c:	f1 f7 ff 65
-      280:	09 70 00 04 18 10 	[MMI]       ld8 r14=[r2]
-      286:	00 00 00 02 00 c0 	            nop.m 0x0
-      28c:	f0 80 1c d0       	            cmp.ltu p6,p7=r15,r16;;
-      290:	08 40 fc 1d 09 3b 	[MMI]       cmp.eq p8,p9=-1,r14
-      296:	00 00 00 02 00 40 	            nop.m 0x0
-      29c:	e1 08 2d d0       	            cmp.ltu p10,p11=r14,r33
-      2a0:	56 01 10 00 40 10 	[BBB] (p10) br.cond.spnt.few 2e0
-<cmpxchg_futex_value_locked+0xb0>
-      2a6:	02 08 00 80 21 03 	      (p08) br.cond.dpnt.few 2b0
-<cmpxchg_futex_value_locked+0x80>
-      2ac:	40 00 00 41       	      (p06) br.cond.spnt.few 2e0
-<cmpxchg_futex_value_locked+0xb0>
-      2b0:	0a 00 00 00 22 00 	[MMI]       mf;;
-      2b6:	80 00 00 00 42 00 	            mov r8=r0
-      2bc:	00 00 04 00       	            nop.i 0x0
-      2c0:	0b 00 20 40 2a 04 	[MMI]       mov.m ar.ccv=r8;;
-      2c6:	10 1a 85 22 20 00 	            cmpxchg4.acq r33=[r33],r35,ar.ccv
-      2cc:	00 00 04 00       	            nop.i 0x0;;
-      2d0:	10 00 84 40 90 11 	[MIB]       st4 [r32]=r33
-      2d6:	00 00 00 02 00 00 	            nop.i 0x0
-      2dc:	20 00 00 40       	            br.few 2f0
-<cmpxchg_futex_value_locked+0xc0>
-      2e0:	09 40 c8 f9 ff 27 	[MMI]       mov r8=-14
-      2e6:	00 00 00 02 00 00 	            nop.m 0x0
-      2ec:	00 00 04 00       	            nop.i 0x0;;
-      2f0:	0b 58 20 1a 19 21 	[MMI]       adds r11=3208,r13;;
-      2f6:	20 01 2c 20 20 00 	            ld4 r18=[r11]
-      2fc:	00 00 04 00       	            nop.i 0x0;;
-      300:	0b 88 fc 25 3f 23 	[MMI]       adds r17=-1,r18;;
-      306:	00 88 2c 20 23 00 	            st4 [r11]=r17
-      30c:	00 00 04 00       	            nop.i 0x0;;
-      310:	11 00 00 00 01 00 	[MIB]       nop.m 0x0
-      316:	00 00 00 02 00 80 	            nop.i 0x0
-      31c:	08 00 84 00       	            br.ret.sptk.many b0;;
-
-The lines
-      2b0:	0a 00 00 00 22 00 	[MMI]       mf;;
-      2b6:	80 00 00 00 42 00 	            mov r8=r0
-      2bc:	00 00 04 00       	            nop.i 0x0
-      2c0:	0b 00 20 40 2a 04 	[MMI]       mov.m ar.ccv=r8;;
-      2c6:	10 1a 85 22 20 00 	            cmpxchg4.acq r33=[r33],r35,ar.ccv
-      2cc:	00 00 04 00       	            nop.i 0x0;;
-are the instructions of the assembly block.
-The line
-      2b6:	80 00 00 00 42 00 	            mov r8=r0
-sets the r8 register to 0 and after that
-      2c0:	0b 00 20 40 2a 04 	[MMI]       mov.m ar.ccv=r8;;
-prepares the 'oldvalue' for the cmpxchg but it takes it from r8. This
-is wrong.
-What happened here is what I explained above: An input register is
-overwritten which is still needed.
-The register operand constraints in futex.h are wrong.
-
-(The problem doesn't occur when the Kernel is compiled with GCC 4.6.)
-
-The attached patch fixes the register operand constraints in futex.h.
-The code after patching of it:
-
-static inline int
-futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
-			      u32 oldval, u32 newval)
-{
-	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
-		return -EFAULT;
-
-	{
-		register unsigned long r8 __asm ("r8") = 0;
-		unsigned long prev;
-		__asm__ __volatile__(
-			"	mf;;					\n"
-			"	mov ar.ccv=%4;;				\n"
-			"[1:]	cmpxchg4.acq %1=[%2],%3,ar.ccv		\n"
-			"	.xdata4 \"__ex_table\", 1b-., 2f-.	\n"
-			"[2:]"
-			: "+r" (r8), "=&r" (prev)
-			: "r" (uaddr), "r" (newval),
-			  "rO" ((long) (unsigned) oldval)
-			: "memory");
-		*uval = prev;
-		return r8;
-	}
-}
-
-I also initialized the 'r8' var with the C programming language.
-The _asm qualifier on the definition of the 'r8' var forces GCC to use
-the r8 processor register for it.
-I don't believe that we should use inline assembly for zeroing out a
-local variable.
-The constraint is
-"+r" (r8)
-what means that it is both an input register and an output register.
-Note that the page fault handler will modify the r8 register which
-will be the return value of the function.
-The real fix is
-"=&r" (prev)
-The & means that GCC must not use any of the input registers to place
-this output register in.
-
-Patched the Kernel 3.2.23 and compiled it with GCC4.4:
-
-0000000000000230 <cmpxchg_futex_value_locked>:
-      230:	0b 18 80 1b 18 21 	[MMI]       adds r3=3168,r13;;
-      236:	80 40 0d 00 42 00 	            adds r8=40,r3
-      23c:	00 00 04 00       	            nop.i 0x0;;
-      240:	0b 50 00 10 10 10 	[MMI]       ld4 r10=[r8];;
-      246:	90 08 28 00 42 00 	            adds r9=1,r10
-      24c:	00 00 04 00       	            nop.i 0x0;;
-      250:	09 00 00 00 01 00 	[MMI]       nop.m 0x0
-      256:	00 48 20 20 23 00 	            st4 [r8]=r9
-      25c:	00 00 04 00       	            nop.i 0x0;;
-      260:	08 10 80 06 00 21 	[MMI]       adds r2=32,r3
-      266:	20 12 01 10 40 00 	            addp4 r34=r34,r0
-      26c:	02 08 f1 52       	            extr.u r16=r33,0,61
-      270:	05 40 00 00 00 e1 	[MLX]       mov r8=r0
-      276:	ff ff 0f 00 00 e0 	            movl r15=0xfffffffbfff;;
-      27c:	f1 f7 ff 65
-      280:	09 70 00 04 18 10 	[MMI]       ld8 r14=[r2]
-      286:	00 00 00 02 00 c0 	            nop.m 0x0
-      28c:	f0 80 1c d0       	            cmp.ltu p6,p7=r15,r16;;
-      290:	08 40 fc 1d 09 3b 	[MMI]       cmp.eq p8,p9=-1,r14
-      296:	00 00 00 02 00 40 	            nop.m 0x0
-      29c:	e1 08 2d d0       	            cmp.ltu p10,p11=r14,r33
-      2a0:	56 01 10 00 40 10 	[BBB] (p10) br.cond.spnt.few 2e0
-<cmpxchg_futex_value_locked+0xb0>
-      2a6:	02 08 00 80 21 03 	      (p08) br.cond.dpnt.few 2b0
-<cmpxchg_futex_value_locked+0x80>
-      2ac:	40 00 00 41       	      (p06) br.cond.spnt.few 2e0
-<cmpxchg_futex_value_locked+0xb0>
-      2b0:	0b 00 00 00 22 00 	[MMI]       mf;;
-      2b6:	00 10 81 54 08 00 	            mov.m ar.ccv=r34
-      2bc:	00 00 04 00       	            nop.i 0x0;;
-      2c0:	09 58 8c 42 11 10 	[MMI]       cmpxchg4.acq r11=[r33],r35,ar.ccv
-      2c6:	00 00 00 02 00 00 	            nop.m 0x0
-      2cc:	00 00 04 00       	            nop.i 0x0;;
-      2d0:	10 00 2c 40 90 11 	[MIB]       st4 [r32]=r11
-      2d6:	00 00 00 02 00 00 	            nop.i 0x0
-      2dc:	20 00 00 40       	            br.few 2f0
-<cmpxchg_futex_value_locked+0xc0>
-      2e0:	09 40 c8 f9 ff 27 	[MMI]       mov r8=-14
-      2e6:	00 00 00 02 00 00 	            nop.m 0x0
-      2ec:	00 00 04 00       	            nop.i 0x0;;
-      2f0:	0b 88 20 1a 19 21 	[MMI]       adds r17=3208,r13;;
-      2f6:	30 01 44 20 20 00 	            ld4 r19=[r17]
-      2fc:	00 00 04 00       	            nop.i 0x0;;
-      300:	0b 90 fc 27 3f 23 	[MMI]       adds r18=-1,r19;;
-      306:	00 90 44 20 23 00 	            st4 [r17]=r18
-      30c:	00 00 04 00       	            nop.i 0x0;;
-      310:	11 00 00 00 01 00 	[MIB]       nop.m 0x0
-      316:	00 00 00 02 00 80 	            nop.i 0x0
-      31c:	08 00 84 00       	            br.ret.sptk.many b0;;
-
-Much better.
-There is a
-      270:	05 40 00 00 00 e1 	[MLX]       mov r8=r0
-which was generated by C code r8 = 0. Below
-      2b6:	00 10 81 54 08 00 	            mov.m ar.ccv=r34
-what means that oldval is no longer overwritten.
-
-This is Debian bug#702641
-(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=702641).
-
-The patch is applicable on Kernel 3.9-rc1, 3.2.23 and many other versions.
-
-Signed-off-by: Stephan Schreiber <info@fs-driver.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Reported-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: file position is child inode number, not hash]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/ia64/include/asm/futex.h |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ fs/sysfs/dir.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/arch/ia64/include/asm/futex.h
-+++ b/arch/ia64/include/asm/futex.h
-@@ -107,16 +107,15 @@ futex_atomic_cmpxchg_inatomic(u32 *uval,
- 		return -EFAULT;
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -977,6 +977,7 @@ static int sysfs_readdir(struct file * f
+ 	enum kobj_ns_type type;
+ 	const void *ns;
+ 	ino_t ino;
++	loff_t off;
  
- 	{
--		register unsigned long r8 __asm ("r8");
-+		register unsigned long r8 __asm ("r8") = 0;
- 		unsigned long prev;
- 		__asm__ __volatile__(
- 			"	mf;;					\n"
--			"	mov %0=r0				\n"
- 			"	mov ar.ccv=%4;;				\n"
- 			"[1:]	cmpxchg4.acq %1=[%2],%3,ar.ccv		\n"
- 			"	.xdata4 \"__ex_table\", 1b-., 2f-.	\n"
- 			"[2:]"
--			: "=r" (r8), "=r" (prev)
-+			: "+r" (r8), "=&r" (prev)
- 			: "r" (uaddr), "r" (newval),
- 			  "rO" ((long) (unsigned) oldval)
- 			: "memory");
+ 	type = sysfs_ns_type(parent_sd);
+ 	ns = sysfs_info(dentry->d_sb)->ns[type];
+@@ -999,6 +1000,7 @@ static int sysfs_readdir(struct file * f
+ 			return 0;
+ 	}
+ 	mutex_lock(&sysfs_mutex);
++	off = filp->f_pos;
+ 	for (pos = sysfs_dir_pos(ns, parent_sd, filp->f_pos, pos);
+ 	     pos;
+ 	     pos = sysfs_dir_next_pos(ns, parent_sd, filp->f_pos, pos)) {
+@@ -1010,19 +1012,24 @@ static int sysfs_readdir(struct file * f
+ 		len = strlen(name);
+ 		ino = pos->s_ino;
+ 		type = dt_type(pos);
+-		filp->f_pos = ino;
++		off = filp->f_pos = ino;
+ 		filp->private_data = sysfs_get(pos);
+ 
+ 		mutex_unlock(&sysfs_mutex);
+-		ret = filldir(dirent, name, len, filp->f_pos, ino, type);
++		ret = filldir(dirent, name, len, off, ino, type);
+ 		mutex_lock(&sysfs_mutex);
+ 		if (ret < 0)
+ 			break;
+ 	}
+ 	mutex_unlock(&sysfs_mutex);
+-	if ((filp->f_pos > 1) && !pos) { /* EOF */
+-		filp->f_pos = INT_MAX;
++
++	/* don't reference last entry if its refcount is dropped */
++	if (!pos) {
+ 		filp->private_data = NULL;
++
++		/* EOF and not changed as 0 or 1 in read/write path */
++		if (off == filp->f_pos && off > 1)
++			filp->f_pos = INT_MAX;
+ 	}
+ 	return 0;
+ }
 
