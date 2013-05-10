@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab3EJOv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:51:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56873 "EHLO
+	id S1757033Ab3EJOwd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:52:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56853 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753832Ab3EJOTm (ORCPT
+	by vger.kernel.org with ESMTP id S1753708Ab3EJOTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:19:42 -0400
+	Fri, 10 May 2013 10:19:38 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "George Barnett" <gbarnett@atlassian.com>,
-        "Theodore Ts'o" <tytso@mit.edu>
+CC: akpm@linux-foundation.org, "Yinghai Lu" <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.373182929@decadent.org.uk>
+Message-ID: <lsq.1368193181.6944232@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [017/118] ext4/jbd2: don't wait (forever) for stale tid caused by
- wraparound
+Subject: [010/118] PCI / ACPI: Don't query OSC support with all possible
+ controls
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,117 +32,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit d76a3a77113db020d9bb1e894822869410450bd9 upstream.
+commit 545d6e189a41c94c11f55045a771118eccc9d9eb upstream.
 
-In the case where an inode has a very stale transaction id (tid) in
-i_datasync_tid or i_sync_tid, it's possible that after a very large
-(2**31) number of transactions, that the tid number space might wrap,
-causing tid_geq()'s calculations to fail.
+Found problem on system that firmware that could handle pci aer.
+Firmware get error reporting after pci injecting error, before os boots.
+But after os boots, firmware can not get report anymore, even pci=noaer
+is passed.
 
-Commit deeeaf13 "jbd2: fix fsync() tid wraparound bug", later modified
-by commit e7b04ac0 "jbd2: don't wake kjournald unnecessarily",
-attempted to fix this problem, but it only avoided kjournald spinning
-forever by fixing the logic in jbd2_log_start_commit().
+Root cause: BIOS _OSC has problem with query bit checking.
+It turns out that BIOS vendor is copying example code from ACPI Spec.
+In ACPI Spec 5.0, page 290:
 
-Unfortunately, in the codepaths in fs/ext4/fsync.c and fs/ext4/inode.c
-that might call jbd2_log_start_commit() with a stale tid, those
-functions will subsequently call jbd2_log_wait_commit() with the same
-stale tid, and then wait for a very long time.  To fix this, we
-replace the calls to jbd2_log_start_commit() and
-jbd2_log_wait_commit() with a call to a new function,
-jbd2_complete_transaction(), which will correctly handle stale tid's.
+	If (Not(And(CDW1,1))) // Query flag clear?
+	{	// Disable GPEs for features granted native control.
+		If (And(CTRL,0x01)) // Hot plug control granted?
+		{
+			Store(0,HPCE) // clear the hot plug SCI enable bit
+			Store(1,HPCS) // clear the hot plug SCI status bit
+		}
+	...
+	}
 
-As a bonus, jbd2_complete_transaction() will avoid locking
-j_state_lock for writing unless a commit needs to be started.  This
-should have a small (but probably not measurable) improvement for
-ext4's scalability.
+When Query flag is set, And(CDW1,1) will be 1, Not(1) will return 0xfffffffe.
+So it will get into code path that should be for control set only.
+BIOS acpi code should be changed to "If (LEqual(And(CDW1,1), 0)))"
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Reported-by: George Barnett <gbarnett@atlassian.com>
-[bwh: Backported to 3.2: adjust context]
+Current kernel code is using _OSC query to notify firmware about support
+from OS and then use _OSC to set control bits.
+During query support, current code is using all possible controls.
+So will execute code that should be only for control set stage.
+
+That will have problem when pci=noaer or aer firmware_first is used.
+As firmware have that control set for os aer already in query support stage,
+but later will not os aer handling.
+
+We should avoid passing all possible controls, just use osc_control_set
+instead.
+That should workaround BIOS bugs with affected systems on the field
+as more bios vendors are copying sample code from ACPI spec.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/fsync.c      |    3 +--
- fs/ext4/inode.c      |    3 +--
- fs/jbd2/journal.c    |   31 +++++++++++++++++++++++++++++++
- include/linux/jbd2.h |    1 +
- 4 files changed, 34 insertions(+), 4 deletions(-)
+ drivers/acpi/pci_root.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/fsync.c
-+++ b/fs/ext4/fsync.c
-@@ -260,8 +260,7 @@ int ext4_sync_file(struct file *file, lo
- 	if (journal->j_flags & JBD2_BARRIER &&
- 	    !jbd2_trans_will_send_data_barrier(journal, commit_tid))
- 		needs_barrier = true;
--	jbd2_log_start_commit(journal, commit_tid);
--	ret = jbd2_log_wait_commit(journal, commit_tid);
-+	ret = jbd2_complete_transaction(journal, commit_tid);
- 	if (needs_barrier)
- 		blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
-  out:
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -147,8 +147,7 @@ void ext4_evict_inode(struct inode *inod
- 			journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
- 			tid_t commit_tid = EXT4_I(inode)->i_datasync_tid;
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -247,8 +247,8 @@ static acpi_status acpi_pci_query_osc(st
+ 		*control &= OSC_PCI_CONTROL_MASKS;
+ 		capbuf[OSC_CONTROL_TYPE] = *control | root->osc_control_set;
+ 	} else {
+-		/* Run _OSC query for all possible controls. */
+-		capbuf[OSC_CONTROL_TYPE] = OSC_PCI_CONTROL_MASKS;
++		/* Run _OSC query only with existing controls. */
++		capbuf[OSC_CONTROL_TYPE] = root->osc_control_set;
+ 	}
  
--			jbd2_log_start_commit(journal, commit_tid);
--			jbd2_log_wait_commit(journal, commit_tid);
-+			jbd2_complete_transaction(journal, commit_tid);
- 			filemap_write_and_wait(&inode->i_data);
- 		}
- 		truncate_inode_pages(&inode->i_data, 0);
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -663,6 +663,37 @@ int jbd2_log_wait_commit(journal_t *jour
- }
- 
- /*
-+ * When this function returns the transaction corresponding to tid
-+ * will be completed.  If the transaction has currently running, start
-+ * committing that transaction before waiting for it to complete.  If
-+ * the transaction id is stale, it is by definition already completed,
-+ * so just return SUCCESS.
-+ */
-+int jbd2_complete_transaction(journal_t *journal, tid_t tid)
-+{
-+	int	need_to_wait = 1;
-+
-+	read_lock(&journal->j_state_lock);
-+	if (journal->j_running_transaction &&
-+	    journal->j_running_transaction->t_tid == tid) {
-+		if (journal->j_commit_request != tid) {
-+			/* transaction not yet started, so request it */
-+			read_unlock(&journal->j_state_lock);
-+			jbd2_log_start_commit(journal, tid);
-+			goto wait_commit;
-+		}
-+	} else if (!(journal->j_committing_transaction &&
-+		     journal->j_committing_transaction->t_tid == tid))
-+		need_to_wait = 0;
-+	read_unlock(&journal->j_state_lock);
-+	if (!need_to_wait)
-+		return 0;
-+wait_commit:
-+	return jbd2_log_wait_commit(journal, tid);
-+}
-+EXPORT_SYMBOL(jbd2_complete_transaction);
-+
-+/*
-  * Log buffer allocation routines:
-  */
- 
---- a/include/linux/jbd2.h
-+++ b/include/linux/jbd2.h
-@@ -1165,6 +1165,7 @@ int __jbd2_log_start_commit(journal_t *j
- int jbd2_journal_start_commit(journal_t *journal, tid_t *tid);
- int jbd2_journal_force_commit_nested(journal_t *journal);
- int jbd2_log_wait_commit(journal_t *journal, tid_t tid);
-+int jbd2_complete_transaction(journal_t *journal, tid_t tid);
- int jbd2_log_do_checkpoint(journal_t *journal);
- int jbd2_trans_will_send_data_barrier(journal_t *journal, tid_t tid);
- 
+ 	status = acpi_pci_run_osc(root->device->handle, capbuf, &result);
 
