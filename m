@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab3EJSL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 14:11:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39347 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542Ab3EJSL2 (ORCPT
+	id S1752663Ab3EJSNx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 14:13:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:38357 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751731Ab3EJSNw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 14:11:28 -0400
-Message-ID: <518D3828.9060000@infradead.org>
-Date: Fri, 10 May 2013 11:10:48 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 10 May 2013 14:13:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,650,1363158000"; 
+   d="scan'208";a="335645404"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ming Lei <Ming.Lei@riverbed.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "mchehab@redhat.com" <mchehab@redhat.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: RE: x86_mce: mce_start uses number of phsical cores instead of
+ logical cores
+Thread-Topic: x86_mce: mce_start uses number of phsical cores instead of
+ logical cores
+Thread-Index: Ac5NnrX+OJKCA1vXQtyGCRlOybefOwACkHHw
+Date: Fri, 10 May 2013 18:13:50 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F2DA4C92B@ORSMSX106.amr.corp.intel.com>
+References: <2CE44BD3DBCF9541909CCB42F11CA3921C6FAA49@SFO1EXC-MBXP06.nbttech.com>
+In-Reply-To: <2CE44BD3DBCF9541909CCB42F11CA3921C6FAA49@SFO1EXC-MBXP06.nbttech.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
-CC: tglx@linutronix.de, linux-kernel@vger.kernel.org, balbi@ti.com
-Subject: Re: [PATCH 1/1] genirq: outline lazy disable in kerneldoc of irq_disable
- function.
-References: <1368181290-1583-1-git-send-email-andreas.fenkart@streamunlimited.com>
-In-Reply-To: <1368181290-1583-1-git-send-email-andreas.fenkart@streamunlimited.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/13 03:21, Andreas Fenkart wrote:
-> comment based on changelog of d209a699a0b975ad
-> 
-> Signed-off-by: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
-> ---
->  kernel/irq/chip.c |   13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-> index cbd97ce..4e3c439 100644
-> --- a/kernel/irq/chip.c
-> +++ b/kernel/irq/chip.c
-> @@ -213,6 +213,19 @@ void irq_enable(struct irq_desc *desc)
->  	irq_state_clr_masked(desc);
->  }
->  
-> +/**
-> + * irq_disable - mask interupt disabled
+> +#if NR_CPUS > 1
+> +	cpus /= cpumask_weight(cpu_core_mask(0)) / cpu_data(0).booted_cores;
+> +#endif
 
-                  - mark interrupt disabled
+Not entirely sure what you are trying to do here (apart from making "cpus"
+be a smaller number).  What is the reasoning behind the right hand side of
+this expression?
 
-> + * @desc:		irq descriptor which should be disabled
-> + *
-> + * If the chip does not implement the irq_disable callback, we
-> + * use a lazy disable approach. That means we mark the interrupt
-> + * disabled, but leave the hardware unmasked. That's an
-> + * optimization because we avoid the hardware access for the
-> + * common case where no interrupt happens after we marked it
-> + * disabled. If an interrupt happens, then the interrupt flow
-> + * handler masks the line at the hardware level and marks it
-> + * pending.
-> + */
->  void irq_disable(struct irq_desc *desc)
->  {
->  	irq_state_set_disabled(desc);
-> 
+Is this problem more related to how EDAC is injecting an error?  When I've
+used other methods (e.g. ACPI/EINJ) I end up with a machine check that is
+broadcast to all processors ... so "cpus = num_online_cpus()" is the correct[1]
+number of processors to wait for.
 
+-Tony
 
--- 
-~Randy
+[1] Andi may point me (again) to a fix to help deal with the case that Linux
+has taken some cpus offline. In that case this code is wrong as the "offline"
+cpus will still show up for machine checks.  But there are troubling corner
+cases with the fix.
