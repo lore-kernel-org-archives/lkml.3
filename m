@@ -1,151 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab3EJOir (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:38:47 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:36336 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755021Ab3EJOio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:38:44 -0400
-Message-ID: <53078.128.237.228.195.1368198321.squirrel@mprc.pku.edu.cn>
-In-Reply-To: <1368127405-112717-8-git-send-email-holt@sgi.com>
-References: <1368127405-112717-1-git-send-email-holt@sgi.com>
-    <1368127405-112717-8-git-send-email-holt@sgi.com>
-Date: Fri, 10 May 2013 23:05:21 +0800 (CST)
-Subject: Re: [PATCH -v9 07/11] unicore32,
-      prepare reboot_mode for moving to generic kernel code.
-From: "Xuetao Guan" <gxt@mprc.pku.edu.cn>
-To: "Robin Holt" <holt@sgi.com>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>, "Robin Holt" <holt@sgi.com>,
-        "Guan Xuetao" <gxt@mprc.pku.edu.cn>, "Russ Anderson" <rja@sgi.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        "Arm Mailing List" <linux-arm-kernel@lists.infradead.org>
-Reply-To: gxt@mprc.pku.edu.cn
-User-Agent: SquirrelMail/1.4.8-4.0.1.el5
-MIME-Version: 1.0
-Content-Type: text/plain;charset=gb2312
+	id S1757189Ab3EJOjP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:39:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57104 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754914Ab3EJOU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 10:20:57 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Jiri Slaby" <jslaby@suse.cz>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Simon Kirby" <sim@hostway.ca>
+Date: Fri, 10 May 2013 14:39:41 +0100
+Message-ID: <lsq.1368193181.961534784@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [076/118] tty: fix up atime/mtime mess, take three
+In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch prepares for the moving the parsing of reboot= to the generic
-> kernel code by making reboot_mode into a more generic form.
->
-> Signed-off-by: Robin Holt <holt@sgi.com>
-> To: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> Cc: Russ Anderson <rja@sgi.com>
-> Cc: Robin Holt <holt@sgi.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-> Cc: the arch/x86 maintainers <x86@kernel.org>
-> Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+3.2.45-rc1 review patch.  If anyone has any objections, please let me know.
 
-Thanks for your hard work.
+------------------
 
-For UniCore32 bits: (Though I can't compile and test it in recent months)
-Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
+commit b0b885657b6c8ef63a46bc9299b2a7715d19acde upstream.
 
->
-> ---
->
-> Changes since -v8
->  - Switched from using REBOOT_WARM/COLD to HARD/SOFT.
-> ---
->  arch/unicore32/kernel/process.c | 10 +++++-----
->  arch/unicore32/kernel/setup.h   |  2 +-
->  arch/unicore32/mm/mmu.c         |  2 +-
->  include/linux/reboot.h          |  2 ++
->  4 files changed, 9 insertions(+), 7 deletions(-)
->
-> diff --git a/arch/unicore32/kernel/process.c
-> b/arch/unicore32/kernel/process.c
-> index c944769..93dd035 100644
-> --- a/arch/unicore32/kernel/process.c
-> +++ b/arch/unicore32/kernel/process.c
-> @@ -51,14 +51,14 @@ void arch_cpu_idle(void)
->  	local_irq_enable();
->  }
->
-> -static char reboot_mode = 'h';
-> +static enum reboot_mode reboot_mode = REBOOT_HARD;
->
->  int __init reboot_setup(char *str)
->  {
-> -	reboot_mode = str[0];
-> +	if ('s' == str[0])
-> +		reboot_mode = REBOOT_SOFT;
->  	return 1;
->  }
-> -
->  __setup("reboot=", reboot_setup);
->
->  void machine_halt(void)
-> @@ -88,7 +88,7 @@ void machine_restart(char *cmd)
->  	 * we may need it to insert some 1:1 mappings so that
->  	 * soft boot works.
->  	 */
-> -	setup_mm_for_reboot(reboot_mode);
-> +	setup_mm_for_reboot();
->
->  	/* Clean and invalidate caches */
->  	flush_cache_all();
-> @@ -102,7 +102,7 @@ void machine_restart(char *cmd)
->  	/*
->  	 * Now handle reboot code.
->  	 */
-> -	if (reboot_mode == 's') {
-> +	if (reboot_mode == REBOOT_SOFT) {
->  		/* Jump into ROM at address 0xffff0000 */
->  		cpu_reset(VECTORS_BASE);
->  	} else {
-> diff --git a/arch/unicore32/kernel/setup.h b/arch/unicore32/kernel/setup.h
-> index 30f749d..f5c51b8 100644
-> --- a/arch/unicore32/kernel/setup.h
-> +++ b/arch/unicore32/kernel/setup.h
-> @@ -22,7 +22,7 @@ extern void puv3_ps2_init(void);
->  extern void pci_puv3_preinit(void);
->  extern void __init puv3_init_gpio(void);
->
-> -extern void setup_mm_for_reboot(char mode);
-> +extern void setup_mm_for_reboot(void);
->
->  extern char __stubs_start[], __stubs_end[];
->  extern char __vectors_start[], __vectors_end[];
-> diff --git a/arch/unicore32/mm/mmu.c b/arch/unicore32/mm/mmu.c
-> index 43c20b4..4f5a532 100644
-> --- a/arch/unicore32/mm/mmu.c
-> +++ b/arch/unicore32/mm/mmu.c
-> @@ -445,7 +445,7 @@ void __init paging_init(void)
->   * the user-mode pages.  This will then ensure that we have predictable
->   * results when turning the mmu off
->   */
-> -void setup_mm_for_reboot(char mode)
-> +void setup_mm_for_reboot(void)
->  {
->  	unsigned long base_pmdval;
->  	pgd_t *pgd;
-> diff --git a/include/linux/reboot.h b/include/linux/reboot.h
-> index 37d56c3..ca29a6f 100644
-> --- a/include/linux/reboot.h
-> +++ b/include/linux/reboot.h
-> @@ -13,6 +13,8 @@
->  enum reboot_mode {
->  	REBOOT_COLD = 0,
->  	REBOOT_WARM,
-> +	REBOOT_HARD,
-> +	REBOOT_SOFT,
->  };
->
->  extern int register_reboot_notifier(struct notifier_block *);
-> --
-> 1.8.2.1
->
+We first tried to avoid updating atime/mtime entirely (commit
+b0de59b5733d: "TTY: do not update atime/mtime on read/write"), and then
+limited it to only update it occasionally (commit 37b7f3c76595: "TTY:
+fix atime/mtime regression"), but it turns out that this was both
+insufficient and overkill.
+
+It was insufficient because we let people attach to the shared ptmx node
+to see activity without even reading atime/mtime, and it was overkill
+because the "only once a minute" means that you can't really tell an
+idle person from an active one with 'w'.
+
+So this tries to fix the problem properly.  It marks the shared ptmx
+node as un-notifiable, and it lowers the "only once a minute" to a few
+seconds instead - still long enough that you can't time individual
+keystrokes, but short enough that you can tell whether somebody is
+active or not.
+
+Reported-by: Simon Kirby <sim@hostway.ca>
+Acked-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/tty/pty.c    |    3 +++
+ drivers/tty/tty_io.c |    4 ++--
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -669,6 +669,9 @@ static int ptmx_open(struct inode *inode
+ 
+ 	nonseekable_open(inode, filp);
+ 
++	/* We refuse fsnotify events on ptmx, since it's a shared resource */
++	filp->f_mode |= FMODE_NONOTIFY;
++
+ 	retval = tty_alloc_file(filp);
+ 	if (retval)
+ 		return retval;
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -940,10 +940,10 @@ void start_tty(struct tty_struct *tty)
+ 
+ EXPORT_SYMBOL(start_tty);
+ 
++/* We limit tty time update visibility to every 8 seconds or so. */
+ static void tty_update_time(struct timespec *time)
+ {
+-	unsigned long sec = get_seconds();
+-	sec -= sec % 60;
++	unsigned long sec = get_seconds() & ~7;
+ 	if ((long)(sec - time->tv_sec) > 0)
+ 		time->tv_sec = sec;
+ }
 
