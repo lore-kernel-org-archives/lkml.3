@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076Ab3EJOVF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:21:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57107 "EHLO
+	id S1754988Ab3EJOVA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:21:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57101 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754918Ab3EJOU6 (ORCPT
+	by vger.kernel.org with ESMTP id S1753578Ab3EJOU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:20:58 -0400
+	Fri, 10 May 2013 10:20:57 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Sylvain BERTRAND" <sylware@legeek.net>,
-        "Alex Deucher" <alexander.deucher@amd.com>
+CC: akpm@linux-foundation.org, "Jiri Slaby" <jslaby@suse.cz>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.779969144@decadent.org.uk>
+Message-ID: <lsq.1368193181.312640195@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [073/118] drm/radeon: fix handling of v6 power tables
+Subject: [074/118] TTY: do not update atime/mtime on read/write
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,60 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 441e76ca83ac604eaf0f046def96d8e3a27eea28 upstream.
+commit b0de59b5733d18b0d1974a060860a8b5c1b36a2e upstream.
 
-The code was mis-handling variable sized arrays.
+On http://vladz.devzero.fr/013_ptmx-timing.php, we can see how to find
+out length of a password using timestamps of /dev/ptmx. It is
+documented in "Timing Analysis of Keystrokes and Timing Attacks on
+SSH". To avoid that problem, do not update time when reading
+from/writing to a TTY.
 
-Reported-by: Sylvain BERTRAND <sylware@legeek.net>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+I am afraid of regressions as this is a behavior we have since 0.97
+and apps may expect the time to be current, e.g. for monitoring
+whether there was a change on the TTY. Now, there is no change. So
+this would better have a lot of testing before it goes upstream.
+
+References: CVE-2013-0160
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/tty/tty_io.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -2447,6 +2447,7 @@ static int radeon_atombios_parse_power_t
- 	int index = GetIndexIntoMasterTable(DATA, PowerPlayInfo);
-         u16 data_offset;
- 	u8 frev, crev;
-+	u8 *power_state_offset;
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -976,8 +976,7 @@ static ssize_t tty_read(struct file *fil
+ 	else
+ 		i = -EIO;
+ 	tty_ldisc_deref(ld);
+-	if (i > 0)
+-		inode->i_atime = current_fs_time(inode->i_sb);
++
+ 	return i;
+ }
  
- 	if (!atom_parse_data_header(mode_info->atom_context, index, NULL,
- 				   &frev, &crev, &data_offset))
-@@ -2469,11 +2470,11 @@ static int radeon_atombios_parse_power_t
- 				       state_array->ucNumEntries, GFP_KERNEL);
- 	if (!rdev->pm.power_state)
- 		return state_index;
-+	power_state_offset = (u8 *)state_array->states;
- 	for (i = 0; i < state_array->ucNumEntries; i++) {
- 		mode_index = 0;
--		power_state = (union pplib_power_state *)&state_array->states[i];
--		/* XXX this might be an inagua bug... */
--		non_clock_array_index = i; /* power_state->v2.nonClockInfoIndex */
-+		power_state = (union pplib_power_state *)power_state_offset;
-+		non_clock_array_index = power_state->v2.nonClockInfoIndex;
- 		non_clock_info = (struct _ATOM_PPLIB_NONCLOCK_INFO *)
- 			&non_clock_info_array->nonClockInfo[non_clock_array_index];
- 		rdev->pm.power_state[i].clock_info = kzalloc(sizeof(struct radeon_pm_clock_info) *
-@@ -2485,9 +2486,6 @@ static int radeon_atombios_parse_power_t
- 		if (power_state->v2.ucNumDPMLevels) {
- 			for (j = 0; j < power_state->v2.ucNumDPMLevels; j++) {
- 				clock_array_index = power_state->v2.clockInfoIndex[j];
--				/* XXX this might be an inagua bug... */
--				if (clock_array_index >= clock_info_array->ucNumEntries)
--					continue;
- 				clock_info = (union pplib_clock_info *)
- 					&clock_info_array->clockInfo[clock_array_index];
- 				valid = radeon_atombios_parse_pplib_clock_info(rdev,
-@@ -2509,6 +2507,7 @@ static int radeon_atombios_parse_power_t
- 								   non_clock_info);
- 			state_index++;
- 		}
-+		power_state_offset += 2 + power_state->v2.ucNumDPMLevels;
+@@ -1078,11 +1077,8 @@ static inline ssize_t do_tty_write(
+ 			break;
+ 		cond_resched();
  	}
- 	/* if multiple clock modes, mark the lowest as no display */
- 	for (i = 0; i < state_index; i++) {
+-	if (written) {
+-		struct inode *inode = file->f_path.dentry->d_inode;
+-		inode->i_mtime = current_fs_time(inode->i_sb);
++	if (written)
+ 		ret = written;
+-	}
+ out:
+ 	tty_write_unlock(tty);
+ 	return ret;
 
