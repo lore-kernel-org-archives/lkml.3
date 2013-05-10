@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab3EJTdi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 15:33:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46687 "EHLO mx1.redhat.com"
+	id S1754828Ab3EJTdp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 15:33:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11782 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753380Ab3EJTdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 15:33:35 -0400
+	id S1753380Ab3EJTdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 15:33:43 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 4/8] FS-Cache: Don't sleep in page release if __GFP_FS is
- not set [ver #2]
+Subject: [PATCH 5/8] FS-Cache: Uninline fscache_object_init() [ver #2]
 To: Trond.Myklebust@netapp.com, torvalds@linux-foundation.org
 From: David Howells <dhowells@redhat.com>
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-cachefs@redhat.com, linux-kernel@vger.kernel.org
-Date: Fri, 10 May 2013 20:33:31 +0100
-Message-ID: <20130510193331.3045.83490.stgit@warthog.procyon.org.uk>
+Date: Fri, 10 May 2013 20:33:39 +0100
+Message-ID: <20130510193339.3045.29012.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20130510193257.3045.77981.stgit@warthog.procyon.org.uk>
 References: <20130510193257.3045.77981.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.16
@@ -28,142 +27,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't sleep in __fscache_maybe_release_page() if __GFP_FS is not set.  This
-goes some way towards mitigating fscache deadlocking against ext4 by way of
-the allocator, eg:
-
-INFO: task flush-8:0:24427 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-flush-8:0       D ffff88003e2b9fd8     0 24427      2 0x00000000
- ffff88003e2b9138 0000000000000046 ffff880012e3a040 ffff88003e2b9fd8
- 0000000000011c80 ffff88003e2b9fd8 ffffffff81a10400 ffff880012e3a040
- 0000000000000002 ffff880012e3a040 ffff88003e2b9098 ffffffff8106dcf5
-Call Trace:
- [<ffffffff8106dcf5>] ? __lock_is_held+0x31/0x53
- [<ffffffff81219b61>] ? radix_tree_lookup_element+0xf4/0x12a
- [<ffffffff81454bed>] schedule+0x60/0x62
- [<ffffffffa01d349c>] __fscache_wait_on_page_write+0x8b/0xa5 [fscache]
- [<ffffffff810498a8>] ? __init_waitqueue_head+0x4d/0x4d
- [<ffffffffa01d393a>] __fscache_maybe_release_page+0x30c/0x324 [fscache]
- [<ffffffffa01d369a>] ? __fscache_maybe_release_page+0x6c/0x324 [fscache]
- [<ffffffff81071b53>] ? trace_hardirqs_on_caller+0x114/0x170
- [<ffffffffa01fd7b2>] nfs_fscache_release_page+0x68/0x94 [nfs]
- [<ffffffffa01ef73e>] nfs_release_page+0x7e/0x86 [nfs]
- [<ffffffff810aa553>] try_to_release_page+0x32/0x3b
- [<ffffffff810b6c70>] shrink_page_list+0x535/0x71a
- [<ffffffff81071b53>] ? trace_hardirqs_on_caller+0x114/0x170
- [<ffffffff810b7352>] shrink_inactive_list+0x20a/0x2dd
- [<ffffffff81071a13>] ? mark_held_locks+0xbe/0xea
- [<ffffffff810b7a65>] shrink_lruvec+0x34c/0x3eb
- [<ffffffff810b7bd3>] do_try_to_free_pages+0xcf/0x355
- [<ffffffff810b7fc8>] try_to_free_pages+0x9a/0xa1
- [<ffffffff810b08d2>] __alloc_pages_nodemask+0x494/0x6f7
- [<ffffffff810d9a07>] kmem_getpages+0x58/0x155
- [<ffffffff810dc002>] fallback_alloc+0x120/0x1f3
- [<ffffffff8106db23>] ? trace_hardirqs_off+0xd/0xf
- [<ffffffff810dbed3>] ____cache_alloc_node+0x177/0x186
- [<ffffffff81162a6c>] ? ext4_init_io_end+0x1c/0x37
- [<ffffffff810dc403>] kmem_cache_alloc+0xf1/0x176
- [<ffffffff810b17ac>] ? test_set_page_writeback+0x101/0x113
- [<ffffffff81162a6c>] ext4_init_io_end+0x1c/0x37
- [<ffffffff81162ce4>] ext4_bio_write_page+0x20f/0x3af
- [<ffffffff8115cc02>] mpage_da_submit_io+0x26e/0x2f6
- [<ffffffff811088e5>] ? __find_get_block_slow+0x38/0x133
- [<ffffffff81161348>] mpage_da_map_and_submit+0x3a7/0x3bd
- [<ffffffff81161a60>] ext4_da_writepages+0x30d/0x426
- [<ffffffff810b3359>] do_writepages+0x1c/0x2a
- [<ffffffff81102f4d>] __writeback_single_inode+0x3e/0xe5
- [<ffffffff81103995>] writeback_sb_inodes+0x1bd/0x2f4
- [<ffffffff81103b3b>] __writeback_inodes_wb+0x6f/0xb4
- [<ffffffff81103c81>] wb_writeback+0x101/0x195
- [<ffffffff81071b53>] ? trace_hardirqs_on_caller+0x114/0x170
- [<ffffffff811043aa>] ? wb_do_writeback+0xaa/0x173
- [<ffffffff8110434a>] wb_do_writeback+0x4a/0x173
- [<ffffffff81071bbc>] ? trace_hardirqs_on+0xd/0xf
- [<ffffffff81038554>] ? del_timer+0x4b/0x5b
- [<ffffffff811044e0>] bdi_writeback_thread+0x6d/0x147
- [<ffffffff81104473>] ? wb_do_writeback+0x173/0x173
- [<ffffffff81048fbc>] kthread+0xd0/0xd8
- [<ffffffff81455eb2>] ? _raw_spin_unlock_irq+0x29/0x3e
- [<ffffffff81048eec>] ? __init_kthread_worker+0x55/0x55
- [<ffffffff81456aac>] ret_from_fork+0x7c/0xb0
- [<ffffffff81048eec>] ? __init_kthread_worker+0x55/0x55
-2 locks held by flush-8:0/24427:
- #0:  (&type->s_umount_key#41){.+.+..}, at: [<ffffffff810e3b73>] grab_super_passive+0x4c/0x76
- #1:  (jbd2_handle){+.+...}, at: [<ffffffff81190d81>] start_this_handle+0x475/0x4ea
-
-
-The problem here is that another thread, which is attempting to write the
-to-be-stored NFS page to the on-ext4 cache file is waiting for the journal
-lock, eg:
-
-INFO: task kworker/u:2:24437 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-kworker/u:2     D ffff880039589768     0 24437      2 0x00000000
- ffff8800395896d8 0000000000000046 ffff8800283bf040 ffff880039589fd8
- 0000000000011c80 ffff880039589fd8 ffff880039f0b040 ffff8800283bf040
- 0000000000000006 ffff8800283bf6b8 ffff880039589658 ffffffff81071a13
-Call Trace:
- [<ffffffff81071a13>] ? mark_held_locks+0xbe/0xea
- [<ffffffff81455e73>] ? _raw_spin_unlock_irqrestore+0x3a/0x50
- [<ffffffff81071b53>] ? trace_hardirqs_on_caller+0x114/0x170
- [<ffffffff81071bbc>] ? trace_hardirqs_on+0xd/0xf
- [<ffffffff81454bed>] schedule+0x60/0x62
- [<ffffffff81190c23>] start_this_handle+0x317/0x4ea
- [<ffffffff810498a8>] ? __init_waitqueue_head+0x4d/0x4d
- [<ffffffff81190fcc>] jbd2__journal_start+0xb3/0x12e
- [<ffffffff81176606>] __ext4_journal_start_sb+0xb2/0xc6
- [<ffffffff8115f137>] ext4_da_write_begin+0x109/0x233
- [<ffffffff810a964d>] generic_file_buffered_write+0x11a/0x264
- [<ffffffff811032cf>] ? __mark_inode_dirty+0x2d/0x1ee
- [<ffffffff810ab1ab>] __generic_file_aio_write+0x2a5/0x2d5
- [<ffffffff810ab24a>] generic_file_aio_write+0x6f/0xd0
- [<ffffffff81159a2c>] ext4_file_write+0x38c/0x3c4
- [<ffffffff810e0915>] do_sync_write+0x91/0xd1
- [<ffffffffa00a17f0>] cachefiles_write_page+0x26f/0x310 [cachefiles]
- [<ffffffffa01d470b>] fscache_write_op+0x21e/0x37a [fscache]
- [<ffffffff81455eb2>] ? _raw_spin_unlock_irq+0x29/0x3e
- [<ffffffffa01d2479>] fscache_op_work_func+0x78/0xd7 [fscache]
- [<ffffffff8104455a>] process_one_work+0x232/0x3a8
- [<ffffffff810444ff>] ? process_one_work+0x1d7/0x3a8
- [<ffffffff81044ee0>] worker_thread+0x214/0x303
- [<ffffffff81044ccc>] ? manage_workers+0x245/0x245
- [<ffffffff81048fbc>] kthread+0xd0/0xd8
- [<ffffffff81455eb2>] ? _raw_spin_unlock_irq+0x29/0x3e
- [<ffffffff81048eec>] ? __init_kthread_worker+0x55/0x55
- [<ffffffff81456aac>] ret_from_fork+0x7c/0xb0
- [<ffffffff81048eec>] ? __init_kthread_worker+0x55/0x55
-4 locks held by kworker/u:2/24437:
- #0:  (fscache_operation){.+.+.+}, at: [<ffffffff810444ff>] process_one_work+0x1d7/0x3a8
- #1:  ((&op->work)){+.+.+.}, at: [<ffffffff810444ff>] process_one_work+0x1d7/0x3a8
- #2:  (sb_writers#14){.+.+.+}, at: [<ffffffff810ab22c>] generic_file_aio_write+0x51/0xd0
- #3:  (&sb->s_type->i_mutex_key#19){+.+.+.}, at: [<ffffffff810ab236>] generic_file_aio_write+0x5b/0x
-
-fscache already tries to cancel pending stores, but it can't cancel a write
-for which I/O is already in progress.
-
-An alternative would be to accept writing garbage to the cache under extreme
-circumstances and to kill the afflicted cache object if we have to do this.
-However, we really need to know how strapped the allocator is before deciding
-to do that.
+Uninline fscache_object_init() so as not to expose some of the FS-Cache
+internals to the cache backend.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- fs/fscache/page.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/fscache/object.c           |   40 ++++++++++++++++++++++++++++++++++++++--
+ include/linux/fscache-cache.h |   38 ++------------------------------------
+ 2 files changed, 40 insertions(+), 38 deletions(-)
 
-diff --git a/fs/fscache/page.c b/fs/fscache/page.c
-index 4882c80..42f8f2d 100644
---- a/fs/fscache/page.c
-+++ b/fs/fscache/page.c
-@@ -109,7 +109,7 @@ page_busy:
- 	 * allocator as the work threads writing to the cache may all end up
- 	 * sleeping on memory allocation, so we may need to impose a timeout
- 	 * too. */
--	if (!(gfp & __GFP_WAIT)) {
-+	if (!(gfp & __GFP_WAIT) || !(gfp & __GFP_FS)) {
- 		fscache_stat(&fscache_n_store_vmscan_busy);
- 		return false;
- 	}
+diff --git a/fs/fscache/object.c b/fs/fscache/object.c
+index 50d41c1..0133699 100644
+--- a/fs/fscache/object.c
++++ b/fs/fscache/object.c
+@@ -363,7 +363,7 @@ unsupported_event:
+ /*
+  * execute an object
+  */
+-void fscache_object_work_func(struct work_struct *work)
++static void fscache_object_work_func(struct work_struct *work)
+ {
+ 	struct fscache_object *object =
+ 		container_of(work, struct fscache_object, work);
+@@ -379,7 +379,43 @@ void fscache_object_work_func(struct work_struct *work)
+ 	clear_bit(FSCACHE_OBJECT_EV_REQUEUE, &object->events);
+ 	fscache_put_object(object);
+ }
+-EXPORT_SYMBOL(fscache_object_work_func);
++
++/**
++ * fscache_object_init - Initialise a cache object description
++ * @object: Object description
++ * @cookie: Cookie object will be attached to
++ * @cache: Cache in which backing object will be found
++ *
++ * Initialise a cache object description to its basic values.
++ *
++ * See Documentation/filesystems/caching/backend-api.txt for a complete
++ * description.
++ */
++void fscache_object_init(struct fscache_object *object,
++			 struct fscache_cookie *cookie,
++			 struct fscache_cache *cache)
++{
++	atomic_inc(&cache->object_count);
++
++	object->state = FSCACHE_OBJECT_INIT;
++	spin_lock_init(&object->lock);
++	INIT_LIST_HEAD(&object->cache_link);
++	INIT_HLIST_NODE(&object->cookie_link);
++	INIT_WORK(&object->work, fscache_object_work_func);
++	INIT_LIST_HEAD(&object->dependents);
++	INIT_LIST_HEAD(&object->dep_link);
++	INIT_LIST_HEAD(&object->pending_ops);
++	object->n_children = 0;
++	object->n_ops = object->n_in_progress = object->n_exclusive = 0;
++	object->events = object->event_mask = 0;
++	object->flags = 0;
++	object->store_limit = 0;
++	object->store_limit_l = 0;
++	object->cache = cache;
++	object->cookie = cookie;
++	object->parent = NULL;
++}
++EXPORT_SYMBOL(fscache_object_init);
+ 
+ /*
+  * initialise an object
+diff --git a/include/linux/fscache-cache.h b/include/linux/fscache-cache.h
+index 5dfa0aa..9b9c1de 100644
+--- a/include/linux/fscache-cache.h
++++ b/include/linux/fscache-cache.h
+@@ -426,42 +426,8 @@ extern const char *fscache_object_states[];
+ 	(test_bit(FSCACHE_IOERROR, &(obj)->cache->flags) &&	\
+ 	 (obj)->state >= FSCACHE_OBJECT_DYING)
+ 
+-extern void fscache_object_work_func(struct work_struct *work);
+-
+-/**
+- * fscache_object_init - Initialise a cache object description
+- * @object: Object description
+- *
+- * Initialise a cache object description to its basic values.
+- *
+- * See Documentation/filesystems/caching/backend-api.txt for a complete
+- * description.
+- */
+-static inline
+-void fscache_object_init(struct fscache_object *object,
+-			 struct fscache_cookie *cookie,
+-			 struct fscache_cache *cache)
+-{
+-	atomic_inc(&cache->object_count);
+-
+-	object->state = FSCACHE_OBJECT_INIT;
+-	spin_lock_init(&object->lock);
+-	INIT_LIST_HEAD(&object->cache_link);
+-	INIT_HLIST_NODE(&object->cookie_link);
+-	INIT_WORK(&object->work, fscache_object_work_func);
+-	INIT_LIST_HEAD(&object->dependents);
+-	INIT_LIST_HEAD(&object->dep_link);
+-	INIT_LIST_HEAD(&object->pending_ops);
+-	object->n_children = 0;
+-	object->n_ops = object->n_in_progress = object->n_exclusive = 0;
+-	object->events = object->event_mask = 0;
+-	object->flags = 0;
+-	object->store_limit = 0;
+-	object->store_limit_l = 0;
+-	object->cache = cache;
+-	object->cookie = cookie;
+-	object->parent = NULL;
+-}
++extern void fscache_object_init(struct fscache_object *, struct fscache_cookie *,
++				struct fscache_cache *);
+ 
+ extern void fscache_object_lookup_negative(struct fscache_object *object);
+ extern void fscache_obtained_object(struct fscache_object *object);
 
