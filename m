@@ -1,139 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab3EJAvl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 20:51:41 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:53387 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757360Ab3EJAvi (ORCPT
+	id S1757467Ab3EJAwB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 20:52:01 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:42208 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757429Ab3EJAvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 20:51:38 -0400
-Date: Fri, 10 May 2013 08:51:25 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jean Delvare <jdelvare@suse.de>, Michal Marek <mmarek@suse.cz>,
-        Roland Eggner <edvx1@systemanalysen.net>
-Subject: Re: [PATCH v3] kconfig: sort found symbols by relevance
-Message-ID: <20130510005125.GA2323@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	"Yann E. MORIN" <yann.morin.1998@free.fr>,
-	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Jean Delvare <jdelvare@suse.de>, Michal Marek <mmarek@suse.cz>,
-	Roland Eggner <edvx1@systemanalysen.net>
-References: <1367826629.4494.30.camel@chaos.site>
- <1367874931-6251-1-git-send-email-yann.morin.1998@free.fr>
- <20130509152731.GA3355@udknight>
- <20130509161217.GA2948@free.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130509161217.GA2948@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 May 2013 20:51:55 -0400
+X-AuditID: cbfee691-b7fe56d000004b96-92-518c44a820aa
+Date: Fri, 10 May 2013 00:51:52 +0000 (GMT)
+From: EUNBONG SONG <eunb.song@samsung.com>
+Subject: Re: Re: EXT4 panic at jbd2_journal_put_journal_head() in 3.9+
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20130510003819803@eunb.song
+Msgkey: 20130510003819803@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20130510003819803@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <6719519.5821368147110937.JavaMail.weblogic@epml17>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjleLIzCtJLcpLzFFi42I5/e+Zpu4Kl55Ag/MHuSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG0buNbAX7jCtePrrN2MA4waiLkZNDSEBFouX/d0YQW0LARGLP
+	lCOsELaYxIV769m6GLmAapYxSizvvgVXdOxFGzNEYj6jRMe5aUAJDg4WAVWJ/5OsQWrYBLQl
+	3n55ADZIWMBNYsXuJmYQW0RAWWLVzE1MIDazQJ1E3/PfrBBHyEtMPn2ZHcTmFRCUODnzCQvE
+	LiWJhht32SDiyhKH9vQyQ8QlJGZNvwB1KK/EjPanUPVyEtO+roGqkZY4P2sDI8wzi78/horz
+	Sxy7vYMJ5GSQ3if3g2HG7N78hQ3CFpCYeuYgVKu6xLxpK5kgbD6JNQvfssCM2XVqOTNM7/0t
+	c6HeUpSY0v2QHcLWkvjyYx8burd4Bewljs9cxj6BUXkWktQsJO2zkLQjq1nAyLKKUTS1ILmg
+	OCm9yFSvODG3uDQvXS85P3cTIyQtTNzBeP+A9SHGZGCMTGSWEk3OB6aVvJJ4Q2MzIwtTE1Nj
+	I3NLM9KElcR51VusA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwBk66mdH1o0IyQufV3tpb
+	L59nnvwm/yJ5m+Nuz7MfGIv1jBvvpdy6n/xpc8aR7NPfo7s+qPZdel+Zo9UZtNbp1pmu2sDd
+	nz71bu/PKLx4coJcSPKlC1WaDgw9N2cIC7trbV38SbztlBRDyc3Lz9dNvFQYF63r5DmJ/Qz/
+	qpB9b6yv+H/YuMrZXImlOCPRUIu5qDgRAHRk0PshAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e/2TN0VLj2BBi/fs1lc3jWHzYHR4/Mm
+	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
+	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
+	jKN3G9kK9hlXvHx0m7GBcYJRFyMnh5CAikTL/++MILaEgInEsRdtzBC2mMSFe+vZuhi5gGrm
+	M0p0nJsGVMTBwSKgKvF/kjVIDZuAtsTbLw9YQWxhATeJFbubwHpFBJQlVs3cxARiMwvUSfQ9
+	/80KsUteYvLpy+wgNq+AoMTJmU9YIHYpSTTcuMsGEVeWOLSnF+oGCYlZ0y+wQti8EjPan0LV
+	y0lM+7oGqkZa4vysDYwwNy/+/hgqzi9x7PYOJpCTQXqf3A+GGbN78xc2CFtAYuqZg1Ct6hLz
+	pq1kgrD5JNYsfMsCM2bXqeXMML33t8yFektRYkr3Q3YIW0viy499bOje4hWwlzg+cxn7BEa5
+	WUhSs5C0z0LSjqxmASPLKkbR1ILkguKk9ApDveLE3OLSvHS95PzcTYzgBPVs4Q7GL+etDzEK
+	cDAq8fB67OkOFGJNLCuuzD3EKMHBrCTCu2EDUIg3JbGyKrUoP76oNCe1+BBjMjD+JjJLiSbn
+	A5NnXkm8obGBsaGhpbmBqaGRBWnCSuK8T1utA4UE0hNLUrNTUwtSi2C2MHFwSjUw2l95955b
+	48ykW0sZj7a6BvA8vVK47LximmNaAfPJ0M8/Mo0O5L0yyDiru++YX4X17v3p3pZR63LT/jzj
+	bj1uumnK5HOcfR9UTxTMmuoxvei7Wc/64/5K2udyIvP3f/ixRFhAdZ18zdKlNlUNdxcevZh1
+	KdNBoHqBRtXRJe94Pqz69LlscRHnAiWW4oxEQy3mouJEAGbVsOqUAwAA
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4A0q6qV019811
 
-On Thu, May 09, 2013 at 06:12:17PM +0200, Yann E. MORIN wrote:
-> Wang, All,
-> 
-> On Thu, May 09, 2013 at 11:27:31PM +0800, Wang YanQing wrote:
-> > On Mon, May 06, 2013 at 11:15:31PM +0200, Yann E. MORIN wrote:
-> > > From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> > > 
-> > > When searching for symbols, return the symbols sorted by relevance.
-> > > 
-> > > Sorting is done as thus:
-> > >   - first, symbols with a prompt,   [1]
-> > >   - then, smallest offset,          [2]
-> > >   - then, shortest match,           [3]
-> > >   - then, highest relative match,   [4]
-> > >   - finally, alphabetical sort      [5]
-> > > 
-> > > So, searching (eg.) for 'P.*CI' :
-> > > 
-> > > [1] Symbols of interest are probably those with a prompt, as they can be
-> > >     changed, while symbols with no prompt are only for info. Thus:
-> > >         PCIEASPM comes before PCI_ATS
-> > 
-> > Search the value of symbols with no prompt are useful too
-> 
-> My reasonning here is that often I need to toggle a symbol, but am not
-> sure what menu it's in, so I search for it.
-> 
-> Sometime, I also need to search for prompt-less symbols, too, to see why
-> a symbol I want is not visible. But that's not the most common use-case.
-> 
-> Also, the examples provided were with a very verbose search: 'P.*CI'
-> which is expected to return a hell of a lot of symbols. More precise
-> searches will yield substancially fewer symbols, so the search results
-> will probably fit in 1 or 2 pages, not 10+ like 'P.*CI'
-> 
-> > > [2] Symbols that match earlier in the name are to be preferred over
-> > >     symbols which match later. Thus:
-> > >         PCI_MSI comes before WDTPCI
-> > 
-> > We can achieve this with ^PCI regular search
-> 
-> Yes, but I expect users do enter the begining of symbols, not a string
-> in the middle or at the end.
-> 
-> Also, as Jean and Thomas have proven, not many people know that searches
-> can be regular expressions.
 
-Ok, indeed, I don't know regular expression in menuconfig before you
-point it out :)
+> Can you give us the full crash message, (i.e., the panic, the BUG,
+> WARN, the registers, etc.), and not the stack trace?
 
-> > > [3] The shortest match is (IMHO) more interesting than a longer one.
-> > >     Thus:
-> > >         PCI comes before PCMCIA
-> > 
-> > We can achieve this with ^PCI regular search plus your previous heuristic
-> 
-> This one is not about location of the match, it's about the length of
-> the match: the shortest the match, the more interesting it is (IMHO). So
-> we'd prefer FOO_PCI_BAR_BUZ over A_PACI_B  (when searching for 'P.*CI').
+>                       - Ted
 
-Ok, I get your meaning.
+Hi, Ted
+Actually i try to find the crash point. And i confirmed crash point is in __journal_remove_journal_head() function.
+I added some debug code and i found  J_ASSERT_JH is failed for jh->b_transaction. 
+My source tree has some modifications only for MIPS architecture. I don't think it does not affect to ext4 operation. 
+Also I confirmed the problem is not reproduced before merge 149b306089b88e186942a8d6647028ae6683aaf9.
 
-> > > [4] The relative match is the ratio of the length of the match against
-> > >     the length of the symbol. The more of a symbol name we match, the
-> > >     more instersting that symbol is. Thus:
-> > >         PCIEAER comes before PCIEASPM
-> > 
-> > This is what your first heuristic
-> > 
-> > > [5] As fallback, sort symbols alphabetically
-> > This is in your first heuristic too.
-> > 
-> > > This heuristic tries hard to get interesting symbols first in the list.
-> > I don't mean your this heuristic is bad, but
-> 
-> This heuristic is just that: a heuristic. It kicks in only if the user
-> dit not provide an anchored regexp (ie with start- or end-of-line).
-> 
-> For the ten-or-so tests I did, the sorting was rather appropriate,
-> though that's only ten-or-so tests and is not exhaustive (and probably
-> subject to testing bias, too).
+149b306089b88e186942a8d6647028ae6683aaf9 Merge tag 'ext4_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4
 
-I hope more people will find the sorting is appropriate if Michal Marek accept 
-it :)
+My full crash messages are as follows.
 
-> What I'm trying to achieve here is come up with a way to sort symbols
-> for searches of *non-anchored* regexps. Anchored regexps will always
-> provide the results they used to provide so far.
-> 
-> Maybe we can emphasize in the UI the fact that regexps, and especially
-> anchored regexps, can be used.
-> 
-> > maybe provide mechanism to user will make guesser life easier.
-> 
-> Sorry, I can't make sense of this sentence. :-( Can you elaborate a bit
-> what you meant, please?
+Iozone: Performance Test of File I/O
+                Version $Revision: 3.397 $
+                Compiled for 64 bit mode.
+                Build: linux-powerpc64
 
-The mechanism means first heuristic in previous Email patch.
+        Contributors:William Norcott, Don Capps, Isom Crawford, Kirby Collins
+                     Al Slater, Scott Rhine, Mike Wisner, Ken Goss
+                     Steve Landherr, Brad Smith, Mark Kelly, Dr. Alain CYR,
+                     Randy Dunlap, Mark Montague, Dan Million, Gavin Brebner,
+                     Jean-Marc Zucconi, Jeff Blomberg, Benny Halevy, Dave Boone,
+                     Erik Habbinga, Kris Strecker, Walter Wong, Joshua Roo[  233.458766] CPU: 3 PID: 1535 Comm: iozone Not tainted 3.9.0+ #81
+t,
+                     Fabrice Bacchella, Zhenghua Xue, Qin Li, Darre[  233.470132] Stack :n Sawyer.
+                     Ben England.
 
-I though we could get this heuristic's result by composite your first heuristic
-in previous Email patch with regular expression, it seams like I lost something,
-see above.
+        Run began: Sun Dec 10  ffffffff8101143808:38:24 2000
 
-Thanks.
+        Record Size 64 KB
+        File size set to 5120 KB
+ a80000008b64b000       SYNC Mode.
+        Command line used: iozone -l 20 -u 20 -r 64k -s 5 0000000000000003m -o -F /user/f1 /user/f2 /user/f3 /user/f4 /user/f5 /user/f6 /u ffffffff80292470ser/f7 /user/f8 /user/f9 /user/f10 /user/f11 /user/f12 /user/f13
+          /user/f14 /user/f15 /user/f16 /user/f17 /user/f18 /user/f19 /us 0000000000000000er/f20
+        Output is in Kbytes/sec
+        Time Resolution = 0.000001 se ffffffff80fa0000conds.
+        Processor cache size set to 1024 Kbytes.
+        Processor ca 000000000000001fche line size set to 32 bytes.
+        File stride size set to 17 * re ffffffff80293728cord size.
+        Min process = 20
+        Max process = 20
+        Throughput
+         test with 20 processes
+        Each process writes a 5120 Kbyte file i 0000000000000000n 64 Kbyte records
+ 0000000000000000 ffffffff81080000 ffffffff81080000
+          ffffffff80e2abf0 ffffffff80f8f9f7 a8000002017a0db8 0000000000000020
+          0000000000000003 0000000000000020 a80000020025f968 ffffffff810f0000
+          a80000020025f770 ffffffff806ee88c a80000020025f588 ffffffff80290994
+          000000007ef10087 ffffffff80293b58 000000000000000a ffffffff80e2abf0
+          0000000000000003 a80000020025f4b0 00000002017a10f8 ffffffff805e68b4
+          0000000000000000 0000000000000000 0000000000000000 0000000000000000
+          0000000000000000 ffffffff80272418 0000000000000000 0000000000000000
+          ...
+[  233.604041] Call Trace:
+[  233.606495] [<ffffffff80272418>] show_stack+0x68/0x80
+[  233.611550] [<ffffffff805e68b4>] cdr_event_handler+0x604/0xbf8
+[  233.617384] [<ffffffff805e7648>] cdr_event_die+0xd0/0x150
+[  233.622784] [<ffffffff802bd42c>] notifier_call_chain+0x5c/0xa8
+[  233.628619] [<ffffffff802bdb04>] __atomic_notifier_call_chain+0x3c/0x58
+[  233.635233] [<ffffffff802bdb68>] notify_die+0x38/0x48
+[  233.640285] [<ffffffff80271c48>] do_trap_or_bp+0x48/0x1a8
+[  233.645684] [<ffffffff8026c764>] resume_userspace_check+0x0/0x10
+[  233.651695] [<ffffffff80460b64>] jbd2_journal_put_journal_head+0xcc/0x250
+[  233.658484] [<ffffffff8045a1b4>] jbd2_journal_get_write_access+0x3c/0x58
+[  233.665188] [<ffffffff804348a8>] __ext4_journal_get_write_access+0x58/0xa0
+[  233.672064] [<ffffffff80410344>] ext4_reserve_inode_write+0x84/0xb0
+[  233.678331] [<ffffffff804103ac>] ext4_mark_inode_dirty+0x3c/0x1e0
+[  233.684424] [<ffffffff80410590>] ext4_dirty_inode+0x40/0x70
+[  233.689998] [<ffffffff80392258>] __mark_inode_dirty+0x48/0x238
+[  233.695832] [<ffffffff803828f4>] update_time+0xb4/0x100
+[  233.701058] [<ffffffff803829f0>] file_update_time+0xb0/0x108
+[  233.706718] [<ffffffff8031eb98>] __generic_file_aio_write+0x180/0x380
+[  233.713158] [<ffffffff8031edf8>] generic_file_aio_write+0x60/0xc0
+[  233.719252] [<ffffffff8040af54>] ext4_file_write+0x6c/0x468
+[  233.724827] [<ffffffff80366cbc>] do_sync_write+0x84/0xe8
+[  233.730139] [<ffffffff80368700>] vfs_write+0xe0/0x1e0
+[  233.735191] [<ffffffff803688f8>] SyS_write+0x50/0xc0
+[  233.740157] [<ffffffff80274864>] handle_sys64+0x44/0x64
+
+Thanks. ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
