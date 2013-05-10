@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab3EJOwb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:52:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56865 "EHLO
+	id S1756439Ab3EJOxM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:53:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56851 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753809Ab3EJOTk (ORCPT
+	by vger.kernel.org with ESMTP id S1753666Ab3EJOTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:19:40 -0400
+	Fri, 10 May 2013 10:19:38 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>
+CC: akpm@linux-foundation.org, "Tony Luck" <tony.luck@intel.com>,
+        "Stephan Schreiber" <info@fs-driver.org>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.579447389@decadent.org.uk>
+Message-ID: <lsq.1368193181.258271513@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [006/118] tracing: Fix ftrace_dump()
+Subject: [008/118] Wrong asm register contraints in the kvm implementation
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,178 +31,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Stephan Schreiber <info@fs-driver.org>
 
-commit 7fe70b579c9e3daba71635e31b6189394e7b79d3 upstream.
+commit de53e9caa4c6149ef4a78c2f83d7f5b655848767 upstream.
 
-ftrace_dump() had a lot of issues. What ftrace_dump() does, is when
-ftrace_dump_on_oops is set (via a kernel parameter or sysctl), it
-will dump out the ftrace buffers to the console when either a oops,
-panic, or a sysrq-z occurs.
+The Linux Kernel contains some inline assembly source code which has
+wrong asm register constraints in arch/ia64/kvm/vtlb.c.
 
-This was written a long time ago when ftrace was fragile to recursion.
-But it wasn't written well even for that.
+I observed this on Kernel 3.2.35 but it is also true on the most
+recent Kernel 3.9-rc1.
 
-There's a possible deadlock that can occur if a ftrace_dump() is happening
-and an NMI triggers another dump. This is because it grabs a lock
-before checking if the dump ran.
+File arch/ia64/kvm/vtlb.c:
 
-It also totally disables ftrace, and tracing for no good reasons.
+u64 guest_vhpt_lookup(u64 iha, u64 *pte)
+{
+	u64 ret;
+	struct thash_data *data;
 
-As the ring_buffer now checks if it is read via a oops or NMI, where
-there's a chance that the buffer gets corrupted, it will disable
-itself. No need to have ftrace_dump() do the same.
+	data = __vtr_lookup(current_vcpu, iha, D_TLB);
+	if (data != NULL)
+		thash_vhpt_insert(current_vcpu, data->page_flags,
+			data->itir, iha, D_TLB);
 
-ftrace_dump() is now cleaned up where it uses an atomic counter to
-make sure only one dump happens at a time. A simple atomic_inc_return()
-is enough that is needed for both other CPUs and NMIs. No need for
-a spinlock, as if one CPU is running the dump, no other CPU needs
-to do it too.
+	asm volatile (
+			"rsm psr.ic|psr.i;;"
+			"srlz.d;;"
+			"ld8.s r9=[%1];;"
+			"tnat.nz p6,p7=r9;;"
+			"(p6) mov %0=1;"
+			"(p6) mov r9=r0;"
+			"(p7) extr.u r9=r9,0,53;;"
+			"(p7) mov %0=r0;"
+			"(p7) st8 [%2]=r9;;"
+			"ssm psr.ic;;"
+			"srlz.d;;"
+			"ssm psr.i;;"
+			"srlz.d;;"
+			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
 
-The tracing_on variable is turned off and not turned on. The original
-code did this, but it wasn't pretty. By just disabling this variable
-we get the result of not seeing traces that happen between crashes.
+	return ret;
+}
 
-For sysrq-z, it doesn't get turned on, but the user can always write
-a '1' to the tracing_on file. If they are using sysrq-z, then they should
-know about tracing_on.
+The list of output registers is
+			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
+The constraint "=r" means that the GCC has to maintain that these vars
+are in registers and contain valid info when the program flow leaves
+the assembly block (output registers).
+But "=r" also means that GCC can put them in registers that are used
+as input registers. Input registers are iha, pte on the example.
+If the predicate p7 is true, the 8th assembly instruction
+			"(p7) mov %0=r0;"
+is the first one which writes to a register which is maintained by the
+register constraints; it sets %0. %0 means the first register operand;
+it is ret here.
+This instruction might overwrite the %2 register (pte) which is needed
+by the next instruction:
+			"(p7) st8 [%2]=r9;;"
+Whether it really happens depends on how GCC decides what registers it
+uses and how it optimizes the code.
 
-The new code is much easier to read and less error prone. No more
-deadlock possibility when an NMI triggers here.
+The attached patch  fixes the register operand constraints in
+arch/ia64/kvm/vtlb.c.
+The register constraints should be
+			: "=&r"(ret) : "r"(iha), "r"(pte):"memory");
+The & means that GCC must not use any of the input registers to place
+this output register in.
 
-Reported-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+This is Debian bug#702639
+(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=702639).
+
+The patch is applicable on Kernel 3.9-rc1, 3.2.35 and many other versions.
+
+Signed-off-by: Stephan Schreiber <info@fs-driver.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/trace/trace.c          |   63 +++++++++++++++++-----------------------
- kernel/trace/trace_selftest.c |    9 +++--
- 2 files changed, 32 insertions(+), 40 deletions(-)
+ arch/ia64/kvm/vtlb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4696,36 +4696,32 @@ void trace_init_global_iter(struct trace
- 	iter->cpu_file = TRACE_PIPE_ALL_CPU;
+--- a/arch/ia64/kvm/vtlb.c
++++ b/arch/ia64/kvm/vtlb.c
+@@ -256,7 +256,7 @@ u64 guest_vhpt_lookup(u64 iha, u64 *pte)
+ 			"srlz.d;;"
+ 			"ssm psr.i;;"
+ 			"srlz.d;;"
+-			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
++			: "=&r"(ret) : "r"(iha), "r"(pte) : "memory");
+ 
+ 	return ret;
  }
- 
--static void
--__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode)
-+void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
- {
--	static arch_spinlock_t ftrace_dump_lock =
--		(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
- 	/* use static because iter can be a bit big for the stack */
- 	static struct trace_iterator iter;
-+	static atomic_t dump_running;
- 	unsigned int old_userobj;
--	static int dump_ran;
- 	unsigned long flags;
- 	int cnt = 0, cpu;
- 
--	/* only one dump */
--	local_irq_save(flags);
--	arch_spin_lock(&ftrace_dump_lock);
--	if (dump_ran)
--		goto out;
--
--	dump_ran = 1;
-+	/* Only allow one dump user at a time. */
-+	if (atomic_inc_return(&dump_running) != 1) {
-+		atomic_dec(&dump_running);
-+		return;
-+	}
- 
-+	/*
-+	 * Always turn off tracing when we dump.
-+	 * We don't need to show trace output of what happens
-+	 * between multiple crashes.
-+	 *
-+	 * If the user does a sysrq-z, then they can re-enable
-+	 * tracing with echo 1 > tracing_on.
-+	 */
- 	tracing_off();
- 
--	/* Did function tracer already get disabled? */
--	if (ftrace_is_dead()) {
--		printk("# WARNING: FUNCTION TRACING IS CORRUPTED\n");
--		printk("#          MAY BE MISSING FUNCTION EVENTS\n");
--	}
--
--	if (disable_tracing)
--		ftrace_kill();
-+	local_irq_save(flags);
- 
- 	trace_init_global_iter(&iter);
- 
-@@ -4758,6 +4754,12 @@ __ftrace_dump(bool disable_tracing, enum
- 
- 	printk(KERN_TRACE "Dumping ftrace buffer:\n");
- 
-+	/* Did function tracer already get disabled? */
-+	if (ftrace_is_dead()) {
-+		printk("# WARNING: FUNCTION TRACING IS CORRUPTED\n");
-+		printk("#          MAY BE MISSING FUNCTION EVENTS\n");
-+	}
-+
- 	/*
- 	 * We need to stop all tracing on all CPUS to read the
- 	 * the next buffer. This is a bit expensive, but is
-@@ -4796,26 +4798,15 @@ __ftrace_dump(bool disable_tracing, enum
- 		printk(KERN_TRACE "---------------------------------\n");
- 
-  out_enable:
--	/* Re-enable tracing if requested */
--	if (!disable_tracing) {
--		trace_flags |= old_userobj;
-+	trace_flags |= old_userobj;
- 
--		for_each_tracing_cpu(cpu) {
--			atomic_dec(&iter.tr->data[cpu]->disabled);
--		}
--		tracing_on();
-+	for_each_tracing_cpu(cpu) {
-+		atomic_dec(&iter.tr->data[cpu]->disabled);
- 	}
--
-- out:
--	arch_spin_unlock(&ftrace_dump_lock);
-+ 	atomic_dec(&dump_running);
- 	local_irq_restore(flags);
- }
--
--/* By default: disable tracing after the dump */
--void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
--{
--	__ftrace_dump(true, oops_dump_mode);
--}
-+EXPORT_SYMBOL_GPL(ftrace_dump);
- 
- __init static int tracer_alloc_buffers(void)
- {
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -461,8 +461,6 @@ trace_selftest_startup_function(struct t
- /* Maximum number of functions to trace before diagnosing a hang */
- #define GRAPH_MAX_FUNC_TEST	100000000
- 
--static void
--__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode);
- static unsigned int graph_hang_thresh;
- 
- /* Wrap the real function entry probe to avoid possible hanging */
-@@ -472,8 +470,11 @@ static int trace_graph_entry_watchdog(st
- 	if (unlikely(++graph_hang_thresh > GRAPH_MAX_FUNC_TEST)) {
- 		ftrace_graph_stop();
- 		printk(KERN_WARNING "BUG: Function graph tracer hang!\n");
--		if (ftrace_dump_on_oops)
--			__ftrace_dump(false, DUMP_ALL);
-+		if (ftrace_dump_on_oops) {
-+			ftrace_dump(DUMP_ALL);
-+			/* ftrace_dump() disables tracing */
-+			tracing_on();
-+		}
- 		return 0;
- 	}
- 
 
