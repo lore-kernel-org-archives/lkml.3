@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab3EJOpl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:45:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57001 "EHLO
+	id S1754493Ab3EJOUX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:20:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56979 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754328Ab3EJOUY (ORCPT
+	by vger.kernel.org with ESMTP id S1754328Ab3EJOUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:20:24 -0400
+	Fri, 10 May 2013 10:20:18 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Neal Cardwell" <ncardwell@google.com>,
-        "Yuchung Cheng" <ycheng@google.com>,
-        "Eric Dumazet" <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Michael Ellerman" <michael@ellerman.id.au>,
+        "Vaidyanathan Srinivasan" <svaidy@linux.vnet.ibm.com>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.825333071@decadent.org.uk>
+Message-ID: <lsq.1368193181.947793552@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [097/118] tcp: call tcp_replace_ts_recent() from tcp_ack()
+Subject: [116/118] powerpc: fix numa distance for form0 device tree
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,154 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 
-[ Upstream commit 12fb3dd9dc3c64ba7d64cec977cca9b5fb7b1d4e ]
+commit 7122beeee7bc1757682049780179d7c216dd1c83 upstream.
 
-commit bd090dfc634d (tcp: tcp_replace_ts_recent() should not be called
-from tcp_validate_incoming()) introduced a TS ecr bug in slow path
-processing.
+The following commit breaks numa distance setup for old powerpc
+systems that use form0 encoding in device tree.
 
-1 A > B P. 1:10001(10000) ack 1 <nop,nop,TS val 1001 ecr 200>
-2 B < A . 1:1(0) ack 1 win 257 <sack 9001:10001,TS val 300 ecr 1001>
-3 A > B . 1:1001(1000) ack 1 win 227 <nop,nop,TS val 1002 ecr 200>
-4 A > B . 1001:2001(1000) ack 1 win 227 <nop,nop,TS val 1002 ecr 200>
+commit 41eab6f88f24124df89e38067b3766b7bef06ddb
+powerpc/numa: Use form 1 affinity to setup node distance
 
-(ecr 200 should be ecr 300 in packets 3 & 4)
+Device tree node /rtas/ibm,associativity-reference-points would
+index into /cpus/PowerPCxxxx/ibm,associativity based on form0 or
+form1 encoding detected by ibm,architecture-vec-5 property.
 
-Problem is tcp_ack() can trigger send of new packets (retransmits),
-reflecting the prior TSval, instead of the TSval contained in the
-currently processed incoming packet.
+All modern systems use form1 and current kernel code is correct.
+However, on older systems with form0 encoding, the numa distance
+will get hard coded as LOCAL_DISTANCE for all nodes.  This causes
+task scheduling anomaly since scheduler will skip building numa
+level domain (topmost domain with all cpus) if all numa distances
+are same.  (value of 'level' in sched_init_numa() will remain 0)
 
-Fix this by calling tcp_replace_ts_recent() from tcp_ack() after the
-checks, but before the actions.
+Prior to the above commit:
+((from) == (to) ? LOCAL_DISTANCE : REMOTE_DISTANCE)
 
-Reported-by: Yuchung Cheng <ycheng@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Restoring compatible behavior with this patch for old powerpc systems
+with device tree where numa distance are encoded as form0.
+
+Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/tcp_input.c | 65 ++++++++++++++++++++++++++--------------------------
- 1 file changed, 32 insertions(+), 33 deletions(-)
+ arch/powerpc/mm/numa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -115,6 +115,7 @@ int sysctl_tcp_abc __read_mostly;
- #define FLAG_DSACKING_ACK	0x800 /* SACK blocks contained D-SACK info */
- #define FLAG_NONHEAD_RETRANS_ACKED	0x1000 /* Non-head rexmitted data was ACKed */
- #define FLAG_SACK_RENEGING	0x2000 /* snd_una advanced to a sacked seq */
-+#define FLAG_UPDATE_TS_RECENT	0x4000 /* tcp_replace_ts_recent() */
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -221,7 +221,7 @@ int __node_distance(int a, int b)
+ 	int distance = LOCAL_DISTANCE;
  
- #define FLAG_ACKED		(FLAG_DATA_ACKED|FLAG_SYN_ACKED)
- #define FLAG_NOT_DUP		(FLAG_DATA|FLAG_WIN_UPDATE|FLAG_ACKED)
-@@ -3723,6 +3724,27 @@ static void tcp_send_challenge_ack(struc
- 	}
- }
+ 	if (!form1_affinity)
+-		return distance;
++		return ((a == b) ? LOCAL_DISTANCE : REMOTE_DISTANCE);
  
-+static void tcp_store_ts_recent(struct tcp_sock *tp)
-+{
-+	tp->rx_opt.ts_recent = tp->rx_opt.rcv_tsval;
-+	tp->rx_opt.ts_recent_stamp = get_seconds();
-+}
-+
-+static void tcp_replace_ts_recent(struct tcp_sock *tp, u32 seq)
-+{
-+	if (tp->rx_opt.saw_tstamp && !after(seq, tp->rcv_wup)) {
-+		/* PAWS bug workaround wrt. ACK frames, the PAWS discard
-+		 * extra check below makes sure this can only happen
-+		 * for pure ACK frames.  -DaveM
-+		 *
-+		 * Not only, also it occurs for expired timestamps.
-+		 */
-+
-+		if (tcp_paws_check(&tp->rx_opt, 0))
-+			tcp_store_ts_recent(tp);
-+	}
-+}
-+
- /* This routine deals with incoming acks, but not outgoing ones. */
- static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
- {
-@@ -3771,6 +3793,12 @@ static int tcp_ack(struct sock *sk, cons
- 	prior_fackets = tp->fackets_out;
- 	prior_in_flight = tcp_packets_in_flight(tp);
- 
-+	/* ts_recent update must be made after we are sure that the packet
-+	 * is in window.
-+	 */
-+	if (flag & FLAG_UPDATE_TS_RECENT)
-+		tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
-+
- 	if (!(flag & FLAG_SLOWPATH) && after(ack, prior_snd_una)) {
- 		/* Window is constant, pure forward advance.
- 		 * No more checks are required.
-@@ -4061,27 +4089,6 @@ const u8 *tcp_parse_md5sig_option(const
- EXPORT_SYMBOL(tcp_parse_md5sig_option);
- #endif
- 
--static inline void tcp_store_ts_recent(struct tcp_sock *tp)
--{
--	tp->rx_opt.ts_recent = tp->rx_opt.rcv_tsval;
--	tp->rx_opt.ts_recent_stamp = get_seconds();
--}
--
--static inline void tcp_replace_ts_recent(struct tcp_sock *tp, u32 seq)
--{
--	if (tp->rx_opt.saw_tstamp && !after(seq, tp->rcv_wup)) {
--		/* PAWS bug workaround wrt. ACK frames, the PAWS discard
--		 * extra check below makes sure this can only happen
--		 * for pure ACK frames.  -DaveM
--		 *
--		 * Not only, also it occurs for expired timestamps.
--		 */
--
--		if (tcp_paws_check(&tp->rx_opt, 0))
--			tcp_store_ts_recent(tp);
--	}
--}
--
- /* Sorry, PAWS as specified is broken wrt. pure-ACKs -DaveM
-  *
-  * It is not fatal. If this ACK does _not_ change critical state (seqs, window)
-@@ -5552,14 +5559,10 @@ slow_path:
- 		return 0;
- 
- step5:
--	if (th->ack && tcp_ack(sk, skb, FLAG_SLOWPATH) < 0)
-+	if (th->ack &&
-+	    tcp_ack(sk, skb, FLAG_SLOWPATH | FLAG_UPDATE_TS_RECENT) < 0)
- 		goto discard;
- 
--	/* ts_recent update must be made after we are sure that the packet
--	 * is in window.
--	 */
--	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
--
- 	tcp_rcv_rtt_measure_ts(sk, skb);
- 
- 	/* Process urgent data. */
-@@ -5923,7 +5926,8 @@ int tcp_rcv_state_process(struct sock *s
- 
- 	/* step 5: check the ACK field */
- 	if (th->ack) {
--		int acceptable = tcp_ack(sk, skb, FLAG_SLOWPATH) > 0;
-+		int acceptable = tcp_ack(sk, skb, FLAG_SLOWPATH |
-+						  FLAG_UPDATE_TS_RECENT) > 0;
- 
- 		switch (sk->sk_state) {
- 		case TCP_SYN_RECV:
-@@ -6030,11 +6034,6 @@ int tcp_rcv_state_process(struct sock *s
- 	} else
- 		goto discard;
- 
--	/* ts_recent update must be made after we are sure that the packet
--	 * is in window.
--	 */
--	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
--
- 	/* step 6: check the URG bit */
- 	tcp_urg(sk, skb, th);
- 
+ 	for (i = 0; i < distance_ref_points_depth; i++) {
+ 		if (distance_lookup_table[a][i] == distance_lookup_table[b][i])
 
