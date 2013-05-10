@@ -1,98 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757635Ab3EJBxp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 21:53:45 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64675 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756569Ab3EJBxo (ORCPT
+	id S1757690Ab3EJBxu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 21:53:50 -0400
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:63216 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757647Ab3EJBxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 21:53:44 -0400
-X-AuditID: 9c930197-b7c1fae000001854-1d-518c5325d6d5
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 5/9] perf tools: Set maximum precise value for event 'p' modifier
-References: <1368106344-23383-1-git-send-email-jolsa@redhat.com>
-	<1368106344-23383-6-git-send-email-jolsa@redhat.com>
-Date: Fri, 10 May 2013 10:53:41 +0900
-In-Reply-To: <1368106344-23383-6-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Thu, 9 May 2013 15:32:20 +0200")
-Message-ID: <8738tv7g7u.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 9 May 2013 21:53:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <518BA478.5050706@ti.com>
+References: <1367931671-3906-1-git-send-email-amit.daniel@samsung.com>
+	<1367931671-3906-5-git-send-email-amit.daniel@samsung.com>
+	<518BA478.5050706@ti.com>
+Date: Fri, 10 May 2013 07:23:43 +0530
+X-Google-Sender-Auth: JzTMTnR3llgGkGD-lYrKDBxHjq4
+Message-ID: <CADGdYn5ps6zqgPUEvf40+z3P17Y4tXxK+KqxPGu2y75vjVTmrA@mail.gmail.com>
+Subject: Re: [PATCH V3 04/21] thermal: exynos: Move exynos_thermal.h from
+ include/* to driver/* folder
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  9 May 2013 15:32:20 +0200, Jiri Olsa wrote:
-> If single 'p' modifier is specified for event, set the
-> system precise value for perf_events_attr::precise_ip.
+Hi,
+
+On Thu, May 9, 2013 at 6:58 PM, Eduardo Valentin
+<eduardo.valentin@ti.com> wrote:
+> Hello Amit,
 >
-> If more than a single 'p' is specified keep the intended
-> value.
-
-So there's no way to set precise=1 on a system suppports precise=2 using
-this syntax, right? (I don't know whether it makes any sense though.)
-
+> On 07-05-2013 09:00, Amit Daniel Kachhap wrote:
+>> This patch renames and moves  include/linux/platform_data/exynos_thermal.h to
+>> drivers/thermal/samsung/exynos_tmu.h. This file movement is needed as exynos
+>> SOC's are not supporting non-DT based platforms. Also the rename is needed as this
+>> file now just contains exynos tmu driver related definations.
+>>
+>> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> ---
+>>  drivers/thermal/samsung/exynos_thermal_common.c    |    1 -
+>>  drivers/thermal/samsung/exynos_thermal_common.h    |   15 +++++++++++++++
+>>  drivers/thermal/samsung/exynos_tmu.c               |    2 +-
+>>  .../thermal/samsung/exynos_tmu.h                   |   15 ---------------
+>>  4 files changed, 16 insertions(+), 17 deletions(-)
+>>  rename include/linux/platform_data/exynos_thermal.h => drivers/thermal/samsung/exynos_tmu.h (88%)
+>>
+>> diff --git a/drivers/thermal/samsung/exynos_thermal_common.c b/drivers/thermal/samsung/exynos_thermal_common.c
+>> index 9a57606..dae5476 100644
+>> --- a/drivers/thermal/samsung/exynos_thermal_common.c
+>> +++ b/drivers/thermal/samsung/exynos_thermal_common.c
+>> @@ -27,7 +27,6 @@
+>>  #include <linux/kernel.h>
+>>  #include <linux/kobject.h>
+>>  #include <linux/mutex.h>
+>> -#include <linux/platform_data/exynos_thermal.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/thermal.h>
+>>  #include "exynos_thermal_common.h"
+>> diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
+>> index da2add0..1c3f8b7 100644
+>> --- a/drivers/thermal/samsung/exynos_thermal_common.h
+>> +++ b/drivers/thermal/samsung/exynos_thermal_common.h
+>> @@ -44,6 +44,21 @@
+>>
+>>  #define EXYNOS_ZONE_COUNT    3
+>>
+>> +/**
+>> + * struct freq_clip_table
+>> + * @freq_clip_max: maximum frequency allowed for this cooling state.
+>> + * @temp_level: Temperature level at which the temperature clipping will
+>> + *   happen.
+>> + * @mask_val: cpumask of the allowed cpu's where the clipping will take place.
+>> + *
+>> + * This structure is required to be filled and passed to the
+>> + * cpufreq_cooling_unregister function.
+>> + */
+>> +struct freq_clip_table {
+>> +     unsigned int freq_clip_max;
+>> +     unsigned int temp_level;
+>> +     const struct cpumask *mask_val;
+>> +};
+>>  struct       thermal_trip_point_conf {
+>>       int trip_val[MAX_TRIP_COUNT];
+>>       int trip_count;
+>> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+>> index 3de3e61..a02f2c9 100644
+>> --- a/drivers/thermal/samsung/exynos_tmu.c
+>> +++ b/drivers/thermal/samsung/exynos_tmu.c
+>> @@ -30,10 +30,10 @@
+>>  #include <linux/mutex.h>
+>>  #include <linux/of.h>
+>>  #include <linux/platform_device.h>
+>> -#include <linux/platform_data/exynos_thermal.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/workqueue.h>
+>>  #include "exynos_thermal_common.h"
+>> +#include "exynos_tmu.h"
+>>
+>>  /* Exynos generic registers */
+>>  #define EXYNOS_TMU_REG_TRIMINFO              0x0
+>> diff --git a/include/linux/platform_data/exynos_thermal.h b/drivers/thermal/samsung/exynos_tmu.h
+>> similarity index 88%
+>> rename from include/linux/platform_data/exynos_thermal.h
+>> rename to drivers/thermal/samsung/exynos_tmu.h
+>> index da7e627..342fb1f 100644
+>> --- a/include/linux/platform_data/exynos_thermal.h
+>> +++ b/drivers/thermal/samsung/exynos_tmu.h
+>> @@ -33,21 +33,6 @@ enum soc_type {
+>>       SOC_ARCH_EXYNOS4210 = 1,
+>>       SOC_ARCH_EXYNOS,
+>>  };
+>> -/**
+>> - * struct freq_clip_table
+>> - * @freq_clip_max: maximum frequency allowed for this cooling state.
+>> - * @temp_level: Temperature level at which the temperature clipping will
+>> - *   happen.
+>> - * @mask_val: cpumask of the allowed cpu's where the clipping will take place.
+>> - *
+>> - * This structure is required to be filled and passed to the
+>> - * cpufreq_cooling_unregister function.
+>> - */
+>> -struct freq_clip_table {
+>> -     unsigned int freq_clip_max;
+>> -     unsigned int temp_level;
+>> -     const struct cpumask *mask_val;
+>> -};
+>>
 >
-> If precise is not supported by system, warning is disaplyed.
-
-s/disaplyed/displayed/
-
->
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Stephane Eranian <eranian@google.com>
-> ---
->  tools/perf/util/parse-events.c | 40 ++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 38 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-> index 2e3ef10..6be4599 100644
-> --- a/tools/perf/util/parse-events.c
-> +++ b/tools/perf/util/parse-events.c
-> @@ -533,6 +533,26 @@ int parse_events_add_breakpoint(struct list_head **list, int *idx,
->  	return add_event(list, idx, &attr, NULL);
->  }
->  
-> +static int precise_default(void)
-> +{
-> +	int precise = perf_precise__get();
-> +	static int warned;
-> +
-> +	/*
-> +	 * Precise info not supported by by this kernel,
-
-s/by by/by/ :)
-
-
-> +	 * set 1 as the precise value.
-> +	 */
-> +	if (precise == -1)
-> +		precise = 1;
-> +
-> +	/* PEBS is not supported here, display warning. */
-> +	if (precise == 0 && !warned++)
-> +		pr_warning("warning: no precise support, "
-> +			   "using non-precise event(s)\n");
-
-Please put the message on a single line.
+> You explain why you need to rename the header, and thats what you do in
+> this patch. On the other hand, you also move the freq_clip_table
+> structure definition. This change is present in this patch, I dont see
+> the connection with the file rename, and you also do not explain why it
+> is needed. Can you please consider, either split this change to other
+> (new) patch or explain it also in this patch?
+Yes I forgot to add explanation here. This is done to fix compilation
+issue when this header is moved. Basically struct freq_clip_table is a
+candidate of common header and I have not included exynos_tmu.h into
+exynos_thermal_common.h. Will provide a detailed explanation.
 
 Thanks,
-Namhyung
+Amit
+>
+>
+>>  /**
+>>   * struct exynos_tmu_platform_data
+>>
+>
+>
