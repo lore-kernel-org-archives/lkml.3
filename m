@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab3EJIRM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 04:17:12 -0400
-Received: from sauhun.de ([89.238.76.85]:60490 "EHLO pokefinder.org"
+	id S1753205Ab3EJIRE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 04:17:04 -0400
+Received: from sauhun.de ([89.238.76.85]:60451 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751941Ab3EJIRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 04:17:09 -0400
+	id S1753143Ab3EJIQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 04:16:58 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Wan ZongShun <mcuos.com@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        linux-arm-kernel@lists.infradead.org, rtc-linux@googlegroups.com,
-        linux-tegra@vger.kernel.org
-Subject: [RFC 22/42] drivers/rtc: don't check resource with devm_ioremap_resource
-Date: Fri, 10 May 2013 10:17:07 +0200
-Message-Id: <1368173847-5661-23-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [RFC 18/42] drivers/pinctrl: don't check resource with devm_ioremap_resource
+Date: Fri, 10 May 2013 10:17:03 +0200
+Message-Id: <1368173847-5661-19-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
 References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
@@ -28,105 +27,101 @@ duplicate this in the driver.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- drivers/rtc/rtc-nuc900.c |    6 +-----
- drivers/rtc/rtc-omap.c   |    5 -----
- drivers/rtc/rtc-s3c.c    |    5 -----
- drivers/rtc/rtc-spear.c  |    7 +------
- drivers/rtc/rtc-tegra.c  |    6 ------
- 5 files changed, 2 insertions(+), 27 deletions(-)
+ drivers/pinctrl/pinctrl-at91.c       |    7 +------
+ drivers/pinctrl/pinctrl-coh901.c     |    5 -----
+ drivers/pinctrl/pinctrl-exynos5440.c |    5 -----
+ drivers/pinctrl/pinctrl-samsung.c    |    5 -----
+ drivers/pinctrl/pinctrl-xway.c       |    4 ----
+ 5 files changed, 1 insertion(+), 25 deletions(-)
 
-diff --git a/drivers/rtc/rtc-nuc900.c b/drivers/rtc/rtc-nuc900.c
-index f5dfb6e..c0f54ec 100644
---- a/drivers/rtc/rtc-nuc900.c
-+++ b/drivers/rtc/rtc-nuc900.c
-@@ -233,12 +233,8 @@ static int __init nuc900_rtc_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "kzalloc nuc900_rtc failed\n");
- 		return -ENOMEM;
+diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+index 5d7529e..b90a3a0 100644
+--- a/drivers/pinctrl/pinctrl-at91.c
++++ b/drivers/pinctrl/pinctrl-at91.c
+@@ -1543,12 +1543,6 @@ static int at91_gpio_probe(struct platform_device *pdev)
+ 		goto err;
  	}
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "platform_get_resource failed\n");
--		return -ENXIO;
--	}
- 
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	nuc900_rtc->rtc_reg = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(nuc900_rtc->rtc_reg))
- 		return PTR_ERR(nuc900_rtc->rtc_reg);
-diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index 4e1bdb8..b0ba3fc 100644
---- a/drivers/rtc/rtc-omap.c
-+++ b/drivers/rtc/rtc-omap.c
-@@ -347,11 +347,6 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		pr_debug("%s: RTC resource data missing\n", pdev->name);
--		return -ENOENT;
--	}
--
- 	rtc_base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(rtc_base))
- 		return PTR_ERR(rtc_base);
-diff --git a/drivers/rtc/rtc-s3c.c b/drivers/rtc/rtc-s3c.c
-index 14040b2..0b495e8 100644
---- a/drivers/rtc/rtc-s3c.c
-+++ b/drivers/rtc/rtc-s3c.c
-@@ -477,11 +477,6 @@ static int s3c_rtc_probe(struct platform_device *pdev)
- 	/* get the memory region */
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res == NULL) {
--		dev_err(&pdev->dev, "failed to get memory region resource\n");
--		return -ENOENT;
--	}
--
- 	s3c_rtc_base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(s3c_rtc_base))
- 		return PTR_ERR(s3c_rtc_base);
-diff --git a/drivers/rtc/rtc-spear.c b/drivers/rtc/rtc-spear.c
-index 574359c..34eed6a 100644
---- a/drivers/rtc/rtc-spear.c
-+++ b/drivers/rtc/rtc-spear.c
-@@ -358,12 +358,6 @@ static int spear_rtc_probe(struct platform_device *pdev)
- 	int status = 0;
- 	int irq;
  
 -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 -	if (!res) {
--		dev_err(&pdev->dev, "no resource defined\n");
--		return -EBUSY;
+-		ret = -ENOENT;
+-		goto err;
 -	}
 -
- 	config = devm_kzalloc(&pdev->dev, sizeof(*config), GFP_KERNEL);
- 	if (!config) {
- 		dev_err(&pdev->dev, "out of memory\n");
-@@ -385,6 +379,7 @@ static int spear_rtc_probe(struct platform_device *pdev)
- 		return status;
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0) {
+ 		ret = irq;
+@@ -1561,6 +1555,7 @@ static int at91_gpio_probe(struct platform_device *pdev)
+ 		goto err;
  	}
  
 +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	config->ioaddr = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(config->ioaddr))
- 		return PTR_ERR(config->ioaddr);
-diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
-index a34315d..76af92a 100644
---- a/drivers/rtc/rtc-tegra.c
-+++ b/drivers/rtc/rtc-tegra.c
-@@ -322,12 +322,6 @@ static int __init tegra_rtc_probe(struct platform_device *pdev)
- 		return -ENOMEM;
+ 	at91_chip->regbase = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(at91_chip->regbase)) {
+ 		ret = PTR_ERR(at91_chip->regbase);
+diff --git a/drivers/pinctrl/pinctrl-coh901.c b/drivers/pinctrl/pinctrl-coh901.c
+index edde3ac..a67af41 100644
+--- a/drivers/pinctrl/pinctrl-coh901.c
++++ b/drivers/pinctrl/pinctrl-coh901.c
+@@ -713,11 +713,6 @@ static int __init u300_gpio_probe(struct platform_device *pdev)
+ 	gpio->dev = &pdev->dev;
+ 
+ 	memres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!memres) {
+-		dev_err(gpio->dev, "could not get GPIO memory resource\n");
+-		return -ENODEV;
+-	}
+-
+ 	gpio->base = devm_ioremap_resource(&pdev->dev, memres);
+ 	if (IS_ERR(gpio->base))
+ 		return PTR_ERR(gpio->base);
+diff --git a/drivers/pinctrl/pinctrl-exynos5440.c b/drivers/pinctrl/pinctrl-exynos5440.c
+index 6038503..32a48f4 100644
+--- a/drivers/pinctrl/pinctrl-exynos5440.c
++++ b/drivers/pinctrl/pinctrl-exynos5440.c
+@@ -1000,11 +1000,6 @@ static int exynos5440_pinctrl_probe(struct platform_device *pdev)
+ 	}
  
  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 -	if (!res) {
--		dev_err(&pdev->dev,
--			"Unable to allocate resources for device.\n");
--		return -EBUSY;
+-		dev_err(dev, "cannot find IO resource\n");
+-		return -ENOENT;
 -	}
 -
- 	info->rtc_base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(info->rtc_base))
- 		return PTR_ERR(info->rtc_base);
+ 	priv->reg_base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(priv->reg_base))
+ 		return PTR_ERR(priv->reg_base);
+diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
+index 9763668..055d016 100644
+--- a/drivers/pinctrl/pinctrl-samsung.c
++++ b/drivers/pinctrl/pinctrl-samsung.c
+@@ -932,11 +932,6 @@ static int samsung_pinctrl_probe(struct platform_device *pdev)
+ 	drvdata->dev = dev;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(dev, "cannot find IO resource\n");
+-		return -ENOENT;
+-	}
+-
+ 	drvdata->virt_base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(drvdata->virt_base))
+ 		return PTR_ERR(drvdata->virt_base);
+diff --git a/drivers/pinctrl/pinctrl-xway.c b/drivers/pinctrl/pinctrl-xway.c
+index f2977cf..e92132c 100644
+--- a/drivers/pinctrl/pinctrl-xway.c
++++ b/drivers/pinctrl/pinctrl-xway.c
+@@ -716,10 +716,6 @@ static int pinmux_xway_probe(struct platform_device *pdev)
+ 
+ 	/* get and remap our register range */
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "Failed to get resource\n");
+-		return -ENOENT;
+-	}
+ 	xway_info.membase[0] = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(xway_info.membase[0]))
+ 		return PTR_ERR(xway_info.membase[0]);
 -- 
 1.7.10.4
 
