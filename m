@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399Ab3EJLwW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 07:52:22 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57651 "EHLO gate.crashing.org"
+	id S1752259Ab3EJMEN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 08:04:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51567 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752209Ab3EJLwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 07:52:20 -0400
-Message-ID: <1368186695.4524.27.camel@pasglop>
-Subject: Re: Invalid perf_branch_entry.to entries question
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>, linux-kernel@vger.kernel.org,
-        eranian@google.com, Anshuman Khandual <anshuman.khandual@in.ibm.com>
-Date: Fri, 10 May 2013 21:51:35 +1000
-In-Reply-To: <CAEjGV6x1=6iFUwQs6=5GY75-J9ZZzs8=CKE=+MGxdwoKycs9jA@mail.gmail.com>
-References: <25394.1367890528@ale.ozlabs.ibm.com>
-	 <20130508155929.GA8459@dyad.programming.kicks-ass.net>
-	 <14691.1368052755@ale.ozlabs.ibm.com>
-	 <20130510104352.GF31235@dyad.programming.kicks-ass.net>
-	 <CAEjGV6x1=6iFUwQs6=5GY75-J9ZZzs8=CKE=+MGxdwoKycs9jA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751450Ab3EJMEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 08:04:12 -0400
+From: Takashi Iwai <tiwai@suse.de>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jean Delvare <jdelvare@suse.de>, crrodriguez@opensuse.org
+Subject: [PATCH] vfs: Fix invalid ida_remove() call
+Date: Fri, 10 May 2013 14:04:11 +0200
+Message-Id: <1368187451-6712-1-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 1.8.2.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-10 at 20:50 +1000, Michael Neuling wrote:
-> The buffer is in the core (not main memory) and hence only has limited
-> entries.  So skipping entries that can hopefully be determined in
-> other ways means we can log more branches.
-> 
-> That being said, it's a PITA for the kernel ;-)
+When the group id of a shared mount is not allocated, the umount still
+tries to call mnt_release_group_id(), which eventually hits a kernel
+warning at ida_remove() spewing a message like:
+  ida_remove called for id=0 which is not allocated.
 
-I would suggest flagging them. As you mention, the code might have been
-modified since the sample was taken. Even if it still looks like a
-branch and you can compute the "To" address it might not be the right
-one ... at least userspace should be notified that this specific sample
-is to handle with care.
+This patch fixes the bug simply checking the group id in the caller.
 
-And if you just can't read the instruction or it's not a branch anymore,
-then stick a -1 in there, no way it can be a valid branch address :-)
+Reported-by: Cristian Rodríguez <crrodriguez@opensuse.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+ fs/pnode.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Cheers,
-Ben.
-
+diff --git a/fs/pnode.c b/fs/pnode.c
+index 3d2a714..9af0df1 100644
+--- a/fs/pnode.c
++++ b/fs/pnode.c
+@@ -83,7 +83,8 @@ static int do_make_slave(struct mount *mnt)
+ 		if (peer_mnt == mnt)
+ 			peer_mnt = NULL;
+ 	}
+-	if (IS_MNT_SHARED(mnt) && list_empty(&mnt->mnt_share))
++	if (mnt->mnt_group_id && IS_MNT_SHARED(mnt) &&
++	    list_empty(&mnt->mnt_share))
+ 		mnt_release_group_id(mnt);
+ 
+ 	list_del_init(&mnt->mnt_share);
+-- 
+1.8.2.1
 
