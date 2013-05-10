@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab3EJMNs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 08:13:48 -0400
-Received: from mga11.intel.com ([192.55.52.93]:31397 "EHLO mga11.intel.com"
+	id S1752803Ab3EJMRL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 08:17:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4342 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752640Ab3EJMNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 08:13:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,647,1363158000"; 
-   d="scan'208";a="335479143"
-From: Imre Deak <imre.deak@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        lm-sensors@lm-sensors.org
-Subject: [PATCH 04/11] hwmon/lm63,lm90: take msecs_to_jiffies_min into use
-Date: Fri, 10 May 2013 15:13:22 +0300
-Message-Id: <1368188011-23661-4-git-send-email-imre.deak@intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
-References: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
+	id S1752530Ab3EJMRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 08:17:10 -0400
+Date: Fri, 10 May 2013 14:14:59 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@kernel.org,
+        fweisbec@gmail.com, peterz@infradead.org, namhyung@kernel.org,
+        xiaoguangrong@linux.vnet.ibm.com
+Subject: Re: [PATCH 04/13] perf session: export a few functions for event
+ processing
+Message-ID: <20130510121459.GH1040@krava.brq.redhat.com>
+References: <1368073909-8825-1-git-send-email-dsahern@gmail.com>
+ <1368073909-8825-5-git-send-email-dsahern@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368073909-8825-5-git-send-email-dsahern@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use msecs_to_jiffies_min instead of open-coding the same.
+On Wed, May 08, 2013 at 10:31:40PM -0600, David Ahern wrote:
+> Allows kvm live mode to reuse the event processing and ordered samples
+> processing used by the perf-report path.
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  tools/perf/util/session.c |   14 +++++++-------
+>  tools/perf/util/session.h |    9 +++++++++
+>  2 files changed, 16 insertions(+), 7 deletions(-)
+> 
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 7e2c4c7..355b01f 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -248,7 +248,7 @@ static int process_finished_round(struct perf_tool *tool,
+>  				  union perf_event *event,
+>  				  struct perf_session *session);
+>  
+> -static void perf_tool__fill_defaults(struct perf_tool *tool)
+> +void perf_tool__fill_defaults(struct perf_tool *tool)
+>  {
+>  	if (tool->sample == NULL)
+>  		tool->sample = process_event_sample_stub;
+> @@ -494,8 +494,8 @@ static int perf_session_deliver_event(struct perf_session *session,
+>  				      struct perf_tool *tool,
+>  				      u64 file_offset);
+>  
+> -static int flush_sample_queue(struct perf_session *s,
+> -			       struct perf_tool *tool)
+> +int flush_sample_queue(struct perf_session *s,
+> +		       struct perf_tool *tool)
 
-Signed-off-by: Imre Deak <imre.deak@intel.com>
----
- drivers/hwmon/lm63.c |    2 +-
- drivers/hwmon/lm90.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+hm, can't see flush_sample_queue being used globaly
 
-diff --git a/drivers/hwmon/lm63.c b/drivers/hwmon/lm63.c
-index f644a2e..db44bcb 100644
---- a/drivers/hwmon/lm63.c
-+++ b/drivers/hwmon/lm63.c
-@@ -248,7 +248,7 @@ static struct lm63_data *lm63_update_device(struct device *dev)
- 	mutex_lock(&data->update_lock);
- 
- 	next_update = data->last_updated
--	  + msecs_to_jiffies(data->update_interval) + 1;
-+	  + msecs_to_jiffies_min(data->update_interval);
- 
- 	if (time_after(jiffies, next_update) || !data->valid) {
- 		if (data->config & 0x04) { /* tachometer enabled  */
-diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-index 8eeb141..314f9d3 100644
---- a/drivers/hwmon/lm90.c
-+++ b/drivers/hwmon/lm90.c
-@@ -471,7 +471,7 @@ static struct lm90_data *lm90_update_device(struct device *dev)
- 	mutex_lock(&data->update_lock);
- 
- 	next_update = data->last_updated
--	  + msecs_to_jiffies(data->update_interval) + 1;
-+	  + msecs_to_jiffies_min(data->update_interval);
- 	if (time_after(jiffies, next_update) || !data->valid) {
- 		u8 h, l;
- 		u8 alarms;
--- 
-1.7.10.4
-
+jirka
