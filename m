@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab3EJLAv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 07:00:51 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:45210 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab3EJLAu (ORCPT
+	id S1752925Ab3EJLBc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 07:01:32 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:47645 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659Ab3EJLB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 07:00:50 -0400
-Date: Fri, 10 May 2013 13:00:46 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, jamie.iles@oracle.com,
-        penberg@kernel.org, acme@ghostprotocols.net, paulus@samba.org,
-        namhyung@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v3 8/9] liblockdep: Add the 'lockdep' user-space utility
-Message-ID: <20130510110046.GB18805@gmail.com>
-References: <1368115089-8909-1-git-send-email-sasha.levin@oracle.com>
- <1368115089-8909-9-git-send-email-sasha.levin@oracle.com>
- <20130510091912.GD3039@dyad.programming.kicks-ass.net>
- <20130510093557.GA16429@gmail.com>
- <20130510104134.GE31235@dyad.programming.kicks-ass.net>
+	Fri, 10 May 2013 07:01:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130510104134.GE31235@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201305101255.47709.hverkuil@xs4all.nl>
+References: <1368161318-16128-1-git-send-email-prabhakar.csengg@gmail.com> <201305101255.47709.hverkuil@xs4all.nl>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Fri, 10 May 2013 16:31:07 +0530
+Message-ID: <CA+V-a8s-7r7bmdJJ2k7ABkhsfb6WrQ6xqUBpWjF=aRAUyJ=F=Q@mail.gmail.com>
+Subject: Re: [PATCH] davinci: vpfe: fix error path in probe
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Hans,
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+On Fri, May 10, 2013 at 4:25 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> On Fri May 10 2013 06:48:38 Lad Prabhakar wrote:
+>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+[Snip]
+>>
+>
+> Just FYI:
+>
+> After applying this patch I get a compiler warning that the probe_free_lock
+> label is unused. I've added a patch removing that label.
+>
+Thanks for fixing it :)
 
-> > If you started acking and emailing from the same address you'd only get 
-> > one! :-)
-> 
-> Bah, that'd mean actually retraining my muscle memory :-)
-
-You write out your acks? Wow :-)
-
-The way I do it is that I have two files named 'ack' and 'sob', with my 
-Acked-by and Signed-off-by lines in them, so I can read them into whatever 
-editing context I need them, without typing out the full thing.
-
-Saves typing and time - and gives email address flexibility ;-)
-
-Thanks,
-
-	Ingo
+Regards,
+--Prabhakar
