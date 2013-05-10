@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab3EJOaQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:30:16 -0400
-Received: from 13.mo5.mail-out.ovh.net ([87.98.182.191]:33441 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755941Ab3EJOaN (ORCPT
+	id S1755764Ab3EJOVv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:21:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57239 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755651Ab3EJOVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:30:13 -0400
-X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 May 2013 10:30:12 EDT
-Date: Fri, 10 May 2013 16:20:02 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH 1/3] dmaengine: at_hdmac/trivial: correct typo in
- comment
-Message-ID: <20130510142002.GL3041@game.jcrosoft.org>
-References: <042cac60509755c1340d141315a9a8eb1965438a.1368191734.git.nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 10 May 2013 10:21:40 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <042cac60509755c1340d141315a9a8eb1965438a.1368191734.git.nicolas.ferre@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 222083757811936108
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Marc Eshel" <eshel@us.ibm.com>,
+        "Trond Myklebust" <Trond.Myklebust@netapp.com>
+Date: Fri, 10 May 2013 14:39:41 +0100
+Message-ID: <lsq.1368193181.95318870@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [044/118] LOCKD: Ensure that nlmclnt_block resets block->b_status
+ after a server reboot
+In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on all
+3.2.45-rc1 review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+------------------
 
-On 15:19 Fri 10 May     , Nicolas Ferre wrote:
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
->  drivers/dma/at_hdmac.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-> index e923cda..cd49420 100644
-> --- a/drivers/dma/at_hdmac.c
-> +++ b/drivers/dma/at_hdmac.c
-> @@ -1120,7 +1120,7 @@ static int atc_alloc_chan_resources(struct dma_chan *chan)
->  		 */
->  		BUG_ON(!atslave->dma_dev || atslave->dma_dev != atdma->dma_common.dev);
->  
-> -		/* if cfg configuration specified take it instad of default */
-> +		/* if cfg configuration specified take it instead of default */
->  		if (atslave->cfg)
->  			cfg = atslave->cfg;
->  	}
-> -- 
-> 1.8.0
-> 
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 1dfd89af8697a299e7982ae740d4695ecd917eef upstream.
+
+After a server reboot, the reclaimer thread will recover all the existing
+locks. For locks that are blocked, however, it will change the value
+of block->b_status to nlm_lck_denied_grace_period in order to signal that
+they need to wake up and resend the original blocking lock request.
+
+Due to a bug, however, the block->b_status never gets reset after the
+blocked locks have been woken up, and so the process goes into an
+infinite loop of resends until the blocked lock is satisfied.
+
+Reported-by: Marc Eshel <eshel@us.ibm.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ fs/lockd/clntlock.c |    3 +++
+ fs/lockd/clntproc.c |    3 ---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+--- a/fs/lockd/clntlock.c
++++ b/fs/lockd/clntlock.c
+@@ -141,6 +141,9 @@ int nlmclnt_block(struct nlm_wait *block
+ 			timeout);
+ 	if (ret < 0)
+ 		return -ERESTARTSYS;
++	/* Reset the lock status after a server reboot so we resend */
++	if (block->b_status == nlm_lck_denied_grace_period)
++		block->b_status = nlm_lck_blocked;
+ 	req->a_res.status = block->b_status;
+ 	return 0;
+ }
+--- a/fs/lockd/clntproc.c
++++ b/fs/lockd/clntproc.c
+@@ -551,9 +551,6 @@ again:
+ 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
+ 		if (status < 0)
+ 			break;
+-		/* Resend the blocking lock request after a server reboot */
+-		if (resp->status ==  nlm_lck_denied_grace_period)
+-			continue;
+ 		if (resp->status != nlm_lck_blocked)
+ 			break;
+ 	}
+
