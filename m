@@ -1,105 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862Ab3EJIMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 04:12:22 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:46038 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab3EJIMS (ORCPT
+	id S1752172Ab3EJIP5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 04:15:57 -0400
+Received: from nskntqsrv03p.mx.bigpond.com ([61.9.168.237]:20768 "EHLO
+	nskntqsrv03p.mx.bigpond.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751561Ab3EJIPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 04:12:18 -0400
-Date: Fri, 10 May 2013 10:12:14 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v2] perf record: fix symbol processing bug and greatly
- improve performance
-Message-ID: <20130510081214.GA6848@gmail.com>
-References: <1368110568-64714-1-git-send-email-Waiman.Long@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368110568-64714-1-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 10 May 2013 04:15:53 -0400
+X-Greylist: delayed 3672 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 May 2013 04:15:52 EDT
+X-Authority-Analysis: v=2.0 cv=FNSZNpUs c=1 sm=1
+ a=tpHzvNDyw14p4wpd1xf5Bw==:17 a=4QTP58DfdrcA:10 a=aFTPlZ8mLXYA:10
+ a=abLpnCq0AAAA:8 a=H5rnqBSDAAAA:8 a=YvqQfTbJdaQA:10 a=VwQbUJbxAAAA:8
+ a=mVMJ6PgCaTTKqff_vy4A:9 a=U-mUTV892a2tCXzE:21 a=g6FUtOpjfvvkjl2y:21
+ a=tpHzvNDyw14p4wpd1xf5Bw==:117
+Date: Fri, 10 May 2013 17:13:58 +1000
+From: Greg Ungerer <gerg@uclinux.org>
+Message-Id: <201305100713.r4A7Dwq6031930@goober.accelcon.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-m68k@vger.kernel.org>,
+        <uclinux-dev@uclinux.org>, <geert@linux-m68k.org>
+Subject: [git pull] m68knommu arch fixes for 3.10
+To: <torvalds@linux-foundation.org>
+X-Mailer: mail (GNU Mailutils 2.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-* Waiman Long <Waiman.Long@hp.com> wrote:
+Can you please pull the m68knommu git tree, for-next branch.
 
-> When "perf record" was used on a large machine with a lot of CPUs,
-> the perf post-processing time (the time after the workload was done
-> until the perf command itself exited) could take a lot of minutes
-> and even hours depending on how large the resulting perf.data file was.
-> 
-> While running AIM7 1500-user high_systime workload on a 80-core
-> x86-64 system with a 3.9 kernel (with only the -s -a options used),
-> the workload itself took about 2 minutes to run and the perf.data
-> file had a size of 1108.746 MB. However, the post-processing step
-> took more than 10 minutes.
-> 
-> With a gprof-profiled perf binary, the time spent by perf was as
-> follows:
-> 
->   %   cumulative   self              self     total
->  time   seconds   seconds    calls   s/call   s/call  name
->  96.90    822.10   822.10   192156     0.00     0.00  dsos__find
->   0.81    828.96     6.86 172089958     0.00     0.00  rb_next
->   0.41    832.44     3.48 48539289     0.00     0.00  rb_erase
-> 
-> So 97% (822 seconds) of the time was spent in a single dsos_find()
-> function. After analyzing the call-graph data below:
-> 
-> -----------------------------------------------
->                 0.00  822.12  192156/192156      map__new [6]
-> [7]     96.9    0.00  822.12  192156         vdso__dso_findnew [7]
->               822.10    0.00  192156/192156      dsos__find [8]
->                 0.01    0.00  192156/192156      dsos__add [62]
->                 0.01    0.00  192156/192366      dso__new [61]
->                 0.00    0.00       1/45282525     memdup [31]
->                 0.00    0.00  192156/192230      dso__set_long_name [91]
-> -----------------------------------------------
->               822.10    0.00  192156/192156      vdso__dso_findnew [7]
-> [8]     96.9  822.10    0.00  192156         dsos__find [8]
-> -----------------------------------------------
-> 
-> It was found that the vdso__dso_findnew() function failed to locate
-> VDSO__MAP_NAME ("[vdso]") in the dso list and have to insert a new
-> entry at the end for 192156 times. This problem is due to the fact that
-> there are 2 types of name in the dso entry - short name and long name.
-> The initial dso__new() adds "[vdso]" to both the short and long names.
-> After that, vdso__dso_findnew() modifies the long name to something
-> like /tmp/perf-vdso.so-NoXkDj. The dsos__find() function only compares
-> the long name. As a result, the same vdso entry is duplicated many
-> time in the dso list. This bug increases memory consumption as well
-> as slows the symbol processing time to a crawl.
-> 
-> To resolve this problem, the dsos__find() function interface was
-> modified to enable searching either the long name or the short
-> name. The vdso__dso_findnew() will now search only the short name
-> while the other call sites search for the long name as before.
-> 
-> With this change, the cpu time of perf was reduced from 848.38s to
-> 15.77s and dsos__find() only accounted for 0.06% of the total time.
-> 
->   0.06     15.73     0.01   192151     0.00     0.00  dsos__find
-> 
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> ---
->  tools/perf/util/dso.c  |   10 ++++++++--
->  tools/perf/util/dso.h  |    3 ++-
->  tools/perf/util/vdso.c |    2 +-
->  3 files changed, 11 insertions(+), 4 deletions(-)
+The bulk of the changes are generalizing the ColdFire v3 core support and
+adding in 537x CPU support. Also a couple of other bug fixes, one to fix
+a reintroduction of a past bug in the romfs filesystem nommu support.
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+Regards
+Greg
 
-Thanks,
 
-	Ingo
+
+
+The following changes since commit 60d509fa6a9c4653a86ad830e4c4b30360b23f0e:
+
+  Linux 3.9-rc8 (2013-04-21 14:38:45 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-next
+
+for you to fetch changes up to 2842e5b00e99b30404f9af1c1b367c8e467b5c6c:
+
+  m68knommu: enable Timer on coldfire 532x (2013-04-29 09:17:59 +1000)
+
+----------------------------------------------------------------
+Greg Ungerer (8):
+      romfs: fix nommu map length to keep inside filesystem
+      m68k: remove unused asm/dbg.h
+      m68knommu: create and use a common M53xx ColdFire class of CPUs
+      m68knommu: make ColdFire M532x platform support more v3 generic
+      m68knommu: add support for the ColdFire 537x family of CPUs
+      m68knommu: add support for configuring a Freescale M5373EVB board
+      m68knommu: fix ColdFire 5373/5329 QSPI base address
+      m68knommu: enable Timer on coldfire 532x
+
+Paul Bolle (1):
+      m68k: clean up unused "config ROMVECSIZE"
+
+Stany MARCEL (1):
+      m68k: Set ColdFire ACR1 cache mode depending on kernel configuration
+
+ arch/m68k/Kconfig.cpu                            | 12 ++++++++++++
+ arch/m68k/Kconfig.machine                        | 16 +++++++---------
+ arch/m68k/Makefile                               |  1 +
+ arch/m68k/include/asm/dbg.h                      |  6 ------
+ arch/m68k/include/asm/dma.h                      |  2 +-
+ arch/m68k/include/asm/m53xxacr.h                 |  4 ++--
+ arch/m68k/include/asm/{m532xsim.h => m53xxsim.h} | 12 ++++++------
+ arch/m68k/include/asm/m54xxacr.h                 |  7 ++++++-
+ arch/m68k/include/asm/mcfgpio.h                  | 10 +++++-----
+ arch/m68k/include/asm/mcfsim.h                   |  4 ++--
+ arch/m68k/include/asm/mcftimer.h                 |  2 +-
+ arch/m68k/platform/coldfire/Makefile             |  2 +-
+ arch/m68k/platform/coldfire/{m532x.c => m53xx.c} | 23 +++++++++++------------
+ arch/m68k/platform/coldfire/timers.c             |  2 +-
+ drivers/tty/serial/68328serial.c                 |  1 -
+ fs/romfs/mmap-nommu.c                            |  5 ++++-
+ 16 files changed, 60 insertions(+), 49 deletions(-)
+ delete mode 100644 arch/m68k/include/asm/dbg.h
+ rename arch/m68k/include/asm/{m532xsim.h => m53xxsim.h} (99%)
+ rename arch/m68k/platform/coldfire/{m532x.c => m53xx.c} (98%)
