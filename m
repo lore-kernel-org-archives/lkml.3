@@ -1,55 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab3EKOJb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 10:09:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:63230 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751Ab3EKOJa (ORCPT
+	id S1752963Ab3EKORd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 10:17:33 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56729 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab3EKORb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 10:09:30 -0400
-Date: Sat, 11 May 2013 16:09:25 +0200
-From: Heinz Diehl <htd@fritha.org>
-To: Frantisek Hrbata <fhrbata@redhat.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        dzickus@redhat.com, kernel-team@fedoraproject.org
-Subject: Re: NULL pointer dereference in xhci_free_dev
-Message-ID: <20130511140925.GA9240@fritha.org>
-References: <20130507140333.GB3380@dhcp-26-164.brq.redhat.com>
- <20130509221559.GD10305@xanatos>
- <20130510065644.GA3320@dhcp-26-164.brq.redhat.com>
+	Sat, 11 May 2013 10:17:31 -0400
+Date: Fri, 10 May 2013 22:24:22 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20130510212422.GY3200@sirena.org.uk>
+References: <1368207091-32538-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DHd0DHvhbdljNSqO"
 Content-Disposition: inline
-In-Reply-To: <20130510065644.GA3320@dhcp-26-164.brq.redhat.com>
-Organization: private site
-OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+155 (d3096e8796e7) (2012-12-30)
-X-Provags-ID: V02:K0:4Xo/TdGNjbpfSAXDj/uDXlT7/Jhg+pgoxzU/u29UgjH
- 4TIxKz29pTjhxbXu9xoDWpaeLWlIcgGHel1w3M2k073jfpCbYv
- j9h4ifuj7POJsHZGm5/njJiwlPHMkt/r6iTlEfY3AHfwbtc/WQ
- 5Z9aT9+XUQMjbUg5uzQ9oQ6zMii8/ESzyEck1UC+e2Dbyc1u+F
- wn7ZQOeZDtyfX86ujuVKq5/ff1eNdKnYA+k0iuclnLz8j5GHe3
- oubPffzpRt0ibkckYubxSJjFrIf/4/ixFVXQRDwHYirOR8OCp7
- iJHyDHGf4IU3kemdi5lPtD9qUlH1KIAo1RYXnWcxAMak7CPxXS
- xegpz/SHTAcuke3lOLJc=
+In-Reply-To: <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.247.243.210
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.05.2013, Frantisek Hrbata wrote: 
 
-> I haven't tried to reproduce. I was asked to help with Fedora's bugs triage and
-> these come up. The goal was just to contact the right people and bring this to
-> their attention. If you have a patch for this, I guess we can try to ask Heinz,
-> or other people reporting this problem, to help with testing.
+--DHd0DHvhbdljNSqO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I'm willing to help, of course. I'll try to install latest 3.9 on the
-machine this bug occurs and see if I manage to reproduce it. As far as
-I remember, it happened when I changed some USB 2.0 devices on an USB
-3 port. The machine is re-installed and runs F18 now.
- 
-> Heinz: Sorry I forgot to add you to CC in the first mail, but Sarah fixed it.
+On Fri, May 10, 2013 at 10:31:31AM -0700, Soren Brinkmann wrote:
 
-Never mind, I'm subscribed to lkml and saw the thread there ;-)
+> +Example:
+> +	usclk: usclk {
+> +		compatible = "clk-userspace";
+> +		clocks = <&foo 15>, <&bar>;
+> +		clock-count = <2>;
+> +	};
 
+This is clearly *very* Linux specific so needs to be a linux vendor
+thing (everything should have a namespaced name anyway).  It's not at
+all obvious to me that this should be in device tree, though, since it's
+not hardware description but a detail of how the OS is currently
+implemented.
+
+For your use case should these things be exposed by the FPGA device
+asking for that rather than by having the clocks available separately?
+Or is this part of the DT blob that's loaded incrementally along with
+the FPGA (which does make things more interesting of course...).
+
+> + * Expose clock controls through sysfs to userspace.
+
+> + * By writing 0/1 to 'enable' the clock can be disabled/enabled. Reading
+> + * that file returns the current state - 0 = disabled, 1 = enabled.
+
+> + * Reading 'set_rate' returns the current clock frequency in Hz. Writing
+> + * the file requests setting a new frequency in Hz.
+
+This needs to be covered in Documentation/ABI since it's adding new
+sysfs stuff.
+
+> +	if (enable)
+> +		ret = clk_prepare_enable(pdata->clk);
+> +	else
+> +		clk_disable_unprepare(pdata->clk);
+
+> +	if (ret)
+> +		return -EBUSY;
+
+Why not pass back the actual error?
+
+> +	pdata = kzalloc(clock_count * sizeof(*pdata), GFP_KERNEL);
+> +	if (!pdata)
+> +		return -ENOMEM;
+
+devm?
+
+> +late_initcall(usclk_setup);
+
+Why not just a regular driver?
+
+--DHd0DHvhbdljNSqO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRjWV+AAoJELSic+t+oim9vrQQAJbobwyqbbFAo1SoqD8j8AlZ
+i0G1QEyPsMUg3lWG0Aw2Vkwi417INijYkGXmazpN7Pp8FvIqGAhmQyjx2jm/5OOR
+1XvwEb3R9KTOKAQS2SV1quIMOFhHqCq4aQY0jwHSPnlh4Hf4Bn/3XO1p+0VrJE8C
+12uWFVHTVCMGF4Jv8A6O3A2Nwuml+ZPmH/bVetootUKG97pULs3IAjkBqLzBGQns
+Ril2QWdyZLjlEDTBnokVMs45q3RYKstulXLE+jXUU/M+q886xdxFmkrRjsxjfhtM
+LxgWy9SdiQ+nW1Jb84BJTKXHy8aSOu+oI0Iy+wOFsLVoNq6TDTlvkUQlKErht57Z
+tdnZknunSBHWlvxEQvyCvWNsp6sJGrEJX/B49/RLna/+a2ojVuvdENpVWGe1DS31
+LLvnP1YGwu8hmQEz2rc3h9zCYQbGgPHpBFahcFElY3ujJXgmXtCTFWyAQj3rT3OW
+F/kY3iUT2f9vACFhQd8KvKgElIH6tp980S25W0a+bRroL3ST2Xujt1JwnKe/bOqs
+K7xdj1YCacF96fECLMOvH1bgT1C7Jjznz5a1SD1OvFDNvwHpZ+fxa/ozRpVF1FlU
+KRr4m7toqSrmF4dFAVAvm9sOjv1xrYHFFcyhibZzw7YR/EIBiLeGyqynwe/M0Osb
+pSsSwgTfE9FMDkwsAwda
+=i05g
+-----END PGP SIGNATURE-----
+
+--DHd0DHvhbdljNSqO--
