@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab3EJLB2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 07:01:28 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:42675 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751659Ab3EJLB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 07:01:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [RFC 03/42] drivers/cpufreq: don't check resource with devm_ioremap_resource
-Date: Fri, 10 May 2013 13:09:53 +0200
-Message-ID: <1832747.3cSvLxeIN8@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1368173847-5661-4-git-send-email-wsa@the-dreams.de>
-References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de> <1368173847-5661-4-git-send-email-wsa@the-dreams.de>
+	id S1752950Ab3EJLCd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 07:02:33 -0400
+Received: from smtp-vbr11.xs4all.nl ([194.109.24.31]:3450 "EHLO
+	smtp-vbr11.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772Ab3EJLCc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 07:02:32 -0400
+X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 May 2013 07:02:31 EDT
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Lad Prabhakar <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH] davinci: vpfe: fix error path in probe
+Date: Fri, 10 May 2013 12:55:47 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9.0-rc1-durdane; KDE/4.8.4; x86_64; ; )
+Cc: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+References: <1368161318-16128-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1368161318-16128-1-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305101255.47709.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 10, 2013 10:16:48 AM Wolfram Sang wrote:
-> devm_ioremap_resource does sanity checks on the given resource. No need to
-> duplicate this in the driver.
+On Fri May 10 2013 06:48:38 Lad Prabhakar wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 > 
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-
-Queued up for a post-3.10-rc1 push.
-
-Thanks,
-Rafael
-
-
+> The error path on failure was calling mutex_unlock(), but there was
+> no actuall call before for mutex_lock(). This patch fixes this issue
+> by pointing it to proper go label.
+> 
+> Reported-by: Jose Pablo Carballo <jose.carballo@ridgerun.com>
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 > ---
->  drivers/cpufreq/kirkwood-cpufreq.c |    4 ----
->  1 file changed, 4 deletions(-)
+>  drivers/media/platform/davinci/vpfe_capture.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
-> index d36ea8d..b2644af 100644
-> --- a/drivers/cpufreq/kirkwood-cpufreq.c
-> +++ b/drivers/cpufreq/kirkwood-cpufreq.c
-> @@ -171,10 +171,6 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
->  	priv.dev = &pdev->dev;
+> diff --git a/drivers/media/platform/davinci/vpfe_capture.c b/drivers/media/platform/davinci/vpfe_capture.c
+> index 8c50d30..3827fe1 100644
+> --- a/drivers/media/platform/davinci/vpfe_capture.c
+> +++ b/drivers/media/platform/davinci/vpfe_capture.c
+> @@ -1837,7 +1837,7 @@ static int vpfe_probe(struct platform_device *pdev)
+>  	if (NULL == ccdc_cfg) {
+>  		v4l2_err(pdev->dev.driver,
+>  			 "Memory allocation failed for ccdc_cfg\n");
+> -		goto probe_free_lock;
+> +		goto probe_free_dev_mem;
+>  	}
 >  
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!res) {
-> -		dev_err(&pdev->dev, "Cannot get memory resource\n");
-> -		return -ENODEV;
-> -	}
->  	priv.base = devm_ioremap_resource(&pdev->dev, res);
->  	if (IS_ERR(priv.base))
->  		return PTR_ERR(priv.base);
+>  	mutex_lock(&ccdc_lock);
 > 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
+Just FYI:
+
+After applying this patch I get a compiler warning that the probe_free_lock
+label is unused. I've added a patch removing that label.
+
+Regards,
+
+	Hans
