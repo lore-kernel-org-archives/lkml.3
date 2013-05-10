@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027Ab3EJIQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 04:16:52 -0400
-Received: from sauhun.de ([89.238.76.85]:60425 "EHLO pokefinder.org"
+	id S1753257Ab3EJIRG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 04:17:06 -0400
+Received: from sauhun.de ([89.238.76.85]:60457 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926Ab3EJIQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 04:16:50 -0400
+	id S1751941Ab3EJIQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 04:16:59 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org
-Subject: [RFC 15/42] drivers/mtd/maps: don't check resource with devm_ioremap_resource
-Date: Fri, 10 May 2013 10:17:00 +0200
-Message-Id: <1368173847-5661-16-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Viresh Kumar <viresh.linux@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>, spear-devel@list.st.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: [RFC 19/42] drivers/pinctrl/spear: don't check resource with devm_ioremap_resource
+Date: Fri, 10 May 2013 10:17:04 +0200
+Message-Id: <1368173847-5661-20-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
 References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
@@ -25,53 +26,33 @@ duplicate this in the driver.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- drivers/mtd/maps/autcpu12-nvram.c |    7 +------
- drivers/mtd/maps/lantiq-flash.c   |    8 +-------
- 2 files changed, 2 insertions(+), 13 deletions(-)
+ drivers/pinctrl/spear/pinctrl-plgpio.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/mtd/maps/autcpu12-nvram.c b/drivers/mtd/maps/autcpu12-nvram.c
-index c3525d2..58853b0 100644
---- a/drivers/mtd/maps/autcpu12-nvram.c
-+++ b/drivers/mtd/maps/autcpu12-nvram.c
-@@ -47,15 +47,10 @@ static int autcpu12_nvram_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, priv);
+diff --git a/drivers/pinctrl/spear/pinctrl-plgpio.c b/drivers/pinctrl/spear/pinctrl-plgpio.c
+index 3e5a887..6b090be 100644
+--- a/drivers/pinctrl/spear/pinctrl-plgpio.c
++++ b/drivers/pinctrl/spear/pinctrl-plgpio.c
+@@ -528,18 +528,13 @@ static int plgpio_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	int ret, irq, i;
  
 -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 -	if (!res) {
--		dev_err(&pdev->dev, "failed to get memory resource\n");
--		return -ENOENT;
+-		dev_err(&pdev->dev, "invalid IORESOURCE_MEM\n");
+-		return -EBUSY;
 -	}
 -
- 	priv->map.bankwidth	= 4;
- 	priv->map.phys		= res->start;
- 	priv->map.size		= resource_size(res);
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	priv->map.virt = devm_ioremap_resource(&pdev->dev, res);
- 	strcpy((char *)priv->map.name, res->name);
- 	if (IS_ERR(priv->map.virt))
-diff --git a/drivers/mtd/maps/lantiq-flash.c b/drivers/mtd/maps/lantiq-flash.c
-index d1da6ed..f405c34 100644
---- a/drivers/mtd/maps/lantiq-flash.c
-+++ b/drivers/mtd/maps/lantiq-flash.c
-@@ -127,16 +127,10 @@ ltq_mtd_probe(struct platform_device *pdev)
- 	ltq_mtd = kzalloc(sizeof(struct ltq_mtd), GFP_KERNEL);
- 	platform_set_drvdata(pdev, ltq_mtd);
+ 	plgpio = devm_kzalloc(&pdev->dev, sizeof(*plgpio), GFP_KERNEL);
+ 	if (!plgpio) {
+ 		dev_err(&pdev->dev, "memory allocation fail\n");
+ 		return -ENOMEM;
+ 	}
  
--	ltq_mtd->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!ltq_mtd->res) {
--		dev_err(&pdev->dev, "failed to get memory resource\n");
--		err = -ENOENT;
--		goto err_out;
--	}
--
- 	ltq_mtd->map = kzalloc(sizeof(struct map_info), GFP_KERNEL);
- 	ltq_mtd->map->phys = ltq_mtd->res->start;
- 	ltq_mtd->map->size = resource_size(ltq_mtd->res);
-+	ltq_mtd->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	ltq_mtd->map->virt = devm_ioremap_resource(&pdev->dev, ltq_mtd->res);
- 	if (IS_ERR(ltq_mtd->map->virt)) {
- 		err = PTR_ERR(ltq_mtd->map->virt);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	plgpio->base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(plgpio->base))
+ 		return PTR_ERR(plgpio->base);
 -- 
 1.7.10.4
 
