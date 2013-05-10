@@ -1,89 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab3EJP5d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 11:57:33 -0400
-Received: from a9-66.smtp-out.amazonses.com ([54.240.9.66]:40266 "EHLO
-	a9-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753625Ab3EJP5c (ORCPT
+	id S1754096Ab3EJQDp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 12:03:45 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:62993 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752004Ab3EJQDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 11:57:32 -0400
-Date: Fri, 10 May 2013 15:57:30 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-cc: glommer@parallels.com, penberg@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [linux-next-20130422] Bug in SLAB?
-In-Reply-To: <201305102138.BDF90621.LFFOFtHSQOMVOJ@I-love.SAKURA.ne.jp>
-Message-ID: <0000013e8f295277-653bcbfa-e1cc-4c05-8e6d-eb6a5a661f6f-000000@email.amazonses.com>
-References: <201304300028.IAD13051.OHOVMJSLFFFQOt@I-love.SAKURA.ne.jp> <201304300116.FGJ56210.FMSOJHFOtFQVOL@I-love.SAKURA.ne.jp> <201305092125.FGG13076.LFOtVOFMSFQJHO@I-love.SAKURA.ne.jp> <0000013e89a4ae3c-f2abd075-e096-42b5-891d-e2e5e2af9ecb-000000@email.amazonses.com>
- <201305100654.FCI28926.HOtMVOJLFFFSQO@I-love.SAKURA.ne.jp> <201305102138.BDF90621.LFFOFtHSQOMVOJ@I-love.SAKURA.ne.jp>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 10 May 2013 12:03:43 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.05.10-54.240.9.66
+In-Reply-To: <20130510153638.GA8179@redhat.com>
+References: <1368159316-31744-1-git-send-email-lucas.de.marchi@gmail.com>
+ <1368159316-31744-3-git-send-email-lucas.de.marchi@gmail.com>
+ <20130510125826.GA553@redhat.com> <CAKi4VALE8tFUTZ1qYwm0Eth1zFMU8xA6XC5RTnF1KCKYQp-0NQ@mail.gmail.com>
+ <20130510153638.GA8179@redhat.com>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Fri, 10 May 2013 13:03:23 -0300
+Message-ID: <CAKi4VAJPXgiik9CGrVyk7cCvz-1913p1KL8tn5FvxH4w0r27bg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] init/Kconfig: Add option to set modprobe command
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 May 2013, Tetsuo Handa wrote:
-
-> Tetsuo Handa wrote:
-> > Can we manage with allocating only 26 elements when MAX_ORDER + PAGE_SHIFT > 26
-> > (e.g. PAGE_SIZE == 256 * 1024) ?
-> >
-> > Can kmalloc_index()/kmalloc_size()/kmalloc_slab() etc. work correctly when
-> > MAX_ORDER + PAGE_SHIFT > 26 (e.g. PAGE_SIZE == 256 * 1024) ?
-> >
-> Today I compared SLAB/SLUB code. If I understood correctly, the line
+On Fri, May 10, 2013 at 12:36 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 05/10, Lucas De Marchi wrote:
+>>
+>> Oh, right. Forgot about that. And this patch set should have been sent
+>> as RFC, since I'm interested in feedback about the idea. What do you
+>> think?
 >
->   if (size <=  64 * 1024 * 1024) return 26;
+> Well, personally I think it would be better to use kasprintf(), see the
+> patch I sent (it is actually wrong, needs kfree(args) before return).
 >
-> in kmalloc_index() is redundant (in fact, kmalloc_caches[26] is out of range)
-> and conflicts with what the comment
-
-True we could remove it but it does not hurt. There is a bounding of size
-before any call to kmalloc_index.
-
->   * The largest kmalloc size supported by the SLAB allocators is
->   * 32 megabyte (2^25) or the maximum allocatable page order if that is
->   * less than 32 MB.
+> Or. How about the patch below? It should be split into 2 changes:
 >
-> says, and 0 <= kmalloc_index() <= 25 is always true for SLAB and
-> 0 <= kmalloc_index() <= PAGE_SHIFT+1 is always true for SLUB.
+>         1. Introduce __argv_split(). It can have more callers, for
+>            example do_coredump() and ftrace_function_filter_re()
+>            can use it to avoid kstrndup() + kfree().
 >
-> Therefore, towards 3.10-rc1,
+>         2. Change call_modprobe() to use kasprintf() + __argv_split().
+
+Seems better. In your previous version I was troubled about
+duplicating the string twice. Now it's weird freeing a
+user-allocated-string,
+but I think it's a good tradeoff and covers other use cases as you
+pointed out as well.
+
+
 >
-> > > -	for (i = 1; i < PAGE_SHIFT + MAX_ORDER; i++) {
-> > > +	for (i = 1; i =< KMALLOC_SHIFT_HIGH; i++) {
-> >
-> -+	for (i = 1; i =< KMALLOC_SHIFT_HIGH; i++) {
-> ++	for (i = 1; i <= KMALLOC_SHIFT_HIGH; i++) {
+> uncompiled/untested.
+
+Ok. I'll give it a try.
+
+
 >
-> would be the last fix for me. (I don't know why kmalloc_caches[0] is excluded.)
+> Oleg.
+>
+> --- x/lib/argv_split.c
+> +++ x/lib/argv_split.c
+> @@ -39,31 +39,15 @@ void argv_free(char **argv)
+>  }
+>  EXPORT_SYMBOL(argv_free);
+>
+> -/**
+> - * argv_split - split a string at whitespace, returning an argv
+> - * @gfp: the GFP mask used to allocate memory
+> - * @str: the string to be split
+> - * @argcp: returned argument count
+> - *
+> - * Returns an array of pointers to strings which are split out from
+> - * @str.  This is performed by strictly splitting on white-space; no
+> - * quote processing is performed.  Multiple whitespace characters are
+> - * considered to be a single argument separator.  The returned array
+> - * is always NULL-terminated.  Returns NULL on memory allocation
+> - * failure.
+> - *
+> - * The source string at `str' may be undergoing concurrent alteration via
+> - * userspace sysctl activity (at least).  The argv_split() implementation
+> - * attempts to handle this gracefully by taking a local copy to work on.
+> +/*
+> + * @argv_str should be kmalloc'ed by the caller, freed by this func.
+>   */
+> -char **argv_split(gfp_t gfp, const char *str, int *argcp)
+> +char **__argv_split(gfp_t gfp, const char *argv_str, int *argcp)
+>  {
+> -       char *argv_str;
+>         bool was_space;
+>         char **argv, **argv_ret;
+>         int argc;
+>
+> -       argv_str = kstrndup(str, KMALLOC_MAX_SIZE - 1, gfp);
+>         if (!argv_str)
+>                 return NULL;
+>
+> @@ -91,4 +75,28 @@ char **argv_split(gfp_t gfp, const char
+>                 *argcp = argc;
+>         return argv_ret;
+>  }
+> +
+> +/**
+> + * argv_split - split a string at whitespace, returning an argv
+> + * @gfp: the GFP mask used to allocate memory
+> + * @str: the string to be split
+> + * @argcp: returned argument count
+> + *
+> + * Returns an array of pointers to strings which are split out from
+> + * @str.  This is performed by strictly splitting on white-space; no
+> + * quote processing is performed.  Multiple whitespace characters are
+> + * considered to be a single argument separator.  The returned array
+> + * is always NULL-terminated.  Returns NULL on memory allocation
+> + * failure.
+> + *
+> + * The source string at `str' may be undergoing concurrent alteration via
+> + * userspace sysctl activity (at least).  The argv_split() implementation
+> + * attempts to handle this gracefully by taking a local copy to work on.
+> + */
+> +char **argv_split(gfp_t gfp, const char *str, int *argcp)
+> +{
+> +       char *dup = kstrndup(str, KMALLOC_MAX_SIZE - 1, gfp);
+> +       return __argv_split(gfp, dup, argcp);
+> +}
+> +
+>  EXPORT_SYMBOL(argv_split);
+> --- x/kernel/kmod.c
+> +++ x/kernel/kmod.c
+> @@ -64,20 +64,16 @@ static DECLARE_RWSEM(umhelper_sem);
+>
+>  #ifdef CONFIG_MODULES
+>
+> -/*
+> -       modprobe_path is set via /proc/sys.
+> -*/
+> -char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe";
+> +/* modprobe_path is set via /proc/sys/kernel/modprobe */
+> +char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe -q --";
+>
+>  static void free_modprobe_argv(struct subprocess_info *info)
+>  {
+> -       kfree(info->argv[3]); /* check call_modprobe() */
+> -       kfree(info->argv);
+> +       argv_free(info->argv);
+>  }
+>
+>  static int call_modprobe(char *module_name, int wait)
+>  {
+> -       struct subprocess_info *info;
+>         static char *envp[] = {
+>                 "HOME=/",
+>                 "TERM=linux",
+> @@ -85,31 +81,24 @@ static int call_modprobe(char *module_na
+>                 NULL
+>         };
+>
+> -       char **argv = kmalloc(sizeof(char *[5]), GFP_KERNEL);
+> +       struct subprocess_info *info;
+> +       char **argv;
+> +       char *args;
+> +
+> +       args = kasprintf(GFP_KERNEL, "%s %s", modprobe_path, module_name);
+> +       argv = __argv_split(GFP_KERNEL, args, NULL);
+>         if (!argv)
+>                 goto out;
+>
+> -       module_name = kstrdup(module_name, GFP_KERNEL);
+> -       if (!module_name)
+> -               goto free_argv;
+> -
+> -       argv[0] = modprobe_path;
+> -       argv[1] = "-q";
+> -       argv[2] = "--";
+> -       argv[3] = module_name;  /* check free_modprobe_argv() */
+> -       argv[4] = NULL;
+> -
+>         info = call_usermodehelper_setup(modprobe_path, argv, envp, GFP_KERNEL,
+>                                          NULL, free_modprobe_argv, NULL);
+>         if (!info)
+> -               goto free_module_name;
+> +               goto free_argv;
+>
+>         return call_usermodehelper_exec(info, wait | UMH_KILLABLE);
+>
+> -free_module_name:
+> -       kfree(module_name);
+>  free_argv:
+> -       kfree(argv);
+> +       argv_free(argv);
+>  out:
+>         return -ENOMEM;
+>  }
+>
 
-Yep. kmalloc[0] is not used. The first cache to be used is 1 and 2 which
-are the non power of two caches. 3 and higher are the power of two caches.
 
 
-Subject: SLAB: Fix init_lock_keys
+--
 
-init_lock_keys goes too far in initializing values in kmalloc_caches because
-it assumed that the size of the kmalloc array goes up to MAX_ORDER. However, the size
-of the kmalloc array for SLAB may be restricted due to increased page sizes or CONFIG_FORCE_MAX_ZONEORDER.
-
-Reported-by: Tetsuo Handa <penguin-kernel@I-Love.SAKURA.ne.jp>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/mm/slab.c
-===================================================================
---- linux.orig/mm/slab.c	2013-05-09 09:06:20.000000000 -0500
-+++ linux/mm/slab.c	2013-05-09 09:08:08.338606055 -0500
-@@ -565,7 +565,7 @@ static void init_node_lock_keys(int q)
- 	if (slab_state < UP)
- 		return;
-
--	for (i = 1; i < PAGE_SHIFT + MAX_ORDER; i++) {
-+	for (i = 1; i <= KMALLOC_SHIFT_HIGH; i++) {
- 		struct kmem_cache_node *n;
- 		struct kmem_cache *cache = kmalloc_caches[i];
-
+Lucas De Marchi
