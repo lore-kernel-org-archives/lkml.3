@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab3EJKVo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 06:21:44 -0400
-Received: from mout.gmx.net ([212.227.17.22]:64678 "EHLO mout.gmx.net"
+	id S1752389Ab3EJKW1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 06:22:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47641 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750867Ab3EJKVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 06:21:43 -0400
-X-Authenticated: #20192376
-X-Provags-ID: V01U2FsdGVkX1/vI88IWAvv7+74MXGmFx98rnyA4GoLwKlxEsvVV5
-	avMplz2/tnPAcU
-From: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, balbi@ti.com,
-        Andreas Fenkart <andreas.fenkart@streamunlimited.com>
-Subject: [PATCH 1/1] genirq: outline lazy disable in kerneldoc of irq_disable function.
-Date: Fri, 10 May 2013 12:21:30 +0200
-Message-Id: <1368181290-1583-1-git-send-email-andreas.fenkart@streamunlimited.com>
-X-Mailer: git-send-email 1.7.10.4
-X-Y-GMX-Trusted: 0
+	id S1751561Ab3EJKW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 06:22:26 -0400
+Date: Fri, 10 May 2013 11:22:24 +0100
+From: Joe Thornber <thornber@redhat.com>
+To: device-mapper development <dm-devel@redhat.com>
+Cc: Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH 2/2] dmcache: Implement a flush message
+Message-ID: <20130510102224.GF20880@debian>
+Mail-Followup-To: device-mapper development <dm-devel@redhat.com>,
+	Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org
+References: <20130508214845.GA7729@blackbox.djwong.org>
+ <20130508220526.GA24132@redhat.com>
+ <20130509203616.GA5713@blackbox.djwong.org>
+ <20130509204751.GB5712@blackbox.djwong.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130509204751.GB5712@blackbox.djwong.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-comment based on changelog of d209a699a0b975ad
+On Thu, May 09, 2013 at 01:47:51PM -0700, Darrick J. Wong wrote:
+> Create a new 'flush' message that causes the dmcache to write all of its
+> metadata out to disk.  This enables us to ensure that the disk reflects
+> whatever's in memory without having to tear down the cache device.  This helps
+> me in the case where I have a cached ro fs that I can't umount and therefore
+> can't tear down the cache device, but want to save the cache metadata anyway.
+> The command syntax is as follows:
+> 
+> # dmsetup message mycache 0 flush now
 
-Signed-off-by: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
----
- kernel/irq/chip.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+Nack.
 
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index cbd97ce..4e3c439 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -213,6 +213,19 @@ void irq_enable(struct irq_desc *desc)
- 	irq_state_clr_masked(desc);
- }
- 
-+/**
-+ * irq_disable - mask interupt disabled
-+ * @desc:		irq descriptor which should be disabled
-+ *
-+ * If the chip does not implement the irq_disable callback, we
-+ * use a lazy disable approach. That means we mark the interrupt
-+ * disabled, but leave the hardware unmasked. That's an
-+ * optimization because we avoid the hardware access for the
-+ * common case where no interrupt happens after we marked it
-+ * disabled. If an interrupt happens, then the interrupt flow
-+ * handler masks the line at the hardware level and marks it
-+ * pending.
-+ */
- void irq_disable(struct irq_desc *desc)
- {
- 	irq_state_set_disabled(desc);
--- 
-1.7.10.4
+[Ignoring the ugly 'now' parameter.]
 
+I think you're in danger of hiding the real issue.  Which is if the
+target's destructor and post suspend is not being called then, as far
+as dm-cache is concerned this is a crash.  Any open transactions will
+be lost as it automatically rolls back.
+
+We need to understand more why this is happening.  It's actually
+harmless atm for dm-cache, because we're forced to commit before using
+a new migration.  But for dm-thin you can lose writes.  Why are you
+never tearing down your dm devices?
+
+- Joe
