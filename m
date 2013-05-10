@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab3EJOc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:32:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57200 "EHLO
+	id S1756739Ab3EJOc4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:32:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57195 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755533Ab3EJOVc (ORCPT
+	by vger.kernel.org with ESMTP id S1755491Ab3EJOVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:21:32 -0400
+	Fri, 10 May 2013 10:21:33 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mika Kuoppala" <mika.kuoppala@intel.com>,
-        "Mika Kuoppala" <mika.kuoppala@linux.intel.com>,
-        "Dave Airlie" <airlied@redhat.com>
+CC: akpm@linux-foundation.org,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        "Michael Ellerman" <michael@ellerman.id.au>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.642884054@decadent.org.uk>
+Message-ID: <lsq.1368193181.545180391@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [052/118] fbcon: when font is freed, clear also vc_font.data
+Subject: [053/118] powerpc/spufs: Initialise inode->i_ino in spufs_new_inode()
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,37 +32,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Kuoppala <mika.kuoppala@linux.intel.com>
+From: Michael Ellerman <michael@ellerman.id.au>
 
-commit e6637d5427d2af9f3f33b95447bfc5347e5ccd85 upstream.
+commit 6747e83235caecd30b186d1282e4eba7679f81b7 upstream.
 
-commit ae1287865f5361fa138d4d3b1b6277908b54eac9
-Author: Dave Airlie <airlied@redhat.com>
-Date:   Thu Jan 24 16:12:41 2013 +1000
+In commit 85fe402 (fs: do not assign default i_ino in new_inode), the
+initialisation of i_ino was removed from new_inode() and pushed down
+into the callers. However spufs_new_inode() was not updated.
 
-    fbcon: don't lose the console font across generic->chip driver switch
+This exhibits as no files appearing in /spu, because all our dirents
+have a zero inode, which readdir() seems to dislike.
 
-uses a pointer in vc->vc_font.data to load font into the new driver.
-However if the font is actually freed, we need to clear the data
-so that we don't reload font from dangling pointer.
-
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=892340
-Signed-off-by: Mika Kuoppala <mika.kuoppala@intel.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/video/console/fbcon.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/powerpc/platforms/cell/spufs/inode.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -1229,6 +1229,8 @@ static void fbcon_deinit(struct vc_data
- finished:
+--- a/arch/powerpc/platforms/cell/spufs/inode.c
++++ b/arch/powerpc/platforms/cell/spufs/inode.c
+@@ -100,6 +100,7 @@ spufs_new_inode(struct super_block *sb,
+ 	if (!inode)
+ 		goto out;
  
- 	fbcon_free_font(p, free_font);
-+	if (free_font)
-+		vc->vc_font.data = NULL;
- 
- 	if (!con_is_bound(&fb_con))
- 		fbcon_exit();
++	inode->i_ino = get_next_ino();
+ 	inode->i_mode = mode;
+ 	inode->i_uid = current_fsuid();
+ 	inode->i_gid = current_fsgid();
 
