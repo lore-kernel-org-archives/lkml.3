@@ -1,200 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab3EJQDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 12:03:45 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:62993 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752004Ab3EJQDn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 12:03:43 -0400
+	id S1754524Ab3EJQGR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 12:06:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52950 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752562Ab3EJQGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 12:06:15 -0400
+Message-ID: <518D1AE7.4080902@ti.com>
+Date: Fri, 10 May 2013 12:05:59 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20130510153638.GA8179@redhat.com>
-References: <1368159316-31744-1-git-send-email-lucas.de.marchi@gmail.com>
- <1368159316-31744-3-git-send-email-lucas.de.marchi@gmail.com>
- <20130510125826.GA553@redhat.com> <CAKi4VALE8tFUTZ1qYwm0Eth1zFMU8xA6XC5RTnF1KCKYQp-0NQ@mail.gmail.com>
- <20130510153638.GA8179@redhat.com>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Fri, 10 May 2013 13:03:23 -0300
-Message-ID: <CAKi4VAJPXgiik9CGrVyk7cCvz-1913p1KL8tn5FvxH4w0r27bg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] init/Kconfig: Add option to set modprobe command
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: amit daniel kachhap <amit.daniel@samsung.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH V3 20/21] thermal: exynos: Support for TMU regulator defined
+ at device tree
+References: <1367931671-3906-1-git-send-email-amit.daniel@samsung.com> <1367931671-3906-21-git-send-email-amit.daniel@samsung.com> <518BB63E.4050006@ti.com> <CADGdYn7GJKi2BDi4RqMeoEEpb2OXqz8mO8ji=YhAdm6nKr6D2A@mail.gmail.com>
+In-Reply-To: <CADGdYn7GJKi2BDi4RqMeoEEpb2OXqz8mO8ji=YhAdm6nKr6D2A@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2KUTKRROIRHSRSXNKMACG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 12:36 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 05/10, Lucas De Marchi wrote:
+------enig2KUTKRROIRHSRSXNKMACG
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 09-05-2013 22:28, amit daniel kachhap wrote:
+> Hi Eduardo,
+>=20
+> On Thu, May 9, 2013 at 8:14 PM, Eduardo Valentin
+> <eduardo.valentin@ti.com> wrote:
+>> On 07-05-2013 09:01, Amit Daniel Kachhap wrote:
+>>> TMU probe function now checks for a device tree defined regulator.
+>>> For compatibility reasons it is allowed to probe driver even without
+>>> this regulator defined.
+>>>
+>>> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>>> ---
+>>>  .../devicetree/bindings/thermal/exynos-thermal.txt |    4 ++++
+>>>  drivers/thermal/samsung/exynos_tmu.c               |   19 ++++++++++=
++++++++++
+>>>  2 files changed, 23 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal=
+=2Etxt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+>>> index 970eeba..ff62f7a 100644
+>>> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+>>> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+>>> @@ -14,6 +14,9 @@
+>>>  - interrupts : Should contain interrupt for thermal system
+>>>  - clocks : The main clock for TMU device
+>>>  - clock-names : Thermal system clock name
+>>> +- vtmu-supply: This entry is optional and provides the regulator nod=
+e supplying
+>>> +             voltage to TMU. If needed this entry can be placed insi=
+de
+>>> +             board/platform specific dts file.
+>>>
+>>>  Example 1):
+>>>
+>>> @@ -25,6 +28,7 @@ Example 1):
+>>>               clocks =3D <&clock 383>;
+>>>               clock-names =3D "tmu_apbif";
+>>>               status =3D "disabled";
+>>> +             vtmu-supply =3D <&tmu_regulator_node>;
+>>>       };
+>>>
+>>>  Example 2):
+>>> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/s=
+amsung/exynos_tmu.c
+>>> index 72446c9..b7c609a 100644
+>>> --- a/drivers/thermal/samsung/exynos_tmu.c
+>>> +++ b/drivers/thermal/samsung/exynos_tmu.c
+>>> @@ -32,6 +32,7 @@
+>>>  #include <linux/of_address.h>
+>>>  #include <linux/of_irq.h>
+>>>  #include <linux/platform_device.h>
+>>> +#include <linux/regulator/consumer.h>
+>>>  #include <linux/slab.h>
+>>>  #include <linux/workqueue.h>
+>>>  #include "exynos_thermal_common.h"
+>>> @@ -52,6 +53,7 @@
+>>>   * @clk: pointer to the clock structure.
+>>>   * @temp_error1: fused value of the first point trim.
+>>>   * @temp_error2: fused value of the second point trim.
+>>> + * @regulator: pointer to the TMU regulator structure.
+>>>   * @reg_conf: pointer to structure to register with core thermal.
+>>>   */
+>>>  struct exynos_tmu_data {
+>>> @@ -65,6 +67,7 @@ struct exynos_tmu_data {
+>>>       struct mutex lock;
+>>>       struct clk *clk;
+>>>       u8 temp_error1, temp_error2;
+>>> +     struct regulator *regulator;
+>>>       struct thermal_sensor_conf *reg_conf;
+>>>  };
+>>>
+>>> @@ -501,10 +504,23 @@ static int exynos_map_dt_data(struct platform_d=
+evice *pdev)
+>>>       struct exynos_tmu_data *data =3D platform_get_drvdata(pdev);
+>>>       struct exynos_tmu_platform_data *pdata =3D data->pdata;
+>>>       struct resource res;
+>>> +     int ret;
+>>>
+>>>       if (!data)
+>>>               return -ENODEV;
+>>>
+>>> +     /* Try enabling the regulator if found */
+>>> +     data->regulator =3D devm_regulator_get(&pdev->dev, "vtmu");
+>>> +     if (!IS_ERR(data->regulator)) {
+>>> +             ret =3D regulator_enable(data->regulator);
+>>> +             if (ret) {
+>>> +                     dev_err(&pdev->dev, "failed to enable vtmu\n");=
+
+>>> +                     return ret;
+>>> +             }
+>>> +     } else {
+>>> +             dev_info(&pdev->dev, "Regulator node (vtmu) not found\n=
+");
 >>
->> Oh, right. Forgot about that. And this patch set should have been sent
->> as RFC, since I'm interested in feedback about the idea. What do you
->> think?
->
-> Well, personally I think it would be better to use kasprintf(), see the
-> patch I sent (it is actually wrong, needs kfree(args) before return).
->
-> Or. How about the patch below? It should be split into 2 changes:
->
->         1. Introduce __argv_split(). It can have more callers, for
->            example do_coredump() and ftrace_function_filter_re()
->            can use it to avoid kstrndup() + kfree().
->
->         2. Change call_modprobe() to use kasprintf() + __argv_split().
+>> Now that you have a bitfield for your features, shouldnt this become a=
 
-Seems better. In your previous version I was troubled about
-duplicating the string twice. Now it's weird freeing a
-user-allocated-string,
-but I think it's a good tradeoff and covers other use cases as you
-pointed out as well.
+>> check? If the SoC requires the regulator, then it has to return a vali=
+d
+>> regulator (regulator_get). Meaning, if your SoC version requires this
+>> feature and the regulator_get returns an error, you must treat as an
+>> error an not continue gracefuly.
+>=20
+> Earlier I also thought of using bit feature for this but then the
+> regulator source usually depends upon the board design so each soc may
+> have several boards. So regulator information is not part of SOC data.
+> Since this information is there is in DT only so I left this part for
+> the DT to handle.
+>=20
 
 
->
-> uncompiled/untested.
+Hmmm.. well, that is actually arguable. Take from driver perspective. If
+a regulator is required for a device to work you have to make it a
+requirement and not rely on whatever state the system has booted.
 
-Ok. I'll give it a try.
+=46rom previous discussions, I understood on of your chip versions
+actually require a regulator to be activated in order to get the sensors
+properly working. Is this understanding correct?
 
-
->
-> Oleg.
->
-> --- x/lib/argv_split.c
-> +++ x/lib/argv_split.c
-> @@ -39,31 +39,15 @@ void argv_free(char **argv)
->  }
->  EXPORT_SYMBOL(argv_free);
->
-> -/**
-> - * argv_split - split a string at whitespace, returning an argv
-> - * @gfp: the GFP mask used to allocate memory
-> - * @str: the string to be split
-> - * @argcp: returned argument count
-> - *
-> - * Returns an array of pointers to strings which are split out from
-> - * @str.  This is performed by strictly splitting on white-space; no
-> - * quote processing is performed.  Multiple whitespace characters are
-> - * considered to be a single argument separator.  The returned array
-> - * is always NULL-terminated.  Returns NULL on memory allocation
-> - * failure.
-> - *
-> - * The source string at `str' may be undergoing concurrent alteration via
-> - * userspace sysctl activity (at least).  The argv_split() implementation
-> - * attempts to handle this gracefully by taking a local copy to work on.
-> +/*
-> + * @argv_str should be kmalloc'ed by the caller, freed by this func.
->   */
-> -char **argv_split(gfp_t gfp, const char *str, int *argcp)
-> +char **__argv_split(gfp_t gfp, const char *argv_str, int *argcp)
->  {
-> -       char *argv_str;
->         bool was_space;
->         char **argv, **argv_ret;
->         int argc;
->
-> -       argv_str = kstrndup(str, KMALLOC_MAX_SIZE - 1, gfp);
->         if (!argv_str)
->                 return NULL;
->
-> @@ -91,4 +75,28 @@ char **argv_split(gfp_t gfp, const char
->                 *argcp = argc;
->         return argv_ret;
->  }
-> +
-> +/**
-> + * argv_split - split a string at whitespace, returning an argv
-> + * @gfp: the GFP mask used to allocate memory
-> + * @str: the string to be split
-> + * @argcp: returned argument count
-> + *
-> + * Returns an array of pointers to strings which are split out from
-> + * @str.  This is performed by strictly splitting on white-space; no
-> + * quote processing is performed.  Multiple whitespace characters are
-> + * considered to be a single argument separator.  The returned array
-> + * is always NULL-terminated.  Returns NULL on memory allocation
-> + * failure.
-> + *
-> + * The source string at `str' may be undergoing concurrent alteration via
-> + * userspace sysctl activity (at least).  The argv_split() implementation
-> + * attempts to handle this gracefully by taking a local copy to work on.
-> + */
-> +char **argv_split(gfp_t gfp, const char *str, int *argcp)
-> +{
-> +       char *dup = kstrndup(str, KMALLOC_MAX_SIZE - 1, gfp);
-> +       return __argv_split(gfp, dup, argcp);
-> +}
-> +
->  EXPORT_SYMBOL(argv_split);
-> --- x/kernel/kmod.c
-> +++ x/kernel/kmod.c
-> @@ -64,20 +64,16 @@ static DECLARE_RWSEM(umhelper_sem);
->
->  #ifdef CONFIG_MODULES
->
-> -/*
-> -       modprobe_path is set via /proc/sys.
-> -*/
-> -char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe";
-> +/* modprobe_path is set via /proc/sys/kernel/modprobe */
-> +char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe -q --";
->
->  static void free_modprobe_argv(struct subprocess_info *info)
->  {
-> -       kfree(info->argv[3]); /* check call_modprobe() */
-> -       kfree(info->argv);
-> +       argv_free(info->argv);
->  }
->
->  static int call_modprobe(char *module_name, int wait)
->  {
-> -       struct subprocess_info *info;
->         static char *envp[] = {
->                 "HOME=/",
->                 "TERM=linux",
-> @@ -85,31 +81,24 @@ static int call_modprobe(char *module_na
->                 NULL
->         };
->
-> -       char **argv = kmalloc(sizeof(char *[5]), GFP_KERNEL);
-> +       struct subprocess_info *info;
-> +       char **argv;
-> +       char *args;
-> +
-> +       args = kasprintf(GFP_KERNEL, "%s %s", modprobe_path, module_name);
-> +       argv = __argv_split(GFP_KERNEL, args, NULL);
->         if (!argv)
->                 goto out;
->
-> -       module_name = kstrdup(module_name, GFP_KERNEL);
-> -       if (!module_name)
-> -               goto free_argv;
-> -
-> -       argv[0] = modprobe_path;
-> -       argv[1] = "-q";
-> -       argv[2] = "--";
-> -       argv[3] = module_name;  /* check free_modprobe_argv() */
-> -       argv[4] = NULL;
-> -
->         info = call_usermodehelper_setup(modprobe_path, argv, envp, GFP_KERNEL,
->                                          NULL, free_modprobe_argv, NULL);
->         if (!info)
-> -               goto free_module_name;
-> +               goto free_argv;
->
->         return call_usermodehelper_exec(info, wait | UMH_KILLABLE);
->
-> -free_module_name:
-> -       kfree(module_name);
->  free_argv:
-> -       kfree(argv);
-> +       argv_free(argv);
->  out:
->         return -ENOMEM;
->  }
->
+> Thanks,
+> Amit Daniel
+>>
+>>> +     }
+>>> +
+>>>       data->id =3D of_alias_get_id(pdev->dev.of_node, "tmuctrl");
+>>>       if (data->id < 0)
+>>>               data->id =3D 0;
+>>> @@ -669,6 +685,9 @@ static int exynos_tmu_remove(struct platform_devi=
+ce *pdev)
+>>>
+>>>       clk_unprepare(data->clk);
+>>>
+>>> +     if (!IS_ERR(data->regulator))
+>>> +             regulator_disable(data->regulator);
+>>> +
+>>>       platform_set_drvdata(pdev, NULL);
+>>>
+>>>       return 0;
+>>>
+>>
+>>
+>=20
+>=20
 
 
 
---
+------enig2KUTKRROIRHSRSXNKMACG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Lucas De Marchi
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlGNGucACgkQCXcVR3XQvP2P8gEAvibFuCAg97xWnACNLQXGgFiR
+NE3rGASAgz2MJeFUGjsBAIF73F0ATPJdeEKm92GW07O2vt1JKrWK0Rjf+f/Edepz
+=7lTg
+-----END PGP SIGNATURE-----
+
+------enig2KUTKRROIRHSRSXNKMACG--
