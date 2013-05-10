@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab3EJOoe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:44:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57038 "EHLO
+	id S1754675Ab3EJOpl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:45:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57001 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754542Ab3EJOUm (ORCPT
+	by vger.kernel.org with ESMTP id S1754328Ab3EJOUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:20:42 -0400
+	Fri, 10 May 2013 10:20:24 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ding Tianhong" <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Karel Srot" <ksrot@redhat.com>
+CC: akpm@linux-foundation.org, "Neal Cardwell" <ncardwell@google.com>,
+        "Yuchung Cheng" <ycheng@google.com>,
+        "Eric Dumazet" <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.413517077@decadent.org.uk>
+Message-ID: <lsq.1368193181.825333071@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [091/118] af_unix: If we don't care about credentials coallesce 
- all messages
+Subject: [097/118] tcp: call tcp_replace_ts_recent() from tcp_ack()
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,53 +33,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 0e82e7f6dfeec1013339612f74abc2cdd29d43d2 ]
+[ Upstream commit 12fb3dd9dc3c64ba7d64cec977cca9b5fb7b1d4e ]
 
-It was reported that the following LSB test case failed
-https://lsbbugs.linuxfoundation.org/attachment.cgi?id=2144 because we
-were not coallescing unix stream messages when the application was
-expecting us to.
+commit bd090dfc634d (tcp: tcp_replace_ts_recent() should not be called
+from tcp_validate_incoming()) introduced a TS ecr bug in slow path
+processing.
 
-The problem was that the first send was before the socket was accepted
-and thus sock->sk_socket was NULL in maybe_add_creds, and the second
-send after the socket was accepted had a non-NULL value for sk->socket
-and thus we could tell the credentials were not needed so we did not
-bother.
+1 A > B P. 1:10001(10000) ack 1 <nop,nop,TS val 1001 ecr 200>
+2 B < A . 1:1(0) ack 1 win 257 <sack 9001:10001,TS val 300 ecr 1001>
+3 A > B . 1:1001(1000) ack 1 win 227 <nop,nop,TS val 1002 ecr 200>
+4 A > B . 1001:2001(1000) ack 1 win 227 <nop,nop,TS val 1002 ecr 200>
 
-The unnecessary credentials on the first message cause
-unix_stream_recvmsg to start verifying that all messages had the same
-credentials before coallescing and then the coallescing failed because
-the second message had no credentials.
+(ecr 200 should be ecr 300 in packets 3 & 4)
 
-Ignoring credentials when we don't care in unix_stream_recvmsg fixes a
-long standing pessimization which would fail to coallesce messages when
-reading from a unix stream socket if the senders were different even if
-we did not care about their credentials.
+Problem is tcp_ack() can trigger send of new packets (retransmits),
+reflecting the prior TSval, instead of the TSval contained in the
+currently processed incoming packet.
 
-I have tested this and verified that the in the LSB test case mentioned
-above that the messages do coallesce now, while the were failing to
-coallesce without this change.
+Fix this by calling tcp_replace_ts_recent() from tcp_ack() after the
+checks, but before the actions.
 
-Reported-by: Karel Srot <ksrot@redhat.com>
-Reported-by: Ding Tianhong <dingtianhong@huawei.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Reported-by: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/unix/af_unix.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/tcp_input.c | 65 ++++++++++++++++++++++++++--------------------------
+ 1 file changed, 32 insertions(+), 33 deletions(-)
 
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1956,7 +1956,7 @@ static int unix_stream_recvmsg(struct ki
- 			if ((UNIXCB(skb).pid  != siocb->scm->pid) ||
- 			    (UNIXCB(skb).cred != siocb->scm->cred))
- 				break;
--		} else {
-+		} else if (test_bit(SOCK_PASSCRED, &sock->flags)) {
- 			/* Copy credentials */
- 			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
- 			check_creds = 1;
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -115,6 +115,7 @@ int sysctl_tcp_abc __read_mostly;
+ #define FLAG_DSACKING_ACK	0x800 /* SACK blocks contained D-SACK info */
+ #define FLAG_NONHEAD_RETRANS_ACKED	0x1000 /* Non-head rexmitted data was ACKed */
+ #define FLAG_SACK_RENEGING	0x2000 /* snd_una advanced to a sacked seq */
++#define FLAG_UPDATE_TS_RECENT	0x4000 /* tcp_replace_ts_recent() */
+ 
+ #define FLAG_ACKED		(FLAG_DATA_ACKED|FLAG_SYN_ACKED)
+ #define FLAG_NOT_DUP		(FLAG_DATA|FLAG_WIN_UPDATE|FLAG_ACKED)
+@@ -3723,6 +3724,27 @@ static void tcp_send_challenge_ack(struc
+ 	}
+ }
+ 
++static void tcp_store_ts_recent(struct tcp_sock *tp)
++{
++	tp->rx_opt.ts_recent = tp->rx_opt.rcv_tsval;
++	tp->rx_opt.ts_recent_stamp = get_seconds();
++}
++
++static void tcp_replace_ts_recent(struct tcp_sock *tp, u32 seq)
++{
++	if (tp->rx_opt.saw_tstamp && !after(seq, tp->rcv_wup)) {
++		/* PAWS bug workaround wrt. ACK frames, the PAWS discard
++		 * extra check below makes sure this can only happen
++		 * for pure ACK frames.  -DaveM
++		 *
++		 * Not only, also it occurs for expired timestamps.
++		 */
++
++		if (tcp_paws_check(&tp->rx_opt, 0))
++			tcp_store_ts_recent(tp);
++	}
++}
++
+ /* This routine deals with incoming acks, but not outgoing ones. */
+ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
+ {
+@@ -3771,6 +3793,12 @@ static int tcp_ack(struct sock *sk, cons
+ 	prior_fackets = tp->fackets_out;
+ 	prior_in_flight = tcp_packets_in_flight(tp);
+ 
++	/* ts_recent update must be made after we are sure that the packet
++	 * is in window.
++	 */
++	if (flag & FLAG_UPDATE_TS_RECENT)
++		tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
++
+ 	if (!(flag & FLAG_SLOWPATH) && after(ack, prior_snd_una)) {
+ 		/* Window is constant, pure forward advance.
+ 		 * No more checks are required.
+@@ -4061,27 +4089,6 @@ const u8 *tcp_parse_md5sig_option(const
+ EXPORT_SYMBOL(tcp_parse_md5sig_option);
+ #endif
+ 
+-static inline void tcp_store_ts_recent(struct tcp_sock *tp)
+-{
+-	tp->rx_opt.ts_recent = tp->rx_opt.rcv_tsval;
+-	tp->rx_opt.ts_recent_stamp = get_seconds();
+-}
+-
+-static inline void tcp_replace_ts_recent(struct tcp_sock *tp, u32 seq)
+-{
+-	if (tp->rx_opt.saw_tstamp && !after(seq, tp->rcv_wup)) {
+-		/* PAWS bug workaround wrt. ACK frames, the PAWS discard
+-		 * extra check below makes sure this can only happen
+-		 * for pure ACK frames.  -DaveM
+-		 *
+-		 * Not only, also it occurs for expired timestamps.
+-		 */
+-
+-		if (tcp_paws_check(&tp->rx_opt, 0))
+-			tcp_store_ts_recent(tp);
+-	}
+-}
+-
+ /* Sorry, PAWS as specified is broken wrt. pure-ACKs -DaveM
+  *
+  * It is not fatal. If this ACK does _not_ change critical state (seqs, window)
+@@ -5552,14 +5559,10 @@ slow_path:
+ 		return 0;
+ 
+ step5:
+-	if (th->ack && tcp_ack(sk, skb, FLAG_SLOWPATH) < 0)
++	if (th->ack &&
++	    tcp_ack(sk, skb, FLAG_SLOWPATH | FLAG_UPDATE_TS_RECENT) < 0)
+ 		goto discard;
+ 
+-	/* ts_recent update must be made after we are sure that the packet
+-	 * is in window.
+-	 */
+-	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
+-
+ 	tcp_rcv_rtt_measure_ts(sk, skb);
+ 
+ 	/* Process urgent data. */
+@@ -5923,7 +5926,8 @@ int tcp_rcv_state_process(struct sock *s
+ 
+ 	/* step 5: check the ACK field */
+ 	if (th->ack) {
+-		int acceptable = tcp_ack(sk, skb, FLAG_SLOWPATH) > 0;
++		int acceptable = tcp_ack(sk, skb, FLAG_SLOWPATH |
++						  FLAG_UPDATE_TS_RECENT) > 0;
+ 
+ 		switch (sk->sk_state) {
+ 		case TCP_SYN_RECV:
+@@ -6030,11 +6034,6 @@ int tcp_rcv_state_process(struct sock *s
+ 	} else
+ 		goto discard;
+ 
+-	/* ts_recent update must be made after we are sure that the packet
+-	 * is in window.
+-	 */
+-	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
+-
+ 	/* step 6: check the URG bit */
+ 	tcp_urg(sk, skb, th);
+ 
 
