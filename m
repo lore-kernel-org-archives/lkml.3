@@ -1,98 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab3EJOBO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:01:14 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:55985 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984Ab3EJOBN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:01:13 -0400
+	id S1753449Ab3EJOBm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:01:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39834 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752771Ab3EJOBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 10:01:40 -0400
+Date: Fri, 10 May 2013 15:01:32 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>, stable@vger.kernel.org,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: Re: [dm-devel] [git pull] device-mapper updates for 3.10
+Message-ID: <20130510140132.GA3580@agk-dp.fab.redhat.com>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+	Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+	Mikulas Patocka <mpatocka@redhat.com>, stable@vger.kernel.org,
+	Bharata B Rao <bharata.rao@gmail.com>,
+	Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+References: <20130510102029.GE1396@agk-dp.fab.redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [95.23.153.142]
-In-Reply-To: <1368192769-24067-2-git-send-email-fery@cypress.com>
-References: <1368192769-24067-1-git-send-email-fery@cypress.com>
-	<1368192769-24067-2-git-send-email-fery@cypress.com>
-Date: Fri, 10 May 2013 16:01:11 +0200
-Message-ID: <CABxcv==KdTbXsiUtkws-CJp9qtnJx4D_ruLCrHn_ZLi4XawitQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Input: cyttsp - add missing handshake
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Ferruh Yigit <fery@cypress.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, ttdrivers@cypress.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130510102029.GE1396@agk-dp.fab.redhat.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 3:32 PM, Ferruh Yigit <fery@cypress.com> wrote:
-> For the devices that has blocking with timeout communication, these
-> extra handshakes will prevent one timeout delay in startup sequence
->
-> Tested-by: Ferruh Yigit <fery@cypress.com> on TMA300-DVK
-> Signed-off-by: Ferruh Yigit <fery@cypress.com>
-> ---
->  drivers/input/touchscreen/cyttsp_core.c |   24 ++++++++++++++++++------
->  1 file changed, 18 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/input/touchscreen/cyttsp_core.c b/drivers/input/touchscreen/cyttsp_core.c
-> index 97ba891..7007f58 100644
-> --- a/drivers/input/touchscreen/cyttsp_core.c
-> +++ b/drivers/input/touchscreen/cyttsp_core.c
-> @@ -116,6 +116,13 @@ static int ttsp_send_command(struct cyttsp *ts, u8 cmd)
->         return ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd), &cmd);
->  }
->
-> +static int _cyttsp_hndshk(struct cyttsp *ts, u8 hst_mode)
-> +{
-> +       if (ts->pdata->use_hndshk)
-> +               return ttsp_send_command(ts, hst_mode ^ CY_HNDSHK_BIT);
-> +       return 0;
-> +}
-> +
->  static int cyttsp_load_bl_regs(struct cyttsp *ts)
->  {
->         memset(&ts->bl_data, 0, sizeof(ts->bl_data));
-> @@ -167,6 +174,10 @@ static int cyttsp_set_operational_mode(struct cyttsp *ts)
->         if (error)
->                 return error;
->
-> +       error = _cyttsp_hndshk(ts, ts->xy_data.hst_mode);
-> +       if (error)
-> +               return error;
-> +
->         return ts->xy_data.act_dist == CY_ACT_DIST_DFLT ? -EIO : 0;
->  }
->
-> @@ -188,6 +199,10 @@ static int cyttsp_set_sysinfo_mode(struct cyttsp *ts)
->         if (error)
->                 return error;
->
-> +       error = _cyttsp_hndshk(ts, ts->sysinfo_data.hst_mode);
-> +       if (error)
-> +               return error;
-> +
->         if (!ts->sysinfo_data.tts_verh && !ts->sysinfo_data.tts_verl)
->                 return -EIO;
->
-> @@ -344,12 +359,9 @@ static irqreturn_t cyttsp_irq(int irq, void *handle)
->                 goto out;
->
->         /* provide flow control handshake */
-> -       if (ts->pdata->use_hndshk) {
-> -               error = ttsp_send_command(ts,
-> -                               ts->xy_data.hst_mode ^ CY_HNDSHK_BIT);
-> -               if (error)
-> -                       goto out;
-> -       }
-> +       error = _cyttsp_hndshk(ts, ts->xy_data.hst_mode);
-> +       if (error)
-> +               goto out;
->
->         if (unlikely(ts->state == CY_IDLE_STATE))
->                 goto out;
-> --
-> 1.7.9.5
->
-> This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+On Fri, May 10, 2013 at 11:20:29AM +0100, Alasdair G Kergon wrote:
+> Please pull from:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/agk/linux-dm tags/dm-3.10-changes
 
-Acked-by: Javier Martinez Canillas <javier@dowhile0.org>
+And the kbuild test robot just spotted that I lost a line from one of
+the patches which meant the thin threshold notification wouldn't
+happen, sorry.
+
+Take two...
+
+Alasdair
+
+
+Please pull from:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/agk/linux-dm tags/dm-3.10-changes-2
+
+to get the following device-mapper updates for 3.10.
+
+----------------------------------------------------------------
+Allow devices that hold metadata for the device-mapper thin
+provisioning target to be extended easily; allow WRITE SAME on
+multipath devices; an assortment of little fixes and clean-ups.
+
+----------------------------------------------------------------
+Alasdair G Kergon (3):
+      dm: document iterate_devices
+      dm cache policy: fix description of lookup fn
+      dm cache: move config fns
+
+Joe Thornber (12):
+      dm cache: tune migration throttling
+      dm persistent data: fix error message typos
+      dm cache: fix typos in comments
+      dm cache: replace memcpy with struct assignment
+      dm thin: refactor data dev resize
+      dm thin: open dev read only when possible
+      dm persistent data: support space map resizing
+      dm thin: detect metadata device resizing
+      dm persistent data: add threshold callback to space map
+      dm persistent metadata: add space map threshold callback
+      dm thin: generate event when metadata threshold passed
+      dm cache: set config value
+
+Mike Snitzer (3):
+      dm stripe: fix regression in stripe_width calculation
+      dm table: fix write same support
+      dm mpath: enable WRITE SAME support
+
+Mikulas Patocka (1):
+      dm bufio: avoid a possible __vmalloc deadlock
+
+Wei Yongjun (2):
+      dm cache: fix error return code in cache_create
+      dm snapshot: fix error return code in snapshot_ctr
+
+ drivers/md/dm-bufio.c                              |   24 ++-
+ drivers/md/dm-cache-metadata.c                     |    4 +-
+ drivers/md/dm-cache-policy.h                       |    4 +-
+ drivers/md/dm-cache-target.c                       |  100 +++++-----
+ drivers/md/dm-mpath.c                              |    1 +
+ drivers/md/dm-snap.c                               |    1 +
+ drivers/md/dm-stripe.c                             |   11 +-
+ drivers/md/dm-table.c                              |    2 +-
+ drivers/md/dm-thin-metadata.c                      |   36 +++-
+ drivers/md/dm-thin-metadata.h                      |    7 +
+ drivers/md/dm-thin.c                               |  200 ++++++++++++++++----
+ drivers/md/persistent-data/dm-space-map-disk.c     |    3 +-
+ drivers/md/persistent-data/dm-space-map-metadata.c |  127 +++++++++++--
+ drivers/md/persistent-data/dm-space-map.h          |   23 +++
+ include/linux/device-mapper.h                      |   15 ++
+ 15 files changed, 442 insertions(+), 116 deletions(-)
