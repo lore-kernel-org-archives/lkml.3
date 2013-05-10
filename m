@@ -1,68 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626Ab3EJJDd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 05:03:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:35618 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751788Ab3EJJDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 05:03:30 -0400
-X-IronPort-AV: E=Sophos;i="4.87,647,1363104000"; 
-   d="scan'208";a="7233881"
-Message-ID: <518CB758.4000101@cn.fujitsu.com>
-Date: Fri, 10 May 2013 17:01:12 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	id S1752689Ab3EJJEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 05:04:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48468 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751919Ab3EJJEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 05:04:23 -0400
+Date: Fri, 10 May 2013 11:04:05 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 12/14] perf ftrace: Use pager for displaying result
+Message-ID: <20130510090405.GA1040@krava.brq.redhat.com>
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+ <1366705872-12132-13-git-send-email-namhyung@kernel.org>
+ <20130424141724.GH971@krava.brq.redhat.com>
+ <877gjr9k8q.fsf@sejong.aot.lge.com>
+ <20130426084023.GB1054@krava.brq.redhat.com>
+ <87ip2w98nl.fsf@sejong.aot.lge.com>
+ <20130506113819.GB1093@krava.brq.redhat.com>
+ <871u9i81ih.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: yinghai@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: mm: Remove unnecessary assignment for max_pfn_mapped:q
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/10 17:02:23,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/10 17:02:30,
-	Serialize complete at 2013/05/10 17:02:30
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871u9i81ih.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-init_memory_mapping will set max_pfn_mapped:
-int_memory_mapping
-  --> add_pfn_range_mapped
-    --> max_pfn_mapped = max(max_pfn_mapped, end_pfn)
+On Wed, May 08, 2013 at 02:49:10PM +0900, Namhyung Kim wrote:
 
-In init_mem_mapping, before we set max_pfn_mapped to 0, we
-have already called init_memory_mapping to setup pagetable
-for [0, ISA_END_ADDRESS], and that sets max_pfn_mapped. So
-the assignment to 0 is not necessary, remove it.
+SNIP
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/mm/init.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> 
+> diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
+> index f1ecfa207822..6b7aeae2dfa5 100644
+> --- a/tools/perf/builtin-ftrace.c
+> +++ b/tools/perf/builtin-ftrace.c
+> @@ -40,9 +40,11 @@ struct perf_ftrace {
+>  };
+>  
+>  static bool done;
+> +static int _signal;
+>  
+>  static void sig_handler(int sig __maybe_unused)
+>  {
+> +	_signal = sig;
+>  	done = true;
+>  }
+>  
+> @@ -218,6 +220,20 @@ static int do_ftrace_live(struct perf_ftrace *ftrace)
+>  
+>  	perf_evlist__start_workload(ftrace->evlist);
+>  
+> +	BUG_ON(ftrace->evlist->threads->map[0] != ftrace->evlist->workload.pid);
+> +
+> +	trace_file = get_tracing_file("tracing_on");
+> +	if (trace_file) {
+> +		int fd = open(trace_file, O_RDONLY);
+> +
+> +		BUG_ON(fd < 0);
+> +		BUG_ON(read(fd, buf, sizeof(buf)) < 0);
+> +		BUG_ON(buf[0] != '1');
+> +
+> +		close(fd);
+> +		put_tracing_file(trace_file);
+> +	}
+> +
+>  	while (!done) {
+>  		if (poll(&pollfd, 1, -1) < 0)
+>  			break;
+> @@ -231,6 +247,7 @@ static int do_ftrace_live(struct perf_ftrace *ftrace)
+>  		}
+>  	}
+>  
+> +	psignal(_signal, "perf");
+>  	write_tracing_file("tracing_on", "0");
+>  
+>  	/* read remaining buffer contents */
+> 
+> 
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index fdc5dca..404c889 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -416,7 +416,6 @@ void __init init_mem_mapping(void)
- 
- 	/* step_size need to be small so pgt_buf from BRK could cover it */
- 	step_size = PMD_SIZE;
--	max_pfn_mapped = 0; /* will get exact value next */
- 	min_pfn_mapped = real_end >> PAGE_SHIFT;
- 	last_start = start = real_end;
- 	while (last_start > ISA_END_ADDRESS) {
--- 
-1.7.1
+yep, that did it.. seems I'm getting the ftrace output
+all the time, with:
 
+[jolsa@krava perf]$ sudo ./perf --no-pager ftrace live ls -l /usr/ 2>&1  | grep perf
+perf: Child exited
+[jolsa@krava perf]$ sudo ./perf --no-pager ftrace live ls -l /usr/ 2>&1  | grep perf
+ 1)   0.030 us    |   perf: Child exited
+[jolsa@krava perf]$ sudo ./perf --no-pager ftrace live ls -l /usr/ 2>&1  | grep perf
+ 1)          perf: Child exited
+[jolsa@krava perf]$ sudo ./perf --no-pager ftrace live ls -l /usr/ 2>&1  | grep perf
+ 2)   perf: Child exited
+[jolsa@krava perf]$ sudo ./perf --no-pager ftrace live ls -l /usr/ 2>&1  | grep perf
+ 1)   4.549 us  perf: Child exited
+^[[A[jolsa@krava perf]$ sudo ./perf --no-pager ftrace live ls -l /usr/ 2>&1  | grep perf
+ 1)   0.024 us    |       perf: Child exited
+
+
+thanks,
+jirka
