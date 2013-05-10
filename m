@@ -1,53 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab3EJOFg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:05:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:49190 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753784Ab3EJODc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:03:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,648,1363158000"; 
-   d="scan'208";a="335522041"
-Message-ID: <518CFE20.8080309@intel.com>
-Date: Fri, 10 May 2013 22:03:12 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1754074Ab3EJOFx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:05:53 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11807 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab3EJODX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 10:03:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 10 May 2013 06:59:59 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <gregkh@linuxfoundation.org>, <swarren@wwwdotorg.org>, <balbi@ti.com>,
+        <stern@rowland.harvard.edu>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH v3 07/10] usb: phy: tegra: get ULPI reset GPIO info using DT.
+Date: Fri, 10 May 2013 19:24:08 +0530
+Message-ID: <1368194051-4925-8-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1368194051-4925-1-git-send-email-vbyravarasu@nvidia.com>
+References: <1368194051-4925-1-git-send-email-vbyravarasu@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>
-Subject: Re: [PATCH v5 6/7] sched: consider runnable load average in move_tasks
-References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-7-git-send-email-alex.shi@intel.com> <CAPM31RK71tBPdnXzLmr1o6nmFhbhU9+b_DqX9zNSbDc4EhC8FQ@mail.gmail.com> <20130506150428.GD15446@dyad.programming.kicks-ass.net> <CAPM31RKqMGAvFh1JmUjCjBo4EJWqA39i8=YPiUw8GUkG9dj7Fw@mail.gmail.com> <51888E87.2090506@intel.com> <5189ACD2.1080105@intel.com> <518B342C.4030808@intel.com>
-In-Reply-To: <518B342C.4030808@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2013 01:29 PM, Alex Shi wrote:
-> 
-> I reviewed the cfs_rq->blocked_load_avg code path, no clear abnormal found.
-> Seems the blocked load avg is fit current balance rules.
+As GPIO information is avail through DT, used it to get Tegra ULPI
+reset GPIO number. Added a new member to tegra_usb_phy structure to
+store this number.
 
-Sorry, I mean, the blocked load avg doesn't fit current balance rules.
-The reason is blow, any comments on this?
-> Sometime the blocked load far bigger than runnable load. The blocked_load_avg 
-> has a long time effect(more than half weight in 32ms), that drives wakeup task to other
-> cpus not locate, and give unnecessary load in periodic balance, isn't it?
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+delta from v1 & v2: no change.
 
+ drivers/usb/phy/phy-tegra-usb.c   |   25 +++++++++++--------------
+ include/linux/usb/tegra_usb_phy.h |    1 +
+ 2 files changed, 12 insertions(+), 14 deletions(-)
 
+diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
+index 16851e2..a2a89a9 100644
+--- a/drivers/usb/phy/phy-tegra-usb.c
++++ b/drivers/usb/phy/phy-tegra-usb.c
+@@ -541,11 +541,10 @@ static int ulpi_phy_power_on(struct tegra_usb_phy *phy)
+ 	int ret;
+ 	unsigned long val;
+ 	void __iomem *base = phy->regs;
+-	struct tegra_ulpi_config *config = phy->config;
+ 
+-	gpio_direction_output(config->reset_gpio, 0);
++	gpio_direction_output(phy->reset_gpio, 0);
+ 	msleep(5);
+-	gpio_direction_output(config->reset_gpio, 1);
++	gpio_direction_output(phy->reset_gpio, 1);
+ 
+ 	clk_prepare_enable(phy->clk);
+ 	msleep(1);
+@@ -603,10 +602,8 @@ static int ulpi_phy_power_on(struct tegra_usb_phy *phy)
+ 
+ static int ulpi_phy_power_off(struct tegra_usb_phy *phy)
+ {
+-	struct tegra_ulpi_config *config = phy->config;
+-
+ 	clk_disable(phy->clk);
+-	return gpio_direction_output(config->reset_gpio, 0);
++	return gpio_direction_output(phy->reset_gpio, 0);
+ }
+ 
+ static int	tegra_phy_init(struct usb_phy *x)
+@@ -622,18 +619,18 @@ static int	tegra_phy_init(struct usb_phy *x)
+ 			pr_err("%s: can't get ulpi clock\n", __func__);
+ 			return PTR_ERR(phy->clk);
+ 		}
+-		if (!gpio_is_valid(ulpi_config->reset_gpio))
+-			ulpi_config->reset_gpio =
+-				of_get_named_gpio(phy->dev->of_node,
+-						  "nvidia,phy-reset-gpio", 0);
+-		if (!gpio_is_valid(ulpi_config->reset_gpio)) {
++
++		phy->reset_gpio =
++			of_get_named_gpio(phy->dev->of_node,
++					  "nvidia,phy-reset-gpio", 0);
++		if (!gpio_is_valid(phy->reset_gpio)) {
+ 			pr_err("%s: invalid reset gpio: %d\n", __func__,
+-			       ulpi_config->reset_gpio);
++			       phy->reset_gpio);
+ 			err = -EINVAL;
+ 			goto err1;
+ 		}
+-		gpio_request(ulpi_config->reset_gpio, "ulpi_phy_reset_b");
+-		gpio_direction_output(ulpi_config->reset_gpio, 0);
++		gpio_request(phy->reset_gpio, "ulpi_phy_reset_b");
++		gpio_direction_output(phy->reset_gpio, 0);
+ 		phy->ulpi = otg_ulpi_create(&ulpi_viewport_access_ops, 0);
+ 		phy->ulpi->io_priv = phy->regs + ULPI_VIEWPORT;
+ 	} else {
+diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
+index a7af923..6cfb8f1 100644
+--- a/include/linux/usb/tegra_usb_phy.h
++++ b/include/linux/usb/tegra_usb_phy.h
+@@ -62,6 +62,7 @@ struct tegra_usb_phy {
+ 	struct device *dev;
+ 	bool is_legacy_phy;
+ 	bool is_ulpi_phy;
++	int reset_gpio;
+ };
+ 
+ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
 -- 
-Thanks
-    Alex
+1.7.0.4
+
