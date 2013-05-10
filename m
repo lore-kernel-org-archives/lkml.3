@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab3EJLHI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 07:07:08 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:48891 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659Ab3EJLHH (ORCPT
+	id S1752976Ab3EJLHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 07:07:44 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:45733 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750Ab3EJLHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 07:07:07 -0400
-Date: Fri, 10 May 2013 13:07:02 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, jamie.iles@oracle.com,
-        penberg@kernel.org, acme@ghostprotocols.net, paulus@samba.org,
-        namhyung@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v3 8/9] liblockdep: Add the 'lockdep' user-space utility
-Message-ID: <20130510110702.GA19068@gmail.com>
-References: <1368115089-8909-1-git-send-email-sasha.levin@oracle.com>
- <1368115089-8909-9-git-send-email-sasha.levin@oracle.com>
- <20130510091912.GD3039@dyad.programming.kicks-ass.net>
- <20130510093557.GA16429@gmail.com>
- <20130510104134.GE31235@dyad.programming.kicks-ass.net>
- <20130510110046.GB18805@gmail.com>
- <20130510111027.GB23014@pd.tnic>
+	Fri, 10 May 2013 07:07:42 -0400
+Message-ID: <518CD501.1040909@cogentembedded.com>
+Date: Fri, 10 May 2013 15:07:45 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130510111027.GB23014@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [RFC 17/42] drivers/net/ethernet/renesas: don't check resource
+ with devm_ioremap_resource
+References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de> <1368173847-5661-18-git-send-email-wsa@the-dreams.de>
+In-Reply-To: <1368173847-5661-18-git-send-email-wsa@the-dreams.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
-* Borislav Petkov <bp@alien8.de> wrote:
+On 10-05-2013 12:17, Wolfram Sang wrote:
 
-> On Fri, May 10, 2013 at 01:00:46PM +0200, Ingo Molnar wrote:
-> > The way I do it is that I have two files named 'ack' and 'sob', with
-> > my Acked-by and Signed-off-by lines in them, so I can read them into
-> > whatever editing context I need them, without typing out the full
-> > thing.
-> 
-> You must have a 'nack' one too :-) Or you rather relish typing this
-> everytime by hand, with gusto?
+> devm_ioremap_resource does sanity checks on the given resource. No need to
+> duplicate this in the driver.
 
-No, I have a 'by' file which contains:
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 
--by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-Which I can then extend with rare tags like Reported-by, Tested-by or 
-NAK-ed-by :-)
+WBR, Sergei
 
-Thanks,
-
-	Ingo
