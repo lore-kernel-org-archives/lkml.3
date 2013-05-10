@@ -1,282 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599Ab3EJAWM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 20:22:12 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:43986 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756477Ab3EJAWK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 20:22:10 -0400
-Date: Fri, 10 May 2013 02:22:06 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] x86/sched/dynamic-ticks: Call new schedule_irq_disable()
- for scheduling in entry_64.S
-Message-ID: <20130510002203.GA2394@somewhere>
-References: <1368062480.7373.95.camel@gandalf.local.home>
+	id S1756654Ab3EJAY0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 20:24:26 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35159 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756492Ab3EJAYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 20:24:25 -0400
+Message-ID: <518C3CE9.1010603@ti.com>
+Date: Thu, 9 May 2013 19:18:49 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368062480.7373.95.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jassi Brar <jaswinder.singh@linaro.org>
+CC: Jassi Brar <jassisinghbrar@gmail.com>,
+        "Loic PALLARDY (loic.pallardy@st.com)" <loic.pallardy@st.com>,
+        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Andy Green <andy.green@linaro.org>
+Subject: Re: [RFC 2/3] mailbox: Introduce a new common API
+References: <CAJe_ZhdH+SCs5crguXrm6y-6bu+eGnTqeJS6cOS5H5Yz=m15Cw@mail.gmail.com> <1367086474-28614-1-git-send-email-jaswinder.singh@linaro.org> <51847070.8040400@ti.com> <CAJe_Zhdbnpu9n46s6L5KNFuTb2K87j+V4htKkmHYtBJ6w+etxQ@mail.gmail.com> <518840A2.5000205@ti.com> <CAJe_ZhedTM_wU7NGH_QRrL=O3JSYjt9ENDLYpOEQNSX3f7OgBA@mail.gmail.com> <518976B9.2030605@ti.com> <CAJe_ZhfpLQzDBSx=2VbD3W-499-g1JOovGDuFwxkE-Cq=HQDww@mail.gmail.com> <518AFB1F.7010409@ti.com> <CAJe_ZheEZo7Akri40ixBhWzeefABxiJXG1Juc4zQOPNQqyahUw@mail.gmail.com>
+In-Reply-To: <CAJe_ZheEZo7Akri40ixBhWzeefABxiJXG1Juc4zQOPNQqyahUw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 09:21:20PM -0400, Steven Rostedt wrote:
-> I started testing the new NOHZ_FULL in the kernel and had some issues,
-> so I started function tracing and this bug report came out:
+Hi Jassi,
+>
+> On 9 May 2013 06:55, Suman Anna <s-anna@ti.com> wrote:
 > 
-> 
-> [23446.458073] ------------[ cut here ]------------
-> [23446.461028] WARNING:
-> at /home/rostedt/work/git/linux-trace.git/kernel/rcutree.c:388
-> rcu_eqs_enter+0x4b/0x89()
-> [23446.466096] Modules linked in: ebtables ipt_MASQUERADE sunrpc bridge
-> stp llc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter
-> ip6_tables ipv6 uinput snd_hda_codec_id
-> t snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm
-> kvm_intel snd_timer snd kvm soundcore shpchp snd_page_alloc microcode
-> i2c_i801 pata_acpi firewire_ohci firewi
-> re_core crc_itu_t ata_generic i915 drm_kms_helper drm i2c_algo_bit
-> i2c_core video
-> [23446.466096] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.9.0-test+ #11
-> [23446.466096] Hardware name: To Be Filled By O.E.M. To Be Filled By
-> O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-> [23446.466096]  ffffffff814879f0 ffffffff81004fa6 ffffffff810337af
-> ffff88007d400000
-> [23446.466096]  0000000000000000 0000000000000000 ffff88007d40d900
-> ffffffff81a01f00
-> [23446.466096]  ffffffff81acba00 ffff88007d6495c0 ffffffff810a1f36
-> 0000000000000a28
-> [23446.466096] Call Trace:
-> [23446.466096]  [<ffffffff814879f0>] ? dump_stack+0xd/0x17
-> [23446.466096]  [<ffffffff81004fa6>] ? show_stack+0x5/0x3e
-> [23446.466096]  [<ffffffff810337af>] ? warn_slowpath_common+0x64/0x7c
-> [23446.466096]  [<ffffffff810a1f36>] ? rcu_eqs_enter+0x4b/0x89
-> [23446.466096]  [<ffffffff810a1f8e>] ? rcu_idle_enter+0x1a/0x30
-> [23446.466096]  [<ffffffff81491bc5>] ? ftrace_graph_caller+0x85/0x85
-> [23446.466096]  [<ffffffff810707f3>] cpu_startup_entry+0xb3/0x11c
-> [23446.466096]  [<ffffffff81ae9d2e>] ? start_kernel+0x41a/0x425
-> [23446.466096]  [<ffffffff81ae972d>] ? repair_env_string+0x54/0x54
-> [23446.466096] ---[ end trace ddbb69ae2a0f6687 ]---
-> [23446.466096] ------------[ cut here ]------------
-> 
-> This is caused by an imbalance of rcu_eqs_enter() and rcu_eqs_exit().
-> Adding more tracing, I also discovered that there seemed to be an
-> imbalance in user_exit() and user_enter(). Specifically, I found that
-> user_enter() was called, and then a migration happened and user_exit()
-> was never called before the schedule. Then I had noticed this in my
-> trace:
-> 
-> run-isol-11546   1.N.. 37363.637641: function:             schedule_user <-- retint_careful
-> run-isol-11546   1.N.. 37363.637641: function:             __schedule <-- preempt_schedule
-> 
-> The funny part here is that schedule_user does not call
-> preempt_schedule. But then I also noticed the flags of the call to
-> schedule_user(): "1.N..". This shows that it was running on cpu 1 with
-> NEED_RESCHED set (N), but both interrupts and preemption are enabled. If
-> an interrupt came in here we can schedule out again, but that would call
-> preempt_schedule_irq, which has code to check if its in "user context
-> (according to dynamic_ticks)" and would do the user_exit() too. But
-> something didn't seem right here.
-> 
-> Then I realized that it was actually the function tracer itself, as for
-> every function it traces, it calls preempt_disable() and
-> preempt_enable() to record the data on a per_cpu buffer. That
-> preempt_enable() noticed the NEED_RESCHED set and since preemption is
-> enabled, it kindly called preempt_schedule() for us!
-> 
-> All this before schedule_user() was able to call user_exit() and take us
-> out of dynamic tick user context.
-> 
-> I then looked at the code in entry_64.S, and noticed that the calls to
-> SCHEDULE_USER were all encompassed with ENABLE_INTERRUPTS and
-> DISABLE_INTERRUPTS before calling schedule. And the SCHEDULE_USER macro
-> is different if we have CONTEXT_TRACKING enabled or not.
-> 
-> I created a new schedule_irq_disabled() which is similar to
-> schedule_preempt_disable()  and works like preempt_schedule_irq(), where
-> it includes the exception_enter() and exit() routines that take care of
-> the accounting of dynamic ticks when interrupting user mode or not. It
-> also takes care of it before enabling interrupts, so we don't need to
-> worry about any preemption happening at the wrong time.
-> 
-> Now the code always calls schedule_irq_disabled() whether or not
-> CONTEXT_TRACKING is configured, which cleans up entry_64.S and removes
-> the need of the context_tracking.h header file in asm.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> Index: linux-trace.git/arch/x86/include/asm/context_tracking.h
-> ===================================================================
-> --- linux-trace.git.orig/arch/x86/include/asm/context_tracking.h
-> +++ /dev/null
-> @@ -1,10 +0,0 @@
-> -#ifndef _ASM_X86_CONTEXT_TRACKING_H
-> -#define _ASM_X86_CONTEXT_TRACKING_H
-> -
-> -#ifdef CONFIG_CONTEXT_TRACKING
-> -# define SCHEDULE_USER call schedule_user
-> -#else
-> -# define SCHEDULE_USER call schedule
-> -#endif
-> -
-> -#endif
-> Index: linux-trace.git/arch/x86/kernel/entry_64.S
-> ===================================================================
-> --- linux-trace.git.orig/arch/x86/kernel/entry_64.S
-> +++ linux-trace.git/arch/x86/kernel/entry_64.S
-> @@ -56,7 +56,6 @@
->  #include <asm/ftrace.h>
->  #include <asm/percpu.h>
->  #include <asm/asm.h>
-> -#include <asm/context_tracking.h>
->  #include <asm/smap.h>
->  #include <linux/err.h>
->  
-> @@ -654,6 +653,7 @@ sysret_check:
->  	LOCKDEP_SYS_EXIT
->  	DISABLE_INTERRUPTS(CLBR_NONE)
->  	TRACE_IRQS_OFF
-> +sysret_check_irqsoff:
->  	movl TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET),%edx
->  	andl %edi,%edx
->  	jnz  sysret_careful
-> @@ -675,12 +675,10 @@ sysret_check:
->  sysret_careful:
->  	bt $TIF_NEED_RESCHED,%edx
->  	jnc sysret_signal
-> -	TRACE_IRQS_ON
-> -	ENABLE_INTERRUPTS(CLBR_NONE)
->  	pushq_cfi %rdi
-> -	SCHEDULE_USER
-> +	call schedule_irq_disabled
->  	popq_cfi %rdi
-> -	jmp sysret_check
-> +	jmp sysret_check_irqsoff
+>>> so it can't be driven by the controller. We could make it a Kconfig option.
+>>> What do you suggest?
+>>
+>> I am saying controller/link because they are the ones that knows how the
+>> physical transport is, and it may vary from one to another. I would
+>> think that the client dependencies would become a subset of this.
+>> Kconfig option is fine, but we have to think about the best way of
+>> representing it from a multi-platform kernel support perspective.
+>>
+> Actually it has more to do with clients and less with multiplatform.
+> Even on single platform the client that needs biggest buffer will
+> rule. Ditto on multi-platform.
+> Anyways I get your idea. I'll put a note there to revisit once number
+> of active clients increase on the platform.
 
-Don't we still want to call LOCKDEP_SYS_EXIT?, the previous
-task scheduled might have taken some locks.
+OK thanks.
 
->  
->  	/* Handle a signal */
->  sysret_signal:
-> @@ -788,13 +786,9 @@ GLOBAL(int_with_check)
->  int_careful:
->  	bt $TIF_NEED_RESCHED,%edx
->  	jnc  int_very_careful
-> -	TRACE_IRQS_ON
-> -	ENABLE_INTERRUPTS(CLBR_NONE)
->  	pushq_cfi %rdi
-> -	SCHEDULE_USER
-> +	call schedule_irq_disabled
->  	popq_cfi %rdi
-> -	DISABLE_INTERRUPTS(CLBR_NONE)
-> -	TRACE_IRQS_OFF
->  	jmp int_with_check
->  
->  	/* handle signals and tracing -- both require a full stack frame */
-> @@ -1088,14 +1082,10 @@ retint_careful:
->  	CFI_RESTORE_STATE
->  	bt    $TIF_NEED_RESCHED,%edx
->  	jnc   retint_signal
-> -	TRACE_IRQS_ON
-> -	ENABLE_INTERRUPTS(CLBR_NONE)
->  	pushq_cfi %rdi
-> -	SCHEDULE_USER
-> +	call schedule_irq_disabled
->  	popq_cfi %rdi
->  	GET_THREAD_INFO(%rcx)
-> -	DISABLE_INTERRUPTS(CLBR_NONE)
-> -	TRACE_IRQS_OFF
->  	jmp retint_check
->  
->  retint_signal:
-> @@ -1534,11 +1524,7 @@ paranoid_userspace:
->  	TRACE_IRQS_OFF
->  	jmp paranoid_userspace
->  paranoid_schedule:
-> -	TRACE_IRQS_ON
-> -	ENABLE_INTERRUPTS(CLBR_ANY)
-> -	SCHEDULE_USER
-> -	DISABLE_INTERRUPTS(CLBR_ANY)
-> -	TRACE_IRQS_OFF
-> +	call schedule_irq_disabled
->  	jmp paranoid_userspace
->  	CFI_ENDPROC
->  END(paranoid_exit)
-> Index: linux-trace.git/kernel/sched/core.c
-> ===================================================================
-> --- linux-trace.git.orig/kernel/sched/core.c
-> +++ linux-trace.git/kernel/sched/core.c
-> @@ -3034,21 +3034,6 @@ asmlinkage void __sched schedule(void)
->  }
->  EXPORT_SYMBOL(schedule);
->  
-> -#ifdef CONFIG_CONTEXT_TRACKING
-> -asmlinkage void __sched schedule_user(void)
-> -{
-> -	/*
-> -	 * If we come here after a random call to set_need_resched(),
-> -	 * or we have been woken up remotely but the IPI has not yet arrived,
-> -	 * we haven't yet exited the RCU idle mode. Do it here manually until
-> -	 * we find a better solution.
-> -	 */
-> -	user_exit();
-> -	schedule();
-> -	user_enter();
-> -}
-> -#endif
-> -
->  /**
->   * schedule_preempt_disabled - called with preemption disabled
->   *
-> @@ -3127,6 +3112,24 @@ asmlinkage void __sched preempt_schedule
->  
->  #endif /* CONFIG_PREEMPT */
->  
-> +/*
-> + * this is the entry point to schedule() from kernel irq off context.
-> + * Note, that this is called and return with irqs disabled. This will
-> + * protect us against recursive calling from irq.
-> + */
-> +asmlinkage void __sched schedule_irq_disabled(void)
-> +{
-> +	enum ctx_state prev_state;
-> +
-> +	prev_state = exception_enter();
+>>>> IMHO. It's calling ipc_links_register twice on the same controller. Idea
+>>>> was that the API would distinguish different controllers, not the same
+>>>> one. Also, see the above example if you were to treat a link as Rx or Tx
+>>>> only (functional behavior differences even though the link is exactly
+>>>> the same type).
+>>>>
+>>> Why is calling ipc_links_register() twice, for a controller with 2
+>>> classes of links, a problem ?
+>>
+>> It will be inelegant, once you start maintaining the list of
+>> ipc_controllers in the core code. You would have to search all the
+>> controllers in the list with the matching name, and their links. You
+>> will need to define multiple controller specific controller structures
+>> and copy most of the elements from the actual h/w device into the
+>> containing ipc_controller definition. As you said, the clients deal with
+>> the links themselves, so making the ops part of the ipc_link definition
+>> makes it easier on the controller implementations. You are anyway
+>> caching the ops in ipc_chan (per link) and that is what you are using in
+>> the core code. Majority of the time, you would be using the same ops for
+>> all the links, but this gives the flexibility to links. You can avoid
+>> having multiple controller instance denoting the h/w block, just because
+>> of the difference in links behavior.
+>>
+> I don't see it as an issue, it's just how the code is designed on the
+> principle that the API works only on links, not controllers. Let us
+> wait for the driver of such a controller to show up. It should be easy
+> to change if we see the need.
 
-So why have you turned user_enter to exception_enter?
-Is it to make it work anywhere and not just preemption on
-user resume time?
+OK fine, I brought it up since we are defining the API, and defining it
+the first time with flexibility eliminates the need later on.
 
-> +
-> +	local_irq_enable();
-> +	__schedule();
-
-Are you sure it's fine to call __schedule() instead of schedule()?
-I don't know much about the blk work to handle there but it may be
-worth considering.
-
-> +	local_irq_disable();
-> +
-> +	exception_exit(prev_state);
-> +}
-
-The patch looks pretty good otherwise.
-
-Thanks.
-
-> +
->  int default_wake_function(wait_queue_t *curr, unsigned mode, int wake_flags,
->  			  void *key)
->  {
 > 
+>>>
+>>> And, No, the API need not know if the link is "RX" or "TX", which is
+>>> purely a logical function.
+>>>
+>>> Please do tell me which controller physically limits its links to do
+>>> only "RX" or only "TX"?  It's just the platform's firmware that
+>>> dictates who sends and who receives on which link, thereby giving the
+>>> illusion of a link being a "RX" or "TX" capable only.
+>>> Even if some h/w limits do exist on links of some controller, still
+>>> the API shouldn't try to discern a "RX" from a "TX" link. When a
+>>> client knows which link to open, it will also know if it should read
+>>> or write to it - this assumption already holds true. If the client
+>>> writes on a link that it's supposed to listen to remote on, no amount
+>>> of policing by the API could help.
+>>>
+>>> Even if the API tries to differentiate "RX" and "TX" links, the
+>>> knowledge must come from a client (it's driven by the protocol on the
+>>> platform), and not the controller because each of its links are
+>>> physically equally capable to do RX or TX on each end.
+>>
+>> The API never differentiates, but the controller implementation has to.
+>> From a controller driver implementation perspective, you still have to
+>> make sure that no client is calling an op on which it is not supposed
+>> to. When you have a mixture like this, a common code would include some
+>> dead paths for certain links.
+>>
+> No, please. The controller driver should not implement any policy (of
+> allowing/disallowing requests). It should simply try to do as
+> directed. If the client screwed up even after getting info from
+> platform_data/DT, let it suffer.
+
+This would be the same as a client trying to misconfigure a link, you
+cannot blame on a client screw up. The controller driver has to take
+care of what it ought to check for in the startup.
+
 > 
+>>>>> Yes, I have 2 types of controllers and I already thought about
+>>>>> multiple controllers in a platform.
+>>>>>  What do you expect to do in controller startup/shutdown? Since the
+>>>>> API works on individual links, not the controllers, when would it call
+>>>>> controller_start() and controller_shutdown()?  The ipc_link's
+>>>>> startup/shutdown are already non-atomic, if the controller needs any
+>>>>> setup it could do it in the first link's startup and teardown in the
+>>>>> last link's shutdown. Not to forget the resources lke IRQ are usually
+>>>>> per Link which should be acquired/released upon link's use/idle.
+>>>>>  While writing the OMAP2 controller driver, did I miss any controller
+>>>>> startup/shutdown ?
+>>>>
+>>>> It just delineates the code better, and has flexibility later on to
+>>>> extend any controller ops or exposing new controller-specific API. The
+>>>> controller start and stop will be called in the same function as
+>>>> ipc_request_channel.
+>>>>
+>>> Already one call ipc_link_ops.startup() reaches the controller upon
+>>> ipc_request_channel.
+>>>
+>>> Do you mean ?
+>>>        ipc_con_ops.startup();
+>>>        ipc_link_ops.startup();
+>>
+>> Yes.
+>>
+> And let the controller startup()/shutdown() upon every
+> link_request/release? 
+
+Yes, and the controller driver can take care of any ref-counting or
+whatever other logic it needs to maintain. You see this outside in the
+previous mailbox code, but that is not the responsibility of the core code.
+
+> 
+> BTW, I have seen my 2 controllers, OMAP, PL320 and read the dbx500
+> driver. Unsurprisingly none of these have any use for what you call a
+> special ipc_con_ops.startup().  Lets say if the call were there, what
+> would the OMAP put in it?
+
+Enabling the clock for the device. The clock is for the entire IP, a
+link has no power/clock dependencies.
+
+> 
+>>>> Yeah, the pm_runtime_enable cannot be called twice when mailbox is
+>>>> invoked from multiple clients on separate links, so there has to a
+>>>> controller-level logic/ref-counting for that. The clocking for us is on
+>>>> the controller.
+>>>>
+>>> No.  You could call pm_runtime_enable/disable any number of times as
+>>> long as they are balanced. The core does refcounting.
+>>
+>> Exactly, as long as they are balanced. I have two clients dealing with
+>> two remotes (using two links) so pm_runtime_enable on the h/w block
+>> needs to be called only when the first one comes in.
+>>
+> Actually you just gave another reason why the API messing around with
+> controller's power state is a bad idea.
+
+Where do you expect to power up the device (obviously this depends on
+the SoC, and its functional purpose)?
+
+> See how mailbox_startup() tries to balance mbox->ops->startup() and
+> mailbox_fini() the mbox->ops->shutdown()  That's very fragile and the
+> cause of imbalance between rpm enable/disable, unless your clients are
+> buggy.
+
+Yeah, it is kinda messed up in the existing code, the startup defined
+there is really for the controller and not the link, and that's why you
+see all the ref-counting balancing logic. The rpm enable/disable being
+called is on the controller's dev, not the link's dev - maybe that's
+what confused you.
+
+regards
+Suman
+
