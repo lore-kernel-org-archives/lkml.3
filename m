@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681Ab3EJO3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:29:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57266 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755937Ab3EJOV5 (ORCPT
+	id S1756770Ab3EJOaQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:30:16 -0400
+Received: from 13.mo5.mail-out.ovh.net ([87.98.182.191]:33441 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755941Ab3EJOaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:21:57 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Fri, 10 May 2013 10:30:13 -0400
+X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 May 2013 10:30:12 EDT
+Date: Fri, 10 May 2013 16:20:02 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH 1/3] dmaengine: at_hdmac/trivial: correct typo in
+ comment
+Message-ID: <20130510142002.GL3041@game.jcrosoft.org>
+References: <042cac60509755c1340d141315a9a8eb1965438a.1368191734.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jesse Barnes" <jbarnes@virtuousgeek.org>,
-        "Jon Bloomfield" <jon.bloomfield@intel.com>,
-        Jon Bloomfield <jon.bloomfield@intel.com> (v2),
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Daniel Vetter" <daniel.vetter@ffwll.ch>
-Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.977725362@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [040/118] drm/i915: Workaround incoherence between fences and LLC
- across multiple CPUs
-In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <042cac60509755c1340d141315a9a8eb1965438a.1368191734.git.nicolas.ferre@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 222083757811936108
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.45-rc1 review patch.  If anyone has any objections, please let me know.
+on all
 
-------------------
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
-
-commit 25ff1195f8a0b3724541ae7bbe331b4296de9c06 upstream.
-
-In order to fully serialize access to the fenced region and the update
-to the fence register we need to take extreme measures on SNB+, and
-manually flush writes to memory prior to writing the fence register in
-conjunction with the memory barriers placed around the register write.
-
-Fixes i-g-t/gem_fence_thrash
-
-v2: Bring a bigger gun
-v3: Switch the bigger gun for heavier bullets (Arjan van de Ven)
-v4: Remove changes for working generations.
-v5: Reduce to a per-cpu wbinvd() call prior to updating the fences.
-v6: Rewrite comments to ellide forgotten history.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=62191
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jon Bloomfield <jon.bloomfield@intel.com>
-Tested-by: Jon Bloomfield <jon.bloomfield@intel.com> (v2)
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: insert the cache flush in i915_gem_object_get_fence()]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -2520,6 +2520,11 @@ i915_find_fence_reg(struct drm_device *d
- 	return avail;
- }
- 
-+static void i915_gem_write_fence__ipi(void *data)
-+{
-+	wbinvd();
-+}
-+
- /**
-  * i915_gem_object_get_fence - set up a fence reg for an object
-  * @obj: object to map through a fence reg
-@@ -2640,6 +2645,17 @@ update:
- 	switch (INTEL_INFO(dev)->gen) {
- 	case 7:
- 	case 6:
-+		/* In order to fully serialize access to the fenced region and
-+		 * the update to the fence register we need to take extreme
-+		 * measures on SNB+. In theory, the write to the fence register
-+		 * flushes all memory transactions before, and coupled with the
-+		 * mb() placed around the register write we serialise all memory
-+		 * operations with respect to the changes in the tiler. Yet, on
-+		 * SNB+ we need to take a step further and emit an explicit wbinvd()
-+		 * on each processor in order to manually flush all memory
-+		 * transactions before updating the fence register.
-+		 */
-+		on_each_cpu(i915_gem_write_fence__ipi, NULL, 1);
- 		ret = sandybridge_write_fence_reg(obj, pipelined);
- 		break;
- 	case 5:
-
+On 15:19 Fri 10 May     , Nicolas Ferre wrote:
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  drivers/dma/at_hdmac.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+> index e923cda..cd49420 100644
+> --- a/drivers/dma/at_hdmac.c
+> +++ b/drivers/dma/at_hdmac.c
+> @@ -1120,7 +1120,7 @@ static int atc_alloc_chan_resources(struct dma_chan *chan)
+>  		 */
+>  		BUG_ON(!atslave->dma_dev || atslave->dma_dev != atdma->dma_common.dev);
+>  
+> -		/* if cfg configuration specified take it instad of default */
+> +		/* if cfg configuration specified take it instead of default */
+>  		if (atslave->cfg)
+>  			cfg = atslave->cfg;
+>  	}
+> -- 
+> 1.8.0
+> 
