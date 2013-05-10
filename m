@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab3EJJhe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 05:37:34 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:54859 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab3EJJhc (ORCPT
+	id S1752952Ab3EJJix (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 05:38:53 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:40484 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576Ab3EJJiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 05:37:32 -0400
-Date: Fri, 10 May 2013 11:37:29 +0200
+	Fri, 10 May 2013 05:38:52 -0400
+Date: Fri, 10 May 2013 11:38:48 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>, Jiri Kosina <jkosina@suse.cz>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123
- native_smp_send_reschedule
-Message-ID: <20130510093729.GA16487@gmail.com>
-References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
- <20130510002930.GB2394@somewhere>
- <20130510092811.GA22942@pd.tnic>
- <CAFTL4hxx_pHkJExnRks4hcOYGrJb8TCMRdCtt0UA-i3wsaWWcQ@mail.gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/9] liblockdep: Wrap kernel/lockdep.c to allow usage
+ from userspace
+Message-ID: <20130510093848.GB16487@gmail.com>
+References: <1368115089-8909-1-git-send-email-sasha.levin@oracle.com>
+ <1368115089-8909-3-git-send-email-sasha.levin@oracle.com>
+ <20130510091816.GC3039@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFTL4hxx_pHkJExnRks4hcOYGrJb8TCMRdCtt0UA-i3wsaWWcQ@mail.gmail.com>
+In-Reply-To: <20130510091816.GC3039@dyad.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-> 2013/5/10 Borislav Petkov <bp@alien8.de>:
-> > On Fri, May 10, 2013 at 02:29:31AM +0200, Frederic Weisbecker wrote:
-> >> @@ -616,8 +616,17 @@ static bool wake_up_full_nohz_cpu(int cpu)
-> >>  {
-> >>       if (tick_nohz_full_cpu(cpu)) {
-> >>               if (cpu != smp_processor_id() ||
-> >> -                 tick_nohz_tick_stopped())
-> >> +                 tick_nohz_tick_stopped()) {
-> >> +                     if (!cpu_online(cpu)) {
-> >> +                             static int printed = 0;
-> >> +                             if (!printed) {
-> >> +                                     printk("%d %d\n", cpu, smp_processor_id());
-> >> +                                     dump_stack();
-> >> +                                     printed = 1;
-> >
-> > You know about printk_once, right? We even have all the pr_<level>_once
-> > macros.
-> >
-> > :-)
+> On Thu, May 09, 2013 at 11:58:02AM -0400, Sasha Levin wrote:
+> > kernel/lockdep.c deals with validating locking scenarios for
+> > various architectures supported by the kernel. There isn't
+> > anything kernel specific going on in lockdep, and when we
+> > compare userspace to other architectures that don't have to deal
+> > with irqs such as s390, they become all too similar.
+> > 
+> > We wrap kernel/lockdep.c and include/linux/lockdep.h with
+> > several headers which allow us to build and use lockdep from
+> > userspace. We don't touch the kernel code itself which means
+> > that any work done on lockdep in the kernel will automatically
+> > benefit userspace lockdep as well!
+> > 
+> > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> > ---
 > 
-> But but that didn't fit as I also want the dump_stack(). May be we
-> want dump_stack_once().
+> OK, this patch is a complete fail with anything not git. Please fix it so I can
+> use quilt.
 
-The pattern I use in such cases is:
-
-	if (WARN_ONCE(!cpu_online(cpu))) {
-		printk("%d %d\n", cpu, smp_processor_id());
-		dump_stack();
-	}
+The way I work that around is by making empty files a single-line empty 
+file, with a single \n in them.
 
 Thanks,
 
