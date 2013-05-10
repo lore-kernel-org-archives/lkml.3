@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946Ab3EJRML (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 13:12:11 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:56413 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495Ab3EJRMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 13:12:09 -0400
-From: Olof Johansson <olof@lixom.net>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>
-Subject: [PATCH] mfd: max77687: add registration of max77686-clk
-Date: Fri, 10 May 2013 10:11:59 -0700
-Message-Id: <1368205919-32538-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.8.1.192.gc4361b8
+	id S1756875Ab3EJROJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 13:14:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63963 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754211Ab3EJROI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 13:14:08 -0400
+Date: Fri, 10 May 2013 19:10:54 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/3] init/Kconfig: Add option to set modprobe command
+Message-ID: <20130510171054.GA27479@redhat.com>
+References: <1368159316-31744-1-git-send-email-lucas.de.marchi@gmail.com> <1368159316-31744-3-git-send-email-lucas.de.marchi@gmail.com> <20130510125826.GA553@redhat.com> <CAKi4VALE8tFUTZ1qYwm0Eth1zFMU8xA6XC5RTnF1KCKYQp-0NQ@mail.gmail.com> <20130510153638.GA8179@redhat.com> <CAKi4VAJPXgiik9CGrVyk7cCvz-1913p1KL8tn5FvxH4w0r27bg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKi4VAJPXgiik9CGrVyk7cCvz-1913p1KL8tn5FvxH4w0r27bg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MAX77686 clock driver has been in-tree for over 6 months, but never
-actually enabled through the MFD registration before.
+On 05/10, Lucas De Marchi wrote:
+>
+> On Fri, May 10, 2013 at 12:36 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > Well, personally I think it would be better to use kasprintf(), see the
+> > patch I sent (it is actually wrong, needs kfree(args) before return).
+> >
+> > Or. How about the patch below? It should be split into 2 changes:
+> >
+> >         1. Introduce __argv_split(). It can have more callers, for
+> >            example do_coredump() and ftrace_function_filter_re()
+> >            can use it to avoid kstrndup() + kfree().
+> >
+> >         2. Change call_modprobe() to use kasprintf() + __argv_split().
+>
+> Seems better. In your previous version I was troubled about
+> duplicating the string twice.
 
-Add it to the table so the device will probe and configure properly.
+Oh, compared to other things we need to do this is nothing ;)
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
- drivers/mfd/max77686.c | 1 +
- 1 file changed, 1 insertion(+)
+But to me it just looks better this way.
 
-diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-index 1cbb176..5bd2467 100644
---- a/drivers/mfd/max77686.c
-+++ b/drivers/mfd/max77686.c
-@@ -37,6 +37,7 @@
- static struct mfd_cell max77686_devs[] = {
- 	{ .name = "max77686-pmic", },
- 	{ .name = "max77686-rtc", },
-+	{ .name = "max77686-clk", },
- };
- 
- static struct regmap_config max77686_regmap_config = {
--- 
-1.8.2.1
+> Now it's weird freeing a
+> user-allocated-string,
+
+This is fine, the "weird" thing is that it frees the string even if
+fails. But this simplifies the usage.
+
+> but I think it's a good tradeoff and covers other use cases as you
+> pointed out as well.
+
+OK, good.
+
+> Ok. I'll give it a try.
+
+Please wait a bit, I'll send v2. See below.
+
+> > -char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe";
+> > +char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe -q --";
+
+No. This is incompatible change, we shouldn't do this.
+
+> > +       args = kasprintf(GFP_KERNEL, "%s %s", modprobe_path, module_name);
+
+This should be kasprintf("%s -q -- %s").
+
+And it needs a comment to explain that we are safe even if we race
+with proc_dostring().
+
+Oleg.
 
