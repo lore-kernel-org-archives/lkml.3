@@ -1,115 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab3EJNYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 09:24:42 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:59078 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271Ab3EJNYl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 09:24:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1305032015060.2990@ionos>
-References: <20130430212007.GB18598@redhat.com>
-	<20130430213719.GA14988@redhat.com>
-	<alpine.LFD.2.02.1305021234510.3972@ionos>
-	<20130502154621.GA23990@redhat.com>
-	<alpine.LFD.2.02.1305022152280.2891@ionos>
-	<CAE9FiQXpV451xTzAJyNdC-+-oqF9v8Cy5evcNOHKFffERw2SwA@mail.gmail.com>
-	<alpine.LFD.2.02.1305022304370.2891@ionos>
-	<CAE9FiQWFK_ropzW_qQLcNxLYyek8-PHGW-8SxfZJSijvdrss1A@mail.gmail.com>
-	<alpine.LFD.2.02.1305022337470.2891@ionos>
-	<20130503144912.GB1283@redhat.com>
-	<alpine.LFD.2.02.1305032015060.2990@ionos>
-Date: Fri, 10 May 2013 09:24:40 -0400
-Message-ID: <CA+5PVA47O+chNZ6fFHMMK+kkqzzYZaXKOXZoZmdX9TSg19dc+w@mail.gmail.com>
-Subject: Re: clockevents_program_event WARN_ON preventing boot.
-From: Josh Boyer <jwboyer@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Dave Jones <davej@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753389Ab3EJN2Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 09:28:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35309 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271Ab3EJN2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 09:28:23 -0400
+Date: Fri, 10 May 2013 09:28:19 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        riel@redhat.com, mst@redhat.com, amit.shah@redhat.com,
+        anton@enomsg.org
+Subject: Re: [RFC 2/2] virtio_balloon: auto-ballooning support
+Message-ID: <20130510092819.322798b7@redhat.com>
+In-Reply-To: <20130510092046.17be9bbb@redhat.com>
+References: <1368111229-29847-1-git-send-email-lcapitulino@redhat.com>
+	<1368111229-29847-3-git-send-email-lcapitulino@redhat.com>
+	<20130509211516.GC16446@optiplex.redhat.com>
+	<20130510092046.17be9bbb@redhat.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 3, 2013 at 2:32 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 3 May 2013, Dave Jones wrote:
->> On Fri, May 03, 2013 at 12:49:20AM +0200, Thomas Gleixner wrote:
->>
->>  > I'm fundamentally confused and Daves observation about slub debug does
->>  > not make it less confusing.
->>  >
->>  > It'd be nice if you could add some more instrumentation or bisect the
->>  > issue.
->>
->> Here's what I ended up with..
->> b352bc1cbc29134a356b5c16ee2281807a7b984e is the first bad commit
->> commit b352bc1cbc29134a356b5c16ee2281807a7b984e
->> Author: Thomas Gleixner <tglx@linutronix.de>
->> Date:   Tue Mar 5 14:25:32 2013 +0100
->>
->>     tick: Convert broadcast cpu bitmaps to cpumask_var_t
->>
->>     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->>     Link: http://lkml.kernel.org/r/20130306111537.366394000@linutronix.de
->>     Cc: Rusty Russell <rusty@rustcorp.com.au>
->>
->
-> I bet you have CONFIG_CPUMASK_OFFSTACK enabled.
->
-> /me is a moron and rumages for a brown paperbag.
->
-> Patch below.
->
-> Thanks,
->
->         tglx
->
-> ------------>
->
-> Subject: tick: Use zalloc_cpumask_var for allocating offstack cpumasks
-> From: Thomas Gleixner <tglx@linutronix.de>
-> Date: Fri, 03 May 2013 20:22:36 +0200
->
-> commit b352bc1cbc (tick: Convert broadcast cpu bitmaps to
-> cpumask_var_t) broke CONFIG_CPUMASK_OFFSTACK in a very subtle way.
->
-> Instead of allocating the cpumasks with zalloc_cpumask_var it uses
-> alloc_cpumask_var, so we can get random data there, which of course
-> confuses the logic completely and causes random failures.
->
-> Reported-by: Dave Jones <davej@redhat.com>
-> Reported-by: Yinghai Lu <yinghai@kernel.org>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+On Fri, 10 May 2013 09:20:46 -0400
+Luiz Capitulino <lcapitulino@redhat.com> wrote:
 
-This still isn't in Linus' tree and it fixes boot issues on a number
-of different machine types.  Is it queued up anywhere?  Hoping it gets
-into 3.10-rc1.
+> On Thu, 9 May 2013 18:15:19 -0300
+> Rafael Aquini <aquini@redhat.com> wrote:
+> 
+> > On Thu, May 09, 2013 at 10:53:49AM -0400, Luiz Capitulino wrote:
+> > > Automatic ballooning consists of dynamically adjusting the guest's
+> > > balloon according to memory pressure in the host and in the guest.
+> > > 
+> > > This commit implements the guest side of automatic balloning, which
+> > > basically consists of registering a shrinker callback with the kernel,
+> > > which will try to deflate the guest's balloon by the amount of pages
+> > > being requested. The shrinker callback is only registered if the host
+> > > supports the VIRTIO_BALLOON_F_AUTO_BALLOON feature bit.
+> > > 
+> > > Automatic inflate is performed by the host.
+> > > 
+> > > Here are some numbers. The test-case is to run 35 VMs (1G of RAM each)
+> > > in parallel doing a kernel build. Host has 32GB of RAM and 16GB of swap.
+> > > SWAP IN and SWAP OUT correspond to the number of pages swapped in and
+> > > swapped out, respectively.
+> > > 
+> > > Auto-ballooning disabled:
+> > > 
+> > > RUN  TIME(s)  SWAP IN  SWAP OUT
+> > > 
+> > > 1    634      930980   1588522
+> > > 2    610      627422   1362174
+> > > 3    649      1079847  1616367
+> > > 4    543      953289   1635379
+> > > 5    642      913237   1514000
+> > > 
+> > > Auto-ballooning enabled:
+> > > 
+> > > RUN  TIME(s)  SWAP IN  SWAP OUT
+> > > 
+> > > 1    629      901      12537
+> > > 2    624      981      18506
+> > > 3    626      573      9085
+> > > 4    631      2250     42534
+> > > 5    627      1610     20808
+> > > 
+> > > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> > > ---
+> > 
+> > Nice work Luiz! Just allow me a silly question, though. 
+> 
+> I have 100% more chances of committing sillynesses than you, so please
+> go ahead.
+> 
+> > Since your shrinker
+> > doesn't change the balloon target size,
+> 
+> Which target size are you referring to? The one in the host (member num_pages
+> of VirtIOBalloon in QEMU)?
+> 
+> If it the one in the host, then my understanding is that that member is only
+> used to communicate the new balloon target to the guest. The guest driver
+> will only read it when told (by the host) to do so, and when it does the
+> target value will be correct.
+> 
+> Am I right?
+> 
+> > as soon as the shrink round finishes the
+> > balloon will re-inflate again, won't it? Doesn't this cause a sort of "balloon
+> > thrashing" scenario, if both guest and host are suffering from memory pressure?
 
-josh
-
-> ---
->  kernel/time/tick-broadcast.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
->
-> Index: linux-2.6/kernel/time/tick-broadcast.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/time/tick-broadcast.c
-> +++ linux-2.6/kernel/time/tick-broadcast.c
-> @@ -785,11 +785,11 @@ bool tick_broadcast_oneshot_available(vo
->
->  void __init tick_broadcast_init(void)
->  {
-> -       alloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
-> -       alloc_cpumask_var(&tmpmask, GFP_NOWAIT);
-> +       zalloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
-> +       zalloc_cpumask_var(&tmpmask, GFP_NOWAIT);
->  #ifdef CONFIG_TICK_ONESHOT
-> -       alloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
-> -       alloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
-> -       alloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
-> +       zalloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
-> +       zalloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
-> +       zalloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
->  #endif
->  }
+Forgot to say that I didn't observe this in my testing. But I'll try harder
+as soon as we clarify which target size we're talking about.
