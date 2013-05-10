@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab3EJTfo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 15:35:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12420 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754501Ab3EJTd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 15:33:28 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 3/8] CacheFiles: name i_mutex lock class explicitly [ver #2]
-To: Trond.Myklebust@netapp.com, torvalds@linux-foundation.org
-From: David Howells <dhowells@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-cachefs@redhat.com, "J. Bruce Fields" <bfields@redhat.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 10 May 2013 20:33:23 +0100
-Message-ID: <20130510193323.3045.57648.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20130510193257.3045.77981.stgit@warthog.procyon.org.uk>
-References: <20130510193257.3045.77981.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.16
+	id S1755124Ab3EJTgI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 15:36:08 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:47667 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754608Ab3EJTgF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 15:36:05 -0400
+Date: Fri, 10 May 2013 11:46:25 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rodolfo Giometti <giometti@linux.it>
+Subject: Re: linux-next: Tree for May 7 (bq27x00_battery)
+Message-ID: <20130510184625.GA2602@teo>
+References: <20130507134922.981483ab1e5cb09e5543a6cc@canb.auug.org.au>
+ <51893811.8080102@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <51893811.8080102@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: J. Bruce Fields <bfields@redhat.com>
+On Tue, May 07, 2013 at 10:21:21AM -0700, Randy Dunlap wrote:
+> On 05/06/13 20:49, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > Please do not add any v3.11 destined work to your linux-next included
+> > branches until after v3.10-rc1 is released.
+> > 
+> > I am receiving a (un)reasonable number of conflicts from there being
+> > multiple copies of some commits in various trees.   Please clean this up
+> > and resist the temptataion to rebase your trees on the way to your
+> > upstream ...
+> > 
+> > Changes since 20130506:
+> > 
+> 
+> on x86_64:
+> 
+> drivers/built-in.o: In function `bq27x00_read_i2c':
+> bq27x00_battery.c:(.text+0x169e20): undefined reference to `i2c_transfer'
+> bq27x00_battery.c:(.text+0x169e44): undefined reference to `i2c_transfer'
+> drivers/built-in.o: In function `bq27x00_battery_init':
+> bq27x00_battery.c:(.init.text+0x82af): undefined reference to `i2c_register_driver'
+> drivers/built-in.o: In function `bq27x00_battery_exit':
+> bq27x00_battery.c:(.exit.text+0xd8f): undefined reference to `i2c_del_driver'
+> 
+> 
+> when CONFIG_I2C=m and CONFIG_BATTERY_BQ27X00_I2C=y.
 
-Just some cleanup.
+Thanks for the report! This should be fixed by this commit:
 
-(And note the caller of this function may, for example, call vfs_unlink
-on a child, so the "1" (I_MUTEX_PARENT) really was what was intended
-here.)
+commit a2d0dbb4b55681874c5f288538ae55ae69baeaff
+Author: Xiong Zhou <jencce.kernel@gmail.com>
+Date:   Tue May 7 10:15:56 2013 +0800
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- fs/cachefiles/namei.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/cachefiles/namei.c b/fs/cachefiles/namei.c
-index 8c01c5fc..07cbd44 100644
---- a/fs/cachefiles/namei.c
-+++ b/fs/cachefiles/namei.c
-@@ -836,7 +836,7 @@ static struct dentry *cachefiles_check_active(struct cachefiles_cache *cache,
- 	//       dir->d_name.len, dir->d_name.len, dir->d_name.name, filename);
- 
- 	/* look up the victim */
--	mutex_lock_nested(&dir->d_inode->i_mutex, 1);
-+	mutex_lock_nested(&dir->d_inode->i_mutex, I_MUTEX_PARENT);
- 
- 	start = jiffies;
- 	victim = lookup_one_len(filename, dir, strlen(filename));
-
+    bq27x00: Fix I2C dependency in KConfig
