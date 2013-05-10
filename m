@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496Ab3EJUjD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 16:39:03 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:43950 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab3EJUjB (ORCPT
+	id S1754559Ab3EJUkS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 16:40:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52592 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888Ab3EJUkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 16:39:01 -0400
-Message-ID: <518D5AE1.7040905@gmail.com>
-Date: Fri, 10 May 2013 13:38:57 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, EUNBONG SONG <eunb.song@samsung.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: EXT4 panic at jbd2_journal_put_journal_head() in 3.9+
-References: <6719519.5821368147110937.JavaMail.weblogic@epml17> <20130510192747.GA11707@thunk.org>
-In-Reply-To: <20130510192747.GA11707@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 10 May 2013 16:40:16 -0400
+Date: Fri, 10 May 2013 13:40:15 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-s390@vger.kernel.org, koverstreet@google.com, bcrl@kvack.org,
+        schwidefsky@de.ibm.com, kirill.shutemov@linux.intel.com,
+        zab@redhat.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v3 next/akpm] aio: convert the ioctx list to radix tree
+Message-Id: <20130510134015.ac8ad56305c539fa9bd8b5a7@linux-foundation.org>
+In-Reply-To: <1366026055-28604-1-git-send-email-octavian.purdila@intel.com>
+References: <1366026055-28604-1-git-send-email-octavian.purdila@intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2013 12:27 PM, Theodore Ts'o wrote:
-> Hmm, since you seem to be able to reproduce the problem reliably, any
-> chance you can try bisecting the problem?  I've looked at the commits
-> that touch fs/jbd2 and nothing is jumping out at me.
->
-> Also, how many CPU's do you have your system, and what kind of storage
-> device were you using when you were running iozone (5400rpm HDD,
-> 7200RPM HDD, RAID array, SSD, etc.)?
+On Mon, 15 Apr 2013 14:40:55 +0300 Octavian Purdila <octavian.purdila@intel.com> wrote:
 
-I too have seen this.
+> When using a large number of threads performing AIO operations the
+> IOCTX list may get a significant number of entries which will cause
+> significant overhead. For example, when running this fio script:
+> 
+> rw=randrw; size=256k ;directory=/mnt/fio; ioengine=libaio; iodepth=1
+> blocksize=1024; numjobs=512; thread; loops=100
+> 
+> on an EXT2 filesystem mounted on top of a ramdisk we can observe up to
+> 30% CPU time spent by lookup_ioctx:
+> 
+>  32.51%  [guest.kernel]  [g] lookup_ioctx
+>   9.19%  [guest.kernel]  [g] __lock_acquire.isra.28
+>   4.40%  [guest.kernel]  [g] lock_release
+>   4.19%  [guest.kernel]  [g] sched_clock_local
+>   3.86%  [guest.kernel]  [g] local_clock
+>   3.68%  [guest.kernel]  [g] native_sched_clock
+>   3.08%  [guest.kernel]  [g] sched_clock_cpu
+>   2.64%  [guest.kernel]  [g] lock_release_holdtime.part.11
+>   2.60%  [guest.kernel]  [g] memcpy
+>   2.33%  [guest.kernel]  [g] lock_acquired
+>   2.25%  [guest.kernel]  [g] lock_acquire
+>   1.84%  [guest.kernel]  [g] do_io_submit
+> 
+> This patchs converts the ioctx list to a radix tree.
 
-My system is:
+The patch looks nice.  One thing we should pay attention to is the
+memory consumption.  radix-trees can be far less space-efficient than
+lists, and as the tree key comes from mmap() it can be pretty sparsely
+distributed.
 
-   12 CPU Octeon (MIPS64)
-   Root is ext3, mounted via ext4fs on a slow CompactFlash/PIO6
-
-I saw the crash when simply booting  a fairly bare-bones Debian distro, 
-although it is somewhat random:
-.
-.
-ata3: PATA max PIO6 cmd 900000001d040000 ctl 900000001d05000d irq 63
-.
-.
-ata3.00: CFA: CF 4GB, 20101001, max UDMA/133
-ata3.00: 7847280 sectors, multi 0: LBA
-ata3.00: configured for PIO6
-.
-.
-scsi 2:0:0:0: Direct-Access     ATA      CF 4GB           2010 PQ: 0 ANSI: 5
-sd 2:0:0:0: [sda] 7847280 512-byte logical blocks: (4.01 GB/3.74 GiB)
-sd 2:0:0:0: [sda] Write Protect is off
-sd 2:0:0:0: [sda] Write cache: disabled, read cache: enabled, doesn't 
-support DPO or FUA
-  sda: sda1 sda2
-sd 2:0:0:0: [sda] Attached SCSI disk
-EXT4-fs (sda2): mounting ext3 file system using the ext4 subsystem
-EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
-VFS: Mounted root (ext3 filesystem) readonly on device 8:2.
-.
-.
-.
-
-I have not been able to get it to fail a second time.  So for me 
-bisecting might not work.
-
-David Daney
-
-
->
-> Thanks,
->
-> 						- Ted
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+So could you please have a think about this, see if we can cook up some
+worst-case numbers and decide if they are problematic?
 
