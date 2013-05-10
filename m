@@ -1,122 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756375Ab3EJAP4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 20:15:56 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53074 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755018Ab3EJAPz (ORCPT
+	id S1756599Ab3EJAWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 20:22:12 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:43986 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756477Ab3EJAWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 20:15:55 -0400
-Date: Fri, 10 May 2013 10:15:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Helge Deller <deller@gmx.de>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [GIT PULL] parisc updates for v3.10
-Message-Id: <20130510101548.d0a86e3587b6625c00dab7a5@canb.auug.org.au>
-In-Reply-To: <518C0788.8060200@gmx.de>
-References: <20130507221102.GA5338@p100.box>
-	<20130508113704.5ac23906e0e513b4a76d5b55@canb.auug.org.au>
-	<518C0788.8060200@gmx.de>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__10_May_2013_10_15_48_+1000_OTTyeGl_Nk04ggtG"
+	Thu, 9 May 2013 20:22:10 -0400
+Date: Fri, 10 May 2013 02:22:06 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] x86/sched/dynamic-ticks: Call new schedule_irq_disable()
+ for scheduling in entry_64.S
+Message-ID: <20130510002203.GA2394@somewhere>
+References: <1368062480.7373.95.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368062480.7373.95.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__10_May_2013_10_15_48_+1000_OTTyeGl_Nk04ggtG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 08, 2013 at 09:21:20PM -0400, Steven Rostedt wrote:
+> I started testing the new NOHZ_FULL in the kernel and had some issues,
+> so I started function tracing and this bug report came out:
+> 
+> 
+> [23446.458073] ------------[ cut here ]------------
+> [23446.461028] WARNING:
+> at /home/rostedt/work/git/linux-trace.git/kernel/rcutree.c:388
+> rcu_eqs_enter+0x4b/0x89()
+> [23446.466096] Modules linked in: ebtables ipt_MASQUERADE sunrpc bridge
+> stp llc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter
+> ip6_tables ipv6 uinput snd_hda_codec_id
+> t snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm
+> kvm_intel snd_timer snd kvm soundcore shpchp snd_page_alloc microcode
+> i2c_i801 pata_acpi firewire_ohci firewi
+> re_core crc_itu_t ata_generic i915 drm_kms_helper drm i2c_algo_bit
+> i2c_core video
+> [23446.466096] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.9.0-test+ #11
+> [23446.466096] Hardware name: To Be Filled By O.E.M. To Be Filled By
+> O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+> [23446.466096]  ffffffff814879f0 ffffffff81004fa6 ffffffff810337af
+> ffff88007d400000
+> [23446.466096]  0000000000000000 0000000000000000 ffff88007d40d900
+> ffffffff81a01f00
+> [23446.466096]  ffffffff81acba00 ffff88007d6495c0 ffffffff810a1f36
+> 0000000000000a28
+> [23446.466096] Call Trace:
+> [23446.466096]  [<ffffffff814879f0>] ? dump_stack+0xd/0x17
+> [23446.466096]  [<ffffffff81004fa6>] ? show_stack+0x5/0x3e
+> [23446.466096]  [<ffffffff810337af>] ? warn_slowpath_common+0x64/0x7c
+> [23446.466096]  [<ffffffff810a1f36>] ? rcu_eqs_enter+0x4b/0x89
+> [23446.466096]  [<ffffffff810a1f8e>] ? rcu_idle_enter+0x1a/0x30
+> [23446.466096]  [<ffffffff81491bc5>] ? ftrace_graph_caller+0x85/0x85
+> [23446.466096]  [<ffffffff810707f3>] cpu_startup_entry+0xb3/0x11c
+> [23446.466096]  [<ffffffff81ae9d2e>] ? start_kernel+0x41a/0x425
+> [23446.466096]  [<ffffffff81ae972d>] ? repair_env_string+0x54/0x54
+> [23446.466096] ---[ end trace ddbb69ae2a0f6687 ]---
+> [23446.466096] ------------[ cut here ]------------
+> 
+> This is caused by an imbalance of rcu_eqs_enter() and rcu_eqs_exit().
+> Adding more tracing, I also discovered that there seemed to be an
+> imbalance in user_exit() and user_enter(). Specifically, I found that
+> user_enter() was called, and then a migration happened and user_exit()
+> was never called before the schedule. Then I had noticed this in my
+> trace:
+> 
+> run-isol-11546   1.N.. 37363.637641: function:             schedule_user <-- retint_careful
+> run-isol-11546   1.N.. 37363.637641: function:             __schedule <-- preempt_schedule
+> 
+> The funny part here is that schedule_user does not call
+> preempt_schedule. But then I also noticed the flags of the call to
+> schedule_user(): "1.N..". This shows that it was running on cpu 1 with
+> NEED_RESCHED set (N), but both interrupts and preemption are enabled. If
+> an interrupt came in here we can schedule out again, but that would call
+> preempt_schedule_irq, which has code to check if its in "user context
+> (according to dynamic_ticks)" and would do the user_exit() too. But
+> something didn't seem right here.
+> 
+> Then I realized that it was actually the function tracer itself, as for
+> every function it traces, it calls preempt_disable() and
+> preempt_enable() to record the data on a per_cpu buffer. That
+> preempt_enable() noticed the NEED_RESCHED set and since preemption is
+> enabled, it kindly called preempt_schedule() for us!
+> 
+> All this before schedule_user() was able to call user_exit() and take us
+> out of dynamic tick user context.
+> 
+> I then looked at the code in entry_64.S, and noticed that the calls to
+> SCHEDULE_USER were all encompassed with ENABLE_INTERRUPTS and
+> DISABLE_INTERRUPTS before calling schedule. And the SCHEDULE_USER macro
+> is different if we have CONTEXT_TRACKING enabled or not.
+> 
+> I created a new schedule_irq_disabled() which is similar to
+> schedule_preempt_disable()  and works like preempt_schedule_irq(), where
+> it includes the exception_enter() and exit() routines that take care of
+> the accounting of dynamic ticks when interrupting user mode or not. It
+> also takes care of it before enabling interrupts, so we don't need to
+> worry about any preemption happening at the wrong time.
+> 
+> Now the code always calls schedule_irq_disabled() whether or not
+> CONTEXT_TRACKING is configured, which cleans up entry_64.S and removes
+> the need of the context_tracking.h header file in asm.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> Index: linux-trace.git/arch/x86/include/asm/context_tracking.h
+> ===================================================================
+> --- linux-trace.git.orig/arch/x86/include/asm/context_tracking.h
+> +++ /dev/null
+> @@ -1,10 +0,0 @@
+> -#ifndef _ASM_X86_CONTEXT_TRACKING_H
+> -#define _ASM_X86_CONTEXT_TRACKING_H
+> -
+> -#ifdef CONFIG_CONTEXT_TRACKING
+> -# define SCHEDULE_USER call schedule_user
+> -#else
+> -# define SCHEDULE_USER call schedule
+> -#endif
+> -
+> -#endif
+> Index: linux-trace.git/arch/x86/kernel/entry_64.S
+> ===================================================================
+> --- linux-trace.git.orig/arch/x86/kernel/entry_64.S
+> +++ linux-trace.git/arch/x86/kernel/entry_64.S
+> @@ -56,7 +56,6 @@
+>  #include <asm/ftrace.h>
+>  #include <asm/percpu.h>
+>  #include <asm/asm.h>
+> -#include <asm/context_tracking.h>
+>  #include <asm/smap.h>
+>  #include <linux/err.h>
+>  
+> @@ -654,6 +653,7 @@ sysret_check:
+>  	LOCKDEP_SYS_EXIT
+>  	DISABLE_INTERRUPTS(CLBR_NONE)
+>  	TRACE_IRQS_OFF
+> +sysret_check_irqsoff:
+>  	movl TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET),%edx
+>  	andl %edi,%edx
+>  	jnz  sysret_careful
+> @@ -675,12 +675,10 @@ sysret_check:
+>  sysret_careful:
+>  	bt $TIF_NEED_RESCHED,%edx
+>  	jnc sysret_signal
+> -	TRACE_IRQS_ON
+> -	ENABLE_INTERRUPTS(CLBR_NONE)
+>  	pushq_cfi %rdi
+> -	SCHEDULE_USER
+> +	call schedule_irq_disabled
+>  	popq_cfi %rdi
+> -	jmp sysret_check
+> +	jmp sysret_check_irqsoff
 
-Hi Helge,
+Don't we still want to call LOCKDEP_SYS_EXIT?, the previous
+task scheduled might have taken some locks.
 
-On Thu, 09 May 2013 22:31:04 +0200 Helge Deller <deller@gmx.de> wrote:
->
-> On 05/08/2013 03:37 AM, Stephen Rothwell wrote:
-> > On Wed, 8 May 2013 00:11:02 +0200 Helge Deller <deller@gmx.de> wrote:
-> >>
-> >> please pull the parisc architecture updates for v3.10 from:
-> >>
-> >>   git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.gi=
-t parisc-for-3.10
-> >=20
-> > Does this mean that the parisc tree I have in linux-next
-> > (git://git.kernel.org/pub/scm/linux/kernel/git/jejb/parisc-2.6.git#for-=
-next)
-> > is defunct?
->=20
-> Not sure. It will be either James or me who will send pull requests...
-> Of course we will agree who of us will do that and from which tree.
->=20
-> So, would it hurt if you add a second parisc tree for linux-next?
-> I've just created a "for-next" branch in my git repository:=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git#for=
--next
+>  
+>  	/* Handle a signal */
+>  sysret_signal:
+> @@ -788,13 +786,9 @@ GLOBAL(int_with_check)
+>  int_careful:
+>  	bt $TIF_NEED_RESCHED,%edx
+>  	jnc  int_very_careful
+> -	TRACE_IRQS_ON
+> -	ENABLE_INTERRUPTS(CLBR_NONE)
+>  	pushq_cfi %rdi
+> -	SCHEDULE_USER
+> +	call schedule_irq_disabled
+>  	popq_cfi %rdi
+> -	DISABLE_INTERRUPTS(CLBR_NONE)
+> -	TRACE_IRQS_OFF
+>  	jmp int_with_check
+>  
+>  	/* handle signals and tracing -- both require a full stack frame */
+> @@ -1088,14 +1082,10 @@ retint_careful:
+>  	CFI_RESTORE_STATE
+>  	bt    $TIF_NEED_RESCHED,%edx
+>  	jnc   retint_signal
+> -	TRACE_IRQS_ON
+> -	ENABLE_INTERRUPTS(CLBR_NONE)
+>  	pushq_cfi %rdi
+> -	SCHEDULE_USER
+> +	call schedule_irq_disabled
+>  	popq_cfi %rdi
+>  	GET_THREAD_INFO(%rcx)
+> -	DISABLE_INTERRUPTS(CLBR_NONE)
+> -	TRACE_IRQS_OFF
+>  	jmp retint_check
+>  
+>  retint_signal:
+> @@ -1534,11 +1524,7 @@ paranoid_userspace:
+>  	TRACE_IRQS_OFF
+>  	jmp paranoid_userspace
+>  paranoid_schedule:
+> -	TRACE_IRQS_ON
+> -	ENABLE_INTERRUPTS(CLBR_ANY)
+> -	SCHEDULE_USER
+> -	DISABLE_INTERRUPTS(CLBR_ANY)
+> -	TRACE_IRQS_OFF
+> +	call schedule_irq_disabled
+>  	jmp paranoid_userspace
+>  	CFI_ENDPROC
+>  END(paranoid_exit)
+> Index: linux-trace.git/kernel/sched/core.c
+> ===================================================================
+> --- linux-trace.git.orig/kernel/sched/core.c
+> +++ linux-trace.git/kernel/sched/core.c
+> @@ -3034,21 +3034,6 @@ asmlinkage void __sched schedule(void)
+>  }
+>  EXPORT_SYMBOL(schedule);
+>  
+> -#ifdef CONFIG_CONTEXT_TRACKING
+> -asmlinkage void __sched schedule_user(void)
+> -{
+> -	/*
+> -	 * If we come here after a random call to set_need_resched(),
+> -	 * or we have been woken up remotely but the IPI has not yet arrived,
+> -	 * we haven't yet exited the RCU idle mode. Do it here manually until
+> -	 * we find a better solution.
+> -	 */
+> -	user_exit();
+> -	schedule();
+> -	user_enter();
+> -}
+> -#endif
+> -
+>  /**
+>   * schedule_preempt_disabled - called with preemption disabled
+>   *
+> @@ -3127,6 +3112,24 @@ asmlinkage void __sched preempt_schedule
+>  
+>  #endif /* CONFIG_PREEMPT */
+>  
+> +/*
+> + * this is the entry point to schedule() from kernel irq off context.
+> + * Note, that this is called and return with irqs disabled. This will
+> + * protect us against recursive calling from irq.
+> + */
+> +asmlinkage void __sched schedule_irq_disabled(void)
+> +{
+> +	enum ctx_state prev_state;
+> +
+> +	prev_state = exception_enter();
 
-I have no problem having both trees in linux-next (as long as you don't
-tread on each other's toes and cause merge problem too often :-)).
+So why have you turned user_enter to exception_enter?
+Is it to make it work anywhere and not just preemption on
+user resume time?
 
-I have added your tree from today (noting that it is empty).  I have set
-you and the parisc mailing list as contacts.
+> +
+> +	local_irq_enable();
+> +	__schedule();
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+Are you sure it's fine to call __schedule() instead of schedule()?
+I don't know much about the blk work to handle there but it may be
+worth considering.
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+> +	local_irq_disable();
+> +
+> +	exception_exit(prev_state);
+> +}
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
+The patch looks pretty good otherwise.
 
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
+Thanks.
 
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Fri__10_May_2013_10_15_48_+1000_OTTyeGl_Nk04ggtG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRjDw0AAoJEECxmPOUX5FE7GYQAJ9uhRtL/H2p9LanhevjS9jU
-dx7UIq3fAeBcpOw/YI0ydnkiIzEaatCAcBFfRH1nZY6Pq8kaNr6FohT+wpqVDK4D
-Yfa0DriDgjhGqZ+qfxZ9kBMeQMeSdE0FlpzsPpaLsPDYLLfJ1h3Sa+TWlnDV2j3n
-YlXAN+AgZIzPU+3Dqy7s5JwRS4K80NqFl0ZnD3Mj4E0rwmIpPM+d703fnjYLzcqY
-3XRepwp+h0FzS4++JALr1NC1p+ZW66oE0LatjICIUIGA9ghaWJQz5Dw0GjQJczV7
-RpWzAEUCgPEVKXMEpQXeZZPS18Uyr1GThyUSv5AofcpYmyKWBqR2Lm74xtbSh1ms
-YNo8yd+locCvI4J89HAc8BucFreMlWfQFVuwdxs54x5mSsMjLtmBpmSV1b0ILxkN
-bXq48gauc+xQupTC3a7QRNPxzUJb55OfUsM6h6Pr4tBTLKD2kSAd9tkXiA84XhZL
-WIR+xq0S6JmMJ6cEEWzG7a1Al9TV+mA4KeZsyBzT2j5BlmMI0cLeFgIOO159JFtW
-SAb5hU3LF1Sp77fhVa2jos40zAICGRsTwtry/FAYJcBAzy4nLfyFjjtEMurEA2E/
-18V/SmBdspBHvNHD5oNvEBeRqi/3eCZ5tDkTFUp74V4HFu4NlFIAsRgWmeJL/KaN
-FUr+P5qDHMq4O85FPBgc
-=4/iM
------END PGP SIGNATURE-----
-
---Signature=_Fri__10_May_2013_10_15_48_+1000_OTTyeGl_Nk04ggtG--
+> +
+>  int default_wake_function(wait_queue_t *curr, unsigned mode, int wake_flags,
+>  			  void *key)
+>  {
+> 
+> 
