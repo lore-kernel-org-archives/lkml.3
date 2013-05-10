@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751038Ab3EJEQD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 00:16:03 -0400
-Received: from mail-gh0-f173.google.com ([209.85.160.173]:50735 "EHLO
-	mail-gh0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711Ab3EJEPy (ORCPT
+	id S1750909Ab3EJEWn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 00:22:43 -0400
+Received: from mail-ye0-f178.google.com ([209.85.213.178]:52351 "EHLO
+	mail-ye0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749Ab3EJEWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 00:15:54 -0400
+	Fri, 10 May 2013 00:22:42 -0400
+X-Greylist: delayed 406 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 May 2013 00:22:42 EDT
 From: Lucas De Marchi <lucas.de.marchi@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Lucas De Marchi <lucas.de.marchi@gmail.com>,
         Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/3] kmod: Use argv_split(), passing module as extra param
-Date: Fri, 10 May 2013 01:15:15 -0300
-Message-Id: <1368159316-31744-2-git-send-email-lucas.de.marchi@gmail.com>
+Subject: [PATCH 3/3] init/Kconfig: Add option to set modprobe command
+Date: Fri, 10 May 2013 01:15:16 -0300
+Message-Id: <1368159316-31744-3-git-send-email-lucas.de.marchi@gmail.com>
 X-Mailer: git-send-email 1.8.2.2
 In-Reply-To: <1368159316-31744-1-git-send-email-lucas.de.marchi@gmail.com>
 References: <1368159316-31744-1-git-send-email-lucas.de.marchi@gmail.com>
@@ -22,70 +23,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that argv_split() leaves room for extra parameter, make
-call_modprobe() use it.
+The hard-coded path of modprobe doesn't allow distros to put the binary
+in another place without add links from one place to another. For
+example, in recent versions of distros like Fedora, Arch and Suse, kmod
+is the default tool to load modules and they have to create a link from
+modprobe to kmod binary.  kmod relies on argv[0] to know what to do but
+in future they want to add commands like "kmod load -- modulename",
+which is not possible if the path to the tool to load modules is
+hard-coded in kernel.
+
+Moreover, it's already possible to set the path through /proc/sys, but
+it would have to be done very early in the boot sequence and on every
+boot since modprobe may be called even before / is mounted. In this
+scenario booting without and initrd would be more difficult as well.
 
 Signed-off-by: Lucas De Marchi <lucas.de.marchi@gmail.com>
 ---
- kernel/kmod.c | 19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ init/Kconfig  | 7 +++++++
+ kernel/kmod.c | 2 +-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
+diff --git a/init/Kconfig b/init/Kconfig
+index 5341d72..72eee1c 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1593,6 +1593,13 @@ menuconfig MODULES
+ 
+ if MODULES
+ 
++config DEFAULT_MODULE_LOAD_BIN
++	string "Default module load binary"
++	default "/sbin/modprobe -q --"
++	help
++	  This option determines the default executable to be called when a
++	  module is requested to be loaded via request_module().
++
+ config MODULE_FORCE_LOAD
+ 	bool "Forced module loading"
+ 	default n
 diff --git a/kernel/kmod.c b/kernel/kmod.c
-index 166aff5..70df90b 100644
+index 70df90b..1828542 100644
 --- a/kernel/kmod.c
 +++ b/kernel/kmod.c
-@@ -67,12 +67,12 @@ static DECLARE_RWSEM(umhelper_sem);
+@@ -67,7 +67,7 @@ static DECLARE_RWSEM(umhelper_sem);
  /*
  	modprobe_path is set via /proc/sys.
  */
--char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe";
-+char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe -q --";
+-char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe -q --";
++char modprobe_path[KMOD_PATH_LEN] = CONFIG_DEFAULT_MODULE_LOAD_BIN;
  
  static void free_modprobe_argv(struct subprocess_info *info)
  {
- 	kfree(info->argv[3]); /* check call_modprobe() */
--	kfree(info->argv);
-+	argv_free(info->argv);
- }
- 
- static int call_modprobe(char *module_name, int wait)
-@@ -84,8 +84,10 @@ static int call_modprobe(char *module_name, int wait)
- 		"PATH=/sbin:/usr/sbin:/bin:/usr/bin",
- 		NULL
- 	};
-+	int argc;
-+	char **argv;
- 
--	char **argv = kmalloc(sizeof(char *[5]), GFP_KERNEL);
-+	argv = argv_split(GFP_KERNEL, modprobe_path, &argc, 1);
- 	if (!argv)
- 		goto out;
- 
-@@ -93,13 +95,8 @@ static int call_modprobe(char *module_name, int wait)
- 	if (!module_name)
- 		goto free_argv;
- 
--	argv[0] = modprobe_path;
--	argv[1] = "-q";
--	argv[2] = "--";
--	argv[3] = module_name;	/* check free_modprobe_argv() */
--	argv[4] = NULL;
--
--	info = call_usermodehelper_setup(modprobe_path, argv, envp, GFP_KERNEL,
-+	argv[argc] = module_name;	/* check free_modprobe_argv() */
-+	info = call_usermodehelper_setup(argv[0], argv, envp, GFP_KERNEL,
- 					 NULL, free_modprobe_argv, NULL);
- 	if (!info)
- 		goto free_module_name;
-@@ -109,7 +106,7 @@ static int call_modprobe(char *module_name, int wait)
- free_module_name:
- 	kfree(module_name);
- free_argv:
--	kfree(argv);
-+	argv_free(argv);
- out:
- 	return -ENOMEM;
- }
 -- 
 1.8.2.2
 
