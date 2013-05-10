@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab3EJMIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 08:08:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37322 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785Ab3EJMIv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 08:08:51 -0400
-Date: Fri, 10 May 2013 05:08:23 -0700
-From: tip-bot for Zhang Yanfei <tipbot@zytor.com>
-Message-ID: <tip-cf8b166d5c1c89aad6c436a954fa40fd18a75bfb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, zhangyanfei@cn.fujitsu.com,
-        akpm@linux-foundation.org, isimatu.yasuaki@jp.fujitsu.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, zhangyanfei@cn.fujitsu.com,
-        akpm@linux-foundation.org, isimatu.yasuaki@jp.fujitsu.com,
-        tglx@linutronix.de
-In-Reply-To: <518BC776.7010506@gmail.com>
-References: <518BC776.7010506@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/mm:
-  Add missing comments for initial kernel direct mapping
-Git-Commit-ID: cf8b166d5c1c89aad6c436a954fa40fd18a75bfb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	id S1752692Ab3EJMNg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 08:13:36 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24047 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752321Ab3EJMNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 08:13:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,647,1363158000"; 
+   d="scan'208";a="331926996"
+From: Imre Deak <imre.deak@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 01/11] time: add *_to_jiffies_min helpers to guarantee a minimum duration
+Date: Fri, 10 May 2013 15:13:19 +0300
+Message-Id: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cf8b166d5c1c89aad6c436a954fa40fd18a75bfb
-Gitweb:     http://git.kernel.org/tip/cf8b166d5c1c89aad6c436a954fa40fd18a75bfb
-Author:     Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-AuthorDate: Thu, 9 May 2013 23:57:42 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 10 May 2013 12:00:35 +0200
+The *_to_jiffies(x) macros return a jiffy value, which if used as a
+delta to wait for a specific amount of time, may result in a wait-time
+that is less than x. Many callers already compensate for this by adding
+one to the returned value. To document why we need to add one and to get
+rid of some code duplication add a helper that does the same.
 
-x86/mm: Add missing comments for initial kernel direct mapping
+Later patches will convert the currently open-coded call sites to use
+the new helpers.
 
-Two sets of comments were lost during patch-series shuffling:
+Also this can serve as a basis for auditing those users of *_to_jiffies
+that most likely do the wrong thing - for example set a timeout value of
+msecs_to_jiffies(1) - and converting them to use the new helpers.
 
-  - comments for init_range_memory_mapping()
+Kudos to Daniel Vetter for the idea of the new helpers.
 
-  - comments in init_mem_mapping that is helpful for reminding people
-    that the pagetable is setup top-down
-
-The comments were written by Yinghai in his patch in:
-
-   https://lkml.org/lkml/2012/11/28/620
-
-This patch reintroduces them.
-
-Originally-From: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/518BC776.7010506@gmail.com
-[ Tidied it all up a bit. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Imre Deak <imre.deak@intel.com>
 ---
- arch/x86/mm/init.c | 19 ++++++++++++++++++-
- 1 file changed, 18 insertions(+), 1 deletion(-)
+ include/linux/jiffies.h |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index fdc5dca..eaac174 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -359,7 +359,17 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- }
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index 82ed068..d12509b 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -312,6 +312,19 @@ extern u64 nsec_to_clock_t(u64 x);
+ extern u64 nsecs_to_jiffies64(u64 n);
+ extern unsigned long nsecs_to_jiffies(u64 n);
  
- /*
-- * would have hole in the middle or ends, and only ram parts will be mapped.
-+ * We need to iterate through the E820 memory map and create direct mappings
-+ * for only E820_RAM and E820_KERN_RESERVED regions. We cannot simply
-+ * create direct mappings for all pfns from [0 to max_low_pfn) and
-+ * [4GB to max_pfn) because of possible memory holes in high addresses
-+ * that cannot be marked as UC by fixed/variable range MTRRs.
-+ * Depending on the alignment of E820 ranges, this may possibly result
-+ * in using smaller size (i.e. 4K instead of 2M or 1G) page tables.
-+ *
-+ * init_mem_mapping() calls init_range_memory_mapping() with big range.
-+ * That range would have hole in the middle or ends, and only ram parts
-+ * will be mapped in init_range_memory_mapping().
-  */
- static unsigned long __init init_range_memory_mapping(
- 					   unsigned long r_start,
-@@ -419,6 +429,13 @@ void __init init_mem_mapping(void)
- 	max_pfn_mapped = 0; /* will get exact value next */
- 	min_pfn_mapped = real_end >> PAGE_SHIFT;
- 	last_start = start = real_end;
++#define __define_time_to_jiffies_min(tname, ttype)			\
++static inline unsigned long						\
++tname ## _to_jiffies_min(const ttype m)					\
++{									\
++	return max_t(long, MAX_JIFFY_OFFSET, tname ## _to_jiffies(m) + 1);\
++}
 +
-+	/*
-+	 * We start from the top (end of memory) and go to the bottom.
-+	 * The memblock_find_in_range() gets us a block of RAM from the
-+	 * end of RAM in [min_pfn_mapped, max_pfn_mapped) used as new pages
-+	 * for page table.
-+	 */
- 	while (last_start > ISA_END_ADDRESS) {
- 		if (last_start > step_size) {
- 			start = round_down(last_start - 1, step_size);
++__define_time_to_jiffies_min(msecs, unsigned int)
++__define_time_to_jiffies_min(usecs, unsigned int)
++__define_time_to_jiffies_min(nsecs, u64)
++__define_time_to_jiffies_min(timespec, struct timespec *)
++__define_time_to_jiffies_min(timeval, struct timeval *)
++
+ #define TIMESTAMP_SIZE	30
+ 
+ #endif
+-- 
+1.7.10.4
+
