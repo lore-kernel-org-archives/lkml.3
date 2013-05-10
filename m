@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757591Ab3EJPb4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 11:31:56 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:39220 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231Ab3EJPby (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 11:31:54 -0400
-Date: Fri, 10 May 2013 17:31:50 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123
- native_smp_send_reschedule
-Message-ID: <20130510153148.GA9358@somewhere>
-References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
- <20130510002930.GB2394@somewhere>
- <20130510092811.GA22942@pd.tnic>
- <CAFTL4hxx_pHkJExnRks4hcOYGrJb8TCMRdCtt0UA-i3wsaWWcQ@mail.gmail.com>
- <20130510093729.GA16487@gmail.com>
- <20130510094556.GA23014@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130510094556.GA23014@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753421Ab3EJPfB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 11:35:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7576 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752811Ab3EJPfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 11:35:00 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] perf: Expand definition of sysfs format attribute
+Date: Fri, 10 May 2013 17:33:00 +0200
+Message-Id: <1368199980-20283-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 11:45:56AM +0200, Borislav Petkov wrote:
-> On Fri, May 10, 2013 at 11:37:29AM +0200, Ingo Molnar wrote:
-> > The pattern I use in such cases is:
-> > 
-> > 	if (WARN_ONCE(!cpu_online(cpu))) {
-> > 		printk("%d %d\n", cpu, smp_processor_id());
-> > 		dump_stack();
-> > 	}
-> 
-> Cool, and WARN_ONCE dumps stack already so:
-> 
-> 	if (WARN_ONCE(!cpu_online(cpu)))
-> 		printk("%d %d\n", cpu, smp_processor_id());
+From: Michael Ellerman <michael@ellerman.id.au>
 
-Even better:
+Make it explicit that the format attributes may define overlapping bit
+ranges. Unfortunately this was left unspecified originally, and all the
+examples show non-overlapping ranges. I don't believe this is an ABI
+change, as we are defining something that was previously undefined, but
+others may disagree.
 
- 	if (WARN_ONCE(!cpu_online(cpu)))
- 		printk_once("%d %d\n", cpu, smp_processor_id());
+The POWER8 PMU would like to define overlapping ranges, as bit ranges in
+the event code have different meanings for certain events. It will also
+allow us to define an overarching "event" field, that encompasses all
+others.
 
-So the printk doesn't flood after the first case.
+As far as I can see perf is comfortable with this change, however I am
+not sure if there are any other users of the interface.
 
-> 
-> Nice.
-> 
-> -- 
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ Documentation/ABI/testing/sysfs-bus-event_source-devices-format | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
+index 079afc7..77f47ff 100644
+--- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
+@@ -9,6 +9,12 @@ Description:
+ 		we want to export, so that userspace can deal with sane
+ 		name/value pairs.
+ 
++		Userspace must be prepared for the possibility that attributes
++		define overlapping bit ranges. For example:
++			attr1 = 'config:0-23'
++			attr2 = 'config:0-7'
++			attr3 = 'config:12-35'
++
+ 		Example: 'config1:1,6-10,44'
+ 		Defines contents of attribute that occupies bits 1,6-10,44 of
+ 		perf_event_attr::config1.
+-- 
+1.7.11.7
+
