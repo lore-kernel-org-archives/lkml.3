@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab3EJKY2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 06:24:28 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:58344
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750867Ab3EJKY1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 06:24:27 -0400
-Date: Fri, 10 May 2013 12:22:45 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/9] perf: Adding better precise_ip field handling
-Message-ID: <20130510102245.GA31235@dyad.programming.kicks-ass.net>
-References: <1368106344-23383-1-git-send-email-jolsa@redhat.com>
- <20130509150744.GB3039@dyad.programming.kicks-ass.net>
- <20130509152022.GD1628@krava.brq.redhat.com>
- <20130510092741.GE3039@dyad.programming.kicks-ass.net>
- <20130510094053.GF1040@krava.brq.redhat.com>
- <20130510095345.GG3039@dyad.programming.kicks-ass.net>
- <20130510101823.GA18427@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130510101823.GA18427@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1752213Ab3EJK3t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 06:29:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39790 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750867Ab3EJK3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 06:29:47 -0400
+From: Lingzhu Xiang <lxiang@redhat.com>
+To: Matt Fleming <matt.fleming@intel.com>, Jeremy Kerr <jk@ozlabs.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Josh Boyer <jwboyer@redhat.com>, "Lee, Chun-Yi" <jlee@suse.com>,
+        Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH] efivarfs: Never return ENOENT from firmware again
+Date: Fri, 10 May 2013 18:29:21 +0800
+Message-Id: <5b6476bf31dc699a0e6f3983e78447eeac34d831.1368180585.git.lxiang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 12:18:23PM +0200, Ingo Molnar wrote:
-> 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > > so you mean just detect that by opening events with increasing precise 
-> > > and see how far we could get.. could be I guess, though the 'precise' 
-> > > sysfs attribute seems more fit to me
-> > 
-> > The other way around, start at ppp end at !p, then use the one that 
-> > worked.
-> 
-> Really, instead of this silly 'probing until it works' notion, how about 
-> the radical idea that we pass to the kernel our request, and the kernel 
-> fulfills our wish to the best of its ability?
-> 
-> This could be done as a new PERF_COUNT_HW_CPU_CYCLES_PRECISE event, to 
-> which tooling could migrate, without changing existing semantics.
-> 
-> The problem with the complex probing is that it's totally unnecessary 
-> complexity that results from lack of passing the right information to the 
-> kernel. Forcing that will only hinder user-space adoption of our precise 
-> profiling facilities.
+Previously in 1fa7e69 efi_status_to_err() translated firmware status
+EFI_NOT_FOUND to -EIO instead of -ENOENT for efivarfs operations to
+avoid confusion. After refactoring in e14ab23, it is also used in other
+places where the translation may be unnecessary.
 
-The part I have trouble with is that its a vague request and you'll get a vague
-answer.
+So move the translation to efivarfs specific code. Also return EOF
+for reading zero-length files, which is what users would expect.
 
-Its very similar to: 'do something' and getting a string of random bytes back.
-Yes it is 'something', request fulfilled.
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Jeremy Kerr <jk@ozlabs.org>
+Cc: Lee, Chun-Yi <jlee@suse.com>
+Cc: Andy Whitcroft <apw@canonical.com>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+---
+This is to be applied against mainline or Matt Fleming's chainsaw branch.
 
-By doing the probing, userspace knows exactly what it asked and what it'll get.
+ fs/efivarfs/file.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/fs/efivarfs/file.c b/fs/efivarfs/file.c
+index bfb5315..8dd524f 100644
+--- a/fs/efivarfs/file.c
++++ b/fs/efivarfs/file.c
+@@ -44,8 +44,11 @@ static ssize_t efivarfs_file_write(struct file *file,
+ 
+ 	bytes = efivar_entry_set_get_size(var, attributes, &datasize,
+ 					  data, &set);
+-	if (!set && bytes)
++	if (!set && bytes) {
++		if (bytes == -ENOENT)
++			bytes = -EIO;
+ 		goto out;
++	}
+ 
+ 	if (bytes == -ENOENT) {
+ 		drop_nlink(inode);
+@@ -76,7 +79,14 @@ static ssize_t efivarfs_file_read(struct file *file, char __user *userbuf,
+ 	int err;
+ 
+ 	err = efivar_entry_size(var, &datasize);
+-	if (err)
++
++	/*
++	 * efivarfs represents uncommitted variables with
++	 * zero-length files. Reading them should return EOF.
++	 */
++	if (err == -ENOENT)
++		return 0;
++	else if (err)
+ 		return err;
+ 
+ 	data = kmalloc(datasize + sizeof(attributes), GFP_KERNEL);
+-- 
+1.7.11.7
+
