@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab3EJUVG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 16:21:06 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:47240 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380Ab3EJUVD (ORCPT
+	id S1754496Ab3EJUjD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 16:39:03 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:43950 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753276Ab3EJUjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 16:21:03 -0400
+	Fri, 10 May 2013 16:39:01 -0400
+Message-ID: <518D5AE1.7040905@gmail.com>
+Date: Fri, 10 May 2013 13:38:57 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <51818334.7020201@fold.natur.cuni.cz>
-References: <51818334.7020201@fold.natur.cuni.cz>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 10 May 2013 14:20:41 -0600
-Message-ID: <CAErSpo4x4Y3sJdvaYyTXT1pPAehrnD5ExA+qzpgkbNiqiU2yVA@mail.gmail.com>
-Subject: Re: 3.9-linux-next-20130501: OOPS in intel_pstate_sample
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Toshi Kani <toshi.kani@hp.com>, Viresh Kumar <viresh.kumar@linaro.org>,
-        cpufreq@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Theodore Ts'o" <tytso@mit.edu>, EUNBONG SONG <eunb.song@samsung.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: EXT4 panic at jbd2_journal_put_journal_head() in 3.9+
+References: <6719519.5821368147110937.JavaMail.weblogic@epml17> <20130510192747.GA11707@thunk.org>
+In-Reply-To: <20130510192747.GA11707@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Viresh, Srinivas, Dirk, cpufreq list]
+On 05/10/2013 12:27 PM, Theodore Ts'o wrote:
+> Hmm, since you seem to be able to reproduce the problem reliably, any
+> chance you can try bisecting the problem?  I've looked at the commits
+> that touch fs/jbd2 and nothing is jumping out at me.
+>
+> Also, how many CPU's do you have your system, and what kind of storage
+> device were you using when you were running iozone (5400rpm HDD,
+> 7200RPM HDD, RAID array, SSD, etc.)?
 
-On Wed, May 1, 2013 at 3:03 PM, Martin Mokrejs
-<mmokrejs@fold.natur.cuni.cz> wrote:
-> Hi,
->   I opened yet another bug https://bugzilla.kernel.org/show_bug.cgi?id=57411 .
+I too have seen this.
+
+My system is:
+
+   12 CPU Octeon (MIPS64)
+   Root is ext3, mounted via ext4fs on a slow CompactFlash/PIO6
+
+I saw the crash when simply booting  a fairly bare-bones Debian distro, 
+although it is somewhat random:
+.
+.
+ata3: PATA max PIO6 cmd 900000001d040000 ctl 900000001d05000d irq 63
+.
+.
+ata3.00: CFA: CF 4GB, 20101001, max UDMA/133
+ata3.00: 7847280 sectors, multi 0: LBA
+ata3.00: configured for PIO6
+.
+.
+scsi 2:0:0:0: Direct-Access     ATA      CF 4GB           2010 PQ: 0 ANSI: 5
+sd 2:0:0:0: [sda] 7847280 512-byte logical blocks: (4.01 GB/3.74 GiB)
+sd 2:0:0:0: [sda] Write Protect is off
+sd 2:0:0:0: [sda] Write cache: disabled, read cache: enabled, doesn't 
+support DPO or FUA
+  sda: sda1 sda2
+sd 2:0:0:0: [sda] Attached SCSI disk
+EXT4-fs (sda2): mounting ext3 file system using the ext4 subsystem
+EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
+VFS: Mounted root (ext3 filesystem) readonly on device 8:2.
+.
+.
+.
+
+I have not been able to get it to fail a second time.  So for me 
+bisecting might not work.
+
+David Daney
+
+
 >
-> This is maybe a dupe of bug https://bugzilla.kernel.org/show_bug.cgi?id=57401
-> (which is vanilla 3.9) but happened on linux-next-20130501 after I did "dmesg | less".
->
-> ? pid_param_set
-> intel_pstate_timer_func
-> call_timer_fn
-> ? __internal_add_timer
-> ? pid_param_set
-> run_timer_softirq
-> __do_softirq
-> irq_exit
-> smp_apic_timer_interrupt
-> apic_timer_interrupt
-> ? sysret_check
->
-> A camera picture of the stacktrace is attached to the bug https://bugzilla.kernel.org/show_bug.cgi?id=57411
-> Please forward this to the appropriate person.
 > Thanks,
-> Martin
+>
+> 						- Ted
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+
