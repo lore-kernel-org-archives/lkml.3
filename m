@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496Ab3EJCpp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 22:45:45 -0400
-Received: from 87-119-183-129.tll.elisa.ee ([87.119.183.129]:53753 "EHLO
-	fatphil.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753389Ab3EJCpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 22:45:44 -0400
-X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 May 2013 22:45:43 EDT
-Date: Fri, 10 May 2013 05:37:26 +0300
-From: Phil Carmody <fatphil@asdf.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Phil Carmody <pc+lkml@asdf.org>, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Makefile: make sparse (CHECK) user-selectable
-Message-ID: <20130510023726.GQ21274@fatphil.org>
-References: <1368026580-26897-1-git-send-email-pc+lkml@asdf.org> <518A8EE6.90206@infradead.org>
+	id S1755552Ab3EJCs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 22:48:56 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:59097 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526Ab3EJCsz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 22:48:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <518A8EE6.90206@infradead.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130510102706.84061f044d3e59717638b731@canb.auug.org.au>
+References: <1368098909-919-1-git-send-email-realmz6@gmail.com>
+	<CA+55aFyQVZ622dH-e+V77B6LKuYeXS+QfnYYQK77=0T82-MkAA@mail.gmail.com>
+	<20130510102706.84061f044d3e59717638b731@canb.auug.org.au>
+Date: Fri, 10 May 2013 10:48:54 +0800
+Message-ID: <CAMk6uBk2inVj8Hu8YZ3tQ86OMh-Ub86eJmx9csrmFO+H4zq0rQ@mail.gmail.com>
+Subject: Re: [uclinux-dist-devel] [GIT PULL] Blackfin updates for 3.10
+From: Steven Miao <realmz6@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Bob Liu <lliubbo@gmail.com>, uclinux-dist-devel@blackfin.uclinux.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/13 10:44 -0700, Randy Dunlap wrote:
-> On 05/08/13 08:23, Phil Carmody wrote:
-> > I've got a tweaked version as well as the system default,
-> > so make the sparse binary that's run user-selectable.
-> > 
-> 
-> I'm confused about why this patch is necessary since I already do
-> 
-> $ make O=builddir CHECK=/path/to/sparse all
+Hi Stephen,
 
-Ach, OK. I was presuming that I should be able to select my sparse
-in the same way that I select my cross compiler, namely in the ENV.
+Yes, please update the current blackfin tree with:
 
-CROSS_COMPILE=whatever- CHECK=/my/sparse make C=1
+  https://github.com/realmz/blackfin-linux.git  blackfin-linus
 
-Doctor - it hurts when I do >this<, ouch.
-Well, don't do that then!
+Thanks!
 
-Phil
--- 
-"In a world of magnets and miracles" 
--- Insane Clown Posse, Miracles, 2009. Much derided.
-"Magnets, how do they work"
--- Pink Floyd, High Hopes, 1994. Lauded as lyrical geniuses.
+-steven
+
+On Fri, May 10, 2013 at 8:27 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> On Thu, 9 May 2013 14:53:42 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>>
+>> Hmm. I'm used to pull blackfin updates from Bob Liu. I see that he has
+>> signed your gpg key, so this all looks fine, but quite frankly, Id'
+>> much rather be told ahead of time that "oh, expect pulls from another
+>> person".
+>>
+>> I do *not* want to end up in some kind of fight over who maintains
+>> what. Bob? Am I supposed to expect blackfin pulls to come from Steven
+>> now? Or is this a one-off? Or what?
+>
+> And should this tree be included in linux-next for future work (as well,
+> or instead of, the current blackfin tree)?
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
