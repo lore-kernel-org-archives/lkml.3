@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab3EJIYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 04:24:50 -0400
-Received: from sauhun.de ([89.238.76.85]:60543 "EHLO pokefinder.org"
+	id S1753385Ab3EJIRQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 04:17:16 -0400
+Received: from sauhun.de ([89.238.76.85]:60511 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753287Ab3EJIRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 04:17:21 -0400
+	id S1751941Ab3EJIRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 04:17:13 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>,
+Cc: Wolfram Sang <wsa@the-dreams.de>, Paul Zimmerman <paulz@synopsys.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-serial@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: [RFC 27/42] drivers/tty/serial: don't check resource with devm_ioremap_resource
-Date: Fri, 10 May 2013 10:17:12 +0200
-Message-Id: <1368173847-5661-28-git-send-email-wsa@the-dreams.de>
+        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [RFC 24/42] drivers/staging/dwc2: don't check resource with devm_ioremap_resource
+Date: Fri, 10 May 2013 10:17:09 +0200
+Message-Id: <1368173847-5661-25-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
 References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
@@ -27,28 +26,25 @@ duplicate this in the driver.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- drivers/tty/serial/serial-tegra.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ drivers/staging/dwc2/platform.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/drivers/tty/serial/serial-tegra.c b/drivers/tty/serial/serial-tegra.c
-index 9799d04..9570b55 100644
---- a/drivers/tty/serial/serial-tegra.c
-+++ b/drivers/tty/serial/serial-tegra.c
-@@ -1295,13 +1295,9 @@ static int tegra_uart_probe(struct platform_device *pdev)
- 	tup->cdata = cdata;
+diff --git a/drivers/staging/dwc2/platform.c b/drivers/staging/dwc2/platform.c
+index 1f3d581..b610960 100644
+--- a/drivers/staging/dwc2/platform.c
++++ b/drivers/staging/dwc2/platform.c
+@@ -102,11 +102,6 @@ static int dwc2_driver_probe(struct platform_device *dev)
+ 	}
  
- 	platform_set_drvdata(pdev, tup);
--	resource = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!resource) {
--		dev_err(&pdev->dev, "No IO memory resource\n");
--		return -ENODEV;
+ 	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&dev->dev, "missing memory base resource\n");
+-		return -EINVAL;
 -	}
- 
- 	u->mapbase = resource->start;
-+	resource = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	u->membase = devm_ioremap_resource(&pdev->dev, resource);
- 	if (IS_ERR(u->membase))
- 		return PTR_ERR(u->membase);
+-
+ 	hsotg->regs = devm_ioremap_resource(&dev->dev, res);
+ 	if (IS_ERR(hsotg->regs))
+ 		return PTR_ERR(hsotg->regs);
 -- 
 1.7.10.4
 
