@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab3EJV3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 17:29:32 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:62606 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061Ab3EJV3a (ORCPT
+	id S1755885Ab3EJV3n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 17:29:43 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:39435 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755700Ab3EJV3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 17:29:30 -0400
+	Fri, 10 May 2013 17:29:40 -0400
 From: Zoran Markovic <zoran.markovic@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: Zoran Markovic <zoran.markovic@linaro.org>,
+Cc: Benoit Goby <benoit@android.com>,
         Android Kernel Team <kernel-team@android.com>,
         Colin Cross <ccross@android.com>, Todd Poynor <toddpoynor@google.com>,
-        San Mehat <san@google.com>, Benoit Goby <benoit@android.com>,
-        John Stultz <john.stultz@linaro.org>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [RFC PATCHv2 0/2] power: device suspend/resume watchdog
-Date: Fri, 10 May 2013 14:28:47 -0700
-Message-Id: <1368221329-1841-1-git-send-email-zoran.markovic@linaro.org>
+        San Mehat <san@google.com>, John Stultz <john.stultz@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Zoran Markovic <zoran.markovic@linaro.org>
+Subject: [RFC PATCHv2 1/2] drivers: power: Add watchdog timer to catch drivers which lockup during suspend/resume.
+Date: Fri, 10 May 2013 14:28:48 -0700
+Message-Id: <1368221329-1841-2-git-send-email-zoran.markovic@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1368221329-1841-1-git-send-email-zoran.markovic@linaro.org>
+References: <1368221329-1841-1-git-send-email-zoran.markovic@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-Attached are two patches addressing comments on the implementation
-of device suspend (and resume) watchdogs from the android kernel. I have
-squashed changes for the suspend and resume watchdogs as they address
-pretty much the same functionality, and also added compile-time
-configurability of the watchdogs.
+From: Benoit Goby <benoit@android.com>
 
-Please be kind to review and comment if it is ready for upstreaming.
+Below is a patch from android kernel that detects a driver suspend/resume
+lockup and captures dump in the kernel log. Please review and provide
+comments.
 
-Best regards,
-Zoran
+Rather than hard-lock the kernel, dump the suspend/resume thread stack and
+BUG() when a driver takes too long to suspend/resume.  The timeout is set to
+12 seconds to be longer than the usbhid 10 second timeout.
+
+Exclude from the watchdog the time spent waiting for children that
+are resumed asynchronously and time every device, whether or not they
+resumed synchronously.
+
+This patch is targeted for mobile devices where a suspend/resume lockup
+could cause a system reboot and catch user's attention. Information
+about failing device can later be retrieved from captured log in
+subsequent boot session.
+
+The hardware watchdog timer is likely suspended during this time and
+couldn't be relied upon. The soft-lockup detector would eventually tell
+that tasks are not scheduled, but would provide little context as to why.
+The patch hence uses system timer and assumes it is still active while the
+devices are suspended/resumed.
 
 Cc: Android Kernel Team <kernel-team@android.com>
 Cc: Colin Cross <ccross@android.com>
@@ -46,18 +62,148 @@ Cc: Pavel Machek <pavel@ucw.cz>
 Cc: Rafael J. Wysocki <rjw@sisk.pl>
 Cc: Len Brown <len.brown@intel.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Original-author: San Mehat <san@google.com>
+Signed-off-by: Benoit Goby <benoit@android.com>
+[zoran.markovic@linaro.org: Changed printk(KERN_EMERG,...) to pr_emerg(...),
+tweaked commit message. Minor changes to merge code into kernel tip.]
+Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+---
+ drivers/base/power/main.c |   66 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
 
-Benoit Goby (1):
-  drivers: power: Add watchdog timer to catch drivers which lockup
-    during suspend/resume.
-
-Zoran Markovic (1):
-  PM: compile-time configuration of device suspend/resume watchdogs.
-
- drivers/base/power/main.c |   87 +++++++++++++++++++++++++++++++++++++++++++++
- kernel/power/Kconfig      |   48 +++++++++++++++++++++++++
- 2 files changed, 135 insertions(+)
-
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 5a9b656..a6a02c0 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -29,6 +29,8 @@
+ #include <linux/async.h>
+ #include <linux/suspend.h>
+ #include <linux/cpuidle.h>
++#include <linux/timer.h>
++
+ #include "../base.h"
+ #include "power.h"
+ 
+@@ -54,6 +56,12 @@ struct suspend_stats suspend_stats;
+ static DEFINE_MUTEX(dpm_list_mtx);
+ static pm_message_t pm_transition;
+ 
++struct dpm_watchdog {
++	struct device		*dev;
++	struct task_struct	*tsk;
++	struct timer_list	timer;
++};
++
+ static int async_error;
+ 
+ /**
+@@ -384,6 +392,56 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
+ 	return error;
+ }
+ 
++/**
++ * dpm_wd_handler - Driver suspend / resume watchdog handler.
++ *
++ * Called when a driver has timed out suspending or resuming.
++ * There's not much we can do here to recover so BUG() out for
++ * a crash-dump
++ */
++static void dpm_wd_handler(unsigned long data)
++{
++	struct dpm_watchdog *wd = (void *)data;
++	struct device *dev      = wd->dev;
++	struct task_struct *tsk = wd->tsk;
++
++	dev_emerg(dev, "**** DPM device timeout ****\n");
++	show_stack(tsk, NULL);
++
++	BUG();
++}
++
++/**
++ * dpm_wd_set - Enable pm watchdog for given device.
++ * @wd: Watchdog. Must be allocated on the stack.
++ * @dev: Device to handle.
++ */
++static void dpm_wd_set(struct dpm_watchdog *wd, struct device *dev)
++{
++	struct timer_list *timer = &wd->timer;
++
++	wd->dev = dev;
++	wd->tsk = get_current();
++
++	init_timer_on_stack(timer);
++	timer->expires = jiffies + HZ * 12;
++	timer->function = dpm_wd_handler;
++	timer->data = (unsigned long)wd;
++	add_timer(timer);
++}
++
++/**
++ * dpm_wd_clear - Disable pm watchdog.
++ * @wd: Watchdog to disable.
++ */
++static void dpm_wd_clear(struct dpm_watchdog *wd)
++{
++	struct timer_list *timer = &wd->timer;
++
++	del_timer_sync(timer);
++	destroy_timer_on_stack(timer);
++}
++
+ /*------------------------- Resume routines -------------------------*/
+ 
+ /**
+@@ -570,6 +628,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
+ 	pm_callback_t callback = NULL;
+ 	char *info = NULL;
+ 	int error = 0;
++	struct dpm_watchdog wd;
+ 
+ 	TRACE_DEVICE(dev);
+ 	TRACE_RESUME(0);
+@@ -585,6 +644,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
+ 	 * a resumed device, even if the device hasn't been completed yet.
+ 	 */
+ 	dev->power.is_prepared = false;
++	dpm_wd_set(&wd, dev);
+ 
+ 	if (!dev->power.is_suspended)
+ 		goto Unlock;
+@@ -636,6 +696,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
+ 
+  Unlock:
+ 	device_unlock(dev);
++	dpm_wd_clear(&wd);
+ 
+  Complete:
+ 	complete_all(&dev->power.completion);
+@@ -1053,6 +1114,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 	pm_callback_t callback = NULL;
+ 	char *info = NULL;
+ 	int error = 0;
++	struct dpm_watchdog wd;
+ 
+ 	dpm_wait_for_children(dev, async);
+ 
+@@ -1076,6 +1138,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 	if (dev->power.syscore)
+ 		goto Complete;
+ 
++	dpm_wd_set(&wd, dev);
++
+ 	device_lock(dev);
+ 
+ 	if (dev->pm_domain) {
+@@ -1131,6 +1195,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
+ 
+ 	device_unlock(dev);
+ 
++	dpm_wd_clear(&wd);
++
+  Complete:
+ 	complete_all(&dev->power.completion);
+ 	if (error)
 -- 
 1.7.9.5
 
