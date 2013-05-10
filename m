@@ -1,91 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630Ab3EJHF6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 03:05:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:32579 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750825Ab3EJHF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 03:05:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,646,1363158000"; 
-   d="scan'208";a="334718048"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "Wei, Gang" <gang.wei@intel.com>
-Subject: RE: [PATCH 4/4] driver: provide sysfs interfaces to access SMX
- parameter
-Thread-Topic: [PATCH 4/4] driver: provide sysfs interfaces to access SMX
- parameter
-Thread-Index: AQHOSvE+ysMfIHdI9EqG5gcExdaKwpj6wt+AgAMpG0A=
-Date: Fri, 10 May 2013 07:05:53 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE9AC926@SHSMSX102.ccr.corp.intel.com>
-References: <1367938519-840-1-git-send-email-qiaowei.ren@intel.com>
-	 <1367938519-840-5-git-send-email-qiaowei.ren@intel.com>
- <1367990697.2425.33.camel@x230>
-In-Reply-To: <1367990697.2425.33.camel@x230>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1751895Ab3EJHGV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 03:06:21 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:45110 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753Ab3EJHGU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 03:06:20 -0400
+Date: Fri, 10 May 2013 09:06:16 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Robin Holt <holt@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Russ Anderson <rja@sgi.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH -v8 00/11] Shutdown from reboot_cpuid without stopping
+ other cpus.
+Message-ID: <20130510070616.GA5763@gmail.com>
+References: <1368127405-112717-1-git-send-email-holt@sgi.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368127405-112717-1-git-send-email-holt@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4A766cr020623
 
-On 2013-05-08, Matthew Garrett wrote:
-> On Tue, 2013-05-07 at 22:55 +0800, Qiaowei Ren wrote:
->
-> > +What:		/sys/devices/platform/intel_txt/parameter/acm_max_size
-> > +Date:		May 2013
-> > +KernelVersion:	3.9
-> > +Contact:	"Qiaowei Ren" <qiaowei.ren@intel.com>
-> > +Description:	The "acm_max_size" property will show max size of
-> > +		authenticated code execution area.
+
+* Robin Holt <holt@sgi.com> wrote:
+
+> We recently noticed that reboot of a 1024 cpu machine takes approx 16
+> minutes of just stopping the cpus.  The slowdown was tracked to commit
+> f96972f.
 > 
-> What would userspace use this for?
-
-These sysfs files are just export SMX & TXT related information to userspace. So that other developers (or OSV & ISV) can be able to develop txt related applications or tools based on these information.
-
-> > +What:		/sys/devices/platform/intel_txt/parameter/acm_mem_types
-> > +Date:		May 2013
-> > +KernelVersion:	3.9
-> > +Contact:	"Qiaowei Ren" <qiaowei.ren@intel.com>
-> > +Description:	The "acm_max_types" property will show external memory
-> > +		types supported during AC mode.
+> The current implementation does all the work of hot removing the cpus
+> before halting the system.  We are switching to just migrating to the
+> reboot_cpu and then continuing with shutdown/reboot.
 > 
-> Or this? And what's AC mode?
-
-It means that the property will show supportable memory types for memory mapped outside of the authenticated code execution area.
-
-> > +	__asm__ __volatile__ (IA32_GETSEC_OPCODE "\n"
-> > +			      : "=a"(eax), "=b"(ebx), "=c"(ecx)
-> > +			      : "a"(IA32_GETSEC_PARAMETERS), "b"(index));
-> > +
-> > +	*param_type = eax & 0x1f;
-> > +	*peax = eax;
-> > +	*pebx = ebx;
-> > +	*pecx = ecx;
+> The patch set is broken into eleven parts.  The first two are planned for
+> the stable release.  The others move the halt/shutdown/reboot related
+> functions to their own kernel/reboot.c file and then move the handling
+> of the kernel reboot= kernel parameter to generic kernel code.
 > 
-> Should there be a check for failure here? Is it possible for this operation to fail?
-
-You mean GETSEC instruction? I don't notice related description in manual. Next function get_parameters() will process return eax/ebx/ecx returned by this instruction.
-
-> > +	write_cr4(read_cr4() | CR4_SMXE);
 > 
-> Whoo. This needs at least a giant comment and probably some locking, but if
-> this is supposed to be set during runtime then it should be done in core
-> architecture code rather than just in this driver.
+> Changes since -v8
+>  - Changes reboot_cpu on stack to cpu to fix bug noticed by Russell King.
+> 
+>  - Switched unicore32 and arm from using REBOOT_WARM/COLD to HARD/SOFT.
+> 
+>  - Fixed case statement bug.
+> 
+>  - Went to using simple_strtoul for parsing reboot_cpu=smp###.
+> 
+>  - Made parsing of reboot= not use any #ifdef'd code.
+> 
+> Changes since -v7.
+>  - Fixed authorship for first patch.
+> 
+>  - Rebased to Linus' current tree (51a26ae7a).
+> 
+> Changes since -v6.
+>  - Cross compiled all arm architectures (using v3.9 kernel.  Fails with
+>    current).
+> 
+>  - Added a #define for non-hotplug case.
+> 
+>  - Add #define for PF_THREAD_BOUND as compatibility to make stable easier.
+> 
+>  - Fixup s/reboot_cpu_id/reboot_cpu/
+> 
+>  - Add include of linux/uaccess.h to allow building on arm.
+> 
+>  - Removed last remaining checkpatch.pl line length warning on
+>    kernel/reboot.c.
+> 
+>  - Fixed the duplicate handling or the reboot= kernel parameter.
+> 
+> Changes since -v5.
+>  - Moved the arch/x86 reboot= up to the generic kernel code.
+> 
+> Changes since -v4.
+>  - Integrated Srivatsa S. Bhat creating cpu_hotplug_disable()
+>    function
+> 
+>  - Integrated comments by Srivatsa S. Bhat.
+> 
+>  - Made one more comment consistent with others in function.
+> 
+> Changes since -v3.
+>  - Added a tested-by for the original reporter.
+> 
+>  - Fix compile failure found by Joe Perches.
+> 
+>  - Integrated comments by Joe Perches.
+> 
+> 
+> To: Andrew Morton <akpm@linux-foundation.org>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: Russ Anderson <rja@sgi.com>
+> Cc: Robin Holt <holt@sgi.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+> Cc: the arch/x86 maintainers <x86@kernel.org>
+> Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
 
-Oh. This code should be removed, because tboot code have set SMXE bit.
+Looks nice now to me. For the x86 bits:
+
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
 Thanks,
-Qiaowei
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	Ingo
