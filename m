@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab3EJO2A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:28:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57271 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755289Ab3EJOV7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:21:59 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Alan Stern" <stern@rowland.harvard.edu>,
-        "Hans de Goede" <hdegoede@redhat.com>,
-        "Dave Stikkolorum" <d.r.stikkolorum@hhs.nl>
-Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.971858759@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [039/118] usbfs: Always allow ctrl requests with USB_RECIP_ENDPOINT
- on the ctrl ep
-In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1756894Ab3EJO2E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:28:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23111 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755289Ab3EJO2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 10:28:01 -0400
+Date: Fri, 10 May 2013 10:27:54 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-cifs@vger.kernel.org, Steve French <smfrench@gmail.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        sjayaraman@novell.com
+Subject: Re: Mount failure due to restricted access to a point along the
+ mount path
+Message-ID: <20130510102754.184cd90d@corrin.poochiereds.net>
+In-Reply-To: <CAJfpegtADAJ+7-DiFvrgWU1N5Fsd_CCQryT0mpx6VOJ=8ikKsA@mail.gmail.com>
+References: <CAJfpegtADAJ+7-DiFvrgWU1N5Fsd_CCQryT0mpx6VOJ=8ikKsA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.45-rc1 review patch.  If anyone has any objections, please let me know.
+On Fri, 10 May 2013 16:13:30 +0200
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-------------------
+> Hi,
+> 
+> A while ago this was discussed:
+> 
+>   http://thread.gmane.org/gmane.linux.kernel.cifs/7779
+> 
+> This is essentially a regression introduced by the shared superblock
+> changes in 3.0 and several SUSE customers are complaining about it.
+> I've created a temporary fix which reverts 29 commits related to the
+> shared superblock changes.  It works, but it's obviously not a
+> permanent fix, especially since we definitely don't want to diverge
+> from mainline.
+> 
+> Is this issue being worked on?  Don't other distros have similar reports?
+> 
+> Thanks,
+> Miklos
 
-From: Hans de Goede <hdegoede@redhat.com>
+I don't know of anyone currently working on it. There are a couple of
+possible approaches to fixing it, I think:
 
-commit 1361bf4b9f9ef45e628a5b89e0fd9bedfdcb7104 upstream.
+1) if the dentries to get down to the root of the mount don't already
+exist, then attach some sort of "placeholder" inode that can be fleshed
+out later if and when the dentry is accessed via other means.
 
-When usbfs receives a ctrl-request from userspace it calls check_ctrlrecip,
-which for a request with USB_RECIP_ENDPOINT tries to map this to an interface
-to see if this interface is claimed, except for ctrl-requests with a type of
-USB_TYPE_VENDOR.
+2) do something like what NFS does (see commit 54ceac45). This becomes
+a bit more complicated due to the fact that the server may not hand out
+real inode numbers and we sometimes have to fake them up.
 
-When trying to use this device: http://www.akaipro.com/eiepro
-redirected to a Windows vm running on qemu on top of Linux.
+#1 is probably simpler to implement, but I'll confess that I haven't
+thought through all of the potential problems with it.
 
-The windows driver makes a ctrl-req with USB_TYPE_CLASS and
-USB_RECIP_ENDPOINT with index 0, and the mapping of the endpoint (0) to
-the interface fails since ep 0 is the ctrl endpoint and thus never is
-part of an interface.
-
-This patch fixes this ctrl-req failing by skipping the checkintf call for
-USB_RECIP_ENDPOINT ctrl-reqs on the ctrl endpoint.
-
-Reported-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
-Tested-by: Dave Stikkolorum <d.r.stikkolorum@hhs.nl>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/usb/core/devio.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -643,6 +643,8 @@ static int check_ctrlrecip(struct dev_st
- 	index &= 0xff;
- 	switch (requesttype & USB_RECIP_MASK) {
- 	case USB_RECIP_ENDPOINT:
-+		if ((index & ~USB_DIR_IN) == 0)
-+			return 0;
- 		ret = findintfep(ps->dev, index);
- 		if (ret >= 0)
- 			ret = checkintf(ps, ret);
-
+-- 
+Jeff Layton <jlayton@redhat.com>
