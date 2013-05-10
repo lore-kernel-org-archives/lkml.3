@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab3EJTdp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 15:33:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11782 "EHLO mx1.redhat.com"
+	id S1754927Ab3EJTdx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 15:33:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56812 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753380Ab3EJTdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 15:33:43 -0400
+	id S1754285Ab3EJTdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 15:33:51 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 5/8] FS-Cache: Uninline fscache_object_init() [ver #2]
+Subject: [PATCH 6/8] FS-Cache: Wrap checks on object state [ver #2]
 To: Trond.Myklebust@netapp.com, torvalds@linux-foundation.org
 From: David Howells <dhowells@redhat.com>
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-cachefs@redhat.com, linux-kernel@vger.kernel.org
-Date: Fri, 10 May 2013 20:33:39 +0100
-Message-ID: <20130510193339.3045.29012.stgit@warthog.procyon.org.uk>
+Date: Fri, 10 May 2013 20:33:47 +0100
+Message-ID: <20130510193347.3045.70304.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20130510193257.3045.77981.stgit@warthog.procyon.org.uk>
 References: <20130510193257.3045.77981.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.16
@@ -27,121 +27,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uninline fscache_object_init() so as not to expose some of the FS-Cache
-internals to the cache backend.
+Wrap checks on object state (mostly outside of fs/fscache/object.c) with
+inline functions so that the mechanism can be replaced.
+
+Some of the state checks within object.c are left as-is as they will be
+replaced.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- fs/fscache/object.c           |   40 ++++++++++++++++++++++++++++++++++++++--
- include/linux/fscache-cache.h |   38 ++------------------------------------
- 2 files changed, 40 insertions(+), 38 deletions(-)
+ fs/cachefiles/namei.c         |    4 ++--
+ fs/fscache/cache.c            |    2 +-
+ fs/fscache/cookie.c           |    8 ++++----
+ fs/fscache/object.c           |    8 ++++----
+ fs/fscache/operation.c        |    2 +-
+ include/linux/fscache-cache.h |   37 ++++++++++++++++++++++++++++---------
+ 6 files changed, 40 insertions(+), 21 deletions(-)
 
+diff --git a/fs/cachefiles/namei.c b/fs/cachefiles/namei.c
+index 07cbd44..01979a3 100644
+--- a/fs/cachefiles/namei.c
++++ b/fs/cachefiles/namei.c
+@@ -130,7 +130,7 @@ found_dentry:
+ 	       fscache_object_states[object->fscache.state],
+ 	       dentry);
+ 
+-	if (object->fscache.state < FSCACHE_OBJECT_DYING) {
++	if (fscache_object_is_live(&object->fscache)) {
+ 		printk(KERN_ERR "\n");
+ 		printk(KERN_ERR "CacheFiles: Error:"
+ 		       " Can't preemptively bury live object\n");
+@@ -192,7 +192,7 @@ try_again:
+ 	/* an old object from a previous incarnation is hogging the slot - we
+ 	 * need to wait for it to be destroyed */
+ wait_for_old_object:
+-	if (xobject->fscache.state < FSCACHE_OBJECT_DYING) {
++	if (fscache_object_is_live(&object->fscache)) {
+ 		printk(KERN_ERR "\n");
+ 		printk(KERN_ERR "CacheFiles: Error:"
+ 		       " Unexpected object collision\n");
+diff --git a/fs/fscache/cache.c b/fs/fscache/cache.c
+index b52aed1..129ea53 100644
+--- a/fs/fscache/cache.c
++++ b/fs/fscache/cache.c
+@@ -115,7 +115,7 @@ struct fscache_cache *fscache_select_cache_for_object(
+ 				     struct fscache_object, cookie_link);
+ 
+ 		cache = object->cache;
+-		if (object->state >= FSCACHE_OBJECT_DYING ||
++		if (fscache_object_is_dying(object) ||
+ 		    test_bit(FSCACHE_IOERROR, &cache->flags))
+ 			cache = NULL;
+ 
+diff --git a/fs/fscache/cookie.c b/fs/fscache/cookie.c
+index e2cba1f..a5f36c9 100644
+--- a/fs/fscache/cookie.c
++++ b/fs/fscache/cookie.c
+@@ -285,7 +285,7 @@ static int fscache_alloc_object(struct fscache_cache *cache,
+ 
+ object_already_extant:
+ 	ret = -ENOBUFS;
+-	if (object->state >= FSCACHE_OBJECT_DYING) {
++	if (fscache_object_is_dead(object)) {
+ 		spin_unlock(&cookie->lock);
+ 		goto error;
+ 	}
+@@ -321,7 +321,7 @@ static int fscache_attach_object(struct fscache_cookie *cookie,
+ 	ret = -EEXIST;
+ 	hlist_for_each_entry(p, &cookie->backing_objects, cookie_link) {
+ 		if (p->cache == object->cache) {
+-			if (p->state >= FSCACHE_OBJECT_DYING)
++			if (fscache_object_is_dying(p))
+ 				ret = -ENOBUFS;
+ 			goto cant_attach_object;
+ 		}
+@@ -332,7 +332,7 @@ static int fscache_attach_object(struct fscache_cookie *cookie,
+ 	hlist_for_each_entry(p, &cookie->parent->backing_objects,
+ 			     cookie_link) {
+ 		if (p->cache == object->cache) {
+-			if (p->state >= FSCACHE_OBJECT_DYING) {
++			if (fscache_object_is_dying(p)) {
+ 				ret = -ENOBUFS;
+ 				spin_unlock(&cookie->parent->lock);
+ 				goto cant_attach_object;
+@@ -400,7 +400,7 @@ void __fscache_invalidate(struct fscache_cookie *cookie)
+ 			object = hlist_entry(cookie->backing_objects.first,
+ 					     struct fscache_object,
+ 					     cookie_link);
+-			if (object->state < FSCACHE_OBJECT_DYING)
++			if (fscache_object_is_live(object))
+ 				fscache_raise_event(
+ 					object, FSCACHE_OBJECT_EV_INVALIDATE);
+ 		}
 diff --git a/fs/fscache/object.c b/fs/fscache/object.c
-index 50d41c1..0133699 100644
+index 0133699..863f687 100644
 --- a/fs/fscache/object.c
 +++ b/fs/fscache/object.c
-@@ -363,7 +363,7 @@ unsupported_event:
- /*
-  * execute an object
-  */
--void fscache_object_work_func(struct work_struct *work)
-+static void fscache_object_work_func(struct work_struct *work)
- {
- 	struct fscache_object *object =
- 		container_of(work, struct fscache_object, work);
-@@ -379,7 +379,43 @@ void fscache_object_work_func(struct work_struct *work)
- 	clear_bit(FSCACHE_OBJECT_EV_REQUEUE, &object->events);
- 	fscache_put_object(object);
- }
--EXPORT_SYMBOL(fscache_object_work_func);
-+
-+/**
-+ * fscache_object_init - Initialise a cache object description
-+ * @object: Object description
-+ * @cookie: Cookie object will be attached to
-+ * @cache: Cache in which backing object will be found
-+ *
-+ * Initialise a cache object description to its basic values.
-+ *
-+ * See Documentation/filesystems/caching/backend-api.txt for a complete
-+ * description.
-+ */
-+void fscache_object_init(struct fscache_object *object,
-+			 struct fscache_cookie *cookie,
-+			 struct fscache_cache *cache)
-+{
-+	atomic_inc(&cache->object_count);
-+
-+	object->state = FSCACHE_OBJECT_INIT;
-+	spin_lock_init(&object->lock);
-+	INIT_LIST_HEAD(&object->cache_link);
-+	INIT_HLIST_NODE(&object->cookie_link);
-+	INIT_WORK(&object->work, fscache_object_work_func);
-+	INIT_LIST_HEAD(&object->dependents);
-+	INIT_LIST_HEAD(&object->dep_link);
-+	INIT_LIST_HEAD(&object->pending_ops);
-+	object->n_children = 0;
-+	object->n_ops = object->n_in_progress = object->n_exclusive = 0;
-+	object->events = object->event_mask = 0;
-+	object->flags = 0;
-+	object->store_limit = 0;
-+	object->store_limit_l = 0;
-+	object->cache = cache;
-+	object->cookie = cookie;
-+	object->parent = NULL;
-+}
-+EXPORT_SYMBOL(fscache_object_init);
+@@ -457,10 +457,10 @@ static void fscache_initialise_object(struct fscache_object *object)
+ 		spin_lock_nested(&parent->lock, 1);
+ 		_debug("parent %s", fscache_object_states[parent->state]);
  
- /*
-  * initialise an object
+-		if (parent->state >= FSCACHE_OBJECT_DYING) {
++		if (fscache_object_is_dying(parent)) {
+ 			_debug("bad parent");
+ 			set_bit(FSCACHE_OBJECT_EV_WITHDRAW, &object->events);
+-		} else if (parent->state < FSCACHE_OBJECT_AVAILABLE) {
++		} else if (!fscache_object_is_available(parent)) {
+ 			_debug("wait");
+ 
+ 			/* we may get woken up in this state by child objects
+@@ -517,9 +517,9 @@ static void fscache_lookup_object(struct fscache_object *object)
+ 	ASSERTCMP(parent->n_obj_ops, >, 0);
+ 
+ 	/* make sure the parent is still available */
+-	ASSERTCMP(parent->state, >=, FSCACHE_OBJECT_AVAILABLE);
++	ASSERT(fscache_object_is_available(parent));
+ 
+-	if (parent->state >= FSCACHE_OBJECT_DYING ||
++	if (fscache_object_is_dying(parent) ||
+ 	    test_bit(FSCACHE_IOERROR, &object->cache->flags)) {
+ 		_debug("unavailable");
+ 		set_bit(FSCACHE_OBJECT_EV_WITHDRAW, &object->events);
+diff --git a/fs/fscache/operation.c b/fs/fscache/operation.c
+index 762a9ec..ccf0219 100644
+--- a/fs/fscache/operation.c
++++ b/fs/fscache/operation.c
+@@ -35,7 +35,7 @@ void fscache_enqueue_operation(struct fscache_operation *op)
+ 
+ 	ASSERT(list_empty(&op->pend_link));
+ 	ASSERT(op->processor != NULL);
+-	ASSERTCMP(op->object->state, >=, FSCACHE_OBJECT_AVAILABLE);
++	ASSERT(fscache_object_is_available(op->object));
+ 	ASSERTCMP(atomic_read(&op->usage), >, 0);
+ 	ASSERTCMP(op->state, ==, FSCACHE_OP_ST_IN_PROGRESS);
+ 
 diff --git a/include/linux/fscache-cache.h b/include/linux/fscache-cache.h
-index 5dfa0aa..9b9c1de 100644
+index 9b9c1de..c5f9234 100644
 --- a/include/linux/fscache-cache.h
 +++ b/include/linux/fscache-cache.h
-@@ -426,42 +426,8 @@ extern const char *fscache_object_states[];
- 	(test_bit(FSCACHE_IOERROR, &(obj)->cache->flags) &&	\
- 	 (obj)->state >= FSCACHE_OBJECT_DYING)
+@@ -417,15 +417,6 @@ struct fscache_object {
  
--extern void fscache_object_work_func(struct work_struct *work);
--
--/**
-- * fscache_object_init - Initialise a cache object description
-- * @object: Object description
-- *
-- * Initialise a cache object description to its basic values.
-- *
-- * See Documentation/filesystems/caching/backend-api.txt for a complete
-- * description.
-- */
--static inline
--void fscache_object_init(struct fscache_object *object,
--			 struct fscache_cookie *cookie,
--			 struct fscache_cache *cache)
--{
--	atomic_inc(&cache->object_count);
--
--	object->state = FSCACHE_OBJECT_INIT;
--	spin_lock_init(&object->lock);
--	INIT_LIST_HEAD(&object->cache_link);
--	INIT_HLIST_NODE(&object->cookie_link);
--	INIT_WORK(&object->work, fscache_object_work_func);
--	INIT_LIST_HEAD(&object->dependents);
--	INIT_LIST_HEAD(&object->dep_link);
--	INIT_LIST_HEAD(&object->pending_ops);
--	object->n_children = 0;
--	object->n_ops = object->n_in_progress = object->n_exclusive = 0;
--	object->events = object->event_mask = 0;
--	object->flags = 0;
--	object->store_limit = 0;
--	object->store_limit_l = 0;
--	object->cache = cache;
--	object->cookie = cookie;
--	object->parent = NULL;
--}
-+extern void fscache_object_init(struct fscache_object *, struct fscache_cookie *,
-+				struct fscache_cache *);
+ extern const char *fscache_object_states[];
  
- extern void fscache_object_lookup_negative(struct fscache_object *object);
- extern void fscache_obtained_object(struct fscache_object *object);
+-#define fscache_object_is_active(obj)			      \
+-	(!test_bit(FSCACHE_IOERROR, &(obj)->cache->flags) &&  \
+-	 (obj)->state >= FSCACHE_OBJECT_AVAILABLE &&	      \
+-	 (obj)->state < FSCACHE_OBJECT_DYING)
+-
+-#define fscache_object_is_dead(obj)				\
+-	(test_bit(FSCACHE_IOERROR, &(obj)->cache->flags) &&	\
+-	 (obj)->state >= FSCACHE_OBJECT_DYING)
+-
+ extern void fscache_object_init(struct fscache_object *, struct fscache_cookie *,
+ 				struct fscache_cache *);
+ 
+@@ -438,6 +429,34 @@ extern void fscache_object_destroy(struct fscache_object *object);
+ #define fscache_object_destroy(object) do {} while(0)
+ #endif
+ 
++static inline bool fscache_object_is_live(struct fscache_object *object)
++{
++	return object->state < FSCACHE_OBJECT_DYING;
++}
++
++static inline bool fscache_object_is_dying(struct fscache_object *object)
++{
++	return !fscache_object_is_live(object);
++}
++
++static inline bool fscache_object_is_available(struct fscache_object *object)
++{
++	return object->state >= FSCACHE_OBJECT_AVAILABLE;
++}
++
++static inline bool fscache_object_is_active(struct fscache_object *object)
++{
++	return fscache_object_is_available(object) &&
++		fscache_object_is_live(object) &&
++		!test_bit(FSCACHE_IOERROR, &object->cache->flags);
++}
++
++static inline bool fscache_object_is_dead(struct fscache_object *object)
++{
++	return fscache_object_is_dying(object) &&
++		test_bit(FSCACHE_IOERROR, &object->cache->flags);
++}
++
+ /**
+  * fscache_object_destroyed - Note destruction of an object in a cache
+  * @cache: The cache from which the object came
 
