@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab3EJU41 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 16:56:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10019 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754247Ab3EJU40 (ORCPT
+	id S1754974Ab3EJVEr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 17:04:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:42909 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754483Ab3EJVEq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 16:56:26 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=lscNsCJQAkAA:10 a=MKZvXr83paJqZ6z7F74A:9 a=CjuIK1q_8ugA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Date: Fri, 10 May 2013 16:56:22 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: SyS symbol munging.
-Message-ID: <20130510205622.GD9583@home.goodmis.org>
-References: <20130510192417.GA4915@redhat.com>
- <20130510123510.78c066f177a7a8e5dd9ec7e4@linux-foundation.org>
- <20130510195500.GD23014@pd.tnic>
- <20130510200503.GM25399@ZenIV.linux.org.uk>
+	Fri, 10 May 2013 17:04:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,651,1363158000"; 
+   d="scan'208";a="332178441"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ming Lei <Ming.Lei@riverbed.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "mchehab@redhat.com" <mchehab@redhat.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: RE: x86_mce: mce_start uses number of phsical cores instead of
+ logical cores
+Thread-Topic: x86_mce: mce_start uses number of phsical cores instead of
+ logical cores
+Thread-Index: Ac5NnrX+OJKCA1vXQtyGCRlOybefOwACkHHwAAC3qcAAASol0AACAr3gAAH652A=
+Date: Fri, 10 May 2013 21:04:44 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F2DA4CB19@ORSMSX106.amr.corp.intel.com>
+References: <2CE44BD3DBCF9541909CCB42F11CA3921C6FAA49@SFO1EXC-MBXP06.nbttech.com>
+ <3908561D78D1C84285E8C5FCA982C28F2DA4C92B@ORSMSX106.amr.corp.intel.com>
+ <2CE44BD3DBCF9541909CCB42F11CA3921C6FAACA@SFO1EXC-MBXP06.nbttech.com>
+ <3908561D78D1C84285E8C5FCA982C28F2DA4C9B9@ORSMSX106.amr.corp.intel.com>
+ <2CE44BD3DBCF9541909CCB42F11CA3921C6FAB06@SFO1EXC-MBXP06.nbttech.com>
+In-Reply-To: <2CE44BD3DBCF9541909CCB42F11CA3921C6FAB06@SFO1EXC-MBXP06.nbttech.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130510200503.GM25399@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 09:05:03PM +0100, Al Viro wrote:
-> On Fri, May 10, 2013 at 09:55:00PM +0200, Borislav Petkov wrote:
-> > On Fri, May 10, 2013 at 12:35:10PM -0700, Andrew Morton wrote:
-> > > I forget who did this initially and peeling back those layers with git
-> > > is tiresome.
-> > 
-> > 1a94bc34768e4 from 2009, although those SyS* things started appearing in
-> > stack traces only recently AFAIR.
-> 
-> Note that both sys_something and SyS_something end up in vmlinux symbol
-> table, refering to the same address.  AFAICS, what matters is which one
-> goes first.  May be even linker-dependent...
+> I used intel edac error injector and saw the same problem. I actually wrote down the core numbers
+> and I saw mce got to 0-5 and 12-17, but not the others. I have 2 sockets, 24 logical cores. 
 
-Actually, it's the first one that kallsyms finds in its binary search.
+Mauro: How does the EDAC injector work on E5645 (Westmere-EP)?  Does it create a real
+error in memory that the processor then accesses ... tripping a machine check?
 
-If the table is layed out a little differently, it may find the first
-one or the second one.
+The mapping of Linux logical cpu numbers to physical socket/core/thread is somewhat
+as the mercy of the order that the BIOS lists things in its tables.  But those numbers look
+very much like you just saw the machine check on one socket.
 
--- Steve
+Look at /proc/cpuinfo to be sure.  If you run "grep ^physical /proc/cpuinfo" I think you'll
+see output like this (confirming that only socket 0 saw the machine check):
 
+physical id     :  0
+physical id     :  0
+physical id     :  0
+physical id     :  0
+physical id     :  0
+physical id     :  0
+physical id     :  1
+physical id     :  1
+physical id     :  1
+physical id     :  1
+physical id     :  1
+physical id     :  1
+physical id     :  0
+physical id     :  0
+physical id     :  0
+physical id     :  0
+physical id     :  0
+physical id     :  0
+physical id     :  1
+physical id     :  1
+physical id     :  1
+physical id     :  1
+physical id     :  1
+physical id     :  1
