@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab3EJTdG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 15:33:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32481 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753252Ab3EJTdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 15:33:04 -0400
-Subject: [PATCH 0/8] Fix assorted FS-Cache issues [ver #2]
-To: Trond.Myklebust@netapp.com, torvalds@linux-foundation.org
-From: David Howells <dhowells@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-cachefs@redhat.com, linux-kernel@vger.kernel.org
-Date: Fri, 10 May 2013 20:32:58 +0100
-Message-ID: <20130510193257.3045.77981.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.16
+	id S1754193Ab3EJTqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 15:46:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47237 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172Ab3EJTqM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 15:46:12 -0400
+Message-ID: <518D4E5B.10804@infradead.org>
+Date: Fri, 10 May 2013 12:45:31 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: SyS symbol munging.
+References: <20130510192417.GA4915@redhat.com> <20130510123510.78c066f177a7a8e5dd9ec7e4@linux-foundation.org>
+In-Reply-To: <20130510123510.78c066f177a7a8e5dd9ec7e4@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/10/13 12:35, Andrew Morton wrote:
+> On Fri, 10 May 2013 15:24:17 -0400 Dave Jones <davej@redhat.com> wrote:
+> 
+>> On Fri, May 10, 2013 at 12:14:54PM -0700, Andrew Morton wrote:
+>>
+>>  > [  163.953629] Call Trace:
+>>  > [  163.957706]  [<ffffffff812be322>] ipcget+0x182/0x380
+>>  > [  163.962123]  [<ffffffff810b99a5>] ?trace_hardirqs_on_caller+0x115/0x1e0
+>>  > [  163.966752]  [<ffffffff812c559a>] SyS_shmget+0x5a/0x60
+>>  > [  163.971163]  [<ffffffff812c47e0>] ? shm_close+0x140/0x140
+>>  > [  163.975590]  [<ffffffff812c3e60>] ? shm_release+0x50/0x50
+>>  > [  163.979991]  [<ffffffff812c3df0>] ? shm_get_unmapped_area+0x20/0x20
+>>  > [  163.984499]  [<ffffffff816caa14>] tracesys+0xdd/0xe2
+>>  
+>> This has been bugging me for a while.
+>> What's changing sys_shmget to SyS_shmget in that trace ? And why ?
+>>
+> 
+> nm vmlinux | grep SyS
+> 
+> That's the actual name of the function definition which the C compiler
+> sees.  It's emitted by SYSCALL_DEFINE, cooked up by all the macro goop
+> in include/linux/syscalls.h.
+> 
+> I forget who did this initially and peeling back those layers with git
+> is tiresome.
+> --
+
+$ git blame include/linux/syscalls.h | grep SyS | more
+07fe6e00 (Al Viro                  2013-01-21 15:03:44 -0500 189) 	asmlinka
+ge long SyS##name(__MAP(x,__SC_LONG,__VA_ARGS__))	\
+6c597963 (Heiko Carstens           2009-02-11 13:04:38 -0800 196) 	SYSCALL_
+ALIAS(sys##name, SyS##name);
 
 
-Following this mail is a series of patches to fix a number of FS-Cache issues,
-including a number of oopses.  The patches can also be found at:
-
-  http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=fscache
-
-on top of a patch from Tejun Heo to fix a problem in the workqueues.  The
-patches are also tagged:
-
-  http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git tags/fscache-20130510
-
-The patches are as follows:
-
- (1) Provide a system wait_on_atomic_t() and wake_up_atomic_t() (enhancement).
-
- (2) Don't put spin_lock() in a while-condition as spin_lock() may be wrapped
-     with do {} while(0) (cleanup).
-
- (3) Name i_mutex lock classes rather than using numbers in CacheFiles (cleanup).
-
- (4) Don't sleep in page release if __GFP_FS is not set (deadlock vs ext4).
-
- (5) Uninline fscache_object_init() (cleanup).
-
- (6) Wrap checks on object state (cleanup).
-
- (7) Simplify the object state machine (need #5 and #6).
-
- (8) Simplify cookie retention by objects (oops fix, need #1 and #7).
-
-David
----
-David Howells (6):
-      Add wait_on_atomic_t() and wake_up_atomic_t()
-      FS-Cache: Don't sleep in page release if __GFP_FS is not set
-      FS-Cache: Uninline fscache_object_init()
-      FS-Cache: Wrap checks on object state
-      FS-Cache: Fix object state machine to have separate work and wait states
-      FS-Cache: Simplify cookie retention for fscache_objects, fixing access problems
-
-J. Bruce Fields (1):
-      CacheFiles: name i_mutex lock class explicitly
-
-Sebastian Andrzej Siewior (1):
-      fs/fscache: remove spin_lock() from the condition in while()
+Those 2 commits explain (to some degree) what the patches do, but not why "SyS".
 
 
- fs/cachefiles/interface.c     |   11 
- fs/cachefiles/namei.c         |   10 
- fs/cachefiles/xattr.c         |    6 
- fs/fscache/cache.c            |   34 +
- fs/fscache/cookie.c           |   93 +--
- fs/fscache/fsdef.c            |    1 
- fs/fscache/internal.h         |   11 
- fs/fscache/main.c             |   11 
- fs/fscache/netfs.c            |    1 
- fs/fscache/object-list.c      |  103 ++--
- fs/fscache/object.c           | 1106 +++++++++++++++++++++--------------------
- fs/fscache/operation.c        |   36 +
- fs/fscache/page.c             |   55 +-
- include/linux/fscache-cache.h |  170 +++---
- include/linux/wait.h          |   24 +
- kernel/wait.c                 |   85 +++
- 16 files changed, 947 insertions(+), 810 deletions(-)
-
+-- 
+~Randy
