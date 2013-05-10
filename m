@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3EJOVO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:21:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57129 "EHLO
+	id S1755562Ab3EJOVe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:21:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57177 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755121Ab3EJOVI (ORCPT
+	by vger.kernel.org with ESMTP id S1755314Ab3EJOV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:21:08 -0400
+	Fri, 10 May 2013 10:21:26 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jonathan Brassow" <jbrassow@redhat.com>,
-        "NeilBrown" <neilb@suse.de>
+CC: akpm@linux-foundation.org, "Jeff Kirsher" <jeffrey.t.kirsher@intel.com>,
+        "Jacob Keller" <jacob.e.keller@intel.com>,
+        "Phil Schmitt" <phillip.j.schmitt@intel.com>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.679129749@decadent.org.uk>
+Message-ID: <lsq.1368193181.364383786@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [067/118] md: bad block list should default to disabled.
+Subject: [059/118] ixgbe: fix EICR write in ixgbe_msix_other
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,59 +32,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Jacob Keller <jacob.e.keller@intel.com>
 
-commit 486adf72ccc0c235754923d47a2270c5dcb0c98b upstream.
+commit d87d830720a1446403ed38bfc2da268be0d356d1 upstream.
 
-Maintenance of a bad-block-list currently defaults to 'enabled'
-and is then disabled when it cannot be supported.
-This is backwards and causes problem for dm-raid which didn't know
-to disable it.
+Previously, the ixgbe_msix_other was writing the full 32bits of the set
+interrupts, instead of only the ones which the ixgbe_msix_other is
+handling. This resulted in a loss of performance when the X540's PPS feature is
+enabled due to sometimes clearing queue interrupts which resulted in the driver
+not getting the interrupt for cleaning the q_vector rings often enough. The fix
+is to simply mask the lower 16bits off so that this handler does not write them
+in the EICR, which causes them to remain high and be properly handled by the
+clean_rings interrupt routine as normal.
 
-So fix the defaults, and only enabled for v1.x metadata which
-explicitly has bad blocks enabled.
-
-The problem with dm-raid has been present since badblock support was
-added in v3.1, so this patch is suitable for any -stable from 3.1
-onwards.
-
-Reported-by: Jonathan Brassow <jbrassow@redhat.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/md.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -1588,8 +1588,8 @@ static int super_1_load(struct md_rdev *
- 					     sector, count, 1) == 0)
- 				return -EINVAL;
- 		}
--	} else if (sb->bblog_offset == 0)
--		rdev->badblocks.shift = -1;
-+	} else if (sb->bblog_offset != 0)
-+		rdev->badblocks.shift = 0;
- 
- 	if (!refdev) {
- 		ret = 1;
-@@ -3063,7 +3063,7 @@ int md_rdev_init(struct md_rdev *rdev)
- 	 * be used - I wonder if that matters
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -1937,6 +1937,16 @@ static irqreturn_t ixgbe_msix_other(int
+ 	 * with the write to EICR.
  	 */
- 	rdev->badblocks.count = 0;
--	rdev->badblocks.shift = 0;
-+	rdev->badblocks.shift = -1; /* disabled until explicitly enabled */
- 	rdev->badblocks.page = kmalloc(PAGE_SIZE, GFP_KERNEL);
- 	seqlock_init(&rdev->badblocks.lock);
- 	if (rdev->badblocks.page == NULL)
-@@ -3135,9 +3135,6 @@ static struct md_rdev *md_import_device(
- 			goto abort_free;
- 		}
- 	}
--	if (super_format == -1)
--		/* hot-add for 0.90, or non-persistent: so no badblocks */
--		rdev->badblocks.shift = -1;
+ 	eicr = IXGBE_READ_REG(hw, IXGBE_EICS);
++
++	/* The lower 16bits of the EICR register are for the queue interrupts
++	 * which should be masked here in order to not accidently clear them if
++	 * the bits are high when ixgbe_msix_other is called. There is a race
++	 * condition otherwise which results in possible performance loss
++	 * especially if the ixgbe_msix_other interrupt is triggering
++	 * consistently (as it would when PPS is turned on for the X540 device)
++	 */
++	eicr &= 0xFFFF0000;
++
+ 	IXGBE_WRITE_REG(hw, IXGBE_EICR, eicr);
  
- 	return rdev;
- 
+ 	if (eicr & IXGBE_EICR_LSC)
 
