@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009Ab3EJOWA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:22:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57261 "EHLO
+	id S1756762Ab3EJO1p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:27:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57281 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755601Ab3EJOV4 (ORCPT
+	by vger.kernel.org with ESMTP id S1755989Ab3EJOWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:21:56 -0400
+	Fri, 10 May 2013 10:22:00 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+CC: akpm@linux-foundation.org, "Yinghai Lu" <yinghai@kernel.org>,
+        "Bjorn Helgaas" <bhelgaas@google.com>,
+        "Chris J. Benenati" <chris.j.benenati@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.437283505@decadent.org.uk>
+Message-ID: <lsq.1368193181.43833515@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [037/118] xen/time: Fix kasprintf splat when allocating timer%d
- IRQ line.
+Subject: [033/118] PCI/PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,71 +33,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 7918c92ae9638eb8a6ec18e2b4a0de84557cccc8 upstream.
+commit 769ba7212f2059ca9fe0c73371e3d415c8c1c529 upstream.
 
-When we online the CPU, we get this splat:
+Commit b51306c (PCI: Set device power state to PCI_D0 for device
+without native PM support) modified pci_platform_power_transition()
+by adding code causing dev->current_state for devices that don't
+support native PCI PM but are power-manageable by the platform to be
+changed to PCI_D0 regardless of the value returned by the preceding
+platform_pci_set_power_state().  In particular, that also is done
+if the platform_pci_set_power_state() has been successful, which
+causes the correct power state of the device set by
+pci_update_current_state() in that case to be overwritten by PCI_D0.
 
-smpboot: Booting Node 0 Processor 1 APIC 0x2
-installing Xen timer for CPU 1
-BUG: sleeping function called from invalid context at /home/konrad/ssd/konrad/linux/mm/slab.c:3179
-in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper/1
-Pid: 0, comm: swapper/1 Not tainted 3.9.0-rc6upstream-00001-g3884fad #1
-Call Trace:
- [<ffffffff810c1fea>] __might_sleep+0xda/0x100
- [<ffffffff81194617>] __kmalloc_track_caller+0x1e7/0x2c0
- [<ffffffff81303758>] ? kasprintf+0x38/0x40
- [<ffffffff813036eb>] kvasprintf+0x5b/0x90
- [<ffffffff81303758>] kasprintf+0x38/0x40
- [<ffffffff81044510>] xen_setup_timer+0x30/0xb0
- [<ffffffff810445af>] xen_hvm_setup_cpu_clockevents+0x1f/0x30
- [<ffffffff81666d0a>] start_secondary+0x19c/0x1a8
+Fix that mistake by making the fallback to PCI_D0 only happen if
+the platform_pci_set_power_state() has returned an error.
 
-The solution to that is use kasprintf in the CPU hotplug path
-that 'online's the CPU. That is, do it in in xen_hvm_cpu_notify,
-and remove the call to in xen_hvm_setup_cpu_clockevents.
-
-Unfortunatly the later is not a good idea as the bootup path
-does not use xen_hvm_cpu_notify so we would end up never allocating
-timer%d interrupt lines when booting. As such add the check for
-atomic() to continue.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+[bhelgaas: folded in Yinghai's simplification, added URL & stable info]
+Reference: http://lkml.kernel.org/r/27806FC4E5928A408B78E88BBC67A2306F466BBA@ORSMSX101.amr.corp.intel.com
+Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/xen/enlighten.c |    5 ++++-
- arch/x86/xen/time.c      |    6 +++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/pci/pci.c |   12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1391,8 +1391,11 @@ static int __cpuinit xen_hvm_cpu_notify(
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 		xen_vcpu_setup(cpu);
--		if (xen_have_vector_callback)
-+		if (xen_have_vector_callback) {
- 			xen_init_lock_cpu(cpu);
-+			if (xen_feature(XENFEAT_hvm_safe_pvclock))
-+				xen_setup_timer(cpu);
-+		}
- 		break;
- 	default:
- 		break;
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -497,7 +497,11 @@ static void xen_hvm_setup_cpu_clockevent
- {
- 	int cpu = smp_processor_id();
- 	xen_setup_runstate_info(cpu);
--	xen_setup_timer(cpu);
-+	/*
-+	 * xen_setup_timer(cpu) - snprintf is bad in atomic context. Hence
-+	 * doing it xen_hvm_cpu_notify (which gets called by smp_init during
-+	 * early bootup and also during CPU hotplug events).
-+	 */
- 	xen_setup_cpu_clockevents();
- }
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -664,15 +664,11 @@ static int pci_platform_power_transition
+ 		error = platform_pci_set_power_state(dev, state);
+ 		if (!error)
+ 			pci_update_current_state(dev, state);
+-		/* Fall back to PCI_D0 if native PM is not supported */
+-		if (!dev->pm_cap)
+-			dev->current_state = PCI_D0;
+-	} else {
++	} else
+ 		error = -ENODEV;
+-		/* Fall back to PCI_D0 if native PM is not supported */
+-		if (!dev->pm_cap)
+-			dev->current_state = PCI_D0;
+-	}
++
++	if (error && !dev->pm_cap) /* Fall back to PCI_D0 */
++		dev->current_state = PCI_D0;
  
+ 	return error;
+ }
 
