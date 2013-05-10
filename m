@@ -1,58 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab3EJNUH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 09:20:07 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:2038 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753003Ab3EJNUF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 09:20:05 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Vinod Koul <vinod.koul@intel.com>, <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3/3] dmaengine: at_hdmac/trivial: rearrange CFG register bits assignment
-Date: Fri, 10 May 2013 15:19:15 +0200
-Message-ID: <c188abd0dbab3af0789d6d35ac37a5402f4b808d.1368191734.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <042cac60509755c1340d141315a9a8eb1965438a.1368191734.git.nicolas.ferre@atmel.com>
-References: <042cac60509755c1340d141315a9a8eb1965438a.1368191734.git.nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753316Ab3EJNUx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 09:20:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20196 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751369Ab3EJNUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 09:20:51 -0400
+Date: Fri, 10 May 2013 09:20:46 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        riel@redhat.com, mst@redhat.com, amit.shah@redhat.com,
+        anton@enomsg.org
+Subject: Re: [RFC 2/2] virtio_balloon: auto-ballooning support
+Message-ID: <20130510092046.17be9bbb@redhat.com>
+In-Reply-To: <20130509211516.GC16446@optiplex.redhat.com>
+References: <1368111229-29847-1-git-send-email-lcapitulino@redhat.com>
+	<1368111229-29847-3-git-send-email-lcapitulino@redhat.com>
+	<20130509211516.GC16446@optiplex.redhat.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No modification in CFG register configuration, just rearrange
-bits directives to group logically and make it more readable.
+On Thu, 9 May 2013 18:15:19 -0300
+Rafael Aquini <aquini@redhat.com> wrote:
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/dma/at_hdmac.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+> On Thu, May 09, 2013 at 10:53:49AM -0400, Luiz Capitulino wrote:
+> > Automatic ballooning consists of dynamically adjusting the guest's
+> > balloon according to memory pressure in the host and in the guest.
+> > 
+> > This commit implements the guest side of automatic balloning, which
+> > basically consists of registering a shrinker callback with the kernel,
+> > which will try to deflate the guest's balloon by the amount of pages
+> > being requested. The shrinker callback is only registered if the host
+> > supports the VIRTIO_BALLOON_F_AUTO_BALLOON feature bit.
+> > 
+> > Automatic inflate is performed by the host.
+> > 
+> > Here are some numbers. The test-case is to run 35 VMs (1G of RAM each)
+> > in parallel doing a kernel build. Host has 32GB of RAM and 16GB of swap.
+> > SWAP IN and SWAP OUT correspond to the number of pages swapped in and
+> > swapped out, respectively.
+> > 
+> > Auto-ballooning disabled:
+> > 
+> > RUN  TIME(s)  SWAP IN  SWAP OUT
+> > 
+> > 1    634      930980   1588522
+> > 2    610      627422   1362174
+> > 3    649      1079847  1616367
+> > 4    543      953289   1635379
+> > 5    642      913237   1514000
+> > 
+> > Auto-ballooning enabled:
+> > 
+> > RUN  TIME(s)  SWAP IN  SWAP OUT
+> > 
+> > 1    629      901      12537
+> > 2    624      981      18506
+> > 3    626      573      9085
+> > 4    631      2250     42534
+> > 5    627      1610     20808
+> > 
+> > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> > ---
+> 
+> Nice work Luiz! Just allow me a silly question, though. 
 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index 78c3fb4..9e1ad73 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -1228,11 +1228,10 @@ static struct dma_chan *at_dma_xlate(struct of_phandle_args *dma_spec,
- 	 * ignored depending on DMA transfer direction.
- 	 */
- 	per_id = dma_spec->args[1];
--	atslave->cfg = ATC_FIFOCFG_HALFFIFO | ATC_DST_H2SEL_HW
--		      | ATC_SRC_H2SEL_HW | ATC_DST_PER(per_id)
--		      | ATC_DST_PER_MSB(per_id)
--		      | ATC_SRC_PER_MSB(per_id)
--		      | ATC_SRC_PER(per_id);
-+	atslave->cfg = ATC_FIFOCFG_HALFFIFO
-+		     | ATC_DST_H2SEL_HW | ATC_SRC_H2SEL_HW
-+		     | ATC_DST_PER_MSB(per_id) | ATC_DST_PER(per_id)
-+		     | ATC_SRC_PER_MSB(per_id) | ATC_SRC_PER(per_id);
- 	atslave->dma_dev = &dmac_pdev->dev;
- 
- 	chan = dma_request_channel(mask, at_dma_filter, atslave);
--- 
-1.8.0
+I have 100% more chances of committing sillynesses than you, so please
+go ahead.
+
+> Since your shrinker
+> doesn't change the balloon target size,
+
+Which target size are you referring to? The one in the host (member num_pages
+of VirtIOBalloon in QEMU)?
+
+If it the one in the host, then my understanding is that that member is only
+used to communicate the new balloon target to the guest. The guest driver
+will only read it when told (by the host) to do so, and when it does the
+target value will be correct.
+
+Am I right?
+
+> as soon as the shrink round finishes the
+> balloon will re-inflate again, won't it? Doesn't this cause a sort of "balloon
+> thrashing" scenario, if both guest and host are suffering from memory pressure?
+> 
+> 
+> The rest I have for the moment, are only nitpicks :)
+> 
+> 
+> >  drivers/virtio/virtio_balloon.c     | 55 +++++++++++++++++++++++++++++++++++++
+> >  include/uapi/linux/virtio_balloon.h |  1 +
+> >  2 files changed, 56 insertions(+)
+> > 
+> > diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+> > index 9d5fe2b..f9dcae8 100644
+> > --- a/drivers/virtio/virtio_balloon.c
+> > +++ b/drivers/virtio/virtio_balloon.c
+> > @@ -71,6 +71,9 @@ struct virtio_balloon
+> >  	/* Memory statistics */
+> >  	int need_stats_update;
+> >  	struct virtio_balloon_stat stats[VIRTIO_BALLOON_S_NR];
+> > +
+> > +	/* Memory shrinker */
+> > +	struct shrinker shrinker;
+> >  };
+> >  
+> >  static struct virtio_device_id id_table[] = {
+> > @@ -126,6 +129,7 @@ static void set_page_pfns(u32 pfns[], struct page *page)
+> >  		pfns[i] = page_to_balloon_pfn(page) + i;
+> >  }
+> >  
+> > +/* This function should be called with vb->balloon_mutex held */
+> >  static void fill_balloon(struct virtio_balloon *vb, size_t num)
+> >  {
+> >  	struct balloon_dev_info *vb_dev_info = vb->vb_dev_info;
+> > @@ -166,6 +170,7 @@ static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
+> >  	}
+> >  }
+> >  
+> > +/* This function should be called with vb->balloon_mutex held */
+> >  static void leak_balloon(struct virtio_balloon *vb, size_t num)
+> >  {
+> >  	struct page *page;
+> > @@ -285,6 +290,45 @@ static void update_balloon_size(struct virtio_balloon *vb)
+> >  			      &actual, sizeof(actual));
+> >  }
+> >  
+> > +static unsigned long balloon_get_nr_pages(const struct virtio_balloon *vb)
+> > +{
+> > +	return vb->num_pages / VIRTIO_BALLOON_PAGES_PER_PAGE;
+> > +}
+> > +
+> > +static int balloon_shrinker(struct shrinker *shrinker,struct shrink_control *sc)
+> > +{
+> > +	unsigned int nr_pages, new_target;
+> > +	struct virtio_balloon *vb;
+> > +
+> > +	vb = container_of(shrinker, struct virtio_balloon, shrinker);
+> > +	if (!mutex_trylock(&vb->balloon_lock)) {
+> > +		return -1;
+> > +	}
+> > +
+> > +	nr_pages = balloon_get_nr_pages(vb);
+> > +	if (!sc->nr_to_scan || !nr_pages) {
+> > +		goto out;
+> > +	}
+> > +
+> > +	/*
+> > +	 * If the current balloon size is greater than the number of
+> > +	 * pages being reclaimed by the kernel, deflate only the needed
+> > +	 * amount. Otherwise deflate everything we have.
+> > +	 */
+> > +	new_target = 0;
+> > +	if (nr_pages > sc->nr_to_scan) {
+> > +		new_target = nr_pages - sc->nr_to_scan;
+> > +	}
+> > +
+> 
+> CodingStyle: you don't need the curly-braces for all these single staments above
+
+Oh, this comes from QEMU coding style. Fixed.
+
+> > +	leak_balloon(vb, new_target);
+> > +	update_balloon_size(vb);
+> > +	nr_pages = balloon_get_nr_pages(vb);
+> > +
+> > +out:
+> > +	mutex_unlock(&vb->balloon_lock);
+> > +	return nr_pages;
+> > +}
+> > +
+> >  static int balloon(void *_vballoon)
+> >  {
+> >  	struct virtio_balloon *vb = _vballoon;
+> > @@ -471,6 +515,13 @@ static int virtballoon_probe(struct virtio_device *vdev)
+> >  		goto out_del_vqs;
+> >  	}
+> >  
+> > +	memset(&vb->shrinker, 0, sizeof(vb->shrinker));
+> > +	if (virtio_has_feature(vb->vdev, VIRTIO_BALLOON_F_AUTO_BALLOON)) {
+> > +		vb->shrinker.shrink = balloon_shrinker;
+> > +		vb->shrinker.seeks = DEFAULT_SEEKS;
+> > +		register_shrinker(&vb->shrinker);
+> > +	}
+> > +
+> >  	return 0;
+> >  
+> >  out_del_vqs:
+> > @@ -487,6 +538,9 @@ out:
+> >  
+> >  static void remove_common(struct virtio_balloon *vb)
+> >  {
+> > +	if (vb->shrinker.shrink)
+> > +		unregister_shrinker(&vb->shrinker);
+> > +
+> >  	/* There might be pages left in the balloon: free them. */
+> >  	mutex_lock(&vb->balloon_lock);
+> >  	while (vb->num_pages)
+> > @@ -543,6 +597,7 @@ static int virtballoon_restore(struct virtio_device *vdev)
+> >  static unsigned int features[] = {
+> >  	VIRTIO_BALLOON_F_MUST_TELL_HOST,
+> >  	VIRTIO_BALLOON_F_STATS_VQ,
+> > +	VIRTIO_BALLOON_F_AUTO_BALLOON,
+> >  };
+> >  
+> >  static struct virtio_driver virtio_balloon_driver = {
+> > diff --git a/include/uapi/linux/virtio_balloon.h b/include/uapi/linux/virtio_balloon.h
+> > index 5e26f61..bd378a4 100644
+> > --- a/include/uapi/linux/virtio_balloon.h
+> > +++ b/include/uapi/linux/virtio_balloon.h
+> > @@ -31,6 +31,7 @@
+> >  /* The feature bitmap for virtio balloon */
+> >  #define VIRTIO_BALLOON_F_MUST_TELL_HOST	0 /* Tell before reclaiming pages */
+> >  #define VIRTIO_BALLOON_F_STATS_VQ	1 /* Memory Stats virtqueue */
+> > +#define VIRTIO_BALLOON_F_AUTO_BALLOON	2 /* Automatic ballooning */
+> >  
+> >  /* Size of a PFN in the balloon interface. */
+> >  #define VIRTIO_BALLOON_PFN_SHIFT 12
+> > -- 
+> > 1.8.1.4
+> > 
+> 
 
