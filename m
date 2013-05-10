@@ -1,63 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab3EJUkS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 16:40:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52592 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888Ab3EJUkQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 16:40:16 -0400
-Date: Fri, 10 May 2013 13:40:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-s390@vger.kernel.org, koverstreet@google.com, bcrl@kvack.org,
-        schwidefsky@de.ibm.com, kirill.shutemov@linux.intel.com,
-        zab@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v3 next/akpm] aio: convert the ioctx list to radix tree
-Message-Id: <20130510134015.ac8ad56305c539fa9bd8b5a7@linux-foundation.org>
-In-Reply-To: <1366026055-28604-1-git-send-email-octavian.purdila@intel.com>
-References: <1366026055-28604-1-git-send-email-octavian.purdila@intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754625Ab3EJUle (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 16:41:34 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:59695 "EHLO mail.atlantis.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754397Ab3EJUld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 16:41:33 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: alsa-devel@alsa-project.org
+Subject: [PATCH] snd-es1968: Add radio support for MediaForte M56VAP
+Date: Fri, 10 May 2013 22:41:12 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201305102241.13171.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Apr 2013 14:40:55 +0300 Octavian Purdila <octavian.purdila@intel.com> wrote:
+Add support for TEA5757 tuner on MediaForte M56VAP sound+modem+radio card.
+The GPIO connection type is automatically detected (like snd-fm801 driver).
 
-> When using a large number of threads performing AIO operations the
-> IOCTX list may get a significant number of entries which will cause
-> significant overhead. For example, when running this fio script:
-> 
-> rw=randrw; size=256k ;directory=/mnt/fio; ioengine=libaio; iodepth=1
-> blocksize=1024; numjobs=512; thread; loops=100
-> 
-> on an EXT2 filesystem mounted on top of a ramdisk we can observe up to
-> 30% CPU time spent by lookup_ioctx:
-> 
->  32.51%  [guest.kernel]  [g] lookup_ioctx
->   9.19%  [guest.kernel]  [g] __lock_acquire.isra.28
->   4.40%  [guest.kernel]  [g] lock_release
->   4.19%  [guest.kernel]  [g] sched_clock_local
->   3.86%  [guest.kernel]  [g] local_clock
->   3.68%  [guest.kernel]  [g] native_sched_clock
->   3.08%  [guest.kernel]  [g] sched_clock_cpu
->   2.64%  [guest.kernel]  [g] lock_release_holdtime.part.11
->   2.60%  [guest.kernel]  [g] memcpy
->   2.33%  [guest.kernel]  [g] lock_acquired
->   2.25%  [guest.kernel]  [g] lock_acquire
->   1.84%  [guest.kernel]  [g] do_io_submit
-> 
-> This patchs converts the ioctx list to a radix tree.
+Also add a safety subsystem vendor check to skip radio detection if vendor
+differs from ESS (so we don't touch GPIOs on laptops).
 
-The patch looks nice.  One thing we should pay attention to is the
-memory consumption.  radix-trees can be far less space-efficient than
-lists, and as the tree key comes from mmap() it can be pretty sparsely
-distributed.
+Tested with SF64-PCE2 and M56VAP cards.
 
-So could you please have a think about this, see if we can cook up some
-worst-case numbers and decide if they are problematic?
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+---
+ sound/pci/es1968.c |   73 +++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 50 insertions(+), 23 deletions(-)
 
+diff --git a/sound/pci/es1968.c b/sound/pci/es1968.c
+index a1f32b5..db08641 100644
+--- a/sound/pci/es1968.c
++++ b/sound/pci/es1968.c
+@@ -564,6 +564,7 @@ struct es1968 {
+ #ifdef CONFIG_SND_ES1968_RADIO
+ 	struct v4l2_device v4l2_dev;
+ 	struct snd_tea575x tea;
++	unsigned int tea575x_tuner;
+ #endif
+ };
+ 
+@@ -2557,37 +2558,47 @@ static int snd_es1968_input_register(struct es1968 *chip)
+ 				bits 1=unmask write to given bit */
+ #define IO_DIR		8      /* direction register offset from GPIO_DATA
+ 				bits 0/1=read/write direction */
+-/* mask bits for GPIO lines */
+-#define STR_DATA	0x0040 /* GPIO6 */
+-#define STR_CLK		0x0080 /* GPIO7 */
+-#define STR_WREN	0x0100 /* GPIO8 */
+-#define STR_MOST	0x0200 /* GPIO9 */
++
++/* GPIO to TEA575x maps */
++struct snd_es1968_tea575x_gpio {
++	u8 data, clk, wren, most;
++	char *name;
++};
++
++static struct snd_es1968_tea575x_gpio snd_es1968_tea575x_gpios[] = {
++	{ .data = 6, .clk = 7, .wren = 8, .most = 9, .name = "SF64-PCE2" },
++	{ .data = 7, .clk = 8, .wren = 6, .most = 10, .name = "M56VAP" },
++};
++
++#define get_tea575x_gpio(chip) \
++	(&snd_es1968_tea575x_gpios[(chip)->tea575x_tuner])
++
+ 
+ static void snd_es1968_tea575x_set_pins(struct snd_tea575x *tea, u8 pins)
+ {
+ 	struct es1968 *chip = tea->private_data;
+-	unsigned long io = chip->io_port + GPIO_DATA;
++	struct snd_es1968_tea575x_gpio gpio = *get_tea575x_gpio(chip);
+ 	u16 val = 0;
+ 
+-	val |= (pins & TEA575X_DATA) ? STR_DATA : 0;
+-	val |= (pins & TEA575X_CLK)  ? STR_CLK  : 0;
+-	val |= (pins & TEA575X_WREN) ? STR_WREN : 0;
++	val |= (pins & TEA575X_DATA) ? (1 << gpio.data) : 0;
++	val |= (pins & TEA575X_CLK)  ? (1 << gpio.clk)  : 0;
++	val |= (pins & TEA575X_WREN) ? (1 << gpio.wren) : 0;
+ 
+-	outw(val, io);
++	outw(val, chip->io_port + GPIO_DATA);
+ }
+ 
+ static u8 snd_es1968_tea575x_get_pins(struct snd_tea575x *tea)
+ {
+ 	struct es1968 *chip = tea->private_data;
+-	unsigned long io = chip->io_port + GPIO_DATA;
+-	u16 val = inw(io);
+-	u8 ret;
++	struct snd_es1968_tea575x_gpio gpio = *get_tea575x_gpio(chip);
++	u16 val = inw(chip->io_port + GPIO_DATA);
++	u8 ret = 0;
+ 
+-	ret = 0;
+-	if (val & STR_DATA)
++	if (val & (1 << gpio.data))
+ 		ret |= TEA575X_DATA;
+-	if (val & STR_MOST)
++	if (val & (1 << gpio.most))
+ 		ret |= TEA575X_MOST;
++
+ 	return ret;
+ }
+ 
+@@ -2596,13 +2607,18 @@ static void snd_es1968_tea575x_set_direction(struct snd_tea575x *tea, bool outpu
+ 	struct es1968 *chip = tea->private_data;
+ 	unsigned long io = chip->io_port + GPIO_DATA;
+ 	u16 odir = inw(io + IO_DIR);
++	struct snd_es1968_tea575x_gpio gpio = *get_tea575x_gpio(chip);
+ 
+ 	if (output) {
+-		outw(~(STR_DATA | STR_CLK | STR_WREN), io + IO_MASK);
+-		outw(odir | STR_DATA | STR_CLK | STR_WREN, io + IO_DIR);
++		outw(~((1 << gpio.data) | (1 << gpio.clk) | (1 << gpio.wren)),
++			io + IO_MASK);
++		outw(odir | (1 << gpio.data) | (1 << gpio.clk) | (1 << gpio.wren),
++			io + IO_DIR);
+ 	} else {
+-		outw(~(STR_CLK | STR_WREN | STR_DATA | STR_MOST), io + IO_MASK);
+-		outw((odir & ~(STR_DATA | STR_MOST)) | STR_CLK | STR_WREN, io + IO_DIR);
++		outw(~((1 << gpio.clk) | (1 << gpio.wren) | (1 << gpio.data) | (1 << gpio.most)),
++			io + IO_MASK);
++		outw((odir & ~((1 << gpio.data) | (1 << gpio.most)))
++			| (1 << gpio.clk) | (1 << gpio.wren), io + IO_DIR);
+ 	}
+ }
+ 
+@@ -2772,6 +2788,9 @@ static int snd_es1968_create(struct snd_card *card,
+ 	snd_card_set_dev(card, &pci->dev);
+ 
+ #ifdef CONFIG_SND_ES1968_RADIO
++	/* don't play with GPIOs on laptops */
++	if (chip->pci->subsystem_vendor != 0x125d)
++		goto no_radio;
+ 	err = v4l2_device_register(&pci->dev, &chip->v4l2_dev);
+ 	if (err < 0) {
+ 		snd_es1968_free(chip);
+@@ -2781,10 +2800,18 @@ static int snd_es1968_create(struct snd_card *card,
+ 	chip->tea.private_data = chip;
+ 	chip->tea.radio_nr = radio_nr;
+ 	chip->tea.ops = &snd_es1968_tea_ops;
+-	strlcpy(chip->tea.card, "SF64-PCE2", sizeof(chip->tea.card));
+ 	sprintf(chip->tea.bus_info, "PCI:%s", pci_name(pci));
+-	if (!snd_tea575x_init(&chip->tea, THIS_MODULE))
+-		printk(KERN_INFO "es1968: detected TEA575x radio\n");
++	for (i = 0; i < ARRAY_SIZE(snd_es1968_tea575x_gpios); i++) {
++		chip->tea575x_tuner = i;
++		if (!snd_tea575x_init(&chip->tea, THIS_MODULE)) {
++			snd_printk(KERN_INFO "es1968: detected TEA575x radio type %s\n",
++				   get_tea575x_gpio(chip)->name);
++			strlcpy(chip->tea.card, get_tea575x_gpio(chip)->name,
++				sizeof(chip->tea.card));
++			break;
++		}
++	}
++no_radio:
+ #endif
+ 
+ 	*chip_ret = chip;
+-- 
+Ondrej Zary
