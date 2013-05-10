@@ -1,259 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab3EJStM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 14:49:12 -0400
-Received: from zetta.elopez.com.ar ([199.30.59.35]:36539 "EHLO
-	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392Ab3EJStL (ORCPT
+	id S1753320Ab3EJSyD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 14:54:03 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:41437 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392Ab3EJSyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 14:49:11 -0400
-Message-ID: <518D411D.9070209@elopez.com.ar>
-Date: Fri, 10 May 2013 15:49:01 -0300
-From: =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130428 Thunderbird/17.0.5
+	Fri, 10 May 2013 14:54:02 -0400
+Date: Fri, 10 May 2013 14:53:39 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yuval Shaia <yuval.shaia@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>, Chien Yen <chien.yen@oracle.com>
+Subject: Re: [PATCH] xen: reuse the same pirq allocated when driver load
+ first time
+Message-ID: <20130510185339.GD2562@phenom.dumpdata.com>
+References: <518A0A50.1020705@oracle.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
-        Mike Turquette <mturquette@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
-References: <1368207091-32538-1-git-send-email-soren.brinkmann@xilinx.com> <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com> <518D320C.4010707@elopez.com.ar> <fe9e603e-a432-4a29-a195-fd393b875a7e@TX2EHSMHS006.ehs.local>
-In-Reply-To: <fe9e603e-a432-4a29-a195-fd393b875a7e@TX2EHSMHS006.ehs.local>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/mixed; boundary="VbJkn9YxBvnuCH5J"
+Content-Disposition: inline
+In-Reply-To: <518A0A50.1020705@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-El 10/05/13 15:15, Sören Brinkmann escribió:
-> Hi Emilio,
+--VbJkn9YxBvnuCH5J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed, May 08, 2013 at 04:18:24PM +0800, Zhenzhong Duan wrote:
+> When driver load and unload in a loop, pirq will exhaust finally.
+> Try to use the same pirq which was already mapped and binded at first time
+
+So what happens if I unload and reload two drivers in random order?
+
+> when driver loaded.
 > 
-> On Fri, May 10, 2013 at 02:44:44PM -0300, Emilio López wrote:
->> Hi,
->>
->> El 10/05/13 14:31, Soren Brinkmann escribió:
->>> The userspace clock driver can be used to expose clock controls through
->>> sysfs to userspace. The driver creates entries in /sys/class/clk.
->>>
->>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
->>> ---
->>>  .../devicetree/bindings/clock/clk-userspace.txt    |   7 +
->>>  drivers/clk/Kconfig                                |   9 ++
->>>  drivers/clk/Makefile                               |   1 +
->>>  drivers/clk/clk-userspace.c                        | 169 +++++++++++++++++++++
->>>  4 files changed, 186 insertions(+)
->>>  create mode 100644 Documentation/devicetree/bindings/clock/clk-userspace.txt
->>>  create mode 100644 drivers/clk/clk-userspace.c
->>>
->>> diff --git a/Documentation/devicetree/bindings/clock/clk-userspace.txt b/Documentation/devicetree/bindings/clock/clk-userspace.txt
->>> new file mode 100644
->>> index 0000000..2d153c7
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/clock/clk-userspace.txt
->>> @@ -0,0 +1,7 @@
->>> +
->>> +Example:
->>> +	usclk: usclk {
->>> +		compatible = "clk-userspace";
->>> +		clocks = <&foo 15>, <&bar>;
->>> +		clock-count = <2>;
->>> +	};
->>
->> Does this belong on DT? It isn't describing hardware, is it?
-> I guess, strictly speaking you are right. Do you have a good
-> alternative?
+> Read pirq from msix entry and test if data is XEN_PIRQ_MSI_DATA
+> xen_irq_from_pirq(pirq) < 0 checking is wrong as irq will be freed
+> when driver unload, it's always true in second load.
 
-If this was part of the framework instead of a consumer, I suppose a
-flag on the DT node defining the clock that indicates it should be
-exported would be acceptable.
+If my understanding is right the issue at hand is that the caching
+information about the pirq disappears once the driver has been
+unloaded b/c the event's irq-info is removed (as the driver is
+unloaded and free_irq is called).
 
-Another possibility would be letting the user export what they need,
-like GPIO does, see "Paths in Sysfs" in
+Stefano,
+Is there a specific write to the MSI structure that would cause the
+hypervisor to drop the PIRQ? Or a nice hypercall to "free" an
+PIRQ in usage?
 
-https://www.kernel.org/doc/Documentation/gpio.txt
+I presume that on the first load the msg.data value is
+ALWAYS != XEN_PIRQ_MSI_DATA right? Is that somethign we can ALWAYS
+depend? Or is there a possibility that it could be that when the
+PCI device is unplugged from one guest and plugged in another?
 
->>> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
->>> index 0357ac4..b35b62c 100644
->>> --- a/drivers/clk/Kconfig
->>> +++ b/drivers/clk/Kconfig
->>> @@ -81,6 +81,15 @@ config COMMON_CLK_AXI_CLKGEN
->>>  	  Support for the Analog Devices axi-clkgen pcore clock generator for Xilinx
->>>  	  FPGAs. It is commonly used in Analog Devices' reference designs.
->>>  
->>> +config COMMON_CLK_USERSPACE
->>> +	bool "Userspace Clock Controls"
->>> +	depends on OF
->>> +	depends on SYSFS
->>> +	help
->>> +	---help---
->>> +	  Expose clock controls through sysfs to userspace. Clocks are selected
->>> +	  through the device tree and the controls are exposed in
->>> +	  /sys/class/clk.
->>>  endmenu
->>>  
->>>  source "drivers/clk/mvebu/Kconfig"
->>> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
->>> index fa435bc..f2f68c8 100644
->>> --- a/drivers/clk/Makefile
->>> +++ b/drivers/clk/Makefile
->>> @@ -8,6 +8,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-rate.o
->>>  obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
->>>  obj-$(CONFIG_COMMON_CLK)	+= clk-mux.o
->>>  obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
->>> +obj-$(CONFIG_COMMON_CLK_USERSPACE) += clk-userspace.o
->>>  
->>>  # SoCs specific
->>>  obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
->>> diff --git a/drivers/clk/clk-userspace.c b/drivers/clk/clk-userspace.c
->>> new file mode 100644
->>> index 0000000..931cf92
->>> --- /dev/null
->>> +++ b/drivers/clk/clk-userspace.c
->>> @@ -0,0 +1,169 @@
->>> +/*
->>> + * Userspace clock driver
->>> + *
->>> + *  Copyright (C) 2013 Xilinx
->>> + *
->>> + *  Sören Brinkmann <soren.brinkmann@xilinx.com>
->>> + *
->>> + * This program is free software: you can redistribute it and/or modify
->>> + * it under the terms of the GNU General Public License v2 as published by
->>> + * the Free Software Foundation.
->>> + *
->>> + * This program is distributed in the hope that it will be useful,
->>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->>> + * GNU General Public License for more details.
->>> + *
->>> + * You should have received a copy of the GNU General Public License
->>> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
->>> + *
->>> + * Expose clock controls through sysfs to userspace.
->>> + *
->>> + * By writing 0/1 to 'enable' the clock can be disabled/enabled. Reading
->>> + * that file returns the current state - 0 = disabled, 1 = enabled.
->>> + *
->>> + * Reading 'set_rate' returns the current clock frequency in Hz. Writing
->>> + * the file requests setting a new frequency in Hz.
->>> + */
->>> +
->>> +#include <linux/clk-provider.h>
->>> +#include <linux/fs.h>
->>> +#include <linux/module.h>
->>> +#include <linux/of.h>
->>> +#include <linux/device.h>
->>> +#include <linux/slab.h>
->>> +
->>> +#define DRIVER_NAME	"clk-userspace"
->>> +
->>> +struct usclk_data {
->>> +	struct clk *clk;
->>> +	int enabled;
->>> +};
->>> +
->>> +static ssize_t enable_show(struct device *dev, struct device_attribute *attr,
->>> +		char *buf)
->>> +{
->>> +	struct usclk_data *pdata = dev_get_drvdata(dev);
->>> +
->>> +	return scnprintf(buf, PAGE_SIZE, "%u\n", pdata->enabled);
->>> +}
->>> +
->>> +static ssize_t enable_store(struct device *dev, struct device_attribute *attr,
->>> +		const char *buf, size_t count)
->>> +{
->>> +	unsigned long enable;
->>> +	int ret;
->>> +	struct usclk_data *pdata = dev_get_drvdata(dev);
->>> +
->>> +	ret = kstrtoul(buf, 0, &enable);
->>> +	if (ret)
->>> +		return -EINVAL;
->>> +
->>> +	enable = !!enable;
->>> +	if (enable == pdata->enabled)
->>> +		return count;
->>> +
->>> +	if (enable)
->>> +		ret = clk_prepare_enable(pdata->clk);
->>> +	else
->>> +		clk_disable_unprepare(pdata->clk);
->>> +
->>> +	if (ret)
->>> +		return -EBUSY;
->>> +
->>> +	pdata->enabled = enable;
->>> +	return count;
->>> +}
->>> +
->>> +static DEVICE_ATTR(enable, 0644, enable_show, enable_store);
->>> +
->>> +static ssize_t set_rate_show(struct device *dev, struct device_attribute *attr,
->>> +		char *buf)
->>> +{
->>> +	struct usclk_data *pdata = dev_get_drvdata(dev);
->>> +
->>> +	return scnprintf(buf, PAGE_SIZE, "%lu\n", clk_get_rate(pdata->clk));
->>> +}
->>> +
->>> +static ssize_t set_rate_store(struct device *dev, struct device_attribute *attr,
->>> +		const char *buf, size_t count)
->>> +{
->>> +	int ret = 0;
->>> +	unsigned long rate;
->>> +	struct usclk_data *pdata = dev_get_drvdata(dev);
->>> +
->>> +	ret = kstrtoul(buf, 0, &rate);
->>> +	if (ret)
->>> +		return -EINVAL;
->>> +
->>> +	rate = clk_round_rate(pdata->clk, rate);
->>> +	ret = clk_set_rate(pdata->clk, rate);
->>> +	if (ret)
->>> +		return -EBUSY;
->>> +
->>> +	return count;
->>> +}
->>> +
->>> +static DEVICE_ATTR(set_rate, 0644, set_rate_show, set_rate_store);
->>> +
->>> +static const struct attribute *usclk_attrs[] = {
->>> +	&dev_attr_enable.attr,
->>> +	&dev_attr_set_rate.attr,
->>> +	NULL
->>> +};
->>
->> For debugging purposes, being able to change parents would be nice too.
-> This is difficult and I don't have a good solution for it, hence it's
-> missing. A clock consumer like a device driver or this driver, just
-> knows about it's input clock, but not about the topology further up.
-> Therefore it is pretty much impossible to implement reparent operations
-> in a clock consumer, IMHO.
-> IOW: For a given input clock, how do you figure out it's possible
-> parents?
+Could we use PHYSDEVOP_irq_status_query to figure out if the PIRQ
+has been already allocated? Ah, does not look like it.
 
-The parent is just a number
+I am a bit worried about depending on just msg.data to tells us
+whether the device had been initialized before.
 
-int (*set_parent)(struct clk_hw *hw, u8 index);
-u8 (*get_parent)(struct clk_hw *hw);
+Perhaps a different solution could be to utilize the
+'xen_device_domain_owner' code. See attached patch (not
+compile tested) to retain whether we had initialized this
+device in the past and we can skip the hypercall.
 
-If you are debugging, you know what the possible parents are, and you
-can reparent with that information.
-
-After checking the clk code however, I didn't find any exposed way to
-reparent with just the parent indexes. Maybe an interface that takes a n
-arbitrary string representing the parent name, and gets that clock and
-then sets the parent would fit.
+On a second thought it could also use some extra checks
+to make sure that the pirq that would be used on the second
+run is the same as on the first one.
 
 > 
->> Maybe this belongs to debugfs instead of sysfs though.
-> Well, the more generic use-case probably. My Zynq use-case rather not,
-> IMHO.
+> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+> Tested-by: Yuval Shaia <yuval.shaia@oracle.com>
+> ---
+>  arch/x86/pci/xen.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+> index 94e7662..4289eef 100644
+> --- a/arch/x86/pci/xen.c
+> +++ b/arch/x86/pci/xen.c
+> @@ -230,8 +230,7 @@ static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+>  		__read_msi_msg(msidesc, &msg);
+>  		pirq = MSI_ADDR_EXT_DEST_ID(msg.address_hi) |
+>  			((msg.address_lo >> MSI_ADDR_DEST_ID_SHIFT) & 0xff);
+> -		if (msg.data != XEN_PIRQ_MSI_DATA ||
+> -		    xen_irq_from_pirq(pirq) < 0) {
+> +		if (msg.data != XEN_PIRQ_MSI_DATA) {
 
-The framework already exposes some information on debugfs, maybe
-expanding that instead of implementing it as a consumer on sysfs would
-be best for the debugging use case. @Mike, what's your thoughts on this?
+>  			if (pirq < 0) {
+>  				irq = -ENODEV;
+> -- 
+> 1.7.3
+> 
 
-Emilio
+--VbJkn9YxBvnuCH5J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="use-xen-device-domain-owner.patch"
+
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index 56ab749..0150bc9 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -225,7 +225,7 @@ static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 		pirq = MSI_ADDR_EXT_DEST_ID(msg.address_hi) |
+ 			((msg.address_lo >> MSI_ADDR_DEST_ID_SHIFT) & 0xff);
+ 		if (msg.data != XEN_PIRQ_MSI_DATA ||
+-		    xen_irq_from_pirq(pirq) < 0) {
++		    xen_device_pirq_alloced(dev)) {
+ 			pirq = xen_allocate_pirq_msi(dev, msidesc);
+ 			if (pirq < 0) {
+ 				irq = -ENODEV;
+@@ -234,6 +234,7 @@ static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 			xen_msi_compose_msg(dev, pirq, &msg);
+ 			__write_msi_msg(msidesc, &msg);
+ 			dev_dbg(&dev->dev, "xen: msi bound to pirq=%d\n", pirq);
++			xen_device_allocated(dev);
+ 		} else {
+ 			dev_dbg(&dev->dev,
+ 				"xen: msi already bound to pirq=%d\n", pirq);
+@@ -500,6 +501,7 @@ int __init pci_xen_initial_domain(void)
+ 
+ struct xen_device_domain_owner {
+ 	domid_t domain;
++	bool used;
+ 	struct pci_dev *dev;
+ 	struct list_head list;
+ };
+@@ -570,4 +572,32 @@ int xen_unregister_device_domain_owner(struct pci_dev *dev)
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(xen_unregister_device_domain_owner);
++
++int xen_device_allocated(struct pci_dev *dev)
++{
++	struct xen_device_domain_owner *owner;
++
++	int rc = xen_register_device_domain_owner(dev, DOMID_SELF);
++	if (rc)
++		return rc;
++
++	spin_lock(&dev_domain_list_spinlock);
++	owner = find_device(dev);
++	if (owner)
++		owner->used = true;
++	spin_unlock(&dev_domain_list_spinlock);
++	return 0;
++}
++bool xen_device_pirq_alloced(struct pci_dev *dev)
++{
++	struct xen_device_domain_owner *owner;
++	bool rc = false;
++
++	spin_lock(&dev_domain_list_spinlock);
++	owner = find_device(dev);
++	if (owner && owner->used)
++		rc = true;
++	spin_unlock(&dev_domain_list_spinlock);
++	return rc;
++}
+ #endif
+
+--VbJkn9YxBvnuCH5J--
