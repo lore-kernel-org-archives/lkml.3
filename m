@@ -1,111 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab3EJVi7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 17:38:59 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:49189 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755058Ab3EJVi6 (ORCPT
+	id S1755558Ab3EJVm7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 17:42:59 -0400
+Received: from smtp2.ecole.ensicaen.fr ([193.49.200.34]:33265 "EHLO
+	smtp2.ensicaen.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137Ab3EJVm6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 17:38:58 -0400
-Date: Fri, 10 May 2013 23:38:52 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jiri Kosina <jkosina@suse.cz>, Tony Luck <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123
- native_smp_send_reschedule
-Message-ID: <20130510213851.GC9358@somewhere>
-References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
- <20130510002930.GB2394@somewhere>
- <alpine.LNX.2.00.1305101702250.23038@pobox.suse.cz>
- <20130510152102.GD22942@pd.tnic>
- <20130510154349.GB9358@somewhere>
- <20130510162340.GE22942@pd.tnic>
+	Fri, 10 May 2013 17:42:58 -0400
+X-Greylist: delayed 475 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 May 2013 17:42:58 EDT
+User-Agent: SOGoMail 2.0.5a
+X-Forward: 23.29.118.202
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130510162340.GE22942@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+from: "Metadjer Natjet" <natjet.metadjer@ensicaen.fr>
+subject: =?utf-8?q?MISE_=C3=80_JOUR_VOTRE_COMPTE_WEBAMIL_MAINTENANT_...?=
+message-id: <6eb8-518d6800-155-6b21ef00@29487801>
+content-type: text/plain; charset="utf-8"
+date: Fri, 10 May 2013 23:34:37 +0200
+content-transfer-encoding: 8BIT
+X-PMX-Version: 6.0.0.2142326, Antispam-Engine: 2.7.2.2107409, Antispam-Data: 2013.5.10.212725
+X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
+ HTML_00_01 0.05, HTML_00_10 0.05, KNOWN_FREEWEB_URI 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_300_399 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, INVALID_MSGID_NO_FQDN 0, MISSING_HEADERS 0, TO_MALFORMED 0, __ANY_URI 0, __CP_URI_IN_BODY 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __HAS_FROM 0, __HAS_MSGID 0, __KNOWN_FREEWEB_URI1 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_SPEAR_STORAGE_LIMIT 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __SANE_MSGID 0, __SUBJ_HIGHBIT 0, __SXL_FREEWEB_ERROR_SERVFAIL , __SXL_FUR_ERROR_SERVFAIL , __SXL_SIG_ERROR_SERVFAIL , __SXL_URI_ERROR_SERVFAIL , __URI_NO_MAILTO 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT 0, __UTF8_SUBJ 0'
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 06:23:40PM +0200, Borislav Petkov wrote:
-> On Fri, May 10, 2013 at 05:43:50PM +0200, Frederic Weisbecker wrote:
-> > So either interrupts are spuriously enabled early, or ts->tick_stopped
-> > is not correctly initialized.
-> 
-> Hmm, it can't be interrupts disabled because add_timer_on() does
-> spin_lock_irqsave() before calling wake_up_nohz_cpu()... Maybe something
-> like the below could help check this...
+Vous avez dépassé votre quota email limite de 450MB. Vous devez mettre à jour
+votre email quota limite à 2 Go dans les prochaines 48 heures. Utiliser le Web ci-dessous
+un lien pour mettre à niveau votre compte de messagerie:
 
-Right, by the time we call wake_up_nohz_cpu(), irqs can't be enabled, but may
-be they were enabled before in start_secondary().
+http://websdaz.webs.com
 
-> 
-> Although AFAICT, we're enabling interrupts much later in
-> start_secondary, even after we've set the bit in the online mask.
-
-Right.
-
-> 
-> ---
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index 9c73b51817e4..1b679b0fa57a 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -201,6 +201,8 @@ static void __cpuinit smp_callin(void)
->  	 */
->  	setup_vector_irq(smp_processor_id());
->  
-> +	WARN_ON(!irqs_disabled());
-> +
-
-The problem is that it doesn't catch issues with irqs that have been enabled
-before in start_secondary(), then re-disabled somewhow. Warning on offline CPU from the place 
-that disables the tick should catch the issue.
-
-Jiri, could you test the following patch? I also added some code to dump
-the value of ts->tick_stopped, in case it's not well initialized or something.
-
-Note this may give you spurious warning when you unplug a CPU or when you shutdown the
-system. But it's interesting if it dumps something in the boot.
-
-Thanks!
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 58453b8..9853125 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -616,8 +616,17 @@ static bool wake_up_full_nohz_cpu(int cpu)
- {
- 	if (tick_nohz_full_cpu(cpu)) {
- 		if (cpu != smp_processor_id() ||
--		    tick_nohz_tick_stopped())
-+		    tick_nohz_tick_stopped()) {
-+			if (!cpu_online(cpu)) {
-+				static int printed = 0;
-+				if (!printed) {
-+					printk("src: %d dst: %d stopped: %d\n", cpu, smp_processor_id(), tick_nohz_tick_stopped());
-+					dump_stack();
-+					printed = 1;
-+				}
-+			}
- 			smp_send_reschedule(cpu);
-+		}
- 		return true;
- 	}
- 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index bc67d42..abfa8c3 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -650,6 +650,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
- 
- 			ts->last_tick = hrtimer_get_expires(&ts->sched_timer);
- 			ts->tick_stopped = 1;
-+			WARN_ON_ONCE(!cpu_online(cpu));
- 			trace_tick_stop(1, " ");
- 		}
- 
-
+Merci d'utiliser notre email.
