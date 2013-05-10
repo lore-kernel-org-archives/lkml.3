@@ -1,37 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab3EJUKW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 16:10:22 -0400
-Received: from www.sr71.net ([198.145.64.142]:40019 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754191Ab3EJUKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 16:10:18 -0400
-Message-ID: <518D5429.3020609@sr71.net>
-Date: Fri, 10 May 2013 13:10:17 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Andi Kleen <ak@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        eranian@google.com
-Subject: Re: NMIs induced by 'perf top' hogging all CPU time
-References: <518C314C.9040905@sr71.net> <20130510102911.GB31235@dyad.programming.kicks-ass.net>
-In-Reply-To: <20130510102911.GB31235@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754451Ab3EJUMm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 16:12:42 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:53646 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918Ab3EJUMk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 16:12:40 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: plat-orion: add missing ehci include to common.h
+Date: Fri, 10 May 2013 22:12:27 +0200
+Message-Id: <1368216747-28898-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2013 03:29 AM, Peter Zijlstra wrote:
-> On Thu, May 09, 2013 at 04:29:16PM -0700, Dave Hansen wrote:
->> If I boot a recent kernel (bb9055b) and run 'perf top' on my machine, it
->> hangs.  It is 100% reproducible; it happens every single time.  If I'm
->> lucky, I'll get some of the hardlockup detection messages on the console.
-> 
-> Are you implicitly saying it worked as expected on previous kernels?
+Removing orion ehci include from board files will raise a compiler
+error because plat/common.h is using an enum provided by orion ehci
+but not including the include itself. This just adds the missing include.
 
-Yes, it works on older kernels.  3.6.11 works, for instance.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnaud Patard <arnaud.patard@rtp-net.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/plat-orion/include/plat/common.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-This hardware is quite effective at finding bugs.  It makes bisecting
-very challenging as not a lot of random mainline versions boot.
+diff --git a/arch/arm/plat-orion/include/plat/common.h b/arch/arm/plat-orion/include/plat/common.h
+index e06fc5f..d9a24f6 100644
+--- a/arch/arm/plat-orion/include/plat/common.h
++++ b/arch/arm/plat-orion/include/plat/common.h
+@@ -10,6 +10,7 @@
+ 
+ #ifndef __PLAT_COMMON_H
+ #include <linux/mv643xx_eth.h>
++#include <linux/platform_data/usb-ehci-orion.h>
+ 
+ struct dsa_platform_data;
+ struct mv_sata_platform_data;
+-- 
+1.7.10.4
+
