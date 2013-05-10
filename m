@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab3EJOFG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:05:06 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:59095
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753195Ab3EJOFD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:05:03 -0400
-Date: Fri, 10 May 2013 16:03:28 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: torvalds@linux-foundation.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/9] liblockdep: Wrap kernel/lockdep.c to allow usage
- from userspace
-Message-ID: <20130510140328.GC304@dyad.programming.kicks-ass.net>
-References: <1368115089-8909-1-git-send-email-sasha.levin@oracle.com>
- <1368115089-8909-3-git-send-email-sasha.levin@oracle.com>
- <20130510091816.GC3039@dyad.programming.kicks-ass.net>
- <20130510101131.GA31152@dyad.programming.kicks-ass.net>
- <518CF4D5.4070000@oracle.com>
+	id S1754045Ab3EJOFg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:05:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49190 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753784Ab3EJODc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 10:03:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,648,1363158000"; 
+   d="scan'208";a="335522041"
+Message-ID: <518CFE20.8080309@intel.com>
+Date: Fri, 10 May 2013 22:03:12 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <518CF4D5.4070000@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Paul Turner <pjt@google.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 6/7] sched: consider runnable load average in move_tasks
+References: <1367804711-30308-1-git-send-email-alex.shi@intel.com> <1367804711-30308-7-git-send-email-alex.shi@intel.com> <CAPM31RK71tBPdnXzLmr1o6nmFhbhU9+b_DqX9zNSbDc4EhC8FQ@mail.gmail.com> <20130506150428.GD15446@dyad.programming.kicks-ass.net> <CAPM31RKqMGAvFh1JmUjCjBo4EJWqA39i8=YPiUw8GUkG9dj7Fw@mail.gmail.com> <51888E87.2090506@intel.com> <5189ACD2.1080105@intel.com> <518B342C.4030808@intel.com>
+In-Reply-To: <518B342C.4030808@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 09:23:33AM -0400, Sasha Levin wrote:
-> Wait, I'm confused. Over here, patch is fine with creating empty files:
+On 05/09/2013 01:29 PM, Alex Shi wrote:
 > 
-> lappy lockdep # touch test.c
-> lappy lockdep # git diff /dev/null test.c > test.patch
-> lappy lockdep # rm test.c
-> lappy lockdep # file test.c
-> test.c: ERROR: cannot open `test.c' (No such file or directory)
-> lappy lockdep # patch -i test.patch
-> patching file test.c
-> lappy lockdep # file test.c
-> test.c: empty
-> lappy lockdep # cat test.patch
-> diff --git a/tools/lib/lockdep/test.c b/tools/lib/lockdep/test.c
-> new file mode 100644
-> index 0000000..e69de29
-> lappy lockdep #
-> 
-> So it seems that here patch would cleanly create empty files, what does quilt
-> do differently?
+> I reviewed the cfs_rq->blocked_load_avg code path, no clear abnormal found.
+> Seems the blocked load avg is fit current balance rules.
+
+Sorry, I mean, the blocked load avg doesn't fit current balance rules.
+The reason is blow, any comments on this?
+> Sometime the blocked load far bigger than runnable load. The blocked_load_avg 
+> has a long time effect(more than half weight in 32ms), that drives wakeup task to other
+> cpus not locate, and give unnecessary load in periodic balance, isn't it?
 
 
-root@twins:~/tmp# touch ponies
-root@twins:~/tmp# git diff /dev/null ponies
-diff --git a/ponies b/ponies
-new file mode 100644
-index 0000000..e69de29
-root@twins:~/tmp# git diff /dev/null ponies > ponies.patch
-root@twins:~/tmp# rm ponies
-root@twins:~/tmp# patch < ponies.patch
-patch: **** Only garbage was found in the patch input.
-
-t@twins:~/tmp# patch --version
-patch 2.6.1
-Copyright (C) 1988 Larry Wall
-Copyright (C) 2003, 2009 Free Software Foundation, Inc.
-
-This program comes with NO WARRANTY, to the extent permitted by law.
-You may redistribute copies of this program
-under the terms of the GNU General Public License.
-For more information about these matters, see the file named COPYING.
-
-written by Larry Wall and Paul Eggert
-
+-- 
+Thanks
+    Alex
