@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab3EJOxM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:53:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56851 "EHLO
+	id S1757140Ab3EJOxh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:53:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56844 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753666Ab3EJOTi (ORCPT
+	by vger.kernel.org with ESMTP id S1753656Ab3EJOTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:19:38 -0400
+	Fri, 10 May 2013 10:19:37 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tony Luck" <tony.luck@intel.com>,
-        "Stephan Schreiber" <info@fs-driver.org>
+CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
+        "Li Zefan" <lizefan@huawei.com>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.258271513@decadent.org.uk>
+Message-ID: <lsq.1368193181.351454482@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [008/118] Wrong asm register contraints in the kvm implementation
+Subject: [009/118] cgroup: fix an off-by-one bug which may trigger BUG_ON()
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,93 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephan Schreiber <info@fs-driver.org>
+From: Li Zefan <lizefan@huawei.com>
 
-commit de53e9caa4c6149ef4a78c2f83d7f5b655848767 upstream.
+commit 3ac1707a13a3da9cfc8f242a15b2fae6df2c5f88 upstream.
 
-The Linux Kernel contains some inline assembly source code which has
-wrong asm register constraints in arch/ia64/kvm/vtlb.c.
+The 3rd parameter of flex_array_prealloc() is the number of elements,
+not the index of the last element.
 
-I observed this on Kernel 3.2.35 but it is also true on the most
-recent Kernel 3.9-rc1.
+The effect of the bug is, when opening cgroup.procs, a flex array will
+be allocated and all elements of the array is allocated with
+GFP_KERNEL flag, but the last one is GFP_ATOMIC, and if we fail to
+allocate memory for it, it'll trigger a BUG_ON().
 
-File arch/ia64/kvm/vtlb.c:
-
-u64 guest_vhpt_lookup(u64 iha, u64 *pte)
-{
-	u64 ret;
-	struct thash_data *data;
-
-	data = __vtr_lookup(current_vcpu, iha, D_TLB);
-	if (data != NULL)
-		thash_vhpt_insert(current_vcpu, data->page_flags,
-			data->itir, iha, D_TLB);
-
-	asm volatile (
-			"rsm psr.ic|psr.i;;"
-			"srlz.d;;"
-			"ld8.s r9=[%1];;"
-			"tnat.nz p6,p7=r9;;"
-			"(p6) mov %0=1;"
-			"(p6) mov r9=r0;"
-			"(p7) extr.u r9=r9,0,53;;"
-			"(p7) mov %0=r0;"
-			"(p7) st8 [%2]=r9;;"
-			"ssm psr.ic;;"
-			"srlz.d;;"
-			"ssm psr.i;;"
-			"srlz.d;;"
-			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
-
-	return ret;
-}
-
-The list of output registers is
-			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
-The constraint "=r" means that the GCC has to maintain that these vars
-are in registers and contain valid info when the program flow leaves
-the assembly block (output registers).
-But "=r" also means that GCC can put them in registers that are used
-as input registers. Input registers are iha, pte on the example.
-If the predicate p7 is true, the 8th assembly instruction
-			"(p7) mov %0=r0;"
-is the first one which writes to a register which is maintained by the
-register constraints; it sets %0. %0 means the first register operand;
-it is ret here.
-This instruction might overwrite the %2 register (pte) which is needed
-by the next instruction:
-			"(p7) st8 [%2]=r9;;"
-Whether it really happens depends on how GCC decides what registers it
-uses and how it optimizes the code.
-
-The attached patch  fixes the register operand constraints in
-arch/ia64/kvm/vtlb.c.
-The register constraints should be
-			: "=&r"(ret) : "r"(iha), "r"(pte):"memory");
-The & means that GCC must not use any of the input registers to place
-this output register in.
-
-This is Debian bug#702639
-(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=702639).
-
-The patch is applicable on Kernel 3.9-rc1, 3.2.35 and many other versions.
-
-Signed-off-by: Stephan Schreiber <info@fs-driver.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/ia64/kvm/vtlb.c |    2 +-
+ kernel/cgroup.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/ia64/kvm/vtlb.c
-+++ b/arch/ia64/kvm/vtlb.c
-@@ -256,7 +256,7 @@ u64 guest_vhpt_lookup(u64 iha, u64 *pte)
- 			"srlz.d;;"
- 			"ssm psr.i;;"
- 			"srlz.d;;"
--			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
-+			: "=&r"(ret) : "r"(iha), "r"(pte) : "memory");
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2029,7 +2029,7 @@ int cgroup_attach_proc(struct cgroup *cg
+ 	if (!group)
+ 		return -ENOMEM;
+ 	/* pre-allocate to guarantee space while iterating in rcu read-side. */
+-	retval = flex_array_prealloc(group, 0, group_size - 1, GFP_KERNEL);
++	retval = flex_array_prealloc(group, 0, group_size, GFP_KERNEL);
+ 	if (retval)
+ 		goto out_free_group_list;
  
- 	return ret;
- }
 
