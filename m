@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab3EJMPA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 08:15:00 -0400
-Received: from mga02.intel.com ([134.134.136.20]:7459 "EHLO mga02.intel.com"
+	id S1753313Ab3EJMOa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 08:14:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:53450 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753129Ab3EJMO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 08:14:57 -0400
+	id S1752818Ab3EJMO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 08:14:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,647,1363158000"; 
-   d="scan'208";a="331927147"
+   d="scan'208";a="300435088"
 From: Imre Deak <imre.deak@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Shani Michaeli <shanim@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH 09/11] net/sunrpc: take msecs_to_jiffies_min into use
-Date: Fri, 10 May 2013 15:13:27 +0300
-Message-Id: <1368188011-23661-9-git-send-email-imre.deak@intel.com>
+        Jon Maloy <jon.maloy@ericsson.com>,
+        Allan Stephens <allan.stephens@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        tipc-discussion@lists.sourceforge.net
+Subject: [PATCH 10/11] net/tipc: take msecs_to_jiffies_min into use
+Date: Fri, 10 May 2013 15:13:28 +0300
+Message-Id: <1368188011-23661-10-git-send-email-imre.deak@intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
 References: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
@@ -34,31 +31,22 @@ Use msecs_to_jiffies_min instead of open-coding the same.
 
 Signed-off-by: Imre Deak <imre.deak@intel.com>
 ---
- net/sunrpc/xprtrdma/verbs.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/tipc/core.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
-index 93726560..9cac2c8 100644
---- a/net/sunrpc/xprtrdma/verbs.c
-+++ b/net/sunrpc/xprtrdma/verbs.c
-@@ -404,7 +404,7 @@ rpcrdma_create_id(struct rpcrdma_xprt *xprt,
- 		goto out;
- 	}
- 	wait_for_completion_interruptible_timeout(&ia->ri_done,
--				msecs_to_jiffies(RDMA_RESOLVE_TIMEOUT) + 1);
-+				msecs_to_jiffies_min(RDMA_RESOLVE_TIMEOUT));
- 	rc = ia->ri_async_rc;
- 	if (rc)
- 		goto out;
-@@ -417,7 +417,7 @@ rpcrdma_create_id(struct rpcrdma_xprt *xprt,
- 		goto out;
- 	}
- 	wait_for_completion_interruptible_timeout(&ia->ri_done,
--				msecs_to_jiffies(RDMA_RESOLVE_TIMEOUT) + 1);
-+				msecs_to_jiffies_min(RDMA_RESOLVE_TIMEOUT));
- 	rc = ia->ri_async_rc;
- 	if (rc)
- 		goto out;
+diff --git a/net/tipc/core.h b/net/tipc/core.h
+index 0207db0..3f23e22 100644
+--- a/net/tipc/core.h
++++ b/net/tipc/core.h
+@@ -133,7 +133,7 @@ static inline void k_init_timer(struct timer_list *timer, Handler routine,
+  */
+ static inline void k_start_timer(struct timer_list *timer, unsigned long msec)
+ {
+-	mod_timer(timer, jiffies + msecs_to_jiffies(msec) + 1);
++	mod_timer(timer, jiffies + msecs_to_jiffies_min(msec));
+ }
+ 
+ /**
 -- 
 1.7.10.4
 
