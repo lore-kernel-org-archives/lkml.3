@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682Ab3EJDMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 23:12:00 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36016 "EHLO
+	id S1751625Ab3EJDTb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 23:19:31 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41460 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab3EJDL6 (ORCPT
+	with ESMTP id S1750754Ab3EJDTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 23:11:58 -0400
-Date: Fri, 10 May 2013 13:11:46 +1000
+	Thu, 9 May 2013 23:19:30 -0400
+Date: Fri, 10 May 2013 13:19:26 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Keith Busch <keith.busch@intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kent Overstreet <koverstreet@google.com>
-Subject: linux-next: build warning after merge of the akpmtree
-Message-Id: <20130510131146.9646757173476e28de57f6aa@canb.auug.org.au>
+        Kent Overstreet <koverstreet@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: build warning after merge of the origintree
+Message-Id: <20130510131926.bbbee7dec35f696c407ac63e@canb.auug.org.au>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Fri__10_May_2013_13_11_46_+1000_B6LBC6Urnkiv1vog"
+ boundary="Signature=_Fri__10_May_2013_13_19_26_+1000_=wR3auU5n/lvVftI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__10_May_2013_13_11_46_+1000_B6LBC6Urnkiv1vog
+--Signature=_Fri__10_May_2013_13_19_26_+1000_=wR3auU5n/lvVftI
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
+Hi all,
 
 After merging the akpm tree, today's linux-next build (x86_64
-allmodconfig) produced these warnings:
+allmodconfig) produced this warning:
 
-drivers/block/nvme-core.c: In function 'nvme_bio_split':
-/scratch/sfr/next/drivers/block/nvme-core.c:483:19: warning: assignment fro=
-m incompatible pointer type [enabled by default]
-/scratch/sfr/next/drivers/block/nvme-core.c:484:19: warning: assignment fro=
-m incompatible pointer type [enabled by default]
+drivers/md/bcache/super.c:656:2: warning: initialization from incompatible =
+pointer type [enabled by default]
+drivers/md/bcache/super.c:656:2: warning: (near initialization for 'bcache_=
+ops.release') [enabled by default]
 
-Introduced by commit 427e97080196 ("NVMe: Split non-mergeable bio
-requests") from Linus' tree interacting with commit 6a4d55146334 ("block:
-prep work for batch completion") from the akpm tree.
+Introduced by commit cafe56359144 ("bcache: A block layer cache")
+interacting with commit db2a144bedd5 ("block_device_operations->release()
+should return void").
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Fri__10_May_2013_13_11_46_+1000_B6LBC6Urnkiv1vog
+--Signature=_Fri__10_May_2013_13_19_26_+1000_=wR3auU5n/lvVftI
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJRjGVyAAoJEECxmPOUX5FEkiUQAJ3gintTw97iHVcRia1bewZT
-qJDBqwwoaO4nHhmXACdFQayrFWTnrRgP8HqtUaoG4sBWY9RY02dYM7XxL52cdxMS
-muINIErMCOX+SaT9gSo55TJ2A7r5I+ptk66+k2giX1J+PXn6jLiI1lsiQ0yxKf3h
-9A4vYRzMtyr5aOA4s0vu9souE2XP7IbHLg/cSpAXzGOyp03Ep8Xpbagll2aPvl/l
-rZxroLYc5FCB0NoVDwV1EmcsysqfK+ArQd58DUT+qAM+iJSK3dqhbQ+g87GAtLIc
-MIyK6U/IYaShp1LWGrqmYtKD42nnbBipRtteYN8Y4Qn5oohnMwdZBiPGH41ILtnW
-5UZc5IAERHwV/w2/la+r0BTNS7x2/3Q9+Xr6MkVE8rsZ8TNn+fr+O5b48cT8/4yh
-skmtnUY3/noF3hz5Cg9No5rFFRcv0j+BmDirdE4tFLNTEHeAfdN9LmfNy1p/tCf/
-JIJp3HHX1uI3QDlEkLMjDwP6mFBs8iX4qgtGg7ZDATTortzQ11JzPK31Z2JTOcSl
-or7eICYCfWzPEnMVdGZPflxb6vus6tDAphaR6z1tbWSsV0xIQk5Tr2P7LkUt5FnZ
-FQYGdI/+LCYxsnENCq80f+PuwKq4XLBoQV8hiyDyMx+SuDKP75+WyckUecx1ue0R
-Ss5/DJzpZGIgFw8QDDO0
-=zoN3
+iQIcBAEBCAAGBQJRjGc+AAoJEECxmPOUX5FE5GgQAIh/+NNI0KL3IlPhKLm8RBs1
+UkfCbNboDj7AhvQDTSGGvrF8WfO3XqxJUxoNGoMQgPVoIGfdFlk3MOJ/askg9pwV
+m6frTM4Pgs2+okmpL5HeX5/crPkRrTqZNcrtBc81YvRhruURnT5umsMZ4TQQ5zxA
+oAPPZG7GvJDgF2Yhhh34zqb1V8CPc3kjnX23RCk9OzGhpAk8XmKtzB9wIse/Asyo
+SVzhvgiEPqnYOcu+B2tCH7kC4APAVGJbeS9b9Zu8sU2nVbRmolbxni1ty4+jLhq3
+8yKID0jbfx5jtJr07tuwGD8WdiaAC9TG2VF9Eerb2djJp7CL6Y3IAV7Zr/leHLsg
+VEzIExSVUVG2R38M6u/rkGddJ5+UDuKz+9AJvOY6fRDSOlwUM9yHT0LSHR6Xg2Id
+2xa6P8HAeUYwpSXrSJHVYUSP6k0mED/XAmMZL4nlenwkwPIZMommhKEy02KXPxPQ
+Wy+3aaLR9apZgHaoEl8VfuJL3BM65iOgfqyiD0F0ScUHRQP+Evo3rQ5h6CGr7ru0
+s747ar9QByUG0oLRFgXn3YgaeCoa64uGOYSh++bAUkJ1aw86r5VVvUfnJ/fwLhcq
+kcs6mhXWSwcazD5H/jgecJf319rj+BSqIVDcNIX8ubI9Z6/07KIJgDqhxF04U0si
+iuaxplDkyhfI31YBz5Sy
+=r1kO
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__10_May_2013_13_11_46_+1000_B6LBC6Urnkiv1vog--
+--Signature=_Fri__10_May_2013_13_19_26_+1000_=wR3auU5n/lvVftI--
