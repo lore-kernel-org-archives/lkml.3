@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741Ab3EJKyj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 06:54:39 -0400
-Received: from plane.gmane.org ([80.91.229.3]:45452 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750867Ab3EJKyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 06:54:38 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: "Holger Hoffstaette" <holger.hoffstaette@googlemail.com>
-Subject: Re: [ 00/73] 3.8.13-stable review
-Date: Fri, 10 May 2013 12:54:27 +0200
-Organization: The Fists of the White Lotus
-Message-ID: <pan.2013.05.10.10.54.26.943195@googlemail.com>
-References: <20130509222757.917088509@linuxfoundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: p5086a710.dip0.t-ipconnect.de
-User-Agent: Pan/0.13.91 (Before we let euphoria convince us we are free)
-Cc: stable@vger.kernel.org
+	id S1752439Ab3EJKyv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 06:54:51 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40630 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136Ab3EJKyu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 06:54:50 -0400
+Date: Fri, 10 May 2013 12:54:46 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
+        Len Brown <len.brown@intel.com>, Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH 0/3] pm: Introduce __pm to mark power management code
+Message-ID: <20130510105446.GA6107@amd.pavel.ucw.cz>
+References: <1368119391-13837-1-git-send-email-linux@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368119391-13837-1-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 09 May 2013 15:31:23 -0700, Greg Kroah-Hartman wrote:
+On Thu 2013-05-09 10:09:48, Guenter Roeck wrote:
+> The following patch series introduces a marker for power management functions
+> and data. This this marker, #ifdef CONFIG_PM and #ifdef CONFIG_PM_SLEEP
+> can be removed from most of the code. This ensures that the conditional code
+> still compiles but is not included in the object file.
 
-> This is the start of the stable review cycle for the 3.8.13 release. There
+Was it compile-tested for both PM_SLEEP and !PM_SLEEP cases?
 
-This patchset broke my internet, with all sorts of weird effects like
-Samba clients having problems to talk to the server and only partially
-working DNS resolution (CDNs broken, Amazon unreachable).
+If driver wants to have pm-specific fields in its structures, this
+will make it harder.
 
-After two reboots to/from .12/.13 (to rule out temporary internet
-brokenness) the problem has been identified as:
-
-> Stefan Bader <stefan.bader@canonical.com>
->     r8169: fix 8168evl frame padding.
-
-After reverting only this patch (turning r8169 back to 3.8.12) things
-again behave as expected with the rest of .13. So far no other regressions
-detected.
-
-This patch should probably be removed from 3.9.2-rc as well.
-
--h
-
-
+Ifdefs are ugly, and this has better compiler coverage in !PM_SLEEP
+case. Good. OTOH most people are running with PM_SLEEP, so advantage
+is not great...
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
