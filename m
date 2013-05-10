@@ -1,41 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab3EJPKL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 11:10:11 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:15724 "EHLO multi.imgtec.com"
+	id S1757232Ab3EJPNK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 11:13:10 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42152 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753709Ab3EJPKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 11:10:10 -0400
-Message-ID: <518D0D9A.5080502@imgtec.com>
-Date: Fri, 10 May 2013 16:09:14 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753092Ab3EJPNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 11:13:07 -0400
+Message-ID: <518D0E73.9040207@ti.com>
+Date: Fri, 10 May 2013 11:12:51 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: James Hogan <james.hogan@imgtec.com>, <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH RFC 0/2] clk: add metag specific gate/mux clocks
-References: <1368198127-1295-1-git-send-email-james.hogan@imgtec.com> <1368198127-1295-4-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1368198127-1295-4-git-send-email-james.hogan@imgtec.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_05_10_16_10_08
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+CC: <linux-pm@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <amit.kachhap@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: Re: [PATCH V3 03/21] thermal: exynos: Rename exynos_thermal.c to
+ exynos_tmu.c
+References: <1367931671-3906-1-git-send-email-amit.daniel@samsung.com> <1367931671-3906-4-git-send-email-amit.daniel@samsung.com>
+In-Reply-To: <1367931671-3906-4-git-send-email-amit.daniel@samsung.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2OWHXNGATSMSPVIOFMABX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/13 16:02, James Hogan wrote:
-> This adds a metag architecture specific clk-gate and clk-mux which
-> extends the generic ones to use global lock2 to protect the register
-> fields. It is common with metag to have an RTOS running on a different
-> thread or core with access to different bits in the same register (which
-> contain clock gate/switch bits for other clocks). Access to such
-> registers must be serialised with a global lock such as the one provided
-> by the metag architecture port in <asm/global_lock.h>
+------enig2OWHXNGATSMSPVIOFMABX
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Hmm, sorry about the duplicated emails, I had *.patch twice in my git
-send-email command line :(.
+On 07-05-2013 09:00, Amit Daniel Kachhap wrote:
+> This patch renames exynos_thermal.c to exynos_tmu.c. This change is nee=
+ded as
+> this file now just contains exynos tmu driver related codes and thermal=
+ zone
+> or cpufreq cooling registration related changes are not there anymore.
+>=20
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
+This one looks fine to me.
+
+Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
+
+> ---
+>  drivers/thermal/samsung/Makefile                   |    6 +++---
+>  .../samsung/{exynos_thermal.c =3D> exynos_tmu.c}     |    2 +-
+>  2 files changed, 4 insertions(+), 4 deletions(-)
+>  rename drivers/thermal/samsung/{exynos_thermal.c =3D> exynos_tmu.c} (9=
+9%)
+>=20
+> diff --git a/drivers/thermal/samsung/Makefile b/drivers/thermal/samsung=
+/Makefile
+> index 6227d4f..22528d6 100644
+> --- a/drivers/thermal/samsung/Makefile
+> +++ b/drivers/thermal/samsung/Makefile
+> @@ -1,6 +1,6 @@
+>  #
+>  # Samsung thermal specific Makefile
+>  #
+> -obj-$(CONFIG_EXYNOS_THERMAL)			+=3D exynos_soc_thermal.o
+> -exynos_soc_thermal-y				:=3D exynos_thermal.o
+> -exynos_soc_thermal-$(CONFIG_EXYNOS_THERMAL_CORE) +=3D exynos_thermal_c=
+ommon.o
+> +obj-$(CONFIG_EXYNOS_THERMAL)			+=3D exynos_thermal.o
+> +exynos_thermal-y				:=3D exynos_tmu.o
+> +exynos_thermal-$(CONFIG_EXYNOS_THERMAL_CORE)	+=3D exynos_thermal_commo=
+n.o
+> diff --git a/drivers/thermal/samsung/exynos_thermal.c b/drivers/thermal=
+/samsung/exynos_tmu.c
+> similarity index 99%
+> rename from drivers/thermal/samsung/exynos_thermal.c
+> rename to drivers/thermal/samsung/exynos_tmu.c
+> index 4c85945..3de3e61 100644
+> --- a/drivers/thermal/samsung/exynos_thermal.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -1,5 +1,5 @@
+>  /*
+> - * exynos_thermal.c - Samsung EXYNOS TMU (Thermal Management Unit)
+> + * exynos_tmu.c - Samsung EXYNOS TMU (Thermal Management Unit)
+>   *
+>   *  Copyright (C) 2011 Samsung Electronics
+>   *  Donggeun Kim <dg77.kim@samsung.com>
+>=20
+
+
+
+------enig2OWHXNGATSMSPVIOFMABX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlGNDnMACgkQCXcVR3XQvP3cNQD/XSuRBKNYuRpnrwa8AjcwA5cl
+xX+3gOem5LCywPtIICsBAKmY5eQz5NH8ibJTQ/Npy88Da61Qus7L1KWcPE/C/Hnc
+=f28/
+-----END PGP SIGNATURE-----
+
+------enig2OWHXNGATSMSPVIOFMABX--
