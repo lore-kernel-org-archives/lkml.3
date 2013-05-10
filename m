@@ -1,106 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757232Ab3EJPNK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 11:13:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42152 "EHLO arroyo.ext.ti.com"
+	id S1757305Ab3EJPNd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 11:13:33 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:58519
+	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753092Ab3EJPNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 11:13:07 -0400
-Message-ID: <518D0E73.9040207@ti.com>
-Date: Fri, 10 May 2013 11:12:51 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-CC: <linux-pm@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <amit.kachhap@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: Re: [PATCH V3 03/21] thermal: exynos: Rename exynos_thermal.c to
- exynos_tmu.c
-References: <1367931671-3906-1-git-send-email-amit.daniel@samsung.com> <1367931671-3906-4-git-send-email-amit.daniel@samsung.com>
-In-Reply-To: <1367931671-3906-4-git-send-email-amit.daniel@samsung.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="----enig2OWHXNGATSMSPVIOFMABX"
+	id S1757216Ab3EJPNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 11:13:31 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Stable <stable@vger.kernel.org> (V3.9)
+Subject: [PATCH 1/1] Staging: hv: Fix a bug in get_vp_index()
+Date: Fri, 10 May 2013 08:47:01 -0700
+Message-Id: <1368200821-20964-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2OWHXNGATSMSPVIOFMABX
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Linux' notion of cpuid is different from the Host's notion of CPUID. In the
+call to bind the channel interrupts, we should use the host's notion of
+CPU Ids. Fix this bug.
 
-On 07-05-2013 09:00, Amit Daniel Kachhap wrote:
-> This patch renames exynos_thermal.c to exynos_tmu.c. This change is nee=
-ded as
-> this file now just contains exynos tmu driver related codes and thermal=
- zone
-> or cpufreq cooling registration related changes are not there anymore.
->=20
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Stable <stable@vger.kernel.org> (V3.9)
+---
+ drivers/hv/channel_mgmt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-This one looks fine to me.
+diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
+index bad8128..21ef689 100644
+--- a/drivers/hv/channel_mgmt.c
++++ b/drivers/hv/channel_mgmt.c
+@@ -329,7 +329,7 @@ static u32 get_vp_index(uuid_le *type_guid)
+ 		return 0;
+ 	}
+ 	cur_cpu = (++next_vp % max_cpus);
+-	return cur_cpu;
++	return hv_context.vp_index[cur_cpu];
+ }
+ 
+ /*
+-- 
+1.7.4.1
 
-Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
-
-> ---
->  drivers/thermal/samsung/Makefile                   |    6 +++---
->  .../samsung/{exynos_thermal.c =3D> exynos_tmu.c}     |    2 +-
->  2 files changed, 4 insertions(+), 4 deletions(-)
->  rename drivers/thermal/samsung/{exynos_thermal.c =3D> exynos_tmu.c} (9=
-9%)
->=20
-> diff --git a/drivers/thermal/samsung/Makefile b/drivers/thermal/samsung=
-/Makefile
-> index 6227d4f..22528d6 100644
-> --- a/drivers/thermal/samsung/Makefile
-> +++ b/drivers/thermal/samsung/Makefile
-> @@ -1,6 +1,6 @@
->  #
->  # Samsung thermal specific Makefile
->  #
-> -obj-$(CONFIG_EXYNOS_THERMAL)			+=3D exynos_soc_thermal.o
-> -exynos_soc_thermal-y				:=3D exynos_thermal.o
-> -exynos_soc_thermal-$(CONFIG_EXYNOS_THERMAL_CORE) +=3D exynos_thermal_c=
-ommon.o
-> +obj-$(CONFIG_EXYNOS_THERMAL)			+=3D exynos_thermal.o
-> +exynos_thermal-y				:=3D exynos_tmu.o
-> +exynos_thermal-$(CONFIG_EXYNOS_THERMAL_CORE)	+=3D exynos_thermal_commo=
-n.o
-> diff --git a/drivers/thermal/samsung/exynos_thermal.c b/drivers/thermal=
-/samsung/exynos_tmu.c
-> similarity index 99%
-> rename from drivers/thermal/samsung/exynos_thermal.c
-> rename to drivers/thermal/samsung/exynos_tmu.c
-> index 4c85945..3de3e61 100644
-> --- a/drivers/thermal/samsung/exynos_thermal.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -1,5 +1,5 @@
->  /*
-> - * exynos_thermal.c - Samsung EXYNOS TMU (Thermal Management Unit)
-> + * exynos_tmu.c - Samsung EXYNOS TMU (Thermal Management Unit)
->   *
->   *  Copyright (C) 2011 Samsung Electronics
->   *  Donggeun Kim <dg77.kim@samsung.com>
->=20
-
-
-
-------enig2OWHXNGATSMSPVIOFMABX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlGNDnMACgkQCXcVR3XQvP3cNQD/XSuRBKNYuRpnrwa8AjcwA5cl
-xX+3gOem5LCywPtIICsBAKmY5eQz5NH8ibJTQ/Npy88Da61Qus7L1KWcPE/C/Hnc
-=f28/
------END PGP SIGNATURE-----
-
-------enig2OWHXNGATSMSPVIOFMABX--
