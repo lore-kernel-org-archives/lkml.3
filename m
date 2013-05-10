@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab3EJTYW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 15:24:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22133 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753679Ab3EJTYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 15:24:21 -0400
-Date: Fri, 10 May 2013 15:24:17 -0400
-From: Dave Jones <davej@redhat.com>
-To: akpm@linux-foundation.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: SyS symbol munging.
-Message-ID: <20130510192417.GA4915@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, akpm@linux-foundation.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1753863Ab3EJTZl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 15:25:41 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37483 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089Ab3EJTZj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 15:25:39 -0400
+Message-ID: <518D49B0.4050901@wwwdotorg.org>
+Date: Fri, 10 May 2013 13:25:36 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, linux-tegra@vger.kernel.org
+Subject: Re: [RFC 04/42] drivers/dma: don't check resource with devm_ioremap_resource
+References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de> <1368173847-5661-5-git-send-email-wsa@the-dreams.de> <518D21D4.6000609@wwwdotorg.org> <20130510175739.GA2912@katana>
+In-Reply-To: <20130510175739.GA2912@katana>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 12:14:54PM -0700, Andrew Morton wrote:
+On 05/10/2013 11:57 AM, Wolfram Sang wrote:
+> On Fri, May 10, 2013 at 10:35:32AM -0600, Stephen Warren wrote:
+>> On 05/10/2013 02:16 AM, Wolfram Sang wrote:
+>>> devm_ioremap_resource does sanity checks on the given resource. No need to
+>>> duplicate this in the driver.
+>>
+>>> diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+>>
+>>>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>> -	if (!res) {
+>>> -		dev_err(&pdev->dev, "No mem resource for DMA\n");
+>>> -		return -EINVAL;
+>>> -	}
+>>> -
+>>>  	tdma->base_addr = devm_ioremap_resource(&pdev->dev, res);
+>>
+>> One issue here is that it's not obvious just from reading the code
+>> that's left behind that the "missing" error-checking of the
+>> platform_get_resource() return value is OK because
+>> devm_ioremap_resource() will check it "for us". Everyone now has to
+>> mentally maintain a list of exceptions where it's OK not to error-check.
+> 
+> My goal is to make not-checking the standard case with devm.
 
- > [  163.953629] Call Trace:
- > [  163.957706]  [<ffffffff812be322>] ipcget+0x182/0x380
- > [  163.962123]  [<ffffffff810b99a5>] ?trace_hardirqs_on_caller+0x115/0x1e0
- > [  163.966752]  [<ffffffff812c559a>] SyS_shmget+0x5a/0x60
- > [  163.971163]  [<ffffffff812c47e0>] ? shm_close+0x140/0x140
- > [  163.975590]  [<ffffffff812c3e60>] ? shm_release+0x50/0x50
- > [  163.979991]  [<ffffffff812c3df0>] ? shm_get_unmapped_area+0x20/0x20
- > [  163.984499]  [<ffffffff816caa14>] tracesys+0xdd/0xe2
- 
-This has been bugging me for a while.
-What's changing sys_shmget to SyS_shmget in that trace ? And why ?
-
-	Dave
-
+OK, if no parameters passed to any devm function every need to be
+error-checked, that'll certainly be a bit easier to remember.
