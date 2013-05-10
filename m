@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab3EJIQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 04:16:26 -0400
-Received: from sauhun.de ([89.238.76.85]:60344 "EHLO pokefinder.org"
+	id S1755424Ab3EJIdN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 04:33:13 -0400
+Received: from sauhun.de ([89.238.76.85]:60358 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752358Ab3EJIQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 04:16:22 -0400
+	id S1752506Ab3EJIQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 04:16:28 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-tegra@vger.kernel.org
-Subject: [RFC 04/42] drivers/dma: don't check resource with devm_ioremap_resource
-Date: Fri, 10 May 2013 10:16:49 +0200
-Message-Id: <1368173847-5661-5-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Inki Dae <inki.dae@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [RFC 06/42] drivers/gpu/drm/exynos: don't check resource with devm_ioremap_resource
+Date: Fri, 10 May 2013 10:16:51 +0200
+Message-Id: <1368173847-5661-7-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
 References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
@@ -26,25 +28,25 @@ duplicate this in the driver.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- drivers/dma/tegra20-apb-dma.c |    5 -----
+ drivers/gpu/drm/exynos/exynos_hdmi.c |    5 -----
  1 file changed, 5 deletions(-)
 
-diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-index fcee27e..53e1375 100644
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -1279,11 +1279,6 @@ static int tegra_dma_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, tdma);
+diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+index bbfc384..6652597 100644
+--- a/drivers/gpu/drm/exynos/exynos_hdmi.c
++++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
+@@ -2005,11 +2005,6 @@ static int hdmi_probe(struct platform_device *pdev)
+ 	}
  
  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 -	if (!res) {
--		dev_err(&pdev->dev, "No mem resource for DMA\n");
--		return -EINVAL;
+-		DRM_ERROR("failed to find registers\n");
+-		return -ENOENT;
 -	}
 -
- 	tdma->base_addr = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(tdma->base_addr))
- 		return PTR_ERR(tdma->base_addr);
+ 	hdata->regs = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(hdata->regs))
+ 		return PTR_ERR(hdata->regs);
 -- 
 1.7.10.4
 
