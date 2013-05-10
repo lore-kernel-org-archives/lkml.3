@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab3EJSGo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 14:06:44 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:53257 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247Ab3EJSGn (ORCPT
+	id S1752693Ab3EJSL3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 14:11:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39347 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542Ab3EJSL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 14:06:43 -0400
-Message-ID: <518D3738.6040402@cogentembedded.com>
-Date: Fri, 10 May 2013 22:06:48 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Fri, 10 May 2013 14:11:28 -0400
+Message-ID: <518D3828.9060000@infradead.org>
+Date: Fri, 10 May 2013 11:10:48 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: gregkh@linuxfoundation.org, swarren@wwwdotorg.org, balbi@ti.com,
-        stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v3 08/10] usb: phy: tegra: Add error handling & clean
- up.
-References: <1368194051-4925-1-git-send-email-vbyravarasu@nvidia.com> <1368194051-4925-9-git-send-email-vbyravarasu@nvidia.com>
-In-Reply-To: <1368194051-4925-9-git-send-email-vbyravarasu@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+CC: tglx@linutronix.de, linux-kernel@vger.kernel.org, balbi@ti.com
+Subject: Re: [PATCH 1/1] genirq: outline lazy disable in kerneldoc of irq_disable
+ function.
+References: <1368181290-1583-1-git-send-email-andreas.fenkart@streamunlimited.com>
+In-Reply-To: <1368181290-1583-1-git-send-email-andreas.fenkart@streamunlimited.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 05/10/13 03:21, Andreas Fenkart wrote:
+> comment based on changelog of d209a699a0b975ad
+> 
+> Signed-off-by: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+> ---
+>  kernel/irq/chip.c |   13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+> 
+> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+> index cbd97ce..4e3c439 100644
+> --- a/kernel/irq/chip.c
+> +++ b/kernel/irq/chip.c
+> @@ -213,6 +213,19 @@ void irq_enable(struct irq_desc *desc)
+>  	irq_state_clr_masked(desc);
+>  }
+>  
+> +/**
+> + * irq_disable - mask interupt disabled
 
-On 05/10/2013 05:54 PM, Venu Byravarasu wrote:
+                  - mark interrupt disabled
 
-> Check return values from all GPIO APIs and handle errors accordingly.
->
-> Remove the call to clk_disable_unprepare(); this function does not
-> prepare or enable the clock, so the error path should not disable or
-> unprepare it.
->
-> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-[...]
-> diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-> index a2a89a9..dce692a 100644
-> --- a/drivers/usb/phy/phy-tegra-usb.c
-> +++ b/drivers/usb/phy/phy-tegra-usb.c
-[...]
-> @@ -624,24 +632,44 @@ static int	tegra_phy_init(struct usb_phy *x)
-[...]
->   		phy->ulpi = otg_ulpi_create(&ulpi_viewport_access_ops, 0);
-> +		if (!phy->ulpi) {
-> +			dev_err(phy->dev, "otg_ulpi_create returned err\n");
+> + * @desc:		irq descriptor which should be disabled
+> + *
+> + * If the chip does not implement the irq_disable callback, we
+> + * use a lazy disable approach. That means we mark the interrupt
+> + * disabled, but leave the hardware unmasked. That's an
+> + * optimization because we avoid the hardware access for the
+> + * common case where no interrupt happens after we marked it
+> + * disabled. If an interrupt happens, then the interrupt flow
+> + * handler masks the line at the hardware level and marks it
+> + * pending.
+> + */
+>  void irq_disable(struct irq_desc *desc)
+>  {
+>  	irq_state_set_disabled(desc);
+> 
 
-    Rather "returned NULL".
 
-WBR, Sergei
-
+-- 
+~Randy
