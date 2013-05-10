@@ -1,103 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab3EJPUP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 11:20:15 -0400
-Received: from 13.mo5.mail-out.ovh.net ([87.98.182.191]:43524 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752957Ab3EJPUM (ORCPT
+	id S1757373Ab3EJPXm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 11:23:42 -0400
+Received: from mx1.sisa.samsung.com ([63.166.156.249]:57224 "EHLO
+	mx1.sisa.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753487Ab3EJPXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 11:20:12 -0400
-Date: Fri, 10 May 2013 16:37:01 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Christian Daudt <csd@broadcom.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, Chris Ball <cjb@laptop.org>,
-        Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wei WANG <wei_wang@realsil.com.cn>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Arnd Bergmann <arnd@arndb.de>, "Mike A. Chan" <mikechan@google.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mmc@vger.kernel.org, csd_b@daudt.org
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH] ARM: mmc: bcm281xx SDHCI driver
-Message-ID: <20130510143701.GC22508@game.jcrosoft.org>
-References: <1368078942-31265-1-git-send-email-csd@broadcom.com>
- <20130509063503.GF3041@game.jcrosoft.org>
- <518CA1DF.5050008@broadcom.com>
+	Fri, 10 May 2013 11:23:41 -0400
+X-ASG-Debug-ID: 1368199415-05c03262a6217b0001-xx1T2L
+X-Barracuda-Envelope-From: shuah.kh@samsung.com
+X-Barracuda-Apparent-Source-IP: 105.144.21.115
+X-ASG-Whitelist: Client
+From: Shuah Khan <shuah.kh@samsung.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/73] 3.9.2-stable review
+Thread-Topic: [ 00/73] 3.9.2-stable review
+X-ASG-Orig-Subj: Re: [ 00/73] 3.9.2-stable review
+Thread-Index: AQHOTRT15mVmj3t/DEqRXXEvvkDf0Jj+/9oA
+Date: Fri, 10 May 2013 15:23:34 +0000
+Message-ID: <1368199414.4694.3.camel@lorien>
+References: <20130509222526.480204972@linuxfoundation.org>
+In-Reply-To: <20130509222526.480204972@linuxfoundation.org>
+Reply-To: Shuah Khan <shuah.kh@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [105.144.34.6]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <08D3C6738D9A5A44A375B8D23C756636@sisa.samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <518CA1DF.5050008@broadcom.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 508906759276833583
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Barracuda-Connect: UNKNOWN[105.144.21.115]
+X-Barracuda-Start-Time: 1368199415
+X-Barracuda-URL: http://192.168.0.101:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4AFNmFW023552
 
-On 00:29 Fri 10 May     , Christian Daudt wrote:
-> Thanks for the feedback.
+On Thu, 2013-05-09 at 15:24 -0700, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.9.2 release.
+> There are 73 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> On 13-05-08 11:35 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> >On 22:55 Wed 08 May     , Christian Daudt wrote:
-> >>Add SDHCI driver for the Broadcom 281xx SoCs. Also
-> >>add bindings for it into bcm281xx dts files.
-> >>Still missing:
-> >>  - power managemement
-> >split the dts/dtsi in an other patch
-> ok.
-> >>Signed-off-by: Christian Daudt <csd@broadcom.com>
-> >>
-> >>diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
-> >>index e3bf2d6..65edf6d 100644
-> >>--- a/arch/arm/configs/bcm_defconfig
-> >>+++ b/arch/arm/configs/bcm_defconfig
-> >>@@ -78,6 +78,13 @@ CONFIG_BACKLIGHT_LCD_SUPPORT=y
-> >>  CONFIG_LCD_CLASS_DEVICE=y
-> >>  CONFIG_BACKLIGHT_CLASS_DEVICE=y
-> >>  # CONFIG_USB_SUPPORT is not set
-> >>+CONFIG_MMC=y
-> >>+CONFIG_MMC_UNSAFE_RESUME=y
-> >>+CONFIG_MMC_BLOCK_MINORS=32
-> >>+CONFIG_MMC_TEST=y
-> >>+CONFIG_MMC_SDHCI=y
-> >>+CONFIG_MMC_SDHCI_PLTFM=y
-> >>+CONFIG_MMC_SDHCI_BCM_KONA=y
-> >>  CONFIG_NEW_LEDS=y
-> >>  CONFIG_LEDS_CLASS=y
-> >>  CONFIG_LEDS_TRIGGERS=y
-> >>diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-> >>index d88219e..e067c5a 100644
-> >>--- a/drivers/mmc/host/Kconfig
-> >>+++ b/drivers/mmc/host/Kconfig
-> >>@@ -238,6 +238,16 @@ config MMC_SDHCI_S3C_DMA
-> >>  	  YMMV.
-> >>+config MMC_SDHCI_BCM_KONA
-> >>+	tristate "SDHCI support on Broadcom KONA platform"
-> >>+	depends on ARCH_BCM && MMC_SDHCI_PLTFM
-> >select MMC_SDHCI_PLTFM
-> >will be better
-> Ok - changed it. Why is the select is better than the depends ?
+> Responses should be made by Sat May 11 22:23:28 UTC 2013.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.2-rc1.gz
+> and the diffstat can be found below.
+> 
+> thanks,
+> 
+> greg k-h
 
-so you do not need to enable MMC_SDHCI_PLTFM
+Patches applied cleanly to 3.0.77, 3.4.44, 3.8.12, and 3.9.1 
 
-and you can drop one line in the savdefconfig
+Compiled and booted on the following systems:
 
-if tomorrow you need regulator select it so a old defconfig will continue to
-work
+Samsung Series 9 900X4C Intel Corei5:
+    (3.4.45-rc1, 3.8.13-rc1, and 3.9.2-rc1)
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
+    (3.0.78-rc1, 3.4.45-rc1, 3.8.13-rc1, and 3.9.2-rc1)
 
-Best Regards,
-J.
+dmesgs for all releases look good. No regressions compared to the previous
+dmesgs for each of these releases.
+
+Cross-compile testing:
+HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
+    (3.0.78-rc1, 3.4.45-rc1, 3.8.13-rc1, and 3.9.2-rc1)
+
+Cross-compile tests results:
+
+alpha: defconfig passed on all
+arm: defconfig passed on all
+arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.8.y, and 3.9.y
+c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, 3.8.y, and 3.9.y
+mips: defconfig passed on all
+mipsel: defconfig passed on all
+powerpc: wii_defconfig passed on all
+sh: defconfig passed on all 
+sparc: defconfig passed on all
+tile: tilegx_defconfig passed on all
+
+
+thanks,
+-- Shuah
+
+Shuah Khan, Linux Kernel Developer - Open Source Group 
+Samsung Research America (Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
