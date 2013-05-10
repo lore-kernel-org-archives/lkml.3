@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab3EJJgE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 05:36:04 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:43220 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576Ab3EJJgC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 05:36:02 -0400
-Date: Fri, 10 May 2013 11:35:57 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, jamie.iles@oracle.com,
-        penberg@kernel.org, acme@ghostprotocols.net, paulus@samba.org,
-        namhyung@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v3 8/9] liblockdep: Add the 'lockdep' user-space utility
-Message-ID: <20130510093557.GA16429@gmail.com>
-References: <1368115089-8909-1-git-send-email-sasha.levin@oracle.com>
- <1368115089-8909-9-git-send-email-sasha.levin@oracle.com>
- <20130510091912.GD3039@dyad.programming.kicks-ass.net>
+	id S1753157Ab3EJJhW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 05:37:22 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51126 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751741Ab3EJJhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 05:37:21 -0400
+Date: Fri, 10 May 2013 11:43:03 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Tony Luck <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123
+ native_smp_send_reschedule
+Message-ID: <20130510094302.GB22942@pd.tnic>
+References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
+ <20130510002930.GB2394@somewhere>
+ <20130510092811.GA22942@pd.tnic>
+ <CAFTL4hxx_pHkJExnRks4hcOYGrJb8TCMRdCtt0UA-i3wsaWWcQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130510091912.GD3039@dyad.programming.kicks-ass.net>
+In-Reply-To: <CAFTL4hxx_pHkJExnRks4hcOYGrJb8TCMRdCtt0UA-i3wsaWWcQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 10, 2013 at 11:26:39AM +0200, Frederic Weisbecker wrote:
+> 2013/5/10 Borislav Petkov <bp@alien8.de>:
+> > On Fri, May 10, 2013 at 02:29:31AM +0200, Frederic Weisbecker wrote:
+> >> @@ -616,8 +616,17 @@ static bool wake_up_full_nohz_cpu(int cpu)
+> >>  {
+> >>       if (tick_nohz_full_cpu(cpu)) {
+> >>               if (cpu != smp_processor_id() ||
+> >> -                 tick_nohz_tick_stopped())
+> >> +                 tick_nohz_tick_stopped()) {
+> >> +                     if (!cpu_online(cpu)) {
+> >> +                             static int printed = 0;
+> >> +                             if (!printed) {
+> >> +                                     printk("%d %d\n", cpu, smp_processor_id());
+> >> +                                     dump_stack();
+> >> +                                     printed = 1;
+> >
+> > You know about printk_once, right? We even have all the pr_<level>_once
+> > macros.
+> >
+> > :-)
+> 
+> But but that didn't fit as I also want the dump_stack().
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Yeah, true - that would flood otherwise.
 
-> On Thu, May 09, 2013 at 11:58:08AM -0400, Sasha Levin wrote:
-> > This is a simple wrapper to make using liblockdep on existing
-> > applications much easier.
-> > 
-> > After running 'make && make install', it becomes quite simple to
-> > test things with liblockdep. For example, to try it on perf:
-> > 
-> > 	lockdep perf
-> > 
-> > No other integration required.
-> > 
-> > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> > Cc: jamie.iles@oracle.com
-> > Cc: penberg@kernel.org
-> > Cc: acme@ghostprotocols.net
-> > Cc: paulus@samba.org
-> > Cc: namhyung@kernel.org
-> 
-> > Cc: peterz@infradead.org
-> 
-> That's me
-> 
-> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> 
-> That too..
-> 
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Link: http://lkml.kernel.org/r/1360456781-32462-11-git-send-email-sasha.levin@oracle.com
-> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> 
-> I was wondering why I kept getting this particular patch twice every time..
+/me needs to definitely have coffee before reading mail.
 
-If you started acking and emailing from the same address you'd only get 
-one! :-)
+> May be we want dump_stack_once().
+>
+> In fact it would be nice to have DO_ONCE(something) and stuff whatever
+> we want inside. All the printk_once() et. al could even be implemented
+> using that.
 
-Thanks,
+Frankly, I have needed functionality like that in the past too. Let's
+see whose itch needs a scratching earlier :-)
 
-	Ingo
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
