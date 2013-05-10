@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab3EJOxw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:53:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56839 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753610Ab3EJOTg (ORCPT
+	id S1753492Ab3EJO5t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:57:49 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:49056 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab3EJO5r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:19:36 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Fri, 10 May 2013 10:57:47 -0400
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>
-Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.964571319@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [011/118] drm/radeon: don't use get_engine_clock() on APUs
-In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <518CCBB2.5010308@cn.fujitsu.com>
+References: <518CB758.4000101@cn.fujitsu.com>
+	<CAE9FiQVpbDJT2Ma6MHkB5aF9PUuGCia_QaLc_LjYCLJb4nKebg@mail.gmail.com>
+	<518CCBB2.5010308@cn.fujitsu.com>
+Date: Fri, 10 May 2013 07:57:47 -0700
+X-Google-Sender-Auth: _1UmiTeX27sfQl7lUfzJ6qp6FTA
+Message-ID: <CAE9FiQWcKAJ0DP833urozcECkZNpbCks_vLVBf8UhaXTRSEWzA@mail.gmail.com>
+Subject: Re: [PATCH] x86: mm: Remove unnecessary assignment for max_pfn_mapped:q
+From: Yinghai Lu <yinghai@kernel.org>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.45-rc1 review patch.  If anyone has any objections, please let me know.
+On Fri, May 10, 2013 at 3:28 AM, Zhang Yanfei
+<zhangyanfei@cn.fujitsu.com> wrote:
+> 于 2013年05月10日 17:27, Yinghai Lu 写道:
+>> On Fri, May 10, 2013 at 2:01 AM, Zhang Yanfei
+>> <zhangyanfei@cn.fujitsu.com> wrote:
+>>> init_memory_mapping will set max_pfn_mapped:
+>>> int_memory_mapping
+>>>   --> add_pfn_range_mapped
+>>>     --> max_pfn_mapped = max(max_pfn_mapped, end_pfn)
+>>>
+>>> In init_mem_mapping, before we set max_pfn_mapped to 0, we
+>>> have already called init_memory_mapping to setup pagetable
+>>> for [0, ISA_END_ADDRESS], and that sets max_pfn_mapped. So
+>>> the assignment to 0 is not necessary, remove it.
+>>
+>> NAK.
+>>
+>> for 32bit or Xen, max_pfn_mapped is set way before in head_32.S and
+>> xen-enlighen.
+>
+> Hi Yinghai
+>
+> I might be wrong, but just from the code in init_mem_mapping only:
+>
+>  410         /* the ISA range is always mapped regardless of memory holes */
+>  411         init_memory_mapping(0, ISA_END_ADDRESS);
+>  412
+>  413         /* xen has big range in reserved near end of ram, skip it at first.*/
+>  414         addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE, PMD_SIZE);
+>  415         real_end = addr + PMD_SIZE;
+>  416
+>  417         /* step_size need to be small so pgt_buf from BRK could cover it */
+>  418         step_size = PMD_SIZE;
+>  419         max_pfn_mapped = 0; /* will get exact value next */
+>
+> Line 411 set max_pfn_mapped, and then line 419 set it to zero again, so
+> why keep the later assignment?
 
-------------------
+the comment says: /* will get exact value next */
 
-From: Alex Deucher <alexander.deucher@amd.com>
+For x86 32bit path, and xen set bigger max_pfn_mapped before.
 
-commit bf05d9985111f85ed6922c134567b96eb789283b upstream.
-
-It doesn't work reliably.  Just report back the currently
-selected engine clock.
-
-Partially fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=62493
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/gpu/drm/radeon/radeon_pm.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
---- a/drivers/gpu/drm/radeon/radeon_pm.c
-+++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -863,7 +863,11 @@ static int radeon_debugfs_pm_info(struct
- 	struct radeon_device *rdev = dev->dev_private;
- 
- 	seq_printf(m, "default engine clock: %u0 kHz\n", rdev->pm.default_sclk);
--	seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
-+	/* radeon_get_engine_clock is not reliable on APUs so just print the current clock */
-+	if ((rdev->family >= CHIP_PALM) && (rdev->flags & RADEON_IS_IGP))
-+		seq_printf(m, "current engine clock: %u0 kHz\n", rdev->pm.current_sclk);
-+	else
-+		seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
- 	seq_printf(m, "default memory clock: %u0 kHz\n", rdev->pm.default_mclk);
- 	if (rdev->asic->get_memory_clock)
- 		seq_printf(m, "current memory clock: %u0 kHz\n", radeon_get_memory_clock(rdev));
-
+Yinghai
