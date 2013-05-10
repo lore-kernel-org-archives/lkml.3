@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857Ab3EJIRm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 04:17:42 -0400
-Received: from sauhun.de ([89.238.76.85]:60583 "EHLO pokefinder.org"
+	id S1754036Ab3EJIRw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 04:17:52 -0400
+Received: from sauhun.de ([89.238.76.85]:60635 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753765Ab3EJIRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 04:17:38 -0400
+	id S1753984Ab3EJIRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 04:17:50 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org
-Subject: [RFC 34/42] drivers/video/omap2/dss: don't check resource with devm_ioremap_resource
-Date: Fri, 10 May 2013 10:17:19 +0200
-Message-Id: <1368173847-5661-35-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org
+Subject: [RFC 40/42] arch/mips/lantiq/xway: don't check resource with devm_ioremap_resource
+Date: Fri, 10 May 2013 10:17:25 +0200
+Message-Id: <1368173847-5661-41-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
 References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
@@ -26,28 +25,28 @@ duplicate this in the driver.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- drivers/video/omap2/dss/hdmi.c |    7 +------
+ arch/mips/lantiq/xway/gptu.c |    7 +------
  1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/video/omap2/dss/hdmi.c b/drivers/video/omap2/dss/hdmi.c
-index 17f4d55..7bc6762 100644
---- a/drivers/video/omap2/dss/hdmi.c
-+++ b/drivers/video/omap2/dss/hdmi.c
-@@ -1064,13 +1064,8 @@ static int omapdss_hdmihw_probe(struct platform_device *pdev)
- 	mutex_init(&hdmi.lock);
- 	mutex_init(&hdmi.ip_data.lock);
+diff --git a/arch/mips/lantiq/xway/gptu.c b/arch/mips/lantiq/xway/gptu.c
+index 9861c86..26226f0 100644
+--- a/arch/mips/lantiq/xway/gptu.c
++++ b/arch/mips/lantiq/xway/gptu.c
+@@ -143,13 +143,8 @@ static int gptu_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
  
--	res = platform_get_resource(hdmi.pdev, IORESOURCE_MEM, 0);
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 -	if (!res) {
--		DSSERR("can't get IORESOURCE_MEM HDMI\n");
--		return -EINVAL;
+-		dev_err(&pdev->dev, "Failed to get resource\n");
+-		return -ENOMEM;
 -	}
 -
- 	/* Base address taken from platform */
-+	res = platform_get_resource(hdmi.pdev, IORESOURCE_MEM, 0);
- 	hdmi.ip_data.base_wp = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(hdmi.ip_data.base_wp))
- 		return PTR_ERR(hdmi.ip_data.base_wp);
+ 	/* remap gptu register range */
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	gptu_membase = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(gptu_membase))
+ 		return PTR_ERR(gptu_membase);
 -- 
 1.7.10.4
 
