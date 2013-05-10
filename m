@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab3EJOvb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:51:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56864 "EHLO
+	id S1754401Ab3EJOv7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:51:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56870 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753838Ab3EJOTo (ORCPT
+	by vger.kernel.org with ESMTP id S1753600Ab3EJOTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:19:44 -0400
+	Fri, 10 May 2013 10:19:41 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Ben Jencks" <ben@bjencks.net>
+CC: akpm@linux-foundation.org, "Dmitry Monakhov" <dmonakhov@openvz.org>,
+        "Theodore Ts'o" <tytso@mit.edu>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.77517529@decadent.org.uk>
+Message-ID: <lsq.1368193181.162758477@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [015/118] usb/misc/appledisplay: Add 24" LED Cinema display
+Subject: [018/118] jbd2: fix race between jbd2_journal_remove_checkpoint
+ and ->j_commit_callback
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,27 +32,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Jencks <ben@bjencks.net>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit e7d3b6e22c871ba36d052ca99bc8ceca4d546a60 upstream.
+commit 794446c6946513c684d448205fbd76fa35f38b72 upstream.
 
-Add the Apple 24" LED Cinema display to the supported devices.
+The following race is possible:
 
-Signed-off-by: Ben Jencks <ben@bjencks.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[kjournald2]                              other_task
+jbd2_journal_commit_transaction()
+  j_state = T_FINISHED;
+  spin_unlock(&journal->j_list_lock);
+                                         ->jbd2_journal_remove_checkpoint()
+					   ->jbd2_journal_free_transaction();
+					     ->kmem_cache_free(transaction)
+  ->j_commit_callback(journal, transaction);
+    -> USE_AFTER_FREE
+
+WARNING: at lib/list_debug.c:62 __list_del_entry+0x1c0/0x250()
+Hardware name:
+list_del corruption. prev->next should be ffff88019a4ec198, but was 6b6b6b6b6b6b6b6b
+Modules linked in: cpufreq_ondemand acpi_cpufreq freq_table mperf coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode sg xhci_hcd button sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw aes_x86_64 xts gf128mul ahci libahci pata_acpi ata_generic dm_mirror dm_region_hash dm_log dm_mod
+Pid: 16400, comm: jbd2/dm-1-8 Tainted: G        W    3.8.0-rc3+ #107
+Call Trace:
+ [<ffffffff8106fb0d>] warn_slowpath_common+0xad/0xf0
+ [<ffffffff8106fc06>] warn_slowpath_fmt+0x46/0x50
+ [<ffffffff813637e9>] ? ext4_journal_commit_callback+0x99/0xc0
+ [<ffffffff8148cae0>] __list_del_entry+0x1c0/0x250
+ [<ffffffff813637bf>] ext4_journal_commit_callback+0x6f/0xc0
+ [<ffffffff813ca336>] jbd2_journal_commit_transaction+0x23a6/0x2570
+ [<ffffffff8108aa42>] ? try_to_del_timer_sync+0x82/0xa0
+ [<ffffffff8108b491>] ? del_timer_sync+0x91/0x1e0
+ [<ffffffff813d3ecf>] kjournald2+0x19f/0x6a0
+ [<ffffffff810ad630>] ? wake_up_bit+0x40/0x40
+ [<ffffffff813d3d30>] ? bit_spin_lock+0x80/0x80
+ [<ffffffff810ac6be>] kthread+0x10e/0x120
+ [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
+ [<ffffffff818ff6ac>] ret_from_fork+0x7c/0xb0
+ [<ffffffff810ac5b0>] ? __init_kthread_worker+0x70/0x70
+
+In order to demonstrace this issue one should mount ext4 with mount -o
+discard option on SSD disk.  This makes callback longer and race
+window becomes wider.
+
+In order to fix this we should mark transaction as finished only after
+callbacks have completed
+
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[bwh: Backported to 3.2: s/jbd2_journal_free_transaction/kfree/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/misc/appledisplay.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/jbd2/commit.c     |   50 ++++++++++++++++++++++++++++----------------------
+ include/linux/jbd2.h |    1 +
+ 2 files changed, 29 insertions(+), 22 deletions(-)
 
---- a/drivers/usb/misc/appledisplay.c
-+++ b/drivers/usb/misc/appledisplay.c
-@@ -63,6 +63,7 @@ static const struct usb_device_id appled
- 	{ APPLEDISPLAY_DEVICE(0x9219) },
- 	{ APPLEDISPLAY_DEVICE(0x921c) },
- 	{ APPLEDISPLAY_DEVICE(0x921d) },
-+	{ APPLEDISPLAY_DEVICE(0x9236) },
+--- a/fs/jbd2/commit.c
++++ b/fs/jbd2/commit.c
+@@ -326,7 +326,7 @@ void jbd2_journal_commit_transaction(jou
+ 	int space_left = 0;
+ 	int first_tag = 0;
+ 	int tag_flag;
+-	int i, to_free = 0;
++	int i;
+ 	int tag_bytes = journal_tag_bytes(journal);
+ 	struct buffer_head *cbh = NULL; /* For transactional checksums */
+ 	__u32 crc32_sum = ~0;
+@@ -996,7 +996,7 @@ restart_loop:
+ 	journal->j_stats.run.rs_blocks_logged += stats.run.rs_blocks_logged;
+ 	spin_unlock(&journal->j_history_lock);
  
- 	/* Terminating entry */
- 	{ }
+-	commit_transaction->t_state = T_FINISHED;
++	commit_transaction->t_state = T_COMMIT_CALLBACK;
+ 	J_ASSERT(commit_transaction == journal->j_committing_transaction);
+ 	journal->j_commit_sequence = commit_transaction->t_tid;
+ 	journal->j_committing_transaction = NULL;
+@@ -1011,38 +1011,44 @@ restart_loop:
+ 				journal->j_average_commit_time*3) / 4;
+ 	else
+ 		journal->j_average_commit_time = commit_time;
++
+ 	write_unlock(&journal->j_state_lock);
+ 
+-	if (commit_transaction->t_checkpoint_list == NULL &&
+-	    commit_transaction->t_checkpoint_io_list == NULL) {
+-		__jbd2_journal_drop_transaction(journal, commit_transaction);
+-		to_free = 1;
++	if (journal->j_checkpoint_transactions == NULL) {
++		journal->j_checkpoint_transactions = commit_transaction;
++		commit_transaction->t_cpnext = commit_transaction;
++		commit_transaction->t_cpprev = commit_transaction;
+ 	} else {
+-		if (journal->j_checkpoint_transactions == NULL) {
+-			journal->j_checkpoint_transactions = commit_transaction;
+-			commit_transaction->t_cpnext = commit_transaction;
+-			commit_transaction->t_cpprev = commit_transaction;
+-		} else {
+-			commit_transaction->t_cpnext =
+-				journal->j_checkpoint_transactions;
+-			commit_transaction->t_cpprev =
+-				commit_transaction->t_cpnext->t_cpprev;
+-			commit_transaction->t_cpnext->t_cpprev =
+-				commit_transaction;
+-			commit_transaction->t_cpprev->t_cpnext =
++		commit_transaction->t_cpnext =
++			journal->j_checkpoint_transactions;
++		commit_transaction->t_cpprev =
++			commit_transaction->t_cpnext->t_cpprev;
++		commit_transaction->t_cpnext->t_cpprev =
++			commit_transaction;
++		commit_transaction->t_cpprev->t_cpnext =
+ 				commit_transaction;
+-		}
+ 	}
+ 	spin_unlock(&journal->j_list_lock);
+-
++	/* Drop all spin_locks because commit_callback may be block.
++	 * __journal_remove_checkpoint() can not destroy transaction
++	 * under us because it is not marked as T_FINISHED yet */
+ 	if (journal->j_commit_callback)
+ 		journal->j_commit_callback(journal, commit_transaction);
+ 
+ 	trace_jbd2_end_commit(journal, commit_transaction);
+ 	jbd_debug(1, "JBD2: commit %d complete, head %d\n",
+ 		  journal->j_commit_sequence, journal->j_tail_sequence);
+-	if (to_free)
+-		kfree(commit_transaction);
+ 
++	write_lock(&journal->j_state_lock);
++	spin_lock(&journal->j_list_lock);
++	commit_transaction->t_state = T_FINISHED;
++	/* Recheck checkpoint lists after j_list_lock was dropped */
++	if (commit_transaction->t_checkpoint_list == NULL &&
++	    commit_transaction->t_checkpoint_io_list == NULL) {
++		__jbd2_journal_drop_transaction(journal, commit_transaction);
++		kfree(commit_transaction);
++	}
++	spin_unlock(&journal->j_list_lock);
++	write_unlock(&journal->j_state_lock);
+ 	wake_up(&journal->j_wait_done_commit);
+ }
+--- a/include/linux/jbd2.h
++++ b/include/linux/jbd2.h
+@@ -470,6 +470,7 @@ struct transaction_s
+ 		T_COMMIT,
+ 		T_COMMIT_DFLUSH,
+ 		T_COMMIT_JFLUSH,
++		T_COMMIT_CALLBACK,
+ 		T_FINISHED
+ 	}			t_state;
+ 
 
