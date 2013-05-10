@@ -1,32 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab3EJUr6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 16:47:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16425 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754397Ab3EJUr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 16:47:56 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20130510193307.3045.21609.stgit@warthog.procyon.org.uk>
-References: <20130510193307.3045.21609.stgit@warthog.procyon.org.uk> <20130510193257.3045.77981.stgit@warthog.procyon.org.uk>
-Cc: dhowells@redhat.com, Trond.Myklebust@netapp.com,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-cachefs@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] Add wait_on_atomic_t() and wake_up_atomic_t() [ver #2]
-Date: Fri, 10 May 2013 21:47:52 +0100
-Message-ID: <26063.1368218872@warthog.procyon.org.uk>
-To: unlisted-recipients:; (no To-header on input)
+	id S1754666Ab3EJU41 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 16:56:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10019 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247Ab3EJU40 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 16:56:26 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=lscNsCJQAkAA:10 a=MKZvXr83paJqZ6z7F74A:9 a=CjuIK1q_8ugA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Date: Fri, 10 May 2013 16:56:22 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: SyS symbol munging.
+Message-ID: <20130510205622.GD9583@home.goodmis.org>
+References: <20130510192417.GA4915@redhat.com>
+ <20130510123510.78c066f177a7a8e5dd9ec7e4@linux-foundation.org>
+ <20130510195500.GD23014@pd.tnic>
+ <20130510200503.GM25399@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130510200503.GM25399@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 10, 2013 at 09:05:03PM +0100, Al Viro wrote:
+> On Fri, May 10, 2013 at 09:55:00PM +0200, Borislav Petkov wrote:
+> > On Fri, May 10, 2013 at 12:35:10PM -0700, Andrew Morton wrote:
+> > > I forget who did this initially and peeling back those layers with git
+> > > is tiresome.
+> > 
+> > 1a94bc34768e4 from 2009, although those SyS* things started appearing in
+> > stack traces only recently AFAIR.
+> 
+> Note that both sys_something and SyS_something end up in vmlinux symbol
+> table, refering to the same address.  AFAICS, what matters is which one
+> goes first.  May be even linker-dependent...
 
-Fengguang's kbuild bot found a compile error on one arch with this patch, so
-I've pushed a new version to the git tree.
+Actually, it's the first one that kallsyms finds in its binary search.
 
-David
+If the table is layed out a little differently, it may find the first
+one or the second one.
+
+-- Steve
+
