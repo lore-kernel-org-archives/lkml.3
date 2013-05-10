@@ -1,129 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab3EJOCD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:02:03 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38025 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659Ab3EJOCA (ORCPT
+	id S1753493Ab3EJOCn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:02:43 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7052 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752981Ab3EJOCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:02:00 -0400
-Date: Fri, 10 May 2013 09:01:29 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Dave Hansen <dave@sr71.net>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mgorman@suse.de, tim.c.chen@linux.intel.com
-Subject: Re: [RFC][PATCH 1/7] defer clearing of page_private() for swap cache
- pages
-Message-ID: <20130510140129.GA8008@cerebellum>
-References: <20130507211954.9815F9D1@viggo.jf.intel.com>
- <20130507211955.7DF88A4F@viggo.jf.intel.com>
- <20130509220739.GA14840@cerebellum>
- <20130510092649.GA14968@dhcp22.suse.cz>
+	Fri, 10 May 2013 10:02:41 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 10 May 2013 07:02:41 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <gregkh@linuxfoundation.org>, <swarren@wwwdotorg.org>, <balbi@ti.com>,
+        <stern@rowland.harvard.edu>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH v3 00/10] Tegra USB PHY driver series
+Date: Fri, 10 May 2013 19:24:01 +0530
+Message-ID: <1368194051-4925-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130510092649.GA14968@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051014-3620-0000-0000-0000026BB0D8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 11:26:49AM +0200, Michal Hocko wrote:
-> On Thu 09-05-13 17:07:39, Seth Jennings wrote:
-> > On Tue, May 07, 2013 at 02:19:55PM -0700, Dave Hansen wrote:
-> > > 
-> > > From: Dave Hansen <dave.hansen@linux.intel.com>
-> > > 
-> > > There are only two callers of swapcache_free() which actually
-> > > pass in a non-NULL 'struct page'.  Both of them
-> > > (__remove_mapping and delete_from_swap_cache())  create a
-> > > temporary on-stack 'swp_entry_t' and set entry.val to
-> > > page_private().
-> > > 
-> > > They need to do this since __delete_from_swap_cache() does
-> > > set_page_private(page, 0) and destroys the information.
-> > > 
-> > > However, I'd like to batch a few of these operations on several
-> > > pages together in a new version of __remove_mapping(), and I
-> > > would prefer not to have to allocate temporary storage for
-> > > each page.  The code is pretty ugly, and it's a bit silly
-> > > to create these on-stack 'swp_entry_t's when it is so easy to
-> > > just keep the information around in 'struct page'.
-> > > 
-> > > There should not be any danger in doing this since we are
-> > > absolutely on the path of freeing these page.  There is no
-> > > turning back, and no other rerferences can be obtained
-> > > after it comes out of the radix tree.
-> > 
-> > I get a BUG on this one:
-> > 
-> > [   26.114818] ------------[ cut here ]------------
-> > [   26.115282] kernel BUG at mm/memcontrol.c:4111!
-> > [   26.115282] invalid opcode: 0000 [#1] PREEMPT SMP 
-> > [   26.115282] Modules linked in:
-> > [   26.115282] CPU: 3 PID: 5026 Comm: cc1 Not tainted 3.9.0+ #8
-> > [   26.115282] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-> > [   26.115282] task: ffff88007c1cdca0 ti: ffff88001b442000 task.ti: ffff88001b442000
-> > [   26.115282] RIP: 0010:[<ffffffff810ed425>]  [<ffffffff810ed425>] __mem_cgroup_uncharge_common+0x255/0x2e0
-> > [   26.115282] RSP: 0000:ffff88001b443708  EFLAGS: 00010206
-> > [   26.115282] RAX: 4000000000090009 RBX: 0000000000000000 RCX: ffffc90000014001
-> > [   26.115282] RDX: 0000000000000000 RSI: 0000000000000002 RDI: ffffea00006e5b40
-> > [   26.115282] RBP: ffff88001b443738 R08: 0000000000000000 R09: 0000000000000000
-> > [   26.115282] R10: 0000000000000000 R11: 0000000000000000 R12: ffffea00006e5b40
-> > [   26.115282] R13: 0000000000000000 R14: ffffea00006e5b40 R15: 0000000000000002
-> > [   26.115282] FS:  00007fabd08ee700(0000) GS:ffff88007fd80000(0000) knlGS:0000000000000000
-> > [   26.115282] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> > [   26.115282] CR2: 00007fabce27a000 CR3: 000000001985f000 CR4: 00000000000006a0
-> > [   26.115282] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > [   26.115282] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > [   26.115282] Stack:
-> > [   26.115282]  ffffffff810dcbae ffff880064a0a500 0000000000000001 ffffea00006e5b40
-> > [   26.115282]  ffffea00006e5b40 0000000000000001 ffff88001b443748 ffffffff810f0d05
-> > [   26.115282]  ffff88001b443778 ffffffff810ddb3e ffff88001b443778 ffffea00006e5b40
-> > [   26.115282] Call Trace:
-> > [   26.115282]  [<ffffffff810dcbae>] ? swap_info_get+0x5e/0xe0
-> > [   26.115282]  [<ffffffff810f0d05>] mem_cgroup_uncharge_swapcache+0x15/0x20
-> > [   26.115282]  [<ffffffff810ddb3e>] swapcache_free+0x4e/0x70
-> > [   26.115282]  [<ffffffff810b6e67>] __remove_mapping+0xd7/0x120
-> > [   26.115282]  [<ffffffff810b8682>] shrink_page_list+0x5c2/0x920
-> > [   26.115282]  [<ffffffff810b780e>] ? isolate_lru_pages.isra.37+0xae/0x120
-> > [   26.115282]  [<ffffffff810b8ecf>] shrink_inactive_list+0x13f/0x380
-> > [   26.115282]  [<ffffffff810b9350>] shrink_lruvec+0x240/0x4e0
-> > [   26.115282]  [<ffffffff810b9656>] shrink_zone+0x66/0x1a0
-> > [   26.115282]  [<ffffffff810ba1fb>] do_try_to_free_pages+0xeb/0x570
-> > [   26.115282]  [<ffffffff810eb7d9>] ? lookup_page_cgroup_used+0x9/0x20
-> > [   26.115282]  [<ffffffff810ba7af>] try_to_free_pages+0x9f/0xc0
-> > [   26.115282]  [<ffffffff810b1357>] __alloc_pages_nodemask+0x5a7/0x970
-> > [   26.115282]  [<ffffffff810cb2be>] handle_pte_fault+0x65e/0x880
-> > [   26.115282]  [<ffffffff810cc7d9>] handle_mm_fault+0x139/0x1e0
-> > [   26.115282]  [<ffffffff81027920>] __do_page_fault+0x160/0x460
-> > [   26.115282]  [<ffffffff810d176c>] ? do_brk+0x1fc/0x360
-> > [   26.115282]  [<ffffffff81212979>] ? lockdep_sys_exit_thunk+0x35/0x67
-> > [   26.115282]  [<ffffffff81027c49>] do_page_fault+0x9/0x10
-> > [   26.115282]  [<ffffffff813b4a72>] page_fault+0x22/0x30
-> > [   26.115282] Code: a9 00 00 08 00 0f 85 43 fe ff ff e9 b8 fe ff ff 66 0f 1f 44 00 00 41 8b 44 24 18 85 c0 0f 89 2b fe ff ff 0f 1f 00 e9 9d fe ff ff <0f> 0b 66 0f 1f 84 00 00 00 00 00 49 89 9c 24 48 0f 00 00 e9 0a 
-> > [   26.115282] RIP  [<ffffffff810ed425>] __mem_cgroup_uncharge_common+0x255/0x2e0
-> > [   26.115282]  RSP <ffff88001b443708>
-> > [   26.171597] ---[ end trace 5e49a21e51452c24 ]---
-> > 
-> > 
-> > mm/memcontrol:4111
-> > VM_BUG_ON(PageSwapCache(page));
-> > 
-> > Seems that mem_cgroup_uncharge_swapcache, somewhat ironically expects the
-> > SwapCache flag to be unset already.
-> > 
-> > Fix might be a simple as removing that VM_BUG_ON() but there might be more to
-> > it.  There usually is :)
-> 
-> This has been already fixed in the -mm tree
-> (http://git.kernel.org/cgit/linux/kernel/git/mhocko/mm.git/commit/?h=since-3.9&id=b341f7ffa5fe6ae11afa87e2fecc32c6093541f8)
+delta from v2:
+This patch is prepared as follow up patch of TEGRA USB PHY driver
+patch series discussed at:
+http://marc.info/?l=linux-tegra&m=136497946026787&w=2
 
-Ah yes, I even saw this patch come in now I see it again.  I should have known!
+Venu Byravarasu (10):
+  ARM: tegra: finalize USB EHCI and PHY bindings
+  arm: dt: Tegra20: Modify ULPI reset GPIO properties
+  ARM: tegra: update device trees for USB binding rework
+  Revert "usb: phy: tegra: don't call into tegra-ehci directly"
+  usb: phy: tegra: Get PHY mode using DT
+  usb: phy: tegra: Return correct error value provided by clk_get_sys
+  usb: phy: tegra: get ULPI reset GPIO info using DT.
+  usb: phy: tegra: Add error handling & clean up.
+  usb: phy: registering Tegra USB PHY as platform driver
+  Usb: Move PORTSC access to PHY
 
-Seth
+ .../bindings/usb/nvidia,tegra20-ehci.txt           |   27 +--
+ .../bindings/usb/nvidia,tegra20-usb-phy.txt        |   40 ++-
+ arch/arm/boot/dts/tegra20-colibri-512.dtsi         |    6 +-
+ arch/arm/boot/dts/tegra20-harmony.dts              |   10 +-
+ arch/arm/boot/dts/tegra20-iris-512.dts             |    1 -
+ arch/arm/boot/dts/tegra20-paz00.dts                |   10 +-
+ arch/arm/boot/dts/tegra20-seaboard.dts             |   24 +-
+ arch/arm/boot/dts/tegra20-trimslice.dts            |   23 +-
+ arch/arm/boot/dts/tegra20-ventana.dts              |   10 +-
+ arch/arm/boot/dts/tegra20-whistler.dts             |   26 ++
+ arch/arm/boot/dts/tegra20.dtsi                     |   46 ++-
+ drivers/usb/host/ehci-tegra.c                      |  143 +++------
+ drivers/usb/phy/phy-tegra-usb.c                    |  349 +++++++++++++-------
+ include/linux/usb/tegra_usb_phy.h                  |    9 +-
+ 14 files changed, 424 insertions(+), 300 deletions(-)
 
