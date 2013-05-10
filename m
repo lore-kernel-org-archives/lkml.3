@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab3EJO2E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:28:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23111 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755289Ab3EJO2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:28:01 -0400
-Date: Fri, 10 May 2013 10:27:54 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-cifs@vger.kernel.org, Steve French <smfrench@gmail.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        sjayaraman@novell.com
-Subject: Re: Mount failure due to restricted access to a point along the
- mount path
-Message-ID: <20130510102754.184cd90d@corrin.poochiereds.net>
-In-Reply-To: <CAJfpegtADAJ+7-DiFvrgWU1N5Fsd_CCQryT0mpx6VOJ=8ikKsA@mail.gmail.com>
-References: <CAJfpegtADAJ+7-DiFvrgWU1N5Fsd_CCQryT0mpx6VOJ=8ikKsA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756652Ab3EJO17 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:27:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57276 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755958Ab3EJOV7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 10:21:59 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Johannes Berg" <johannes.berg@intel.com>
+Date: Fri, 10 May 2013 14:39:41 +0100
+Message-ID: <lsq.1368193181.136500812@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [034/118] wireless: regulatory: fix channel disabling race condition
+In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 May 2013 16:13:30 +0200
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+3.2.45-rc1 review patch.  If anyone has any objections, please let me know.
 
-> Hi,
-> 
-> A while ago this was discussed:
-> 
->   http://thread.gmane.org/gmane.linux.kernel.cifs/7779
-> 
-> This is essentially a regression introduced by the shared superblock
-> changes in 3.0 and several SUSE customers are complaining about it.
-> I've created a temporary fix which reverts 29 commits related to the
-> shared superblock changes.  It works, but it's obviously not a
-> permanent fix, especially since we definitely don't want to diverge
-> from mainline.
-> 
-> Is this issue being worked on?  Don't other distros have similar reports?
-> 
-> Thanks,
-> Miklos
+------------------
 
-I don't know of anyone currently working on it. There are a couple of
-possible approaches to fixing it, I think:
+From: Johannes Berg <johannes.berg@intel.com>
 
-1) if the dentries to get down to the root of the mount don't already
-exist, then attach some sort of "placeholder" inode that can be fleshed
-out later if and when the dentry is accessed via other means.
+commit 990de49f74e772b6db5208457b7aa712a5f4db86 upstream.
 
-2) do something like what NFS does (see commit 54ceac45). This becomes
-a bit more complicated due to the fact that the server may not hand out
-real inode numbers and we sometimes have to fake them up.
+When a full scan 2.4 and 5 GHz scan is scheduled, but then the 2.4 GHz
+part of the scan disables a 5.2 GHz channel due to, e.g. receiving
+country or frequency information, that 5.2 GHz channel might already
+be in the list of channels to scan next. Then, when the driver checks
+if it should do a passive scan, that will return false and attempt an
+active scan. This is not only wrong but can also lead to the iwlwifi
+device firmware crashing since it checks regulatory as well.
 
-#1 is probably simpler to implement, but I'll confess that I haven't
-thought through all of the potential problems with it.
+Fix this by not setting the channel flags to just disabled but rather
+OR'ing in the disabled flag. That way, even if the race happens, the
+channel will be scanned passively which is still (mostly) correct.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ net/wireless/reg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -853,7 +853,7 @@ static void handle_channel(struct wiphy
+ 			return;
+ 
+ 		REG_DBG_PRINT("Disabling freq %d MHz\n", chan->center_freq);
+-		chan->flags = IEEE80211_CHAN_DISABLED;
++		chan->flags |= IEEE80211_CHAN_DISABLED;
+ 		return;
+ 	}
+ 
+
