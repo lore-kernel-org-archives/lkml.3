@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab3EJOev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:34:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57184 "EHLO
+	id S1755982Ab3EJOfR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:35:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57181 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755311Ab3EJOV1 (ORCPT
+	by vger.kernel.org with ESMTP id S1755180Ab3EJOV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 May 2013 10:21:27 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
-        "Daniel Mack" <zonque@gmail.com>
+CC: akpm@linux-foundation.org, "Chris LaRocque" <clarocq@gmail.com>,
+        "Richard Cochran" <richardcochran@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.625975403@decadent.org.uk>
+Message-ID: <lsq.1368193181.388345541@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [055/118] ALSA: snd-usb: try harder to find USB_DT_CS_ENDPOINT
+Subject: [056/118] gianfar: do not advertise any alarm capability.
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,50 +32,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Richard Cochran <richardcochran@gmail.com>
 
-commit ebfc594c02148b6a85c2f178cf167a44a3c3ce10 upstream.
+commit cd4baaaa04b4aaa3b0ec4d13a6f3d203b92eadbd upstream.
 
-The USB_DT_CS_ENDPOINT class-specific endpoint descriptor is usually
-stuffed directly after the standard USB endpoint descriptor, and this is
-where the driver currently expects it to be.
+An early draft of the PHC patch series included an alarm in the
+gianfar driver. During the review process, the alarm code was dropped,
+but the capability removal was overlooked. This patch fixes the issue
+by advertising zero alarms.
 
-There are, however, devices in the wild that have it the other way
-around in their descriptor sets, so the USB_DT_CS_ENDPOINT comes
-*before* the standard enpoint. Devices known to implement it that way
-are "Sennheiser BTD-500" and Plantronics USB headsets.
+This patch should be applied to every 3.x stable kernel.
 
-When the driver can't find the USB_DT_CS_ENDPOINT, it won't be able to
-change sample rates, as the bitmask for the validity of this command is
-storen in bmAttributes of that descriptor.
-
-Fix this by searching the entire interface instead of just the extra
-bytes of the first endpoint, in case the latter fails.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-and-tested-by: Torstein Hegge <hegge@resisty.net>
-Reported-and-tested-by: Yves G <alsa-user@vivigatt.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+Reported-by: Chris LaRocque <clarocq@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/usb/stream.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/net/ethernet/freescale/gianfar_ptp.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/sound/usb/stream.c
-+++ b/sound/usb/stream.c
-@@ -168,6 +168,14 @@ static int parse_uac_endpoint_attributes
- 	if (!csep && altsd->bNumEndpoints >= 2)
- 		csep = snd_usb_find_desc(alts->endpoint[1].extra, alts->endpoint[1].extralen, NULL, USB_DT_CS_ENDPOINT);
+--- a/drivers/net/ethernet/freescale/gianfar_ptp.c
++++ b/drivers/net/ethernet/freescale/gianfar_ptp.c
+@@ -127,7 +127,6 @@ struct gianfar_ptp_registers {
  
-+	/*
-+	 * If we can't locate the USB_DT_CS_ENDPOINT descriptor in the extra
-+	 * bytes after the first endpoint, go search the entire interface.
-+	 * Some devices have it directly *before* the standard endpoint.
-+	 */
-+	if (!csep)
-+		csep = snd_usb_find_desc(alts->extra, alts->extralen, NULL, USB_DT_CS_ENDPOINT);
-+
- 	if (!csep || csep->bLength < 7 ||
- 	    csep->bDescriptorSubtype != UAC_EP_GENERAL) {
- 		snd_printk(KERN_WARNING "%d:%u:%d : no or invalid"
+ #define DRIVER		"gianfar_ptp"
+ #define DEFAULT_CKSEL	1
+-#define N_ALARM		1 /* first alarm is used internally to reset fipers */
+ #define N_EXT_TS	2
+ #define REG_SIZE	sizeof(struct gianfar_ptp_registers)
+ 
+@@ -410,7 +409,7 @@ static struct ptp_clock_info ptp_gianfar
+ 	.owner		= THIS_MODULE,
+ 	.name		= "gianfar clock",
+ 	.max_adj	= 512000,
+-	.n_alarm	= N_ALARM,
++	.n_alarm	= 0,
+ 	.n_ext_ts	= N_EXT_TS,
+ 	.n_per_out	= 0,
+ 	.pps		= 1,
 
