@@ -1,90 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab3EJV6L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 17:58:11 -0400
-Received: from incomingmail.riverbed.com ([208.70.196.45]:40997 "EHLO
-	smtp1.riverbed.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520Ab3EJV6J convert rfc822-to-8bit (ORCPT
+	id S1754563Ab3EJWSd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 18:18:33 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:57550 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753974Ab3EJWSc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 17:58:09 -0400
-From: Ming Lei <Ming.Lei@riverbed.com>
-To: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "mchehab@redhat.com" <mchehab@redhat.com>, "bp@alien8.de" <bp@alien8.de>
-Subject: RE: x86_mce: mce_start uses number of phsical cores instead of
- logical cores
-Thread-Topic: x86_mce: mce_start uses number of phsical cores instead of
- logical cores
-Thread-Index: Ac5NnrX+OJKCA1vXQtyGCRlOybefOwACkHHwAAC3qcAAASol0AACAr3gAAH652AAAiA5kA==
-Date: Fri, 10 May 2013 21:58:08 +0000
-Message-ID: <2CE44BD3DBCF9541909CCB42F11CA3921C6FAB84@SFO1EXC-MBXP06.nbttech.com>
-References: <2CE44BD3DBCF9541909CCB42F11CA3921C6FAA49@SFO1EXC-MBXP06.nbttech.com>
- <3908561D78D1C84285E8C5FCA982C28F2DA4C92B@ORSMSX106.amr.corp.intel.com>
- <2CE44BD3DBCF9541909CCB42F11CA3921C6FAACA@SFO1EXC-MBXP06.nbttech.com>
- <3908561D78D1C84285E8C5FCA982C28F2DA4C9B9@ORSMSX106.amr.corp.intel.com>
- <2CE44BD3DBCF9541909CCB42F11CA3921C6FAB06@SFO1EXC-MBXP06.nbttech.com>
- <3908561D78D1C84285E8C5FCA982C28F2DA4CB19@ORSMSX106.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F2DA4CB19@ORSMSX106.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.205.252]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 10 May 2013 18:18:32 -0400
 MIME-Version: 1.0
+In-Reply-To: <518D411D.9070209@elopez.com.ar>
+References: <1368207091-32538-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com>
+ <518D320C.4010707@elopez.com.ar> <fe9e603e-a432-4a29-a195-fd393b875a7e@TX2EHSMHS006.ehs.local>
+ <518D411D.9070209@elopez.com.ar>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Fri, 10 May 2013 15:18:10 -0700
+Message-ID: <CAPtuhTgsP4gvMAFoQb3icXAZw3ucSg4dfrAdJMho-VxNmNTvwg@mail.gmail.com>
+Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
+To: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+Cc: =?ISO-8859-1?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You are right, here is the boot information confirming this:
-smpboot: Booting Node   0, Processors  #1 #2 #3 #4 #5 OK
-smpboot: Booting Node   1, Processors  #6 #7 #8 #9 #10 #11 OK
-smpboot: Booting Node   0, Processors  #12 #13 #14 #15 #16 #17 OK
-smpboot: Booting Node   1, Processors  #18 #19 #20 #21 #22 #23 OK
+On Fri, May 10, 2013 at 11:49 AM, Emilio López <emilio@elopez.com.ar> wrote:
+> Hi,
+>
+> El 10/05/13 15:15, Sören Brinkmann escribió:
+>> Hi Emilio,
+>>
+>> On Fri, May 10, 2013 at 02:44:44PM -0300, Emilio López wrote:
+>>> Hi,
+>>>
+>>> El 10/05/13 14:31, Soren Brinkmann escribió:
+>>>> The userspace clock driver can be used to expose clock controls through
+>>>> sysfs to userspace. The driver creates entries in /sys/class/clk.
+>>>>
+>>>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>>>> ---
+>>>>  .../devicetree/bindings/clock/clk-userspace.txt    |   7 +
+>>>>  drivers/clk/Kconfig                                |   9 ++
+>>>>  drivers/clk/Makefile                               |   1 +
+>>>>  drivers/clk/clk-userspace.c                        | 169 +++++++++++++++++++++
+>>>>  4 files changed, 186 insertions(+)
+>>>>  create mode 100644 Documentation/devicetree/bindings/clock/clk-userspace.txt
+>>>>  create mode 100644 drivers/clk/clk-userspace.c
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/clock/clk-userspace.txt b/Documentation/devicetree/bindings/clock/clk-userspace.txt
+>>>> new file mode 100644
+>>>> index 0000000..2d153c7
+>>>> --- /dev/null
+>>>> +++ b/Documentation/devicetree/bindings/clock/clk-userspace.txt
+>>>> @@ -0,0 +1,7 @@
+>>>> +
+>>>> +Example:
+>>>> +   usclk: usclk {
+>>>> +           compatible = "clk-userspace";
+>>>> +           clocks = <&foo 15>, <&bar>;
+>>>> +           clock-count = <2>;
+>>>> +   };
+>>>
+>>> Does this belong on DT? It isn't describing hardware, is it?
+>> I guess, strictly speaking you are right. Do you have a good
+>> alternative?
+>
+> If this was part of the framework instead of a consumer, I suppose a
+> flag on the DT node defining the clock that indicates it should be
+> exported would be acceptable.
+>
+> Another possibility would be letting the user export what they need,
+> like GPIO does, see "Paths in Sysfs" in
+>
+> https://www.kernel.org/doc/Documentation/gpio.txt
+>
+>>>> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+>>>> index 0357ac4..b35b62c 100644
+>>>> --- a/drivers/clk/Kconfig
+>>>> +++ b/drivers/clk/Kconfig
+>>>> @@ -81,6 +81,15 @@ config COMMON_CLK_AXI_CLKGEN
+>>>>       Support for the Analog Devices axi-clkgen pcore clock generator for Xilinx
+>>>>       FPGAs. It is commonly used in Analog Devices' reference designs.
+>>>>
+>>>> +config COMMON_CLK_USERSPACE
+>>>> +   bool "Userspace Clock Controls"
+>>>> +   depends on OF
+>>>> +   depends on SYSFS
+>>>> +   help
+>>>> +   ---help---
+>>>> +     Expose clock controls through sysfs to userspace. Clocks are selected
+>>>> +     through the device tree and the controls are exposed in
+>>>> +     /sys/class/clk.
+>>>>  endmenu
+>>>>
+>>>>  source "drivers/clk/mvebu/Kconfig"
+>>>> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+>>>> index fa435bc..f2f68c8 100644
+>>>> --- a/drivers/clk/Makefile
+>>>> +++ b/drivers/clk/Makefile
+>>>> @@ -8,6 +8,7 @@ obj-$(CONFIG_COMMON_CLK)    += clk-fixed-rate.o
+>>>>  obj-$(CONFIG_COMMON_CLK)   += clk-gate.o
+>>>>  obj-$(CONFIG_COMMON_CLK)   += clk-mux.o
+>>>>  obj-$(CONFIG_COMMON_CLK)   += clk-composite.o
+>>>> +obj-$(CONFIG_COMMON_CLK_USERSPACE) += clk-userspace.o
+>>>>
+>>>>  # SoCs specific
+>>>>  obj-$(CONFIG_ARCH_BCM2835) += clk-bcm2835.o
+>>>> diff --git a/drivers/clk/clk-userspace.c b/drivers/clk/clk-userspace.c
+>>>> new file mode 100644
+>>>> index 0000000..931cf92
+>>>> --- /dev/null
+>>>> +++ b/drivers/clk/clk-userspace.c
+>>>> @@ -0,0 +1,169 @@
+>>>> +/*
+>>>> + * Userspace clock driver
+>>>> + *
+>>>> + *  Copyright (C) 2013 Xilinx
+>>>> + *
+>>>> + *  Sören Brinkmann <soren.brinkmann@xilinx.com>
+>>>> + *
+>>>> + * This program is free software: you can redistribute it and/or modify
+>>>> + * it under the terms of the GNU General Public License v2 as published by
+>>>> + * the Free Software Foundation.
+>>>> + *
+>>>> + * This program is distributed in the hope that it will be useful,
+>>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>>> + * GNU General Public License for more details.
+>>>> + *
+>>>> + * You should have received a copy of the GNU General Public License
+>>>> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+>>>> + *
+>>>> + * Expose clock controls through sysfs to userspace.
+>>>> + *
+>>>> + * By writing 0/1 to 'enable' the clock can be disabled/enabled. Reading
+>>>> + * that file returns the current state - 0 = disabled, 1 = enabled.
+>>>> + *
+>>>> + * Reading 'set_rate' returns the current clock frequency in Hz. Writing
+>>>> + * the file requests setting a new frequency in Hz.
+>>>> + */
+>>>> +
+>>>> +#include <linux/clk-provider.h>
+>>>> +#include <linux/fs.h>
+>>>> +#include <linux/module.h>
+>>>> +#include <linux/of.h>
+>>>> +#include <linux/device.h>
+>>>> +#include <linux/slab.h>
+>>>> +
+>>>> +#define DRIVER_NAME        "clk-userspace"
+>>>> +
+>>>> +struct usclk_data {
+>>>> +   struct clk *clk;
+>>>> +   int enabled;
+>>>> +};
+>>>> +
+>>>> +static ssize_t enable_show(struct device *dev, struct device_attribute *attr,
+>>>> +           char *buf)
+>>>> +{
+>>>> +   struct usclk_data *pdata = dev_get_drvdata(dev);
+>>>> +
+>>>> +   return scnprintf(buf, PAGE_SIZE, "%u\n", pdata->enabled);
+>>>> +}
+>>>> +
+>>>> +static ssize_t enable_store(struct device *dev, struct device_attribute *attr,
+>>>> +           const char *buf, size_t count)
+>>>> +{
+>>>> +   unsigned long enable;
+>>>> +   int ret;
+>>>> +   struct usclk_data *pdata = dev_get_drvdata(dev);
+>>>> +
+>>>> +   ret = kstrtoul(buf, 0, &enable);
+>>>> +   if (ret)
+>>>> +           return -EINVAL;
+>>>> +
+>>>> +   enable = !!enable;
+>>>> +   if (enable == pdata->enabled)
+>>>> +           return count;
+>>>> +
+>>>> +   if (enable)
+>>>> +           ret = clk_prepare_enable(pdata->clk);
+>>>> +   else
+>>>> +           clk_disable_unprepare(pdata->clk);
+>>>> +
+>>>> +   if (ret)
+>>>> +           return -EBUSY;
+>>>> +
+>>>> +   pdata->enabled = enable;
+>>>> +   return count;
+>>>> +}
+>>>> +
+>>>> +static DEVICE_ATTR(enable, 0644, enable_show, enable_store);
+>>>> +
+>>>> +static ssize_t set_rate_show(struct device *dev, struct device_attribute *attr,
+>>>> +           char *buf)
+>>>> +{
+>>>> +   struct usclk_data *pdata = dev_get_drvdata(dev);
+>>>> +
+>>>> +   return scnprintf(buf, PAGE_SIZE, "%lu\n", clk_get_rate(pdata->clk));
+>>>> +}
+>>>> +
+>>>> +static ssize_t set_rate_store(struct device *dev, struct device_attribute *attr,
+>>>> +           const char *buf, size_t count)
+>>>> +{
+>>>> +   int ret = 0;
+>>>> +   unsigned long rate;
+>>>> +   struct usclk_data *pdata = dev_get_drvdata(dev);
+>>>> +
+>>>> +   ret = kstrtoul(buf, 0, &rate);
+>>>> +   if (ret)
+>>>> +           return -EINVAL;
+>>>> +
+>>>> +   rate = clk_round_rate(pdata->clk, rate);
+>>>> +   ret = clk_set_rate(pdata->clk, rate);
+>>>> +   if (ret)
+>>>> +           return -EBUSY;
+>>>> +
+>>>> +   return count;
+>>>> +}
+>>>> +
+>>>> +static DEVICE_ATTR(set_rate, 0644, set_rate_show, set_rate_store);
+>>>> +
+>>>> +static const struct attribute *usclk_attrs[] = {
+>>>> +   &dev_attr_enable.attr,
+>>>> +   &dev_attr_set_rate.attr,
+>>>> +   NULL
+>>>> +};
+>>>
+>>> For debugging purposes, being able to change parents would be nice too.
+>> This is difficult and I don't have a good solution for it, hence it's
+>> missing. A clock consumer like a device driver or this driver, just
+>> knows about it's input clock, but not about the topology further up.
+>> Therefore it is pretty much impossible to implement reparent operations
+>> in a clock consumer, IMHO.
+>> IOW: For a given input clock, how do you figure out it's possible
+>> parents?
+>
+> The parent is just a number
+>
+> int (*set_parent)(struct clk_hw *hw, u8 index);
+> u8 (*get_parent)(struct clk_hw *hw);
+>
+> If you are debugging, you know what the possible parents are, and you
+> can reparent with that information.
+>
+> After checking the clk code however, I didn't find any exposed way to
+> reparent with just the parent indexes. Maybe an interface that takes a n
+> arbitrary string representing the parent name, and gets that clock and
+> then sets the parent would fit.
+>
+>>
+>>> Maybe this belongs to debugfs instead of sysfs though.
+>> Well, the more generic use-case probably. My Zynq use-case rather not,
+>> IMHO.
+>
+> The framework already exposes some information on debugfs, maybe
+> expanding that instead of implementing it as a consumer on sysfs would
+> be best for the debugging use case. @Mike, what's your thoughts on this?
+>
 
-So only one socket gets the machine check. So is there still a problem but the fix will be different? I think the error inject creates a real machine check, but since each CPU has its own memory controller, the machine check may only send to the CPU the error happens.
+In the previous thread on this topic we discussed a generic approach
+to exposing clock controls via debugfs.
 
-Ming
+One way to do it is to introduce a new config option,
+CONFIG_COMMON_CLK_DEBUG_CONTROL that would expose the controls for
+every clock in the existing debugfs infrastructure.  The downside to
+this approach is that it would get abused and ship in millions of
+Android products using horrible userspace hacks to control clocks.
+Maybe that's not our problem to solve, maybe it is.
 
+If CONFIG_COMMON_CLK_DEBUG_CONTROL existed it might be a good idea to
+intentionally break the abi compatibility with every new release.
+That would certainly reinforce that this is not a condoned or stable
+api (which is true for all debugfs).
 
------Original Message-----
-From: Luck, Tony [mailto:tony.luck@intel.com] 
-Sent: Friday, May 10, 2013 2:05 PM
-To: Ming Lei; linux-kernel@vger.kernel.org
-Cc: mchehab@redhat.com; bp@alien8.de
-Subject: RE: x86_mce: mce_start uses number of phsical cores instead of logical cores
+I think that Soren wants something with a stable interface that he can
+use for his Zynq use case.  Regarding that, why not write an actual
+device driver to do what you want to do from userspace?
 
-> I used intel edac error injector and saw the same problem. I actually 
-> wrote down the core numbers and I saw mce got to 0-5 and 12-17, but not the others. I have 2 sockets, 24 logical cores.
+Regards,
+Mike
 
-Mauro: How does the EDAC injector work on E5645 (Westmere-EP)?  Does it create a real error in memory that the processor then accesses ... tripping a machine check?
-
-The mapping of Linux logical cpu numbers to physical socket/core/thread is somewhat as the mercy of the order that the BIOS lists things in its tables.  But those numbers look very much like you just saw the machine check on one socket.
-
-Look at /proc/cpuinfo to be sure.  If you run "grep ^physical /proc/cpuinfo" I think you'll see output like this (confirming that only socket 0 saw the machine check):
-
-physical id     :  0
-physical id     :  0
-physical id     :  0
-physical id     :  0
-physical id     :  0
-physical id     :  0
-physical id     :  1
-physical id     :  1
-physical id     :  1
-physical id     :  1
-physical id     :  1
-physical id     :  1
-physical id     :  0
-physical id     :  0
-physical id     :  0
-physical id     :  0
-physical id     :  0
-physical id     :  0
-physical id     :  1
-physical id     :  1
-physical id     :  1
-physical id     :  1
-physical id     :  1
-physical id     :  1
+> Emilio
