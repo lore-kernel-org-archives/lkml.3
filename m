@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab3EJTZl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 15:25:41 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37483 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089Ab3EJTZj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 15:25:39 -0400
-Message-ID: <518D49B0.4050901@wwwdotorg.org>
-Date: Fri, 10 May 2013 13:25:36 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1753907Ab3EJT1y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 15:27:54 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:47504 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753089Ab3EJT1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 15:27:53 -0400
+Date: Fri, 10 May 2013 15:27:47 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: EUNBONG SONG <eunb.song@samsung.com>
+Cc: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: EXT4 panic at jbd2_journal_put_journal_head() in 3.9+
+Message-ID: <20130510192747.GA11707@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	EUNBONG SONG <eunb.song@samsung.com>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <6719519.5821368147110937.JavaMail.weblogic@epml17>
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, linux-tegra@vger.kernel.org
-Subject: Re: [RFC 04/42] drivers/dma: don't check resource with devm_ioremap_resource
-References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de> <1368173847-5661-5-git-send-email-wsa@the-dreams.de> <518D21D4.6000609@wwwdotorg.org> <20130510175739.GA2912@katana>
-In-Reply-To: <20130510175739.GA2912@katana>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6719519.5821368147110937.JavaMail.weblogic@epml17>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2013 11:57 AM, Wolfram Sang wrote:
-> On Fri, May 10, 2013 at 10:35:32AM -0600, Stephen Warren wrote:
->> On 05/10/2013 02:16 AM, Wolfram Sang wrote:
->>> devm_ioremap_resource does sanity checks on the given resource. No need to
->>> duplicate this in the driver.
->>
->>> diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
->>
->>>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>> -	if (!res) {
->>> -		dev_err(&pdev->dev, "No mem resource for DMA\n");
->>> -		return -EINVAL;
->>> -	}
->>> -
->>>  	tdma->base_addr = devm_ioremap_resource(&pdev->dev, res);
->>
->> One issue here is that it's not obvious just from reading the code
->> that's left behind that the "missing" error-checking of the
->> platform_get_resource() return value is OK because
->> devm_ioremap_resource() will check it "for us". Everyone now has to
->> mentally maintain a list of exceptions where it's OK not to error-check.
-> 
-> My goal is to make not-checking the standard case with devm.
+Hmm, since you seem to be able to reproduce the problem reliably, any
+chance you can try bisecting the problem?  I've looked at the commits
+that touch fs/jbd2 and nothing is jumping out at me.
 
-OK, if no parameters passed to any devm function every need to be
-error-checked, that'll certainly be a bit easier to remember.
+Also, how many CPU's do you have your system, and what kind of storage
+device were you using when you were running iozone (5400rpm HDD,
+7200RPM HDD, RAID array, SSD, etc.)?
+
+Thanks,
+
+						- Ted
