@@ -1,74 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757256Ab3EJPOO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 11:14:14 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51174 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753127Ab3EJPON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 11:14:13 -0400
-Date: Fri, 10 May 2013 17:21:02 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123
- native_smp_send_reschedule
-Message-ID: <20130510152102.GD22942@pd.tnic>
-References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
- <20130510002930.GB2394@somewhere>
- <alpine.LNX.2.00.1305101702250.23038@pobox.suse.cz>
+	id S1757288Ab3EJPPO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 11:15:14 -0400
+Received: from 19.mo5.mail-out.ovh.net ([46.105.35.78]:42893 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753430Ab3EJPPM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 11:15:12 -0400
+X-Greylist: delayed 1800 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 May 2013 11:15:12 EDT
+Date: Fri, 10 May 2013 16:34:04 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH] ARM: at91: dts: request only spi cs-gpios used on
+ sama5d3x cpu module
+Message-ID: <20130510143404.GB22508@game.jcrosoft.org>
+References: <1368181807-15182-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1305101702250.23038@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1368181807-15182-1-git-send-email-nicolas.ferre@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 459367162953837420
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 05:03:56PM +0200, Jiri Kosina wrote:
-> [ ... snip ... ]
->  Enabling non-boot CPUs ...
->  smpboot: Booting Node 0 Processor 1 APIC 0x1
->  CPU1 microcode updated early to revision 0x60f, date = 2010-09-29
->  Disabled fast string operations
->  1 1
->  CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.9.0-12317-gb2031d4 #1
->  Hardware name: LENOVO 7470BN2/7470BN2, BIOS 6DET38WW (2.02 ) 12/19/2008
->   ffff88007c28cca0 ffff880079851e08 ffffffff8154837e ffff880079851e28
->   ffffffff81077514 ffff88007c28cca0 ffff88007c28cca0 ffff880079851e68
->   ffffffff810529db 0000000179851e78 ffff88007c28cca0 0000000000000001
->  Call Trace:
->   [<ffffffff8154837e>] dump_stack+0x19/0x1b
->   [<ffffffff81077514>] wake_up_nohz_cpu+0xd4/0xf0
->   [<ffffffff810529db>] add_timer_on+0xdb/0x110
->   [<ffffffff8101e4f4>] mce_start_timer+0x64/0x70
->   [<ffffffff8101e552>] __mcheck_cpu_init_timer+0x52/0x60
->   [<ffffffff8153e22e>] mcheck_cpu_init+0x6f/0x111
->   [<ffffffff8153b94e>] identify_cpu+0x3cc/0x3f9
->   [<ffffffff8153b98d>] identify_secondary_cpu+0x12/0x1d
->   [<ffffffff8153fdd6>] smp_store_cpu_info+0x3a/0x3c
->   [<ffffffff8153fec2>] smp_callin+0xea/0x1c1
->   [<ffffffff8153ffbd>] start_secondary+0x24/0x97
+On 12:30 Fri 10 May     , Nicolas Ferre wrote:
+> From: Ludovic Desroches <ludovic.desroches@atmel.com>
+> 
+> Instead of requesting all available spi cs-gpios, request only the ones used on
+> the board, in our case on the cpu module.
+> 
+> Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Ok, I got it:
-
-smp_callin is called by start_secondary() and down that path we add the
-timer and do wake_up_nohz_cpu.
-
-HOWEVER(!), the bit in the cpu_online_mask is set much later in
-smp_callin() with
-
-	set_cpu_online(smp_processor_id(), true);
-
-Thus, when we come to send the IPI, the cpu is still offline, according
-to the cpu_online_mask, thus the WARN_ON.
-
-Nice :-\
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Best Regards,
+J.
+> ---
+>  arch/arm/boot/dts/sama5d3.dtsi    | 10 ----------
+>  arch/arm/boot/dts/sama5d3xcm.dtsi |  4 ++++
+>  2 files changed, 4 insertions(+), 10 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+> index 2e643ea..dee5e2f 100644
+> --- a/arch/arm/boot/dts/sama5d3.dtsi
+> +++ b/arch/arm/boot/dts/sama5d3.dtsi
+> @@ -75,11 +75,6 @@
+>  				compatible = "atmel,at91sam9x5-spi";
+>  				reg = <0xf0004000 0x100>;
+>  				interrupts = <24 4 3>;
+> -				cs-gpios = <&pioD 13 0
+> -					    &pioD 14 0 /* conflicts with SCK0 and CANRX0 */
+> -					    &pioD 15 0 /* conflicts with CTS0 and CANTX0 */
+> -					    &pioD 16 0 /* conflicts with RTS0 and PWMFI3 */
+> -					   >;
+>  				pinctrl-names = "default";
+>  				pinctrl-0 = <&pinctrl_spi0>;
+>  				status = "disabled";
+> @@ -203,11 +198,6 @@
+>  				compatible = "atmel,at91sam9x5-spi";
+>  				reg = <0xf8008000 0x100>;
+>  				interrupts = <25 4 3>;
+> -				cs-gpios = <&pioC 25 0
+> -					    &pioC 26 0 /* conflitcs with TWD1 and ISI_D11 */
+> -					    &pioC 27 0 /* conflitcs with TWCK1 and ISI_D10 */
+> -					    &pioC 28 0 /* conflitcs with PWMFI0 and ISI_D9 */
+> -					   >;
+>  				pinctrl-names = "default";
+>  				pinctrl-0 = <&pinctrl_spi1>;
+>  				status = "disabled";
+> diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
+> index 1f8ed40..b336e77 100644
+> --- a/arch/arm/boot/dts/sama5d3xcm.dtsi
+> +++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
+> @@ -32,6 +32,10 @@
+>  
+>  	ahb {
+>  		apb {
+> +			spi0: spi@f0004000 {
+> +				cs-gpios = <&pioD 13 0>, <0>, <0>, <0>;
+> +			};
+> +
+>  			macb0: ethernet@f0028000 {
+>  				phy-mode = "rgmii";
+>  			};
+> -- 
+> 1.8.0
+> 
