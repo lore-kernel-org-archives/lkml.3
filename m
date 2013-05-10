@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab3EJOVa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:21:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57178 "EHLO
+	id S1755397Ab3EJOV2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:21:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57175 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755319Ab3EJOV0 (ORCPT
+	by vger.kernel.org with ESMTP id S1755330Ab3EJOVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:21:26 -0400
+	Fri, 10 May 2013 10:21:24 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org, "Martin Schwidefsky" <schwidefsky@de.ibm.com>,
+        "Gerald Schaefer" <gerald.schaefer@de.ibm.com>,
+        "Heiko Carstens" <heiko.carstens@de.ibm.com>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.755488966@decadent.org.uk>
+Message-ID: <lsq.1368193181.214700466@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [057/118] ALSA: usb-audio: Fix autopm error during probing
+Subject: [061/118] s390/memory hotplug: prevent offline of active memory
+ increments
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,41 +33,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 60af3d037eb8c670dcce31401501d1271e7c5d95 upstream.
+commit 94c163663fc1dcfc067a5fb3cc1446b9469975ce upstream.
 
-We've got strange errors in get_ctl_value() in mixer.c during
-probing, e.g. on Hercules RMX2 DJ Controller:
+In case a machine supports memory hotplug all active memory increments
+present at IPL time have been initialized with a "usecount" of 1.
+This is wrong if the memory increment size is larger than the memory
+section size of the memory hotplug code. If that is the case the
+usecount must be initialized with the number of memory sections that
+fit into one memory increment.
+Otherwise it is possible to put a memory increment into standby state
+even if there are still active sections.
+Afterwards addressing exceptions might happen which cause the kernel
+to panic.
+However even worse, if a memory increment was put into standby state
+and afterwards into active state again, it's contents would have been
+zeroed, leading to memory corruption.
 
-  ALSA mixer.c:352 cannot get ctl value: req = 0x83, wValue = 0x201, wIndex = 0xa00, type = 4
-  ALSA mixer.c:352 cannot get ctl value: req = 0x83, wValue = 0x200, wIndex = 0xa00, type = 4
-  ....
+This was only an issue for machines that support standby memory and
+have at least 256GB memory.
 
-It turned out that the culprit is autopm: snd_usb_autoresume() returns
--ENODEV when called during card->probing = 1.
+This is broken since commit fdb1bb15 "[S390] sclp/memory hotplug: fix
+initial usecount of increments".
 
-Since the call itself during card->probing = 1 is valid, let's fix the
-return value of snd_usb_autoresume() as success.
-
-Reported-and-tested-by: Daniel Schürmann <daschuer@mixxx.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Reviewed-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/usb/card.c |    4 +++-
+ drivers/s390/char/sclp_cmd.c |    4 +++-
  1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -611,7 +611,9 @@ int snd_usb_autoresume(struct snd_usb_au
- 	int err = -ENODEV;
+--- a/drivers/s390/char/sclp_cmd.c
++++ b/drivers/s390/char/sclp_cmd.c
+@@ -509,6 +509,8 @@ static void __init sclp_add_standby_memo
+ 	add_memory_merged(0);
+ }
  
- 	down_read(&chip->shutdown_rwsem);
--	if (!chip->shutdown && !chip->probing)
-+	if (chip->probing)
-+		err = 0;
-+	else if (!chip->shutdown)
- 		err = usb_autopm_get_interface(chip->pm_intf);
- 	up_read(&chip->shutdown_rwsem);
- 
++#define MEM_SCT_SIZE (1UL << SECTION_SIZE_BITS)
++
+ static void __init insert_increment(u16 rn, int standby, int assigned)
+ {
+ 	struct memory_increment *incr, *new_incr;
+@@ -521,7 +523,7 @@ static void __init insert_increment(u16
+ 	new_incr->rn = rn;
+ 	new_incr->standby = standby;
+ 	if (!standby)
+-		new_incr->usecount = 1;
++		new_incr->usecount = rzm > MEM_SCT_SIZE ? rzm/MEM_SCT_SIZE : 1;
+ 	last_rn = 0;
+ 	prev = &sclp_mem_list;
+ 	list_for_each_entry(incr, &sclp_mem_list, list) {
 
