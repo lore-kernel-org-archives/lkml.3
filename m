@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab3EJJ1P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 05:27:15 -0400
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:55371 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab3EJJ1O (ORCPT
+	id S1752840Ab3EJJ3a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 05:29:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37340 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714Ab3EJJ33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 05:27:14 -0400
+	Fri, 10 May 2013 05:29:29 -0400
+Date: Fri, 10 May 2013 11:27:41 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 0/9] perf: Adding better precise_ip field handling
+Message-ID: <20130510092741.GE3039@dyad.programming.kicks-ass.net>
+References: <1368106344-23383-1-git-send-email-jolsa@redhat.com>
+ <20130509150744.GB3039@dyad.programming.kicks-ass.net>
+ <20130509152022.GD1628@krava.brq.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <518CB758.4000101@cn.fujitsu.com>
-References: <518CB758.4000101@cn.fujitsu.com>
-Date: Fri, 10 May 2013 02:27:13 -0700
-X-Google-Sender-Auth: 8pYuDEYpuEyPqPPxi-i0Op_LBhE
-Message-ID: <CAE9FiQVpbDJT2Ma6MHkB5aF9PUuGCia_QaLc_LjYCLJb4nKebg@mail.gmail.com>
-Subject: Re: [PATCH] x86: mm: Remove unnecessary assignment for max_pfn_mapped:q
-From: Yinghai Lu <yinghai@kernel.org>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130509152022.GD1628@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 2:01 AM, Zhang Yanfei
-<zhangyanfei@cn.fujitsu.com> wrote:
-> init_memory_mapping will set max_pfn_mapped:
-> int_memory_mapping
->   --> add_pfn_range_mapped
->     --> max_pfn_mapped = max(max_pfn_mapped, end_pfn)
->
-> In init_mem_mapping, before we set max_pfn_mapped to 0, we
-> have already called init_memory_mapping to setup pagetable
-> for [0, ISA_END_ADDRESS], and that sets max_pfn_mapped. So
-> the assignment to 0 is not necessary, remove it.
+On Thu, May 09, 2013 at 05:20:22PM +0200, Jiri Olsa wrote:
+> On Thu, May 09, 2013 at 05:07:44PM +0200, Peter Zijlstra wrote:
+> > On Thu, May 09, 2013 at 03:32:15PM +0200, Jiri Olsa wrote:
+> > > hi,
+> > > adding sysfs attribute to specify the maximum allowed value
+> > > for perf_event_attr::precise_ip field.
+> > > 
+> > > Adding functionality for simple 'p' modifier and 'precise' term
+> > > to get the maximum allowed value for perf_event_attr::precise_ip
+> > > field.
+> > > 
+> > 
+> > You've seem to lost the part explaining why we want this.. :-)
+> 
+> well, initially it was an answer when we broke precise event
+> monitoring in kernel so I wrote automated test for it (patches 1,2,3)
+> https://lkml.org/lkml/2012/12/12/561
 
-NAK.
+But those don't rely on the max thing right?
 
-for 32bit or Xen, max_pfn_mapped is set way before in head_32.S and
-xen-enlighen.
+> having maximum precise enabled with just single 'p' seemed
+> like good idea
 
-Yinghai
+Doesn't seem like to me; that takes away the possibility to use less.
+
+> next step would be to enable precise automatically for 'cycles'
+> (when PEBS is working) asked for by Ingo
+> http://marc.info/?l=linux-kernel&m=135929050803963&w=2
+
+Hurm.. I'm of two minds there. As Stephane has been pointing out for ages,
+cycles behaves significantly different between regular and PEBS events for some
+cases.
+
+Also, you really don't need the max_precise for that either. At worst you'll
+have a number of unsuccessful event creations.
