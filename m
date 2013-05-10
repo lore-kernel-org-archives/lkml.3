@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab3EJO17 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:27:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57276 "EHLO
+	id S1756983Ab3EJO3M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:29:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57262 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755958Ab3EJOV7 (ORCPT
+	by vger.kernel.org with ESMTP id S1755740Ab3EJOV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:21:59 -0400
+	Fri, 10 May 2013 10:21:57 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johannes Berg" <johannes.berg@intel.com>
+CC: akpm@linux-foundation.org,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.136500812@decadent.org.uk>
+Message-ID: <lsq.1368193181.726947006@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [034/118] wireless: regulatory: fix channel disabling race condition
+Subject: [035/118] xen/smp: Fix leakage of timer interrupt line for every
+ CPU online/offline.
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,37 +32,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 990de49f74e772b6db5208457b7aa712a5f4db86 upstream.
+commit 888b65b4bc5e7fcbbb967023300cd5d44dba1950 upstream.
 
-When a full scan 2.4 and 5 GHz scan is scheduled, but then the 2.4 GHz
-part of the scan disables a 5.2 GHz channel due to, e.g. receiving
-country or frequency information, that 5.2 GHz channel might already
-be in the list of channels to scan next. Then, when the driver checks
-if it should do a passive scan, that will return false and attempt an
-active scan. This is not only wrong but can also lead to the iwlwifi
-device firmware crashing since it checks regulatory as well.
+In the PVHVM path when we do CPU online/offline path we would
+leak the timer%d IRQ line everytime we do a offline event. The
+online path (xen_hvm_setup_cpu_clockevents via
+x86_cpuinit.setup_percpu_clockev) would allocate a new interrupt
+line for the timer%d.
 
-Fix this by not setting the channel flags to just disabled but rather
-OR'ing in the disabled flag. That way, even if the race happens, the
-channel will be scanned passively which is still (mostly) correct.
+But we would still use the old interrupt line leading to:
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+kernel BUG at /home/konrad/ssd/konrad/linux/kernel/hrtimer.c:1261!
+invalid opcode: 0000 [#1] SMP
+RIP: 0010:[<ffffffff810b9e21>]  [<ffffffff810b9e21>] hrtimer_interrupt+0x261/0x270
+.. snip..
+ <IRQ>
+ [<ffffffff810445ef>] xen_timer_interrupt+0x2f/0x1b0
+ [<ffffffff81104825>] ? stop_machine_cpu_stop+0xb5/0xf0
+ [<ffffffff8111434c>] handle_irq_event_percpu+0x7c/0x240
+ [<ffffffff811175b9>] handle_percpu_irq+0x49/0x70
+ [<ffffffff813a74a3>] __xen_evtchn_do_upcall+0x1c3/0x2f0
+ [<ffffffff813a760a>] xen_evtchn_do_upcall+0x2a/0x40
+ [<ffffffff8167c26d>] xen_hvm_callback_vector+0x6d/0x80
+ <EOI>
+ [<ffffffff81666d01>] ? start_secondary+0x193/0x1a8
+ [<ffffffff81666cfd>] ? start_secondary+0x18f/0x1a8
+
+There is also the oddity (timer1) in the /proc/interrupts after
+offlining CPU1:
+
+  64:       1121          0  xen-percpu-virq      timer0
+  78:          0          0  xen-percpu-virq      timer1
+  84:          0       2483  xen-percpu-virq      timer2
+
+This patch fixes it.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/wireless/reg.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/xen/smp.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -853,7 +853,7 @@ static void handle_channel(struct wiphy
- 			return;
- 
- 		REG_DBG_PRINT("Disabling freq %d MHz\n", chan->center_freq);
--		chan->flags = IEEE80211_CHAN_DISABLED;
-+		chan->flags |= IEEE80211_CHAN_DISABLED;
- 		return;
- 	}
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -563,6 +563,7 @@ static void xen_hvm_cpu_die(unsigned int
+ 	unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
++	xen_teardown_timer(cpu);
+ 	native_cpu_die(cpu);
+ }
  
 
