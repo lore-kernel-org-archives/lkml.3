@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab3EJOc4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:32:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57195 "EHLO
+	id S1756057Ab3EJOdd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:33:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57192 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755491Ab3EJOVd (ORCPT
+	by vger.kernel.org with ESMTP id S1755443Ab3EJOVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:21:33 -0400
+	Fri, 10 May 2013 10:21:32 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        "Michael Ellerman" <michael@ellerman.id.au>
+CC: akpm@linux-foundation.org, "Vitaliy Fillipov" <vitalif@yourcmc.ru>,
+        700333@bugs.debian.org, "Thomas Gleixner" <tglx@linutronix.de>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.545180391@decadent.org.uk>
+Message-ID: <lsq.1368193181.619230899@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [053/118] powerpc/spufs: Initialise inode->i_ino in spufs_new_inode()
+Subject: [058/118] clockevents: Set dummy handler on CPU_DEAD shutdown
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,32 +31,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <michael@ellerman.id.au>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 6747e83235caecd30b186d1282e4eba7679f81b7 upstream.
+commit 6f7a05d7018de222e40ca003721037a530979974 upstream.
 
-In commit 85fe402 (fs: do not assign default i_ino in new_inode), the
-initialisation of i_ino was removed from new_inode() and pushed down
-into the callers. However spufs_new_inode() was not updated.
+Vitaliy reported that a per cpu HPET timer interrupt crashes the
+system during hibernation. What happens is that the per cpu HPET timer
+gets shut down when the nonboot cpus are stopped. When the nonboot
+cpus are onlined again the HPET code sets up the MSI interrupt which
+fires before the clock event device is registered. The event handler
+is still set to hrtimer_interrupt, which then crashes the machine due
+to highres mode not being active.
 
-This exhibits as no files appearing in /spu, because all our dirents
-have a zero inode, which readdir() seems to dislike.
+See http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=700333
 
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+There is no real good way to avoid that in the HPET code. The HPET
+code alrady has a mechanism to detect spurious interrupts when event
+handler == NULL for a similar reason.
+
+We can handle that in the clockevent/tick layer and replace the
+previous functional handler with a dummy handler like we do in
+tick_setup_new_device().
+
+The original clockevents code did this in clockevents_exchange_device(),
+but that got removed by commit 7c1e76897 (clockevents: prevent
+clockevent event_handler ending up handler_noop) which forgot to fix
+it up in tick_shutdown(). Same issue with the broadcast device.
+
+Reported-by: Vitaliy Fillipov <vitalif@yourcmc.ru>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: 700333@bugs.debian.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/platforms/cell/spufs/inode.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/time/tick-broadcast.c |    4 ++++
+ kernel/time/tick-common.c    |    1 +
+ 2 files changed, 5 insertions(+)
 
---- a/arch/powerpc/platforms/cell/spufs/inode.c
-+++ b/arch/powerpc/platforms/cell/spufs/inode.c
-@@ -100,6 +100,7 @@ spufs_new_inode(struct super_block *sb,
- 	if (!inode)
- 		goto out;
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -66,6 +66,8 @@ static void tick_broadcast_start_periodi
+  */
+ int tick_check_broadcast_device(struct clock_event_device *dev)
+ {
++	struct clock_event_device *cur = tick_broadcast_device.evtdev;
++
+ 	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
+ 	    (tick_broadcast_device.evtdev &&
+ 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
+@@ -73,6 +75,8 @@ int tick_check_broadcast_device(struct c
+ 		return 0;
  
-+	inode->i_ino = get_next_ino();
- 	inode->i_mode = mode;
- 	inode->i_uid = current_fsuid();
- 	inode->i_gid = current_fsgid();
+ 	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
++	if (cur)
++		cur->event_handler = clockevents_handle_noop;
+ 	tick_broadcast_device.evtdev = dev;
+ 	if (!cpumask_empty(tick_get_broadcast_mask()))
+ 		tick_broadcast_start_periodic(dev);
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -323,6 +323,7 @@ static void tick_shutdown(unsigned int *
+ 		 */
+ 		dev->mode = CLOCK_EVT_MODE_UNUSED;
+ 		clockevents_exchange_device(dev, NULL);
++		dev->event_handler = clockevents_handle_noop;
+ 		td->evtdev = NULL;
+ 	}
+ 	raw_spin_unlock_irqrestore(&tick_device_lock, flags);
 
