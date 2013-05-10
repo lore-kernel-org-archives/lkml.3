@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab3EJOUx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:20:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57016 "EHLO
+	id S1756768Ab3EJOl4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:41:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57081 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753097Ab3EJOUi (ORCPT
+	by vger.kernel.org with ESMTP id S1754722Ab3EJOUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:20:38 -0400
+	Fri, 10 May 2013 10:20:52 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Dmitry Popov" <dp@highloadlab.com>
+CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
+        "Paul Mackerras" <paulus@samba.org>,
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
+        "Arnaldo Carvalho de Melo" <acme@ghostprotocols.net>, davej@redhat.com,
+        "Tommi Rantala" <tt.rantala@gmail.com>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.158401843@decadent.org.uk>
+Message-ID: <lsq.1368193181.436720657@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [094/118] tcp: incoming connections might use wrong route under 
- synflood
+Subject: [078/118] perf: Treat attr.config as u64 in perf_swevent_init()
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,39 +34,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Popov <dp@highloadlab.com>
+From: Tommi Rantala <tt.rantala@gmail.com>
 
-[ Upstream commit d66954a066158781ccf9c13c91d0316970fe57b6 ]
+commit 8176cced706b5e5d15887584150764894e94e02f upstream.
 
-There is a bug in cookie_v4_check (net/ipv4/syncookies.c):
-	flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
-			   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
-			   inet_sk_flowi_flags(sk),
-			   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
-			   ireq->loc_addr, th->source, th->dest);
+Trinity discovered that we fail to check all 64 bits of
+attr.config passed by user space, resulting to out-of-bounds
+access of the perf_swevent_enabled array in
+sw_perf_event_destroy().
 
-Here we do not respect sk->sk_bound_dev_if, therefore wrong dst_entry may be
-taken. This dst_entry is used by new socket (get_cookie_sock ->
-tcp_v4_syn_recv_sock), so its packets may take the wrong path.
+Introduced in commit b0a873ebb ("perf: Register PMU
+implementations").
 
-Signed-off-by: Dmitry Popov <dp@highloadlab.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tommi Rantala <tt.rantala@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: davej@redhat.com
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Link: http://lkml.kernel.org/r/1365882554-30259-1-git-send-email-tt.rantala@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/syncookies.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/events/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/syncookies.c
-+++ b/net/ipv4/syncookies.c
-@@ -347,8 +347,8 @@ struct sock *cookie_v4_check(struct sock
- 	 * hasn't changed since we received the original syn, but I see
- 	 * no easy way to do this.
- 	 */
--	flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
--			   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
-+	flowi4_init_output(&fl4, sk->sk_bound_dev_if, sk->sk_mark,
-+			   RT_CONN_FLAGS(sk), RT_SCOPE_UNIVERSE, IPPROTO_TCP,
- 			   inet_sk_flowi_flags(sk),
- 			   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
- 			   ireq->loc_addr, th->source, th->dest);
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5164,7 +5164,7 @@ static void sw_perf_event_destroy(struct
+ 
+ static int perf_swevent_init(struct perf_event *event)
+ {
+-	int event_id = event->attr.config;
++	u64 event_id = event->attr.config;
+ 
+ 	if (event->attr.type != PERF_TYPE_SOFTWARE)
+ 		return -ENOENT;
 
