@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124Ab3EJTgI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 15:36:08 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:47667 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754608Ab3EJTgF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 15:36:05 -0400
-Date: Fri, 10 May 2013 11:46:25 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rodolfo Giometti <giometti@linux.it>
-Subject: Re: linux-next: Tree for May 7 (bq27x00_battery)
-Message-ID: <20130510184625.GA2602@teo>
-References: <20130507134922.981483ab1e5cb09e5543a6cc@canb.auug.org.au>
- <51893811.8080102@infradead.org>
+	id S1754189Ab3EJTdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 15:33:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32481 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753252Ab3EJTdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 15:33:04 -0400
+Subject: [PATCH 0/8] Fix assorted FS-Cache issues [ver #2]
+To: Trond.Myklebust@netapp.com, torvalds@linux-foundation.org
+From: David Howells <dhowells@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-cachefs@redhat.com, linux-kernel@vger.kernel.org
+Date: Fri, 10 May 2013 20:32:58 +0100
+Message-ID: <20130510193257.3045.77981.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51893811.8080102@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 10:21:21AM -0700, Randy Dunlap wrote:
-> On 05/06/13 20:49, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Please do not add any v3.11 destined work to your linux-next included
-> > branches until after v3.10-rc1 is released.
-> > 
-> > I am receiving a (un)reasonable number of conflicts from there being
-> > multiple copies of some commits in various trees.   Please clean this up
-> > and resist the temptataion to rebase your trees on the way to your
-> > upstream ...
-> > 
-> > Changes since 20130506:
-> > 
-> 
-> on x86_64:
-> 
-> drivers/built-in.o: In function `bq27x00_read_i2c':
-> bq27x00_battery.c:(.text+0x169e20): undefined reference to `i2c_transfer'
-> bq27x00_battery.c:(.text+0x169e44): undefined reference to `i2c_transfer'
-> drivers/built-in.o: In function `bq27x00_battery_init':
-> bq27x00_battery.c:(.init.text+0x82af): undefined reference to `i2c_register_driver'
-> drivers/built-in.o: In function `bq27x00_battery_exit':
-> bq27x00_battery.c:(.exit.text+0xd8f): undefined reference to `i2c_del_driver'
-> 
-> 
-> when CONFIG_I2C=m and CONFIG_BATTERY_BQ27X00_I2C=y.
 
-Thanks for the report! This should be fixed by this commit:
 
-commit a2d0dbb4b55681874c5f288538ae55ae69baeaff
-Author: Xiong Zhou <jencce.kernel@gmail.com>
-Date:   Tue May 7 10:15:56 2013 +0800
+Following this mail is a series of patches to fix a number of FS-Cache issues,
+including a number of oopses.  The patches can also be found at:
 
-    bq27x00: Fix I2C dependency in KConfig
+  http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=fscache
+
+on top of a patch from Tejun Heo to fix a problem in the workqueues.  The
+patches are also tagged:
+
+  http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git tags/fscache-20130510
+
+The patches are as follows:
+
+ (1) Provide a system wait_on_atomic_t() and wake_up_atomic_t() (enhancement).
+
+ (2) Don't put spin_lock() in a while-condition as spin_lock() may be wrapped
+     with do {} while(0) (cleanup).
+
+ (3) Name i_mutex lock classes rather than using numbers in CacheFiles (cleanup).
+
+ (4) Don't sleep in page release if __GFP_FS is not set (deadlock vs ext4).
+
+ (5) Uninline fscache_object_init() (cleanup).
+
+ (6) Wrap checks on object state (cleanup).
+
+ (7) Simplify the object state machine (need #5 and #6).
+
+ (8) Simplify cookie retention by objects (oops fix, need #1 and #7).
+
+David
+---
+David Howells (6):
+      Add wait_on_atomic_t() and wake_up_atomic_t()
+      FS-Cache: Don't sleep in page release if __GFP_FS is not set
+      FS-Cache: Uninline fscache_object_init()
+      FS-Cache: Wrap checks on object state
+      FS-Cache: Fix object state machine to have separate work and wait states
+      FS-Cache: Simplify cookie retention for fscache_objects, fixing access problems
+
+J. Bruce Fields (1):
+      CacheFiles: name i_mutex lock class explicitly
+
+Sebastian Andrzej Siewior (1):
+      fs/fscache: remove spin_lock() from the condition in while()
+
+
+ fs/cachefiles/interface.c     |   11 
+ fs/cachefiles/namei.c         |   10 
+ fs/cachefiles/xattr.c         |    6 
+ fs/fscache/cache.c            |   34 +
+ fs/fscache/cookie.c           |   93 +--
+ fs/fscache/fsdef.c            |    1 
+ fs/fscache/internal.h         |   11 
+ fs/fscache/main.c             |   11 
+ fs/fscache/netfs.c            |    1 
+ fs/fscache/object-list.c      |  103 ++--
+ fs/fscache/object.c           | 1106 +++++++++++++++++++++--------------------
+ fs/fscache/operation.c        |   36 +
+ fs/fscache/page.c             |   55 +-
+ include/linux/fscache-cache.h |  170 +++---
+ include/linux/wait.h          |   24 +
+ kernel/wait.c                 |   85 +++
+ 16 files changed, 947 insertions(+), 810 deletions(-)
+
