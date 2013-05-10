@@ -1,98 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435Ab3EJKUm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 06:20:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15737 "EHLO mx1.redhat.com"
+	id S1752287Ab3EJKVo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 06:21:44 -0400
+Received: from mout.gmx.net ([212.227.17.22]:64678 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752325Ab3EJKUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 06:20:39 -0400
-Date: Fri, 10 May 2013 11:20:29 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>, stable@vger.kernel.org,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: [git pull] device-mapper updates for 3.10
-Message-ID: <20130510102029.GE1396@agk-dp.fab.redhat.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-	Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-	Mikulas Patocka <mpatocka@redhat.com>, stable@vger.kernel.org,
-	Bharata B Rao <bharata.rao@gmail.com>,
-	Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1750867Ab3EJKVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 06:21:43 -0400
+X-Authenticated: #20192376
+X-Provags-ID: V01U2FsdGVkX1/vI88IWAvv7+74MXGmFx98rnyA4GoLwKlxEsvVV5
+	avMplz2/tnPAcU
+From: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, balbi@ti.com,
+        Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+Subject: [PATCH 1/1] genirq: outline lazy disable in kerneldoc of irq_disable function.
+Date: Fri, 10 May 2013 12:21:30 +0200
+Message-Id: <1368181290-1583-1-git-send-email-andreas.fenkart@streamunlimited.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from:
+comment based on changelog of d209a699a0b975ad
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/agk/linux-dm tags/dm-3.10-changes
+Signed-off-by: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+---
+ kernel/irq/chip.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-to get the following device-mapper updates for 3.10.
-
-Thanks,
-Alasdair
-
-----------------------------------------------------------------
-Allow devices that hold metadata for the device-mapper thin
-provisioning target to be extended easily; allow WRITE SAME on
-multipath devices; an assortment of little fixes and clean-ups.
-
-----------------------------------------------------------------
-Alasdair G Kergon (3):
-      dm: document iterate_devices
-      dm cache policy: fix description of lookup fn
-      dm cache: move config fns
-
-Joe Thornber (12):
-      dm cache: tune migration throttling
-      dm persistent data: fix error message typos
-      dm cache: fix typos in comments
-      dm cache: replace memcpy with struct assignment
-      dm thin: refactor data dev resize
-      dm thin: open dev read only when possible
-      dm persistent data: support space map resizing
-      dm thin: detect metadata device resizing
-      dm persistent data: add threshold callback to space map
-      dm persistent metadata: add space map threshold callback
-      dm thin: generate event when metadata threshold passed
-      dm cache: set config value
-
-Mike Snitzer (3):
-      dm stripe: fix regression in stripe_width calculation
-      dm table: fix write same support
-      dm mpath: enable WRITE SAME support
-
-Mikulas Patocka (1):
-      dm bufio: avoid a possible __vmalloc deadlock
-
-Wei Yongjun (2):
-      dm cache: fix error return code in cache_create
-      dm snapshot: fix error return code in snapshot_ctr
-
- drivers/md/dm-bufio.c                              |   24 ++-
- drivers/md/dm-cache-metadata.c                     |    4 +-
- drivers/md/dm-cache-policy.h                       |    4 +-
- drivers/md/dm-cache-target.c                       |  100 +++++-----
- drivers/md/dm-mpath.c                              |    1 +
- drivers/md/dm-snap.c                               |    1 +
- drivers/md/dm-stripe.c                             |   11 +-
- drivers/md/dm-table.c                              |    2 +-
- drivers/md/dm-thin-metadata.c                      |   36 +++-
- drivers/md/dm-thin-metadata.h                      |    7 +
- drivers/md/dm-thin.c                               |  200 ++++++++++++++++----
- drivers/md/persistent-data/dm-space-map-disk.c     |    3 +-
- drivers/md/persistent-data/dm-space-map-metadata.c |  127 +++++++++++--
- drivers/md/persistent-data/dm-space-map.h          |   23 +++
- include/linux/device-mapper.h                      |   15 ++
- 15 files changed, 442 insertions(+), 116 deletions(-)
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index cbd97ce..4e3c439 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -213,6 +213,19 @@ void irq_enable(struct irq_desc *desc)
+ 	irq_state_clr_masked(desc);
+ }
+ 
++/**
++ * irq_disable - mask interupt disabled
++ * @desc:		irq descriptor which should be disabled
++ *
++ * If the chip does not implement the irq_disable callback, we
++ * use a lazy disable approach. That means we mark the interrupt
++ * disabled, but leave the hardware unmasked. That's an
++ * optimization because we avoid the hardware access for the
++ * common case where no interrupt happens after we marked it
++ * disabled. If an interrupt happens, then the interrupt flow
++ * handler masks the line at the hardware level and marks it
++ * pending.
++ */
+ void irq_disable(struct irq_desc *desc)
+ {
+ 	irq_state_set_disabled(desc);
+-- 
+1.7.10.4
 
