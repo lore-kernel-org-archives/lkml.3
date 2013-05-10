@@ -1,453 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab3EJALb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 20:11:31 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:50014 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab3EJALV (ORCPT
+	id S1756375Ab3EJAP4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 20:15:56 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53074 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755018Ab3EJAPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 20:11:21 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, kernel-team@android.com,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 1/3] ARM: Move some macros from entry-armv to entry-header
-Date: Thu,  9 May 2013 17:10:49 -0700
-Message-Id: <1368144651-11250-2-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1368144651-11250-1-git-send-email-john.stultz@linaro.org>
-References: <1368144651-11250-1-git-send-email-john.stultz@linaro.org>
+	Thu, 9 May 2013 20:15:55 -0400
+Date: Fri, 10 May 2013 10:15:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Helge Deller <deller@gmx.de>
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [GIT PULL] parisc updates for v3.10
+Message-Id: <20130510101548.d0a86e3587b6625c00dab7a5@canb.auug.org.au>
+In-Reply-To: <518C0788.8060200@gmx.de>
+References: <20130507221102.GA5338@p100.box>
+	<20130508113704.5ac23906e0e513b4a76d5b55@canb.auug.org.au>
+	<518C0788.8060200@gmx.de>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__10_May_2013_10_15_48_+1000_OTTyeGl_Nk04ggtG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
+--Signature=_Fri__10_May_2013_10_15_48_+1000_OTTyeGl_Nk04ggtG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Just move the macros into header file as we would want to use them for
-KGDB FIQ entry code.
+Hi Helge,
 
-The following macros were moved:
+On Thu, 09 May 2013 22:31:04 +0200 Helge Deller <deller@gmx.de> wrote:
+>
+> On 05/08/2013 03:37 AM, Stephen Rothwell wrote:
+> > On Wed, 8 May 2013 00:11:02 +0200 Helge Deller <deller@gmx.de> wrote:
+> >>
+> >> please pull the parisc architecture updates for v3.10 from:
+> >>
+> >>   git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.gi=
+t parisc-for-3.10
+> >=20
+> > Does this mean that the parisc tree I have in linux-next
+> > (git://git.kernel.org/pub/scm/linux/kernel/git/jejb/parisc-2.6.git#for-=
+next)
+> > is defunct?
+>=20
+> Not sure. It will be either James or me who will send pull requests...
+> Of course we will agree who of us will do that and from which tree.
+>=20
+> So, would it hurt if you add a second parisc tree for linux-next?
+> I've just created a "for-next" branch in my git repository:=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git#for=
+-next
 
- - svc_entry
- - usr_entry
- - kuser_cmpxchg_check
- - vector_stub
+I have no problem having both trees in linux-next (as long as you don't
+tread on each other's toes and cause merge problem too often :-)).
 
-To make kuser_cmpxchg_check actually work across different files, we
-also have to make kuser_cmpxchg64_fixup global.
+I have added your tree from today (noting that it is empty).  I have set
+you and the parisc mailing list as contacts.
 
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: kernel-team@android.com
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- arch/arm/kernel/entry-armv.S   | 169 +---------------------------------------
- arch/arm/kernel/entry-header.S | 171 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 172 insertions(+), 168 deletions(-)
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
 
-diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index 582b405..35b19cd 100644
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -136,57 +136,6 @@ common_invalid:
- 	b	bad_mode
- ENDPROC(__und_invalid)
- 
--/*
-- * SVC mode handlers
-- */
--
--#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5)
--#define SPFIX(code...) code
--#else
--#define SPFIX(code...)
--#endif
--
--	.macro	svc_entry, stack_hole=0
-- UNWIND(.fnstart		)
-- UNWIND(.save {r0 - pc}		)
--	sub	sp, sp, #(S_FRAME_SIZE + \stack_hole - 4)
--#ifdef CONFIG_THUMB2_KERNEL
-- SPFIX(	str	r0, [sp]	)	@ temporarily saved
-- SPFIX(	mov	r0, sp		)
-- SPFIX(	tst	r0, #4		)	@ test original stack alignment
-- SPFIX(	ldr	r0, [sp]	)	@ restored
--#else
-- SPFIX(	tst	sp, #4		)
--#endif
-- SPFIX(	subeq	sp, sp, #4	)
--	stmia	sp, {r1 - r12}
--
--	ldmia	r0, {r3 - r5}
--	add	r7, sp, #S_SP - 4	@ here for interlock avoidance
--	mov	r6, #-1			@  ""  ""      ""       ""
--	add	r2, sp, #(S_FRAME_SIZE + \stack_hole - 4)
-- SPFIX(	addeq	r2, r2, #4	)
--	str	r3, [sp, #-4]!		@ save the "real" r0 copied
--					@ from the exception stack
--
--	mov	r3, lr
--
--	@
--	@ We are now ready to fill in the remaining blanks on the stack:
--	@
--	@  r2 - sp_svc
--	@  r3 - lr_svc
--	@  r4 - lr_<exception>, already fixed up for correct return/restart
--	@  r5 - spsr_<exception>
--	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
--	@
--	stmia	r7, {r2 - r6}
--
--#ifdef CONFIG_TRACE_IRQFLAGS
--	bl	trace_hardirqs_off
--#endif
--	.endm
--
- 	.align	5
- __dabt_svc:
- 	svc_entry
-@@ -305,72 +254,7 @@ ENDPROC(__pabt_svc)
- 
- /*
-  * User mode handlers
-- *
-- * EABI note: sp_svc is always 64-bit aligned here, so should S_FRAME_SIZE
-  */
--
--#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5) && (S_FRAME_SIZE & 7)
--#error "sizeof(struct pt_regs) must be a multiple of 8"
--#endif
--
--	.macro	usr_entry
-- UNWIND(.fnstart	)
-- UNWIND(.cantunwind	)	@ don't unwind the user space
--	sub	sp, sp, #S_FRAME_SIZE
-- ARM(	stmib	sp, {r1 - r12}	)
-- THUMB(	stmia	sp, {r0 - r12}	)
--
--	ldmia	r0, {r3 - r5}
--	add	r0, sp, #S_PC		@ here for interlock avoidance
--	mov	r6, #-1			@  ""  ""     ""        ""
--
--	str	r3, [sp]		@ save the "real" r0 copied
--					@ from the exception stack
--
--	@
--	@ We are now ready to fill in the remaining blanks on the stack:
--	@
--	@  r4 - lr_<exception>, already fixed up for correct return/restart
--	@  r5 - spsr_<exception>
--	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
--	@
--	@ Also, separately save sp_usr and lr_usr
--	@
--	stmia	r0, {r4 - r6}
-- ARM(	stmdb	r0, {sp, lr}^			)
-- THUMB(	store_user_sp_lr r0, r1, S_SP - S_PC	)
--
--	@
--	@ Enable the alignment trap while in kernel mode
--	@
--	alignment_trap r0
--
--	@
--	@ Clear FP to mark the first stack frame
--	@
--	zero_fp
--
--#ifdef CONFIG_IRQSOFF_TRACER
--	bl	trace_hardirqs_off
--#endif
--	ct_user_exit save = 0
--	.endm
--
--	.macro	kuser_cmpxchg_check
--#if !defined(CONFIG_CPU_32v6K) && !defined(CONFIG_NEEDS_SYSCALL_FOR_CMPXCHG)
--#ifndef CONFIG_MMU
--#warning "NPTL on non MMU needs fixing"
--#else
--	@ Make sure our user space atomic helper is restarted
--	@ if it was interrupted in a critical region.  Here we
--	@ perform a quick test inline since it should be false
--	@ 99.9999% of the time.  The rest is done out of line.
--	cmp	r4, #TASK_SIZE
--	blhs	kuser_cmpxchg64_fixup
--#endif
--#endif
--	.endm
--
- 	.align	5
- __dabt_usr:
- 	usr_entry
-@@ -803,6 +687,7 @@ __kuser_cmpxchg64:				@ 0xffff0f60
- 	ldmfd	sp!, {r4, r5, r6, pc}
- 
- 	.text
-+	.global kuser_cmpxchg64_fixup
- kuser_cmpxchg64_fixup:
- 	@ Called from kuser_cmpxchg_fixup.
- 	@ r4 = address of interrupted insn (must be preserved).
-@@ -933,58 +818,6 @@ __kuser_helper_end:
- 
-  THUMB(	.thumb	)
- 
--/*
-- * Vector stubs.
-- *
-- * This code is copied to 0xffff0200 so we can use branches in the
-- * vectors, rather than ldr's.  Note that this code must not
-- * exceed 0x300 bytes.
-- *
-- * Common stub entry macro:
-- *   Enter in IRQ mode, spsr = SVC/USR CPSR, lr = SVC/USR PC
-- *
-- * SP points to a minimal amount of processor-private memory, the address
-- * of which is copied into r0 for the mode specific abort handler.
-- */
--	.macro	vector_stub, name, mode, correction=0
--	.align	5
--
--vector_\name:
--	.if \correction
--	sub	lr, lr, #\correction
--	.endif
--
--	@
--	@ Save r0, lr_<exception> (parent PC) and spsr_<exception>
--	@ (parent CPSR)
--	@
--	stmia	sp, {r0, lr}		@ save r0, lr
--	mrs	lr, spsr
--	str	lr, [sp, #8]		@ save spsr
--
--	@
--	@ Prepare for SVC32 mode.  IRQs remain disabled.
--	@
--	mrs	r0, cpsr
--	eor	r0, r0, #(\mode ^ SVC_MODE | PSR_ISETSTATE)
--	msr	spsr_cxsf, r0
--
--	@
--	@ the branch table must immediately follow this code
--	@
--	and	lr, lr, #0x0f
-- THUMB(	adr	r0, 1f			)
-- THUMB(	ldr	lr, [r0, lr, lsl #2]	)
--	mov	r0, sp
-- ARM(	ldr	lr, [pc, lr, lsl #2]	)
--	movs	pc, lr			@ branch to handler in SVC mode
--ENDPROC(vector_\name)
--
--	.align	2
--	@ handler addresses follow this label
--1:
--	.endm
--
- 	.globl	__stubs_start
- __stubs_start:
- /*
-diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
-index 160f337..41de38b 100644
---- a/arch/arm/kernel/entry-header.S
-+++ b/arch/arm/kernel/entry-header.S
-@@ -73,6 +73,109 @@
- 	msr	cpsr_c, \rtemp			@ switch back to the SVC mode
- 	.endm
- 
-+/*
-+ * Vector stubs.
-+ *
-+ * This code is copied to 0xffff0200 so we can use branches in the
-+ * vectors, rather than ldr's.  Note that this code must not
-+ * exceed 0x300 bytes.
-+ *
-+ * Common stub entry macro:
-+ *   Enter in IRQ mode, spsr = SVC/USR CPSR, lr = SVC/USR PC
-+ *
-+ * SP points to a minimal amount of processor-private memory, the address
-+ * of which is copied into r0 for the mode specific abort handler.
-+ */
-+	.macro	vector_stub, name, mode, correction=0
-+	.align	5
-+
-+vector_\name:
-+	.if \correction
-+	sub	lr, lr, #\correction
-+	.endif
-+
-+	@
-+	@ Save r0, lr_<exception> (parent PC) and spsr_<exception>
-+	@ (parent CPSR)
-+	@
-+	stmia	sp, {r0, lr}		@ save r0, lr
-+	mrs	lr, spsr
-+	str	lr, [sp, #8]		@ save spsr
-+
-+	@
-+	@ Prepare for SVC32 mode.  IRQs remain disabled.
-+	@
-+	mrs	r0, cpsr
-+	eor	r0, r0, #(\mode ^ SVC_MODE | PSR_ISETSTATE)
-+	msr	spsr_cxsf, r0
-+
-+	@
-+	@ the branch table must immediately follow this code
-+	@
-+	and	lr, lr, #0x0f
-+ THUMB(	adr	r0, 1f			)
-+ THUMB(	ldr	lr, [r0, lr, lsl #2]	)
-+	mov	r0, sp
-+ ARM(	ldr	lr, [pc, lr, lsl #2]	)
-+	movs	pc, lr			@ branch to handler in SVC mode
-+ENDPROC(vector_\name)
-+
-+	.align	2
-+	@ handler addresses follow this label
-+1:
-+	.endm
-+
-+/*
-+ * SVC mode handlers
-+ */
-+
-+#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5)
-+#define SPFIX(code...) code
-+#else
-+#define SPFIX(code...)
-+#endif
-+
-+	.macro	svc_entry, stack_hole=0
-+ UNWIND(.fnstart		)
-+ UNWIND(.save {r0 - pc}		)
-+	sub	sp, sp, #(S_FRAME_SIZE + \stack_hole - 4)
-+#ifdef CONFIG_THUMB2_KERNEL
-+ SPFIX(	str	r0, [sp]	)	@ temporarily saved
-+ SPFIX(	mov	r0, sp		)
-+ SPFIX(	tst	r0, #4		)	@ test original stack alignment
-+ SPFIX(	ldr	r0, [sp]	)	@ restored
-+#else
-+ SPFIX(	tst	sp, #4		)
-+#endif
-+ SPFIX(	subeq	sp, sp, #4	)
-+	stmia	sp, {r1 - r12}
-+
-+	ldmia	r0, {r3 - r5}
-+	add	r7, sp, #S_SP - 4	@ here for interlock avoidance
-+	mov	r6, #-1			@  ""  ""      ""       ""
-+	add	r2, sp, #(S_FRAME_SIZE + \stack_hole - 4)
-+ SPFIX(	addeq	r2, r2, #4	)
-+	str	r3, [sp, #-4]!		@ save the "real" r0 copied
-+					@ from the exception stack
-+
-+	mov	r3, lr
-+
-+	@
-+	@ We are now ready to fill in the remaining blanks on the stack:
-+	@
-+	@  r2 - sp_svc
-+	@  r3 - lr_svc
-+	@  r4 - lr_<exception>, already fixed up for correct return/restart
-+	@  r5 - spsr_<exception>
-+	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
-+	@
-+	stmia	r7, {r2 - r6}
-+
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	bl	trace_hardirqs_off
-+#endif
-+	.endm
-+
- #ifndef CONFIG_THUMB2_KERNEL
- 	.macro	svc_exit, rpsr, irq = 0
- 	.if	\irq != 0
-@@ -226,6 +329,74 @@
- 	.endm
- 
- /*
-+ * User mode handlers
-+ *
-+ * EABI note: sp_svc is always 64-bit aligned here, so should S_FRAME_SIZE
-+ */
-+
-+#if defined(CONFIG_AEABI) && (__LINUX_ARM_ARCH__ >= 5) && (S_FRAME_SIZE & 7)
-+#error "sizeof(struct pt_regs) must be a multiple of 8"
-+#endif
-+
-+	.macro	usr_entry
-+ UNWIND(.fnstart	)
-+ UNWIND(.cantunwind	)	@ don't unwind the user space
-+	sub	sp, sp, #S_FRAME_SIZE
-+ ARM(	stmib	sp, {r1 - r12}	)
-+ THUMB(	stmia	sp, {r0 - r12}	)
-+
-+	ldmia	r0, {r3 - r5}
-+	add	r0, sp, #S_PC		@ here for interlock avoidance
-+	mov	r6, #-1			@  ""  ""     ""        ""
-+
-+	str	r3, [sp]		@ save the "real" r0 copied
-+					@ from the exception stack
-+
-+	@
-+	@ We are now ready to fill in the remaining blanks on the stack:
-+	@
-+	@  r4 - lr_<exception>, already fixed up for correct return/restart
-+	@  r5 - spsr_<exception>
-+	@  r6 - orig_r0 (see pt_regs definition in ptrace.h)
-+	@
-+	@ Also, separately save sp_usr and lr_usr
-+	@
-+	stmia	r0, {r4 - r6}
-+ ARM(	stmdb	r0, {sp, lr}^			)
-+ THUMB(	store_user_sp_lr r0, r1, S_SP - S_PC	)
-+
-+	@
-+	@ Enable the alignment trap while in kernel mode
-+	@
-+	alignment_trap r0
-+
-+	@
-+	@ Clear FP to mark the first stack frame
-+	@
-+	zero_fp
-+
-+#ifdef CONFIG_IRQSOFF_TRACER
-+	bl	trace_hardirqs_off
-+#endif
-+	ct_user_exit save = 0
-+	.endm
-+
-+	.macro	kuser_cmpxchg_check
-+#if !defined(CONFIG_CPU_32v6K) && !defined(CONFIG_NEEDS_SYSCALL_FOR_CMPXCHG)
-+#ifndef CONFIG_MMU
-+#warning "NPTL on non MMU needs fixing"
-+#else
-+	@ Make sure our user space atomic helper is restarted
-+	@ if it was interrupted in a critical region.  Here we
-+	@ perform a quick test inline since it should be false
-+	@ 99.9999% of the time.  The rest is done out of line.
-+	cmp	r4, #TASK_SIZE
-+	blhs	kuser_cmpxchg64_fixup
-+#endif
-+#endif
-+	.endm
-+
-+/*
-  * These are the registers used in the syscall handler, and allow us to
-  * have in theory up to 7 arguments to a function - r0 to r6.
-  *
--- 
-1.8.1.2
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
 
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
+
+--Signature=_Fri__10_May_2013_10_15_48_+1000_OTTyeGl_Nk04ggtG
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRjDw0AAoJEECxmPOUX5FE7GYQAJ9uhRtL/H2p9LanhevjS9jU
+dx7UIq3fAeBcpOw/YI0ydnkiIzEaatCAcBFfRH1nZY6Pq8kaNr6FohT+wpqVDK4D
+Yfa0DriDgjhGqZ+qfxZ9kBMeQMeSdE0FlpzsPpaLsPDYLLfJ1h3Sa+TWlnDV2j3n
+YlXAN+AgZIzPU+3Dqy7s5JwRS4K80NqFl0ZnD3Mj4E0rwmIpPM+d703fnjYLzcqY
+3XRepwp+h0FzS4++JALr1NC1p+ZW66oE0LatjICIUIGA9ghaWJQz5Dw0GjQJczV7
+RpWzAEUCgPEVKXMEpQXeZZPS18Uyr1GThyUSv5AofcpYmyKWBqR2Lm74xtbSh1ms
+YNo8yd+locCvI4J89HAc8BucFreMlWfQFVuwdxs54x5mSsMjLtmBpmSV1b0ILxkN
+bXq48gauc+xQupTC3a7QRNPxzUJb55OfUsM6h6Pr4tBTLKD2kSAd9tkXiA84XhZL
+WIR+xq0S6JmMJ6cEEWzG7a1Al9TV+mA4KeZsyBzT2j5BlmMI0cLeFgIOO159JFtW
+SAb5hU3LF1Sp77fhVa2jos40zAICGRsTwtry/FAYJcBAzy4nLfyFjjtEMurEA2E/
+18V/SmBdspBHvNHD5oNvEBeRqi/3eCZ5tDkTFUp74V4HFu4NlFIAsRgWmeJL/KaN
+FUr+P5qDHMq4O85FPBgc
+=4/iM
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__10_May_2013_10_15_48_+1000_OTTyeGl_Nk04ggtG--
