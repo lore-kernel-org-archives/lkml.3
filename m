@@ -1,93 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab3EJNYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 09:24:08 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:41409 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab3EJNYH (ORCPT
+	id S1753358Ab3EJNYm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 09:24:42 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:59078 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271Ab3EJNYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 09:24:07 -0400
-Message-ID: <518CF4D5.4070000@oracle.com>
-Date: Fri, 10 May 2013 09:23:33 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130429 Thunderbird/17.0.5
+	Fri, 10 May 2013 09:24:41 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: torvalds@linux-foundation.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/9] liblockdep: Wrap kernel/lockdep.c to allow usage
- from userspace
-References: <1368115089-8909-1-git-send-email-sasha.levin@oracle.com> <1368115089-8909-3-git-send-email-sasha.levin@oracle.com> <20130510091816.GC3039@dyad.programming.kicks-ass.net> <20130510101131.GA31152@dyad.programming.kicks-ass.net>
-In-Reply-To: <20130510101131.GA31152@dyad.programming.kicks-ass.net>
+In-Reply-To: <alpine.LFD.2.02.1305032015060.2990@ionos>
+References: <20130430212007.GB18598@redhat.com>
+	<20130430213719.GA14988@redhat.com>
+	<alpine.LFD.2.02.1305021234510.3972@ionos>
+	<20130502154621.GA23990@redhat.com>
+	<alpine.LFD.2.02.1305022152280.2891@ionos>
+	<CAE9FiQXpV451xTzAJyNdC-+-oqF9v8Cy5evcNOHKFffERw2SwA@mail.gmail.com>
+	<alpine.LFD.2.02.1305022304370.2891@ionos>
+	<CAE9FiQWFK_ropzW_qQLcNxLYyek8-PHGW-8SxfZJSijvdrss1A@mail.gmail.com>
+	<alpine.LFD.2.02.1305022337470.2891@ionos>
+	<20130503144912.GB1283@redhat.com>
+	<alpine.LFD.2.02.1305032015060.2990@ionos>
+Date: Fri, 10 May 2013 09:24:40 -0400
+Message-ID: <CA+5PVA47O+chNZ6fFHMMK+kkqzzYZaXKOXZoZmdX9TSg19dc+w@mail.gmail.com>
+Subject: Re: clockevents_program_event WARN_ON preventing boot.
+From: Josh Boyer <jwboyer@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2013 06:11 AM, Peter Zijlstra wrote:
-> On Fri, May 10, 2013 at 11:18:16AM +0200, Peter Zijlstra wrote:
->> On Thu, May 09, 2013 at 11:58:02AM -0400, Sasha Levin wrote:
->>> kernel/lockdep.c deals with validating locking scenarios for
->>> various architectures supported by the kernel. There isn't
->>> anything kernel specific going on in lockdep, and when we
->>> compare userspace to other architectures that don't have to deal
->>> with irqs such as s390, they become all too similar.
->>>
->>> We wrap kernel/lockdep.c and include/linux/lockdep.h with
->>> several headers which allow us to build and use lockdep from
->>> userspace. We don't touch the kernel code itself which means
->>> that any work done on lockdep in the kernel will automatically
->>> benefit userspace lockdep as well!
->>>
->>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->>> ---
+On Fri, May 3, 2013 at 2:32 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Fri, 3 May 2013, Dave Jones wrote:
+>> On Fri, May 03, 2013 at 12:49:20AM +0200, Thomas Gleixner wrote:
 >>
->> OK, this patch is a complete fail with anything not git. Please fix it so I can
->> use quilt.
-> 
-> So I tried patch --posix; but that makes patch unhappy too:
-> 
-> |--- /dev/null
-> |+++ b/tools/lib/lockdep/Makefile
-> --------------------------
-> No file to patch.  Skipping patch.
-> out of 1 hunk ignored
-> can't find file to patch at input line 393
-> Perhaps you used the wrong -p or --strip option?
-> 
-> And while patch has a --remove-empty-files it does not recognise
-> --no-remove-empty-files :/
-> 
-> I briefly read a thread from the git mailing list where Linus and others
-> discussed the various weirdness around empty files and the take away was that
-> git would act differently by default. Because as Linus put it: "patch" is a
-> total piece of utterly unbelievable SH*T. 
-> 
-> However, aside from different behaviour I don't think its that nice git-diff
-> creates patches that patch cannot possibly apply right...
+>>  > I'm fundamentally confused and Daves observation about slub debug does
+>>  > not make it less confusing.
+>>  >
+>>  > It'd be nice if you could add some more instrumentation or bisect the
+>>  > issue.
+>>
+>> Here's what I ended up with..
+>> b352bc1cbc29134a356b5c16ee2281807a7b984e is the first bad commit
+>> commit b352bc1cbc29134a356b5c16ee2281807a7b984e
+>> Author: Thomas Gleixner <tglx@linutronix.de>
+>> Date:   Tue Mar 5 14:25:32 2013 +0100
+>>
+>>     tick: Convert broadcast cpu bitmaps to cpumask_var_t
+>>
+>>     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+>>     Link: http://lkml.kernel.org/r/20130306111537.366394000@linutronix.de
+>>     Cc: Rusty Russell <rusty@rustcorp.com.au>
+>>
+>
+> I bet you have CONFIG_CPUMASK_OFFSTACK enabled.
+>
+> /me is a moron and rumages for a brown paperbag.
+>
+> Patch below.
+>
+> Thanks,
+>
+>         tglx
+>
+> ------------>
+>
+> Subject: tick: Use zalloc_cpumask_var for allocating offstack cpumasks
+> From: Thomas Gleixner <tglx@linutronix.de>
+> Date: Fri, 03 May 2013 20:22:36 +0200
+>
+> commit b352bc1cbc (tick: Convert broadcast cpu bitmaps to
+> cpumask_var_t) broke CONFIG_CPUMASK_OFFSTACK in a very subtle way.
+>
+> Instead of allocating the cpumasks with zalloc_cpumask_var it uses
+> alloc_cpumask_var, so we can get random data there, which of course
+> confuses the logic completely and causes random failures.
+>
+> Reported-by: Dave Jones <davej@redhat.com>
+> Reported-by: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Wait, I'm confused. Over here, patch is fine with creating empty files:
+This still isn't in Linus' tree and it fixes boot issues on a number
+of different machine types.  Is it queued up anywhere?  Hoping it gets
+into 3.10-rc1.
 
-lappy lockdep # touch test.c
-lappy lockdep # git diff /dev/null test.c > test.patch
-lappy lockdep # rm test.c
-lappy lockdep # file test.c
-test.c: ERROR: cannot open `test.c' (No such file or directory)
-lappy lockdep # patch -i test.patch
-patching file test.c
-lappy lockdep # file test.c
-test.c: empty
-lappy lockdep # cat test.patch
-diff --git a/tools/lib/lockdep/test.c b/tools/lib/lockdep/test.c
-new file mode 100644
-index 0000000..e69de29
-lappy lockdep #
+josh
 
-So it seems that here patch would cleanly create empty files, what does quilt
-do differently?
-
-
-Thanks,
-Sasha
+> ---
+>  kernel/time/tick-broadcast.c |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+>
+> Index: linux-2.6/kernel/time/tick-broadcast.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/time/tick-broadcast.c
+> +++ linux-2.6/kernel/time/tick-broadcast.c
+> @@ -785,11 +785,11 @@ bool tick_broadcast_oneshot_available(vo
+>
+>  void __init tick_broadcast_init(void)
+>  {
+> -       alloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
+> -       alloc_cpumask_var(&tmpmask, GFP_NOWAIT);
+> +       zalloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
+> +       zalloc_cpumask_var(&tmpmask, GFP_NOWAIT);
+>  #ifdef CONFIG_TICK_ONESHOT
+> -       alloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
+> -       alloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
+> -       alloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
+> +       zalloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
+> +       zalloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
+> +       zalloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
+>  #endif
+>  }
