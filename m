@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab3EJONd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:13:33 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:39726 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232Ab3EJONc (ORCPT
+	id S1753504Ab3EJOOD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:14:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41273 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab3EJOOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:13:32 -0400
+	Fri, 10 May 2013 10:14:02 -0400
+Date: Fri, 10 May 2013 16:12:27 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: torvalds@linux-foundation.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/9] liblockdep: Wrap kernel/lockdep.c to allow usage
+ from userspace
+Message-ID: <20130510141227.GD304@dyad.programming.kicks-ass.net>
+References: <1368115089-8909-1-git-send-email-sasha.levin@oracle.com>
+ <1368115089-8909-3-git-send-email-sasha.levin@oracle.com>
+ <20130510091816.GC3039@dyad.programming.kicks-ass.net>
+ <20130510101131.GA31152@dyad.programming.kicks-ass.net>
+ <518CF4D5.4070000@oracle.com>
+ <20130510140328.GC304@dyad.programming.kicks-ass.net>
+ <518CFFF5.2060807@oracle.com>
 MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-Date: Fri, 10 May 2013 16:13:30 +0200
-Message-ID: <CAJfpegtADAJ+7-DiFvrgWU1N5Fsd_CCQryT0mpx6VOJ=8ikKsA@mail.gmail.com>
-Subject: Mount failure due to restricted access to a point along the mount path
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: linux-cifs@vger.kernel.org
-Cc: Steve French <smfrench@gmail.com>, Jeff Layton <jlayton@redhat.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        sjayaraman@novell.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <518CFFF5.2060807@oracle.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, May 10, 2013 at 10:11:01AM -0400, Sasha Levin wrote:
+> Ah!
+> 
+> # patch --version
+> GNU patch 2.7.1
 
-A while ago this was discussed:
-
-  http://thread.gmane.org/gmane.linux.kernel.cifs/7779
-
-This is essentially a regression introduced by the shared superblock
-changes in 3.0 and several SUSE customers are complaining about it.
-I've created a temporary fix which reverts 29 commits related to the
-shared superblock changes.  It works, but it's obviously not a
-permanent fix, especially since we definitely don't want to diverge
-from mainline.
-
-Is this issue being worked on?  Don't other distros have similar reports?
-
-Thanks,
-Miklos
+I suppose I'd better go find me a fresher patch then! :-)
