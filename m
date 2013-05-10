@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab3EJBew (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 21:34:52 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46191 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644Ab3EJBev (ORCPT
+	id S1755012Ab3EJBkS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 21:40:18 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:46429 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644Ab3EJBkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 21:34:51 -0400
-X-AuditID: 9c93016f-b7ba0ae000004cc2-68-518c4eb9b32f
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/9] perf tools: Add precise object to interface sysfs precise
-References: <1368106344-23383-1-git-send-email-jolsa@redhat.com>
-	<1368106344-23383-3-git-send-email-jolsa@redhat.com>
-Date: Fri, 10 May 2013 10:34:49 +0900
-In-Reply-To: <1368106344-23383-3-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Thu, 9 May 2013 15:32:17 +0200")
-Message-ID: <87bo8j7h3a.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 9 May 2013 21:40:16 -0400
+Message-ID: <518C4FFD.1090404@hitachi.com>
+Date: Fri, 10 May 2013 10:40:13 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
+Subject: Re: [PATCH 02/11] [BUGFIX] ftrace, kprobes: Fix a deadlock on ftrace_regex_lock
+References: <20130509054405.30398.73831.stgit@mhiramat-M0-7522>  <20130509054417.30398.84254.stgit@mhiramat-M0-7522>  <1368116860.7373.118.camel@gandalf.local.home>  <1368117277.7373.119.camel@gandalf.local.home> <1368119312.7373.123.camel@gandalf.local.home>
+In-Reply-To: <1368119312.7373.123.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+(2013/05/10 2:08), Steven Rostedt wrote:
+> On Thu, 2013-05-09 at 12:34 -0400, Steven Rostedt wrote:
+>> On Thu, 2013-05-09 at 12:27 -0400, Steven Rostedt wrote:
+>>
+>>> We probably should have a better way to initialize this. As there are 26
+>>> ftrace_ops currently in the kernel (and this patch doesn't cover all of
+>>> them). Maybe have the first time its registered to initialize it.
 
-On Thu,  9 May 2013 15:32:17 +0200, Jiri Olsa wrote:
-> Adding precise util object to get maximum value for
-> perf_event_attr::precise_ip. The value is exported
-> via sysfs file '/sys/devices/cpu/precise'.
->
-> The interface is:
->   int perf_precise__get(void)
+Oh, I missed many of them :(
 
-I think Arnaldo wants to use double underscores to separate the name of
-data struct and method name.  So wouldn't it be more appropriate using
-one of perf_precise_get() or perf_get_precise()?
+>> Crap, but it can be used before that. Hmm, I guess all ftrace functions
+>> will need to check that flag first. We do something similar for rt_mutex
+>> in -rt.
+> 
+> I added this on top of your patch. I kept the INIT_REGEX_LOCK as it's
+> only local to ftrace.c and wont spread further. Also, the
+> ftrace_list_end ftrace_ops is just a place holder (needed for race
+> conditions that can have function tracers call its stub), so it does not
+> need to be initialized. If anything tries to grab its mutex, that's a
+> bug anyway.
+> 
+> What do you think?
 
-Thanks,
-Namhyung
+Hmm, would we really need to have the additional flag?
+I mean, do we better force ftrace user to use ftrace_ops_init before
+calling such functions as mutex itself does?
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
