@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451Ab3EJUMm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 16:12:42 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:53646 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918Ab3EJUMk (ORCPT
+	id S1754542Ab3EJUVG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 16:21:06 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:47240 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753380Ab3EJUVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 16:12:40 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: plat-orion: add missing ehci include to common.h
-Date: Fri, 10 May 2013 22:12:27 +0200
-Message-Id: <1368216747-28898-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 10 May 2013 16:21:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <51818334.7020201@fold.natur.cuni.cz>
+References: <51818334.7020201@fold.natur.cuni.cz>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 10 May 2013 14:20:41 -0600
+Message-ID: <CAErSpo4x4Y3sJdvaYyTXT1pPAehrnD5ExA+qzpgkbNiqiU2yVA@mail.gmail.com>
+Subject: Re: 3.9-linux-next-20130501: OOPS in intel_pstate_sample
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Toshi Kani <toshi.kani@hp.com>, Viresh Kumar <viresh.kumar@linaro.org>,
+        cpufreq@vger.kernel.org,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing orion ehci include from board files will raise a compiler
-error because plat/common.h is using an enum provided by orion ehci
-but not including the include itself. This just adds the missing include.
+[+cc Viresh, Srinivas, Dirk, cpufreq list]
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/plat-orion/include/plat/common.h |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/plat-orion/include/plat/common.h b/arch/arm/plat-orion/include/plat/common.h
-index e06fc5f..d9a24f6 100644
---- a/arch/arm/plat-orion/include/plat/common.h
-+++ b/arch/arm/plat-orion/include/plat/common.h
-@@ -10,6 +10,7 @@
- 
- #ifndef __PLAT_COMMON_H
- #include <linux/mv643xx_eth.h>
-+#include <linux/platform_data/usb-ehci-orion.h>
- 
- struct dsa_platform_data;
- struct mv_sata_platform_data;
--- 
-1.7.10.4
-
+On Wed, May 1, 2013 at 3:03 PM, Martin Mokrejs
+<mmokrejs@fold.natur.cuni.cz> wrote:
+> Hi,
+>   I opened yet another bug https://bugzilla.kernel.org/show_bug.cgi?id=57411 .
+>
+> This is maybe a dupe of bug https://bugzilla.kernel.org/show_bug.cgi?id=57401
+> (which is vanilla 3.9) but happened on linux-next-20130501 after I did "dmesg | less".
+>
+> ? pid_param_set
+> intel_pstate_timer_func
+> call_timer_fn
+> ? __internal_add_timer
+> ? pid_param_set
+> run_timer_softirq
+> __do_softirq
+> irq_exit
+> smp_apic_timer_interrupt
+> apic_timer_interrupt
+> ? sysret_check
+>
+> A camera picture of the stacktrace is attached to the bug https://bugzilla.kernel.org/show_bug.cgi?id=57411
+> Please forward this to the appropriate person.
+> Thanks,
+> Martin
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
