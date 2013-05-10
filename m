@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab3EJOV4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:21:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57253 "EHLO
+	id S1756305Ab3EJOWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:22:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57311 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755601Ab3EJOVy (ORCPT
+	by vger.kernel.org with ESMTP id S1756065Ab3EJOWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:21:54 -0400
+	Fri, 10 May 2013 10:22:04 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Peter Verthez" <peter.verthez@skynet.be>,
-        "Daniel Vetter" <daniel.vetter@ffwll.ch>,
-        "Jani Nikula" <jani.nikula@intel.com>
+CC: akpm@linux-foundation.org, "Frederic Weisbecker" <fweisbec@gmail.com>,
+        "Steven Rostedt" <rostedt@goodmis.org>,
+        "Namhyung Kim" <namhyung.kim@lge.com>,
+        "Namhyung Kim" <namhyung@kernel.org>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.21785252@decadent.org.uk>
+Message-ID: <lsq.1368193181.252602522@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [041/118] drm/i915: ensure single initialization and cleanup of
- backlight device
+Subject: [027/118] tracing: Check return value of tracing_init_dentry()
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,88 +33,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-commit dc652f90e088798bfa31f496ba994ddadd5d5680 upstream.
+commit ed6f1c996bfe4b6e520cf7a74b51cd6988d84420 upstream.
 
-Backlight cleanup in the eDP connector destroy callback caused the
-backlight device to be removed on some systems that first initialized LVDS
-and then attempted to initialize eDP. Prevent multiple backlight
-initializations, and ensure backlight cleanup is only done once by moving
-it to modeset cleanup.
+Check return value and bail out if it's NULL.
 
-A small wrinkle is the introduced asymmetry in backlight
-setup/cleanup. This could be solved by adding refcounting, but it seems
-overkill considering that there should only ever be one backlight device.
+Link: http://lkml.kernel.org/r/1365553093-10180-2-git-send-email-namhyung@kernel.org
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=55701
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Tested-by: Peter Verthez <peter.verthez@skynet.be>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2:
- - Adjust context
- - s/dev_priv->backlight\.device/dev_priv->backlight/]
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9093,6 +9093,9 @@ void intel_modeset_cleanup(struct drm_de
- 	del_timer_sync(&dev_priv->idle_timer);
- 	cancel_work_sync(&dev_priv->idle_work);
+ kernel/trace/trace.c       |    2 ++
+ kernel/trace/trace_stack.c |    2 ++
+ kernel/trace/trace_stat.c  |    2 ++
+ 3 files changed, 6 insertions(+)
+
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4563,6 +4563,8 @@ static __init int tracer_init_debugfs(vo
+ 	trace_access_lock_init();
  
-+	/* destroy backlight, if any, before the connectors */
-+	intel_panel_destroy_backlight(dev);
-+
- 	drm_mode_config_cleanup(dev);
- }
+ 	d_tracer = tracing_init_dentry();
++	if (!d_tracer)
++		return 0;
  
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -2274,11 +2274,6 @@ done:
- static void
- intel_dp_destroy(struct drm_connector *connector)
- {
--	struct drm_device *dev = connector->dev;
--
--	if (intel_dpd_is_edp(dev))
--		intel_panel_destroy_backlight(dev);
--
- 	drm_sysfs_connector_remove(connector);
- 	drm_connector_cleanup(connector);
- 	kfree(connector);
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -553,8 +553,6 @@ static void intel_lvds_destroy(struct dr
- 	struct drm_device *dev = connector->dev;
- 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	trace_create_file("tracing_enabled", 0644, d_tracer,
+ 			&global_trace, &tracing_ctrl_fops);
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -411,6 +411,8 @@ static __init int stack_trace_init(void)
+ 	struct dentry *d_tracer;
  
--	intel_panel_destroy_backlight(dev);
--
- 	if (dev_priv->lid_notifier.notifier_call)
- 		acpi_lid_notifier_unregister(&dev_priv->lid_notifier);
- 	drm_sysfs_connector_remove(connector);
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -361,6 +361,9 @@ int intel_panel_setup_backlight(struct d
+ 	d_tracer = tracing_init_dentry();
++	if (!d_tracer)
++		return 0;
  
- 	intel_panel_init_backlight(dev);
+ 	trace_create_file("stack_max_size", 0644, d_tracer,
+ 			&max_stack_size, &stack_max_size_fops);
+--- a/kernel/trace/trace_stat.c
++++ b/kernel/trace/trace_stat.c
+@@ -307,6 +307,8 @@ static int tracing_stat_init(void)
+ 	struct dentry *d_tracing;
  
-+	if (WARN_ON(dev_priv->backlight))
-+		return -ENODEV;
-+
- 	if (dev_priv->int_lvds_connector)
- 		connector = dev_priv->int_lvds_connector;
- 	else if (dev_priv->int_edp_connector)
-@@ -388,8 +391,10 @@ int intel_panel_setup_backlight(struct d
- void intel_panel_destroy_backlight(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
--	if (dev_priv->backlight)
-+	if (dev_priv->backlight) {
- 		backlight_device_unregister(dev_priv->backlight);
-+		dev_priv->backlight = NULL;
-+	}
- }
- #else
- int intel_panel_setup_backlight(struct drm_device *dev)
+ 	d_tracing = tracing_init_dentry();
++	if (!d_tracing)
++		return 0;
+ 
+ 	stat_dir = debugfs_create_dir("trace_stat", d_tracing);
+ 	if (!stat_dir)
 
