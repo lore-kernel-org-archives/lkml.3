@@ -1,118 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757073Ab3EJBCO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 21:02:14 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:47579 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755068Ab3EJBCM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 21:02:12 -0400
-Message-ID: <518C46F0.6060507@huawei.com>
-Date: Fri, 10 May 2013 09:01:36 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1757364Ab3EJBCl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 21:02:41 -0400
+Received: from blu0-omc3-s13.blu0.hotmail.com ([65.55.116.88]:53310 "EHLO
+	blu0-omc3-s13.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756350Ab3EJBCk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 21:02:40 -0400
+X-Greylist: delayed 367 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 May 2013 21:02:40 EDT
+X-EIP: [ershPQU0Ut08iln4MpaS5J82exYYk0RN]
+X-Originating-Email: [yuhongbao_386@hotmail.com]
+Message-ID: <BLU177-W3584FC3A1BE197A6E3EA63C3A50@phx.gbl>
+From: Yuhong Bao <yuhongbao_386@hotmail.com>
+To: Luke Kenneth Casson Leighton <lkcl@lkcl.net>,
+        Robert Hancock <hancockrwd@gmail.com>
+CC: David Goodenough <david.goodenough@btconnect.com>,
+        "debian-arm@lists.debian.org" <debian-arm@lists.debian.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>
+Subject: RE: device tree not the answer in the ARM world [was: Re: running
+ Debian on a Cubieboard]
+Date: Thu, 9 May 2013 18:00:36 -0700
+Importance: Normal
+In-Reply-To: <BLU177-W3979760AA80426B3FF12DAC3A50@phx.gbl>
+References: <CAPweEDym3TSEKWB1PsRWZ77irkTPF-Qdm9nRGfRBrv72CQ8zJA@mail.gmail.com>,<51872CF6.5070409@gmail.com>,<CAPweEDz-Zp91zLG2H_bdj_Z5BSgKaXj6Hc8+OOp1_6Cm01xrFA@mail.gmail.com>,<BLU177-W3979760AA80426B3FF12DAC3A50@phx.gbl>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-CC: Libo Chen <libo.chen@huawei.com>, "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "lizefan@huawei.com" <lizefan@huawei.com>
-Subject: Re: [PATCH v2 1/2] i2c: i2c-bfin-twi: don`t free peripheral before
- it init successful
-References: <1368088044-20408-1-git-send-email-libo.chen@huawei.com> <1368088044-20408-2-git-send-email-libo.chen@huawei.com> <B168F8A49F4BCF4C84FD23DA5F6363EEAD57@NWD2MBX7.ad.analog.com>
-In-Reply-To: <B168F8A49F4BCF4C84FD23DA5F6363EEAD57@NWD2MBX7.ad.analog.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+X-OriginalArrivalTime: 10 May 2013 01:00:36.0953 (UTC) FILETIME=[C840BC90:01CE4D19]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/5/9 16:33, Zhang, Sonic wrote:
-> Hi Libo,
-> 
->> -----Original Message-----
->> From: Libo Chen [mailto:libo.chen@huawei.com]
->> Sent: Thursday, May 09, 2013 4:27 PM
->> To: Zhang, Sonic; wsa@the-dreams.de
->> Cc: uclinux-dist-devel@blackfin.uclinux.org; linux-kernel@vger.kernel.org; linux-
->> i2c@vger.kernel.org; lizefan@huawei.com; Libo Chen
->> Subject: [PATCH v2 1/2] i2c: i2c-bfin-twi: don`t free peripheral before it init
->> successful
->>
->> down out_error_no_irq. When platform_get_irq fail, no need to free peripheral
->>
->> Signed-off-by: Libo Chen <libo.chen@huawei.com>
->> ---
->> drivers/i2c/busses/i2c-bfin-twi.c |    2 +-
->> 1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
->> index 05080c4..6617645 100644
->> --- a/drivers/i2c/busses/i2c-bfin-twi.c
->> +++ b/drivers/i2c/busses/i2c-bfin-twi.c
->> @@ -709,9 +709,9 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
->> out_error_add_adapter:
->>       free_irq(iface->irq, iface);
->> out_error_req_irq:
->> -out_error_no_irq:
->>       peripheral_free_list((unsigned short *)pdev->dev.platform_data);
->> out_error_pin_mux:
->> +out_error_no_irq:
->>       iounmap(iface->regs_base);
->> out_error_ioremap:
->> out_error_get_res:
->> --
-> 
-> Sorry, but you didn't exchange as I suggested.
-> Should be
-> 
+----------------------------------------
+> From: yuhongbao_386@hotmail.com
+> To: lkcl@lkcl.net; hancockrwd@gmail.com
+> CC: david.goodenough@btconnect.com; debian-arm@lists.debian.org; linux-kernel@vger.kernel.org; arm-netbook@lists.phcomp.co.uk
+> Subject: RE: device tree not the answer in the ARM world [was: Re: running Debian on a Cubieboard]
+> Date: Thu, 9 May 2013 17:56:33 -0700
+>
+> > the economics of market forces don't work that way.
+> > profit-maximising companies are pathologically and *LEGALLY* bound to
+> > enact the articles of incorporation. so you'd need to show them that
+> > it would hurt their profits to continue the way that they are going.
+> I think legally bound is a myth, but that is off-topic for lkml of course.
+And obviously it doesn't matter if it is actually required by law if they practically behave that way.
 
-Hi Sonic,
-
-Look at peripheral_request_list()
-{
-	u16 cnt;
-	int ret;
-
-	for (cnt = 0; per[cnt] != 0; cnt++) {
-
-		ret = peripheral_request(per[cnt], label);
-
-		if (ret < 0) {
-			for ( ; cnt > 0; cnt--)
-				peripheral_free(per[cnt - 1]);
-
-			return ret;
-		}
-	}
-
-	return 0;
-}
-
-
-When peripheral_request fail, it had called peripheral_free().
-So there is no reason to call peripheral_free_list again.
-
-Did I miss something else?
-
-
->> out_error_req_irq:
->> -out_error_no_irq:
->> +out_error_pin_mux:
->>       peripheral_free_list((unsigned short *)pdev->dev.platform_data);
->> -out_error_pin_mux:
->> +out_error_no_irq:
-> 
-> 
-> Regards,
-> 
-> Sonic
-> 
-> 
-> 
-
-
+Yuhong Bao 		 	   		  
