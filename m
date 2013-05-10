@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab3EJOUZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:20:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56994 "EHLO
+	id S1754537Ab3EJOU2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:20:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57006 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753984Ab3EJOUW (ORCPT
+	by vger.kernel.org with ESMTP id S1753320Ab3EJOU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:20:22 -0400
+	Fri, 10 May 2013 10:20:26 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Mathias Krause" <minipli@googlemail.com>
+CC: akpm@linux-foundation.org, "Daniel Borkmann" <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Vlad Yasevich" <vyasevich@gmail.com>,
+        "Neil Horman" <nhorman@tuxdriver.com>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.368643279@decadent.org.uk>
+Message-ID: <lsq.1368193181.280463449@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [098/118] atm: update msg_namelen in vcc_recvmsg()
+Subject: [096/118] net: sctp: sctp_auth_key_put: use kzfree instead of  kfree
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,34 +33,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 9b3e617f3df53822345a8573b6d358f6b9e5ed87 ]
+[ Upstream commit 586c31f3bf04c290dc0a0de7fc91d20aa9a5ee53 ]
 
-The current code does not fill the msg_name member in case it is set.
-It also does not set the msg_namelen member to 0 and therefore makes
-net/socket.c leak the local, uninitialized sockaddr_storage variable
-to userland -- 128 bytes of kernel stack memory.
+For sensitive data like keying material, it is common practice to zero
+out keys before returning the memory back to the allocator. Thus, use
+kzfree instead of kfree.
 
-Fix that by simply setting msg_namelen to 0 as obviously nobody cared
-about vcc_recvmsg() not filling the msg_name in case it was set.
-
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/atm/common.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/sctp/auth.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/atm/common.c
-+++ b/net/atm/common.c
-@@ -500,6 +500,8 @@ int vcc_recvmsg(struct kiocb *iocb, stru
- 	struct sk_buff *skb;
- 	int copied, error = -EINVAL;
+--- a/net/sctp/auth.c
++++ b/net/sctp/auth.c
+@@ -71,7 +71,7 @@ void sctp_auth_key_put(struct sctp_auth_
+ 		return;
  
-+	msg->msg_namelen = 0;
-+
- 	if (sock->state != SS_CONNECTED)
- 		return -ENOTCONN;
- 	if (flags & ~MSG_DONTWAIT)		/* only handle MSG_DONTWAIT */
+ 	if (atomic_dec_and_test(&key->refcnt)) {
+-		kfree(key);
++		kzfree(key);
+ 		SCTP_DBG_OBJCNT_DEC(keys);
+ 	}
+ }
 
