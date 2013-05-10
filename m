@@ -1,62 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757737Ab3EJRqU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 13:46:20 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48106 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757733Ab3EJRqT (ORCPT
+	id S1757627Ab3EJRv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 13:51:56 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19396 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989Ab3EJRvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 13:46:19 -0400
-Date: Fri, 10 May 2013 18:43:44 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Olof Johansson <olof@lixom.net>
-Cc: Christian Daudt <csd@broadcom.com>, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Will Deacon <will.deacon@arm.com>, "arm@kernel.org" <arm@kernel.org>,
-        linux-arm-kernel@lists.infradead.org, csd_b@daudt.org,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] ARM: bcm281xx: Add L2 support for Rev A2 chips
-Message-ID: <20130510174344.GX18614@n2100.arm.linux.org.uk>
-References: <1367542653-955-1-git-send-email-csd@broadcom.com> <20130509204434.GA16724@quad.lixom.net>
+	Fri, 10 May 2013 13:51:55 -0400
+Date: Fri, 10 May 2013 10:51:49 -0700
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: device-mapper development <dm-devel@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org,
+        Joe Thornber <thornber@redhat.com>
+Subject: Re: [dm-devel] [PATCH 2/2] dmcache: Implement a flush message
+Message-ID: <20130510175149.GC5712@blackbox.djwong.org>
+References: <20130508214845.GA7729@blackbox.djwong.org>
+ <20130508220526.GA24132@redhat.com>
+ <20130509203616.GA5713@blackbox.djwong.org>
+ <20130509204751.GB5712@blackbox.djwong.org>
+ <20130510102224.GF20880@debian>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130509204434.GA16724@quad.lixom.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20130510102224.GF20880@debian>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 01:44:34PM -0700, Olof Johansson wrote:
-> On Thu, May 02, 2013 at 05:57:33PM -0700, Christian Daudt wrote:
-> > Rev A2 SoCs have an unorthodox memory re-mapping and this needs
-> > to be reflected in the cache operations.
-> > This patch adds new outer cache functions for the l2x0 driver
-> > to support this SoC revision. It also adds a new compatible
-> > value for the cache to enable this functionality.
+On Fri, May 10, 2013 at 11:22:24AM +0100, Joe Thornber wrote:
+> On Thu, May 09, 2013 at 01:47:51PM -0700, Darrick J. Wong wrote:
+> > Create a new 'flush' message that causes the dmcache to write all of its
+> > metadata out to disk.  This enables us to ensure that the disk reflects
+> > whatever's in memory without having to tear down the cache device.  This helps
+> > me in the case where I have a cached ro fs that I can't umount and therefore
+> > can't tear down the cache device, but want to save the cache metadata anyway.
+> > The command syntax is as follows:
 > > 
-> > Updates from V1:
-> > - remove section 1 altogether and note that in comments
-> > - simplify section selection caused by section 1 removal
-> > - BUG_ON just in case section 1 shows up
-> > 
-> > Signed-off-by: Christian Daudt <csd@broadcom.com>
+> > # dmsetup message mycache 0 flush now
 > 
-> This patch mostly covers code that is on Russells plate, so please feed
-> this to his tracker to be picked up by him. Feel free to add:
+> Nack.
+> 
+> [Ignoring the ugly 'now' parameter.]
+> 
+> I think you're in danger of hiding the real issue.  Which is if the
+> target's destructor and post suspend is not being called then, as far
+> as dm-cache is concerned this is a crash.  Any open transactions will
+> be lost as it automatically rolls back.
+> 
+> We need to understand more why this is happening.  It's actually
+> harmless atm for dm-cache, because we're forced to commit before using
+> a new migration.  But for dm-thin you can lose writes.  Why are you
+> never tearing down your dm devices?
 
-Yes, but there's a problem.  I don't have bcm11351.dtsi to apply this
-patch to.  This is one of the problems of splitting the SoC stuff
-from core stuff - either I start doing cross-merges (which cause Linus
-and everyone else pain as we've seen this time around) or we have to
-stuff everything through a single tree.
+afaict, there isn't anything in the initscripts that tears down dm devices
+prior to invoking reboot(), and the kernel drivers don't have reboot notifiers
+to flush things out either.  I've been told that lvm does this, but I don't see
+anything in the Ubuntu or RHEL6 that would suggest a teardown script...
 
-Not happy.
+# dpkg -L lvm2 dmsetup libdevmapper1.02.1 libdevmapper-event1.02.1 | grep etc
+/etc
+/etc/lvm
+/etc/lvm/lvm.conf
+# grep -rn dmsetup /etc
+/etc/lvm/lvm.conf:333:    # waiting for udev, run 'dmsetup udevcomplete_all' manually to wake them up.
 
-Not applying until after -rc1.
+# rpm -ql lvm2 lvm2-libs device-mapper device-mapper-event device-mapper-event-libs device-mapper-libs | grep /etc
+/etc/lvm
+/etc/lvm/archive
+/etc/lvm/backup
+/etc/lvm/cache
+/etc/lvm/cache/.cache
+/etc/lvm/lvm.conf
+/etc/rc.d/init.d/lvm2-monitor
+# grep -rn dmsetup /etc/rc* /etc/init*
+/etc/rc0.d/K75netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc0.d/S01halt:22:            if /sbin/dmsetup info "$dst" | grep -q '^Open count: *0$'; then
+/etc/rc0.d/S01halt:120:	    && [ "$(dmsetup status "$dst" | cut -d ' ' -f 3)" = crypt ]; then
+/etc/rc1.d/K75netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc2.d/K75netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc3.d/S25netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc4.d/S25netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc5.d/S25netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc6.d/K75netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc6.d/S01reboot:22:            if /sbin/dmsetup info "$dst" | grep -q '^Open count: *0$'; then
+/etc/rc6.d/S01reboot:120:	    && [ "$(dmsetup status "$dst" | cut -d ' ' -f 3)" = crypt ]; then
+/etc/rc.d/rc6.d/K75netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc.d/rc6.d/S01reboot:22:            if /sbin/dmsetup info "$dst" | grep -q '^Open count: *0$'; then
+/etc/rc.d/rc6.d/S01reboot:120:	    && [ "$(dmsetup status "$dst" | cut -d ' ' -f 3)" = crypt ]; then
+/etc/rc.d/rc0.d/K75netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc.d/rc0.d/S01halt:22:            if /sbin/dmsetup info "$dst" | grep -q '^Open count: *0$'; then
+/etc/rc.d/rc0.d/S01halt:120:	    && [ "$(dmsetup status "$dst" | cut -d ' ' -f 3)" = crypt ]; then
+/etc/rc.d/rc.sysinit:191:		/sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p" >/dev/null
+/etc/rc.d/rc5.d/S25netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc.d/rc1.d/K75netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc.d/rc3.d/S25netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc.d/init.d/netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc.d/init.d/halt:22:            if /sbin/dmsetup info "$dst" | grep -q '^Open count: *0$'; then
+/etc/rc.d/init.d/halt:120:	    && [ "$(dmsetup status "$dst" | cut -d ' ' -f 3)" = crypt ]; then
+/etc/rc.d/rc4.d/S25netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc.d/rc2.d/K75netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/rc.sysinit:191:		/sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p" >/dev/null
+/etc/init.d/netfs:53:		       /sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p"
+/etc/init.d/halt:22:            if /sbin/dmsetup info "$dst" | grep -q '^Open count: *0$'; then
+/etc/init.d/halt:120:	    && [ "$(dmsetup status "$dst" | cut -d ' ' -f 3)" = crypt ]; then
+
+What am I missing?  My observation of Ubuntu is that at best it shuts down
+services, umounts most of the filesystems, syncs, and reboots.  RHEL seems to
+shut down multipath and dmcrypt, but that was all I found.  For /most/ users of
+dm it seems like the system simply reboots, and nobody's the worse for the
+wear.
+
+In the meantime I've added a script to my dmcache test tools to tear things
+down at the end, which works unless the umount fails. :/ I guess I could simply
+suspend the devices, but the postsuspend flush only seems to get called if I
+actually redefine the device to some driver that isn't cache.
+
+(I guess I could suspend the device and replace cache with zero... yuck.)
+
+--D
