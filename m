@@ -1,36 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab3EJKnO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 06:43:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38334 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485Ab3EJKnN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 06:43:13 -0400
-Date: Fri, 10 May 2013 12:41:34 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, jamie.iles@oracle.com,
-        penberg@kernel.org, acme@ghostprotocols.net, paulus@samba.org,
-        namhyung@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v3 8/9] liblockdep: Add the 'lockdep' user-space utility
-Message-ID: <20130510104134.GE31235@dyad.programming.kicks-ass.net>
-References: <1368115089-8909-1-git-send-email-sasha.levin@oracle.com>
- <1368115089-8909-9-git-send-email-sasha.levin@oracle.com>
- <20130510091912.GD3039@dyad.programming.kicks-ass.net>
- <20130510093557.GA16429@gmail.com>
+	id S1752682Ab3EJKn5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 06:43:57 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:19619 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958Ab3EJKn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 06:43:56 -0400
+Message-ID: <518CCF69.9040200@imgtec.com>
+Date: Fri, 10 May 2013 11:43:53 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130510093557.GA16429@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Mike Turquette <mturquette@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: Re: [PATCH v2 0/3] clk: implement remuxing during set_rate
+References: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com> <518AE16D.5060501@codeaurora.org> <518B663D.60806@imgtec.com> <518BFD99.2010208@codeaurora.org>
+In-Reply-To: <518BFD99.2010208@codeaurora.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_05_10_11_43_55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If you started acking and emailing from the same address you'd only get 
-> one! :-)
+On 09/05/13 20:48, Stephen Boyd wrote:
+> On 05/09/13 02:02, James Hogan wrote:
+>> On 09/05/13 00:36, Stephen Boyd wrote:
+>>> Which tree is this based on? I get failures with git am on patch 2.
+>>>
+>> It was based on v3.9-rc4.
+>>
+> 
+> Thanks. Would it be possible for you to update to Mike's for-next
+> branch? I've done the rebase myself for now and it seems to work well
+> enough. I'll need to add the set_rate_and_parent() op on top.
+> 
 
-Bah, that'd mean actually retraining my muscle memory :-)
+Yes, I will do that before reposting. Thanks for giving it a spin.
+
+Cheers
+James
+
