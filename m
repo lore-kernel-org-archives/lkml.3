@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab3EJLwN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 07:52:13 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:58116 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab3EJLwL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 07:52:11 -0400
-Date: Fri, 10 May 2013 13:52:07 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] HID
-Message-ID: <20130510115207.GA20038@gmail.com>
-References: <alpine.LNX.2.00.1304301023040.20139@pobox.suse.cz>
- <20130510114759.GA19857@gmail.com>
- <alpine.LNX.2.00.1305101349000.23038@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1305101349000.23038@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752399Ab3EJLwW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 07:52:22 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57651 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752209Ab3EJLwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 07:52:20 -0400
+Message-ID: <1368186695.4524.27.camel@pasglop>
+Subject: Re: Invalid perf_branch_entry.to entries question
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Michael Neuling <mikey@neuling.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>, linux-kernel@vger.kernel.org,
+        eranian@google.com, Anshuman Khandual <anshuman.khandual@in.ibm.com>
+Date: Fri, 10 May 2013 21:51:35 +1000
+In-Reply-To: <CAEjGV6x1=6iFUwQs6=5GY75-J9ZZzs8=CKE=+MGxdwoKycs9jA@mail.gmail.com>
+References: <25394.1367890528@ale.ozlabs.ibm.com>
+	 <20130508155929.GA8459@dyad.programming.kicks-ass.net>
+	 <14691.1368052755@ale.ozlabs.ibm.com>
+	 <20130510104352.GF31235@dyad.programming.kicks-ass.net>
+	 <CAEjGV6x1=6iFUwQs6=5GY75-J9ZZzs8=CKE=+MGxdwoKycs9jA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Jiri Kosina <jkosina@suse.cz> wrote:
-
-> On Fri, 10 May 2013, Ingo Molnar wrote:
+On Fri, 2013-05-10 at 20:50 +1000, Michael Neuling wrote:
+> The buffer is in the core (not main memory) and hence only has limited
+> entries.  So skipping entries that can hopefully be determined in
+> other ways means we can log more branches.
 > 
-> > hi Jiri,
-> > 
-> > * Jiri Kosina <jkosina@suse.cz> wrote:
-> > 
-> > > Linus,
-> > > 
-> > > please pull from
-> > > 
-> > >   git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
-> > > 
-> > > to receive HID subsystem updates for 3.10. Highlights:
-> > > 
-> > > 
-> > > - hid driver transport cleanup, finalizing the long-desired decoupling of 
-> > >   core from transport layers, by Benjamin Tissoires and Henrik Rydberg
-> > > - support for hybrid finger/pen multitouch HID devices, by Benjamin 
-> > >   Tissoires
-> > > - fix for long-standing issue in Logitech unifying driver sometimes not
-> > >   inializing properly due to device specifics, by Andrew de los Reyes
-> > > - Wii remote driver updates to support 2nd generation of devices, by David 
-> > >   Herrmann
-> > > - support for Apple IR remote
-> > > - roccat driver now supports new devices (Roccat Kone Pure, IskuFX), by 
-> > >   Stefan Achatz
-> > > - debugfs locking fixes in hid debug interface, by Jiri Kosina
-> > 
-> > FYI, there's a new HID related lockdep and RCU splat upstream, probably 
-> > relatd to the debugfs locking fixes:
-> > 
-> > [   79.088631] ======================================================
-> > [   79.088631] [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
-> > [   79.088631] 3.9.0-13694-g7cf229a-dirty #224212 Tainted: G        W   
-> > [   79.088631] ------------------------------------------------------
-> > [   79.088631] swapper/0/1 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-> > [   79.088631]  (&hdev->debug_list_lock){+.+...}, at: [<ffffffff82e510d9>] hid_debug_event+0x2e/0xd0
-> > [   79.088631] 
-> > 
-> > See the full bootlog below. It's from an allyesconfig x86-64 bootup log.
-> 
-> Hi Ingo,
-> 
-> thanks for the report. I have a fix for this in my tree already and am 
-> going to send pull request to Linus shortly.
+> That being said, it's a PITA for the kernel ;-)
 
-Great, thanks!
+I would suggest flagging them. As you mention, the code might have been
+modified since the sample was taken. Even if it still looks like a
+branch and you can compute the "To" address it might not be the right
+one ... at least userspace should be notified that this specific sample
+is to handle with care.
 
-	Ingo
+And if you just can't read the instruction or it's not a branch anymore,
+then stick a -1 in there, no way it can be a valid branch address :-)
+
+Cheers,
+Ben.
+
+
