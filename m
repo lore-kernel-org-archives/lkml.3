@@ -1,86 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280Ab3EJFrx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 01:47:53 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:54390 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab3EJFrs (ORCPT
+	id S1751416Ab3EJFzi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 01:55:38 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:44216 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab3EJFzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 01:47:48 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Daniel Phillips <daniel.raymond.phillips@gmail.com>,
-        linux-fsdevel@vger.kernel.org, tux3@tux3.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Tux3 Report: Faster than tmpfs, what?
-References: <CAEsagEhu3pND5j410mQM=AMEQZ-1WOG0qdKys0pfFv0-jkLs8g@mail.gmail.com>
-	<20130510045049.GU24635@dastard>
-Date: Fri, 10 May 2013 14:47:35 +0900
-In-Reply-To: <20130510045049.GU24635@dastard> (Dave Chinner's message of "Fri,
-	10 May 2013 14:50:49 +1000")
-Message-ID: <87fvxvz8qw.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Fri, 10 May 2013 01:55:37 -0400
+Message-ID: <518C8BD6.5080306@monstr.eu>
+Date: Fri, 10 May 2013 07:55:34 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/microblaze fixes for 3.10
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2VBUXDCBEXISREXPXAKPA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner <david@fromorbit.com> writes:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2VBUXDCBEXISREXPXAKPA
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
->> tux3:
->>     Operation      Count    AvgLat    MaxLat
->>     ----------------------------------------
->>     NTCreateX    1477980     0.003    12.944
-> ....
->>     ReadX        2316653     0.002     0.499
->>     LockX           4812     0.002     0.207
->>     UnlockX         4812     0.001     0.221
->>     Throughput 1546.81 MB/sec  1 clients  1 procs  max_latency=12.950 ms
->
-> Hmmm... No "Flush" operations. Gotcha - you've removed the data
-> integrity operations from the benchmark.
+Hi Linus,
 
-Right. Because tux3 is not implementing fsync() yet. So, I did
+please pull these changes to you tree.
 
-	grep -v Flush /usr/share/dbench/client.txt > client2.txt
+Thanks,
+Michal
 
-Why is it important for comparing?
 
-> Ah, I get it now - you've done that so the front end of tux3 won't
-> encounter any blocking operations and so can offload 100% of
-> operations. It also explains the sync call every 4 seconds to keep
-> tux3 back end writing out to disk so that a) all the offloaded work
-> is done by the sync process and not measured by the benchmark, and
-> b) so the front end doesn't overrun queues and throttle or run out
-> of memory.
+The following changes since commit e0fd9affeb64088eff407dfc98bbd3a5c17ea4=
+79:
 
-Our backend is still using debugging mode (flush each 10 transactions
-for stress/debugging). Since no interface to use normal writeback
-timing yet, and I'm not tackling about it yet.
+  Merge tag 'rdma-for-linus' of git://git.kernel.org/pub/scm/linux/kernel=
+/git/roland/infiniband (2013-05-08 15:29:48 -0700)
 
-And if normal writeback can't beat crappy fixed timing (4 secs), Rather,
-it means we have to improve writeback timing. I.e. sync should be rather
-slower than best timing, right?
+are available in the git repository at:
 
-> Oh, so nicely contrived. But terribly obvious now that I've found
-> it.  You've carefully crafted the benchmark to demonstrate a best
-> case workload for the tux3 architecture, then carefully not
-> measured the overhead of the work tux3 has offloaded, and then not
-> disclosed any of this in the hope that all people will look at is
-> the headline.
->
-> This would make a great case study for a "BenchMarketing For
-> Dummies" book.
 
-Simply wrong. I did this to start optimization of tux3 (We know we have
-many places to optimize in tux3), but the result was that post. If you
-can't see at all what we did by frontend/backend design from that, I'm a
-bit sad for it.
+  git://git.monstr.eu/linux-2.6-microblaze.git next
 
-I think I can improve tmpfs/ext4 like tux3 (Unlink/Deltree) if I want to
-do, from this result.
+for you to fetch changes up to a047775e7eff511a529bf65f3b3e9c11443789b2:
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+  microblaze: Enable IRQ in arch_cpu_idle (2013-05-09 10:46:16 +0200)
+
+----------------------------------------------------------------
+Dan Christensen (1):
+      microblaze: Set the default irq_domain
+
+Michal Simek (7):
+      microblaze: pci: Remove duplicated header
+      microblaze: Do not use r6 in head.S
+      microblaze: Fix initrd support
+      microblaze: Do not select OPT_LIB_ASM by default
+      microblaze: Add support for new cpu versions and target architectur=
+e
+      microblaze: Fix uaccess_ok macro
+      microblaze: Enable IRQ in arch_cpu_idle
+
+Wei Yongjun (1):
+      microblaze: pci: Remove duplicated include from pci-common.c
+
+ arch/microblaze/configs/mmu_defconfig |  1 -
+ arch/microblaze/include/asm/pci.h     |  2 --
+ arch/microblaze/include/asm/uaccess.h | 30 +++++++++++++++++++----------=
+-
+ arch/microblaze/kernel/cpu/cpuinfo.c  |  5 +++++
+ arch/microblaze/kernel/head.S         | 20 ++++++++++----------
+ arch/microblaze/kernel/intc.c         |  2 ++
+ arch/microblaze/kernel/process.c      |  5 +++++
+ arch/microblaze/mm/init.c             |  9 +++++----
+ arch/microblaze/pci/pci-common.c      |  1 -
+ 9 files changed, 46 insertions(+), 29 deletions(-)
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2VBUXDCBEXISREXPXAKPA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGMi9YACgkQykllyylKDCEDyACcD9aHcTxRIh9WO0QyOXyPnvo1
+pBsAoIvi5Be31AivenNv3wK0Iw3P1C5v
+=rKIq
+-----END PGP SIGNATURE-----
+
+------enig2VBUXDCBEXISREXPXAKPA--
