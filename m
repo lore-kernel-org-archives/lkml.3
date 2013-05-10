@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab3EJIQd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 04:16:33 -0400
-Received: from sauhun.de ([89.238.76.85]:60367 "EHLO pokefinder.org"
+	id S1752966Ab3EJIQu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 04:16:50 -0400
+Received: from sauhun.de ([89.238.76.85]:60410 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752498Ab3EJIQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 04:16:30 -0400
+	id S1751788Ab3EJIQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 04:16:46 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>
-Subject: [RFC 07/42] drivers/gpu/host1x: don't check resource with devm_ioremap_resource
-Date: Fri, 10 May 2013 10:16:52 +0200
-Message-Id: <1368173847-5661-8-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [RFC 13/42] drivers/mfd: don't check resource with devm_ioremap_resource
+Date: Fri, 10 May 2013 10:16:58 +0200
+Message-Id: <1368173847-5661-14-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
 References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
@@ -24,34 +24,27 @@ duplicate this in the driver.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- drivers/gpu/host1x/dev.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/mfd/intel_msic.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/drivers/gpu/host1x/dev.c b/drivers/gpu/host1x/dev.c
-index 28e28a2..e615edd 100644
---- a/drivers/gpu/host1x/dev.c
-+++ b/drivers/gpu/host1x/dev.c
-@@ -98,12 +98,6 @@ static int host1x_probe(struct platform_device *pdev)
- 	if (!id)
- 		return -EINVAL;
- 
--	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!regs) {
--		dev_err(&pdev->dev, "failed to get registers\n");
--		return -ENXIO;
+diff --git a/drivers/mfd/intel_msic.c b/drivers/mfd/intel_msic.c
+index 5be3b5e..b1a9461 100644
+--- a/drivers/mfd/intel_msic.c
++++ b/drivers/mfd/intel_msic.c
+@@ -413,12 +413,8 @@ static int intel_msic_probe(struct platform_device *pdev)
+ 	 * Map in the MSIC interrupt tree area in SRAM. This is exposed to
+ 	 * the clients via intel_msic_irq_read().
+ 	 */
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "failed to get SRAM iomem resource\n");
+-		return -ENODEV;
 -	}
--
- 	syncpt_irq = platform_get_irq(pdev, 0);
- 	if (syncpt_irq < 0) {
- 		dev_err(&pdev->dev, "failed to get IRQ\n");
-@@ -120,6 +114,7 @@ static int host1x_probe(struct platform_device *pdev)
- 	/* set common host1x device data */
- 	platform_set_drvdata(pdev, host);
  
-+	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	host->regs = devm_ioremap_resource(&pdev->dev, regs);
- 	if (IS_ERR(host->regs))
- 		return PTR_ERR(host->regs);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	msic->irq_base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(msic->irq_base))
+ 		return PTR_ERR(msic->irq_base);
 -- 
 1.7.10.4
 
