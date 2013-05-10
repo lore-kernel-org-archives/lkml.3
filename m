@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438Ab3EJIWD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 04:22:03 -0400
-Received: from sauhun.de ([89.238.76.85]:60580 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753703Ab3EJIRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 04:17:36 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org
-Subject: [RFC 33/42] drivers/video/omap2: don't check resource with devm_ioremap_resource
-Date: Fri, 10 May 2013 10:17:18 +0200
-Message-Id: <1368173847-5661-34-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
-References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
+	id S1754506Ab3EJIWY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 04:22:24 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:26918 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754470Ab3EJIWV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 04:22:21 -0400
+Message-ID: <518CAE3B.1090205@atmel.com>
+Date: Fri, 10 May 2013 10:22:19 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: <linux-kernel@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        <netdev@vger.kernel.org>
+Subject: Re: [PATCH 07/12] net/ethernet: ARM_AT91_ETHER should depend on HAS_DMA
+References: <1368133494-22198-1-git-send-email-geert@linux-m68k.org> <1368133494-22198-7-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1368133494-22198-7-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_ioremap_resource does sanity checks on the given resource. No need to
-duplicate this in the driver.
+On 09/05/2013 23:04, Geert Uytterhoeven :
+> If NO_DMA=y:
+>
+> drivers/built-in.o: In function `at91ether_start':
+> drivers/net/ethernet/cadence/at91_ether.c:49: undefined reference to `dma_alloc_coherent'
+> drivers/net/ethernet/cadence/at91_ether.c:60: undefined reference to `dma_free_coherent'
+> drivers/built-in.o: In function `at91ether_interrupt':
+> drivers/net/ethernet/cadence/at91_ether.c:250: undefined reference to `dma_unmap_single'
+> drivers/built-in.o: In function `at91ether_start_xmit':
+> drivers/net/ethernet/cadence/at91_ether.c:169: undefined reference to `dma_map_single'
+> drivers/built-in.o: In function `at91ether_close':
+> drivers/net/ethernet/cadence/at91_ether.c:145: undefined reference to `dma_free_coherent'
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
- drivers/video/omap2/vrfb.c |    5 -----
- 1 file changed, 5 deletions(-)
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-diff --git a/drivers/video/omap2/vrfb.c b/drivers/video/omap2/vrfb.c
-index 5261229..f346b02 100644
---- a/drivers/video/omap2/vrfb.c
-+++ b/drivers/video/omap2/vrfb.c
-@@ -353,11 +353,6 @@ static int __init vrfb_probe(struct platform_device *pdev)
- 	/* first resource is the register res, the rest are vrfb contexts */
- 
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!mem) {
--		dev_err(&pdev->dev, "can't get vrfb base address\n");
--		return -EINVAL;
--	}
--
- 	vrfb_base = devm_ioremap_resource(&pdev->dev, mem);
- 	if (IS_ERR(vrfb_base))
- 		return PTR_ERR(vrfb_base);
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: netdev@vger.kernel.org
+> ---
+>   drivers/net/ethernet/cadence/Kconfig |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/cadence/Kconfig b/drivers/net/ethernet/cadence/Kconfig
+> index 1194446..0d9d6e6 100644
+> --- a/drivers/net/ethernet/cadence/Kconfig
+> +++ b/drivers/net/ethernet/cadence/Kconfig
+> @@ -22,7 +22,7 @@ if NET_CADENCE
+>
+>   config ARM_AT91_ETHER
+>   	tristate "AT91RM9200 Ethernet support"
+> -	depends on GENERIC_HARDIRQS
+> +	depends on GENERIC_HARDIRQS && HAS_DMA
+>   	select NET_CORE
+>   	select MACB
+>   	---help---
+>
+
+
 -- 
-1.7.10.4
-
+Nicolas Ferre
