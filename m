@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305Ab3EJOWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:22:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57311 "EHLO
+	id S1756427Ab3EJOWZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:22:25 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57335 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756065Ab3EJOWE (ORCPT
+	by vger.kernel.org with ESMTP id S1756264Ab3EJOWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:22:04 -0400
+	Fri, 10 May 2013 10:22:12 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Steven Rostedt" <rostedt@goodmis.org>,
-        "Namhyung Kim" <namhyung.kim@lge.com>,
-        "Namhyung Kim" <namhyung@kernel.org>
+CC: akpm@linux-foundation.org, "John Stultz" <john.stultz@linaro.org>,
+        "Rik van Riel" <riel@redhat.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Prarit Bhargava" <prarit@redhat.com>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.252602522@decadent.org.uk>
+Message-ID: <lsq.1368193181.572916548@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [027/118] tracing: Check return value of tracing_init_dentry()
+Subject: [021/118] hrtimer: Add expiry time overflow check in
+ hrtimer_interrupt
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,56 +34,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Prarit Bhargava <prarit@redhat.com>
 
-commit ed6f1c996bfe4b6e520cf7a74b51cd6988d84420 upstream.
+commit 8f294b5a139ee4b75e890ad5b443c93d1e558a8b upstream.
 
-Check return value and bail out if it's NULL.
+The settimeofday01 test in the LTP testsuite effectively does
 
-Link: http://lkml.kernel.org/r/1365553093-10180-2-git-send-email-namhyung@kernel.org
+        gettimeofday(current time);
+        settimeofday(Jan 1, 1970 + 100 seconds);
+        settimeofday(current time);
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+This test causes a stack trace to be displayed on the console during the
+setting of timeofday to Jan 1, 1970 + 100 seconds:
+
+[  131.066751] ------------[ cut here ]------------
+[  131.096448] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x135/0x140()
+[  131.104935] Hardware name: Dinar
+[  131.108150] Modules linked in: sg nfsv3 nfs_acl nfsv4 auth_rpcgss nfs dns_resolver fscache lockd sunrpc nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter ip_tables kvm_amd kvm sp5100_tco bnx2 i2c_piix4 crc32c_intel k10temp fam15h_power ghash_clmulni_intel amd64_edac_mod pcspkr serio_raw edac_mce_amd edac_core microcode xfs libcrc32c sr_mod sd_mod cdrom ata_generic crc_t10dif pata_acpi radeon i2c_algo_bit drm_kms_helper ttm drm ahci pata_atiixp libahci libata usb_storage i2c_core dm_mirror dm_region_hash dm_log dm_mod
+[  131.176784] Pid: 0, comm: swapper/28 Not tainted 3.8.0+ #6
+[  131.182248] Call Trace:
+[  131.184684]  <IRQ>  [<ffffffff810612af>] warn_slowpath_common+0x7f/0xc0
+[  131.191312]  [<ffffffff8106130a>] warn_slowpath_null+0x1a/0x20
+[  131.197131]  [<ffffffff810b9fd5>] clockevents_program_event+0x135/0x140
+[  131.203721]  [<ffffffff810bb584>] tick_program_event+0x24/0x30
+[  131.209534]  [<ffffffff81089ab1>] hrtimer_interrupt+0x131/0x230
+[  131.215437]  [<ffffffff814b9600>] ? cpufreq_p4_target+0x130/0x130
+[  131.221509]  [<ffffffff81619119>] smp_apic_timer_interrupt+0x69/0x99
+[  131.227839]  [<ffffffff8161805d>] apic_timer_interrupt+0x6d/0x80
+[  131.233816]  <EOI>  [<ffffffff81099745>] ? sched_clock_cpu+0xc5/0x120
+[  131.240267]  [<ffffffff814b9ff0>] ? cpuidle_wrap_enter+0x50/0xa0
+[  131.246252]  [<ffffffff814b9fe9>] ? cpuidle_wrap_enter+0x49/0xa0
+[  131.252238]  [<ffffffff814ba050>] cpuidle_enter_tk+0x10/0x20
+[  131.257877]  [<ffffffff814b9c89>] cpuidle_idle_call+0xa9/0x260
+[  131.263692]  [<ffffffff8101c42f>] cpu_idle+0xaf/0x120
+[  131.268727]  [<ffffffff815f8971>] start_secondary+0x255/0x257
+[  131.274449] ---[ end trace 1151a50552231615 ]---
+
+When we change the system time to a low value like this, the value of
+timekeeper->offs_real will be a negative value.
+
+It seems that the WARN occurs because an hrtimer has been started in the time
+between the releasing of the timekeeper lock and the IPI call (via a call to
+on_each_cpu) in clock_was_set() in the do_settimeofday() code.  The end result
+is that a REALTIME_CLOCK timer has been added with softexpires = expires =
+KTIME_MAX.  The hrtimer_interrupt() fires/is called and the loop at
+kernel/hrtimer.c:1289 is executed.  In this loop the code subtracts the
+clock base's offset (which was set to timekeeper->offs_real in
+do_settimeofday()) from the current hrtimer_cpu_base->expiry value (which
+was KTIME_MAX):
+
+	KTIME_MAX - (a negative value) = overflow
+
+A simple check for an overflow can resolve this problem.  Using KTIME_MAX
+instead of the overflow value will result in the hrtimer function being run,
+and the reprogramming of the timer after that.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+[jstultz: Tweaked commit subject]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/trace/trace.c       |    2 ++
- kernel/trace/trace_stack.c |    2 ++
- kernel/trace/trace_stat.c  |    2 ++
- 3 files changed, 6 insertions(+)
+ kernel/hrtimer.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4563,6 +4563,8 @@ static __init int tracer_init_debugfs(vo
- 	trace_access_lock_init();
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1308,6 +1308,8 @@ retry:
  
- 	d_tracer = tracing_init_dentry();
-+	if (!d_tracer)
-+		return 0;
- 
- 	trace_create_file("tracing_enabled", 0644, d_tracer,
- 			&global_trace, &tracing_ctrl_fops);
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -411,6 +411,8 @@ static __init int stack_trace_init(void)
- 	struct dentry *d_tracer;
- 
- 	d_tracer = tracing_init_dentry();
-+	if (!d_tracer)
-+		return 0;
- 
- 	trace_create_file("stack_max_size", 0644, d_tracer,
- 			&max_stack_size, &stack_max_size_fops);
---- a/kernel/trace/trace_stat.c
-+++ b/kernel/trace/trace_stat.c
-@@ -307,6 +307,8 @@ static int tracing_stat_init(void)
- 	struct dentry *d_tracing;
- 
- 	d_tracing = tracing_init_dentry();
-+	if (!d_tracing)
-+		return 0;
- 
- 	stat_dir = debugfs_create_dir("trace_stat", d_tracing);
- 	if (!stat_dir)
+ 				expires = ktime_sub(hrtimer_get_expires(timer),
+ 						    base->offset);
++				if (expires.tv64 < 0)
++					expires.tv64 = KTIME_MAX;
+ 				if (expires.tv64 < expires_next.tv64)
+ 					expires_next = expires;
+ 				break;
 
