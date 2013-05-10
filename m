@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab3EJOTt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:19:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56867 "EHLO
+	id S1754192Ab3EJOT5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:19:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56899 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753823Ab3EJOTl (ORCPT
+	by vger.kernel.org with ESMTP id S1753823Ab3EJOTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:19:41 -0400
+	Fri, 10 May 2013 10:19:52 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Fred Hartnett" <fred.hartnett@hp.com>,
-        "Tony Luck" <tony.luck@intel.com>
+CC: akpm@linux-foundation.org, "Hayes Wang" <hayeswang@realtek.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "=?UTF-8?q?fran=C3=A7ois=20romieu?=" <romieu@fr.zoreil.com>
 Date: Fri, 10 May 2013 14:39:41 +0100
-Message-ID: <lsq.1368193181.281151932@decadent.org.uk>
+Message-ID: <lsq.1368193181.15393931@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [013/118] Fix initialization of CMCI/CMCP interrupts
+Subject: [117/118] r8169: fix vlan tag read ordering.
 In-Reply-To: <lsq.1368193179.973009354@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:d51a:8785:aa0a:cebe
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,126 +32,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: françois romieu <romieu@fr.zoreil.com>
 
-commit d303e9e98fce56cdb3c6f2ac92f626fc2bd51c77 upstream.
+commit ce11ff5e5963e441feb591e76278528f876c332d upstream.
 
-Back 2010 during a revamp of the irq code some initializations
-were moved from ia64_mca_init() to ia64_mca_late_init() in
+Control of receive descriptor must not be returned to ethernet chipset
+before vlan tag processing is done.
 
-	commit c75f2aa13f5b268aba369b5dc566088b5194377c
-	Cannot use register_percpu_irq() from ia64_mca_init()
+VLAN tag receive word is now reset both in normal and error path.
 
-But this was hideously wrong. First of all these initializations
-are now down far too late. Specifically after all the other cpus
-have been brought up and initialized their own CMC vectors from
-smp_callin(). Also ia64_mca_late_init() may be called from any cpu
-so the line:
-	ia64_mca_cmc_vector_setup();       /* Setup vector on BSP */
-is generally not executed on the BSP, and so the CMC vector isn't
-setup at all on that processor.
-
-Make use of the arch_early_irq_init() hook to get this code executed
-at just the right moment: not too early, not too late.
-
-Reported-by: Fred Hartnett <fred.hartnett@hp.com>
-Tested-by: Fred Hartnett <fred.hartnett@hp.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Spotted-by: Timo Teras <timo.teras@iki.fi>
+Cc: Hayes Wang <hayeswang@realtek.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/ia64/include/asm/mca.h |    1 +
- arch/ia64/kernel/irq.c      |    8 ++++++++
- arch/ia64/kernel/mca.c      |   37 ++++++++++++++++++++++++-------------
- 3 files changed, 33 insertions(+), 13 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
---- a/arch/ia64/include/asm/mca.h
-+++ b/arch/ia64/include/asm/mca.h
-@@ -143,6 +143,7 @@ extern unsigned long __per_cpu_mca[NR_CP
- extern int cpe_vector;
- extern int ia64_cpe_irq;
- extern void ia64_mca_init(void);
-+extern void ia64_mca_irq_init(void);
- extern void ia64_mca_cpu_init(void *);
- extern void ia64_os_mca_dispatch(void);
- extern void ia64_os_mca_dispatch_end(void);
---- a/arch/ia64/kernel/irq.c
-+++ b/arch/ia64/kernel/irq.c
-@@ -23,6 +23,8 @@
- #include <linux/interrupt.h>
- #include <linux/kernel_stat.h>
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -1629,8 +1629,6 @@ static void rtl8169_rx_vlan_tag(struct R
  
-+#include <asm/mca.h>
-+
- /*
-  * 'what should we do if we get a hw irq event on an illegal vector'.
-  * each architecture has to answer this themselves.
-@@ -83,6 +85,12 @@ bool is_affinity_mask_valid(const struct
- 
- #endif /* CONFIG_SMP */
- 
-+int __init arch_early_irq_init(void)
-+{
-+	ia64_mca_irq_init();
-+	return 0;
-+}
-+
- #ifdef CONFIG_HOTPLUG_CPU
- unsigned int vectors_in_migration[NR_IRQS];
- 
---- a/arch/ia64/kernel/mca.c
-+++ b/arch/ia64/kernel/mca.c
-@@ -2071,22 +2071,16 @@ ia64_mca_init(void)
- 	printk(KERN_INFO "MCA related initialization done\n");
+ 	if (opts2 & RxVlanTag)
+ 		__vlan_hwaccel_put_tag(skb, swab16(opts2 & 0xffff));
+-
+-	desc->opts2 = 0;
  }
  
-+
- /*
-- * ia64_mca_late_init
-- *
-- *	Opportunity to setup things that require initialization later
-- *	than ia64_mca_init.  Setup a timer to poll for CPEs if the
-- *	platform doesn't support an interrupt driven mechanism.
-- *
-- *  Inputs  :   None
-- *  Outputs :   Status
-+ * These pieces cannot be done in ia64_mca_init() because it is called before
-+ * early_irq_init() which would wipe out our percpu irq registrations. But we
-+ * cannot leave them until ia64_mca_late_init() because by then all the other
-+ * processors have been brought online and have set their own CMC vectors to
-+ * point at a non-existant action. Called from arch_early_irq_init().
-  */
--static int __init
--ia64_mca_late_init(void)
-+void __init ia64_mca_irq_init(void)
- {
--	if (!mca_init)
--		return 0;
--
- 	/*
- 	 *  Configure the CMCI/P vector and handler. Interrupts for CMC are
- 	 *  per-processor, so AP CMC interrupts are setup in smp_callin() (smpboot.c).
-@@ -2105,6 +2099,23 @@ ia64_mca_late_init(void)
- 	/* Setup the CPEI/P handler */
- 	register_percpu_irq(IA64_CPEP_VECTOR, &mca_cpep_irqaction);
- #endif
-+}
-+
-+/*
-+ * ia64_mca_late_init
-+ *
-+ *	Opportunity to setup things that require initialization later
-+ *	than ia64_mca_init.  Setup a timer to poll for CPEs if the
-+ *	platform doesn't support an interrupt driven mechanism.
-+ *
-+ *  Inputs  :   None
-+ *  Outputs :   Status
-+ */
-+static int __init
-+ia64_mca_late_init(void)
-+{
-+	if (!mca_init)
-+		return 0;
+ static int rtl8169_gset_tbi(struct net_device *dev, struct ethtool_cmd *cmd)
+@@ -5823,7 +5821,6 @@ static int rtl8169_rx_interrupt(struct n
+ 				rtl8169_schedule_work(dev, rtl8169_reset_task);
+ 				dev->stats.rx_fifo_errors++;
+ 			}
+-			rtl8169_mark_to_asic(desc, rx_buf_sz);
+ 		} else {
+ 			struct sk_buff *skb;
+ 			dma_addr_t addr = le64_to_cpu(desc->addr);
+@@ -5837,16 +5834,14 @@ static int rtl8169_rx_interrupt(struct n
+ 			if (unlikely(rtl8169_fragmented_frame(status))) {
+ 				dev->stats.rx_dropped++;
+ 				dev->stats.rx_length_errors++;
+-				rtl8169_mark_to_asic(desc, rx_buf_sz);
+-				continue;
++				goto release_descriptor;
+ 			}
  
- 	register_hotcpu_notifier(&mca_cpu_notifier);
+ 			skb = rtl8169_try_rx_copy(tp->Rx_databuff[entry],
+ 						  tp, pkt_size, addr);
+-			rtl8169_mark_to_asic(desc, rx_buf_sz);
+ 			if (!skb) {
+ 				dev->stats.rx_dropped++;
+-				continue;
++				goto release_descriptor;
+ 			}
  
+ 			rtl8169_rx_csum(skb, status);
+@@ -5860,6 +5855,10 @@ static int rtl8169_rx_interrupt(struct n
+ 			dev->stats.rx_bytes += pkt_size;
+ 			dev->stats.rx_packets++;
+ 		}
++release_descriptor:
++		desc->opts2 = 0;
++		wmb();
++		rtl8169_mark_to_asic(desc, rx_buf_sz);
+ 	}
+ 
+ 	count = cur_rx - tp->cur_rx;
 
