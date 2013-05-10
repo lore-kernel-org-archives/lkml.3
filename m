@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab3EJWkZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 18:40:25 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:20360 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454Ab3EJWkY (ORCPT
+	id S1754967Ab3EJWmD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 18:42:03 -0400
+Received: from mga03.intel.com ([143.182.124.21]:18702 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753570Ab3EJWmB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 18:40:24 -0400
-Date: Fri, 10 May 2013 15:40:13 -0700
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ttyprintk: Fix NULL pointer deref by setting tty_port ops
- after initializing port
-Message-ID: <20130510224013.GA5706@blackbox.djwong.org>
+	Fri, 10 May 2013 18:42:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,651,1363158000"; 
+   d="scan'208";a="239863346"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ming Lei <Ming.Lei@riverbed.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "mchehab@redhat.com" <mchehab@redhat.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: RE: x86_mce: mce_start uses number of phsical cores instead of
+ logical cores
+Thread-Topic: x86_mce: mce_start uses number of phsical cores instead of
+ logical cores
+Thread-Index: Ac5NnrX+OJKCA1vXQtyGCRlOybefOwACkHHwAAC3qcAAASol0AACAr3gAAH652AAAiA5kAAA3IFQ
+Date: Fri, 10 May 2013 22:41:59 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F2DA4CD58@ORSMSX106.amr.corp.intel.com>
+References: <2CE44BD3DBCF9541909CCB42F11CA3921C6FAA49@SFO1EXC-MBXP06.nbttech.com>
+ <3908561D78D1C84285E8C5FCA982C28F2DA4C92B@ORSMSX106.amr.corp.intel.com>
+ <2CE44BD3DBCF9541909CCB42F11CA3921C6FAACA@SFO1EXC-MBXP06.nbttech.com>
+ <3908561D78D1C84285E8C5FCA982C28F2DA4C9B9@ORSMSX106.amr.corp.intel.com>
+ <2CE44BD3DBCF9541909CCB42F11CA3921C6FAB06@SFO1EXC-MBXP06.nbttech.com>
+ <3908561D78D1C84285E8C5FCA982C28F2DA4CB19@ORSMSX106.amr.corp.intel.com>
+ <2CE44BD3DBCF9541909CCB42F11CA3921C6FAB84@SFO1EXC-MBXP06.nbttech.com>
+In-Reply-To: <2CE44BD3DBCF9541909CCB42F11CA3921C6FAB84@SFO1EXC-MBXP06.nbttech.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tty_port_init() zeroes out the tty port, which means that we have to set the
-ops pointer /after/, not before this call.  Otherwise, tty_port_open will crash
-when it tries to deref ops, which is now a NULL pointer.
+> So only one socket gets the machine check. So is there still a problem but the fix will be different?
+> I think the error inject creates a real machine check, but since each CPU has its own memory controller,
+> the machine check may only send to the CPU the error happens.
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
----
- drivers/char/ttyprintk.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+If there is a real machine check, then it must go to all logical cpus. If it doesn't get there, then there
+is a h/w (or possibly f/w configuration) problem.  Interesting that few others have seen this. Perhaps
+because it only shows up in a fatal path and the machine is crashing anyway.  A Google search for
+the "Some CPUs didn't answer in synchronization" message does have a few hits that look relevant,
+but following a few didn't give me enough details on machine configuration to tell whether they
+match what you are seeing.
 
-diff --git a/drivers/char/ttyprintk.c b/drivers/char/ttyprintk.c
-index 4945bd3..d5d2e4a 100644
---- a/drivers/char/ttyprintk.c
-+++ b/drivers/char/ttyprintk.c
-@@ -179,7 +179,6 @@ static int __init ttyprintk_init(void)
- {
- 	int ret = -ENOMEM;
- 
--	tpk_port.port.ops = &null_ops;
- 	mutex_init(&tpk_port.port_write_mutex);
- 
- 	ttyprintk_driver = tty_alloc_driver(1,
-@@ -190,6 +189,7 @@ static int __init ttyprintk_init(void)
- 		return PTR_ERR(ttyprintk_driver);
- 
- 	tty_port_init(&tpk_port.port);
-+	tpk_port.port.ops = &null_ops;
- 
- 	ttyprintk_driver->driver_name = "ttyprintk";
- 	ttyprintk_driver->name = "ttyprintk";
+If there are many machines that do this - then we may need a workaround in Linux code for them.
+Who is the manufacturer of the motherboard and/or system you are using?
+
+But the current code that expects to see the machine check on all logical cpus is correct (and works
+as is on other machines that are following the specification).
+
+-Tony
+
+
