@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab3EJPPO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 11:15:14 -0400
-Received: from 19.mo5.mail-out.ovh.net ([46.105.35.78]:42893 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753430Ab3EJPPM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 11:15:12 -0400
-X-Greylist: delayed 1800 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 May 2013 11:15:12 EDT
-Date: Fri, 10 May 2013 16:34:04 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH] ARM: at91: dts: request only spi cs-gpios used on
- sama5d3x cpu module
-Message-ID: <20130510143404.GB22508@game.jcrosoft.org>
-References: <1368181807-15182-1-git-send-email-nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368181807-15182-1-git-send-email-nicolas.ferre@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 459367162953837420
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1757360Ab3EJPRj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 11:17:39 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13258 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753195Ab3EJPRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 11:17:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,648,1363158000"; 
+   d="scan'208";a="334910944"
+From: Alex Shi <alex.shi@intel.com>
+To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, morten.rasmussen@arm.com
+Cc: vincent.guittot@linaro.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        alex.shi@intel.com, mgorman@suse.de, riel@redhat.com,
+        wangyun@linux.vnet.ibm.com
+Subject: [patch 0/8]: use runnable load avg in balance
+Date: Fri, 10 May 2013 23:17:21 +0800
+Message-Id: <1368199049-2798-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12:30 Fri 10 May     , Nicolas Ferre wrote:
-> From: Ludovic Desroches <ludovic.desroches@atmel.com>
-> 
-> Instead of requesting all available spi cs-gpios, request only the ones used on
-> the board, in our case on the cpu module.
-> 
-> Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+This patchset bases on tip/sched/core.
 
-Best Regards,
-J.
-> ---
->  arch/arm/boot/dts/sama5d3.dtsi    | 10 ----------
->  arch/arm/boot/dts/sama5d3xcm.dtsi |  4 ++++
->  2 files changed, 4 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
-> index 2e643ea..dee5e2f 100644
-> --- a/arch/arm/boot/dts/sama5d3.dtsi
-> +++ b/arch/arm/boot/dts/sama5d3.dtsi
-> @@ -75,11 +75,6 @@
->  				compatible = "atmel,at91sam9x5-spi";
->  				reg = <0xf0004000 0x100>;
->  				interrupts = <24 4 3>;
-> -				cs-gpios = <&pioD 13 0
-> -					    &pioD 14 0 /* conflicts with SCK0 and CANRX0 */
-> -					    &pioD 15 0 /* conflicts with CTS0 and CANTX0 */
-> -					    &pioD 16 0 /* conflicts with RTS0 and PWMFI3 */
-> -					   >;
->  				pinctrl-names = "default";
->  				pinctrl-0 = <&pinctrl_spi0>;
->  				status = "disabled";
-> @@ -203,11 +198,6 @@
->  				compatible = "atmel,at91sam9x5-spi";
->  				reg = <0xf8008000 0x100>;
->  				interrupts = <25 4 3>;
-> -				cs-gpios = <&pioC 25 0
-> -					    &pioC 26 0 /* conflitcs with TWD1 and ISI_D11 */
-> -					    &pioC 27 0 /* conflitcs with TWCK1 and ISI_D10 */
-> -					    &pioC 28 0 /* conflitcs with PWMFI0 and ISI_D9 */
-> -					   >;
->  				pinctrl-names = "default";
->  				pinctrl-0 = <&pinctrl_spi1>;
->  				status = "disabled";
-> diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
-> index 1f8ed40..b336e77 100644
-> --- a/arch/arm/boot/dts/sama5d3xcm.dtsi
-> +++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
-> @@ -32,6 +32,10 @@
->  
->  	ahb {
->  		apb {
-> +			spi0: spi@f0004000 {
-> +				cs-gpios = <&pioD 13 0>, <0>, <0>, <0>;
-> +			};
-> +
->  			macb0: ethernet@f0028000 {
->  				phy-mode = "rgmii";
->  			};
-> -- 
-> 1.8.0
-> 
+This version changed the runnable load avg value setting for new task
+in patch 3rd.
+
+We also tried to include blocked load avg in balance. but find many benchmark
+performance dropping. Guess the too bigger cpu load drive task to be waken
+on remote CPU, and cause wrong decision in periodic balance.
+
+I retested on Intel core2, NHM, SNB, IVB, 2 and 4 sockets machines with
+benchmark kbuild, aim7, dbench, tbench, hackbench, oltp, and netperf loopback
+etc. The performance is better now. 
+
+On SNB EP 4 sockets machine, the hackbench increased about 50%, and result
+become stable. on other machines, hackbench increased about 2~10%.
+oltp increased about 30% in NHM EX box.
+netperf loopback also increased on SNB EP 4 sockets box.
+no clear changes on other benchmarks.
+ 
+Michael Wang had tested previous version on pgbench on his box:
+https://lkml.org/lkml/2013/4/2/1022
+
+And Morten tested previous version too.
+http://comments.gmane.org/gmane.linux.kernel/1463371
+
+Thanks comments from Peter, Paul, Morten, Miacheal and Preeti.
+And more comments are appreciated!
+
+Regards
+Alex
+
+[patch v6 1/8] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
+[patch v6 2/8] sched: move few runnable tg variables into CONFIG_SMP
+[patch v6 3/8] sched: set initial value of runnable avg for new
+[patch v6 4/8] sched: fix slept time double counting in enqueue
+[patch v6 5/8] sched: update cpu load after task_tick.
+[patch v6 6/8] sched: compute runnable load avg in cpu_load and
+[patch v6 7/8] sched: consider runnable load average in move_tasks
+[patch v6 8/8] sched: remove blocked_load_avg in tg
