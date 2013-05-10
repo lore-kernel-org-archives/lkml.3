@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab3EJK3t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 06:29:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39790 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750867Ab3EJK3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 06:29:47 -0400
-From: Lingzhu Xiang <lxiang@redhat.com>
-To: Matt Fleming <matt.fleming@intel.com>, Jeremy Kerr <jk@ozlabs.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josh Boyer <jwboyer@redhat.com>, "Lee, Chun-Yi" <jlee@suse.com>,
-        Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH] efivarfs: Never return ENOENT from firmware again
-Date: Fri, 10 May 2013 18:29:21 +0800
-Message-Id: <5b6476bf31dc699a0e6f3983e78447eeac34d831.1368180585.git.lxiang@redhat.com>
+	id S1752536Ab3EJKaM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 06:30:12 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:24765 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304Ab3EJKaK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 06:30:10 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ARM: at91: dts: request only spi cs-gpios used on sama5d3x cpu module
+Date: Fri, 10 May 2013 12:30:07 +0200
+Message-ID: <1368181807-15182-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously in 1fa7e69 efi_status_to_err() translated firmware status
-EFI_NOT_FOUND to -EIO instead of -ENOENT for efivarfs operations to
-avoid confusion. After refactoring in e14ab23, it is also used in other
-places where the translation may be unnecessary.
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
 
-So move the translation to efivarfs specific code. Also return EOF
-for reading zero-length files, which is what users would expect.
+Instead of requesting all available spi cs-gpios, request only the ones used on
+the board, in our case on the cpu module.
 
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Jeremy Kerr <jk@ozlabs.org>
-Cc: Lee, Chun-Yi <jlee@suse.com>
-Cc: Andy Whitcroft <apw@canonical.com>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
-This is to be applied against mainline or Matt Fleming's chainsaw branch.
+ arch/arm/boot/dts/sama5d3.dtsi    | 10 ----------
+ arch/arm/boot/dts/sama5d3xcm.dtsi |  4 ++++
+ 2 files changed, 4 insertions(+), 10 deletions(-)
 
- fs/efivarfs/file.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/fs/efivarfs/file.c b/fs/efivarfs/file.c
-index bfb5315..8dd524f 100644
---- a/fs/efivarfs/file.c
-+++ b/fs/efivarfs/file.c
-@@ -44,8 +44,11 @@ static ssize_t efivarfs_file_write(struct file *file,
+diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+index 2e643ea..dee5e2f 100644
+--- a/arch/arm/boot/dts/sama5d3.dtsi
++++ b/arch/arm/boot/dts/sama5d3.dtsi
+@@ -75,11 +75,6 @@
+ 				compatible = "atmel,at91sam9x5-spi";
+ 				reg = <0xf0004000 0x100>;
+ 				interrupts = <24 4 3>;
+-				cs-gpios = <&pioD 13 0
+-					    &pioD 14 0 /* conflicts with SCK0 and CANRX0 */
+-					    &pioD 15 0 /* conflicts with CTS0 and CANTX0 */
+-					    &pioD 16 0 /* conflicts with RTS0 and PWMFI3 */
+-					   >;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_spi0>;
+ 				status = "disabled";
+@@ -203,11 +198,6 @@
+ 				compatible = "atmel,at91sam9x5-spi";
+ 				reg = <0xf8008000 0x100>;
+ 				interrupts = <25 4 3>;
+-				cs-gpios = <&pioC 25 0
+-					    &pioC 26 0 /* conflitcs with TWD1 and ISI_D11 */
+-					    &pioC 27 0 /* conflitcs with TWCK1 and ISI_D10 */
+-					    &pioC 28 0 /* conflitcs with PWMFI0 and ISI_D9 */
+-					   >;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_spi1>;
+ 				status = "disabled";
+diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
+index 1f8ed40..b336e77 100644
+--- a/arch/arm/boot/dts/sama5d3xcm.dtsi
++++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
+@@ -32,6 +32,10 @@
  
- 	bytes = efivar_entry_set_get_size(var, attributes, &datasize,
- 					  data, &set);
--	if (!set && bytes)
-+	if (!set && bytes) {
-+		if (bytes == -ENOENT)
-+			bytes = -EIO;
- 		goto out;
-+	}
- 
- 	if (bytes == -ENOENT) {
- 		drop_nlink(inode);
-@@ -76,7 +79,14 @@ static ssize_t efivarfs_file_read(struct file *file, char __user *userbuf,
- 	int err;
- 
- 	err = efivar_entry_size(var, &datasize);
--	if (err)
+ 	ahb {
+ 		apb {
++			spi0: spi@f0004000 {
++				cs-gpios = <&pioD 13 0>, <0>, <0>, <0>;
++			};
 +
-+	/*
-+	 * efivarfs represents uncommitted variables with
-+	 * zero-length files. Reading them should return EOF.
-+	 */
-+	if (err == -ENOENT)
-+		return 0;
-+	else if (err)
- 		return err;
- 
- 	data = kmalloc(datasize + sizeof(attributes), GFP_KERNEL);
+ 			macb0: ethernet@f0028000 {
+ 				phy-mode = "rgmii";
+ 			};
 -- 
-1.7.11.7
+1.8.0
 
