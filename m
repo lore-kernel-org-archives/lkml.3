@@ -1,179 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab3EJPjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 11:39:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34055 "EHLO mx1.redhat.com"
+	id S1753554Ab3EJPlP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 11:41:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43489 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752818Ab3EJPjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 11:39:52 -0400
-Date: Fri, 10 May 2013 17:36:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/3] init/Kconfig: Add option to set modprobe command
-Message-ID: <20130510153638.GA8179@redhat.com>
-References: <1368159316-31744-1-git-send-email-lucas.de.marchi@gmail.com> <1368159316-31744-3-git-send-email-lucas.de.marchi@gmail.com> <20130510125826.GA553@redhat.com> <CAKi4VALE8tFUTZ1qYwm0Eth1zFMU8xA6XC5RTnF1KCKYQp-0NQ@mail.gmail.com>
+	id S1752818Ab3EJPlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 11:41:13 -0400
+Message-ID: <518D1509.5070801@ti.com>
+Date: Fri, 10 May 2013 11:40:57 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKi4VALE8tFUTZ1qYwm0Eth1zFMU8xA6XC5RTnF1KCKYQp-0NQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: amit daniel kachhap <amit.daniel@samsung.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH V3 10/21] thermal: exynos: Fix to clear only the generated
+ interrupts
+References: <1367931671-3906-1-git-send-email-amit.daniel@samsung.com> <1367931671-3906-11-git-send-email-amit.daniel@samsung.com> <518BB3D7.3010205@ti.com> <CADGdYn7Hm6EXvgK_ih_T8eE1oxzeiHimpZJ2LvQvCvC=ycmddg@mail.gmail.com>
+In-Reply-To: <CADGdYn7Hm6EXvgK_ih_T8eE1oxzeiHimpZJ2LvQvCvC=ycmddg@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2TCTJLLKIIAIQSTMKGQKR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10, Lucas De Marchi wrote:
->
-> Oh, right. Forgot about that. And this patch set should have been sent
-> as RFC, since I'm interested in feedback about the idea. What do you
-> think?
+------enig2TCTJLLKIIAIQSTMKGQKR
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Well, personally I think it would be better to use kasprintf(), see the
-patch I sent (it is actually wrong, needs kfree(args) before return).
+On 09-05-2013 22:22, amit daniel kachhap wrote:
+> Hi,
+>=20
+> On Thu, May 9, 2013 at 8:03 PM, Eduardo Valentin
+> <eduardo.valentin@ti.com> wrote:
+>> On 07-05-2013 09:01, Amit Daniel Kachhap wrote:
+>>> This patch uses the TMU status register to know the generated interru=
+pts
+>>> and only clear them in the interrupt handler.
+>>>
+>>> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+>>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>>> ---
+>>>  drivers/thermal/samsung/exynos_tmu.c      |   10 ++++------
+>>>  drivers/thermal/samsung/exynos_tmu_data.c |    2 ++
+>>>  2 files changed, 6 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/s=
+amsung/exynos_tmu.c
+>>> index 97b87aa..082d5a2 100644
+>>> --- a/drivers/thermal/samsung/exynos_tmu.c
+>>> +++ b/drivers/thermal/samsung/exynos_tmu.c
+>>> @@ -325,17 +325,15 @@ static void exynos_tmu_work(struct work_struct =
+*work)
+>>>                       struct exynos_tmu_data, irq_work);
+>>>       struct exynos_tmu_platform_data *pdata =3D data->pdata;
+>>>       struct exynos_tmu_registers *reg =3D pdata->registers;
+>>> +     unsigned int val_irq;
+>>>
+>>>       exynos_report_trigger();
+>>>       mutex_lock(&data->lock);
+>>>       clk_enable(data->clk);
+>>>
+>>> -     if (data->soc =3D=3D SOC_ARCH_EXYNOS)
+>>> -             writel((reg->inten_rise_mask << reg->inten_rise_shift) =
+|
+>>> -                     (reg->inten_fall_mask << reg->inten_fall_shift)=
+,
+>>> -                             data->base + reg->tmu_intclear);
+>>> -     else
+>>> -             writel(reg->inten_rise_mask, data->base + reg->tmu_intc=
+lear);
+>>> +     val_irq =3D readl(data->base + reg->tmu_intstat);
+>>> +     /* clear the interrupts */
+>>> +     writel(val_irq, data->base + reg->tmu_intclear);
+>>>
+>>
+>> hmmm.. Don t you need to act accordingly depending on what is in your
+>> int status?
+>=20
+> Earlier also it is done like this way. Basically core thermal layer
+> checks temp for each trip so even if I check for which threshold
+> interrupt is raised it is of no use. Anyway this is a TODO for me.
+>=20
 
-Or. How about the patch below? It should be split into 2 changes:
+Please add  a /* TODO: */ entry then.
 
-	1. Introduce __argv_split(). It can have more callers, for
-	   example do_coredump() and ftrace_function_filter_re()
-	   can use it to avoid kstrndup() + kfree().
-
-	2. Change call_modprobe() to use kasprintf() + __argv_split().
-
-uncompiled/untested.
-
-Oleg.
-
---- x/lib/argv_split.c
-+++ x/lib/argv_split.c
-@@ -39,31 +39,15 @@ void argv_free(char **argv)
- }
- EXPORT_SYMBOL(argv_free);
- 
--/**
-- * argv_split - split a string at whitespace, returning an argv
-- * @gfp: the GFP mask used to allocate memory
-- * @str: the string to be split
-- * @argcp: returned argument count
-- *
-- * Returns an array of pointers to strings which are split out from
-- * @str.  This is performed by strictly splitting on white-space; no
-- * quote processing is performed.  Multiple whitespace characters are
-- * considered to be a single argument separator.  The returned array
-- * is always NULL-terminated.  Returns NULL on memory allocation
-- * failure.
-- *
-- * The source string at `str' may be undergoing concurrent alteration via
-- * userspace sysctl activity (at least).  The argv_split() implementation
-- * attempts to handle this gracefully by taking a local copy to work on.
-+/*
-+ * @argv_str should be kmalloc'ed by the caller, freed by this func.
-  */
--char **argv_split(gfp_t gfp, const char *str, int *argcp)
-+char **__argv_split(gfp_t gfp, const char *argv_str, int *argcp)
+> Thanks,
+> Amit Daniel
+>>
+>>>       clk_disable(data->clk);
+>>>       mutex_unlock(&data->lock);
+>>> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/ther=
+mal/samsung/exynos_tmu_data.c
+>>> index 3a1ded1..7322597 100644
+>>> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+>>> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+>>> @@ -45,6 +45,7 @@ static struct exynos_tmu_registers exynos4210_tmu_r=
+egisters =3D {
+>>>       .inten_rise1_shift =3D EXYNOS_TMU_INTEN_RISE1_SHIFT,
+>>>       .inten_rise2_shift =3D EXYNOS_TMU_INTEN_RISE2_SHIFT,
+>>>       .inten_rise3_shift =3D EXYNOS_TMU_INTEN_RISE3_SHIFT,
+>>> +     .tmu_intstat =3D EXYNOS_TMU_REG_INTSTAT,
+>>>       .tmu_intclear =3D EXYNOS_TMU_REG_INTCLEAR,
+>>>  };
+>>>  struct exynos_tmu_platform_data const exynos4210_default_tmu_data =3D=
  {
--	char *argv_str;
- 	bool was_space;
- 	char **argv, **argv_ret;
- 	int argc;
- 
--	argv_str = kstrndup(str, KMALLOC_MAX_SIZE - 1, gfp);
- 	if (!argv_str)
- 		return NULL;
- 
-@@ -91,4 +75,28 @@ char **argv_split(gfp_t gfp, const char 
- 		*argcp = argc;
- 	return argv_ret;
- }
-+
-+/**
-+ * argv_split - split a string at whitespace, returning an argv
-+ * @gfp: the GFP mask used to allocate memory
-+ * @str: the string to be split
-+ * @argcp: returned argument count
-+ *
-+ * Returns an array of pointers to strings which are split out from
-+ * @str.  This is performed by strictly splitting on white-space; no
-+ * quote processing is performed.  Multiple whitespace characters are
-+ * considered to be a single argument separator.  The returned array
-+ * is always NULL-terminated.  Returns NULL on memory allocation
-+ * failure.
-+ *
-+ * The source string at `str' may be undergoing concurrent alteration via
-+ * userspace sysctl activity (at least).  The argv_split() implementation
-+ * attempts to handle this gracefully by taking a local copy to work on.
-+ */
-+char **argv_split(gfp_t gfp, const char *str, int *argcp)
-+{
-+	char *dup = kstrndup(str, KMALLOC_MAX_SIZE - 1, gfp);
-+	return __argv_split(gfp, dup, argcp);
-+}
-+
- EXPORT_SYMBOL(argv_split);
---- x/kernel/kmod.c
-+++ x/kernel/kmod.c
-@@ -64,20 +64,16 @@ static DECLARE_RWSEM(umhelper_sem);
- 
- #ifdef CONFIG_MODULES
- 
--/*
--	modprobe_path is set via /proc/sys.
--*/
--char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe";
-+/* modprobe_path is set via /proc/sys/kernel/modprobe */
-+char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe -q --";
- 
- static void free_modprobe_argv(struct subprocess_info *info)
- {
--	kfree(info->argv[3]); /* check call_modprobe() */
--	kfree(info->argv);
-+	argv_free(info->argv);
- }
- 
- static int call_modprobe(char *module_name, int wait)
- {
--	struct subprocess_info *info;
- 	static char *envp[] = {
- 		"HOME=/",
- 		"TERM=linux",
-@@ -85,31 +81,24 @@ static int call_modprobe(char *module_na
- 		NULL
- 	};
- 
--	char **argv = kmalloc(sizeof(char *[5]), GFP_KERNEL);
-+	struct subprocess_info *info;
-+	char **argv;
-+	char *args;
-+
-+	args = kasprintf(GFP_KERNEL, "%s %s", modprobe_path, module_name);
-+	argv = __argv_split(GFP_KERNEL, args, NULL);
- 	if (!argv)
- 		goto out;
- 
--	module_name = kstrdup(module_name, GFP_KERNEL);
--	if (!module_name)
--		goto free_argv;
--
--	argv[0] = modprobe_path;
--	argv[1] = "-q";
--	argv[2] = "--";
--	argv[3] = module_name;	/* check free_modprobe_argv() */
--	argv[4] = NULL;
--
- 	info = call_usermodehelper_setup(modprobe_path, argv, envp, GFP_KERNEL,
- 					 NULL, free_modprobe_argv, NULL);
- 	if (!info)
--		goto free_module_name;
-+		goto free_argv;
- 
- 	return call_usermodehelper_exec(info, wait | UMH_KILLABLE);
- 
--free_module_name:
--	kfree(module_name);
- free_argv:
--	kfree(argv);
-+	argv_free(argv);
- out:
- 	return -ENOMEM;
- }
+>>> @@ -111,6 +112,7 @@ static struct exynos_tmu_registers exynos5250_tmu=
+_registers =3D {
+>>>       .inten_rise2_shift =3D EXYNOS_TMU_INTEN_RISE2_SHIFT,
+>>>       .inten_rise3_shift =3D EXYNOS_TMU_INTEN_RISE3_SHIFT,
+>>>       .inten_fall0_shift =3D EXYNOS_TMU_INTEN_FALL0_SHIFT,
+>>> +     .tmu_intstat =3D EXYNOS_TMU_REG_INTSTAT,
+>>>       .tmu_intclear =3D EXYNOS_TMU_REG_INTCLEAR,
+>>>       .emul_con =3D EXYNOS_EMUL_CON,
+>>>       .emul_temp_shift =3D EXYNOS_EMUL_DATA_SHIFT,
+>>>
+>>
+>>
+>=20
+>=20
 
+
+
+------enig2TCTJLLKIIAIQSTMKGQKR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlGNFQkACgkQCXcVR3XQvP3JhQD+LVEih4n5kDlucpm4mF4s5+/d
+fIkGjA+THtXDaMrYKaoA/2nESwD1+UTDA1YgEyKDqsGhiIDby0YfzswAAfrcju2l
+=oMc8
+-----END PGP SIGNATURE-----
+
+------enig2TCTJLLKIIAIQSTMKGQKR--
