@@ -1,113 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab3EJNtQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 09:49:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36100 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751271Ab3EJNtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 09:49:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,648,1363158000"; 
-   d="scan'208";a="331962022"
-Message-ID: <1368193751.7024.34.camel@ideak-mobl>
-Subject: Re: [PATCH 01/11] time: add *_to_jiffies_min helpers to guarantee a
- minimum duration
-From: Imre Deak <imre.deak@intel.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Date: Fri, 10 May 2013 16:49:11 +0300
-In-Reply-To: <CAKMK7uGVYxmpDANT+e5eOFtwqcM3AZdshQuy+9Xjcv=JiAeY7A@mail.gmail.com>
-References: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
-	 <CAKMK7uGVYxmpDANT+e5eOFtwqcM3AZdshQuy+9Xjcv=JiAeY7A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753151Ab3EJNu2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 09:50:28 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:60625 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751271Ab3EJNuZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 09:50:25 -0400
+From: Stephen GALLIMORE <stephen.gallimore@st.com>
+To: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>
+Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Stuart MENEFY <stuart.menefy@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
+Date: Fri, 10 May 2013 15:50:16 +0200
+Subject: RE: [RFC 1/8] serial:st-asc: Add ST ASC driver.
+Thread-Topic: [RFC 1/8] serial:st-asc: Add ST ASC driver.
+Thread-Index: Ac5MAZt6GB2onu7ySGeL3ypSBxqboQAAQQRQAF/KzsA=
+Message-ID: <A3BF01DB4A606149A4C20C4C4C808F6C3189F9A245@SAFEX1MAIL1.st.com>
+References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
+ <1368022248-2153-1-git-send-email-srinivas.kandagatla@st.com>
+ <201305081634.43498.arnd@arndb.de> <20130508153459.GA17186@kroah.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-10 at 14:24 +0200, Daniel Vetter wrote:
-> On Fri, May 10, 2013 at 2:13 PM, Imre Deak <imre.deak@intel.com> wrote:
-> > The *_to_jiffies(x) macros return a jiffy value, which if used as a
-> > delta to wait for a specific amount of time, may result in a wait-time
-> > that is less than x. Many callers already compensate for this by adding
-> > one to the returned value. To document why we need to add one and to get
-> > rid of some code duplication add a helper that does the same.
-> >
-> > Later patches will convert the currently open-coded call sites to use
-> > the new helpers.
-> >
-> > Also this can serve as a basis for auditing those users of *_to_jiffies
-> > that most likely do the wrong thing - for example set a timeout value of
-> > msecs_to_jiffies(1) - and converting them to use the new helpers.
-> >
-> > Kudos to Daniel Vetter for the idea of the new helpers.
-> >
-> > Signed-off-by: Imre Deak <imre.deak@intel.com>
-> > ---
-> >  include/linux/jiffies.h |   13 +++++++++++++
-> >  1 file changed, 13 insertions(+)
-> >
-> > diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-> > index 82ed068..d12509b 100644
-> > --- a/include/linux/jiffies.h
-> > +++ b/include/linux/jiffies.h
-> > @@ -312,6 +312,19 @@ extern u64 nsec_to_clock_t(u64 x);
-> >  extern u64 nsecs_to_jiffies64(u64 n);
-> >  extern unsigned long nsecs_to_jiffies(u64 n);
+>On Wed, May 08, 2013 at 04:34:43PM +0200, Arnd Bergmann wrote:
+> > > +#define ASC_MAJOR		204
+> > > +#define ASC_MINOR_START		40
+> > 
+> > I don't know what the current policy is on allocating major/minor 
+> > numbers, but I'm sure you cannot just reuse one that is already used.
+>
+> First, our apologies, this issue was raised internally and then got forgotten about, there's always something I guess.
 > 
-> Some piece of kerneldoc is missing here ...
+> > >I agree, why are you trying to create a new tty device name?  Can't 
+> > >you use the existing ttyS name and minor number as you will not have any other type of serial device on this system?
+>
+> That is an interesting question Greg; I believe it probably stems from historic ST SoCs that had two different types of serial devices,
+> something that is no longer the case. We will review our approach to this again, although we are not sure we can use the
+> existing ttyS major/minor (even if that is an acceptable thing to do) because of the (remote) possibility of someone using 
+> a standard PCIe attached serial card.
 
-True, I'll add it.
+Greg, having looked at this we have concluded that we should just go dynamic, as others have mentioned with udev on a full system
+or devtmpfs on a minimal initramfs system there is no reason to use a static major/minor. However the view here is that we
+would prefer to keep the unique name, as for example the lantiq driver which is also dynamic does, for the reason previously
+mentioned regarding PCIe cards.
 
->  Also I'm a bit confused
-> about the _min suffix, I kinda expect something called _min to be less
-> than the normal one thing. A few ideas:
-> - to_jiffy_timeout (since pretty much all of the values computed like
-> this will end up in schedule_timeout eventually),
-> - to_jiffies_relative (iirc relative is already established in other parts)
-> - ...
+Is that acceptable?
 
-_min as in minimum guaranteed. As for _timeout, the returned value can
-be used in other ways too for example to directly compare against
-jiffies. I don't have a strong preference, so I can use _timeout
-instead.
-
-> In any case I'd like to have this + the i915 patch go into 3.10 cc:
-> stable if possible, since it fixes bugs
-> (the i915 patch is missing bugzilla links, too).
-
-Ok, I will CC stable. I planned to post the patchset with the actual
-fixes as a follow-up, so haven't included any bugzilla links here.
-
-> Cheers, Daniel
-> 
-> > +#define __define_time_to_jiffies_min(tname, ttype)                     \
-> > +static inline unsigned long                                            \
-> > +tname ## _to_jiffies_min(const ttype m)                                        \
-> > +{                                                                      \
-> > +       return max_t(long, MAX_JIFFY_OFFSET, tname ## _to_jiffies(m) + 1);\
-
-Here I meant min_t :/
-
---Imre
-
-> > +}
-> > +
-> > +__define_time_to_jiffies_min(msecs, unsigned int)
-> > +__define_time_to_jiffies_min(usecs, unsigned int)
-> > +__define_time_to_jiffies_min(nsecs, u64)
-> > +__define_time_to_jiffies_min(timespec, struct timespec *)
-> > +__define_time_to_jiffies_min(timeval, struct timeval *)
-> > +
-> >  #define TIMESTAMP_SIZE 30
-> >
-> >  #endif
-> > --
-> > 1.7.10.4
-
+Regards,
+-stephen
