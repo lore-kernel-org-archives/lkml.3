@@ -1,109 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757780Ab3EJBzv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 21:55:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53876 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755099Ab3EJBzt convert rfc822-to-8bit (ORCPT
+	id S1757827Ab3EJB54 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 21:57:56 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49498 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757648Ab3EJB5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 21:55:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,645,1363158000"; 
-   d="scan'208";a="334614387"
-From: "Zhang, Ning A" <ning.a.zhang@intel.com>
-To: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: ASOC bug? maybe no need to set bias_level to PREPARE.
-Thread-Topic: ASOC bug? maybe no need to set bias_level to PREPARE.
-Thread-Index: Ac5NHByMEDSZGfd2RfWQbkjWhMl7bA==
-Date: Fri, 10 May 2013 01:55:45 +0000
-Message-ID: <027FCDD209E4CC4181A7B9D5DBB88057249BFD2C@SHSMSX102.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 9 May 2013 21:57:55 -0400
+X-AuditID: 9c930197-b7c1fae000001854-7d-518c54215c2e
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 8/9] perf: Document the ABI for 'precise' sysfs attribute
+References: <1368106344-23383-1-git-send-email-jolsa@redhat.com>
+	<1368106344-23383-9-git-send-email-jolsa@redhat.com>
+Date: Fri, 10 May 2013 10:57:53 +0900
+In-Reply-To: <1368106344-23383-9-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Thu, 9 May 2013 15:32:23 +0200")
+Message-ID: <87y5bn61ge.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Girdwood
+On Thu,  9 May 2013 15:32:23 +0200, Jiri Olsa wrote:
+> Adding ABI documentation for newly added 'precise' sysfs
+> attribute.  It's added under the testing section.
+>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Stephane Eranian <eranian@google.com>
+> ---
+>  .../ABI/testing/sysfs-bus-event_source-devices-cpu-precise     | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>  create mode 100644 Documentation/ABI/testing/sysfs-bus-event_source-devices-cpu-precise
+>
+> diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-cpu-precise b/Documentation/ABI/testing/sysfs-bus-event_source-devices-cpu-precise
+> new file mode 100644
+> index 0000000..f3ed378
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-cpu-precise
+> @@ -0,0 +1,10 @@
+> +Where:		/sys/bus/event_source/devices/cpu/precise
+> +Date:		January 2013
+> +Kernel Version:	3.7
 
-When I try to fix wm1811 standby issue for our customer, I find a strange behavior in ASOC core.
+Looks like a copy-and-paste problem. :)
 
-here is my test code:
+Thanks,
+Namhyung
 
-snd_soc_dapm_disable_pin(&dapm,"MICBIAS2"); 
-snd_soc_dapm_disable_pin(&dapm,"CLK_SYS"); 
-snd_soc_dapm_sync(&dapm);
 
-and add debug info in dapm_pre_sequence_async() 
-and we will find these debug info printed: 
-
-d->bias_level = 1 
-d->target_bias_level = 0 
-in snd_soc_dapm_set_bias_level
-
-from the debug log, when STANDBY -> OFF transition, it set bias_level to PREPARE.
-
-that's wrong logic.
-
-And more there is comment in source code:
-	/* Prepare for a STADDBY->ON or ON->STANDBY transition */
-But, the code isn't the same as the comment.
-
-----
->From 58d8994bdc543909e9904b8df0787afc36684283 Mon Sep 17 00:00:00 2001
-From: ning.a.zhang <ning.a.zhang@intel.com>
-Date: Fri, 10 May 2013 09:44:06 +0700
-Subject: [PATCH] Asoc dapm behavior fix
-
-in soc_dapm.c, there is a illogic behavior, when bias_level
-from STANDBY -> OFF transition.
-source does not follow its comment.
-
-this patch is based on the comment
-
-Signed-off-by: ning.a.zhang <ning.a.zhang@intel.com>
----
- sound/soc/soc-dapm.c |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-index d6d9ba2..834ab4c 100644
---- a/sound/soc/soc-dapm.c
-+++ b/sound/soc/soc-dapm.c
-@@ -1486,8 +1486,9 @@ static void dapm_pre_sequence_async(void *data, async_cookie_t cookie)
- 				"ASoC: Failed to turn on bias: %d\n", ret);
- 	}
- 
--	/* Prepare for a STADDBY->ON or ON->STANDBY transition */
--	if (d->bias_level != d->target_bias_level) {
-+	/* If we're on and we're not supposed to be go into PREPARE */
-+	if (d->bias_level == SND_SOC_BIAS_ON &&
-+	    d->target_bias_level != SND_SOC_BIAS_ON) {
- 		ret = snd_soc_dapm_set_bias_level(d, SND_SOC_BIAS_PREPARE);
- 		if (ret != 0)
- 			dev_err(d->dev,
-@@ -1525,6 +1526,15 @@ static void dapm_post_sequence_async(void *data, async_cookie_t cookie)
- 			pm_runtime_put(d->dev);
- 	}
- 
-+	if (d->bias_level == SND_SOC_BIAS_STANDBY &&
-+	    (d->target_bias_level == SND_SOC_BIAS_PREPARE ||
-+	     d->target_bias_level == SND_SOC_BIAS_ON)) {
-+		ret = snd_soc_dapm_set_bias_level(d, SND_SOC_BIAS_PREPARE);
-+		if (ret != 0)
-+			dev_err(d->dev, "ASoC: Failed to apply prepare bias: %d\n",
-+				ret);
-+	}
-+
- 	/* If we just powered up then move to active bias */
- 	if (d->bias_level == SND_SOC_BIAS_PREPARE &&
- 	    d->target_bias_level == SND_SOC_BIAS_ON) {
--- 
-1.7.1
-
+> +Contact:	Jiri Olsa <jolsa@redhat.com>
+> +		Linux kernel mailing list <linux-kernel@vger.kernel.org>
+> +Description:
+> +		X86 specific attribute
+> +
+> +		Attribute to specify the maximum allowed value
+> +		for perf_event_attr:precise_ip field.
