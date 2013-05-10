@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab3EJC6J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 22:58:09 -0400
-Received: from mail-vb0-f41.google.com ([209.85.212.41]:36084 "EHLO
-	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909Ab3EJC6H (ORCPT
+	id S1751682Ab3EJDMA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 23:12:00 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36016 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab3EJDL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 22:58:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130510102706.84061f044d3e59717638b731@canb.auug.org.au>
-References: <1368098909-919-1-git-send-email-realmz6@gmail.com>
-	<CA+55aFyQVZ622dH-e+V77B6LKuYeXS+QfnYYQK77=0T82-MkAA@mail.gmail.com>
-	<20130510102706.84061f044d3e59717638b731@canb.auug.org.au>
-Date: Fri, 10 May 2013 10:58:06 +0800
-Message-ID: <CAA_GA1cA0RrmcWhBcD9iWs2LjHVns-B+6SEimSzx4yiZDKxiVg@mail.gmail.com>
-Subject: Re: [uclinux-dist-devel] [GIT PULL] Blackfin updates for 3.10
-From: Bob Liu <lliubbo@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "Steven Miao (Steven Miao)" <realmz6@gmail.com>,
+	Thu, 9 May 2013 23:11:58 -0400
+Date: Fri, 10 May 2013 13:11:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Keith Busch <keith.busch@intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Kent Overstreet <koverstreet@google.com>
+Subject: linux-next: build warning after merge of the akpmtree
+Message-Id: <20130510131146.9646757173476e28de57f6aa@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__10_May_2013_13_11_46_+1000_B6LBC6Urnkiv1vog"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 8:27 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> On Thu, 9 May 2013 14:53:42 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
->>
->> Hmm. I'm used to pull blackfin updates from Bob Liu. I see that he has
->> signed your gpg key, so this all looks fine, but quite frankly, Id'
->> much rather be told ahead of time that "oh, expect pulls from another
->> person".
->>
->> I do *not* want to end up in some kind of fight over who maintains
->> what. Bob? Am I supposed to expect blackfin pulls to come from Steven
->> now? Or is this a one-off? Or what?
->
-> And should this tree be included in linux-next for future work (as well,
-> or instead of, the current blackfin tree)?
->
+--Signature=_Fri__10_May_2013_13_11_46_+1000_B6LBC6Urnkiv1vog
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, please!
-And now you can drop my blackfin git tree from linux-next.
+Hi Andrew,
 
---
-Regards,
---Bob
+After merging the akpm tree, today's linux-next build (x86_64
+allmodconfig) produced these warnings:
+
+drivers/block/nvme-core.c: In function 'nvme_bio_split':
+/scratch/sfr/next/drivers/block/nvme-core.c:483:19: warning: assignment fro=
+m incompatible pointer type [enabled by default]
+/scratch/sfr/next/drivers/block/nvme-core.c:484:19: warning: assignment fro=
+m incompatible pointer type [enabled by default]
+
+Introduced by commit 427e97080196 ("NVMe: Split non-mergeable bio
+requests") from Linus' tree interacting with commit 6a4d55146334 ("block:
+prep work for batch completion") from the akpm tree.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__10_May_2013_13_11_46_+1000_B6LBC6Urnkiv1vog
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRjGVyAAoJEECxmPOUX5FEkiUQAJ3gintTw97iHVcRia1bewZT
+qJDBqwwoaO4nHhmXACdFQayrFWTnrRgP8HqtUaoG4sBWY9RY02dYM7XxL52cdxMS
+muINIErMCOX+SaT9gSo55TJ2A7r5I+ptk66+k2giX1J+PXn6jLiI1lsiQ0yxKf3h
+9A4vYRzMtyr5aOA4s0vu9souE2XP7IbHLg/cSpAXzGOyp03Ep8Xpbagll2aPvl/l
+rZxroLYc5FCB0NoVDwV1EmcsysqfK+ArQd58DUT+qAM+iJSK3dqhbQ+g87GAtLIc
+MIyK6U/IYaShp1LWGrqmYtKD42nnbBipRtteYN8Y4Qn5oohnMwdZBiPGH41ILtnW
+5UZc5IAERHwV/w2/la+r0BTNS7x2/3Q9+Xr6MkVE8rsZ8TNn+fr+O5b48cT8/4yh
+skmtnUY3/noF3hz5Cg9No5rFFRcv0j+BmDirdE4tFLNTEHeAfdN9LmfNy1p/tCf/
+JIJp3HHX1uI3QDlEkLMjDwP6mFBs8iX4qgtGg7ZDATTortzQ11JzPK31Z2JTOcSl
+or7eICYCfWzPEnMVdGZPflxb6vus6tDAphaR6z1tbWSsV0xIQk5Tr2P7LkUt5FnZ
+FQYGdI/+LCYxsnENCq80f+PuwKq4XLBoQV8hiyDyMx+SuDKP75+WyckUecx1ue0R
+Ss5/DJzpZGIgFw8QDDO0
+=zoN3
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__10_May_2013_13_11_46_+1000_B6LBC6Urnkiv1vog--
