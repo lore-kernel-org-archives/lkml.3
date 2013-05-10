@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab3EJDiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 May 2013 23:38:12 -0400
-Received: from mga14.intel.com ([143.182.124.37]:50288 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042Ab3EJDiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 May 2013 23:38:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,645,1363158000"; 
-   d="scan'208";a="331750844"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "Wei, Gang" <gang.wei@intel.com>
-Subject: RE: [PATCH 1/4] driver: add TXT driver in kernel
-Thread-Topic: [PATCH 1/4] driver: add TXT driver in kernel
-Thread-Index: AQHOSvE9AcunBqr7IUa9oxQD3ESIK5j6kqOAgAIFqdA=
-Date: Fri, 10 May 2013 03:38:05 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE9AC855@SHSMSX102.ccr.corp.intel.com>
-References: <1367938519-840-1-git-send-email-qiaowei.ren@intel.com>
-	 <1367938519-840-2-git-send-email-qiaowei.ren@intel.com>
- <1367980339.2425.7.camel@x230>
-In-Reply-To: <1367980339.2425.7.camel@x230>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1753213Ab3EJDkw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 May 2013 23:40:52 -0400
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:58553 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751198Ab3EJDkv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 May 2013 23:40:51 -0400
 MIME-Version: 1.0
+In-Reply-To: <CA+5PVA5V59N7CaX++=059icOH1-u6a4U+B46LijMn0eeB1UZFw@mail.gmail.com>
+References: <CACtbSuSDBe33DGfR0LFXCtzRYBaF-JuKBjYWu8QFEdw7nENPSA@mail.gmail.com>
+	<CA+5PVA5V59N7CaX++=059icOH1-u6a4U+B46LijMn0eeB1UZFw@mail.gmail.com>
+Date: Thu, 9 May 2013 20:40:50 -0700
+Message-ID: <CACtbSuTcLnkO0qM9o60nUerKGPdLUqxJxBbK2Gd0WYZtgcLMSg@mail.gmail.com>
+Subject: Re: [PATCH] [SVN] Please Merge 7 VirtualBox Kernel Modules into the
+ Linux Kernel
+From: quickbooks office <quickbooks.office@gmail.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        vbox-dev@virtualbox.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4A3cKG7020253
 
-On 2013-05-08, Matthew Garrett wrote:
-> On Tue, 2013-05-07 at 22:55 +0800, Qiaowei Ren wrote:
-> 
-> > + * This module is expected to be a better tool to access below
-> > + resources
-> 
-> Expected to be or is? :)
+On Wed, May 8, 2013 at 8:40 AM, Josh Boyer <jwboyer@gmail.com> wrote:
+> On Wed, May 8, 2013 at 12:09 AM, quickbooks office
+> <quickbooks.office@gmail.com> wrote:
+>> Please Merge VirtualBox Kernel Modules into the Kernel.
+>>
+>> -----------------------------------------------------------------------------------------------------------
+>>
+>> svn co http://www.virtualbox.org/svn/vbox/trunk vbox
+>> sh '/home/user/vbox/src/VBox/Additions/linux/export_modules'
+>> VBoxGuestModules.tar.gz
+>>
+>> Extracting VBoxGuestModules.tar.gz will give the Source Code for 3
+>> modules (used in a Linux Guest):
+>>
+>> 1. vboxguest (VirtualBox guest kernel module)
+>>
+>> 2. vboxsf (VirtualBox guest kernel module for shared folders)
+>>
+>> 3. vboxvideo (VirtualBox guest kernel module for drm support)
+>
+> That's not how this works.  The vbox developers need to submit them as
+> patches to the appropriate maintainers and they need to go through
+> proper review.  As far as I can tell, that hasn't been done because
+> they don't want to settle on a single API/ABI between the kernel and
+> userspace interfaces for vbox.
+>
+> josh
 
-"is" :)
+Who are the appropriate maintainers for adding new (VirtualBox) kernel
+modules to the Linux kernel?
+And how would they go through proper review?
 
-> > + * Data is currently found below
-> 
-> You're adding it to ABI, so it shouldn't just be current - are you planning on
-> moving it at any point? Is this functionality that should be under securityfs
-> instead?
-> 
-> > +	txt_pdev = platform_device_register_simple(DEV_NAME, -1, NULL, 0);
-> 
-> This will register even if there's no TXT support on the platform, right? Is there
-> no mechanism for determining whether a platform has TXT support before
-> registering a device?
-> 
-> > +module_init(txt_sysfs_init);
-> > +module_exit(txt_sysfs_exit);
-> 
-> And you've got no module aliases, so this will never be autoloaded. How does
-> the OS know that the platform implements TXT?
-
-Currently this driver only depends on CONFIG_INTEL_TXT, which is the kernel option for enabling Intel TXT support. And there is no explicit interface to check whether txt is supported in this txt enabling part of kernel. But since the tboot code will detect whether the platform actually supports Intel TXT, and so tboot_enabled() in include/linux/tboot.h may be used to determine whether a platform has TXT support.
-
-In fact, we may also check CPU feature ECX[6] (SMX) for this purpose.
-
-Thanks,
-Qiaowei
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks.
