@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab3EJOHS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 10:07:18 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:50688 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356Ab3EJOHQ (ORCPT
+	id S1753620Ab3EJOIO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 10:08:14 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:36469 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386Ab3EJOIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 10:07:16 -0400
-Message-ID: <518CFF0A.7000002@gmail.com>
-Date: Fri, 10 May 2013 08:07:06 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Fri, 10 May 2013 10:08:12 -0400
+Date: Fri, 10 May 2013 07:08:21 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Stephen GALLIMORE <stephen.gallimore@st.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Stuart MENEFY <stuart.menefy@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
+Subject: Re: [RFC 1/8] serial:st-asc: Add ST ASC driver.
+Message-ID: <20130510140821.GA4099@kroah.com>
+References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com>
+ <1368022248-2153-1-git-send-email-srinivas.kandagatla@st.com>
+ <201305081634.43498.arnd@arndb.de>
+ <20130508153459.GA17186@kroah.com>
+ <A3BF01DB4A606149A4C20C4C4C808F6C3189F9A245@SAFEX1MAIL1.st.com>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@kernel.org,
-        fweisbec@gmail.com, peterz@infradead.org, namhyung@kernel.org,
-        xiaoguangrong@linux.vnet.ibm.com
-Subject: Re: [PATCH 04/13] perf session: export a few functions for event
- processing
-References: <1368073909-8825-1-git-send-email-dsahern@gmail.com> <1368073909-8825-5-git-send-email-dsahern@gmail.com> <20130510121459.GH1040@krava.brq.redhat.com>
-In-Reply-To: <20130510121459.GH1040@krava.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A3BF01DB4A606149A4C20C4C4C808F6C3189F9A245@SAFEX1MAIL1.st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/10/13 6:14 AM, Jiri Olsa wrote:
->> @@ -494,8 +494,8 @@ static int perf_session_deliver_event(struct perf_session *session,
->>   				      struct perf_tool *tool,
->>   				      u64 file_offset);
->>
->> -static int flush_sample_queue(struct perf_session *s,
->> -			       struct perf_tool *tool)
->> +int flush_sample_queue(struct perf_session *s,
->> +		       struct perf_tool *tool)
->
-> hm, can't see flush_sample_queue being used globaly
+On Fri, May 10, 2013 at 03:50:16PM +0200, Stephen GALLIMORE wrote:
+> Greg, having looked at this we have concluded that we should just go
+> dynamic, as others have mentioned with udev on a full system or
+> devtmpfs on a minimal initramfs system there is no reason to use a
+> static major/minor. However the view here is that we would prefer to
+> keep the unique name, as for example the lantiq driver which is also
+> dynamic does, for the reason previously mentioned regarding PCIe
+> cards.
 
-oops, moved to finish_round and forgot to remove this export.
+Why do you want your own name?
 
-David
+> Is that acceptable?
 
+I would prefer not to use a new serial port name, as this is only going
+to make it harder for me to delete that name in the next year :)
+
+Sorry,
+
+greg k-h
