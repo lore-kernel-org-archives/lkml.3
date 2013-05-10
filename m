@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757776Ab3EJP2E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 11:28:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51154 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757398Ab3EJP2B (ORCPT
+	id S1757649Ab3EJP3S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 11:29:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42863 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757499Ab3EJP3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 11:28:01 -0400
-Date: Fri, 10 May 2013 08:28:00 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/73] 3.9.2-stable review
-Message-ID: <20130510152800.GA11798@kroah.com>
-References: <20130509222526.480204972@linuxfoundation.org>
- <1368199414.4694.3.camel@lorien>
+	Fri, 10 May 2013 11:29:17 -0400
+Date: Fri, 10 May 2013 17:27:38 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: acme@infradead.org, jolsa@redhat.com, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, rob@landley.net
+Subject: Re: [RFC/PATCH] perf: Expand definition of sysfs format attribute
+Message-ID: <20130510152738.GA885@dyad.programming.kicks-ass.net>
+References: <1362370865-4437-1-git-send-email-michael@ellerman.id.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368199414.4694.3.camel@lorien>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1362370865-4437-1-git-send-email-michael@ellerman.id.au>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 03:23:34PM +0000, Shuah Khan wrote:
-> On Thu, 2013-05-09 at 15:24 -0700, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.9.2 release.
-> > There are 73 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > 
-> > Responses should be made by Sat May 11 22:23:28 UTC 2013.
-> > Anything received after that time might be too late.
-> > 
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.2-rc1.gz
-> > and the diffstat can be found below.
-> > 
-> > thanks,
-> > 
-> > greg k-h
+On Mon, Mar 04, 2013 at 03:21:05PM +1100, Michael Ellerman wrote:
+> Make it explicit that the format attributes may define overlapping bit
+> ranges. Unfortunately this was left unspecified originally, and all the
+> examples show non-overlapping ranges. I don't believe this is an ABI
+> change, as we are defining something that was previously undefined, but
+> others may disagree.
 > 
-> Patches applied cleanly to 3.0.77, 3.4.44, 3.8.12, and 3.9.1 
+> The POWER8 PMU would like to define overlapping ranges, as bit ranges in
+> the event code have different meanings for certain events. It will also
+> allow us to define an overarching "event" field, that encompasses all
+> others.
 > 
-> Compiled and booted on the following systems:
+> As far as I can see perf is comfortable with this change, however I am
+> not sure if there are any other users of the interface.
 > 
-> Samsung Series 9 900X4C Intel Corei5:
->     (3.4.45-rc1, 3.8.13-rc1, and 3.9.2-rc1)
-> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
->     (3.0.78-rc1, 3.4.45-rc1, 3.8.13-rc1, and 3.9.2-rc1)
-> 
-> dmesgs for all releases look good. No regressions compared to the previous
-> dmesgs for each of these releases.
+> Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
 
-Wonderful, thanks for testing all of these and letting us know.
+Jiri was going to collect to send to Ingo..
 
-greg k-h
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+
+> ---
+>  Documentation/ABI/testing/sysfs-bus-event_source-devices-format |    6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
+> index 079afc7..77f47ff 100644
+> --- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
+> +++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
+> @@ -9,6 +9,12 @@ Description:
+>  		we want to export, so that userspace can deal with sane
+>  		name/value pairs.
+>  
+> +		Userspace must be prepared for the possibility that attributes
+> +		define overlapping bit ranges. For example:
+> +			attr1 = 'config:0-23'
+> +			attr2 = 'config:0-7'
+> +			attr3 = 'config:12-35'
+> +
+>  		Example: 'config1:1,6-10,44'
+>  		Defines contents of attribute that occupies bits 1,6-10,44 of
+>  		perf_event_attr::config1.
+> -- 
+> 1.7.10.4
+> 
