@@ -1,196 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab3EJI15 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 04:27:57 -0400
-Received: from sauhun.de ([89.238.76.85]:60472 "EHLO pokefinder.org"
+	id S1754845Ab3EJI2L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 04:28:11 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4115 "EHLO mms3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753065Ab3EJIRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 04:17:03 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tony Prisk <linux@prisktech.co.nz>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [RFC 20/42] drivers/pwm: don't check resource with devm_ioremap_resource
-Date: Fri, 10 May 2013 10:17:05 +0200
-Message-Id: <1368173847-5661-21-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
-References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
+	id S1753065Ab3EJI2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 04:28:05 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <518CA1DF.5050008@broadcom.com>
+Date: Fri, 10 May 2013 00:29:35 -0700
+From: "Christian Daudt" <csd@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130404
+ Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
+cc: "Grant Likely" <grant.likely@secretlab.ca>,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        "Rob Landley" <rob@landley.net>,
+        "Russell King" <linux@arm.linux.org.uk>, "Chris Ball" <cjb@laptop.org>,
+        "Stephen Warren" <swarren@nvidia.com>,
+        "Olof Johansson" <olof@lixom.net>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Wei WANG" <wei_wang@realsil.com.cn>,
+        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
+        "Arnd Bergmann" <arnd@arndb.de>, "Mike A. Chan" <mikechan@google.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mmc@vger.kernel.org, csd_b@daudt.org
+Subject: Re: [PATCH] ARM: mmc: bcm281xx SDHCI driver
+References: <1368078942-31265-1-git-send-email-csd@broadcom.com>
+ <20130509063503.GF3041@game.jcrosoft.org>
+In-Reply-To: <20130509063503.GF3041@game.jcrosoft.org>
+X-WSS-ID: 7D9272072L813960352-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_ioremap_resource does sanity checks on the given resource. No need to
-duplicate this in the driver.
+Thanks for the feedback.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
- drivers/pwm/pwm-imx.c      |    5 -----
- drivers/pwm/pwm-puv3.c     |    5 -----
- drivers/pwm/pwm-pxa.c      |    5 -----
- drivers/pwm/pwm-spear.c    |    7 +------
- drivers/pwm/pwm-tegra.c    |    5 -----
- drivers/pwm/pwm-tiecap.c   |    5 -----
- drivers/pwm/pwm-tiehrpwm.c |    5 -----
- drivers/pwm/pwm-tipwmss.c  |    5 -----
- drivers/pwm/pwm-vt8500.c   |    5 -----
- 9 files changed, 1 insertion(+), 46 deletions(-)
+On 13-05-08 11:35 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 22:55 Wed 08 May     , Christian Daudt wrote:
+>> Add SDHCI driver for the Broadcom 281xx SoCs. Also
+>> add bindings for it into bcm281xx dts files.
+>> Still missing:
+>>   - power managemement
+> split the dts/dtsi in an other patch
+ok.
+>> Signed-off-by: Christian Daudt <csd@broadcom.com>
+>>
+>> diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
+>> index e3bf2d6..65edf6d 100644
+>> --- a/arch/arm/configs/bcm_defconfig
+>> +++ b/arch/arm/configs/bcm_defconfig
+>> @@ -78,6 +78,13 @@ CONFIG_BACKLIGHT_LCD_SUPPORT=y
+>>   CONFIG_LCD_CLASS_DEVICE=y
+>>   CONFIG_BACKLIGHT_CLASS_DEVICE=y
+>>   # CONFIG_USB_SUPPORT is not set
+>> +CONFIG_MMC=y
+>> +CONFIG_MMC_UNSAFE_RESUME=y
+>> +CONFIG_MMC_BLOCK_MINORS=32
+>> +CONFIG_MMC_TEST=y
+>> +CONFIG_MMC_SDHCI=y
+>> +CONFIG_MMC_SDHCI_PLTFM=y
+>> +CONFIG_MMC_SDHCI_BCM_KONA=y
+>>   CONFIG_NEW_LEDS=y
+>>   CONFIG_LEDS_CLASS=y
+>>   CONFIG_LEDS_TRIGGERS=y
+>> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+>> index d88219e..e067c5a 100644
+>> --- a/drivers/mmc/host/Kconfig
+>> +++ b/drivers/mmc/host/Kconfig
+>> @@ -238,6 +238,16 @@ config MMC_SDHCI_S3C_DMA
+>>   
+>>   	  YMMV.
+>>   
+>> +config MMC_SDHCI_BCM_KONA
+>> +	tristate "SDHCI support on Broadcom KONA platform"
+>> +	depends on ARCH_BCM && MMC_SDHCI_PLTFM
+> select MMC_SDHCI_PLTFM
+> will be better
+Ok - changed it. Why is the select is better than the depends ?
+>> +
+>> +static int sdhci_bcm_kona_sd_reset(struct sdhci_host *host)
+>> +{
+>> +	unsigned int val;
+>> +	unsigned long timeout;
+>> +
+>> +	/* This timeout should be sufficent for core to reset */
+>> +	timeout = jiffies + msecs_to_jiffies(100);
+>> +
+>> +	/* reset the host using the top level reset */
+>> +	val = sdhci_readl(host, KONA_SDHOST_CORECTRL);
+>> +	val |= KONA_SDHOST_RESET;
+>> +	sdhci_writel(host, val, KONA_SDHOST_CORECTRL);
+>> +
+>> +	while (!(sdhci_readl(host, KONA_SDHOST_CORECTRL) & KONA_SDHOST_RESET)) {
+>> +		if (time_is_before_jiffies(timeout)) {
+>> +			pr_err("Error: sd host is stuck in reset!!!\n");
+>> +			return -EFAULT;
+>> +		}
+>> +	}
+>> +
+>> +	/* bring the host out of reset */
+>> +	val = sdhci_readl(host, KONA_SDHOST_CORECTRL);
+>> +	val &= ~KONA_SDHOST_RESET;
+>> +
+>> +	/*
+>> +	 * Back-to-Back register write needs a delay of 1ms at bootup (min 10uS)
+>> +	 * Back-to-Back writes to same register needs delay when SD bus clock
+>> +	 * is very low w.r.t AHB clock, mainly during boot-time and during card
+>> +	 * insert-removal.
+>> +	 */
+>> +	udelay(1000);
+> really a udelay of 1ms
+I'm trying to clarify on whether this is really necessary but it does 
+seem that this is the case. I'll send a follow-up patch if I manage to 
+get confirmation on a smaller safe number.
 
-diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-index ec28798..c938bae 100644
---- a/drivers/pwm/pwm-imx.c
-+++ b/drivers/pwm/pwm-imx.c
-@@ -265,11 +265,6 @@ static int imx_pwm_probe(struct platform_device *pdev)
- 	imx->chip.npwm = 1;
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (r == NULL) {
--		dev_err(&pdev->dev, "no memory resource defined\n");
--		return -ENODEV;
--	}
--
- 	imx->mmio_base = devm_ioremap_resource(&pdev->dev, r);
- 	if (IS_ERR(imx->mmio_base))
- 		return PTR_ERR(imx->mmio_base);
-diff --git a/drivers/pwm/pwm-puv3.c b/drivers/pwm/pwm-puv3.c
-index d1eb499..ed6007b 100644
---- a/drivers/pwm/pwm-puv3.c
-+++ b/drivers/pwm/pwm-puv3.c
-@@ -117,11 +117,6 @@ static int pwm_probe(struct platform_device *pdev)
- 		return PTR_ERR(puv3->clk);
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (r == NULL) {
--		dev_err(&pdev->dev, "no memory resource defined\n");
--		return -ENODEV;
--	}
--
- 	puv3->base = devm_ioremap_resource(&pdev->dev, r);
- 	if (IS_ERR(puv3->base))
- 		return PTR_ERR(puv3->base);
-diff --git a/drivers/pwm/pwm-pxa.c b/drivers/pwm/pwm-pxa.c
-index dee6ab55..dc97175 100644
---- a/drivers/pwm/pwm-pxa.c
-+++ b/drivers/pwm/pwm-pxa.c
-@@ -147,11 +147,6 @@ static int pwm_probe(struct platform_device *pdev)
- 	pwm->chip.npwm = (id->driver_data & HAS_SECONDARY_PWM) ? 2 : 1;
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (r == NULL) {
--		dev_err(&pdev->dev, "no memory resource defined\n");
--		return -ENODEV;
--	}
--
- 	pwm->mmio_base = devm_ioremap_resource(&pdev->dev, r);
- 	if (IS_ERR(pwm->mmio_base))
- 		return PTR_ERR(pwm->mmio_base);
-diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
-index 6d99e2c..8af6ea8 100644
---- a/drivers/pwm/pwm-spear.c
-+++ b/drivers/pwm/pwm-spear.c
-@@ -178,18 +178,13 @@ static int spear_pwm_probe(struct platform_device *pdev)
- 	int ret;
- 	u32 val;
- 
--	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!r) {
--		dev_err(&pdev->dev, "no memory resources defined\n");
--		return -ENODEV;
--	}
--
- 	pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
- 	if (!pc) {
- 		dev_err(&pdev->dev, "failed to allocate memory\n");
- 		return -ENOMEM;
- 	}
- 
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	pc->mmio_base = devm_ioremap_resource(&pdev->dev, r);
- 	if (IS_ERR(pc->mmio_base))
- 		return PTR_ERR(pc->mmio_base);
-diff --git a/drivers/pwm/pwm-tegra.c b/drivers/pwm/pwm-tegra.c
-index 3d75f4a..a540293 100644
---- a/drivers/pwm/pwm-tegra.c
-+++ b/drivers/pwm/pwm-tegra.c
-@@ -181,11 +181,6 @@ static int tegra_pwm_probe(struct platform_device *pdev)
- 	pwm->dev = &pdev->dev;
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!r) {
--		dev_err(&pdev->dev, "no memory resources defined\n");
--		return -ENODEV;
--	}
--
- 	pwm->mmio_base = devm_ioremap_resource(&pdev->dev, r);
- 	if (IS_ERR(pwm->mmio_base))
- 		return PTR_ERR(pwm->mmio_base);
-diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
-index 0d65fb2..72ca42d 100644
---- a/drivers/pwm/pwm-tiecap.c
-+++ b/drivers/pwm/pwm-tiecap.c
-@@ -240,11 +240,6 @@ static int ecap_pwm_probe(struct platform_device *pdev)
- 	pc->chip.npwm = 1;
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!r) {
--		dev_err(&pdev->dev, "no memory resource defined\n");
--		return -ENODEV;
--	}
--
- 	pc->mmio_base = devm_ioremap_resource(&pdev->dev, r);
- 	if (IS_ERR(pc->mmio_base))
- 		return PTR_ERR(pc->mmio_base);
-diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
-index 6a21759..48a485c 100644
---- a/drivers/pwm/pwm-tiehrpwm.c
-+++ b/drivers/pwm/pwm-tiehrpwm.c
-@@ -471,11 +471,6 @@ static int ehrpwm_pwm_probe(struct platform_device *pdev)
- 	pc->chip.npwm = NUM_PWM_CHANNEL;
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!r) {
--		dev_err(&pdev->dev, "no memory resource defined\n");
--		return -ENODEV;
--	}
--
- 	pc->mmio_base = devm_ioremap_resource(&pdev->dev, r);
- 	if (IS_ERR(pc->mmio_base))
- 		return PTR_ERR(pc->mmio_base);
-diff --git a/drivers/pwm/pwm-tipwmss.c b/drivers/pwm/pwm-tipwmss.c
-index c9c3d3a..3b119bc 100644
---- a/drivers/pwm/pwm-tipwmss.c
-+++ b/drivers/pwm/pwm-tipwmss.c
-@@ -70,11 +70,6 @@ static int pwmss_probe(struct platform_device *pdev)
- 	mutex_init(&info->pwmss_lock);
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!r) {
--		dev_err(&pdev->dev, "no memory resource defined\n");
--		return -ENODEV;
--	}
--
- 	info->mmio_base = devm_ioremap_resource(&pdev->dev, r);
- 	if (IS_ERR(info->mmio_base))
- 		return PTR_ERR(info->mmio_base);
-diff --git a/drivers/pwm/pwm-vt8500.c b/drivers/pwm/pwm-vt8500.c
-index 69effd1..323125a 100644
---- a/drivers/pwm/pwm-vt8500.c
-+++ b/drivers/pwm/pwm-vt8500.c
-@@ -230,11 +230,6 @@ static int vt8500_pwm_probe(struct platform_device *pdev)
- 	}
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (r == NULL) {
--		dev_err(&pdev->dev, "no memory resource defined\n");
--		return -ENODEV;
--	}
--
- 	chip->base = devm_ioremap_resource(&pdev->dev, r);
- 	if (IS_ERR(chip->base))
- 		return PTR_ERR(chip->base);
--- 
-1.7.10.4
+>> +	sdhci_writel(host, val, KONA_SDHOST_CORECTRL);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void sdhci_bcm_kona_sd_init(struct sdhci_host *host)
+>> +{
+>> +	unsigned int val;
+>> +
+>> +	/* enable the interrupt from the IP core */
+>> +	val = sdhci_readl(host, KONA_SDHOST_COREIMR);
+>> +	val |= KONA_SDHOST_IP;
+>> +	sdhci_writel(host, val, KONA_SDHOST_COREIMR);
+>> +
+>> +	/* Enable the AHB clock gating module to the host */
+>> +	val = sdhci_readl(host, KONA_SDHOST_CORECTRL);
+>> +	val |= KONA_SDHOST_EN;
+>> +
+>> +	/*
+>> +	 * Back-to-Back register write needs a delay of 1ms at bootup (min 10uS)
+>> +	 * Back-to-Back writes to same register needs delay when SD bus clock
+>> +	 * is very low w.r.t AHB clock, mainly during boot-time and during card
+>> +	 * insert-removal.
+>> +	 */
+>> +	udelay(1000);
+> ditto
+see above
+>> +	sdhci_writel(host, val, KONA_SDHOST_CORECTRL);
+>> +}
+>> +
+>> +/*
+>> + * Software emulation of the SD card insertion/removal. Set insert=1 for insert
+>> + * and insert=0 for removal. The card detection is done by GPIO. For Broadcom
+>> + * IP to function properly the bit 0 of CORESTAT register needs to be set/reset
+>> + * to generate the CD IRQ handled in sdhci.c which schedules card_tasklet.
+>> + */
+>> +static int sdhci_bcm_kona_sd_card_emulate(struct sdhci_host *host, int insert)
+>> +{
+>> +	struct sdhci_pltfm_host *pltfm_priv = sdhci_priv(host);
+>> +	struct sdhci_bcm_kona_dev *kona_dev = pltfm_priv->priv;
+>> +	u32 val;
+>> +	unsigned long flags;
+>> +
+>> +	/* this function can be called from various contexts including ISR */
+>> +	spin_lock_irqsave(&host->lock, flags);
+>> +	/* Ensure SD bus scanning to detect media change */
+>> +	host->mmc->rescan_disable = 0;
+>> +
+>> +	/*
+>> +	 * Back-to-Back register write needs a delay of min 10uS.
+>> +	 * Back-to-Back writes to same register needs delay when SD bus clock
+>> +	 * is very low w.r.t AHB clock, mainly during boot-time and during card
+>> +	 * insert-removal.
+>> +	 * We keep 20uS
+>> +	 */
+>> +	udelay(20);
+>> +	val = sdhci_readl(host, KONA_SDHOST_CORESTAT);
+>> +
+>> +	if (insert) {
+>> +		if (kona_dev->cfg->wp_gpio >= 0) {
+> gpio_is_valid
+done
+>> +			int wp_status = gpio_get_value(kona_dev->cfg->wp_gpio);
+>> +
+>> +			if (wp_status)
+>> +				val |= KONA_SDHOST_WP;
+>> +			else
+>> +				val &= ~KONA_SDHOST_WP;
+>> +		}
+>> +
+>> +		val |= KONA_SDHOST_CD_SW;
+>> +		sdhci_writel(host, val, KONA_SDHOST_CORESTAT);
+>> +	} else {
+>> +		val &= ~KONA_SDHOST_CD_SW;
+>> +		sdhci_writel(host, val, KONA_SDHOST_CORESTAT);
+>> +	}
+>> +	spin_unlock_irqrestore(&host->lock, flags);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +/*
+>> + * SD card detection interrupt handler
+>> + */
+>> +static irqreturn_t sdhci_bcm_kona_pltfm_cd_interrupt(int irq, void *host)
+>> +{
+>> +	struct sdhci_pltfm_host *pltfm_priv = sdhci_priv(host);
+>> +	struct sdhci_bcm_kona_dev *kona_dev = pltfm_priv->priv;
+>> +
+>> +	if (gpio_get_value_cansleep(kona_dev->cfg->cd_gpio) == 0) {
+>> +		pr_debug("card inserted\n");
+> dev_dbg
+done
+>> +		sdhci_bcm_kona_sd_card_emulate(host, 1);
+>> +	} else {
+>> +		pr_debug("card removed\n");
+> ditto
+done
+>> +static struct sdhci_bcm_kona_cfg * __init sdhci_bcm_kona_parse_dt(
+>> +			struct platform_device *pdev)
+>> +{
+>> +	struct sdhci_bcm_kona_cfg *cfg;
+>> +	struct device_node *np = pdev->dev.of_node;
+>> +	u32 temp;
+>> +
+>> +	if (!np)
+>> +		return NULL;
+>> +
+>> +	cfg = devm_kzalloc(&pdev->dev, sizeof(*cfg), GFP_KERNEL);
+>> +	if (!cfg) {
+>> +		dev_err(&pdev->dev, "Can't allocate platform cfg\n");
+>> +		return NULL;
+>> +	}
+>> +
+>> +	cfg->cd_gpio = of_get_named_gpio(np, "cd-gpios", 0);
+>> +	cfg->wp_gpio = of_get_named_gpio(np, "wp-gpios", 0);
+>> +	if (of_get_property(np, "non-removable", NULL))
+>> +		cfg->non_removable = 1;
+> use of_property_read_bool
+done
+>> +		/* Sleep for 128ms to allow debounce to stabilize */
+>> +		msleep(SD_DETECT_GPIO_DEBOUNCE_128MS);
+>> +		/* request irq for cd_gpio after the gpio debounce is
+>> +		 * stabilized, otherwise, some bogus gpio interrupts might be
+>> +		 * triggered.
+>> +		 */
+>> +		irq = gpio_to_irq(kona_dev->cfg->cd_gpio);
+>> +		ret = devm_request_threaded_irq(dev,
+>> +				irq,
+>> +				NULL,
+>> +				sdhci_bcm_kona_pltfm_cd_interrupt,
+>> +				IRQF_TRIGGER_FALLING|
+>> +				IRQF_TRIGGER_RISING |
+>> +				IRQF_ONESHOT |
+>> +				IRQF_NO_SUSPEND, "sdio cd", host);
+>> +		if (ret) {
+>> +			dev_err(kona_dev->dev,
+>> +				"Unable to request card detection irq=%d"
+>> +				" for gpio=%d  ret=%d\n",
+> put the sting of the dev_err on one line so we can grep
+merged it into single line
+
+
+  Thanks,
+    csd
+
 
