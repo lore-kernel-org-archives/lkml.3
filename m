@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757830Ab3EJR5e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 13:57:34 -0400
-Received: from sauhun.de ([89.238.76.85]:55849 "EHLO pokefinder.org"
+	id S1757872Ab3EJR6u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 13:58:50 -0400
+Received: from sauhun.de ([89.238.76.85]:55983 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755557Ab3EJR5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 13:57:32 -0400
-Date: Fri, 10 May 2013 19:58:54 +0200
+	id S1753652Ab3EJR6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 13:58:49 -0400
+Date: Fri, 10 May 2013 20:00:12 +0200
 From: Wolfram Sang <wsa@the-dreams.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-serial@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [RFC 27/42] drivers/tty/serial: don't check resource with
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Subject: Re: [RFC 30/42] drivers/usb/host: don't check resource with
  devm_ioremap_resource
-Message-ID: <20130510175850.GB2912@katana>
-References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
- <1368173847-5661-28-git-send-email-wsa@the-dreams.de>
- <20130510152636.GJ11227@kroah.com>
+Message-ID: <20130510180007.GC2912@katana>
+References: <1368173847-5661-31-git-send-email-wsa@the-dreams.de>
+ <Pine.LNX.4.44L0.1305100957320.1313-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130510152636.GJ11227@kroah.com>
+In-Reply-To: <Pine.LNX.4.44L0.1305100957320.1313-100000@iolanthe.rowland.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 08:26:36AM -0700, Greg Kroah-Hartman wrote:
-> On Fri, May 10, 2013 at 10:17:12AM +0200, Wolfram Sang wrote:
+On Fri, May 10, 2013 at 10:03:28AM -0400, Alan Stern wrote:
+> On Fri, 10 May 2013, Wolfram Sang wrote:
+> 
 > > devm_ioremap_resource does sanity checks on the given resource. No need to
 > > duplicate this in the driver.
 > > 
 > > Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 > > ---
-> >  drivers/tty/serial/serial-tegra.c |    6 +-----
-> >  1 file changed, 1 insertion(+), 5 deletions(-)
+> >  drivers/usb/host/ehci-atmel.c    |    9 +--------
+> >  drivers/usb/host/ehci-mxc.c      |    8 +-------
+> >  drivers/usb/host/ehci-platform.c |    6 +-----
+> >  drivers/usb/host/ehci-sh.c       |   10 +---------
+> >  drivers/usb/host/ohci-nxp.c      |    6 ------
+> >  drivers/usb/host/ohci-platform.c |    7 +------
+> >  6 files changed, 5 insertions(+), 41 deletions(-)
 > > 
-> > diff --git a/drivers/tty/serial/serial-tegra.c b/drivers/tty/serial/serial-tegra.c
-> > index 9799d04..9570b55 100644
-> > --- a/drivers/tty/serial/serial-tegra.c
-> > +++ b/drivers/tty/serial/serial-tegra.c
-> > @@ -1295,13 +1295,9 @@ static int tegra_uart_probe(struct platform_device *pdev)
-> >  	tup->cdata = cdata;
+> > diff --git a/drivers/usb/host/ehci-atmel.c b/drivers/usb/host/ehci-atmel.c
+> > index 6642009..62bf3e6 100644
+> > --- a/drivers/usb/host/ehci-atmel.c
+> > +++ b/drivers/usb/host/ehci-atmel.c
+> > @@ -101,17 +101,10 @@ static int ehci_atmel_drv_probe(struct platform_device *pdev)
+> >  		goto fail_create_hcd;
+> >  	}
 > >  
-> >  	platform_set_drvdata(pdev, tup);
-> > -	resource = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > -	if (!resource) {
-> > -		dev_err(&pdev->dev, "No IO memory resource\n");
-> > -		return -ENODEV;
+> > -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > -	if (!res) {
+> > -		dev_err(&pdev->dev,
+> > -			"Found HC with no register addr. Check %s setup!\n",
+> > -			dev_name(&pdev->dev));
+> > -		retval = -ENODEV;
+> > -		goto fail_request_resource;
 > > -	}
+> >  	hcd->rsrc_start = res->start;
+> >  	hcd->rsrc_len = resource_size(res);
 > >  
-> >  	u->mapbase = resource->start;
-> > +	resource = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >  	hcd->regs = devm_ioremap_resource(&pdev->dev, res);
 > 
-> You need to look at your scripts, as again, this is totally wrong.
+> This isn't right.  You are now dereferencing an uninitialized pointer
+> in the assignment to hcd->rsrc_start.  The compiler won't like that.
+> 
+> Most of the other changes in this patch suffer from the same problem.
 
-Yes, brown paper bag mistake :( Will fix!
+I broke the detection of dereferencing and compile tested an unaffected
+kernel. Thanks for pointing out. Will fix!
 
