@@ -1,52 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab3EJJ0m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 05:26:42 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:37475 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab3EJJ0l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 05:26:41 -0400
+	id S1752677Ab3EJJ04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 05:26:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47011 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751941Ab3EJJ0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 05:26:52 -0400
+Date: Fri, 10 May 2013 11:26:49 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Dave Hansen <dave@sr71.net>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mgorman@suse.de, tim.c.chen@linux.intel.com
+Subject: Re: [RFC][PATCH 1/7] defer clearing of page_private() for swap cache
+ pages
+Message-ID: <20130510092649.GA14968@dhcp22.suse.cz>
+References: <20130507211954.9815F9D1@viggo.jf.intel.com>
+ <20130507211955.7DF88A4F@viggo.jf.intel.com>
+ <20130509220739.GA14840@cerebellum>
 MIME-Version: 1.0
-In-Reply-To: <20130510092811.GA22942@pd.tnic>
-References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
-	<20130510002930.GB2394@somewhere>
-	<20130510092811.GA22942@pd.tnic>
-Date: Fri, 10 May 2013 11:26:39 +0200
-Message-ID: <CAFTL4hxx_pHkJExnRks4hcOYGrJb8TCMRdCtt0UA-i3wsaWWcQ@mail.gmail.com>
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jiri Kosina <jkosina@suse.cz>, Tony Luck <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130509220739.GA14840@cerebellum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/10 Borislav Petkov <bp@alien8.de>:
-> On Fri, May 10, 2013 at 02:29:31AM +0200, Frederic Weisbecker wrote:
->> @@ -616,8 +616,17 @@ static bool wake_up_full_nohz_cpu(int cpu)
->>  {
->>       if (tick_nohz_full_cpu(cpu)) {
->>               if (cpu != smp_processor_id() ||
->> -                 tick_nohz_tick_stopped())
->> +                 tick_nohz_tick_stopped()) {
->> +                     if (!cpu_online(cpu)) {
->> +                             static int printed = 0;
->> +                             if (!printed) {
->> +                                     printk("%d %d\n", cpu, smp_processor_id());
->> +                                     dump_stack();
->> +                                     printed = 1;
->
-> You know about printk_once, right? We even have all the pr_<level>_once
-> macros.
->
-> :-)
+On Thu 09-05-13 17:07:39, Seth Jennings wrote:
+> On Tue, May 07, 2013 at 02:19:55PM -0700, Dave Hansen wrote:
+> > 
+> > From: Dave Hansen <dave.hansen@linux.intel.com>
+> > 
+> > There are only two callers of swapcache_free() which actually
+> > pass in a non-NULL 'struct page'.  Both of them
+> > (__remove_mapping and delete_from_swap_cache())  create a
+> > temporary on-stack 'swp_entry_t' and set entry.val to
+> > page_private().
+> > 
+> > They need to do this since __delete_from_swap_cache() does
+> > set_page_private(page, 0) and destroys the information.
+> > 
+> > However, I'd like to batch a few of these operations on several
+> > pages together in a new version of __remove_mapping(), and I
+> > would prefer not to have to allocate temporary storage for
+> > each page.  The code is pretty ugly, and it's a bit silly
+> > to create these on-stack 'swp_entry_t's when it is so easy to
+> > just keep the information around in 'struct page'.
+> > 
+> > There should not be any danger in doing this since we are
+> > absolutely on the path of freeing these page.  There is no
+> > turning back, and no other rerferences can be obtained
+> > after it comes out of the radix tree.
+> 
+> I get a BUG on this one:
+> 
+> [   26.114818] ------------[ cut here ]------------
+> [   26.115282] kernel BUG at mm/memcontrol.c:4111!
+> [   26.115282] invalid opcode: 0000 [#1] PREEMPT SMP 
+> [   26.115282] Modules linked in:
+> [   26.115282] CPU: 3 PID: 5026 Comm: cc1 Not tainted 3.9.0+ #8
+> [   26.115282] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+> [   26.115282] task: ffff88007c1cdca0 ti: ffff88001b442000 task.ti: ffff88001b442000
+> [   26.115282] RIP: 0010:[<ffffffff810ed425>]  [<ffffffff810ed425>] __mem_cgroup_uncharge_common+0x255/0x2e0
+> [   26.115282] RSP: 0000:ffff88001b443708  EFLAGS: 00010206
+> [   26.115282] RAX: 4000000000090009 RBX: 0000000000000000 RCX: ffffc90000014001
+> [   26.115282] RDX: 0000000000000000 RSI: 0000000000000002 RDI: ffffea00006e5b40
+> [   26.115282] RBP: ffff88001b443738 R08: 0000000000000000 R09: 0000000000000000
+> [   26.115282] R10: 0000000000000000 R11: 0000000000000000 R12: ffffea00006e5b40
+> [   26.115282] R13: 0000000000000000 R14: ffffea00006e5b40 R15: 0000000000000002
+> [   26.115282] FS:  00007fabd08ee700(0000) GS:ffff88007fd80000(0000) knlGS:0000000000000000
+> [   26.115282] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [   26.115282] CR2: 00007fabce27a000 CR3: 000000001985f000 CR4: 00000000000006a0
+> [   26.115282] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [   26.115282] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [   26.115282] Stack:
+> [   26.115282]  ffffffff810dcbae ffff880064a0a500 0000000000000001 ffffea00006e5b40
+> [   26.115282]  ffffea00006e5b40 0000000000000001 ffff88001b443748 ffffffff810f0d05
+> [   26.115282]  ffff88001b443778 ffffffff810ddb3e ffff88001b443778 ffffea00006e5b40
+> [   26.115282] Call Trace:
+> [   26.115282]  [<ffffffff810dcbae>] ? swap_info_get+0x5e/0xe0
+> [   26.115282]  [<ffffffff810f0d05>] mem_cgroup_uncharge_swapcache+0x15/0x20
+> [   26.115282]  [<ffffffff810ddb3e>] swapcache_free+0x4e/0x70
+> [   26.115282]  [<ffffffff810b6e67>] __remove_mapping+0xd7/0x120
+> [   26.115282]  [<ffffffff810b8682>] shrink_page_list+0x5c2/0x920
+> [   26.115282]  [<ffffffff810b780e>] ? isolate_lru_pages.isra.37+0xae/0x120
+> [   26.115282]  [<ffffffff810b8ecf>] shrink_inactive_list+0x13f/0x380
+> [   26.115282]  [<ffffffff810b9350>] shrink_lruvec+0x240/0x4e0
+> [   26.115282]  [<ffffffff810b9656>] shrink_zone+0x66/0x1a0
+> [   26.115282]  [<ffffffff810ba1fb>] do_try_to_free_pages+0xeb/0x570
+> [   26.115282]  [<ffffffff810eb7d9>] ? lookup_page_cgroup_used+0x9/0x20
+> [   26.115282]  [<ffffffff810ba7af>] try_to_free_pages+0x9f/0xc0
+> [   26.115282]  [<ffffffff810b1357>] __alloc_pages_nodemask+0x5a7/0x970
+> [   26.115282]  [<ffffffff810cb2be>] handle_pte_fault+0x65e/0x880
+> [   26.115282]  [<ffffffff810cc7d9>] handle_mm_fault+0x139/0x1e0
+> [   26.115282]  [<ffffffff81027920>] __do_page_fault+0x160/0x460
+> [   26.115282]  [<ffffffff810d176c>] ? do_brk+0x1fc/0x360
+> [   26.115282]  [<ffffffff81212979>] ? lockdep_sys_exit_thunk+0x35/0x67
+> [   26.115282]  [<ffffffff81027c49>] do_page_fault+0x9/0x10
+> [   26.115282]  [<ffffffff813b4a72>] page_fault+0x22/0x30
+> [   26.115282] Code: a9 00 00 08 00 0f 85 43 fe ff ff e9 b8 fe ff ff 66 0f 1f 44 00 00 41 8b 44 24 18 85 c0 0f 89 2b fe ff ff 0f 1f 00 e9 9d fe ff ff <0f> 0b 66 0f 1f 84 00 00 00 00 00 49 89 9c 24 48 0f 00 00 e9 0a 
+> [   26.115282] RIP  [<ffffffff810ed425>] __mem_cgroup_uncharge_common+0x255/0x2e0
+> [   26.115282]  RSP <ffff88001b443708>
+> [   26.171597] ---[ end trace 5e49a21e51452c24 ]---
+> 
+> 
+> mm/memcontrol:4111
+> VM_BUG_ON(PageSwapCache(page));
+> 
+> Seems that mem_cgroup_uncharge_swapcache, somewhat ironically expects the
+> SwapCache flag to be unset already.
+> 
+> Fix might be a simple as removing that VM_BUG_ON() but there might be more to
+> it.  There usually is :)
 
-But but that didn't fit as I also want the dump_stack(). May be we
-want dump_stack_once().
-
-In fact it would be nice to have DO_ONCE(something) and stuff whatever
-we want inside.
-All the printk_once() et. al could even be implemented using that.
+This has been already fixed in the -mm tree
+(http://git.kernel.org/cgit/linux/kernel/git/mhocko/mm.git/commit/?h=since-3.9&id=b341f7ffa5fe6ae11afa87e2fecc32c6093541f8)
+-- 
+Michal Hocko
+SUSE Labs
