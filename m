@@ -1,41 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565Ab3EJKlQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 06:41:16 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:19586 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958Ab3EJKlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 06:41:15 -0400
-Message-ID: <518CCEC6.5050507@imgtec.com>
-Date: Fri, 10 May 2013 11:41:10 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752661Ab3EJKlr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 06:41:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38310 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119Ab3EJKlq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 06:41:46 -0400
+Date: Fri, 10 May 2013 12:40:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] sched: use this_rq() helper
+Message-ID: <20130510104015.GD31235@dyad.programming.kicks-ass.net>
+References: <1368116643-87971-1-git-send-email-nzimmer@sgi.com>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] clk: add support for clock reparent on set_rate
-References: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com> <1366388904-13903-3-git-send-email-james.hogan@imgtec.com> <518C0097.50300@codeaurora.org>
-In-Reply-To: <518C0097.50300@codeaurora.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_05_10_11_41_12
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368116643-87971-1-git-send-email-nzimmer@sgi.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/13 21:01, Stephen Boyd wrote:
-> I believe we'll need to update the check in __clk_init() to allow you to
-> have either a .round_rate or a .determine_rate op if you have a
-> .recalc_rate op. Right now it fails to register the clock and then
-> oopses later on while setting up clock debugfs.
-> 
-> Here's a (probably whitespace damaged) patch for the first one.
+On Thu, May 09, 2013 at 11:24:03AM -0500, Nathan Zimmer wrote:
+> It is a few instructions more efficent to and slightly more readable to use
+> this_rq()-> instead of cpu_rq(smp_processor_id()->
 
-Thanks, I'll incorporate that.
+If you've taken the trouble of actually measuring this, including the
+measurement results is appreciated.
 
-Cheers
-James
+But yes, it also makes the code slightly smaller.
+
+Thanks!
+
+Acked-by: Peter Zijlstra <peterz@infradead.org> 
 
