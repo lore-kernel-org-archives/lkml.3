@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab3EJKzm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 06:55:42 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:55554 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914Ab3EJKzk (ORCPT
+	id S1752553Ab3EJK4a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 06:56:30 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:39850 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334Ab3EJK43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 06:55:40 -0400
-Date: Fri, 10 May 2013 12:55:36 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/9] perf: Adding better precise_ip field handling
-Message-ID: <20130510105536.GA18805@gmail.com>
-References: <1368106344-23383-1-git-send-email-jolsa@redhat.com>
- <20130509150744.GB3039@dyad.programming.kicks-ass.net>
- <20130509152022.GD1628@krava.brq.redhat.com>
- <20130510092741.GE3039@dyad.programming.kicks-ass.net>
- <20130510094053.GF1040@krava.brq.redhat.com>
- <20130510095345.GG3039@dyad.programming.kicks-ass.net>
- <20130510101823.GA18427@gmail.com>
- <20130510102245.GA31235@dyad.programming.kicks-ass.net>
- <20130510103112.GA18755@gmail.com>
- <20130510103436.GC31235@dyad.programming.kicks-ass.net>
+	Fri, 10 May 2013 06:56:29 -0400
+Date: Fri, 10 May 2013 11:56:20 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+Message-ID: <20130510105620.GQ3200@sirena.org.uk>
+References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
+ <1368173847-5661-43-git-send-email-wsa@the-dreams.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OrT4iOlIQZp3kw4S"
 Content-Disposition: inline
-In-Reply-To: <20130510103436.GC31235@dyad.programming.kicks-ass.net>
+In-Reply-To: <1368173847-5661-43-git-send-email-wsa@the-dreams.de>
+X-Cookie: Your domestic life may be harmonious.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 176.12.107.141
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC 42/42] sound/soc/kirkwood: don't check resource with
+ devm_ioremap_resource
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+--OrT4iOlIQZp3kw4S
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> On Fri, May 10, 2013 at 12:31:12PM +0200, Ingo Molnar wrote:
-> > PERF_COUNT_HW_CPU_CYCLES_PRECISE is not a vague request at all: it means 
-> > 'get me the most precise cycles profiling available on this system'.
-> 
-> And how will you interpret the results? Do you know to manually adjust 
-> for skid or will you assume the results 'correct'?
+On Fri, May 10, 2013 at 10:17:27AM +0200, Wolfram Sang wrote:
+> devm_ioremap_resource does sanity checks on the given resource. No need to
+> duplicate this in the driver.
 
-Look at the tools/perf/ patches, they don't actually need or use that 
-information to adjust for skid!
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-If user-space wants _that_ level of control because it wants to correct 
-for skid (if there's skid), or if it wants to display to the user how 
-precise the profiling is, then they can do the (much) more complex probing 
-dance.
+--OrT4iOlIQZp3kw4S
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-What is absolutely indefensible is to not give a good shortcut for the 
-most common case of 'give me the most precise cycles event you got'...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-> I see such a feature only causing confusion; I told it to be precise, 
-> therefore this register op after the memory load really is the more 
-> expensive thing.
+iQIcBAEBAgAGBQJRjNJRAAoJELSic+t+oim9LMgP/jywx9NAjFcL8jhkepKJGZ5s
+ghvVXPjgCNTzxZ5U4/3ggS3l2zrv0yQ332KUU4cSMqMnkV2F6ge6ecO4qpArbffF
+rqK2tw811plfTTR/TN4+PBnJgfslyRyApDCTg7xmqzndVCdaVnTjM6OHKfZ69pea
+dd02q0sUSnI2Xv/f1EntMqWesqQ/YCoFp/hFAHEwK4ng8wMW7kxYbI3Pro8SJFMR
+IxPH48Nf5lAZJHSbOtz8wS0d3F+rAgeZGO+IXH9+wUrRFVoNPrh+rP1PoikNoXho
+IXjARjc1rbekTgfd5Jhx4P9x8wleiQisT5it4FBtfWwAROXCUrfSAWjmCMJHrCp6
+yh7HVLlL/DJTwCj6NEBmx3j9CXXnZaZ+rRvKbj1pnBD+O8BzI8JVUp3dfNDso91X
+hL1bI5ZcfZ+wSvSR6wCeAWXLv1uAaBNDBttLjNSjy3kmhTRgbA59rh/i2RM36tCp
+DlGymaJzwLzBCoP07ozQPFutKoodgHmLBjoMty4AxQf4yXdh8f/BZC4azBJjWN7z
+/8CPjrphHU8hlKWHTn7NmUV+1Po9gWpoAhNgjyGOu6TicuDDeEQ7NpQlnH0bLD7N
+uka1d7EWvtsDqIxjoh3wfH+4VCl9/OKoxFR92kFryAtgw6tbhaGoso/XDZeZLj36
+ZtcHQMskfb05ISehHbcU
+=yxO3
+-----END PGP SIGNATURE-----
 
-You are creating confusion where there's none: "give me the best profiling 
-you've got" is a pretty reasonable thing to ask.
-
-The thing is, there's variations in the quality of profiling between CPUs, 
-sometimes even between CPU models. 99.999% of the people don't care about 
-that, because 99.9% of the time the profile is unambiguous: functions are 
-typically big enough, with the overhead somewhere in the middle, so skid 
-just doesn't matter.
-
-So to 'solve' this corner case information you worry about to extract 
-(which cannot be solved - there's more profiling artifacts and imprecision 
-than skid) you sacrifice the thing that _DOES_ matter: for the kernel to 
-offer our best profiling feature as easily as possible...
-
-What explanation do you have for that failure?
-
-> People generally don't volunteer to think, you have to force them to -- 
-> even if that makes them complain.
-
-It is a mistake to 'force' people to consider stuff _they don't care about 
-in 99% of the cases_.
-
-Thanks,
-
-	Ingo
+--OrT4iOlIQZp3kw4S--
