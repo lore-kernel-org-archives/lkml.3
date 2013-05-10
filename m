@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab3EJLBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 07:01:32 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:47645 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659Ab3EJLB3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 07:01:29 -0400
+	id S1752834Ab3EJLB2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 07:01:28 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:42675 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751659Ab3EJLB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 07:01:26 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [RFC 03/42] drivers/cpufreq: don't check resource with devm_ioremap_resource
+Date: Fri, 10 May 2013 13:09:53 +0200
+Message-ID: <1832747.3cSvLxeIN8@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1368173847-5661-4-git-send-email-wsa@the-dreams.de>
+References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de> <1368173847-5661-4-git-send-email-wsa@the-dreams.de>
 MIME-Version: 1.0
-In-Reply-To: <201305101255.47709.hverkuil@xs4all.nl>
-References: <1368161318-16128-1-git-send-email-prabhakar.csengg@gmail.com> <201305101255.47709.hverkuil@xs4all.nl>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 10 May 2013 16:31:07 +0530
-Message-ID: <CA+V-a8s-7r7bmdJJ2k7ABkhsfb6WrQ6xqUBpWjF=aRAUyJ=F=Q@mail.gmail.com>
-Subject: Re: [PATCH] davinci: vpfe: fix error path in probe
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+On Friday, May 10, 2013 10:16:48 AM Wolfram Sang wrote:
+> devm_ioremap_resource does sanity checks on the given resource. No need to
+> duplicate this in the driver.
+> 
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 
-On Fri, May 10, 2013 at 4:25 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> On Fri May 10 2013 06:48:38 Lad Prabhakar wrote:
->> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-[Snip]
->>
->
-> Just FYI:
->
-> After applying this patch I get a compiler warning that the probe_free_lock
-> label is unused. I've added a patch removing that label.
->
-Thanks for fixing it :)
+Queued up for a post-3.10-rc1 push.
 
-Regards,
---Prabhakar
+Thanks,
+Rafael
+
+
+> ---
+>  drivers/cpufreq/kirkwood-cpufreq.c |    4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
+> index d36ea8d..b2644af 100644
+> --- a/drivers/cpufreq/kirkwood-cpufreq.c
+> +++ b/drivers/cpufreq/kirkwood-cpufreq.c
+> @@ -171,10 +171,6 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
+>  	priv.dev = &pdev->dev;
+>  
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (!res) {
+> -		dev_err(&pdev->dev, "Cannot get memory resource\n");
+> -		return -ENODEV;
+> -	}
+>  	priv.base = devm_ioremap_resource(&pdev->dev, res);
+>  	if (IS_ERR(priv.base))
+>  		return PTR_ERR(priv.base);
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
