@@ -1,289 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328Ab3EJPDV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 11:03:21 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:14598 "EHLO multi.imgtec.com"
+	id S1756779Ab3EJPEF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 11:04:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59018 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753729Ab3EJPCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 11:02:55 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH RFC 1/2] clk: metag/clk-gate: add metag specific clock gate
-Date: Fri, 10 May 2013 16:02:06 +0100
-Message-ID: <1368198127-1295-5-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1368198127-1295-1-git-send-email-james.hogan@imgtec.com>
-References: <1368198127-1295-1-git-send-email-james.hogan@imgtec.com>
+	id S1753951Ab3EJPEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 11:04:00 -0400
+Date: Fri, 10 May 2013 17:03:56 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123
+ native_smp_send_reschedule
+In-Reply-To: <20130510002930.GB2394@somewhere>
+Message-ID: <alpine.LNX.2.00.1305101702250.23038@pobox.suse.cz>
+References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz> <20130510002930.GB2394@somewhere>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_05_10_16_02_51
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a metag architecture specific clk-gate which extends the generic one
-to use global lock2 to protect the register fields. It is common with
-metag to have an RTOS running on a different thread or core with access
-to different bits in the same register (in this case clock gate bits for
-other clocks). Access to such registers must be serialised with a global
-lock such as the one provided by the metag architecture port in
-<asm/global_lock.h>
+On Fri, 10 May 2013, Frederic Weisbecker wrote:
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Mike Turquette <mturquette@linaro.org>
----
- .../bindings/clock/img,meta-gate-clock.txt         |  28 ++++
- drivers/clk/Makefile                               |   1 +
- drivers/clk/metag/Makefile                         |   2 +
- drivers/clk/metag/clk-gate.c                       | 179 +++++++++++++++++++++
- 4 files changed, 210 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/img,meta-gate-clock.txt
- create mode 100644 drivers/clk/metag/Makefile
- create mode 100644 drivers/clk/metag/clk-gate.c
+> Like Borislav said, it's due to the scheduler IPI sent to an offline
+> target. Here this is because we enqueue a timer and we must ensure the
+> target handles this timer by rescheduling its tick if necessary.
+> 
+> But it's weird because the mce timer at this stage should only enqueue
+> to the current CPU and the tick shouldn't be stopped. So there shouldn't
+> be an IPI sent.
+> 
+> Could you please apply this patch and tell me what you can see in the
+> logs?
+> 
+> Thanks.
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 58453b8..19e841a 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -616,8 +616,17 @@ static bool wake_up_full_nohz_cpu(int cpu)
+>  {
+>  	if (tick_nohz_full_cpu(cpu)) {
+>  		if (cpu != smp_processor_id() ||
+> -		    tick_nohz_tick_stopped())
+> +		    tick_nohz_tick_stopped()) {
+> +			if (!cpu_online(cpu)) {
+> +				static int printed = 0;
+> +				if (!printed) {
+> +					printk("%d %d\n", cpu, smp_processor_id());
+> +					dump_stack();
+> +					printed = 1;
+> +				}
+> +			}
+>  			smp_send_reschedule(cpu);
+> +		}
+>  		return true;
+>  	}
 
-diff --git a/Documentation/devicetree/bindings/clock/img,meta-gate-clock.txt b/Documentation/devicetree/bindings/clock/img,meta-gate-clock.txt
-new file mode 100644
-index 0000000..483097c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/img,meta-gate-clock.txt
-@@ -0,0 +1,28 @@
-+Binding for clock gate requiring global Meta locking.
-+
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Required properties:
-+- compatible         : Shall be "img,meta-mux-clock".
-+- #clock-cells       : From common clock binding; shall be set to 0.
-+- reg                : Address of configuration register.
-+- bit                : Bit number of gate switch in configuration register.
-+- clocks             : From common clock binding.
-+
-+Required source clocks:
-+- 0                  : Input clock that can be gated (doesn't have to be named).
-+
-+Optional properties:
-+- clock-output-names : From common clock binding.
-+
-+Example:
-+	clock {
-+		compatible = "img,meta-gate-clock";
-+		#clock-cells = <0>;
-+		clocks = <&sys_clk>;
-+		reg = <0x02004010 0x4>;
-+		bit = <0>;
-+		clock-output-names = "scb0";
-+	};
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index e7f7fe9..a800077 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -30,6 +30,7 @@ obj-$(CONFIG_ARCH_VT8500)	+= clk-vt8500.o
- obj-$(CONFIG_ARCH_ZYNQ)		+= clk-zynq.o
- obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
- 
-+obj-$(CONFIG_METAG)		+= metag/
- obj-$(CONFIG_X86)		+= x86/
- 
- # Chip specific
-diff --git a/drivers/clk/metag/Makefile b/drivers/clk/metag/Makefile
-new file mode 100644
-index 0000000..8e9a6ac
---- /dev/null
-+++ b/drivers/clk/metag/Makefile
-@@ -0,0 +1,2 @@
-+# metag clock types
-+obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
-diff --git a/drivers/clk/metag/clk-gate.c b/drivers/clk/metag/clk-gate.c
-new file mode 100644
-index 0000000..63da8d9
---- /dev/null
-+++ b/drivers/clk/metag/clk-gate.c
-@@ -0,0 +1,179 @@
-+/*
-+ * Copyright (C) 2013 Imagination Technologies Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Metag gated clock implementation
-+ * Based on gated clock implementation, but does appropriate locking to protect
-+ * registers shared between hardware threads.
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/slab.h>
-+#include <linux/string.h>
-+#include <asm/global_lock.h>
-+
-+/**
-+ * struct clk_metag_gate - metag gating clock
-+ *
-+ * @mux:	the parent class
-+ * @ops:	pointer to clk_ops of parent class
-+ *
-+ * Clock which can gate its output. Extends basic mux by using a global
-+ * exclusive lock when read-modify-writing the mux field so that multiple
-+ * threads/cores can use different fields in the same register.
-+ */
-+struct clk_metag_gate {
-+	struct clk_gate		gate;
-+	const struct clk_ops	*ops;
-+};
-+
-+static inline struct clk_metag_gate *to_clk_metag_gate(struct clk_hw *hw)
-+{
-+	struct clk_gate *gate = container_of(hw, struct clk_gate, hw);
-+
-+	return container_of(gate, struct clk_metag_gate, gate);
-+}
-+
-+/* Acquire exclusive lock since other cores may access the same register */
-+static int clk_metag_gate_enable(struct clk_hw *hw)
-+{
-+	struct clk_metag_gate *gate = to_clk_metag_gate(hw);
-+	int ret;
-+	unsigned long flags;
-+
-+	__global_lock2(flags);
-+	ret = gate->ops->enable(&gate->gate.hw);
-+	__global_unlock2(flags);
-+
-+	return ret;
-+}
-+
-+/* Acquire exclusive lock since other cores may access the same register */
-+static void clk_metag_gate_disable(struct clk_hw *hw)
-+{
-+	struct clk_metag_gate *gate = to_clk_metag_gate(hw);
-+	unsigned long flags;
-+
-+	__global_lock2(flags);
-+	gate->ops->disable(&gate->gate.hw);
-+	__global_unlock2(flags);
-+}
-+
-+static int clk_metag_gate_is_enabled(struct clk_hw *hw)
-+{
-+	struct clk_metag_gate *gate = to_clk_metag_gate(hw);
-+
-+	return gate->ops->is_enabled(&gate->gate.hw);
-+}
-+
-+static const struct clk_ops clk_metag_gate_ops = {
-+	.enable = clk_metag_gate_enable,
-+	.disable = clk_metag_gate_disable,
-+	.is_enabled = clk_metag_gate_is_enabled,
-+};
-+
-+/**
-+ * clk_register_metag_gate - register a Meta gate clock with the clock framework
-+ * @dev: device that is registering this clock
-+ * @name: name of this clock
-+ * @parent_name: name of this clock's parent
-+ * @flags: framework-specific flags for this clock
-+ * @reg: register address to control gating of this clock
-+ * @bit_idx: which bit in the register controls gating of this clock
-+ * @clk_gate_flags: gate-specific flags for this clock
-+ */
-+static struct clk *__init clk_register_metag_gate(struct device *dev,
-+		const char *name, const char *parent_name, unsigned long flags,
-+		void __iomem *reg, u8 bit_idx, u8 clk_gate_flags)
-+{
-+	struct clk_metag_gate *gate;
-+	struct clk *clk;
-+	struct clk_init_data init;
-+
-+	/* allocate the gate */
-+	gate = kzalloc(sizeof(struct clk_metag_gate), GFP_KERNEL);
-+	if (!gate) {
-+		pr_err("%s: could not allocate gated clk\n", __func__);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	init.name = name;
-+	init.ops = &clk_metag_gate_ops;
-+	init.flags = flags | CLK_IS_BASIC;
-+	init.parent_names = (parent_name ? &parent_name : NULL);
-+	init.num_parents = (parent_name ? 1 : 0);
-+
-+	/* struct clk_gate assignments */
-+	gate->gate.reg = reg;
-+	gate->gate.bit_idx = bit_idx;
-+	gate->gate.flags = clk_gate_flags;
-+	gate->gate.hw.init = &init;
-+
-+	/* struct clk_metag_gate assignments */
-+	gate->ops = &clk_gate_ops;
-+
-+	clk = clk_register(dev, &gate->gate.hw);
-+
-+	if (IS_ERR(clk))
-+		kfree(gate);
-+
-+	return clk;
-+}
-+
-+#ifdef CONFIG_OF
-+/**
-+ * of_metag_gate_clk_setup() - Setup function for simple fixed rate clock
-+ */
-+static void __init of_metag_gate_clk_setup(struct device_node *node)
-+{
-+	struct clk *clk;
-+	const char *clk_name = node->name;
-+	u32 bit_idx;
-+	void __iomem *reg;
-+	const char *parent_name;
-+	u8 flags = 0;
-+
-+	of_property_read_string(node, "clock-output-names", &clk_name);
-+
-+	if (of_property_read_u32(node, "bit", &bit_idx)) {
-+		pr_err("%s(%s): could not read bit property\n",
-+		       __func__, clk_name);
-+		return;
-+	}
-+
-+	parent_name = of_clk_get_parent_name(node, 0);
-+	if (!parent_name) {
-+		pr_err("%s(%s): could not read parent clock\n",
-+		       __func__, clk_name);
-+		return;
-+	}
-+
-+	reg = of_iomap(node, 0);
-+	if (!reg) {
-+		pr_err("%s(%s): of_iomap failed\n",
-+		       __func__, clk_name);
-+		return;
-+	}
-+
-+	clk = clk_register_metag_gate(NULL, clk_name, parent_name,
-+				      CLK_SET_RATE_PARENT, reg, bit_idx, flags);
-+	if (IS_ERR(clk))
-+		goto err_iounmap;
-+
-+	of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+
-+	return;
-+
-+err_iounmap:
-+	iounmap(reg);
-+}
-+CLK_OF_DECLARE(metag_gate_clk, "img,meta-gate-clock", of_metag_gate_clk_setup);
-+#endif /* CONFIG_OF */
+Absolutely, here it goes.
+
+[ ... snip ... ]
+ Enabling non-boot CPUs ...
+ smpboot: Booting Node 0 Processor 1 APIC 0x1
+ CPU1 microcode updated early to revision 0x60f, date = 2010-09-29
+ Disabled fast string operations
+ 1 1
+ CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.9.0-12317-gb2031d4 #1
+ Hardware name: LENOVO 7470BN2/7470BN2, BIOS 6DET38WW (2.02 ) 12/19/2008
+  ffff88007c28cca0 ffff880079851e08 ffffffff8154837e ffff880079851e28
+  ffffffff81077514 ffff88007c28cca0 ffff88007c28cca0 ffff880079851e68
+  ffffffff810529db 0000000179851e78 ffff88007c28cca0 0000000000000001
+ Call Trace:
+  [<ffffffff8154837e>] dump_stack+0x19/0x1b
+  [<ffffffff81077514>] wake_up_nohz_cpu+0xd4/0xf0
+  [<ffffffff810529db>] add_timer_on+0xdb/0x110
+  [<ffffffff8101e4f4>] mce_start_timer+0x64/0x70
+  [<ffffffff8101e552>] __mcheck_cpu_init_timer+0x52/0x60
+  [<ffffffff8153e22e>] mcheck_cpu_init+0x6f/0x111
+  [<ffffffff8153b94e>] identify_cpu+0x3cc/0x3f9
+  [<ffffffff8153b98d>] identify_secondary_cpu+0x12/0x1d
+  [<ffffffff8153fdd6>] smp_store_cpu_info+0x3a/0x3c
+  [<ffffffff8153fec2>] smp_callin+0xea/0x1c1
+  [<ffffffff8153ffbd>] start_secondary+0x24/0x97
+ ------------[ cut here ]------------
+ WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule+0x59/0x60()
+ Modules linked in: af_packet tun iptable_mangle xt_DSCP nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables xt_tcpudp nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack iptable_filter ip_tables x_tables rfcomm bnep btusb bluetooth cpufreq_conservative cpufreq_userspace cpufreq_powersave iTCO_wdt iTCO_vendor_support snd_hda_codec_conexant acpi_cpufreq mperf kvm_intel kvm iwldvm mac80211 thinkpad_acpi snd_hda_intel sg microcode snd_hda_codec snd_seq iwlwifi snd_hwdep cfg80211 snd_seq_device pcspkr i2c_i801 snd_pcm lpc_ich mfd_core rfkill e1000e snd_timer snd_page_alloc ehci_pci ptp mei_me pps_core mei snd wmi soundcore tpm_tis battery tpm ac tpm_bios autofs4 uhci_hcd ehci_hcd i915 drm_kms_helper drm i2c_algo_bit usbcore button video usb_common edd fan processor ata_generic thermal thermal_sys
+ CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.9.0-12317-gb2031d4 #1
+ Hardware name: LENOVO 7470BN2/7470BN2, BIOS 6DET38WW (2.02 ) 12/19/2008
+  000000000000007b ffff880079851da8 ffffffff8154837e ffff880079851de8
+  ffffffff8104212b ffff88007c28cca0 0000000000000001 ffff88007c28cca0
+  ffff880079878000 0000000100004525 0000000000000096 ffff880079851df8
+ Call Trace:
+  [<ffffffff8154837e>] dump_stack+0x19/0x1b
+  [<ffffffff8104212b>] warn_slowpath_common+0x6b/0xa0
+  [<ffffffff81042175>] warn_slowpath_null+0x15/0x20
+  [<ffffffff81026b09>] native_smp_send_reschedule+0x59/0x60
+  [<ffffffff81077486>] wake_up_nohz_cpu+0x46/0xf0
+  [<ffffffff810529db>] add_timer_on+0xdb/0x110
+  [<ffffffff8101e4f4>] mce_start_timer+0x64/0x70
+  [<ffffffff8101e552>] __mcheck_cpu_init_timer+0x52/0x60
+  [<ffffffff8153e22e>] mcheck_cpu_init+0x6f/0x111
+  [<ffffffff8153b94e>] identify_cpu+0x3cc/0x3f9
+  [<ffffffff8153b98d>] identify_secondary_cpu+0x12/0x1d
+  [<ffffffff8153fdd6>] smp_store_cpu_info+0x3a/0x3c
+  [<ffffffff8153fec2>] smp_callin+0xea/0x1c1
+  [<ffffffff8153ffbd>] start_secondary+0x24/0x97
+ ---[ end trace 954b959ede48c006 ]---
+ microcode: CPU1 sig=0x10676, pf=0x80, revision=0x60f
+ CPU1 is up
+ i915 0000:00:02.0: power state changed by ACPI to D0
+[ ... snip ... ]
+
+I.e. the "CPU1 is up" happens only after the microcode has been updated, 
+but the attempt to send IPI to it indeed seems to happen earlier.
+
 -- 
-1.8.1.2
-
-
+Jiri Kosina
+SUSE Labs
