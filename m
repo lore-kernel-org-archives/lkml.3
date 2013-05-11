@@ -1,131 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab3EKOCl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 10:02:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32758 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab3EKOCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 10:02:39 -0400
-Date: Sat, 11 May 2013 22:02:19 +0800
-From: Dong Zhu <bluezhudong@gmail.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Matthew Vick <matthew.vick@intel.com>,
-        Jacob Keller <Jacob.e.keller@intel.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org
-Subject: [PATCH] igb: add a method to get the nic hw time stamping policy
-Message-ID: <20130511140219.GG8399@zhudong.nay.redhat.com>
+	id S1752927Ab3EKOJb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 10:09:31 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:63230 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab3EKOJa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 10:09:30 -0400
+Date: Sat, 11 May 2013 16:09:25 +0200
+From: Heinz Diehl <htd@fritha.org>
+To: Frantisek Hrbata <fhrbata@redhat.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        dzickus@redhat.com, kernel-team@fedoraproject.org
+Subject: Re: NULL pointer dereference in xhci_free_dev
+Message-ID: <20130511140925.GA9240@fritha.org>
+References: <20130507140333.GB3380@dhcp-26-164.brq.redhat.com>
+ <20130509221559.GD10305@xanatos>
+ <20130510065644.GA3320@dhcp-26-164.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130510065644.GA3320@dhcp-26-164.brq.redhat.com>
+Organization: private site
+OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+155 (d3096e8796e7) (2012-12-30)
+X-Provags-ID: V02:K0:4Xo/TdGNjbpfSAXDj/uDXlT7/Jhg+pgoxzU/u29UgjH
+ 4TIxKz29pTjhxbXu9xoDWpaeLWlIcgGHel1w3M2k073jfpCbYv
+ j9h4ifuj7POJsHZGm5/njJiwlPHMkt/r6iTlEfY3AHfwbtc/WQ
+ 5Z9aT9+XUQMjbUg5uzQ9oQ6zMii8/ESzyEck1UC+e2Dbyc1u+F
+ wn7ZQOeZDtyfX86ujuVKq5/ff1eNdKnYA+k0iuclnLz8j5GHe3
+ oubPffzpRt0ibkckYubxSJjFrIf/4/ixFVXQRDwHYirOR8OCp7
+ iJHyDHGf4IU3kemdi5lPtD9qUlH1KIAo1RYXnWcxAMak7CPxXS
+ xegpz/SHTAcuke3lOLJc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From e6a55411486de8a09b859e73140bf35c0ee36047 Mon Sep 17 00:00:00 2001
-From: Dong Zhu <bluezhudong@gmail.com>
-Date: Sat, 11 May 2013 21:44:54 +0800
-Subject: [PATCH] igb: add a method to get the nic hw time stamping policy
+On 11.05.2013, Frantisek Hrbata wrote: 
 
-Currently kernel only support setting the hw time stamping policy
-through ioctl,now add a method to check which packets(Outgoing and
-Incoming) are time stamped by nic.
+> I haven't tried to reproduce. I was asked to help with Fedora's bugs triage and
+> these come up. The goal was just to contact the right people and bring this to
+> their attention. If you have a patch for this, I guess we can try to ask Heinz,
+> or other people reporting this problem, to help with testing.
 
-Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
----
- drivers/net/ethernet/intel/igb/igb_ptp.c | 29 +++++++++++++++++++++++++++++
- include/uapi/linux/net_tstamp.h          |  4 +++-
- 2 files changed, 32 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/intel/igb/igb_ptp.c b/drivers/net/ethernet/intel/igb/igb_ptp.c
-index 7e8c477..8c06346 100644
---- a/drivers/net/ethernet/intel/igb/igb_ptp.c
-+++ b/drivers/net/ethernet/intel/igb/igb_ptp.c
-@@ -577,6 +577,34 @@ int igb_ptp_hwtstamp_ioctl(struct net_device *netdev,
- 	if (config.flags)
- 		return -EINVAL;
+I'm willing to help, of course. I'll try to install latest 3.9 on the
+machine this bug occurs and see if I manage to reproduce it. As far as
+I remember, it happened when I changed some USB 2.0 devices on an USB
+3 port. The machine is re-installed and runs F18 now.
  
-+	if (config.rw == 0)
-+		goto set_policy;
-+	else if (config.rw == 1) {
-+		if (config.tx_type || config.rx_filter)
-+			return -EINVAL;
-+
-+		regval = rd32(E1000_TSYNCTXCTL);
-+
-+		if (regval & E1000_TSYNCTXCTL_ENABLED)
-+			config.tx_type = HWTSTAMP_TX_ON;
-+		else
-+			config.tx_type = HWTSTAMP_TX_OFF;
-+
-+		regval = rd32(E1000_TSYNCRXCTL);
-+
-+		if (!(regval & E1000_TSYNCRXCTL_ENABLED))
-+			config.rx_filter = HWTSTAMP_FILTER_NONE;
-+		else if (E1000_TSYNCRXCTL_TYPE_ALL ==
-+				(regval & E1000_TSYNCRXCTL_TYPE_MASK))
-+			config.rx_filter = HWTSTAMP_FILTER_ALL;
-+		else
-+			return -ERANGE;
-+
-+		goto end;
-+	} else
-+		return -EINVAL;
-+
-+set_policy:
- 	switch (config.tx_type) {
- 	case HWTSTAMP_TX_OFF:
- 		tsync_tx_ctl = 0;
-@@ -707,6 +735,7 @@ int igb_ptp_hwtstamp_ioctl(struct net_device *netdev,
- 	regval = rd32(E1000_RXSTMPL);
- 	regval = rd32(E1000_RXSTMPH);
- 
-+end:
- 	return copy_to_user(ifr->ifr_data, &config, sizeof(config)) ?
- 		-EFAULT : 0;
- }
-diff --git a/include/uapi/linux/net_tstamp.h b/include/uapi/linux/net_tstamp.h
-index ae5df12..77147da 100644
---- a/include/uapi/linux/net_tstamp.h
-+++ b/include/uapi/linux/net_tstamp.h
-@@ -28,9 +28,10 @@ enum {
- /**
-  * struct hwtstamp_config - %SIOCSHWTSTAMP parameter
-  *
-+ * @rw:        0/1 represents set/get the hw time stamp policy
-  * @flags:	no flags defined right now, must be zero
-  * @tx_type:	one of HWTSTAMP_TX_*
-- * @rx_type:	one of one of HWTSTAMP_FILTER_*
-+ * @rx_filter:	one of one of HWTSTAMP_FILTER_*
-  *
-  * %SIOCSHWTSTAMP expects a &struct ifreq with a ifr_data pointer to
-  * this structure. dev_ifsioc() in the kernel takes care of the
-@@ -39,6 +40,7 @@ enum {
-  * 32 and 64 bit systems, don't break this!
-  */
- struct hwtstamp_config {
-+	int rw;
- 	int flags;
- 	int tx_type;
- 	int rx_filter;
--- 
-1.7.11.7
+> Heinz: Sorry I forgot to add you to CC in the first mail, but Sarah fixed it.
 
+Never mind, I'm subscribed to lkml and saw the thread there ;-)
 
--- 
-Best Regards,
-Dong Zhu
