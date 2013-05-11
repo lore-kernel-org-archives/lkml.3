@@ -1,99 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab3EKHgo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 03:36:44 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:49460 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745Ab3EKHgm (ORCPT
+	id S1753599Ab3EKHm4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 03:42:56 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:64791 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261Ab3EKHmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 03:36:42 -0400
-Date: Sat, 11 May 2013 09:36:38 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: mm: Remove unnecessary assignment for
- max_pfn_mapped:q
-Message-ID: <20130511073638.GA24435@gmail.com>
-References: <518CB758.4000101@cn.fujitsu.com>
- <CAE9FiQVpbDJT2Ma6MHkB5aF9PUuGCia_QaLc_LjYCLJb4nKebg@mail.gmail.com>
- <518CCBB2.5010308@cn.fujitsu.com>
- <CAE9FiQWcKAJ0DP833urozcECkZNpbCks_vLVBf8UhaXTRSEWzA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQWcKAJ0DP833urozcECkZNpbCks_vLVBf8UhaXTRSEWzA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 11 May 2013 03:42:54 -0400
+X-AuditID: cbfee68e-b7efa6d000004d12-66-518df67c4202
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Kukjin Kim'" <kgene.kim@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "'Doug Anderson'" <dianders@chromium.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ARM: dts: add DP clock reference to exynos5250 device tree
+Date: Sat, 11 May 2013 16:42:52 +0900
+Message-id: <003001ce4e1b$24a28fc0$6de7af40$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac5OGthhKW49i064RfeZCehr9b1uyg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t8zfd2ab72BBhtXalmcXXaQzeLywkus
+	Fr0LrrJZbHp8jdXi8q45bBYzzu9jsjh1/TObxbEZSxgdODxmN1xk8bhzbQ+bx+Yl9R5XTjSx
+	evRtWcXo8XmTXABbFJdNSmpOZllqkb5dAlfGsxvlBV1sFQsWTWRsYPzG0sXIySEhYCKx8MFm
+	RghbTOLCvfVsXYxcHEICyxglvv6/zA5TtPPyVBaIxCJGiad9rYwQzi9GiV/njjCBVLEJqEl8
+	+XIYrENEQEPi6e4jYEXMAt1MEkePbGUDSQgL+Essf74fzGYRUJXofNsItptXwFLi5p15TBC2
+	oMSPyffA7mMW0JJYv/M4E4QtL7F5zVtmiJMUJHacfc0IsUxP4v26FYwQNSIS+168A1ssIXCL
+	XeL7nVfsEMsEJL5NPgQ0lAMoISux6QDUHEmJgytusExgFJuFZPUsJKtnIVk9C8mKBYwsqxhF
+	UwuSC4qT0ouM9IoTc4tL89L1kvNzNzFCYrRvB+PNA9aHGJOB1k9klhJNzgfGeF5JvKGxmZGF
+	qYmpsZG5pRlpwkrivGot1oFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGMua6ja3xK9IuDWr
+	57BRT0+T3hQ/tncbbh6O3bP1Y6SI4/zH921PvD317NKV8pPTvgYHqDJf+3+qWTLMddKad3GG
+	vJUS9kxCXMnte0Jbu55yPwua2TTp/OQ5wt5XU6OWzOvdqaZWbKM76+K7oANlrjem7k7SmrWQ
+	t4lT+fnuX8uY9pXE/hR406XEUpyRaKjFXFScCABSzfIj5wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t9jAd2ab72BBt8a1CzOLjvIZnF54SVW
+	i94FV9ksNj2+xmpxedccNosZ5/cxWZy6/pnN4tiMJYwOHB6zGy6yeNy5tofNY/OSeo8rJ5pY
+	Pfq2rGL0+LxJLoAtqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VW
+	ycUnQNctMwfoICWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxrMb5QVd
+	bBULFk1kbGD8xtLFyMkhIWAisfPyVChbTOLCvfVsXYxcHEICixglnva1MkI4vxglfp07wgRS
+	xSagJvHly2F2EFtEQEPi6e4jYEXMAt1MEkePbGUDSQgL+Essf74fzGYRUJXofNvICGLzClhK
+	3LwzjwnCFpT4Mfke2GpmAS2J9TuPM0HY8hKb17xlhjhJQWLH2deMEMv0JN6vW8EIUSMise/F
+	O8YJjAKzkIyahWTULCSjZiFpWcDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOAE8k97B
+	uKrB4hCjAAejEg9vhVBvoBBrYllxZe4hRgkOZiUR3mcPgEK8KYmVValF+fFFpTmpxYcYk4E+
+	ncgsJZqcD0xOeSXxhsYmZkaWRmYWRibm5qQJK4nzHmy1DhQSSE8sSc1OTS1ILYLZwsTBKdXA
+	uIXvqGpTo9OLWcf8Zl8LYJlZsbtzblLFH2/brQayATxnO5K3MCn7fE3//1Lz4UpTwaabThPf
+	9dhnP9Xd3Z9p+e7x0/lRequFgpnMMpX1PDvLljMX6DjrNhfe3jpzyceoPnX7vGc/li7oUd28
+	c8P9C3Gmj19U3Tt4R/KKbt4pzV07Hx90lDEOUGIpzkg01GIuKk4EADgkkExEAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The transition to common clock happened; however, DP (Display Port)
+clock node was not added. Thus, DP (Display Port) clock node should
+be added to the device tree.
 
-* Yinghai Lu <yinghai@kernel.org> wrote:
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+Tested on Exynos5250
 
-> On Fri, May 10, 2013 at 3:28 AM, Zhang Yanfei
-> <zhangyanfei@cn.fujitsu.com> wrote:
-> > ?? 2013??05??10?? 17:27, Yinghai Lu ????:
-> >> On Fri, May 10, 2013 at 2:01 AM, Zhang Yanfei
-> >> <zhangyanfei@cn.fujitsu.com> wrote:
-> >>> init_memory_mapping will set max_pfn_mapped:
-> >>> int_memory_mapping
-> >>>   --> add_pfn_range_mapped
-> >>>     --> max_pfn_mapped = max(max_pfn_mapped, end_pfn)
-> >>>
-> >>> In init_mem_mapping, before we set max_pfn_mapped to 0, we
-> >>> have already called init_memory_mapping to setup pagetable
-> >>> for [0, ISA_END_ADDRESS], and that sets max_pfn_mapped. So
-> >>> the assignment to 0 is not necessary, remove it.
-> >>
-> >> NAK.
-> >>
-> >> for 32bit or Xen, max_pfn_mapped is set way before in head_32.S and
-> >> xen-enlighen.
-> >
-> > Hi Yinghai
-> >
-> > I might be wrong, but just from the code in init_mem_mapping only:
-> >
-> >  410         /* the ISA range is always mapped regardless of memory holes */
-> >  411         init_memory_mapping(0, ISA_END_ADDRESS);
-> >  412
-> >  413         /* xen has big range in reserved near end of ram, skip it at first.*/
-> >  414         addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE, PMD_SIZE);
-> >  415         real_end = addr + PMD_SIZE;
-> >  416
-> >  417         /* step_size need to be small so pgt_buf from BRK could cover it */
-> >  418         step_size = PMD_SIZE;
-> >  419         max_pfn_mapped = 0; /* will get exact value next */
-> >
-> > Line 411 set max_pfn_mapped, and then line 419 set it to zero again, so
-> > why keep the later assignment?
-> 
-> the comment says: /* will get exact value next */
+ arch/arm/boot/dts/exynos5250.dtsi |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-And what does that comment mean??
+diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+index 9dfc6de..8b1f9b6 100644
+--- a/arch/arm/boot/dts/exynos5250.dtsi
++++ b/arch/arm/boot/dts/exynos5250.dtsi
+@@ -651,6 +651,8 @@
+ 		reg = <0x145b0000 0x1000>;
+ 		interrupts = <10 3>;
+ 		interrupt-parent = <&combiner>;
++		clocks = <&clock 342>;
++		clock-names = "dp";
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+-- 
+1.7.2.5
 
-next where? Which call? How? What's the logic? Where is it described 
-accurately so that people who haven't seen the code (for a while) can 
-understand it?
 
-> For x86 32bit path, and xen set bigger max_pfn_mapped before.
-
-and what does this mean? Perhaps:
-
- "32-bit x86 and Xen set a bigger value for max_pfn_mapped before this 
-  call."
-
-?
-
-And where and why does it matter that we set a bigger max_pfn_mapped 
-before?
-
-The dependencies in this code are incestous.
-
-Thanks,
-
-	Ingo
