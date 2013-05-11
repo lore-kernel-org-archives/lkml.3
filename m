@@ -1,75 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab3EKHwo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 03:52:44 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:58193 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531Ab3EKHwn (ORCPT
+	id S1753738Ab3EKIJV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 04:09:21 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:9237 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752911Ab3EKIJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 03:52:43 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: Tony Luck <tony.luck@gmail.com>, eunb.song@samsung.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-ext4\@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Re: EXT4 panic at jbd2_journal_put_journal_head() in 3.9+
-In-Reply-To: <CA+8MBbKHJgnueAurRV1aeeV-NdzRTz_gVwYcJuyDrjJLErtcfg@mail.gmail.com>
-References: <6719519.5821368147110937.JavaMail.weblogic@epml17> <CA+8MBbKHJgnueAurRV1aeeV-NdzRTz_gVwYcJuyDrjJLErtcfg@mail.gmail.com>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Sat, 11 May 2013 11:52:38 +0400
-Message-ID: <871u9e6ji1.fsf@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sat, 11 May 2013 04:09:13 -0400
+X-AuditID: cbfee68d-b7f016d000007930-f0-518dfca7f374
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Kukjin Kim'" <kgene.kim@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "'Doug Anderson'" <dianders@chromium.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dts: add pin state information for DP HPD support to
+ Exynos5250
+Date: Sat, 11 May 2013 17:09:11 +0900
+Message-id: <000001ce4e1e$d1cc5de0$756519a0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac5OHsUc0NHAD9xSRqu01P08e4ifqA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t8zI93lf3oDDbpemlicXXaQzeLywkus
+	Fr0LrrJZbHp8jdXi8q45bBYzzu9jsjh1/TObxbEZSxgdODxmN1xk8bhzbQ+bx+Yl9R5XTjSx
+	evRtWcXo8XmTXABbFJdNSmpOZllqkb5dAlfG6Rlt7AWzuSpubvvO2MC4haOLkZNDQsBE4sOT
+	98wQtpjEhXvr2boYuTiEBJYxSlxYtpUNpmjX3rusEIlFjBL7ujZCOb8YJd6+nsIKUsUmoCbx
+	5cthdhBbREBD4unuI4wgRcwC3UwSR49AjBIWCJfo+dsFZrMIqEpMnvuQCcTmFbCUeDblGDuE
+	LSjxY/I9FhCbWUBLYv3O40wQtrzE5jVvoW5VkNhx9jUjxDI9idvnGtghakQk9r14xwhRc49d
+	YtfPCohdAhLfJh8CmskBFJeV2HQAaoykxMEVN1gmMIrNQrJ5FpLNs5BsnoVkwwJGllWMoqkF
+	yQXFSelFhnrFibnFpXnpesn5uZsYITHau4Px9gHrQ4zJQOsnMkuJJucDYzyvJN7Q2MzIwtTE
+	1NjI3NKMNGElcV61FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYy7dDvMA+41hX1i5Mh7
+	2r5mxeO5EgfNlKzmVy3hYlDcsp43LbbkRNKv9p/d3rpHLrtw5257sebZPsEv6QLL3ySt4f+n
+	deHwS/YFzsdNj7KLN9Usna00ZW9TguO6gAsOYWU60uve7Gte9lKxasOctL+/HlQ0X3L99Pa9
+	16aLj4/ea16zqGNV/u0YJZbijERDLeai4kQASz450OcCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsVy+t9jAd3lf3oDDTZsMbA4u+wgm8XlhZdY
+	LXoXXGWz2PT4GqvF5V1z2CxmnN/HZHHq+mc2i2MzljA6cHjMbrjI4nHn2h42j81L6j2unGhi
+	9ejbsorR4/MmuQC2qAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRb
+	JRefAF23zBygg5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGadntLEX
+	zOaquLntO2MD4xaOLkZODgkBE4lde++yQthiEhfurWfrYuTiEBJYxCixr2sjK4Tzi1Hi7esp
+	YFVsAmoSX74cZgexRQQ0JJ7uPsIIUsQs0M0kcfTIVjaQhLBAuETP3y4wm0VAVWLy3IdMIDav
+	gKXEsynH2CFsQYkfk++xgNjMAloS63ceZ4Kw5SU2r3nLDHGSgsSOs68ZIZbpSdw+18AOUSMi
+	se/FO8YJjAKzkIyahWTULCSjZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOAU8
+	k9rBuLLB4hCjAAejEg+vgkBvoBBrYllxZe4hRgkOZiUR3mcPgEK8KYmVValF+fFFpTmpxYcY
+	k4E+ncgsJZqcD0xPeSXxhsYmZkaWRmYWRibm5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTB
+	KdXAGDrLMnLDuqhvqzST/D0X9Fs4WvH3uad/+P967zmlsm2xhx6x2uQd36tzOm35xKRdC099
+	f5TMbTTJTpNx8fy8Mk6uAkOxpQzL0lZayJ2qeuhXf+Npwq9LlY+esAUZal07wB2eXiMWW/qN
+	M7JuwgKpVIH8K0w/XjGZd57p3yEyX/113tndL16yKbEUZyQaajEXFScCADWQ+yBFAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 May 2013 10:27:58 -0700, Tony Luck <tony.luck@gmail.com> wrote:
-Non-text part: multipart/mixed
-> I think I have the same (or highly similar) thing happening on ia64.
-What was page_size and fsblock size?
-> 
-> Similarities: seeing assertions fail for b_transaction
-> Differences: I only have ext3 filesystems mounted, no ext4
-> 
-> See attached trace.  I'm pretty certain that the highly unhelpful
-> 
->     bugcheck! 0 [1]
-> 
-> comes from the
-> 
->         J_ASSERT_JH(jh, jh->b_transaction == NULL);
-> 
-> from disassembling __journal_remove_journal_head(). The instruction
-> pointer <a0000001003d6690> points to the 2nd "break" instruction
-> in the function.
-> 
-> The problem shows up after 30 minutes to a couple of hours of stress (kernel
-> builds with "make -j32").
-I cant reproduce this one yet.
-But changes {ext3,jbd} are minimal
-#git log --oneline v3.9.. fs/{ext3,jbd}
-5af43c2 Merge branch 'akpm' (incoming from Andrew)
-a27bb33 aio: don't include aio.h in sched.h
-4385bab make blkdev_put() return void
-14a9e5c Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs
-e760040 fs/buffer.c: remove unnecessary init operation after allocating buffer_head.
-713685111 mm: make snapshotting pages for stable writes a per-bio
-operation
-8bb9da9 jbd: use kmem_cache_zalloc for allocating journal head
-e162b2f jbd: use kmem_cache_zalloc instead of kmem_cache_alloc/memset
-e678a4f jbd: don't wait (forever) for stale tid caused by wraparound
-e643692 ext3: fix data=journal fast mount/umount hang
+Add pin state information for DP HPD support that requires
+pin configuration support using pinctrl interface.
 
-So looks very strange..
-I have ia64 and now I work on reproduction.
-> 
-> I'm pretty sure this problem didn't occur in plain v3.9 (it can run for
-> a full 24 hours).
-> 
-> Trying to bisect - but it takes a while to be convinced that a good kernel
-> is actually good (since I don't have a clear picture of how long to run
-> before deciding that the bug isn't going to show)
-> 
-> -Tony
-Attachment: bug (application/octet-stream)
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+Tested on Exynos5250
+
+ arch/arm/boot/dts/exynos5250-pinctrl.dtsi |    7 +++++++
+ arch/arm/boot/dts/exynos5250-smdk5250.dts |    3 +++
+ 2 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
+index d1650fb..e9cdee3 100644
+--- a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
++++ b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
+@@ -553,6 +553,13 @@
+ 			samsung,pin-pud = <0>;
+ 			samaung,pin-drv = <0>;
+ 		};
++
++		dp_hpd: dp_hpd {
++			samsung,pins = "gpx0-7";
++			samsung,pin-function = <3>;
++			samsung,pin-pud = <0>;
++			samaung,pin-drv = <0>;
++		};
+ 	};
+ 
+ 	pinctrl@13400000 {
+diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+index 3e0c792..d53ea34 100644
+--- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
++++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+@@ -224,6 +224,9 @@
+ 		samsung,color-depth = <1>;
+ 		samsung,link-rate = <0x0a>;
+ 		samsung,lane-count = <4>;
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&dp_hpd>;
+ 	};
+ 
+ 	display-timings {
+-- 
+1.7.2.5
+
+
