@@ -1,137 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab3EKQvk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 12:51:40 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:56720 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349Ab3EKQvi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 12:51:38 -0400
-Message-ID: <518E7723.5010003@cogentembedded.com>
-Date: Sat, 11 May 2013 20:51:47 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1753906Ab3EKQy3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 12:54:29 -0400
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:20306
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753395Ab3EKQy2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 12:54:28 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz98dIc89bh1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh906i1155h)
+Date: Sat, 11 May 2013 09:54:22 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
+References: <1368207091-32538-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com>
+ <20130510212422.GY3200@sirena.org.uk>
 MIME-Version: 1.0
-To: Dong Zhu <bluezhudong@gmail.com>
-CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Matthew Vick <matthew.vick@intel.com>,
-        Jacob Keller <Jacob.e.keller@intel.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: Re: [PATCH] igb: add a method to get the nic hw time stamping policy
-References: <20130511140219.GG8399@zhudong.nay.redhat.com>
-In-Reply-To: <20130511140219.GG8399@zhudong.nay.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20130510212422.GY3200@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <7e18bed3-ae6b-4aa0-bf23-b6c61ba8b85b@CO9EHSMHS030.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, May 10, 2013 at 10:24:22PM +0100, Mark Brown wrote:
+> On Fri, May 10, 2013 at 10:31:31AM -0700, Soren Brinkmann wrote:
+> 
+> > +Example:
+> > +	usclk: usclk {
+> > +		compatible = "clk-userspace";
+> > +		clocks = <&foo 15>, <&bar>;
+> > +		clock-count = <2>;
+> > +	};
+> 
+> This is clearly *very* Linux specific so needs to be a linux vendor
+> thing (everything should have a namespaced name anyway).  It's not at
+> all obvious to me that this should be in device tree, though, since it's
+> not hardware description but a detail of how the OS is currently
+> implemented.
+> 
+> For your use case should these things be exposed by the FPGA device
+> asking for that rather than by having the clocks available separately?
+> Or is this part of the DT blob that's loaded incrementally along with
+> the FPGA (which does make things more interesting of course...).
+Here may be some misunderstanding.
+The clocks are not in the FPGA. The clocks are always there and part of
+the processing system (PS), they are just routed to the FPGA where they
+can be used as clocks for the FPGA design.
 
-On 11-05-2013 18:02, Dong Zhu wrote:
+So, hopefully, in most cases there will be a "normal" device drivers for the
+IP in the FPGA. E.g. if there is a soft IP Ethernet core in the FPGA an
+appropriate device driver will use clk_get() to claim the appropriate
+clock from its provider, which can be one of these FPGA clocks.
+In this case there is no userspace exposure needed at all and the here
+proposed driver is not used.
 
->  From e6a55411486de8a09b859e73140bf35c0ee36047 Mon Sep 17 00:00:00 2001
-> From: Dong Zhu <bluezhudong@gmail.com>
-> Date: Sat, 11 May 2013 21:44:54 +0800
-> Subject: [PATCH] igb: add a method to get the nic hw time stamping policy
+But if your design isn't that complex or there is no device driver
+available for it (yet), there is the desire to have simple userspace
+controls to adjust the frequency easily during runtime. In this case the
+proposed driver can be used to expose the clock controls for the wanted
+clocks through sysfs.
 
-    Please, don't send this header with your patches.
+I hope that will be the way it used. I didn't intent to provide a
+userspace API people rely on for more than some simple adjustments.
+The more complex the IP in the FPGA becomes, the requirements and
+limitations on clocking become more complex too. Then people will have
+to write/use a proper dedicated driver for the IP, IMHO.
 
-> Currently kernel only support setting the hw time stamping policy
-> through ioctl,now add a method to check which packets(Outgoing and
-> Incoming) are time stamped by nic.
+> 
+> > + * Expose clock controls through sysfs to userspace.
+> 
+> > + * By writing 0/1 to 'enable' the clock can be disabled/enabled. Reading
+> > + * that file returns the current state - 0 = disabled, 1 = enabled.
+> 
+> > + * Reading 'set_rate' returns the current clock frequency in Hz. Writing
+> > + * the file requests setting a new frequency in Hz.
+> 
+> This needs to be covered in Documentation/ABI since it's adding new
+> sysfs stuff.
+I wanted to avoid becoming the provider of a stable userspace API. We'll
+see how this goes.
 
-> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
-> ---
->   drivers/net/ethernet/intel/igb/igb_ptp.c | 29 +++++++++++++++++++++++++++++
->   include/uapi/linux/net_tstamp.h          |  4 +++-
->   2 files changed, 32 insertions(+), 1 deletion(-)
+> 
+> > +	if (enable)
+> > +		ret = clk_prepare_enable(pdata->clk);
+> > +	else
+> > +		clk_disable_unprepare(pdata->clk);
+> 
+> > +	if (ret)
+> > +		return -EBUSY;
+> 
+> Why not pass back the actual error?
+Good question. Was there some spec saying, that these sysfs callbacks
+should return this error? Otherwise this will be fixed.
 
-> diff --git a/drivers/net/ethernet/intel/igb/igb_ptp.c b/drivers/net/ethernet/intel/igb/igb_ptp.c
-> index 7e8c477..8c06346 100644
-> --- a/drivers/net/ethernet/intel/igb/igb_ptp.c
-> +++ b/drivers/net/ethernet/intel/igb/igb_ptp.c
-> @@ -577,6 +577,34 @@ int igb_ptp_hwtstamp_ioctl(struct net_device *netdev,
->   	if (config.flags)
->   		return -EINVAL;
->
-> +	if (config.rw == 0)
-> +		goto set_policy;
-> +	else if (config.rw == 1) {
+> 
+> > +	pdata = kzalloc(clock_count * sizeof(*pdata), GFP_KERNEL);
+> > +	if (!pdata)
+> > +		return -ENOMEM;
+> 
+> devm?
+In the current state, there is no real device and devices aren't
+destroyed either. If this changes the managed framework may become an
+option.
 
-    Both arms of the *if* statement should have {} if one does, 
-according to Documentation/CodingStyle.
+> 
+> > +late_initcall(usclk_setup);
+> 
+> Why not just a regular driver?
+Looks like I'll go that way. I didn't want it originally, since there
+is no physical HW for this driver. I wanted to use the clock probing
+mechanism, but ran into problems with that because it takes place too
+early during boot.
 
-> +		if (config.tx_type || config.rx_filter)
-> +			return -EINVAL;
-> +
-> +		regval = rd32(E1000_TSYNCTXCTL);
-> +
 
-    Empty line not needed here.
+	Sören
 
-> +		if (regval & E1000_TSYNCTXCTL_ENABLED)
-> +			config.tx_type = HWTSTAMP_TX_ON;
-> +		else
-> +			config.tx_type = HWTSTAMP_TX_OFF;
-> +
-> +		regval = rd32(E1000_TSYNCRXCTL);
-> +
-
-    ... and here.
-
-> +		if (!(regval & E1000_TSYNCRXCTL_ENABLED))
-> +			config.rx_filter = HWTSTAMP_FILTER_NONE;
-> +		else if (E1000_TSYNCRXCTL_TYPE_ALL ==
-> +				(regval & E1000_TSYNCRXCTL_TYPE_MASK))
-> +			config.rx_filter = HWTSTAMP_FILTER_ALL;
-> +		else
-> +			return -ERANGE;
-> +
-> +		goto end;
-> +	} else
-> +		return -EINVAL;
-
-    Same comment about missing {}. This *if*, however, asks to be 
-converted to *switch*...
-
-> diff --git a/include/uapi/linux/net_tstamp.h b/include/uapi/linux/net_tstamp.h
-> index ae5df12..77147da 100644
-> --- a/include/uapi/linux/net_tstamp.h
-> +++ b/include/uapi/linux/net_tstamp.h
-> @@ -28,9 +28,10 @@ enum {
->   /**
->    * struct hwtstamp_config - %SIOCSHWTSTAMP parameter
->    *
-> + * @rw:        0/1 represents set/get the hw time stamp policy
->    * @flags:	no flags defined right now, must be zero
->    * @tx_type:	one of HWTSTAMP_TX_*
-> - * @rx_type:	one of one of HWTSTAMP_FILTER_*
-> + * @rx_filter:	one of one of HWTSTAMP_FILTER_*
-
-    You don't mention this change in the changelog. Most probably it 
-should be in a separate patch.
-
-> @@ -39,6 +40,7 @@ enum {
->   * 32 and 64 bit systems, don't break this!
->   */
->  struct hwtstamp_config {
-> +	int rw;
-
-    Why not 'bool'?
-
-WBR, Sergei
 
