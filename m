@@ -1,112 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab3EKORd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 10:17:33 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56729 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab3EKORb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 10:17:31 -0400
-Date: Fri, 10 May 2013 22:24:22 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20130510212422.GY3200@sirena.org.uk>
-References: <1368207091-32538-1-git-send-email-soren.brinkmann@xilinx.com>
- <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DHd0DHvhbdljNSqO"
-Content-Disposition: inline
-In-Reply-To: <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.247.243.210
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1753015Ab3EKOTX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 10:19:23 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:56971 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752834Ab3EKOTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 10:19:22 -0400
+From: Robin Holt <holt@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Russ Anderson <rja@sgi.com>,
+        Robin Holt <holt@sgi.com>, Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH -v11 00/11] Shutdown from reboot_cpuid without stopping other cpus.
+Date: Sat, 11 May 2013 09:19:07 -0500
+Message-Id: <1368281958-26695-1-git-send-email-holt@sgi.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We recently noticed that reboot of a 1024 cpu machine takes approx 16
+minutes of just stopping the cpus.  The slowdown was tracked to commit
+f96972f.
 
---DHd0DHvhbdljNSqO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The current implementation does all the work of hot removing the cpus
+before halting the system.  We are switching to just migrating to the
+reboot_cpu and then continuing with shutdown/reboot.
 
-On Fri, May 10, 2013 at 10:31:31AM -0700, Soren Brinkmann wrote:
+The patch set is broken into eleven parts.  The first two are planned for
+the stable release.  The others move the halt/shutdown/reboot related
+functions to their own kernel/reboot.c file and then move the handling
+of the kernel reboot= kernel parameter to generic kernel code.
 
-> +Example:
-> +	usclk: usclk {
-> +		compatible = "clk-userspace";
-> +		clocks = <&foo 15>, <&bar>;
-> +		clock-count = <2>;
-> +	};
+Changes since -v10
+ - Added Russell's Acked-by for arm.
 
-This is clearly *very* Linux specific so needs to be a linux vendor
-thing (everything should have a namespaced name anyway).  It's not at
-all obvious to me that this should be in device tree, though, since it's
-not hardware description but a detail of how the OS is currently
-implemented.
+ - Fixed an accidentally commented out line in an arm header file.
 
-For your use case should these things be exposed by the FPGA device
-asking for that rather than by having the clocks available separately?
-Or is this part of the DT blob that's loaded incrementally along with
-the FPGA (which does make things more interesting of course...).
+Changes since -v9
+ - Added Ingo's Acked-by for x86.
 
-> + * Expose clock controls through sysfs to userspace.
+ - Added Guan's Acked-by for unicore32.
 
-> + * By writing 0/1 to 'enable' the clock can be disabled/enabled. Reading
-> + * that file returns the current state - 0 = disabled, 1 = enabled.
+ - Replaced first patch with updated patch from Srivatsa S. Bhat.
+   This compiles for alpha allmodconfig, all arm defconfigs, and a few
+   test x86_64 defconfigs.  I have not tried more.
 
-> + * Reading 'set_rate' returns the current clock frequency in Hz. Writing
-> + * the file requests setting a new frequency in Hz.
+Changes since -v8
+ - Changes reboot_cpu on stack to cpu to fix bug noticed by Russell King.
 
-This needs to be covered in Documentation/ABI since it's adding new
-sysfs stuff.
+ - Switched unicore32 and arm from using REBOOT_WARM/COLD to HARD/SOFT.
 
-> +	if (enable)
-> +		ret = clk_prepare_enable(pdata->clk);
-> +	else
-> +		clk_disable_unprepare(pdata->clk);
+ - Fixed case statement bug.
 
-> +	if (ret)
-> +		return -EBUSY;
+ - Went to using simple_strtoul for parsing reboot_cpu=smp###.
 
-Why not pass back the actual error?
+ - Made parsing of reboot= not use any #ifdef'd code.
 
-> +	pdata = kzalloc(clock_count * sizeof(*pdata), GFP_KERNEL);
-> +	if (!pdata)
-> +		return -ENOMEM;
+Changes since -v7.
+ - Fixed authorship for first patch.
 
-devm?
+ - Rebased to Linus' current tree (51a26ae7a).
 
-> +late_initcall(usclk_setup);
+Changes since -v6.
+ - Cross compiled all arm architectures (using v3.9 kernel.  Fails with
+   current).
 
-Why not just a regular driver?
+ - Added a #define for non-hotplug case.
 
---DHd0DHvhbdljNSqO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ - Add #define for PF_THREAD_BOUND as compatibility to make stable easier.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+ - Fixup s/reboot_cpu_id/reboot_cpu/
 
-iQIcBAEBAgAGBQJRjWV+AAoJELSic+t+oim9vrQQAJbobwyqbbFAo1SoqD8j8AlZ
-i0G1QEyPsMUg3lWG0Aw2Vkwi417INijYkGXmazpN7Pp8FvIqGAhmQyjx2jm/5OOR
-1XvwEb3R9KTOKAQS2SV1quIMOFhHqCq4aQY0jwHSPnlh4Hf4Bn/3XO1p+0VrJE8C
-12uWFVHTVCMGF4Jv8A6O3A2Nwuml+ZPmH/bVetootUKG97pULs3IAjkBqLzBGQns
-Ril2QWdyZLjlEDTBnokVMs45q3RYKstulXLE+jXUU/M+q886xdxFmkrRjsxjfhtM
-LxgWy9SdiQ+nW1Jb84BJTKXHy8aSOu+oI0Iy+wOFsLVoNq6TDTlvkUQlKErht57Z
-tdnZknunSBHWlvxEQvyCvWNsp6sJGrEJX/B49/RLna/+a2ojVuvdENpVWGe1DS31
-LLvnP1YGwu8hmQEz2rc3h9zCYQbGgPHpBFahcFElY3ujJXgmXtCTFWyAQj3rT3OW
-F/kY3iUT2f9vACFhQd8KvKgElIH6tp980S25W0a+bRroL3ST2Xujt1JwnKe/bOqs
-K7xdj1YCacF96fECLMOvH1bgT1C7Jjznz5a1SD1OvFDNvwHpZ+fxa/ozRpVF1FlU
-KRr4m7toqSrmF4dFAVAvm9sOjv1xrYHFFcyhibZzw7YR/EIBiLeGyqynwe/M0Osb
-pSsSwgTfE9FMDkwsAwda
-=i05g
------END PGP SIGNATURE-----
+ - Add include of linux/uaccess.h to allow building on arm.
 
---DHd0DHvhbdljNSqO--
+ - Removed last remaining checkpatch.pl line length warning on
+   kernel/reboot.c.
+
+ - Fixed the duplicate handling or the reboot= kernel parameter.
+
+Changes since -v5.
+ - Moved the arch/x86 reboot= up to the generic kernel code.
+
+Changes since -v4.
+ - Integrated Srivatsa S. Bhat creating cpu_hotplug_disable()
+   function
+
+ - Integrated comments by Srivatsa S. Bhat.
+
+ - Made one more comment consistent with others in function.
+
+Changes since -v3.
+ - Added a tested-by for the original reporter.
+
+ - Fix compile failure found by Joe Perches.
+
+ - Integrated comments by Joe Perches.
+
+
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: the arch/x86 maintainers <x86@kernel.org>
+Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
