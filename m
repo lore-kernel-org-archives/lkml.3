@@ -1,207 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab3EKKQJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 06:16:09 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53639 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab3EKKQG (ORCPT
+	id S1754018Ab3EKLBB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 07:01:01 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:43080 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab3EKLA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 06:16:06 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Libo Chen <chenlibo.3@gmail.com>
-Cc: ben-linux@fluff.org, kgene.kim@samsung.com, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com, libo.chen@huawei.com,
-        stern@rowland.harvard.edu, akpm@linux-foundation.org
-Subject: Re: [PATCH] usb: gadget: s3c2410: fix clk resource leak and update
-Date: Sat, 11 May 2013 12:15:56 +0200
-Message-ID: <1684189.YrZqmJjoym@flatron>
-User-Agent: KMail/4.10.3 (Linux/3.9.1-gentoo-r1; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <518DE4FF.1000702@gmail.com>
-References: <518DE4FF.1000702@gmail.com>
+	Sat, 11 May 2013 07:00:59 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, EUNBONG SONG <eunb.song@samsung.com>,
+        Jan Kara <jack@suse.cz>
+Cc: "linux-ext4\@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-xfs@vger.kernel.org, Dave Chinner <david@fromorbit.com>
+Subject: EXT4 regression caused 4eec7
+In-Reply-To: <87txm96fkd.fsf@openvz.org>
+References: <6719519.5821368147110937.JavaMail.weblogic@epml17> <20130510192747.GA11707@thunk.org> <87y5bm53z3.fsf@openvz.org> <87txm96fkd.fsf@openvz.org>
+User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Sat, 11 May 2013 15:00:53 +0400
+Message-ID: <87mws1eq6y.fsf@openvz.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Libo,
+On Sat, 11 May 2013 13:17:38 +0400, Dmitry Monakhov <dmonakhov@openvz.org> wrote:
+Non-text part: multipart/mixed
+> On Sat, 11 May 2013 12:13:20 +0400, Dmitry Monakhov <dmonakhov@openvz.org> wrote:
+> > On Fri, 10 May 2013 15:27:47 -0400, Theodore Ts'o <tytso@mit.edu> wrote:
+> > > Hmm, since you seem to be able to reproduce the problem reliably, any
+> > > chance you can try bisecting the problem?  I've looked at the commits
+> > > that touch fs/jbd2 and nothing is jumping out at me.
+> > > 
+> > > Also, how many CPU's do you have your system, and what kind of storage
+> > > device were you using when you were running iozone (5400rpm HDD,
+> > > 7200RPM HDD, RAID array, SSD, etc.)?
+> Ok, I've able to reproduce corruption on ext4
+> So at this moment we have:
+> Slub corruption on XFS testcase: xfstests/generic/013
+> Slub corruption on EXT4 testcase: xfstests/generic/299
+I've bisected ext4 related issue. It is appeared that it is pure ext4
+specific. Regression caused by  following commit
+commit 4eec708d263f0ee10861d69251708a225b64cac7
+Author: Jan Kara <jack@suse.cz>
+Date:   Thu Apr 11 23:56:53 2013 -0400
+    ext4: use io_end for multiple bios
 
-On Saturday 11 of May 2013 14:28:15 Libo Chen wrote:
-> From: Libo Chen <libo.chen@huawei.com>
-
-The patch subject is slightly misleading. It suggests that the patch only 
-changes clock handling, but in fact the biggest part of the patch is 
-conversion to devm_ helpers.
-
-I think following subject would suit this patch better:
-
-[PATCH] usb: gadget: s3c2410: Convert to managed resource allocation
-
-What do you think?
-
-Also please see my comments inline.
-
-> currently, when clk_get(NULL,"usb-device") fail, it does not
-> disable && put usb_bus_clock. It is incorrect.
+TESTCASE: xfstests  generic/299
 > 
-> this patch use new interface devm_xxx instead of xxx then
-> we no need to care about cleanup resource in err case that is boring
-> and reduce code size.
+> In fact both test cases (069'th and 299'th) are just stress tests.
+> So this is likely a regression in mm layer. I try to bisect it now.
 > 
-> Signed-off-by: Libo Chen <libo.chen@huawei.com>
-> ---
->  drivers/usb/gadget/s3c2410_udc.c | 85
-> ++++++++++++----------------------------
->  1 file changed, 25 insertions(+), 60 deletions(-)
 > 
-> diff --git a/drivers/usb/gadget/s3c2410_udc.c
-> b/drivers/usb/gadget/s3c2410_udc.c
-> old mode 100644
-> new mode 100755
-> index d0e75e1..0c573a8
-> --- a/drivers/usb/gadget/s3c2410_udc.c
-> +++ b/drivers/usb/gadget/s3c2410_udc.c
-> @@ -1780,7 +1780,7 @@ static int s3c2410_udc_probe(struct
-> platform_device *pdev)
+> #Testcase: xfstests  generic/299
+> #DMESG
+> ------------[ cut here ]------------
+> WARNING: at fs/ext4/inode.c:3223 ext4_ext_direct_IO+0x2cb/0x3c0()
+> Modules linked in: cpufreq_ondemand usb_storage acpi_cpufreq freq_table mperf coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode sg xhci_hcd button sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 ahci libahci pata_acpi ata_generic dm_mirror dm_region_hash dm_log dm_mod
+> CPU: 3 PID: 30537 Comm: fio Not tainted 3.9.0+ #14
+> Hardware name:                  /DQ67SW, BIOS SWQ6710H.86A.0052.2011.0520.1802 05/20/2011
+>  ffffffff81e44ed6 ffff8801259ffa28 ffffffff818b20ff ffff8801259ffa68
+>  ffffffff81060a87 ffff8801259ffa58 ffff880205a921d0 ffff880233192740
+>  ffff880176496400 0000000000000000 ffffffffffffffe4 ffff8801259ffa78
+> Call Trace:
+>  [<ffffffff818b20ff>] dump_stack+0x19/0x22
+>  [<ffffffff81060a87>] warn_slowpath_common+0x87/0xb0
+>  [<ffffffff81060aca>] warn_slowpath_null+0x1a/0x20
+>  [<ffffffff813131eb>] ext4_ext_direct_IO+0x2cb/0x3c0
+>  [<ffffffff813161c0>] ? ext4_get_block_write_nolock+0x20/0x20
+>  [<ffffffff813132e0>] ? ext4_ext_direct_IO+0x3c0/0x3c0
+>  [<ffffffff8131ac9f>] ext4_direct_IO+0x22f/0x3c0
+>  [<ffffffff8118db75>] generic_file_direct_write+0x175/0x240
+>  [<ffffffff81191bc6>] __generic_file_aio_write+0x556/0x770
+>  [<ffffffff8130d2de>] ext4_file_dio_write+0x35e/0x4f0
+>  [<ffffffff812929b3>] ? aio_rw_vect_retry+0xc3/0x250
+>  [<ffffffff8130d5ae>] ext4_file_write+0x13e/0x190
+>  [<ffffffff8130d470>] ? ext4_file_dio_write+0x4f0/0x4f0
+>  [<ffffffff812929e3>] aio_rw_vect_retry+0xf3/0x250
+>  [<ffffffff811c7f53>] ? might_fault+0x73/0xe0
+>  [<ffffffff8130d470>] ? ext4_file_dio_write+0x4f0/0x4f0
+>  [<ffffffff812949da>] aio_run_iocb+0x25a/0x3b0
+>  [<ffffffff81294e26>] io_submit_one+0x2f6/0x3a0
+>  [<ffffffff8129512e>] do_io_submit+0x25e/0x2f0
+>  [<ffffffff812926b2>] ? lookup_ioctx+0xc2/0x100
+>  [<ffffffff812951d0>] SyS_io_submit+0x10/0x20
+>  [<ffffffff818c4ac2>] system_call_fastpath+0x16/0x1b
+> ---[ end trace c96126e84d56efc2 ]---
+> ------------[ cut here ]------------
+> WARNING: at fs/ext4/inode.c:3223 ext4_ext_direct_IO+0x2cb/0x3c0()
+> Modules linked in: cpufreq_ondemand usb_storage acpi_cpufreq freq_table mperf coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode sg xhci_hcd button sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 ahci libahci pata_acpi ata_generic dm_mirror dm_region_hash dm_log dm_mod
+> CPU: 1 PID: 30539 Comm: fio Tainted: G        W    3.9.0+ #14
+> Hardware name:                  /DQ67SW, BIOS SWQ6710H.86A.0052.2011.0520.1802 05/20/2011
+>  ffffffff81e44ed6 ffff880131209a28 ffffffff818b20ff ffff880131209a68
+>  ffffffff81060a87 ffff880131209a58 ffff8801f5347990 ffff88022b9b7e00
+>  ffff88023342c508 0000000000000000 ffffffffffffffe4 ffff880131209a78
+> Call Trace:
+>  [<ffffffff818b20ff>] dump_stack+0x19/0x22
+>  [<ffffffff81060a87>] warn_slowpath_common+0x87/0xb0
+>  [<ffffffff81060aca>] warn_slowpath_null+0x1a/0x20
+>  [<ffffffff813131eb>] ext4_ext_direct_IO+0x2cb/0x3c0
+>  [<ffffffff813161c0>] ? ext4_get_block_write_nolock+0x20/0x20
+>  [<ffffffff813132e0>] ? ext4_ext_direct_IO+0x3c0/0x3c0
+>  [<ffffffff8131ac9f>] ext4_direct_IO+0x22f/0x3c0
+>  [<ffffffff8118db75>] generic_file_direct_write+0x175/0x240
+>  [<ffffffff81191bc6>] __generic_file_aio_write+0x556/0x770
+>  [<ffffffff8130d2de>] ext4_file_dio_write+0x35e/0x4f0
+>  [<ffffffff812929b3>] ? aio_rw_vect_retry+0xc3/0x250
+>  [<ffffffff8130d5ae>] ext4_file_write+0x13e/0x190
+>  [<ffffffff8130d470>] ? ext4_file_dio_write+0x4f0/0x4f0
+>  [<ffffffff812929e3>] aio_rw_vect_retry+0xf3/0x250
+>  [<ffffffff811c7f53>] ? might_fault+0x73/0xe0
+>  [<ffffffff8130d470>] ? ext4_file_dio_write+0x4f0/0x4f0
+>  [<ffffffff812949da>] aio_run_iocb+0x25a/0x3b0
+>  [<ffffffff81294e26>] io_submit_one+0x2f6/0x3a0
+>  [<ffffffff8129512e>] do_io_submit+0x25e/0x2f0
+>  [<ffffffff812926b2>] ? lookup_ioctx+0xc2/0x100
+>  [<ffffffff812951d0>] SyS_io_submit+0x10/0x20
+>  [<ffffffff818c4ac2>] system_call_fastpath+0x16/0x1b
+> ---[ end trace c96126e84d56efc3 ]---
+> Slab corruption (Tainted: G        W   ): ext4_io_end start=ffff88023342c508, len=64
+> Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+> Last user: [<ffffffff8131fe9b>](ext4_release_io_end+0x12b/0x130)
+> 030: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6a 6b 6b a5  kkkkkkkkkkkkjkk.
+> Prev obj: start=ffff88023342c4b0, len=64
+> Redzone: 0xd84156c5635688c0/0xd84156c5635688c0.
+> Last user: [<ffffffff813200d3>](ext4_init_io_end+0x23/0x60)
+> 000: 58 cf 42 33 02 88 ff ff c8 27 33 62 01 88 ff ff  X.B3.....'3b....
+> 010: d0 51 a4 30 02 88 ff ff 05 00 00 00 00 00 00 00  .Q.0............
+> Next obj: start=ffff88023342c560, len=64
+> Redzone: 0xd84156c5635688c0/0xd84156c5635688c0.
+> Last user: [<ffffffff813200d3>](ext4_init_io_end+0x23/0x60)
+> 000: a8 d3 1e 27 02 88 ff ff a0 8d 47 2b 02 88 ff ff  ...'......G+....
+> 010: d0 51 a4 30 02 88 ff ff 05 00 00 00 00 00 00 00  .Q.0............
+> Slab corruption (Tainted: G        W   ): ext4_io_end start=ffff880176496400, len=64
+> Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+> Last user: [<ffffffff8131fe9b>](ext4_release_io_end+0x12b/0x130)
+> 030: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6a 6b 6b a5  kkkkkkkkkkkkjkk.
+> Prev obj: start=ffff8801764963a8, len=64
+> Redzone: 0xd84156c5635688c0/0xd84156c5635688c0.
+> Last user: [<ffffffff813200d3>](ext4_init_io_end+0x23/0x60)
+> 000: a8 63 49 76 01 88 ff ff a8 63 49 76 01 88 ff ff  .cIv.....cIv....
+> 010: 90 b9 79 2b 02 88 ff ff 00 00 00 00 00 00 00 00  ..y+............
+> Next obj: start=ffff880176496458, len=64
+> Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+> Last user: [<ffffffff8131fe9b------------[ cut here ]------------
 > 
->  	dev_dbg(dev, "%s()\n", __func__);
 > 
-> -	usb_bus_clock = clk_get(NULL, "usb-bus-gadget");
-> +	usb_bus_clock = devm_clk_get(NULL, "usb-bus-gadget");
-
-Passing NULL as the dev parameter of devm_ functions is a BUG. You need to 
-pass a valid pointer to struct device to them, otherwise it doesn't make 
-sense - the list of allocated resources is a part of struct device.
-
->  	if (IS_ERR(usb_bus_clock)) {
->  		dev_err(dev, "failed to get usb bus clock source\n");
->  		return PTR_ERR(usb_bus_clock);
-> @@ -1788,8 +1788,9 @@ static int s3c2410_udc_probe(struct
-> platform_device *pdev)
-> 
->  	clk_enable(usb_bus_clock);
-
-If you enable this clock after allocation of all resources instead, you 
-won't have to disable it manually like in following chunk:
-> 
-> -	udc_clock = clk_get(NULL, "usb-device");
-> +	udc_clock = devm_clk_get(NULL, "usb-device");
->  	if (IS_ERR(udc_clock)) {
-> +		clk_disable(usb_bus_clock);
->  		dev_err(dev, "failed to get udc clock source\n");
->  		return PTR_ERR(udc_clock);
->  	}
-> @@ -1814,13 +1815,15 @@ static int s3c2410_udc_probe(struct
-> platform_device *pdev)
->  	rsrc_start = S3C2410_PA_USBDEV;
->  	rsrc_len   = S3C24XX_SZ_USBDEV;
-> 
-> -	if (!request_mem_region(rsrc_start, rsrc_len, gadget_name))
-> -		return -EBUSY;
-> +	if (!devm_request_mem_region(rsrc_start, rsrc_len, gadget_name)) {
-> +		retval = -EBUSY;
-> +		goto out;
-> +	}
-> 
-> -	base_addr = ioremap(rsrc_start, rsrc_len);
-> +	base_addr = devm_ioremap(rsrc_start, rsrc_len);
-
-This won't even compile... Was this patch tested at all?
-
-See the definition of devm_ioremap:
-http://lxr.free-electrons.com/source/lib/devres.c#L25
-
-In addition, a better function is available, devm_request_and_ioremap.
-(http://lxr.free-electrons.com/source/lib/devres.c#L143)
-
-You can use it instead of calling request_mem_region and ioremap 
-separately.
-
->  	if (!base_addr) {
->  		retval = -ENOMEM;
-> -		goto err_mem;
-> +		goto out;
->  	}
-> 
->  	the_controller = udc;
-> @@ -1830,31 +1833,31 @@ static int s3c2410_udc_probe(struct
-> platform_device *pdev)
->  	s3c2410_udc_reinit(udc);
-> 
->  	/* irq setup after old hardware state is cleaned up */
-> -	retval = request_irq(IRQ_USBD, s3c2410_udc_irq,
-> +	retval = devm_request_irq(IRQ_USBD, s3c2410_udc_irq,
->  			     0, gadget_name, udc);
-
-This won't compile too.
-
->  	if (retval != 0) {
->  		dev_err(dev, "cannot get irq %i, err %d\n", IRQ_USBD, 
-retval);
->  		retval = -EBUSY;
-> -		goto err_map;
-> +		goto out;
->  	}
-> 
->  	dev_dbg(dev, "got irq %i\n", IRQ_USBD);
-> 
->  	if (udc_info && udc_info->vbus_pin > 0) {
-> -		retval = gpio_request(udc_info->vbus_pin, "udc vbus");
-> +		retval = devm_gpio_request(udc_info->vbus_pin, "udc 
-vbus");
-
-Neither this will.
-
->  		if (retval < 0) {
->  			dev_err(dev, "cannot claim vbus pin\n");
-> -			goto err_int;
-> +			goto out;
->  		}
-> 
->  		irq = gpio_to_irq(udc_info->vbus_pin);
->  		if (irq < 0) {
->  			dev_err(dev, "no irq for gpio vbus pin\n");
-> -			goto err_gpio_claim;
-> +			goto out;
->  		}
-> 
-> -		retval = request_irq(irq, s3c2410_udc_vbus_irq,
-> +		retval = devm_request_irq(irq, s3c2410_udc_vbus_irq,
->  				     IRQF_TRIGGER_RISING
-
-Neither this will.
-
-> 
->  				     | IRQF_TRIGGER_FALLING | IRQF_SHARED,
-> 
->  				     gadget_name, udc);
-> @@ -1863,7 +1866,7 @@ static int s3c2410_udc_probe(struct
-> platform_device *pdev)
->  			dev_err(dev, "can't get vbus irq %d, err %d\n",
->  				irq, retval);
->  			retval = -EBUSY;
-> -			goto err_gpio_claim;
-> +			goto out;
->  		}
-> 
->  		dev_dbg(dev, "got irq %i\n", irq);
-> @@ -1874,17 +1877,17 @@ static int s3c2410_udc_probe(struct
-> platform_device *pdev)
->  	if (udc_info && !udc_info->udc_command &&
->  		gpio_is_valid(udc_info->pullup_pin)) {
-> 
-> -		retval = gpio_request_one(udc_info->pullup_pin,
-> +		retval = devm_gpio_request_one(udc_info->pullup_pin,
-
-Neither this will.
-
-Well, this patch is a good idea, but a very poor implementation.
-
-Please _test_ (compile and boot) your patch next time.
-
-Best regards,
-Tomasz
-
+> > XFS TOO....
+> > It it definitely just an ext3/4 related issue.
+> > I've run xfstests on xfs and almost immediately have got slub corruption
+> > I use following HEAD: 2dbd3cac87250a0d44e07acc86c4224a08522709
+> > 
+> > 2013-05-11 11:59:30 Slab corruption (Not tainted): xfs_efi_item
+> > start=ffff8802335063f0, len=400^M
+> > 2013-05-11 11:59:30 Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.^M
+> > 2013-05-11 11:59:30 Last user:
+> > [<ffffffffa03ba36f>](xfs_efi_item_free+0x3f/0x50 [xfs])^M
+> > 2013-05-11 11:59:30 070: 6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b
+> > jkkkkkkkkkkkkkkk^M
+> > 2013-05-11 11:59:30 Single bit error detected. Probably bad RAM.^M
+> > 2013-05-11 11:59:30 Run memtest86+ or a similar memory test tool.^M
+> > 2013-05-11 11:59:30 Prev obj: start=ffff880233506248, len=400^M
+> > 2013-05-11 11:59:30 Redzone: 0xd84156c5635688c0/0xd84156c5635688c0.^M
+> > 2013-05-11 11:59:30 Last user:
+> > [<ffffffffa034d7bb>](kmem_zone_alloc+0xbb/0x190 [xfs])^M
+> > 2013-05-11 11:59:30 000: 48 62 50 33 02 88 ff ff 48 62 50 33 02 88 ff ff
+> > HbP3....HbP3....^M
+> > 2013-05-11 11:59:30 010: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > ................^M
+> > 2013-05-11 11:59:30 Next obj: start=ffff880233506598, len=400^M
+> > 2013-05-11 11:59:30 Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.^M
+> > > 
+> > > Thanks,
+> > > 
+> > > 						- Ted
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
