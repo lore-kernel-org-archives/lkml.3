@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab3EKWWy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 18:22:54 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:61332 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754523Ab3EKWWx (ORCPT
+	id S1754631Ab3EKWbl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 18:31:41 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:38439 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754257Ab3EKWbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 18:22:53 -0400
+	Sat, 11 May 2013 18:31:40 -0400
+Date: Sat, 11 May 2013 15:31:11 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH] perf: Power7: Make CPI stack events available in sysfs
+Message-ID: <20130511223111.GA30064@us.ibm.com>
+References: <20130406164803.GA408@us.ibm.com>
+ <20130415061508.GD21147@concordia>
+ <20130422155505.GA26169@us.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20130511013000.GD14820@jonmason-lab>
-References: <20130511013000.GD14820@jonmason-lab>
-Date: Sat, 11 May 2013 15:22:52 -0700
-X-Google-Sender-Auth: Kv1C1I3gxNjrRDG_09nhQivM4JA
-Message-ID: <CA+55aFxkSm34X_cwaQ9chue==SBpFNFfeOYB0dLg8WS1crz1iA@mail.gmail.com>
-Subject: Re: [GIT PULL] NTB bug fixes for v3.10
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jon Mason <jon.mason@intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130422155505.GA26169@us.ibm.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051122-3620-0000-0000-0000026FEB46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 6:30 PM, Jon Mason <jon.mason@intel.com> wrote:
->
->   https://github.com/jonmason/ntb.git for-linus
+Sukadev Bhattiprolu [sukadev@linux.vnet.ibm.com] wrote:
+| Michael Ellerman [michael@ellerman.id.au] wrote:
+| | On Sat, Apr 06, 2013 at 09:48:03AM -0700, Sukadev Bhattiprolu wrote:
+| | > From bdeacf7175241f6c79b5b2be0fa6b20b0d0b7d1c Mon Sep 17 00:00:00 2001
+| | > From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+| | > Date: Sat, 6 Apr 2013 08:48:26 -0700
+| | > Subject: [PATCH] perf: Power7: Make CPI stack events available in sysfs
+| | > 
+| | > A set of Power7 events are often used for Cycles Per Instruction (CPI) stack
+| | > analysis. Make these events available in sysfs (/sys/devices/cpu/events/) so
+| | > they can be identified using their symbolic names:
+| | > 
+| | > 	perf stat -e 'cpu/PM_CMPLU_STALL_DCACHE_MISS/' /bin/ls
+| | 
+| | Should we take these two via the powerpc tree? Or do you want to take
+| | them Arnaldo?
+| 
+| I think it can go through powerpc tree since it is all arch-specific.
+| 
 
-This has so much wrong that I don't know where to start.
+Ben, Paul,
 
-Don't use the https transport unless you have to. Use the "git" one.
+Any comments on this patch ?
 
-Also, that's an unsigned branch from an open hosting site. No. No. No.
+	https://lkml.org/lkml/2013/4/6/169
 
-If you use github or similar, you need to send me a signed tag, and
-your pgp key should in turn be signed by some key I recognize. Not
-this kind of "please pull this random branch from this random site"
-crap.
-
-                Linus
