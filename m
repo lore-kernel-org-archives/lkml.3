@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004Ab3EKPsd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 11:48:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47848 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098Ab3EKPsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 11:48:32 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130511130457.GD18614@n2100.arm.linux.org.uk>
-References: <1368273447-11958-1-git-send-email-holt@sgi.com> <1368273447-11958-10-git-send-email-holt@sgi.com> <20130511130457.GD18614@n2100.arm.linux.org.uk>
+	id S1753753Ab3EKQcK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 12:32:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:29209 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753620Ab3EKQcI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 12:32:08 -0400
+Date: Sat, 11 May 2013 19:31:55 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: Keith Busch <keith.busch@intel.com>,
+        Vishal Verma <vishal.l.verma@intel.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] NVMe: check for integer overflow in nvme_map_user_pages()
+Message-ID: <20130511163155.GA21427@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH -v10 09/11] arm, prepare reboot_mode for moving to	generic kernel code.
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 11 May 2013 08:47:28 -0700
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Robin Holt <holt@sgi.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Russ Anderson <rja@sgi.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Message-ID: <588ed084-fed7-4bd9-bcd7-a32f40bd404a@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By the way, do we really need Yoda programming here?
+You need to have CAP_SYS_ADMIN to trigger this overflow but it makes the
+static checkers complain so we should fix it.  The worry is that
+"length" comes from copy_from_user() so we need to check that "length +
+offset" can't overflow.
 
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+I also changed the min_t() cast to be unsigned instead of signed.  Now
+that we cap "length" to INT_MAX it doesn't make a difference, but it's a
+little easier for reviewers to know that large values aren't cast to
+negative.
 
->On Sat, May 11, 2013 at 06:57:25AM -0500, Robin Holt wrote:
->> This patch prepares for the moving the parsing of reboot= to the
->generic
->> kernel code by making reboot_mode into a more generic form.
->> 
->> Signed-off-by: Robin Holt <holt@sgi.com>
->> To: Andrew Morton <akpm@linux-foundation.org>
->> To: Russell King <linux@arm.linux.org.uk>
->> Cc: Russ Anderson <rja@sgi.com>
->> Cc: Robin Holt <holt@sgi.com>
->> Cc: H. Peter Anvin <hpa@zytor.com>
->> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
->> Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
->> Cc: the arch/x86 maintainers <x86@kernel.org>
->> Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
->
->Almost-but-not-quite-Acked-by: Russell King
-><rmk+kernel@arm.linux.org.uk> :)
->
->> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
->> index f219703..92b47df 100644
->> --- a/arch/arm/kernel/process.c
->> +++ b/arch/arm/kernel/process.c
->> @@ -174,14 +174,14 @@ void arch_cpu_idle(void)
->>  		default_idle();
->>  }
->>  
->> -static char reboot_mode = 'h';
->> +enum reboot_mode reboot_mode = REBOOT_HARD;
->>  
->> -int __init reboot_setup(char *str)
->> +static int __init reboot_setup(char *str)
->>  {
->> -	reboot_mode = str[0];
->> +	if ('s' == str[0])
->> +		reboot_mode = REBOOT_SOFT;
->
->Remember we talked about the 'gpio' mode as well, so you also need here
->+	if ('g' == str[0])
->		reboot_mode = REBOOT_GPIO;
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index 8efdfaa..4376375 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -1206,7 +1206,7 @@ struct nvme_iod *nvme_map_user_pages(struct nvme_dev *dev, int write,
+ 
+ 	if (addr & 3)
+ 		return ERR_PTR(-EINVAL);
+-	if (!length)
++	if (!length || length > INT_MAX - PAGE_SIZE)
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	offset = offset_in_page(addr);
+@@ -1227,7 +1227,8 @@ struct nvme_iod *nvme_map_user_pages(struct nvme_dev *dev, int write,
+ 	sg_init_table(sg, count);
+ 	for (i = 0; i < count; i++) {
+ 		sg_set_page(&sg[i], pages[i],
+-				min_t(int, length, PAGE_SIZE - offset), offset);
++			    min_t(unsigned, length, PAGE_SIZE - offset),
++			    offset);
+ 		length -= (PAGE_SIZE - offset);
+ 		offset = 0;
+ 	}
