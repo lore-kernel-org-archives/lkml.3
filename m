@@ -1,85 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab3EKBTW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 21:19:22 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:57499 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892Ab3EKBTV (ORCPT
+	id S1756605Ab3EKB0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 21:26:25 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:55288 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754779Ab3EKB0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 21:19:21 -0400
+	Fri, 10 May 2013 21:26:23 -0400
+Date: Sat, 11 May 2013 03:26:18 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] x86/sched/dynamic-ticks: Call new schedule_irq_disable()
+ for scheduling in entry_64.S
+Message-ID: <20130511012617.GD13340@somewhere>
+References: <1368062480.7373.95.camel@gandalf.local.home>
+ <20130510002203.GA2394@somewhere>
+ <1368146829.7373.146.camel@gandalf.local.home>
 MIME-Version: 1.0
-Reply-To: konrad@darnok.org
-In-Reply-To: <20130510084413.GA2683@blaptop>
-References: <1368056517-31065-1-git-send-email-minchan@kernel.org>
- <20130509201540.GB5273@localhost.localdomain> <20130510084413.GA2683@blaptop>
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Date: Fri, 10 May 2013 21:18:59 -0400
-X-Google-Sender-Auth: y0oCpZPeDmHAw3dEGYvs4OftWbU
-Message-ID: <CAPbh3rsVnvEmH+sRoRYjGi3DERMkzFPmOn=a_Gt0uAMnLLmZJg@mail.gmail.com>
-Subject: Re: [PATCH v3] mm: remove compressed copy from zram in-memory
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>, Shaohua Li <shli@kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368146829.7373.146.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 4:44 AM, Minchan Kim <minchan@kernel.org> wrote:
-> Hi Konrad,
->
-> On Thu, May 09, 2013 at 04:15:42PM -0400, Konrad Rzeszutek Wilk wrote:
->> On Thu, May 09, 2013 at 08:41:57AM +0900, Minchan Kim wrote:
->>
->> Hey Michan,
->         ^-n
->
-> It's a only thing I can know better than other native speakers. :)
+On Thu, May 09, 2013 at 08:47:09PM -0400, Steven Rostedt wrote:
+> On Fri, 2013-05-10 at 02:22 +0200, Frederic Weisbecker wrote:
+> >  
+> > > @@ -654,6 +653,7 @@ sysret_check:
+> > >  	LOCKDEP_SYS_EXIT
+> > >  	DISABLE_INTERRUPTS(CLBR_NONE)
+> > >  	TRACE_IRQS_OFF
+> > > +sysret_check_irqsoff:
+> > >  	movl TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET),%edx
+> > >  	andl %edi,%edx
+> > >  	jnz  sysret_careful
+> > > @@ -675,12 +675,10 @@ sysret_check:
+> > >  sysret_careful:
+> > >  	bt $TIF_NEED_RESCHED,%edx
+> > >  	jnc sysret_signal
+> > > -	TRACE_IRQS_ON
+> > > -	ENABLE_INTERRUPTS(CLBR_NONE)
+> > >  	pushq_cfi %rdi
+> > > -	SCHEDULE_USER
+> > > +	call schedule_irq_disabled
+> > >  	popq_cfi %rdi
+> > > -	jmp sysret_check
+> > > +	jmp sysret_check_irqsoff
+> > 
+> > Don't we still want to call LOCKDEP_SYS_EXIT?, the previous
+> > task scheduled might have taken some locks.
+> 
+> Sure, but would that still catch this? I thought LOCKDEP_SYS_EXIT just
+> cared about going into user land if the current task had locks. Where it
+> shouldn't here. And you are concerned about the previous task. Well, the
+> scheduler should have caught that, as you shouldn't have any spin locks
+> there. And it doesn't matter if the previous task had a mutex. The
+> previous task is still in kernel space.
 
-I keep on misspelling your name. I am really sorry about that.
+Ah you're right. But still the current task had several opportunities to take locks
+since the context switch. It's still relevant to check that.
 
->
->
->> Just a couple of syntax corrections. The code comment could also
->> benefit from this.
->>
->> Otherwise it looks OK to me.
->>
->> > Swap subsystem does lazy swap slot free with expecting the page
->>                      ^-a                       ^- the expectation that
->> > would be swapped out again so we can avoid unnecessary write.
->>                                 ^--that it
->> >
->> > But the problem in in-memory swap(ex, zram) is that it consumes
->>                   ^^-with
->> > memory space until vm_swap_full(ie, used half of all of swap device)
->> > condition meet. It could be bad if we use multiple swap device,
->>            ^- 'is'   ^^^^^ - 'would'                       ^^^^^-devices
->> > small in-memory swap and big storage swap or in-memory swap alone.
->>                       ^-,                   ^-,
->> >
->> > This patch makes swap subsystem free swap slot as soon as swap-read
->> > is completed and make the swapcache page dirty so the page should
->>                        ^-makes                      ^-'that the'
->> > be written out the swap device to reclaim it.
->> > It means we never lose it.
->> >
->> > I tested this patch with kernel compile workload.
->>                           ^-a
->
-> Thanks for the correct whole sentence!
-> But Andrew alreay correted it with his style.
+> > 
+> > > +
+> > > +	local_irq_enable();
+> > > +	__schedule();
+> > 
+> > Are you sure it's fine to call __schedule() instead of schedule()?
+> > I don't know much about the blk work to handle there but it may be
+> > worth considering.
+> 
+> Note, this isn't a call to schedule that was made by normal kernel
+> space. This is very much like a preemption. In fact, it is a preemption
+> and my first patch used preempt_schedule_irq() instead, but as that's
+> made for CONFIG_PREEMPT enabled, it seemed a bit hacky to take that out
+> of that context.
+> 
+> This is only called when the task is being preempted. But because its
+> going to user land, its OK. The blk code there is more worried about
+> something that did some work, set itself to TASK_UNINTERRUPTIBLE and
+> then called schedule() (think completions). That is, the blk code that
+> needs to be submitted will be the code that wakes up this task.
+> 
+> We should never be in anything but TASK_RUNNING when going into user
+> space.
 
-<nods> I saw his email a couple of hours ago.
-
-> Although he was done, I'm giving a million thanks to you.
-> Surely, Thanks Andrew, too.
->
-> --
-> Kind regards,
-> Minchan Kim
->
+Ok, I haven't checked the details of what that blk_ thing is doing so,
+if it really doesn't care about any kind of preemption, that's ok.
