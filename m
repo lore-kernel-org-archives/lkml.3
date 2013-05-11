@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab3EKDHW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 23:07:22 -0400
-Received: from mail-ye0-f178.google.com ([209.85.213.178]:35348 "EHLO
-	mail-ye0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470Ab3EKDHU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 23:07:20 -0400
-Date: Fri, 10 May 2013 23:07:13 -0400 (EDT)
-From: Parag Warudkar <parag.lkml@gmail.com>
-X-X-Sender: parag@parag-iMac
-To: Parag Warudkar <parag.lkml@gmail.com>
-cc: =?ISO-8859-15?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>,
-        =?ISO-8859-15?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
-        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] radeon: Allow disabling UVD
-In-Reply-To: <alpine.DEB.2.02.1305081730440.7947@parag-iMac>
-Message-ID: <alpine.DEB.2.02.1305102303350.2630@parag-iMac>
-References: <CAOULuOb79h99RiyYpMGLzzM2QeawYfG8CfrvNtk4WtJJxRn87g@mail.gmail.com> <1367910123.12136.7.camel@thor.local> <5188BEF7.7090505@vodafone.de> <CAOULuObffavZs9+p-C_C5Y6y=6aJhnYVf_d0nXWXb9Zt2A7rBw@mail.gmail.com> <518A1B94.6090001@vodafone.de>
- <alpine.DEB.2.02.1305081730440.7947@parag-iMac>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751148Ab3EKEQR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 00:16:17 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:36555 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750768Ab3EKEQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 00:16:15 -0400
+Date: Fri, 10 May 2013 23:16:10 -0500
+From: Robin Holt <holt@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Robin Holt <holt@sgi.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Russ Anderson <rja@sgi.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH -v8 01/11] CPU hotplug: Provide a generic helper to
+ disable/enable CPU hotplug
+Message-ID: <20130511041610.GZ3672@sgi.com>
+References: <1367937595-32241-1-git-send-email-holt@sgi.com>
+ <1367937595-32241-2-git-send-email-holt@sgi.com>
+ <20130509150121.8c3ef60b2fc748ce542a1a52@linux-foundation.org>
+ <1651579.orCh9JNVz6@vostro.rjw.lan>
+ <20130510100324.e1e066ab.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-2081765409-1368241638=:2630"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130510100324.e1e066ab.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323329-2081765409-1368241638=:2630
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-
-
-On Wed, 8 May 2013, Parag Warudkar wrote:
-
+On Fri, May 10, 2013 at 10:03:24AM -0700, Andrew Morton wrote:
+> On Fri, 10 May 2013 13:11:51 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 > 
+> > ...
+> >
+> > > cpu_hotplug_disable() doesn't get compiled unless we've defined
+> > > CONFIG_PM_SLEEP_SMP.  I cannot begin to imagine what the logic is
+> > > behind that!
+> > 
+> > I suppose it was only used by suspend/hibernate code paths when this was
+> > introduced.
 > 
-> On Wed, 8 May 2013, Christian König wrote:
-> 
-> > If you want to hack a bit on it you could try commenting out the calls to
-> > "radeon_set_uvd_clocks" in radeon_uvd.c. That should give you the default
-> > clocks of 100Mhz, not enough for usable decoding, but on SUMO based UVD blocks
-> > a very failsafe default.
+> OK, well I suspect that what I have now is simply wrong for Robin's
+> application.  Robin, can you please check this?  We probably want to
+> make the does-something version of cpu_hotplug_disable/enable available
+> if CONFIG_HOTPLUG_CPU.
 
-Commenting out the two calls to radeon_set_uvd_clocks() did not make any 
-difference - still fails to initialize. BTW, this is also an EFI install. 
-Sounds like for some people BIOS mode works based on the bug report.
+This patch came from "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+I think I need to defer.
 
-Also confirming  that the suspend/resume issue persists with the 
-SUMO_uvd.bin firmware loaded even if the UVD init fails. It is only by 
-removing the firmware I can get the machine to suspend reliably.
+I spent all day trying to get an alpha cross compiler to build an
+unmodified kernel and modules, only to find I didn't need to go that
+far and could reproduce the failure with just building vmlinux.
 
-Parag 
---8323329-2081765409-1368241638=:2630--
+Sorry for my slow response,
+Robin
