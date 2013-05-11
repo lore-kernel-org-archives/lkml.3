@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756970Ab3EKANh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 20:13:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5415 "EHLO
+	id S1756870Ab3EKANg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 20:13:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24857 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753816Ab3EKANG (ORCPT
+	with ESMTP id S1753599Ab3EKANG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 May 2013 20:13:06 -0400
-X-Authority-Analysis: v=2.0 cv=UO1f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=6ItXu9fk00gA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=nP0WxYSnRpcA:10 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=VnNF1IyMAAAA:8 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=QyXUC8HyAAAA:8 a=XUiTGkfo7A5uvOEMmh4A:9 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=U4LtojowmETmYyebIQgA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=7LCdMwag0o4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=M88ZUxpYkQQA:10 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=VnNF1IyMAAAA:8 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=1XWaLZrsAAAA:8 a=QyXUC8HyAAAA:8 a=PrhRXCh_IkD_4krUzEoA:9 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=UTB_XpHje0EA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=f9KIMHdT4mSrh0TVJEkA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130511001304.214878967@goodmis.org>
+Message-Id: <20130511001304.787961779@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 10 May 2013 20:12:12 -0400
+Date: Fri, 10 May 2013 20:12:15 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -23,10 +23,12 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
-Subject: [PATCH 06/18] ftrace: Cleanup regex_lock and ftrace_lock around hash updating
+        Ingo Molnar <mingo@redhat.com>, David Sharp <dhsharp@google.com>,
+        Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>,
+        Tom Zanussi <tom.zanussi@intel.com>
+Subject: [PATCH 09/18] tracing: Modify soft-mode only if theres no other referrer
 References: <20130511001206.477862307@goodmis.org>
-Content-Disposition: inline; filename=0006-ftrace-Cleanup-regex_lock-and-ftrace_lock-around-has.patch
+Content-Disposition: inline; filename=0009-tracing-Modify-soft-mode-only-if-there-s-no-other-re.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -38,241 +40,114 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Cleanup regex_lock and ftrace_lock locking points around
-ftrace_ops hash update code.
+Modify soft-mode flag only if no other soft-mode referrer
+(currently only the ftrace triggers) by using a reference
+counter in each ftrace_event_file.
 
-The new rule is that regex_lock protects ops->*_hash
-read-update-write code for each ftrace_ops. Usually,
-hash update is done by following sequence.
+Without this fix, adding and removing several different
+enable/disable_event triggers on the same event clear
+soft-mode bit from the ftrace_event_file. This also
+happens with a typo of glob on setting triggers.
 
-1. allocate a new local hash and copy the original hash.
-2. update the local hash.
-3. move(actually, copy) back the local hash to ftrace_ops.
-4. update ftrace entries if needed.
-5. release the local hash.
+e.g.
 
-This makes regex_lock protect #1-#4, and ftrace_lock
-to protect #3, #4 and adding and removing ftrace_ops from the
-ftrace_ops_list. The ftrace_lock protects #3 as well because
-the move functions update the entries too.
+ # echo vfs_symlink:enable_event:net:netif_rx > set_ftrace_filter
+ # cat events/net/netif_rx/enable
+ 0*
+ # echo typo_func:enable_event:net:netif_rx > set_ftrace_filter
+ # cat events/net/netif_rx/enable
+ 0
+ # cat set_ftrace_filter
+ #### all functions enabled ####
+ vfs_symlink:enable_event:net:netif_rx:unlimited
 
-Link: http://lkml.kernel.org/r/20130509054421.30398.83411.stgit@mhiramat-M0=
--7522
+As above, we still have a trigger, but soft-mode is gone.
+
+Link: http://lkml.kernel.org/r/20130509054429.30398.7464.stgit@mhiramat-M0-=
+7522
 
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
+Cc: David Sharp <dhsharp@google.com>
+Cc: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
 Cc: Tom Zanussi <tom.zanussi@intel.com>
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c |   59 +++++++++++++++++++++++++++------------------=
-----
- 1 file changed, 32 insertions(+), 27 deletions(-)
+ include/linux/ftrace_event.h |    1 +
+ kernel/trace/trace_events.c  |   12 ++++++++++--
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 827f2fe..cacf085 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2656,28 +2656,26 @@ ftrace_regex_open(struct ftrace_ops *ops, int flag,
- 		return -ENOMEM;
- 	}
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 34e00fb..4372658 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -293,6 +293,7 @@ struct ftrace_event_file {
+ 	 * caching and such. Which is mostly OK ;-)
+ 	 */
+ 	unsigned long		flags;
++	atomic_t		sm_ref;	/* soft-mode reference counter */
+ };
 =20
-+	iter->ops =3D ops;
-+	iter->flags =3D flag;
-+
-+	mutex_lock(&ops->regex_lock);
-+
- 	if (flag & FTRACE_ITER_NOTRACE)
- 		hash =3D ops->notrace_hash;
- 	else
- 		hash =3D ops->filter_hash;
+ #define __TRACE_EVENT_FLAGS(name, value)				\
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 915c136..8be1224 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -251,7 +251,8 @@ static int __ftrace_event_enable_disable(struct ftrace_=
+event_file *file,
+ 	switch (enable) {
+ 	case 0:
+ 		/*
+-		 * When soft_disable is set and enable is cleared, we want
++		 * When soft_disable is set and enable is cleared, the sm_ref
++		 * reference counter is decremented. If it reaches 0, we want
+ 		 * to clear the SOFT_DISABLED flag but leave the event in the
+ 		 * state that it was. That is, if the event was enabled and
+ 		 * SOFT_DISABLED isn't set, then do nothing. But if SOFT_DISABLED
+@@ -263,6 +264,8 @@ static int __ftrace_event_enable_disable(struct ftrace_=
+event_file *file,
+ 		 * "soft enable"s (clearing the SOFT_DISABLED bit) wont work.
+ 		 */
+ 		if (soft_disable) {
++			if (atomic_dec_return(&file->sm_ref) > 0)
++				break;
+ 			disable =3D file->flags & FTRACE_EVENT_FL_SOFT_DISABLED;
+ 			clear_bit(FTRACE_EVENT_FL_SOFT_MODE_BIT, &file->flags);
+ 		} else
+@@ -291,8 +294,11 @@ static int __ftrace_event_enable_disable(struct ftrace=
+_event_file *file,
+ 		 */
+ 		if (!soft_disable)
+ 			clear_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &file->flags);
+-		else
++		else {
++			if (atomic_inc_return(&file->sm_ref) > 1)
++				break;
+ 			set_bit(FTRACE_EVENT_FL_SOFT_MODE_BIT, &file->flags);
++		}
 =20
--	iter->ops =3D ops;
--	iter->flags =3D flag;
--
- 	if (file->f_mode & FMODE_WRITE) {
--		mutex_lock(&ftrace_lock);
- 		iter->hash =3D alloc_and_copy_ftrace_hash(FTRACE_HASH_DEFAULT_BITS, hash=
-);
--		mutex_unlock(&ftrace_lock);
--
- 		if (!iter->hash) {
- 			trace_parser_put(&iter->parser);
- 			kfree(iter);
--			return -ENOMEM;
-+			ret =3D -ENOMEM;
-+			goto out_unlock;
- 		}
- 	}
+ 		if (!(file->flags & FTRACE_EVENT_FL_ENABLED)) {
 =20
--	mutex_lock(&ops->regex_lock);
--
- 	if ((file->f_mode & FMODE_WRITE) &&
- 	    (file->f_flags & O_TRUNC))
- 		ftrace_filter_reset(iter->hash);
-@@ -2697,6 +2695,8 @@ ftrace_regex_open(struct ftrace_ops *ops, int flag,
- 		}
- 	} else
- 		file->private_data =3D iter;
-+
-+ out_unlock:
- 	mutex_unlock(&ops->regex_lock);
+@@ -1540,6 +1546,7 @@ __trace_add_new_event(struct ftrace_event_call *call,
 =20
- 	return ret;
-@@ -3012,7 +3012,7 @@ register_ftrace_function_probe(char *glob, struct ftr=
-ace_probe_ops *ops,
- 	if (WARN_ON(not))
- 		return -EINVAL;
+ 	file->event_call =3D call;
+ 	file->tr =3D tr;
++	atomic_set(&file->sm_ref, 0);
+ 	list_add(&file->list, &tr->events);
 =20
--	mutex_lock(&ftrace_lock);
-+	mutex_lock(&trace_probe_ops.regex_lock);
+ 	return event_create_dir(tr->event_dir, file, id, enable, filter, format);
+@@ -1562,6 +1569,7 @@ __trace_early_add_new_event(struct ftrace_event_call =
+*call,
 =20
- 	hash =3D alloc_and_copy_ftrace_hash(FTRACE_HASH_DEFAULT_BITS, *orig_hash);
- 	if (!hash) {
-@@ -3070,14 +3070,16 @@ register_ftrace_function_probe(char *glob, struct f=
-trace_probe_ops *ops,
+ 	file->event_call =3D call;
+ 	file->tr =3D tr;
++	atomic_set(&file->sm_ref, 0);
+ 	list_add(&file->list, &tr->events);
 =20
- 	} while_for_each_ftrace_rec();
-=20
-+	mutex_lock(&ftrace_lock);
- 	ret =3D ftrace_hash_move(&trace_probe_ops, 1, orig_hash, hash);
- 	if (ret < 0)
- 		count =3D ret;
-=20
- 	__enable_ftrace_function_probe();
-+	mutex_unlock(&ftrace_lock);
-=20
-  out_unlock:
--	mutex_unlock(&ftrace_lock);
-+	mutex_unlock(&trace_probe_ops.regex_lock);
- 	free_ftrace_hash(hash);
-=20
- 	return count;
-@@ -3117,7 +3119,7 @@ __unregister_ftrace_function_probe(char *glob, struct=
- ftrace_probe_ops *ops,
- 			return;
- 	}
-=20
--	mutex_lock(&ftrace_lock);
-+	mutex_lock(&trace_probe_ops.regex_lock);
-=20
- 	hash =3D alloc_and_copy_ftrace_hash(FTRACE_HASH_DEFAULT_BITS, *orig_hash);
- 	if (!hash)
-@@ -3155,6 +3157,7 @@ __unregister_ftrace_function_probe(char *glob, struct=
- ftrace_probe_ops *ops,
- 			list_add(&entry->free_list, &free_list);
- 		}
- 	}
-+	mutex_lock(&ftrace_lock);
- 	__disable_ftrace_function_probe();
- 	/*
- 	 * Remove after the disable is called. Otherwise, if the last
-@@ -3166,9 +3169,10 @@ __unregister_ftrace_function_probe(char *glob, struc=
-t ftrace_probe_ops *ops,
- 		list_del(&entry->free_list);
- 		ftrace_free_entry(entry);
- 	}
-+	mutex_unlock(&ftrace_lock);
-=20=09=09
-  out_unlock:
--	mutex_unlock(&ftrace_lock);
-+	mutex_unlock(&trace_probe_ops.regex_lock);
- 	free_ftrace_hash(hash);
- }
-=20
-@@ -3284,11 +3288,10 @@ ftrace_regex_write(struct file *file, const char __=
-user *ubuf,
- 	} else
- 		iter =3D file->private_data;
-=20
--	mutex_lock(&iter->ops->regex_lock);
--
--	ret =3D -ENODEV;
- 	if (unlikely(ftrace_disabled))
--		goto out_unlock;
-+		return -ENODEV;
-+
-+	/* iter->hash is a local copy, so we don't need regex_lock */
-=20
- 	parser =3D &iter->parser;
- 	read =3D trace_get_user(parser, ubuf, cnt, ppos);
-@@ -3299,13 +3302,11 @@ ftrace_regex_write(struct file *file, const char __=
-user *ubuf,
- 					   parser->idx, enable);
- 		trace_parser_clear(parser);
- 		if (ret < 0)
--			goto out_unlock;
-+			goto out;
- 	}
-=20
- 	ret =3D read;
--out_unlock:
--	mutex_unlock(&iter->ops->regex_lock);
--
-+ out:
- 	return ret;
- }
-=20
-@@ -3357,16 +3358,19 @@ ftrace_set_hash(struct ftrace_ops *ops, unsigned ch=
-ar *buf, int len,
- 	if (unlikely(ftrace_disabled))
- 		return -ENODEV;
-=20
-+	mutex_lock(&ops->regex_lock);
-+
- 	if (enable)
- 		orig_hash =3D &ops->filter_hash;
- 	else
- 		orig_hash =3D &ops->notrace_hash;
-=20
- 	hash =3D alloc_and_copy_ftrace_hash(FTRACE_HASH_DEFAULT_BITS, *orig_hash);
--	if (!hash)
--		return -ENOMEM;
-+	if (!hash) {
-+		ret =3D -ENOMEM;
-+		goto out_regex_unlock;
-+	}
-=20
--	mutex_lock(&ops->regex_lock);
- 	if (reset)
- 		ftrace_filter_reset(hash);
- 	if (buf && !ftrace_match_records(hash, buf, len)) {
-@@ -3584,8 +3588,6 @@ int ftrace_regex_release(struct inode *inode, struct =
-file *file)
- 	} else
- 		iter =3D file->private_data;
-=20
--	mutex_lock(&iter->ops->regex_lock);
--
- 	parser =3D &iter->parser;
- 	if (trace_parser_loaded(parser)) {
- 		parser->buffer[parser->idx] =3D 0;
-@@ -3594,6 +3596,8 @@ int ftrace_regex_release(struct inode *inode, struct =
-file *file)
-=20
- 	trace_parser_put(parser);
-=20
-+	mutex_lock(&iter->ops->regex_lock);
-+
- 	if (file->f_mode & FMODE_WRITE) {
- 		filter_hash =3D !!(iter->flags & FTRACE_ITER_FILTER);
-=20
-@@ -3611,10 +3615,11 @@ int ftrace_regex_release(struct inode *inode, struc=
-t file *file)
-=20
- 		mutex_unlock(&ftrace_lock);
- 	}
-+
-+	mutex_unlock(&iter->ops->regex_lock);
- 	free_ftrace_hash(iter->hash);
- 	kfree(iter);
-=20
--	mutex_unlock(&iter->ops->regex_lock);
  	return 0;
- }
-=20
 --=20
 1.7.10.4
 
@@ -285,13 +160,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRjY0QAAoJEOdOSU1xswtM9A0IALJh9DJ1omu/zuCg6MVZidBC
-3KIr42QZg0g5JaHAzmTyvo+kR7Y7LFE8gF9R7Y77Y0pONMNLnWy5V9ajphItYFg2
-w9iUlkWJJPLJ/4ZNh4NtYoZhvyT0exjN5q9ssn5COpRlTZYksDAaAXtp1TskkzED
-nKcKLn8U6C9I/eHv/l3lHpwgEUejePptplZs4UznoxMyTt+82A+JvhWgmOaxhNvh
-btWMZDADdvCNvy0ER1eeuLS19FzI1JvWQHD47/clUSRpxop8oPgWN7cVftitBBR1
-Z4BHsuKEAOjAHQlGdJLPJs5oyyAnE8YA1qrQ5XHAxk3FBrKOw9PPr158XwA0qBE=
-=dy2o
+iQEcBAABAgAGBQJRjY0QAAoJEOdOSU1xswtMuL4IANBDFNDjSVY3+4vUby2jKMDo
+bR4HbY9cI/hbKx48gf7kp+/+mt0f8vLyVn8t+KkdWSKegMtHXj/wfeQ2EvL5brOS
+fdcnWZ5aJDniLRLVUlU81iuePgnzgaPNT5InVBrjqIq4uxUy7ZfkoFw2kajlW7i+
+6wM74uKyeaSlxZA6U0adJdIJUcfonsCHJoj50oYxSbM7jPM8geHC5VXAxHUvqKPw
+eOALt9o4650Gktn8zhM12E4ojIWPT/xOZ103CJpcQysu/VmXipPp2AEUOKIG9Xe7
+gjqMpDRnbNOoQhLQWQQIbLW+n0AkxZg0eMIho1USesL+SPhmU3/uhxFcc5G8Gyg=
+=dasq
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
