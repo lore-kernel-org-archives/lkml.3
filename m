@@ -1,232 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab3EKGYA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 02:24:00 -0400
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:46327 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338Ab3EKGX7 (ORCPT
+	id S1753705Ab3EKG17 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 02:27:59 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:49305 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753380Ab3EKG15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 02:23:59 -0400
+	Sat, 11 May 2013 02:27:57 -0400
+Message-ID: <518DE4FF.1000702@gmail.com>
+Date: Sat, 11 May 2013 14:28:15 +0800
+From: Libo Chen <chenlibo.3@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1368221329-1841-3-git-send-email-zoran.markovic@linaro.org>
-References: <1368221329-1841-1-git-send-email-zoran.markovic@linaro.org>
-	<1368221329-1841-3-git-send-email-zoran.markovic@linaro.org>
-Date: Fri, 10 May 2013 23:23:58 -0700
-X-Google-Sender-Auth: FNHdcne_qA_Pdt3tKIRSDcyD4Ek
-Message-ID: <CAMbhsRT2rc5A3zeKA2Om+y-Kv2HVh0pa6YjQ9BLC2jBBfWfxsA@mail.gmail.com>
-Subject: Re: [RFC PATCHv2 2/2] PM: compile-time configuration of device
- suspend/resume watchdogs.
-From: Colin Cross <ccross@android.com>
-To: Zoran Markovic <zoran.markovic@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
-        Benoit Goby <benoit@android.com>, John Stultz <john.stultz@linaro.org>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: ben-linux@fluff.org, kgene.kim@samsung.com, balbi@ti.com
+CC: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lizefan@huawei.com, libo.chen@huawei.com, stern@rowland.harvard.edu,
+        akpm@linux-foundation.org
+Subject: [PATCH] usb: gadget: s3c2410: fix clk resource leak and update
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 2:28 PM, Zoran Markovic
-<zoran.markovic@linaro.org> wrote:
-> Power management debug option to configure device suspend/resume watchdogs.
-> Available options are:
->   1. Enable/disable the feature.
->   2. Select triggered watchdog action between:
->         - system panic (default)
->         - dump stacktrace
->         - log event
+From: Libo Chen <libo.chen@huawei.com>
 
-I don't see much point to logging the event but not printing the stack
-trace, you can just disable the feature if you don't want your logs
-cluttered, and this shouldn't fire very often.
+currently, when clk_get(NULL,"usb-device") fail, it does not
+disable && put usb_bus_clock. It is incorrect.
 
->   3. Select timeout value for the watchdog(s).
->
-> Minor changes were made to watchdog code to accommodate this feature.
->
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Cc: Colin Cross <ccross@android.com>
-> Cc: Todd Poynor <toddpoynor@google.com>
-> Cc: San Mehat <san@google.com>
-> Cc: Benoit Goby <benoit@android.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Len Brown <len.brown@intel.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+this patch use new interface devm_xxx instead of xxx then
+we no need to care about cleanup resource in err case that is boring
+and reduce code size.
 
-This whole patch is linked enough with the previous one that I suggest
-squashing them together, and expanding your comments above your signed
-off by to say you added configuration options.
+Signed-off-by: Libo Chen <libo.chen@huawei.com>
+---
+ drivers/usb/gadget/s3c2410_udc.c | 85
+++++++++++++----------------------------
+ 1 file changed, 25 insertions(+), 60 deletions(-)
 
-> ---
->  drivers/base/power/main.c |   37 ++++++++++++++++++++++++++--------
->  kernel/power/Kconfig      |   48 +++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 77 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> index a6a02c0..8e0bb33 100644
-> --- a/drivers/base/power/main.c
-> +++ b/drivers/base/power/main.c
-> @@ -392,6 +392,26 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
->         return error;
->  }
->
-> +#ifdef CONFIG_DPM_WD
-> +/**
-> + * dpm_wd_action - recovery from suspend/resume watchdog timeout
-> + * @wd: Watchdog. Must be allocated on the stack.
-> + */
-> +#if defined(CONFIG_DPM_WD_ACTION_STACKTRACE)
-> +static inline void dpm_wd_action(struct dpm_watchdog *wd)
-> +{
-> +       show_stack(wd->tsk, NULL);
-> +}
-> +#elif defined(CONFIG_DPM_WD_ACTION_PANIC)
-> +static inline void dpm_wd_action(struct dpm_watchdog *wd)
-> +{
-> +       panic("%s: unrecoverable failure\n", dev_name(wd->dev));
+diff --git a/drivers/usb/gadget/s3c2410_udc.c
+b/drivers/usb/gadget/s3c2410_udc.c
+old mode 100644
+new mode 100755
+index d0e75e1..0c573a8
+--- a/drivers/usb/gadget/s3c2410_udc.c
++++ b/drivers/usb/gadget/s3c2410_udc.c
+@@ -1780,7 +1780,7 @@ static int s3c2410_udc_probe(struct
+platform_device *pdev)
 
-The panic here is not very useful, it's going to print the stack of
-the task that was running when the timer fired which is likely to be
-the idle task if the suspend task is deadlocked.  This should call
-show_stack and panic.  If you take out the log action, then all this
-can stay inline with the handler and be:
+ 	dev_dbg(dev, "%s()\n", __func__);
 
-dev_emerg(wd->dev, "**** DPM device timeout ****\n");
-show_stack(wd->tsk, NULL);
-#ifdef CONFIG_DPM_WD_ACTION_PANIC
-panic("%s: unrecoverable failure\n", dev_name(wd->dev));
-#endif
+-	usb_bus_clock = clk_get(NULL, "usb-bus-gadget");
++	usb_bus_clock = devm_clk_get(NULL, "usb-bus-gadget");
+ 	if (IS_ERR(usb_bus_clock)) {
+ 		dev_err(dev, "failed to get usb bus clock source\n");
+ 		return PTR_ERR(usb_bus_clock);
+@@ -1788,8 +1788,9 @@ static int s3c2410_udc_probe(struct
+platform_device *pdev)
 
-Also, and this is a problem with the existing patch and not your
-modifications, the format devname: error in the log is usually printed
-by the device driver, which may cause confusion for someone who sees
-this error and tries to grep for it in the mentioned driver.  Maybe a
-better format for the pr_emerg and the panic would be:
-   PM: **** DPM device timeout suspending devname ****
-Ideally the message would specify if the error happened while
-suspending or resuming.
+ 	clk_enable(usb_bus_clock);
 
-> +}
-> +#else /* CONFIG_DPM_WD_ACTION_LOG */
-> +/* event already logged in dpm_wd_handler() */
-> +#define dpm_wd_action(x)
-> +#endif
-> +
->  /**
->   * dpm_wd_handler - Driver suspend / resume watchdog handler.
->   *
-> @@ -402,13 +422,9 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
->  static void dpm_wd_handler(unsigned long data)
->  {
->         struct dpm_watchdog *wd = (void *)data;
-> -       struct device *dev      = wd->dev;
-> -       struct task_struct *tsk = wd->tsk;
-> -
-> -       dev_emerg(dev, "**** DPM device timeout ****\n");
-> -       show_stack(tsk, NULL);
->
-> -       BUG();
-> +       dev_emerg(wd->dev, "**** DPM device timeout ****\n");
-> +       dpm_wd_action(wd);
->  }
->
->  /**
-> @@ -424,14 +440,15 @@ static void dpm_wd_set(struct dpm_watchdog *wd, struct device *dev)
->         wd->tsk = get_current();
->
->         init_timer_on_stack(timer);
-> -       timer->expires = jiffies + HZ * 12;
-> +       /* use same timeout value for both suspend and resume */
-> +       timer->expires = jiffies + HZ * CONFIG_DPM_WD_TIMEOUT;
->         timer->function = dpm_wd_handler;
->         timer->data = (unsigned long)wd;
->         add_timer(timer);
->  }
->
->  /**
-> - * dpm_wd_clear - Disable pm watchdog.
-> + * dpm_wd_clear - Disable suspend/resume watchdog.
->   * @wd: Watchdog to disable.
->   */
->  static void dpm_wd_clear(struct dpm_watchdog *wd)
-> @@ -441,6 +458,10 @@ static void dpm_wd_clear(struct dpm_watchdog *wd)
->         del_timer_sync(timer);
->         destroy_timer_on_stack(timer);
->  }
-> +#else
-> +#define dpm_wd_set(x, y)
-> +#define dpm_wd_clear(x)
-> +#endif
->
->  /*------------------------- Resume routines -------------------------*/
->
-> diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-> index edc8bdd..339caa1 100644
-> --- a/kernel/power/Kconfig
-> +++ b/kernel/power/Kconfig
-> @@ -179,6 +179,54 @@ config PM_SLEEP_DEBUG
->         def_bool y
->         depends on PM_DEBUG && PM_SLEEP
->
-> +config DPM_WD
-> +       bool "Device suspend/resume watchdog"
-> +       depends on PM_DEBUG
-> +       ---help---
-> +         Sets up a watchdog timer to capture drivers that are
-> +         locked up attempting to suspend/resume a device.
-> +         A detected lockup causes a configurable watchdog action,
-> +         such as logging the event, dumping the stack trace or
-> +         kernel panic.
-> +
-> +choice
-> +       prompt "Watchdog recovery action"
-> +       default DPM_WD_ACTION_PANIC
-> +       depends on DPM_WD
-> +       ---help---
-> +         Select recovery action triggered by suspend/resume watchdog.
-> +
-> +config DPM_WD_ACTION_PANIC
-> +       bool "System panic"
-> +       ---help---
-> +         When selected, a lockup during device's suspend or
-> +         resume would cause a system panic. This would immediately
-> +         capture user's attention. Panic message can be observed in
-> +         subsequent boot session using pstore.
-> +
-> +config DPM_WD_ACTION_STACKTRACE
-> +       bool "Dump stack"
-> +       ---help---
-> +         When selected, a lockup during device's suspend or
-> +         resume would cause the caller's stack to be
-> +         captured in the system log. The stack trace shows
-> +         which driver call caused a lockup.
-> +
-> +config DPM_WD_ACTION_LOG
-> +       bool "Log event"
-> +       ---help---
-> +         When selected, a lockup during device's suspend or
-> +         resume would cause the watchdog timeout event to be
-> +         logged in the system log.
-> +
-> +endchoice
-> +
-> +config DPM_WD_TIMEOUT
-> +       int "Watchdog timeout in seconds"
-> +       range 1 120
-> +       default 12
-> +       depends on DPM_WD
-> +
->  config PM_TRACE
->         bool
->         help
-> --
-> 1.7.9.5
->
+-	udc_clock = clk_get(NULL, "usb-device");
++	udc_clock = devm_clk_get(NULL, "usb-device");
+ 	if (IS_ERR(udc_clock)) {
++		clk_disable(usb_bus_clock);
+ 		dev_err(dev, "failed to get udc clock source\n");
+ 		return PTR_ERR(udc_clock);
+ 	}
+@@ -1814,13 +1815,15 @@ static int s3c2410_udc_probe(struct
+platform_device *pdev)
+ 	rsrc_start = S3C2410_PA_USBDEV;
+ 	rsrc_len   = S3C24XX_SZ_USBDEV;
+
+-	if (!request_mem_region(rsrc_start, rsrc_len, gadget_name))
+-		return -EBUSY;
++	if (!devm_request_mem_region(rsrc_start, rsrc_len, gadget_name)) {
++		retval = -EBUSY;
++		goto out;
++	}
+
+-	base_addr = ioremap(rsrc_start, rsrc_len);
++	base_addr = devm_ioremap(rsrc_start, rsrc_len);
+ 	if (!base_addr) {
+ 		retval = -ENOMEM;
+-		goto err_mem;
++		goto out;
+ 	}
+
+ 	the_controller = udc;
+@@ -1830,31 +1833,31 @@ static int s3c2410_udc_probe(struct
+platform_device *pdev)
+ 	s3c2410_udc_reinit(udc);
+
+ 	/* irq setup after old hardware state is cleaned up */
+-	retval = request_irq(IRQ_USBD, s3c2410_udc_irq,
++	retval = devm_request_irq(IRQ_USBD, s3c2410_udc_irq,
+ 			     0, gadget_name, udc);
+
+ 	if (retval != 0) {
+ 		dev_err(dev, "cannot get irq %i, err %d\n", IRQ_USBD, retval);
+ 		retval = -EBUSY;
+-		goto err_map;
++		goto out;
+ 	}
+
+ 	dev_dbg(dev, "got irq %i\n", IRQ_USBD);
+
+ 	if (udc_info && udc_info->vbus_pin > 0) {
+-		retval = gpio_request(udc_info->vbus_pin, "udc vbus");
++		retval = devm_gpio_request(udc_info->vbus_pin, "udc vbus");
+ 		if (retval < 0) {
+ 			dev_err(dev, "cannot claim vbus pin\n");
+-			goto err_int;
++			goto out;
+ 		}
+
+ 		irq = gpio_to_irq(udc_info->vbus_pin);
+ 		if (irq < 0) {
+ 			dev_err(dev, "no irq for gpio vbus pin\n");
+-			goto err_gpio_claim;
++			goto out;
+ 		}
+
+-		retval = request_irq(irq, s3c2410_udc_vbus_irq,
++		retval = devm_request_irq(irq, s3c2410_udc_vbus_irq,
+ 				     IRQF_TRIGGER_RISING
+ 				     | IRQF_TRIGGER_FALLING | IRQF_SHARED,
+ 				     gadget_name, udc);
+@@ -1863,7 +1866,7 @@ static int s3c2410_udc_probe(struct
+platform_device *pdev)
+ 			dev_err(dev, "can't get vbus irq %d, err %d\n",
+ 				irq, retval);
+ 			retval = -EBUSY;
+-			goto err_gpio_claim;
++			goto out;
+ 		}
+
+ 		dev_dbg(dev, "got irq %i\n", irq);
+@@ -1874,17 +1877,17 @@ static int s3c2410_udc_probe(struct
+platform_device *pdev)
+ 	if (udc_info && !udc_info->udc_command &&
+ 		gpio_is_valid(udc_info->pullup_pin)) {
+
+-		retval = gpio_request_one(udc_info->pullup_pin,
++		retval = devm_gpio_request_one(udc_info->pullup_pin,
+ 				udc_info->vbus_pin_inverted ?
+ 				GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW,
+ 				"udc pullup");
+ 		if (retval)
+-			goto err_vbus_irq;
++			goto out;
+ 	}
+
+ 	retval = usb_add_gadget_udc(&pdev->dev, &udc->gadget);
+ 	if (retval)
+-		goto err_add_udc;
++		goto out;
+
+ 	if (s3c2410_udc_debugfs_root) {
+ 		udc->regs_info = debugfs_create_file("registers", S_IRUGO,
+@@ -1898,22 +1901,9 @@ static int s3c2410_udc_probe(struct
+platform_device *pdev)
+
+ 	return 0;
+
+-err_add_udc:
+-	if (udc_info && !udc_info->udc_command &&
+-			gpio_is_valid(udc_info->pullup_pin))
+-		gpio_free(udc_info->pullup_pin);
+-err_vbus_irq:
+-	if (udc_info && udc_info->vbus_pin > 0)
+-		free_irq(gpio_to_irq(udc_info->vbus_pin), udc);
+-err_gpio_claim:
+-	if (udc_info && udc_info->vbus_pin > 0)
+-		gpio_free(udc_info->vbus_pin);
+-err_int:
+-	free_irq(IRQ_USBD, udc);
+-err_map:
+-	iounmap(base_addr);
+-err_mem:
+-	release_mem_region(rsrc_start, rsrc_len);
++out:
++	clk_disable(udc_clock);
++	clk_disable(usb_bus_clock);
+
+ 	return retval;
+ }
+@@ -1931,36 +1921,11 @@ static int s3c2410_udc_remove(struct
+platform_device *pdev)
+ 	if (udc->driver)
+ 		return -EBUSY;
+
+-	usb_del_gadget_udc(&udc->gadget);
+ 	debugfs_remove(udc->regs_info);
++	usb_del_gadget_udc(&udc->gadget);
+
+-	if (udc_info && !udc_info->udc_command &&
+-		gpio_is_valid(udc_info->pullup_pin))
+-		gpio_free(udc_info->pullup_pin);
+-
+-	if (udc_info && udc_info->vbus_pin > 0) {
+-		irq = gpio_to_irq(udc_info->vbus_pin);
+-		free_irq(irq, udc);
+-	}
+-
+-	free_irq(IRQ_USBD, udc);
+-
+-	iounmap(base_addr);
+-	release_mem_region(rsrc_start, rsrc_len);
+-
+-	platform_set_drvdata(pdev, NULL);
+-
+-	if (!IS_ERR(udc_clock) && udc_clock != NULL) {
+-		clk_disable(udc_clock);
+-		clk_put(udc_clock);
+-		udc_clock = NULL;
+-	}
+-
+-	if (!IS_ERR(usb_bus_clock) && usb_bus_clock != NULL) {
+-		clk_disable(usb_bus_clock);
+-		clk_put(usb_bus_clock);
+-		usb_bus_clock = NULL;
+-	}
++	clk_disable(udc_clock);
++	clk_disable(usb_bus_clock);
+
+ 	dev_dbg(&pdev->dev, "%s: remove ok\n", __func__);
+ 	return 0;
+-- 
+1.8.1.2
+
