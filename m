@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab3EKLck (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 07:32:40 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:50579 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751113Ab3EKLcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 07:32:39 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: Dan Williams <djbw@fb.com>
-Subject: [RFC 4/4] ARM: SAMSUNG: set s3c24xx_dma_filter for s3c64xx-spi0 device
-Date: Sat, 11 May 2013 13:32:35 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org
-References: <201305111330.05046.heiko@sntech.de>
-In-Reply-To: <201305111330.05046.heiko@sntech.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201305111332.36077.heiko@sntech.de>
+	id S1751944Ab3EKL5g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 07:57:36 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:59306 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751042Ab3EKL5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 07:57:35 -0400
+From: Robin Holt <holt@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Russ Anderson <rja@sgi.com>,
+        Robin Holt <holt@sgi.com>, Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH -v10 00/11] Shutdown from reboot_cpuid without stopping other cpus.
+Date: Sat, 11 May 2013 06:57:16 -0500
+Message-Id: <1368273447-11958-1-git-send-email-holt@sgi.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The spi-s3c64xx device is also used on the s3c2416 and s3c2443 SoCs.
-The driver also already uses only generic dma-engine operations.
+We recently noticed that reboot of a 1024 cpu machine takes approx 16
+minutes of just stopping the cpus.  The slowdown was tracked to commit
+f96972f.
 
-Therefore add another elif to set the s3c24xx filter.
+The current implementation does all the work of hot removing the cpus
+before halting the system.  We are switching to just migrating to the
+reboot_cpu and then continuing with shutdown/reboot.
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
- arch/arm/plat-samsung/devs.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+The patch set is broken into eleven parts.  The first two are planned for
+the stable release.  The others move the halt/shutdown/reboot related
+functions to their own kernel/reboot.c file and then move the handling
+of the kernel reboot= kernel parameter to generic kernel code.
 
-diff --git a/arch/arm/plat-samsung/devs.c b/arch/arm/plat-samsung/devs.c
-index 30c2fe2..bb13f99 100644
---- a/arch/arm/plat-samsung/devs.c
-+++ b/arch/arm/plat-samsung/devs.c
-@@ -32,6 +32,7 @@
- #include <linux/ioport.h>
- #include <linux/platform_data/s3c-hsudc.h>
- #include <linux/platform_data/s3c-hsotg.h>
-+#include <linux/platform_data/dma-s3c24xx.h>
- 
- #include <media/s5p_hdmi.h>
- 
-@@ -1513,8 +1514,10 @@ void __init s3c64xx_spi0_set_platdata(int (*cfg_gpio)(void), int src_clk_nr,
- 	pd.num_cs = num_cs;
- 	pd.src_clk_nr = src_clk_nr;
- 	pd.cfg_gpio = (cfg_gpio) ? cfg_gpio : s3c64xx_spi0_cfg_gpio;
--#ifdef CONFIG_PL330_DMA
-+#if defined(CONFIG_PL330_DMA)
- 	pd.filter = pl330_filter;
-+#elif defined(CONFIG_S3C24XX_DMAC)
-+	pd.filter = s3c24xx_dma_filter;
- #endif
- 
- 	s3c_set_platdata(&pd, sizeof(pd), &s3c64xx_device_spi0);
--- 
-1.7.2.3
+Changes since -v9
+ - Added Ingo's Acked-by for x86.
 
+ - Added Guan's Acked-by for unicore32.
+
+ - Replaced first patch with updated patch from Srivatsa S. Bhat.
+   This compiles for alpha allmodconfig, all arm defconfigs, and a few
+   test x86_64 defconfigs.  I have not tried more.
+
+Changes since -v8
+ - Changes reboot_cpu on stack to cpu to fix bug noticed by Russell King.
+
+ - Switched unicore32 and arm from using REBOOT_WARM/COLD to HARD/SOFT.
+
+ - Fixed case statement bug.
+
+ - Went to using simple_strtoul for parsing reboot_cpu=smp###.
+
+ - Made parsing of reboot= not use any #ifdef'd code.
+
+Changes since -v7.
+ - Fixed authorship for first patch.
+
+ - Rebased to Linus' current tree (51a26ae7a).
+
+Changes since -v6.
+ - Cross compiled all arm architectures (using v3.9 kernel.  Fails with
+   current).
+
+ - Added a #define for non-hotplug case.
+
+ - Add #define for PF_THREAD_BOUND as compatibility to make stable easier.
+
+ - Fixup s/reboot_cpu_id/reboot_cpu/
+
+ - Add include of linux/uaccess.h to allow building on arm.
+
+ - Removed last remaining checkpatch.pl line length warning on
+   kernel/reboot.c.
+
+ - Fixed the duplicate handling or the reboot= kernel parameter.
+
+Changes since -v5.
+ - Moved the arch/x86 reboot= up to the generic kernel code.
+
+Changes since -v4.
+ - Integrated Srivatsa S. Bhat creating cpu_hotplug_disable()
+   function
+
+ - Integrated comments by Srivatsa S. Bhat.
+
+ - Made one more comment consistent with others in function.
+
+Changes since -v3.
+ - Added a tested-by for the original reporter.
+
+ - Fix compile failure found by Joe Perches.
+
+ - Integrated comments by Joe Perches.
+
+
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: the arch/x86 maintainers <x86@kernel.org>
+Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
