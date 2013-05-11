@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab3EKVM2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 17:12:28 -0400
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:39765 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754060Ab3EKVM0 (ORCPT
+	id S1754488Ab3EKVZU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 17:25:20 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:45172 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754439Ab3EKVZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 17:12:26 -0400
+	Sat, 11 May 2013 17:25:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130511210641.GQ25399@ZenIV.linux.org.uk>
-References: <20130509050343.GD25399@ZenIV.linux.org.uk>
-	<CA+55aFzNuEx8705x3NckigLdRMrEWehyEmgLcJ3kF=BPDZo+Bg@mail.gmail.com>
-	<20130511172242.GP25399@ZenIV.linux.org.uk>
-	<CA+55aFzsgr6ZHWxNRvM3VZu=bWn75TfGb0EAXO1wdFnBFTCz-Q@mail.gmail.com>
-	<20130511210641.GQ25399@ZenIV.linux.org.uk>
-Date: Sat, 11 May 2013 14:12:25 -0700
-X-Google-Sender-Auth: uUiGuZXVKKHPXcDUTeEQm_D3eMg
-Message-ID: <CA+55aFy8Y9w0OBHLTqHxjLLXZXOSf+d5YJ-huNaMOs3V5DycCA@mail.gmail.com>
-Subject: Re: [RFC] next cycle fun: ->release() API change
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <003001ce4e1b$24a28fc0$6de7af40$@samsung.com>
+References: <003001ce4e1b$24a28fc0$6de7af40$@samsung.com>
+Date: Sat, 11 May 2013 14:25:15 -0700
+X-Google-Sender-Auth: 0MS2bEuZakTHYntVZzCgcqEfLLE
+Message-ID: <CAD=FV=V=exRoo1VAF5W7May_DFOWb6h_KL7BkqK3G2qmBQgUeA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: dts: add DP clock reference to exynos5250 device tree
+From: Doug Anderson <dianders@chromium.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?St=E9phane_Marchesin?= <marcheu@chromium.org>,
+        Sean Paul <seanpaul@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 11, 2013 at 2:06 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+Jingoo,
+
+On Sat, May 11, 2013 at 12:42 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+> The transition to common clock happened; however, DP (Display Port)
+> clock node was not added. Thus, DP (Display Port) clock node should
+> be added to the device tree.
 >
-> Less boilerplate?  We used to pass inode to fput() as well, but
-> switched to passing file alone...
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+> Tested on Exynos5250
+>
+>  arch/arm/boot/dts/exynos5250.dtsi |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 
-.. and that was painful.
+Clock number matches clock bindings for 5250 and clock name matches dp
+driver, so this looks good.
 
-The advantage has to be balanced against the pain it causes. I'm not
-seeing the advantage here as being worth it. If this kind of thing not
-only causes way more churn, _and_ it causes us to pick a new (worse)
-name just because it also forces a non-compatible ABI, I'm really
-doubtful.
-
-I mean, if we had *other* reasons for the churn, and the name needed
-to change anyway, then maybe, but..
-
-             Linus
+Reviewed-by: Doug Anderson <dianders@chromium.org>
