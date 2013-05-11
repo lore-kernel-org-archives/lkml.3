@@ -1,28 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067Ab3EKANq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 20:13:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26184 "EHLO
+	id S1757406Ab3EKANp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 20:13:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11649 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756266Ab3EKANI (ORCPT
+	with ESMTP id S1756264Ab3EKANI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 May 2013 20:13:08 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=RLKoo40W0fYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=x6Hd-1goRbkA:10 a=v-9Tpi4omvYqg6QLtcEA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=sWFldwy9pU_93O82478A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=eRzDlewj5ewA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=CS8ug4Mk4GEA:10 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=QyXUC8HyAAAA:8 a=VnNF1IyMAAAA:8 a=arZ6SeXbPmP6ca6IZTcA:9 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=4-E8n_-o32CM1vvhTX4A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130511001305.508530826@goodmis.org>
+Message-Id: <20130511001306.094372368@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 10 May 2013 20:12:18 -0400
+Date: Fri, 10 May 2013 20:12:21 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH 12/18] ftrace: Fix the output of enabled_functions debug file
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: [PATCH 15/18] tracing/kprobes: Increment probe hit-count even if it is used by
+ perf
 References: <20130511001206.477862307@goodmis.org>
-Content-Disposition: inline; filename=0012-ftrace-Fix-the-output-of-enabled_functions-debug-fil.patch
+Content-Disposition: inline; filename=0015-tracing-kprobes-Increment-probe-hit-count-even-if-it.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,40 +37,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-The enabled_functions debugfs file was created to be able to see
-what functions have been modified from nops to calling a tracer.
+Increment probe hit-count for profiling even if it is used
+by perf tool. Same thing has already done in trace_uprobe.
 
-The current method uses the counter in the function record.
-As when a ftrace_ops is registered to a function, its count
-increases. But that doesn't mean that the function is actively
-being traced. /proc/sys/kernel/ftrace_enabled can be set to zero
-which would disable it, as well as something can go wrong and
-we can think its enabled when only the counter is set.
+Link: http://lkml.kernel.org/r/20130509054436.30398.21133.stgit@mhiramat-M0=
+-7522
 
-The record's FTRACE_FL_ENABLED flag is set or cleared when its
-function is modified. That is a much more accurate way of knowing
-what function is enabled or not.
-
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Tom Zanussi <tom.zanussi@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/trace_kprobe.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index f104c45..dcca9fa 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2459,7 +2459,7 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
- 		     !ftrace_lookup_ip(ops->notrace_hash, rec->ip)) ||
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 0b7386a..6e86fbb 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -733,8 +733,6 @@ static __kprobes void kprobe_trace_func(struct kprobe *=
+kp, struct pt_regs *regs)
+ 	unsigned long irq_flags;
+ 	struct ftrace_event_call *call =3D &tp->call;
 =20
- 		    ((iter->flags & FTRACE_ITER_ENABLED) &&
--		     !(rec->flags & ~FTRACE_FL_MASK))) {
-+		     !(rec->flags & FTRACE_FL_ENABLED))) {
+-	tp->nhit++;
+-
+ 	local_save_flags(irq_flags);
+ 	pc =3D preempt_count();
 =20
- 			rec =3D NULL;
- 			goto retry;
+@@ -767,8 +765,6 @@ static __kprobes void kretprobe_trace_func(struct kretp=
+robe_instance *ri,
+ 	unsigned long irq_flags;
+ 	struct ftrace_event_call *call =3D &tp->call;
+=20
+-	tp->nhit++;
+-
+ 	local_save_flags(irq_flags);
+ 	pc =3D preempt_count();
+=20
+@@ -1075,6 +1071,8 @@ int kprobe_dispatcher(struct kprobe *kp, struct pt_re=
+gs *regs)
+ {
+ 	struct trace_probe *tp =3D container_of(kp, struct trace_probe, rp.kp);
+=20
++	tp->nhit++;
++
+ 	if (tp->flags & TP_FLAG_TRACE)
+ 		kprobe_trace_func(kp, regs);
+ #ifdef CONFIG_PERF_EVENTS
+@@ -1089,6 +1087,8 @@ int kretprobe_dispatcher(struct kretprobe_instance *r=
+i, struct pt_regs *regs)
+ {
+ 	struct trace_probe *tp =3D container_of(ri->rp, struct trace_probe, rp);
+=20
++	tp->nhit++;
++
+ 	if (tp->flags & TP_FLAG_TRACE)
+ 		kretprobe_trace_func(ri, regs);
+ #ifdef CONFIG_PERF_EVENTS
 --=20
 1.7.10.4
 
@@ -78,13 +112,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRjY0RAAoJEOdOSU1xswtMDWQH/1Usv8Bkc2qupanP/BmgoyE4
-nDKB1KsbwMBuCtbB0LkMos20rLcRmI/yyKdsk6L2Z09UA9mjpMU3LX8KYPy+FM4I
-rnv8egNuAzWhfH81umjwJahrlj2saHQEw3Dyo54eCj/A8f1RawQJJmIlM+C0p4fD
-r7kCKw2bosxXe1HLJVKHIUuJL0oM+vLCCdVF+CeqlkhZn3rqd/3nbgYrEv5T/3pQ
-nbSn+pMDlIfim59VlQRF7P2LzUh89w816J2gRTGCV9yPJm9BxgNKQR7eD+lgiEBA
-ddjyJ0viiZP+LFGeiM/faernREqtkXy4u38IkIN+QBadv2UYCoNCIihZLsq/X7E=
-=uVhV
+iQEcBAABAgAGBQJRjY0SAAoJEOdOSU1xswtMvaEIAIHrQzvv0cN0UNK0YP+eHuVK
+xvfp0jmTnwObss0GBKlSX625ENUYSGuLJpx8ZYmfc4BnN3KY5mHNw3brXjwPsseR
+o2i3upVLlHWMmC9aUk2Mm+MvVybPuQBx2Zb+mmfGy5IHEdm/G6GPbWfPyC+0vq2q
+BnwzE7AmqgfIf4fNMojp+KlY/KiQ7KGU0LEFP9W0+Ee7EysufTPwBMEq/h+kcOH3
+i1L0ZkwEKR0qjFiibfqnEAUbskqWDQy/90JwhitkNVU1ECXdUHNbL0eG8TrAZ3Zo
+kNN8n/tAQZ0wbX0Zi8vJiIY4a/tgrbFsYviURxyF3KDmymODIMU0FVYbDKp69I0=
+=2J6X
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
