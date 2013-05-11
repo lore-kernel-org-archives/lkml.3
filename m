@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab3EKXNP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 19:13:15 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60203 "EHLO
+	id S1752134Ab3EKXZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 19:25:56 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60255 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab3EKXNO (ORCPT
+	with ESMTP id S1751425Ab3EKXZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 19:13:14 -0400
-Date: Sat, 11 May 2013 16:13:12 -0700 (PDT)
-Message-Id: <20130511.161312.2021294984526564526.davem@davemloft.net>
-To: yefremov.denis@gmail.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org, ldv-project@linuxtesting.org
-Subject: Re: [PATCH 11/21] ipv4: ip_output: remove inline marking of
- EXPORT_SYMBOL functions
+	Sat, 11 May 2013 19:25:55 -0400
+Date: Sat, 11 May 2013 16:25:54 -0700 (PDT)
+Message-Id: <20130511.162554.1852680841693318294.davem@davemloft.net>
+To: jiri@resnulli.us
+Cc: netdev@vger.kernel.org, sri@us.ibm.com, kaber@trash.net,
+        linux-kernel@vger.kernel.org, mtesar@redhat.com,
+        eric.dumazet@gmail.com
+Subject: Re: [patch net] macvlan: fix passthru mode race between dev
+ removal and rx path
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1368091192-10245-6-git-send-email-yefremov.denis@gmail.com>
-References: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
-	<1368091192-10245-6-git-send-email-yefremov.denis@gmail.com>
+In-Reply-To: <1368109420-14199-1-git-send-email-jiri@resnulli.us>
+References: <1368109420-14199-1-git-send-email-jiri@resnulli.us>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -27,14 +26,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Denis Efremov <yefremov.denis@gmail.com>
-Date: Thu,  9 May 2013 13:19:42 +0400
+From: Jiri Pirko <jiri@resnulli.us>
+Date: Thu,  9 May 2013 16:23:40 +0200
 
-> EXPORT_SYMBOL and inline directives are contradictory to each other.
-> The patch fixes this inconsistency.
+> Currently, if macvlan in passthru mode is created and data are rxed and
+> you remove this device, following panic happens:
 > 
-> Found by Linux Driver Verification project (linuxtesting.org).
+> NULL pointer dereference at 0000000000000198
+> IP: [<ffffffffa0196058>] macvlan_handle_frame+0x153/0x1f7 [macvlan]
 > 
-> Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
+> I'm using following script to trigger this:
+ ...
+> I run this script while "ping -f" is running on another machine to send
+> packets to e1 rx.
+> 
+> Reason of the panic is that list_first_entry() is blindly called in
+> macvlan_handle_frame() even if the list was empty. vlan is set to
+> incorrect pointer which leads to the crash.
+> 
+> I'm fixing this by protecting port->vlans list by rcu and by preventing
+> from getting incorrect pointer in case the list is empty.
+> 
+> Introduced by: commit eb06acdc85585f2 "macvlan: Introduce 'passthru' mode to takeover the underlying device"
+> 
+> Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 
-Applied, thanks.
+Applied and queued up for -stable, thanks!
