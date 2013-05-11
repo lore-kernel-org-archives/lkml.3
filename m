@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab3EKBIv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 21:08:51 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:34740 "EHLO
+	id S1757442Ab3EKBIt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 21:08:49 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:37309 "EHLO
 	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756986Ab3EKBIZ (ORCPT
+	with ESMTP id S1757145Ab3EKBI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 21:08:25 -0400
+	Fri, 10 May 2013 21:08:26 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
@@ -15,9 +15,9 @@ Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Mike Turquette <mturquette@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 06/10] clk: mvebu: add Armada XP SoC-centric clock init
-Date: Sat, 11 May 2013 03:08:06 +0200
-Message-Id: <1368234490-31416-7-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 10/10] clk: mvebu: desintegrate obsolete file
+Date: Sat, 11 May 2013 03:08:10 +0200
+Message-Id: <1368234490-31416-11-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368234490-31416-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1368234490-31416-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -25,9 +25,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is moving core clock and clock gating init for Armada XP to
-its own file and adds a Kconfig option. Also init functions are added
-and declared so they get called on of_clk_init.
+Switch from function-centric to soc-centric clock drivers now makes
+a bunch of files obsolete. This deletes all files and Kconfig options
+that are not required anymore.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -40,249 +40,1091 @@ Cc: Mike Turquette <mturquette@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/clk/mvebu/Kconfig     |    5 +
- drivers/clk/mvebu/Makefile    |    1 +
- drivers/clk/mvebu/armada-xp.c |  204 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 210 insertions(+)
- create mode 100644 drivers/clk/mvebu/armada-xp.c
+ drivers/clk/mvebu/Kconfig           |   10 +-
+ drivers/clk/mvebu/Makefile          |    2 -
+ drivers/clk/mvebu/clk-core.c        |  675 -----------------------------------
+ drivers/clk/mvebu/clk-core.h        |   18 -
+ drivers/clk/mvebu/clk-gating-ctrl.c |  241 -------------
+ drivers/clk/mvebu/clk-gating-ctrl.h |   22 --
+ drivers/clk/mvebu/clk.c             |   23 --
+ include/linux/clk/mvebu.h           |   22 --
+ 8 files changed, 2 insertions(+), 1011 deletions(-)
+ delete mode 100644 drivers/clk/mvebu/clk-core.c
+ delete mode 100644 drivers/clk/mvebu/clk-core.h
+ delete mode 100644 drivers/clk/mvebu/clk-gating-ctrl.c
+ delete mode 100644 drivers/clk/mvebu/clk-gating-ctrl.h
+ delete mode 100644 drivers/clk/mvebu/clk.c
+ delete mode 100644 include/linux/clk/mvebu.h
 
 diff --git a/drivers/clk/mvebu/Kconfig b/drivers/clk/mvebu/Kconfig
-index 1daf61e..8740d34 100644
+index 8740d34..0b0f3e7 100644
 --- a/drivers/clk/mvebu/Kconfig
 +++ b/drivers/clk/mvebu/Kconfig
-@@ -15,6 +15,11 @@ config ARMADA_370_CLK
- 	select MVEBU_CLK_COMMON
- 	select MVEBU_CLK_CPU
- 
-+config ARMADA_XP_CLK
+@@ -1,13 +1,7 @@
+-config MVEBU_CLK_CORE
+-       bool
++config MVEBU_CLK_COMMON
 +	bool
-+	select MVEBU_CLK_COMMON
-+	select MVEBU_CLK_CPU
-+
- config DOVE_CLK
+ 
+ config MVEBU_CLK_CPU
+-       bool
+-
+-config MVEBU_CLK_GATING
+-       bool
+-
+-config MVEBU_CLK_COMMON
  	bool
- 	select MVEBU_CLK_COMMON
+ 
+ config ARMADA_370_CLK
 diff --git a/drivers/clk/mvebu/Makefile b/drivers/clk/mvebu/Makefile
-index 367b72c..13f3d22 100644
+index 13f3d22..1c7e70c 100644
 --- a/drivers/clk/mvebu/Makefile
 +++ b/drivers/clk/mvebu/Makefile
-@@ -4,5 +4,6 @@ obj-$(CONFIG_MVEBU_CLK_CPU) 	+= clk-cpu.o
- obj-$(CONFIG_MVEBU_CLK_GATING) 	+= clk-gating-ctrl.o
+@@ -1,7 +1,5 @@
+ obj-$(CONFIG_MVEBU_CLK_COMMON)	+= common.o
+-obj-$(CONFIG_MVEBU_CLK_CORE) 	+= clk.o clk-core.o
+ obj-$(CONFIG_MVEBU_CLK_CPU) 	+= clk-cpu.o
+-obj-$(CONFIG_MVEBU_CLK_GATING) 	+= clk-gating-ctrl.o
  
  obj-$(CONFIG_ARMADA_370_CLK)	+= armada-370.o
-+obj-$(CONFIG_ARMADA_XP_CLK)	+= armada-xp.o
- obj-$(CONFIG_DOVE_CLK)		+= dove.o
- obj-$(CONFIG_KIRKWOOD_CLK)	+= kirkwood.o
-diff --git a/drivers/clk/mvebu/armada-xp.c b/drivers/clk/mvebu/armada-xp.c
-new file mode 100644
-index 0000000..cf7612e
---- /dev/null
-+++ b/drivers/clk/mvebu/armada-xp.c
-@@ -0,0 +1,204 @@
-+/*
-+ * Marvell Armada XP SoC clocks
-+ *
-+ * Copyright (C) 2012 Marvell
-+ *
-+ * Gregory CLEMENT <gregory.clement@free-electrons.com>
-+ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-+ * Andrew Lunn <andrew@lunn.ch>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/clk-provider.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include "common.h"
-+
-+/*
-+ * Core Clocks
-+ *
-+ * Armada XP Sample At Reset is a 64 bit bitfiled split in two
-+ * register of 32 bits
-+ */
-+
-+#define SARL				0	/* Low part [0:31] */
-+#define	 SARL_AXP_PCLK_FREQ_OPT		21
-+#define	 SARL_AXP_PCLK_FREQ_OPT_MASK	0x7
-+#define	 SARL_AXP_FAB_FREQ_OPT		24
-+#define	 SARL_AXP_FAB_FREQ_OPT_MASK	0xF
-+#define SARH				4	/* High part [32:63] */
-+#define	 SARH_AXP_PCLK_FREQ_OPT		(52-32)
-+#define	 SARH_AXP_PCLK_FREQ_OPT_MASK	0x1
-+#define	 SARH_AXP_PCLK_FREQ_OPT_SHIFT	3
-+#define	 SARH_AXP_FAB_FREQ_OPT		(51-32)
-+#define	 SARH_AXP_FAB_FREQ_OPT_MASK	0x1
-+#define	 SARH_AXP_FAB_FREQ_OPT_SHIFT	4
-+
-+enum { AXP_CPU_TO_NBCLK, AXP_CPU_TO_HCLK, AXP_CPU_TO_DRAMCLK };
-+
-+static const struct coreclk_ratio __initconst axp_coreclk_ratios[] = {
-+	{ .id = AXP_CPU_TO_NBCLK, .name = "nbclk" },
-+	{ .id = AXP_CPU_TO_HCLK, .name = "hclk" },
-+	{ .id = AXP_CPU_TO_DRAMCLK, .name = "dramclk" },
-+};
-+
-+/* Armada XP TCLK frequency is fixed to 250MHz */
-+static u32 __init axp_get_tclk_freq(void __iomem *sar)
-+{
-+	return 250000000;
-+}
-+
-+static const u32 __initconst axp_cpu_freqs[] = {
-+	1000000000,
-+	1066000000,
-+	1200000000,
-+	1333000000,
-+	1500000000,
-+	1666000000,
-+	1800000000,
-+	2000000000,
-+	667000000,
-+	0,
-+	800000000,
-+	1600000000,
-+};
-+
-+static u32 __init axp_get_cpu_freq(void __iomem *sar)
-+{
-+	u32 cpu_freq;
-+	u8 cpu_freq_select = 0;
-+
-+	cpu_freq_select = ((readl(sar + SARL) >> SARL_AXP_PCLK_FREQ_OPT) &
-+			   SARL_AXP_PCLK_FREQ_OPT_MASK);
-+	/*
-+	 * The upper bit is not contiguous to the other ones and
-+	 * located in the high part of the SAR registers
-+	 */
-+	cpu_freq_select |= (((readl(sar + SARH) >> SARH_AXP_PCLK_FREQ_OPT) &
-+	     SARH_AXP_PCLK_FREQ_OPT_MASK) << SARH_AXP_PCLK_FREQ_OPT_SHIFT);
-+	if (cpu_freq_select >= ARRAY_SIZE(axp_cpu_freqs)) {
-+		pr_err("CPU freq select unsupported: %d\n", cpu_freq_select);
-+		cpu_freq = 0;
-+	} else
-+		cpu_freq = axp_cpu_freqs[cpu_freq_select];
-+
-+	return cpu_freq;
-+}
-+
-+static const int __initconst axp_nbclk_ratios[32][2] = {
-+	{0, 1}, {1, 2}, {2, 2}, {2, 2},
-+	{1, 2}, {1, 2}, {1, 1}, {2, 3},
-+	{0, 1}, {1, 2}, {2, 4}, {0, 1},
-+	{1, 2}, {0, 1}, {0, 1}, {2, 2},
-+	{0, 1}, {0, 1}, {0, 1}, {1, 1},
-+	{2, 3}, {0, 1}, {0, 1}, {0, 1},
-+	{0, 1}, {0, 1}, {0, 1}, {1, 1},
-+	{0, 1}, {0, 1}, {0, 1}, {0, 1},
-+};
-+
-+static const int __initconst axp_hclk_ratios[32][2] = {
-+	{0, 1}, {1, 2}, {2, 6}, {2, 3},
-+	{1, 3}, {1, 4}, {1, 2}, {2, 6},
-+	{0, 1}, {1, 6}, {2, 10}, {0, 1},
-+	{1, 4}, {0, 1}, {0, 1}, {2, 5},
-+	{0, 1}, {0, 1}, {0, 1}, {1, 2},
-+	{2, 6}, {0, 1}, {0, 1}, {0, 1},
-+	{0, 1}, {0, 1}, {0, 1}, {1, 1},
-+	{0, 1}, {0, 1}, {0, 1}, {0, 1},
-+};
-+
-+static const int __initconst axp_dramclk_ratios[32][2] = {
-+	{0, 1}, {1, 2}, {2, 3}, {2, 3},
-+	{1, 3}, {1, 2}, {1, 2}, {2, 6},
-+	{0, 1}, {1, 3}, {2, 5}, {0, 1},
-+	{1, 4}, {0, 1}, {0, 1}, {2, 5},
-+	{0, 1}, {0, 1}, {0, 1}, {1, 1},
-+	{2, 3}, {0, 1}, {0, 1}, {0, 1},
-+	{0, 1}, {0, 1}, {0, 1}, {1, 1},
-+	{0, 1}, {0, 1}, {0, 1}, {0, 1},
-+};
-+
-+static void __init axp_get_clk_ratio(
-+	void __iomem *sar, int id, int *mult, int *div)
-+{
-+	u32 opt = ((readl(sar + SARL) >> SARL_AXP_FAB_FREQ_OPT) &
-+	      SARL_AXP_FAB_FREQ_OPT_MASK);
-+	/*
-+	 * The upper bit is not contiguous to the other ones and
-+	 * located in the high part of the SAR registers
-+	 */
-+	opt |= (((readl(sar + SARH) >> SARH_AXP_FAB_FREQ_OPT) &
-+		 SARH_AXP_FAB_FREQ_OPT_MASK) << SARH_AXP_FAB_FREQ_OPT_SHIFT);
-+
-+	switch (id) {
-+	case AXP_CPU_TO_NBCLK:
-+		*mult = axp_nbclk_ratios[opt][0];
-+		*div = axp_nbclk_ratios[opt][1];
-+		break;
-+	case AXP_CPU_TO_HCLK:
-+		*mult = axp_hclk_ratios[opt][0];
-+		*div = axp_hclk_ratios[opt][1];
-+		break;
-+	case AXP_CPU_TO_DRAMCLK:
-+		*mult = axp_dramclk_ratios[opt][0];
-+		*div = axp_dramclk_ratios[opt][1];
-+		break;
-+	}
-+}
-+
-+static const struct coreclk_soc_desc axp_coreclks = {
-+	.get_tclk_freq = axp_get_tclk_freq,
-+	.get_cpu_freq = axp_get_cpu_freq,
-+	.get_clk_ratio = axp_get_clk_ratio,
-+	.ratios = axp_coreclk_ratios,
-+	.num_ratios = ARRAY_SIZE(axp_coreclk_ratios),
-+};
-+
-+static void __init axp_coreclk_init(struct device_node *np)
-+{
-+	mvebu_coreclk_setup(np, &axp_coreclks);
-+}
-+CLK_OF_DECLARE(axp_core_clk, "marvell,armada-xp-core-clock",
-+	       axp_coreclk_init);
-+
-+/*
-+ * Clock Gating Control
-+ */
-+
-+static const struct clk_gating_soc_desc __initconst axp_gating_desc[] = {
-+	{ "audio", NULL, 0, 0 },
-+	{ "ge3", NULL, 1, 0 },
-+	{ "ge2", NULL,  2, 0 },
-+	{ "ge1", NULL, 3, 0 },
-+	{ "ge0", NULL, 4, 0 },
-+	{ "pex0", NULL, 5, 0 },
-+	{ "pex1", NULL, 6, 0 },
-+	{ "pex2", NULL, 7, 0 },
-+	{ "pex3", NULL, 8, 0 },
-+	{ "bp", NULL, 13, 0 },
-+	{ "sata0lnk", NULL, 14, 0 },
-+	{ "sata0", "sata0lnk", 15, 0 },
-+	{ "lcd", NULL, 16, 0 },
-+	{ "sdio", NULL, 17, 0 },
-+	{ "usb0", NULL, 18, 0 },
-+	{ "usb1", NULL, 19, 0 },
-+	{ "usb2", NULL, 20, 0 },
-+	{ "xor0", NULL, 22, 0 },
-+	{ "crypto", NULL, 23, 0 },
-+	{ "tdm", NULL, 25, 0 },
-+	{ "xor1", NULL, 28, 0 },
-+	{ "sata1lnk", NULL, 29, 0 },
-+	{ "sata1", "sata1lnk", 30, 0 },
-+	{ }
-+};
-+
-+static void __init axp_clk_gating_init(struct device_node *np)
-+{
-+	mvebu_clk_gating_setup(np, axp_gating_desc);
-+}
-+CLK_OF_DECLARE(axp_clk_gating, "marvell,armada-xp-gating-clock",
-+	       axp_clk_gating_init);
+ obj-$(CONFIG_ARMADA_XP_CLK)	+= armada-xp.o
+diff --git a/drivers/clk/mvebu/clk-core.c b/drivers/clk/mvebu/clk-core.c
+deleted file mode 100644
+index 0a53edb..0000000
+--- a/drivers/clk/mvebu/clk-core.c
++++ /dev/null
+@@ -1,675 +0,0 @@
+-/*
+- * Marvell EBU clock core handling defined at reset
+- *
+- * Copyright (C) 2012 Marvell
+- *
+- * Gregory CLEMENT <gregory.clement@free-electrons.com>
+- * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+- *
+- * This file is licensed under the terms of the GNU General Public
+- * License version 2.  This program is licensed "as is" without any
+- * warranty of any kind, whether express or implied.
+- */
+-#include <linux/kernel.h>
+-#include <linux/clk.h>
+-#include <linux/clkdev.h>
+-#include <linux/clk-provider.h>
+-#include <linux/of_address.h>
+-#include <linux/io.h>
+-#include <linux/of.h>
+-#include "clk-core.h"
+-
+-struct core_ratio {
+-	int id;
+-	const char *name;
+-};
+-
+-struct core_clocks {
+-	u32 (*get_tclk_freq)(void __iomem *sar);
+-	u32 (*get_cpu_freq)(void __iomem *sar);
+-	void (*get_clk_ratio)(void __iomem *sar, int id, int *mult, int *div);
+-	const struct core_ratio *ratios;
+-	int num_ratios;
+-};
+-
+-static struct clk_onecell_data clk_data;
+-
+-static void __init mvebu_clk_core_setup(struct device_node *np,
+-				 struct core_clocks *coreclk)
+-{
+-	const char *tclk_name = "tclk";
+-	const char *cpuclk_name = "cpuclk";
+-	void __iomem *base;
+-	unsigned long rate;
+-	int n;
+-
+-	base = of_iomap(np, 0);
+-	if (WARN_ON(!base))
+-		return;
+-
+-	/*
+-	 * Allocate struct for TCLK, cpu clk, and core ratio clocks
+-	 */
+-	clk_data.clk_num = 2 + coreclk->num_ratios;
+-	clk_data.clks = kzalloc(clk_data.clk_num * sizeof(struct clk *),
+-				GFP_KERNEL);
+-	if (WARN_ON(!clk_data.clks))
+-		return;
+-
+-	/*
+-	 * Register TCLK
+-	 */
+-	of_property_read_string_index(np, "clock-output-names", 0,
+-				      &tclk_name);
+-	rate = coreclk->get_tclk_freq(base);
+-	clk_data.clks[0] = clk_register_fixed_rate(NULL, tclk_name, NULL,
+-						   CLK_IS_ROOT, rate);
+-	WARN_ON(IS_ERR(clk_data.clks[0]));
+-
+-	/*
+-	 * Register CPU clock
+-	 */
+-	of_property_read_string_index(np, "clock-output-names", 1,
+-				      &cpuclk_name);
+-	rate = coreclk->get_cpu_freq(base);
+-	clk_data.clks[1] = clk_register_fixed_rate(NULL, cpuclk_name, NULL,
+-						   CLK_IS_ROOT, rate);
+-	WARN_ON(IS_ERR(clk_data.clks[1]));
+-
+-	/*
+-	 * Register fixed-factor clocks derived from CPU clock
+-	 */
+-	for (n = 0; n < coreclk->num_ratios; n++) {
+-		const char *rclk_name = coreclk->ratios[n].name;
+-		int mult, div;
+-
+-		of_property_read_string_index(np, "clock-output-names",
+-					      2+n, &rclk_name);
+-		coreclk->get_clk_ratio(base, coreclk->ratios[n].id,
+-				       &mult, &div);
+-		clk_data.clks[2+n] = clk_register_fixed_factor(NULL, rclk_name,
+-				       cpuclk_name, 0, mult, div);
+-		WARN_ON(IS_ERR(clk_data.clks[2+n]));
+-	};
+-
+-	/*
+-	 * SAR register isn't needed anymore
+-	 */
+-	iounmap(base);
+-
+-	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
+-}
+-
+-#ifdef CONFIG_MACH_ARMADA_370_XP
+-/*
+- * Armada 370/XP Sample At Reset is a 64 bit bitfiled split in two
+- * register of 32 bits
+- */
+-
+-#define SARL				    0	/* Low part [0:31] */
+-#define	    SARL_AXP_PCLK_FREQ_OPT	    21
+-#define	    SARL_AXP_PCLK_FREQ_OPT_MASK	    0x7
+-#define	    SARL_A370_PCLK_FREQ_OPT	    11
+-#define	    SARL_A370_PCLK_FREQ_OPT_MASK    0xF
+-#define	    SARL_AXP_FAB_FREQ_OPT	    24
+-#define	    SARL_AXP_FAB_FREQ_OPT_MASK	    0xF
+-#define	    SARL_A370_FAB_FREQ_OPT	    15
+-#define	    SARL_A370_FAB_FREQ_OPT_MASK	    0x1F
+-#define	    SARL_A370_TCLK_FREQ_OPT	    20
+-#define	    SARL_A370_TCLK_FREQ_OPT_MASK    0x1
+-#define SARH				    4	/* High part [32:63] */
+-#define	    SARH_AXP_PCLK_FREQ_OPT	    (52-32)
+-#define	    SARH_AXP_PCLK_FREQ_OPT_MASK	    0x1
+-#define	    SARH_AXP_PCLK_FREQ_OPT_SHIFT    3
+-#define	    SARH_AXP_FAB_FREQ_OPT	    (51-32)
+-#define	    SARH_AXP_FAB_FREQ_OPT_MASK	    0x1
+-#define	    SARH_AXP_FAB_FREQ_OPT_SHIFT	    4
+-
+-static const u32 __initconst armada_370_tclk_frequencies[] = {
+-	16600000,
+-	20000000,
+-};
+-
+-static u32 __init armada_370_get_tclk_freq(void __iomem *sar)
+-{
+-	u8 tclk_freq_select = 0;
+-
+-	tclk_freq_select = ((readl(sar) >> SARL_A370_TCLK_FREQ_OPT) &
+-			    SARL_A370_TCLK_FREQ_OPT_MASK);
+-	return armada_370_tclk_frequencies[tclk_freq_select];
+-}
+-
+-static const u32 __initconst armada_370_cpu_frequencies[] = {
+-	400000000,
+-	533000000,
+-	667000000,
+-	800000000,
+-	1000000000,
+-	1067000000,
+-	1200000000,
+-};
+-
+-static u32 __init armada_370_get_cpu_freq(void __iomem *sar)
+-{
+-	u32 cpu_freq;
+-	u8 cpu_freq_select = 0;
+-
+-	cpu_freq_select = ((readl(sar) >> SARL_A370_PCLK_FREQ_OPT) &
+-			   SARL_A370_PCLK_FREQ_OPT_MASK);
+-	if (cpu_freq_select >= ARRAY_SIZE(armada_370_cpu_frequencies)) {
+-		pr_err("CPU freq select unsupported %d\n", cpu_freq_select);
+-		cpu_freq = 0;
+-	} else
+-		cpu_freq = armada_370_cpu_frequencies[cpu_freq_select];
+-
+-	return cpu_freq;
+-}
+-
+-enum { A370_XP_NBCLK, A370_XP_HCLK, A370_XP_DRAMCLK };
+-
+-static const struct core_ratio __initconst armada_370_xp_core_ratios[] = {
+-	{ .id = A370_XP_NBCLK,	 .name = "nbclk" },
+-	{ .id = A370_XP_HCLK,	 .name = "hclk" },
+-	{ .id = A370_XP_DRAMCLK, .name = "dramclk" },
+-};
+-
+-static const int __initconst armada_370_xp_nbclk_ratios[32][2] = {
+-	{0, 1}, {1, 2}, {2, 2}, {2, 2},
+-	{1, 2}, {1, 2}, {1, 1}, {2, 3},
+-	{0, 1}, {1, 2}, {2, 4}, {0, 1},
+-	{1, 2}, {0, 1}, {0, 1}, {2, 2},
+-	{0, 1}, {0, 1}, {0, 1}, {1, 1},
+-	{2, 3}, {0, 1}, {0, 1}, {0, 1},
+-	{0, 1}, {0, 1}, {0, 1}, {1, 1},
+-	{0, 1}, {0, 1}, {0, 1}, {0, 1},
+-};
+-
+-static const int __initconst armada_370_xp_hclk_ratios[32][2] = {
+-	{0, 1}, {1, 2}, {2, 6}, {2, 3},
+-	{1, 3}, {1, 4}, {1, 2}, {2, 6},
+-	{0, 1}, {1, 6}, {2, 10}, {0, 1},
+-	{1, 4}, {0, 1}, {0, 1}, {2, 5},
+-	{0, 1}, {0, 1}, {0, 1}, {1, 2},
+-	{2, 6}, {0, 1}, {0, 1}, {0, 1},
+-	{0, 1}, {0, 1}, {0, 1}, {1, 1},
+-	{0, 1}, {0, 1}, {0, 1}, {0, 1},
+-};
+-
+-static const int __initconst armada_370_xp_dramclk_ratios[32][2] = {
+-	{0, 1}, {1, 2}, {2, 3}, {2, 3},
+-	{1, 3}, {1, 2}, {1, 2}, {2, 6},
+-	{0, 1}, {1, 3}, {2, 5}, {0, 1},
+-	{1, 4}, {0, 1}, {0, 1}, {2, 5},
+-	{0, 1}, {0, 1}, {0, 1}, {1, 1},
+-	{2, 3}, {0, 1}, {0, 1}, {0, 1},
+-	{0, 1}, {0, 1}, {0, 1}, {1, 1},
+-	{0, 1}, {0, 1}, {0, 1}, {0, 1},
+-};
+-
+-static void __init armada_370_xp_get_clk_ratio(u32 opt,
+-	void __iomem *sar, int id, int *mult, int *div)
+-{
+-	switch (id) {
+-	case A370_XP_NBCLK:
+-		*mult = armada_370_xp_nbclk_ratios[opt][0];
+-		*div = armada_370_xp_nbclk_ratios[opt][1];
+-		break;
+-	case A370_XP_HCLK:
+-		*mult = armada_370_xp_hclk_ratios[opt][0];
+-		*div = armada_370_xp_hclk_ratios[opt][1];
+-		break;
+-	case A370_XP_DRAMCLK:
+-		*mult = armada_370_xp_dramclk_ratios[opt][0];
+-		*div = armada_370_xp_dramclk_ratios[opt][1];
+-		break;
+-	}
+-}
+-
+-static void __init armada_370_get_clk_ratio(
+-	void __iomem *sar, int id, int *mult, int *div)
+-{
+-	u32 opt = ((readl(sar) >> SARL_A370_FAB_FREQ_OPT) &
+-		SARL_A370_FAB_FREQ_OPT_MASK);
+-
+-	armada_370_xp_get_clk_ratio(opt, sar, id, mult, div);
+-}
+-
+-
+-static const struct core_clocks armada_370_core_clocks = {
+-	.get_tclk_freq = armada_370_get_tclk_freq,
+-	.get_cpu_freq = armada_370_get_cpu_freq,
+-	.get_clk_ratio = armada_370_get_clk_ratio,
+-	.ratios = armada_370_xp_core_ratios,
+-	.num_ratios = ARRAY_SIZE(armada_370_xp_core_ratios),
+-};
+-
+-static const u32 __initconst armada_xp_cpu_frequencies[] = {
+-	1000000000,
+-	1066000000,
+-	1200000000,
+-	1333000000,
+-	1500000000,
+-	1666000000,
+-	1800000000,
+-	2000000000,
+-	667000000,
+-	0,
+-	800000000,
+-	1600000000,
+-};
+-
+-/* For Armada XP TCLK frequency is fix: 250MHz */
+-static u32 __init armada_xp_get_tclk_freq(void __iomem *sar)
+-{
+-	return 250 * 1000 * 1000;
+-}
+-
+-static u32 __init armada_xp_get_cpu_freq(void __iomem *sar)
+-{
+-	u32 cpu_freq;
+-	u8 cpu_freq_select = 0;
+-
+-	cpu_freq_select = ((readl(sar) >> SARL_AXP_PCLK_FREQ_OPT) &
+-			   SARL_AXP_PCLK_FREQ_OPT_MASK);
+-	/*
+-	 * The upper bit is not contiguous to the other ones and
+-	 * located in the high part of the SAR registers
+-	 */
+-	cpu_freq_select |= (((readl(sar+4) >> SARH_AXP_PCLK_FREQ_OPT) &
+-			     SARH_AXP_PCLK_FREQ_OPT_MASK)
+-			    << SARH_AXP_PCLK_FREQ_OPT_SHIFT);
+-	if (cpu_freq_select >= ARRAY_SIZE(armada_xp_cpu_frequencies)) {
+-		pr_err("CPU freq select unsupported: %d\n", cpu_freq_select);
+-		cpu_freq = 0;
+-	} else
+-		cpu_freq = armada_xp_cpu_frequencies[cpu_freq_select];
+-
+-	return cpu_freq;
+-}
+-
+-static void __init armada_xp_get_clk_ratio(
+-	void __iomem *sar, int id, int *mult, int *div)
+-{
+-
+-	u32 opt = ((readl(sar) >> SARL_AXP_FAB_FREQ_OPT) &
+-	      SARL_AXP_FAB_FREQ_OPT_MASK);
+-	/*
+-	 * The upper bit is not contiguous to the other ones and
+-	 * located in the high part of the SAR registers
+-	 */
+-	opt |= (((readl(sar+4) >> SARH_AXP_FAB_FREQ_OPT) &
+-		SARH_AXP_FAB_FREQ_OPT_MASK)
+-	       << SARH_AXP_FAB_FREQ_OPT_SHIFT);
+-
+-	armada_370_xp_get_clk_ratio(opt, sar, id, mult, div);
+-}
+-
+-static const struct core_clocks armada_xp_core_clocks = {
+-	.get_tclk_freq = armada_xp_get_tclk_freq,
+-	.get_cpu_freq = armada_xp_get_cpu_freq,
+-	.get_clk_ratio = armada_xp_get_clk_ratio,
+-	.ratios = armada_370_xp_core_ratios,
+-	.num_ratios = ARRAY_SIZE(armada_370_xp_core_ratios),
+-};
+-
+-#endif /* CONFIG_MACH_ARMADA_370_XP */
+-
+-/*
+- * Dove PLL sample-at-reset configuration
+- *
+- * SAR0[8:5]   : CPU frequency
+- *		 5  = 1000 MHz
+- *		 6  =  933 MHz
+- *		 7  =  933 MHz
+- *		 8  =  800 MHz
+- *		 9  =  800 MHz
+- *		 10 =  800 MHz
+- *		 11 = 1067 MHz
+- *		 12 =  667 MHz
+- *		 13 =  533 MHz
+- *		 14 =  400 MHz
+- *		 15 =  333 MHz
+- *		 others reserved.
+- *
+- * SAR0[11:9]  : CPU to L2 Clock divider ratio
+- *		 0 = (1/1) * CPU
+- *		 2 = (1/2) * CPU
+- *		 4 = (1/3) * CPU
+- *		 6 = (1/4) * CPU
+- *		 others reserved.
+- *
+- * SAR0[15:12] : CPU to DDR DRAM Clock divider ratio
+- *		 0  = (1/1) * CPU
+- *		 2  = (1/2) * CPU
+- *		 3  = (2/5) * CPU
+- *		 4  = (1/3) * CPU
+- *		 6  = (1/4) * CPU
+- *		 8  = (1/5) * CPU
+- *		 10 = (1/6) * CPU
+- *		 12 = (1/7) * CPU
+- *		 14 = (1/8) * CPU
+- *		 15 = (1/10) * CPU
+- *		 others reserved.
+- *
+- * SAR0[24:23] : TCLK frequency
+- *		 0 = 166 MHz
+- *		 1 = 125 MHz
+- *		 others reserved.
+- */
+-#ifdef CONFIG_ARCH_DOVE
+-#define SAR_DOVE_CPU_FREQ		5
+-#define SAR_DOVE_CPU_FREQ_MASK		0xf
+-#define SAR_DOVE_L2_RATIO		9
+-#define SAR_DOVE_L2_RATIO_MASK		0x7
+-#define SAR_DOVE_DDR_RATIO		12
+-#define SAR_DOVE_DDR_RATIO_MASK		0xf
+-#define SAR_DOVE_TCLK_FREQ		23
+-#define SAR_DOVE_TCLK_FREQ_MASK		0x3
+-
+-static const u32 __initconst dove_tclk_frequencies[] = {
+-	166666667,
+-	125000000,
+-	0, 0
+-};
+-
+-static u32 __init dove_get_tclk_freq(void __iomem *sar)
+-{
+-	u32 opt = (readl(sar) >> SAR_DOVE_TCLK_FREQ) &
+-		SAR_DOVE_TCLK_FREQ_MASK;
+-	return dove_tclk_frequencies[opt];
+-}
+-
+-static const u32 __initconst dove_cpu_frequencies[] = {
+-	0, 0, 0, 0, 0,
+-	1000000000,
+-	933333333, 933333333,
+-	800000000, 800000000, 800000000,
+-	1066666667,
+-	666666667,
+-	533333333,
+-	400000000,
+-	333333333
+-};
+-
+-static u32 __init dove_get_cpu_freq(void __iomem *sar)
+-{
+-	u32 opt = (readl(sar) >> SAR_DOVE_CPU_FREQ) &
+-		SAR_DOVE_CPU_FREQ_MASK;
+-	return dove_cpu_frequencies[opt];
+-}
+-
+-enum { DOVE_CPU_TO_L2, DOVE_CPU_TO_DDR };
+-
+-static const struct core_ratio __initconst dove_core_ratios[] = {
+-	{ .id = DOVE_CPU_TO_L2, .name = "l2clk", },
+-	{ .id = DOVE_CPU_TO_DDR, .name = "ddrclk", }
+-};
+-
+-static const int __initconst dove_cpu_l2_ratios[8][2] = {
+-	{ 1, 1 }, { 0, 1 }, { 1, 2 }, { 0, 1 },
+-	{ 1, 3 }, { 0, 1 }, { 1, 4 }, { 0, 1 }
+-};
+-
+-static const int __initconst dove_cpu_ddr_ratios[16][2] = {
+-	{ 1, 1 }, { 0, 1 }, { 1, 2 }, { 2, 5 },
+-	{ 1, 3 }, { 0, 1 }, { 1, 4 }, { 0, 1 },
+-	{ 1, 5 }, { 0, 1 }, { 1, 6 }, { 0, 1 },
+-	{ 1, 7 }, { 0, 1 }, { 1, 8 }, { 1, 10 }
+-};
+-
+-static void __init dove_get_clk_ratio(
+-	void __iomem *sar, int id, int *mult, int *div)
+-{
+-	switch (id) {
+-	case DOVE_CPU_TO_L2:
+-	{
+-		u32 opt = (readl(sar) >> SAR_DOVE_L2_RATIO) &
+-			SAR_DOVE_L2_RATIO_MASK;
+-		*mult = dove_cpu_l2_ratios[opt][0];
+-		*div = dove_cpu_l2_ratios[opt][1];
+-		break;
+-	}
+-	case DOVE_CPU_TO_DDR:
+-	{
+-		u32 opt = (readl(sar) >> SAR_DOVE_DDR_RATIO) &
+-			SAR_DOVE_DDR_RATIO_MASK;
+-		*mult = dove_cpu_ddr_ratios[opt][0];
+-		*div = dove_cpu_ddr_ratios[opt][1];
+-		break;
+-	}
+-	}
+-}
+-
+-static const struct core_clocks dove_core_clocks = {
+-	.get_tclk_freq = dove_get_tclk_freq,
+-	.get_cpu_freq = dove_get_cpu_freq,
+-	.get_clk_ratio = dove_get_clk_ratio,
+-	.ratios = dove_core_ratios,
+-	.num_ratios = ARRAY_SIZE(dove_core_ratios),
+-};
+-#endif /* CONFIG_ARCH_DOVE */
+-
+-/*
+- * Kirkwood PLL sample-at-reset configuration
+- * (6180 has different SAR layout than other Kirkwood SoCs)
+- *
+- * SAR0[4:3,22,1] : CPU frequency (6281,6292,6282)
+- *	4  =  600 MHz
+- *	6  =  800 MHz
+- *	7  = 1000 MHz
+- *	9  = 1200 MHz
+- *	12 = 1500 MHz
+- *	13 = 1600 MHz
+- *	14 = 1800 MHz
+- *	15 = 2000 MHz
+- *	others reserved.
+- *
+- * SAR0[19,10:9] : CPU to L2 Clock divider ratio (6281,6292,6282)
+- *	1 = (1/2) * CPU
+- *	3 = (1/3) * CPU
+- *	5 = (1/4) * CPU
+- *	others reserved.
+- *
+- * SAR0[8:5] : CPU to DDR DRAM Clock divider ratio (6281,6292,6282)
+- *	2 = (1/2) * CPU
+- *	4 = (1/3) * CPU
+- *	6 = (1/4) * CPU
+- *	7 = (2/9) * CPU
+- *	8 = (1/5) * CPU
+- *	9 = (1/6) * CPU
+- *	others reserved.
+- *
+- * SAR0[4:2] : Kirkwood 6180 cpu/l2/ddr clock configuration (6180 only)
+- *	5 = [CPU =  600 MHz, L2 = (1/2) * CPU, DDR = 200 MHz = (1/3) * CPU]
+- *	6 = [CPU =  800 MHz, L2 = (1/2) * CPU, DDR = 200 MHz = (1/4) * CPU]
+- *	7 = [CPU = 1000 MHz, L2 = (1/2) * CPU, DDR = 200 MHz = (1/5) * CPU]
+- *	others reserved.
+- *
+- * SAR0[21] : TCLK frequency
+- *	0 = 200 MHz
+- *	1 = 166 MHz
+- *	others reserved.
+- */
+-#ifdef CONFIG_ARCH_KIRKWOOD
+-#define SAR_KIRKWOOD_CPU_FREQ(x)	\
+-	(((x & (1 <<  1)) >>  1) |	\
+-	 ((x & (1 << 22)) >> 21) |	\
+-	 ((x & (3 <<  3)) >>  1))
+-#define SAR_KIRKWOOD_L2_RATIO(x)	\
+-	(((x & (3 <<  9)) >> 9) |	\
+-	 (((x & (1 << 19)) >> 17)))
+-#define SAR_KIRKWOOD_DDR_RATIO		5
+-#define SAR_KIRKWOOD_DDR_RATIO_MASK	0xf
+-#define SAR_MV88F6180_CLK		2
+-#define SAR_MV88F6180_CLK_MASK		0x7
+-#define SAR_KIRKWOOD_TCLK_FREQ		21
+-#define SAR_KIRKWOOD_TCLK_FREQ_MASK	0x1
+-
+-enum { KIRKWOOD_CPU_TO_L2, KIRKWOOD_CPU_TO_DDR };
+-
+-static const struct core_ratio __initconst kirkwood_core_ratios[] = {
+-	{ .id = KIRKWOOD_CPU_TO_L2, .name = "l2clk", },
+-	{ .id = KIRKWOOD_CPU_TO_DDR, .name = "ddrclk", }
+-};
+-
+-static u32 __init kirkwood_get_tclk_freq(void __iomem *sar)
+-{
+-	u32 opt = (readl(sar) >> SAR_KIRKWOOD_TCLK_FREQ) &
+-		SAR_KIRKWOOD_TCLK_FREQ_MASK;
+-	return (opt) ? 166666667 : 200000000;
+-}
+-
+-static const u32 __initconst kirkwood_cpu_frequencies[] = {
+-	0, 0, 0, 0,
+-	600000000,
+-	0,
+-	800000000,
+-	1000000000,
+-	0,
+-	1200000000,
+-	0, 0,
+-	1500000000,
+-	1600000000,
+-	1800000000,
+-	2000000000
+-};
+-
+-static u32 __init kirkwood_get_cpu_freq(void __iomem *sar)
+-{
+-	u32 opt = SAR_KIRKWOOD_CPU_FREQ(readl(sar));
+-	return kirkwood_cpu_frequencies[opt];
+-}
+-
+-static const int __initconst kirkwood_cpu_l2_ratios[8][2] = {
+-	{ 0, 1 }, { 1, 2 }, { 0, 1 }, { 1, 3 },
+-	{ 0, 1 }, { 1, 4 }, { 0, 1 }, { 0, 1 }
+-};
+-
+-static const int __initconst kirkwood_cpu_ddr_ratios[16][2] = {
+-	{ 0, 1 }, { 0, 1 }, { 1, 2 }, { 0, 1 },
+-	{ 1, 3 }, { 0, 1 }, { 1, 4 }, { 2, 9 },
+-	{ 1, 5 }, { 1, 6 }, { 0, 1 }, { 0, 1 },
+-	{ 0, 1 }, { 0, 1 }, { 0, 1 }, { 0, 1 }
+-};
+-
+-static void __init kirkwood_get_clk_ratio(
+-	void __iomem *sar, int id, int *mult, int *div)
+-{
+-	switch (id) {
+-	case KIRKWOOD_CPU_TO_L2:
+-	{
+-		u32 opt = SAR_KIRKWOOD_L2_RATIO(readl(sar));
+-		*mult = kirkwood_cpu_l2_ratios[opt][0];
+-		*div = kirkwood_cpu_l2_ratios[opt][1];
+-		break;
+-	}
+-	case KIRKWOOD_CPU_TO_DDR:
+-	{
+-		u32 opt = (readl(sar) >> SAR_KIRKWOOD_DDR_RATIO) &
+-			SAR_KIRKWOOD_DDR_RATIO_MASK;
+-		*mult = kirkwood_cpu_ddr_ratios[opt][0];
+-		*div = kirkwood_cpu_ddr_ratios[opt][1];
+-		break;
+-	}
+-	}
+-}
+-
+-static const struct core_clocks kirkwood_core_clocks = {
+-	.get_tclk_freq = kirkwood_get_tclk_freq,
+-	.get_cpu_freq = kirkwood_get_cpu_freq,
+-	.get_clk_ratio = kirkwood_get_clk_ratio,
+-	.ratios = kirkwood_core_ratios,
+-	.num_ratios = ARRAY_SIZE(kirkwood_core_ratios),
+-};
+-
+-static const u32 __initconst mv88f6180_cpu_frequencies[] = {
+-	0, 0, 0, 0, 0,
+-	600000000,
+-	800000000,
+-	1000000000
+-};
+-
+-static u32 __init mv88f6180_get_cpu_freq(void __iomem *sar)
+-{
+-	u32 opt = (readl(sar) >> SAR_MV88F6180_CLK) & SAR_MV88F6180_CLK_MASK;
+-	return mv88f6180_cpu_frequencies[opt];
+-}
+-
+-static const int __initconst mv88f6180_cpu_ddr_ratios[8][2] = {
+-	{ 0, 1 }, { 0, 1 }, { 0, 1 }, { 0, 1 },
+-	{ 0, 1 }, { 1, 3 }, { 1, 4 }, { 1, 5 }
+-};
+-
+-static void __init mv88f6180_get_clk_ratio(
+-	void __iomem *sar, int id, int *mult, int *div)
+-{
+-	switch (id) {
+-	case KIRKWOOD_CPU_TO_L2:
+-	{
+-		/* mv88f6180 has a fixed 1:2 CPU-to-L2 ratio */
+-		*mult = 1;
+-		*div = 2;
+-		break;
+-	}
+-	case KIRKWOOD_CPU_TO_DDR:
+-	{
+-		u32 opt = (readl(sar) >> SAR_MV88F6180_CLK) &
+-			SAR_MV88F6180_CLK_MASK;
+-		*mult = mv88f6180_cpu_ddr_ratios[opt][0];
+-		*div = mv88f6180_cpu_ddr_ratios[opt][1];
+-		break;
+-	}
+-	}
+-}
+-
+-static const struct core_clocks mv88f6180_core_clocks = {
+-	.get_tclk_freq = kirkwood_get_tclk_freq,
+-	.get_cpu_freq = mv88f6180_get_cpu_freq,
+-	.get_clk_ratio = mv88f6180_get_clk_ratio,
+-	.ratios = kirkwood_core_ratios,
+-	.num_ratios = ARRAY_SIZE(kirkwood_core_ratios),
+-};
+-#endif /* CONFIG_ARCH_KIRKWOOD */
+-
+-static const __initdata struct of_device_id clk_core_match[] = {
+-#ifdef CONFIG_MACH_ARMADA_370_XP
+-	{
+-		.compatible = "marvell,armada-370-core-clock",
+-		.data = &armada_370_core_clocks,
+-	},
+-	{
+-		.compatible = "marvell,armada-xp-core-clock",
+-		.data = &armada_xp_core_clocks,
+-	},
+-#endif
+-#ifdef CONFIG_ARCH_DOVE
+-	{
+-		.compatible = "marvell,dove-core-clock",
+-		.data = &dove_core_clocks,
+-	},
+-#endif
+-
+-#ifdef CONFIG_ARCH_KIRKWOOD
+-	{
+-		.compatible = "marvell,kirkwood-core-clock",
+-		.data = &kirkwood_core_clocks,
+-	},
+-	{
+-		.compatible = "marvell,mv88f6180-core-clock",
+-		.data = &mv88f6180_core_clocks,
+-	},
+-#endif
+-
+-	{ }
+-};
+-
+-void __init mvebu_core_clk_init(void)
+-{
+-	struct device_node *np;
+-
+-	for_each_matching_node(np, clk_core_match) {
+-		const struct of_device_id *match =
+-			of_match_node(clk_core_match, np);
+-		mvebu_clk_core_setup(np, (struct core_clocks *)match->data);
+-	}
+-}
+diff --git a/drivers/clk/mvebu/clk-core.h b/drivers/clk/mvebu/clk-core.h
+deleted file mode 100644
+index 28b5e02..0000000
+--- a/drivers/clk/mvebu/clk-core.h
++++ /dev/null
+@@ -1,18 +0,0 @@
+-/*
+- *  * Marvell EBU clock core handling defined at reset
+- *
+- * Copyright (C) 2012 Marvell
+- *
+- * Gregory CLEMENT <gregory.clement@free-electrons.com>
+- *
+- * This file is licensed under the terms of the GNU General Public
+- * License version 2.  This program is licensed "as is" without any
+- * warranty of any kind, whether express or implied.
+- */
+-
+-#ifndef __MVEBU_CLK_CORE_H
+-#define __MVEBU_CLK_CORE_H
+-
+-void __init mvebu_core_clk_init(void);
+-
+-#endif
+diff --git a/drivers/clk/mvebu/clk-gating-ctrl.c b/drivers/clk/mvebu/clk-gating-ctrl.c
+deleted file mode 100644
+index a88e09b..0000000
+--- a/drivers/clk/mvebu/clk-gating-ctrl.c
++++ /dev/null
+@@ -1,241 +0,0 @@
+-/*
+- * Marvell MVEBU clock gating control.
+- *
+- * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+- * Andrew Lunn <andrew@lunn.ch>
+- *
+- * This file is licensed under the terms of the GNU General Public
+- * License version 2. This program is licensed "as is" without any
+- * warranty of any kind, whether express or implied.
+- */
+-#include <linux/kernel.h>
+-#include <linux/bitops.h>
+-#include <linux/io.h>
+-#include <linux/clk.h>
+-#include <linux/clkdev.h>
+-#include <linux/clk-provider.h>
+-#include <linux/clk/mvebu.h>
+-#include <linux/of.h>
+-#include <linux/of_address.h>
+-
+-struct mvebu_gating_ctrl {
+-	spinlock_t lock;
+-	struct clk **gates;
+-	int num_gates;
+-};
+-
+-struct mvebu_soc_descr {
+-	const char *name;
+-	const char *parent;
+-	int bit_idx;
+-	unsigned long flags;
+-};
+-
+-#define to_clk_gate(_hw) container_of(_hw, struct clk_gate, hw)
+-
+-static struct clk *mvebu_clk_gating_get_src(
+-	struct of_phandle_args *clkspec, void *data)
+-{
+-	struct mvebu_gating_ctrl *ctrl = (struct mvebu_gating_ctrl *)data;
+-	int n;
+-
+-	if (clkspec->args_count < 1)
+-		return ERR_PTR(-EINVAL);
+-
+-	for (n = 0; n < ctrl->num_gates; n++) {
+-		struct clk_gate *gate =
+-			to_clk_gate(__clk_get_hw(ctrl->gates[n]));
+-		if (clkspec->args[0] == gate->bit_idx)
+-			return ctrl->gates[n];
+-	}
+-	return ERR_PTR(-ENODEV);
+-}
+-
+-static void __init mvebu_clk_gating_setup(
+-	struct device_node *np, const struct mvebu_soc_descr *descr)
+-{
+-	struct mvebu_gating_ctrl *ctrl;
+-	struct clk *clk;
+-	void __iomem *base;
+-	const char *default_parent = NULL;
+-	int n;
+-
+-	base = of_iomap(np, 0);
+-
+-	clk = of_clk_get(np, 0);
+-	if (!IS_ERR(clk)) {
+-		default_parent = __clk_get_name(clk);
+-		clk_put(clk);
+-	}
+-
+-	ctrl = kzalloc(sizeof(struct mvebu_gating_ctrl), GFP_KERNEL);
+-	if (WARN_ON(!ctrl))
+-		return;
+-
+-	spin_lock_init(&ctrl->lock);
+-
+-	/*
+-	 * Count, allocate, and register clock gates
+-	 */
+-	for (n = 0; descr[n].name;)
+-		n++;
+-
+-	ctrl->num_gates = n;
+-	ctrl->gates = kzalloc(ctrl->num_gates * sizeof(struct clk *),
+-			      GFP_KERNEL);
+-	if (WARN_ON(!ctrl->gates)) {
+-		kfree(ctrl);
+-		return;
+-	}
+-
+-	for (n = 0; n < ctrl->num_gates; n++) {
+-		const char *parent =
+-			(descr[n].parent) ? descr[n].parent : default_parent;
+-		ctrl->gates[n] = clk_register_gate(NULL, descr[n].name, parent,
+-					descr[n].flags, base, descr[n].bit_idx,
+-					0, &ctrl->lock);
+-		WARN_ON(IS_ERR(ctrl->gates[n]));
+-	}
+-	of_clk_add_provider(np, mvebu_clk_gating_get_src, ctrl);
+-}
+-
+-/*
+- * SoC specific clock gating control
+- */
+-
+-#ifdef CONFIG_MACH_ARMADA_370
+-static const struct mvebu_soc_descr __initconst armada_370_gating_descr[] = {
+-	{ "audio", NULL, 0, 0 },
+-	{ "pex0_en", NULL, 1, 0 },
+-	{ "pex1_en", NULL,  2, 0 },
+-	{ "ge1", NULL, 3, 0 },
+-	{ "ge0", NULL, 4, 0 },
+-	{ "pex0", NULL, 5, 0 },
+-	{ "pex1", NULL, 9, 0 },
+-	{ "sata0", NULL, 15, 0 },
+-	{ "sdio", NULL, 17, 0 },
+-	{ "tdm", NULL, 25, 0 },
+-	{ "ddr", NULL, 28, CLK_IGNORE_UNUSED },
+-	{ "sata1", NULL, 30, 0 },
+-	{ }
+-};
+-#endif
+-
+-#ifdef CONFIG_MACH_ARMADA_XP
+-static const struct mvebu_soc_descr __initconst armada_xp_gating_descr[] = {
+-	{ "audio", NULL, 0, 0 },
+-	{ "ge3", NULL, 1, 0 },
+-	{ "ge2", NULL,  2, 0 },
+-	{ "ge1", NULL, 3, 0 },
+-	{ "ge0", NULL, 4, 0 },
+-	{ "pex0", NULL, 5, 0 },
+-	{ "pex1", NULL, 6, 0 },
+-	{ "pex2", NULL, 7, 0 },
+-	{ "pex3", NULL, 8, 0 },
+-	{ "bp", NULL, 13, 0 },
+-	{ "sata0lnk", NULL, 14, 0 },
+-	{ "sata0", "sata0lnk", 15, 0 },
+-	{ "lcd", NULL, 16, 0 },
+-	{ "sdio", NULL, 17, 0 },
+-	{ "usb0", NULL, 18, 0 },
+-	{ "usb1", NULL, 19, 0 },
+-	{ "usb2", NULL, 20, 0 },
+-	{ "xor0", NULL, 22, 0 },
+-	{ "crypto", NULL, 23, 0 },
+-	{ "tdm", NULL, 25, 0 },
+-	{ "xor1", NULL, 28, 0 },
+-	{ "sata1lnk", NULL, 29, 0 },
+-	{ "sata1", "sata1lnk", 30, 0 },
+-	{ }
+-};
+-#endif
+-
+-#ifdef CONFIG_ARCH_DOVE
+-static const struct mvebu_soc_descr __initconst dove_gating_descr[] = {
+-	{ "usb0", NULL, 0, 0 },
+-	{ "usb1", NULL, 1, 0 },
+-	{ "ge", "gephy", 2, 0 },
+-	{ "sata", NULL, 3, 0 },
+-	{ "pex0", NULL, 4, 0 },
+-	{ "pex1", NULL, 5, 0 },
+-	{ "sdio0", NULL, 8, 0 },
+-	{ "sdio1", NULL, 9, 0 },
+-	{ "nand", NULL, 10, 0 },
+-	{ "camera", NULL, 11, 0 },
+-	{ "i2s0", NULL, 12, 0 },
+-	{ "i2s1", NULL, 13, 0 },
+-	{ "crypto", NULL, 15, 0 },
+-	{ "ac97", NULL, 21, 0 },
+-	{ "pdma", NULL, 22, 0 },
+-	{ "xor0", NULL, 23, 0 },
+-	{ "xor1", NULL, 24, 0 },
+-	{ "gephy", NULL, 30, 0 },
+-	{ }
+-};
+-#endif
+-
+-#ifdef CONFIG_ARCH_KIRKWOOD
+-static const struct mvebu_soc_descr __initconst kirkwood_gating_descr[] = {
+-	{ "ge0", NULL, 0, 0 },
+-	{ "pex0", NULL, 2, 0 },
+-	{ "usb0", NULL, 3, 0 },
+-	{ "sdio", NULL, 4, 0 },
+-	{ "tsu", NULL, 5, 0 },
+-	{ "runit", NULL, 7, 0 },
+-	{ "xor0", NULL, 8, 0 },
+-	{ "audio", NULL, 9, 0 },
+-	{ "powersave", "cpuclk", 11, 0 },
+-	{ "sata0", NULL, 14, 0 },
+-	{ "sata1", NULL, 15, 0 },
+-	{ "xor1", NULL, 16, 0 },
+-	{ "crypto", NULL, 17, 0 },
+-	{ "pex1", NULL, 18, 0 },
+-	{ "ge1", NULL, 19, 0 },
+-	{ "tdm", NULL, 20, 0 },
+-	{ }
+-};
+-#endif
+-
+-static const __initdata struct of_device_id clk_gating_match[] = {
+-#ifdef CONFIG_MACH_ARMADA_370
+-	{
+-		.compatible = "marvell,armada-370-gating-clock",
+-		.data = armada_370_gating_descr,
+-	},
+-#endif
+-
+-#ifdef CONFIG_MACH_ARMADA_XP
+-	{
+-		.compatible = "marvell,armada-xp-gating-clock",
+-		.data = armada_xp_gating_descr,
+-	},
+-#endif
+-
+-#ifdef CONFIG_ARCH_DOVE
+-	{
+-		.compatible = "marvell,dove-gating-clock",
+-		.data = dove_gating_descr,
+-	},
+-#endif
+-
+-#ifdef CONFIG_ARCH_KIRKWOOD
+-	{
+-		.compatible = "marvell,kirkwood-gating-clock",
+-		.data = kirkwood_gating_descr,
+-	},
+-#endif
+-
+-	{ }
+-};
+-
+-void __init mvebu_gating_clk_init(void)
+-{
+-	struct device_node *np;
+-
+-	for_each_matching_node(np, clk_gating_match) {
+-		const struct of_device_id *match =
+-			of_match_node(clk_gating_match, np);
+-		mvebu_clk_gating_setup(np,
+-		       (const struct mvebu_soc_descr *)match->data);
+-	}
+-}
+diff --git a/drivers/clk/mvebu/clk-gating-ctrl.h b/drivers/clk/mvebu/clk-gating-ctrl.h
+deleted file mode 100644
+index 9275d1e..0000000
+--- a/drivers/clk/mvebu/clk-gating-ctrl.h
++++ /dev/null
+@@ -1,22 +0,0 @@
+-/*
+- * Marvell EBU gating clock handling
+- *
+- * Copyright (C) 2012 Marvell
+- *
+- * Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+- *
+- * This file is licensed under the terms of the GNU General Public
+- * License version 2.  This program is licensed "as is" without any
+- * warranty of any kind, whether express or implied.
+- */
+-
+-#ifndef __MVEBU_CLK_GATING_H
+-#define __MVEBU_CLK_GATING_H
+-
+-#ifdef CONFIG_MVEBU_CLK_GATING
+-void __init mvebu_gating_clk_init(void);
+-#else
+-void mvebu_gating_clk_init(void) {}
+-#endif
+-
+-#endif
+diff --git a/drivers/clk/mvebu/clk.c b/drivers/clk/mvebu/clk.c
+deleted file mode 100644
+index 29f10fb..0000000
+--- a/drivers/clk/mvebu/clk.c
++++ /dev/null
+@@ -1,23 +0,0 @@
+-/*
+- * Marvell EBU SoC clock handling.
+- *
+- * Copyright (C) 2012 Marvell
+- *
+- * Gregory CLEMENT <gregory.clement@free-electrons.com>
+- *
+- * This file is licensed under the terms of the GNU General Public
+- * License version 2.  This program is licensed "as is" without any
+- * warranty of any kind, whether express or implied.
+- */
+-#include <linux/kernel.h>
+-#include <linux/clk-provider.h>
+-#include <linux/of.h>
+-#include "clk-core.h"
+-#include "clk-gating-ctrl.h"
+-
+-void __init mvebu_clocks_init(void)
+-{
+-	mvebu_core_clk_init();
+-	mvebu_gating_clk_init();
+-	of_clk_init(NULL);
+-}
+diff --git a/include/linux/clk/mvebu.h b/include/linux/clk/mvebu.h
+deleted file mode 100644
+index 8c4ae71..0000000
+--- a/include/linux/clk/mvebu.h
++++ /dev/null
+@@ -1,22 +0,0 @@
+-/*
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#ifndef __CLK_MVEBU_H_
+-#define __CLK_MVEBU_H_
+-
+-void __init mvebu_clocks_init(void);
+-
+-#endif
 -- 
 1.7.10.4
 
