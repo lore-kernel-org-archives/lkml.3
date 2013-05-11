@@ -1,101 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab3EKB7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 21:59:13 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:51130 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754125Ab3EKB7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 21:59:12 -0400
-From: Robin Holt <holt@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Russ Anderson <rja@sgi.com>,
-        Robin Holt <holt@sgi.com>, Russell King <linux@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH -v10 00/11] Shutdown from reboot_cpuid without stopping other cpus.
-Date: Fri, 10 May 2013 20:58:52 -0500
-Message-Id: <1368237543-38532-1-git-send-email-holt@sgi.com>
-X-Mailer: git-send-email 1.8.2.1
+	id S1755841Ab3EKCRH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 22:17:07 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:41242 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753910Ab3EKCRF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 May 2013 22:17:05 -0400
+Message-ID: <518DAA1A.3010407@gmail.com>
+Date: Sat, 11 May 2013 10:16:58 +0800
+From: majianpeng <majianpeng@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: rusty@rustcorp.com.au
+CC: lizefan@huawei.com, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] module: Add section ".ref.data" into kmemleak-scan-area.
+Content-Type: multipart/mixed;
+ boundary="------------070001050600090901000407"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We recently noticed that reboot of a 1024 cpu machine takes approx 16
-minutes of just stopping the cpus.  The slowdown was tracked to commit
-f96972f.
+This is a multi-part message in MIME format.
+--------------070001050600090901000407
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-The current implementation does all the work of hot removing the cpus
-before halting the system.  We are switching to just migrating to the
-reboot_cpu and then continuing with shutdown/reboot.
+In commit 523c81135,it used "__refdata" on event_class_ftrace_##call.
+It will cause kmemleak to misjudge because when loading module it did
+not add '.ref.data' into kmemleak-scan-area.
 
-The patch set is broken into eleven parts.  The first two are planned for
-the stable release.  The others move the halt/shutdown/reboot related
-functions to their own kernel/reboot.c file and then move the handling
-of the kernel reboot= kernel parameter to generic kernel code.
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ kernel/module.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Changes since -v9
- - Added Ingo's Acked-by.
-
-Changes since -v8
- - Changes reboot_cpu on stack to cpu to fix bug noticed by Russell King.
-
- - Switched unicore32 and arm from using REBOOT_WARM/COLD to HARD/SOFT.
-
- - Fixed case statement bug.
-
- - Went to using simple_strtoul for parsing reboot_cpu=smp###.
-
- - Made parsing of reboot= not use any #ifdef'd code.
-
-Changes since -v7.
- - Fixed authorship for first patch.
-
- - Rebased to Linus' current tree (51a26ae7a).
-
-Changes since -v6.
- - Cross compiled all arm architectures (using v3.9 kernel.  Fails with
-   current).
-
- - Added a #define for non-hotplug case.
-
- - Add #define for PF_THREAD_BOUND as compatibility to make stable easier.
-
- - Fixup s/reboot_cpu_id/reboot_cpu/
-
- - Add include of linux/uaccess.h to allow building on arm.
-
- - Removed last remaining checkpatch.pl line length warning on
-   kernel/reboot.c.
-
- - Fixed the duplicate handling or the reboot= kernel parameter.
-
-Changes since -v5.
- - Moved the arch/x86 reboot= up to the generic kernel code.
-
-Changes since -v4.
- - Integrated Srivatsa S. Bhat creating cpu_hotplug_disable()
-   function
-
- - Integrated comments by Srivatsa S. Bhat.
-
- - Made one more comment consistent with others in function.
-
-Changes since -v3.
- - Added a tested-by for the original reporter.
-
- - Fix compile failure found by Joe Perches.
-
- - Integrated comments by Joe Perches.
+diff --git a/kernel/module.c b/kernel/module.c
+index b049939..dafe2ea 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2434,7 +2434,8 @@ static void kmemleak_load_module(const struct module *mod,
+                const char *name = info->secstrings + info->sechdrs[i].sh_name;
+                if (!(info->sechdrs[i].sh_flags & SHF_ALLOC))
+                        continue;
+-               if (!strstarts(name, ".data") && !strstarts(name, ".bss"))
++               if (!strstarts(name, ".data") && !strstarts(name, ".bss") &&
++                       !strstarts(name, ".ref.data"))
+                        continue;
+ 
+                kmemleak_scan_area((void *)info->sechdrs[i].sh_addr,
+-- 
+1.7.10.4
 
 
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Russ Anderson <rja@sgi.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: the arch/x86 maintainers <x86@kernel.org>
-Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+--------------070001050600090901000407
+Content-Type: text/x-patch;
+ name="0001-module-Add-section-.ref.data-to-kmemleak-area.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-module-Add-section-.ref.data-to-kmemleak-area.patch"
+
+>From 9adf5b9aae7ceb97828042d0ae8fe9fb688bc691 Mon Sep 17 00:00:00 2001
+From: Jianpeng Ma <majianpeng@gmail.com>
+Date: Sat, 11 May 2013 10:04:14 +0800
+Subject: [PATCH] module: Add section ".ref.data" into kmemleak-scan-area.
+
+In commit 523c81135,it used "__refdata" on event_class_ftrace_##call.
+It will cause kmemleak to misjudge because when loading module it did
+not add '.ref.data' into kmemleak-scan-area.
+
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ kernel/module.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/module.c b/kernel/module.c
+index b049939..dafe2ea 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2434,7 +2434,8 @@ static void kmemleak_load_module(const struct module *mod,
+ 		const char *name = info->secstrings + info->sechdrs[i].sh_name;
+ 		if (!(info->sechdrs[i].sh_flags & SHF_ALLOC))
+ 			continue;
+-		if (!strstarts(name, ".data") && !strstarts(name, ".bss"))
++		if (!strstarts(name, ".data") && !strstarts(name, ".bss") && 
++			!strstarts(name, ".ref.data"))
+ 			continue;
+ 
+ 		kmemleak_scan_area((void *)info->sechdrs[i].sh_addr,
+-- 
+1.7.10.4
+
+
+--------------070001050600090901000407--
