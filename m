@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab3EKA4T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 20:56:19 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:39649 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753553Ab3EKA4R (ORCPT
+	id S1756874Ab3EKBIX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 21:08:23 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:49404 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756017Ab3EKBIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 20:56:17 -0400
-Date: Sat, 11 May 2013 02:56:14 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: kosaki.motohiro@gmail.com
-Cc: linux-kernel@vger.kernel.org, Olivier Langlois <olivier@trillion01.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 2/7] posix-cpu-timers: fix acounting delta_exec twice
-Message-ID: <20130511005613.GC13340@somewhere>
-References: <1367556468-4021-1-git-send-email-kosaki.motohiro@gmail.com>
- <1367556468-4021-4-git-send-email-kosaki.motohiro@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367556468-4021-4-git-send-email-kosaki.motohiro@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 10 May 2013 21:08:20 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 00/10] clk: mvebu: restructure SoC clock drivers
+Date: Sat, 11 May 2013 03:08:00 +0200
+Message-Id: <1368234490-31416-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 03, 2013 at 12:47:43AM -0400, kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> Currently glibc rt/tst-cpuclock2 test(*) sporadically fails because
-> scheduler delta can be accounted twice from thread_group_cputimer()
-> and account_group_exec_runtime().
-> 
-> Finally, clock_nanosleep() wakes up before an argument. This is posix
-> violation. This issue was introduced by commit d670ec1317 (posix-cpu-timers:
-> Cure SMP wobbles).
-> 
-> (*) http://sourceware.org/git/?p=glibc.git;a=blob;f=rt/tst-cpuclock2.c;h=6752721717f959e89c0d692b3f1ee082d507eec2;hb=HEAD
-> 
-> Cc: Olivier Langlois <olivier@trillion01.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-[...]
-> diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-> index 8fd709c..e56be4c 100644
-> --- a/kernel/posix-cpu-timers.c
-> +++ b/kernel/posix-cpu-timers.c
-> @@ -220,7 +220,7 @@ static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
->  		cpu->cpu = virt_ticks(p);
->  		break;
->  	case CPUCLOCK_SCHED:
-> -		cpu->sched = task_sched_runtime(p);
-> +		cpu->sched = task_sched_runtime(p, true);
->  		break;
->  	}
->  	return 0;
-> @@ -250,8 +250,13 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
->  		 * values through the TIMER_ABSTIME flag, therefore we have
->  		 * to synchronize the timer to the clock every time we start
->  		 * it.
-> +		 *
-> +		 * Do not add the current delta, because
-> +		 * account_group_exec_runtime() will also this delta and we
-> +		 * wouldn't want to double account time and get ahead of
-> +		 * ourselves.
->  		 */
-> -		thread_group_cputime(tsk, &sum);
-> +		thread_group_cputime(tsk, false, &sum);
->  		raw_spin_lock_irqsave(&cputimer->lock, flags);
+Marvell EBU SoCs share some common clock functions that register core
+clocks or clock gates from SoC specific data. These clock drivers are
+organized by function and over time the drivers filled up with #ifdefs
+to separate different SoC specific code.
 
-I wonder if we should move thread_group_cputime() inside this lock.
-Otherwise we can miss some updates in-between.
+This patch set first adds a new element to clock gate descriptors to
+allow to pass clk flags per clock gate. (Patch 1)
+
+Then it restructures MVEBU clock drivers into common clock setup and
+SoC specific files and Kconfig options. The driver's init functions
+are also registered to get called with of_clk_init. (Patches 2, 3-6)
+
+It then switches Dove, Kirkwood, and Armada 370/XP to make use of
+of_clk_init instead of mvebu_clocks_init. (Patches 7-9)
+
+Finally, all obsolete files and Kconfig options are removed. (Patch 10)
+
+It has been tested on CuBox (Dove) and Dockstar (Kirkwood) by me.
+Armada 370 and XP are compile tested only and should get their Tested-by
+from Thomas and Gregory, respectively.
+
+@Mike: As this only touches MVEBU related code, I suggest to take it
+all through the corresponding ARM branch.
+
+Sebastian Hesselbarth (10):
+  clk: mvebu: introduce per-clock-gate flags
+  clk: mvebu: add common clock functions for core clk and clk gating
+  clk: mvebu: add Dove SoC-centric clock init
+  clk: mvebu: add Kirkwood SoC-centric clock init
+  clk: mvebu: add Armada 370 SoC-centric clock init
+  clk: mvebu: add Armada XP SoC-centric clock init
+  ARM: dove: move DT boards to SoC-centric clock init
+  ARM: kirkwood: move DT boards to SoC-centric clock init
+  ARM: mvebu: move DT boards to SoC-centric clock init
+  clk: mvebu: desintegrate obsolete file
+
+ arch/arm/mach-dove/Kconfig          |    3 +-
+ arch/arm/mach-dove/board-dt.c       |    3 +-
+ arch/arm/mach-dove/common.c         |    1 -
+ arch/arm/mach-kirkwood/Kconfig      |    3 +-
+ arch/arm/mach-kirkwood/board-dt.c   |    3 +-
+ arch/arm/mach-mvebu/Kconfig         |    5 +-
+ arch/arm/mach-mvebu/armada-370-xp.c |    4 +-
+ drivers/clk/mvebu/Kconfig           |   25 +-
+ drivers/clk/mvebu/Makefile          |    8 +-
+ drivers/clk/mvebu/armada-370.c      |  176 +++++++++
+ drivers/clk/mvebu/armada-xp.c       |  204 +++++++++++
+ drivers/clk/mvebu/clk-core.c        |  675 -----------------------------------
+ drivers/clk/mvebu/clk-core.h        |   18 -
+ drivers/clk/mvebu/clk-gating-ctrl.c |  250 -------------
+ drivers/clk/mvebu/clk-gating-ctrl.h |   22 --
+ drivers/clk/mvebu/clk.c             |   23 --
+ drivers/clk/mvebu/common.c          |  163 +++++++++
+ drivers/clk/mvebu/common.h          |   48 +++
+ drivers/clk/mvebu/dove.c            |  194 ++++++++++
+ drivers/clk/mvebu/kirkwood.c        |  247 +++++++++++++
+ include/linux/clk/mvebu.h           |   22 --
+ 21 files changed, 1066 insertions(+), 1031 deletions(-)
+ create mode 100644 drivers/clk/mvebu/armada-370.c
+ create mode 100644 drivers/clk/mvebu/armada-xp.c
+ delete mode 100644 drivers/clk/mvebu/clk-core.c
+ delete mode 100644 drivers/clk/mvebu/clk-core.h
+ delete mode 100644 drivers/clk/mvebu/clk-gating-ctrl.c
+ delete mode 100644 drivers/clk/mvebu/clk-gating-ctrl.h
+ delete mode 100644 drivers/clk/mvebu/clk.c
+ create mode 100644 drivers/clk/mvebu/common.c
+ create mode 100644 drivers/clk/mvebu/common.h
+ create mode 100644 drivers/clk/mvebu/dove.c
+ create mode 100644 drivers/clk/mvebu/kirkwood.c
+ delete mode 100644 include/linux/clk/mvebu.h
+---
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+-- 
+1.7.10.4
+
