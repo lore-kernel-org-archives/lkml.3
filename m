@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073Ab3EKBKs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 21:10:48 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:38397 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756477Ab3EKBIV (ORCPT
+	id S1756898Ab3EKBKr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 21:10:47 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:44144 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756484Ab3EKBIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 May 2013 21:08:21 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -15,9 +15,9 @@ Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Mike Turquette <mturquette@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/10] clk: mvebu: add Dove SoC-centric clock init
-Date: Sat, 11 May 2013 03:08:03 +0200
-Message-Id: <1368234490-31416-4-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 04/10] clk: mvebu: add Kirkwood SoC-centric clock init
+Date: Sat, 11 May 2013 03:08:04 +0200
+Message-Id: <1368234490-31416-5-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368234490-31416-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1368234490-31416-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -25,8 +25,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is moving core clock and clock gating init for Dove to its own
-file and adds a Kconfig option. Also init functions are added and
+This is moving core clock and clock gating init for Kirkwood to its
+own file and adds a Kconfig option. Also init functions are added and
 declared so they get called on of_clk_init.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -40,42 +40,41 @@ Cc: Mike Turquette <mturquette@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/clk/mvebu/Kconfig  |    4 +
- drivers/clk/mvebu/Makefile |    2 +
- drivers/clk/mvebu/dove.c   |  194 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 200 insertions(+)
- create mode 100644 drivers/clk/mvebu/dove.c
+ drivers/clk/mvebu/Kconfig    |    4 +
+ drivers/clk/mvebu/Makefile   |    1 +
+ drivers/clk/mvebu/kirkwood.c |  247 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 252 insertions(+)
+ create mode 100644 drivers/clk/mvebu/kirkwood.c
 
 diff --git a/drivers/clk/mvebu/Kconfig b/drivers/clk/mvebu/Kconfig
-index 2c3cf95..bc5f05e 100644
+index bc5f05e..211695c 100644
 --- a/drivers/clk/mvebu/Kconfig
 +++ b/drivers/clk/mvebu/Kconfig
-@@ -9,3 +9,7 @@ config MVEBU_CLK_GATING
- 
- config MVEBU_CLK_COMMON
+@@ -13,3 +13,7 @@ config MVEBU_CLK_COMMON
+ config DOVE_CLK
  	bool
+ 	select MVEBU_CLK_COMMON
 +
-+config DOVE_CLK
++config KIRKWOOD_CLK
 +	bool
 +	select MVEBU_CLK_COMMON
 diff --git a/drivers/clk/mvebu/Makefile b/drivers/clk/mvebu/Makefile
-index 2143230..bfc3078 100644
+index bfc3078..97d1ab0 100644
 --- a/drivers/clk/mvebu/Makefile
 +++ b/drivers/clk/mvebu/Makefile
-@@ -2,3 +2,5 @@ obj-$(CONFIG_MVEBU_CLK_COMMON)	+= common.o
- obj-$(CONFIG_MVEBU_CLK_CORE) 	+= clk.o clk-core.o
- obj-$(CONFIG_MVEBU_CLK_CPU) 	+= clk-cpu.o
+@@ -4,3 +4,4 @@ obj-$(CONFIG_MVEBU_CLK_CPU) 	+= clk-cpu.o
  obj-$(CONFIG_MVEBU_CLK_GATING) 	+= clk-gating-ctrl.o
-+
-+obj-$(CONFIG_DOVE_CLK)		+= dove.o
-diff --git a/drivers/clk/mvebu/dove.c b/drivers/clk/mvebu/dove.c
+ 
+ obj-$(CONFIG_DOVE_CLK)		+= dove.o
++obj-$(CONFIG_KIRKWOOD_CLK)	+= kirkwood.o
+diff --git a/drivers/clk/mvebu/kirkwood.c b/drivers/clk/mvebu/kirkwood.c
 new file mode 100644
-index 0000000..79d7aed
+index 0000000..71d2461
 --- /dev/null
-+++ b/drivers/clk/mvebu/dove.c
-@@ -0,0 +1,194 @@
++++ b/drivers/clk/mvebu/kirkwood.c
+@@ -0,0 +1,247 @@
 +/*
-+ * Marvell Dove SoC clocks
++ * Marvell Kirkwood SoC clocks
 + *
 + * Copyright (C) 2012 Marvell
 + *
@@ -97,177 +96,230 @@ index 0000000..79d7aed
 +/*
 + * Core Clocks
 + *
-+ * Dove PLL sample-at-reset configuration
++ * Kirkwood PLL sample-at-reset configuration
++ * (6180 has different SAR layout than other Kirkwood SoCs)
 + *
-+ * SAR0[8:5]   : CPU frequency
-+ *		 5  = 1000 MHz
-+ *		 6  =  933 MHz
-+ *		 7  =  933 MHz
-+ *		 8  =  800 MHz
-+ *		 9  =  800 MHz
-+ *		 10 =  800 MHz
-+ *		 11 = 1067 MHz
-+ *		 12 =  667 MHz
-+ *		 13 =  533 MHz
-+ *		 14 =  400 MHz
-+ *		 15 =  333 MHz
-+ *		 others reserved.
++ * SAR0[4:3,22,1] : CPU frequency (6281,6292,6282)
++ *	4  =  600 MHz
++ *	6  =  800 MHz
++ *	7  = 1000 MHz
++ *	9  = 1200 MHz
++ *	12 = 1500 MHz
++ *	13 = 1600 MHz
++ *	14 = 1800 MHz
++ *	15 = 2000 MHz
++ *	others reserved.
 + *
-+ * SAR0[11:9]  : CPU to L2 Clock divider ratio
-+ *		 0 = (1/1) * CPU
-+ *		 2 = (1/2) * CPU
-+ *		 4 = (1/3) * CPU
-+ *		 6 = (1/4) * CPU
-+ *		 others reserved.
++ * SAR0[19,10:9] : CPU to L2 Clock divider ratio (6281,6292,6282)
++ *	1 = (1/2) * CPU
++ *	3 = (1/3) * CPU
++ *	5 = (1/4) * CPU
++ *	others reserved.
 + *
-+ * SAR0[15:12] : CPU to DDR DRAM Clock divider ratio
-+ *		 0  = (1/1) * CPU
-+ *		 2  = (1/2) * CPU
-+ *		 3  = (2/5) * CPU
-+ *		 4  = (1/3) * CPU
-+ *		 6  = (1/4) * CPU
-+ *		 8  = (1/5) * CPU
-+ *		 10 = (1/6) * CPU
-+ *		 12 = (1/7) * CPU
-+ *		 14 = (1/8) * CPU
-+ *		 15 = (1/10) * CPU
-+ *		 others reserved.
++ * SAR0[8:5] : CPU to DDR DRAM Clock divider ratio (6281,6292,6282)
++ *	2 = (1/2) * CPU
++ *	4 = (1/3) * CPU
++ *	6 = (1/4) * CPU
++ *	7 = (2/9) * CPU
++ *	8 = (1/5) * CPU
++ *	9 = (1/6) * CPU
++ *	others reserved.
 + *
-+ * SAR0[24:23] : TCLK frequency
-+ *		 0 = 166 MHz
-+ *		 1 = 125 MHz
-+ *		 others reserved.
++ * SAR0[4:2] : Kirkwood 6180 cpu/l2/ddr clock configuration (6180 only)
++ *	5 = [CPU =  600 MHz, L2 = (1/2) * CPU, DDR = 200 MHz = (1/3) * CPU]
++ *	6 = [CPU =  800 MHz, L2 = (1/2) * CPU, DDR = 200 MHz = (1/4) * CPU]
++ *	7 = [CPU = 1000 MHz, L2 = (1/2) * CPU, DDR = 200 MHz = (1/5) * CPU]
++ *	others reserved.
++ *
++ * SAR0[21] : TCLK frequency
++ *	0 = 200 MHz
++ *	1 = 166 MHz
++ *	others reserved.
 + */
 +
-+#define SAR_DOVE_CPU_FREQ		5
-+#define SAR_DOVE_CPU_FREQ_MASK		0xf
-+#define SAR_DOVE_L2_RATIO		9
-+#define SAR_DOVE_L2_RATIO_MASK		0x7
-+#define SAR_DOVE_DDR_RATIO		12
-+#define SAR_DOVE_DDR_RATIO_MASK		0xf
-+#define SAR_DOVE_TCLK_FREQ		23
-+#define SAR_DOVE_TCLK_FREQ_MASK		0x3
++#define SAR_KIRKWOOD_CPU_FREQ(x)	\
++	(((x & (1 <<  1)) >>  1) |	\
++	 ((x & (1 << 22)) >> 21) |	\
++	 ((x & (3 <<  3)) >>  1))
++#define SAR_KIRKWOOD_L2_RATIO(x)	\
++	(((x & (3 <<  9)) >> 9) |	\
++	 (((x & (1 << 19)) >> 17)))
++#define SAR_KIRKWOOD_DDR_RATIO		5
++#define SAR_KIRKWOOD_DDR_RATIO_MASK	0xf
++#define SAR_MV88F6180_CLK		2
++#define SAR_MV88F6180_CLK_MASK		0x7
++#define SAR_KIRKWOOD_TCLK_FREQ		21
++#define SAR_KIRKWOOD_TCLK_FREQ_MASK	0x1
 +
-+enum { DOVE_CPU_TO_L2, DOVE_CPU_TO_DDR };
++enum { KIRKWOOD_CPU_TO_L2, KIRKWOOD_CPU_TO_DDR };
 +
-+static const struct coreclk_ratio __initconst dove_coreclk_ratios[] = {
-+	{ .id = DOVE_CPU_TO_L2, .name = "l2clk", },
-+	{ .id = DOVE_CPU_TO_DDR, .name = "ddrclk", }
++static const struct coreclk_ratio __initconst kirkwood_coreclk_ratios[] = {
++	{ .id = KIRKWOOD_CPU_TO_L2, .name = "l2clk", },
++	{ .id = KIRKWOOD_CPU_TO_DDR, .name = "ddrclk", }
 +};
 +
-+static const u32 __initconst dove_tclk_freqs[] = {
-+	166666667,
-+	125000000,
-+	0, 0
-+};
-+
-+static u32 __init dove_get_tclk_freq(void __iomem *sar)
++static u32 __init kirkwood_get_tclk_freq(void __iomem *sar)
 +{
-+	u32 opt = (readl(sar) >> SAR_DOVE_TCLK_FREQ) &
-+		SAR_DOVE_TCLK_FREQ_MASK;
-+	return dove_tclk_freqs[opt];
++	u32 opt = (readl(sar) >> SAR_KIRKWOOD_TCLK_FREQ) &
++		SAR_KIRKWOOD_TCLK_FREQ_MASK;
++	return (opt) ? 166666667 : 200000000;
 +}
 +
-+static const u32 __initconst dove_cpu_freqs[] = {
-+	0, 0, 0, 0, 0,
++static const u32 __initconst kirkwood_cpu_freqs[] = {
++	0, 0, 0, 0,
++	600000000,
++	0,
++	800000000,
 +	1000000000,
-+	933333333, 933333333,
-+	800000000, 800000000, 800000000,
-+	1066666667,
-+	666666667,
-+	533333333,
-+	400000000,
-+	333333333
++	0,
++	1200000000,
++	0, 0,
++	1500000000,
++	1600000000,
++	1800000000,
++	2000000000
 +};
 +
-+static u32 __init dove_get_cpu_freq(void __iomem *sar)
++static u32 __init kirkwood_get_cpu_freq(void __iomem *sar)
 +{
-+	u32 opt = (readl(sar) >> SAR_DOVE_CPU_FREQ) &
-+		SAR_DOVE_CPU_FREQ_MASK;
-+	return dove_cpu_freqs[opt];
++	u32 opt = SAR_KIRKWOOD_CPU_FREQ(readl(sar));
++	return kirkwood_cpu_freqs[opt];
 +}
 +
-+static const int __initconst dove_cpu_l2_ratios[8][2] = {
-+	{ 1, 1 }, { 0, 1 }, { 1, 2 }, { 0, 1 },
-+	{ 1, 3 }, { 0, 1 }, { 1, 4 }, { 0, 1 }
++static const int __initconst kirkwood_cpu_l2_ratios[8][2] = {
++	{ 0, 1 }, { 1, 2 }, { 0, 1 }, { 1, 3 },
++	{ 0, 1 }, { 1, 4 }, { 0, 1 }, { 0, 1 }
 +};
 +
-+static const int __initconst dove_cpu_ddr_ratios[16][2] = {
-+	{ 1, 1 }, { 0, 1 }, { 1, 2 }, { 2, 5 },
-+	{ 1, 3 }, { 0, 1 }, { 1, 4 }, { 0, 1 },
-+	{ 1, 5 }, { 0, 1 }, { 1, 6 }, { 0, 1 },
-+	{ 1, 7 }, { 0, 1 }, { 1, 8 }, { 1, 10 }
++static const int __initconst kirkwood_cpu_ddr_ratios[16][2] = {
++	{ 0, 1 }, { 0, 1 }, { 1, 2 }, { 0, 1 },
++	{ 1, 3 }, { 0, 1 }, { 1, 4 }, { 2, 9 },
++	{ 1, 5 }, { 1, 6 }, { 0, 1 }, { 0, 1 },
++	{ 0, 1 }, { 0, 1 }, { 0, 1 }, { 0, 1 }
 +};
 +
-+static void __init dove_get_clk_ratio(
++static void __init kirkwood_get_clk_ratio(
 +	void __iomem *sar, int id, int *mult, int *div)
 +{
 +	switch (id) {
-+	case DOVE_CPU_TO_L2:
++	case KIRKWOOD_CPU_TO_L2:
 +	{
-+		u32 opt = (readl(sar) >> SAR_DOVE_L2_RATIO) &
-+			SAR_DOVE_L2_RATIO_MASK;
-+		*mult = dove_cpu_l2_ratios[opt][0];
-+		*div = dove_cpu_l2_ratios[opt][1];
++		u32 opt = SAR_KIRKWOOD_L2_RATIO(readl(sar));
++		*mult = kirkwood_cpu_l2_ratios[opt][0];
++		*div = kirkwood_cpu_l2_ratios[opt][1];
 +		break;
 +	}
-+	case DOVE_CPU_TO_DDR:
++	case KIRKWOOD_CPU_TO_DDR:
 +	{
-+		u32 opt = (readl(sar) >> SAR_DOVE_DDR_RATIO) &
-+			SAR_DOVE_DDR_RATIO_MASK;
-+		*mult = dove_cpu_ddr_ratios[opt][0];
-+		*div = dove_cpu_ddr_ratios[opt][1];
++		u32 opt = (readl(sar) >> SAR_KIRKWOOD_DDR_RATIO) &
++			SAR_KIRKWOOD_DDR_RATIO_MASK;
++		*mult = kirkwood_cpu_ddr_ratios[opt][0];
++		*div = kirkwood_cpu_ddr_ratios[opt][1];
 +		break;
 +	}
 +	}
 +}
 +
-+static const struct coreclk_soc_desc dove_coreclks = {
-+	.get_tclk_freq = dove_get_tclk_freq,
-+	.get_cpu_freq = dove_get_cpu_freq,
-+	.get_clk_ratio = dove_get_clk_ratio,
-+	.ratios = dove_coreclk_ratios,
-+	.num_ratios = ARRAY_SIZE(dove_coreclk_ratios),
++static const u32 __initconst mv88f6180_cpu_freqs[] = {
++	0, 0, 0, 0, 0,
++	600000000,
++	800000000,
++	1000000000
 +};
 +
-+static void __init dove_coreclk_init(struct device_node *np)
++static u32 __init mv88f6180_get_cpu_freq(void __iomem *sar)
 +{
-+	mvebu_coreclk_setup(np, &dove_coreclks);
++	u32 opt = (readl(sar) >> SAR_MV88F6180_CLK) & SAR_MV88F6180_CLK_MASK;
++	return mv88f6180_cpu_freqs[opt];
 +}
-+CLK_OF_DECLARE(dove_core_clk, "marvell,dove-core-clock", dove_coreclk_init);
++
++static const int __initconst mv88f6180_cpu_ddr_ratios[8][2] = {
++	{ 0, 1 }, { 0, 1 }, { 0, 1 }, { 0, 1 },
++	{ 0, 1 }, { 1, 3 }, { 1, 4 }, { 1, 5 }
++};
++
++static void __init mv88f6180_get_clk_ratio(
++	void __iomem *sar, int id, int *mult, int *div)
++{
++	switch (id) {
++	case KIRKWOOD_CPU_TO_L2:
++	{
++		/* mv88f6180 has a fixed 1:2 CPU-to-L2 ratio */
++		*mult = 1;
++		*div = 2;
++		break;
++	}
++	case KIRKWOOD_CPU_TO_DDR:
++	{
++		u32 opt = (readl(sar) >> SAR_MV88F6180_CLK) &
++			SAR_MV88F6180_CLK_MASK;
++		*mult = mv88f6180_cpu_ddr_ratios[opt][0];
++		*div = mv88f6180_cpu_ddr_ratios[opt][1];
++		break;
++	}
++	}
++}
++
++static const struct coreclk_soc_desc kirkwood_coreclks = {
++	.get_tclk_freq = kirkwood_get_tclk_freq,
++	.get_cpu_freq = kirkwood_get_cpu_freq,
++	.get_clk_ratio = kirkwood_get_clk_ratio,
++	.ratios = kirkwood_coreclk_ratios,
++	.num_ratios = ARRAY_SIZE(kirkwood_coreclk_ratios),
++};
++
++static void __init kirkwood_coreclk_init(struct device_node *np)
++{
++	mvebu_coreclk_setup(np, &kirkwood_coreclks);
++}
++CLK_OF_DECLARE(kirkwood_core_clk, "marvell,kirkwood-core-clock",
++	       kirkwood_coreclk_init);
++
++static const struct coreclk_soc_desc mv88f6180_coreclks = {
++	.get_tclk_freq = kirkwood_get_tclk_freq,
++	.get_cpu_freq = mv88f6180_get_cpu_freq,
++	.get_clk_ratio = mv88f6180_get_clk_ratio,
++	.ratios = kirkwood_coreclk_ratios,
++	.num_ratios = ARRAY_SIZE(kirkwood_coreclk_ratios),
++};
++
++static void __init mv88f6180_coreclk_init(struct device_node *np)
++{
++	mvebu_coreclk_setup(np, &mv88f6180_coreclks);
++}
++CLK_OF_DECLARE(mv88f6180_core_clk, "marvell,mv88f6180-core-clock",
++	       mv88f6180_coreclk_init);
 +
 +/*
 + * Clock Gating Control
 + */
 +
-+static const struct clk_gating_soc_desc __initconst dove_gating_desc[] = {
-+	{ "usb0", NULL, 0, 0 },
-+	{ "usb1", NULL, 1, 0 },
-+	{ "ge",	"gephy", 2, 0 },
-+	{ "sata", NULL, 3, 0 },
-+	{ "pex0", NULL, 4, 0 },
-+	{ "pex1", NULL, 5, 0 },
-+	{ "sdio0", NULL, 8, 0 },
-+	{ "sdio1", NULL, 9, 0 },
-+	{ "nand", NULL, 10, 0 },
-+	{ "camera", NULL, 11, 0 },
-+	{ "i2s0", NULL, 12, 0 },
-+	{ "i2s1", NULL, 13, 0 },
-+	{ "crypto", NULL, 15, 0 },
-+	{ "ac97", NULL, 21, 0 },
-+	{ "pdma", NULL, 22, 0 },
-+	{ "xor0", NULL, 23, 0 },
-+	{ "xor1", NULL, 24, 0 },
-+	{ "gephy", NULL, 30, 0 },
++static const struct clk_gating_soc_desc __initconst kirkwood_gating_desc[] = {
++	{ "ge0", NULL, 0, 0 },
++	{ "pex0", NULL, 2, 0 },
++	{ "usb0", NULL, 3, 0 },
++	{ "sdio", NULL, 4, 0 },
++	{ "tsu", NULL, 5, 0 },
++	{ "runit", NULL, 7, 0 },
++	{ "xor0", NULL, 8, 0 },
++	{ "audio", NULL, 9, 0 },
++	{ "powersave", "cpuclk", 11, 0 },
++	{ "sata0", NULL, 14, 0 },
++	{ "sata1", NULL, 15, 0 },
++	{ "xor1", NULL, 16, 0 },
++	{ "crypto", NULL, 17, 0 },
++	{ "pex1", NULL, 18, 0 },
++	{ "ge1", NULL, 19, 0 },
++	{ "tdm", NULL, 20, 0 },
 +	{ }
 +};
 +
-+static void __init dove_clk_gating_init(struct device_node *np)
++static void __init kirkwood_clk_gating_init(struct device_node *np)
 +{
-+	mvebu_clk_gating_setup(np, dove_gating_desc);
++	mvebu_clk_gating_setup(np, kirkwood_gating_desc);
 +}
-+CLK_OF_DECLARE(dove_clk_gating, "marvell,dove-gating-clock",
-+	       dove_clk_gating_init);
++CLK_OF_DECLARE(kirkwood_clk_gating, "marvell,kirkwood-gating-clock",
++	       kirkwood_clk_gating_init);
 -- 
 1.7.10.4
 
