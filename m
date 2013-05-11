@@ -1,81 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab3EKJ2L (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 05:28:11 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35701 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742Ab3EKJ2J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 05:28:09 -0400
-Date: Sat, 11 May 2013 11:28:07 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Zoran Markovic <zoran.markovic@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        Colin Cross <ccross@android.com>, Todd Poynor <toddpoynor@google.com>,
-        San Mehat <san@google.com>, Benoit Goby <benoit@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCHv2 2/2] PM: compile-time configuration of device
- suspend/resume watchdogs.
-Message-ID: <20130511092807.GB10045@amd.pavel.ucw.cz>
-References: <1368221329-1841-1-git-send-email-zoran.markovic@linaro.org>
- <1368221329-1841-3-git-send-email-zoran.markovic@linaro.org>
+	id S1754165Ab3EKJtL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 05:49:11 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:51098 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753177Ab3EKJtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 05:49:09 -0400
+Date: Sat, 11 May 2013 04:49:03 -0500
+From: Robin Holt <holt@sgi.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russ Anderson <rja@sgi.com>, Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH -v8 01/11] CPU hotplug: Provide a generic helper to
+ disable/enable CPU hotplug
+Message-ID: <20130511094903.GC3658@sgi.com>
+References: <1367937595-32241-1-git-send-email-holt@sgi.com>
+ <1367937595-32241-2-git-send-email-holt@sgi.com>
+ <20130509150121.8c3ef60b2fc748ce542a1a52@linux-foundation.org>
+ <1651579.orCh9JNVz6@vostro.rjw.lan>
+ <20130510100324.e1e066ab.akpm@linux-foundation.org>
+ <20130511041610.GZ3672@sgi.com>
+ <518E0BB0.2000401@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368221329-1841-3-git-send-email-zoran.markovic@linaro.org>
+In-Reply-To: <518E0BB0.2000401@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Thank you.  That fixed the alpha allmodconfig case for me.  I am currently
+rebuilding all the arm defconfig files and will resubmit -v10 when that
+is done.
 
-> Power management debug option to configure device suspend/resume watchdogs.
-> Available options are:
->   1. Enable/disable the feature.
->   2. Select triggered watchdog action between:
->         - system panic (default)
->         - dump stacktrace
->         - log event
->   3. Select timeout value for the watchdog(s).
+Robin
 
-People disliked the previous behaviour, so you add 10 config
-options... with different behaviours. Also 1 second timeout is not
-acceptable for endusers (will break the system), so it should not be
-offered. In fact, remove that option, too. People doing that kind of
-debugging can modify the sources, right?
-
-(Maybe it would make sense to do same action regular watchdog does,
-but...)
-
-That's not the way to go. If "panic" is right behaviour, just go with
-panic.
-
-> @@ -402,13 +422,9 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
->  static void dpm_wd_handler(unsigned long data)
->  {
->  	struct dpm_watchdog *wd = (void *)data;
-> -	struct device *dev      = wd->dev;
-> -	struct task_struct *tsk = wd->tsk;
-> -
-> -	dev_emerg(dev, "**** DPM device timeout ****\n");
-> -	show_stack(tsk, NULL);
+On Sat, May 11, 2013 at 02:43:20PM +0530, Srivatsa S. Bhat wrote:
+> On 05/11/2013 09:46 AM, Robin Holt wrote:
+> > On Fri, May 10, 2013 at 10:03:24AM -0700, Andrew Morton wrote:
+> >> On Fri, 10 May 2013 13:11:51 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> >>
+> >>> ...
+> >>>
+> >>>> cpu_hotplug_disable() doesn't get compiled unless we've defined
+> >>>> CONFIG_PM_SLEEP_SMP.  I cannot begin to imagine what the logic is
+> >>>> behind that!
+> >>>
+> >>> I suppose it was only used by suspend/hibernate code paths when this was
+> >>> introduced.
+> >>
+> >> OK, well I suspect that what I have now is simply wrong for Robin's
+> >> application.  Robin, can you please check this?  We probably want to
+> >> make the does-something version of cpu_hotplug_disable/enable available
+> >> if CONFIG_HOTPLUG_CPU.
+> > 
+> > This patch came from "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+> > I think I need to defer.
+> 
+> Here is a revised patch, which should address all the problems, IMHO.
+> Let me know if you face any issues. (And thanks a lot for fixing up the
+> !SMP case in the previous version.)
+> 
+> --------------------------------------------------------------------->
+> 
+> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Subject: [PATCH] CPU hotplug: Provide a generic helper to disable/enable CPU hotplug
+> 
+> There are instances in the kernel where we would like to disable
+> CPU hotplug (from sysfs) during some important operation. Today
+> the freezer code depends on this and the code to do it was kinda
+> tailor-made for that.
+> 
+> Restructure the code and make it generic enough to be useful for
+> other usecases too.
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
+> 
+>  include/linux/cpu.h |    4 ++++
+>  kernel/cpu.c        |   55 +++++++++++++++++++++------------------------------
+>  2 files changed, 27 insertions(+), 32 deletions(-)
+> 
+> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+> index c6f6e08..9f3c7e8 100644
+> --- a/include/linux/cpu.h
+> +++ b/include/linux/cpu.h
+> @@ -175,6 +175,8 @@ extern struct bus_type cpu_subsys;
 >  
-> -	BUG();
-> +	dev_emerg(wd->dev, "**** DPM device timeout ****\n");
-> +	dpm_wd_action(wd);
+>  extern void get_online_cpus(void);
+>  extern void put_online_cpus(void);
+> +extern void cpu_hotplug_disable(void);
+> +extern void cpu_hotplug_enable(void);
+>  #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
+>  #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
+>  #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
+> @@ -198,6 +200,8 @@ static inline void cpu_hotplug_driver_unlock(void)
+>  
+>  #define get_online_cpus()	do { } while (0)
+>  #define put_online_cpus()	do { } while (0)
+> +#define cpu_hotplug_disable()	do { } while (0)
+> +#define cpu_hotplug_enable()	do { } while (0)
+>  #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
+>  /* These aren't inline functions due to a GCC bug. */
+>  #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
+> diff --git a/kernel/cpu.c b/kernel/cpu.c
+> index b5e4ab2..198a388 100644
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -133,6 +133,27 @@ static void cpu_hotplug_done(void)
+>  	mutex_unlock(&cpu_hotplug.lock);
 >  }
 >  
->  /**
-
-And merge this to previous patch. Introducing the code then redoing it
-in next patch does not help review.
-
-									Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> +/*
+> + * Wait for currently running CPU hotplug operations to complete (if any) and
+> + * disable future CPU hotplug (from sysfs). The 'cpu_add_remove_lock' protects
+> + * the 'cpu_hotplug_disabled' flag. The same lock is also acquired by the
+> + * hotplug path before performing hotplug operations. So acquiring that lock
+> + * guarantees mutual exclusion from any currently running hotplug operations.
+> + */
+> +void cpu_hotplug_disable(void)
+> +{
+> +	cpu_maps_update_begin();
+> +	cpu_hotplug_disabled = 1;
+> +	cpu_maps_update_done();
+> +}
+> +
+> +void cpu_hotplug_enable(void)
+> +{
+> +	cpu_maps_update_begin();
+> +	cpu_hotplug_disabled = 0;
+> +	cpu_maps_update_done();
+> +}
+> +
+>  #else /* #if CONFIG_HOTPLUG_CPU */
+>  static void cpu_hotplug_begin(void) {}
+>  static void cpu_hotplug_done(void) {}
+> @@ -541,36 +562,6 @@ static int __init alloc_frozen_cpus(void)
+>  core_initcall(alloc_frozen_cpus);
+>  
+>  /*
+> - * Prevent regular CPU hotplug from racing with the freezer, by disabling CPU
+> - * hotplug when tasks are about to be frozen. Also, don't allow the freezer
+> - * to continue until any currently running CPU hotplug operation gets
+> - * completed.
+> - * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
+> - * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
+> - * CPU hotplug path and released only after it is complete. Thus, we
+> - * (and hence the freezer) will block here until any currently running CPU
+> - * hotplug operation gets completed.
+> - */
+> -void cpu_hotplug_disable_before_freeze(void)
+> -{
+> -	cpu_maps_update_begin();
+> -	cpu_hotplug_disabled = 1;
+> -	cpu_maps_update_done();
+> -}
+> -
+> -
+> -/*
+> - * When tasks have been thawed, re-enable regular CPU hotplug (which had been
+> - * disabled while beginning to freeze tasks).
+> - */
+> -void cpu_hotplug_enable_after_thaw(void)
+> -{
+> -	cpu_maps_update_begin();
+> -	cpu_hotplug_disabled = 0;
+> -	cpu_maps_update_done();
+> -}
+> -
+> -/*
+>   * When callbacks for CPU hotplug notifications are being executed, we must
+>   * ensure that the state of the system with respect to the tasks being frozen
+>   * or not, as reported by the notification, remains unchanged *throughout the
+> @@ -589,12 +580,12 @@ cpu_hotplug_pm_callback(struct notifier_block *nb,
+>  
+>  	case PM_SUSPEND_PREPARE:
+>  	case PM_HIBERNATION_PREPARE:
+> -		cpu_hotplug_disable_before_freeze();
+> +		cpu_hotplug_disable();
+>  		break;
+>  
+>  	case PM_POST_SUSPEND:
+>  	case PM_POST_HIBERNATION:
+> -		cpu_hotplug_enable_after_thaw();
+> +		cpu_hotplug_enable();
+>  		break;
+>  
+>  	default:
+> 
