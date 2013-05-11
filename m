@@ -1,61 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753Ab3EKQcK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 12:32:10 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:29209 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab3EKQcI (ORCPT
+	id S1753831Ab3EKQvk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 12:51:40 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:56720 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753349Ab3EKQvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 12:32:08 -0400
-Date: Sat, 11 May 2013 19:31:55 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: Keith Busch <keith.busch@intel.com>,
-        Vishal Verma <vishal.l.verma@intel.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] NVMe: check for integer overflow in nvme_map_user_pages()
-Message-ID: <20130511163155.GA21427@elgon.mountain>
+	Sat, 11 May 2013 12:51:38 -0400
+Message-ID: <518E7723.5010003@cogentembedded.com>
+Date: Sat, 11 May 2013 20:51:47 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Dong Zhu <bluezhudong@gmail.com>
+CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Matthew Vick <matthew.vick@intel.com>,
+        Jacob Keller <Jacob.e.keller@intel.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: Re: [PATCH] igb: add a method to get the nic hw time stamping policy
+References: <20130511140219.GG8399@zhudong.nay.redhat.com>
+In-Reply-To: <20130511140219.GG8399@zhudong.nay.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You need to have CAP_SYS_ADMIN to trigger this overflow but it makes the
-static checkers complain so we should fix it.  The worry is that
-"length" comes from copy_from_user() so we need to check that "length +
-offset" can't overflow.
+Hello.
 
-I also changed the min_t() cast to be unsigned instead of signed.  Now
-that we cap "length" to INT_MAX it doesn't make a difference, but it's a
-little easier for reviewers to know that large values aren't cast to
-negative.
+On 11-05-2013 18:02, Dong Zhu wrote:
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>  From e6a55411486de8a09b859e73140bf35c0ee36047 Mon Sep 17 00:00:00 2001
+> From: Dong Zhu <bluezhudong@gmail.com>
+> Date: Sat, 11 May 2013 21:44:54 +0800
+> Subject: [PATCH] igb: add a method to get the nic hw time stamping policy
 
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index 8efdfaa..4376375 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -1206,7 +1206,7 @@ struct nvme_iod *nvme_map_user_pages(struct nvme_dev *dev, int write,
- 
- 	if (addr & 3)
- 		return ERR_PTR(-EINVAL);
--	if (!length)
-+	if (!length || length > INT_MAX - PAGE_SIZE)
- 		return ERR_PTR(-EINVAL);
- 
- 	offset = offset_in_page(addr);
-@@ -1227,7 +1227,8 @@ struct nvme_iod *nvme_map_user_pages(struct nvme_dev *dev, int write,
- 	sg_init_table(sg, count);
- 	for (i = 0; i < count; i++) {
- 		sg_set_page(&sg[i], pages[i],
--				min_t(int, length, PAGE_SIZE - offset), offset);
-+			    min_t(unsigned, length, PAGE_SIZE - offset),
-+			    offset);
- 		length -= (PAGE_SIZE - offset);
- 		offset = 0;
- 	}
+    Please, don't send this header with your patches.
+
+> Currently kernel only support setting the hw time stamping policy
+> through ioctl,now add a method to check which packets(Outgoing and
+> Incoming) are time stamped by nic.
+
+> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+> ---
+>   drivers/net/ethernet/intel/igb/igb_ptp.c | 29 +++++++++++++++++++++++++++++
+>   include/uapi/linux/net_tstamp.h          |  4 +++-
+>   2 files changed, 32 insertions(+), 1 deletion(-)
+
+> diff --git a/drivers/net/ethernet/intel/igb/igb_ptp.c b/drivers/net/ethernet/intel/igb/igb_ptp.c
+> index 7e8c477..8c06346 100644
+> --- a/drivers/net/ethernet/intel/igb/igb_ptp.c
+> +++ b/drivers/net/ethernet/intel/igb/igb_ptp.c
+> @@ -577,6 +577,34 @@ int igb_ptp_hwtstamp_ioctl(struct net_device *netdev,
+>   	if (config.flags)
+>   		return -EINVAL;
+>
+> +	if (config.rw == 0)
+> +		goto set_policy;
+> +	else if (config.rw == 1) {
+
+    Both arms of the *if* statement should have {} if one does, 
+according to Documentation/CodingStyle.
+
+> +		if (config.tx_type || config.rx_filter)
+> +			return -EINVAL;
+> +
+> +		regval = rd32(E1000_TSYNCTXCTL);
+> +
+
+    Empty line not needed here.
+
+> +		if (regval & E1000_TSYNCTXCTL_ENABLED)
+> +			config.tx_type = HWTSTAMP_TX_ON;
+> +		else
+> +			config.tx_type = HWTSTAMP_TX_OFF;
+> +
+> +		regval = rd32(E1000_TSYNCRXCTL);
+> +
+
+    ... and here.
+
+> +		if (!(regval & E1000_TSYNCRXCTL_ENABLED))
+> +			config.rx_filter = HWTSTAMP_FILTER_NONE;
+> +		else if (E1000_TSYNCRXCTL_TYPE_ALL ==
+> +				(regval & E1000_TSYNCRXCTL_TYPE_MASK))
+> +			config.rx_filter = HWTSTAMP_FILTER_ALL;
+> +		else
+> +			return -ERANGE;
+> +
+> +		goto end;
+> +	} else
+> +		return -EINVAL;
+
+    Same comment about missing {}. This *if*, however, asks to be 
+converted to *switch*...
+
+> diff --git a/include/uapi/linux/net_tstamp.h b/include/uapi/linux/net_tstamp.h
+> index ae5df12..77147da 100644
+> --- a/include/uapi/linux/net_tstamp.h
+> +++ b/include/uapi/linux/net_tstamp.h
+> @@ -28,9 +28,10 @@ enum {
+>   /**
+>    * struct hwtstamp_config - %SIOCSHWTSTAMP parameter
+>    *
+> + * @rw:        0/1 represents set/get the hw time stamp policy
+>    * @flags:	no flags defined right now, must be zero
+>    * @tx_type:	one of HWTSTAMP_TX_*
+> - * @rx_type:	one of one of HWTSTAMP_FILTER_*
+> + * @rx_filter:	one of one of HWTSTAMP_FILTER_*
+
+    You don't mention this change in the changelog. Most probably it 
+should be in a separate patch.
+
+> @@ -39,6 +40,7 @@ enum {
+>   * 32 and 64 bit systems, don't break this!
+>   */
+>  struct hwtstamp_config {
+> +	int rw;
+
+    Why not 'bool'?
+
+WBR, Sergei
+
