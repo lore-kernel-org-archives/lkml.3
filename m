@@ -1,418 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581Ab3EKV1z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 17:27:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56805 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754419Ab3EKV1x (ORCPT
+	id S1754600Ab3EKVfy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 17:35:54 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:56435 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754463Ab3EKVfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 17:27:53 -0400
-Date: Sat, 11 May 2013 14:28:04 -0700
+	Sat, 11 May 2013 17:35:53 -0400
+Date: Sat, 11 May 2013 14:36:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.0.78
-Message-ID: <20130511212804.GB19261@kroah.com>
-References: <20130511212713.GA19261@kroah.com>
+Subject: Linux 3.4.45
+Message-ID: <20130511213603.GA19467@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
 Content-Disposition: inline
-In-Reply-To: <20130511212713.GA19261@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-diff --git a/Makefile b/Makefile
-index 12abc70..f111c5b 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 0
--SUBLEVEL = 77
-+SUBLEVEL = 78
- EXTRAVERSION =
- NAME = Sneaky Weasel
- 
-diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
-index 2c1ae7a..97042c6 100644
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -221,7 +221,7 @@ int __node_distance(int a, int b)
- 	int distance = LOCAL_DISTANCE;
- 
- 	if (!form1_affinity)
--		return distance;
-+		return ((a == b) ? LOCAL_DISTANCE : REMOTE_DISTANCE);
- 
- 	for (i = 0; i < distance_ref_points_depth; i++) {
- 		if (distance_lookup_table[a][i] == distance_lookup_table[b][i])
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index a93741d..3f4b6da 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -568,20 +568,6 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 		}
- 	}
- 
--	/*
--	 * The way access filter has a performance penalty on some workloads.
--	 * Disable it on the affected CPUs.
--	 */
--	if ((c->x86 == 0x15) &&
--	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
--		u64 val;
--
--		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
--			val |= 0x1E;
--			checking_wrmsrl(0xc0011021, val);
--		}
--	}
--
- 	cpu_detect_cache_sizes(c);
- 
- 	/* Multi core CPU? */
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index c22c423..96c4577 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -44,11 +44,15 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
- 	int i;
- 	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
- 	unsigned long start = 0, good_end;
-+	unsigned long pgd_extra = 0;
- 	phys_addr_t base;
- 
- 	for (i = 0; i < nr_range; i++) {
- 		unsigned long range, extra;
- 
-+		if ((mr[i].end >> PGDIR_SHIFT) - (mr[i].start >> PGDIR_SHIFT))
-+			pgd_extra++;
-+
- 		range = mr[i].end - mr[i].start;
- 		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
- 
-@@ -73,6 +77,7 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
- 	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
- 	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
- 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
-+	tables += (pgd_extra * PAGE_SIZE);
- 
- #ifdef CONFIG_X86_32
- 	/* for fixmap */
-diff --git a/drivers/gpu/drm/i915/intel_dvo.c b/drivers/gpu/drm/i915/intel_dvo.c
-index 6eda1b5..8ac91b8 100644
---- a/drivers/gpu/drm/i915/intel_dvo.c
-+++ b/drivers/gpu/drm/i915/intel_dvo.c
-@@ -371,6 +371,7 @@ void intel_dvo_init(struct drm_device *dev)
- 		const struct intel_dvo_device *dvo = &intel_dvo_devices[i];
- 		struct i2c_adapter *i2c;
- 		int gpio;
-+		bool dvoinit;
- 
- 		/* Allow the I2C driver info to specify the GPIO to be used in
- 		 * special cases, but otherwise default to what's defined
-@@ -390,7 +391,17 @@ void intel_dvo_init(struct drm_device *dev)
- 		i2c = &dev_priv->gmbus[gpio].adapter;
- 
- 		intel_dvo->dev = *dvo;
--		if (!dvo->dev_ops->init(&intel_dvo->dev, i2c))
-+
-+		/* GMBUS NAK handling seems to be unstable, hence let the
-+		 * transmitter detection run in bit banging mode for now.
-+		 */
-+		intel_gmbus_force_bit(i2c, true);
-+
-+		dvoinit = dvo->dev_ops->init(&intel_dvo->dev, i2c);
-+
-+		intel_gmbus_force_bit(i2c, false);
-+
-+		if (!dvoinit)
- 			continue;
- 
- 		intel_encoder->type = INTEL_OUTPUT_DVO;
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index eebf002..09881ac 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -767,6 +767,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "X7SPA-H"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Fujitsu Esprimo Q900",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "ESPRIMO Q900"),
-+		},
-+	},
- 
- 	{ }	/* terminating entry */
- };
-diff --git a/drivers/gpu/drm/radeon/atom.c b/drivers/gpu/drm/radeon/atom.c
-index 88661ea..6b84d279 100644
---- a/drivers/gpu/drm/radeon/atom.c
-+++ b/drivers/gpu/drm/radeon/atom.c
-@@ -1384,10 +1384,10 @@ int atom_allocate_fb_scratch(struct atom_context *ctx)
- 		firmware_usage = (struct _ATOM_VRAM_USAGE_BY_FIRMWARE *)(ctx->bios + data_offset);
- 
- 		DRM_DEBUG("atom firmware requested %08x %dkb\n",
--			  firmware_usage->asFirmwareVramReserveInfo[0].ulStartAddrUsedByFirmware,
--			  firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb);
-+			  le32_to_cpu(firmware_usage->asFirmwareVramReserveInfo[0].ulStartAddrUsedByFirmware),
-+			  le16_to_cpu(firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb));
- 
--		usage_bytes = firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb * 1024;
-+		usage_bytes = le16_to_cpu(firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb) * 1024;
- 	}
- 	ctx->scratch_size_bytes = 0;
- 	if (usage_bytes == 0)
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index a75d290..d3264b9 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -330,6 +330,16 @@ void evergreen_hpd_init(struct radeon_device *rdev)
- 
- 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
- 		struct radeon_connector *radeon_connector = to_radeon_connector(connector);
-+
-+		if (connector->connector_type == DRM_MODE_CONNECTOR_eDP ||
-+		    connector->connector_type == DRM_MODE_CONNECTOR_LVDS) {
-+			/* don't try to enable hpd on eDP or LVDS avoid breaking the
-+			 * aux dp channel on imac and help (but not completely fix)
-+			 * https://bugzilla.redhat.com/show_bug.cgi?id=726143
-+			 * also avoid interrupt storms during dpms.
-+			 */
-+			continue;
-+		}
- 		switch (radeon_connector->hpd.hpd) {
- 		case RADEON_HPD_1:
- 			WREG32(DC_HPD1_CONTROL, tmp);
-diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
-index cee31843..b1aade0 100644
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -2031,6 +2031,8 @@ static int radeon_atombios_parse_power_table_1_3(struct radeon_device *rdev)
- 	num_modes = power_info->info.ucNumOfPowerModeEntries;
- 	if (num_modes > ATOM_MAX_NUMBEROF_POWER_BLOCK)
- 		num_modes = ATOM_MAX_NUMBEROF_POWER_BLOCK;
-+	if (num_modes == 0)
-+		return state_index;
- 	rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state) * num_modes, GFP_KERNEL);
- 	if (!rdev->pm.power_state)
- 		return state_index;
-@@ -2401,6 +2403,8 @@ static int radeon_atombios_parse_power_table_4_5(struct radeon_device *rdev)
- 	power_info = (union power_info *)(mode_info->atom_context->bios + data_offset);
- 
- 	radeon_atombios_add_pplib_thermal_controller(rdev, &power_info->pplib.sThermalController);
-+	if (power_info->pplib.ucNumStates == 0)
-+		return state_index;
- 	rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state) *
- 				       power_info->pplib.ucNumStates, GFP_KERNEL);
- 	if (!rdev->pm.power_state)
-@@ -2485,6 +2489,8 @@ static int radeon_atombios_parse_power_table_6(struct radeon_device *rdev)
- 	non_clock_info_array = (struct NonClockInfoArray *)
- 		(mode_info->atom_context->bios + data_offset +
- 		 le16_to_cpu(power_info->pplib.usNonClockInfoArrayOffset));
-+	if (state_array->ucNumEntries == 0)
-+		return state_index;
- 	rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state) *
- 				       state_array->ucNumEntries, GFP_KERNEL);
- 	if (!rdev->pm.power_state)
-@@ -2561,7 +2567,9 @@ void radeon_atombios_get_power_modes(struct radeon_device *rdev)
- 		default:
- 			break;
- 		}
--	} else {
-+	}
-+
-+	if (state_index == 0) {
- 		rdev->pm.power_state = kzalloc(sizeof(struct radeon_power_state), GFP_KERNEL);
- 		if (rdev->pm.power_state) {
- 			/* add the default mode */
-diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
-index 4f88863..8270a85 100644
---- a/drivers/gpu/drm/radeon/radeon_pm.c
-+++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -845,7 +845,11 @@ static int radeon_debugfs_pm_info(struct seq_file *m, void *data)
- 	struct radeon_device *rdev = dev->dev_private;
- 
- 	seq_printf(m, "default engine clock: %u0 kHz\n", rdev->pm.default_sclk);
--	seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
-+	/* radeon_get_engine_clock is not reliable on APUs so just print the current clock */
-+	if ((rdev->family >= CHIP_PALM) && (rdev->flags & RADEON_IS_IGP))
-+		seq_printf(m, "current engine clock: %u0 kHz\n", rdev->pm.current_sclk);
-+	else
-+		seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
- 	seq_printf(m, "default memory clock: %u0 kHz\n", rdev->pm.default_mclk);
- 	if (rdev->asic->get_memory_clock)
- 		seq_printf(m, "current memory clock: %u0 kHz\n", radeon_get_memory_clock(rdev));
-diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
-index 450f529..2c69d12 100644
---- a/fs/autofs4/expire.c
-+++ b/fs/autofs4/expire.c
-@@ -61,15 +61,6 @@ static int autofs4_mount_busy(struct vfsmount *mnt, struct dentry *dentry)
- 		/* This is an autofs submount, we can't expire it */
- 		if (autofs_type_indirect(sbi->type))
- 			goto done;
--
--		/*
--		 * Otherwise it's an offset mount and we need to check
--		 * if we can umount its mount, if there is one.
--		 */
--		if (!d_mountpoint(path.dentry)) {
--			status = 0;
--			goto done;
--		}
- 	}
- 
- 	/* Update the expiry counter if fs is busy */
-diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
-index f6b4ac7..7d9731d 100644
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -614,9 +614,9 @@ void audit_trim_trees(void)
- 		}
- 		spin_unlock(&hash_lock);
- 		trim_marked(tree);
--		put_tree(tree);
- 		drop_collected_mounts(root_mnt);
- skip_it:
-+		put_tree(tree);
- 		mutex_lock(&audit_filter_mutex);
- 	}
- 	list_del(&cursor);
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index d197611..c62ae75 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4489,30 +4489,32 @@ void trace_init_global_iter(struct trace_iterator *iter)
- 	iter->cpu_file = TRACE_PIPE_ALL_CPU;
- }
- 
--static void
--__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode)
-+void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
- {
--	static arch_spinlock_t ftrace_dump_lock =
--		(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
- 	/* use static because iter can be a bit big for the stack */
- 	static struct trace_iterator iter;
-+	static atomic_t dump_running;
- 	unsigned int old_userobj;
--	static int dump_ran;
- 	unsigned long flags;
- 	int cnt = 0, cpu;
- 
--	/* only one dump */
--	local_irq_save(flags);
--	arch_spin_lock(&ftrace_dump_lock);
--	if (dump_ran)
--		goto out;
--
--	dump_ran = 1;
-+	/* Only allow one dump user at a time. */
-+	if (atomic_inc_return(&dump_running) != 1) {
-+		atomic_dec(&dump_running);
-+		return;
-+	}
- 
-+	/*
-+	 * Always turn off tracing when we dump.
-+	 * We don't need to show trace output of what happens
-+	 * between multiple crashes.
-+	 *
-+	 * If the user does a sysrq-z, then they can re-enable
-+	 * tracing with echo 1 > tracing_on.
-+	 */
- 	tracing_off();
- 
--	if (disable_tracing)
--		ftrace_kill();
-+	local_irq_save(flags);
- 
- 	trace_init_global_iter(&iter);
- 
-@@ -4583,26 +4585,15 @@ __ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode)
- 		printk(KERN_TRACE "---------------------------------\n");
- 
-  out_enable:
--	/* Re-enable tracing if requested */
--	if (!disable_tracing) {
--		trace_flags |= old_userobj;
-+	trace_flags |= old_userobj;
- 
--		for_each_tracing_cpu(cpu) {
--			atomic_dec(&iter.tr->data[cpu]->disabled);
--		}
--		tracing_on();
-+	for_each_tracing_cpu(cpu) {
-+		atomic_dec(&iter.tr->data[cpu]->disabled);
- 	}
--
-- out:
--	arch_spin_unlock(&ftrace_dump_lock);
-+ 	atomic_dec(&dump_running);
- 	local_irq_restore(flags);
- }
--
--/* By default: disable tracing after the dump */
--void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
--{
--	__ftrace_dump(true, oops_dump_mode);
--}
-+EXPORT_SYMBOL_GPL(ftrace_dump);
- 
- __init static int tracer_alloc_buffers(void)
- {
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index 288541f..09fd98a 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -461,8 +461,6 @@ trace_selftest_startup_function(struct tracer *trace, struct trace_array *tr)
- /* Maximum number of functions to trace before diagnosing a hang */
- #define GRAPH_MAX_FUNC_TEST	100000000
- 
--static void
--__ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode);
- static unsigned int graph_hang_thresh;
- 
- /* Wrap the real function entry probe to avoid possible hanging */
-@@ -472,8 +470,11 @@ static int trace_graph_entry_watchdog(struct ftrace_graph_ent *trace)
- 	if (unlikely(++graph_hang_thresh > GRAPH_MAX_FUNC_TEST)) {
- 		ftrace_graph_stop();
- 		printk(KERN_WARNING "BUG: Function graph tracer hang!\n");
--		if (ftrace_dump_on_oops)
--			__ftrace_dump(false, DUMP_ALL);
-+		if (ftrace_dump_on_oops) {
-+			ftrace_dump(DUMP_ALL);
-+			/* ftrace_dump() disables tracing */
-+			tracing_on();
-+		}
- 		return 0;
- 	}
- 
-diff --git a/net/netfilter/ipvs/ip_vs_pe_sip.c b/net/netfilter/ipvs/ip_vs_pe_sip.c
-index 13d607a..87ecf75 100644
---- a/net/netfilter/ipvs/ip_vs_pe_sip.c
-+++ b/net/netfilter/ipvs/ip_vs_pe_sip.c
-@@ -37,14 +37,10 @@ static int get_callid(const char *dptr, unsigned int dataoff,
- 		if (ret > 0)
- 			break;
- 		if (!ret)
--			return 0;
-+			return -EINVAL;
- 		dataoff += *matchoff;
- 	}
- 
--	/* Empty callid is useless */
--	if (!*matchlen)
--		return -EINVAL;
--
- 	/* Too large is useless */
- 	if (*matchlen > IP_VS_PEDATA_MAXLEN)
- 		return -EINVAL;
+--vkogqOf2sHV7VnPd
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.4.45 kernel.
+
+All users of the 3.4 kernel series must upgrade.
+
+The updated 3.4.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.4.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                   |    2=20
+ arch/powerpc/include/asm/ppc-opcode.h      |    4 +
+ arch/powerpc/kernel/traps.c                |   10 +++-
+ arch/powerpc/mm/numa.c                     |    2=20
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   27 +++++++++--
+ arch/x86/mm/init.c                         |    5 ++
+ drivers/cpufreq/longhaul.c                 |   10 +++-
+ drivers/gpu/drm/i915/intel_dvo.c           |   13 +++++
+ drivers/gpu/drm/i915/intel_lvds.c          |    8 +++
+ drivers/gpu/drm/radeon/atom.c              |    6 +-
+ drivers/gpu/drm/radeon/evergreen.c         |   67 ++++++++++++++++++++++++=
++++--
+ drivers/gpu/drm/radeon/evergreen_reg.h     |    2=20
+ drivers/gpu/drm/radeon/ni.c                |    8 ++-
+ drivers/gpu/drm/radeon/nid.h               |    4 +
+ drivers/gpu/drm/radeon/radeon_atombios.c   |   21 ++++++---
+ drivers/gpu/drm/radeon/radeon_pm.c         |    6 ++
+ drivers/gpu/drm/radeon/si.c                |    1=20
+ drivers/gpu/drm/radeon/sid.h               |    2=20
+ drivers/net/ethernet/ibm/ibmveth.c         |   23 ++++-----
+ drivers/net/ethernet/realtek/r8169.c       |    9 +++
+ drivers/usb/host/xhci-ring.c               |   23 ++++++---
+ fs/autofs4/expire.c                        |    9 ---
+ fs/ext4/resize.c                           |    4 +
+ include/drm/drm_pciids.h                   |    5 ++
+ kernel/audit_tree.c                        |    2=20
+ kernel/trace/trace.c                       |   62 +++++++++++-------------=
+--
+ kernel/trace/trace_selftest.c              |    9 ++-
+ net/netfilter/ipvs/ip_vs_pe_sip.c          |    6 --
+ 28 files changed, 247 insertions(+), 103 deletions(-)
+
+Alex Deucher (10):
+      drm/radeon: don't use get_engine_clock() on APUs
+      drm/radeon/dce6: add missing display reg for tiling setup
+      drm/radeon: properly lock disp in mc_stop/resume for evergreen+
+      drm/radeon: disable the crtcs in mc_stop (evergreen+) (v2)
+      drm/radeon: add some new SI PCI ids
+      drm/radeon/evergreen+: don't enable HPD interrupts on eDP/LVDS
+      drm/radeon: fix endian bugs in atom_allocate_fb_scratch()
+      drm/radeon: fix possible segfault when parsing pm tables
+      drm/radeon: add new richland pci ids
+      drm/radeon: fix handling of v6 power tables
+
+Anton Blanchard (1):
+      powerpc: Emulate non privileged DSCR read and write
+
+Benjamin Herrenschmidt (1):
+      net/eth/ibmveth: Fixup retrieval of MAC address
+
+Chen Gang (1):
+      kernel/audit_tree.c: tree will leak memory when failure occurs in aud=
+it_trim_trees()
+
+Christian Lamparter (1):
+      drm/i915: Add no-lvds quirk for Fujitsu Esprimo Q900
+
+David Jeffery (1):
+      autofs - remove autofs dentry mount check
+
+David M=C3=BCller (1):
+      drm/i915: Fall back to bit banging mode for DVO transmitter detection
+
+Greg Kroah-Hartman (1):
+      Linux 3.4.45
+
+Hans Schillstrom (1):
+      ipvs: ip_vs_sip_fill_param() BUG: bad check of return value
+
+Jerry Hoemann (1):
+      x86/mm: account for PGDIR_SIZE alignment
+
+Peter Zijlstra (2):
+      perf/x86/intel/lbr: Fix LBR filter
+      perf/x86/intel/lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_K=
+ERNEL
+
+Rafa=C5=82 Bilski (1):
+      cpufreq / Longhaul: Disable driver by default
+
+Sarah Sharp (1):
+      xhci: Don't warn on empty ring for suspended devices.
+
+Stefan Bader (1):
+      r8169: fix 8168evl frame padding.
+
+Steven Rostedt (Red Hat) (1):
+      tracing: Fix ftrace_dump()
+
+Theodore Ts'o (1):
+      ext4: add check for inodes_count overflow in new resize ioctl
+
+Vaidyanathan Srinivasan (1):
+      powerpc: fix numa distance for form0 device tree
+
+
+--vkogqOf2sHV7VnPd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRjrnDAAoJEDjbvchgkmk+KqEP+wfLmXzb+nxLm8gxJlY/Tj8J
+JQQP751acNBbb77MBr1yvQJhjZeRGrZGgxQm2syr/L11NVcRzV6s6U8VnNP0vtrK
+AB0LOeo42uKjSUN/SC95Iy5KszlDRcAGPB9IzzpGa2RI0XBOhLvGNzg0XomqcYu2
+WmfZg5fQi82h8UiYe+CtRnSoPyJJThHba1Iqi74gHwAcJUPAX2dg21G/ygVOoyYO
+24beD+KX3RtlPf+iEolSXk1Zo5AdFCpIjx4A407zabvk17QkBWR6WiwrrhRDYqRL
+GpkJs6YK2gIGaa/kjbIaCHq7JB0mMop4MBIx6tJQzjwqvzO9I/SZAAGGjXC98+8a
+qqRgjSUntN4Se2BSIVmqmnMkJJlep/LT+B17sI2aCi0TUNZuf+xBjrQpXe4+iP6o
+h0pOv7I5XGyG4EkMEcQ4VvrJWzz68+C6Uq0zswmUTSKJsdmPMpYRWmKc5Er3XXNH
+tQ+jlKGW1M5TXILsN+6oVEzIvAlkMdWXMccTLtV2Z7iMDj5oek2eNOOTLgzFzQj3
+brAcpoXal0nLcIxoj4YSsUYGBepCha1Up6gdZs2iHdKP4zbHpliBNdRyRG3V3sr2
+M+hz9GW7zaRGPQE5BLGLz7avgWgTvjY5AxxRzXd0D1TK91ehwwQ+Ng+CgVO13JUD
+CcLInRE7wjK/h4AJV9AI
+=GZ58
+-----END PGP SIGNATURE-----
+
+--vkogqOf2sHV7VnPd--
