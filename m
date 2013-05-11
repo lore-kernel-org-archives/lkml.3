@@ -1,136 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713Ab3EKHuO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 03:50:14 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:41517 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753416Ab3EKHuM (ORCPT
+	id S1753838Ab3EKHwo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 03:52:44 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:58193 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752531Ab3EKHwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 03:50:12 -0400
-Date: Sat, 11 May 2013 09:50:08 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/9] perf: Adding better precise_ip field handling
-Message-ID: <20130511075008.GC24435@gmail.com>
-References: <20130509152022.GD1628@krava.brq.redhat.com>
- <20130510092741.GE3039@dyad.programming.kicks-ass.net>
- <20130510094053.GF1040@krava.brq.redhat.com>
- <20130510095345.GG3039@dyad.programming.kicks-ass.net>
- <20130510101823.GA18427@gmail.com>
- <20130510102245.GA31235@dyad.programming.kicks-ass.net>
- <20130510103112.GA18755@gmail.com>
- <20130510103436.GC31235@dyad.programming.kicks-ass.net>
- <20130510105536.GA18805@gmail.com>
- <20130510112756.GH31235@dyad.programming.kicks-ass.net>
+	Sat, 11 May 2013 03:52:43 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: Tony Luck <tony.luck@gmail.com>, eunb.song@samsung.com
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-ext4\@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Re: EXT4 panic at jbd2_journal_put_journal_head() in 3.9+
+In-Reply-To: <CA+8MBbKHJgnueAurRV1aeeV-NdzRTz_gVwYcJuyDrjJLErtcfg@mail.gmail.com>
+References: <6719519.5821368147110937.JavaMail.weblogic@epml17> <CA+8MBbKHJgnueAurRV1aeeV-NdzRTz_gVwYcJuyDrjJLErtcfg@mail.gmail.com>
+User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Sat, 11 May 2013 11:52:38 +0400
+Message-ID: <871u9e6ji1.fsf@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130510112756.GH31235@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Fri, May 10, 2013 at 12:55:36PM +0200, Ingo Molnar wrote:
-> > Look at the tools/perf/ patches, they don't actually need or use that 
-> > information to adjust for skid!
-> > 
-> > If user-space wants _that_ level of control because it wants to correct 
-> > for skid (if there's skid), or if it wants to display to the user how 
-> > precise the profiling is, then they can do the (much) more complex probing 
-> > dance.
-> > 
-> > What is absolutely indefensible is to not give a good shortcut for the 
-> > most common case of 'give me the most precise cycles event you got'...
+On Fri, 10 May 2013 10:27:58 -0700, Tony Luck <tony.luck@gmail.com> wrote:
+Non-text part: multipart/mixed
+> I think I have the same (or highly similar) thing happening on ia64.
+What was page_size and fsblock size?
 > 
-> That's not what I'm saying... the user (not userspace, but you and me) 
-> when staring at perf output need to interpret the result.
+> Similarities: seeing assertions fail for b_transaction
+> Differences: I only have ext3 filesystems mounted, no ext4
 > 
-> If you don't know WTF the thing actually measured, how are you going to 
-> do that?
-
-That's really a red herring: there's absolutely no reason why the 
-kernel could not pass back the level of precision it provided.
-
-You are also over-rating the importance of such details - most developers 
-will assume when looking at profiler output that it's a statistical result 
-- and being happy when it happens to be "absolutely accurate" instead of 
-just "very accurate"...
-
-> > > I see such a feature only causing confusion; I told it to be 
-> > > precise, therefore this register op after the memory load really is 
-> > > the more expensive thing.
-> > 
-> > You are creating confusion where there's none: "give me the best 
-> > profiling you've got" is a pretty reasonable thing to ask.
+> See attached trace.  I'm pretty certain that the highly unhelpful
 > 
-> Only if it then tells you what you got. It doesn't do that.
-
-I'm not against the kernel telling what precision it gave us, at all. That 
-could be solved by the kernel setting the precision field in the 
-PERF_COUNT_CYCLES_PRECISE case or so.
-
-I'm against you apparently recommending a complex probing method to get 
-something the kernel ought to get us straight away via much simpler 
-ways...
-
-Complexity does not primarily result in people doing things 'smarter'. It 
-primarily results in people _not using the feature at all_.
-
-> > The thing is, there's variations in the quality of profiling between 
-> > CPUs, sometimes even between CPU models. 99.999% of the people don't 
-> > care about that, because 99.9% of the time the profile is unambiguous: 
-> > functions are typically big enough, with the overhead somewhere in the 
-> > middle, so skid just doesn't matter.
+>     bugcheck! 0 [1]
 > 
-> Sure at function level it doesn't matter, but once you found your most 
-> expensive function very often the next question is _why_ is it 
-> expensive.
+> comes from the
 > 
-> At that point you're going to stare at asm output. The moment you do 
-> that you need to know the type of output you're staring at.
-
-FYI, very few developers are actually looking at the assembly output 
-because very few developers _know_ assembly to begin with.
-
-They are looking at things like sysprof or perf report output, maybe at 
-the annotated _source_ code and that's it.
-
-The mapping to source code is fuzzy to begin with, with inlining, loop 
-unrolling and other compiler optimizations being a far bigger effect than 
-skid.
-
-So the fuzz created by skid is relatively small - but it's nice when it's 
-gone and obviously it's helpful when you are looking at assembly output.
-
-> Also, if you think function level output is the most relevant one, you 
-> shouldn't use PEBS at all. PEBS has an issue with REP prefixes, it 
-> severely under accounts the cycles spend on them. And since exact 
-> placement doesn't matter (as you just argued) the little skid you have 
-> is irrelevant.
+>         J_ASSERT_JH(jh, jh->b_transaction == NULL);
 > 
-> So either skid matters and you need to know what type of output you've 
-> got, or it doesn't and the whole precise thing is irrelevant at best.
+> from disassembling __journal_remove_journal_head(). The instruction
+> pointer <a0000001003d6690> points to the 2nd "break" instruction
+> in the function.
+> 
+> The problem shows up after 30 minutes to a couple of hours of stress (kernel
+> builds with "make -j32").
+I cant reproduce this one yet.
+But changes {ext3,jbd} are minimal
+#git log --oneline v3.9.. fs/{ext3,jbd}
+5af43c2 Merge branch 'akpm' (incoming from Andrew)
+a27bb33 aio: don't include aio.h in sched.h
+4385bab make blkdev_put() return void
+14a9e5c Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs
+e760040 fs/buffer.c: remove unnecessary init operation after allocating buffer_head.
+713685111 mm: make snapshotting pages for stable writes a per-bio
+operation
+8bb9da9 jbd: use kmem_cache_zalloc for allocating journal head
+e162b2f jbd: use kmem_cache_zalloc instead of kmem_cache_alloc/memset
+e678a4f jbd: don't wait (forever) for stale tid caused by wraparound
+e643692 ext3: fix data=journal fast mount/umount hang
 
-That's just another plain silly argument: having more precise results is 
-obviously useful even if you don't use a magnifying lense. Sometimes 
-functions are small and skid results in the wrong function being credited 
-with overhead.
-
-It's also immaterial: there's no reason why the kernel couldn't feed back 
-the level of precision it offers, to user-space, via a small, simple 
-variation to the existing syscall interface.
-
-Thanks,
-
-	Ingo
+So looks very strange..
+I have ia64 and now I work on reproduction.
+> 
+> I'm pretty sure this problem didn't occur in plain v3.9 (it can run for
+> a full 24 hours).
+> 
+> Trying to bisect - but it takes a while to be convinced that a good kernel
+> is actually good (since I don't have a clear picture of how long to run
+> before deciding that the bug isn't going to show)
+> 
+> -Tony
+Attachment: bug (application/octet-stream)
