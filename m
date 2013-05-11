@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab3EKX26 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 19:28:58 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60307 "EHLO
+	id S1753020Ab3EKX3L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 19:29:11 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60312 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab3EKX2z (ORCPT
+	with ESMTP id S1752143Ab3EKX3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 19:28:55 -0400
-Date: Sat, 11 May 2013 16:28:54 -0700 (PDT)
-Message-Id: <20130511.162854.1260352831052000779.davem@davemloft.net>
+	Sat, 11 May 2013 19:29:08 -0400
+Date: Sat, 11 May 2013 16:29:07 -0700 (PDT)
+Message-Id: <20130511.162907.906353130491070142.davem@davemloft.net>
 To: geert@linux-m68k.org
-Cc: linux-kernel@vger.kernel.org, peppe.cavallaro@st.com,
+Cc: linux-kernel@vger.kernel.org, mcgrof@qca.qualcomm.com,
+        linville@tuxdriver.com, linux-wireless@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: Re: [PATCH 04/12] net/ethernet: STMMAC_ETH should depend on HAS_DMA
+Subject: Re: [PATCH 05/12] net/wireless: ATH9K should depend on HAS_DMA
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1368133494-22198-4-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1368133494-22198-5-git-send-email-geert@linux-m68k.org>
 References: <1368133494-22198-1-git-send-email-geert@linux-m68k.org>
-	<1368133494-22198-4-git-send-email-geert@linux-m68k.org>
+	<1368133494-22198-5-git-send-email-geert@linux-m68k.org>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -26,7 +27,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Thu,  9 May 2013 23:04:46 +0200
+Date: Thu,  9 May 2013 23:04:47 +0200
 
 > If NO_DMA=y:
  ...
