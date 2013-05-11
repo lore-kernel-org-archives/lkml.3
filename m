@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab3EKL74 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 07:59:56 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:59335 "EHLO relay.sgi.com"
+	id S1752321Ab3EKMAa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 08:00:30 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:55611 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752213Ab3EKL5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 07:57:51 -0400
+	id S1752098Ab3EKL5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 07:57:49 -0400
 From: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robin Holt <holt@sgi.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Russ Anderson <rja@sgi.com>, Russell King <linux@arm.linux.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Miguel Boton <mboton.lkml@gmail.com>, Russ Anderson <rja@sgi.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         the arch/x86 maintainers <x86@kernel.org>,
         Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH -v10 07/11] unicore32, prepare reboot_mode for moving to generic kernel code.
-Date: Sat, 11 May 2013 06:57:23 -0500
-Message-Id: <1368273447-11958-8-git-send-email-holt@sgi.com>
+Subject: [PATCH -v10 06/11] x86, prepare reboot_mode for moving to generic kernel code.
+Date: Sat, 11 May 2013 06:57:22 -0500
+Message-Id: <1368273447-11958-7-git-send-email-holt@sgi.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1368273447-11958-1-git-send-email-holt@sgi.com>
 References: <1368273447-11958-1-git-send-email-holt@sgi.com>
@@ -29,105 +30,91 @@ kernel code by making reboot_mode into a more generic form.
 
 Signed-off-by: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Miguel Boton <mboton.lkml@gmail.com>
 Cc: Russ Anderson <rja@sgi.com>
 Cc: Robin Holt <holt@sgi.com>
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: the arch/x86 maintainers <x86@kernel.org>
 Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 ---
+ arch/x86/kernel/reboot.c | 12 +++++++-----
+ include/linux/reboot.h   |  5 +++++
+ 2 files changed, 12 insertions(+), 5 deletions(-)
 
-Changes since -v8
- - Switched from using REBOOT_WARM/COLD to HARD/SOFT.
----
- arch/unicore32/kernel/process.c | 10 +++++-----
- arch/unicore32/kernel/setup.h   |  2 +-
- arch/unicore32/mm/mmu.c         |  2 +-
- include/linux/reboot.h          |  2 ++
- 4 files changed, 9 insertions(+), 7 deletions(-)
-
-diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
-index c944769..93dd035 100644
---- a/arch/unicore32/kernel/process.c
-+++ b/arch/unicore32/kernel/process.c
-@@ -51,14 +51,14 @@ void arch_cpu_idle(void)
- 	local_irq_enable();
- }
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 76fa1e9..f770340 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -36,7 +36,7 @@ void (*pm_power_off)(void);
+ EXPORT_SYMBOL(pm_power_off);
  
--static char reboot_mode = 'h';
-+static enum reboot_mode reboot_mode = REBOOT_HARD;
+ static const struct desc_ptr no_idt = {};
+-static int reboot_mode;
++static enum reboot_mode reboot_mode;
+ enum reboot_type reboot_type = BOOT_ACPI;
+ int reboot_force;
  
- int __init reboot_setup(char *str)
- {
--	reboot_mode = str[0];
-+	if ('s' == str[0])
-+		reboot_mode = REBOOT_SOFT;
- 	return 1;
- }
--
- __setup("reboot=", reboot_setup);
+@@ -88,11 +88,11 @@ static int __init reboot_setup(char *str)
  
- void machine_halt(void)
-@@ -88,7 +88,7 @@ void machine_restart(char *cmd)
- 	 * we may need it to insert some 1:1 mappings so that
- 	 * soft boot works.
- 	 */
--	setup_mm_for_reboot(reboot_mode);
-+	setup_mm_for_reboot();
+ 		switch (*str) {
+ 		case 'w':
+-			reboot_mode = 0x1234;
++			reboot_mode = REBOOT_WARM;
+ 			break;
  
- 	/* Clean and invalidate caches */
- 	flush_cache_all();
-@@ -102,7 +102,7 @@ void machine_restart(char *cmd)
- 	/*
- 	 * Now handle reboot code.
- 	 */
--	if (reboot_mode == 's') {
-+	if (reboot_mode == REBOOT_SOFT) {
- 		/* Jump into ROM at address 0xffff0000 */
- 		cpu_reset(VECTORS_BASE);
- 	} else {
-diff --git a/arch/unicore32/kernel/setup.h b/arch/unicore32/kernel/setup.h
-index 30f749d..f5c51b8 100644
---- a/arch/unicore32/kernel/setup.h
-+++ b/arch/unicore32/kernel/setup.h
-@@ -22,7 +22,7 @@ extern void puv3_ps2_init(void);
- extern void pci_puv3_preinit(void);
- extern void __init puv3_init_gpio(void);
+ 		case 'c':
+-			reboot_mode = 0;
++			reboot_mode = REBOOT_COLD;
+ 			break;
  
--extern void setup_mm_for_reboot(char mode);
-+extern void setup_mm_for_reboot(void);
+ #ifdef CONFIG_SMP
+@@ -536,6 +536,7 @@ static void native_machine_emergency_restart(void)
+ 	int i;
+ 	int attempt = 0;
+ 	int orig_reboot_type = reboot_type;
++	unsigned short mode;
  
- extern char __stubs_start[], __stubs_end[];
- extern char __vectors_start[], __vectors_end[];
-diff --git a/arch/unicore32/mm/mmu.c b/arch/unicore32/mm/mmu.c
-index 43c20b4..4f5a532 100644
---- a/arch/unicore32/mm/mmu.c
-+++ b/arch/unicore32/mm/mmu.c
-@@ -445,7 +445,7 @@ void __init paging_init(void)
-  * the user-mode pages.  This will then ensure that we have predictable
-  * results when turning the mmu off
-  */
--void setup_mm_for_reboot(char mode)
-+void setup_mm_for_reboot(void)
- {
- 	unsigned long base_pmdval;
- 	pgd_t *pgd;
+ 	if (reboot_emergency)
+ 		emergency_vmx_disable_all();
+@@ -543,7 +544,8 @@ static void native_machine_emergency_restart(void)
+ 	tboot_shutdown(TB_SHUTDOWN_REBOOT);
+ 
+ 	/* Tell the BIOS if we want cold or warm reboot */
+-	*((unsigned short *)__va(0x472)) = reboot_mode;
++	mode = reboot_mode == REBOOT_WARM ? 0x1234 : 0;
++	*((unsigned short *)__va(0x472)) = mode;
+ 
+ 	for (;;) {
+ 		/* Could also try the reset bit in the Hammer NB */
+@@ -585,7 +587,7 @@ static void native_machine_emergency_restart(void)
+ 
+ 		case BOOT_EFI:
+ 			if (efi_enabled(EFI_RUNTIME_SERVICES))
+-				efi.reset_system(reboot_mode ?
++				efi.reset_system(reboot_mode == REBOOT_WARM ?
+ 						 EFI_RESET_WARM :
+ 						 EFI_RESET_COLD,
+ 						 EFI_SUCCESS, 0, NULL);
 diff --git a/include/linux/reboot.h b/include/linux/reboot.h
-index 37d56c3..ca29a6f 100644
+index c6eba21..37d56c3 100644
 --- a/include/linux/reboot.h
 +++ b/include/linux/reboot.h
-@@ -13,6 +13,8 @@
- enum reboot_mode {
- 	REBOOT_COLD = 0,
- 	REBOOT_WARM,
-+	REBOOT_HARD,
-+	REBOOT_SOFT,
- };
+@@ -10,6 +10,11 @@
+ #define SYS_HALT	0x0002	/* Notify of system halt */
+ #define SYS_POWER_OFF	0x0003	/* Notify of system power off */
  
++enum reboot_mode {
++	REBOOT_COLD = 0,
++	REBOOT_WARM,
++};
++
  extern int register_reboot_notifier(struct notifier_block *);
+ extern int unregister_reboot_notifier(struct notifier_block *);
+ 
 -- 
 1.8.2.1
 
