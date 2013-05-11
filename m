@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab3EKUf3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 16:35:29 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:54356 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753906Ab3EKUf2 (ORCPT
+	id S1754375Ab3EKVGo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 17:06:44 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39232 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754020Ab3EKVGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 16:35:28 -0400
-Message-ID: <518EAB9B.8040106@cogentembedded.com>
-Date: Sun, 12 May 2013 00:35:39 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Sat, 11 May 2013 17:06:43 -0400
+Date: Sat, 11 May 2013 22:06:41 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] next cycle fun: ->release() API change
+Message-ID: <20130511210641.GQ25399@ZenIV.linux.org.uk>
+References: <20130509050343.GD25399@ZenIV.linux.org.uk>
+ <CA+55aFzNuEx8705x3NckigLdRMrEWehyEmgLcJ3kF=BPDZo+Bg@mail.gmail.com>
+ <20130511172242.GP25399@ZenIV.linux.org.uk>
+ <CA+55aFzsgr6ZHWxNRvM3VZu=bWn75TfGb0EAXO1wdFnBFTCz-Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [RFC 17/42] drivers/net/ethernet/renesas: don't check resource
- with devm_ioremap_resource
-References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de> <1368173847-5661-18-git-send-email-wsa@the-dreams.de>
-In-Reply-To: <1368173847-5661-18-git-send-email-wsa@the-dreams.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzsgr6ZHWxNRvM3VZu=bWn75TfGb0EAXO1wdFnBFTCz-Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sat, May 11, 2013 at 12:16:22PM -0700, Linus Torvalds wrote:
 
-On 05/10/2013 12:17 PM, Wolfram Sang wrote:
+> >> Because renaming really doesn't buy us anything but pain.
+> >
+> > Umm...  I'd rather go the whole way and get rid of inode argument as well,
+> > while we are at it.  It's completely redundant and it's unused in very large
+> > majority of the instances.
+> 
+> So? What's the advantage of removing it?
 
-> devm_ioremap_resource does sanity checks on the given resource. No need to
-> duplicate this in the driver.
->
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> ---
->   drivers/net/ethernet/renesas/sh_eth.c |   14 +-------------
->   1 file changed, 1 insertion(+), 13 deletions(-)
->
-> diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
-> index 33dc6f2..6175839 100644
-> --- a/drivers/net/ethernet/renesas/sh_eth.c
-> +++ b/drivers/net/ethernet/renesas/sh_eth.c
-> @@ -2661,14 +2661,6 @@ static int sh_eth_drv_probe(struct platform_device *pdev)
->   	struct sh_eth_private *mdp = NULL;
->   	struct sh_eth_plat_data *pd = pdev->dev.platform_data;
->   
-> -	/* get base addr */
-> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (unlikely(res == NULL)) {
-> -		dev_err(&pdev->dev, "invalid resource\n");
-> -		ret = -EINVAL;
-> -		goto out;
-> -	}
-> -
->   	ndev = alloc_etherdev(sizeof(struct sh_eth_private));
->   	if (!ndev) {
->   		ret = -ENOMEM;
+Less boilerplate?  We used to pass inode to fput() as well, but
+switched to passing file alone...  Put it that way - if you were adding
+such method today, would you bother with passing an argument that is
+unused by most of the instances and can be trivially obtained from the
+argument we have to pass?  Sure, back then you had the opposite
+situation - all non-empty instances were using inode (and none of them
+even looked at file), but with the mix we have these days...
+Hell knows; I agree that if we really try to preserve the interface
+compatibility here, just switching the return type wins, but since
+the conversion for every particular driver is trivial anyway...
 
-     There's ndev->base_addr = res->start; below this which you broke. NAK.
-You should really compile-test your patches.
+> Also, "->close()" would be *exactly* the wrong name to call this,
+> since it would be absolutely and utterly misleading. "->release()" is
+> _not_ about close, and in fact the whole return code is partially due
+> to people thinking it is. It's "->flush()" that gets called at close
+> time.
 
-WBR, Sergei
-
+Agreed - I'd welcome any alternative suggestions, and yes, I understand your
+point re "just call it 'release'".
