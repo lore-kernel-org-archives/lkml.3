@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab3EKANd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 May 2013 20:13:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11649 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356Ab3EKANF (ORCPT
+	id S1756890Ab3EKASG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 May 2013 20:18:06 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:56262 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754378Ab3EKASD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 May 2013 20:13:05 -0400
-X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Q01Ji7nO_U0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=n6nKWzXh2cUA:10 a=VwQbUJbxAAAA:8 a=LMcSrfU8RRQBovQVaDYA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=JTMqrY5UvyEA:10 a=LI9Vle30uBYA:10 a=c3d4ZAKcgtrIh3wP5qgA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130511001303.237466370@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 10 May 2013 20:12:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnd Bergmann <arnd@arndb.de>, Robert Richter <rric@kernel.org>
-Subject: [PATCH 01/18] ring-buffer: Select IRQ_WORK
-References: <20130511001206.477862307@goodmis.org>
-Content-Disposition: inline; filename=0001-ring-buffer-Select-IRQ_WORK.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Fri, 10 May 2013 20:18:03 -0400
+Date: Sat, 11 May 2013 02:17:58 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Olivier Langlois <olivier@trillion01.com>
+Cc: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 1/7] posix-cpu-timers: don't account cpu timer after
+ stopped thread runtime accounting
+Message-ID: <20130511001756.GA13340@somewhere>
+References: <1367556468-4021-1-git-send-email-kosaki.motohiro@gmail.com>
+ <1367556468-4021-3-git-send-email-kosaki.motohiro@gmail.com>
+ <20130506234717.GA1703@somewhere>
+ <1367896600.14310.49.camel@Wailaba2>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367896600.14310.49.camel@Wailaba2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, May 06, 2013 at 11:16:40PM -0400, Olivier Langlois wrote:
+> On Tue, 2013-05-07 at 01:47 +0200, Frederic Weisbecker wrote:
+> > On Fri, May 03, 2013 at 12:47:42AM -0400, kosaki.motohiro@gmail.com wrote:
+> > > From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > 
+> > > When tsk->signal->cputimer->running is 1, signal->cputimer and
+> > > tsk->sum_sched_runtime increase at the same pace because update_curr()
+> > > increases both accounting.
+> > > 
+> > > However, there is one exception. When thread exiting, __exit_signal() turns
+> > > over task's sum_shced_runtime to sig->sum_sched_runtime, but it doesn't stop
+> > > signal->cputimer accounting.
+> > > 
+> > > This inconsistency makes POSIX timer wake up too early. This patch fixes it.
+> > > 
+> > > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > > Cc: Ingo Molnar <mingo@kernel.org>
+> > > Acked-by: Peter Zijlstra <peterz@infradead.org>
+> > > Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+> > > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > ---
+> > >  kernel/sched/stats.h |    7 +++++++
+> > >  1 files changed, 7 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/kernel/sched/stats.h b/kernel/sched/stats.h
+> > > index 2ef90a5..5a0cfc4 100644
+> > > --- a/kernel/sched/stats.h
+> > > +++ b/kernel/sched/stats.h
+> > > @@ -225,6 +225,13 @@ static inline void account_group_exec_runtime(struct task_struct *tsk,
+> > >       if (!cputimer->running)
+> > >               return;
+> > >  
+> > > +     /*
+> > > +      * After turning over se.sum_exec_runtime to sig->sum_sched_runtime
+> > > +      * in __exit_signal(), we must not account exec_runtime for consistency.
+> > > +      */
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Please just precise the nature of that consistency: the fact we want CLOCK_PROCESS_CPUTIME_ID
+clock and timer to be consistent.
 
-As the wake up logic for waiters on the buffer has been moved
-from the tracing code to the ring buffer, it requires also adding
-IRQ_WORK as the wake up code is performed via irq_work.
+> > > +     if (unlikely(!tsk->sighand))
+> > > +             return;
+> > 
+> > Ok, if we want the clock and timer to be consistent, do we also want the same check in
+> > account_group_user_time() and account_group_system_time()? The task can still account
+> > a tick after autoreaping itself between release_task() and the final schedule().
+> > 
+> If I can reply, I believe that Kosaki refactoring is superior to my
+> initial proposal because:
+> 
+> 1. Condition will only be evaluated when cputimer is on (and not slow
+> down scheduler when it is off)
+> 2. It handles all the cases when this function is called. There are few
+> other places outside update_curr() that this function is called.
 
-This fixes compile breakage when a user of the ring buffer is selected
-but tracing and irq_work are not.
+Agreed. Thanks!
 
-Link http://lkml.kernel.org/r/20130503115332.GT8356@rric.localhost
-
-Cc: Arnd Bergmann <arnd@arndb.de>
-Reported-by: Robert Richter <rric@kernel.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 5e9efd4..015f85a 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -71,6 +71,7 @@ config TRACE_CLOCK
- config RING_BUFFER
- 	bool
- 	select TRACE_CLOCK
-+	select IRQ_WORK
-=20
- config FTRACE_NMI_ENTER
-        bool
-@@ -107,7 +108,6 @@ config TRACING
- 	select BINARY_PRINTF
- 	select EVENT_TRACING
- 	select TRACE_CLOCK
--	select IRQ_WORK
-=20
- config GENERIC_TRACER
- 	bool
---=20
-1.7.10.4
-
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJRjY0PAAoJEOdOSU1xswtMAK4IALDc/YMupGTSZZmHYSMJpC2E
-KEextlNZAP6LpEaXbRtff6MT3jwrzzy2Co8CoEKBWf1wW2yvBjAMwcgxAMOgqruU
-B5+ErOajAHbUUuxwajDmgsJqefLgwgynG3rustjUMO8ChYLAKxOPLidgR5n3MZnX
-OF+HXKlIimFRhbItBdiTH2RkKq38V+tItRs2GdKmM8I2Ak4e7HbJwj2W/osTkHCF
-FscYoXyoqF2Sl9wLPLv5j5r7Xxzl9qDBQ2zasXRNmW92GvRS69xVHuc3rsNevAH6
-COoLcijqo6Keru/ifqFmOQMsYllwPBvNs3s203AB51gziRzmaUqW9kT5Tm9RKKM=
-=Fe6l
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
