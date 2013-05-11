@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab3EKThx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 15:37:53 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:39337 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753802Ab3EKThw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 15:37:52 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [uclinux-dist-devel] [GIT PULL] Blackfin updates for 3.10
-Date: Sat, 11 May 2013 15:37:52 -0400
-User-Agent: KMail/1.13.7 (Linux/3.8.3; KDE/4.6.5; x86_64; ; )
-Cc: Steven Miao <realmz6@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Bob Liu <lliubbo@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <1368098909-919-1-git-send-email-realmz6@gmail.com> <20130510102706.84061f044d3e59717638b731@canb.auug.org.au> <CAMk6uBk2inVj8Hu8YZ3tQ86OMh-Ub86eJmx9csrmFO+H4zq0rQ@mail.gmail.com>
-In-Reply-To: <CAMk6uBk2inVj8Hu8YZ3tQ86OMh-Ub86eJmx9csrmFO+H4zq0rQ@mail.gmail.com>
+	id S1754084Ab3EKUFn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 16:05:43 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:59090 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738Ab3EKUFl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 16:05:41 -0400
+Message-ID: <518EA49F.50206@cogentembedded.com>
+Date: Sun, 12 May 2013 00:05:51 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart19853719.1PNPm1igi4";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Jiang Liu <liuj97@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6, part3 15/16] mm: report available pages as "MemTotal"
+ for each NUMA node
+References: <1368293689-16410-1-git-send-email-jiang.liu@huawei.com> <1368293689-16410-16-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1368293689-16410-16-git-send-email-jiang.liu@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201305111537.54782.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart19853719.1PNPm1igi4
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Hello.
 
-On Thursday 09 May 2013 22:48:54 Steven Miao wrote:
-> Hi Stephen,
+On 05/11/2013 09:34 PM, Jiang Liu wrote:
 
-please don't top post
+    I've noticed a small typo in the changelog.
 
-> Yes, please update the current blackfin tree with:
->=20
->   https://github.com/realmz/blackfin-linux.git  blackfin-linus
+> As reported by https://bugzilla.kernel.org/show_bug.cgi?id=53501,
+> "MemTotal" from /proc/meminfo means memory pages managed by the buddy
+> system (managed_pages), but "MemTotal" from /sys/.../node/nodex/meminfo
+> means phsical pages present (present_pages) within the NUMA node.
 
-why don't you sign up for an account on kernel.org and host your tree there=
- ?
-=2Dmike
+     s/phsical/physical/
 
---nextPart19853719.1PNPm1igi4
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+> There's a difference between managed_pages and present_pages due to
+> bootmem allocator and reserved pages.
+>
+> And Documentation/filesystems/proc.txt says
+>      MemTotal: Total usable ram (i.e. physical ram minus a few reserved
+>                bits and the kernel binary code)
+>
+> So change /sys/.../node/nodex/meminfo to report available pages within
+> the node as "MemTotal".
+>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Reported-by: sworddragon2@aol.com
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: linux-mm@kvack.org
+> Cc: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+WBR, Sergei
 
-iQIcBAABAgAGBQJRjp4SAAoJEEFjO5/oN/WB8KUQAI84xkYBh1J5EsPCyEIP/nBD
-fX1cHShlwJlc+3UzEjno8s1eILkKQsT8Xb9PkOqiedN1NvNegFb3O62I8xk++rz1
-6WhYLRbOWtWwetVKpPMMqrEvY+DeNiwAvyezwwIRr/U7nZxWnqXGDS3xddlciiIq
-zD4njoGS+vnaKb4MS8/zIb0VbP4a9P8imL3IFKZ5U+ZW0OmFTk4YQj16NP29rEKj
-TWy+LjlS5aNHnfX8g/OJkSGWk/pdzLNJobxfLoRsAbHlLg0Cqwxlj8l5OMpqxEXm
-Unu6UVPImiGJzxhWeyKzu67nj63ITvbhW3hzi+8XNBOEhVsW/VN8aIhc5dA6gVxP
-JROO42U+NHeRlZlr70SjWxh0TbIWtVNWk2yfc84BtSUuX5Y6asQo2CnWvEcqXWrU
-bvgeaaGb6eqinVBbN3WscpBxw26dn1CDF07l4X9PGZNTFt8C8ZAhkiq/7oYst5Wm
-xCpS0m3UH070t4NRLinsLIGyerGo2cK7hfrMhOTPte2Xcr1Bs4pWsUmD2IziScu2
-d7iXjt9xEDrsvFzNkOpFLRCtk3auqKXTAHiaTXAeuAAVdbTyj4GBgirpg8g6clfI
-Z7gP1tWZ4fB048Y362yKotVJcn/Utb0v7SCFNKofVfMwYE+0++zbMUm3ns6NVwpd
-QsJiso7gHWh4+NOyafA2
-=OlR2
------END PGP SIGNATURE-----
-
---nextPart19853719.1PNPm1igi4--
