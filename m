@@ -1,124 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415Ab3EKMtE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 08:49:04 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:58366 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751990Ab3EKMtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 08:49:02 -0400
-Date: Sat, 11 May 2013 07:49:00 -0500
-From: Robin Holt <holt@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Russ Anderson <rja@sgi.com>,
-        Robin Holt <holt@sgi.com>, Russell King <linux@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH -v10 00/11] Shutdown from reboot_cpuid without stopping
- other cpus.
-Message-ID: <20130511124900.GA3672@sgi.com>
-References: <1368273447-11958-1-git-send-email-holt@sgi.com>
+	id S1752396Ab3EKNBc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 09:01:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46038 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab3EKNBa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 09:01:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368273447-11958-1-git-send-email-holt@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <s5hobcjuqmy.wl%tiwai@suse.de>
+References: <1367996197-32748-1-git-send-email-tiwai@suse.de>
+	<1367996197-32748-2-git-send-email-tiwai@suse.de>
+	<CACVXFVM2ZFYeJND7nxGhyGU7cG08Hta5qBZMAz+rDhxM1kRWZA@mail.gmail.com>
+	<s5hd2t1wih4.wl%tiwai@suse.de>
+	<s5h38txwhqq.wl%tiwai@suse.de>
+	<s5hsj1xxsv2.wl%tiwai@suse.de>
+	<CACVXFVPH1W8ogaus49WNyU17xcbbZ=_2F2FD4Yv_DJcdDov8EQ@mail.gmail.com>
+	<s5hmws4y5h7.wl%tiwai@suse.de>
+	<CACVXFVPRLiP3wFL6CZbKxS73JRDybtig83vhjQ6q-yoM8uLPyg@mail.gmail.com>
+	<s5hd2t0xexl.wl%tiwai@suse.de>
+	<CACVXFVMEif3gqkQxzae+ooYofD8pcuJzpgz6gY3Mexch0jpbmA@mail.gmail.com>
+	<s5hobcjuqmy.wl%tiwai@suse.de>
+Date: Sat, 11 May 2013 21:01:27 +0800
+Message-ID: <CACVXFVPo7ED5fo1+FT=ibM_HvB2h1Vc7P2e+C_LHGw-BQ9e-tA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] firmware: Avoid superfluous usermodehelper lock
+From: Ming Lei <ming.lei@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I will resubmit a -v11 with Russell's comment about the wrongly added
-^// in a bit.
+On Fri, May 10, 2013 at 5:32 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Fri, 10 May 2013 09:25:51 +0800,
+>>
+>> Anyway, if you want to force killing loader, please only kill these
+>> FW_ACTION_NOHOTPLUG before suspend and reboot, and do
+>> not touch FW_ACTION_HOTPLUG. Is it OK for you?
+>
+> Note that, as with my patch, only the shutdown case is handled.  Let's
+> not mixing up suspend and shutdown behavior for now.
+>
+> I see no reason why we need to wait at shutdown even for
+> FW_ACTION_HOTPLUG.  At that point, there should be no longer
+> user-space action.  It means that the driver shouldn't get any more
+> data to finish the f/w loading upon that point.  Thus the only
 
-Robin
+For example, when one ethernet driver is requesting its firmware,
+the loader is forced to be killed before shutdown, so the driver can't set the
+WoL any more in its shutdown(), then users start to complain it is a
+regression.
 
-On Sat, May 11, 2013 at 06:57:16AM -0500, Robin Holt wrote:
-> We recently noticed that reboot of a 1024 cpu machine takes approx 16
-> minutes of just stopping the cpus.  The slowdown was tracked to commit
-> f96972f.
-> 
-> The current implementation does all the work of hot removing the cpus
-> before halting the system.  We are switching to just migrating to the
-> reboot_cpu and then continuing with shutdown/reboot.
-> 
-> The patch set is broken into eleven parts.  The first two are planned for
-> the stable release.  The others move the halt/shutdown/reboot related
-> functions to their own kernel/reboot.c file and then move the handling
-> of the kernel reboot= kernel parameter to generic kernel code.
-> 
-> Changes since -v9
->  - Added Ingo's Acked-by for x86.
-> 
->  - Added Guan's Acked-by for unicore32.
-> 
->  - Replaced first patch with updated patch from Srivatsa S. Bhat.
->    This compiles for alpha allmodconfig, all arm defconfigs, and a few
->    test x86_64 defconfigs.  I have not tried more.
-> 
-> Changes since -v8
->  - Changes reboot_cpu on stack to cpu to fix bug noticed by Russell King.
-> 
->  - Switched unicore32 and arm from using REBOOT_WARM/COLD to HARD/SOFT.
-> 
->  - Fixed case statement bug.
-> 
->  - Went to using simple_strtoul for parsing reboot_cpu=smp###.
-> 
->  - Made parsing of reboot= not use any #ifdef'd code.
-> 
-> Changes since -v7.
->  - Fixed authorship for first patch.
-> 
->  - Rebased to Linus' current tree (51a26ae7a).
-> 
-> Changes since -v6.
->  - Cross compiled all arm architectures (using v3.9 kernel.  Fails with
->    current).
-> 
->  - Added a #define for non-hotplug case.
-> 
->  - Add #define for PF_THREAD_BOUND as compatibility to make stable easier.
-> 
->  - Fixup s/reboot_cpu_id/reboot_cpu/
-> 
->  - Add include of linux/uaccess.h to allow building on arm.
-> 
->  - Removed last remaining checkpatch.pl line length warning on
->    kernel/reboot.c.
-> 
->  - Fixed the duplicate handling or the reboot= kernel parameter.
-> 
-> Changes since -v5.
->  - Moved the arch/x86 reboot= up to the generic kernel code.
-> 
-> Changes since -v4.
->  - Integrated Srivatsa S. Bhat creating cpu_hotplug_disable()
->    function
-> 
->  - Integrated comments by Srivatsa S. Bhat.
-> 
->  - Made one more comment consistent with others in function.
-> 
-> Changes since -v3.
->  - Added a tested-by for the original reporter.
-> 
->  - Fix compile failure found by Joe Perches.
-> 
->  - Integrated comments by Joe Perches.
-> 
-> 
-> To: Andrew Morton <akpm@linux-foundation.org>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Russ Anderson <rja@sgi.com>
-> Cc: Robin Holt <holt@sgi.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-> Cc: the arch/x86 maintainers <x86@kernel.org>
-> Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+That is why I suggest you to only kill requests of FW_ACTION_NOHOTPLUG.
+
+Also it isn't good to affect all drivers just for fixing two insane drivers.
+
+> possible consequence is the timeout, which is equivalent with the
+> immediate abort of the operation.
+>
+> As mentioned earlier, the suspend behavior may be different.  We want
+> to retry the f/w load.  Ideally, the f/w loader should abort and
+> automatically retry after resume.  In this case, also there is no big
+
+I don't think it is good idea since suspend() may need firmware to
+change the device's power state. Considered that only two insane
+drivers use FW_ACTION_NOHOTPLUG, we can kill the two before
+suspend just like the case of shutdown.
+
+> reason to distinguish FW_ACTION_* types.  Even for udev case, the
+> action can be easily retried.
+>
+> Or, a cleaner solution would be to get rid of FW_ACTION_NOHOTPLUG
+> completely.  As Kay mentioned, this was a big mistake from the very
+
+It is still not a good idea, hackers may need FW_ACTION_NOHOTPLUG
+to debug its driver with private firmwares, or examples like dell's BIOS update.
+
+
+Thanks,
+--
+Ming Lei
