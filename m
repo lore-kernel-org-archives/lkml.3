@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524Ab3EKLaQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 07:30:16 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:50471 "EHLO gloria.sntech.de"
+	id S1751682Ab3EKLat (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 07:30:49 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:50489 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751038Ab3EKLaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 07:30:14 -0400
+	id S1751112Ab3EKLas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 07:30:48 -0400
 From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
 To: Dan Williams <djbw@fb.com>
-Subject: [RFC 0/4] ARM: S3C24XX: add dmaengine based dma-driver
-Date: Sat, 11 May 2013 13:30:04 +0200
+Subject: [RFC 1/4] ARM: S3C24XX: number the dma clocks
+Date: Sat, 11 May 2013 13:30:43 +0200
 User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
 Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
         linux-arm-kernel@lists.infradead.org
+References: <201305111330.05046.heiko@sntech.de>
+In-Reply-To: <201305111330.05046.heiko@sntech.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201305111330.05046.heiko@sntech.de>
+Message-Id: <201305111330.43669.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series tries to provide a basic dmaengine driver for the s3c24xx
-SoCs.
+Each dma channel has its own clock. The upcoming dma driver wants to
+handle these itself and therefore needs to be able to get the correct
+clock for a channel.
 
-The driver currently has some limitations, in that it does not support the
-earlier s3c24xx socs, that cannot use every channel, but have special
-channel requirements for specific slave-targets.
+Therefore rename the dma clocks to "dma.X" for s3c2412, s3c2416 and
+s3c2443. This does not change the behaviour for the old dma driver at
+all, as all dma clocks are still always on and not handled by the old
+dma driver at all.
 
-Another limitation is, that it currently does not support scatter-gather
-lists with more than element, due to me not understanding sg at first.
-While it does not hinder the usability, as all applicable Samsung drivers
-currently use only 1-element-lists, I plan to fix this in the next revision.
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+are always enabled in the original code.
+---
+ arch/arm/mach-s3c24xx/clock-s3c2412.c  |    8 ++++----
+ arch/arm/mach-s3c24xx/common-s3c2443.c |   12 ++++++------
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
-In any case, I would be thankful for pointers to the obvious mistakes I'll
-probably have made, due to this being my first travel into dmaengine-land.
-
-
-Heiko Stuebner (4):
-  ARM: S3C24XX: number the dma clocks
-  dma: add dmaengine driver for Samsung s3c24xx SoCs
-  ARM: S3C24XX: add platform-devices for new dma driver for s3c2412 and s3c2443
-  ARM: SAMSUNG: set s3c24xx_dma_filter for s3c64xx-spi0 device
-
- arch/arm/mach-s3c24xx/clock-s3c2412.c     |    8 +-
- arch/arm/mach-s3c24xx/common-s3c2443.c    |   12 +-
- arch/arm/mach-s3c24xx/common.c            |  103 +++
- arch/arm/mach-s3c24xx/common.h            |    3 +
- arch/arm/plat-samsung/devs.c              |    5 +-
- drivers/dma/Kconfig                       |   12 +-
- drivers/dma/Makefile                      |    1 +
- drivers/dma/s3c24xx-dma.c                 | 1129 +++++++++++++++++++++++++++++
- include/linux/platform_data/dma-s3c24xx.h |   54 ++
- 9 files changed, 1315 insertions(+), 12 deletions(-)
- create mode 100644 drivers/dma/s3c24xx-dma.c
- create mode 100644 include/linux/platform_data/dma-s3c24xx.h
-
+diff --git a/arch/arm/mach-s3c24xx/clock-s3c2412.c b/arch/arm/mach-s3c24xx/clock-s3c2412.c
+index 2cc017d..26e2bdc 100644
+--- a/arch/arm/mach-s3c24xx/clock-s3c2412.c
++++ b/arch/arm/mach-s3c24xx/clock-s3c2412.c
+@@ -484,22 +484,22 @@ static struct clk init_clocks_disable[] = {
+ 
+ static struct clk init_clocks[] = {
+ 	{
+-		.name		= "dma",
++		.name		= "dma.0",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2412_clkcon_enable,
+ 		.ctrlbit	= S3C2412_CLKCON_DMA0,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.1",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2412_clkcon_enable,
+ 		.ctrlbit	= S3C2412_CLKCON_DMA1,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.2",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2412_clkcon_enable,
+ 		.ctrlbit	= S3C2412_CLKCON_DMA2,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.3",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2412_clkcon_enable,
+ 		.ctrlbit	= S3C2412_CLKCON_DMA3,
+diff --git a/arch/arm/mach-s3c24xx/common-s3c2443.c b/arch/arm/mach-s3c24xx/common-s3c2443.c
+index 869bb9c..7f78533 100644
+--- a/arch/arm/mach-s3c24xx/common-s3c2443.c
++++ b/arch/arm/mach-s3c24xx/common-s3c2443.c
+@@ -500,32 +500,32 @@ static struct clk init_clocks_off[] = {
+ 
+ static struct clk init_clocks[] = {
+ 	{
+-		.name		= "dma",
++		.name		= "dma.0",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2443_clkcon_enable_h,
+ 		.ctrlbit	= S3C2443_HCLKCON_DMA0,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.1",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2443_clkcon_enable_h,
+ 		.ctrlbit	= S3C2443_HCLKCON_DMA1,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.2",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2443_clkcon_enable_h,
+ 		.ctrlbit	= S3C2443_HCLKCON_DMA2,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.3",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2443_clkcon_enable_h,
+ 		.ctrlbit	= S3C2443_HCLKCON_DMA3,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.4",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2443_clkcon_enable_h,
+ 		.ctrlbit	= S3C2443_HCLKCON_DMA4,
+ 	}, {
+-		.name		= "dma",
++		.name		= "dma.5",
+ 		.parent		= &clk_h,
+ 		.enable		= s3c2443_clkcon_enable_h,
+ 		.ctrlbit	= S3C2443_HCLKCON_DMA5,
 -- 
 1.7.2.3
 
