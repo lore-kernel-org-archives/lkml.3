@@ -1,101 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab3EKL5g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 07:57:36 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:59306 "EHLO relay.sgi.com"
+	id S1752548Ab3EKL55 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 07:57:57 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:55592 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751042Ab3EKL5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 07:57:35 -0400
+	id S1752131Ab3EKL5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 07:57:44 -0400
 From: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Russ Anderson <rja@sgi.com>,
-        Robin Holt <holt@sgi.com>, Russell King <linux@arm.linux.org.uk>,
+Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russ Anderson <rja@sgi.com>, Russell King <linux@arm.linux.org.uk>,
         Guan Xuetao <gxt@mprc.pku.edu.cn>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         the arch/x86 maintainers <x86@kernel.org>,
         Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH -v10 00/11] Shutdown from reboot_cpuid without stopping other cpus.
-Date: Sat, 11 May 2013 06:57:16 -0500
-Message-Id: <1368273447-11958-1-git-send-email-holt@sgi.com>
+Subject: [PATCH -v10 04/11] Move shutdown/reboot related functions to kernel/reboot.c
+Date: Sat, 11 May 2013 06:57:20 -0500
+Message-Id: <1368273447-11958-5-git-send-email-holt@sgi.com>
 X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1368273447-11958-1-git-send-email-holt@sgi.com>
+References: <1368273447-11958-1-git-send-email-holt@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We recently noticed that reboot of a 1024 cpu machine takes approx 16
-minutes of just stopping the cpus.  The slowdown was tracked to commit
-f96972f.
+This patch is preparatory.  It moves reboot related syscall, etc
+functions from kernel/sys.c to kernel/reboot.c.
 
-The current implementation does all the work of hot removing the cpus
-before halting the system.  We are switching to just migrating to the
-reboot_cpu and then continuing with shutdown/reboot.
-
-The patch set is broken into eleven parts.  The first two are planned for
-the stable release.  The others move the halt/shutdown/reboot related
-functions to their own kernel/reboot.c file and then move the handling
-of the kernel reboot= kernel parameter to generic kernel code.
-
-Changes since -v9
- - Added Ingo's Acked-by for x86.
-
- - Added Guan's Acked-by for unicore32.
-
- - Replaced first patch with updated patch from Srivatsa S. Bhat.
-   This compiles for alpha allmodconfig, all arm defconfigs, and a few
-   test x86_64 defconfigs.  I have not tried more.
-
-Changes since -v8
- - Changes reboot_cpu on stack to cpu to fix bug noticed by Russell King.
-
- - Switched unicore32 and arm from using REBOOT_WARM/COLD to HARD/SOFT.
-
- - Fixed case statement bug.
-
- - Went to using simple_strtoul for parsing reboot_cpu=smp###.
-
- - Made parsing of reboot= not use any #ifdef'd code.
-
-Changes since -v7.
- - Fixed authorship for first patch.
-
- - Rebased to Linus' current tree (51a26ae7a).
-
-Changes since -v6.
- - Cross compiled all arm architectures (using v3.9 kernel.  Fails with
-   current).
-
- - Added a #define for non-hotplug case.
-
- - Add #define for PF_THREAD_BOUND as compatibility to make stable easier.
-
- - Fixup s/reboot_cpu_id/reboot_cpu/
-
- - Add include of linux/uaccess.h to allow building on arm.
-
- - Removed last remaining checkpatch.pl line length warning on
-   kernel/reboot.c.
-
- - Fixed the duplicate handling or the reboot= kernel parameter.
-
-Changes since -v5.
- - Moved the arch/x86 reboot= up to the generic kernel code.
-
-Changes since -v4.
- - Integrated Srivatsa S. Bhat creating cpu_hotplug_disable()
-   function
-
- - Integrated comments by Srivatsa S. Bhat.
-
- - Made one more comment consistent with others in function.
-
-Changes since -v3.
- - Added a tested-by for the original reporter.
-
- - Fix compile failure found by Joe Perches.
-
- - Integrated comments by Joe Perches.
-
-
+Signed-off-by: Robin Holt <holt@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: H. Peter Anvin <hpa@zytor.com>
 Cc: Russ Anderson <rja@sgi.com>
@@ -105,3 +37,740 @@ Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: the arch/x86 maintainers <x86@kernel.org>
 Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+
+---
+
+Changes since -v6:
+ - Add include of linux/uaccess.h to allow building on arm.
+---
+ kernel/Makefile |   2 +-
+ kernel/reboot.c | 347 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sys.c    | 331 -----------------------------------------------------
+ 3 files changed, 348 insertions(+), 332 deletions(-)
+ create mode 100644 kernel/reboot.c
+
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 271fd31..470839d 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -9,7 +9,7 @@ obj-y     = fork.o exec_domain.o panic.o printk.o \
+ 	    rcupdate.o extable.o params.o posix-timers.o \
+ 	    kthread.o wait.o sys_ni.o posix-cpu-timers.o mutex.o \
+ 	    hrtimer.o rwsem.o nsproxy.o srcu.o semaphore.o \
+-	    notifier.o ksysfs.o cred.o \
++	    notifier.o ksysfs.o cred.o reboot.o \
+ 	    async.o range.o groups.o lglock.o smpboot.o
+ 
+ ifdef CONFIG_FUNCTION_TRACER
+diff --git a/kernel/reboot.c b/kernel/reboot.c
+new file mode 100644
+index 0000000..0616483
+--- /dev/null
++++ b/kernel/reboot.c
+@@ -0,0 +1,347 @@
++/*
++ *  linux/kernel/reboot.c
++ *
++ *  Copyright (C) 2013  Linus Torvalds
++ */
++
++#include <linux/export.h>
++#include <linux/kexec.h>
++#include <linux/kmod.h>
++#include <linux/kmsg_dump.h>
++#include <linux/reboot.h>
++#include <linux/suspend.h>
++#include <linux/syscalls.h>
++#include <linux/syscore_ops.h>
++#include <linux/uaccess.h>
++
++/*
++ * this indicates whether you can reboot with ctrl-alt-del: the default is yes
++ */
++
++int C_A_D = 1;
++struct pid *cad_pid;
++EXPORT_SYMBOL(cad_pid);
++
++/*
++ * If set, this is used for preparing the system to power off.
++ */
++
++void (*pm_power_off_prepare)(void);
++
++/**
++ *	emergency_restart - reboot the system
++ *
++ *	Without shutting down any hardware or taking any locks
++ *	reboot the system.  This is called when we know we are in
++ *	trouble so this is our best effort to reboot.  This is
++ *	safe to call in interrupt context.
++ */
++void emergency_restart(void)
++{
++	kmsg_dump(KMSG_DUMP_EMERG);
++	machine_emergency_restart();
++}
++EXPORT_SYMBOL_GPL(emergency_restart);
++
++void kernel_restart_prepare(char *cmd)
++{
++	blocking_notifier_call_chain(&reboot_notifier_list, SYS_RESTART, cmd);
++	system_state = SYSTEM_RESTART;
++	usermodehelper_disable();
++	device_shutdown();
++}
++
++/**
++ *	register_reboot_notifier - Register function to be called at reboot time
++ *	@nb: Info about notifier function to be called
++ *
++ *	Registers a function with the list of functions
++ *	to be called at reboot time.
++ *
++ *	Currently always returns zero, as blocking_notifier_chain_register()
++ *	always returns zero.
++ */
++int register_reboot_notifier(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_register(&reboot_notifier_list, nb);
++}
++EXPORT_SYMBOL(register_reboot_notifier);
++
++/**
++ *	unregister_reboot_notifier - Unregister previously registered reboot notifier
++ *	@nb: Hook to be unregistered
++ *
++ *	Unregisters a previously registered reboot
++ *	notifier function.
++ *
++ *	Returns zero on success, or %-ENOENT on failure.
++ */
++int unregister_reboot_notifier(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_unregister(&reboot_notifier_list, nb);
++}
++EXPORT_SYMBOL(unregister_reboot_notifier);
++
++static void migrate_to_reboot_cpu(void)
++{
++	/* The boot cpu is always logical cpu 0 */
++	int cpu = 0;
++
++	cpu_hotplug_disable();
++
++	/* Make certain the cpu I'm about to reboot on is online */
++	if (!cpu_online(cpu))
++		cpu = cpumask_first(cpu_online_mask);
++
++	/* Prevent races with other tasks migrating this task */
++	current->flags |= PF_NO_SETAFFINITY;
++
++	/* Make certain I only run on the appropriate processor */
++	set_cpus_allowed_ptr(current, cpumask_of(cpu));
++}
++
++/**
++ *	kernel_restart - reboot the system
++ *	@cmd: pointer to buffer containing command to execute for restart
++ *		or %NULL
++ *
++ *	Shutdown everything and perform a clean reboot.
++ *	This is not safe to call in interrupt context.
++ */
++void kernel_restart(char *cmd)
++{
++	kernel_restart_prepare(cmd);
++	migrate_to_reboot_cpu();
++	syscore_shutdown();
++	if (!cmd)
++		printk(KERN_EMERG "Restarting system.\n");
++	else
++		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
++	kmsg_dump(KMSG_DUMP_RESTART);
++	machine_restart(cmd);
++}
++EXPORT_SYMBOL_GPL(kernel_restart);
++
++static void kernel_shutdown_prepare(enum system_states state)
++{
++	blocking_notifier_call_chain(&reboot_notifier_list,
++		(state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
++	system_state = state;
++	usermodehelper_disable();
++	device_shutdown();
++}
++/**
++ *	kernel_halt - halt the system
++ *
++ *	Shutdown everything and perform a clean system halt.
++ */
++void kernel_halt(void)
++{
++	kernel_shutdown_prepare(SYSTEM_HALT);
++	migrate_to_reboot_cpu();
++	syscore_shutdown();
++	printk(KERN_EMERG "System halted.\n");
++	kmsg_dump(KMSG_DUMP_HALT);
++	machine_halt();
++}
++
++EXPORT_SYMBOL_GPL(kernel_halt);
++
++/**
++ *	kernel_power_off - power_off the system
++ *
++ *	Shutdown everything and perform a clean system power_off.
++ */
++void kernel_power_off(void)
++{
++	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
++	if (pm_power_off_prepare)
++		pm_power_off_prepare();
++	migrate_to_reboot_cpu();
++	syscore_shutdown();
++	printk(KERN_EMERG "Power down.\n");
++	kmsg_dump(KMSG_DUMP_POWEROFF);
++	machine_power_off();
++}
++EXPORT_SYMBOL_GPL(kernel_power_off);
++
++static DEFINE_MUTEX(reboot_mutex);
++
++/*
++ * Reboot system call: for obvious reasons only root may call it,
++ * and even root needs to set up some magic numbers in the registers
++ * so that some mistake won't make this reboot the whole machine.
++ * You can also set the meaning of the ctrl-alt-del-key here.
++ *
++ * reboot doesn't sync: do that yourself before calling this.
++ */
++SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
++		void __user *, arg)
++{
++	struct pid_namespace *pid_ns = task_active_pid_ns(current);
++	char buffer[256];
++	int ret = 0;
++
++	/* We only trust the superuser with rebooting the system. */
++	if (!ns_capable(pid_ns->user_ns, CAP_SYS_BOOT))
++		return -EPERM;
++
++	/* For safety, we require "magic" arguments. */
++	if (magic1 != LINUX_REBOOT_MAGIC1 ||
++	    (magic2 != LINUX_REBOOT_MAGIC2 &&
++	                magic2 != LINUX_REBOOT_MAGIC2A &&
++			magic2 != LINUX_REBOOT_MAGIC2B &&
++	                magic2 != LINUX_REBOOT_MAGIC2C))
++		return -EINVAL;
++
++	/*
++	 * If pid namespaces are enabled and the current task is in a child
++	 * pid_namespace, the command is handled by reboot_pid_ns() which will
++	 * call do_exit().
++	 */
++	ret = reboot_pid_ns(pid_ns, cmd);
++	if (ret)
++		return ret;
++
++	/* Instead of trying to make the power_off code look like
++	 * halt when pm_power_off is not set do it the easy way.
++	 */
++	if ((cmd == LINUX_REBOOT_CMD_POWER_OFF) && !pm_power_off)
++		cmd = LINUX_REBOOT_CMD_HALT;
++
++	mutex_lock(&reboot_mutex);
++	switch (cmd) {
++	case LINUX_REBOOT_CMD_RESTART:
++		kernel_restart(NULL);
++		break;
++
++	case LINUX_REBOOT_CMD_CAD_ON:
++		C_A_D = 1;
++		break;
++
++	case LINUX_REBOOT_CMD_CAD_OFF:
++		C_A_D = 0;
++		break;
++
++	case LINUX_REBOOT_CMD_HALT:
++		kernel_halt();
++		do_exit(0);
++		panic("cannot halt");
++
++	case LINUX_REBOOT_CMD_POWER_OFF:
++		kernel_power_off();
++		do_exit(0);
++		break;
++
++	case LINUX_REBOOT_CMD_RESTART2:
++		if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
++			ret = -EFAULT;
++			break;
++		}
++		buffer[sizeof(buffer) - 1] = '\0';
++
++		kernel_restart(buffer);
++		break;
++
++#ifdef CONFIG_KEXEC
++	case LINUX_REBOOT_CMD_KEXEC:
++		ret = kernel_kexec();
++		break;
++#endif
++
++#ifdef CONFIG_HIBERNATION
++	case LINUX_REBOOT_CMD_SW_SUSPEND:
++		ret = hibernate();
++		break;
++#endif
++
++	default:
++		ret = -EINVAL;
++		break;
++	}
++	mutex_unlock(&reboot_mutex);
++	return ret;
++}
++
++static void deferred_cad(struct work_struct *dummy)
++{
++	kernel_restart(NULL);
++}
++
++/*
++ * This function gets called by ctrl-alt-del - ie the keyboard interrupt.
++ * As it's called within an interrupt, it may NOT sync: the only choice
++ * is whether to reboot at once, or just ignore the ctrl-alt-del.
++ */
++void ctrl_alt_del(void)
++{
++	static DECLARE_WORK(cad_work, deferred_cad);
++
++	if (C_A_D)
++		schedule_work(&cad_work);
++	else
++		kill_cad_pid(SIGINT, 1);
++}
++	
++
++char poweroff_cmd[POWEROFF_CMD_PATH_LEN] = "/sbin/poweroff";
++
++static int __orderly_poweroff(bool force)
++{
++	char **argv;
++	static char *envp[] = {
++		"HOME=/",
++		"PATH=/sbin:/bin:/usr/sbin:/usr/bin",
++		NULL
++	};
++	int ret;
++
++	argv = argv_split(GFP_KERNEL, poweroff_cmd, NULL);
++	if (argv) {
++		ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
++		argv_free(argv);
++	} else {
++		printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
++					 __func__, poweroff_cmd);
++		ret = -ENOMEM;
++	}
++
++	if (ret && force) {
++		printk(KERN_WARNING "Failed to start orderly shutdown: "
++					"forcing the issue\n");
++		/*
++		 * I guess this should try to kick off some daemon to sync and
++		 * poweroff asap.  Or not even bother syncing if we're doing an
++		 * emergency shutdown?
++		 */
++		emergency_sync();
++		kernel_power_off();
++	}
++
++	return ret;
++}
++
++static bool poweroff_force;
++
++static void poweroff_work_func(struct work_struct *work)
++{
++	__orderly_poweroff(poweroff_force);
++}
++
++static DECLARE_WORK(poweroff_work, poweroff_work_func);
++
++/**
++ * orderly_poweroff - Trigger an orderly system poweroff
++ * @force: force poweroff if command execution fails
++ *
++ * This may be called from any context to trigger a system shutdown.
++ * If the orderly shutdown fails, it will force an immediate shutdown.
++ */
++int orderly_poweroff(bool force)
++{
++	if (force) /* do not override the pending "true" */
++		poweroff_force = true;
++	schedule_work(&poweroff_work);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(orderly_poweroff);
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 17bb8d3..467a18f 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -116,20 +116,6 @@ EXPORT_SYMBOL(fs_overflowuid);
+ EXPORT_SYMBOL(fs_overflowgid);
+ 
+ /*
+- * this indicates whether you can reboot with ctrl-alt-del: the default is yes
+- */
+-
+-int C_A_D = 1;
+-struct pid *cad_pid;
+-EXPORT_SYMBOL(cad_pid);
+-
+-/*
+- * If set, this is used for preparing the system to power off.
+- */
+-
+-void (*pm_power_off_prepare)(void);
+-
+-/*
+  * Returns true if current's euid is same as p's uid or euid,
+  * or has CAP_SYS_NICE to p's user_ns.
+  *
+@@ -308,261 +294,6 @@ out_unlock:
+ 	return retval;
+ }
+ 
+-/**
+- *	emergency_restart - reboot the system
+- *
+- *	Without shutting down any hardware or taking any locks
+- *	reboot the system.  This is called when we know we are in
+- *	trouble so this is our best effort to reboot.  This is
+- *	safe to call in interrupt context.
+- */
+-void emergency_restart(void)
+-{
+-	kmsg_dump(KMSG_DUMP_EMERG);
+-	machine_emergency_restart();
+-}
+-EXPORT_SYMBOL_GPL(emergency_restart);
+-
+-void kernel_restart_prepare(char *cmd)
+-{
+-	blocking_notifier_call_chain(&reboot_notifier_list, SYS_RESTART, cmd);
+-	system_state = SYSTEM_RESTART;
+-	usermodehelper_disable();
+-	device_shutdown();
+-}
+-
+-/**
+- *	register_reboot_notifier - Register function to be called at reboot time
+- *	@nb: Info about notifier function to be called
+- *
+- *	Registers a function with the list of functions
+- *	to be called at reboot time.
+- *
+- *	Currently always returns zero, as blocking_notifier_chain_register()
+- *	always returns zero.
+- */
+-int register_reboot_notifier(struct notifier_block *nb)
+-{
+-	return blocking_notifier_chain_register(&reboot_notifier_list, nb);
+-}
+-EXPORT_SYMBOL(register_reboot_notifier);
+-
+-/**
+- *	unregister_reboot_notifier - Unregister previously registered reboot notifier
+- *	@nb: Hook to be unregistered
+- *
+- *	Unregisters a previously registered reboot
+- *	notifier function.
+- *
+- *	Returns zero on success, or %-ENOENT on failure.
+- */
+-int unregister_reboot_notifier(struct notifier_block *nb)
+-{
+-	return blocking_notifier_chain_unregister(&reboot_notifier_list, nb);
+-}
+-EXPORT_SYMBOL(unregister_reboot_notifier);
+-
+-static void migrate_to_reboot_cpu(void)
+-{
+-	/* The boot cpu is always logical cpu 0 */
+-	int cpu = 0;
+-
+-	cpu_hotplug_disable();
+-
+-	/* Make certain the cpu I'm about to reboot on is online */
+-	if (!cpu_online(cpu))
+-		cpu = cpumask_first(cpu_online_mask);
+-
+-	/* Prevent races with other tasks migrating this task */
+-	current->flags |= PF_NO_SETAFFINITY;
+-
+-	/* Make certain I only run on the appropriate processor */
+-	set_cpus_allowed_ptr(current, cpumask_of(cpu));
+-}
+-
+-/**
+- *	kernel_restart - reboot the system
+- *	@cmd: pointer to buffer containing command to execute for restart
+- *		or %NULL
+- *
+- *	Shutdown everything and perform a clean reboot.
+- *	This is not safe to call in interrupt context.
+- */
+-void kernel_restart(char *cmd)
+-{
+-	kernel_restart_prepare(cmd);
+-	migrate_to_reboot_cpu();
+-	syscore_shutdown();
+-	if (!cmd)
+-		printk(KERN_EMERG "Restarting system.\n");
+-	else
+-		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
+-	kmsg_dump(KMSG_DUMP_RESTART);
+-	machine_restart(cmd);
+-}
+-EXPORT_SYMBOL_GPL(kernel_restart);
+-
+-static void kernel_shutdown_prepare(enum system_states state)
+-{
+-	blocking_notifier_call_chain(&reboot_notifier_list,
+-		(state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
+-	system_state = state;
+-	usermodehelper_disable();
+-	device_shutdown();
+-}
+-/**
+- *	kernel_halt - halt the system
+- *
+- *	Shutdown everything and perform a clean system halt.
+- */
+-void kernel_halt(void)
+-{
+-	kernel_shutdown_prepare(SYSTEM_HALT);
+-	migrate_to_reboot_cpu();
+-	syscore_shutdown();
+-	printk(KERN_EMERG "System halted.\n");
+-	kmsg_dump(KMSG_DUMP_HALT);
+-	machine_halt();
+-}
+-
+-EXPORT_SYMBOL_GPL(kernel_halt);
+-
+-/**
+- *	kernel_power_off - power_off the system
+- *
+- *	Shutdown everything and perform a clean system power_off.
+- */
+-void kernel_power_off(void)
+-{
+-	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
+-	if (pm_power_off_prepare)
+-		pm_power_off_prepare();
+-	migrate_to_reboot_cpu();
+-	syscore_shutdown();
+-	printk(KERN_EMERG "Power down.\n");
+-	kmsg_dump(KMSG_DUMP_POWEROFF);
+-	machine_power_off();
+-}
+-EXPORT_SYMBOL_GPL(kernel_power_off);
+-
+-static DEFINE_MUTEX(reboot_mutex);
+-
+-/*
+- * Reboot system call: for obvious reasons only root may call it,
+- * and even root needs to set up some magic numbers in the registers
+- * so that some mistake won't make this reboot the whole machine.
+- * You can also set the meaning of the ctrl-alt-del-key here.
+- *
+- * reboot doesn't sync: do that yourself before calling this.
+- */
+-SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+-		void __user *, arg)
+-{
+-	struct pid_namespace *pid_ns = task_active_pid_ns(current);
+-	char buffer[256];
+-	int ret = 0;
+-
+-	/* We only trust the superuser with rebooting the system. */
+-	if (!ns_capable(pid_ns->user_ns, CAP_SYS_BOOT))
+-		return -EPERM;
+-
+-	/* For safety, we require "magic" arguments. */
+-	if (magic1 != LINUX_REBOOT_MAGIC1 ||
+-	    (magic2 != LINUX_REBOOT_MAGIC2 &&
+-	                magic2 != LINUX_REBOOT_MAGIC2A &&
+-			magic2 != LINUX_REBOOT_MAGIC2B &&
+-	                magic2 != LINUX_REBOOT_MAGIC2C))
+-		return -EINVAL;
+-
+-	/*
+-	 * If pid namespaces are enabled and the current task is in a child
+-	 * pid_namespace, the command is handled by reboot_pid_ns() which will
+-	 * call do_exit().
+-	 */
+-	ret = reboot_pid_ns(pid_ns, cmd);
+-	if (ret)
+-		return ret;
+-
+-	/* Instead of trying to make the power_off code look like
+-	 * halt when pm_power_off is not set do it the easy way.
+-	 */
+-	if ((cmd == LINUX_REBOOT_CMD_POWER_OFF) && !pm_power_off)
+-		cmd = LINUX_REBOOT_CMD_HALT;
+-
+-	mutex_lock(&reboot_mutex);
+-	switch (cmd) {
+-	case LINUX_REBOOT_CMD_RESTART:
+-		kernel_restart(NULL);
+-		break;
+-
+-	case LINUX_REBOOT_CMD_CAD_ON:
+-		C_A_D = 1;
+-		break;
+-
+-	case LINUX_REBOOT_CMD_CAD_OFF:
+-		C_A_D = 0;
+-		break;
+-
+-	case LINUX_REBOOT_CMD_HALT:
+-		kernel_halt();
+-		do_exit(0);
+-		panic("cannot halt");
+-
+-	case LINUX_REBOOT_CMD_POWER_OFF:
+-		kernel_power_off();
+-		do_exit(0);
+-		break;
+-
+-	case LINUX_REBOOT_CMD_RESTART2:
+-		if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
+-			ret = -EFAULT;
+-			break;
+-		}
+-		buffer[sizeof(buffer) - 1] = '\0';
+-
+-		kernel_restart(buffer);
+-		break;
+-
+-#ifdef CONFIG_KEXEC
+-	case LINUX_REBOOT_CMD_KEXEC:
+-		ret = kernel_kexec();
+-		break;
+-#endif
+-
+-#ifdef CONFIG_HIBERNATION
+-	case LINUX_REBOOT_CMD_SW_SUSPEND:
+-		ret = hibernate();
+-		break;
+-#endif
+-
+-	default:
+-		ret = -EINVAL;
+-		break;
+-	}
+-	mutex_unlock(&reboot_mutex);
+-	return ret;
+-}
+-
+-static void deferred_cad(struct work_struct *dummy)
+-{
+-	kernel_restart(NULL);
+-}
+-
+-/*
+- * This function gets called by ctrl-alt-del - ie the keyboard interrupt.
+- * As it's called within an interrupt, it may NOT sync: the only choice
+- * is whether to reboot at once, or just ignore the ctrl-alt-del.
+- */
+-void ctrl_alt_del(void)
+-{
+-	static DECLARE_WORK(cad_work, deferred_cad);
+-
+-	if (C_A_D)
+-		schedule_work(&cad_work);
+-	else
+-		kill_cad_pid(SIGINT, 1);
+-}
+-	
+ /*
+  * Unprivileged users may change the real gid to the effective gid
+  * or vice versa.  (BSD-style)
+@@ -2276,68 +2007,6 @@ SYSCALL_DEFINE3(getcpu, unsigned __user *, cpup, unsigned __user *, nodep,
+ 	return err ? -EFAULT : 0;
+ }
+ 
+-char poweroff_cmd[POWEROFF_CMD_PATH_LEN] = "/sbin/poweroff";
+-
+-static int __orderly_poweroff(bool force)
+-{
+-	char **argv;
+-	static char *envp[] = {
+-		"HOME=/",
+-		"PATH=/sbin:/bin:/usr/sbin:/usr/bin",
+-		NULL
+-	};
+-	int ret;
+-
+-	argv = argv_split(GFP_KERNEL, poweroff_cmd, NULL);
+-	if (argv) {
+-		ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+-		argv_free(argv);
+-	} else {
+-		printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
+-					 __func__, poweroff_cmd);
+-		ret = -ENOMEM;
+-	}
+-
+-	if (ret && force) {
+-		printk(KERN_WARNING "Failed to start orderly shutdown: "
+-					"forcing the issue\n");
+-		/*
+-		 * I guess this should try to kick off some daemon to sync and
+-		 * poweroff asap.  Or not even bother syncing if we're doing an
+-		 * emergency shutdown?
+-		 */
+-		emergency_sync();
+-		kernel_power_off();
+-	}
+-
+-	return ret;
+-}
+-
+-static bool poweroff_force;
+-
+-static void poweroff_work_func(struct work_struct *work)
+-{
+-	__orderly_poweroff(poweroff_force);
+-}
+-
+-static DECLARE_WORK(poweroff_work, poweroff_work_func);
+-
+-/**
+- * orderly_poweroff - Trigger an orderly system poweroff
+- * @force: force poweroff if command execution fails
+- *
+- * This may be called from any context to trigger a system shutdown.
+- * If the orderly shutdown fails, it will force an immediate shutdown.
+- */
+-int orderly_poweroff(bool force)
+-{
+-	if (force) /* do not override the pending "true" */
+-		poweroff_force = true;
+-	schedule_work(&poweroff_work);
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(orderly_poweroff);
+-
+ /**
+  * do_sysinfo - fill in sysinfo struct
+  * @info: pointer to buffer to fill
+-- 
+1.8.2.1
+
