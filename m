@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751203Ab3ELS0v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 14:26:51 -0400
-Received: from sauhun.de ([89.238.76.85]:59608 "EHLO pokefinder.org"
+	id S1751259Ab3ELS3j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 14:29:39 -0400
+Received: from 8bytes.org ([85.214.48.195]:49147 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751011Ab3ELS0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 14:26:49 -0400
-Date: Sun, 12 May 2013 20:28:07 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
-        Dan Williams <djbw@fb.com>, linux-tegra@vger.kernel.org
-Subject: Re: [RFC 04/42] drivers/dma: don't check resource with
- devm_ioremap_resource
-Message-ID: <20130512182802.GA2922@katana>
-References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
- <1368173847-5661-5-git-send-email-wsa@the-dreams.de>
- <518D21D4.6000609@wwwdotorg.org>
- <20130510175739.GA2912@katana>
- <518D49B0.4050901@wwwdotorg.org>
- <20130512160440.GA27639@intel.com>
+	id S1751009Ab3ELS3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 14:29:38 -0400
+Date: Sun, 12 May 2013 20:29:35 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Bisected post-3.9 regression: Resume takes 5 times as much time
+ as with v3.9
+Message-ID: <20130512182935.GD24440@8bytes.org>
+References: <87r4hdjsu5.fsf@nemi.mork.no>
+ <20130512113157.GG3648@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130512160440.GA27639@intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130512113157.GG3648@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Sun May 12 20:29:36 2013
+X-DSPAM-Confidence: 0.9986
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 518fdf9023671995510992
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 09:34:40PM +0530, Vinod Koul wrote:
-> On Fri, May 10, 2013 at 01:25:36PM -0600, Stephen Warren wrote:
-> > On 05/10/2013 11:57 AM, Wolfram Sang wrote:
-> > > On Fri, May 10, 2013 at 10:35:32AM -0600, Stephen Warren wrote:
-> > >> On 05/10/2013 02:16 AM, Wolfram Sang wrote:
-> > >>> devm_ioremap_resource does sanity checks on the given resource. No need to
-> > >>> duplicate this in the driver.
-> > >>
-> > >>> diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-> > >>
-> > >>>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > >>> -	if (!res) {
-> > >>> -		dev_err(&pdev->dev, "No mem resource for DMA\n");
-> > >>> -		return -EINVAL;
-> > >>> -	}
-> > >>> -
-> > >>>  	tdma->base_addr = devm_ioremap_resource(&pdev->dev, res);
-> > >>
-> > >> One issue here is that it's not obvious just from reading the code
-> > >> that's left behind that the "missing" error-checking of the
-> > >> platform_get_resource() return value is OK because
-> > >> devm_ioremap_resource() will check it "for us". Everyone now has to
-> > >> mentally maintain a list of exceptions where it's OK not to error-check.
-> > > 
-> > > My goal is to make not-checking the standard case with devm.
-> > 
-> > OK, if no parameters passed to any devm function every need to be
-> > error-checked, that'll certainly be a bit easier to remember.
-> Okay to remove the log message and move to devm_ but I dont agree with this
-> patch not returning error above. We shouldnt supress the error..
+Hi Paul,
 
-The error will be reported because devm_ioremap_resource will return an
-ERR_PTR.
+On Sun, May 12, 2013 at 04:31:57AM -0700, Paul E. McKenney wrote:
+> On Sat, May 11, 2013 at 08:04:50PM +0200, Bjørn Mork wrote:
+> > Bisecting it ended up pointing to
+> > 
+> > commit c0f4dfd4f90f1667d234d21f15153ea09a2eaa66
+> > Author: Paul E. McKenney <paul.mckenney@linaro.org>
+> > Date:   Fri Dec 28 11:30:36 2012 -0800
+> > 
+> >     rcu: Make RCU_FAST_NO_HZ take advantage of numbered callbacks
+> >     
+> >     Because RCU callbacks are now associated with the number of the grace
+> >     period that they must wait for, CPUs can now take advance callbacks
+> >     corresponding to grace periods that ended while a given CPU was in
+> >     dyntick-idle mode.  This eliminates the need to try forcing the RCU
+> >     state machine while entering idle, thus reducing the CPU intensiveness
+> >     of RCU_FAST_NO_HZ, which should increase its energy efficiency.
+> >     
+> >     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > 
+> > 
+> > Being a big patch, I'm pretty sure that the problem is some minor
+> > issue. But rather than trying to userstand this, just tried reverting
+> > it on top of the current mainline and can confirm that this fixes the
+> > regression.  I'll leave the understanding to you :)
+> > 
+> > I'm attaching the revert patch as I had to fix a conflict, and may have
+> > done something wrong there.  I'm also attaching my .config.
+> > 
+> > Let me know if you need more information, or want me to try out proposed
+> > fixes.
+> 
+> We don't want to back out the RCU_FAST_NO_HZ changes due to their
+> energy-efficiency benefits.  So could you please try out Borislav's
+> patch below?  He ran into the same issue a few weeks ago, and this
+> one fixed it for him.
+
+I get a ~10min boot delay with this patch:
+
+[    1.149676] system 00:01: [mem 0xf6000000-0xf6003fff] could not be reserved
+[    1.149724] system 00:01: Plug and Play ACPI device, IDs PNP0c02 (active)
+[  603.957670] pnp 00:02: [dma 4]
+[  603.957735] pnp 00:02: Plug and Play ACPI device, IDs PNP0200 (active)
+
+This happens on my AMD FX-6100 system. I bisected the problem down to the same
+commit and reverting it fixes the problem. Any ideas?
+
+
+	Joerg
+
 
