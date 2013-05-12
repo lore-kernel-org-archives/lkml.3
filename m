@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab3ELPQh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 11:16:37 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:60608 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839Ab3ELPQf (ORCPT
+	id S1754064Ab3ELPRY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 11:17:24 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:33229 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311Ab3ELPRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 11:16:35 -0400
+	Sun, 12 May 2013 11:17:23 -0400
+Message-ID: <518FB27A.4070903@gmail.com>
+Date: Sun, 12 May 2013 23:17:14 +0800
+From: Liu Jiang <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1368041688-29986-1-git-send-email-bp@alien8.de>
-References: <1368041688-29986-1-git-send-email-bp@alien8.de>
-Date: Sun, 12 May 2013 20:46:34 +0530
-X-Google-Sender-Auth: qkHkZdg7MI9U2rRIbTwHW_6Ehz8
-Message-ID: <CAOh2x=kLJ3NVN177KTWjZikkZb8Q8RQjye4qrUT=PCdCj2jSgg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq, ondemand: Remove leftover debug line
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: cpufreq@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH v5, part4 20/41] mm/h8300: prepare for removing num_physpages
+ and simplify mem_init()
+References: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com> <1368028298-7401-21-git-send-email-jiang.liu@huawei.com> <518A7CC0.1010606@cogentembedded.com> <518AA7A0.1020702@cogentembedded.com> <518AE13A.2060204@linux.vnet.ibm.com>
+In-Reply-To: <518AE13A.2060204@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 9, 2013 at 1:04 AM, Borislav Petkov <bp@alien8.de> wrote:
-> From: Borislav Petkov <bp@suse.de>
+On 05/09/2013 07:35 AM, Cody P Schafer wrote:
+> On 05/08/2013 12:29 PM, Sergei Shtylyov wrote:
+>>
+>>      Although, not necessarily: it also supports CONFIG_DYNAMIC_DEBUG --
+>> look at how pr_debug() is defined.
+>> So this doesn't seem to be an equivalent change, and I suggest not doing
+>> it at all.
+>>
+>> WBR, Sergei
 >
-> I don't see how the virtual address of the tuners pointer would be of
-> any help to anyone so remove it.
+> pr_devel() should get the same behavior: no code emitted unless debug 
+> is defined, if it is, output at KERN_DEBUG level.
 >
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  drivers/cpufreq/cpufreq_ondemand.c | 1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> index b0ffef96bf77..4b9bb5def6f1 100644
-> --- a/drivers/cpufreq/cpufreq_ondemand.c
-> +++ b/drivers/cpufreq/cpufreq_ondemand.c
-> @@ -547,7 +547,6 @@ static int od_init(struct dbs_data *dbs_data)
->         tuners->io_is_busy = should_io_be_busy();
->
->         dbs_data->tuners = tuners;
-> -       pr_info("%s: tuners %p\n", __func__, tuners);
->         mutex_init(&dbs_data->mutex);
->         return 0;
->  }
-
-Sorry for this message :(
-
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Thanks Cody and Sergei, will use pr_devel() instead in next version.
+Gerry
