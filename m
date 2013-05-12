@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab3ELRZI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 13:25:08 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:58769 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568Ab3ELRZG (ORCPT
+	id S1754763Ab3ELSCX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 14:02:23 -0400
+Received: from smtp-out-236.synserver.de ([212.40.185.236]:1028 "EHLO
+	smtp-out-236.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754691Ab3ELSCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 13:25:06 -0400
-Date: Sun, 12 May 2013 19:24:46 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Dong Zhu <bluezhudong@gmail.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Matthew Vick <matthew.vick@intel.com>,
-        Jacob Keller <Jacob.e.keller@intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: Re: [PATCH] igb: add a method to get the nic hw time stamping
- policy
-Message-ID: <20130512172446.GA2484@netboy>
-References: <20130511140219.GG8399@zhudong.nay.redhat.com>
- <518E7723.5010003@cogentembedded.com>
- <20130512142555.GI8399@zhudong.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130512142555.GI8399@zhudong.nay.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 12 May 2013 14:02:22 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 8617
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] pwm: jz4740: Pass device to clk_get
+Date: Sun, 12 May 2013 20:04:49 +0200
+Message-Id: <1368381889-3948-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 10:25:55PM +0800, Dong Zhu wrote:
-> Thanks for your pointing out my mistakes of CodingStyle.
-> 
-> > > struct hwtstamp_config {
-> > >+	int rw;
-> 
-> My initial idea was that the type of rw should be enum like tx_type, but I am
-> not sure whther it is necessary to define a new enum, if this patch could
-> be accpeted I will ask someone about the rw. At that time I will change
-> the type of rw to bool or define a new enum, then convert the if to
-> switch if necessary.
+In preparation to switching the jz4740 clk driver to the common clk framework
+make sure to pass the device to clk_get().
 
-You cannot add any new field at all. That would break a userland ABI.
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/pwm/pwm-jz4740.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-Richard
+diff --git a/drivers/pwm/pwm-jz4740.c b/drivers/pwm/pwm-jz4740.c
+index 0a2ede3..a44d890 100644
+--- a/drivers/pwm/pwm-jz4740.c
++++ b/drivers/pwm/pwm-jz4740.c
+@@ -171,7 +171,7 @@ static int jz4740_pwm_probe(struct platform_device *pdev)
+ 	if (!jz4740)
+ 		return -ENOMEM;
+ 
+-	jz4740->clk = clk_get(NULL, "ext");
++	jz4740->clk = clk_get(&pdev->dev, "ext");
+ 	if (IS_ERR(jz4740->clk))
+ 		return PTR_ERR(jz4740->clk);
+ 
+-- 
+1.8.2.1
+
