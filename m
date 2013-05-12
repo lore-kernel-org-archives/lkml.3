@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab3ELQ1U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 12:27:20 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45178 "EHLO mail.skyhub.de"
+	id S1754633Ab3ELQbP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 12:31:15 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:59397 "EHLO smtp1-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753326Ab3ELQ1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 12:27:19 -0400
-Date: Sun, 12 May 2013 18:27:17 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>
-Cc: paulmck@linux.vnet.ibm.com, "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>
-Subject: Re: Bisected post-3.9 regression: Resume takes 5 times as much time
- as with v3.9
-Message-ID: <20130512162717.GA6305@pd.tnic>
-References: <87r4hdjsu5.fsf@nemi.mork.no>
- <20130512113157.GG3648@linux.vnet.ibm.com>
- <87hai8kwgh.fsf@nemi.mork.no>
+	id S1754239Ab3ELQbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 12:31:14 -0400
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+Subject: [PATCH] bcache: fix compilation warning
+Date: Sun, 12 May 2013 18:30:51 +0200
+Message-Id: <1368376251-14622-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <87hai8kwgh.fsf@nemi.mork.no>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 06:13:34PM +0200, Bjørn Mork wrote:
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 6934238..2dcbf84 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -3103,9 +3103,11 @@ static int rcu_pm_notify(struct notifier_block *self,
->  {
->  	switch (action) {
->  	case PM_HIBERNATION_PREPARE:
-> +	case PM_SUSPEND_PREPARE:
->  		rcu_expedited = 1;
->  		break;
-> -	case PM_POST_RESTORE:
-> +	case PM_POST_HIBERNATION:
-> +	case PM_POST_SUSPEND:
->  		rcu_expedited = 0;
->  		break;
->  	default:
+The release function of a block device does not return a value; make
+release_dev void. This fixes the following warning:
 
-If I'm reading Documentation/power/notifiers.txt correctly, we only need
-PM_HIBERNATION_PREPARE when we go to sleep (whatever hibernation method
-we use) and PM_POST_HIBERNATION when we restore.
+  drivers/md/bcache/super.c:653:2: warning: initialization from incompatible pointer type [enabled by default]
+  drivers/md/bcache/super.c:653:2: warning: (near initialization for ‘bcache_ops.release’) [enabled by default]
 
-I don't think it matters for expediting RCU grace periods whether
-we had an error during resume or not and I'd basically want to set
-rcu_expedited to 0 unconditionally when resuming..
+Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+---
+ drivers/md/bcache/super.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Hmm.
-
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index c8046bc..b09beb2 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -634,11 +634,10 @@ static int open_dev(struct block_device *b, fmode_t mode)
+ 	return 0;
+ }
+ 
+-static int release_dev(struct gendisk *b, fmode_t mode)
++static void release_dev(struct gendisk *b, fmode_t mode)
+ {
+ 	struct bcache_device *d = b->private_data;
+ 	closure_put(&d->cl);
+-	return 0;
+ }
+ 
+ static int ioctl_dev(struct block_device *b, fmode_t mode,
 -- 
-Regards/Gruss,
-    Boris.
+1.7.10.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
