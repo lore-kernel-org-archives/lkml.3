@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab3ELBVq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:21:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44034 "EHLO mga02.intel.com"
+	id S1754767Ab3ELBVo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:21:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19861 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754652Ab3ELBVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754654Ab3ELBVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 11 May 2013 21:21:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="335554492"
+   d="scan'208";a="335554490"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 29/39] thp: move maybe_pmd_mkwrite() out of mk_huge_pmd()
-Date: Sun, 12 May 2013 04:23:26 +0300
-Message-Id: <1368321816-17719-30-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 20/39] thp, mm: naive support of thp in generic read/write routines
+Date: Sun, 12 May 2013 04:23:17 +0300
+Message-Id: <1368321816-17719-21-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,65 +33,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-It's confusing that mk_huge_pmd() has sematics different from mk_pte()
-or mk_pmd().
+For now we still write/read at most PAGE_CACHE_SIZE bytes a time.
 
-Let's move maybe_pmd_mkwrite() out of mk_huge_pmd() and adjust
-prototype to match mk_pte().
+This implementation doesn't cover address spaces with backing store.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/huge_memory.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ mm/filemap.c |   19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index a88f9b2..575f29b 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -709,11 +709,10 @@ pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma)
- 	return pmd;
- }
+diff --git a/mm/filemap.c b/mm/filemap.c
+index e086ef0..ebd361a 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1177,6 +1177,17 @@ find_page:
+ 			if (unlikely(page == NULL))
+ 				goto no_cached_page;
+ 		}
++		if (PageTransCompound(page)) {
++			struct page *head = compound_trans_head(page);
++			/*
++			 * We don't yet support huge pages in page cache
++			 * for filesystems with backing device, so pages
++			 * should always be up-to-date.
++			 */
++			BUG_ON(ra->ra_pages);
++			BUG_ON(!PageUptodate(head));
++			goto page_ok;
++		}
+ 		if (PageReadahead(page)) {
+ 			page_cache_async_readahead(mapping,
+ 					ra, filp, page,
+@@ -2413,8 +2424,13 @@ again:
+ 		if (mapping_writably_mapped(mapping))
+ 			flush_dcache_page(page);
  
--static inline pmd_t mk_huge_pmd(struct page *page, struct vm_area_struct *vma)
-+static inline pmd_t mk_huge_pmd(struct page *page, pgprot_t prot)
- {
- 	pmd_t entry;
--	entry = mk_pmd(page, vma->vm_page_prot);
--	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
-+	entry = mk_pmd(page, prot);
- 	entry = pmd_mkhuge(entry);
- 	return entry;
- }
-@@ -746,7 +745,8 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
- 		pte_free(mm, pgtable);
- 	} else {
- 		pmd_t entry;
--		entry = mk_huge_pmd(page, vma);
-+		entry = mk_huge_pmd(page, vma->vm_page_prot);
-+		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
- 		page_add_new_anon_rmap(page, vma, haddr);
- 		set_pmd_at(mm, haddr, pmd, entry);
- 		pgtable_trans_huge_deposit(mm, pgtable);
-@@ -1229,7 +1229,8 @@ alloc:
- 		goto out_mn;
- 	} else {
- 		pmd_t entry;
--		entry = mk_huge_pmd(new_page, vma);
-+		entry = mk_huge_pmd(new_page, vma->vm_page_prot);
-+		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
- 		pmdp_clear_flush(vma, haddr, pmd);
- 		page_add_new_anon_rmap(new_page, vma, haddr);
- 		set_pmd_at(mm, haddr, pmd, entry);
-@@ -2410,7 +2411,8 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	__SetPageUptodate(new_page);
- 	pgtable = pmd_pgtable(_pmd);
++		if (PageTransHuge(page))
++			offset = pos & ~HPAGE_PMD_MASK;
++
+ 		pagefault_disable();
+-		copied = iov_iter_copy_from_user_atomic(page, i, offset, bytes);
++		copied = iov_iter_copy_from_user_atomic(
++				page + (offset >> PAGE_CACHE_SHIFT),
++				i, offset & ~PAGE_CACHE_MASK, bytes);
+ 		pagefault_enable();
+ 		flush_dcache_page(page);
  
--	_pmd = mk_huge_pmd(new_page, vma);
-+	_pmd = mk_huge_pmd(new_page, vma->vm_page_prot);
-+	_pmd = maybe_pmd_mkwrite(pmd_mkdirty(_pmd), vma);
- 
- 	/*
- 	 * spin_lock() below is not the equivalent of smp_wmb(), so
+@@ -2437,6 +2453,7 @@ again:
+ 			 * because not all segments in the iov can be copied at
+ 			 * once without a pagefault.
+ 			 */
++			offset = pos & ~PAGE_CACHE_MASK;
+ 			bytes = min_t(unsigned long, PAGE_CACHE_SIZE - offset,
+ 						iov_iter_single_seg_count(i));
+ 			goto again;
 -- 
 1.7.10.4
 
