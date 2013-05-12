@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab3ELB2R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:28:17 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4397 "EHLO mga01.intel.com"
+	id S1754631Ab3ELBVh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:21:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62392 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753757Ab3ELBVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 21:21:41 -0400
+	id S1754548Ab3ELBVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 21:21:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="336134842"
+   d="scan'208";a="311985777"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -20,12 +20,10 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCHv4 05/39] memcg, thp: charge huge cache pages
-Date: Sun, 12 May 2013 04:23:02 +0300
-Message-Id: <1368321816-17719-6-git-send-email-kirill.shutemov@linux.intel.com>
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 09/39] thp, mm: introduce mapping_can_have_hugepages() predicate
+Date: Sun, 12 May 2013 04:23:06 +0300
+Message-Id: <1368321816-17719-10-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -35,34 +33,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-mem_cgroup_cache_charge() has check for PageCompound(). The check
-prevents charging huge cache pages.
-
-I don't see a reason why the check is present. Looks like it's just
-legacy (introduced in 52d4b9a memcg: allocate all page_cgroup at boot).
-
-Let's just drop it.
+Returns true if mapping can have huge pages. Just check for __GFP_COMP
+in gfp mask of the mapping for now.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c |    2 --
- 1 file changed, 2 deletions(-)
+ include/linux/pagemap.h |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index fe4f123..a7de6a7 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4080,8 +4080,6 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index e3dea75..28597ec 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -84,6 +84,18 @@ static inline void mapping_set_gfp_mask(struct address_space *m, gfp_t mask)
+ 				(__force unsigned long)mask;
+ }
  
- 	if (mem_cgroup_disabled())
- 		return 0;
--	if (PageCompound(page))
--		return 0;
- 
- 	if (!PageSwapCache(page))
- 		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
++static inline bool mapping_can_have_hugepages(struct address_space *m)
++{
++	if (IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE)) {
++		gfp_t gfp_mask = mapping_gfp_mask(m);
++		/* __GFP_COMP is key part of GFP_TRANSHUGE */
++		return !!(gfp_mask & __GFP_COMP) &&
++			transparent_hugepage_pagecache();
++	}
++
++	return false;
++}
++
+ /*
+  * The page cache can done in larger chunks than
+  * one page, because it allows for more efficient
 -- 
 1.7.10.4
 
