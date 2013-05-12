@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab3ELAbQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 20:31:16 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:44310 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752418Ab3ELAbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 20:31:15 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Colin Cross <ccross@android.com>
-Cc: Zoran Markovic <zoran.markovic@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Benoit Goby <benoit@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
-        John Stultz <john.stultz@linaro.org>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCHv2 1/2] drivers: power: Add watchdog timer to catch drivers which lockup during suspend/resume.
-Date: Sun, 12 May 2013 02:39:44 +0200
-Message-ID: <29127567.mTXaJOMILH@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAMbhsRS+fNo19srma9WqcHutJnv8driOMnpM1-yW=pduJMo63g@mail.gmail.com>
-References: <1368221329-1841-1-git-send-email-zoran.markovic@linaro.org> <1368221329-1841-2-git-send-email-zoran.markovic@linaro.org> <CAMbhsRS+fNo19srma9WqcHutJnv8driOMnpM1-yW=pduJMo63g@mail.gmail.com>
+	id S1752906Ab3ELAkf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 20:40:35 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:50874 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752432Ab3ELAkd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 20:40:33 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al8RALPjjlF5LMBd/2dsb2JhbABagweDCrgmhSQEAX8XdIIfAQEFOhwjEAgDDgYECSUPBSUDIROIC7taFo11gR0HgnRhA5crihKHJIMhKg
+Date: Sun, 12 May 2013 10:40:31 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: xfs_efi_item slab corruption. (v3.9-10936-g51a26ae)
+Message-ID: <20130512004031.GE32675@dastard>
+References: <20130507133707.GA18301@redhat.com>
+ <87k3n5en0b.fsf@openvz.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k3n5en0b.fsf@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 10, 2013 11:13:27 PM Colin Cross wrote:
-> On Fri, May 10, 2013 at 2:28 PM, Zoran Markovic
-> <zoran.markovic@linaro.org> wrote:
-> > From: Benoit Goby <benoit@android.com>
-> >
-> > Below is a patch from android kernel that detects a driver suspend/resume
-> > lockup and captures dump in the kernel log. Please review and provide
-> > comments.
+On Sat, May 11, 2013 at 04:09:40PM +0400, Dmitry Monakhov wrote:
+> On Tue, 7 May 2013 09:37:07 -0400, Dave Jones <davej@redhat.com> wrote:
+> > started compiling a kernel, and then...
+> > 
+> I've bisected this one.
+> commit 666d644cd72a9ec58b353209ff191d7430f3b357
+> Author: Dave Chinner <dchinner@redhat.com>
+> Date:   Wed Apr 3 14:09:21 2013 +1100
 > 
-> This paragraph should go below the --- line so it doesn't end up in
-> the final commit message.
+>     xfs: don't free EFIs before the EFDs are committed
 > 
-> > Rather than hard-lock the kernel, dump the suspend/resume thread stack and
-> > BUG() when a driver takes too long to suspend/resume.
+> #xfstests  ./check generic/007 generic/007 generic/007
 
-And how exactly is that different from hanging the kernel?
+Yuo, we already have a candidate fix for it. Thanks for another
+independent confirmation of the cause, though.
 
-> > The timeout is set to 12 seconds to be longer than the usbhid 10
-> > second timeout.
+Cheers,
 
-Which is kind of arbitrary.
-
-> > Exclude from the watchdog the time spent waiting for children that
-> > are resumed asynchronously and time every device, whether or not they
-> > resumed synchronously.
-
-What about changing the code to use wait_for_completion_timeout() instead
-of wait_for_completion() and actually trying to recover if one of them times
-out?  [It could try to unregister the device in question and if *that* hangs
-indefinitely, *then* commit a panic() or something similar, but if it succeeds,
-abort the ongoing suspend or complete the resume without that device.]
-
-Of course, that would involve changing things not to depend on async, but
-might be better than slapping a timer on top.
-
-> > This patch is targeted for mobile devices where a suspend/resume lockup
-> > could cause a system reboot and catch user's attention. Information
-> > about failing device can later be retrieved from captured log in
-> > subsequent boot session.
-> 
-> I would take out the phrase "catch user's attention", the intention of
-> this patch is actually the opposite - get the system back to working
-> normally as fast as possible, while still putting enough information
-> to debug the problem into the log.
-> 
-> > The hardware watchdog timer is likely suspended during this time and
-> > couldn't be relied upon. The soft-lockup detector would eventually tell
-> > that tasks are not scheduled, but would provide little context as to why.
-> > The patch hence uses system timer and assumes it is still active while the
-> > devices are suspended/resumed.
-
-I must say I'm not particularly impressed by this patch series.  I understand
-the motivation, but I'm wondering if that's the best we can do.
-
-Thanks,
-Rafael
-
-
+Dave.
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Dave Chinner
+david@fromorbit.com
