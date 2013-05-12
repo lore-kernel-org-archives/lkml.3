@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab3ELBVs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:21:48 -0400
-Received: from mga14.intel.com ([143.182.124.37]:34988 "EHLO mga14.intel.com"
+	id S1754802Ab3ELBVq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:21:46 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44034 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754651Ab3ELBVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754652Ab3ELBVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 11 May 2013 21:21:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="332629689"
+   d="scan'208";a="335554492"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 26/39] ramfs: enable transparent huge page cache
-Date: Sun, 12 May 2013 04:23:23 +0300
-Message-Id: <1368321816-17719-27-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 29/39] thp: move maybe_pmd_mkwrite() out of mk_huge_pmd()
+Date: Sun, 12 May 2013 04:23:26 +0300
+Message-Id: <1368321816-17719-30-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,34 +33,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-ramfs is the most simple fs from page cache point of view. Let's start
-transparent huge page cache enabling here.
+It's confusing that mk_huge_pmd() has sematics different from mk_pte()
+or mk_pmd().
 
-For now we allocate only non-movable huge page. ramfs pages cannot be
-moved yet.
+Let's move maybe_pmd_mkwrite() out of mk_huge_pmd() and adjust
+prototype to match mk_pte().
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- fs/ramfs/inode.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ mm/huge_memory.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
-index c24f1e1..54d69c7 100644
---- a/fs/ramfs/inode.c
-+++ b/fs/ramfs/inode.c
-@@ -61,7 +61,11 @@ struct inode *ramfs_get_inode(struct super_block *sb,
- 		inode_init_owner(inode, dir, mode);
- 		inode->i_mapping->a_ops = &ramfs_aops;
- 		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
--		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
-+		/*
-+		 * TODO: make ramfs pages movable
-+		 */
-+		mapping_set_gfp_mask(inode->i_mapping,
-+				GFP_TRANSHUGE & ~__GFP_MOVABLE);
- 		mapping_set_unevictable(inode->i_mapping);
- 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
- 		switch (mode & S_IFMT) {
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index a88f9b2..575f29b 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -709,11 +709,10 @@ pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma)
+ 	return pmd;
+ }
+ 
+-static inline pmd_t mk_huge_pmd(struct page *page, struct vm_area_struct *vma)
++static inline pmd_t mk_huge_pmd(struct page *page, pgprot_t prot)
+ {
+ 	pmd_t entry;
+-	entry = mk_pmd(page, vma->vm_page_prot);
+-	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
++	entry = mk_pmd(page, prot);
+ 	entry = pmd_mkhuge(entry);
+ 	return entry;
+ }
+@@ -746,7 +745,8 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 		pte_free(mm, pgtable);
+ 	} else {
+ 		pmd_t entry;
+-		entry = mk_huge_pmd(page, vma);
++		entry = mk_huge_pmd(page, vma->vm_page_prot);
++		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+ 		page_add_new_anon_rmap(page, vma, haddr);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+ 		pgtable_trans_huge_deposit(mm, pgtable);
+@@ -1229,7 +1229,8 @@ alloc:
+ 		goto out_mn;
+ 	} else {
+ 		pmd_t entry;
+-		entry = mk_huge_pmd(new_page, vma);
++		entry = mk_huge_pmd(new_page, vma->vm_page_prot);
++		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+ 		pmdp_clear_flush(vma, haddr, pmd);
+ 		page_add_new_anon_rmap(new_page, vma, haddr);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+@@ -2410,7 +2411,8 @@ static void collapse_huge_page(struct mm_struct *mm,
+ 	__SetPageUptodate(new_page);
+ 	pgtable = pmd_pgtable(_pmd);
+ 
+-	_pmd = mk_huge_pmd(new_page, vma);
++	_pmd = mk_huge_pmd(new_page, vma->vm_page_prot);
++	_pmd = maybe_pmd_mkwrite(pmd_mkdirty(_pmd), vma);
+ 
+ 	/*
+ 	 * spin_lock() below is not the equivalent of smp_wmb(), so
 -- 
 1.7.10.4
 
