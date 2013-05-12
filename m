@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab3ELBau (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:30:50 -0400
-Received: from mga14.intel.com ([143.182.124.37]:34988 "EHLO mga14.intel.com"
+	id S1755518Ab3ELBat (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:30:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62392 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754562Ab3ELBVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 21:21:34 -0400
+	id S1754563Ab3ELBVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 21:21:35 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="240202810"
+   d="scan'208";a="335554454"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 14/39] thp, mm: rewrite delete_from_page_cache() to support huge pages
-Date: Sun, 12 May 2013 04:23:11 +0300
-Message-Id: <1368321816-17719-15-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 13/39] mm: trace filemap: dump page order
+Date: Sun, 12 May 2013 04:23:10 +0300
+Message-Id: <1368321816-17719-14-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,73 +33,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-As with add_to_page_cache_locked() we handle HPAGE_CACHE_NR pages a
-time.
+Dump page order to trace to be able to distinguish between small page
+and huge page in page cache.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/filemap.c |   31 +++++++++++++++++++++++++------
- 1 file changed, 25 insertions(+), 6 deletions(-)
+ include/trace/events/filemap.h |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index b0c7c8c..657ce82 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -115,6 +115,9 @@
- void __delete_from_page_cache(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
-+	bool thp = PageTransHuge(page) &&
-+		IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE);
-+	int nr;
+diff --git a/include/trace/events/filemap.h b/include/trace/events/filemap.h
+index 0421f49..7e14b13 100644
+--- a/include/trace/events/filemap.h
++++ b/include/trace/events/filemap.h
+@@ -21,6 +21,7 @@ DECLARE_EVENT_CLASS(mm_filemap_op_page_cache,
+ 		__field(struct page *, page)
+ 		__field(unsigned long, i_ino)
+ 		__field(unsigned long, index)
++		__field(int, order)
+ 		__field(dev_t, s_dev)
+ 	),
  
- 	trace_mm_filemap_delete_from_page_cache(page);
- 	/*
-@@ -127,13 +130,29 @@ void __delete_from_page_cache(struct page *page)
- 	else
- 		cleancache_invalidate_page(mapping, page);
+@@ -28,18 +29,20 @@ DECLARE_EVENT_CLASS(mm_filemap_op_page_cache,
+ 		__entry->page = page;
+ 		__entry->i_ino = page->mapping->host->i_ino;
+ 		__entry->index = page->index;
++		__entry->order = compound_order(page);
+ 		if (page->mapping->host->i_sb)
+ 			__entry->s_dev = page->mapping->host->i_sb->s_dev;
+ 		else
+ 			__entry->s_dev = page->mapping->host->i_rdev;
+ 	),
  
--	radix_tree_delete(&mapping->page_tree, page->index);
-+	if (thp) {
-+		int i;
-+
-+		nr = HPAGE_CACHE_NR;
-+		radix_tree_delete(&mapping->page_tree, page->index);
-+		for (i = 1; i < HPAGE_CACHE_NR; i++) {
-+			radix_tree_delete(&mapping->page_tree, page->index + i);
-+			page[i].mapping = NULL;
-+			page_cache_release(page + i);
-+		}
-+		__dec_zone_page_state(page, NR_FILE_TRANSPARENT_HUGEPAGES);
-+	} else {
-+		BUG_ON(PageTransHuge(page));
-+		nr = 1;
-+		radix_tree_delete(&mapping->page_tree, page->index);
-+	}
-+
- 	page->mapping = NULL;
- 	/* Leave page->index set: truncation lookup relies upon it */
--	mapping->nrpages--;
--	__dec_zone_page_state(page, NR_FILE_PAGES);
-+	mapping->nrpages -= nr;
-+	__mod_zone_page_state(page_zone(page), NR_FILE_PAGES, -nr);
- 	if (PageSwapBacked(page))
--		__dec_zone_page_state(page, NR_SHMEM);
-+		__mod_zone_page_state(page_zone(page), NR_SHMEM, -nr);
- 	BUG_ON(page_mapped(page));
+-	TP_printk("dev %d:%d ino %lx page=%p pfn=%lu ofs=%lu",
++	TP_printk("dev %d:%d ino %lx page=%p pfn=%lu ofs=%lu order=%d",
+ 		MAJOR(__entry->s_dev), MINOR(__entry->s_dev),
+ 		__entry->i_ino,
+ 		__entry->page,
+ 		page_to_pfn(__entry->page),
+-		__entry->index << PAGE_SHIFT)
++		__entry->index << PAGE_SHIFT,
++		__entry->order)
+ );
  
- 	/*
-@@ -144,8 +163,8 @@ void __delete_from_page_cache(struct page *page)
- 	 * having removed the page entirely.
- 	 */
- 	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
--		dec_zone_page_state(page, NR_FILE_DIRTY);
--		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-+		mod_zone_page_state(page_zone(page), NR_FILE_DIRTY, -nr);
-+		add_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE, -nr);
- 	}
- }
- 
+ DEFINE_EVENT(mm_filemap_op_page_cache, mm_filemap_delete_from_page_cache,
 -- 
 1.7.10.4
 
