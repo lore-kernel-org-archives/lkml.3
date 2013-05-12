@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092Ab3ELEXx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 00:23:53 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:52815 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab3ELEXs (ORCPT
+	id S1752324Ab3ELEYG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 00:24:06 -0400
+Received: from mail-da0-f49.google.com ([209.85.210.49]:64164 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab3ELEYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 00:23:48 -0400
+	Sun, 12 May 2013 00:24:02 -0400
 From: Daniel Tang <dt.tangr@gmail.com>
 To: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
 Cc: Daniel Tang <dt.tangr@gmail.com>, Linus Walleij <linus.walleij@linaro.org>,
         Arnd Bergmann <arnd@arndb.de>,
         "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
         Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org
-Subject: [RFC PATCHv3 3/6] clk: Add TI-Nspire clock drivers
-Date: Sun, 12 May 2013 14:22:58 +1000
-Message-Id: <1368332581-94691-4-git-send-email-dt.tangr@gmail.com>
+Subject: [RFC PATCHv3 5/6] input: Add TI-Nspire keypad driver
+Date: Sun, 12 May 2013 14:23:00 +1000
+Message-Id: <1368332581-94691-6-git-send-email-dt.tangr@gmail.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1368332581-94691-1-git-send-email-dt.tangr@gmail.com>
 References: <1368332581-94691-1-git-send-email-dt.tangr@gmail.com>
@@ -26,31 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
 ---
- drivers/clk/Makefile     |   1 +
- drivers/clk/clk-nspire.c | 141 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 142 insertions(+)
- create mode 100644 drivers/clk/clk-nspire.c
+ drivers/input/keyboard/Kconfig         |  10 ++
+ drivers/input/keyboard/Makefile        |   1 +
+ drivers/input/keyboard/nspire-keypad.c | 315 +++++++++++++++++++++++++++++++++
+ 3 files changed, 326 insertions(+)
+ create mode 100644 drivers/input/keyboard/nspire-keypad.c
 
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 137d3e7..72ebbe1 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -13,6 +13,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
- obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
- obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
- obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
-+obj-$(CONFIG_ARCH_NSPIRE)	+= clk-nspire.o
- obj-$(CONFIG_ARCH_MXS)		+= mxs/
- obj-$(CONFIG_ARCH_SOCFPGA)	+= socfpga/
- obj-$(CONFIG_PLAT_SPEAR)	+= spear/
-diff --git a/drivers/clk/clk-nspire.c b/drivers/clk/clk-nspire.c
+diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+index 62a2c0e..bdbda87 100644
+--- a/drivers/input/keyboard/Kconfig
++++ b/drivers/input/keyboard/Kconfig
+@@ -418,6 +418,16 @@ config KEYBOARD_NOMADIK
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called nmk-ske-keypad.
+ 
++config KEYBOARD_NSPIRE
++	tristate "TI-NSPIRE builtin keyboard"
++	depends on ARCH_NSPIRE
++	select INPUT_MATRIXKMAP
++	help
++	  Say Y here if you want to use the builtin keypad on the TI-NSPIRE.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called nspire-keypad.
++
+ config KEYBOARD_TEGRA
+ 	tristate "NVIDIA Tegra internal matrix keyboard controller support"
+ 	depends on ARCH_TEGRA && OF
+diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
+index 0c43e8c..a699b61 100644
+--- a/drivers/input/keyboard/Makefile
++++ b/drivers/input/keyboard/Makefile
+@@ -36,6 +36,7 @@ obj-$(CONFIG_KEYBOARD_MCS)		+= mcs_touchkey.o
+ obj-$(CONFIG_KEYBOARD_MPR121)		+= mpr121_touchkey.o
+ obj-$(CONFIG_KEYBOARD_NEWTON)		+= newtonkbd.o
+ obj-$(CONFIG_KEYBOARD_NOMADIK)		+= nomadik-ske-keypad.o
++obj-$(CONFIG_KEYBOARD_NSPIRE)		+= nspire-keypad.o
+ obj-$(CONFIG_KEYBOARD_OMAP)		+= omap-keypad.o
+ obj-$(CONFIG_KEYBOARD_OMAP4)		+= omap4-keypad.o
+ obj-$(CONFIG_KEYBOARD_OPENCORES)	+= opencores-kbd.o
+diff --git a/drivers/input/keyboard/nspire-keypad.c b/drivers/input/keyboard/nspire-keypad.c
 new file mode 100644
-index 0000000..2a8d14c
+index 0000000..e863f14
 --- /dev/null
-+++ b/drivers/clk/clk-nspire.c
-@@ -0,0 +1,141 @@
++++ b/drivers/input/keyboard/nspire-keypad.c
+@@ -0,0 +1,315 @@
 +/*
-+ *  linux/drivers/clk/clk-nspire.c
++ *  linux/drivers/input/keyboard/nspire-keypad.c
 + *
 + *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
 + *
@@ -60,136 +82,310 @@ index 0000000..2a8d14c
 + *
 + */
 +
-+#include <linux/clk-provider.h>
-+#include <linux/err.h>
++#include <linux/input/matrix_keypad.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/spinlock.h>
 +#include <linux/io.h>
++#include <linux/delay.h>
++#include <linux/input.h>
++#include <linux/slab.h>
++#include <linux/clk.h>
++#include <linux/module.h>
 +#include <linux/of.h>
-+#include <linux/of_address.h>
 +
-+#define MHZ (1000 * 1000)
++#define KEYPAD_SCAN_MODE	0x00
++#define KEYPAD_CNTL		0x04
++#define KEYPAD_INT		0x08
++#define KEYPAD_INTMSK		0x0C
 +
-+#define BASE_CPU_SHIFT		1
-+#define BASE_CPU_MASK		0x7F
++#define KEYPAD_DATA		0x10
++#define KEYPAD_GPIO		0x30
 +
-+#define CPU_AHB_SHIFT		12
-+#define CPU_AHB_MASK		0x07
++#define KEYPAD_UNKNOWN_INT	0x40
++#define KEYPAD_UNKNOWN_INT_STS	0x44
 +
-+#define FIXED_BASE_SHIFT	8
-+#define FIXED_BASE_MASK		0x01
++#define KEYPAD_BITMASK_COLS	11
++#define KEYPAD_BITMASK_ROWS	8
 +
-+#define CLASSIC_BASE_SHIFT	16
-+#define CLASSIC_BASE_MASK	0x1F
++struct nspire_keypad {
++	spinlock_t lock;
 +
-+#define CX_BASE_SHIFT		15
-+#define CX_BASE_MASK		0x3F
++	void __iomem *reg_base;
++	int irq;
++	u32 int_mask;
 +
-+#define CX_UNKNOWN_SHIFT	21
-+#define CX_UNKNOWN_MASK		0x03
++	struct input_dev *input;
++	struct clk *clk;
 +
-+#define EXTRACT(var, prop) (((var)>>prop##_SHIFT) & prop##_MASK)
++	struct matrix_keymap_data *keymap;
++	int row_shift;
 +
-+struct nspire_clk_info {
-+	u32 base_clock;
-+	u16 base_cpu_ratio;
-+	u16 base_ahb_ratio;
++	/* Maximum delay estimated assuming 33MHz APB */
++	u32 scan_interval;	/* In microseconds (~2000us max) */
++	u32 row_delay;		/* In microseconds (~500us max) */
++
++	bool active_low;
 +};
 +
-+static int nspire_clk_read(struct device_node *node,
-+		struct nspire_clk_info *clk)
++static inline void nspire_report_state(struct nspire_keypad *keypad,
++		int row, int col, unsigned int state)
 +{
-+	u32 val;
-+	int ret;
-+	void __iomem *io;
-+	const char *type = NULL;
++	int code = MATRIX_SCAN_CODE(row, col, keypad->row_shift);
++	unsigned short *keymap = keypad->input->keycode;
 +
-+	ret = of_property_read_string(node, "io-type", &type);
-+	if (ret)
-+		return ret;
++	state = keypad->active_low ? !state : !!state;
++	input_report_key(keypad->input, keymap[code], state);
++}
 +
-+	io = of_iomap(node, 0);
-+	if (!io)
-+		return -ENOMEM;
-+	val = readl(io);
-+	iounmap(io);
++static irqreturn_t nspire_keypad_irq(int irq, void *dev_id)
++{
++	struct nspire_keypad *keypad = dev_id;
++	u32 int_sts;
++	u16 state[8];
++	int row, col;
 +
-+	if (!strcmp(type, "cx")) {
-+		if (EXTRACT(val, FIXED_BASE)) {
-+			clk->base_clock = 48 * MHZ;
-+		} else {
-+			clk->base_clock = 6 * EXTRACT(val, CX_BASE) * MHZ;
-+		}
++	int_sts = readl(keypad->reg_base + KEYPAD_INT) & keypad->int_mask;
 +
-+		clk->base_cpu_ratio = EXTRACT(val, BASE_CPU) *
-+					EXTRACT(val, CX_UNKNOWN);
-+		clk->base_ahb_ratio = clk->base_cpu_ratio *
-+					(EXTRACT(val, CPU_AHB) + 1);
-+	} else if (!strcmp(type, "classic")) {
-+		if (EXTRACT(val, FIXED_BASE)) {
-+			clk->base_clock = 27 * MHZ;
-+		} else {
-+			clk->base_clock = (300 -
-+					6 * EXTRACT(val, CLASSIC_BASE)) * MHZ;
-+		}
++	if (!int_sts)
++		return IRQ_NONE;
 +
-+		clk->base_cpu_ratio = EXTRACT(val, BASE_CPU) * 2;
-+		clk->base_ahb_ratio = clk->base_cpu_ratio *
-+					(EXTRACT(val, CPU_AHB) + 1);
-+	} else {
-+		return -EINVAL;
++	spin_lock(&keypad->lock);
++
++	memcpy_fromio(state, keypad->reg_base + KEYPAD_DATA, sizeof(state));
++
++	for (row = 0; row < KEYPAD_BITMASK_ROWS; row++) {
++		u16 bits = state[row];
++		for (col = 0; col < KEYPAD_BITMASK_COLS; col++)
++			nspire_report_state(keypad, row, col, bits & (1<<col));
 +	}
++	input_sync(keypad->input);
++	writel(0x3, keypad->reg_base + KEYPAD_INT);
++
++	spin_unlock(&keypad->lock);
++
++	return IRQ_HANDLED;
++}
++
++static int nspire_keypad_chip_init(struct nspire_keypad *keypad)
++{
++	unsigned long val = 0, cycles_per_us, delay_cycles, row_delay_cycles;
++
++	cycles_per_us = (clk_get_rate(keypad->clk) / 1000000);
++	if (cycles_per_us == 0)
++		cycles_per_us = 1;
++
++	delay_cycles = cycles_per_us * keypad->scan_interval;
++	WARN_ON(delay_cycles >= (1<<16)); /* Overflow */
++	delay_cycles &= 0xffff;
++
++	row_delay_cycles = cycles_per_us * keypad->row_delay;
++	WARN_ON(row_delay_cycles >= (1<<14)); /* Overflow */
++	row_delay_cycles &= 0x3fff;
++
++
++	val |= (3<<0); /* Set scan mode to 3 (continuous scan) */
++	val |= (row_delay_cycles<<2); /* Delay between scanning each row */
++	val |= (delay_cycles<<16); /* Delay between scans */
++	writel(val, keypad->reg_base + KEYPAD_SCAN_MODE);
++
++	val = (KEYPAD_BITMASK_ROWS & 0xff) | (KEYPAD_BITMASK_COLS & 0xff)<<8;
++	writel(val, keypad->reg_base + KEYPAD_CNTL);
++
++	/* Enable interrupts */
++	keypad->int_mask = (1<<1);
++	writel(keypad->int_mask, keypad->reg_base + 0xc);
++
++	/* Disable GPIO interrupts to prevent hanging on touchpad */
++	/* Possibly used to detect touchpad events */
++	writel(0, keypad->reg_base + KEYPAD_UNKNOWN_INT);
++	/* Acknowledge existing interrupts */
++	writel(~0, keypad->reg_base + KEYPAD_UNKNOWN_INT_STS);
 +
 +	return 0;
 +}
 +
-+static void __init nspire_ahbdiv_setup(struct device_node *node)
++static int nspire_keypad_probe(struct platform_device *pdev)
 +{
-+	int ret;
++	const struct device_node *of_node = pdev->dev.of_node;
++	struct nspire_keypad *keypad;
++	struct input_dev *input;
++	struct resource *res;
 +	struct clk *clk;
-+	const char *clk_name = node->name;
-+	const char *parent_name;
-+	struct nspire_clk_info info;
++	int irq, error;
 +
-+	ret = nspire_clk_read(node, &info);
-+	if (WARN_ON(ret))
-+		return;
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0) {
++		dev_err(&pdev->dev, "failed to get keypad irq\n");
++		return -EINVAL;
++	}
 +
-+	of_property_read_string(node, "clock-output-names", &clk_name);
-+	parent_name = of_clk_get_parent_name(node, 0);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "missing platform resources\n");
++		return -EINVAL;
++	}
 +
-+	clk = clk_register_fixed_factor(NULL, clk_name, parent_name, 0,
-+					1, info.base_ahb_ratio);
-+	if (!IS_ERR(clk))
-+		of_clk_add_provider(node, of_clk_src_simple_get, clk);
++	clk = clk_get(&pdev->dev, NULL);
++	if (IS_ERR(clk)) {
++		dev_err(&pdev->dev, "unable to get clock\n");
++		return -EINVAL;
++	}
++
++	clk_prepare(clk);
++	error = clk_enable(clk);
++	if (error)
++		goto err_put_clk;
++
++	keypad = kzalloc(sizeof(struct nspire_keypad), GFP_KERNEL);
++	input = input_allocate_device();
++	if (!keypad || !input) {
++		dev_err(&pdev->dev, "failed to allocate keypad memory\n");
++		error = -ENOMEM;
++		goto err_free_mem;
++	}
++
++	error = of_property_read_u32(of_node, "scan-interval",
++			&keypad->scan_interval);
++	if (error) {
++		dev_err(&pdev->dev, "failed to get scan-interval\n");
++		goto err_free_mem;
++	}
++
++	error = of_property_read_u32(of_node, "row-delay",
++			&keypad->row_delay);
++	if (error) {
++		dev_err(&pdev->dev, "failed to get row-delay\n");
++		goto err_free_mem;
++	}
++
++	keypad->active_low = of_property_read_bool(of_node,
++			"active-low");
++
++	keypad->keymap = NULL;
++
++	keypad->row_shift = get_count_order(KEYPAD_BITMASK_COLS);
++	keypad->irq = irq;
++	keypad->clk = clk;
++	keypad->input = input;
++	spin_lock_init(&keypad->lock);
++
++	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
++		dev_err(&pdev->dev, "failed to request I/O memory\n");
++		error = -EBUSY;
++		goto err_free_mem;
++	}
++
++	keypad->reg_base = ioremap(res->start, resource_size(res));
++	if (!keypad->reg_base) {
++		dev_err(&pdev->dev, "failed to remap I/O memory\n");
++		error = -ENXIO;
++		goto err_free_mem_region;
++	}
++
++	input->id.bustype = BUS_HOST;
++	input->name = "nspire-keypad";
++	input->dev.parent = &pdev->dev;
++
++	set_bit(EV_KEY, input->evbit);
++	set_bit(EV_REP, input->evbit);
++
++	error = matrix_keypad_build_keymap(keypad->keymap, "keymap",
++			KEYPAD_BITMASK_ROWS, KEYPAD_BITMASK_COLS, NULL, input);
++	if (error) {
++		dev_err(&pdev->dev, "building keymap failed\n");
++		goto err_iounmap;
++	}
++
++	error = nspire_keypad_chip_init(keypad);
++	if (error) {
++		dev_err(&pdev->dev, "unable to init keypad hardware\n");
++		goto err_iounmap;
++	}
++
++	error = request_irq(keypad->irq, nspire_keypad_irq, 0,
++			"nspire_keypad", keypad);
++	if (error) {
++		dev_err(&pdev->dev, "allocate irq %d failed\n", keypad->irq);
++		goto err_iounmap;
++	}
++
++	error = input_register_device(input);
++	if (error) {
++		dev_err(&pdev->dev,
++				"unable to register input device: %d\n", error);
++		goto err_free_irq;
++	}
++
++	platform_set_drvdata(pdev, keypad);
++
++	dev_info(&pdev->dev, "TI-NSPIRE keypad at %#08x ("
++			"scan_interval=%uus,row_delay=%uus"
++			"%s)\n", res->start,
++			keypad->row_delay,
++			keypad->scan_interval,
++			keypad->active_low ? ",active_low" : "");
++
++	return 0;
++
++err_free_irq:
++	free_irq(keypad->irq, keypad);
++err_iounmap:
++	iounmap(keypad->reg_base);
++err_free_mem_region:
++	release_mem_region(res->start, resource_size(res));
++err_free_mem:
++	input_free_device(input);
++	kfree(keypad);
++
++	clk_disable(clk);
++err_put_clk:
++	clk_unprepare(clk);
++	clk_put(clk);
++	return error;
 +}
 +
-+static void __init nspire_clk_setup(struct device_node *node)
++static int nspire_keypad_remove(struct platform_device *pdev)
 +{
-+	int ret;
-+	struct clk *clk;
-+	const char *clk_name = node->name;
-+	struct nspire_clk_info info;
++	struct nspire_keypad *keypad = platform_get_drvdata(pdev);
++	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 +
-+	ret = nspire_clk_read(node, &info);
-+	if (WARN_ON(ret))
-+		return;
++	free_irq(keypad->irq, keypad);
 +
-+	of_property_read_string(node, "clock-output-names", &clk_name);
++	input_unregister_device(keypad->input);
 +
-+	clk = clk_register_fixed_rate(NULL, clk_name, NULL, CLK_IS_ROOT,
-+			info.base_clock);
-+	if (!IS_ERR(clk))
-+		of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+	else
-+		return;
++	iounmap(keypad->reg_base);
++	release_mem_region(res->start, resource_size(res));
++	kfree(keypad);
 +
-+	pr_info("TI-NSPIRE Base: %uMHz CPU: %uMHz AHB: %uMHz\n",
-+		info.base_clock / MHZ,
-+		info.base_clock / info.base_cpu_ratio / MHZ,
-+		info.base_clock / info.base_ahb_ratio / MHZ);
++	clk_disable(keypad->clk);
++	clk_unprepare(keypad->clk);
++	clk_put(keypad->clk);
++
++	return 0;
 +}
++#ifdef CONFIG_OF
++static const struct of_device_id nspire_keypad_dt_match[] = {
++	{ .compatible = "nspire-keypad" },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, nspire_keypad_dt_match);
++#endif
 +
-+CLK_OF_DECLARE(nspire_clk, "nspire-clock", nspire_clk_setup);
-+CLK_OF_DECLARE(nspire_ahbdiv, "nspire-ahb-divider", nspire_ahbdiv_setup);
++static struct platform_driver nspire_keypad_driver = {
++	.driver = {
++		.name = "nspire-keypad",
++		.owner  = THIS_MODULE,
++		.of_match_table = of_match_ptr(nspire_keypad_dt_match),
++	},
++	.remove = nspire_keypad_remove,
++	.probe = nspire_keypad_probe,
++};
++
++module_platform_driver(nspire_keypad_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("TI-NSPIRE Keypad Driver");
 -- 
 1.8.1.3
 
