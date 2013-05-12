@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689Ab3EMOT7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 10:19:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16554 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751071Ab3EMOT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 10:19:58 -0400
-Date: Mon, 13 May 2013 16:16:33 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 3/3] init/Kconfig: Add option to set modprobe command
-Message-ID: <20130513141633.GB1613@redhat.com>
-References: <1368159316-31744-1-git-send-email-lucas.de.marchi@gmail.com> <1368159316-31744-3-git-send-email-lucas.de.marchi@gmail.com> <20130510125826.GA553@redhat.com> <CAKi4VALE8tFUTZ1qYwm0Eth1zFMU8xA6XC5RTnF1KCKYQp-0NQ@mail.gmail.com> <20130510153638.GA8179@redhat.com> <CAKi4VAJPXgiik9CGrVyk7cCvz-1913p1KL8tn5FvxH4w0r27bg@mail.gmail.com> <20130510171054.GA27479@redhat.com> <CAKi4VAK7KA6WyVkuw+QMBnzF63b-67Gq-VmhWBs69Q0Wnc7wNw@mail.gmail.com>
+	id S1753911Ab3EMOX7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 10:23:59 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:55246 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752065Ab3EMOX5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 10:23:57 -0400
+Date: Mon, 13 May 2013 00:52:22 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Clemens Ladisch <clemens@ladisch.de>, Arnd Bergmann <arnd@arndb.de>,
+        Takashi Iwai <tiwai@suse.de>, LMML <linux-media@vger.kernel.org>
+Subject: Re: Device driver memory 'mmap()' function helper cleanup
+Message-ID: <20130512215221.GD6748@valkosipuli.retiisi.org.uk>
+References: <CA+55aFyK2EEPuBPrqu3AGRbW+8TdP=kLLz4opvynNRcrSWC2ww@mail.gmail.com>
+ <20130417074300.33d05475@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKi4VAK7KA6WyVkuw+QMBnzF63b-67Gq-VmhWBs69Q0Wnc7wNw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130417074300.33d05475@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11, Lucas De Marchi wrote:
->
-> On Fri, May 10, 2013 at 2:10 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> >> > -char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe";
-> >> > +char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe -q --";
-> >
-> > No. This is incompatible change, we shouldn't do this.
->
-> But then what option do we have? I don't think any distro writing to
-> sysctl would stop working without "-q --".
+Hi Mauro,
 
-Who knows?
+On Wed, Apr 17, 2013 at 07:43:00AM -0300, Mauro Carvalho Chehab wrote:
+> and a camera anymore. The OMAP2 were used on some Nokia phones.
+> They used to maintain that code, but now that they moved to the dark
+> side of the moon, they lost their interests on it. So, it may not 
+> be easily find testers for patches there.
 
-Again, I won't argue, I simply do not know. But this is incompatible
-change.
+There's one more underlying issue there than potentially having both no-one
+with the device and time to test it: the driver does not function as-is in
+mainline (nor any recent non-mainline kernel either). Quite some work would
+be required to update it (both to figure out why the whole system crashes
+when trying to capture images and change the driver use modern APIs). A
+small while back we decided to still keep the driver in the tree:
 
-> And if they are indeed
-> using this during boot, I think they would be much safer to just
-> change to set this at compile time like this patch is trying to do.
+<URL:http://www.spinics.net/lists/linux-media/msg56237.html>
 
-Personally I think that "compile time" is not the best choice, but
-I won't argue.
+(The rest of the discussion took place in #v4l AFAIR.)
 
-> Otherwise, the options are really ugly:
->
-> 1) always give "-q --" by putting this on the kasprintf() call:
-> kasprintf(GFP_KERNEL, "%s -q -- %s", modprobe_command, module_name).
-> 2) provide a proc_dostring_modprobe, which ensures "-q --" is appended
-> to the provided path
+So, what could be done now is either 1) write a patch that changes the
+driver to use the right API and take a risk of adding one more bug to the
+driver; or 2) remove the driver now and bring it back only if someone really
+has time to make it work first.
 
-Agreed, both options do not look nice.
+-- 
+Kind regards,
 
-Lucas. I will be happy to resend the argv_split/call_modprobe changes,
-but I can't judge whether we can/want do this.
-
-Oleg.
-
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
