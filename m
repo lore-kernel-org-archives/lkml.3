@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab3ELUrv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 16:47:51 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:34503 "EHLO
+	id S1752389Ab3ELUtY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 16:49:24 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:35729 "EHLO
 	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab3ELUru (ORCPT
+	with ESMTP id S1751941Ab3ELUtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 16:47:50 -0400
-Date: Sun, 12 May 2013 22:47:48 +0200 (CEST)
+	Sun, 12 May 2013 16:49:22 -0400
+Date: Sun, 12 May 2013 22:49:21 +0200 (CEST)
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-cc: User-mode Linux Kernel Development 
-	<user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: Build regressions/improvements in v3.10-rc1 (um)
+cc: linux-crypto@vger.kernel.org, linux-parisc@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.10-rc1 (crypto/parisc)
 In-Reply-To: <alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
-Message-ID: <alpine.DEB.2.00.1305122247320.5463@ayla.of.borg>
+Message-ID: <alpine.DEB.2.00.1305122248030.5463@ayla.of.borg>
 References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg> <alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
@@ -27,23 +26,13 @@ On Sun, 12 May 2013, Geert Uytterhoeven wrote:
 > However, the full list of errors isn't that unmanageable, so I'm following
 > up with a digested list...
 
-arch/um/drivers/cow_user.c:216: error: implicit declaration of function 'htobe32': 1 errors in 1 logs
-arch/um/drivers/cow_user.c:249: error: implicit declaration of function 'htobe64': 1 errors in 1 logs
-arch/um/drivers/cow_user.c:303: error: implicit declaration of function 'be32toh': 1 errors in 1 logs
-arch/um/drivers/cow_user.c:330: error: implicit declaration of function 'be64toh': 1 errors in 1 logs
-arch/um/os-Linux/skas/process.c:321: error: 'PTRACE_O_TRACESYSGOOD' undeclared (first use in this function): 1 errors in 1 logs
-arch/um/os-Linux/skas/process.c:321: error: (Each undeclared identifier is reported only once: 1 errors in 1 logs
-arch/um/os-Linux/skas/process.c:321: error: for each function it appears in.): 1 errors in 1 logs
-arch/um/os-Linux/skas/process.c:412: error: 'PTRACE_GETSIGINFO' undeclared (first use in this function): 1 errors in 1 logs
-arch/um/os-Linux/skas/process.c:560: error: 'PTRACE_O_TRACESYSGOOD' undeclared (first use in this function): 1 errors in 1 logs
-arch/um/os-Linux/start_up.c:245: error: 'PTRACE_SETOPTIONS' undeclared (first use in this function): 1 errors in 1 logs
-arch/um/os-Linux/start_up.c:245: error: (Each undeclared identifier is reported only once: 1 errors in 1 logs
-arch/um/os-Linux/start_up.c:245: error: for each function it appears in.): 1 errors in 1 logs
-arch/um/os-Linux/start_up.c:246: error: 'PTRACE_O_TRACESYSGOOD' undeclared (first use in this function): 1 errors in 1 logs
-arch/um/os-Linux/start_up.c:303: error: 'PTRACE_SETOPTIONS' undeclared (first use in this function): 1 errors in 1 logs
-arch/um/os-Linux/start_up.c:304: error: 'PTRACE_O_TRACESYSGOOD' undeclared (first use in this function): 1 errors in 1 logs
-	v3.10-rc1/um-i386/um-defconfig
-	Old host environment on kissb?
+lib/mpi/generic_mpih-mul1.c:50:3: error: inconsistent operand constraints in an 'asm': 1 errors in 1 logs
+lib/mpi/generic_mpih-mul2.c:49:3: error: inconsistent operand constraints in an 'asm': 1 errors in 1 logs
+lib/mpi/generic_mpih-mul3.c:49:3: error: inconsistent operand constraints in an 'asm': 1 errors in 1 logs
+lib/mpi/mpih-div.c:142:6: error: inconsistent operand constraints in an 'asm': 1 errors in 1 logs
+lib/mpi/mpih-div.c:205:6: error: inconsistent operand constraints in an 'asm': 1 errors in 1 logs
+	v3.10-rc1/parisc/parisc-allmodconfig
+
 
 Gr{oetje,eeting}s,
 
