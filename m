@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab3ELBWF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:22:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:23353 "EHLO mga03.intel.com"
+	id S1755140Ab3ELBWE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:22:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3032 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754736Ab3ELBVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 21:21:43 -0400
+	id S1754675Ab3ELBVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 21:21:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="332629730"
+   d="scan'208";a="336134832"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 39/39] thp: map file-backed huge pages on fault
-Date: Sun, 12 May 2013 04:23:36 +0300
-Message-Id: <1368321816-17719-40-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 01/39] mm: drop actor argument of do_generic_file_read()
+Date: Sun, 12 May 2013 04:22:58 +0300
+Message-Id: <1368321816-17719-2-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,49 +33,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Look like all pieces are in place, we can map file-backed huge-pages
-now.
+There's only one caller of do_generic_file_read() and the only actor is
+file_read_actor(). No reason to have a callback parameter.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/huge_mm.h |    4 +++-
- mm/memory.c             |    5 ++++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ mm/filemap.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index f4d6626..903f097 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -78,7 +78,9 @@ extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
- 	   (1<<TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG) &&			\
- 	   ((__vma)->vm_flags & VM_HUGEPAGE))) &&			\
- 	 !((__vma)->vm_flags & VM_NOHUGEPAGE) &&			\
--	 !is_vma_temporary_stack(__vma))
-+	 !is_vma_temporary_stack(__vma) &&				\
-+	 (!(__vma)->vm_ops ||						\
-+		  mapping_can_have_hugepages((__vma)->vm_file->f_mapping)))
- #define transparent_hugepage_defrag(__vma)				\
- 	((transparent_hugepage_flags &					\
- 	  (1<<TRANSPARENT_HUGEPAGE_DEFRAG_FLAG)) ||			\
-diff --git a/mm/memory.c b/mm/memory.c
-index ebff552..7fe9752 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3939,10 +3939,13 @@ retry:
- 	if (!pmd)
- 		return VM_FAULT_OOM;
- 	if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
--		int ret = 0;
-+		int ret;
- 		if (!vma->vm_ops)
- 			ret = do_huge_pmd_anonymous_page(mm, vma, address,
- 					pmd, flags);
-+		else
-+			ret = do_huge_linear_fault(mm, vma, address,
-+					pmd, flags);
- 		if ((ret & VM_FAULT_FALLBACK) == 0)
- 			return ret;
- 	} else {
+diff --git a/mm/filemap.c b/mm/filemap.c
+index e989fb1..61158ac 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1088,7 +1088,6 @@ static void shrink_readahead_size_eio(struct file *filp,
+  * @filp:	the file to read
+  * @ppos:	current file position
+  * @desc:	read_descriptor
+- * @actor:	read method
+  *
+  * This is a generic file read routine, and uses the
+  * mapping->a_ops->readpage() function for the actual low-level stuff.
+@@ -1097,7 +1096,7 @@ static void shrink_readahead_size_eio(struct file *filp,
+  * of the logic when it comes to error handling etc.
+  */
+ static void do_generic_file_read(struct file *filp, loff_t *ppos,
+-		read_descriptor_t *desc, read_actor_t actor)
++		read_descriptor_t *desc)
+ {
+ 	struct address_space *mapping = filp->f_mapping;
+ 	struct inode *inode = mapping->host;
+@@ -1198,13 +1197,14 @@ page_ok:
+ 		 * Ok, we have the page, and it's up-to-date, so
+ 		 * now we can copy it to user space...
+ 		 *
+-		 * The actor routine returns how many bytes were actually used..
++		 * The file_read_actor routine returns how many bytes were
++		 * actually used..
+ 		 * NOTE! This may not be the same as how much of a user buffer
+ 		 * we filled up (we may be padding etc), so we can only update
+ 		 * "pos" here (the actor routine has to update the user buffer
+ 		 * pointers and the remaining count).
+ 		 */
+-		ret = actor(desc, page, offset, nr);
++		ret = file_read_actor(desc, page, offset, nr);
+ 		offset += ret;
+ 		index += offset >> PAGE_CACHE_SHIFT;
+ 		offset &= ~PAGE_CACHE_MASK;
+@@ -1477,7 +1477,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 		if (desc.count == 0)
+ 			continue;
+ 		desc.error = 0;
+-		do_generic_file_read(filp, ppos, &desc, file_read_actor);
++		do_generic_file_read(filp, ppos, &desc);
+ 		retval += desc.written;
+ 		if (desc.error) {
+ 			retval = retval ?: desc.error;
 -- 
 1.7.10.4
 
