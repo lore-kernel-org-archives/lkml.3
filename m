@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab3ELXYn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 19:24:43 -0400
-Received: from josephdwagner.info ([72.4.161.242]:57663 "EHLO
-	josephdwagner.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab3ELXYm (ORCPT
+	id S1752071Ab3ELXgZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 19:36:25 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:46344 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab3ELXgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 19:24:42 -0400
-X-Greylist: delayed 3406 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 May 2013 19:24:42 EDT
-From: "Joseph D. Wagner" <joe@josephdwagner.info>
-To: <linux-kernel@vger.kernel.org>
-Subject: Excessive Swapping Under Minimal Load
-Date: Sun, 12 May 2013 15:27:42 -0700
-Message-ID: <000001ce4f5f$ec7178f0$c5546ad0$@josephdwagner.info>
+	Sun, 12 May 2013 19:36:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac5PXW5uu84GcgVEQZC3vPLXFO9pJg==
-Content-Language: en-us
+In-Reply-To: <2359346.pRaN3J5Bl7@avalon>
+References: <1363345636-2006-1-git-send-email-linus.walleij@stericsson.com>
+	<1761651.lXztZzrj1S@avalon>
+	<CACRpkdaMdU4DHWULnSB_dvGk8pTRbirL1HVTGqJ2rwqXR798uQ@mail.gmail.com>
+	<2359346.pRaN3J5Bl7@avalon>
+Date: Mon, 13 May 2013 01:36:23 +0200
+Message-ID: <CACRpkdauJ1DUn2FYWT7gqM3pW3QGzjimFnDgzqmDrZXMk9Yu0Q@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: document the "GPIO mode" pitfall
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>, Pankaj Dev <pankaj.dev@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am trying to use duplicity to backup my /home to an external hard drive
-(usb 2 interface).  After running for a few minutes, my io slows to a crawl.
-My system reports using about 300-400MB of swap, even though only about
-600MB / 4GB is in use.
+On Sat, Apr 27, 2013 at 3:16 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> On Friday 26 April 2013 10:49:12 Linus Walleij wrote:
 
-I am trying to isolate the cause.  It may be duplicity in conjunction with
-the particulars of my configuration (see below).  I get good performance
-under normal circumstances.  I am using fedora 18, which has /tmp mounted
-using tmpfs, but duplicity never uses more than 1.0GB - 1.1GB.
+>> > Does DRIVE_* imply that the pin is driven by the selected function, and
+>> > OUTPUT imply that the pin is driven to a fixed level ?
+>>
+>> That is unclear, but I suggest DRIVE* implies that everything on the pin
+>> is driven according to that configuration. (Else it is getting ignored...)
+>>
+>> OUTPUT would be used when you don't know the particulars or when
+>> the driving cannot be controlled in a fine-grained manner like with the
+>> DRIVE* configs.
+>>
+>> Does this make sense?
+>
+> Kinda, but it's still unclear to me. While the options are (briefly)
+> documented, how they interact isn't.
 
-First, is this the correct forum for asking for this kind of help?
+Do you think the sematics need to be etched in stone or do
+you think it could be left as driver-specific, like if I write in the
+defintion that the interaction of different config arguments is up
+to the driver?
 
-Second, what information 
+>> > What about cases where I want to drive the pin to a fixed level in a non
+>> > low-power output mode (for instance because I need more current that what
+>> > the low-power output mode provides) ?
+>>
+>> Just use pinconfig for that?
+>
+> How would you do so ? Only OUTPUT allows setting the output level explictly,
+> the other DRIVE_* options don't specify the output level.
 
-The particulars of my configuration:
-sda1 -> win7 hidden boot
-sda2 -> win7 regular
-sda3 -> grub2 boot
-sda5 -> luks swap
-sda6 -> luks ext4 root
-sda7 -> regular ext4 data
-sdb1 -> luks userdata1 -> md raid 0 with userdata1 and userdata2-> ext4 home
-sdc1 -> luks userdata2 -> md raid 0 with userdata1 and userdata2 -> ext4
-home
+The PIN_CONFIG_DRIVE_STRENGTH argument is in mA.
 
-My thinking in putting md raid on top of luks was that I would be able to
-better use multithreading (2 luks, 1 per physical drive), whereas putting
-luks on top of md raid might create a choke point (1 luks for 1 virtual
-drive).  I'll admit that this might be the problem.  However, it works fine
-under normal circumstances.
+Is this what you're after or something else?
 
-I was hoping someone could help me either 1) isolate what is causing the
-swapping, or 2) tell me what is wrong with my configuration based upon their
-knowledge of how the kernel works.
-
-Thanks in advance.
-
-Joseph D. Wagner
-
+Yours,
+Linus Walleij
