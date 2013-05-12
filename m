@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393Ab3ELEjP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 00:39:15 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:51699 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab3ELEjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 00:39:12 -0400
+	id S1751293Ab3ELFY7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 01:24:59 -0400
+Received: from mail-2.visir.is ([193.4.194.143]:38483 "EHLO heimsnet.is"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750786Ab3ELFY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 01:24:58 -0400
+X-Greylist: delayed 3597 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 May 2013 01:24:57 EDT
+From: "Dr.Graham Douglas " <drgrahamdouglas.eggbank@aol.com>
+Subject: Dr.Graham Douglas
+X-Mailer: CommuniGate Pro WebUser Interface v.4.2.10
+Date: Sun, 12 May 2013 04:24:56 +0000
+Message-ID: <web-75407202@heimsnet.is>
 MIME-Version: 1.0
-In-Reply-To: <CAPkEcwi7J8U_pUKCVBwrpLVauddokTytcq=PUqSSkUELdUiatg@mail.gmail.com>
-References: <CAEsagEhu3pND5j410mQM=AMEQZ-1WOG0qdKys0pfFv0-jkLs8g@mail.gmail.com>
-	<20130510045049.GU24635@dastard>
-	<CAEsagEism-SQB9LRC+EuPLoBiFOEHc0peLjh3cDxwrNe3Jz=2w@mail.gmail.com>
-	<CAPkEcwi7J8U_pUKCVBwrpLVauddokTytcq=PUqSSkUELdUiatg@mail.gmail.com>
-Date: Sat, 11 May 2013 21:39:10 -0700
-Message-ID: <CAEsagEhf-kFL68HueXjbRZPvJVQD2FhiAprnBXk9qPfwaUhtxw@mail.gmail.com>
-Subject: Re: Tux3 Report: Faster than tmpfs, what?
-From: Daniel Phillips <daniel.raymond.phillips@gmail.com>
-To: james northrup <northrup.james@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        tux3@tux3.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 11, 2013 at 11:35 AM, james northrup
-<northrup.james@gmail.com> wrote:
-> also interesting information... Study of 2,047 papers on PubMed finds
-> that two-thirds of retracted papers were down to scientific
-> misconduct, not error
 
-Could you please be specific about the meaning you intend? Because
-innuendo is less than useful in this forum. If you mean to say that
-our posted results might not be independently verifiable then I invite
-you to run the tests as described (including removing fsync) yourself.
-If you require any assistance from us in doing that, we will be
-pleased to provide it.
 
-Regards,
+Dr.Graham Douglas
 
-Daniel
+Operations / regionchef Egg Bank Plc,
+
+1Waterhouse Square 138-142 Holborn
+
+London Storbritannien
+                          
+E-post: drgrahamdouglas.eggbank @ aol.com
+                            
+Tel: +447031902413
+                              
+
+Kära vän,
+
+Mitt namn är Dr.Graham Douglas Jag är från Harlesden Nordvästra England,
+formellt senior projektledare och programmerare manager på Deutsche Bank, en
+betrodd rådgivare i över 20 år och för närvarande de Operations / regionchef
+platschef Egg Bank London, här i England. Jag arbetar för Nyast Ministrarna
+Bank London. Jag skriver att du efter en affär i mitt kontor som kommer att
+vara en enorm fördel för oss båda.
+ 
+I min avdelning, som är Operations / regionchef platschef Egg Bank Plc,
+(1Waterhouse Square 138-142 Holborn), jag upptäckte en övergiven summan av £
+21,500,000,00 Brittiska pund (Tjugo en miljon femhundra tusen brittiska pund)
+på ett konto som tillhör en av våra utländska kunder Late David McDowell Brown
+en amerikansk medborgare i Arlington Virginia, som tyvärr miste livet på första
+februari 2003 genom södra USA rymdfärjan Columbia, dog han som enskild människa
+ 
+ Vid valet av kontaktar du är upphetsad av geografisk karaktär av var du bor, i
+synnerhet på grund av känslighet för transaktionen och sekretessen här.
+Nu är vår bank har väntat på någon av de anhöriga att komma upp för påståendet,
+men ingen har gjort det. Jag personligen har tappat målet att hitta släktingar
+i 5 år nu.
+ 
+ Jag söker nu ditt medgivande att presentera dig som de närmast anhöriga /
+Kommer bidragsmottagaren till den avlidna så att intäkterna från detta konto
+värderas till £ 21 500, 000, kan 00 brittiska pounds betalas ut till dig. Detta
+kommer att betalas ut eller delas i dessa procentsatser, 50% till mig och 40%
+till dig medan 10% är för de kostnader som uppstår under transaktionen när jag
+har fått alla nödvändiga juridiska dokument som kan användas för att
+säkerhetskopiera detta påstående vi gör. Allt jag behöver är att fylla i ditt
+namn till handlingarna och legalisera det i domstol här för att visa dig som
+den rättmätiga förmånstagaren.
+
+ Också jag behöver din ärliga samarbete, sekretess och absolut tillit utan
+tvekan, för att vi ser denna transaktion igenom. Jag garanterar er att detta
+kommer att genomföras under ett legitimt system som skyddar dig mot eventuella
+brott mot lagen. Snälla, ge mig följande som vi har 5 dagar att köra igenom
+det.
+Detta är mycket brådskande TACK.
+
+1. Fullständigt namn
+
+2. Du är Telefonnummer
+
+3. Du är Kontaktadress.
+
+4. Yrke
+
+Vänligen svara så jag skickar till er bank formulär att fylla omedelbart.
+Vänliga hälsningar,
+Dr Graham
+Skicka din information till min LIGUSTER EMAIL drgrahamdouglas.eggbank @
+aol.com
