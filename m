@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab3ELVed (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 17:34:33 -0400
-Received: from 8bytes.org ([85.214.48.195]:49208 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751187Ab3ELVec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 17:34:32 -0400
-Date: Sun, 12 May 2013 23:34:30 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Bisected post-3.9 regression: Resume takes 5 times as much time
- as with v3.9
-Message-ID: <20130512213430.GE24440@8bytes.org>
-References: <87r4hdjsu5.fsf@nemi.mork.no>
- <20130512113157.GG3648@linux.vnet.ibm.com>
- <20130512182935.GD24440@8bytes.org>
- <20130512205747.GK3648@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130512205747.GK3648@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Sun May 12 23:34:31 2013
-X-DSPAM-Confidence: 0.9961
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 51900ae723672227717730
+	id S1752149Ab3ELVkv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 17:40:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34672 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab3ELVku (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 17:40:50 -0400
+Message-ID: <1368394787.9190.0.camel@zurbaran>
+Subject: Re: [PATCH] NFC: remove commented out Makefile line
+From: Samuel Ortiz <samuel@sortiz.org>
+Reply-To: Samuel Ortiz <samuel@sortiz.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, linux-nfc@ml01.01.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 12 May 2013 23:39:47 +0200
+In-Reply-To: <1368393684.1350.16.camel@x61.thuisdomein>
+References: <1368393684.1350.16.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 01:57:48PM -0700, Paul E. McKenney wrote:
-> That does look pretty extreme!  If you build with CONFIG_RCU_NO_HZ=n,
-> but without the revert, do you still get the delays?
+Hi Paul,
 
-With CONFIG_RCU_NO_HZ=n (and no revert) the system boots fine, no boot
-delay. I also enabled some RCU debugging options (with
-CONFIG_RCU_NO_HZ=y), but didn't see anything so far.
+On Sun, 2013-05-12 at 23:21 +0200, Paul Bolle wrote:
+> The Kconfig symbol NFC_LLCP was removed in commit 30cc458765 ("NFC: Move
+> LLCP code to the NFC top level diirectory"). But the reference to its
+> macro in this Makefile was only commented out. Remove it now.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Untested.
+> 
+>  net/nfc/Makefile | 1 -
+>  1 file changed, 1 deletion(-)
+Applied to my nfc-fixes tree, thanks.
 
-
-	Joerg
-
+Cheers,
+Samuel.
 
