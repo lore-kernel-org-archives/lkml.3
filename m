@@ -1,89 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293Ab3ELFY7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 01:24:59 -0400
-Received: from mail-2.visir.is ([193.4.194.143]:38483 "EHLO heimsnet.is"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750786Ab3ELFY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 01:24:58 -0400
-X-Greylist: delayed 3597 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 May 2013 01:24:57 EDT
-From: "Dr.Graham Douglas " <drgrahamdouglas.eggbank@aol.com>
-Subject: Dr.Graham Douglas
-X-Mailer: CommuniGate Pro WebUser Interface v.4.2.10
-Date: Sun, 12 May 2013 04:24:56 +0000
-Message-ID: <web-75407202@heimsnet.is>
+	id S1751799Ab3ELGga (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 02:36:30 -0400
+Received: from ozlabs.org ([203.10.76.45]:35372 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751136Ab3ELGg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 02:36:29 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "lkml" <linux-kernel@vger.kernel.org>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>
+Subject: [PULL] virtio/lguest fixes
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Sun, 12 May 2013 15:59:40 +0930
+Message-ID: <87wqr43e3v.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following changes since commit de9c9f86be0dc3495de98dc65c80abe6e7c7d643:
+
+  Merge tag 'remoteproc-3.10' of git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc (2013-05-07 14:04:56 -0700)
+
+are available in the git repository at:
 
 
-Dr.Graham Douglas
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/fixes-for-linus
 
-Operations / regionchef Egg Bank Plc,
+for you to fetch changes up to f616fe4feee4000c2995d2d1e1981513bf9ab0d4:
 
-1Waterhouse Square 138-142 Holborn
+  lguest: clear cached last cpu when guest_set_pgd() called. (2013-05-08 10:49:18 +0930)
 
-London Storbritannien
-                          
-E-post: drgrahamdouglas.eggbank @ aol.com
-                            
-Tel: +447031902413
-                              
+----------------------------------------------------------------
+Missing license tag and some fallout from the lguest pagetable rework.
 
-Kära vän,
+Thanks,
+Rusty.
 
-Mitt namn är Dr.Graham Douglas Jag är från Harlesden Nordvästra England,
-formellt senior projektledare och programmerare manager på Deutsche Bank, en
-betrodd rådgivare i över 20 år och för närvarande de Operations / regionchef
-platschef Egg Bank London, här i England. Jag arbetar för Nyast Ministrarna
-Bank London. Jag skriver att du efter en affär i mitt kontor som kommer att
-vara en enorm fördel för oss båda.
- 
-I min avdelning, som är Operations / regionchef platschef Egg Bank Plc,
-(1Waterhouse Square 138-142 Holborn), jag upptäckte en övergiven summan av £
-21,500,000,00 Brittiska pund (Tjugo en miljon femhundra tusen brittiska pund)
-på ett konto som tillhör en av våra utländska kunder Late David McDowell Brown
-en amerikansk medborgare i Arlington Virginia, som tyvärr miste livet på första
-februari 2003 genom södra USA rymdfärjan Columbia, dog han som enskild människa
- 
- Vid valet av kontaktar du är upphetsad av geografisk karaktär av var du bor, i
-synnerhet på grund av känslighet för transaktionen och sekretessen här.
-Nu är vår bank har väntat på någon av de anhöriga att komma upp för påståendet,
-men ingen har gjort det. Jag personligen har tappat målet att hitta släktingar
-i 5 år nu.
- 
- Jag söker nu ditt medgivande att presentera dig som de närmast anhöriga /
-Kommer bidragsmottagaren till den avlidna så att intäkterna från detta konto
-värderas till £ 21 500, 000, kan 00 brittiska pounds betalas ut till dig. Detta
-kommer att betalas ut eller delas i dessa procentsatser, 50% till mig och 40%
-till dig medan 10% är för de kostnader som uppstår under transaktionen när jag
-har fått alla nödvändiga juridiska dokument som kan användas för att
-säkerhetskopiera detta påstående vi gör. Allt jag behöver är att fylla i ditt
-namn till handlingarna och legalisera det i domstol här för att visa dig som
-den rättmätiga förmånstagaren.
+----------------------------------------------------------------
+Dave Jones (1):
+      Add missing module license tag to vring helpers.
 
- Också jag behöver din ärliga samarbete, sekretess och absolut tillit utan
-tvekan, för att vi ser denna transaktion igenom. Jag garanterar er att detta
-kommer att genomföras under ett legitimt system som skyddar dig mot eventuella
-brott mot lagen. Snälla, ge mig följande som vi har 5 dagar att köra igenom
-det.
-Detta är mycket brådskande TACK.
+Rusty Russell (1):
+      lguest: clear cached last cpu when guest_set_pgd() called.
 
-1. Fullständigt namn
-
-2. Du är Telefonnummer
-
-3. Du är Kontaktadress.
-
-4. Yrke
-
-Vänligen svara så jag skickar till er bank formulär att fylla omedelbart.
-Vänliga hälsningar,
-Dr Graham
-Skicka din information till min LIGUSTER EMAIL drgrahamdouglas.eggbank @
-aol.com
+ drivers/lguest/page_tables.c | 1 +
+ drivers/vhost/vringh.c       | 3 +++
+ 2 files changed, 4 insertions(+)
