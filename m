@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064Ab3ELPRY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 11:17:24 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:33229 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab3ELPRX (ORCPT
+	id S1754018Ab3ELPX6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 11:23:58 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:56605 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab3ELPX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 11:17:23 -0400
-Message-ID: <518FB27A.4070903@gmail.com>
-Date: Sun, 12 May 2013 23:17:14 +0800
-From: Liu Jiang <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH v5, part4 20/41] mm/h8300: prepare for removing num_physpages
- and simplify mem_init()
-References: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com> <1368028298-7401-21-git-send-email-jiang.liu@huawei.com> <518A7CC0.1010606@cogentembedded.com> <518AA7A0.1020702@cogentembedded.com> <518AE13A.2060204@linux.vnet.ibm.com>
-In-Reply-To: <518AE13A.2060204@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 12 May 2013 11:23:57 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH] block: remove refs to XD disks from documentation
+Date: Sun, 12 May 2013 17:23:42 +0200
+Message-Id: <1368372222-17569-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/2013 07:35 AM, Cody P Schafer wrote:
-> On 05/08/2013 12:29 PM, Sergei Shtylyov wrote:
->>
->>      Although, not necessarily: it also supports CONFIG_DYNAMIC_DEBUG --
->> look at how pr_debug() is defined.
->> So this doesn't seem to be an equivalent change, and I suggest not doing
->> it at all.
->>
->> WBR, Sergei
->
-> pr_devel() should get the same behavior: no code emitted unless debug 
-> is defined, if it is, output at KERN_DEBUG level.
->
-Thanks Cody and Sergei, will use pr_devel() instead in next version.
-Gerry
+Commit d1a6f4f19728d6e90480e53601a90fc9f6a348ad
+"block: delete super ancient PC-XT driver for 1980's hardware"
+deleted the XD disk driver, but there are still a few
+references to it in the documentation directory. Delete
+the remnants and thus also free up the major block device
+13 for reuse.
+
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ Documentation/devices.txt             | 7 +------
+ Documentation/kernel-parameters.txt   | 3 ---
+ Documentation/m68k/kernel-options.txt | 2 --
+ 3 files changed, 1 insertion(+), 11 deletions(-)
+
+diff --git a/Documentation/devices.txt b/Documentation/devices.txt
+index 08f01e7..0683e83 100644
+--- a/Documentation/devices.txt
++++ b/Documentation/devices.txt
+@@ -498,12 +498,7 @@ Your cooperation is appreciated.
+ 
+ 		Each device type has 5 bits (32 minors).
+ 
+- 13 block	8-bit MFM/RLL/IDE controller
+-		  0 = /dev/xda		First XT disk whole disk
+-		 64 = /dev/xdb		Second XT disk whole disk
+-
+-		Partitions are handled in the same way as IDE disks
+-		(see major number 3).
++ 13 block
+ 
+  14 char	Open Sound System (OSS)
+ 		  0 = /dev/mixer	Mixer control
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index c3bfacb..5469dbf 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3330,9 +3330,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			plus one apbt timer for broadcast timer.
+ 			x86_mrst_timer=apbt_only | lapic_and_apbt
+ 
+-	xd=		[HW,XT] Original XT pre-IDE (RLL encoded) disks.
+-	xd_geo=		See header of drivers/block/xd.c.
+-
+ 	xen_emul_unplug=		[HW,X86,XEN]
+ 			Unplug Xen emulated devices
+ 			Format: [unplug0,][unplug1]
+diff --git a/Documentation/m68k/kernel-options.txt b/Documentation/m68k/kernel-options.txt
+index 97d45f2..eaf32a1 100644
+--- a/Documentation/m68k/kernel-options.txt
++++ b/Documentation/m68k/kernel-options.txt
+@@ -80,8 +80,6 @@ Valid names are:
+   /dev/sdd: -> 0x0830 (forth SCSI disk)
+   /dev/sde: -> 0x0840 (fifth SCSI disk)
+   /dev/fd : -> 0x0200 (floppy disk)
+-  /dev/xda: -> 0x0c00 (first XT disk, unused in Linux/m68k)
+-  /dev/xdb: -> 0x0c40 (second XT disk, unused in Linux/m68k)
+ 
+   The name must be followed by a decimal number, that stands for the
+ partition number. Internally, the value of the number is just
+-- 
+1.8.1.4
+
