@@ -1,70 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751465Ab3ELTFN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 15:05:13 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:32377 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751174Ab3ELTFL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 15:05:11 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zz98dIc89bh1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh906i1155h)
-Date: Sun, 12 May 2013 12:05:04 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
-References: <1368207091-32538-1-git-send-email-soren.brinkmann@xilinx.com>
- <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com>
- <20130510212422.GY3200@sirena.org.uk>
- <7e18bed3-ae6b-4aa0-bf23-b6c61ba8b85b@CO9EHSMHS030.ehs.local>
- <20130512143344.GC3200@sirena.org.uk>
+	id S1751505Ab3ELTPK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 15:15:10 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:41305 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235Ab3ELTPI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 15:15:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20130512143344.GC3200@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <9e55c552-ce34-4663-9a57-bf2c626d7d58@TX2EHSMHS008.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+In-Reply-To: <29127567.mTXaJOMILH@vostro.rjw.lan>
+References: <1368221329-1841-1-git-send-email-zoran.markovic@linaro.org>
+	<1368221329-1841-2-git-send-email-zoran.markovic@linaro.org>
+	<CAMbhsRS+fNo19srma9WqcHutJnv8driOMnpM1-yW=pduJMo63g@mail.gmail.com>
+	<29127567.mTXaJOMILH@vostro.rjw.lan>
+Date: Sun, 12 May 2013 12:15:06 -0700
+X-Google-Sender-Auth: 5_XanUpfDcmNKYu-nZwQ2AtcBwU
+Message-ID: <CAMbhsRSweH-gwq4yettOnw9bDQebYR8A2o71nWRjY4aN=1+++w@mail.gmail.com>
+Subject: Re: [RFC PATCHv2 1/2] drivers: power: Add watchdog timer to catch
+ drivers which lockup during suspend/resume.
+From: Colin Cross <ccross@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Zoran Markovic <zoran.markovic@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Benoit Goby <benoit@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
+        John Stultz <john.stultz@linaro.org>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 06:33:44PM +0400, Mark Brown wrote:
-> On Sat, May 11, 2013 at 09:54:22AM -0700, Sören Brinkmann wrote:
-> > On Fri, May 10, 2013 at 10:24:22PM +0100, Mark Brown wrote:
-> 
-> > > For your use case should these things be exposed by the FPGA device
-> > > asking for that rather than by having the clocks available separately?
-> > > Or is this part of the DT blob that's loaded incrementally along with
-> > > the FPGA (which does make things more interesting of course...).
-> 
-> > Here may be some misunderstanding.
-> > The clocks are not in the FPGA. The clocks are always there and part of
-> > the processing system (PS), they are just routed to the FPGA where they
-> > can be used as clocks for the FPGA design.
-> 
-> No, there's no confusion here - the clocks that are being exposed to
-> userspace are the clocks which enter the FPGA.  The driver or whatever
-> that understands the FPGA can do what is needed to control them,
-> including routing them on to subdevices it instantiates or exposing them
-> to userspace.
-Such a driver does not exist in general.
-For some IP cores, Linux drivers do exist and then
-they are supposed to directly use the CCF, IMHO, no need to expose
-things to userspace in that case.
-I'm trying to cover cases, in which there is no driver available/needed for
-the FPGA design, other than some simple clock controls.
+On Sat, May 11, 2013 at 5:39 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, May 10, 2013 11:13:27 PM Colin Cross wrote:
+>> On Fri, May 10, 2013 at 2:28 PM, Zoran Markovic
+>> <zoran.markovic@linaro.org> wrote:
+>> > From: Benoit Goby <benoit@android.com>
+>> >
+>> > Below is a patch from android kernel that detects a driver suspend/resume
+>> > lockup and captures dump in the kernel log. Please review and provide
+>> > comments.
+>>
+>> This paragraph should go below the --- line so it doesn't end up in
+>> the final commit message.
+>>
+>> > Rather than hard-lock the kernel, dump the suspend/resume thread stack and
+>> > BUG() when a driver takes too long to suspend/resume.
+>
+> And how exactly is that different from hanging the kernel?
 
-As simple example, if you wrote your own HW blinken lights design, you
-wouldn't have nor need a Linux driver for it, but if you used these
-clocks as inputs you could change the blinking speed by adjusting the
-frequency.
+This works best with reboot on panic + pstore ram console, which
+results in rebooting to a kernel in a good state that can inspect the
+stack trace.
 
-	Sören
+>> > The timeout is set to 12 seconds to be longer than the usbhid 10
+>> > second timeout.
+>
+> Which is kind of arbitrary.
 
+The next patch (which should be squashed into this one) makes this
+timeout configurable.
 
+>> > Exclude from the watchdog the time spent waiting for children that
+>> > are resumed asynchronously and time every device, whether or not they
+>> > resumed synchronously.
+>
+> What about changing the code to use wait_for_completion_timeout() instead
+> of wait_for_completion() and actually trying to recover if one of them times
+> out?  [It could try to unregister the device in question and if *that* hangs
+> indefinitely, *then* commit a panic() or something similar, but if it succeeds,
+> abort the ongoing suspend or complete the resume without that device.]
+
+I don't think this is feasible.  What do you do if userspace was using
+the device?  What do you do if the suspend function later starts
+running again if the blocking condition clears up, and starts
+accessing hardware for an unregistered device?  Trying to unload a
+driver that is known to be misbehaving sounds to me like it is going
+to result in an even more unstable situation.  The purpose of this
+patch is to get the end user's phone back into a usable state as fast
+as possible, while still providing the information needed to debug the
+issue to power users or developers.
+
+> Of course, that would involve changing things not to depend on async, but
+> might be better than slapping a timer on top.
+>
+>> > This patch is targeted for mobile devices where a suspend/resume lockup
+>> > could cause a system reboot and catch user's attention. Information
+>> > about failing device can later be retrieved from captured log in
+>> > subsequent boot session.
+>>
+>> I would take out the phrase "catch user's attention", the intention of
+>> this patch is actually the opposite - get the system back to working
+>> normally as fast as possible, while still putting enough information
+>> to debug the problem into the log.
+>>
+>> > The hardware watchdog timer is likely suspended during this time and
+>> > couldn't be relied upon. The soft-lockup detector would eventually tell
+>> > that tasks are not scheduled, but would provide little context as to why.
+>> > The patch hence uses system timer and assumes it is still active while the
+>> > devices are suspended/resumed.
+>
+> I must say I'm not particularly impressed by this patch series.  I understand
+> the motivation, but I'm wondering if that's the best we can do.
+
+This feature is most useful for Android devices, which is why we never
+pushed it upstream ourselves.  It has been extremely valuable to us
+during development, we have been using it for years and it turns a
+class of bugs that is very difficult to debug ("phone is stuck with
+screen off", none of the regular debugging tools are useful because
+most drivers are suspended) into something that can be trivially
+collected out of the logs on the next reboot.
