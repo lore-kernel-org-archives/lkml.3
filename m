@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803Ab3ELUpF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 16:45:05 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:41181 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab3ELUpD (ORCPT
+	id S1751941Ab3ELUps (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 16:45:48 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:38279 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465Ab3ELUpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 16:45:03 -0400
-Date: Sun, 12 May 2013 22:45:01 +0200 (CEST)
+	Sun, 12 May 2013 16:45:47 -0400
+Date: Sun, 12 May 2013 22:45:45 +0200 (CEST)
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-cc: Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: Re: Build regressions/improvements in v3.10-rc1 (avr)
+cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+Subject: Re: Build regressions/improvements in v3.10-rc1 (h8300)
 In-Reply-To: <alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
-Message-ID: <alpine.DEB.2.00.1305122244300.5463@ayla.of.borg>
+Message-ID: <alpine.DEB.2.00.1305122245160.5463@ayla.of.borg>
 References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg> <alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
@@ -27,13 +26,26 @@ On Sun, 12 May 2013, Geert Uytterhoeven wrote:
 > However, the full list of errors isn't that unmanageable, so I'm following
 > up with a digested list...
 
-(.init.text+0x540): undefined reference to `atmel_default_console_device': 1 errors in 1 logs
-	v3.10-rc1/avr32/avr32-allnoconfig
-	Patch sent last February
+arch/h8300/kernel/entry.S:158: Error: junk at end of line, first unrecognized character is `(': 1 errors in 1 logs
+    ...
+arch/h8300/kernel/entry.S:204: Error: invalid operands: 2 errors in 1 logs
+    ...
+arch/h8300/kernel/syscalls.S:100: Error: junk at end of line, first unrecognized character is `(': 1 errors in 1 logs
+arch/h8300/lib/abs.S:12: Error: junk at end of line, first unrecognized character is `(': 1 errors in 1 logs
+arch/h8300/lib/memcpy.S:13: Error: junk at end of line, first unrecognized character is `(': 1 errors in 1 logs
+arch/h8300/lib/memset.S:13: Error: junk at end of line, first unrecognized character is `(': 1 errors in 1 logs
+arch/h8300/platform/h8300h/generic/crt0_ram.S:25: Error: junk at end of line, first unrecognized character is `(': 1 errors in 1 logs
+    ...
+arch/h8300/platform/h8300h/generic/crt0_ram.S:68: Error: invalid operands: 1 errors in 1 logs
+kernel/cpu/idle.c:70:4: error: implicit declaration of function 'check_pgt_cache' [-Werror=implicit-function-declaration]: 1 errors in 1 logs
+	v3.10-rc1/h8300/h8300-defconfig
+	Patch series sent last week
 
 
-vsprintf.c:(.text+0x8de): relocation truncated to fit: R_AVR32_9UW_PCREL against `.text'+ae0: 1 errors in 1 logs
-	v3.10-rc1/avr32/avr32-allnoconfig
+kernel/task_work.c:38:3: error: implicit declaration of function 'read_barrier_depends' [-Werror=implicit-function-declaration]: 1 errors in 1 logs
+	v3.10-rc1/h8300/h8300-defconfig
+	Patch available
+
 
 Gr{oetje,eeting}s,
 
