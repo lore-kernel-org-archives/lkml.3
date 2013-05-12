@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab3ELB0N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:26:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:23353 "EHLO mga03.intel.com"
+	id S1755187Ab3ELB0K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:26:10 -0400
+Received: from mga03.intel.com ([143.182.124.21]:3497 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754582Ab3ELBVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754731Ab3ELBVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 11 May 2013 21:21:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="332629726"
+   d="scan'208";a="332629724"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 38/39] thp: vma_adjust_trans_huge(): adjust file-backed VMA too
-Date: Sun, 12 May 2013 04:23:35 +0300
-Message-Id: <1368321816-17719-39-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 35/39] mm: decomposite do_wp_page() and get rid of some 'goto' logic
+Date: Sun, 12 May 2013 04:23:32 +0300
+Message-Id: <1368321816-17719-36-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,62 +33,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Since we're going to have huge pages in page cache, we need to call
-adjust file-backed VMA, which potentially can contain huge pages.
-
-For now we call it for all VMAs.
-
-Probably later we will need to introduce a flag to indicate that the VMA
-has huge pages.
+Let's extract some 'reuse' path to separate function and use it instead
+of ugly goto.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/huge_mm.h |   11 +----------
- mm/huge_memory.c        |    2 +-
- 2 files changed, 2 insertions(+), 11 deletions(-)
+ mm/memory.c |  110 ++++++++++++++++++++++++++++++++---------------------------
+ 1 file changed, 59 insertions(+), 51 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index b20334a..f4d6626 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -139,7 +139,7 @@ extern void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
- #endif
- extern int hugepage_madvise(struct vm_area_struct *vma,
- 			    unsigned long *vm_flags, int advice);
--extern void __vma_adjust_trans_huge(struct vm_area_struct *vma,
-+extern void vma_adjust_trans_huge(struct vm_area_struct *vma,
- 				    unsigned long start,
- 				    unsigned long end,
- 				    long adjust_next);
-@@ -155,15 +155,6 @@ static inline int pmd_trans_huge_lock(pmd_t *pmd,
- 	else
- 		return 0;
- }
--static inline void vma_adjust_trans_huge(struct vm_area_struct *vma,
--					 unsigned long start,
--					 unsigned long end,
--					 long adjust_next)
--{
--	if (!vma->anon_vma || vma->vm_ops)
--		return;
--	__vma_adjust_trans_huge(vma, start, end, adjust_next);
--}
- static inline int hpage_nr_pages(struct page *page)
- {
- 	if (unlikely(PageTransHuge(page)))
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index d7c9df5..9c3815b 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2783,7 +2783,7 @@ static void split_huge_page_address(struct mm_struct *mm,
- 	split_huge_page_pmd_mm(mm, address, pmd);
+diff --git a/mm/memory.c b/mm/memory.c
+index 8997cd8..eb99ab1 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2594,6 +2594,52 @@ static inline void cow_user_page(struct page *dst, struct page *src, unsigned lo
+ 		copy_user_highpage(dst, src, va, vma);
  }
  
--void __vma_adjust_trans_huge(struct vm_area_struct *vma,
-+void vma_adjust_trans_huge(struct vm_area_struct *vma,
- 			     unsigned long start,
- 			     unsigned long end,
- 			     long adjust_next)
++static void dirty_page(struct vm_area_struct *vma, struct page *page,
++		bool page_mkwrite)
++{
++	/*
++	 * Yes, Virginia, this is actually required to prevent a race
++	 * with clear_page_dirty_for_io() from clearing the page dirty
++	 * bit after it clear all dirty ptes, but before a racing
++	 * do_wp_page installs a dirty pte.
++	 *
++	 * __do_fault is protected similarly.
++	 */
++	if (!page_mkwrite) {
++		wait_on_page_locked(page);
++		set_page_dirty_balance(page, page_mkwrite);
++		/* file_update_time outside page_lock */
++		if (vma->vm_file)
++			file_update_time(vma->vm_file);
++	}
++	put_page(page);
++	if (page_mkwrite) {
++		struct address_space *mapping = page->mapping;
++
++		set_page_dirty(page);
++		unlock_page(page);
++		page_cache_release(page);
++		if (mapping)	{
++			/*
++			 * Some device drivers do not set page.mapping
++			 * but still dirty their pages
++			 */
++			balance_dirty_pages_ratelimited(mapping);
++		}
++	}
++}
++
++static void mkwrite_pte(struct vm_area_struct *vma, unsigned long address,
++		pte_t *page_table, pte_t orig_pte)
++{
++	pte_t entry;
++	flush_cache_page(vma, address, pte_pfn(orig_pte));
++	entry = pte_mkyoung(orig_pte);
++	entry = maybe_mkwrite(pte_mkdirty(entry), vma);
++	if (ptep_set_access_flags(vma, address, page_table, entry, 1))
++		update_mmu_cache(vma, address, page_table);
++}
++
+ /*
+  * This routine handles present pages, when users try to write
+  * to a shared page. It is done by copying the page to a new address
+@@ -2618,10 +2664,8 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	__releases(ptl)
+ {
+ 	struct page *old_page, *new_page = NULL;
+-	pte_t entry;
+ 	int ret = 0;
+ 	int page_mkwrite = 0;
+-	struct page *dirty_page = NULL;
+ 	unsigned long mmun_start = 0;	/* For mmu_notifiers */
+ 	unsigned long mmun_end = 0;	/* For mmu_notifiers */
+ 
+@@ -2635,8 +2679,11 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		 * accounting on raw pfn maps.
+ 		 */
+ 		if ((vma->vm_flags & (VM_WRITE|VM_SHARED)) ==
+-				     (VM_WRITE|VM_SHARED))
+-			goto reuse;
++				     (VM_WRITE|VM_SHARED)) {
++			mkwrite_pte(vma, address, page_table, orig_pte);
++			pte_unmap_unlock(page_table, ptl);
++			return VM_FAULT_WRITE;
++		}
+ 		goto gotten;
+ 	}
+ 
+@@ -2665,7 +2712,9 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			 */
+ 			page_move_anon_rmap(old_page, vma, address);
+ 			unlock_page(old_page);
+-			goto reuse;
++			mkwrite_pte(vma, address, page_table, orig_pte);
++			pte_unmap_unlock(page_table, ptl);
++			return VM_FAULT_WRITE;
+ 		}
+ 		unlock_page(old_page);
+ 	} else if (unlikely((vma->vm_flags & (VM_WRITE|VM_SHARED)) ==
+@@ -2727,53 +2776,11 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ 			page_mkwrite = 1;
+ 		}
+-		dirty_page = old_page;
+-		get_page(dirty_page);
+-
+-reuse:
+-		flush_cache_page(vma, address, pte_pfn(orig_pte));
+-		entry = pte_mkyoung(orig_pte);
+-		entry = maybe_mkwrite(pte_mkdirty(entry), vma);
+-		if (ptep_set_access_flags(vma, address, page_table, entry,1))
+-			update_mmu_cache(vma, address, page_table);
++		get_page(old_page);
++		mkwrite_pte(vma, address, page_table, orig_pte);
+ 		pte_unmap_unlock(page_table, ptl);
+-		ret |= VM_FAULT_WRITE;
+-
+-		if (!dirty_page)
+-			return ret;
+-
+-		/*
+-		 * Yes, Virginia, this is actually required to prevent a race
+-		 * with clear_page_dirty_for_io() from clearing the page dirty
+-		 * bit after it clear all dirty ptes, but before a racing
+-		 * do_wp_page installs a dirty pte.
+-		 *
+-		 * __do_fault is protected similarly.
+-		 */
+-		if (!page_mkwrite) {
+-			wait_on_page_locked(dirty_page);
+-			set_page_dirty_balance(dirty_page, page_mkwrite);
+-			/* file_update_time outside page_lock */
+-			if (vma->vm_file)
+-				file_update_time(vma->vm_file);
+-		}
+-		put_page(dirty_page);
+-		if (page_mkwrite) {
+-			struct address_space *mapping = dirty_page->mapping;
+-
+-			set_page_dirty(dirty_page);
+-			unlock_page(dirty_page);
+-			page_cache_release(dirty_page);
+-			if (mapping)	{
+-				/*
+-				 * Some device drivers do not set page.mapping
+-				 * but still dirty their pages
+-				 */
+-				balance_dirty_pages_ratelimited(mapping);
+-			}
+-		}
+-
+-		return ret;
++		dirty_page(vma, old_page, page_mkwrite);
++		return ret | VM_FAULT_WRITE;
+ 	}
+ 
+ 	/*
+@@ -2810,6 +2817,7 @@ gotten:
+ 	 */
+ 	page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
+ 	if (likely(pte_same(*page_table, orig_pte))) {
++		pte_t entry;
+ 		if (old_page) {
+ 			if (!PageAnon(old_page)) {
+ 				dec_mm_counter_fast(mm, MM_FILEPAGES);
 -- 
 1.7.10.4
 
