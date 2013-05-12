@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab3ELBVu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:21:50 -0400
-Received: from mga14.intel.com ([143.182.124.37]:4954 "EHLO mga14.intel.com"
+	id S1754839Ab3ELBVs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:21:48 -0400
+Received: from mga14.intel.com ([143.182.124.37]:34988 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754656Ab3ELBVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 21:21:39 -0400
+	id S1754651Ab3ELBVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 21:21:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="240202830"
+   d="scan'208";a="332629689"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 24/39] thp, mm: truncate support for transparent huge page cache
-Date: Sun, 12 May 2013 04:23:21 +0300
-Message-Id: <1368321816-17719-25-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 26/39] ramfs: enable transparent huge page cache
+Date: Sun, 12 May 2013 04:23:23 +0300
+Message-Id: <1368321816-17719-27-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,48 +33,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-If we starting position of truncation is in tail page we have to spilit
-the huge page page first.
+ramfs is the most simple fs from page cache point of view. Let's start
+transparent huge page cache enabling here.
 
-We also have to split if end is within the huge page. Otherwise we can
-truncate whole huge page at once.
+For now we allocate only non-movable huge page. ramfs pages cannot be
+moved yet.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/truncate.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ fs/ramfs/inode.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/mm/truncate.c b/mm/truncate.c
-index c75b736..0152feb 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -231,6 +231,17 @@ void truncate_inode_pages_range(struct address_space *mapping,
- 			if (index > end)
- 				break;
- 
-+			/* split page if we start from tail page */
-+			if (PageTransTail(page))
-+				split_huge_page(compound_trans_head(page));
-+			if (PageTransHuge(page)) {
-+				/* split if end is within huge page */
-+				if (index == (end & ~HPAGE_CACHE_INDEX_MASK))
-+					split_huge_page(page);
-+				else
-+					/* skip tail pages */
-+					i += HPAGE_CACHE_NR - 1;
-+			}
- 			if (!trylock_page(page))
- 				continue;
- 			WARN_ON(page->index != index);
-@@ -280,6 +291,8 @@ void truncate_inode_pages_range(struct address_space *mapping,
- 			if (index > end)
- 				break;
- 
-+			if (PageTransHuge(page))
-+				split_huge_page(page);
- 			lock_page(page);
- 			WARN_ON(page->index != index);
- 			wait_on_page_writeback(page);
+diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
+index c24f1e1..54d69c7 100644
+--- a/fs/ramfs/inode.c
++++ b/fs/ramfs/inode.c
+@@ -61,7 +61,11 @@ struct inode *ramfs_get_inode(struct super_block *sb,
+ 		inode_init_owner(inode, dir, mode);
+ 		inode->i_mapping->a_ops = &ramfs_aops;
+ 		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
+-		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
++		/*
++		 * TODO: make ramfs pages movable
++		 */
++		mapping_set_gfp_mask(inode->i_mapping,
++				GFP_TRANSHUGE & ~__GFP_MOVABLE);
+ 		mapping_set_unevictable(inode->i_mapping);
+ 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+ 		switch (mode & S_IFMT) {
 -- 
 1.7.10.4
 
