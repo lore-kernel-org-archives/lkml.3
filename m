@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab3ELOOW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 10:14:22 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:39318 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab3ELOOV (ORCPT
+	id S1753615Ab3ELOYv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 10:24:51 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:65137 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242Ab3ELOYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 10:14:21 -0400
-Message-ID: <518FA3BB.7060806@free-electrons.com>
-Date: Sun, 12 May 2013 16:14:19 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Gerlando Falauto <gerlando.falauto@keymile.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [patch 8/8] irqchip: sun4i: Convert to generic irq chip
-References: <20130503212258.385818955@linutronix.de> <20130506142348.321859745@linutronix.de> <20130506142539.523110430@linutronix.de> <518FA24D.80203@free-electrons.com>
-In-Reply-To: <518FA24D.80203@free-electrons.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Sun, 12 May 2013 10:24:49 -0400
+X-IronPort-AV: E=Sophos;i="4.87,657,1363158000"; 
+   d="scan'208";a="46528035"
+From: Dolev Raviv <draviv@codeaurora.org>
+To: linux-scsi@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Dolev Raviv <draviv@codeaurora.org>,
+        Sujit Reddy Thumma <sthumma@codeaurora.org>,
+        devicetree-discuss@lists.ozlabs.org (moderated list:OPEN FIRMWARE
+	AND...),
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH V1 1/8] Documentation: devicetree: Add DT bindings for UFS host controller
+Date: Sun, 12 May 2013 17:23:53 +0300
+Message-Id: <1368368640-10167-2-git-send-email-draviv@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1368368640-10167-1-git-send-email-draviv@codeaurora.org>
+References: <1368368640-10167-1-git-send-email-draviv@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 12/05/2013 16:08, Maxime Ripard a écrit :
-> Hi Thomas,
-> 
-> Le 06/05/2013 16:30, Thomas Gleixner a écrit :
->> Proof of concept patch to demonstrate the new irqdomain support for
->> the generic irq chip. Untested !!
->>
->> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
-> 
-> I just tested it, and with the minor patch I sent, it's working fine.
-> 
-> You can add my
-> Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Compatible list is used in commit 03b1781 but is not documented.
+Add necessary device tree bindings to describe on-chip UFS host
+controllers.
 
-After addressing the comments RobH already made that is.
+Signed-off-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
 
-Maxime
+diff --git a/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt b/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
+new file mode 100644
+index 0000000..20468b2
+--- /dev/null
++++ b/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
+@@ -0,0 +1,16 @@
++* Universal Flash Storage (UFS) Host Controller
++
++UFSHC nodes are defined to describe on-chip UFS host controllers.
++Each UFS controller instance should have its own node.
++
++Required properties:
++- compatible        : compatible list, contains "jedec,ufs-1.1"
++- interrupts        : <interrupt mapping for UFS host controller IRQ>
++- reg               : <registers mapping>
++
++Example:
++	ufshc@0xfc598000 {
++		compatible = "jedec,ufs-1.1";
++		reg = <0xfc598000 0x800>;
++		interrupts = <0 28 0>;
++	};
+-- 
+1.7.6
 
 -- 
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
