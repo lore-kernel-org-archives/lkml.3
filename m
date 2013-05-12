@@ -1,91 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab3ELU55 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 16:57:57 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:56229 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab3ELU54 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 16:57:56 -0400
-Date: Sun, 12 May 2013 13:57:48 -0700
+	id S1752134Ab3ELU6r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 16:58:47 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:45611 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751607Ab3ELU6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 16:58:46 -0400
+Date: Sun, 12 May 2013 13:58:24 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Bisected post-3.9 regression: Resume takes 5 times as much time
- as with v3.9
-Message-ID: <20130512205747.GK3648@linux.vnet.ibm.com>
+To: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org
+Subject: Re: [v3.10-rc1] WARNING: at kernel/rcutree.c:502
+Message-ID: <20130512205824.GL3648@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <87r4hdjsu5.fsf@nemi.mork.no>
- <20130512113157.GG3648@linux.vnet.ibm.com>
- <20130512182935.GD24440@8bytes.org>
+References: <87ip2opntp.fsf@nemi.mork.no>
+ <20130512113905.GH3648@linux.vnet.ibm.com>
+ <87li7kp50r.fsf@nemi.mork.no>
+ <20130512172135.GJ3648@linux.vnet.ibm.com>
+ <87a9o0ukll.fsf@nemi.mork.no>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130512182935.GD24440@8bytes.org>
+In-Reply-To: <87a9o0ukll.fsf@nemi.mork.no>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051220-7282-0000-0000-00001715D4C7
+x-cbid: 13051220-9360-0000-0000-0000122337C2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 08:29:35PM +0200, Joerg Roedel wrote:
-> Hi Paul,
+On Sun, May 12, 2013 at 08:19:34PM +0200, Bjørn Mork wrote:
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
+> > On Sun, May 12, 2013 at 05:55:00PM +0200, Bjørn Mork wrote:
+> >> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
+> >> > On Sun, May 12, 2013 at 11:08:50AM +0200, Bjørn Mork wrote:
+> >> >> Hello,
+> >> >> 
+> >> >> got the splat below when running powertop on plain v3.10-rc1
+> >> >> (i.e. without my previously mentioned revert patch or any other extra
+> >> >> patches).  Config attached.
+> >> >
+> >> > OK, it looks like you have context-tracking enabled, so you might be
+> >> > hitting a bug that Steven Rostedt found a few days ago.  Could you
+> >> > please try out his fix below?
+> >> 
+> >> Thanks for the quick reply, but I'm afraid that patch had no effect on
+> >> the warning I got. It's still there.
+> >
+> > Other than wondering whether powertop has issues similar to the bug
+> > Steven Rostedt located, I must confess myself clueless.  Here are some
+> > diagnostics I can suggest:
+> >
+> > 1.	Run in 32-bit mode.  This disables some of the new adaptive-ticks
+> > 	functionality, so might give a probabilistic indication of where
+> > 	the bug lies.
+> >
+> > 2.	The standard fallback of bisection.
+> >
+> > Would you be willing to do either of these?
 > 
-> On Sun, May 12, 2013 at 04:31:57AM -0700, Paul E. McKenney wrote:
-> > On Sat, May 11, 2013 at 08:04:50PM +0200, Bjørn Mork wrote:
-> > > Bisecting it ended up pointing to
-> > > 
-> > > commit c0f4dfd4f90f1667d234d21f15153ea09a2eaa66
-> > > Author: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > Date:   Fri Dec 28 11:30:36 2012 -0800
-> > > 
-> > >     rcu: Make RCU_FAST_NO_HZ take advantage of numbered callbacks
-> > >     
-> > >     Because RCU callbacks are now associated with the number of the grace
-> > >     period that they must wait for, CPUs can now take advance callbacks
-> > >     corresponding to grace periods that ended while a given CPU was in
-> > >     dyntick-idle mode.  This eliminates the need to try forcing the RCU
-> > >     state machine while entering idle, thus reducing the CPU intensiveness
-> > >     of RCU_FAST_NO_HZ, which should increase its energy efficiency.
-> > >     
-> > >     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > 
-> > > 
-> > > Being a big patch, I'm pretty sure that the problem is some minor
-> > > issue. But rather than trying to userstand this, just tried reverting
-> > > it on top of the current mainline and can confirm that this fixes the
-> > > regression.  I'll leave the understanding to you :)
-> > > 
-> > > I'm attaching the revert patch as I had to fix a conflict, and may have
-> > > done something wrong there.  I'm also attaching my .config.
-> > > 
-> > > Let me know if you need more information, or want me to try out proposed
-> > > fixes.
-> > 
-> > We don't want to back out the RCU_FAST_NO_HZ changes due to their
-> > energy-efficiency benefits.  So could you please try out Borislav's
-> > patch below?  He ran into the same issue a few weeks ago, and this
-> > one fixed it for him.
+> Willing, yes. But it will take some time before I am able to do either
+> unless I can recreate the problem in a virtual machine.  I assume that
+> you by " 32-bit mode" mean a 32bit kernel?  I'm not exactly set up to
+> run that on my laptop.  Bisection will be less work.
 > 
-> I get a ~10min boot delay with this patch:
+> To be honest, I don't even know how old this thing is.  It could be
+> totally unrelated to your recent changes for all I know. Running
+> powertop is something I do once every 6 kernel releases or something
+> like that...
 > 
-> [    1.149676] system 00:01: [mem 0xf6000000-0xf6003fff] could not be reserved
-> [    1.149724] system 00:01: Plug and Play ACPI device, IDs PNP0c02 (active)
-> [  603.957670] pnp 00:02: [dma 4]
-> [  603.957735] pnp 00:02: Plug and Play ACPI device, IDs PNP0200 (active)
-> 
-> This happens on my AMD FX-6100 system. I bisected the problem down to the same
-> commit and reverting it fixes the problem. Any ideas?
+> I'll see what I can come up with.  Thanks for your attention.
 
-That does look pretty extreme!  If you build with CONFIG_RCU_NO_HZ=n,
-but without the revert, do you still get the delays?
+And thank you for the testing and information!
 
 							Thanx, Paul
 
