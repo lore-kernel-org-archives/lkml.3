@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab3ELBVm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:21:42 -0400
-Received: from mga03.intel.com ([143.182.124.21]:4642 "EHLO mga03.intel.com"
+	id S1755305Ab3ELB1U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:27:20 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3032 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754341Ab3ELBVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 21:21:35 -0400
+	id S1754711Ab3ELBVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 21:21:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="240202774"
+   d="scan'208";a="336134851"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 02/39] block: implement add_bdi_stat()
-Date: Sun, 12 May 2013 04:22:59 +0300
-Message-Id: <1368321816-17719-3-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 17/39] thp, mm: handle tail pages in page_cache_get_speculative()
+Date: Sun, 12 May 2013 04:23:14 +0300
+Message-Id: <1368321816-17719-18-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,36 +33,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-We're going to add/remove a number of page cache entries at once. This
-patch implements add_bdi_stat() which adjusts bdi stats by arbitrary
-amount. It's required for batched page cache manipulations.
+For tail page we call __get_page_tail(). It has the same semantics, but
+for tail page.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/backing-dev.h |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ include/linux/pagemap.h |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index 3504599..b05d961 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -167,6 +167,16 @@ static inline void __dec_bdi_stat(struct backing_dev_info *bdi,
- 	__add_bdi_stat(bdi, item, -1);
- }
- 
-+static inline void add_bdi_stat(struct backing_dev_info *bdi,
-+		enum bdi_stat_item item, s64 amount)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	__add_bdi_stat(bdi, item, amount);
-+	local_irq_restore(flags);
-+}
-+
- static inline void dec_bdi_stat(struct backing_dev_info *bdi,
- 		enum bdi_stat_item item)
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 28597ec..2e86251 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -161,6 +161,9 @@ static inline int page_cache_get_speculative(struct page *page)
  {
+ 	VM_BUG_ON(in_interrupt());
+ 
++	if (unlikely(PageTail(page)))
++		return __get_page_tail(page);
++
+ #ifdef CONFIG_TINY_RCU
+ # ifdef CONFIG_PREEMPT_COUNT
+ 	VM_BUG_ON(!in_atomic());
+@@ -187,7 +190,6 @@ static inline int page_cache_get_speculative(struct page *page)
+ 		return 0;
+ 	}
+ #endif
+-	VM_BUG_ON(PageTail(page));
+ 
+ 	return 1;
+ }
 -- 
 1.7.10.4
 
