@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab3ELQbP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 12:31:15 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:59397 "EHLO smtp1-g21.free.fr"
+	id S1754692Ab3ELQb3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 12:31:29 -0400
+Received: from sauhun.de ([89.238.76.85]:47647 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754239Ab3ELQbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 12:31:14 -0400
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
-Subject: [PATCH] bcache: fix compilation warning
-Date: Sun, 12 May 2013 18:30:51 +0200
-Message-Id: <1368376251-14622-1-git-send-email-vincent.stehle@laposte.net>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754248Ab3ELQb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 12:31:28 -0400
+Date: Sun, 12 May 2013 18:32:51 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [RFC 17/42] drivers/net/ethernet/renesas: don't check resource
+ with devm_ioremap_resource
+Message-ID: <20130512163246.GA2928@katana>
+References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
+ <1368173847-5661-18-git-send-email-wsa@the-dreams.de>
+ <518EAB9B.8040106@cogentembedded.com>
+ <20130512094202.GA3039@katana>
+ <518FB49B.7030708@cogentembedded.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <518FB49B.7030708@cogentembedded.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The release function of a block device does not return a value; make
-release_dev void. This fixes the following warning:
+Hi,
 
-  drivers/md/bcache/super.c:653:2: warning: initialization from incompatible pointer type [enabled by default]
-  drivers/md/bcache/super.c:653:2: warning: (near initialization for ‘bcache_ops.release’) [enabled by default]
+>    You can always try to do:
+> 
+> $ make drivers/net/ethernet/renesas/sh_eth.o
+> 
+> with a .config file you have. It will compile a file regardless of
+> whether it's enabled in your .config or not...
 
-Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
----
- drivers/md/bcache/super.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Been there. This mainly works for platform independent drivers. In this case:
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index c8046bc..b09beb2 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -634,11 +634,10 @@ static int open_dev(struct block_device *b, fmode_t mode)
- 	return 0;
- }
- 
--static int release_dev(struct gendisk *b, fmode_t mode)
-+static void release_dev(struct gendisk *b, fmode_t mode)
- {
- 	struct bcache_device *d = b->private_data;
- 	closure_put(&d->cl);
--	return 0;
- }
- 
- static int ioctl_dev(struct block_device *b, fmode_t mode,
--- 
-1.7.10.4
+  CC      drivers/net/ethernet/renesas/sh_eth.o
+drivers/net/ethernet/renesas/sh_eth.c: In function 'sh_eth_dev_init':
+drivers/net/ethernet/renesas/sh_eth.c:1274:2: error: implicit declaration of function 'sh_eth_reset' [-Werror=implicit-function-declaration]
+drivers/net/ethernet/renesas/sh_eth.c: In function 'sh_eth_drv_probe':
+drivers/net/ethernet/renesas/sh_eth.c:2724:13: error: 'sh_eth_my_cpu_data' undeclared (first use in this function)
+drivers/net/ethernet/renesas/sh_eth.c:2724:13: note: each undeclared identifier is reported only once for each function it appears in
+drivers/net/ethernet/renesas/sh_eth.c: At top level:
+drivers/net/ethernet/renesas/sh_eth.c:889:12: warning: 'sh_eth_check_reset' defined but not used [-Wunused-function]
+
+> >That being said, the actual mistake I did was embarassing, I agree. I am
+> >sorry for that and will improve. And, doing things means doing mistakes,
+> >too.
+> 
+>    Be more attentive in the future please. :-)
+
+Sure thing.
+
+Regards,
+
+   Wolfram
 
