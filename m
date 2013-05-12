@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755097Ab3ELBWA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:22:00 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62392 "EHLO mga09.intel.com"
+	id S1755071Ab3ELBV7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:21:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19861 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754648Ab3ELBVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 21:21:38 -0400
+	id S1754669Ab3ELBVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 21:21:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="335554488"
+   d="scan'208";a="335554504"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 22/39] thp: handle file pages in split_huge_page()
-Date: Sun, 12 May 2013 04:23:19 +0300
-Message-Id: <1368321816-17719-23-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 34/39] thp, mm: handle huge pages in filemap_fault()
+Date: Sun, 12 May 2013 04:23:31 +0300
+Message-Id: <1368321816-17719-35-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,145 +33,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-The base scheme is the same as for anonymous pages, but we walk by
-mapping->i_mmap rather then anon_vma->rb_root.
+If caller asks for huge page (flags & FAULT_FLAG_TRANSHUGE),
+filemap_fault() return it if there's a huge page already by the offset.
+
+If the area of page cache required to create huge is empty, we create a
+new huge page and return it.
+
+Otherwise we return VM_FAULT_FALLBACK to indicate that fallback to small
+pages is required.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/huge_memory.c |   68 +++++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 57 insertions(+), 11 deletions(-)
+ mm/filemap.c |   52 +++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 43 insertions(+), 9 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index ed31e90..73974e8 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1655,23 +1655,23 @@ static void __split_huge_page_refcount(struct page *page,
- 		*/
- 		page_tail->_mapcount = page->_mapcount;
- 
--		BUG_ON(page_tail->mapping);
- 		page_tail->mapping = page->mapping;
- 
- 		page_tail->index = page->index + i;
- 		page_nid_xchg_last(page_tail, page_nid_last(page));
- 
--		BUG_ON(!PageAnon(page_tail));
- 		BUG_ON(!PageUptodate(page_tail));
- 		BUG_ON(!PageDirty(page_tail));
--		BUG_ON(!PageSwapBacked(page_tail));
- 
- 		lru_add_page_tail(page, page_tail, lruvec, list);
- 	}
- 	atomic_sub(tail_count, &page->_count);
- 	BUG_ON(atomic_read(&page->_count) <= 0);
- 
--	__mod_zone_page_state(zone, NR_ANON_TRANSPARENT_HUGEPAGES, -1);
-+	if (PageAnon(page))
-+		__mod_zone_page_state(zone, NR_ANON_TRANSPARENT_HUGEPAGES, -1);
-+	else
-+		__mod_zone_page_state(zone, NR_FILE_TRANSPARENT_HUGEPAGES, -1);
- 
- 	ClearPageCompound(page);
- 	compound_unlock(page);
-@@ -1771,7 +1771,7 @@ static int __split_huge_page_map(struct page *page,
- }
- 
- /* must be called with anon_vma->root->rwsem held */
--static void __split_huge_page(struct page *page,
-+static void __split_anon_huge_page(struct page *page,
- 			      struct anon_vma *anon_vma,
- 			      struct list_head *list)
- {
-@@ -1795,7 +1795,7 @@ static void __split_huge_page(struct page *page,
- 	 * and establishes a child pmd before
- 	 * __split_huge_page_splitting() freezes the parent pmd (so if
- 	 * we fail to prevent copy_huge_pmd() from running until the
--	 * whole __split_huge_page() is complete), we will still see
-+	 * whole __split_anon_huge_page() is complete), we will still see
- 	 * the newly established pmd of the child later during the
- 	 * walk, to be able to set it as pmd_trans_splitting too.
- 	 */
-@@ -1826,14 +1826,11 @@ static void __split_huge_page(struct page *page,
-  * from the hugepage.
-  * Return 0 if the hugepage is split successfully otherwise return 1.
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 9877347..1deedd6 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1557,14 +1557,23 @@ EXPORT_SYMBOL(generic_file_aio_read);
+  * This adds the requested page to the page cache if it isn't already there,
+  * and schedules an I/O to read in its contents from disk.
   */
--int split_huge_page_to_list(struct page *page, struct list_head *list)
-+static int split_anon_huge_page(struct page *page, struct list_head *list)
+-static int page_cache_read(struct file *file, pgoff_t offset)
++static int page_cache_read(struct file *file, pgoff_t offset, bool thp)
  {
- 	struct anon_vma *anon_vma;
- 	int ret = 1;
+ 	struct address_space *mapping = file->f_mapping;
+-	struct page *page; 
++	struct page *page;
+ 	int ret;
  
--	BUG_ON(is_huge_zero_page(page));
--	BUG_ON(!PageAnon(page));
--
- 	/*
- 	 * The caller does not necessarily hold an mmap_sem that would prevent
- 	 * the anon_vma disappearing so we first we take a reference to it
-@@ -1851,7 +1848,7 @@ int split_huge_page_to_list(struct page *page, struct list_head *list)
- 		goto out_unlock;
+ 	do {
+-		page = page_cache_alloc_cold(mapping);
++		if (thp) {
++			gfp_t gfp_mask = mapping_gfp_mask(mapping) | __GFP_COLD;
++			BUG_ON(offset & HPAGE_CACHE_INDEX_MASK);
++			page = alloc_pages(gfp_mask, HPAGE_PMD_ORDER);
++			if (page)
++				count_vm_event(THP_FAULT_ALLOC);
++			else
++				count_vm_event(THP_FAULT_FALLBACK);
++		} else
++			page = page_cache_alloc_cold(mapping);
+ 		if (!page)
+ 			return -ENOMEM;
  
- 	BUG_ON(!PageSwapBacked(page));
--	__split_huge_page(page, anon_vma, list);
-+	__split_anon_huge_page(page, anon_vma, list);
- 	count_vm_event(THP_SPLIT);
+@@ -1573,11 +1582,18 @@ static int page_cache_read(struct file *file, pgoff_t offset)
+ 			ret = mapping->a_ops->readpage(file, page);
+ 		else if (ret == -EEXIST)
+ 			ret = 0; /* losing race to add is OK */
++		else if (ret == -ENOSPC)
++			/*
++			 * No space in page cache to add huge page.
++			 * For caller it's the same as -ENOMEM: fall back to
++			 * small pages is required.
++			 */
++			ret = -ENOMEM;
  
- 	BUG_ON(PageCompound(page));
-@@ -1862,6 +1859,55 @@ out:
+ 		page_cache_release(page);
+ 
+ 	} while (ret == AOP_TRUNCATED_PAGE);
+-		
++
  	return ret;
  }
  
-+static int split_file_huge_page(struct page *page, struct list_head *list)
-+{
-+	struct address_space *mapping = page->mapping;
-+	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-+	struct vm_area_struct *vma;
-+	int mapcount, mapcount2;
-+
-+	BUG_ON(!PageHead(page));
-+	BUG_ON(PageTail(page));
-+
-+	mutex_lock(&mapping->i_mmap_mutex);
-+	mapcount = 0;
-+	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
-+		unsigned long addr = vma_address(page, vma);
-+		mapcount += __split_huge_page_splitting(page, vma, addr);
-+	}
-+
-+	if (mapcount != page_mapcount(page))
-+		printk(KERN_ERR "mapcount %d page_mapcount %d\n",
-+		       mapcount, page_mapcount(page));
-+	BUG_ON(mapcount != page_mapcount(page));
-+
-+	__split_huge_page_refcount(page, list);
-+
-+	mapcount2 = 0;
-+	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
-+		unsigned long addr = vma_address(page, vma);
-+		mapcount2 += __split_huge_page_map(page, vma, addr);
-+	}
-+
-+	if (mapcount != mapcount2)
-+		printk(KERN_ERR "mapcount %d mapcount2 %d page_mapcount %d\n",
-+		       mapcount, mapcount2, page_mapcount(page));
-+	BUG_ON(mapcount != mapcount2);
-+	count_vm_event(THP_SPLIT);
-+	mutex_unlock(&mapping->i_mmap_mutex);
-+	return 0;
-+}
-+
-+int split_huge_page_to_list(struct page *page, struct list_head *list)
-+{
-+	BUG_ON(is_huge_zero_page(page));
-+
-+	if (PageAnon(page))
-+		return split_anon_huge_page(page, list);
-+	else
-+		return split_file_huge_page(page, list);
-+}
-+
- #define VM_NO_THP (VM_SPECIAL|VM_MIXEDMAP|VM_HUGETLB|VM_SHARED|VM_MAYSHARE)
+@@ -1669,13 +1685,20 @@ int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	struct address_space *mapping = file->f_mapping;
+ 	struct file_ra_state *ra = &file->f_ra;
+ 	struct inode *inode = mapping->host;
++	bool thp = vmf->flags & FAULT_FLAG_TRANSHUGE;
+ 	pgoff_t offset = vmf->pgoff;
++	unsigned long address = (unsigned long)vmf->virtual_address;
+ 	struct page *page;
+ 	pgoff_t size;
+ 	int ret = 0;
  
- int hugepage_madvise(struct vm_area_struct *vma,
++	if (thp) {
++		BUG_ON(ra->ra_pages);
++		offset = linear_page_index(vma, address & HPAGE_PMD_MASK);
++	}
++
+ 	size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+-	if (offset >= size)
++	if (vmf->pgoff >= size)
+ 		return VM_FAULT_SIGBUS;
+ 
+ 	/*
+@@ -1700,7 +1723,8 @@ retry_find:
+ 			goto no_cached_page;
+ 	}
+ 
+-	if (PageTransCompound(page))
++	/* Split huge page if we don't want huge page to be here */
++	if (!thp && PageTransCompound(page))
+ 		split_huge_page(compound_trans_head(page));
+ 	if (!lock_page_or_retry(page, vma->vm_mm, vmf->flags)) {
+ 		page_cache_release(page);
+@@ -1722,12 +1746,22 @@ retry_find:
+ 	if (unlikely(!PageUptodate(page)))
+ 		goto page_not_uptodate;
+ 
++	if (thp && !PageTransHuge(page)) {
++		/*
++		 * Caller asked for huge page, but we have small page
++		 * by this offset. Fallback to small pages.
++		 */
++		unlock_page(page);
++		page_cache_release(page);
++		return VM_FAULT_FALLBACK;
++	}
++
+ 	/*
+ 	 * Found the page and have a reference on it.
+ 	 * We must recheck i_size under page lock.
+ 	 */
+ 	size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+-	if (unlikely(offset >= size)) {
++	if (unlikely(vmf->pgoff >= size)) {
+ 		unlock_page(page);
+ 		page_cache_release(page);
+ 		return VM_FAULT_SIGBUS;
+@@ -1741,7 +1775,7 @@ no_cached_page:
+ 	 * We're only likely to ever get here if MADV_RANDOM is in
+ 	 * effect.
+ 	 */
+-	error = page_cache_read(file, offset);
++	error = page_cache_read(file, offset, thp);
+ 
+ 	/*
+ 	 * The page we want has now been added to the page cache.
+@@ -1757,7 +1791,7 @@ no_cached_page:
+ 	 * to schedule I/O.
+ 	 */
+ 	if (error == -ENOMEM)
+-		return VM_FAULT_OOM;
++		return VM_FAULT_OOM | VM_FAULT_FALLBACK;
+ 	return VM_FAULT_SIGBUS;
+ 
+ page_not_uptodate:
 -- 
 1.7.10.4
 
