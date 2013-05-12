@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab3ELRXr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 13:23:47 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:46218 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754568Ab3ELRXq (ORCPT
+	id S1754779Ab3ELRZI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 13:25:08 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:58769 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754568Ab3ELRZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 13:23:46 -0400
-Date: Sun, 12 May 2013 19:23:44 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
-Subject: Re: [RFC 36/42] drivers/watchdog: don't check resource with devm_ioremap_resource
-Message-ID: <20130512172344.GX14155@spo001.leaseweb.com>
-References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de> <1368173847-5661-37-git-send-email-wsa@the-dreams.de>
-Mime-Version: 1.0
+	Sun, 12 May 2013 13:25:06 -0400
+Date: Sun, 12 May 2013 19:24:46 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Dong Zhu <bluezhudong@gmail.com>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Matthew Vick <matthew.vick@intel.com>,
+        Jacob Keller <Jacob.e.keller@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: Re: [PATCH] igb: add a method to get the nic hw time stamping
+ policy
+Message-ID: <20130512172446.GA2484@netboy>
+References: <20130511140219.GG8399@zhudong.nay.redhat.com>
+ <518E7723.5010003@cogentembedded.com>
+ <20130512142555.GI8399@zhudong.nay.redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368173847-5661-37-git-send-email-wsa@the-dreams.de>
-User-Agent: Mutt/1.4.1i
+In-Reply-To: <20130512142555.GI8399@zhudong.nay.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
-
-> devm_ioremap_resource does sanity checks on the given resource. No need to
-> duplicate this in the driver.
+On Sun, May 12, 2013 at 10:25:55PM +0800, Dong Zhu wrote:
+> Thanks for your pointing out my mistakes of CodingStyle.
 > 
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-
-Acked-by: Wim Van Sebroeck <wim@iguana.be>
-
-
-> ---
->  drivers/watchdog/imx2_wdt.c |    5 -----
->  1 file changed, 5 deletions(-)
+> > > struct hwtstamp_config {
+> > >+	int rw;
 > 
-> diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
-> index ff90882..62946c2 100644
-> --- a/drivers/watchdog/imx2_wdt.c
-> +++ b/drivers/watchdog/imx2_wdt.c
-> @@ -257,11 +257,6 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
->  	struct resource *res;
->  
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!res) {
-> -		dev_err(&pdev->dev, "can't get device resources\n");
-> -		return -ENODEV;
-> -	}
-> -
->  	imx2_wdt.base = devm_ioremap_resource(&pdev->dev, res);
->  	if (IS_ERR(imx2_wdt.base))
->  		return PTR_ERR(imx2_wdt.base);
+> My initial idea was that the type of rw should be enum like tx_type, but I am
+> not sure whther it is necessary to define a new enum, if this patch could
+> be accpeted I will ask someone about the rw. At that time I will change
+> the type of rw to bool or define a new enum, then convert the if to
+> switch if necessary.
 
-Kind regards,
-Wim.
+You cannot add any new field at all. That would break a userland ABI.
 
+Thanks,
+Richard
