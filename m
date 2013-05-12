@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635Ab3ELBay (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:30:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48267 "EHLO mga02.intel.com"
+	id S1755598Ab3ELBax (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:30:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33720 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754549Ab3ELBVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754556Ab3ELBVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 11 May 2013 21:21:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="335554448"
+   d="scan'208";a="335554450"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 10/39] thp: account anon transparent huge pages into NR_ANON_PAGES
-Date: Sun, 12 May 2013 04:23:07 +0300
-Message-Id: <1368321816-17719-11-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 11/39] thp: represent file thp pages in meminfo and friends
+Date: Sun, 12 May 2013 04:23:08 +0300
+Message-Id: <1368321816-17719-12-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,116 +33,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-We use NR_ANON_PAGES as base for reporting AnonPages to user.
-There's not much sense in not accounting transparent huge pages there, but
-add them on printing to user.
+The patch adds new zone stat to count file transparent huge pages and
+adjust related places.
 
-Let's account transparent huge pages in NR_ANON_PAGES in the first place.
+For now we don't count mapped or dirty file thp pages separately.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- drivers/base/node.c |    6 ------
- fs/proc/meminfo.c   |    6 ------
- mm/huge_memory.c    |    1 -
- mm/rmap.c           |   18 +++++++++---------
- 4 files changed, 9 insertions(+), 22 deletions(-)
+ drivers/base/node.c    |    4 ++++
+ fs/proc/meminfo.c      |    3 +++
+ include/linux/mmzone.h |    1 +
+ mm/vmstat.c            |    1 +
+ 4 files changed, 9 insertions(+)
 
 diff --git a/drivers/base/node.c b/drivers/base/node.c
-index 7616a77..bc9f43b 100644
+index bc9f43b..de261f5 100644
 --- a/drivers/base/node.c
 +++ b/drivers/base/node.c
-@@ -125,13 +125,7 @@ static ssize_t node_read_meminfo(struct device *dev,
- 		       nid, K(node_page_state(nid, NR_WRITEBACK)),
- 		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
- 		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
--		       nid, K(node_page_state(nid, NR_ANON_PAGES)
--			+ node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
--			HPAGE_PMD_NR),
--#else
- 		       nid, K(node_page_state(nid, NR_ANON_PAGES)),
--#endif
- 		       nid, K(node_page_state(nid, NR_SHMEM)),
- 		       nid, node_page_state(nid, NR_KERNEL_STACK) *
- 				THREAD_SIZE / 1024,
+@@ -119,6 +119,7 @@ static ssize_t node_read_meminfo(struct device *dev,
+ 		       "Node %d SUnreclaim:     %8lu kB\n"
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 		       "Node %d AnonHugePages:  %8lu kB\n"
++		       "Node %d FileHugePages:  %8lu kB\n"
+ #endif
+ 			,
+ 		       nid, K(node_page_state(nid, NR_FILE_DIRTY)),
+@@ -140,6 +141,9 @@ static ssize_t node_read_meminfo(struct device *dev,
+ 		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
+ 			, nid,
+ 			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
++			HPAGE_PMD_NR)
++			, nid,
++			K(node_page_state(nid, NR_FILE_TRANSPARENT_HUGEPAGES) *
+ 			HPAGE_PMD_NR));
+ #else
+ 		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE)));
 diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
-index 5aa847a..59d85d6 100644
+index 59d85d6..a62952c 100644
 --- a/fs/proc/meminfo.c
 +++ b/fs/proc/meminfo.c
-@@ -132,13 +132,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
- 		K(i.freeswap),
- 		K(global_page_state(NR_FILE_DIRTY)),
- 		K(global_page_state(NR_WRITEBACK)),
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
--		K(global_page_state(NR_ANON_PAGES)
--		  + global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
--		  HPAGE_PMD_NR),
--#else
- 		K(global_page_state(NR_ANON_PAGES)),
--#endif
- 		K(global_page_state(NR_FILE_MAPPED)),
- 		K(global_page_state(NR_SHMEM)),
- 		K(global_page_state(NR_SLAB_RECLAIMABLE) +
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index bd8ef7f..ed31e90 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1672,7 +1672,6 @@ static void __split_huge_page_refcount(struct page *page,
- 	BUG_ON(atomic_read(&page->_count) <= 0);
+@@ -104,6 +104,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ #endif
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 		"AnonHugePages:  %8lu kB\n"
++		"FileHugePages:  %8lu kB\n"
+ #endif
+ 		,
+ 		K(i.totalram),
+@@ -158,6 +159,8 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 		,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+ 		   HPAGE_PMD_NR)
++		,K(global_page_state(NR_FILE_TRANSPARENT_HUGEPAGES) *
++		   HPAGE_PMD_NR)
+ #endif
+ 		);
  
- 	__mod_zone_page_state(zone, NR_ANON_TRANSPARENT_HUGEPAGES, -1);
--	__mod_zone_page_state(zone, NR_ANON_PAGES, HPAGE_PMD_NR);
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 72e1cb5..33fd258 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -142,6 +142,7 @@ enum zone_stat_item {
+ 	NUMA_OTHER,		/* allocation from other node */
+ #endif
+ 	NR_ANON_TRANSPARENT_HUGEPAGES,
++	NR_FILE_TRANSPARENT_HUGEPAGES,
+ 	NR_FREE_CMA_PAGES,
+ 	NR_VM_ZONE_STAT_ITEMS };
  
- 	ClearPageCompound(page);
- 	compound_unlock(page);
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 6280da8..6abf387 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1055,11 +1055,11 @@ void do_page_add_anon_rmap(struct page *page,
- {
- 	int first = atomic_inc_and_test(&page->_mapcount);
- 	if (first) {
--		if (!PageTransHuge(page))
--			__inc_zone_page_state(page, NR_ANON_PAGES);
--		else
-+		if (PageTransHuge(page))
- 			__inc_zone_page_state(page,
- 					      NR_ANON_TRANSPARENT_HUGEPAGES);
-+		__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
-+				hpage_nr_pages(page));
- 	}
- 	if (unlikely(PageKsm(page)))
- 		return;
-@@ -1088,10 +1088,10 @@ void page_add_new_anon_rmap(struct page *page,
- 	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
- 	SetPageSwapBacked(page);
- 	atomic_set(&page->_mapcount, 0); /* increment count (starts at -1) */
--	if (!PageTransHuge(page))
--		__inc_zone_page_state(page, NR_ANON_PAGES);
--	else
-+	if (PageTransHuge(page))
- 		__inc_zone_page_state(page, NR_ANON_TRANSPARENT_HUGEPAGES);
-+	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
-+			hpage_nr_pages(page));
- 	__page_set_anon_rmap(page, vma, address, 1);
- 	if (!mlocked_vma_newpage(vma, page))
- 		lru_cache_add_lru(page, LRU_ACTIVE_ANON);
-@@ -1150,11 +1150,11 @@ void page_remove_rmap(struct page *page)
- 		goto out;
- 	if (anon) {
- 		mem_cgroup_uncharge_page(page);
--		if (!PageTransHuge(page))
--			__dec_zone_page_state(page, NR_ANON_PAGES);
--		else
-+		if (PageTransHuge(page))
- 			__dec_zone_page_state(page,
- 					      NR_ANON_TRANSPARENT_HUGEPAGES);
-+		__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
-+				hpage_nr_pages(page));
- 	} else {
- 		__dec_zone_page_state(page, NR_FILE_MAPPED);
- 		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 7a35116..7945285 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -738,6 +738,7 @@ const char * const vmstat_text[] = {
+ 	"numa_other",
+ #endif
+ 	"nr_anon_transparent_hugepages",
++	"nr_file_transparent_hugepages",
+ 	"nr_free_cma",
+ 	"nr_dirty_threshold",
+ 	"nr_dirty_background_threshold",
 -- 
 1.7.10.4
 
