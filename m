@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab3ELOrO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 10:47:14 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44534 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754176Ab3ELOrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 10:47:12 -0400
-Date: Sun, 12 May 2013 16:47:08 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Max Asbock <masbock@linux.vnet.ibm.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "naveen.n.rao@in.ibm.com" <naveen.n.rao@in.ibm.com>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "lcm@linux.vnet.ibm.com" <lcm@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch] MCE, APEI: Don't enable CMCI when Firmware First mode is
- set in HEST for corrected machine checks
-Message-ID: <20130512144708.GA5589@pd.tnic>
-References: <1367881102.4518.68.camel@oc3432500282.ibm.com>
- <20130506232537.GF22041@pd.tnic>
- <1367897566.4518.83.camel@oc3432500282.ibm.com>
- <20130507131946.GC7633@pd.tnic>
- <1367941214.4518.90.camel@oc3432500282.ibm.com>
- <20130508212237.GI30955@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F2DA47E5E@ORSMSX101.amr.corp.intel.com>
- <20130508221501.GK30955@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F2DA47F03@ORSMSX101.amr.corp.intel.com>
- <1368208744.4518.182.camel@oc3432500282.ibm.com>
+	id S1753945Ab3ELOvI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 10:51:08 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58552 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311Ab3ELOvG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 10:51:06 -0400
+Date: Sun, 12 May 2013 18:50:40 +0400
+From: Mark Brown <broonie@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <20130512145040.GB4046@sirena.org.uk>
+References: <20130512144249.GA4046@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/WwmFnJnmDyWGHa4"
 Content-Disposition: inline
-In-Reply-To: <1368208744.4518.182.camel@oc3432500282.ibm.com>
+In-Reply-To: <20130512144249.GA4046@sirena.org.uk>
+X-Cookie: Big book, big bore.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.247.243.210
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [GIT PULL] regmap updates for v3.10
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And I was wondering why this is not reaching lkml. Fixed.
 
-On Fri, May 10, 2013 at 10:59:04AM -0700, Max Asbock wrote:
-> I'll try to summarize the situation:
-> 
-> We proposed two iterations of a patch that would parse HEST for a
-> Corrected Machine Check entry and cause CMCI to be disabled if the
-> Firmware First flag was found to be on in that entry.
-> Several shortcomings of this approach were subsequently pointed out:
-> a) Disabling CMCI doesn't go far enough. If the firmware wants to
-> control corrected machine checks then we shouldn't even be polling the
-> MCi_STATUS registers. Therefore we need to disable CMCI and disable
-> polling if FF is set.
-> 
-> b) The firmware may take over only a subset of the possible corrected
-> machine check events. If we turn off CMCI (and polling) for all banks we
-> may miss out on some types of errors. Therefore we should not
-> indiscriminately disable CMCI on all banks.
-> 
-> The question arose whether the APEI spec allows to specify individual
-> machine check banks which fall under FF control. The answer appears to
-> be 'possibly'. The Corrected Machine Check (CMC) structure defined in
-> the APEI spec allows for a list of Machine Check Bank structures which
-> could be used to designate a set of banks falling under FF control.
-> However, the spec is silent on how the list of Machine Check Bank
-> structures in the CMC structure is be used. 
-> 
-> Further steps in this endeavor may depend on the interpretation of the
-> CMC structure in APEI an whether we can specify individual machine check
-> banks that fall under FF control.
+--/WwmFnJnmDyWGHa4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Right, so we need a complete solution where all FF banks are excluded
-from polling. The question is, does the CMC table in APEI enumerate
-*all* FF banks or we need to parse something else too.
+On Sun, May 12, 2013 at 06:42:49PM +0400, Mark Brown wrote:
+> The following changes since commit c1be5a5b1b355d40e6cf79cc979eb66dafa24a=
+d1:
+>=20
+>   Linux 3.9 (2013-04-28 17:36:01 -0700)
+>=20
+> are available in the git repository at:
+>=20
+>   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git for-ne=
+xt
+>=20
+> for you to fetch changes up to ecdd483531cc72aecbc711c75d3e29cf1502240f:
+>=20
+>   regmap: debugfs: Check return value of regmap_write() (2013-05-09 14:32=
+:36 +0100)
 
--- 
-Regards/Gruss,
-    Boris.
+Gah, sorry - ignore me.  I had intended to rebuild one of these fixes on
+your tree due to a slightly fiddly conflict but completely forgot about
+that during the merge window :(
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+--/WwmFnJnmDyWGHa4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRj6w9AAoJELSic+t+oim9vhwP/A1oLMOl4I+HNftul3bIoJuB
+J5V1mhhHXZds/NsvfFnXymcHJb3Hwe80HMsgUoH0L1fu7SoQfTKjCmQ/lenU4H9E
+aHvgzIJB3a9b9GWTTqocXdHH6hOgY2J6plt3RnPBRbpHLvyEI9V7T/4jcf6VSV7Z
+5sDfLTCTJGbeoaPXL/+eu/DlnDGu5U4PccY1yj6uCHIBmMIhERBoFbeXznp1MmpS
+E6zbXW8gu8HCp9TJM5dMofUh5SQsyapDA81jIMeYuuT+qvqJ9BdZte3C9YmUmtTR
+VxfX3Qhg5P9RY/wFAyvY05BLeC/Ar/DihoHFvzb0xhC6i6kKU7HvOvoqVaXh5rr+
+Eei+c5+Ar4VXwN+q8+/y9OywQNOJP+y+ZRfg8VTGziu/crxWu19pf1aYBIINOmlM
+umuPtAdvremCeoVmLxXGz0v5rQI0if7c46fOPynpaGSIHC5BDTZy4E6ZLTq1Eg73
+eEBs/WPW8FAoeHivIR7bQY5TLvwrQjin7dwMcTjcqgB7bRcLtodZNcHuQgaCUGlJ
+MbrGM80tokAw+V8PA1AREfvBeyZVbFsNtKCMJGg1LDxIOtbZZao23A4Q/x/C2AMN
+OVMUaIjCYyFGv6rLnGRUtqwKSR/cJ9glG0ELw5zDukqKLzj3VUU+/Ce521zYSBRF
+sh61GhOLF9CqZQKk+uTt
+=hyVD
+-----END PGP SIGNATURE-----
+
+--/WwmFnJnmDyWGHa4--
