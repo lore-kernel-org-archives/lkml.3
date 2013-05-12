@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab3ELBV4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:21:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3032 "EHLO mga01.intel.com"
+	id S1754968Ab3ELBVy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:21:54 -0400
+Received: from mga14.intel.com ([143.182.124.37]:34988 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754671Ab3ELBVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 21:21:39 -0400
+	id S1754666Ab3ELBVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 21:21:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="336134833"
+   d="scan'208";a="240202832"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 03/39] mm: implement zero_huge_user_segment and friends
-Date: Sun, 12 May 2013 04:23:00 +0300
-Message-Id: <1368321816-17719-4-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 30/39] thp: do_huge_pmd_anonymous_page() cleanup
+Date: Sun, 12 May 2013 04:23:27 +0300
+Message-Id: <1368321816-17719-31-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,80 +33,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Let's add helpers to clear huge page segment(s). They provide the same
-functionallity as zero_user_segment and zero_user, but for huge pages.
+Minor cleanup: unindent most code of the fucntion by inverting one
+condition. It's preparation for the next patch.
+
+No functional changes.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/mm.h |    7 +++++++
- mm/memory.c        |   36 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+)
+ mm/huge_memory.c |   83 +++++++++++++++++++++++++++---------------------------
+ 1 file changed, 41 insertions(+), 42 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index c05d7cf..5e156fb 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1797,6 +1797,13 @@ extern void dump_page(struct page *page);
- extern void clear_huge_page(struct page *page,
- 			    unsigned long addr,
- 			    unsigned int pages_per_huge_page);
-+extern void zero_huge_user_segment(struct page *page,
-+		unsigned start, unsigned end);
-+static inline void zero_huge_user(struct page *page,
-+		unsigned start, unsigned len)
-+{
-+	zero_huge_user_segment(page, start, start + len);
-+}
- extern void copy_user_huge_page(struct page *dst, struct page *src,
- 				unsigned long addr, struct vm_area_struct *vma,
- 				unsigned int pages_per_huge_page);
-diff --git a/mm/memory.c b/mm/memory.c
-index f7a1fba..f02a8be 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -4266,6 +4266,42 @@ void clear_huge_page(struct page *page,
- 	}
- }
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 575f29b..ab07f5d 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -804,55 +804,54 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	unsigned long haddr = address & HPAGE_PMD_MASK;
+ 	pte_t *pte;
  
-+void zero_huge_user_segment(struct page *page, unsigned start, unsigned end)
-+{
-+	int i;
-+	unsigned start_idx, end_idx;
-+	unsigned start_off, end_off;
-+
-+	BUG_ON(end < start);
-+
-+	might_sleep();
-+
-+	if (start == end)
-+		return;
-+
-+	start_idx = start >> PAGE_SHIFT;
-+	start_off = start & ~PAGE_MASK;
-+	end_idx = (end - 1) >> PAGE_SHIFT;
-+	end_off = ((end - 1) & ~PAGE_MASK) + 1;
-+
-+	/*
-+	 * if start and end are on the same small page we can call
-+	 * zero_user_segment() once and save one kmap_atomic().
-+	 */
-+	if (start_idx == end_idx)
-+		return zero_user_segment(page + start_idx, start_off, end_off);
-+
-+	/* zero the first (possibly partial) page */
-+	zero_user_segment(page + start_idx, start_off, PAGE_SIZE);
-+	for (i = start_idx + 1; i < end_idx; i++) {
-+		cond_resched();
-+		clear_highpage(page + i);
-+		flush_dcache_page(page + i);
+-	if (haddr >= vma->vm_start && haddr + HPAGE_PMD_SIZE <= vma->vm_end) {
+-		if (unlikely(anon_vma_prepare(vma)))
+-			return VM_FAULT_OOM;
+-		if (unlikely(khugepaged_enter(vma)))
++	if (haddr < vma->vm_start || haddr + HPAGE_PMD_SIZE > vma->vm_end)
++		goto out;
++	if (unlikely(anon_vma_prepare(vma)))
++		return VM_FAULT_OOM;
++	if (unlikely(khugepaged_enter(vma)))
++		return VM_FAULT_OOM;
++	if (!(flags & FAULT_FLAG_WRITE) &&
++			transparent_hugepage_use_zero_page()) {
++		pgtable_t pgtable;
++		struct page *zero_page;
++		bool set;
++		pgtable = pte_alloc_one(mm, haddr);
++		if (unlikely(!pgtable))
+ 			return VM_FAULT_OOM;
+-		if (!(flags & FAULT_FLAG_WRITE) &&
+-				transparent_hugepage_use_zero_page()) {
+-			pgtable_t pgtable;
+-			struct page *zero_page;
+-			bool set;
+-			pgtable = pte_alloc_one(mm, haddr);
+-			if (unlikely(!pgtable))
+-				return VM_FAULT_OOM;
+-			zero_page = get_huge_zero_page();
+-			if (unlikely(!zero_page)) {
+-				pte_free(mm, pgtable);
+-				count_vm_event(THP_FAULT_FALLBACK);
+-				goto out;
+-			}
+-			spin_lock(&mm->page_table_lock);
+-			set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
+-					zero_page);
+-			spin_unlock(&mm->page_table_lock);
+-			if (!set) {
+-				pte_free(mm, pgtable);
+-				put_huge_zero_page();
+-			}
+-			return 0;
+-		}
+-		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+-					  vma, haddr, numa_node_id(), 0);
+-		if (unlikely(!page)) {
++		zero_page = get_huge_zero_page();
++		if (unlikely(!zero_page)) {
++			pte_free(mm, pgtable);
+ 			count_vm_event(THP_FAULT_FALLBACK);
+ 			goto out;
+ 		}
+-		count_vm_event(THP_FAULT_ALLOC);
+-		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
+-			put_page(page);
+-			goto out;
+-		}
+-		if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd,
+-							  page))) {
+-			mem_cgroup_uncharge_page(page);
+-			put_page(page);
+-			goto out;
++		spin_lock(&mm->page_table_lock);
++		set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
++				zero_page);
++		spin_unlock(&mm->page_table_lock);
++		if (!set) {
++			pte_free(mm, pgtable);
++			put_huge_zero_page();
+ 		}
+-
+ 		return 0;
+ 	}
++	page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
++			vma, haddr, numa_node_id(), 0);
++	if (unlikely(!page)) {
++		count_vm_event(THP_FAULT_FALLBACK);
++		goto out;
 +	}
-+	/* zero the last (possibly partial) page */
-+	zero_user_segment(page + end_idx, 0, end_off);
-+}
++	count_vm_event(THP_FAULT_ALLOC);
++	if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
++		put_page(page);
++		goto out;
++	}
++	if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd, page))) {
++		mem_cgroup_uncharge_page(page);
++		put_page(page);
++		goto out;
++	}
 +
- static void copy_user_gigantic_page(struct page *dst, struct page *src,
- 				    unsigned long addr,
- 				    struct vm_area_struct *vma,
++	return 0;
+ out:
+ 	/*
+ 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
 -- 
 1.7.10.4
 
