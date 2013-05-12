@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3ELB1U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:27:20 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3032 "EHLO mga01.intel.com"
+	id S1755324Ab3ELB1j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:27:39 -0400
+Received: from mga01.intel.com ([192.55.52.88]:4397 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754711Ab3ELBVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754691Ab3ELBVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 11 May 2013 21:21:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="336134851"
+   d="scan'208";a="336134848"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 17/39] thp, mm: handle tail pages in page_cache_get_speculative()
-Date: Sun, 12 May 2013 04:23:14 +0300
-Message-Id: <1368321816-17719-18-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 15/39] thp, mm: trigger bug in replace_page_cache_page() on THP
+Date: Sun, 12 May 2013 04:23:12 +0300
+Message-Id: <1368321816-17719-16-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,36 +33,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-For tail page we call __get_page_tail(). It has the same semantics, but
-for tail page.
+replace_page_cache_page() is only used by FUSE. It's unlikely that we
+will support THP in FUSE page cache any soon.
+
+Let's pospone implemetation of THP handling in replace_page_cache_page()
+until any will use it.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/pagemap.h |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/filemap.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index 28597ec..2e86251 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -161,6 +161,9 @@ static inline int page_cache_get_speculative(struct page *page)
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 657ce82..3a03426 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -428,6 +428,8 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
  {
- 	VM_BUG_ON(in_interrupt());
+ 	int error;
  
-+	if (unlikely(PageTail(page)))
-+		return __get_page_tail(page);
-+
- #ifdef CONFIG_TINY_RCU
- # ifdef CONFIG_PREEMPT_COUNT
- 	VM_BUG_ON(!in_atomic());
-@@ -187,7 +190,6 @@ static inline int page_cache_get_speculative(struct page *page)
- 		return 0;
- 	}
- #endif
--	VM_BUG_ON(PageTail(page));
- 
- 	return 1;
- }
++	VM_BUG_ON(PageTransHuge(old));
++	VM_BUG_ON(PageTransHuge(new));
+ 	VM_BUG_ON(!PageLocked(old));
+ 	VM_BUG_ON(!PageLocked(new));
+ 	VM_BUG_ON(new->mapping);
 -- 
 1.7.10.4
 
