@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab3ELB0o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:26:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4397 "EHLO mga01.intel.com"
+	id S1755275Ab3ELB0n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:26:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19861 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754715Ab3ELBVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754341Ab3ELBVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 11 May 2013 21:21:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="336134855"
+   d="scan'208";a="311985808"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 31/39] thp: consolidate code between handle_mm_fault() and do_huge_pmd_anonymous_page()
-Date: Sun, 12 May 2013 04:23:28 +0300
-Message-Id: <1368321816-17719-32-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 36/39] mm: do_wp_page(): extract VM_WRITE|VM_SHARED case to separate function
+Date: Sun, 12 May 2013 04:23:33 +0300
+Message-Id: <1368321816-17719-37-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,149 +33,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-do_huge_pmd_anonymous_page() has copy-pasted piece of handle_mm_fault()
-to handle fallback path.
-
-Let's consolidate code back by introducing VM_FAULT_FALLBACK return
-code.
+The code will be shared with transhuge pages.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/huge_mm.h |    3 ---
- include/linux/mm.h      |    3 ++-
- mm/huge_memory.c        |   31 +++++--------------------------
- mm/memory.c             |    9 ++++++---
- 4 files changed, 13 insertions(+), 33 deletions(-)
+ mm/memory.c |  142 ++++++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 73 insertions(+), 69 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index 9e6425f..d688271 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -101,9 +101,6 @@ extern int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 			  pmd_t *dst_pmd, pmd_t *src_pmd,
- 			  struct vm_area_struct *vma,
- 			  unsigned long addr, unsigned long end);
--extern int handle_pte_fault(struct mm_struct *mm,
--			    struct vm_area_struct *vma, unsigned long address,
--			    pte_t *pte, pmd_t *pmd, unsigned int flags);
- extern int split_huge_page_to_list(struct page *page, struct list_head *list);
- static inline int split_huge_page(struct page *page)
- {
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 5e156fb..280b414 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -881,11 +881,12 @@ static inline int page_mapped(struct page *page)
- #define VM_FAULT_NOPAGE	0x0100	/* ->fault installed the pte, not return page */
- #define VM_FAULT_LOCKED	0x0200	/* ->fault locked the returned page */
- #define VM_FAULT_RETRY	0x0400	/* ->fault blocked, must retry */
-+#define VM_FAULT_FALLBACK 0x0800	/* huge page fault failed, fall back to small */
- 
- #define VM_FAULT_HWPOISON_LARGE_MASK 0xf000 /* encodes hpage index for large hwpoison */
- 
- #define VM_FAULT_ERROR	(VM_FAULT_OOM | VM_FAULT_SIGBUS | VM_FAULT_HWPOISON | \
--			 VM_FAULT_HWPOISON_LARGE)
-+			 VM_FAULT_FALLBACK | VM_FAULT_HWPOISON_LARGE)
- 
- /* Encode hstate index for a hwpoisoned large page */
- #define VM_FAULT_SET_HINDEX(x) ((x) << 12)
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index ab07f5d..facfdac 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -802,10 +802,9 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- {
- 	struct page *page;
- 	unsigned long haddr = address & HPAGE_PMD_MASK;
--	pte_t *pte;
- 
- 	if (haddr < vma->vm_start || haddr + HPAGE_PMD_SIZE > vma->vm_end)
--		goto out;
-+		return VM_FAULT_FALLBACK;
- 	if (unlikely(anon_vma_prepare(vma)))
- 		return VM_FAULT_OOM;
- 	if (unlikely(khugepaged_enter(vma)))
-@@ -822,7 +821,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		if (unlikely(!zero_page)) {
- 			pte_free(mm, pgtable);
- 			count_vm_event(THP_FAULT_FALLBACK);
--			goto out;
-+			return VM_FAULT_FALLBACK;
- 		}
- 		spin_lock(&mm->page_table_lock);
- 		set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
-@@ -838,40 +837,20 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			vma, haddr, numa_node_id(), 0);
- 	if (unlikely(!page)) {
- 		count_vm_event(THP_FAULT_FALLBACK);
--		goto out;
-+		return VM_FAULT_FALLBACK;
- 	}
- 	count_vm_event(THP_FAULT_ALLOC);
- 	if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
- 		put_page(page);
--		goto out;
-+		return VM_FAULT_FALLBACK;
- 	}
- 	if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd, page))) {
- 		mem_cgroup_uncharge_page(page);
- 		put_page(page);
--		goto out;
-+		return VM_FAULT_FALLBACK;
- 	}
- 
- 	return 0;
--out:
--	/*
--	 * Use __pte_alloc instead of pte_alloc_map, because we can't
--	 * run pte_offset_map on the pmd, if an huge pmd could
--	 * materialize from under us from a different thread.
--	 */
--	if (unlikely(pmd_none(*pmd)) &&
--	    unlikely(__pte_alloc(mm, vma, pmd, address)))
--		return VM_FAULT_OOM;
--	/* if an huge pmd materialized from under us just retry later */
--	if (unlikely(pmd_trans_huge(*pmd)))
--		return 0;
--	/*
--	 * A regular pmd is established and it can't morph into a huge pmd
--	 * from under us anymore at this point because we hold the mmap_sem
--	 * read mode and khugepaged takes it in write mode. So now it's
--	 * safe to run pte_offset_map().
--	 */
--	pte = pte_offset_map(pmd, address);
--	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
- }
- 
- int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
 diff --git a/mm/memory.c b/mm/memory.c
-index c845cf2..4008d93 100644
+index eb99ab1..4685dd1 100644
 --- a/mm/memory.c
 +++ b/mm/memory.c
-@@ -3701,7 +3701,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-  * but allow concurrent faults), and pte mapped but not yet locked.
-  * We return with mmap_sem still held, but pte unmapped and unlocked.
-  */
--int handle_pte_fault(struct mm_struct *mm,
-+static int handle_pte_fault(struct mm_struct *mm,
- 		     struct vm_area_struct *vma, unsigned long address,
- 		     pte_t *pte, pmd_t *pmd, unsigned int flags)
- {
-@@ -3788,9 +3788,12 @@ retry:
- 	if (!pmd)
- 		return VM_FAULT_OOM;
- 	if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
-+		int ret = 0;
- 		if (!vma->vm_ops)
--			return do_huge_pmd_anonymous_page(mm, vma, address,
--							  pmd, flags);
-+			ret = do_huge_pmd_anonymous_page(mm, vma, address,
-+					pmd, flags);
-+		if ((ret & VM_FAULT_FALLBACK) == 0)
+@@ -2641,6 +2641,76 @@ static void mkwrite_pte(struct vm_area_struct *vma, unsigned long address,
+ }
+ 
+ /*
++ * Only catch write-faults on shared writable pages, read-only shared pages can
++ * get COWed by get_user_pages(.write=1, .force=1).
++ */
++static int do_wp_page_shared(struct mm_struct *mm, struct vm_area_struct *vma,
++		unsigned long address, pte_t *page_table, pmd_t *pmd,
++		spinlock_t *ptl, pte_t orig_pte, struct page *page)
++{
++	struct vm_fault vmf;
++	bool page_mkwrite = false;
++	int tmp, ret = 0;
++
++	if (vma->vm_ops && vma->vm_ops->page_mkwrite)
++		goto mkwrite_done;
++
++	vmf.virtual_address = (void __user *)(address & PAGE_MASK);
++	vmf.pgoff = page->index;
++	vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
++	vmf.page = page;
++
++	/*
++	 * Notify the address space that the page is about to
++	 * become writable so that it can prohibit this or wait
++	 * for the page to get into an appropriate state.
++	 *
++	 * We do this without the lock held, so that it can
++	 * sleep if it needs to.
++	 */
++	page_cache_get(page);
++	pte_unmap_unlock(page_table, ptl);
++
++	tmp = vma->vm_ops->page_mkwrite(vma, &vmf);
++	if (unlikely(tmp & (VM_FAULT_ERROR | VM_FAULT_NOPAGE))) {
++		ret = tmp;
++		page_cache_release(page);
++		return ret;
++	}
++	if (unlikely(!(tmp & VM_FAULT_LOCKED))) {
++		lock_page(page);
++		if (!page->mapping) {
++			unlock_page(page);
++			page_cache_release(page);
 +			return ret;
- 	} else {
- 		pmd_t orig_pmd = *pmd;
- 		int ret;
++		}
++	} else
++		VM_BUG_ON(!PageLocked(page));
++
++	/*
++	 * Since we dropped the lock we need to revalidate
++	 * the PTE as someone else may have changed it.  If
++	 * they did, we just return, as we can count on the
++	 * MMU to tell us if they didn't also make it writable.
++	 */
++	page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
++	if (!pte_same(*page_table, orig_pte)) {
++		unlock_page(page);
++		pte_unmap_unlock(page_table, ptl);
++		page_cache_release(page);
++		return ret;
++	}
++
++	page_mkwrite = true;
++mkwrite_done:
++	get_page(page);
++	mkwrite_pte(vma, address, page_table, orig_pte);
++	pte_unmap_unlock(page_table, ptl);
++	dirty_page(vma, page, page_mkwrite);
++	return ret | VM_FAULT_WRITE;
++}
++
++/*
+  * This routine handles present pages, when users try to write
+  * to a shared page. It is done by copying the page to a new address
+  * and decrementing the shared-page counter for the old page.
+@@ -2665,7 +2735,6 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ {
+ 	struct page *old_page, *new_page = NULL;
+ 	int ret = 0;
+-	int page_mkwrite = 0;
+ 	unsigned long mmun_start = 0;	/* For mmu_notifiers */
+ 	unsigned long mmun_end = 0;	/* For mmu_notifiers */
+ 
+@@ -2718,70 +2787,9 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		}
+ 		unlock_page(old_page);
+ 	} else if (unlikely((vma->vm_flags & (VM_WRITE|VM_SHARED)) ==
+-					(VM_WRITE|VM_SHARED))) {
+-		/*
+-		 * Only catch write-faults on shared writable pages,
+-		 * read-only shared pages can get COWed by
+-		 * get_user_pages(.write=1, .force=1).
+-		 */
+-		if (vma->vm_ops && vma->vm_ops->page_mkwrite) {
+-			struct vm_fault vmf;
+-			int tmp;
+-
+-			vmf.virtual_address = (void __user *)(address &
+-								PAGE_MASK);
+-			vmf.pgoff = old_page->index;
+-			vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
+-			vmf.page = old_page;
+-
+-			/*
+-			 * Notify the address space that the page is about to
+-			 * become writable so that it can prohibit this or wait
+-			 * for the page to get into an appropriate state.
+-			 *
+-			 * We do this without the lock held, so that it can
+-			 * sleep if it needs to.
+-			 */
+-			page_cache_get(old_page);
+-			pte_unmap_unlock(page_table, ptl);
+-
+-			tmp = vma->vm_ops->page_mkwrite(vma, &vmf);
+-			if (unlikely(tmp &
+-					(VM_FAULT_ERROR | VM_FAULT_NOPAGE))) {
+-				ret = tmp;
+-				goto unwritable_page;
+-			}
+-			if (unlikely(!(tmp & VM_FAULT_LOCKED))) {
+-				lock_page(old_page);
+-				if (!old_page->mapping) {
+-					ret = 0; /* retry the fault */
+-					unlock_page(old_page);
+-					goto unwritable_page;
+-				}
+-			} else
+-				VM_BUG_ON(!PageLocked(old_page));
+-
+-			/*
+-			 * Since we dropped the lock we need to revalidate
+-			 * the PTE as someone else may have changed it.  If
+-			 * they did, we just return, as we can count on the
+-			 * MMU to tell us if they didn't also make it writable.
+-			 */
+-			page_table = pte_offset_map_lock(mm, pmd, address,
+-							 &ptl);
+-			if (!pte_same(*page_table, orig_pte)) {
+-				unlock_page(old_page);
+-				goto unlock;
+-			}
+-
+-			page_mkwrite = 1;
+-		}
+-		get_page(old_page);
+-		mkwrite_pte(vma, address, page_table, orig_pte);
+-		pte_unmap_unlock(page_table, ptl);
+-		dirty_page(vma, old_page, page_mkwrite);
+-		return ret | VM_FAULT_WRITE;
+-	}
++					(VM_WRITE|VM_SHARED)))
++		return do_wp_page_shared(mm, vma, address, page_table, pmd, ptl,
++				orig_pte, old_page);
+ 
+ 	/*
+ 	 * Ok, we need to copy. Oh, well..
+@@ -2900,10 +2908,6 @@ oom:
+ 	if (old_page)
+ 		page_cache_release(old_page);
+ 	return VM_FAULT_OOM;
+-
+-unwritable_page:
+-	page_cache_release(old_page);
+-	return ret;
+ }
+ 
+ static void unmap_mapping_range_vma(struct vm_area_struct *vma,
 -- 
 1.7.10.4
 
