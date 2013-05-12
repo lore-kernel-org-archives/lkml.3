@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab3ELBVy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:21:54 -0400
-Received: from mga14.intel.com ([143.182.124.37]:34988 "EHLO mga14.intel.com"
+	id S1754942Ab3ELBVx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:21:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8640 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754666Ab3ELBVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 May 2013 21:21:40 -0400
+	id S1754667Ab3ELBVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 May 2013 21:21:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="240202832"
+   d="scan'208";a="335554498"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 30/39] thp: do_huge_pmd_anonymous_page() cleanup
-Date: Sun, 12 May 2013 04:23:27 +0300
-Message-Id: <1368321816-17719-31-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 27/39] x86-64, mm: proper alignment mappings with hugepages
+Date: Sun, 12 May 2013 04:23:24 +0300
+Message-Id: <1368321816-17719-28-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,117 +33,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Minor cleanup: unindent most code of the fucntion by inverting one
-condition. It's preparation for the next patch.
-
-No functional changes.
+Make arch_get_unmapped_area() return unmapped area aligned to HPAGE_MASK
+if the file mapping can have huge pages.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/huge_memory.c |   83 +++++++++++++++++++++++++++---------------------------
- 1 file changed, 41 insertions(+), 42 deletions(-)
+ arch/x86/kernel/sys_x86_64.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 575f29b..ab07f5d 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -804,55 +804,54 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	unsigned long haddr = address & HPAGE_PMD_MASK;
- 	pte_t *pte;
+diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
+index dbded5a..d97ab40 100644
+--- a/arch/x86/kernel/sys_x86_64.c
++++ b/arch/x86/kernel/sys_x86_64.c
+@@ -15,6 +15,7 @@
+ #include <linux/random.h>
+ #include <linux/uaccess.h>
+ #include <linux/elf.h>
++#include <linux/pagemap.h>
  
--	if (haddr >= vma->vm_start && haddr + HPAGE_PMD_SIZE <= vma->vm_end) {
--		if (unlikely(anon_vma_prepare(vma)))
--			return VM_FAULT_OOM;
--		if (unlikely(khugepaged_enter(vma)))
-+	if (haddr < vma->vm_start || haddr + HPAGE_PMD_SIZE > vma->vm_end)
-+		goto out;
-+	if (unlikely(anon_vma_prepare(vma)))
-+		return VM_FAULT_OOM;
-+	if (unlikely(khugepaged_enter(vma)))
-+		return VM_FAULT_OOM;
-+	if (!(flags & FAULT_FLAG_WRITE) &&
-+			transparent_hugepage_use_zero_page()) {
-+		pgtable_t pgtable;
-+		struct page *zero_page;
-+		bool set;
-+		pgtable = pte_alloc_one(mm, haddr);
-+		if (unlikely(!pgtable))
- 			return VM_FAULT_OOM;
--		if (!(flags & FAULT_FLAG_WRITE) &&
--				transparent_hugepage_use_zero_page()) {
--			pgtable_t pgtable;
--			struct page *zero_page;
--			bool set;
--			pgtable = pte_alloc_one(mm, haddr);
--			if (unlikely(!pgtable))
--				return VM_FAULT_OOM;
--			zero_page = get_huge_zero_page();
--			if (unlikely(!zero_page)) {
--				pte_free(mm, pgtable);
--				count_vm_event(THP_FAULT_FALLBACK);
--				goto out;
--			}
--			spin_lock(&mm->page_table_lock);
--			set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
--					zero_page);
--			spin_unlock(&mm->page_table_lock);
--			if (!set) {
--				pte_free(mm, pgtable);
--				put_huge_zero_page();
--			}
--			return 0;
--		}
--		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
--					  vma, haddr, numa_node_id(), 0);
--		if (unlikely(!page)) {
-+		zero_page = get_huge_zero_page();
-+		if (unlikely(!zero_page)) {
-+			pte_free(mm, pgtable);
- 			count_vm_event(THP_FAULT_FALLBACK);
- 			goto out;
- 		}
--		count_vm_event(THP_FAULT_ALLOC);
--		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
--			put_page(page);
--			goto out;
--		}
--		if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd,
--							  page))) {
--			mem_cgroup_uncharge_page(page);
--			put_page(page);
--			goto out;
-+		spin_lock(&mm->page_table_lock);
-+		set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
-+				zero_page);
-+		spin_unlock(&mm->page_table_lock);
-+		if (!set) {
-+			pte_free(mm, pgtable);
-+			put_huge_zero_page();
- 		}
--
- 		return 0;
- 	}
-+	page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
-+			vma, haddr, numa_node_id(), 0);
-+	if (unlikely(!page)) {
-+		count_vm_event(THP_FAULT_FALLBACK);
-+		goto out;
-+	}
-+	count_vm_event(THP_FAULT_ALLOC);
-+	if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
-+		put_page(page);
-+		goto out;
-+	}
-+	if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd, page))) {
-+		mem_cgroup_uncharge_page(page);
-+		put_page(page);
-+		goto out;
-+	}
+ #include <asm/ia32.h>
+ #include <asm/syscalls.h>
+@@ -34,6 +35,13 @@ static unsigned long get_align_mask(void)
+ 	return va_align.mask;
+ }
+ 
++static inline unsigned long mapping_align_mask(struct address_space *mapping)
++{
++	if (mapping_can_have_hugepages(mapping))
++		return PAGE_MASK & ~HPAGE_MASK;
++	return get_align_mask();
++}
 +
-+	return 0;
- out:
- 	/*
- 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
+ unsigned long align_vdso_addr(unsigned long addr)
+ {
+ 	unsigned long align_mask = get_align_mask();
+@@ -135,7 +143,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ 	info.length = len;
+ 	info.low_limit = begin;
+ 	info.high_limit = end;
+-	info.align_mask = filp ? get_align_mask() : 0;
++	info.align_mask = filp ? mapping_align_mask(filp->f_mapping) : 0;
+ 	info.align_offset = pgoff << PAGE_SHIFT;
+ 	return vm_unmapped_area(&info);
+ }
+@@ -174,7 +182,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 	info.length = len;
+ 	info.low_limit = PAGE_SIZE;
+ 	info.high_limit = mm->mmap_base;
+-	info.align_mask = filp ? get_align_mask() : 0;
++	info.align_mask = filp ? mapping_align_mask(filp->f_mapping) : 0;
+ 	info.align_offset = pgoff << PAGE_SHIFT;
+ 	addr = vm_unmapped_area(&info);
+ 	if (!(addr & ~PAGE_MASK))
 -- 
 1.7.10.4
 
