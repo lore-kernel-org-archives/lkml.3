@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab3ELPNt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 11:13:49 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:55377 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839Ab3ELPNs (ORCPT
+	id S1753747Ab3ELPQh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 11:16:37 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:60608 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839Ab3ELPQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 11:13:48 -0400
+	Sun, 12 May 2013 11:16:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAHp75VfWzzevr6AQzE25P8FUXd=amzL5-XgkJXvbRDESF=M76A@mail.gmail.com>
-References: <1368086241-9357-1-git-send-email-yefremov.denis@gmail.com>
-	<1368091192-10245-4-git-send-email-yefremov.denis@gmail.com>
-	<CAHp75VfWzzevr6AQzE25P8FUXd=amzL5-XgkJXvbRDESF=M76A@mail.gmail.com>
-Date: Sun, 12 May 2013 20:43:47 +0530
-X-Google-Sender-Auth: hd-nEE0ubHpp73yjOt5sSBe6nPM
-Message-ID: <CAOh2x=nrTneXoWmVre7W3xMEYmbGcaFADcHCz4oNYAMVe9xR2A@mail.gmail.com>
-Subject: Re: [PATCH 09/21] dw_dmac: remove inline marking of EXPORT_SYMBOL functions
+In-Reply-To: <1368041688-29986-1-git-send-email-bp@alien8.de>
+References: <1368041688-29986-1-git-send-email-bp@alien8.de>
+Date: Sun, 12 May 2013 20:46:34 +0530
+X-Google-Sender-Auth: qkHkZdg7MI9U2rRIbTwHW_6Ehz8
+Message-ID: <CAOh2x=kLJ3NVN177KTWjZikkZb8Q8RQjye4qrUT=PCdCj2jSgg@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq, ondemand: Remove leftover debug line
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Denis Efremov <yefremov.denis@gmail.com>, trivial@kernel.org,
-        ldv-project@linuxtesting.org, Dan Williams <djbw@fb.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
+To: Borislav Petkov <bp@alien8.de>
+Cc: cpufreq@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 8:54 PM, Andy Shevchenko
-<andy.shevchenko@gmail.com> wrote:
-> Seems those inlines are leftovers from first versions of the driver. Anyway,
-> looks fine by me. I think Viresh can give you an Ack.
+On Thu, May 9, 2013 at 1:04 AM, Borislav Petkov <bp@alien8.de> wrote:
+> From: Borislav Petkov <bp@suse.de>
 >
-> 9.5.2013 12.22 "Denis Efremov" <yefremov.denis@gmail.com> kirjoitti:
->>
->> EXPORT_SYMBOL and inline directives are contradictory to each other.
->> The patch fixes this inconsistency.
->>
->> Found by Linux Driver Verification project (linuxtesting.org).
->>
->> Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
->> ---
->>  drivers/dma/dw_dmac.c | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
+> I don't see how the virtual address of the tuners pointer would be of
+> any help to anyone so remove it.
+>
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  drivers/cpufreq/cpufreq_ondemand.c | 1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+> index b0ffef96bf77..4b9bb5def6f1 100644
+> --- a/drivers/cpufreq/cpufreq_ondemand.c
+> +++ b/drivers/cpufreq/cpufreq_ondemand.c
+> @@ -547,7 +547,6 @@ static int od_init(struct dbs_data *dbs_data)
+>         tuners->io_is_busy = should_io_be_busy();
+>
+>         dbs_data->tuners = tuners;
+> -       pr_info("%s: tuners %p\n", __func__, tuners);
+>         mutex_init(&dbs_data->mutex);
+>         return 0;
+>  }
+
+Sorry for this message :(
 
 Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
