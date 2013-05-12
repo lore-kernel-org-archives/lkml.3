@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484Ab3ELB2Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:28:25 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3497 "EHLO mga03.intel.com"
+	id S1754728Ab3ELB2Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:28:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:4642 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754633Ab3ELBVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754643Ab3ELBVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 11 May 2013 21:21:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="332629679"
+   d="scan'208";a="332629682"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 16/39] thp, mm: locking tail page is a bug
-Date: Sun, 12 May 2013 04:23:13 +0300
-Message-Id: <1368321816-17719-17-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 23/39] thp: wait_split_huge_page(): serialize over i_mmap_mutex too
+Date: Sun, 12 May 2013 04:23:20 +0300
+Message-Id: <1368321816-17719-24-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,34 +33,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Locking head page means locking entire compound page.
-If we try to lock tail page, something went wrong.
+Since we're going to have huge pages backed by files,
+wait_split_huge_page() has to serialize not only over anon_vma_lock,
+but over i_mmap_mutex too.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/filemap.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/huge_mm.h |   15 ++++++++++++---
+ mm/huge_memory.c        |    4 ++--
+ mm/memory.c             |    4 ++--
+ 3 files changed, 16 insertions(+), 7 deletions(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 3a03426..9ea46a4 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -681,6 +681,7 @@ void __lock_page(struct page *page)
- {
- 	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 74494a2..9e6425f 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -118,11 +118,20 @@ extern void __split_huge_page_pmd(struct vm_area_struct *vma,
+ 			__split_huge_page_pmd(__vma, __address,		\
+ 					____pmd);			\
+ 	}  while (0)
+-#define wait_split_huge_page(__anon_vma, __pmd)				\
++#define wait_split_huge_page(__vma, __pmd)				\
+ 	do {								\
+ 		pmd_t *____pmd = (__pmd);				\
+-		anon_vma_lock_write(__anon_vma);			\
+-		anon_vma_unlock_write(__anon_vma);			\
++		struct address_space *__mapping =			\
++					vma->vm_file->f_mapping;	\
++		struct anon_vma *__anon_vma = (__vma)->anon_vma;	\
++		if (__mapping)						\
++			mutex_lock(&__mapping->i_mmap_mutex);		\
++		if (__anon_vma) {					\
++			anon_vma_lock_write(__anon_vma);		\
++			anon_vma_unlock_write(__anon_vma);		\
++		}							\
++		if (__mapping)						\
++			mutex_unlock(&__mapping->i_mmap_mutex);		\
+ 		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
+ 		       pmd_trans_huge(*____pmd));			\
+ 	} while (0)
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 73974e8..7ad458d 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -924,7 +924,7 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 		spin_unlock(&dst_mm->page_table_lock);
+ 		pte_free(dst_mm, pgtable);
  
-+	VM_BUG_ON(PageTail(page));
- 	__wait_on_bit_lock(page_waitqueue(page), &wait, sleep_on_page,
- 							TASK_UNINTERRUPTIBLE);
+-		wait_split_huge_page(vma->anon_vma, src_pmd); /* src_vma */
++		wait_split_huge_page(vma, src_pmd); /* src_vma */
+ 		goto out;
+ 	}
+ 	src_page = pmd_page(pmd);
+@@ -1497,7 +1497,7 @@ int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma)
+ 	if (likely(pmd_trans_huge(*pmd))) {
+ 		if (unlikely(pmd_trans_splitting(*pmd))) {
+ 			spin_unlock(&vma->vm_mm->page_table_lock);
+-			wait_split_huge_page(vma->anon_vma, pmd);
++			wait_split_huge_page(vma, pmd);
+ 			return -1;
+ 		} else {
+ 			/* Thp mapped by 'pmd' is stable, so we can
+diff --git a/mm/memory.c b/mm/memory.c
+index f02a8be..c845cf2 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -620,7 +620,7 @@ int __pte_alloc(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (new)
+ 		pte_free(mm, new);
+ 	if (wait_split_huge_page)
+-		wait_split_huge_page(vma->anon_vma, pmd);
++		wait_split_huge_page(vma, pmd);
+ 	return 0;
  }
-@@ -690,6 +691,7 @@ int __lock_page_killable(struct page *page)
- {
- 	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
  
-+	VM_BUG_ON(PageTail(page));
- 	return __wait_on_bit_lock(page_waitqueue(page), &wait,
- 					sleep_on_page_killable, TASK_KILLABLE);
- }
+@@ -1530,7 +1530,7 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
+ 		if (likely(pmd_trans_huge(*pmd))) {
+ 			if (unlikely(pmd_trans_splitting(*pmd))) {
+ 				spin_unlock(&mm->page_table_lock);
+-				wait_split_huge_page(vma->anon_vma, pmd);
++				wait_split_huge_page(vma, pmd);
+ 			} else {
+ 				page = follow_trans_huge_pmd(vma, address,
+ 							     pmd, flags);
 -- 
 1.7.10.4
 
