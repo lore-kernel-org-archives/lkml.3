@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab3ELB1j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 May 2013 21:27:39 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4397 "EHLO mga01.intel.com"
+	id S1755351Ab3ELB1x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 May 2013 21:27:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3032 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754691Ab3ELBVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754686Ab3ELBVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 11 May 2013 21:21:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,654,1363158000"; 
-   d="scan'208";a="336134848"
+   d="scan'208";a="336134838"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv4 15/39] thp, mm: trigger bug in replace_page_cache_page() on THP
-Date: Sun, 12 May 2013 04:23:12 +0300
-Message-Id: <1368321816-17719-16-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv4 07/39] thp, mm: basic defines for transparent huge page cache
+Date: Sun, 12 May 2013 04:23:04 +0300
+Message-Id: <1368321816-17719-8-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,30 +33,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-replace_page_cache_page() is only used by FUSE. It's unlikely that we
-will support THP in FUSE page cache any soon.
-
-Let's pospone implemetation of THP handling in replace_page_cache_page()
-until any will use it.
-
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/filemap.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/huge_mm.h |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 657ce82..3a03426 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -428,6 +428,8 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
- {
- 	int error;
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 528454c..6b4c9b2 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -64,6 +64,10 @@ extern pmd_t *page_check_address_pmd(struct page *page,
+ #define HPAGE_PMD_MASK HPAGE_MASK
+ #define HPAGE_PMD_SIZE HPAGE_SIZE
  
-+	VM_BUG_ON(PageTransHuge(old));
-+	VM_BUG_ON(PageTransHuge(new));
- 	VM_BUG_ON(!PageLocked(old));
- 	VM_BUG_ON(!PageLocked(new));
- 	VM_BUG_ON(new->mapping);
++#define HPAGE_CACHE_ORDER      (HPAGE_SHIFT - PAGE_CACHE_SHIFT)
++#define HPAGE_CACHE_NR         (1L << HPAGE_CACHE_ORDER)
++#define HPAGE_CACHE_INDEX_MASK (HPAGE_CACHE_NR - 1)
++
+ extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
+ 
+ #define transparent_hugepage_enabled(__vma)				\
+@@ -185,6 +189,10 @@ extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vm
+ #define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
+ #define HPAGE_PMD_SIZE ({ BUILD_BUG(); 0; })
+ 
++#define HPAGE_CACHE_ORDER      ({ BUILD_BUG(); 0; })
++#define HPAGE_CACHE_NR         ({ BUILD_BUG(); 0; })
++#define HPAGE_CACHE_INDEX_MASK ({ BUILD_BUG(); 0; })
++
+ #define hpage_nr_pages(x) 1
+ 
+ #define transparent_hugepage_enabled(__vma) 0
 -- 
 1.7.10.4
 
