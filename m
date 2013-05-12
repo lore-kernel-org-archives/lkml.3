@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab3ELVRb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 17:17:31 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:40629 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab3ELVRa (ORCPT
+	id S1751959Ab3ELVV2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 17:21:28 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:60363 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751631Ab3ELVV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 17:17:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1305122247320.5463@ayla.of.borg>
-References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg>
-	<alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
-	<alpine.DEB.2.00.1305122247320.5463@ayla.of.borg>
-Date: Sun, 12 May 2013 23:17:28 +0200
-Message-ID: <CAFLxGvzA5nzpQjOKWgz0nBKG2s3gPspted-25uduqkr7_ySj6A@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.10-rc1 (um)
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        User-mode Linux Kernel Development 
-	<user-mode-linux-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 12 May 2013 17:21:27 -0400
+Message-ID: <1368393684.1350.16.camel@x61.thuisdomein>
+Subject: [PATCH] NFC: remove commented out Makefile line
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-wireless@vger.kernel.org, linux-nfc@ml01.01.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 12 May 2013 23:21:24 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 May 2013 21:21:24.0981 (UTC) FILETIME=[A84E5250:01CE4F56]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert,
+The Kconfig symbol NFC_LLCP was removed in commit 30cc458765 ("NFC: Move
+LLCP code to the NFC top level diirectory"). But the reference to its
+macro in this Makefile was only commented out. Remove it now.
 
-On Sun, May 12, 2013 at 10:47 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Sun, 12 May 2013, Geert Uytterhoeven wrote:
->> However, the full list of errors isn't that unmanageable, so I'm following
->> up with a digested list...
->
-> arch/um/drivers/cow_user.c:216: error: implicit declaration of function 'htobe32': 1 errors in 1 logs
-> arch/um/drivers/cow_user.c:249: error: implicit declaration of function 'htobe64': 1 errors in 1 logs
-> arch/um/drivers/cow_user.c:303: error: implicit declaration of function 'be32toh': 1 errors in 1 logs
-> arch/um/drivers/cow_user.c:330: error: implicit declaration of function 'be64toh': 1 errors in 1 logs
-> arch/um/os-Linux/skas/process.c:321: error: 'PTRACE_O_TRACESYSGOOD' undeclared (first use in this function): 1 errors in 1 logs
-> arch/um/os-Linux/skas/process.c:321: error: (Each undeclared identifier is reported only once: 1 errors in 1 logs
-> arch/um/os-Linux/skas/process.c:321: error: for each function it appears in.): 1 errors in 1 logs
-> arch/um/os-Linux/skas/process.c:412: error: 'PTRACE_GETSIGINFO' undeclared (first use in this function): 1 errors in 1 logs
-> arch/um/os-Linux/skas/process.c:560: error: 'PTRACE_O_TRACESYSGOOD' undeclared (first use in this function): 1 errors in 1 logs
-> arch/um/os-Linux/start_up.c:245: error: 'PTRACE_SETOPTIONS' undeclared (first use in this function): 1 errors in 1 logs
-> arch/um/os-Linux/start_up.c:245: error: (Each undeclared identifier is reported only once: 1 errors in 1 logs
-> arch/um/os-Linux/start_up.c:245: error: for each function it appears in.): 1 errors in 1 logs
-> arch/um/os-Linux/start_up.c:246: error: 'PTRACE_O_TRACESYSGOOD' undeclared (first use in this function): 1 errors in 1 logs
-> arch/um/os-Linux/start_up.c:303: error: 'PTRACE_SETOPTIONS' undeclared (first use in this function): 1 errors in 1 logs
-> arch/um/os-Linux/start_up.c:304: error: 'PTRACE_O_TRACESYSGOOD' undeclared (first use in this function): 1 errors in 1 logs
->         v3.10-rc1/um-i386/um-defconfig
->         Old host environment on kissb?
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-This really looks like a host environment issue.
-PTRACE_O_TRACESYSGOOD for example is defined in /usr/include/linux/ptrace.h
+ net/nfc/Makefile | 1 -
+ 1 file changed, 1 deletion(-)
 
---
-Thanks,
-//richard
+diff --git a/net/nfc/Makefile b/net/nfc/Makefile
+index fb799de..a76f453 100644
+--- a/net/nfc/Makefile
++++ b/net/nfc/Makefile
+@@ -5,7 +5,6 @@
+ obj-$(CONFIG_NFC) += nfc.o
+ obj-$(CONFIG_NFC_NCI) += nci/
+ obj-$(CONFIG_NFC_HCI) += hci/
+-#obj-$(CONFIG_NFC_LLCP) += llcp/
+ 
+ nfc-objs := core.o netlink.o af_nfc.o rawsock.o llcp_core.o llcp_commands.o \
+ 		llcp_sock.o
+-- 
+1.7.11.7
+
