@@ -1,41 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab3ELUur (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 16:50:47 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:59974 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab3ELUuq (ORCPT
+	id S1752240Ab3ELU55 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 16:57:57 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:56229 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab3ELU54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 16:50:46 -0400
-Date: Sun, 12 May 2013 22:50:45 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-cc: linux-s390@vger.kernel.org
-Subject: Re: Build regressions/improvements in v3.10-rc1 (s390)
-In-Reply-To: <alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
-Message-ID: <alpine.DEB.2.00.1305122250110.5463@ayla.of.borg>
-References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg> <alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sun, 12 May 2013 16:57:56 -0400
+Date: Sun, 12 May 2013 13:57:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Bisected post-3.9 regression: Resume takes 5 times as much time
+ as with v3.9
+Message-ID: <20130512205747.GK3648@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <87r4hdjsu5.fsf@nemi.mork.no>
+ <20130512113157.GG3648@linux.vnet.ibm.com>
+ <20130512182935.GD24440@8bytes.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130512182935.GD24440@8bytes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051220-7282-0000-0000-00001715D4C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 May 2013, Geert Uytterhoeven wrote:
-> However, the full list of errors isn't that unmanageable, so I'm following
-> up with a digested list...
+On Sun, May 12, 2013 at 08:29:35PM +0200, Joerg Roedel wrote:
+> Hi Paul,
+> 
+> On Sun, May 12, 2013 at 04:31:57AM -0700, Paul E. McKenney wrote:
+> > On Sat, May 11, 2013 at 08:04:50PM +0200, Bjørn Mork wrote:
+> > > Bisecting it ended up pointing to
+> > > 
+> > > commit c0f4dfd4f90f1667d234d21f15153ea09a2eaa66
+> > > Author: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > Date:   Fri Dec 28 11:30:36 2012 -0800
+> > > 
+> > >     rcu: Make RCU_FAST_NO_HZ take advantage of numbered callbacks
+> > >     
+> > >     Because RCU callbacks are now associated with the number of the grace
+> > >     period that they must wait for, CPUs can now take advance callbacks
+> > >     corresponding to grace periods that ended while a given CPU was in
+> > >     dyntick-idle mode.  This eliminates the need to try forcing the RCU
+> > >     state machine while entering idle, thus reducing the CPU intensiveness
+> > >     of RCU_FAST_NO_HZ, which should increase its energy efficiency.
+> > >     
+> > >     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > 
+> > > 
+> > > Being a big patch, I'm pretty sure that the problem is some minor
+> > > issue. But rather than trying to userstand this, just tried reverting
+> > > it on top of the current mainline and can confirm that this fixes the
+> > > regression.  I'll leave the understanding to you :)
+> > > 
+> > > I'm attaching the revert patch as I had to fix a conflict, and may have
+> > > done something wrong there.  I'm also attaching my .config.
+> > > 
+> > > Let me know if you need more information, or want me to try out proposed
+> > > fixes.
+> > 
+> > We don't want to back out the RCU_FAST_NO_HZ changes due to their
+> > energy-efficiency benefits.  So could you please try out Borislav's
+> > patch below?  He ran into the same issue a few weeks ago, and this
+> > one fixed it for him.
+> 
+> I get a ~10min boot delay with this patch:
+> 
+> [    1.149676] system 00:01: [mem 0xf6000000-0xf6003fff] could not be reserved
+> [    1.149724] system 00:01: Plug and Play ACPI device, IDs PNP0c02 (active)
+> [  603.957670] pnp 00:02: [dma 4]
+> [  603.957735] pnp 00:02: Plug and Play ACPI device, IDs PNP0200 (active)
+> 
+> This happens on my AMD FX-6100 system. I bisected the problem down to the same
+> commit and reverting it fixes the problem. Any ideas?
 
-drivers/net/ethernet/sfc/efx.c:646:3: error: call to '__compiletime_assert_648' declared with attribute error: BUILD_BUG_ON failed: sizeof(struct efx_rx_page_state) + EFX_PAGE_IP_ALIGN + EFX_RX_USR_BUF_SIZE > PAGE_SIZE / 2: 2 errors in 2 logs
-	v3.10-rc1/s390x/s390-allyesconfig v3.10-rc1/s390x/s390-allmodconfig
+That does look pretty extreme!  If you build with CONFIG_RCU_NO_HZ=n,
+but without the revert, do you still get the delays?
 
-Gr{oetje,eeting}s,
+							Thanx, Paul
 
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
