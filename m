@@ -1,381 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab3ELOZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 10:25:56 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:44138 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754118Ab3ELOZF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 10:25:05 -0400
-X-IronPort-AV: E=Sophos;i="4.87,657,1363158000"; 
-   d="scan'208";a="46403650"
-From: Dolev Raviv <draviv@codeaurora.org>
-To: linux-scsi@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, Dolev Raviv <draviv@codeaurora.org>,
-        Sujit Reddy Thumma <sthumma@codeaurora.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH V1 7/8] scsi: ufs: Add support for sending NOP OUT UPIU
-Date: Sun, 12 May 2013 17:23:59 +0300
-Message-Id: <1368368640-10167-8-git-send-email-draviv@codeaurora.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1368368640-10167-1-git-send-email-draviv@codeaurora.org>
-References: <1368368640-10167-1-git-send-email-draviv@codeaurora.org>
+	id S1754628Ab3ELO0U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 10:26:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42468 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753311Ab3ELO0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 10:26:16 -0400
+Date: Sun, 12 May 2013 22:25:55 +0800
+From: Dong Zhu <bluezhudong@gmail.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Matthew Vick <matthew.vick@intel.com>,
+        Jacob Keller <Jacob.e.keller@intel.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: Re: [PATCH] igb: add a method to get the nic hw time stamping
+ policy
+Message-ID: <20130512142555.GI8399@zhudong.nay.redhat.com>
+References: <20130511140219.GG8399@zhudong.nay.redhat.com>
+ <518E7723.5010003@cogentembedded.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <518E7723.5010003@cogentembedded.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of device initialization sequence, sending NOP OUT UPIU and
-waiting for NOP IN UPIU response is mandatory. This confirms that the
-device UFS Transport (UTP) layer is functional and the host can configure
-the device with further commands. Add support for sending NOP OUT UPIU to
-check the device connection path and test whether the UTP layer on the
-device side is functional during initialization.
+Thanks for your pointing out my mistakes of CodingStyle.
 
-Signed-off-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
-Signed-off-by: Dolev Raviv <draviv@codeaurora.org>
-Acked-by: Santosh Y <santoshsy@gmail.com>
+> > struct hwtstamp_config {
+> >+	int rw;
 
+My initial idea was that the type of rw should be enum like tx_type, but I am
+not sure whther it is necessary to define a new enum, if this patch could
+be accpeted I will ask someone about the rw. At that time I will change
+the type of rw to bool or define a new enum, then convert the if to
+switch if necessary.
+
+Patch after modifying:
+
+>From cf337e7863af66428554785c32a9840fafaa3492 Mon Sep 17 00:00:00 2001
+From: Dong Zhu <bluezhudong@gmail.com>
+Date: Sun, 12 May 2013 21:57:57 +0800
+
+Currently kernel only support setting the hw time stamping policy
+through ioctl,now add a method to check which packets(Outgoing and
+Incoming) are time stamped by nic.
+
+Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
 ---
-v5:
-  - rebase on top of Seungwon Jeon's UFS V4 patchset
-v4:
-   - Removed readl_poll_timeout and replaced with wait logic
-   - additional checks for completion
-v3:
-   - minor bug fix in error path
-v2:
-   - fixed INTERNAL_CMD_TAG check in readl_poll_timeout
-   - minor cleanup from v1
-   - rebased on Seungwon Jeon's UFS V3 patchset
+ drivers/net/ethernet/intel/igb/igb_ptp.c | 28 ++++++++++++++++++++++++++++
+ include/uapi/linux/net_tstamp.h          |  4 +++-
+ 2 files changed, 31 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
-index 333812f..2db550b 100644
---- a/drivers/scsi/ufs/ufshcd.c
-+++ b/drivers/scsi/ufs/ufshcd.c
-@@ -43,6 +43,13 @@
- /* UIC command timeout, unit: ms */
- #define UIC_CMD_TIMEOUT	500
+diff --git a/drivers/net/ethernet/intel/igb/igb_ptp.c b/drivers/net/ethernet/intel/igb/igb_ptp.c
+index 7e8c477..4ea091d 100644
+--- a/drivers/net/ethernet/intel/igb/igb_ptp.c
++++ b/drivers/net/ethernet/intel/igb/igb_ptp.c
+@@ -577,6 +577,33 @@ int igb_ptp_hwtstamp_ioctl(struct net_device *netdev,
+ 	if (config.flags)
+ 		return -EINVAL;
  
-+/* NOP OUT retries waiting for NOP IN response */
-+#define NOP_OUT_RETRIES    10
-+/* Timeout after 30 msecs if NOP OUT hangs without response */
-+#define NOP_OUT_TIMEOUT    30 /* msecs */
-+/* Reserved tag for internal commands */
-+#define INTERNAL_CMD_TAG   0
++	if (config.rw == 0) {
++		goto set_policy;
++	} else if (config.rw == 1) {
++		if (config.tx_type || config.rx_filter)
++			return -EINVAL;
 +
- enum {
- 	UFSHCD_MAX_CHANNEL	= 0,
- 	UFSHCD_MAX_ID		= 1,
-@@ -71,6 +78,39 @@ enum {
- 	INT_AGGR_CONFIG,
- };
- 
-+/*
-+ * ufshcd_wait_for_register - wait for register value to change
-+ * @hba - per-adapter interface
-+ * @reg - mmio register offset
-+ * @mask - mask to apply to read register value
-+ * @val - wait condition
-+ * @interval_us - polling interval in microsecs
-+ * @timeout_ms - timeout in millisecs
-+ *
-+ * Returns final register value after iteration
-+ */
-+static u32 ufshcd_wait_for_register(struct ufs_hba *hba, u32 reg, u32 mask,
-+		u32 val, unsigned long interval_us, unsigned long timeout_ms)
-+{
-+	u32 tmp;
-+	ktime_t start;
-+	unsigned long diff;
++		regval = rd32(E1000_TSYNCTXCTL);
++		if (regval & E1000_TSYNCTXCTL_ENABLED)
++			config.tx_type = HWTSTAMP_TX_ON;
++		else
++			config.tx_type = HWTSTAMP_TX_OFF;
 +
-+	tmp = ufshcd_readl(hba, reg);
++		regval = rd32(E1000_TSYNCRXCTL);
++		if (!(regval & E1000_TSYNCRXCTL_ENABLED))
++			config.rx_filter = HWTSTAMP_FILTER_NONE;
++		else if (E1000_TSYNCRXCTL_TYPE_ALL ==
++				(regval & E1000_TSYNCRXCTL_TYPE_MASK))
++			config.rx_filter = HWTSTAMP_FILTER_ALL;
++		else
++			return -ERANGE;
 +
-+	start = ktime_get();
-+	while ((tmp & mask) == val) {
-+		/* wakeup within 50us of expiry */
-+		usleep_range(interval_us, interval_us + 50);
-+		tmp = ufshcd_readl(hba, reg);
-+		diff = ktime_to_ms(ktime_sub(ktime_get(), start));
-+		if (diff > timeout_ms)
-+			break;
++		goto end;
++	} else {
++		return -EINVAL;
 +	}
 +
-+	return tmp;
-+}
-+
- /**
-  * ufshcd_get_intr_mask - Get the interrupt bit mask
-  * @hba - Pointer to adapter instance
-@@ -612,7 +652,7 @@ static void ufshcd_prepare_req_desc(struct ufshcd_lrb *lrbp, u32 *upiu_flags)
- {
- 	struct utp_transfer_req_desc *req_desc = lrbp->utr_descriptor_ptr;
- 	enum dma_data_direction cmd_dir =
--		lrbp->cmd->sc_data_direction;
-+		lrbp->cmd ? lrbp->cmd->sc_data_direction : DMA_NONE;
- 	u32 data_direction;
- 	u32 dword_0;
++set_policy:
+ 	switch (config.tx_type) {
+ 	case HWTSTAMP_TX_OFF:
+ 		tsync_tx_ctl = 0;
+@@ -707,6 +734,7 @@ int igb_ptp_hwtstamp_ioctl(struct net_device *netdev,
+ 	regval = rd32(E1000_RXSTMPL);
+ 	regval = rd32(E1000_RXSTMPH);
  
-@@ -629,6 +669,8 @@ static void ufshcd_prepare_req_desc(struct ufshcd_lrb *lrbp, u32 *upiu_flags)
- 
- 	dword_0 = data_direction | (lrbp->command_type
- 				<< UPIU_COMMAND_TYPE_OFFSET);
-+	if (lrbp->intr_cmd)
-+		dword_0 |= UTP_REQ_DESC_INT_CMD;
- 
- 	/* Transfer request descriptor header fields */
- 	req_desc->header.dword_0 = cpu_to_le32(dword_0);
-@@ -717,6 +759,18 @@ static void ufshcd_prepare_utp_query_req_upiu(struct ufs_hba *hba,
- 
++end:
+ 	return copy_to_user(ifr->ifr_data, &config, sizeof(config)) ?
+ 		-EFAULT : 0;
  }
- 
-+static inline void ufshcd_prepare_utp_nop_upiu(struct ufshcd_lrb *lrbp)
-+{
-+	struct utp_upiu_req *ucd_req_ptr = lrbp->ucd_req_ptr;
-+
-+	memset(ucd_req_ptr, 0, sizeof(struct utp_upiu_req));
-+
-+	/* command descriptor fields */
-+	ucd_req_ptr->header.dword_0 =
-+		UPIU_HEADER_DWORD(
-+			UPIU_TRANSACTION_NOP_OUT, 0, 0, lrbp->task_tag);
-+}
-+
+diff --git a/include/uapi/linux/net_tstamp.h b/include/uapi/linux/net_tstamp.h
+index ae5df12..77147da 100644
+--- a/include/uapi/linux/net_tstamp.h
++++ b/include/uapi/linux/net_tstamp.h
+@@ -28,9 +28,10 @@ enum {
  /**
-  * ufshcd_compose_upiu - form UFS Protocol Information Unit(UPIU)
-  * @hba - UFS hba
-@@ -731,11 +785,13 @@ static int ufshcd_compose_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
- 	case UTP_CMD_TYPE_SCSI:
- 	case UTP_CMD_TYPE_DEV_MANAGE:
- 		ufshcd_prepare_req_desc(lrbp, &upiu_flags);
--		if (lrbp->command_type == UTP_CMD_TYPE_SCSI)
-+		if (lrbp->cmd && lrbp->command_type == UTP_CMD_TYPE_SCSI)
- 			ufshcd_prepare_utp_scsi_cmd_upiu(lrbp, upiu_flags);
--		else
-+		else if (lrbp->cmd && ufshcd_is_query_req(lrbp))
- 			ufshcd_prepare_utp_query_req_upiu(hba, lrbp,
- 								upiu_flags);
-+		else if (!lrbp->cmd)
-+			ufshcd_prepare_utp_nop_upiu(lrbp);
- 		break;
- 	case UTP_CMD_TYPE_UFS:
- 		/* For UFS native command implementation */
-@@ -784,6 +840,7 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
- 	lrbp->sense_buffer = cmd->sense_buffer;
- 	lrbp->task_tag = tag;
- 	lrbp->lun = cmd->device->lun;
-+	lrbp->intr_cmd = false;
- 
- 	if (ufshcd_is_query_req(lrbp))
- 		lrbp->command_type = UTP_CMD_TYPE_DEV_MANAGE;
-@@ -972,6 +1029,104 @@ static int ufshcd_dme_link_startup(struct ufs_hba *hba)
- 	return ret;
- }
- 
-+static int
-+ufshcd_compose_nop_out_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
-+{
-+	lrbp->cmd = NULL;
-+	lrbp->sense_bufflen = 0;
-+	lrbp->sense_buffer = NULL;
-+	lrbp->task_tag = INTERNAL_CMD_TAG;
-+	lrbp->lun = 0; /* NOP OUT is not specific to any LUN */
-+	lrbp->command_type = UTP_CMD_TYPE_DEV_MANAGE;
-+	lrbp->intr_cmd = true; /* No interrupt aggregation */
-+
-+	return ufshcd_compose_upiu(hba, lrbp);
-+}
-+
-+static int ufshcd_wait_for_nop_cmd(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
-+{
-+	int err = 0;
-+	unsigned long timeout;
-+	unsigned long flags;
-+
-+	timeout = wait_for_completion_timeout(
-+			lrbp->completion, msecs_to_jiffies(NOP_OUT_TIMEOUT));
-+
-+	spin_lock_irqsave(hba->host->host_lock, flags);
-+	lrbp->completion = NULL;
-+	if (timeout)
-+		err = ufshcd_get_tr_ocs(lrbp);
-+	else
-+		err = -ETIMEDOUT;
-+	spin_unlock_irqrestore(hba->host->host_lock, flags);
-+
-+	return err;
-+}
-+
-+/**
-+ * ufshcd_validate_dev_connection() - Check device connection status
-+ * @hba: per-adapter instance
-+ *
-+ * Send NOP OUT UPIU and wait for NOP IN response to check whether the
-+ * device Transport Protocol (UTP) layer is ready after a reset.
-+ * If the UTP layer at the device side is not initialized, it may
-+ * not respond with NOP IN UPIU within timeout of %NOP_OUT_TIMEOUT
-+ * and we retry sending NOP OUT for %NOP_OUT_RETRIES iterations.
-+ */
-+static int ufshcd_validate_dev_connection(struct ufs_hba *hba)
-+{
-+	int err;
-+	struct ufshcd_lrb *lrbp;
-+	unsigned long flags;
-+	struct completion wait;
-+	int retries = NOP_OUT_RETRIES;
-+
-+retry:
-+	init_completion(&wait);
-+
-+	spin_lock_irqsave(hba->host->host_lock, flags);
-+	lrbp = &hba->lrb[INTERNAL_CMD_TAG];
-+	err = ufshcd_compose_nop_out_upiu(hba, lrbp);
-+	if (unlikely(err)) {
-+		spin_unlock_irqrestore(hba->host->host_lock, flags);
-+		goto out;
-+	}
-+
-+	lrbp->completion = &wait;
-+	ufshcd_send_command(hba, INTERNAL_CMD_TAG);
-+	spin_unlock_irqrestore(hba->host->host_lock, flags);
-+
-+	err = ufshcd_wait_for_nop_cmd(hba, lrbp);
-+
-+	if (err == -ETIMEDOUT) {
-+		u32 reg;
-+		u32 mask = 1 << INTERNAL_CMD_TAG;
-+
-+		/* clear outstanding transaction before retry */
-+		spin_lock_irqsave(hba->host->host_lock, flags);
-+		ufshcd_utrl_clear(hba, INTERNAL_CMD_TAG);
-+		__clear_bit(INTERNAL_CMD_TAG, &hba->outstanding_reqs);
-+		spin_unlock_irqrestore(hba->host->host_lock, flags);
-+
-+		/* poll for max. 1 sec to clear door bell register by h/w */
-+		reg = ufshcd_wait_for_register(hba,
-+				REG_UTP_TRANSFER_REQ_DOOR_BELL,
-+				mask, mask, 1000, 1000);
-+		if ((reg & mask) == mask)
-+			retries = 0;
-+	}
-+
-+	if (err && retries--) {
-+		dev_dbg(hba->dev, "%s: error %d retrying\n", __func__, err);
-+		goto retry;
-+	}
-+
-+out:
-+	if (err)
-+		dev_err(hba->dev, "%s: NOP OUT failed %d\n", __func__, err);
-+	return err;
-+}
-+
- /**
-  * ufshcd_make_hba_operational - Make UFS controller operational
-  * @hba: per adapter instance
-@@ -1438,6 +1593,16 @@ static void ufshcd_uic_cmd_compl(struct ufs_hba *hba)
- 	}
- }
- 
-+/*
-+ * ufshcd_is_nop_out_upiu() - check if the command is NOP OUT UPIU
-+ * @lrbp: pointer to logical reference block
-+ */
-+static inline bool ufshcd_is_nop_out_upiu(struct ufshcd_lrb *lrbp)
-+{
-+	return (be32_to_cpu(lrbp->ucd_req_ptr->header.dword_0) >> 24) ==
-+				UPIU_TRANSACTION_NOP_OUT;
-+}
-+
- /**
-  * ufshcd_transfer_req_compl - handle SCSI and query command completion
-  * @hba: per adapter instance
-@@ -1449,6 +1614,7 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
- 	u32 tr_doorbell;
- 	int result;
- 	int index;
-+	bool int_aggr_reset = true;
- 
- 	lrb = hba->lrb;
- 	tr_doorbell = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL);
-@@ -1456,17 +1622,21 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
- 
- 	for (index = 0; index < hba->nutrs; index++) {
- 		if (test_bit(index, &completed_reqs)) {
--
--			result = ufshcd_transfer_rsp_status(hba, &lrb[index]);
--
- 			if (lrb[index].cmd) {
-+				result = ufshcd_transfer_rsp_status(
-+						hba, &lrb[index]);
- 				scsi_dma_unmap(lrb[index].cmd);
- 				lrb[index].cmd->result = result;
- 				lrb[index].cmd->scsi_done(lrb[index].cmd);
- 
- 				/* Mark completed command as NULL in LRB */
- 				lrb[index].cmd = NULL;
-+			} else if (ufshcd_is_nop_out_upiu(&lrb[index])) {
-+				if (lrb[index].completion)
-+					complete(lrb[index].completion);
- 			}
-+			/* Don't reset counters for interrupt cmd */
-+			int_aggr_reset = lrb[index].intr_cmd ? false : true;
- 		} /* end of if */
- 	} /* end of for */
- 
-@@ -1474,7 +1644,8 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
- 	hba->outstanding_reqs ^= completed_reqs;
- 
- 	/* Reset interrupt aggregation counters */
--	ufshcd_config_int_aggr(hba, INT_AGGR_RESET);
-+	if (int_aggr_reset)
-+		ufshcd_config_int_aggr(hba, INT_AGGR_RESET);
- }
- 
- /**
-@@ -1772,8 +1943,16 @@ static void ufshcd_async_scan(void *data, async_cookie_t cookie)
- 	int ret;
- 
- 	ret = ufshcd_link_startup(hba);
--	if (!ret)
--		scsi_scan_host(hba->host);
-+	if (ret)
-+		goto out;
-+
-+	ret = ufshcd_validate_dev_connection(hba);
-+	if (ret)
-+		goto out;
-+
-+	scsi_scan_host(hba->host);
-+out:
-+	return;
- }
- 
- static struct scsi_host_template ufshcd_driver_template = {
-diff --git a/drivers/scsi/ufs/ufshcd.h b/drivers/scsi/ufs/ufshcd.h
-index 974bd07..558d2f4 100644
---- a/drivers/scsi/ufs/ufshcd.h
-+++ b/drivers/scsi/ufs/ufshcd.h
-@@ -102,6 +102,8 @@ struct uic_command {
-  * @command_type: SCSI, UFS, Query.
-  * @task_tag: Task tag of the command
-  * @lun: LUN of the command
-+ * @intr_cmd: Interrupt command (doesn't participate in interrupt aggregation)
-+ * @completion: holds the state of completion (used for internal commands)
+  * struct hwtstamp_config - %SIOCSHWTSTAMP parameter
+  *
++ * @rw:        0/1 represents set/get the hw time stamp policy
+  * @flags:	no flags defined right now, must be zero
+  * @tx_type:	one of HWTSTAMP_TX_*
+- * @rx_type:	one of one of HWTSTAMP_FILTER_*
++ * @rx_filter:	one of one of HWTSTAMP_FILTER_*
+  *
+  * %SIOCSHWTSTAMP expects a &struct ifreq with a ifr_data pointer to
+  * this structure. dev_ifsioc() in the kernel takes care of the
+@@ -39,6 +40,7 @@ enum {
+  * 32 and 64 bit systems, don't break this!
   */
- struct ufshcd_lrb {
- 	struct utp_transfer_req_desc *utr_descriptor_ptr;
-@@ -117,6 +119,8 @@ struct ufshcd_lrb {
- 	int command_type;
- 	int task_tag;
- 	unsigned int lun;
-+	bool intr_cmd;
-+	struct completion *completion;
- };
- 
- /**
+ struct hwtstamp_config {
++	int rw;
+ 	int flags;
+ 	int tx_type;
+ 	int rx_filter;
 -- 
-1.7.6
+1.7.11.7
 
 -- 
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-of Code Aurora Forum, hosted by The Linux Foundation
+Best Regards,
+Dong Zhu
