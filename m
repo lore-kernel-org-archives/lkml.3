@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084Ab3EMJEc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 05:04:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14448 "EHLO mx1.redhat.com"
+	id S1752020Ab3EMJFE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 05:05:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63289 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951Ab3EMJEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 05:04:31 -0400
-Date: Mon, 13 May 2013 11:05:48 +0200
+	id S1750704Ab3EMJFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 05:05:01 -0400
+Date: Mon, 13 May 2013 11:06:17 +0200
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, linux-pci@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: x86@kernel.org, linux-pci@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
         Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@redhat.com>,
         Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH v3 -tip x86/apic 1/2] PCI/MSI: Allocate as many multiple-MSIs
- as requested
-Message-ID: <8575dc590b819892f366852fe50835efaf579f4f.1368431413.git.agordeev@redhat.com>
+Subject: [PATCH v3 -tip x86/apic 2/2] x86/MSI: Conserve interrupt resources
+ when using multiple-MSIs
+Message-ID: <924d05fe41fb93fdc2013680fb220d4b171de303.1368431413.git.agordeev@redhat.com>
 References: <cover.1368431413.git.agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,76 +27,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When multiple MSIs are enabled with pci_enable_msi_block(), the
-requested number of interrupts 'nvec' is rounded up to the nearest
-power-of-two value. The result is then used for setting up the
-number of MSI messages in the PCI device and allocation of
-interrupt resources in the operating system (i.e. vector numbers).
-Thus, in cases when a device driver requests some number of MSIs
-and this number is not a power-of-two value, the extra operating
-system resources (allocated as the result of rounding) are wasted.
+Current multiple-MSI implementation does not take into account
+actual number of requested MSIs and always rounds that number
+to a closest power-of-two value. Yet, a number of MSIs a PCI
+device could send (and therefore a number of messages a device
+driver could request) may be a lesser power-of-two. As result,
+resources allocated for extra MSIs just wasted.
 
-This fix introduces 'msi_desc::nvec' field to address the above
-issue. When non-zero, it will report the actual number of MSIs the
-device will send, as requested by the device driver. This value
-should be used by architectures to properly set up and tear down
-associated interrupt resources.
+This update takes advantage of 'msi_desc::nvec' field introduced
+with generic MSI code to track number of requested and used MSIs.
+As result, resources associated with interrupts are conserved.
+Of those resources most noticeable are x86 interrupt vectors.
 
-Note, although the existing 'msi_desc::multiple' field might seem
-redundant, in fact in does not. In general case the number of MSIs a
-PCI device is initialized with is not necessarily the closest power-
-of-two value of the number of MSIs the device will send. Thus, in
-theory it would not be always possible to derive the former from the
-latter and we need to keep them both, to stress this corner case.
-Besides, since 'msi_desc::multiple' is a bitfield, throwing it out
-would not save us any space.
+The initial version of this fix also consumed on IRTEs, but Jan
+noticed that a malfunctioning PCI device might send a message
+number it did not claim and thus refer an IRTE it does not own.
+To avoid this security hole the old-way approach preserved and
+as many IRTEs are reserved as the device could possibly send.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/pci/msi.c   |   10 ++++++++--
- include/linux/msi.h |    1 +
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/iommu/irq_remapping.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 00cc78c7..014b9d5 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -79,7 +79,10 @@ void default_teardown_msi_irqs(struct pci_dev *dev)
- 		int i, nvec;
- 		if (entry->irq == 0)
- 			continue;
--		nvec = 1 << entry->msi_attrib.multiple;
-+		if (entry->nvec)
-+			nvec = entry->nvec;
-+		else
-+			nvec = 1 << entry->msi_attrib.multiple;
- 		for (i = 0; i < nvec; i++)
- 			arch_teardown_msi_irq(entry->irq + i);
- 	}
-@@ -340,7 +343,10 @@ static void free_msi_irqs(struct pci_dev *dev)
- 		int i, nvec;
- 		if (!entry->irq)
- 			continue;
--		nvec = 1 << entry->msi_attrib.multiple;
-+		if (entry->nvec)
-+			nvec = entry->nvec;
-+		else
-+			nvec = 1 << entry->msi_attrib.multiple;
- #ifdef CONFIG_GENERIC_HARDIRQS
- 		for (i = 0; i < nvec; i++)
- 			BUG_ON(irq_has_action(entry->irq + i));
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index ce93a34..0e20dfc 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -35,6 +35,7 @@ struct msi_desc {
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index d56f8c1..9eeb6cf 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -51,26 +51,27 @@ static void irq_remapping_disable_io_apic(void)
  
- 	u32 masked;			/* mask bits */
+ static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
+ {
+-	int node, ret, sub_handle, index = 0;
++	int node, ret, sub_handle, nvec_pow2, index = 0;
  	unsigned int irq;
-+	unsigned int nvec;		/* number of messages */
- 	struct list_head list;
+ 	struct msi_desc *msidesc;
  
- 	union {
+-	nvec = __roundup_pow_of_two(nvec);
+-
+ 	WARN_ON(!list_is_singular(&dev->msi_list));
+ 	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
+ 	WARN_ON(msidesc->irq);
+ 	WARN_ON(msidesc->msi_attrib.multiple);
++	WARN_ON(msidesc->nvec);
+ 
+ 	node = dev_to_node(&dev->dev);
+ 	irq = __create_irqs(get_nr_irqs_gsi(), nvec, node);
+ 	if (irq == 0)
+ 		return -ENOSPC;
+ 
+-	msidesc->msi_attrib.multiple = ilog2(nvec);
++	nvec_pow2 = __roundup_pow_of_two(nvec);
++	msidesc->nvec = nvec;
++	msidesc->msi_attrib.multiple = ilog2(nvec_pow2);
+ 	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
+ 		if (!sub_handle) {
+-			index = msi_alloc_remapped_irq(dev, irq, nvec);
++			index = msi_alloc_remapped_irq(dev, irq, nvec_pow2);
+ 			if (index < 0) {
+ 				ret = index;
+ 				goto error;
+@@ -95,6 +96,7 @@ error:
+ 	 * IRQs from tearing down again in default_teardown_msi_irqs()
+ 	 */
+ 	msidesc->irq = 0;
++	msidesc->nvec = 0;
+ 	msidesc->msi_attrib.multiple = 0;
+ 
+ 	return ret;
 -- 
 1.7.7.6
 
