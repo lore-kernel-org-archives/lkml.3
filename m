@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab3EMH6l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 03:58:41 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:45170 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194Ab3EMH6k (ORCPT
+	id S1754235Ab3EMICK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 04:02:10 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:34135 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab3EMICI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 03:58:40 -0400
+	Mon, 13 May 2013 04:02:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPgLHd_ETnhT-YQgyPKJJ5meTF_mibYipShRO2GPGMhpdGOuyw@mail.gmail.com>
-References: <CAPgLHd_ETnhT-YQgyPKJJ5meTF_mibYipShRO2GPGMhpdGOuyw@mail.gmail.com>
-Date: Mon, 13 May 2013 13:28:39 +0530
-Message-ID: <CAKohponMh0-L-LAYE7Rf3frULQ3WEwJCi+Hfe9qtE+zEWtncrQ@mail.gmail.com>
-Subject: Re: [PATCH] mtd: fsmc_nand: fix error return code in fsmc_nand_probe()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: dwmw2@infradead.org, grant.likely@linaro.org, rob.herring@calxeda.com,
-        artem.bityutskiy@linux.intel.com, linus.walleij@linaro.org,
-        vipin.kumar@st.com, yongjun_wei@trendmicro.com.cn,
-        linux-mtd@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1367809448-9437-1-git-send-email-chao.xie@marvell.com>
+References: <1367809448-9437-1-git-send-email-chao.xie@marvell.com>
+Date: Mon, 13 May 2013 16:02:07 +0800
+Message-ID: <CADApbegCt=uGcQxdukq-svi201J+YeAX1M1vs-dKAD_AD9HFPw@mail.gmail.com>
+Subject: Re: [PATCH V2 0/5] input: pxa27x-keypad: enhancement and device tree support
+From: Chao Xie <xiechao.mail@gmail.com>
+To: Chao Xie <chao.xie@marvell.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 May 2013 12:25, Wei Yongjun <weiyj.lk@gmail.com> wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Fix to return -ENODEV in the dma channel request error handling
-> case instead of 0, as done elsewhere in this function.
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/mtd/nand/fsmc_nand.c | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/mtd/nand/fsmc_nand.c b/drivers/mtd/nand/fsmc_nand.c
-> index 911e243..6988fc8 100644
-> --- a/drivers/mtd/nand/fsmc_nand.c
-> +++ b/drivers/mtd/nand/fsmc_nand.c
-> @@ -1032,6 +1032,7 @@ static int __init fsmc_nand_probe(struct platform_device *pdev)
->         case USE_DMA_ACCESS:
->                 dma_cap_zero(mask);
->                 dma_cap_set(DMA_MEMCPY, mask);
-> +               ret = -ENODEV;
->                 host->read_dma_chan = dma_request_channel(mask, filter,
->                                 pdata->read_dma_priv);
->                 if (!host->read_dma_chan) {
->
+hi, dmitry
+What is your idea about these patches?
+Do i need add someone else to review them?
 
-Better do it for error cases only.. like:
-
->                 if (!host->read_dma_chan) {
-                           ret = -ENODEV;
+On Mon, May 6, 2013 at 11:04 AM, Chao Xie <chao.xie@marvell.com> wrote:
+> The patches include 2 parts
+> 1. use matrix_keypad for matrix keyes support
+> 2. add device tree support for pxa27x-keypad
+>
+> V2->V1:
+> Do not copy the members from pdata. For device tree support,
+> directly allocate the pdata structure.
+>
+> Chao Xie (5):
+>   input: pxa27x-keypad: use matrix_keymap for matrix keyes
+>   arm: mmp: use matrix_keymap for aspenite
+>   arm: mmp: use matrix_keymap for teton_bga
+>   input: pxa27x-keypad: remove the unused members at platform data
+>   input: pxa27x-keypad: add device tree support
+>
+>  .../devicetree/bindings/input/pxa27x-keypad.txt    |   60 +++++
+>  arch/arm/mach-mmp/aspenite.c                       |   10 +-
+>  arch/arm/mach-mmp/teton_bga.c                      |    8 +-
+>  drivers/input/keyboard/Kconfig                     |    1 +
+>  drivers/input/keyboard/pxa27x_keypad.c             |  266 ++++++++++++++++++--
+>  include/linux/platform_data/keypad-pxa27x.h        |    3 +-
+>  6 files changed, 325 insertions(+), 23 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/input/pxa27x-keypad.txt
+>
+> --
+> 1.7.4.1
+>
