@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383Ab3EMUOx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 16:14:53 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:62903 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755244Ab3EMUOw (ORCPT
+	id S1755394Ab3EMUVE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 16:21:04 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26875 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755286Ab3EMUVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 16:14:52 -0400
-Message-ID: <1368476089.1350.74.camel@x61.thuisdomein>
-Subject: Re: [PATCH] myri_sbus: remove firmware
-From: Paul Bolle <pebolle@tiscali.nl>
-To: David Miller <davem@davemloft.net>
-Cc: mason@myri.com, linux-kernel@vger.kernel.org
-Date: Mon, 13 May 2013 22:14:49 +0200
-In-Reply-To: <20130513.130749.1053380556995548595.davem@davemloft.net>
-References: <1365171782.1830.67.camel@x61.thuisdomein>
-	 <20130405.125530.727706283199340601.davem@davemloft.net>
-	 <1368475385.1350.70.camel@x61.thuisdomein>
-	 <20130513.130749.1053380556995548595.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 May 2013 20:14:50.0556 (UTC) FILETIME=[85DB2FC0:01CE5016]
-X-RcptDomain: vger.kernel.org
+	Mon, 13 May 2013 16:21:02 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX197WWS+r+948iZhNkFNcdEFEijvd9U7KgM=
+Date: Mon, 13 May 2013 16:20:56 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: dove: add si5351 clock driver to CuBox DT
+Message-ID: <20130513202056.GC31290@titan.lakedaemon.net>
+References: <1367342675-15312-1-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367342675-15312-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-13 at 13:07 -0700, David Miller wrote:
-> From: Paul Bolle <pebolle@tiscali.nl>
-> > I don't think this patch has been queued for mainline anywhere. Would
-> > you mind queuing this in a tree you maintain?
+On Tue, Apr 30, 2013 at 07:24:35PM +0200, Sebastian Hesselbarth wrote:
+> This patch adds the device tree node for si5351 clock generator
+> and the corresponding oscillator connected to it. It also limits
+> i2c frequency to 100kHz as there are bus locks reported on higher
+> frequencies.
 > 
-> I don't maintain the firmware tree, therefore I cannot do that.
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/dove-cubox.dts |   51 +++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 50 insertions(+), 1 deletions(-)
 
-I see.
+Applied to mvebu/dt
 
-MAINTAINERS doesn't have any hits for the firmware/ directory. Who's is
-supposed to handle patches like this one?
+thx,
 
-
-Paul Bolle
-
+Jason.
