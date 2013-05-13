@@ -1,201 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246Ab3EMMk1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 08:40:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:54566 "EHLO mga01.intel.com"
+	id S1752650Ab3EMMka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 08:40:30 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:44405 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983Ab3EMMkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 08:40:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,662,1363158000"; 
-   d="scan'208";a="336761413"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-acpi@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ACPI / LPSS: add support for Intel BayTrail
-Date: Mon, 13 May 2013 15:42:44 +0300
-Message-Id: <1368448964-2118-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1750983Ab3EMMk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 08:40:27 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: =?UTF-8?q?=5BPATCHv11=204/4=5D=20zswap=3A=20add=20documentation?=
+Date: Mon, 13 May 2013 07:40:03 -0500
+Message-Id: <1368448803-2089-5-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051312-7182-0000-0000-000006A9309F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel BayTrail has almost the same Low Power Subsystem than Lynxpoint with
-few differences. Peripherals are clocked with different speeds (typically
-lower) and the clock is not always gated. To support this we add
-possibility to share a common fixed rate clock and make clock gating
-optional.
+This patch adds the documentation file for the zswap functionality
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 ---
- drivers/acpi/acpi_lpss.c  |   88 +++++++++++++++++++++++++++++++++++++++++----
- drivers/clk/x86/clk-lpt.c |    4 +--
- 2 files changed, 82 insertions(+), 10 deletions(-)
+ Documentation/vm/zswap.txt |   72 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 72 insertions(+)
+ create mode 100644 Documentation/vm/zswap.txt
 
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index 652fd5c..f6d7605 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -33,11 +33,19 @@ ACPI_MODULE_NAME("acpi_lpss");
- #define LPSS_SW_LTR			0x10
- #define LPSS_AUTO_LTR			0x14
- 
-+struct lpss_shared_clock {
-+	const char *name;
-+	unsigned long rate;
-+	struct clk *clk;
-+};
+diff --git a/Documentation/vm/zswap.txt b/Documentation/vm/zswap.txt
+new file mode 100644
+index 0000000..88384b3
+--- /dev/null
++++ b/Documentation/vm/zswap.txt
+@@ -0,0 +1,72 @@
++Overview:
 +
- struct lpss_device_desc {
- 	bool clk_required;
- 	const char *clkdev_name;
- 	bool ltr_required;
- 	unsigned int prv_offset;
-+	bool clk_gate;
-+	struct lpss_shared_clock *shared_clock;
- };
- 
- static struct lpss_device_desc lpss_dma_desc = {
-@@ -56,6 +64,7 @@ static struct lpss_device_desc lpt_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x800,
- 	.ltr_required = true,
-+	.clk_gate = true,
- };
- 
- static struct lpss_device_desc lpt_sdio_dev_desc = {
-@@ -63,6 +72,45 @@ static struct lpss_device_desc lpt_sdio_dev_desc = {
- 	.ltr_required = true,
- };
- 
-+static struct lpss_shared_clock uart_clock = {
-+	.name = "uart_clk",
-+	.rate = 44236800,
-+};
++Zswap is a lightweight compressed cache for swap pages. It takes pages that are
++in the process of being swapped out and attempts to compress them into a
++dynamically allocated RAM-based memory pool.  If this process is successful,
++the writeback to the swap device is deferred and, in many cases, avoided
++completely.  This results in a significant I/O reduction and performance gains
++for systems that are swapping.
 +
-+static struct lpss_device_desc byt_uart_dev_desc = {
-+	.clk_required = true,
-+	.prv_offset = 0x800,
-+	.clk_gate = true,
-+	.shared_clock = &uart_clock,
-+};
++Zswap provides compressed swap caching that basically trades CPU cycles for
++reduced swap I/O.  This trade-off can result in a significant performance
++improvement as reads to/writes from to the compressed cache almost always
++faster that reading from a swap device which incurs the latency of an
++asynchronous block I/O read.
 +
-+static struct lpss_shared_clock spi_clock = {
-+	.name = "spi_clk",
-+	.rate = 50000000,
-+};
++Some potential benefits:
++* Desktop/laptop users with limited RAM capacities can mitigate the
++    performance impact of swapping.
++* Overcommitted guests that share a common I/O resource can
++    dramatically reduce their swap I/O pressure, avoiding heavy handed I/O
++    throttling by the hypervisor. This allows more work to get done with less
++    impact to the guest workload and guests sharing the I/O subsystem
++* Users with SSDs as swap devices can extend the life of the device by
++    drastically reducing life-shortening writes.
 +
-+static struct lpss_device_desc byt_spi_dev_desc = {
-+	.clk_required = true,
-+	.prv_offset = 0x400,
-+	.clk_gate = true,
-+	.shared_clock = &spi_clock,
-+};
++Zswap evicts pages from compressed cache on an LRU basis to the backing swap
++device when the compressed pool reaches it size limit.  This requirement had
++been identified in prior community discussions.
 +
-+static struct lpss_device_desc byt_sdio_dev_desc = {
-+	.clk_required = true,
-+};
++To enabled zswap, the "enabled" attribute must be set to 1 at boot time.  e.g.
++zswap.enabled=1
 +
-+static struct lpss_shared_clock i2c_clock = {
-+	.name = "i2c_clk",
-+	.rate = 100000000,
-+};
++Design:
 +
-+static struct lpss_device_desc byt_i2c_dev_desc = {
-+	.clk_required = true,
-+	.prv_offset = 0x800,
-+	.shared_clock = &i2c_clock,
-+};
++Zswap receives pages for compression through the Frontswap API and is able to
++evict pages from its own compressed pool on an LRU basis and write them back to
++the backing swap device in the case that the compressed pool is full.
 +
- static const struct acpi_device_id acpi_lpss_device_ids[] = {
- 	/* Generic LPSS devices */
- 	{ "INTL9C60", (unsigned long)&lpss_dma_desc },
-@@ -77,6 +125,13 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
- 	{ "INT33C6", (unsigned long)&lpt_sdio_dev_desc },
- 	{ "INT33C7", },
- 
-+	/* BayTrail LPSS devices */
-+	{ "80860F0A", (unsigned long)&byt_uart_dev_desc },
-+	{ "80860F0E", (unsigned long)&byt_spi_dev_desc },
-+	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
-+	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
-+	{ "INT33B2", },
++Zswap makes use of zbud for the managing the compressed memory pool.  Each
++allocation in zbud is not directly accessible by address.  Rather, a handle is
++return by the allocation routine and that handle must be mapped before being
++accessed.  The compressed memory pool grows on demand and shrinks as compressed
++pages are freed.  The pool is not preallocated.
 +
- 	{ }
- };
- 
-@@ -98,7 +153,10 @@ static int register_device_clock(struct acpi_device *adev,
- 				 struct lpss_private_data *pdata)
- {
- 	const struct lpss_device_desc *dev_desc = pdata->dev_desc;
-+	struct lpss_shared_clock *shared_clock = dev_desc->shared_clock;
-+	struct clk *clk = ERR_PTR(-ENODEV);
- 	struct lpss_clk_data *clk_data;
-+	const char *parent;
- 
- 	if (!lpss_clk_dev)
- 		lpt_register_clock_device();
-@@ -117,14 +175,30 @@ static int register_device_clock(struct acpi_device *adev,
- 	    || pdata->mmio_size < dev_desc->prv_offset + LPSS_CLK_SIZE)
- 		return -ENODATA;
- 
--	pdata->clk = clk_register_gate(NULL, dev_name(&adev->dev),
--				       clk_data->name, 0,
--				       pdata->mmio_base + dev_desc->prv_offset,
--				       0, 0, NULL);
--	if (IS_ERR(pdata->clk))
--		return PTR_ERR(pdata->clk);
-+	parent = clk_data->name;
++When a swap page is passed from frontswap to zswap, zswap maintains a mapping
++of the swap entry, a combination of the swap type and swap offset, to the zbud
++handle that references that compressed swap page.  This mapping is achieved
++with a red-black tree per swap type.  The swap offset is the search key for the
++tree nodes.
 +
-+	if (shared_clock) {
-+		clk = shared_clock->clk;
-+		if (!clk) {
-+			clk = clk_register_fixed_rate(NULL, shared_clock->name,
-+						      "lpss_clk", 0,
-+						      shared_clock->rate);
-+			shared_clock->clk = clk;
-+		}
-+		parent = shared_clock->name;
-+	}
++During a page fault on a PTE that is a swap entry, frontswap calls the zswap
++load function to decompress the page into the page allocated by the page fault
++handler.
 +
-+	if (dev_desc->clk_gate) {
-+		clk = clk_register_gate(NULL, dev_name(&adev->dev), parent, 0,
-+					pdata->mmio_base + dev_desc->prv_offset,
-+					0, 0, NULL);
-+		pdata->clk = clk;
-+	}
++Once there are no PTEs referencing a swap page stored in zswap (i.e. the count
++in the swap_map goes to 0) the swap code calls the zswap invalidate function,
++via frontswap, to free the compressed entry.
 +
-+	if (IS_ERR(clk))
-+		return PTR_ERR(clk);
- 
--	clk_register_clkdev(pdata->clk, NULL, dev_name(&adev->dev));
-+	clk_register_clkdev(clk, NULL, dev_name(&adev->dev));
- 	return 0;
- }
- 
-diff --git a/drivers/clk/x86/clk-lpt.c b/drivers/clk/x86/clk-lpt.c
-index 4f45eee..812f83f 100644
---- a/drivers/clk/x86/clk-lpt.c
-+++ b/drivers/clk/x86/clk-lpt.c
-@@ -1,5 +1,5 @@
- /*
-- * Intel Lynxpoint LPSS clocks.
-+ * Intel Low Power Subsystem clocks.
-  *
-  * Copyright (C) 2013, Intel Corporation
-  * Authors: Mika Westerberg <mika.westerberg@linux.intel.com>
-@@ -18,8 +18,6 @@
- #include <linux/platform_data/clk-lpss.h>
- #include <linux/platform_device.h>
- 
--#define PRV_CLOCK_PARAMS 0x800
--
- static int lpt_clk_probe(struct platform_device *pdev)
- {
- 	struct lpss_clk_data *drvdata;
++Zswap seeks to be simple in its policies.  Sysfs attributes allow for two user
++controlled policies:
++* max_compression_ratio - Maximum compression ratio, as as percentage,
++    for an acceptable compressed page. Any page that does not compress by at
++    least this ratio will be rejected.
++* max_pool_percent - The maximum percentage of memory that the compressed
++    pool can occupy.
++
++Zswap allows the compressor to be selected at kernel boot time by setting the
++“compressor” attribute.  The default compressor is lzo.  e.g.
++zswap.compressor=deflate
++
++A debugfs interface is provided for various statistic about pool size, number
++of pages stored, and various counters for the reasons pages are rejected.
 -- 
-1.7.10.4
+1.7.9.5
 
