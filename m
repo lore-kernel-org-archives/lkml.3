@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431Ab3EMLDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 07:03:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2297 "EHLO mga09.intel.com"
+	id S1753943Ab3EMLGr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 07:06:47 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:15461 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753793Ab3EMLDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 07:03:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,662,1363158000"; 
-   d="scan'208";a="336222356"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-pm@vger.kernel.org
-Cc: Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] PM / Runtime: honor device autosuspend in pm_generic_runtime_idle()
-Date: Mon, 13 May 2013 14:05:27 +0300
-Message-Id: <1368443127-9636-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751419Ab3EMLGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 07:06:46 -0400
+X-IronPort-AV: E=Sophos;i="4.87,662,1363132800"; 
+   d="scan'208";a="24810966"
+Date: Mon, 13 May 2013 12:06:43 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yuval Shaia <yuval.shaia@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>, Chien Yen <chien.yen@oracle.com>
+Subject: Re: [PATCH] xen: reuse the same pirq allocated when driver load
+ first time
+In-Reply-To: <20130510185339.GD2562@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1305131136020.4799@kaball.uk.xensource.com>
+References: <518A0A50.1020705@oracle.com> <20130510185339.GD2562@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the device is using autosuspend we should honor that and call
-pm_runtime_autosuspend() instead of pm_runtime_suspend(). Failing to do so
-causes the device to be suspended immediately even though it expects to be
-suspended only when the autosuspend delay is expired.
+On Fri, 10 May 2013, Konrad Rzeszutek Wilk wrote:
+> On Wed, May 08, 2013 at 04:18:24PM +0800, Zhenzhong Duan wrote:
+> > When driver load and unload in a loop, pirq will exhaust finally.
+> > Try to use the same pirq which was already mapped and binded at first time
+> 
+> So what happens if I unload and reload two drivers in random order?
+> 
+> > when driver loaded.
+> > 
+> > Read pirq from msix entry and test if data is XEN_PIRQ_MSI_DATA
+> > xen_irq_from_pirq(pirq) < 0 checking is wrong as irq will be freed
+> > when driver unload, it's always true in second load.
+> 
+> If my understanding is right the issue at hand is that the caching
+> information about the pirq disappears once the driver has been
+> unloaded b/c the event's irq-info is removed (as the driver is
+> unloaded and free_irq is called).
+> 
+> Stefano,
+> Is there a specific write to the MSI structure that would cause the
+> hypervisor to drop the PIRQ? Or a nice hypercall to "free" an
+> PIRQ in usage?
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/base/power/generic_ops.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+We already have a "free PIRQ" hypercall, it's called
+PHYSDEVOP_unmap_pirq and should be called by QEMU.
+Linux should disable the MSI bit in the PCI config options of the
+device:
 
-diff --git a/drivers/base/power/generic_ops.c b/drivers/base/power/generic_ops.c
-index bfd898b..19786ca 100644
---- a/drivers/base/power/generic_ops.c
-+++ b/drivers/base/power/generic_ops.c
-@@ -29,7 +29,10 @@ int pm_generic_runtime_idle(struct device *dev)
- 			return ret;
- 	}
- 
--	pm_runtime_suspend(dev);
-+	if (dev->power.use_autosuspend)
-+		pm_runtime_autosuspend(dev);
-+	else
-+		pm_runtime_suspend(dev);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(pm_generic_runtime_idle);
--- 
-1.7.10.4
+pci_disable_msi -> pci_msi_shutdown -> msi_set_enable(0)
 
+That should cause QEMU to issue a xc_physdev_unmap_pirq that actually
+unmaps the pirq. If it doesn't, it's a bug :)
+
+
+> I presume that on the first load the msg.data value is
+> ALWAYS != XEN_PIRQ_MSI_DATA right? Is that somethign we can ALWAYS
+> depend? Or is there a possibility that it could be that when the
+> PCI device is unplugged from one guest and plugged in another?
+> 
+> Could we use PHYSDEVOP_irq_status_query to figure out if the PIRQ
+> has been already allocated? Ah, does not look like it.
+> 
+> I am a bit worried about depending on just msg.data to tells us
+> whether the device had been initialized before.
+
+Data comes from QEMU, I think it is zeroed at init time.
