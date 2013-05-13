@@ -1,304 +1,472 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab3EMPDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 11:03:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38147 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752513Ab3EMPDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 11:03:08 -0400
-Date: Mon, 13 May 2013 11:03:03 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, aquini@redhat.com,
-        amit.shah@redhat.com, anton@enomsg.org
-Subject: Re: [RFC 2/2] virtio_balloon: auto-ballooning support
-Message-ID: <20130513110303.33dbaba6@redhat.com>
-In-Reply-To: <20130512184934.GA16334@redhat.com>
-References: <1368111229-29847-1-git-send-email-lcapitulino@redhat.com>
-	<1368111229-29847-3-git-send-email-lcapitulino@redhat.com>
-	<20130512143054.GI10144@redhat.com>
-	<518FC4F9.5010505@redhat.com>
-	<20130512184934.GA16334@redhat.com>
-Organization: Red Hat
+	id S1754800Ab3EMPDU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 11:03:20 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:60348 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754401Ab3EMPDO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 11:03:14 -0400
+Message-ID: <1368457391.1350.67.camel@x61.thuisdomein>
+Subject: [PATCH] ath5k: Remove AHB bus support.
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: Bob Copeland <me@bobcopeland.com>,
+        Wojciech Dubowik <Wojciech.Dubowik@neratec.com>, nbd@openwrt.org,
+        ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 13 May 2013 17:03:11 +0200
+In-Reply-To: <1362999998.3137.60.camel@x61.thuisdomein>
+References: <1320756113.14409.385.camel@x61.thuisdomein>
+	 <20111108141647.GA3390@hash.lan>
+	 <1342124352.22584.21.camel@x61.thuisdomein>
+	 <20120712203837.GA3045@localhost> <4FFFBDD8.6020305@neratec.com>
+	 <20120713124134.GA5567@localhost>
+	 <1362999998.3137.60.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 May 2013 15:03:11.0523 (UTC) FILETIME=[FC5D2F30:01CE4FEA]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 May 2013 21:49:34 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+AHB bus support was added in v2.6.38, through commit a0b907ee2a ("ath5k:
+Add AHB bus support."). That code can only be build if the Kconfig
+symbol ATHEROS_AR231X is set. But that symbol has never been added to
+the tree. So AHB bus support has always been dead code.
 
-> On Sun, May 12, 2013 at 12:36:09PM -0400, Rik van Riel wrote:
-> > On 05/12/2013 10:30 AM, Michael S. Tsirkin wrote:
-> > >On Thu, May 09, 2013 at 10:53:49AM -0400, Luiz Capitulino wrote:
-> > >>Automatic ballooning consists of dynamically adjusting the guest's
-> > >>balloon according to memory pressure in the host and in the guest.
-> > >>
-> > >>This commit implements the guest side of automatic balloning, which
-> > >>basically consists of registering a shrinker callback with the kernel,
-> > >>which will try to deflate the guest's balloon by the amount of pages
-> > >>being requested. The shrinker callback is only registered if the host
-> > >>supports the VIRTIO_BALLOON_F_AUTO_BALLOON feature bit.
-> > >
-> > >OK so we have a new feature bit, such that:
-> > >- if AUTO_BALLOON is set in host, guest can leak a
-> > >   page from a balloon at any time
-> > >
-> > >questions left unanswered
-> > >- what meaning does num_pages have now?
-> > 
-> > "as large as we could go"
-> 
-> I see. This is the reverse of it's current meaning.
-> I would suggest a new field instead of overriding
-> the existing one.
+Let's remove all code that depends on ATHEROS_AR231X. If that symbol
+ever gets added to the tree the AHB bus support can be re-added too.
 
-I'll write a spec patch as you suggested on irc and will decide what
-to do from there.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Compile tested (I do not think I have hardware that use the ath5k
+driver).
 
-> > >- when will the balloon be re-inflated?
-> > 
-> > I believe the qemu changes Luiz wrote address that side,
-> > with qemu-kvm getting notifications from the host kernel
-> > when there is memory pressure, and shrinking the guest
-> > in reaction to that notification.
-> 
-> But it's the guest memory pressure we care about:
-> 
-> - host asks balloon to inflate
-> later
-> - guest asks balloon to deflate
-> 
-> with this patch guest takes priority,
-> balloon deflates. So we should only inflate
-> if guest does not need the memory.
+1) I mentioned the missing ATHEROS_AR231X symbol three times before (in
+August 2011, in July 2012 and in March 2103). Nobody stepped forward to
+tell me they were actually working on adding that symbol somehow. So
+let's see how people react when I submit a patch to remove the (dead)
+AHB bus support.
 
-Inflate will actually fail if the guest doesn't have memory to fill
-the balloon. But in any case, and as you said elsewhere in this
-thread, inflate is not new and could be even done by mngt. So I don't
-think this should be changed in this patch.
+ drivers/net/wireless/ath/ath5k/Kconfig  |  14 +-
+ drivers/net/wireless/ath/ath5k/Makefile |   1 -
+ drivers/net/wireless/ath/ath5k/ahb.c    | 239 --------------------------------
+ drivers/net/wireless/ath/ath5k/ath5k.h  |  28 ----
+ drivers/net/wireless/ath/ath5k/base.c   |  14 --
+ drivers/net/wireless/ath/ath5k/led.c    |   6 -
+ 6 files changed, 3 insertions(+), 299 deletions(-)
+ delete mode 100644 drivers/net/wireless/ath/ath5k/ahb.c
 
-> > >I'd like to see a spec patch addressing these questions.
-> > >
-> > >Would we ever want to mix the two types of ballooning?
-> > >If yes possibly when we put a page in the balloon we
-> > >might want to give host a hint "this page might be
-> > >leaked again soon".
-> > 
-> > It might not be the same page, and the host really does
-> > not care which page it is.
-> 
-> Whether we care depends on what we do with the page.
-> For example, in the future we might care which numa node is
-> used.
-> 
-> > The automatic inflation happens when the host needs to
-> > free up memory.
-> 
-> This can be done today by management, with no need to
-> change qemu. So automatic inflate, IMHO does not need
-> a feature flag. It's the automatic deflate in guest that's new.
-
-Makes sense.
-
-> > >>Automatic inflate is performed by the host.
-> > >>
-> > >>Here are some numbers. The test-case is to run 35 VMs (1G of RAM each)
-> > >>in parallel doing a kernel build. Host has 32GB of RAM and 16GB of swap.
-> > >>SWAP IN and SWAP OUT correspond to the number of pages swapped in and
-> > >>swapped out, respectively.
-> > >>
-> > >>Auto-ballooning disabled:
-> > >>
-> > >>RUN  TIME(s)  SWAP IN  SWAP OUT
-> > >>
-> > >>1    634      930980   1588522
-> > >>2    610      627422   1362174
-> > >>3    649      1079847  1616367
-> > >>4    543      953289   1635379
-> > >>5    642      913237   1514000
-> > >>
-> > >>Auto-ballooning enabled:
-> > >>
-> > >>RUN  TIME(s)  SWAP IN  SWAP OUT
-> > >>
-> > >>1    629      901      12537
-> > >>2    624      981      18506
-> > >>3    626      573      9085
-> > >>4    631      2250     42534
-> > >>5    627      1610     20808
-> > >
-> > >So what exactly happens here?
-> > >Much less swap in/out activity, but no gain
-> > >in total runtime. Doesn't this show there's
-> > >a bottleneck somewhere? Could be a problem in
-> > >the implementation?
-> > 
-> > It could also be an issue with the benchmark chosen,
-> > which may not have swap as its bottleneck at any point.
-> > 
-> > However, the reduced swapping is still very promising!
-> 
-> Isn't this a direct result of inflating the balloon?
-> E.g. just inflating the balloon without
-> the shrinker will make us avoid swap in host.
-> What we would want to check is whether shrinking works as
-> expected, and whether we need to speed up shrinking.
-> 
-> As I say above, inflating the balloon is easy.
-> A good benchmark would show how we can
-> deflate and re-inflate it efficiently with
-> demand.
-
-I'm going to measure this.
-
-> > >Also, what happened with the balloon?
-> > >Did we end up with balloon completely inflated? deflated?
-
-In my test-case VMs are started with 1G. After the test, almost all
-of them have between 200-300MB.
-
-> > >
-> > >One question to consider: possibly if we are
-> > >going to reuse the page in the balloon soon,
-> > >we might want to bypass notify before use for it?
-> > >Maybe that will help speed things up.
-> > >
-> > >
-> > >>Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-> > >>---
-> > >>  drivers/virtio/virtio_balloon.c     | 55 +++++++++++++++++++++++++++++++++++++
-> > >>  include/uapi/linux/virtio_balloon.h |  1 +
-> > >>  2 files changed, 56 insertions(+)
-> > >>
-> > >>diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-> > >>index 9d5fe2b..f9dcae8 100644
-> > >>--- a/drivers/virtio/virtio_balloon.c
-> > >>+++ b/drivers/virtio/virtio_balloon.c
-> > >>@@ -71,6 +71,9 @@ struct virtio_balloon
-> > >>  	/* Memory statistics */
-> > >>  	int need_stats_update;
-> > >>  	struct virtio_balloon_stat stats[VIRTIO_BALLOON_S_NR];
-> > >>+
-> > >>+	/* Memory shrinker */
-> > >>+	struct shrinker shrinker;
-> > >>  };
-> > >>
-> > >>  static struct virtio_device_id id_table[] = {
-> > >>@@ -126,6 +129,7 @@ static void set_page_pfns(u32 pfns[], struct page *page)
-> > >>  		pfns[i] = page_to_balloon_pfn(page) + i;
-> > >>  }
-> > >>
-> > >>+/* This function should be called with vb->balloon_mutex held */
-> > >>  static void fill_balloon(struct virtio_balloon *vb, size_t num)
-> > >>  {
-> > >>  	struct balloon_dev_info *vb_dev_info = vb->vb_dev_info;
-> > >>@@ -166,6 +170,7 @@ static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
-> > >>  	}
-> > >>  }
-> > >>
-> > >>+/* This function should be called with vb->balloon_mutex held */
-> > >>  static void leak_balloon(struct virtio_balloon *vb, size_t num)
-> > >>  {
-> > >>  	struct page *page;
-> > >>@@ -285,6 +290,45 @@ static void update_balloon_size(struct virtio_balloon *vb)
-> > >>  			      &actual, sizeof(actual));
-> > >>  }
-> > >>
-> > >>+static unsigned long balloon_get_nr_pages(const struct virtio_balloon *vb)
-> > >>+{
-> > >>+	return vb->num_pages / VIRTIO_BALLOON_PAGES_PER_PAGE;
-> > >>+}
-> > >>+
-> > >>+static int balloon_shrinker(struct shrinker *shrinker,struct shrink_control *sc)
-> > >>+{
-> > >>+	unsigned int nr_pages, new_target;
-> > >>+	struct virtio_balloon *vb;
-> > >>+
-> > >>+	vb = container_of(shrinker, struct virtio_balloon, shrinker);
-> > >>+	if (!mutex_trylock(&vb->balloon_lock)) {
-> > >>+		return -1;
-> > >>+	}
-> > >>+
-> > >>+	nr_pages = balloon_get_nr_pages(vb);
-> > >>+	if (!sc->nr_to_scan || !nr_pages) {
-> > >>+		goto out;
-> > >>+	}
-> > >>+
-> > >>+	/*
-> > >>+	 * If the current balloon size is greater than the number of
-> > >>+	 * pages being reclaimed by the kernel, deflate only the needed
-> > >>+	 * amount. Otherwise deflate everything we have.
-> > >>+	 */
-> > >>+	new_target = 0;
-> > >>+	if (nr_pages > sc->nr_to_scan) {
-> > >>+		new_target = nr_pages - sc->nr_to_scan;
-> > >>+	}
-> > >>+
-> > >>+	leak_balloon(vb, new_target);
-> > >>+	update_balloon_size(vb);
-> > >>+	nr_pages = balloon_get_nr_pages(vb);
-> > >>+
-> > >>+out:
-> > >>+	mutex_unlock(&vb->balloon_lock);
-> > >>+	return nr_pages;
-> > >>+}
-> > >>+
-> > >>  static int balloon(void *_vballoon)
-> > >>  {
-> > >>  	struct virtio_balloon *vb = _vballoon;
-> > >>@@ -471,6 +515,13 @@ static int virtballoon_probe(struct virtio_device *vdev)
-> > >>  		goto out_del_vqs;
-> > >>  	}
-> > >>
-> > >>+	memset(&vb->shrinker, 0, sizeof(vb->shrinker));
-> > >>+	if (virtio_has_feature(vb->vdev, VIRTIO_BALLOON_F_AUTO_BALLOON)) {
-> > >>+		vb->shrinker.shrink = balloon_shrinker;
-> > >>+		vb->shrinker.seeks = DEFAULT_SEEKS;
-> > >>+		register_shrinker(&vb->shrinker);
-> > >>+	}
-> > >>+
-> > >>  	return 0;
-> > >>
-> > >>  out_del_vqs:
-> > >>@@ -487,6 +538,9 @@ out:
-> > >>
-> > >>  static void remove_common(struct virtio_balloon *vb)
-> > >>  {
-> > >>+	if (vb->shrinker.shrink)
-> > >>+		unregister_shrinker(&vb->shrinker);
-> > >>+
-> > >>  	/* There might be pages left in the balloon: free them. */
-> > >>  	mutex_lock(&vb->balloon_lock);
-> > >>  	while (vb->num_pages)
-> > >>@@ -543,6 +597,7 @@ static int virtballoon_restore(struct virtio_device *vdev)
-> > >>  static unsigned int features[] = {
-> > >>  	VIRTIO_BALLOON_F_MUST_TELL_HOST,
-> > >>  	VIRTIO_BALLOON_F_STATS_VQ,
-> > >>+	VIRTIO_BALLOON_F_AUTO_BALLOON,
-> > >>  };
-> > >>
-> > >>  static struct virtio_driver virtio_balloon_driver = {
-> > >>diff --git a/include/uapi/linux/virtio_balloon.h b/include/uapi/linux/virtio_balloon.h
-> > >>index 5e26f61..bd378a4 100644
-> > >>--- a/include/uapi/linux/virtio_balloon.h
-> > >>+++ b/include/uapi/linux/virtio_balloon.h
-> > >>@@ -31,6 +31,7 @@
-> > >>  /* The feature bitmap for virtio balloon */
-> > >>  #define VIRTIO_BALLOON_F_MUST_TELL_HOST	0 /* Tell before reclaiming pages */
-> > >>  #define VIRTIO_BALLOON_F_STATS_VQ	1 /* Memory Stats virtqueue */
-> > >>+#define VIRTIO_BALLOON_F_AUTO_BALLOON	2 /* Automatic ballooning */
-> > >>
-> > >>  /* Size of a PFN in the balloon interface. */
-> > >>  #define VIRTIO_BALLOON_PFN_SHIFT 12
-> > >>--
-> > >>1.8.1.4
-> > 
-> > 
-> > -- 
-> > All rights reversed
-> 
+diff --git a/drivers/net/wireless/ath/ath5k/Kconfig b/drivers/net/wireless/ath/ath5k/Kconfig
+index c9f81a3..93caf8e68 100644
+--- a/drivers/net/wireless/ath/ath5k/Kconfig
++++ b/drivers/net/wireless/ath/ath5k/Kconfig
+@@ -1,13 +1,12 @@
+ config ATH5K
+ 	tristate "Atheros 5xxx wireless cards support"
+-	depends on (PCI || ATHEROS_AR231X) && MAC80211
++	depends on PCI && MAC80211
+ 	select ATH_COMMON
+ 	select MAC80211_LEDS
+ 	select LEDS_CLASS
+ 	select NEW_LEDS
+ 	select AVERAGE
+-	select ATH5K_AHB if (ATHEROS_AR231X && !PCI)
+-	select ATH5K_PCI if (!ATHEROS_AR231X && PCI)
++	select ATH5K_PCI
+ 	---help---
+ 	  This module adds support for wireless adapters based on
+ 	  Atheros 5xxx chipset.
+@@ -52,16 +51,9 @@ config ATH5K_TRACER
+ 
+ 	  If unsure, say N.
+ 
+-config ATH5K_AHB
+-	bool "Atheros 5xxx AHB bus support"
+-	depends on (ATHEROS_AR231X && !PCI)
+-	---help---
+-	  This adds support for WiSoC type chipsets of the 5xxx Atheros
+-	  family.
+-
+ config ATH5K_PCI
+ 	bool "Atheros 5xxx PCI bus support"
+-	depends on (!ATHEROS_AR231X && PCI)
++	depends on PCI
+ 	---help---
+ 	  This adds support for PCI type chipsets of the 5xxx Atheros
+ 	  family.
+diff --git a/drivers/net/wireless/ath/ath5k/Makefile b/drivers/net/wireless/ath/ath5k/Makefile
+index 1b3a34f..51e2d86 100644
+--- a/drivers/net/wireless/ath/ath5k/Makefile
++++ b/drivers/net/wireless/ath/ath5k/Makefile
+@@ -17,6 +17,5 @@ ath5k-y				+= ani.o
+ ath5k-y				+= sysfs.o
+ ath5k-y				+= mac80211-ops.o
+ ath5k-$(CONFIG_ATH5K_DEBUG)	+= debug.o
+-ath5k-$(CONFIG_ATH5K_AHB)	+= ahb.o
+ ath5k-$(CONFIG_ATH5K_PCI)	+= pci.o
+ obj-$(CONFIG_ATH5K)		+= ath5k.o
+diff --git a/drivers/net/wireless/ath/ath5k/ahb.c b/drivers/net/wireless/ath/ath5k/ahb.c
+deleted file mode 100644
+index 8e8bcc7a..0000000
+--- a/drivers/net/wireless/ath/ath5k/ahb.c
++++ /dev/null
+@@ -1,239 +0,0 @@
+-/*
+- * Copyright (c) 2008-2009 Atheros Communications Inc.
+- * Copyright (c) 2009 Gabor Juhos <juhosg@openwrt.org>
+- * Copyright (c) 2009 Imre Kaloz <kaloz@openwrt.org>
+- *
+- * Permission to use, copy, modify, and/or distribute this software for any
+- * purpose with or without fee is hereby granted, provided that the above
+- * copyright notice and this permission notice appear in all copies.
+- *
+- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+- */
+-
+-#include <linux/nl80211.h>
+-#include <linux/platform_device.h>
+-#include <linux/etherdevice.h>
+-#include <linux/export.h>
+-#include <ar231x_platform.h>
+-#include "ath5k.h"
+-#include "debug.h"
+-#include "base.h"
+-#include "reg.h"
+-
+-/* return bus cachesize in 4B word units */
+-static void ath5k_ahb_read_cachesize(struct ath_common *common, int *csz)
+-{
+-	*csz = L1_CACHE_BYTES >> 2;
+-}
+-
+-static bool
+-ath5k_ahb_eeprom_read(struct ath_common *common, u32 off, u16 *data)
+-{
+-	struct ath5k_hw *ah = common->priv;
+-	struct platform_device *pdev = to_platform_device(ah->dev);
+-	struct ar231x_board_config *bcfg = pdev->dev.platform_data;
+-	u16 *eeprom, *eeprom_end;
+-
+-
+-
+-	bcfg = pdev->dev.platform_data;
+-	eeprom = (u16 *) bcfg->radio;
+-	eeprom_end = ((void *) bcfg->config) + BOARD_CONFIG_BUFSZ;
+-
+-	eeprom += off;
+-	if (eeprom > eeprom_end)
+-		return false;
+-
+-	*data = *eeprom;
+-	return true;
+-}
+-
+-int ath5k_hw_read_srev(struct ath5k_hw *ah)
+-{
+-	struct platform_device *pdev = to_platform_device(ah->dev);
+-	struct ar231x_board_config *bcfg = pdev->dev.platform_data;
+-	ah->ah_mac_srev = bcfg->devid;
+-	return 0;
+-}
+-
+-static int ath5k_ahb_eeprom_read_mac(struct ath5k_hw *ah, u8 *mac)
+-{
+-	struct platform_device *pdev = to_platform_device(ah->dev);
+-	struct ar231x_board_config *bcfg = pdev->dev.platform_data;
+-	u8 *cfg_mac;
+-
+-	if (to_platform_device(ah->dev)->id == 0)
+-		cfg_mac = bcfg->config->wlan0_mac;
+-	else
+-		cfg_mac = bcfg->config->wlan1_mac;
+-
+-	memcpy(mac, cfg_mac, ETH_ALEN);
+-	return 0;
+-}
+-
+-static const struct ath_bus_ops ath_ahb_bus_ops = {
+-	.ath_bus_type = ATH_AHB,
+-	.read_cachesize = ath5k_ahb_read_cachesize,
+-	.eeprom_read = ath5k_ahb_eeprom_read,
+-	.eeprom_read_mac = ath5k_ahb_eeprom_read_mac,
+-};
+-
+-/*Initialization*/
+-static int ath_ahb_probe(struct platform_device *pdev)
+-{
+-	struct ar231x_board_config *bcfg = pdev->dev.platform_data;
+-	struct ath5k_hw *ah;
+-	struct ieee80211_hw *hw;
+-	struct resource *res;
+-	void __iomem *mem;
+-	int irq;
+-	int ret = 0;
+-	u32 reg;
+-
+-	if (!pdev->dev.platform_data) {
+-		dev_err(&pdev->dev, "no platform data specified\n");
+-		ret = -EINVAL;
+-		goto err_out;
+-	}
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (res == NULL) {
+-		dev_err(&pdev->dev, "no memory resource found\n");
+-		ret = -ENXIO;
+-		goto err_out;
+-	}
+-
+-	mem = ioremap_nocache(res->start, resource_size(res));
+-	if (mem == NULL) {
+-		dev_err(&pdev->dev, "ioremap failed\n");
+-		ret = -ENOMEM;
+-		goto err_out;
+-	}
+-
+-	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+-	if (res == NULL) {
+-		dev_err(&pdev->dev, "no IRQ resource found\n");
+-		ret = -ENXIO;
+-		goto err_iounmap;
+-	}
+-
+-	irq = res->start;
+-
+-	hw = ieee80211_alloc_hw(sizeof(struct ath5k_hw), &ath5k_hw_ops);
+-	if (hw == NULL) {
+-		dev_err(&pdev->dev, "no memory for ieee80211_hw\n");
+-		ret = -ENOMEM;
+-		goto err_iounmap;
+-	}
+-
+-	ah = hw->priv;
+-	ah->hw = hw;
+-	ah->dev = &pdev->dev;
+-	ah->iobase = mem;
+-	ah->irq = irq;
+-	ah->devid = bcfg->devid;
+-
+-	if (bcfg->devid >= AR5K_SREV_AR2315_R6) {
+-		/* Enable WMAC AHB arbitration */
+-		reg = ioread32((void __iomem *) AR5K_AR2315_AHB_ARB_CTL);
+-		reg |= AR5K_AR2315_AHB_ARB_CTL_WLAN;
+-		iowrite32(reg, (void __iomem *) AR5K_AR2315_AHB_ARB_CTL);
+-
+-		/* Enable global WMAC swapping */
+-		reg = ioread32((void __iomem *) AR5K_AR2315_BYTESWAP);
+-		reg |= AR5K_AR2315_BYTESWAP_WMAC;
+-		iowrite32(reg, (void __iomem *) AR5K_AR2315_BYTESWAP);
+-	} else {
+-		/* Enable WMAC DMA access (assuming 5312 or 231x*/
+-		/* TODO: check other platforms */
+-		reg = ioread32((void __iomem *) AR5K_AR5312_ENABLE);
+-		if (to_platform_device(ah->dev)->id == 0)
+-			reg |= AR5K_AR5312_ENABLE_WLAN0;
+-		else
+-			reg |= AR5K_AR5312_ENABLE_WLAN1;
+-		iowrite32(reg, (void __iomem *) AR5K_AR5312_ENABLE);
+-
+-		/*
+-		 * On a dual-band AR5312, the multiband radio is only
+-		 * used as pass-through. Disable 2 GHz support in the
+-		 * driver for it
+-		 */
+-		if (to_platform_device(ah->dev)->id == 0 &&
+-		    (bcfg->config->flags & (BD_WLAN0 | BD_WLAN1)) ==
+-		     (BD_WLAN1 | BD_WLAN0))
+-			ah->ah_capabilities.cap_needs_2GHz_ovr = true;
+-		else
+-			ah->ah_capabilities.cap_needs_2GHz_ovr = false;
+-	}
+-
+-	ret = ath5k_init_ah(ah, &ath_ahb_bus_ops);
+-	if (ret != 0) {
+-		dev_err(&pdev->dev, "failed to attach device, err=%d\n", ret);
+-		ret = -ENODEV;
+-		goto err_free_hw;
+-	}
+-
+-	platform_set_drvdata(pdev, hw);
+-
+-	return 0;
+-
+- err_free_hw:
+-	ieee80211_free_hw(hw);
+-	platform_set_drvdata(pdev, NULL);
+- err_iounmap:
+-        iounmap(mem);
+- err_out:
+-	return ret;
+-}
+-
+-static int ath_ahb_remove(struct platform_device *pdev)
+-{
+-	struct ar231x_board_config *bcfg = pdev->dev.platform_data;
+-	struct ieee80211_hw *hw = platform_get_drvdata(pdev);
+-	struct ath5k_hw *ah;
+-	u32 reg;
+-
+-	if (!hw)
+-		return 0;
+-
+-	ah = hw->priv;
+-
+-	if (bcfg->devid >= AR5K_SREV_AR2315_R6) {
+-		/* Disable WMAC AHB arbitration */
+-		reg = ioread32((void __iomem *) AR5K_AR2315_AHB_ARB_CTL);
+-		reg &= ~AR5K_AR2315_AHB_ARB_CTL_WLAN;
+-		iowrite32(reg, (void __iomem *) AR5K_AR2315_AHB_ARB_CTL);
+-	} else {
+-		/*Stop DMA access */
+-		reg = ioread32((void __iomem *) AR5K_AR5312_ENABLE);
+-		if (to_platform_device(ah->dev)->id == 0)
+-			reg &= ~AR5K_AR5312_ENABLE_WLAN0;
+-		else
+-			reg &= ~AR5K_AR5312_ENABLE_WLAN1;
+-		iowrite32(reg, (void __iomem *) AR5K_AR5312_ENABLE);
+-	}
+-
+-	ath5k_deinit_ah(ah);
+-	iounmap(ah->iobase);
+-	platform_set_drvdata(pdev, NULL);
+-	ieee80211_free_hw(hw);
+-
+-	return 0;
+-}
+-
+-static struct platform_driver ath_ahb_driver = {
+-	.probe      = ath_ahb_probe,
+-	.remove     = ath_ahb_remove,
+-	.driver		= {
+-		.name	= "ar231x-wmac",
+-		.owner	= THIS_MODULE,
+-	},
+-};
+-
+-module_platform_driver(ath_ahb_driver);
+diff --git a/drivers/net/wireless/ath/ath5k/ath5k.h b/drivers/net/wireless/ath/ath5k/ath5k.h
+index 2d691b8..deaedb8 100644
+--- a/drivers/net/wireless/ath/ath5k/ath5k.h
++++ b/drivers/net/wireless/ath/ath5k/ath5k.h
+@@ -1645,32 +1645,6 @@ static inline struct ath_regulatory *ath5k_hw_regulatory(struct ath5k_hw *ah)
+ 	return &(ath5k_hw_common(ah)->regulatory);
+ }
+ 
+-#ifdef CONFIG_ATHEROS_AR231X
+-#define AR5K_AR2315_PCI_BASE	((void __iomem *)0xb0100000)
+-
+-static inline void __iomem *ath5k_ahb_reg(struct ath5k_hw *ah, u16 reg)
+-{
+-	/* On AR2315 and AR2317 the PCI clock domain registers
+-	 * are outside of the WMAC register space */
+-	if (unlikely((reg >= 0x4000) && (reg < 0x5000) &&
+-	    (ah->ah_mac_srev >= AR5K_SREV_AR2315_R6)))
+-		return AR5K_AR2315_PCI_BASE + reg;
+-
+-	return ah->iobase + reg;
+-}
+-
+-static inline u32 ath5k_hw_reg_read(struct ath5k_hw *ah, u16 reg)
+-{
+-	return ioread32(ath5k_ahb_reg(ah, reg));
+-}
+-
+-static inline void ath5k_hw_reg_write(struct ath5k_hw *ah, u32 val, u16 reg)
+-{
+-	iowrite32(val, ath5k_ahb_reg(ah, reg));
+-}
+-
+-#else
+-
+ static inline u32 ath5k_hw_reg_read(struct ath5k_hw *ah, u16 reg)
+ {
+ 	return ioread32(ah->iobase + reg);
+@@ -1681,8 +1655,6 @@ static inline void ath5k_hw_reg_write(struct ath5k_hw *ah, u32 val, u16 reg)
+ 	iowrite32(val, ah->iobase + reg);
+ }
+ 
+-#endif
+-
+ static inline enum ath_bus_type ath5k_get_bus_type(struct ath5k_hw *ah)
+ {
+ 	return ath5k_hw_common(ah)->bus_ops->ath_bus_type;
+diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
+index 9b20d9e..654cc3d 100644
+--- a/drivers/net/wireless/ath/ath5k/base.c
++++ b/drivers/net/wireless/ath/ath5k/base.c
+@@ -97,15 +97,6 @@ static int ath5k_reset(struct ath5k_hw *ah, struct ieee80211_channel *chan,
+ 
+ /* Known SREVs */
+ static const struct ath5k_srev_name srev_names[] = {
+-#ifdef CONFIG_ATHEROS_AR231X
+-	{ "5312",	AR5K_VERSION_MAC,	AR5K_SREV_AR5312_R2 },
+-	{ "5312",	AR5K_VERSION_MAC,	AR5K_SREV_AR5312_R7 },
+-	{ "2313",	AR5K_VERSION_MAC,	AR5K_SREV_AR2313_R8 },
+-	{ "2315",	AR5K_VERSION_MAC,	AR5K_SREV_AR2315_R6 },
+-	{ "2315",	AR5K_VERSION_MAC,	AR5K_SREV_AR2315_R7 },
+-	{ "2317",	AR5K_VERSION_MAC,	AR5K_SREV_AR2317_R1 },
+-	{ "2317",	AR5K_VERSION_MAC,	AR5K_SREV_AR2317_R2 },
+-#else
+ 	{ "5210",	AR5K_VERSION_MAC,	AR5K_SREV_AR5210 },
+ 	{ "5311",	AR5K_VERSION_MAC,	AR5K_SREV_AR5311 },
+ 	{ "5311A",	AR5K_VERSION_MAC,	AR5K_SREV_AR5311A },
+@@ -124,7 +115,6 @@ static const struct ath5k_srev_name srev_names[] = {
+ 	{ "5418",	AR5K_VERSION_MAC,	AR5K_SREV_AR5418 },
+ 	{ "2425",	AR5K_VERSION_MAC,	AR5K_SREV_AR2425 },
+ 	{ "2417",	AR5K_VERSION_MAC,	AR5K_SREV_AR2417 },
+-#endif
+ 	{ "xxxxx",	AR5K_VERSION_MAC,	AR5K_SREV_UNKNOWN },
+ 	{ "5110",	AR5K_VERSION_RAD,	AR5K_SREV_RAD_5110 },
+ 	{ "5111",	AR5K_VERSION_RAD,	AR5K_SREV_RAD_5111 },
+@@ -140,10 +130,6 @@ static const struct ath5k_srev_name srev_names[] = {
+ 	{ "5413",	AR5K_VERSION_RAD,	AR5K_SREV_RAD_5413 },
+ 	{ "5424",	AR5K_VERSION_RAD,	AR5K_SREV_RAD_5424 },
+ 	{ "5133",	AR5K_VERSION_RAD,	AR5K_SREV_RAD_5133 },
+-#ifdef CONFIG_ATHEROS_AR231X
+-	{ "2316",	AR5K_VERSION_RAD,	AR5K_SREV_RAD_2316 },
+-	{ "2317",	AR5K_VERSION_RAD,	AR5K_SREV_RAD_2317 },
+-#endif
+ 	{ "xxxxx",	AR5K_VERSION_RAD,	AR5K_SREV_UNKNOWN },
+ };
+ 
+diff --git a/drivers/net/wireless/ath/ath5k/led.c b/drivers/net/wireless/ath/ath5k/led.c
+index f77ef36..dbf2483 100644
+--- a/drivers/net/wireless/ath/ath5k/led.c
++++ b/drivers/net/wireless/ath/ath5k/led.c
+@@ -162,20 +162,14 @@ int ath5k_init_leds(struct ath5k_hw *ah)
+ {
+ 	int ret = 0;
+ 	struct ieee80211_hw *hw = ah->hw;
+-#ifndef CONFIG_ATHEROS_AR231X
+ 	struct pci_dev *pdev = ah->pdev;
+-#endif
+ 	char name[ATH5K_LED_MAX_NAME_LEN + 1];
+ 	const struct pci_device_id *match;
+ 
+ 	if (!ah->pdev)
+ 		return 0;
+ 
+-#ifdef CONFIG_ATHEROS_AR231X
+-	match = NULL;
+-#else
+ 	match = pci_match_id(&ath5k_led_devices[0], pdev);
+-#endif
+ 	if (match) {
+ 		__set_bit(ATH_STAT_LEDSOFT, ah->status);
+ 		ah->led_pin = ATH_PIN(match->driver_data);
+-- 
+1.7.11.7
 
