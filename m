@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab3EMH3W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 03:29:22 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:18525 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab3EMH3V (ORCPT
+	id S1754411Ab3EMHmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 03:42:07 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:55362 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754339Ab3EMHmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 03:29:21 -0400
-Date: Mon, 13 May 2013 09:29:04 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Imre Deak <imre.deak@intel.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 01/11] time: add *_to_jiffies_min helpers to guarantee a
- minimum duration
-Message-ID: <20130513092904.3ba12f9d@endymion.delvare>
-In-Reply-To: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
-References: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 13 May 2013 03:42:04 -0400
+Date: Mon, 13 May 2013 09:41:59 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-net-drivers@solarflare.com,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Stuart Hodgson <smhodgson@solarflare.com>
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-s390@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.10-rc1 (s390)
+Message-ID: <20130513074159.GA4290@osiris>
+References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg>
+ <alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
+ <alpine.DEB.2.00.1305122250110.5463@ayla.of.borg>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1305122250110.5463@ayla.of.borg>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051307-1948-0000-0000-0000051E2154
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Imre,
-
-On Fri, 10 May 2013 15:13:19 +0300, Imre Deak wrote:
-> The *_to_jiffies(x) macros return a jiffy value, which if used as a
-> delta to wait for a specific amount of time, may result in a wait-time
-> that is less than x.
-
-Are you sure? I have always considered that *_to_jiffies(x) macros
-rounded up, and reading the code seems to confirm that:
-
-	/*
-	 * Generic case - multiply, round and divide. (...)
-	 */
-	(...)
-	return (MSEC_TO_HZ_MUL32 * m + MSEC_TO_HZ_ADJ32)
-		>> MSEC_TO_HZ_SHR32;
-
-What makes you think the resulting wait time can be less that requested?
-
-If this really is the case then the proper way to address the issue is
-to fix the original macros, not introducing new ones.
-
-> Many callers already compensate for this by adding
-> one to the returned value.
-
-This is an assumption from you, and I am afraid it is wrong in many
-cases. I see that Michal Kubecek already pointed out one case where it
-was indeed wrong, and I am about to make a similar reply to another
-post of yours.
-
-> To document why we need to add one and to get
-> rid of some code duplication add a helper that does the same.
-
-I'm sorry but you can't call "+ 1" code duplication.
-
-> Later patches will convert the currently open-coded call sites to use
-> the new helpers.
+On Sun, May 12, 2013 at 10:50:45PM +0200, Geert Uytterhoeven wrote:
+> On Sun, 12 May 2013, Geert Uytterhoeven wrote:
+> > However, the full list of errors isn't that unmanageable, so I'm following
+> > up with a digested list...
 > 
-> Also this can serve as a basis for auditing those users of *_to_jiffies
-> that most likely do the wrong thing - for example set a timeout value of
-> msecs_to_jiffies(1) - and converting them to use the new helpers.
+> drivers/net/ethernet/sfc/efx.c:646:3: error: call to '__compiletime_assert_648' declared with attribute error: BUILD_BUG_ON failed: sizeof(struct efx_rx_page_state) + EFX_PAGE_IP_ALIGN + EFX_RX_USR_BUF_SIZE > PAGE_SIZE / 2: 2 errors in 2 logs
+> 	v3.10-rc1/s390x/s390-allyesconfig v3.10-rc1/s390x/s390-allmodconfig
 
-You should be very, very careful before claiming that the code is wrong
-and you're fixing it. It might as well be that the code is right but
-you did not understand it, and you're actually breaking it. Or the code
-was already wrong and you're making it worse ;)
+that seems to a BUILD_BUG_ON that only triggers on s390, because we have
+L1_CACHE_BYTES defined with 256 bytes... which seems to be more than any
+other architecture has.
+There was a different network driver that had a similar BUILD_BUG_ON, but
+it got removed.
 
-As a summary, I don't like the idea, sorry.
+Right, it was the igb driver:
+http://comments.gmane.org/gmane.linux.network/261378
 
--- 
-Jean Delvare
