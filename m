@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762Ab3EMODK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 10:03:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9792 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751891Ab3EMODJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 10:03:09 -0400
-Date: Mon, 13 May 2013 15:59:47 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] init/Kconfig: Add option to set modprobe command
-Message-ID: <20130513135947.GA1613@redhat.com>
-References: <1368159316-31744-1-git-send-email-lucas.de.marchi@gmail.com> <1368159316-31744-3-git-send-email-lucas.de.marchi@gmail.com> <20130510125826.GA553@redhat.com> <CAKi4VALE8tFUTZ1qYwm0Eth1zFMU8xA6XC5RTnF1KCKYQp-0NQ@mail.gmail.com> <20130510153638.GA8179@redhat.com> <CAKi4VAJPXgiik9CGrVyk7cCvz-1913p1KL8tn5FvxH4w0r27bg@mail.gmail.com> <20130510171054.GA27479@redhat.com> <20130510173511.GA28490@redhat.com> <CAKi4VAK3paytaMGBmu0oVGcLUeuCbL7i3aht-Ho7rz7cdf5KTg@mail.gmail.com>
+	id S1753522Ab3EMOEw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 10:04:52 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47677 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab3EMOEu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 10:04:50 -0400
+Date: Mon, 13 May 2013 16:04:45 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Robin Holt <holt@sgi.com>
+cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: Full dynticks needs evtdesc set before marking cpu online.
+In-Reply-To: <20130513135948.GF3658@sgi.com>
+Message-ID: <alpine.LFD.2.02.1305131602090.2863@ionos>
+References: <20130508235736.GT3658@sgi.com> <alpine.LFD.2.02.1305131119180.2863@ionos> <20130513125514.GE3658@sgi.com> <alpine.LFD.2.02.1305131501210.2863@ionos> <20130513135948.GF3658@sgi.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKi4VAK3paytaMGBmu0oVGcLUeuCbL7i3aht-Ho7rz7cdf5KTg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10, Lucas De Marchi wrote:
->
-> On Fri, May 10, 2013 at 2:35 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 05/10, Oleg Nesterov wrote:
-> >>
-> >> > > -char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe";
-> >> > > +char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe -q --";
-> >>
-> >> No. This is incompatible change, we shouldn't do this.
-> >
-> > Exactly. This can break a distro which writes to sys/kernel/modprobe.
-> >
-> > And if we do not do this, you can simply make a single trivial patch
-> > which does
-...
-> > that it all. (or perhaps a kernel parameter makes more sense).
-> >
-> > Yes, this doesn't allow to pass the additional arguments, but is it
-> > that important?
->
-> Yes, because I don't want to simply change the binary to use, I want
-> to be able to use a general "kmod" binary that accept a command like
-> "load". Next version of kmod will accept things like this (see the
-> commit message in patch 3/3):
+On Mon, 13 May 2013, Robin Holt wrote:
+> On Mon, May 13, 2013 at 03:03:55PM +0200, Thomas Gleixner wrote:
+> > On Mon, 13 May 2013, Robin Holt wrote:
+> > 
+> > > On Mon, May 13, 2013 at 11:21:00AM +0200, Thomas Gleixner wrote:
+> > > > On Wed, 8 May 2013, Robin Holt wrote:
+> > > > 
+> > > > > Thomas,
+> > > > > 
+> > > > > We are seeing failures booting medium sized machines which I think is
+> > > > > a change in expectations that dyntick put on x86's start_secondary.
+> > > > > 
+> > > > > During boot of cpus, we see an occassional panic in tick_do_broadcast at
+> > > > 
+> > > > http://lkml.indiana.edu/hypermail/linux/kernel/1305.0/01818.html
+> > > > 
+> > > > Will hit Linus tree soon.
+> > > 
+> > > I think this is really due to a sequence in start_secondary.  The cpu
+> > > has been marked as online, but its evtdesc has not been initialized.
+> > > I sent a followup to this with a hack/patch.
+> > 
+> > No, the real issue is that I messed up the cpumask conversion in the
+> > broadcast code, i.e. using alloc instead of zalloc, which allocated
+> > nonzeroed memory for the cpumasks, so any random bit set will crash
+> > the machine. Your patch is just papering over the issue.
+> 
+> I believe I understand now.  What would be the downside of moving
+> the initialization to before marking the cpu online?  It seems like a
+> reasonable this to expect as well in spite of it not being the right
+> fix to the other bug.
 
-Well, but a link to the binary which checks argv[0] or a trivial executable
-which simply execs "kmod load" looks like the simple workaround. And this
-doesn't need to recompile the kernel.
+Yes, we can move it, but its not a required thing that the tick device
+is setup befor onlining.
 
-Lucas, I simply do not know...
+Thanks,
 
-Andrew, Rusty, what do you think? Can we do the change above? Do we
-really want CONFIG_MODPROBE_PATH or a kernel parameter ?
-
-Oleg.
-
+	tglx
