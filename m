@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab3EMK4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 06:56:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37640 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918Ab3EMK4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 06:56:33 -0400
-Date: Mon, 13 May 2013 12:57:49 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 1/1] powerpc: Fix irq_set_affinity() return values
-Message-ID: <20130513105748.GA27077@dhcp-26-207.brq.redhat.com>
+	id S1754915Ab3EMK5s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 06:57:48 -0400
+Received: from mail.ch.keymile.com ([193.17.201.103]:17145 "HELO
+	mail-ch.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753070Ab3EMK5q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 06:57:46 -0400
+Message-ID: <5190C720.50903@keymile.com>
+Date: Mon, 13 May 2013 12:57:36 +0200
+From: Gerlando Falauto <gerlando.falauto@keymile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/8] genirq: Support for irq domains in generic irq chip - V2
+References: <20130506142348.321859745@linutronix.de>
+In-Reply-To: <20130506142348.321859745@linutronix.de>
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 May 2013 10:57:36.0715 (UTC) FILETIME=[ADBBE9B0:01CE4FC8]
+X-ESAFE-STATUS: [srvchber1306.keymile.net] Mail allowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- arch/powerpc/platforms/wsp/ics.c    |    2 +-
- arch/powerpc/sysdev/ehv_pic.c       |    2 +-
- arch/powerpc/sysdev/mpic.c          |    2 +-
- arch/powerpc/sysdev/xics/ics-opal.c |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+Hi Thomas,
 
-diff --git a/arch/powerpc/platforms/wsp/ics.c b/arch/powerpc/platforms/wsp/ics.c
-index 97fe82e..2d3b1dd 100644
---- a/arch/powerpc/platforms/wsp/ics.c
-+++ b/arch/powerpc/platforms/wsp/ics.c
-@@ -361,7 +361,7 @@ static int wsp_chip_set_affinity(struct irq_data *d,
- 	xive = xive_set_server(xive, get_irq_server(ics, hw_irq));
- 	wsp_ics_set_xive(ics, hw_irq, xive);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK;
- }
- 
- static struct irq_chip wsp_irq_chip = {
-diff --git a/arch/powerpc/sysdev/ehv_pic.c b/arch/powerpc/sysdev/ehv_pic.c
-index 6e0e100..9cd0e60 100644
---- a/arch/powerpc/sysdev/ehv_pic.c
-+++ b/arch/powerpc/sysdev/ehv_pic.c
-@@ -81,7 +81,7 @@ int ehv_pic_set_affinity(struct irq_data *d, const struct cpumask *dest,
- 	ev_int_set_config(src, config, prio, cpuid);
- 	spin_unlock_irqrestore(&ehv_pic_lock, flags);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK;
- }
- 
- static unsigned int ehv_pic_type_to_vecpri(unsigned int type)
-diff --git a/arch/powerpc/sysdev/mpic.c b/arch/powerpc/sysdev/mpic.c
-index d30e6a6..20f6625 100644
---- a/arch/powerpc/sysdev/mpic.c
-+++ b/arch/powerpc/sysdev/mpic.c
-@@ -836,7 +836,7 @@ int mpic_set_affinity(struct irq_data *d, const struct cpumask *cpumask,
- 			       mpic_physmask(mask));
- 	}
- 
--	return 0;
-+	return IRQ_SET_MASK_OK;
- }
- 
- static unsigned int mpic_type_to_vecpri(struct mpic *mpic, unsigned int type)
-diff --git a/arch/powerpc/sysdev/xics/ics-opal.c b/arch/powerpc/sysdev/xics/ics-opal.c
-index f7e8609..39d7221 100644
---- a/arch/powerpc/sysdev/xics/ics-opal.c
-+++ b/arch/powerpc/sysdev/xics/ics-opal.c
-@@ -148,7 +148,7 @@ static int ics_opal_set_affinity(struct irq_data *d,
- 		       __func__, d->irq, hw_irq, server, rc);
- 		return -1;
- 	}
--	return 0;
-+	return IRQ_SET_MASK_OK;
- }
- 
- static struct irq_chip ics_opal_irq_chip = {
--- 
-1.7.7.6
+On 05/06/2013 04:30 PM, Thomas Gleixner wrote:
+> Changes vs. V1:
+>
+> 	- Fixed the generic chip pointer thinko (Sebastian Hesselbarth)
+>
+> 	- Proper support for mask cache
+>
+> 	- Read mask hardware only for the first map of an generic chip
+>            instance
+>
+> 	- sun4i prefix irq functions proper
+>
 
+[removed all other individual recipients to avoid useless garbage],
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+thanks for taking care of this. Sorry for the late response, I have been 
+away for a whole week with no email access.
+
+I understand you are providing generic changes and it would be up to us 
+to update individual drivers so to take advantage of those semplifications.
+Please forgive me if I got this all wrong though.
+
+I've got a few questions then:
+
+1) What happened to your initial proposal of renaming gc->mask_cache to 
+gc->shared_mask_cache? Does that mean you intend to keep compatibility 
+so individual drivers can be updated one at a time?
+
+2) What shall we do with such potential patches for individual drivers, 
+given the dependencies on your work? Wait until yours get merged?
+
+3) [a bit OT] anyone got a clue why I cannot see my previous patch 
+series on patchwork.kernel.org? Neither can I find from within 
+http://marc.info/?l=linux-kernel.
+I looked up '[PATCH v3b 0/9] refactoring for mask_cache' and could not 
+find it, only some replies to the thread were shown.
+Patches/messages from the same thread are correctly shown on 
+news.gmane.org under gmane.linux.kernel, though threading is broken on 
+my reader; they will not be found through the web interface for 
+gmane.linux.kernel though.
+I noticed this was a cross post to linux-kernel@vger.kernel.org and 
+stable@vger.kernel.org (which I guess is something that should not be 
+done under any circumstances). And all the above works just fine for 
+-stable as opposed to LKML.
+Could this cross-posting be the root cause for this whole mess?
+
+Thanks!
+Gerlando
