@@ -1,69 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab3EMQly (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 12:41:54 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:24986 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab3EMQlw (ORCPT
+	id S1753391Ab3EMQmL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 12:42:11 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:39990 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213Ab3EMQmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 12:41:52 -0400
-Message-ID: <1368463307.3305.23.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: Build regressions/improvements in v3.10-rc1 (s390)
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        <linux-net-drivers@solarflare.com>,
-        Stuart Hodgson <smhodgson@solarflare.com>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, <netdev@vger.kernel.org>
-Date: Mon, 13 May 2013 17:41:47 +0100
-In-Reply-To: <20130513074159.GA4290@osiris>
-References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg>
-	 <alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
-	 <alpine.DEB.2.00.1305122250110.5463@ayla.of.borg>
-	 <20130513074159.GA4290@osiris>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Mon, 13 May 2013 12:42:06 -0400
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19862.005
-X-TM-AS-Result: No--16.728700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+In-Reply-To: <1793382.NnHvlOcUkD@vostro.rjw.lan>
+References: <1368437025.1350.35.camel@x61.thuisdomein>
+	<CAKohpo=WKr_+1E6KvrsNyy8xPJHVVt-panTrt409k9wP27u8Gg@mail.gmail.com>
+	<1368437542.1350.37.camel@x61.thuisdomein>
+	<1793382.NnHvlOcUkD@vostro.rjw.lan>
+Date: Mon, 13 May 2013 22:12:06 +0530
+Message-ID: <CAKohpomOMS-Zq4EBO2yhw+FO0FntS94S+WJmskheQh1uqc-1AQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: rename references to CPU_FREQ_SA11x0
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Arnd Bergmann <arnd@arndb.de>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-13 at 09:41 +0200, Heiko Carstens wrote:
-> On Sun, May 12, 2013 at 10:50:45PM +0200, Geert Uytterhoeven wrote:
-> > On Sun, 12 May 2013, Geert Uytterhoeven wrote:
-> > > However, the full list of errors isn't that unmanageable, so I'm following
-> > > up with a digested list...
-> > 
-> > drivers/net/ethernet/sfc/efx.c:646:3: error: call to '__compiletime_assert_648' declared with attribute error: BUILD_BUG_ON failed: sizeof(struct efx_rx_page_state) + EFX_PAGE_IP_ALIGN + EFX_RX_USR_BUF_SIZE > PAGE_SIZE / 2: 2 errors in 2 logs
-> > 	v3.10-rc1/s390x/s390-allyesconfig v3.10-rc1/s390x/s390-allmodconfig
-> 
-> that seems to a BUILD_BUG_ON that only triggers on s390, because we have
-> L1_CACHE_BYTES defined with 256 bytes... which seems to be more than any
-> other architecture has.
-> There was a different network driver that had a similar BUILD_BUG_ON, but
-> it got removed.
-> 
-> Right, it was the igb driver:
-> http://comments.gmane.org/gmane.linux.network/261378
+On 13 May 2013 17:22, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday, May 13, 2013 11:32:22 AM Paul Bolle wrote:
+>> On Mon, 2013-05-13 at 14:58 +0530, Viresh Kumar wrote:
+>> > Already Acked.
+>> >
+>> > http://www.spinics.net/lists/arm-kernel/msg242828.html
+>>
+>> I see. Thanks!
+>
+> And applied too (see current linux-next).
 
-The critical value here is EFX_RX_USR_BUF_SIZE.  The hardware constrains
-it to be a multiple of 32, but for performance reasons it also ought to
-be a multiple of the cache line size(s).  In our internal development
-branch it has already been reduced to 1792, which is a multiple of 256
-and should satisfy the BUILD_BUG_ON check.  I'll post a patch shortly.
-
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+I don't know for what you queued it up? But it must go in rc2.
