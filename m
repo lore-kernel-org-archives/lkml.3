@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab3EMFMZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 01:12:25 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:46518 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab3EMFMW (ORCPT
+	id S1753126Ab3EMFOZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 01:14:25 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:41558 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065Ab3EMFOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 01:12:22 -0400
-X-AuditID: cbfee68e-b7f276d000002279-68-5190763460d4
-Date: Mon, 13 May 2013 05:12:20 +0000 (GMT)
-From: EUNBONG SONG <eunb.song@samsung.com>
-Subject: Re: Re: EXT4 panic at jbd2_journal_put_journal_head() in 3.9+
-To: "Sidorov, Andrei" <Andrei.Sidorov@arrisi.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Tony Luck <tony.luck@gmail.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20130513050958898@eunb.song
-Msgkey: 20130513050958898@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130513050958898@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <3567921.21651368421937829.JavaMail.weblogic@epml07>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t8zHV2TsgmBBpPXyVlc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6M81+mMxXcYK44+qKNsYHxBHMXIyeHkICKRMv/74wgtoSAicT/
-	x5PZIGwxiQv31gPZXEA1yxglrvXNhCv63jidCSIxn1HiyMJHYJNYBFQlvs7eA9bNJqAt8fbL
-	A1YQW1jATWLF7iZmkAYRgcVMEodaPzFBrJaXmHz6MjuIzSsgKHFy5hMWiA1KEqsuvWCBiCtL
-	LL15BOokCYlZ0y+wQti8EjPan0LVy0lM+7qGGcKWljg/awMjzAuLvz+GivNLHLu9A2gvB1jv
-	k/vBMGN2b/4CNV5AYuqZg1Ct6hIt1/YyQdh8EmsWvmWBGbPr1HJmmN77W+aC1TALKEpM6X7I
-	DmFrSXz5sY8N3Vu8Ag4S16+dYAeFg4TAVA6JpW9fsE9gVJqFpG4WklmzkMxCVrOAkWUVo2hq
-	QXJBcVJ6kZFecWJucWleul5yfu4mRkhy6NvBePOA9SHGZGCkTGSWEk3OByaXvJJ4Q2MzIwtT
-	E1NjI3NLM9KElcR51VqsA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwFlZueu5q1Bfd47H3
-	FY90Seq5LcoP26Uu3TqglrnQcuvjrXP3dDzh+35WRUxMUX/vBueS7D//FixrbirPuf3GyHX3
-	o/j4bW6/0jnMjLcFyxW0b9o24bxLld/+otWLvPXLzkeLH1zE1iZvfDPufzr7uVCrD+LLUifW
-	zv5wPanyI4dDm8flF1W/lViKMxINtZiLihMBdo+hpyQDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOKsWRmVeSWpSXmKPExsVy+t/tGbomZRMCDR73yVhc3jWHzYHR4/Mm
-	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
-	jPNfpjMV3GCuOPqijbGB8QRzFyMnh5CAikTL/++MILaEgInE98bpTBC2mMSFe+vZuhi5gGrm
-	M0ocWfgIrIFFQFXi6+w9bCA2m4C2xNsvD1hBbGEBN4kVu5uYQRpEBBYzSRxq/cQEsUFeYvLp
-	y+wgNq+AoMTJmU9YIDYoSay69IIFIq4ssfTmETaIuITErOkXWCFsXokZ7U+h6uUkpn1dwwxh
-	S0ucn7WBEebSxd8fQ8X5JY7d3gG0lwOs98n9YJgxuzd/gRovIDH1zEGoVnWJlmt7oR7mk1iz
-	8C0LzJhdp5Yzw/Te3zIXrIZZQFFiSvdDdghbS+LLj31s6N7iFXCQuH7tBPsERtlZSFKzkLTP
-	QtKOrGYBI8sqRtHUguSC4qT0ChO94sTc4tK8dL3k/NxNjOBk9GzJDsaGC9aHGAU4GJV4eBco
-	TwgUYk0sK67MPcQowcGsJMK71w0oxJuSWFmVWpQfX1Sak1p8iDEZGGsTmaVEk/OBiTKvJN7Q
-	2MDY0NDS3MDU0MiCNGElcd5nrdaBQgLpiSWp2ampBalFMFuYODilGhhDLl5fcqtELlK37JJr
-	mpg/+9VShanp6S56t6a8DVy6K17l4LH85ms5xgfPhEzetrdut+P5D7cXnRdyEez+nxhUIHkw
-	0lfz1+V3OinrakP3Xgt7Xji71ZbfTfOure2v/ac3BTEFzb5Vt3xnWJJr7pOO3xOX7D+eV3H4
-	6WQ2/f8VTf1+Dyf3Tr6nxFKckWioxVxUnAgA5U+gAooDAAA=
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Mon, 13 May 2013 01:14:24 -0400
+To: keescook@chromium.org
+Cc: sfr@canb.auug.org.au, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jlayton@redhat.com,
+        viro@zeniv.linux.org.uk
+Date: Mon, 13 May 2013 01:14:17 -0400 (EDT)
+X-Mailer: TouchDown
+X-Mailer: Zimbra 8.0.3_GA_5664 (MobileSync - TouchDown(MSRPC)/8.1.00052/)
+MIME-Version: 1.0
+Subject: =?utf-8?B?UkU6IGxpbnV4LW5leHQ6IG1hbnVhbCBtZXJnZSBvZiB0aGUgYWtwbSB0cmVlIHdpdGggTGludXMn?=
+ =?utf-8?B?IHRyZWU=?=
+Message-ID: <2046909660.224701.1368422057749.JavaMail.root@zmail12.collab.prod.int.phx2.redhat.com>
+Content-Type: multipart/mixed;boundary="__1368422072038TOUCHDOWN_BOUNDARY__"
+From: Eric Paris <eparis@redhat.com>
+In-Reply-To: <CAGXu5j+bxbXrj-Xf38gekusz2jQNWjLVu1i=Wasqhwowhe3QrA@mail.gmail.com>
+References: <20130513120728.f3f469e5d71b39ec78800175@canb.auug.org.au> <1368411070.929.19.camel@localhost> <CAGXu5j+bxbXrj-Xf38gekusz2jQNWjLVu1i=Wasqhwowhe3QrA@mail.gmail.com>
+Thread-Topic: linux-next: manual merge of the akpm tree with Linus' tree
+Thread-Index: 9LCOedwhJPuLy7yP6bj8kHdHV/Bb1A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4D5CVcT031485
+
+--__1368422072038TOUCHDOWN_BOUNDARY__
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
 
-> Hi,
 
-> Bitfields are likely to be implemented using read-modify-write semantics.
-> Modifications of either b_jlist or b_jmodified must be done under lock
-> since they share same uint. I guess this lock is missing somewhere.
 
-Hi, I agree with you.  b_jlist and b_jmodified share the same unit.
-I think they are separated. 
-Thanks. ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-----Original Message-----
+From: Kees Cook [keescook@chromium.org]
+Received: Monday, 13 May 2013, 12:49am
+To: Eric Paris [eparis@redhat.com]
+CC: Stephen Rothwell [sfr@canb.auug.org.au]; Andrew Morton [akpm@linux-foundation.org]; Linus [torvalds@linux-foundation.org]; Linux-Next [linux-next@vger.kernel.org]; LKML [linux-kernel@vger.kernel.org]; Jeff Layton [jlayton@redhat.com]; Al Viro [viro@zeniv.linux.org.uk]
+Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
+
+
+On Sun, May 12, 2013 at 7:11 PM, Eric Paris <eparis@redhat.com> wrote:
+> On Mon, 2013-05-13 at 12:07 +1000, Stephen Rothwell wrote:
+>> Hi Andrew,
+>>
+>> Today's linux-next merge of the akpm tree got a conflict in
+>> kernel/auditsc.c between commit b24a30a73054 ("audit: fix event coverage
+>> of AUDIT_ANOM_LINK") from Linus' tree and commit "audit: fix mq_open and
+>> mq_unlink to add the MQ root as a hidden parent audit_names record" from
+>> the akpm tree.
+>
+> Actually, I've already picked the patch up for 3.11.  So Andrew, you can
+> drop it.
+>
+>> I fixed it up (see below) and can carry the fix as necessary (no action
+>> is required).
+>>
+>> BTW, commit b24a30a73054 from Linus' tree has Eric Paris as Author and
+>> Committer, but is only Signed-off-by Kees Cook.  It is part of a long
+>> series that did not go anywhere near linus-next.   I do have an audit
+>> tree in linux-next
+>> (git://git.kernel.org/pub/scm/linux/kernel/git/viro/audit.git#for-next)
+>> but that hasn't seen any recent activity.
+>
+> I thought I sent you a note asking for audit to get pulled into -next
+> quite a while back.  I'll resend...
+>
+
+Hrm, how did the Author get mangled?
+
+-Kees
+
+--
+Kees Cook
+Chrome OS Security
+
+--__1368422072038TOUCHDOWN_BOUNDARY__--
