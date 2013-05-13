@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab3EMQZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 12:25:45 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:34223 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753753Ab3EMQZn (ORCPT
+	id S1755124Ab3EMQ2H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 12:28:07 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42755 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090Ab3EMQ2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 12:25:43 -0400
-Date: Tue, 14 May 2013 00:43:26 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: EUNBONG SONG <eunb.song@samsung.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-xfs@vger.kernel.org" <linux-xfs@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: Re: Re: EXT4 regression caused 4eec7
-Message-ID: <20130513164326.GA14526@gmail.com>
-Mail-Followup-To: Jan Kara <jack@suse.cz>,
-	EUNBONG SONG <eunb.song@samsung.com>, Theodore Ts'o <tytso@mit.edu>,
-	Dmitry Monakhov <dmonakhov@openvz.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-xfs@vger.kernel.org" <linux-xfs@vger.kernel.org>,
-	Dave Chinner <david@fromorbit.com>
-References: <31302271.2821368363898561.JavaMail.weblogic@epml17>
- <20130513131809.GG400@quack.suse.cz>
- <20130513135643.GB12883@gmail.com>
- <20130513151727.GI400@quack.suse.cz>
+	Mon, 13 May 2013 12:28:04 -0400
+Message-ID: <5191148E.7050205@wwwdotorg.org>
+Date: Mon, 13 May 2013 10:27:58 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130513151727.GI400@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        Sekhar Nori <nsekhar@ti.com>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH V1 resend] cpufreq: Raname index as data in cpufreq_frequency_table
+References: <7e12acada8adcba5f4eb72f6c49e38aaf00a294f.1368434974.git.viresh.kumar@linaro.org>
+In-Reply-To: <7e12acada8adcba5f4eb72f6c49e38aaf00a294f.1368434974.git.viresh.kumar@linaro.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 05:17:27PM +0200, Jan Kara wrote:
-> On Mon 13-05-13 21:56:43, Zheng Liu wrote:
-> > On Mon, May 13, 2013 at 03:18:09PM +0200, Jan Kara wrote:
-> > > On Sun 12-05-13 13:04:59, EUNBONG SONG wrote:
-> > > > 
-> > > > 
-> > > > >> Since at this point it's safer to rollback the change and we can
-> > > > >> investigate more deeply how to fix it correctly for the next
-> > > > >> development cycle, this is the patch which I'm testing.
-> > > > 
-> > > > >>                     - Ted
-> > > > 
-> > > > > Hello, I've tested with your patch. But the same problem was reproduced.
-> > > > > Currently, I'm trying to git bisect. If i done git bisect, i will let you know.
-> > > > 
-> > > > Hi, I've done git bisect. and panic at jbd2_journal_put_journal_head() is caused by 
-> > > > ae4647fb7654676fc44a97e86eb35f9f06b99f66: "jbd2: reduce journal_head size."
-> > > > I write just code patch which revert ae4647fb7654676fc44a97e86eb35f9f06b99f66 because
-> > > > I don't know the root cause. 
-> > >   This is really strange. I've verified the code and all the places
-> > > modifying b_jlist or b_modified are holding bh_state lock so we should be
-> > > safe...
-> > 
-> > Hi Jan,
-> > 
-> > Could you please take a look at this mail [1].  I don't think we hold
-> > bh_state lock there.
-> > 
-> > 1. http://www.spinics.net/lists/linux-ext4/msg38205.html
->   I'll also reply to that thread but: Yes, we don't hold bh_state lock when
-> reading b_jlist in that one case (that's why I wrote 'modify' and not just
-> 'access' in my previous email). But that's really harmless since we don't
-> do any complex operations with b_jlist (only get & set) so we either see an
-> old value or a new one. And that particular use is going away anyway later
-> in my series.
+On 05/13/2013 06:57 AM, Viresh Kumar wrote:
+> "Index" field of struct cpufreq_frequency_table was never index and isn't used
+> at all by cpufreq core. And is only useful for cpufreq drivers for their
+> personal use.
+> 
+> Many people now a days blindly set it in ascending order with the assumption
+> that core is using it for some work.
+> 
+> This patch renames it to "data" as that's what its purpose it. All users of the
+> same are fixed too.
 
-I see.  Thanks for your explanation.
+> diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
 
-                                                - Zheng
+> -/* Frequency table index must be sequential starting at 0 */
+> +/* Frequency table data must be sequential starting at 0 */
+
+I assume that comment is due to the assumption you're trying to remove.
+Should the comment be removed/corrected now? Perhaps the .data field
+isn't even needed any more in this driver?
+
+>  static struct cpufreq_frequency_table freq_table[] = {
+>  	{ 0, 216000 },
+>  	{ 1, 312000 },
+
