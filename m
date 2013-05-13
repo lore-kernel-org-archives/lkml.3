@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab3EMRrJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 13:47:09 -0400
-Received: from mail-da0-f51.google.com ([209.85.210.51]:58154 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab3EMRrG (ORCPT
+	id S1753925Ab3EMRrS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 13:47:18 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:44021 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab3EMRrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 13:47:06 -0400
+	Mon, 13 May 2013 13:47:14 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Michal Simek <michal.simek@xilinx.com>,
         Josh Cartwright <joshc@eso.teric.us>,
@@ -17,11 +17,13 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
-Subject: [PATCH v2 1/5] tty: xuartps: Remove suspend/resume functions
-Date: Mon, 13 May 2013 10:46:35 -0700
-Message-Id: <1368467199-8702-2-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH v2 4/5] arm: zynq: Migrate platform to clock controller
+Date: Mon, 13 May 2013 10:46:38 -0700
+Message-Id: <1368467199-8702-5-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <1368467199-8702-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1368467199-8702-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -29,66 +31,425 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently Zynq does not support suspend/resume.
-The driver callbacks are never used or tested, broken and using the old
-PM interface.
+Migrate the Zynq platform and its drivers to use the new clock
+controller driver.
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>
 Cc: linux-serial@vger.kernel.org
 ---
- drivers/tty/serial/xilinx_uartps.c | 30 ------------------------------
- 1 file changed, 30 deletions(-)
+ arch/arm/boot/dts/zynq-7000.dtsi        | 71 ++++++++-------------------
+ arch/arm/boot/dts/zynq-zc702.dts        |  4 --
+ arch/arm/mach-zynq/slcr.c               |  2 +-
+ drivers/clk/Makefile                    |  2 +-
+ drivers/clk/zynq/Makefile               |  3 ++
+ drivers/clocksource/cadence_ttc_timer.c | 23 +++++++--
+ drivers/tty/serial/xilinx_uartps.c      | 85 ++++++++++++++++++++++++++-------
+ include/linux/clk/zynq.h                |  8 +++-
+ 8 files changed, 118 insertions(+), 80 deletions(-)
+ create mode 100644 drivers/clk/zynq/Makefile
 
+diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+index 14fb2e6..0dbee2c 100644
+--- a/arch/arm/boot/dts/zynq-7000.dtsi
++++ b/arch/arm/boot/dts/zynq-7000.dtsi
+@@ -49,16 +49,18 @@
+ 
+ 		uart0: uart@e0000000 {
+ 			compatible = "xlnx,xuartps";
++			clocks = <&clkc 23>, <&clkc 40>;
++			clock-names = "ref_clk", "aper_clk";
+ 			reg = <0xE0000000 0x1000>;
+ 			interrupts = <0 27 4>;
+-			clocks = <&uart_clk 0>;
+ 		};
+ 
+ 		uart1: uart@e0001000 {
+ 			compatible = "xlnx,xuartps";
++			clocks = <&clkc 24>, <&clkc 41>;
++			clock-names = "ref_clk", "aper_clk";
+ 			reg = <0xE0001000 0x1000>;
+ 			interrupts = <0 50 4>;
+-			clocks = <&uart_clk 1>;
+ 		};
+ 
+ 		slcr: slcr@f8000000 {
+@@ -69,50 +71,21 @@
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 
+-				ps_clk: ps_clk {
+-					#clock-cells = <0>;
+-					compatible = "fixed-clock";
+-					/* clock-frequency set in board-specific file */
+-					clock-output-names = "ps_clk";
+-				};
+-				armpll: armpll {
+-					#clock-cells = <0>;
+-					compatible = "xlnx,zynq-pll";
+-					clocks = <&ps_clk>;
+-					reg = <0x100 0x110>;
+-					clock-output-names = "armpll";
+-				};
+-				ddrpll: ddrpll {
+-					#clock-cells = <0>;
+-					compatible = "xlnx,zynq-pll";
+-					clocks = <&ps_clk>;
+-					reg = <0x104 0x114>;
+-					clock-output-names = "ddrpll";
+-				};
+-				iopll: iopll {
+-					#clock-cells = <0>;
+-					compatible = "xlnx,zynq-pll";
+-					clocks = <&ps_clk>;
+-					reg = <0x108 0x118>;
+-					clock-output-names = "iopll";
+-				};
+-				uart_clk: uart_clk {
+-					#clock-cells = <1>;
+-					compatible = "xlnx,zynq-periph-clock";
+-					clocks = <&iopll &armpll &ddrpll>;
+-					reg = <0x154>;
+-					clock-output-names = "uart0_ref_clk",
+-							     "uart1_ref_clk";
+-				};
+-				cpu_clk: cpu_clk {
++				clkc: clkc {
+ 					#clock-cells = <1>;
+-					compatible = "xlnx,zynq-cpu-clock";
+-					clocks = <&iopll &armpll &ddrpll>;
+-					reg = <0x120 0x1C4>;
+-					clock-output-names = "cpu_6x4x",
+-							     "cpu_3x2x",
+-							     "cpu_2x",
+-							     "cpu_1x";
++					compatible = "xlnx,ps7-clkc";
++					ps-clk-frequency = <33333333>;
++					clock-output-names = "armpll", "ddrpll", "iopll", "cpu_6or4x",
++							"cpu_3or2x", "cpu_2x", "cpu_1x", "ddr2x", "ddr3x",
++							"dci", "lqspi", "smc", "pcap", "gem0", "gem1",
++							"fclk0", "fclk1", "fclk2", "fclk3", "can0", "can1",
++							"sdio0", "sdio1", "uart0", "uart1", "spi0", "spi1",
++							"dma", "usb0_aper", "usb1_aper", "gem0_aper",
++							"gem1_aper", "sdio0_aper", "sdio1_aper",
++							"spi0_aper", "spi1_aper", "can0_aper", "can1_aper",
++							"i2c0_aper", "i2c1_aper", "uart0_aper", "uart1_aper",
++							"gpio_aper", "lqspi_aper", "smc_aper", "swdt",
++							"dbg_trc", "dbg_apb";
+ 				};
+ 			};
+ 		};
+@@ -121,9 +94,8 @@
+ 			interrupt-parent = <&intc>;
+ 			interrupts = < 0 10 4 0 11 4 0 12 4 >;
+ 			compatible = "cdns,ttc";
++			clocks = <&clkc 6>;
+ 			reg = <0xF8001000 0x1000>;
+-			clocks = <&cpu_clk 3>;
+-			clock-names = "cpu_1x";
+ 			clock-ranges;
+ 		};
+ 
+@@ -131,9 +103,8 @@
+ 			interrupt-parent = <&intc>;
+ 			interrupts = < 0 37 4 0 38 4 0 39 4 >;
+ 			compatible = "cdns,ttc";
++			clocks = <&clkc 6>;
+ 			reg = <0xF8002000 0x1000>;
+-			clocks = <&cpu_clk 3>;
+-			clock-names = "cpu_1x";
+ 			clock-ranges;
+ 		};
+ 		scutimer: scutimer@f8f00600 {
+@@ -141,7 +112,7 @@
+ 			interrupts = < 1 13 0x301 >;
+ 			compatible = "arm,cortex-a9-twd-timer";
+ 			reg = < 0xf8f00600 0x20 >;
+-			clocks = <&cpu_clk 1>;
++			clocks = <&clkc 4>;
+ 		} ;
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
+index 86f44d5..e25a307 100644
+--- a/arch/arm/boot/dts/zynq-zc702.dts
++++ b/arch/arm/boot/dts/zynq-zc702.dts
+@@ -28,7 +28,3 @@
+ 	};
+ 
+ };
+-
+-&ps_clk {
+-	clock-frequency = <33333330>;
+-};
+diff --git a/arch/arm/mach-zynq/slcr.c b/arch/arm/mach-zynq/slcr.c
+index c70969b..50d008d 100644
+--- a/arch/arm/mach-zynq/slcr.c
++++ b/arch/arm/mach-zynq/slcr.c
+@@ -117,7 +117,7 @@ int __init zynq_slcr_init(void)
+ 
+ 	pr_info("%s mapped to %p\n", np->name, zynq_slcr_base);
+ 
+-	xilinx_zynq_clocks_init(zynq_slcr_base);
++	zynq_clock_init(zynq_slcr_base);
+ 
+ 	of_node_put(np);
+ 
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 137d3e7..fa435bc 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -27,7 +27,7 @@ obj-$(CONFIG_MACH_LOONGSON1)	+= clk-ls1x.o
+ obj-$(CONFIG_ARCH_SUNXI)	+= sunxi/
+ obj-$(CONFIG_ARCH_U8500)	+= ux500/
+ obj-$(CONFIG_ARCH_VT8500)	+= clk-vt8500.o
+-obj-$(CONFIG_ARCH_ZYNQ)		+= clk-zynq.o
++obj-$(CONFIG_ARCH_ZYNQ)		+= zynq/
+ obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
+ obj-$(CONFIG_PLAT_SAMSUNG)	+= samsung/
+ 
+diff --git a/drivers/clk/zynq/Makefile b/drivers/clk/zynq/Makefile
+new file mode 100644
+index 0000000..156d923
+--- /dev/null
++++ b/drivers/clk/zynq/Makefile
+@@ -0,0 +1,3 @@
++# Zynq clock specific Makefile
++
++obj-$(CONFIG_ARCH_ZYNQ)	+= clkc.o pll.o
+diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
+index 685bc60..4cbe28c 100644
+--- a/drivers/clocksource/cadence_ttc_timer.c
++++ b/drivers/clocksource/cadence_ttc_timer.c
+@@ -51,6 +51,8 @@
+ 
+ #define TTC_CNT_CNTRL_DISABLE_MASK	0x1
+ 
++#define TTC_CLK_CNTRL_CSRC_MASK		(1 << 5)	/* clock source */
++
+ /*
+  * Setup the timers to use pre-scaling, using a fixed value for now that will
+  * work across most input frequency, but it may need to be more dynamic
+@@ -396,8 +398,9 @@ static void __init ttc_timer_init(struct device_node *timer)
+ {
+ 	unsigned int irq;
+ 	void __iomem *timer_baseaddr;
+-	struct clk *clk;
++	struct clk *clk_cs, *clk_ce;
+ 	static int initialized;
++	int clksel;
+ 
+ 	if (initialized)
+ 		return;
+@@ -421,14 +424,24 @@ static void __init ttc_timer_init(struct device_node *timer)
+ 		BUG();
+ 	}
+ 
+-	clk = of_clk_get_by_name(timer, "cpu_1x");
+-	if (IS_ERR(clk)) {
++	clksel = __raw_readl(timer_baseaddr + TTC_CLK_CNTRL_OFFSET);
++	clksel = !!(clksel & TTC_CLK_CNTRL_CSRC_MASK);
++	clk_cs = of_clk_get(timer, clksel);
++	if (IS_ERR(clk_cs)) {
++		pr_err("ERROR: timer input clock not found\n");
++		BUG();
++	}
++
++	clksel = __raw_readl(timer_baseaddr + 4 + TTC_CLK_CNTRL_OFFSET);
++	clksel = !!(clksel & TTC_CLK_CNTRL_CSRC_MASK);
++	clk_ce = of_clk_get(timer, clksel);
++	if (IS_ERR(clk_ce)) {
+ 		pr_err("ERROR: timer input clock not found\n");
+ 		BUG();
+ 	}
+ 
+-	ttc_setup_clocksource(clk, timer_baseaddr);
+-	ttc_setup_clockevent(clk, timer_baseaddr + 4, irq);
++	ttc_setup_clocksource(clk_cs, timer_baseaddr);
++	ttc_setup_clockevent(clk_ce, timer_baseaddr + 4, irq);
+ 
+ 	pr_info("%s #0 at %p, irq=%d\n", timer->name, timer_baseaddr, irq);
+ }
 diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-index 4e5c778..b5f655d 100644
+index b5f655d..916305a 100644
 --- a/drivers/tty/serial/xilinx_uartps.c
 +++ b/drivers/tty/serial/xilinx_uartps.c
-@@ -1006,34 +1006,6 @@ static int xuartps_remove(struct platform_device *pdev)
+@@ -14,6 +14,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/serial.h>
+ #include <linux/serial_core.h>
++#include <linux/slab.h>
+ #include <linux/tty.h>
+ #include <linux/tty_flip.h>
+ #include <linux/console.h>
+@@ -139,6 +140,16 @@
+ #define XUARTPS_SR_RXTRIG	0x00000001 /* Rx Trigger */
+ 
+ /**
++ * struct xuartps - device data
++ * @refclk	Reference clock
++ * @aperclk	APB clock
++ */
++struct xuartps {
++	struct clk		*refclk;
++	struct clk		*aperclk;
++};
++
++/**
+  * xuartps_isr - Interrupt handler
+  * @irq: Irq number
+  * @dev_id: Id of the port
+@@ -936,34 +947,55 @@ static int xuartps_probe(struct platform_device *pdev)
+ 	int rc;
+ 	struct uart_port *port;
+ 	struct resource *res, *res2;
+-	struct clk *clk;
++	struct xuartps *xuartps_data;
+ 
+-	clk = of_clk_get(pdev->dev.of_node, 0);
+-	if (IS_ERR(clk)) {
+-		dev_err(&pdev->dev, "no clock specified\n");
+-		return PTR_ERR(clk);
++	xuartps_data = kzalloc(sizeof(*xuartps_data), GFP_KERNEL);
++	if (!xuartps_data)
++		return -ENOMEM;
++
++	xuartps_data->aperclk = clk_get(&pdev->dev, "aper_clk");
++	if (IS_ERR(xuartps_data->aperclk)) {
++		dev_err(&pdev->dev, "aper_clk clock not found.\n");
++		rc = PTR_ERR(xuartps_data->aperclk);
++		goto err_out_free;
++	}
++	xuartps_data->refclk = clk_get(&pdev->dev, "ref_clk");
++	if (IS_ERR(xuartps_data->refclk)) {
++		dev_err(&pdev->dev, "ref_clk clock not found.\n");
++		rc = PTR_ERR(xuartps_data->refclk);
++		goto err_out_clk_put_aper;
+ 	}
+ 
+-	rc = clk_prepare_enable(clk);
++	rc = clk_prepare_enable(xuartps_data->aperclk);
++	if (rc) {
++		dev_err(&pdev->dev, "Unable to enable APER clock.\n");
++		goto err_out_clk_put;
++	}
++	rc = clk_prepare_enable(xuartps_data->refclk);
+ 	if (rc) {
+-		dev_err(&pdev->dev, "could not enable clock\n");
+-		return -EBUSY;
++		dev_err(&pdev->dev, "Unable to enable device clock.\n");
++		goto err_out_clk_dis_aper;
+ 	}
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		return -ENODEV;
++	if (!res) {
++		rc = -ENODEV;
++		goto err_out_clk_disable;
++	}
+ 
+ 	res2 = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+-	if (!res2)
+-		return -ENODEV;
++	if (!res2) {
++		rc = -ENODEV;
++		goto err_out_clk_disable;
++	}
+ 
+ 	/* Initialize the port structure */
+ 	port = xuartps_get_port();
+ 
+ 	if (!port) {
+ 		dev_err(&pdev->dev, "Cannot get uart_port structure\n");
+-		return -ENODEV;
++		rc = -ENODEV;
++		goto err_out_clk_disable;
+ 	} else {
+ 		/* Register the port.
+ 		 * This function also registers this device with the tty layer
+@@ -972,18 +1004,31 @@ static int xuartps_probe(struct platform_device *pdev)
+ 		port->mapbase = res->start;
+ 		port->irq = res2->start;
+ 		port->dev = &pdev->dev;
+-		port->uartclk = clk_get_rate(clk);
+-		port->private_data = clk;
++		port->uartclk = clk_get_rate(xuartps_data->refclk);
++		port->private_data = xuartps_data;
+ 		dev_set_drvdata(&pdev->dev, port);
+ 		rc = uart_add_one_port(&xuartps_uart_driver, port);
+ 		if (rc) {
+ 			dev_err(&pdev->dev,
+ 				"uart_add_one_port() failed; err=%i\n", rc);
+ 			dev_set_drvdata(&pdev->dev, NULL);
+-			return rc;
++			goto err_out_clk_disable;
+ 		}
+ 		return 0;
+ 	}
++
++err_out_clk_disable:
++	clk_disable_unprepare(xuartps_data->refclk);
++err_out_clk_dis_aper:
++	clk_disable_unprepare(xuartps_data->aperclk);
++err_out_clk_put:
++	clk_put(xuartps_data->refclk);
++err_out_clk_put_aper:
++	clk_put(xuartps_data->aperclk);
++err_out_free:
++	kfree(xuartps_data);
++
++	return rc;
+ }
+ 
+ /**
+@@ -995,14 +1040,18 @@ static int xuartps_probe(struct platform_device *pdev)
+ static int xuartps_remove(struct platform_device *pdev)
+ {
+ 	struct uart_port *port = dev_get_drvdata(&pdev->dev);
+-	struct clk *clk = port->private_data;
++	struct xuartps *xuartps_data = port->private_data;
+ 	int rc;
+ 
+ 	/* Remove the xuartps port from the serial core */
+ 	rc = uart_remove_one_port(&xuartps_uart_driver, port);
+ 	dev_set_drvdata(&pdev->dev, NULL);
+ 	port->mapbase = 0;
+-	clk_disable_unprepare(clk);
++	clk_disable_unprepare(xuartps_data->refclk);
++	clk_disable_unprepare(xuartps_data->aperclk);
++	clk_put(xuartps_data->refclk);
++	clk_put(xuartps_data->aperclk);
++	kfree(xuartps_data);
  	return rc;
  }
  
--/**
-- * xuartps_suspend - suspend event
-- * @pdev: Pointer to the platform device structure
-- * @state: State of the device
-- *
-- * Returns 0
-- **/
--static int xuartps_suspend(struct platform_device *pdev, pm_message_t state)
--{
--	/* Call the API provided in serial_core.c file which handles
--	 * the suspend.
--	 */
--	uart_suspend_port(&xuartps_uart_driver, &xuartps_port[pdev->id]);
--	return 0;
--}
--
--/**
-- * xuartps_resume - Resume after a previous suspend
-- * @pdev: Pointer to the platform device structure
-- *
-- * Returns 0
-- **/
--static int xuartps_resume(struct platform_device *pdev)
--{
--	uart_resume_port(&xuartps_uart_driver, &xuartps_port[pdev->id]);
--	return 0;
--}
--
- /* Match table for of_platform binding */
- static struct of_device_id xuartps_of_match[] = {
- 	{ .compatible = "xlnx,xuartps", },
-@@ -1044,8 +1016,6 @@ MODULE_DEVICE_TABLE(of, xuartps_of_match);
- static struct platform_driver xuartps_platform_driver = {
- 	.probe   = xuartps_probe,		/* Probe method */
- 	.remove  = xuartps_remove,		/* Detach method */
--	.suspend = xuartps_suspend,		/* Suspend */
--	.resume  = xuartps_resume,		/* Resume after a suspend */
- 	.driver  = {
- 		.owner = THIS_MODULE,
- 		.name = XUARTPS_NAME,		/* Driver name */
+diff --git a/include/linux/clk/zynq.h b/include/linux/clk/zynq.h
+index 56be7cd..e062d31 100644
+--- a/include/linux/clk/zynq.h
++++ b/include/linux/clk/zynq.h
+@@ -1,4 +1,5 @@
+ /*
++ * Copyright (C) 2013 Xilinx Inc.
+  * Copyright (C) 2012 National Instruments
+  *
+  * This program is free software; you can redistribute it and/or modify
+@@ -19,6 +20,11 @@
+ #ifndef __LINUX_CLK_ZYNQ_H_
+ #define __LINUX_CLK_ZYNQ_H_
+ 
+-void __init xilinx_zynq_clocks_init(void __iomem *slcr);
++#include <linux/spinlock.h>
+ 
++void zynq_clock_init(void __iomem *slcr);
++
++struct clk *clk_register_zynq_pll(const char *name, const char *parent,
++		void __iomem *pll_ctrl, void __iomem *pll_status, u8 lock_index,
++		spinlock_t *lock);
+ #endif
 -- 
 1.8.2.3
 
