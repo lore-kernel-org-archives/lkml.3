@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab3EMQLi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 12:11:38 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:60344 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab3EMQJL (ORCPT
+	id S1755314Ab3EMQMX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 12:12:23 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:39718 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755008Ab3EMQMU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 12:09:11 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: [PATCH v2, part 1 4/9] PCI: mark pci_scan_bus_parented() as __deprecated
-Date: Tue, 14 May 2013 00:08:28 +0800
-Message-Id: <1368461313-4371-5-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com>
-References: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com>
+	Mon, 13 May 2013 12:12:20 -0400
+Message-ID: <519110DF.9070403@arm.com>
+Date: Mon, 13 May 2013 17:12:15 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Nishanth Menon <nm@ti.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 1/2] PM / OPP: add support to specify phandle of another
+ node for OPP
+References: <1367406679-21603-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1367406679-21603-2-git-send-email-Sudeep.KarkadaNagesha@arm.com> <20130501144120.GA17385@kahuna>
+In-Reply-To: <20130501144120.GA17385@kahuna>
+X-MC-Unique: 113051317121801801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark pci_scan_bus_parented() as __deprecated and clean up outdated
-comments.
+Hi device-tree folks,
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
----
- arch/tile/kernel/pci.c | 3 ---
- include/linux/pci.h    | 4 ++--
- 2 files changed, 2 insertions(+), 5 deletions(-)
+On 01/05/13 15:41, Nishanth Menon wrote:
+> On 12:11-20130501, Sudeep.KarkadaNagesha@arm.com wrote:
+>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+>>
+>> If more than one similar devices share the same OPPs, currently we
+>> need to replicate the OPP entries in all the nodes.
+> Nice, thanks.
+>>
+>> Few drivers like cpufreq depend on physical cpu0 node to specify the
+> cpufreq-cpu0?
+>> OPPs and only that node is referred irrespective of the logical cpu
+>> accessing it. Alternatively to support cpuhotplug path, few drivers
+>> parse all the cpu nodes for OPPs. Instead we can specify the phandle
+>> of the node with which the current node shares the operating points.
+>>
+>> This patch adds support to specify the phandle in the operating points
+>> of any device node, where the node specified by the phandle holds the
+>> actual OPPs.
+>>
+>> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+>> ---
+>>  Documentation/devicetree/bindings/power/opp.txt |   41 +++++++++++++++++++++++
+>>  drivers/base/power/opp.c                        |   30 ++++++++++++-----
+>>  2 files changed, 63 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/power/opp.txt b/Documentation/devicetree/bindings/power/opp.txt
+>> index 74499e5..a659da4 100644
+>> --- a/Documentation/devicetree/bindings/power/opp.txt
+>> +++ b/Documentation/devicetree/bindings/power/opp.txt
+>> @@ -23,3 +23,44 @@ cpu@0 {
+>>              198000  850000
+>>      >;
+>>  };
+>> +
+> Definition of operating-points is now a little different in the
+> original description - it still indicates tuple {freq,voltage}, where
+> as, this patch allows phandle to a different device's operating-points
+> to be used. - we might want to rephrase the description.
+>
+> btw, to device-tree folks, I am not sure if it is OK to have different formats
+> for the same property like operating-points. At least I don't seem to
+> quickly be able to find any precedence.
+>
+Any directions on this to proceed ? Is proposed option of phandle for
+OPP acceptable ?
 
-diff --git a/arch/tile/kernel/pci.c b/arch/tile/kernel/pci.c
-index 67237d3..936e087 100644
---- a/arch/tile/kernel/pci.c
-+++ b/arch/tile/kernel/pci.c
-@@ -309,9 +309,6 @@ int __init pcibios_init(void)
- 			 *
- 			 * It reads the PCI tree for this bus into the Linux
- 			 * data structures.
--			 *
--			 * This is inlined in linux/pci.h and calls into
--			 * pci_scan_bus_parented() in probe.c.
- 			 */
- 			pci_add_resource(&resources, &ioport_resource);
- 			pci_add_resource(&resources, &iomem_resource);
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 68beb11..cc4ce27 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -720,8 +720,8 @@ void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
- void pcibios_scan_specific_bus(int busn);
- struct pci_bus *pci_find_bus(int domain, int busnr);
- void pci_bus_add_devices(const struct pci_bus *bus);
--struct pci_bus *pci_scan_bus_parented(struct device *parent, int bus,
--				      struct pci_ops *ops, void *sysdata);
-+struct pci_bus * __deprecated pci_scan_bus_parented(struct device *parent,
-+			int bus, struct pci_ops *ops, void *sysdata);
- struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
- struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 				    struct pci_ops *ops, void *sysdata,
--- 
-1.8.1.2
+Regards,
+Sudeep
+
+-- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
 
