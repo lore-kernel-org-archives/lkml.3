@@ -1,68 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab3EMQDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 12:03:19 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:56271 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab3EMQDS (ORCPT
+	id S1754546Ab3EMQFL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 12:05:11 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:11635 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab3EMQFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 12:03:18 -0400
-Message-ID: <51910EC2.8090501@linaro.org>
-Date: Mon, 13 May 2013 09:03:14 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Mon, 13 May 2013 12:05:08 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <hein_tibosch@yahoo.es>
+CC: <michal.simek@xilinx.com>, Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <s.trumtrar@pengutronix.de>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] net/macb: fix ISR clear-on-write behavior only for some SoC
+Date: Mon, 13 May 2013 18:05:05 +0200
+Message-ID: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: Zoran Markovic <zoran.markovic@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Todd Poynor <toddpoynor@google.com>, San Mehat <san@google.com>,
-        Benoit Goby <benoit@android.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCHv2 2/2] PM: compile-time configuration of device suspend/resume
- watchdogs.
-References: <1368221329-1841-1-git-send-email-zoran.markovic@linaro.org> <1368221329-1841-3-git-send-email-zoran.markovic@linaro.org> <CAMbhsRT2rc5A3zeKA2Om+y-Kv2HVh0pa6YjQ9BLC2jBBfWfxsA@mail.gmail.com>
-In-Reply-To: <CAMbhsRT2rc5A3zeKA2Om+y-Kv2HVh0pa6YjQ9BLC2jBBfWfxsA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2013 11:23 PM, Colin Cross wrote:
-> On Fri, May 10, 2013 at 2:28 PM, Zoran Markovic
-> <zoran.markovic@linaro.org> wrote:
->> +#ifdef CONFIG_DPM_WD
->> +/**
->> + * dpm_wd_action - recovery from suspend/resume watchdog timeout
->> + * @wd: Watchdog. Must be allocated on the stack.
->> + */
->> +#if defined(CONFIG_DPM_WD_ACTION_STACKTRACE)
->> +static inline void dpm_wd_action(struct dpm_watchdog *wd)
->> +{
->> +       show_stack(wd->tsk, NULL);
->> +}
->> +#elif defined(CONFIG_DPM_WD_ACTION_PANIC)
->> +static inline void dpm_wd_action(struct dpm_watchdog *wd)
->> +{
->> +       panic("%s: unrecoverable failure\n", dev_name(wd->dev));
-> The panic here is not very useful, it's going to print the stack of
-> the task that was running when the timer fired which is likely to be
-> the idle task if the suspend task is deadlocked.  This should call
-> show_stack and panic.  If you take out the log action, then all this
-> can stay inline with the handler and be:
->
-> dev_emerg(wd->dev, "**** DPM device timeout ****\n");
-> show_stack(wd->tsk, NULL);
-> #ifdef CONFIG_DPM_WD_ACTION_PANIC
-> panic("%s: unrecoverable failure\n", dev_name(wd->dev));
-> #endif
+Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
+introduces clear-on-write on ISR register. This behavior is not always
+implemented when using Cadence MACB/GEM and is breaking other platforms.
+We are using a new Device Tree compatibility string and a capability
+property to actually activate this clear-on-write behavior on ISR.
 
-#ifdefs in functions are usually to be avoided. Thus why I suggested he 
-use the config dependent dpm_wd_action() function to handle this.
+Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ Documentation/devicetree/bindings/net/macb.txt |  2 ++
+ drivers/net/ethernet/cadence/macb.c            | 15 +++++++++++++--
+ drivers/net/ethernet/cadence/macb.h            |  5 +++++
+ 3 files changed, 20 insertions(+), 2 deletions(-)
 
-thanks
--john
+diff --git a/Documentation/devicetree/bindings/net/macb.txt b/Documentation/devicetree/bindings/net/macb.txt
+index 44afa0e..13ec4f6 100644
+--- a/Documentation/devicetree/bindings/net/macb.txt
++++ b/Documentation/devicetree/bindings/net/macb.txt
+@@ -6,6 +6,8 @@ Required properties:
+   Use "cdns,at32ap7000-macb" for other 10/100 usage or use the generic form: "cdns,macb".
+   Use "cnds,pc302-gem" for Picochip picoXcell pc302 and later devices based on
+   the Cadence GEM, or the generic form: "cdns,gem".
++  Use "cdns,zynq-7000-gem" for devices based on Cadence GEM with alternative
++  options enabled (ISR clear on write).
+ - reg: Address and length of the register set for the device
+ - interrupts: Should contain macb interrupt
+ - phy-mode: String, operation mode of the PHY interface.
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index 6be513d..628f2b0 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -485,7 +485,8 @@ static void macb_tx_interrupt(struct macb *bp)
+ 	status = macb_readl(bp, TSR);
+ 	macb_writel(bp, TSR, status);
+ 
+-	macb_writel(bp, ISR, MACB_BIT(TCOMP));
++	if (bp->caps & MACB_CAPS_ISR_CLEAR_ON_WRITE)
++		macb_writel(bp, ISR, MACB_BIT(TCOMP));
+ 
+ 	netdev_vdbg(bp->dev, "macb_tx_interrupt status = 0x%03lx\n",
+ 		(unsigned long)status);
+@@ -738,7 +739,8 @@ static irqreturn_t macb_interrupt(int irq, void *dev_id)
+ 			 * now.
+ 			 */
+ 			macb_writel(bp, IDR, MACB_RX_INT_FLAGS);
+-			macb_writel(bp, ISR, MACB_BIT(RCOMP));
++			if (bp->caps & MACB_CAPS_ISR_CLEAR_ON_WRITE)
++				macb_writel(bp, ISR, MACB_BIT(RCOMP));
+ 
+ 			if (napi_schedule_prep(&bp->napi)) {
+ 				netdev_vdbg(bp->dev, "scheduling RX softirq\n");
+@@ -1474,6 +1476,10 @@ static const struct of_device_id macb_dt_ids[] = {
+ 	{ .compatible = "cdns,macb" },
+ 	{ .compatible = "cdns,pc302-gem" },
+ 	{ .compatible = "cdns,gem" },
++	{
++		.compatible = "cdns,zynq-7000-gem",
++		.data = (void *)MACB_CAPS_ISR_CLEAR_ON_WRITE,
++	},
+ 	{ /* sentinel */ }
+ };
+ MODULE_DEVICE_TABLE(of, macb_dt_ids);
+@@ -1484,6 +1490,7 @@ static int __init macb_probe(struct platform_device *pdev)
+ 	struct macb_platform_data *pdata;
+ 	struct resource *regs;
+ 	struct net_device *dev;
++	const struct of_device_id *dev_id;
+ 	struct macb *bp;
+ 	struct phy_device *phydev;
+ 	u32 config;
+@@ -1558,6 +1565,10 @@ static int __init macb_probe(struct platform_device *pdev)
+ 
+ 	dev->base_addr = regs->start;
+ 
++	dev_id = of_match_device(macb_dt_ids, &pdev->dev);
++	if (dev_id)
++		bp->caps = (u32)dev_id->data;
++
+ 	/* Set MII management clock divider */
+ 	config = macb_mdc_clk_div(bp);
+ 	config |= macb_dbw(bp);
+diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+index 993d703..5d622fe 100644
+--- a/drivers/net/ethernet/cadence/macb.h
++++ b/drivers/net/ethernet/cadence/macb.h
+@@ -323,6 +323,9 @@
+ #define MACB_MAN_READ				2
+ #define MACB_MAN_CODE				2
+ 
++/* Capability mask bits */
++#define MACB_CAPS_ISR_CLEAR_ON_WRITE		0x1
++
+ /* Bit manipulation macros */
+ #define MACB_BIT(name)					\
+ 	(1 << MACB_##name##_OFFSET)
+@@ -574,6 +577,8 @@ struct macb {
+ 	unsigned int 		speed;
+ 	unsigned int 		duplex;
+ 
++	u32			caps;
++
+ 	phy_interface_t		phy_interface;
+ 
+ 	/* AT91RM9200 transmit */
+-- 
+1.8.0
 
