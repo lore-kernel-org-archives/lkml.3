@@ -1,86 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab3EMLVj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 07:21:39 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:50910 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750830Ab3EMLVg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 07:21:36 -0400
-Date: Mon, 13 May 2013 07:21:32 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Francis Deslauriers <fdeslaur@gmail.com>, linux-mm@kvack.org,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        rostedt@goodmis.org, fweisbec@gmail.com, raphael.beamonte@gmail.com,
-        linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [page fault tracepoint 1/2] Add page fault trace event
-	definitions
-Message-ID: <20130513112132.GA15168@Krystal>
-References: <1368079520-11015-1-git-send-email-fdeslaur@gmail.com> <518B464E.6010208@huawei.com> <518BA91E.3080406@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <518BA91E.3080406@zytor.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753978Ab3EML1s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 07:27:48 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35666 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751551Ab3EML1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 07:27:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,662,1363158000"; 
+   d="scan'208";a="336730675"
+Message-ID: <1368444448.16445.62.camel@intelbox>
+Subject: Re: [PATCH 01/11] time: add *_to_jiffies_min helpers to guarantee a
+ minimum duration
+From: Imre Deak <imre.deak@intel.com>
+Reply-To: imre.deak@intel.com
+To: Jean Delvare <khali@linux-fr.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>
+Date: Mon, 13 May 2013 14:27:28 +0300
+In-Reply-To: <20130513092904.3ba12f9d@endymion.delvare>
+References: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
+	 <20130513092904.3ba12f9d@endymion.delvare>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* H. Peter Anvin (hpa@zytor.com) wrote:
-> On 05/08/2013 11:46 PM, zhangwei(Jovi) wrote:
-> > On 2013/5/9 14:05, Francis Deslauriers wrote:
-> >> Add page_fault_entry and page_fault_exit event definitions. It will
-> >> allow each architecture to instrument their page faults.
-> > 
-> > I'm wondering if this tracepoint could handle other page faults,
-> > like faults in kernel memory(vmalloc, kmmio, etc...)
-> > 
-> > And if we decide to support those faults, add a type annotate in TP_printk
-> > would be much helpful for user, to let user know what type of page faults happened.
-> > 
+On Mon, 2013-05-13 at 09:29 +0200, Jean Delvare wrote:
+> Hi Imre,
 > 
-> The plan for x86 was to switch the IDT so that any exception could get a
-> trace event without any overhead in normal operation.  This has been in
-> the process for quite some time but looks like it was getting very close.
+> On Fri, 10 May 2013 15:13:19 +0300, Imre Deak wrote:
+> > The *_to_jiffies(x) macros return a jiffy value, which if used as a
+> > delta to wait for a specific amount of time, may result in a wait-time
+> > that is less than x.
+> 
+> Are you sure? I have always considered that *_to_jiffies(x) macros
+> rounded up, and reading the code seems to confirm that:
+> 
+> 	/*
+> 	 * Generic case - multiply, round and divide. (...)
+> 	 */
+> 	(...)
+> 	return (MSEC_TO_HZ_MUL32 * m + MSEC_TO_HZ_ADJ32)
+> 		>> MSEC_TO_HZ_SHR32;
+> 
+> What makes you think the resulting wait time can be less that requested?
 
-Hi Peter,
+Yes the above does a round-up, but for another reason. It makes only
+sure you won't wait less than the requested time because you have a too
+coarse HZ value. So for example with HZ=1000 it won't do any adjustment,
+but with HZ=100 it'll round up durations not dividable by 10 msec.
 
-Who is leading this IDT instrumentation effort ?
+What the proposed change wants to solve is how - or rather what point in
+time - the returned value is used. For example in the following loop to
+wait for some condition to become true:
 
-Since we have tracepoints in interrupt handlers nowadays, I wonder what
-makes traps so much more special than interrupts to require the
-arch-specific complexity of the IDT switcharoo trick ? If I had to
-guess, the reason for this would be the page fault handler, which is
-called way too frequently for its own good. The number of page faults
-triggered by COW on process fork has been impressively high for the past
-couple of years.
+timeout = msecs_to_jiffies(1);
+while (!condition && timeout) {
+	prepare_to_wait(wq, ...);
+	timeout = schedule_timeout(timeout);
+}
 
-IMHO, this should be one extra reason for quickly allowing people to
-trace those page faults, so they can get an idea of their tremendous
-performance impact. This could speed up the efforts on transparent huge
-pages, which seems to be a viable long-term solution to this page-size
-scalability issue.
+it would seem we'll wait at least 1 msec for the condition to become
+true. In fact with HZ=1000 and an initial timeout value of 1 we may wait
+less, since schedule_timeout() will return with 0 already at the next
+scheduling clock tick which is most probably less than 1 msec ahead in
+time.
 
-By default, my 3.5 Linux kernel (Debian) has:
+> If this really is the case then the proper way to address the issue is
+> to fix the original macros, not introducing new ones.
 
-$ cat /sys/kernel/mm/transparent_hugepage/enabled
-always [madvise] never
+I'm not sure if we need the adjustment in all cases. For example in the
+following polling loop we'd like to wake up every msec (to check for
+something not signaled through the wq) and time out after 50 iterations:
 
-I think transparent huge pages will become generally useful when enabled
-by default, and when they will handle the page cache in addition to
-anonymous pages.[1]
+for (i = 0; i < 50; i++) {
+	prepare_to_wait(wq, ...);
+	if (condition)
+		break;
+	schedule_timeout(msecs_to_jiffies(1));
+}
 
-Thanks,
+Having the +1 adjustment in msecs_to_jiffies() would result in waking up
+close to every 2 msec.
 
-Mathieu
+> > Many callers already compensate for this by adding
+> > one to the returned value.
+> 
+> This is an assumption from you, and I am afraid it is wrong in many
+> cases. I see that Michal Kubecek already pointed out one case where it
+> was indeed wrong, and I am about to make a similar reply to another
+> post of yours.
 
-[1] Documentation/vm/transhuge.txt
+Agreed, I was wrong in those cases and we shouldn't change them. There
+are places on the other hand where the adjustment is made to guarantee a
+minimum waiting time and thus better expressed with a properly named
+helper.
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+> > To document why we need to add one and to get
+> > rid of some code duplication add a helper that does the same.
+> 
+> I'm sorry but you can't call "+ 1" code duplication.
+
+You're right, the change doesn't reduce code duplication.. It only
+documents why the +1 is needed, which is very much called for imo.
+
+> > Later patches will convert the currently open-coded call sites to use
+> > the new helpers.
+> > 
+> > Also this can serve as a basis for auditing those users of *_to_jiffies
+> > that most likely do the wrong thing - for example set a timeout value of
+> > msecs_to_jiffies(1) - and converting them to use the new helpers.
+> 
+> You should be very, very careful before claiming that the code is wrong
+> and you're fixing it. It might as well be that the code is right but
+> you did not understand it, and you're actually breaking it. Or the code
+> was already wrong and you're making it worse ;)
+
+Agreed and I should've been more careful with the converting patches.
+But the fact is that there is currently code out there that uses
+msecs_to_jiffies() incorrectly. Fixing these and making it less likely
+for similar problems to appear in the future is worth the trouble
+though.
+
+--Imre
+
+> As a summary, I don't like the idea, sorry.
+
