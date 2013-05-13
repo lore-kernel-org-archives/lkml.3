@@ -1,131 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967Ab3EMPVY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 11:21:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48911 "EHLO mx1.redhat.com"
+	id S1755147Ab3EMPXG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 11:23:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31069 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754920Ab3EMPVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 11:21:20 -0400
-Date: Mon, 13 May 2013 17:17:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Michael Neuling <mikey@neuling.org>, Paul Mackerras <paulus@samba.org>,
-        Paul Mundt <lethal@linux-sh.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 05/13] ptrace: Revert "Prepare to fix racy accesses on task
-	breakpoints"
-Message-ID: <20130513151714.GA6263@redhat.com>
+	id S1755051Ab3EMPXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 11:23:02 -0400
+Message-ID: <51910552.5050507@redhat.com>
+Date: Mon, 13 May 2013 11:22:58 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130513151631.GA6215@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Luiz Capitulino <lcapitulino@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, aquini@redhat.com,
+        amit.shah@redhat.com, anton@enomsg.org
+Subject: Re: [RFC 2/2] virtio_balloon: auto-ballooning support
+References: <1368111229-29847-1-git-send-email-lcapitulino@redhat.com> <1368111229-29847-3-git-send-email-lcapitulino@redhat.com> <20130512143054.GI10144@redhat.com> <518FC4F9.5010505@redhat.com> <20130512184934.GA16334@redhat.com> <20130513110303.33dbaba6@redhat.com> <20130513151624.GB1992@redhat.com>
+In-Reply-To: <20130513151624.GB1992@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit bf26c018490c2fce7fe9b629083b96ce0e6ad019.
+On 05/13/2013 11:16 AM, Michael S. Tsirkin wrote:
 
-The patch was fine but we can no longer race with SIGKILL after
-9899d11f "ptrace: ensure arch_ptrace/ptrace_request can never race
-with SIGKILL", the __TASK_TRACED tracee can't be woken up and
-->ptrace_bps[] can't go away.
+> However, there's a big question mark: host specifies
+> inflate, guest says deflate, who wins?
 
-Now that ptrace_get_breakpoints/ptrace_put_breakpoints have no
-callers, we can kill them and remove task->ptrace_bp_refcnt.
+If we're dealing with a NUMA guest, they could both win :)
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: Michael Neuling <mikey@neuling.org>
----
- include/linux/ptrace.h |   10 ----------
- include/linux/sched.h  |    3 ---
- kernel/exit.c          |    2 +-
- kernel/ptrace.c        |   16 ----------------
- 4 files changed, 1 insertions(+), 30 deletions(-)
+The host could see reduced memory use of the guest in one
+place, while the guest could see increased memory availability
+in another place...
 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 89573a3..07d0df6 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -142,9 +142,6 @@ static inline void ptrace_init_task(struct task_struct *child, bool ptrace)
- {
- 	INIT_LIST_HEAD(&child->ptrace_entry);
- 	INIT_LIST_HEAD(&child->ptraced);
--#ifdef CONFIG_HAVE_HW_BREAKPOINT
--	atomic_set(&child->ptrace_bp_refcnt, 1);
--#endif
- 	child->jobctl = 0;
- 	child->ptrace = 0;
- 	child->parent = child->real_parent;
-@@ -351,11 +348,4 @@ extern int task_current_syscall(struct task_struct *target, long *callno,
- 				unsigned long args[6], unsigned int maxargs,
- 				unsigned long *sp, unsigned long *pc);
- 
--#ifdef CONFIG_HAVE_HW_BREAKPOINT
--extern int ptrace_get_breakpoints(struct task_struct *tsk);
--extern void ptrace_put_breakpoints(struct task_struct *tsk);
--#else
--static inline void ptrace_put_breakpoints(struct task_struct *tsk) { }
--#endif /* CONFIG_HAVE_HW_BREAKPOINT */
--
- #endif
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 178a8d9..ebdba8a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1406,9 +1406,6 @@ struct task_struct {
- 	} memcg_batch;
- 	unsigned int memcg_kmem_skip_account;
- #endif
--#ifdef CONFIG_HAVE_HW_BREAKPOINT
--	atomic_t ptrace_bp_refcnt;
--#endif
- #ifdef CONFIG_UPROBES
- 	struct uprobe_task *utask;
- #endif
-diff --git a/kernel/exit.c b/kernel/exit.c
-index af2eb3c..0636035 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -819,7 +819,7 @@ void do_exit(long code)
- 	/*
- 	 * FIXME: do that only when needed, using sched_exit tracepoint
- 	 */
--	ptrace_put_breakpoints(tsk);
-+	flush_ptrace_hw_breakpoint(tsk);
- 
- 	exit_notify(tsk, group_dead);
- #ifdef CONFIG_NUMA
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index aed981a..8cc170b 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -1179,19 +1179,3 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
- 	return ret;
- }
- #endif	/* CONFIG_COMPAT */
--
--#ifdef CONFIG_HAVE_HW_BREAKPOINT
--int ptrace_get_breakpoints(struct task_struct *tsk)
--{
--	if (atomic_inc_not_zero(&tsk->ptrace_bp_refcnt))
--		return 0;
--
--	return -1;
--}
--
--void ptrace_put_breakpoints(struct task_struct *tsk)
--{
--	if (atomic_dec_and_test(&tsk->ptrace_bp_refcnt))
--		flush_ptrace_hw_breakpoint(tsk);
--}
--#endif /* CONFIG_HAVE_HW_BREAKPOINT */
+I also suspect that having some "churn" could help sort out
+exactly what the working set is.
+
+> At some point Google sent patches that gave guest
+> complete control over the balloon.
+> This has the advantage that management isn't involved.
+
+I believe the Google patches still included some way for the
+host to initiate balloon inflation on the guest side, because
+the guest internal state alone is not enough to see when the
+host is under memory pressure.
+
+I discussed the project with the Google developers in question
+a little over a year ago, but I do not remember whether their
+pressure notification went through qemu, or directly from the
+host kernel to the guest kernel...
+
+> And at some level it seems to make sense: why set
+> an upper limit on size of the balloon?
+> The bigger it is, the better.
+
+Response time.
+
+If too much of a guest's memory has been removed, it can take
+too long for the guest to react to user requests, be it over
+the web or ssh or something else...
+
 -- 
-1.5.5.1
-
+All rights reversed
