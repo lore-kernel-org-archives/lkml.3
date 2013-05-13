@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417Ab3EMI7G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 04:59:06 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:12314 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840Ab3EMI7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 04:59:03 -0400
-X-IronPort-AV: E=Sophos;i="4.87,661,1363104000"; 
-   d="scan'208,223";a="7255571"
-Message-ID: <5190AAB9.5080904@cn.fujitsu.com>
-Date: Mon, 13 May 2013 16:56:25 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: hirofumi@mail.parknet.co.jp
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] fs/fat: Use fat_msg() to replace printk() in __fat_fs_error()
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/13 16:57:27,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/13 16:57:28,
-	Serialize complete at 2013/05/13 16:57:28
+	id S1751375Ab3EMI7v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 04:59:51 -0400
+Received: from gate.crashing.org ([63.228.1.57]:43433 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750830Ab3EMI7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 04:59:50 -0400
+Message-ID: <1368435563.19924.28.camel@pasglop>
+Subject: Re: [RFC PATCH v3 0/5] powerpc: Support context tracking for Power
+ pSeries
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, paulus@samba.org,
+        michael@ellerman.id.au, Anton Blanchard <anton@au1.ibm.com>
+Date: Mon, 13 May 2013 18:59:23 +1000
+In-Reply-To: <1368432193.2618.30.camel@ThinkPad-T5421>
+References: <1368422493-9831-1-git-send-email-zhong@linux.vnet.ibm.com>
+	 <1368424306.19924.20.camel@pasglop>
+	 <1368432193.2618.30.camel@ThinkPad-T5421>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 87141ec058aad35ac55bc7c3fc2eb378566a5a6a Mon Sep 17 00:00:00 2001
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Date: Mon, 13 May 2013 17:48:19 +0900
-Subject: [PATCH] fs/fat: Use fat_msg() to replace printk() in __fat_fs_error()
+On Mon, 2013-05-13 at 16:03 +0800, Li Zhong wrote:
+> 
+> To my understanding, it is used to enable RCU user extended quiescent
+> state, so RCU on that cpu doesn't need scheduler ticks. And together
+> with some other code(already in 3.10), we are able to remove the ticks
+> in some cases (e.g. only 1 task running on the cpu, with some other
+> limitations).
 
+Ok, sounds interesting. Once you fix the little cosmetic issue, I don't
+see any reason not to merge them as it's basically wiring up an existing
+feature (in that regard the patches are pretty straightforward) and I
+assume the overhead is only there when you enable it.
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- fs/fat/misc.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+Cheers,
+Ben.
 
-diff --git a/fs/fat/misc.c b/fs/fat/misc.c
-index 359d307..628e22a 100644
---- a/fs/fat/misc.c
-+++ b/fs/fat/misc.c
-@@ -30,7 +30,7 @@ void __fat_fs_error(struct super_block *sb, int report, const char *fmt, ...)
- 		va_start(args, fmt);
- 		vaf.fmt = fmt;
- 		vaf.va = &args;
--		printk(KERN_ERR "FAT-fs (%s): error, %pV\n", sb->s_id, &vaf);
-+		fat_msg(sb, KERN_ERR, "error, %pV", &vaf);
- 		va_end(args);
- 	}
- 
-@@ -38,8 +38,7 @@ void __fat_fs_error(struct super_block *sb, int report, const char *fmt, ...)
- 		panic("FAT-fs (%s): fs panic from previous error\n", sb->s_id);
- 	else if (opts->errors == FAT_ERRORS_RO && !(sb->s_flags & MS_RDONLY)) {
- 		sb->s_flags |= MS_RDONLY;
--		printk(KERN_ERR "FAT-fs (%s): Filesystem has been "
--				"set read-only\n", sb->s_id);
-+		fat_msg(sb, KERN_ERR, "Filesystem has been set read-only");
- 	}
- }
- EXPORT_SYMBOL_GPL(__fat_fs_error);
--- 
-1.7.1
 
