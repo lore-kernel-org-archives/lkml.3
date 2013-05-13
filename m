@@ -1,149 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3EMIPi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 04:15:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53367 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752456Ab3EMIMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 04:12:46 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Michal Hocko <mhocko@suse.cz>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/9] mm: vmscan: Obey proportional scanning requirements for kswapd
-Date: Mon, 13 May 2013 09:12:33 +0100
-Message-Id: <1368432760-21573-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1368432760-21573-1-git-send-email-mgorman@suse.de>
-References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
+	id S1752993Ab3EMIRS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 04:17:18 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:38747 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab3EMIRQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 04:17:16 -0400
+Date: Mon, 13 May 2013 10:17:07 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Imre Deak <imre.deak@intel.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 01/11] time: add *_to_jiffies_min helpers to guarantee a
+ minimum duration
+Message-ID: <20130513101707.53259093@endymion.delvare>
+In-Reply-To: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
+References: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplistically, the anon and file LRU lists are scanned proportionally
-depending on the value of vm.swappiness although there are other factors
-taken into account by get_scan_count().  The patch "mm: vmscan: Limit
-the number of pages kswapd reclaims" limits the number of pages kswapd
-reclaims but it breaks this proportional scanning and may evenly shrink
-anon/file LRUs regardless of vm.swappiness.
+BTW...
 
-This patch preserves the proportional scanning and reclaim. It does mean
-that kswapd will reclaim more than requested but the number of pages will
-be related to the high watermark.
+On Fri, 10 May 2013 15:13:19 +0300, Imre Deak wrote:
+> +#define __define_time_to_jiffies_min(tname, ttype)			\
+> +static inline unsigned long						\
+> +tname ## _to_jiffies_min(const ttype m)					\
+> +{									\
+> +	return max_t(long, MAX_JIFFY_OFFSET, tname ## _to_jiffies(m) + 1);\
+> +}
 
-[mhocko@suse.cz: Correct proportional reclaim for memcg and simplify]
-[kamezawa.hiroyu@jp.fujitsu.com: Recalculate scan based on target]
-[hannes@cmpxchg.org: Account for already scanned pages properly]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
----
- mm/vmscan.c | 67 +++++++++++++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 59 insertions(+), 8 deletions(-)
+How would this work at all? Isn't it going to just return
+MAX_JIFFY_OFFSET all the time?
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index cdbc069..26ad67f 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1822,17 +1822,25 @@ out:
- static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
- {
- 	unsigned long nr[NR_LRU_LISTS];
-+	unsigned long targets[NR_LRU_LISTS];
- 	unsigned long nr_to_scan;
- 	enum lru_list lru;
- 	unsigned long nr_reclaimed = 0;
- 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
- 	struct blk_plug plug;
-+	bool scan_adjusted = false;
- 
- 	get_scan_count(lruvec, sc, nr);
- 
-+	/* Record the original scan target for proportional adjustments later */
-+	memcpy(targets, nr, sizeof(nr));
-+
- 	blk_start_plug(&plug);
- 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
- 					nr[LRU_INACTIVE_FILE]) {
-+		unsigned long nr_anon, nr_file, percentage;
-+		unsigned long nr_scanned;
-+
- 		for_each_evictable_lru(lru) {
- 			if (nr[lru]) {
- 				nr_to_scan = min(nr[lru], SWAP_CLUSTER_MAX);
-@@ -1842,17 +1850,60 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
- 							    lruvec, sc);
- 			}
- 		}
-+
-+		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
-+			continue;
-+
- 		/*
--		 * On large memory systems, scan >> priority can become
--		 * really large. This is fine for the starting priority;
--		 * we want to put equal scanning pressure on each zone.
--		 * However, if the VM has a harder time of freeing pages,
--		 * with multiple processes reclaiming pages, the total
--		 * freeing target can get unreasonably large.
-+		 * For global direct reclaim, reclaim only the number of pages
-+		 * requested. Less care is taken to scan proportionally as it
-+		 * is more important to minimise direct reclaim stall latency
-+		 * than it is to properly age the LRU lists.
- 		 */
--		if (nr_reclaimed >= nr_to_reclaim &&
--		    sc->priority < DEF_PRIORITY)
-+		if (global_reclaim(sc) && !current_is_kswapd())
- 			break;
-+
-+		/*
-+		 * For kswapd and memcg, reclaim at least the number of pages
-+		 * requested. Ensure that the anon and file LRUs shrink
-+		 * proportionally what was requested by get_scan_count(). We
-+		 * stop reclaiming one LRU and reduce the amount scanning
-+		 * proportional to the original scan target.
-+		 */
-+		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
-+		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
-+
-+		if (nr_file > nr_anon) {
-+			unsigned long scan_target = targets[LRU_INACTIVE_ANON] +
-+						targets[LRU_ACTIVE_ANON] + 1;
-+			lru = LRU_BASE;
-+			percentage = nr_anon * 100 / scan_target;
-+		} else {
-+			unsigned long scan_target = targets[LRU_INACTIVE_FILE] +
-+						targets[LRU_ACTIVE_FILE] + 1;
-+			lru = LRU_FILE;
-+			percentage = nr_file * 100 / scan_target;
-+		}
-+
-+		/* Stop scanning the smaller of the LRU */
-+		nr[lru] = 0;
-+		nr[lru + LRU_ACTIVE] = 0;
-+
-+		/*
-+		 * Recalculate the other LRU scan count based on its original
-+		 * scan target and the percentage scanning already complete
-+		 */
-+		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
-+		nr_scanned = targets[lru] - nr[lru];
-+		nr[lru] = targets[lru] * (100 - percentage) / 100;
-+		nr[lru] -= min(nr[lru], nr_scanned);
-+
-+		lru += LRU_ACTIVE;
-+		nr_scanned = targets[lru] - nr[lru];
-+		nr[lru] = targets[lru] * (100 - percentage) / 100;
-+		nr[lru] -= min(nr[lru], nr_scanned);
-+
-+		scan_adjusted = true;
- 	}
- 	blk_finish_plug(&plug);
- 	sc->nr_reclaimed += nr_reclaimed;
 -- 
-1.8.1.4
-
+Jean Delvare
