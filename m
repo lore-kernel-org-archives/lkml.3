@@ -1,237 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab3EMQK0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 12:10:26 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:53637 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863Ab3EMQJ3 (ORCPT
+	id S1755302Ab3EMQK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 12:10:57 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:14127 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753768Ab3EMQJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 12:09:29 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2, part 1 8/9] PCI: make PCI host bridge/bus creating and destroying logic symmetric
-Date: Tue, 14 May 2013 00:08:32 +0800
-Message-Id: <1368461313-4371-9-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com>
-References: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com>
+	Mon, 13 May 2013 12:09:22 -0400
+Message-ID: <1368461354.3305.17.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH] igb: add a method to get the nic hw time stamping policy
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "Vick, Matthew" <matthew.vick@intel.com>, Dong Zhu <bluezhudong@gmail.com>
+CC: Richard Cochran <richardcochran@gmail.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Dave, Tushar N" <tushar.n.dave@intel.com>,
+        "Keller, Jacob E" <jacob.e.keller@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, "Dave Jones" <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Mon, 13 May 2013 17:09:14 +0100
+In-Reply-To: <CDB65511.1CE8D%matthew.vick@intel.com>
+References: <CDB65511.1CE8D%matthew.vick@intel.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19862.005
+X-TM-AS-Result: No--22.905400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes PCI host bridge/bus creating and destroying logic
-symmetric by using device_initialize()/device_add()/device_del()/put_device()
-pairs as discussed in thread at:
-http://comments.gmane.org/gmane.linux.kernel.pci/22073
+On Mon, 2013-05-13 at 15:48 +0000, Vick, Matthew wrote:
+> On 5/13/13 3:07 AM, "Dong Zhu" <bluezhudong@gmail.com> wrote:
+[...]
+> >From 8a12932fd2a3bb5ca904bc72b20140247a5d81be Mon Sep 17 00:00:00 2001
+> >From: Dong Zhu <bluezhudong@gmail.com>
+> >Date: Mon, 13 May 2013 17:27:59 +0800
+> >
+> >Currently kernel only support setting the hw time stamping policy
+> >through ioctl,now add a method to check which packets(Outgoing and
+> >Incoming) are time stamped by nic.
+> >
+> >Add this to igb_get_ts_info, we can query this by using the GET_TS_INFO
+> >ethtool command. Testing on I350 and 82576NS it seems work well.
+> >
+> >Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+> >---
+> > drivers/net/ethernet/intel/igb/igb_ethtool.c | 78
+> >+++++++++++++++++++++++++++-
+> > include/uapi/linux/ethtool.h                 |  3 ++
+> > 2 files changed, 79 insertions(+), 2 deletions(-)
+> 
+> [...]
+> 
+> >diff --git a/include/uapi/linux/ethtool.h b/include/uapi/linux/ethtool.h
+> >index 0c9b448..06cdbc0 100644
+> >--- a/include/uapi/linux/ethtool.h
+> >+++ b/include/uapi/linux/ethtool.h
+> >@@ -772,7 +772,10 @@ struct ethtool_sfeatures {
+> >  * @so_timestamping: bit mask of the sum of the supported
+> >SO_TIMESTAMPING flags
+> >  * @phc_index: device index of the associated PHC, or -1 if there is none
+> >  * @tx_types: bit mask of the supported hwtstamp_tx_types enumeration
+> >values
+> >+ * @tx_reserved[0]: bit mask of the in use hwtstamp_tx_types enumeration
+> >values
+> >  * @rx_filters: bit mask of the supported hwtstamp_rx_filters
+> >enumeration values
+> >+ * @rx_reserved[0]: bit mask of the in use hwtstamp_rx_filters
+> >enumeration
+> >+ * values
 
-It also fixes a bug in error recovery path in pci_create_root_bus()
-which may kfree() an in-use host bridge object.
+Why would we keep calling a field 'reserved' once it's been given a
+specific meaning?
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/probe.c  | 84 +++++++++++++++++++++++-----------------------------
- drivers/pci/remove.c |  3 +-
- 2 files changed, 39 insertions(+), 48 deletions(-)
+> >  * The bits in the 'tx_types' and 'rx_filters' fields correspond to
+> >  * the 'hwtstamp_tx_types' and 'hwtstamp_rx_filters' enumeration values,
+> >-- 
+> >1.7.11.7
+> >
+> >
+> >-- 
+> >Best Regards,
+> >Dong Zhu
+> 
+> CCing Ben Hutchings, since now your patch is affecting ethtool.
+[...]
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index bc075a3..a2617c2 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -451,7 +451,7 @@ void pci_read_bridge_bases(struct pci_bus *child)
- 	}
- }
- 
--static struct pci_bus * pci_alloc_bus(void)
-+static struct pci_bus *pci_alloc_bus(struct pci_ops *ops, void *sd, int bus)
- {
- 	struct pci_bus *b;
- 
-@@ -464,10 +464,32 @@ static struct pci_bus * pci_alloc_bus(void)
- 		INIT_LIST_HEAD(&b->resources);
- 		b->max_bus_speed = PCI_SPEED_UNKNOWN;
- 		b->cur_bus_speed = PCI_SPEED_UNKNOWN;
-+		b->sysdata = sd;
-+		b->ops = ops;
-+		b->number = bus;
-+		b->busn_res.start = bus;
-+		b->busn_res.end = 0xff;
-+		b->busn_res.flags = IORESOURCE_BUS;
-+		b->dev.class = &pcibus_class;
-+		dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
-+		device_initialize(&b->dev);
- 	}
-+
- 	return b;
- }
- 
-+static void pci_release_host_bridge_dev(struct device *dev)
-+{
-+	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
-+
-+	if (bridge->release_fn)
-+		bridge->release_fn(bridge);
-+
-+	pci_free_resource_list(&bridge->windows);
-+
-+	kfree(bridge);
-+}
-+
- static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
- {
- 	struct pci_host_bridge *bridge;
-@@ -476,6 +498,10 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
- 	if (bridge) {
- 		INIT_LIST_HEAD(&bridge->windows);
- 		bridge->bus = b;
-+		bridge->dev.release = pci_release_host_bridge_dev;
-+		dev_set_name(&bridge->dev, "pci%04x:%02x",
-+			     pci_domain_nr(b), b->number);
-+		device_initialize(&bridge->dev);
- 	}
- 
- 	return bridge;
-@@ -628,28 +654,13 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
- 	/*
- 	 * Allocate a new bus, and inherit stuff from the parent..
- 	 */
--	child = pci_alloc_bus();
-+	child = pci_alloc_bus(parent->ops, parent->sysdata, busnr);
- 	if (!child)
- 		return NULL;
- 
- 	child->parent = parent;
--	child->ops = parent->ops;
--	child->sysdata = parent->sysdata;
- 	child->bus_flags = parent->bus_flags;
--
--	/* initialize some portions of the bus device, but don't register it
--	 * now as the parent is not properly set up yet.
--	 */
--	child->dev.class = &pcibus_class;
--	dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
--
--	/*
--	 * Set up the primary, secondary and subordinate
--	 * bus numbers.
--	 */
--	child->number = child->busn_res.start = busnr;
- 	child->primary = parent->busn_res.start;
--	child->busn_res.end = 0xff;
- 
- 	if (!bridge) {
- 		child->dev.parent = parent->bridge;
-@@ -670,7 +681,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
- 	bridge->subordinate = child;
- 
- add_dev:
--	ret = device_register(&child->dev);
-+	ret = device_add(&child->dev);
- 	WARN_ON(ret < 0);
- 
- 	pcibios_add_bus(child);
-@@ -1190,18 +1201,6 @@ int pci_cfg_space_size(struct pci_dev *dev)
- 	return PCI_CFG_SPACE_SIZE;
- }
- 
--static void pci_release_bus_bridge_dev(struct device *dev)
--{
--	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
--
--	if (bridge->release_fn)
--		bridge->release_fn(bridge);
--
--	pci_free_resource_list(&bridge->windows);
--
--	kfree(bridge);
--}
--
- struct pci_dev *pci_alloc_dev(struct pci_bus *bus)
- {
- 	struct pci_dev *dev;
-@@ -1688,13 +1687,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	char bus_addr[64];
- 	char *fmt;
- 
--	b = pci_alloc_bus();
-+	b = pci_alloc_bus(ops, sysdata, bus);
- 	if (!b)
- 		return NULL;
- 
--	b->sysdata = sysdata;
--	b->ops = ops;
--	b->number = b->busn_res.start = bus;
- 	b2 = pci_find_bus(pci_domain_nr(b), bus);
- 	if (b2) {
- 		/* If we already got to this bus through a different bridge, ignore it */
-@@ -1706,27 +1702,22 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	if (!bridge)
- 		goto err_out;
- 
--	bridge->dev.parent = parent;
--	bridge->dev.release = pci_release_bus_bridge_dev;
--	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
- 	error = pcibios_root_bridge_prepare(bridge);
- 	if (error)
- 		goto bridge_dev_reg_err;
- 
--	error = device_register(&bridge->dev);
-+	bridge->dev.parent = parent;
-+	error = device_add(&bridge->dev);
- 	if (error)
- 		goto bridge_dev_reg_err;
-+
- 	b->bridge = get_device(&bridge->dev);
- 	device_enable_async_suspend(b->bridge);
- 	pci_set_bus_of_node(b);
--
- 	if (!parent)
- 		set_dev_node(b->bridge, pcibus_to_node(b));
--
--	b->dev.class = &pcibus_class;
- 	b->dev.parent = b->bridge;
--	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
--	error = device_register(&b->dev);
-+	error = device_add(&b->dev);
- 	if (error)
- 		goto class_dev_reg_err;
- 
-@@ -1769,12 +1760,11 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	return b;
- 
- class_dev_reg_err:
--	put_device(&bridge->dev);
--	device_unregister(&bridge->dev);
-+	device_del(&bridge->dev);
- bridge_dev_reg_err:
--	kfree(bridge);
-+	put_device(&bridge->dev);
- err_out:
--	kfree(b);
-+	put_device(&b->dev);
- 	return NULL;
- }
- 
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 8fc54b7..b0ce875 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -52,7 +52,8 @@ void pci_remove_bus(struct pci_bus *bus)
- 	up_write(&pci_bus_sem);
- 	pci_remove_legacy_files(bus);
- 	pcibios_remove_bus(bus);
--	device_unregister(&bus->dev);
-+	device_del(&bus->dev);
-+	put_device(&bus->dev);
- }
- EXPORT_SYMBOL(pci_remove_bus);
- 
+Thanks, Matthew.
+
+Ben.
+
 -- 
-1.8.1.2
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
