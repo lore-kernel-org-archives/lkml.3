@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab3EMUEE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 16:04:04 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59474 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755154Ab3EMUEC (ORCPT
+	id S1755347Ab3EMUHv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 16:07:51 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57166 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755166Ab3EMUHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 16:04:02 -0400
-Message-ID: <5191472D.7060601@gmail.com>
-Date: Mon, 13 May 2013 22:03:57 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] pinctrl: dove: add PMU functions to pinctrl
-References: <1367883368-27889-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130513200002.GY31290@titan.lakedaemon.net>
-In-Reply-To: <20130513200002.GY31290@titan.lakedaemon.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 13 May 2013 16:07:50 -0400
+Date: Mon, 13 May 2013 13:07:49 -0700 (PDT)
+Message-Id: <20130513.130749.1053380556995548595.davem@davemloft.net>
+To: pebolle@tiscali.nl
+Cc: mason@myri.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] myri_sbus: remove firmware
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1368475385.1350.70.camel@x61.thuisdomein>
+References: <1365171782.1830.67.camel@x61.thuisdomein>
+	<20130405.125530.727706283199340601.davem@davemloft.net>
+	<1368475385.1350.70.camel@x61.thuisdomein>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2013 10:00 PM, Jason Cooper wrote:
-> On Tue, May 07, 2013 at 01:36:08AM +0200, Sebastian Hesselbarth wrote:
->> Dove power management unit can mux some special functions to mpp0-15.
->> This patch adds support to set/get the current PMU function mapped
->> to the corresponding mpp pins. The device tree documentation is also
->> updated accordingly.
->>
->> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->
-> Do you intend to have anything depending on these changes in this merge
-> window?
+From: Paul Bolle <pebolle@tiscali.nl>
+Date: Mon, 13 May 2013 22:03:05 +0200
 
-Jason,
+> Dave,
+> 
+> On Fri, 2013-04-05 at 12:55 -0400, David Miller wrote:
+>> From: Paul Bolle <pebolle@tiscali.nl>
+>> > Support for MyriCOM Gigabit Ethernet cards was removed in v3.1. Remove
+>> > the firmware too.
+>> > 
+>> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+>> 
+>> Acked-by: David S. Miller <davem@davemloft.net>
+> 
+> I don't think this patch has been queued for mainline anywhere. Would
+> you mind queuing this in a tree you maintain?
 
-I don't. There will be pmu and pmic support someday but I am not working
-on it.
-
-Sebastian
+I don't maintain the firmware tree, therefore I cannot do that.
