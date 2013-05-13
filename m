@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab3ENAny (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 20:43:54 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63746 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754301Ab3ENAnx (ORCPT
+	id S1755645Ab3ENAtU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 20:49:20 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:42055 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755472Ab3ENAtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 20:43:53 -0400
-X-AuditID: 9c930179-b7b92ae0000035f7-e5-519188c63782
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 1/2] perf report: Add --percent-limit option
-References: <1368434503-29373-1-git-send-email-namhyung@kernel.org>
-	<20130513132028.GA1032@krava.brq.redhat.com>
-Date: Tue, 14 May 2013 09:43:50 +0900
-In-Reply-To: <20130513132028.GA1032@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Mon, 13 May 2013 15:20:29 +0200")
-Message-ID: <87li7i5r21.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 13 May 2013 20:49:19 -0400
+Date: Mon, 13 May 2013 07:00:05 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Bisected post-3.9 regression: Resume takes 5 times as much time
+ as with v3.9
+Message-ID: <20130513140005.GA9165@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <87r4hdjsu5.fsf@nemi.mork.no>
+ <20130512113157.GG3648@linux.vnet.ibm.com>
+ <20130512182935.GD24440@8bytes.org>
+ <20130512205747.GK3648@linux.vnet.ibm.com>
+ <20130512213430.GE24440@8bytes.org>
+ <20130513013518.GM3648@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130513013518.GM3648@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051400-2398-0000-0000-0000144E2238
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Sun, May 12, 2013 at 06:35:18PM -0700, Paul E. McKenney wrote:
+> On Sun, May 12, 2013 at 11:34:30PM +0200, Joerg Roedel wrote:
+> > On Sun, May 12, 2013 at 01:57:48PM -0700, Paul E. McKenney wrote:
+> > > That does look pretty extreme!  If you build with CONFIG_RCU_NO_HZ=n,
+> > > but without the revert, do you still get the delays?
+> > 
+> > With CONFIG_RCU_NO_HZ=n (and no revert) the system boots fine, no boot
+> > delay. I also enabled some RCU debugging options (with
+> > CONFIG_RCU_NO_HZ=y), but didn't see anything so far.
+> 
+> OK, good -- we at least have an easy work-around while I am tracking
+> this down.  ;-)
 
-On Mon, 13 May 2013 15:20:29 +0200, Jiri Olsa wrote:
-> On Mon, May 13, 2013 at 05:41:42PM +0900, Namhyung Kim wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> The --percent-limit option is for not showing small overheaded entries
->> in the output.  Maybe we want to set a certain default value like 0.1.
->
-> hi,
-> can't apply this on acme's perf/core nor latest tip
-> What is this based on? Maybe you could push the branch out? ;-)
+And could you please try out the following patch?
 
-Oops, I wanted to make it independent to other patches, but it seemed I
-failed. :)
+							Thanx, Paul
 
-It's on top on acme/perf/core but also depends on my other works.  I'll
-resend the patches in a set and push the branch soon.
+------------------------------------------------------------------------
 
-Thanks,
-Namhyung
+rcu: Fix comparison sense in rcu_needs_cpu()
+
+Commit c0f4dfd4f (rcu: Make RCU_FAST_NO_HZ take advantage of numbered
+callbacks) introduced a bug that can result in excessively long grace
+periods.  This bug reverse the senes of the "if" statement checking
+for lazy callbacks, so that RCU takes a lazy approach when there are
+in fact non-lazy callbacks.  This can result in excessive boot, suspend,
+and resume times.
+
+This commit therefore fixes the sense of this "if" statement.
+
+Reported-by: Borislav Petkov <bp@alien8.de>
+Reported-by: Bjørn Mork <bjorn@mork.no>
+Reported-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 641991d..63098a5 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1692,7 +1692,7 @@ int rcu_needs_cpu(int cpu, unsigned long *dj)
+ 	rdtp->last_accelerate = jiffies;
+ 
+ 	/* Request timer delay depending on laziness, and round. */
+-	if (rdtp->all_lazy) {
++	if (!rdtp->all_lazy) {
+ 		*dj = round_up(rcu_idle_gp_delay + jiffies,
+ 			       rcu_idle_gp_delay) - jiffies;
+ 	} else {
+
