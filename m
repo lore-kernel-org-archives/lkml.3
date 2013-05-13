@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab3EMJrJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 05:47:09 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:41648 "EHLO
+	id S1754073Ab3EMJof (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 05:44:35 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:41538 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164Ab3EMJok (ORCPT
+	with ESMTP id S1751083Ab3EMJob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 05:44:40 -0400
+	Mon, 13 May 2013 05:44:31 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Michal Simek <michal.simek@xilinx.com>,
@@ -23,9 +23,9 @@ To: Maxime Ripard <maxime.ripard@free-electrons.com>,
 Cc: linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH 09/14] ARM: mvebu: Remove init_irq declaration in machine description
-Date: Mon, 13 May 2013 11:44:08 +0200
-Message-Id: <1368438253-28218-10-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 01/14] ARM: sunxi: Remove init_irq declaration in machine description
+Date: Mon, 13 May 2013 11:44:00 +0200
+Message-Id: <1368438253-28218-2-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1368438253-28218-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1368438253-28218-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -36,25 +36,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
 specified") removed the need to explictly setup the init_irq field in
 the machine description when using only irqchip_init. Remove that
-declaration for mvebu as well.
+declaration for sunxi as well.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/mach-mvebu/armada-370-xp.c | 1 -
+ arch/arm/mach-sunxi/sunxi.c | 1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/arch/arm/mach-mvebu/armada-370-xp.c b/arch/arm/mach-mvebu/armada-370-xp.c
-index 42a4cb3..8500002 100644
---- a/arch/arm/mach-mvebu/armada-370-xp.c
-+++ b/arch/arm/mach-mvebu/armada-370-xp.c
-@@ -96,7 +96,6 @@ DT_MACHINE_START(ARMADA_XP_DT, "Marvell Armada 370/XP (Device Tree)")
- 	.init_machine	= armada_370_xp_dt_init,
- 	.map_io		= armada_370_xp_map_io,
- 	.init_early	= armada_370_xp_init_early,
+diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
+index 706ce35..4de1edf 100644
+--- a/arch/arm/mach-sunxi/sunxi.c
++++ b/arch/arm/mach-sunxi/sunxi.c
+@@ -117,7 +117,6 @@ static const char * const sunxi_board_dt_compat[] = {
+ DT_MACHINE_START(SUNXI_DT, "Allwinner A1X (Device Tree)")
+ 	.init_machine	= sunxi_dt_init,
+ 	.map_io		= sunxi_map_io,
 -	.init_irq	= irqchip_init,
- 	.init_time	= armada_370_xp_timer_and_clk_init,
- 	.restart	= mvebu_restart,
- 	.dt_compat	= armada_370_xp_dt_compat,
+ 	.init_time	= sunxi_timer_init,
+ 	.dt_compat	= sunxi_board_dt_compat,
+ MACHINE_END
 -- 
 1.8.1.2
 
