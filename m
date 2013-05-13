@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab3EMCEE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 22:04:04 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41764 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198Ab3EMCEC (ORCPT
+	id S1752996Ab3EMCEs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 22:04:48 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:49658 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535Ab3EMCEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 22:04:02 -0400
-Date: Mon, 13 May 2013 03:04:00 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: linux-3.10-rc1 procfs interface breaks vmware, eicon, fio ....
- any fix?
-Message-ID: <20130513020400.GS25399@ZenIV.linux.org.uk>
-References: <CAAJw_Zv4Cy-fSg24F=7poRNs2oGA=7nuZQtQOyf_-dsStzNpgw@mail.gmail.com>
+	Sun, 12 May 2013 22:04:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAJw_Zv4Cy-fSg24F=7poRNs2oGA=7nuZQtQOyf_-dsStzNpgw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <871u9e6ji1.fsf@openvz.org>
+References: <6719519.5821368147110937.JavaMail.weblogic@epml17>
+	<CA+8MBbKHJgnueAurRV1aeeV-NdzRTz_gVwYcJuyDrjJLErtcfg@mail.gmail.com>
+	<871u9e6ji1.fsf@openvz.org>
+Date: Sun, 12 May 2013 19:04:45 -0700
+Message-ID: <CA+8MBbLY1jQCQmBrKdVpihkqFBf93iJKZ7J8E_JXcu9NVeff_w@mail.gmail.com>
+Subject: Re: Re: EXT4 panic at jbd2_journal_put_journal_head() in 3.9+
+From: Tony Luck <tony.luck@gmail.com>
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: eunb.song@samsung.com, "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 08:19:46AM +0800, Jeff Chua wrote:
-> Anyone on lkml working on patches for vmware to make it run on
-> Linux-3.10-rc1? The recent change in procfs interface breaks vmware,
-> diva/eicon and fio modules.
-> 
-> Every modules is now broken and needs to be reworked. Is there a more
-> subtle way to handle this like give more time to allow developers to
-> handle the move rather than killing off the "tranditional" procfs
-> access
+On Sat, May 11, 2013 at 12:52 AM, Dmitry Monakhov <dmonakhov@openvz.org> wrote:.
+> What was page_size and fsblock size?
 
-I might feel bad about those, if not for one thing - their authors
-had explicitly chosen to keep them out of tree and did not bother
-to watch what was going on in linux-next - these changes had been
-there for quite a while.  And now you have a chutzpah to come and
-complain about that?  Better yet, we are expected to be working on
-fixing those?  Really?  It's not a rethorical question - I seriously
-want to know whether I'd misparsed what you meant to say.
+CONFIG_IA64_PAGE_SIZE_64KB=y
+
+fsblock size is whatever is the default for SLES11SP2 on ia64 - which
+tool will tell me?
+
+My git bisect finally competed and points the a finger at:
+
+bisect> git bisect good
+ae4647fb7654676fc44a97e86eb35f9f06b99f66 is first bad commit
+commit ae4647fb7654676fc44a97e86eb35f9f06b99f66
+Author: Jan Kara <jack@suse.cz>
+Date:   Fri Apr 12 00:03:42 2013 -0400
+
+    jbd2: reduce journal_head size
+
+    Remove unused t_cow_tid field (ext4 copy-on-write support doesn't seem
+    to be happening) and change b_modified and b_jlist to bitfields thus
+    saving 8 bytes in the structure.
+
+    Signed-off-by: Jan Kara <jack@suse.cz>
+    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+    Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+
+:040000 040000 c39ece4341894b3daf84764ba425a87ffb90fe50
+d4e8d9185c2a1b740c235ca8ed05d496a442fce3 M      include
+
+-Tony
