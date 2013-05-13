@@ -1,45 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab3EMV6V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 17:58:21 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59169 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755092Ab3EMV6U (ORCPT
+	id S1755474Ab3EMV6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 17:58:42 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:13555 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755441Ab3EMV6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 17:58:20 -0400
-From: Joern Engel <joern@logfs.org>
-To: linux-kernel@vger.kernel.org
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        Joern Engel <joern@logfs.org>
-Subject: [PATCH 1/3] target: removed unused transport_state flag
-Date: Mon, 13 May 2013 16:30:05 -0400
-Message-Id: <1368477007-25274-2-git-send-email-joern@logfs.org>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1368477007-25274-1-git-send-email-joern@logfs.org>
-References: <1368477007-25274-1-git-send-email-joern@logfs.org>
+	Mon, 13 May 2013 17:58:35 -0400
+Message-ID: <1368482311.3305.48.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: [PATCHv2 net 1/2] sfc: Delete EFX_PAGE_IP_ALIGN, equivalent to
+ NET_IP_ALIGN
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Miller <davem@davemloft.net>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+CC: <linux-net-drivers@solarflare.com>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Date: Mon, 13 May 2013 22:58:31 +0100
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19862.005
+X-TM-AS-Result: No--15.730300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joern Engel <joern@logfs.org>
----
- include/target/target_core_base.h |    1 -
- 1 file changed, 1 deletion(-)
+The two architectures that define CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+(powerpc and x86) now both define NET_IP_ALIGN as 0, so there is no
+need for this optimisation any more.
 
-diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index c4af592..068ec0f 100644
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -463,7 +463,6 @@ struct se_cmd {
- #define CMD_T_ABORTED		(1 << 0)
- #define CMD_T_ACTIVE		(1 << 1)
- #define CMD_T_COMPLETE		(1 << 2)
--#define CMD_T_QUEUED		(1 << 3)
- #define CMD_T_SENT		(1 << 4)
- #define CMD_T_STOP		(1 << 5)
- #define CMD_T_FAILED		(1 << 6)
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+---
+ drivers/net/ethernet/sfc/efx.c        |    4 ++--
+ drivers/net/ethernet/sfc/net_driver.h |   15 +--------------
+ drivers/net/ethernet/sfc/rx.c         |    6 +++---
+ 3 files changed, 6 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/net/ethernet/sfc/efx.c b/drivers/net/ethernet/sfc/efx.c
+index 01b9920..999289b 100644
+--- a/drivers/net/ethernet/sfc/efx.c
++++ b/drivers/net/ethernet/sfc/efx.c
+@@ -638,13 +638,13 @@ static void efx_start_datapath(struct efx_nic *efx)
+ 			   EFX_MAX_FRAME_LEN(efx->net_dev->mtu) +
+ 			   efx->type->rx_buffer_padding);
+ 	rx_buf_len = (sizeof(struct efx_rx_page_state) +
+-		      EFX_PAGE_IP_ALIGN + efx->rx_dma_len);
++		      NET_IP_ALIGN + efx->rx_dma_len);
+ 	if (rx_buf_len <= PAGE_SIZE) {
+ 		efx->rx_scatter = false;
+ 		efx->rx_buffer_order = 0;
+ 	} else if (efx->type->can_rx_scatter) {
+ 		BUILD_BUG_ON(sizeof(struct efx_rx_page_state) +
+-			     EFX_PAGE_IP_ALIGN + EFX_RX_USR_BUF_SIZE >
++			     NET_IP_ALIGN + EFX_RX_USR_BUF_SIZE >
+ 			     PAGE_SIZE / 2);
+ 		efx->rx_scatter = true;
+ 		efx->rx_dma_len = EFX_RX_USR_BUF_SIZE;
+diff --git a/drivers/net/ethernet/sfc/net_driver.h b/drivers/net/ethernet/sfc/net_driver.h
+index 9bd433a..5efddf3 100644
+--- a/drivers/net/ethernet/sfc/net_driver.h
++++ b/drivers/net/ethernet/sfc/net_driver.h
+@@ -468,24 +468,11 @@ enum nic_state {
+ };
+ 
+ /*
+- * Alignment of page-allocated RX buffers
+- *
+- * Controls the number of bytes inserted at the start of an RX buffer.
+- * This is the equivalent of NET_IP_ALIGN [which controls the alignment
+- * of the skb->head for hardware DMA].
+- */
+-#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
+-#define EFX_PAGE_IP_ALIGN 0
+-#else
+-#define EFX_PAGE_IP_ALIGN NET_IP_ALIGN
+-#endif
+-
+-/*
+  * Alignment of the skb->head which wraps a page-allocated RX buffer
+  *
+  * The skb allocated to wrap an rx_buffer can have this alignment. Since
+  * the data is memcpy'd from the rx_buf, it does not need to be equal to
+- * EFX_PAGE_IP_ALIGN.
++ * NET_IP_ALIGN.
+  */
+ #define EFX_PAGE_SKB_ALIGN 2
+ 
+diff --git a/drivers/net/ethernet/sfc/rx.c b/drivers/net/ethernet/sfc/rx.c
+index e73e30b..99f70dd 100644
+--- a/drivers/net/ethernet/sfc/rx.c
++++ b/drivers/net/ethernet/sfc/rx.c
+@@ -93,7 +93,7 @@ static inline void efx_sync_rx_buffer(struct efx_nic *efx,
+ 
+ void efx_rx_config_page_split(struct efx_nic *efx)
+ {
+-	efx->rx_page_buf_step = ALIGN(efx->rx_dma_len + EFX_PAGE_IP_ALIGN,
++	efx->rx_page_buf_step = ALIGN(efx->rx_dma_len + NET_IP_ALIGN,
+ 				      L1_CACHE_BYTES);
+ 	efx->rx_bufs_per_page = efx->rx_buffer_order ? 1 :
+ 		((PAGE_SIZE - sizeof(struct efx_rx_page_state)) /
+@@ -188,9 +188,9 @@ static int efx_init_rx_buffers(struct efx_rx_queue *rx_queue)
+ 		do {
+ 			index = rx_queue->added_count & rx_queue->ptr_mask;
+ 			rx_buf = efx_rx_buffer(rx_queue, index);
+-			rx_buf->dma_addr = dma_addr + EFX_PAGE_IP_ALIGN;
++			rx_buf->dma_addr = dma_addr + NET_IP_ALIGN;
+ 			rx_buf->page = page;
+-			rx_buf->page_offset = page_offset + EFX_PAGE_IP_ALIGN;
++			rx_buf->page_offset = page_offset + NET_IP_ALIGN;
+ 			rx_buf->len = efx->rx_dma_len;
+ 			rx_buf->flags = 0;
+ 			++rx_queue->added_count;
+
 -- 
-1.7.10.4
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
