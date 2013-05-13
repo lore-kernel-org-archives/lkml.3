@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab3EMGAF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 02:00:05 -0400
-Received: from 8bytes.org ([85.214.48.195]:49435 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753115Ab3EMGAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 02:00:03 -0400
-Date: Mon, 13 May 2013 08:00:01 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Bisected post-3.9 regression: Resume takes 5 times as much time
- as with v3.9
-Message-ID: <20130513060001.GF24440@8bytes.org>
-References: <87r4hdjsu5.fsf@nemi.mork.no>
- <20130512113157.GG3648@linux.vnet.ibm.com>
- <20130512182935.GD24440@8bytes.org>
- <20130512205747.GK3648@linux.vnet.ibm.com>
- <20130512213430.GE24440@8bytes.org>
- <20130513013518.GM3648@linux.vnet.ibm.com>
+	id S1753969Ab3EMGBq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 02:01:46 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:38596 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753295Ab3EMGBp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 02:01:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130513013518.GM3648@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Mon May 13 08:00:02 2013
-X-DSPAM-Confidence: 0.9969
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5190816223675067813459
+Date: Mon, 13 May 2013 14:01:43 +0800
+Message-ID: <CAPgLHd87mUGwSfX31YLLkL-+72AcrW6szwZiqbfqRZvfvFHBDA@mail.gmail.com>
+Subject: [PATCH] hwmon: fix error return code in abituguru_probe()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: hdegoede@redhat.com, khali@linux-fr.org, linux@roeck-us.net
+Cc: yongjun_wei@trendmicro.com.cn, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 06:35:18PM -0700, Paul E. McKenney wrote:
-> On Sun, May 12, 2013 at 11:34:30PM +0200, Joerg Roedel wrote:
-> > With CONFIG_RCU_NO_HZ=n (and no revert) the system boots fine, no boot
-> > delay. I also enabled some RCU debugging options (with
-> > CONFIG_RCU_NO_HZ=y), but didn't see anything so far.
-> 
-> OK, good -- we at least have an easy work-around while I am tracking
-> this down.  ;-)
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Fine. Let me know if I can help you with some further testing or trying
-a fix :)
+Fix to return a negative error code from the error handling
+case instead of 0, as done elsewhere in this function.
 
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/hwmon/abituguru.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-	Joerg
-
+diff --git a/drivers/hwmon/abituguru.c b/drivers/hwmon/abituguru.c
+index df0b699..2ebd6ce 100644
+--- a/drivers/hwmon/abituguru.c
++++ b/drivers/hwmon/abituguru.c
+@@ -1414,14 +1414,18 @@ static int abituguru_probe(struct platform_device *pdev)
+ 	pr_info("found Abit uGuru\n");
+ 
+ 	/* Register sysfs hooks */
+-	for (i = 0; i < sysfs_attr_i; i++)
+-		if (device_create_file(&pdev->dev,
+-				&data->sysfs_attr[i].dev_attr))
++	for (i = 0; i < sysfs_attr_i; i++) {
++		res = device_create_file(&pdev->dev,
++					 &data->sysfs_attr[i].dev_attr);
++		if (res)
+ 			goto abituguru_probe_error;
+-	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++)
+-		if (device_create_file(&pdev->dev,
+-				&abituguru_sysfs_attr[i].dev_attr))
++	}
++	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++) {
++		res = device_create_file(&pdev->dev,
++					 &abituguru_sysfs_attr[i].dev_attr);
++		if (res)
+ 			goto abituguru_probe_error;
++	}
+ 
+ 	data->hwmon_dev = hwmon_device_register(&pdev->dev);
+ 	if (!IS_ERR(data->hwmon_dev))
 
