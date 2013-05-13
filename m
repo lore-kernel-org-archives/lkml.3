@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab3EMPWU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 11:22:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35645 "EHLO mx1.redhat.com"
+	id S1755063Ab3EMPVh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 11:21:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13274 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755039Ab3EMPVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 11:21:38 -0400
-Date: Mon, 13 May 2013 17:17:21 +0200
+	id S1755035Ab3EMPVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 11:21:33 -0400
+Date: Mon, 13 May 2013 17:17:33 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -17,9 +17,8 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Russell King <linux@arm.linux.org.uk>,
         Will Deacon <will.deacon@arm.com>, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 07/13] ptrace/x86: dont delay "disable" till second pass in
-	ptrace_write_dr7()
-Message-ID: <20130513151721.GA6273@redhat.com>
+Subject: [PATCH 10/13] ptrace/x86: cleanup ptrace_set_debugreg()
+Message-ID: <20130513151733.GA6290@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,133 +28,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ptrace_write_dr7() skips ptrace_modify_breakpoint(disabled => true)
-unless second_pass, this buys nothing but complicates the code and
-means that we always do the main loop twice even if "disabled" was
-never true.
+ptrace_set_debugreg() is trivial but looks horrible. Kill the
+unnecessary goto's and return's to cleanup the code.
 
-The comment says:
-
-	Don't unregister the breakpoints right-away,
-	unless all register_user_hw_breakpoint()
-	requests have succeeded.
-
-Firstly, we do not do register_user_hw_breakpoint(), it was removed
-by 24f1e32c "hw-breakpoints: Rewrite the hw-breakpoints layer on top
-of perf events".
-
-We are going to restore register_user_hw_breakpoint() (see the next
-patch) but this doesn't matter, after 44234adc "hw-breakpoints: Modify
-breakpoints without unregistering them" perf_event_disable() can not
-hurt, hw_breakpoint_del() does not free the slot.
-
-Remove the "second_pass" check from the main loop and simplify the
-code. Since we have to check "bp != NULL" anyway, the patch also
-removes the same check in ptrace_modify_breakpoint() and moves the
-comment into ptrace_write_dr7().
-
-With this patch the second pass is only needed to restore the saved
-old_dr7. This should never fail, so the patch adds WARN_ON() to catch
-the potential problems as Frederic suggested.
+This matches ptrace_get_debugreg() which also needs the trivial
+whitespace cleanups.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- arch/x86/kernel/ptrace.c |   53 +++++++++++++++++----------------------------
- 1 files changed, 20 insertions(+), 33 deletions(-)
+ arch/x86/kernel/ptrace.c |   26 ++++++++------------------
+ 1 files changed, 8 insertions(+), 18 deletions(-)
 
 diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 0649f16..98b0a2c 100644
+index 5c387b3..7461f50 100644
 --- a/arch/x86/kernel/ptrace.c
 +++ b/arch/x86/kernel/ptrace.c
-@@ -609,14 +609,6 @@ ptrace_modify_breakpoint(struct perf_event *bp, int len, int type,
- 	int gen_len, gen_type;
- 	struct perf_event_attr attr;
- 
--	/*
--	 * We should have at least an inactive breakpoint at this
--	 * slot. It means the user is writing dr7 without having
--	 * written the address register first
--	 */
--	if (!bp)
--		return -EINVAL;
--
- 	err = arch_bp_generic_fields(len, type, &gen_len, &gen_type);
- 	if (err)
- 		return err;
-@@ -634,52 +626,47 @@ ptrace_modify_breakpoint(struct perf_event *bp, int len, int type,
+@@ -703,7 +703,7 @@ restore:
   */
- static int ptrace_write_dr7(struct task_struct *tsk, unsigned long data)
+ static unsigned long ptrace_get_debugreg(struct task_struct *tsk, int n)
  {
 -	struct thread_struct *thread = &(tsk->thread);
 +	struct thread_struct *thread = &tsk->thread;
- 	unsigned long old_dr7;
--	int i, orig_ret = 0, rc = 0;
--	int second_pass = 0;
-+	bool second_pass = false;
-+	int i, rc, ret = 0;
+ 	unsigned long val = 0;
  
- 	data &= ~DR_CONTROL_RESERVED;
- 	old_dr7 = ptrace_get_dr7(thread->ptrace_bps);
-+
- restore:
--	/*
--	 * Loop through all the hardware breakpoints, making the
--	 * appropriate changes to each.
--	 */
-+	rc = 0;
- 	for (i = 0; i < HBP_NUM; i++) {
- 		unsigned len, type;
- 		bool disabled = !decode_dr7(data, i, &len, &type);
- 		struct perf_event *bp = thread->ptrace_bps[i];
- 
--		if (disabled) {
-+		if (!bp) {
-+			if (disabled)
-+				continue;
- 			/*
--			 * Don't unregister the breakpoints right-away, unless
--			 * all register_user_hw_breakpoint() requests have
--			 * succeeded. This prevents any window of opportunity
--			 * for debug register grabbing by other users.
-+			 * We should have at least an inactive breakpoint at
-+			 * this slot. It means the user is writing dr7 without
-+			 * having written the address register first.
- 			 */
--			if (!bp || !second_pass)
--				continue;
-+			rc = -EINVAL;
-+			break;
- 		}
- 
- 		rc = ptrace_modify_breakpoint(bp, len, type, tsk, disabled);
- 		if (rc)
- 			break;
+ 	if (n < HBP_NUM) {
+@@ -713,7 +713,7 @@ static unsigned long ptrace_get_debugreg(struct task_struct *tsk, int n)
+ 			val = bp->hw.info.address;
+ 	} else if (n == 6) {
+ 		val = thread->debugreg6;
+-	 } else if (n == 7) {
++	} else if (n == 7) {
+ 		val = thread->ptrace_dr7;
  	}
--	/*
--	 * Make a second pass to free the remaining unused breakpoints
--	 * or to restore the original breakpoints if an error occurred.
--	 */
--	if (!second_pass) {
--		second_pass = 1;
--		if (rc < 0) {
--			orig_ret = rc;
--			data = old_dr7;
--		}
-+
-+	/* Restore if the first pass failed, second_pass shouldn't fail. */
-+	if (rc && !WARN_ON(second_pass)) {
-+		ret = rc;
-+		data = old_dr7;
-+		second_pass = true;
- 		goto restore;
- 	}
+ 	return val;
+@@ -761,30 +761,20 @@ static int ptrace_set_breakpoint_addr(struct task_struct *tsk, int nr,
+ static int ptrace_set_debugreg(struct task_struct *tsk, int n,
+ 			       unsigned long val)
+ {
+-	struct thread_struct *thread = &(tsk->thread);
+-	int rc = 0;
+-
++	struct thread_struct *thread = &tsk->thread;
+ 	/* There are no DR4 or DR5 registers */
+-	if (n == 4 || n == 5)
+-		return -EIO;
++	int rc = -EIO;
  
--	return orig_ret < 0 ? orig_ret : rc;
-+	return ret;
+-	if (n == 6) {
+-		thread->debugreg6 = val;
+-		goto ret_path;
+-	}
+ 	if (n < HBP_NUM) {
+ 		rc = ptrace_set_breakpoint_addr(tsk, n, val);
+-		if (rc)
+-			return rc;
+-	}
+-	/* All that's left is DR7 */
+-	if (n == 7) {
++	} else if (n == 6) {
++		thread->debugreg6 = val;
++		rc = 0;
++	} else if (n == 7) {
+ 		rc = ptrace_write_dr7(tsk, val);
+ 		if (!rc)
+ 			thread->ptrace_dr7 = val;
+ 	}
+-
+-ret_path:
+ 	return rc;
  }
  
- /*
 -- 
 1.5.5.1
 
