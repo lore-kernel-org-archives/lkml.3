@@ -1,306 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab3EMMlj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 08:41:39 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:58003 "EHLO e7.ny.us.ibm.com"
+	id S1752537Ab3EMMvc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 08:51:32 -0400
+Received: from git.silcnet.org ([81.89.56.81]:52972 "EHLO git.silcnet.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991Ab3EMMkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 08:40:24 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: =?UTF-8?q?=5BPATCHv11=200/4=5D=20zswap=3A=20compressed=20swap=20caching?=
-Date: Mon, 13 May 2013 07:39:59 -0500
-Message-Id: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751013Ab3EMMvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 08:51:31 -0400
+Date: Mon, 13 May 2013 14:32:07 +0200 (CEST)
+From: Pekka Riikonen <priikone@iki.fi>
+X-X-Sender: priikone@git.silcnet.org
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+cc: linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND] x86: irq_fpu_usable returns false negatives with
+ eagerfpu 
+Message-ID: <alpine.GSO.2.00.1305131356320.18@git.silcnet.org>
+User-Agent: Alpine 2.00 (GSO 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051312-5806-0000-0000-0000211BE391
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the latest version of the zswap patchset for compressed swap caching.
-This is submitted for merging into linux-next and inclusion in v3.11.
+With the addition of eagerfpu the irq_fpu_usable() now returns false 
+negatives especially in the case of ksoftirqd and interrupted idle task, 
+two common cases for FPU use for example in networking/crypto.  With 
+eagerfpu=off FPU use is possible in those contexts.  This is because of 
+the eagerfpu check in interrupted_kernel_fpu_idle():
 
-New in this Version:
+...
+  * For now, with eagerfpu we will return interrupted kernel FPU
+  * state as not-idle. TBD: Ideally we can change the return value
+  * to something like __thread_has_fpu(current). But we need to
+  * be careful of doing __thread_clear_has_fpu() before saving
+  * the FPU etc for supporting nested uses etc. For now, take
+  * the simple route!
+...
+ 	if (use_eager_fpu())
+ 		return 0;
 
-Fixup symbol collision in lib/fault-inject.c with local definition of
-debugfs functions (thanks Greg).  Rebased to 3.10-rc1.
+As eagerfpu is automatically "on" on those CPUs that also have the 
+features like AES-NI this patch changes the eagerfpu check to return 1 in 
+case the kernel_fpu_begin() has not been said yet.  Once it has been the 
+__thread_has_fpu() will start returning 0.
 
-Useful References:
+Notice that with eagerfpu the __thread_has_fpu is always true initially. 
+FPU use is thus always possible no matter what task is under us, unless 
+the state has already been saved with kernel_fpu_begin().
 
-LSFMM: In-kernel memory compression
-https://lwn.net/Articles/548109/
+Signed-off-by: Pekka Riikonen <priikone@iki.fi>
+---
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 245a71d..cb33909 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -22,23 +22,19 @@
+  /*
+   * Were we in an interrupt that interrupted kernel mode?
+   *
+- * For now, with eagerfpu we will return interrupted kernel FPU
+- * state as not-idle. TBD: Ideally we can change the return value
+- * to something like __thread_has_fpu(current). But we need to
+- * be careful of doing __thread_clear_has_fpu() before saving
+- * the FPU etc for supporting nested uses etc. For now, take
+- * the simple route!
+- *
+   * On others, we can do a kernel_fpu_begin/end() pair *ONLY* if that
+   * pair does nothing at all: the thread must not have fpu (so
+   * that we don't try to save the FPU state), and TS must
+   * be set (so that the clts/stts pair does nothing that is
+   * visible in the interrupted kernel thread).
++ *
++ * Except for the eagerfpu case when we return 1 unless we've already
++ * been eager and saved the state in kernel_fpu_begin().
+   */
+  static inline bool interrupted_kernel_fpu_idle(void)
+  {
+  	if (use_eager_fpu())
+-		return 0;
++		return __thread_has_fpu(current);
 
-The zswap compressed swap cache
-https://lwn.net/Articles/537422/
+  	return !__thread_has_fpu(current) &&
+  		(read_cr0() & X86_CR0_TS);
+@@ -78,8 +74,8 @@ void __kernel_fpu_begin(void)
+  	struct task_struct *me = current;
 
-Zswap Overview:
-
-Zswap is a lightweight compressed cache for swap pages. It takes
-pages that are in the process of being swapped out and attempts to
-compress them into a dynamically allocated RAM-based memory pool.
-If this process is successful, the writeback to the swap device is
-deferred and, in many cases, avoided completely.  This results in
-a significant I/O reduction and performance gains for systems that
-are swapping.
-
-The results of a kernel building benchmark indicate a
-runtime reduction of 53% and an I/O reduction 76% with zswap vs normal
-swapping with a kernel build under heavy memory pressure (see
-Performance section for more).
-
-Some addition performance metrics regarding the performance
-improvements and I/O reductions that can be achieved using zswap as
-measured by SPECjbb are provided here:
-http://ibm.co/VCgHvM
-
-These results include runs on x86 and new results on Power7+ with
-hardware compression acceleration.
-
-Of particular note is that zswap is able to evict pages from the compressed
-cache, on an LRU basis, to the backing swap device when the compressed pool
-reaches it size limit or the pool is unable to obtain additional pages
-from the buddy allocator.  This eviction functionality had been identified
-as a requirement in prior community discussions.
-
-Rationale:
-
-Zswap provides compressed swap caching that basically trades CPU cycles
-for reduced swap I/O.  This trade-off can result in a significant
-performance improvement as reads to/writes from to the compressed
-cache almost always faster that reading from a swap device
-which incurs the latency of an asynchronous block I/O read.
-
-Some potential benefits:
-* Desktop/laptop users with limited RAM capacities can mitigate the
-    performance impact of swapping.
-* Overcommitted guests that share a common I/O resource can
-    dramatically reduce their swap I/O pressure, avoiding heavy
-    handed I/O throttling by the hypervisor.  This allows more work
-    to get done with less impact to the guest workload and guests
-    sharing the I/O subsystem
-* Users with SSDs as swap devices can extend the life of the device by
-    drastically reducing life-shortening writes.
-
-Compressed swap is also provided in zcache, along with page cache
-compression and RAM clustering through RAMSter. Zswap seeks to deliver
-the benefit of swap  compression to users in a discrete function.
-This design decision is akin to Unix design philosophy of doing one
-thing well, it leaves file cache compression and other features
-for separate code.
-
-Design:
-
-Zswap receives pages for compression through the Frontswap API and
-is able to evict pages from its own compressed pool on an LRU basis
-and write them back to the backing swap device in the case that the
-compressed pool is full or unable to secure additional pages from
-the buddy allocator.
-
-Zswap makes use of zbud for the managing the compressed memory pool.
-Each allocation in zbud is not directly accessible by address.  Rather,
-a handle is return by the allocation routine and that handle must be
-mapped before being accessed.  The compressed memory pool grows on
-demand and shrinks as compressed pages are freed.  The pool is not
-preallocated.
-
-When a swap page is passed from frontswap to zswap, zswap maintains
-a mapping of the swap entry, a combination of the swap type and swap
-offset, to the zbud handle that references that compressed swap
-page.  This mapping is achieved with a red-black tree per swap type.
-The swap offset is the search key for the tree nodes.
-
-Zswap seeks to be simple in its policies.  Sysfs attributes allow for
-two user controlled policies:
-* max_compression_ratio - Maximum compression ratio, as as percentage,
-    for an acceptable compressed page. Any page that does not compress
-    by at least this ratio will be rejected.
-* max_pool_percent - The maximum percentage of memory that the compressed
-    pool can occupy.
-
-To enabled zswap, the "enabled" attribute must be set to 1 at boot time.
-
-Zswap allows the compressor to be selected at kernel boot time by
-setting the “compressor” attribute.  The default compressor is lzo.
-
-A debugfs interface is provided for various statistic about pool size,
-number of pages stored, and various counters for the reasons pages
-are rejected.
-
-Changelog:
-
-v11:
-* fixup symbol collision with lib/fault-inject.c (Greg)
-* rebase v3.10-rc1
-
-v10:
-* replace zsmalloc with zbud (zsmalloc to come back as option in future dev)
-* lru logic moved out of zswap into allocator
-* simplified and improved writeback logic
-* removed memory pool and tmpage pool as part of refactoring
-* Rebase to (almost) v3.10-rc1
-
-v9:
-* Fix load-during-writeback race; double lru add (for real this time)
-* checkpatch and comment fixes
-* Fix __swap_writepage() return value check
-* Move check for max outstanding writebacks (dedup some code)
-* Rebase to v3.9-rc6
-
-v8:
-* Fix load-during-writeback race; double lru add
-* checkpatch fixups
-* s/NOWAIT/ATOMIC for tree allocation (Dave)
-* Check __swap_writepage() for error before incr outstanding write count (Rob)
-* Convert pcpu compression buffer alloc from alloc_page() to kmalloc() (Dave)
-* Rebase to v3.9-rc5
-
-v7:
-* Decrease zswap_stored_pages during tree cleanup (Joonsoo)
-* Move zswap_entry_cache_alloc() earlier during store (Joonsoo)
-* Move type field from struct zswap_entry to struct zswap_tree
-* Change to swapper_space array (-rc1 change)
-* s/reset_page_mapcount/page_mapcount_reset in zsmalloc (-rc1 change)
-* Rebase to v3.9-rc1
-
-v6:
-* fix access-after-free regression introduced in v5
-  (rb_erase() outside the lock)
-* fix improper freeing of rbtree (Cody)
-* fix comment typo (Ric)
-* add comments about ZS_MM_WO usage and page mapping mode (Joonsoo)
-* don't use page->object (Joonsoo)
-* remove DEBUG (Joonsoo)
-* rebase to v3.8
-
-v5:
-* zsmalloc patch converted from promotion to "new code" (for review only,
-  see note in [1/8])
-* promote zsmalloc to mm/ instead of /lib
-* add more documentation everywhere
-* convert USE_PGTABLE_MAPPING to kconfig option, thanks to Minchan
-* s/flush/writeback/
-* #define pr_fmt() for formatting messages (Joe)
-* checkpatch fixups
-* lots of changes suggested Minchan
-
-v4:
-* Added Acks (Minchan)
-* Separated flushing functionality into standalone patch
-  for easier review (Minchan)
-* fix comment on zswap enabled attribute (Minchan)
-* add TODO for dynamic mempool size (Minchan)
-* and check for NULL in zswap_free_page() (Minchan)
-* add missing zs_free() in error path (Minchan)
-* TODO: add comments for flushing/refcounting (Minchan)
-
-v3:
-* Dropped the zsmalloc patches from the set, except the promotion patch
-  which has be converted to a rename patch (vs full diff).  The dropped
-  patches have been Acked and are going into Greg's staging tree soon.
-* Separated [PATCHv2 7/9] into two patches since it makes changes for two
-  different reasons (Minchan)
-* Moved ZSWAP_MAX_OUTSTANDING_FLUSHES near the top in zswap.c (Rik)
-* Rebase to v3.8-rc5. linux-next is a little volatile with the
-  swapper_space per type changes which will effect this patchset.
-* TODO: Move some stats from debugfs to sysfs. Which ones? (Rik)
-
-v2:
-* Rename zswap_fs_* functions to zswap_frontswap_* to avoid
-  confusion with "filesystem"
-* Add comment about what the tree lock protects
-* Remove "#if 0" code (should have been done before)
-* Break out changes to existing swap code into separate patch
-* Fix blank line EOF warning on documentation file
-* Rebase to next-20130107
-
-Performance, Kernel Building:
-
-Setup
-========
-Gentoo w/ kernel v3.7-rc7
-Quad-core i5-2500 @ 3.3GHz
-512MB DDR3 1600MHz (limited with mem=512m on boot)
-Filesystem and swap on 80GB HDD (about 58MB/s with hdparm -t)
-majflt are major page faults reported by the time command
-pswpin/out is the delta of pswpin/out from /proc/vmstat before and after
-the make -jN
-
-Summary
-========
-* Zswap reduces I/O and improves performance at all swap pressure levels.
-
-* Under heavy swaping at 24 threads, zswap reduced I/O by 76%, saving
-  over 1.5GB of I/O, and cut runtime in half.
-
-Details
-========
-I/O (in pages)
-	base				zswap				change	change
-N	pswpin	pswpout	majflt	I/O sum	pswpin	pswpout	majflt	I/O sum	%I/O	MB
-8	1	335	291	627	0	0	249	249	-60%	1
-12	3688	14315	5290	23293	123	860	5954	6937	-70%	64
-16	12711	46179	16803	75693	2936	7390	46092	56418	-25%	75
-20	42178	133781	49898	225857	9460	28382	92951	130793	-42%	371
-24	96079	357280	105242	558601	7719	18484	109309	135512	-76%	1653
-
-Runtime (in seconds)
-N	base	zswap	%change
-8	107	107	0%
-12	128	110	-14%
-16	191	179	-6%
-20	371	240	-35%
-24	570	267	-53%
-
-%CPU utilization (out of 400% on 4 cpus)
-N	base	zswap	%change
-8	317	319	1%
-12	267	311	16%
-16	179	191	7%
-20	94	143	52%
-24	60	128	113%
-
-Seth Jennings (4):
-  debugfs: add get/set for atomic types
-  zbud: add to mm/
-  zswap: add to mm/
-  zswap: add documentation
-
- Documentation/vm/zswap.txt |   72 ++++
- fs/debugfs/file.c          |   42 ++
- include/linux/debugfs.h    |    2 +
- include/linux/zbud.h       |   22 +
- lib/fault-inject.c         |   21 -
- mm/Kconfig                 |   25 ++
- mm/Makefile                |    2 +
- mm/zbud.c                  |  564 ++++++++++++++++++++++++++
- mm/zswap.c                 |  952 ++++++++++++++++++++++++++++++++++++++++++++
- 9 files changed, 1681 insertions(+), 21 deletions(-)
- create mode 100644 Documentation/vm/zswap.txt
- create mode 100644 include/linux/zbud.h
- create mode 100644 mm/zbud.c
- create mode 100644 mm/zswap.c
-
--- 
-1.7.9.5
-
+  	if (__thread_has_fpu(me)) {
+-		__save_init_fpu(me);
+  		__thread_clear_has_fpu(me);
++		__save_init_fpu(me);
+  		/* We do 'stts()' in __kernel_fpu_end() */
+  	} else if (!use_eager_fpu()) {
+  		this_cpu_write(fpu_owner_task, NULL);
