@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab3EMDhG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 23:37:06 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:47882 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751929Ab3EMDhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 23:37:03 -0400
-Date: Sun, 12 May 2013 23:36:55 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: eunb.song@samsung.com, Dmitry Monakhov <dmonakhov@openvz.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: EXT4 panic at jbd2_journal_put_journal_head() in 3.9+
-Message-ID: <20130513033655.GE25996@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Tony Luck <tony.luck@gmail.com>, eunb.song@samsung.com,
-	Dmitry Monakhov <dmonakhov@openvz.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <7032562.14371368411664268.JavaMail.weblogic@epml07>
- <CA+8MBb+51dMaYQd-g-T40+UstbxsSbmewSXiUfNDrVouSA3=Zw@mail.gmail.com>
+	id S1752707Ab3EMDmX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 23:42:23 -0400
+Received: from mail-ia0-f169.google.com ([209.85.210.169]:60132 "EHLO
+	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929Ab3EMDmV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 23:42:21 -0400
+Message-ID: <51906213.2020005@gmail.com>
+Date: Sun, 12 May 2013 22:46:27 -0500
+From: Chris Fries <ccfries@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Thunderbird/3.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+8MBb+51dMaYQd-g-T40+UstbxsSbmewSXiUfNDrVouSA3=Zw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: jaegeuk.kim@samsung.com, linux-f2fs-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, rknize2@motorola.com,
+        jason.hrycay@motorola.com
+Subject: [PATCH] f2fs: Remove BUG_ON in dec_valid_node_count
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 08:11:59PM -0700, Tony Luck wrote:
-> 
-> My best guess as to why this commit causes problems is that there are places
-> where updates to individual fields in this structure used to be independent
-> because they were to whole words.  Now we have bitfileds there are races
-> between access to different fields in the same word.
+From: Chris Fries <C.Fries@motorola.com>
 
-Yeah, except we access the fields while holding a lock.... wait a
-minute.  We're using bit_spinlocks().... and am I missing something?
+Panic loops while running LTP fsstress has been able to get
+a disk into two different panic loops from dec_valid_node_count.
+f2fs.h:714  BUG_ON(sbi->total_valid_node_count < count);
 
-Where are the barrier statements to prevent the CPU or the compiler
-from reordering statements around bit_spin_lock()?  But if that's the
-problem, I would have expected lots of other things to be broken.
+Once, it happens during recovery itself, and the disk would cause
+a panic every time it mounted.
 
-	   	      	       	       	     - Ted
+Another time, it would happen during garbage collection, so the disk
+would cause a panic within 200 seconds of mounting.
+
+Removing this BUG_ON hasn't shown any side effects, so let's take it
+out and monitor.
+
+Signed-off-by: Chris Fries <C.Fries@motorola.com>
+
+---
+ fs/f2fs/f2fs.h | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index e80a87c..b8e9679 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -722,9 +722,21 @@ static inline void dec_valid_node_count(struct f2fs_sb_info *sbi,
+ {
+ 	spin_lock(&sbi->stat_lock);
+ 
+-	BUG_ON(sbi->total_valid_block_count < count);
+-	BUG_ON(sbi->total_valid_node_count < count);
+-	BUG_ON(inode->i_blocks < count);
++	if (sbi->total_valid_block_count < count) {
++		WARN(1, "F2FS: total_valid_block_count too small- %d vs %d\n",
++			(unsigned int)sbi->total_valid_block_count, count);
++		count = sbi->total_valid_block_count;
++	}
++	if (sbi->total_valid_node_count < count) {
++		WARN(1, "F2FS: total_valid_node_count too small- %d vs %d\n",
++			sbi->total_valid_node_count, count);
++		count = sbi->total_valid_node_count;
++	}
++	if (inode->i_blocks < count) {
++		WARN(1, "F2FS: inode->i_blocks too small - %d vs %d\n",
++			(unsigned int)inode->i_blocks, count);
++		count = sbi->total_valid_node_count;
++	}
+ 
+ 	inode->i_blocks -= count;
+ 	sbi->total_valid_node_count -= count;
+-- 
+1.8.0
+
