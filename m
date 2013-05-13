@@ -1,114 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab3EMMiD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 08:38:03 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:54535 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab3EMMiB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 08:38:01 -0400
-Message-ID: <5190DEA1.7030901@gmail.com>
-Date: Mon, 13 May 2013 20:37:53 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de, mingo@redhat.com
-CC: yinghai@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        konrad.wilk@oracle.com
-Subject: [PATCH] x86, 64bit: Fix a possible bug in switchover in head_64.S
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+	id S1752246Ab3EMMk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 08:40:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:54566 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750983Ab3EMMkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 08:40:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,662,1363158000"; 
+   d="scan'208";a="336761413"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-acpi@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ACPI / LPSS: add support for Intel BayTrail
+Date: Mon, 13 May 2013 15:42:44 +0300
+Message-Id: <1368448964-2118-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Intel BayTrail has almost the same Low Power Subsystem than Lynxpoint with
+few differences. Peripherals are clocked with different speeds (typically
+lower) and the clock is not always gated. To support this we add
+possibility to share a common fixed rate clock and make clock gating
+optional.
 
-In head_64.S, a switchover has been used to handle kernel crossing
-1G, 512G boundaries.
-
-And commit 8170e6bed465b4b0c7687f93e9948aca4358a33b
-    x86, 64bit: Use a #PF handler to materialize early mappings on demand
-said:
-    During the switchover in head_64.S, before #PF handler is available,
-    we use three pages to handle kernel crossing 1G, 512G boundaries with
-    sharing page by playing games with page aliasing: the same page is
-    mapped twice in the higher-level tables with appropriate wraparound.
-
-The switchover code is:
-104         leaq    _text(%rip), %rdi
-105         leaq    early_level4_pgt(%rip), %rbx
-106
-107         movq    %rdi, %rax
-108         shrq    $PGDIR_SHIFT, %rax
-109
-110         leaq    (4096 + _KERNPG_TABLE)(%rbx), %rdx
-111         movq    %rdx, 0(%rbx,%rax,8)
-112         movq    %rdx, 8(%rbx,%rax,8)
-113
-114         addq    $4096, %rdx
-115         movq    %rdi, %rax
-116         shrq    $PUD_SHIFT, %rax
-117         andl    $(PTRS_PER_PUD-1), %eax
-118         movq    %rdx, (4096+0)(%rbx,%rax,8)
-119         movq    %rdx, (4096+8)(%rbx,%rax,8)
-120
-121         addq    $8192, %rbx
-122         movq    %rdi, %rax
-123         shrq    $PMD_SHIFT, %rdi
-124         addq    $(__PAGE_KERNEL_LARGE_EXEC & ~_PAGE_GLOBAL), %rax
-125         leaq    (_end - 1)(%rip), %rcx
-126         shrq    $PMD_SHIFT, %rcx
-127         subq    %rdi, %rcx
-128         incl    %ecx
-129
-130 1:
-131         andq    $(PTRS_PER_PMD - 1), %rdi
-132         movq    %rax, (%rbx,%rdi,8)
-133         incq    %rdi
-134         addq    $PMD_SIZE, %rax
-135         decl    %ecx
-136         jnz     1b
-
-It seems line 119 has a potential bug there. For example,
-the kernel is loaded at physical address 511G+1008M, that is
-    000000000 111111111 111111000 000000000000000000000
-and the kernel _end is 512G+2M, that is
-    000000001 000000000 000000001 000000000000000000000
-So in this example, when using the 2nd page to setup PUD (line 114~119),
-rax is 511.
-In line 118, we put rdx which is the address of the PMD page (the 3rd page)
-into entry 511 of the PUD table. But in line 119, the entry we calculate from
-(4096+8)(%rbx,%rax,8) has exceeded the PUD page. IMO, the entry in line
-119 should be wraparound into entry 0 of the PUD table.
-
-Sorry for not having a machine with memory exceeding 512GB, so I cannot
-test to see if my guess is right or not. Please correct me if I am wrong.
-
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- arch/x86/kernel/head_64.S |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ drivers/acpi/acpi_lpss.c  |   88 +++++++++++++++++++++++++++++++++++++++++----
+ drivers/clk/x86/clk-lpt.c |    4 +--
+ 2 files changed, 82 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 08f7e80..2395d8f 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -116,8 +116,13 @@ startup_64:
- 	shrq	$PUD_SHIFT, %rax
- 	andl	$(PTRS_PER_PUD-1), %eax
- 	movq	%rdx, (4096+0)(%rbx,%rax,8)
-+	cmp	$511, %rax
-+	je	1f
- 	movq	%rdx, (4096+8)(%rbx,%rax,8)
+diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+index 652fd5c..f6d7605 100644
+--- a/drivers/acpi/acpi_lpss.c
++++ b/drivers/acpi/acpi_lpss.c
+@@ -33,11 +33,19 @@ ACPI_MODULE_NAME("acpi_lpss");
+ #define LPSS_SW_LTR			0x10
+ #define LPSS_AUTO_LTR			0x14
+ 
++struct lpss_shared_clock {
++	const char *name;
++	unsigned long rate;
++	struct clk *clk;
++};
++
+ struct lpss_device_desc {
+ 	bool clk_required;
+ 	const char *clkdev_name;
+ 	bool ltr_required;
+ 	unsigned int prv_offset;
++	bool clk_gate;
++	struct lpss_shared_clock *shared_clock;
+ };
+ 
+ static struct lpss_device_desc lpss_dma_desc = {
+@@ -56,6 +64,7 @@ static struct lpss_device_desc lpt_dev_desc = {
+ 	.clk_required = true,
+ 	.prv_offset = 0x800,
+ 	.ltr_required = true,
++	.clk_gate = true,
+ };
+ 
+ static struct lpss_device_desc lpt_sdio_dev_desc = {
+@@ -63,6 +72,45 @@ static struct lpss_device_desc lpt_sdio_dev_desc = {
+ 	.ltr_required = true,
+ };
+ 
++static struct lpss_shared_clock uart_clock = {
++	.name = "uart_clk",
++	.rate = 44236800,
++};
++
++static struct lpss_device_desc byt_uart_dev_desc = {
++	.clk_required = true,
++	.prv_offset = 0x800,
++	.clk_gate = true,
++	.shared_clock = &uart_clock,
++};
++
++static struct lpss_shared_clock spi_clock = {
++	.name = "spi_clk",
++	.rate = 50000000,
++};
++
++static struct lpss_device_desc byt_spi_dev_desc = {
++	.clk_required = true,
++	.prv_offset = 0x400,
++	.clk_gate = true,
++	.shared_clock = &spi_clock,
++};
++
++static struct lpss_device_desc byt_sdio_dev_desc = {
++	.clk_required = true,
++};
++
++static struct lpss_shared_clock i2c_clock = {
++	.name = "i2c_clk",
++	.rate = 100000000,
++};
++
++static struct lpss_device_desc byt_i2c_dev_desc = {
++	.clk_required = true,
++	.prv_offset = 0x800,
++	.shared_clock = &i2c_clock,
++};
++
+ static const struct acpi_device_id acpi_lpss_device_ids[] = {
+ 	/* Generic LPSS devices */
+ 	{ "INTL9C60", (unsigned long)&lpss_dma_desc },
+@@ -77,6 +125,13 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
+ 	{ "INT33C6", (unsigned long)&lpt_sdio_dev_desc },
+ 	{ "INT33C7", },
+ 
++	/* BayTrail LPSS devices */
++	{ "80860F0A", (unsigned long)&byt_uart_dev_desc },
++	{ "80860F0E", (unsigned long)&byt_spi_dev_desc },
++	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
++	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
++	{ "INT33B2", },
++
+ 	{ }
+ };
+ 
+@@ -98,7 +153,10 @@ static int register_device_clock(struct acpi_device *adev,
+ 				 struct lpss_private_data *pdata)
+ {
+ 	const struct lpss_device_desc *dev_desc = pdata->dev_desc;
++	struct lpss_shared_clock *shared_clock = dev_desc->shared_clock;
++	struct clk *clk = ERR_PTR(-ENODEV);
+ 	struct lpss_clk_data *clk_data;
++	const char *parent;
+ 
+ 	if (!lpss_clk_dev)
+ 		lpt_register_clock_device();
+@@ -117,14 +175,30 @@ static int register_device_clock(struct acpi_device *adev,
+ 	    || pdata->mmio_size < dev_desc->prv_offset + LPSS_CLK_SIZE)
+ 		return -ENODATA;
+ 
+-	pdata->clk = clk_register_gate(NULL, dev_name(&adev->dev),
+-				       clk_data->name, 0,
+-				       pdata->mmio_base + dev_desc->prv_offset,
+-				       0, 0, NULL);
+-	if (IS_ERR(pdata->clk))
+-		return PTR_ERR(pdata->clk);
++	parent = clk_data->name;
++
++	if (shared_clock) {
++		clk = shared_clock->clk;
++		if (!clk) {
++			clk = clk_register_fixed_rate(NULL, shared_clock->name,
++						      "lpss_clk", 0,
++						      shared_clock->rate);
++			shared_clock->clk = clk;
++		}
++		parent = shared_clock->name;
++	}
++
++	if (dev_desc->clk_gate) {
++		clk = clk_register_gate(NULL, dev_name(&adev->dev), parent, 0,
++					pdata->mmio_base + dev_desc->prv_offset,
++					0, 0, NULL);
++		pdata->clk = clk;
++	}
++
++	if (IS_ERR(clk))
++		return PTR_ERR(clk);
+ 
+-	clk_register_clkdev(pdata->clk, NULL, dev_name(&adev->dev));
++	clk_register_clkdev(clk, NULL, dev_name(&adev->dev));
+ 	return 0;
+ }
+ 
+diff --git a/drivers/clk/x86/clk-lpt.c b/drivers/clk/x86/clk-lpt.c
+index 4f45eee..812f83f 100644
+--- a/drivers/clk/x86/clk-lpt.c
++++ b/drivers/clk/x86/clk-lpt.c
+@@ -1,5 +1,5 @@
+ /*
+- * Intel Lynxpoint LPSS clocks.
++ * Intel Low Power Subsystem clocks.
+  *
+  * Copyright (C) 2013, Intel Corporation
+  * Authors: Mika Westerberg <mika.westerberg@linux.intel.com>
+@@ -18,8 +18,6 @@
+ #include <linux/platform_data/clk-lpss.h>
+ #include <linux/platform_device.h>
+ 
+-#define PRV_CLOCK_PARAMS 0x800
 -
-+	jmp	2f
-+1:
-+	movq	%rdx, (4096)(%rbx)
-+2:
- 	addq	$8192, %rbx
- 	movq	%rdi, %rax
- 	shrq	$PMD_SHIFT, %rdi
+ static int lpt_clk_probe(struct platform_device *pdev)
+ {
+ 	struct lpss_clk_data *drvdata;
 -- 
-1.7.1
+1.7.10.4
+
