@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab3EMTJp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 15:09:45 -0400
-Received: from mail-ia0-f181.google.com ([209.85.210.181]:47898 "EHLO
-	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951Ab3EMTJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 15:09:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <1368103855-28363-1-git-send-email-lee.jones@linaro.org>
-References: <1368103855-28363-1-git-send-email-lee.jones@linaro.org>
-Date: Mon, 13 May 2013 21:09:38 +0200
-Message-ID: <CACRpkdZR3AsGyCUH=cbskcZPs0PVBjH6QXUGkD+KG8SzGMMOKg@mail.gmail.com>
-Subject: Re: [PATCH] serial: pl011: protect attribute read from NULL platform
- data struct
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>, Greg KH <gregkh@linuxfoundation.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>, Jiri Slaby <jslaby@suse.cz>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755158Ab3EMTJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 15:09:42 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:48259 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754904Ab3EMTJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 15:09:38 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, spruce-project@linuxtesting.org
+Subject: [PATCH 1/2] ext4: do not left pages locked in mpage_da_submit_io()
+Date: Mon, 13 May 2013 23:08:12 +0400
+Message-Id: <1368472093-16997-2-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1368472093-16997-1-git-send-email-khoroshilov@ispras.ru>
+References: <1368472093-16997-1-git-send-email-khoroshilov@ispras.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 9, 2013 at 2:50 PM, Lee Jones <lee.jones@linaro.org> wrote:
+If call to ext4_init_io_end() is failed under memory pressure,
+mpage_da_submit_io() just returns -ENOMEM and left all pages
+from the extent locked. That leads to a deadlock as soon as
+callers of mpage_da_submit_io() expect it unlocks all the pages.
 
-> It's completely feasible that platform data will be empty i.e. when
-> booting with Device Tree with no device AUXDATA. So we must protect
-> it's use in these use-cases, or risk a kernel Oops.
->
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: linux-serial@vger.kernel.org
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
-> *******                                                        *******
-> If this issue has not already been fixed, this patch should be applied
-> during the v3.10 -rc:s, as it fixes a serious bug which was introduced
-> in the merge-window.
-> *******                                                        *******
+Found by Linux File System Verification project (linuxtesting.org).
 
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ fs/ext4/inode.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-You should probably put Greg on To: so that he picks this up for
-the -rc:s ASAP.
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 793d44b..aeca439 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1489,8 +1489,9 @@ static int mpage_da_submit_io(struct mpage_da_data *mpd,
+ 	BUG_ON(mpd->next_page <= mpd->first_page);
+ 	ext4_io_submit_init(&io_submit, mpd->wbc);
+ 	io_submit.io_end = ext4_init_io_end(inode, GFP_NOFS);
++	/* In case of error we still have to unlock pages */
+ 	if (!io_submit.io_end)
+-		return -ENOMEM;
++		ret = -ENOMEM;
+ 	/*
+ 	 * We need to start from the first_page to the next_page - 1
+ 	 * to make sure we also write the mapped dirty buffer_heads.
+@@ -1512,6 +1513,11 @@ static int mpage_da_submit_io(struct mpage_da_data *mpd,
+ 			index = page->index;
+ 			if (index > end)
+ 				break;
++			if (!io_submit.io_end) {
++				unlock_page(page);
++				index++;
++				continue;
++			}
+ 
+ 			if (index == size >> PAGE_CACHE_SHIFT)
+ 				len = size & ~PAGE_CACHE_MASK;
+@@ -1577,9 +1583,11 @@ static int mpage_da_submit_io(struct mpage_da_data *mpd,
+ 		}
+ 		pagevec_release(&pvec);
+ 	}
+-	ext4_io_submit(&io_submit);
+-	/* Drop io_end reference we got from init */
+-	ext4_put_io_end_defer(io_submit.io_end);
++	if (io_submit.io_end) {
++		ext4_io_submit(&io_submit);
++		/* Drop io_end reference we got from init */
++		ext4_put_io_end_defer(io_submit.io_end);
++	}
+ 	return ret;
+ }
+ 
+-- 
+1.7.9.5
 
-Yours,
-Linus Walleij
