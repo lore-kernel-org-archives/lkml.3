@@ -1,113 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab3EMX65 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 19:58:57 -0400
-Received: from mail-da0-f42.google.com ([209.85.210.42]:45030 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754940Ab3EMX64 (ORCPT
+	id S1755660Ab3EMX7D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 19:59:03 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:46202 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755501Ab3EMX67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 19:58:56 -0400
+	Mon, 13 May 2013 19:58:59 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         linux-fbdev@vger.kernel.org
 Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Jerome Glisse <j.glisse@gmail.com>,
         Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3 0/9] Clean up write-combining MTRR addition
-Date: Mon, 13 May 2013 16:58:39 -0700
-Message-Id: <cover.1368485053.git.luto@amacapital.net>
+Subject: [PATCH v3 1/9] Add arch_phys_wc_{add,del} to manipulate WC MTRRs if needed
+Date: Mon, 13 May 2013 16:58:40 -0700
+Message-Id: <89c33a8d4a367b33dfb3fe4af2ad85b59b02ec22.1368485053.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <cover.1368485053.git.luto@amacapital.net>
+References: <cover.1368485053.git.luto@amacapital.net>
+In-Reply-To: <cover.1368485053.git.luto@amacapital.net>
+References: <cover.1368485053.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A fair number of drivers (mostly graphics) add write-combining MTRRs.
-Most ignore errors and most add the MTRR even on PAT systems which don't
-need to use MTRRs.
+Several drivers currently use mtrr_add through various #ifdef guards
+and/or drm wrappers.  The vast majority of them want to add WC MTRRs
+on x86 systems and don't actually need the MTRR if PAT (i.e.
+ioremap_wc, etc) are working.
 
-This series adds new functions arch_phys_wc_{add,del} that, on PAT-less
-x86 systems with MTRRs, add MTRRs and report errors, and that do nothing
-otherwise.  (Other architectures, if any, with a similar mechanism could
-implement them.)
+arch_phys_wc_add and arch_phys_wc_del are new functions, available
+on all architectures and configurations, that add WC MTRRs on x86 if
+needed (and handle errors) and do nothing at all otherwise.  They're
+also easier to use than mtrr_add and mtrr_del, so the call sites can
+be simplified.
 
-I've only tested the radeon driver, since I don't have test hardware
-easily available for the other drivers.
+As an added benefit, this will avoid wasting MTRRs and possibly
+warning pointlessly on PAT-supporting systems.
 
-Benefits include:
- - Simpler code
- - No more complaints about MTRR conflict warnings on PAT systems
- - Eventual unexporting of the MTRR API?
-
-This series eliminates about half of the mtrr_add calls in drivers/.
-
-Note: this series breaks and then fixes dritests from libdrm.  The breakage
-is probably irrelevant for any practical purpose, and fixing it will
-be a bit complicated due to header file breakage that's only fixed in
-patch 8.
-
-Daniel, can you check that patch 1 is still okay?
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
 Changes from v2:
- - There's a new API phys_wc_to_mtrr_index (x86-only) to support drmGetMap
- - Minor cleanups to patche 1 and 5.
- - Patch 9 is new
+ - Make MTRR_TO_PHYS_WC_OFFSET a macro instead of open-coding it.
+ - Add phys_wc_to_mtrr_index to make drmGetMap keep working.  Sigh.
 
-Changes from v1:
- - Helpers renamed
- - Lots of bugs fixed
+ arch/x86/include/asm/io.h       |  7 ++++
+ arch/x86/include/asm/mtrr.h     | 10 +++++-
+ arch/x86/kernel/cpu/mtrr/main.c | 71 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/io.h              | 25 +++++++++++++++
+ 4 files changed, 112 insertions(+), 1 deletion(-)
 
-Andy Lutomirski (9):
-  Add arch_phys_wc_{add,del} to manipulate WC MTRRs if needed
-  drm (ast,cirrus,mgag200,nouveau,savage,vmwgfx): Remove
-    drm_mtrr_{add,del}
-  drm: Update drm_addmap and drm_mmap to use PAT WC instead of MTRRs
-  drm,agpgart: Use pgprot_writecombine for AGP maps and make the MTRR
-    optional
-  i915: Use arch_phys_wc_{add,del}
-  radeon: Switch to arch_phys_wc_add and add a missing ..._del
-  uvesafb: Clean up MTRR code
-  drm: Remove mtrr_add and mtrr_del fallback hack for non-MTRR systems
-  drm: Don't leak phys_wc "handles" to userspace
-
-Andy Lutomirski (9):
-  Add arch_phys_wc_{add,del} to manipulate WC MTRRs if needed
-  drm (ast,cirrus,mgag200,nouveau,savage,vmwgfx): Remove
-    drm_mtrr_{add,del}
-  drm: Update drm_addmap and drm_mmap to use PAT WC instead of MTRRs
-  drm,agpgart: Use pgprot_writecombine for AGP maps and make the MTRR
-    optional
-  i915: Use arch_phys_wc_{add,del}
-  radeon: Switch to arch_phys_wc_add and add a missing ..._del
-  uvesafb: Clean up MTRR code
-  drm: Remove mtrr_add and mtrr_del fallback hack for non-MTRR systems
-  drm: Don't leak phys_wc "handles" to userspace
-
- Documentation/fb/uvesafb.txt           | 16 +++-----
- arch/x86/include/asm/io.h              |  7 ++++
- arch/x86/include/asm/mtrr.h            | 10 ++++-
- arch/x86/kernel/cpu/mtrr/main.c        | 71 ++++++++++++++++++++++++++++++++++
- drivers/char/agp/frontend.c            |  8 ++--
- drivers/gpu/drm/ast/ast_ttm.c          | 13 ++-----
- drivers/gpu/drm/cirrus/cirrus_ttm.c    | 15 ++-----
- drivers/gpu/drm/drm_bufs.c             | 26 +++++++++----
- drivers/gpu/drm/drm_ioctl.c            | 15 ++++++-
- drivers/gpu/drm/drm_pci.c              |  8 ++--
- drivers/gpu/drm/drm_stub.c             | 10 +----
- drivers/gpu/drm/drm_vm.c               | 22 +++++------
- drivers/gpu/drm/i915/i915_dma.c        | 42 ++------------------
- drivers/gpu/drm/mgag200/mgag200_ttm.c  | 14 ++-----
- drivers/gpu/drm/nouveau/nouveau_ttm.c  | 13 ++-----
- drivers/gpu/drm/radeon/radeon_object.c |  5 ++-
- drivers/gpu/drm/savage/savage_bci.c    | 43 +++++++-------------
- drivers/gpu/drm/savage/savage_drv.h    |  5 +--
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c    | 10 ++---
- drivers/video/uvesafb.c                | 70 ++++++++-------------------------
- include/drm/drmP.h                     | 34 +---------------
- include/drm/drm_os_linux.h             | 16 --------
- include/linux/io.h                     | 25 ++++++++++++
- include/video/uvesafb.h                |  1 +
- 24 files changed, 230 insertions(+), 269 deletions(-)
-
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index d8e8eef..34f69cb 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -345,4 +345,11 @@ extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
+ 
+ #define IO_SPACE_LIMIT 0xffff
+ 
++#ifdef CONFIG_MTRR
++extern int __must_check arch_phys_wc_add(unsigned long base,
++					 unsigned long size);
++extern void arch_phys_wc_del(int handle);
++#define arch_phys_wc_add arch_phys_wc_add
++#endif
++
+ #endif /* _ASM_X86_IO_H */
+diff --git a/arch/x86/include/asm/mtrr.h b/arch/x86/include/asm/mtrr.h
+index e235582..f768f62 100644
+--- a/arch/x86/include/asm/mtrr.h
++++ b/arch/x86/include/asm/mtrr.h
+@@ -26,7 +26,10 @@
+ #include <uapi/asm/mtrr.h>
+ 
+ 
+-/*  The following functions are for use by other drivers  */
++/*
++ * The following functions are for use by other drivers that cannot use
++ * arch_phys_wc_add and arch_phys_wc_del.
++ */
+ # ifdef CONFIG_MTRR
+ extern u8 mtrr_type_lookup(u64 addr, u64 end);
+ extern void mtrr_save_fixed_ranges(void *);
+@@ -45,6 +48,7 @@ extern void mtrr_aps_init(void);
+ extern void mtrr_bp_restore(void);
+ extern int mtrr_trim_uncached_memory(unsigned long end_pfn);
+ extern int amd_special_default_mtrr(void);
++extern int phys_wc_to_mtrr_index(int handle);
+ #  else
+ static inline u8 mtrr_type_lookup(u64 addr, u64 end)
+ {
+@@ -80,6 +84,10 @@ static inline int mtrr_trim_uncached_memory(unsigned long end_pfn)
+ static inline void mtrr_centaur_report_mcr(int mcr, u32 lo, u32 hi)
+ {
+ }
++static inline int phys_wc_to_mtrr_index(int handle)
++{
++	return -1;
++}
+ 
+ #define mtrr_ap_init() do {} while (0)
+ #define mtrr_bp_init() do {} while (0)
+diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
+index 726bf96..3533d4d 100644
+--- a/arch/x86/kernel/cpu/mtrr/main.c
++++ b/arch/x86/kernel/cpu/mtrr/main.c
+@@ -51,9 +51,13 @@
+ #include <asm/e820.h>
+ #include <asm/mtrr.h>
+ #include <asm/msr.h>
++#include <asm/pat.h>
+ 
+ #include "mtrr.h"
+ 
++/* arch_phys_wc_add returns an MTRR register index plus this offset. */
++#define MTRR_TO_PHYS_WC_OFFSET 1000
++
+ u32 num_var_ranges;
+ 
+ unsigned int mtrr_usage_table[MTRR_MAX_VAR_RANGES];
+@@ -524,6 +528,73 @@ int mtrr_del(int reg, unsigned long base, unsigned long size)
+ }
+ EXPORT_SYMBOL(mtrr_del);
+ 
++/**
++ * arch_phys_wc_add - add a WC MTRR and handle errors if PAT is unavailable
++ * @base: Physical base address
++ * @size: Size of region
++ *
++ * If PAT is available, this does nothing.  If PAT is unavailable, it
++ * attempts to add a WC MTRR covering size bytes starting at base and
++ * logs an error if this fails.
++ *
++ * Drivers must store the return value to pass to mtrr_del_wc_if_needed,
++ * but drivers should not try to interpret that return value.
++ */
++int arch_phys_wc_add(unsigned long base, unsigned long size)
++{
++	int ret;
++
++	if (pat_enabled)
++		return 0;  /* Success!  (We don't need to do anything.) */
++
++	ret = mtrr_add(base, size, MTRR_TYPE_WRCOMB, true);
++	if (ret < 0) {
++		pr_warn("Failed to add WC MTRR for [%p-%p]; performance may suffer.",
++			(void *)base, (void *)(base + size - 1));
++		return ret;
++	}
++	return ret + MTRR_TO_PHYS_WC_OFFSET;
++}
++EXPORT_SYMBOL(arch_phys_wc_add);
++
++/*
++ * arch_phys_wc_del - undoes arch_phys_wc_add
++ * @handle: Return value from arch_phys_wc_add
++ *
++ * This cleans up after mtrr_add_wc_if_needed.
++ *
++ * The API guarantees that mtrr_del_wc_if_needed(error code) and
++ * mtrr_del_wc_if_needed(0) do nothing.
++ */
++void arch_phys_wc_del(int handle)
++{
++	if (handle >= 1) {
++		WARN_ON(handle < MTRR_TO_PHYS_WC_OFFSET);
++		mtrr_del(handle - MTRR_TO_PHYS_WC_OFFSET, 0, 0);
++	}
++}
++EXPORT_SYMBOL(arch_phys_wc_del);
++
++/*
++ * phys_wc_to_mtrr_index - translates arch_phys_wc_add's return value
++ * @handle: Return value from arch_phys_wc_add
++ *
++ * This will turn the return value from arch_phys_wc_add into an mtrr
++ * index suitable for debugging.
++ *
++ * Note: There is no legitimate use for this function, except possibly
++ * in printk line.  Alas there is an illegitimate use in some ancient
++ * drm ioctls.
++ */
++int phys_wc_to_mtrr_index(int handle)
++{
++	if (handle < MTRR_TO_PHYS_WC_OFFSET)
++		return -1;
++	else
++		return handle - MTRR_TO_PHYS_WC_OFFSET;
++}
++EXPORT_SYMBOL_GPL(phys_wc_to_mtrr_index);
++
+ /*
+  * HACK ALERT!
+  * These should be called implicitly, but we can't yet until all the initcall
+diff --git a/include/linux/io.h b/include/linux/io.h
+index 069e407..f4f42fa 100644
+--- a/include/linux/io.h
++++ b/include/linux/io.h
+@@ -76,4 +76,29 @@ void devm_ioremap_release(struct device *dev, void *res);
+ #define arch_has_dev_port()     (1)
+ #endif
+ 
++/*
++ * Some systems (x86 without PAT) have a somewhat reliable way to mark a
++ * physical address range such that uncached mappings will actually
++ * end up write-combining.  This facility should be used in conjunction
++ * with pgprot_writecombine, ioremap-wc, or set_memory_wc, since it has
++ * no effect if the per-page mechanisms are functional.
++ * (On x86 without PAT, these functions manipulate MTRRs.)
++ *
++ * arch_phys_del_wc(0) or arch_phys_del_wc(any error code) is guaranteed
++ * to have no effect.
++ */
++#ifndef arch_phys_wc_add
++static inline int __must_check arch_phys_wc_add(unsigned long base,
++						unsigned long size)
++{
++	return 0;  /* It worked (i.e. did nothing). */
++}
++
++static inline void arch_phys_wc_del(int handle)
++{
++}
++
++#define arch_phys_wc_add arch_phys_wc_add
++#endif
++
+ #endif /* _LINUX_IO_H */
 -- 
 1.8.1.4
 
