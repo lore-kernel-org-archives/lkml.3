@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421Ab3EMOLU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 10:11:20 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:40590 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab3EMOLT (ORCPT
+	id S1753664Ab3EMOPf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 10:15:35 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:56385 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751846Ab3EMOPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 10:11:19 -0400
-Date: Mon, 13 May 2013 16:11:17 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 1/2] perf report: Add --percent-limit option
-Message-ID: <20130513141117.GC17814@two.firstfloor.org>
-References: <1368434503-29373-1-git-send-email-namhyung@kernel.org>
+	Mon, 13 May 2013 10:15:33 -0400
+Date: Mon, 13 May 2013 10:15:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: linux fddl <fddllinux@gmail.com>
+cc: linux-usb@vger.kernel.org, <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: usb: why we need a msleep(5) in ehci_bus_suspend/resume
+In-Reply-To: <CAGALBbBJuVRcG9zcqcTSNHJ4FsyE9DuHhvzRZQdEePEq=GXMFg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1305131014060.1389-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368434503-29373-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 05:41:42PM +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
+On Mon, 13 May 2013, linux fddl wrote:
+
+> Hi,
 > 
-> The --percent-limit option is for not showing small overheaded entries
-> in the output.  Maybe we want to set a certain default value like 0.1.
+>   From the ehci-hub.c, I find that ehci_bus_suspend/resume have some
+> code like this:
 > 
-> Cc: Andi Kleen <andi@firstfloor.org>
+> if (time_before(jiffies, ehci->netx_statechange))
+>     msleep(5);
+> ...
+> ehci->next_statechange = jiffies + msec_to_jiffies(10);
+> 
+> and
+> 
+> if (time_before(jiffies, ehci->netx_statechange))
+>     msleep(5);
+> ...
+> ehci->next_statechange = jiffies + msec_to_jiffies(5);
+> 
+> but I don't know why such a short sleep is needed, and why one is
+> [ehci->next_statechange = jiffies + msec_to_jiffies(10)] and the other is
+> [ehci->next_statechange = jiffies + msec_to_jiffies(5)],
+> I googled for a long time, but it seems that there is no explanation.
+> 
+>   Anyone knows why and can give any explanation?
 
-I like the option, but 0 is not a good default.
-Make it 1 or something.
+At this point I don't think anybody knows.  The person who originally
+wrote that code died a few years ago.
 
-Perhaps a better heuristic would be 
-percent < threshold || samples < sample-threshold
-with sample-threshold being several hundred at least.
-
-A very small number of hits on something is usually quite much useless,
-unless your original event was extremly rare in the beginning
-(but then it's unclear if the profile is any useful)
-
--Andi
+Alan Stern
 
