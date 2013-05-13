@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab3EMQVW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 12:21:22 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:58343 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab3EMQVV (ORCPT
+	id S1755102Ab3EMQZp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 12:25:45 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:34223 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753753Ab3EMQZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 12:21:21 -0400
-Message-ID: <519112F9.2010102@gmail.com>
-Date: Mon, 13 May 2013 18:21:13 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 13 May 2013 12:25:43 -0400
+Date: Tue, 14 May 2013 00:43:26 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: EUNBONG SONG <eunb.song@samsung.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-xfs@vger.kernel.org" <linux-xfs@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: Re: Re: EXT4 regression caused 4eec7
+Message-ID: <20130513164326.GA14526@gmail.com>
+Mail-Followup-To: Jan Kara <jack@suse.cz>,
+	EUNBONG SONG <eunb.song@samsung.com>, Theodore Ts'o <tytso@mit.edu>,
+	Dmitry Monakhov <dmonakhov@openvz.org>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-xfs@vger.kernel.org" <linux-xfs@vger.kernel.org>,
+	Dave Chinner <david@fromorbit.com>
+References: <31302271.2821368363898561.JavaMail.weblogic@epml17>
+ <20130513131809.GG400@quack.suse.cz>
+ <20130513135643.GB12883@gmail.com>
+ <20130513151727.GI400@quack.suse.cz>
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
-References: <1368207091-32538-1-git-send-email-soren.brinkmann@xilinx.com> <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com> <20130510212422.GY3200@sirena.org.uk> <7e18bed3-ae6b-4aa0-bf23-b6c61ba8b85b@CO9EHSMHS030.ehs.local> <20130512143344.GC3200@sirena.org.uk> <9e55c552-ce34-4663-9a57-bf2c626d7d58@TX2EHSMHS008.ehs.local> <20130513052135.GD6836@sirena.org.uk> <0bf5a185-86f7-4a93-a90f-42caefb06a1d@TX2EHSMHS009.ehs.local>
-In-Reply-To: <0bf5a185-86f7-4a93-a90f-42caefb06a1d@TX2EHSMHS009.ehs.local>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130513151727.GI400@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/13 18:09, Sören Brinkmann wrote:
-> On Mon, May 13, 2013 at 09:21:35AM +0400, Mark Brown wrote:
->> On Sun, May 12, 2013 at 12:05:04PM -0700, Sören Brinkmann wrote:
->>> On Sun, May 12, 2013 at 06:33:44PM +0400, Mark Brown wrote:
->>>> No, there's no confusion here - the clocks that are being exposed to
->>>> userspace are the clocks which enter the FPGA.  The driver or whatever
->>>> that understands the FPGA can do what is needed to control them,
->>>> including routing them on to subdevices it instantiates or exposing them
->>>> to userspace.
->>
->>> Such a driver does not exist in general.
->>> For some IP cores, Linux drivers do exist and then
->>> they are supposed to directly use the CCF, IMHO, no need to expose
->>> things to userspace in that case.
->>> I'm trying to cover cases, in which there is no driver available/needed for
->>> the FPGA design, other than some simple clock controls.
->>
->> You're not understanding the point here.  If you've got a
->> reprogrammmable FPGA you at least need some way to get the FPGA image in
->> there.  This driver is presumably responsible for instantiating whatever
->> is needed to control what is on the FPGA, that could include punting the
->> clocks to userspace if that's sane.
-> Well, that driver actually exists. But that just programs a bitstream
-> you give it to program. It does not know anything about the design it
-> programs and cannot make any kind of decision whether the clocks should
-> be userspace controlled or not.
+On Mon, May 13, 2013 at 05:17:27PM +0200, Jan Kara wrote:
+> On Mon 13-05-13 21:56:43, Zheng Liu wrote:
+> > On Mon, May 13, 2013 at 03:18:09PM +0200, Jan Kara wrote:
+> > > On Sun 12-05-13 13:04:59, EUNBONG SONG wrote:
+> > > > 
+> > > > 
+> > > > >> Since at this point it's safer to rollback the change and we can
+> > > > >> investigate more deeply how to fix it correctly for the next
+> > > > >> development cycle, this is the patch which I'm testing.
+> > > > 
+> > > > >>                     - Ted
+> > > > 
+> > > > > Hello, I've tested with your patch. But the same problem was reproduced.
+> > > > > Currently, I'm trying to git bisect. If i done git bisect, i will let you know.
+> > > > 
+> > > > Hi, I've done git bisect. and panic at jbd2_journal_put_journal_head() is caused by 
+> > > > ae4647fb7654676fc44a97e86eb35f9f06b99f66: "jbd2: reduce journal_head size."
+> > > > I write just code patch which revert ae4647fb7654676fc44a97e86eb35f9f06b99f66 because
+> > > > I don't know the root cause. 
+> > >   This is really strange. I've verified the code and all the places
+> > > modifying b_jlist or b_modified are holding bh_state lock so we should be
+> > > safe...
+> > 
+> > Hi Jan,
+> > 
+> > Could you please take a look at this mail [1].  I don't think we hold
+> > bh_state lock there.
+> > 
+> > 1. http://www.spinics.net/lists/linux-ext4/msg38205.html
+>   I'll also reply to that thread but: Yes, we don't hold bh_state lock when
+> reading b_jlist in that one case (that's why I wrote 'modify' and not just
+> 'access' in my previous email). But that's really harmless since we don't
+> do any complex operations with b_jlist (only get & set) so we either see an
+> old value or a new one. And that particular use is going away anyway later
+> in my series.
 
-Soeren,
+I see.  Thanks for your explanation.
 
-what Mark wants to point out is that you add fabric clocks to the Xilinx
-driver instead. This way, you will have user-space controllable clocks
-but only if you loaded the xilinx driver first.
-
-IIRC the fabric clock controller provided by Zynq _is_ always there and
-accessible from ARM CPUs. You just don't have a new generic driver
-allowing to poke with all clocks, but a xilinx only driver allowing you
-to set the (xilinx only) fabric clocks.
-
-I've played with Zynq a while ago, did Xilinx mainline the bitfile
-driver already? If not, why don't you give it a shot?
-
-Sebastian
+                                                - Zheng
