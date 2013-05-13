@@ -1,115 +1,490 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab3EMQfE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 12:35:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51033 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab3EMQfC (ORCPT
+	id S1752791Ab3EMQjc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 12:39:32 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:49896 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab3EMQj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 12:35:02 -0400
-Message-ID: <5191153F.8000001@infradead.org>
-Date: Mon, 13 May 2013 09:30:55 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 13 May 2013 12:39:29 -0400
+Message-ID: <5191173D.3070709@gmail.com>
+Date: Mon, 13 May 2013 12:39:25 -0400
+From: Jonathan Bither <jonbither@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Steven Whitehouse <swhiteho@redhat.com>
-CC: David Teigland <teigland@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Subject: Re: linux-next: Tree for May 8 (dlm)
-References: <20130508140122.e4747b58be4333060b7a248a@canb.auug.org.au>  <518A93BD.3020300@infradead.org>  <20130509094745.049e46fff25f357e7eb50123@canb.auug.org.au>  <20130509165028.GA18077@redhat.com>  <518BD826.4040403@infradead.org> <1368436712.2882.14.camel@menhir>
-In-Reply-To: <1368436712.2882.14.camel@menhir>
-Content-Type: text/plain; charset=UTF-8
+To: Adrian Chadd <adrian@freebsd.org>
+CC: Paul Bolle <pebolle@tiscali.nl>, Jiri Slaby <jirislaby@gmail.com>,
+        Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Bob Copeland <me@bobcopeland.com>,
+        Wojciech Dubowik <Wojciech.Dubowik@neratec.com>, nbd@openwrt.org,
+        ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ath5k: Remove AHB bus support.
+References: <1320756113.14409.385.camel@x61.thuisdomein> <20111108141647.GA3390@hash.lan> <1342124352.22584.21.camel@x61.thuisdomein> <20120712203837.GA3045@localhost> <4FFFBDD8.6020305@neratec.com> <20120713124134.GA5567@localhost> <1362999998.3137.60.camel@x61.thuisdomein> <1368457391.1350.67.camel@x61.thuisdomein> <CAJ-VmokciVPxzJ0LptdQyL9koa8Bw7ecJdentPH5q9+MQ4=GpA@mail.gmail.com>
+In-Reply-To: <CAJ-VmokciVPxzJ0LptdQyL9koa8Bw7ecJdentPH5q9+MQ4=GpA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/13 02:18, Steven Whitehouse wrote:
-> Hi,
-> 
-> On Thu, 2013-05-09 at 10:08 -0700, Randy Dunlap wrote:
->> On 05/09/13 09:50, David Teigland wrote:
->>> On Thu, May 09, 2013 at 09:47:45AM +1000, Stephen Rothwell wrote:
->>>> [Just forwarding to David ...]
->>>>
->>>> On Wed, 08 May 2013 11:04:45 -0700 Randy Dunlap <rdunlap@infradead.org> wrote:
->>>>>
->>>>> on x86_64:
->>>>>
->>>>> when CONFIG_GFS2_FS_LOCKING_DLM=y and CONFIG_DLM=m:
->>>>>
->>>>> fs/built-in.o: In function `gfs2_lock':
->>>>> file.c:(.text+0xa512c): undefined reference to `dlm_posix_get'
->>>>> file.c:(.text+0xa5140): undefined reference to `dlm_posix_unlock'
->>>>> file.c:(.text+0xa514a): undefined reference to `dlm_posix_lock'
->>>
->>> gfs2/file.c calls the dlm directly, so I suppose gfs2 itself needs
->>> to depend on the dlm.  It's been like this for a long time, so I
->>> don't know why it only appeared now.
->>
->> Agreed to both statements.
->>
->>>>> fs/built-in.o: In function `gdlm_cancel':
->>>>> lock_dlm.c:(.text+0xb3f57): undefined reference to `dlm_unlock'
->>>>> fs/built-in.o: In function `gdlm_unmount':
->>>>> lock_dlm.c:(.text+0xb40ff): undefined reference to `dlm_release_lockspace'
->>>>> fs/built-in.o: In function `sync_unlock.isra.4':
->>>>> lock_dlm.c:(.text+0xb420d): undefined reference to `dlm_unlock'
->>>>> fs/built-in.o: In function `sync_lock.isra.5':
->>>>> lock_dlm.c:(.text+0xb42d9): undefined reference to `dlm_lock'
->>>>> fs/built-in.o: In function `gdlm_put_lock':
->>>>> lock_dlm.c:(.text+0xb45e7): undefined reference to `dlm_unlock'
->>>>> fs/built-in.o: In function `gdlm_mount':
->>>>> lock_dlm.c:(.text+0xb4928): undefined reference to `dlm_new_lockspace'
->>>>> lock_dlm.c:(.text+0xb4c75): undefined reference to `dlm_release_lockspace'
->>>>> fs/built-in.o: In function `gdlm_lock':
->>>>> lock_dlm.c:(.text+0xb529f): undefined reference to `dlm_lock'
->>>
->>> lock_dlm.c is GFS2_FS_LOCKING_DLM which depends on DLM.
->>> Is that not correct?
->>
->> The problem is that GFS2_FS_LOCKING_DLM is a bool.  It depends on DLM,
->> which is a tristate with a value of 'm', so the bool is true (as long
->> as DLM != 'n').
->>
->> One option is to make GFS2_FS_LOCKING_DLM depend on "DLM != n", but a
->> better fix is to make GFS2_FS depend on DLM, like you said above.
->>
->>
-> 
-> Does this look correct? As Dave says this has not changed for some time.
-> It seems that every time we try to get this right, there is always some
-> corner case that is missed :( 
-
-Sorry, I misspoke above.   It will have to depend on DLM=y since DLM=m
-is what is causing these build errors.
-
-> We can't make GFS2_FS depend on DLM as otherwise there would be no
-> reason to have GFS2_FS_LOCKING_DLM, at least if I've understood the
-> issue here correctly. So I've come up with the following... does it look
-> ok?
-> 
-> 
-> diff --git a/fs/gfs2/Kconfig b/fs/gfs2/Kconfig
-> index eb08c9e..edbad96 100644
-> --- a/fs/gfs2/Kconfig
-> +++ b/fs/gfs2/Kconfig
-> @@ -26,7 +26,7 @@ config GFS2_FS
->  config GFS2_FS_LOCKING_DLM
->  	bool "GFS2 DLM locking"
->  	depends on (GFS2_FS!=n) && NET && INET && (IPV6 || IPV6=n) && \
-> -		HOTPLUG && DLM && CONFIGFS_FS && SYSFS
-> +		HOTPLUG && (DLM!=n) && CONFIGFS_FS && SYSFS
-
-		HOTPLUG && DLM=y && CONFIGFS_FS && SYSFS
-
->  	help
->  	  Multiple node locking module for GFS2
->  
-> 
-> 
 
 
--- 
-~Randy
+On 05/13/2013 11:11 AM, Adrian Chadd wrote:
+> ... is anyone using this on openwrt?
+>
+I am.
+I am also reworking AR2131X drivers and will submit a patch to 
+linux-mips shortly.
+>
+>
+>
+> Adrian
+>
+> On 13 May 2013 08:03, Paul Bolle <pebolle@tiscali.nl> wrote:
+>> AHB bus support was added in v2.6.38, through commit a0b907ee2a ("ath5k:
+>> Add AHB bus support."). That code can only be build if the Kconfig
+>> symbol ATHEROS_AR231X is set. But that symbol has never been added to
+>> the tree. So AHB bus support has always been dead code.
+>>
+>> Let's remove all code that depends on ATHEROS_AR231X. If that symbol
+>> ever gets added to the tree the AHB bus support can be re-added too.
+>>
+>> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+>> ---
+>> 0) Compile tested (I do not think I have hardware that use the ath5k
+>> driver).
+>>
+>> 1) I mentioned the missing ATHEROS_AR231X symbol three times before (in
+>> August 2011, in July 2012 and in March 2103). Nobody stepped forward to
+>> tell me they were actually working on adding that symbol somehow. So
+>> let's see how people react when I submit a patch to remove the (dead)
+>> AHB bus support.
+>>
+>>   drivers/net/wireless/ath/ath5k/Kconfig  |  14 +-
+>>   drivers/net/wireless/ath/ath5k/Makefile |   1 -
+>>   drivers/net/wireless/ath/ath5k/ahb.c    | 239 --------------------------------
+>>   drivers/net/wireless/ath/ath5k/ath5k.h  |  28 ----
+>>   drivers/net/wireless/ath/ath5k/base.c   |  14 --
+>>   drivers/net/wireless/ath/ath5k/led.c    |   6 -
+>>   6 files changed, 3 insertions(+), 299 deletions(-)
+>>   delete mode 100644 drivers/net/wireless/ath/ath5k/ahb.c
+>>
+>> diff --git a/drivers/net/wireless/ath/ath5k/Kconfig b/drivers/net/wireless/ath/ath5k/Kconfig
+>> index c9f81a3..93caf8e68 100644
+>> --- a/drivers/net/wireless/ath/ath5k/Kconfig
+>> +++ b/drivers/net/wireless/ath/ath5k/Kconfig
+>> @@ -1,13 +1,12 @@
+>>   config ATH5K
+>>          tristate "Atheros 5xxx wireless cards support"
+>> -       depends on (PCI || ATHEROS_AR231X) && MAC80211
+>> +       depends on PCI && MAC80211
+>>          select ATH_COMMON
+>>          select MAC80211_LEDS
+>>          select LEDS_CLASS
+>>          select NEW_LEDS
+>>          select AVERAGE
+>> -       select ATH5K_AHB if (ATHEROS_AR231X && !PCI)
+>> -       select ATH5K_PCI if (!ATHEROS_AR231X && PCI)
+>> +       select ATH5K_PCI
+>>          ---help---
+>>            This module adds support for wireless adapters based on
+>>            Atheros 5xxx chipset.
+>> @@ -52,16 +51,9 @@ config ATH5K_TRACER
+>>
+>>            If unsure, say N.
+>>
+>> -config ATH5K_AHB
+>> -       bool "Atheros 5xxx AHB bus support"
+>> -       depends on (ATHEROS_AR231X && !PCI)
+>> -       ---help---
+>> -         This adds support for WiSoC type chipsets of the 5xxx Atheros
+>> -         family.
+>> -
+>>   config ATH5K_PCI
+>>          bool "Atheros 5xxx PCI bus support"
+>> -       depends on (!ATHEROS_AR231X && PCI)
+>> +       depends on PCI
+>>          ---help---
+>>            This adds support for PCI type chipsets of the 5xxx Atheros
+>>            family.
+>> diff --git a/drivers/net/wireless/ath/ath5k/Makefile b/drivers/net/wireless/ath/ath5k/Makefile
+>> index 1b3a34f..51e2d86 100644
+>> --- a/drivers/net/wireless/ath/ath5k/Makefile
+>> +++ b/drivers/net/wireless/ath/ath5k/Makefile
+>> @@ -17,6 +17,5 @@ ath5k-y                               += ani.o
+>>   ath5k-y                                += sysfs.o
+>>   ath5k-y                                += mac80211-ops.o
+>>   ath5k-$(CONFIG_ATH5K_DEBUG)    += debug.o
+>> -ath5k-$(CONFIG_ATH5K_AHB)      += ahb.o
+>>   ath5k-$(CONFIG_ATH5K_PCI)      += pci.o
+>>   obj-$(CONFIG_ATH5K)            += ath5k.o
+>> diff --git a/drivers/net/wireless/ath/ath5k/ahb.c b/drivers/net/wireless/ath/ath5k/ahb.c
+>> deleted file mode 100644
+>> index 8e8bcc7a..0000000
+>> --- a/drivers/net/wireless/ath/ath5k/ahb.c
+>> +++ /dev/null
+>> @@ -1,239 +0,0 @@
+>> -/*
+>> - * Copyright (c) 2008-2009 Atheros Communications Inc.
+>> - * Copyright (c) 2009 Gabor Juhos <juhosg@openwrt.org>
+>> - * Copyright (c) 2009 Imre Kaloz <kaloz@openwrt.org>
+>> - *
+>> - * Permission to use, copy, modify, and/or distribute this software for any
+>> - * purpose with or without fee is hereby granted, provided that the above
+>> - * copyright notice and this permission notice appear in all copies.
+>> - *
+>> - * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+>> - * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+>> - * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+>> - * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+>> - * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+>> - * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+>> - * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+>> - */
+>> -
+>> -#include <linux/nl80211.h>
+>> -#include <linux/platform_device.h>
+>> -#include <linux/etherdevice.h>
+>> -#include <linux/export.h>
+>> -#include <ar231x_platform.h>
+>> -#include "ath5k.h"
+>> -#include "debug.h"
+>> -#include "base.h"
+>> -#include "reg.h"
+>> -
+>> -/* return bus cachesize in 4B word units */
+>> -static void ath5k_ahb_read_cachesize(struct ath_common *common, int *csz)
+>> -{
+>> -       *csz = L1_CACHE_BYTES >> 2;
+>> -}
+>> -
+>> -static bool
+>> -ath5k_ahb_eeprom_read(struct ath_common *common, u32 off, u16 *data)
+>> -{
+>> -       struct ath5k_hw *ah = common->priv;
+>> -       struct platform_device *pdev = to_platform_device(ah->dev);
+>> -       struct ar231x_board_config *bcfg = pdev->dev.platform_data;
+>> -       u16 *eeprom, *eeprom_end;
+>> -
+>> -
+>> -
+>> -       bcfg = pdev->dev.platform_data;
+>> -       eeprom = (u16 *) bcfg->radio;
+>> -       eeprom_end = ((void *) bcfg->config) + BOARD_CONFIG_BUFSZ;
+>> -
+>> -       eeprom += off;
+>> -       if (eeprom > eeprom_end)
+>> -               return false;
+>> -
+>> -       *data = *eeprom;
+>> -       return true;
+>> -}
+>> -
+>> -int ath5k_hw_read_srev(struct ath5k_hw *ah)
+>> -{
+>> -       struct platform_device *pdev = to_platform_device(ah->dev);
+>> -       struct ar231x_board_config *bcfg = pdev->dev.platform_data;
+>> -       ah->ah_mac_srev = bcfg->devid;
+>> -       return 0;
+>> -}
+>> -
+>> -static int ath5k_ahb_eeprom_read_mac(struct ath5k_hw *ah, u8 *mac)
+>> -{
+>> -       struct platform_device *pdev = to_platform_device(ah->dev);
+>> -       struct ar231x_board_config *bcfg = pdev->dev.platform_data;
+>> -       u8 *cfg_mac;
+>> -
+>> -       if (to_platform_device(ah->dev)->id == 0)
+>> -               cfg_mac = bcfg->config->wlan0_mac;
+>> -       else
+>> -               cfg_mac = bcfg->config->wlan1_mac;
+>> -
+>> -       memcpy(mac, cfg_mac, ETH_ALEN);
+>> -       return 0;
+>> -}
+>> -
+>> -static const struct ath_bus_ops ath_ahb_bus_ops = {
+>> -       .ath_bus_type = ATH_AHB,
+>> -       .read_cachesize = ath5k_ahb_read_cachesize,
+>> -       .eeprom_read = ath5k_ahb_eeprom_read,
+>> -       .eeprom_read_mac = ath5k_ahb_eeprom_read_mac,
+>> -};
+>> -
+>> -/*Initialization*/
+>> -static int ath_ahb_probe(struct platform_device *pdev)
+>> -{
+>> -       struct ar231x_board_config *bcfg = pdev->dev.platform_data;
+>> -       struct ath5k_hw *ah;
+>> -       struct ieee80211_hw *hw;
+>> -       struct resource *res;
+>> -       void __iomem *mem;
+>> -       int irq;
+>> -       int ret = 0;
+>> -       u32 reg;
+>> -
+>> -       if (!pdev->dev.platform_data) {
+>> -               dev_err(&pdev->dev, "no platform data specified\n");
+>> -               ret = -EINVAL;
+>> -               goto err_out;
+>> -       }
+>> -
+>> -       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> -       if (res == NULL) {
+>> -               dev_err(&pdev->dev, "no memory resource found\n");
+>> -               ret = -ENXIO;
+>> -               goto err_out;
+>> -       }
+>> -
+>> -       mem = ioremap_nocache(res->start, resource_size(res));
+>> -       if (mem == NULL) {
+>> -               dev_err(&pdev->dev, "ioremap failed\n");
+>> -               ret = -ENOMEM;
+>> -               goto err_out;
+>> -       }
+>> -
+>> -       res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+>> -       if (res == NULL) {
+>> -               dev_err(&pdev->dev, "no IRQ resource found\n");
+>> -               ret = -ENXIO;
+>> -               goto err_iounmap;
+>> -       }
+>> -
+>> -       irq = res->start;
+>> -
+>> -       hw = ieee80211_alloc_hw(sizeof(struct ath5k_hw), &ath5k_hw_ops);
+>> -       if (hw == NULL) {
+>> -               dev_err(&pdev->dev, "no memory for ieee80211_hw\n");
+>> -               ret = -ENOMEM;
+>> -               goto err_iounmap;
+>> -       }
+>> -
+>> -       ah = hw->priv;
+>> -       ah->hw = hw;
+>> -       ah->dev = &pdev->dev;
+>> -       ah->iobase = mem;
+>> -       ah->irq = irq;
+>> -       ah->devid = bcfg->devid;
+>> -
+>> -       if (bcfg->devid >= AR5K_SREV_AR2315_R6) {
+>> -               /* Enable WMAC AHB arbitration */
+>> -               reg = ioread32((void __iomem *) AR5K_AR2315_AHB_ARB_CTL);
+>> -               reg |= AR5K_AR2315_AHB_ARB_CTL_WLAN;
+>> -               iowrite32(reg, (void __iomem *) AR5K_AR2315_AHB_ARB_CTL);
+>> -
+>> -               /* Enable global WMAC swapping */
+>> -               reg = ioread32((void __iomem *) AR5K_AR2315_BYTESWAP);
+>> -               reg |= AR5K_AR2315_BYTESWAP_WMAC;
+>> -               iowrite32(reg, (void __iomem *) AR5K_AR2315_BYTESWAP);
+>> -       } else {
+>> -               /* Enable WMAC DMA access (assuming 5312 or 231x*/
+>> -               /* TODO: check other platforms */
+>> -               reg = ioread32((void __iomem *) AR5K_AR5312_ENABLE);
+>> -               if (to_platform_device(ah->dev)->id == 0)
+>> -                       reg |= AR5K_AR5312_ENABLE_WLAN0;
+>> -               else
+>> -                       reg |= AR5K_AR5312_ENABLE_WLAN1;
+>> -               iowrite32(reg, (void __iomem *) AR5K_AR5312_ENABLE);
+>> -
+>> -               /*
+>> -                * On a dual-band AR5312, the multiband radio is only
+>> -                * used as pass-through. Disable 2 GHz support in the
+>> -                * driver for it
+>> -                */
+>> -               if (to_platform_device(ah->dev)->id == 0 &&
+>> -                   (bcfg->config->flags & (BD_WLAN0 | BD_WLAN1)) ==
+>> -                    (BD_WLAN1 | BD_WLAN0))
+>> -                       ah->ah_capabilities.cap_needs_2GHz_ovr = true;
+>> -               else
+>> -                       ah->ah_capabilities.cap_needs_2GHz_ovr = false;
+>> -       }
+>> -
+>> -       ret = ath5k_init_ah(ah, &ath_ahb_bus_ops);
+>> -       if (ret != 0) {
+>> -               dev_err(&pdev->dev, "failed to attach device, err=%d\n", ret);
+>> -               ret = -ENODEV;
+>> -               goto err_free_hw;
+>> -       }
+>> -
+>> -       platform_set_drvdata(pdev, hw);
+>> -
+>> -       return 0;
+>> -
+>> - err_free_hw:
+>> -       ieee80211_free_hw(hw);
+>> -       platform_set_drvdata(pdev, NULL);
+>> - err_iounmap:
+>> -        iounmap(mem);
+>> - err_out:
+>> -       return ret;
+>> -}
+>> -
+>> -static int ath_ahb_remove(struct platform_device *pdev)
+>> -{
+>> -       struct ar231x_board_config *bcfg = pdev->dev.platform_data;
+>> -       struct ieee80211_hw *hw = platform_get_drvdata(pdev);
+>> -       struct ath5k_hw *ah;
+>> -       u32 reg;
+>> -
+>> -       if (!hw)
+>> -               return 0;
+>> -
+>> -       ah = hw->priv;
+>> -
+>> -       if (bcfg->devid >= AR5K_SREV_AR2315_R6) {
+>> -               /* Disable WMAC AHB arbitration */
+>> -               reg = ioread32((void __iomem *) AR5K_AR2315_AHB_ARB_CTL);
+>> -               reg &= ~AR5K_AR2315_AHB_ARB_CTL_WLAN;
+>> -               iowrite32(reg, (void __iomem *) AR5K_AR2315_AHB_ARB_CTL);
+>> -       } else {
+>> -               /*Stop DMA access */
+>> -               reg = ioread32((void __iomem *) AR5K_AR5312_ENABLE);
+>> -               if (to_platform_device(ah->dev)->id == 0)
+>> -                       reg &= ~AR5K_AR5312_ENABLE_WLAN0;
+>> -               else
+>> -                       reg &= ~AR5K_AR5312_ENABLE_WLAN1;
+>> -               iowrite32(reg, (void __iomem *) AR5K_AR5312_ENABLE);
+>> -       }
+>> -
+>> -       ath5k_deinit_ah(ah);
+>> -       iounmap(ah->iobase);
+>> -       platform_set_drvdata(pdev, NULL);
+>> -       ieee80211_free_hw(hw);
+>> -
+>> -       return 0;
+>> -}
+>> -
+>> -static struct platform_driver ath_ahb_driver = {
+>> -       .probe      = ath_ahb_probe,
+>> -       .remove     = ath_ahb_remove,
+>> -       .driver         = {
+>> -               .name   = "ar231x-wmac",
+>> -               .owner  = THIS_MODULE,
+>> -       },
+>> -};
+>> -
+>> -module_platform_driver(ath_ahb_driver);
+>> diff --git a/drivers/net/wireless/ath/ath5k/ath5k.h b/drivers/net/wireless/ath/ath5k/ath5k.h
+>> index 2d691b8..deaedb8 100644
+>> --- a/drivers/net/wireless/ath/ath5k/ath5k.h
+>> +++ b/drivers/net/wireless/ath/ath5k/ath5k.h
+>> @@ -1645,32 +1645,6 @@ static inline struct ath_regulatory *ath5k_hw_regulatory(struct ath5k_hw *ah)
+>>          return &(ath5k_hw_common(ah)->regulatory);
+>>   }
+>>
+>> -#ifdef CONFIG_ATHEROS_AR231X
+>> -#define AR5K_AR2315_PCI_BASE   ((void __iomem *)0xb0100000)
+>> -
+>> -static inline void __iomem *ath5k_ahb_reg(struct ath5k_hw *ah, u16 reg)
+>> -{
+>> -       /* On AR2315 and AR2317 the PCI clock domain registers
+>> -        * are outside of the WMAC register space */
+>> -       if (unlikely((reg >= 0x4000) && (reg < 0x5000) &&
+>> -           (ah->ah_mac_srev >= AR5K_SREV_AR2315_R6)))
+>> -               return AR5K_AR2315_PCI_BASE + reg;
+>> -
+>> -       return ah->iobase + reg;
+>> -}
+>> -
+>> -static inline u32 ath5k_hw_reg_read(struct ath5k_hw *ah, u16 reg)
+>> -{
+>> -       return ioread32(ath5k_ahb_reg(ah, reg));
+>> -}
+>> -
+>> -static inline void ath5k_hw_reg_write(struct ath5k_hw *ah, u32 val, u16 reg)
+>> -{
+>> -       iowrite32(val, ath5k_ahb_reg(ah, reg));
+>> -}
+>> -
+>> -#else
+>> -
+>>   static inline u32 ath5k_hw_reg_read(struct ath5k_hw *ah, u16 reg)
+>>   {
+>>          return ioread32(ah->iobase + reg);
+>> @@ -1681,8 +1655,6 @@ static inline void ath5k_hw_reg_write(struct ath5k_hw *ah, u32 val, u16 reg)
+>>          iowrite32(val, ah->iobase + reg);
+>>   }
+>>
+>> -#endif
+>> -
+>>   static inline enum ath_bus_type ath5k_get_bus_type(struct ath5k_hw *ah)
+>>   {
+>>          return ath5k_hw_common(ah)->bus_ops->ath_bus_type;
+>> diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
+>> index 9b20d9e..654cc3d 100644
+>> --- a/drivers/net/wireless/ath/ath5k/base.c
+>> +++ b/drivers/net/wireless/ath/ath5k/base.c
+>> @@ -97,15 +97,6 @@ static int ath5k_reset(struct ath5k_hw *ah, struct ieee80211_channel *chan,
+>>
+>>   /* Known SREVs */
+>>   static const struct ath5k_srev_name srev_names[] = {
+>> -#ifdef CONFIG_ATHEROS_AR231X
+>> -       { "5312",       AR5K_VERSION_MAC,       AR5K_SREV_AR5312_R2 },
+>> -       { "5312",       AR5K_VERSION_MAC,       AR5K_SREV_AR5312_R7 },
+>> -       { "2313",       AR5K_VERSION_MAC,       AR5K_SREV_AR2313_R8 },
+>> -       { "2315",       AR5K_VERSION_MAC,       AR5K_SREV_AR2315_R6 },
+>> -       { "2315",       AR5K_VERSION_MAC,       AR5K_SREV_AR2315_R7 },
+>> -       { "2317",       AR5K_VERSION_MAC,       AR5K_SREV_AR2317_R1 },
+>> -       { "2317",       AR5K_VERSION_MAC,       AR5K_SREV_AR2317_R2 },
+>> -#else
+>>          { "5210",       AR5K_VERSION_MAC,       AR5K_SREV_AR5210 },
+>>          { "5311",       AR5K_VERSION_MAC,       AR5K_SREV_AR5311 },
+>>          { "5311A",      AR5K_VERSION_MAC,       AR5K_SREV_AR5311A },
+>> @@ -124,7 +115,6 @@ static const struct ath5k_srev_name srev_names[] = {
+>>          { "5418",       AR5K_VERSION_MAC,       AR5K_SREV_AR5418 },
+>>          { "2425",       AR5K_VERSION_MAC,       AR5K_SREV_AR2425 },
+>>          { "2417",       AR5K_VERSION_MAC,       AR5K_SREV_AR2417 },
+>> -#endif
+>>          { "xxxxx",      AR5K_VERSION_MAC,       AR5K_SREV_UNKNOWN },
+>>          { "5110",       AR5K_VERSION_RAD,       AR5K_SREV_RAD_5110 },
+>>          { "5111",       AR5K_VERSION_RAD,       AR5K_SREV_RAD_5111 },
+>> @@ -140,10 +130,6 @@ static const struct ath5k_srev_name srev_names[] = {
+>>          { "5413",       AR5K_VERSION_RAD,       AR5K_SREV_RAD_5413 },
+>>          { "5424",       AR5K_VERSION_RAD,       AR5K_SREV_RAD_5424 },
+>>          { "5133",       AR5K_VERSION_RAD,       AR5K_SREV_RAD_5133 },
+>> -#ifdef CONFIG_ATHEROS_AR231X
+>> -       { "2316",       AR5K_VERSION_RAD,       AR5K_SREV_RAD_2316 },
+>> -       { "2317",       AR5K_VERSION_RAD,       AR5K_SREV_RAD_2317 },
+>> -#endif
+>>          { "xxxxx",      AR5K_VERSION_RAD,       AR5K_SREV_UNKNOWN },
+>>   };
+>>
+>> diff --git a/drivers/net/wireless/ath/ath5k/led.c b/drivers/net/wireless/ath/ath5k/led.c
+>> index f77ef36..dbf2483 100644
+>> --- a/drivers/net/wireless/ath/ath5k/led.c
+>> +++ b/drivers/net/wireless/ath/ath5k/led.c
+>> @@ -162,20 +162,14 @@ int ath5k_init_leds(struct ath5k_hw *ah)
+>>   {
+>>          int ret = 0;
+>>          struct ieee80211_hw *hw = ah->hw;
+>> -#ifndef CONFIG_ATHEROS_AR231X
+>>          struct pci_dev *pdev = ah->pdev;
+>> -#endif
+>>          char name[ATH5K_LED_MAX_NAME_LEN + 1];
+>>          const struct pci_device_id *match;
+>>
+>>          if (!ah->pdev)
+>>                  return 0;
+>>
+>> -#ifdef CONFIG_ATHEROS_AR231X
+>> -       match = NULL;
+>> -#else
+>>          match = pci_match_id(&ath5k_led_devices[0], pdev);
+>> -#endif
+>>          if (match) {
+>>                  __set_bit(ATH_STAT_LEDSOFT, ah->status);
+>>                  ah->led_pin = ATH_PIN(match->driver_data);
+>> --
+>> 1.7.11.7
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
