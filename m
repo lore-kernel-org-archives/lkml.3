@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab3EMJof (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 05:44:35 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:41538 "EHLO
+	id S1754494Ab3EMJry (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 05:47:54 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:41584 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab3EMJob (ORCPT
+	with ESMTP id S1754015Ab3EMJoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 05:44:31 -0400
+	Mon, 13 May 2013 05:44:34 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Michal Simek <michal.simek@xilinx.com>,
@@ -23,9 +23,9 @@ To: Maxime Ripard <maxime.ripard@free-electrons.com>,
 Cc: linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH 01/14] ARM: sunxi: Remove init_irq declaration in machine description
-Date: Mon, 13 May 2013 11:44:00 +0200
-Message-Id: <1368438253-28218-2-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 04/14] ARM: picoxcell: Remove init_irq declaration in machine description
+Date: Mon, 13 May 2013 11:44:03 +0200
+Message-Id: <1368438253-28218-5-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1368438253-28218-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1368438253-28218-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -36,25 +36,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
 specified") removed the need to explictly setup the init_irq field in
 the machine description when using only irqchip_init. Remove that
-declaration for sunxi as well.
+declaration for picoxcell as well.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Jamie Iles <jamie@jamieiles.com>
 ---
- arch/arm/mach-sunxi/sunxi.c | 1 -
+ arch/arm/mach-picoxcell/common.c | 1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
-index 706ce35..4de1edf 100644
---- a/arch/arm/mach-sunxi/sunxi.c
-+++ b/arch/arm/mach-sunxi/sunxi.c
-@@ -117,7 +117,6 @@ static const char * const sunxi_board_dt_compat[] = {
- DT_MACHINE_START(SUNXI_DT, "Allwinner A1X (Device Tree)")
- 	.init_machine	= sunxi_dt_init,
- 	.map_io		= sunxi_map_io,
+diff --git a/arch/arm/mach-picoxcell/common.c b/arch/arm/mach-picoxcell/common.c
+index 70b441a..b444947 100644
+--- a/arch/arm/mach-picoxcell/common.c
++++ b/arch/arm/mach-picoxcell/common.c
+@@ -87,7 +87,6 @@ static void picoxcell_wdt_restart(char mode, const char *cmd)
+ DT_MACHINE_START(PICOXCELL, "Picochip picoXcell")
+ 	.map_io		= picoxcell_map_io,
+ 	.nr_irqs	= NR_IRQS_LEGACY,
 -	.init_irq	= irqchip_init,
- 	.init_time	= sunxi_timer_init,
- 	.dt_compat	= sunxi_board_dt_compat,
- MACHINE_END
+ 	.init_time	= dw_apb_timer_init,
+ 	.init_machine	= picoxcell_init_machine,
+ 	.dt_compat	= picoxcell_dt_match,
 -- 
 1.8.1.2
 
