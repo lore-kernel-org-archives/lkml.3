@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab3EMMBt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 08:01:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47293 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab3EMMBq (ORCPT
+	id S1753669Ab3EMMCL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 08:02:11 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:56586 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab3EMMBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 08:01:46 -0400
-Date: Mon, 13 May 2013 14:01:44 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Gerlando Falauto <gerlando.falauto@keymile.com>
-cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 0/8] genirq: Support for irq domains in generic irq chip
- - V2
-In-Reply-To: <5190C720.50903@keymile.com>
-Message-ID: <alpine.LFD.2.02.1305131359290.2863@ionos>
-References: <20130506142348.321859745@linutronix.de> <5190C720.50903@keymile.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 13 May 2013 08:01:15 -0400
+X-AuditID: 85900ec0-d38c8b900000151e-a2-5190d609c0f7
+Subject: [PATCH 2/3] [CLEANUP/SPARSE] tracing/kprobes: Fix a sparse warning
+ for incorrect type in assignment
+To: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
+Date: Mon, 13 May 2013 20:58:37 +0900
+Message-ID: <20130513115837.6545.23322.stgit@mhiramat-M0-7522>
+In-Reply-To: <20130513115824.6545.47677.stgit@mhiramat-M0-7522>
+References: <20130513115824.6545.47677.stgit@mhiramat-M0-7522>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 May 2013, Gerlando Falauto wrote:
-> 1) What happened to your initial proposal of renaming gc->mask_cache to
-> gc->shared_mask_cache? Does that mean you intend to keep compatibility so
-> individual drivers can be updated one at a time?
+Fix a sparse warning about the rcu operated pointer is
+defined without __rcu address space.
 
-Yes.
- 
-> 2) What shall we do with such potential patches for individual drivers, given
-> the dependencies on your work? Wait until yours get merged?
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+---
+ kernel/trace/trace_kprobe.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I'll provide a branch for the SoC folks, which they can pull into
-their tree, so we don't have cross tree dependencies.
- 
-> Could this cross-posting be the root cause for this whole mess?
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 0a3d8d5..81c5109 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -35,7 +35,7 @@ struct trace_probe {
+ 	const char		*symbol;	/* symbol name */
+ 	struct ftrace_event_class	class;
+ 	struct ftrace_event_call	call;
+-	struct ftrace_event_file	**files;
++	struct ftrace_event_file * __rcu *files;
+ 	ssize_t			size;		/* trace entry size */
+ 	unsigned int		nr_args;
+ 	struct probe_arg	args[];
 
-No idea, really.
- 
-Thanks,
-
-	tglx
