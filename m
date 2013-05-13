@@ -1,105 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab3EMSZG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 14:25:06 -0400
-Received: from plane.gmane.org ([80.91.229.3]:52134 "EHLO plane.gmane.org"
+	id S1754458Ab3EMS0I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 14:26:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60137 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752467Ab3EMSZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 14:25:04 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Dmitry Maluka <D.Maluka@adbglobal.com>
-Subject: Yet another page fault deadlock
-Date: Mon, 13 May 2013 21:13:36 +0300
-Message-ID: <kmrak0$ip1$1@ger.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: 193.105.30.100
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-Cc: linux-mm@kvack.org
+	id S1752015Ab3EMS0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 14:26:05 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Tanya Brokhman <tlinder@codeaurora.org>
+Cc: axboe@kernel.dk, linux-arm-msm@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+        linux-kernel@vger.kernel.org (open list)
+Subject: Re: [PATCH/RESEND v6 3/3] block: Adding ROW scheduling algorithm
+References: <1368354917-28687-1-git-send-email-tlinder@codeaurora.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 13 May 2013 14:25:57 -0400
+In-Reply-To: <1368354917-28687-1-git-send-email-tlinder@codeaurora.org> (Tanya
+	Brokhman's message of "Sun, 12 May 2013 13:34:48 +0300")
+Message-ID: <x49d2suohxm.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Tanya Brokhman <tlinder@codeaurora.org> writes:
 
-Sometimes we run into an interesting deadlock on mm->mmap_sem. I see it
-is similar to these deadlocks:
+> This patch adds the implementation of a new scheduling algorithm - ROW.
+> The policy of this algorithm is to prioritize READ requests over WRITE
+> as much as possible without starving the WRITE requests.
+> The requests are kept in queues according to their priority. The dispatch
+> is done in a Round Robin manner with a different slice for each queue.
+> READ request queues get bigger dispatch quantum than the write requests.
 
-https://lkml.org/lkml/2005/2/22/123
-https://lkml.org/lkml/2001/9/17/105
+You have just described CFQ.
 
-in the sense that it is too triggered by page faults and is explained by
-"fair" rwsem semantics (pending write lock blocks further read locks).
+Last time I asked for performance numbers[1], you mentioned that you had
+published some, but provided no pointers to a paper or mailing list
+posting, and I wasn't able to find anything via google, either.
 
-First, let me describe the prerequisites. It is an embedded MIPS
-platform. We have 2 custom kernel drivers (call them A and B):
+It sounds as though you haven't even tried to adapt CFQ to your needs
+(you mentioned trying to tune it, but not what tunings you tried or what
+the results were).  Continuing to position your new scheduler as the
+only way forward without providing the data that led you to that
+conclusion isn't very helpful.  Note that I'm not suggesting that your
+conclusion is wrong.  Perhaps if you can provide a link to a research
+paper, we can start there.  For now, I can't see why we should take on
+the maintenance of another I/O scheduler.
 
-- Driver A implements hardware encryption/decryption. It acts both as a
-char device driver and as an in-kernel library with an API allowing
-other kernel modules to encrypt/decrypt data. Important point: driver A
-uses a single mutex (call it A_mutex) to protect all its operations,
-regardless of whether they are requested by user space or by another
-kernel module.
+Cheers,
+Jeff
 
-- Driver B is a block device driver implementing a transparent encrypted
-storage. It uses driver A's in-kernel API for encryption during write
-and decryption during read.
-
-We have squashfs mounted on a block device provided by driver B. And we
-have a user-space process with a plenty of threads in it (call them
-thread 1, 2, 3, ...).
-
-Now, the sequence leading to the deadlock:
-
-1. Thread 1 needs to encrypt or decrypt some data. It uses char device
-interface provided by driver A. Upon driver entry, it first locks A_mutex.
-
-2. Thread 2 reads from a mmap'ed file on squashfs. Page fault is
-generated. do_page_fault() read-locks mm->mmap_sem. Then squashfs
-filemap fault handler is called, then read request is sent to driver B,
-then driver B calls an API function from driver A. This function first
-tries to lock A_mutex, and hangs on it.
-
-3. Thread 3 does a syscall which requires mm->mmap_sem write-locked
-(sometimes it is mmap, sometimes mprotect). It hangs on mm->mmap_sem.
-
-4. Thread 1 proceeds with handling the request from user space from step
-1. During copy_to_user() or copy_from_user() page fault is generated.
-do_page_fault() tries to read-lock mm->mmap_sem and hangs on it.
-
-This deadlock does not happen if we memset() the entire user space
-buffer in thread 1 before doing the syscall. I.e. we make sure that the
-buffer is fully mapped before the request to driver A, preventing demand
-paging during copy_to/from_user(). We are currently using it as a
-workaround.
-
-So... I realize that in our case the deadlock is caused by our
-proprietary component (driver A) whose authors were smart guys but not
-farsighted enough to anticipate this scenario. Now we are considering
-reworking driver A to make all copy_to/from_user() calls without A_mutex
-locked. This should remove the deadlock source, AFAICS.
-
-However, it looks like a general internal kernel architecture problem.
-The whole page fault handling procedure is done with mm->mmap_sem
-read-held, and due to rwsem semantics, down_read/down_write/down_read
-deadlock may happen if two threads are getting page fault and a third
-thread is trying to write-lock mm->mmap_sem. So all the code performing
-page fault handling procedure should be especially careful about
-avoiding such deadlock. But this is a complex procedure involving
-different subsystems, particularly, arbitrary block device driver. So
-any block device driver should be implemented with this in mind. While
-this is probably not documented anywhere.
-
-Perhaps the rule to avoid deadlocks should be "do not write a block
-device driver which protects its I/O with the same lock which is used to
-protect copy_to_user or copy_from_user operations elsewhere". From the
-wording it might seem that any sane driver should follow this anyway.
-But as you can see, in more complex cases (like our driver B using
-driver A) it is not so obvious.
-
-So I'm reporting this because it seems worth at least discussing, even
-if there is nothing to fix in vanilla kernel.
-
+[1] https://lkml.org/lkml/2012/8/7/164
