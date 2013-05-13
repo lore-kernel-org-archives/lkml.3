@@ -1,95 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab3EMRYn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 13:24:43 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:46899
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750926Ab3EMRYl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 13:24:41 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zzbb2dI98dIc89bh1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh906i1155h)
-Date: Mon, 13 May 2013 10:24:33 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
-References: <1368207091-32538-1-git-send-email-soren.brinkmann@xilinx.com>
- <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com>
- <20130510212422.GY3200@sirena.org.uk>
- <7e18bed3-ae6b-4aa0-bf23-b6c61ba8b85b@CO9EHSMHS030.ehs.local>
- <20130512143344.GC3200@sirena.org.uk>
- <9e55c552-ce34-4663-9a57-bf2c626d7d58@TX2EHSMHS008.ehs.local>
- <20130513052135.GD6836@sirena.org.uk>
- <0bf5a185-86f7-4a93-a90f-42caefb06a1d@TX2EHSMHS009.ehs.local>
- <519112F9.2010102@gmail.com>
+	id S1752887Ab3EMRYv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 13:24:51 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:50593 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab3EMRYt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 13:24:49 -0400
+X-IronPort-AV: E=Sophos;i="4.87,663,1363132800"; 
+   d="scan'208";a="23719714"
+Date: Mon, 13 May 2013 18:24:46 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yuval Shaia <yuval.shaia@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>, Chien Yen <chien.yen@oracle.com>
+Subject: Re: [PATCH] xen: reuse the same pirq allocated when driver load
+ first time
+In-Reply-To: <20130513161714.GC10401@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1305131753070.4799@kaball.uk.xensource.com>
+References: <518A0A50.1020705@oracle.com> <20130510185339.GD2562@phenom.dumpdata.com> <alpine.DEB.2.02.1305131136020.4799@kaball.uk.xensource.com> <20130513140749.GQ6811@phenom.dumpdata.com> <alpine.DEB.2.02.1305131540020.4799@kaball.uk.xensource.com>
+ <20130513161714.GC10401@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <519112F9.2010102@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <7c5e7537-6ed5-4622-a7a9-bf46820ef695@VA3EHSMHS033.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 06:21:13PM +0200, Sebastian Hesselbarth wrote:
-> On 05/13/13 18:09, Sören Brinkmann wrote:
-> >On Mon, May 13, 2013 at 09:21:35AM +0400, Mark Brown wrote:
-> >>On Sun, May 12, 2013 at 12:05:04PM -0700, Sören Brinkmann wrote:
-> >>>On Sun, May 12, 2013 at 06:33:44PM +0400, Mark Brown wrote:
-> >>>>No, there's no confusion here - the clocks that are being exposed to
-> >>>>userspace are the clocks which enter the FPGA.  The driver or whatever
-> >>>>that understands the FPGA can do what is needed to control them,
-> >>>>including routing them on to subdevices it instantiates or exposing them
-> >>>>to userspace.
-> >>
-> >>>Such a driver does not exist in general.
-> >>>For some IP cores, Linux drivers do exist and then
-> >>>they are supposed to directly use the CCF, IMHO, no need to expose
-> >>>things to userspace in that case.
-> >>>I'm trying to cover cases, in which there is no driver available/needed for
-> >>>the FPGA design, other than some simple clock controls.
-> >>
-> >>You're not understanding the point here.  If you've got a
-> >>reprogrammmable FPGA you at least need some way to get the FPGA image in
-> >>there.  This driver is presumably responsible for instantiating whatever
-> >>is needed to control what is on the FPGA, that could include punting the
-> >>clocks to userspace if that's sane.
-> >Well, that driver actually exists. But that just programs a bitstream
-> >you give it to program. It does not know anything about the design it
-> >programs and cannot make any kind of decision whether the clocks should
-> >be userspace controlled or not.
+On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
+> On Mon, May 13, 2013 at 03:50:52PM +0100, Stefano Stabellini wrote:
+> > On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
+> > > On Mon, May 13, 2013 at 12:06:43PM +0100, Stefano Stabellini wrote:
+> > > > On Fri, 10 May 2013, Konrad Rzeszutek Wilk wrote:
+> > > > > On Wed, May 08, 2013 at 04:18:24PM +0800, Zhenzhong Duan wrote:
+> > > > > > When driver load and unload in a loop, pirq will exhaust finally.
+> > > > > > Try to use the same pirq which was already mapped and binded at first time
+> > > > > 
+> > > > > So what happens if I unload and reload two drivers in random order?
+> > > > > 
+> > > > > > when driver loaded.
+> > > > > > 
+> > > > > > Read pirq from msix entry and test if data is XEN_PIRQ_MSI_DATA
+> > > > > > xen_irq_from_pirq(pirq) < 0 checking is wrong as irq will be freed
+> > > > > > when driver unload, it's always true in second load.
+> > > > > 
+> > > > > If my understanding is right the issue at hand is that the caching
+> > > > > information about the pirq disappears once the driver has been
+> > > > > unloaded b/c the event's irq-info is removed (as the driver is
+> > > > > unloaded and free_irq is called).
+> > > > > 
+> > > > > Stefano,
+> > > > > Is there a specific write to the MSI structure that would cause the
+> > > > > hypervisor to drop the PIRQ? Or a nice hypercall to "free" an
+> > > > > PIRQ in usage?
+> > > > 
+> > > > We already have a "free PIRQ" hypercall, it's called
+> > > > PHYSDEVOP_unmap_pirq and should be called by QEMU.
+> > > 
+> > > Considering that we call function that allocates (PHYSDEVOP_get_free_pirq)
+> > > it in the Linux kernel (and not in QEMU), perhaps that should be done in the
+> > > Linux kernel as part of xen_destroy_irq()? Or would that confuse QEMU?
+> > 
+> > I think it would confuse QEMU. It is probably better to let the unmap
+> > being handled by it.
+> > 
+> > 
+> > > It looks like QEMU only does that hypercall (via xc_physdev_unmap_pirq)
+> > > unregister_real_device which is only called during pci unplug?
+> > 
+> > You are right! I would think that this behaviour is erroneous unless it
+> > was done on purpose to avoid allocating MSIs twice.
+> > If that is the case we would need to do something similar in Linux too.
+> > 
+> > I think that the issue is the mismatch between QEMU's and Linux's
+> > behaviours: either both should be allocating MSIs once, or they should
+> > both be allocating and deallocating MSIs every time the driver is loaded
+> > and unloaded.
 > 
-> Soeren,
+> Right. But we also have the scenario that QEMU and Linux are going to 
+> be out of sync. So we need fixes in both places - I think.
+
+QEMU is the owner of the pirq, in fact it is the one that creates and
+destroys the mapping. I think that the right place to fix this problem
+is in QEMU, the ABI would be much cleaner as a result. As a side effect
+we don't need to make any changes in Linux.
+
+> > 
+> > > > Linux should disable the MSI bit in the PCI config options of the
+> > > > device:
+> > > > 
+> > > > pci_disable_msi -> pci_msi_shutdown -> msi_set_enable(0)
+> > > 
+> > > Zhenzhong, does it do that? Looking at the driver it certainly seems that way.
+> > > > 
+> > > > That should cause QEMU to issue a xc_physdev_unmap_pirq that actually
+> > > > unmaps the pirq. If it doesn't, it's a bug :)
+> > > 
+> > > <sigh> It doesn't do that. So two bugs:
+> > >  - QEMU doing that
+> > >  - Linux kernel doing the hypercall as well.
+> > 
+> > At first sight I also thought that the Linux kernel was issuing
+> > PHYSDEVOP_unmap_pirq too but actually Linux is only doing it if
+> > xen_initial_domain().
 > 
-> what Mark wants to point out is that you add fabric clocks to the Xilinx
-> driver instead. This way, you will have user-space controllable clocks
-> but only if you loaded the xilinx driver first.
-What "Xilinx driver", are we talking about?
+> That seems like an easy fix. Just do 'if (xen_initial_domain()
+> || xen_hvm_domain())'. I think the only one we cannot do it for
+> is 'xen_pv_domain()' (so PCI in PV guests) as the "owner" of the PIRQ is
+> actually dom0.
 
-> 
-> IIRC the fabric clock controller provided by Zynq _is_ always there and
-> accessible from ARM CPUs. You just don't have a new generic driver
-> allowing to poke with all clocks, but a xilinx only driver allowing you
-> to set the (xilinx only) fabric clocks.
-Right.
-
-> 
-> I've played with Zynq a while ago, did Xilinx mainline the bitfile
-> driver already? If not, why don't you give it a shot?
-The device config driver is not in mainline, AFAIK. And I think it's in
-rather bad shape and needs a lot of work before it is upstreamable. But
-this is probably the right place to put this.
-On the other hand, currently this driver is only required for
-programming the FPGA from Linux, which is not required. One of the
-bootloaders could do this for you earlier.
-
-	Sören
-
-
+We could do that and it might be easier than changing QEMU, but I think
+it would be more clear and consistent if QEMU was the one to do the
+unmapping.
