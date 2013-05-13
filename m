@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab3EMJlS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 05:41:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39154 "EHLO mx1.redhat.com"
+	id S1753630Ab3EMJmc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 05:42:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42836 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751471Ab3EMJlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 05:41:17 -0400
-Date: Mon, 13 May 2013 12:40:43 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, mingo@kernel.org, fweisbec@gmail.com,
-        peterz@infradead.org, jolsa@redhat.com, namhyung@kernel.org,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 00/13] perf: kvm live mode
-Message-ID: <20130513094043.GN10830@redhat.com>
-References: <1368073909-8825-1-git-send-email-dsahern@gmail.com>
- <518B9C44.7090404@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <518B9C44.7090404@linux.vnet.ibm.com>
+	id S1750830Ab3EMJma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 05:42:30 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1368293689-16410-3-git-send-email-jiang.liu@huawei.com>
+References: <1368293689-16410-3-git-send-email-jiang.liu@huawei.com> <1368293689-16410-1-git-send-email-jiang.liu@huawei.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Mark Salter <msalter@redhat.com>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH v6, part3 02/16] mm: enhance free_reserved_area() to support poisoning memory with zero
+Date: Mon, 13 May 2013 10:41:17 +0100
+Message-ID: <15961.1368438077@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 08:53:24PM +0800, Xiao Guangrong wrote:
-> CC kvm list.
-> 
-> On 05/09/2013 12:31 PM, David Ahern wrote:
-> > With the consolidation of the open counters code in December 2012
-> > (late to the party figuring that out) I think all of the past
-> > comments on the live mode for perf-kvm have been resolved.
-> 
-> Great work, David! I am playing it and glad to see it works fine.
-> Will review the patches later.
-> 
-Looks very useful indeed!
+Jiang Liu <liuj97@gmail.com> wrote:
 
---
-			Gleb.
+> +	free_reserved_area((void *)start, (void *)end, -1, "initrd");
+
+Do you mean -1 or ULONG_MAX?
+
+David
