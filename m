@@ -1,72 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab3EMWAV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 18:00:21 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:46197 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752338Ab3EMWAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 18:00:20 -0400
-X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 May 2013 18:00:20 EDT
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: Helge Deller <deller@gmx.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1755299Ab3EMWB2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 18:01:28 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:13591 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090Ab3EMWB0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 18:01:26 -0400
+Message-ID: <1368482482.3305.50.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: [PATCHv2 net 2/2] sfc: Reduce RX scatter buffer size, and reduce
+ alignment if appropriate
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Miller <davem@davemloft.net>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: <linux-net-drivers@solarflare.com>,
         Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Subject: Re: [GIT PULL] parisc updates for v3.10
-Date: Mon, 13 May 2013 23:53:29 +0200
-Message-ID: <2654532.supg57YsM8@donald.sf-tec.de>
-User-Agent: KMail/4.10.3 (Linux/3.9.1-1.gb6484b6-desktop; KDE/4.10.3; i686; ; )
-In-Reply-To: <20130513204843.GA1858@p100.box>
-References: <20130513204843.GA1858@p100.box>
+        <linux-s390@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Date: Mon, 13 May 2013 23:01:22 +0100
+In-Reply-To: <1368482311.3305.48.camel@bwh-desktop.uk.solarflarecom.com>
+References: <1368482311.3305.48.camel@bwh-desktop.uk.solarflarecom.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart3093006.pdgbnbJYAQ"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19862.005
+X-TM-AS-Result: No--8.978800-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+efx_start_datapath() asserts that we can fit 2 RX scatter buffers plus
+a software structure, each appropriately aligned, into a single page.
+Where L1_CACHE_BYTES == 256 and PAGE_SIZE == 4096, which is the case
+on s390, this assertion fails.
 
---nextPart3093006.pdgbnbJYAQ
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+The current scatter buffer size is also not a multiple of 64 or 128,
+which are more common cache line sizes.  If we can make both the start
+and end of a scatter buffer cache-aligned, this will reduce the need
+for read-modify-write operations on inter- processor links.
 
-> Helge Deller (2):
->       parisc: make default cross compiler search more robust (v3)
+Fix the alignment by reducing EFX_RX_USR_BUF_SIZE to 2048 - 256 ==
+1792.  (We could use 2048 - L1_CACHE_BYTES, but EFX_RX_USR_BUF_SIZE
+also affects user-level networking where a larger amount of
+housekeeping data may be needed.  Although this version of the driver
+does not support user-level networking, I prefer to keep scattering
+behaviour consistent with the out-of-tree version.)
 
-Needs CC:stable as without this building 3.9.x is not possible in some 
-configurations.
+This still doesn't fix the s390 build because like most architectures
+it has NET_IP_ALIGN == 2.  When NET_IP_ALIGN != 0 we cannot achieve
+cache line alignment at either the start or end of a scatter buffer,
+so there is actually no point in padding the buffers to a multiple of
+the cache line size.  All we need is 4-byte alignment of the network
+header, so do that.
 
-> John David Anglin (1):
->       parisc: fix SMP races when updating PTE and TLB entries in entry.S
+Adjust the assertions accordingly.
 
-Possibly also this as it's a bugfix, but Dave is the one who may be judge how 
-"clear" it is.
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+---
+ drivers/net/ethernet/sfc/efx.c        |    6 ++++--
+ drivers/net/ethernet/sfc/net_driver.h |   16 ++++++++++++++--
+ drivers/net/ethernet/sfc/rx.c         |    2 +-
+ 3 files changed, 19 insertions(+), 5 deletions(-)
 
-The same is probably true for these from the first round of updates:
+diff --git a/drivers/net/ethernet/sfc/efx.c b/drivers/net/ethernet/sfc/efx.c
+index 999289b..39e4cb3 100644
+--- a/drivers/net/ethernet/sfc/efx.c
++++ b/drivers/net/ethernet/sfc/efx.c
+@@ -643,9 +643,11 @@ static void efx_start_datapath(struct efx_nic *efx)
+ 		efx->rx_scatter = false;
+ 		efx->rx_buffer_order = 0;
+ 	} else if (efx->type->can_rx_scatter) {
++		BUILD_BUG_ON(EFX_RX_USR_BUF_SIZE % L1_CACHE_BYTES);
+ 		BUILD_BUG_ON(sizeof(struct efx_rx_page_state) +
+-			     NET_IP_ALIGN + EFX_RX_USR_BUF_SIZE >
+-			     PAGE_SIZE / 2);
++			     2 * ALIGN(NET_IP_ALIGN + EFX_RX_USR_BUF_SIZE,
++				       EFX_RX_BUF_ALIGNMENT) >
++			     PAGE_SIZE);
+ 		efx->rx_scatter = true;
+ 		efx->rx_dma_len = EFX_RX_USR_BUF_SIZE;
+ 		efx->rx_buffer_order = 0;
+diff --git a/drivers/net/ethernet/sfc/net_driver.h b/drivers/net/ethernet/sfc/net_driver.h
+index 5efddf3..39d6bd77 100644
+--- a/drivers/net/ethernet/sfc/net_driver.h
++++ b/drivers/net/ethernet/sfc/net_driver.h
+@@ -72,8 +72,20 @@
+ /* Maximum possible MTU the driver supports */
+ #define EFX_MAX_MTU (9 * 1024)
+ 
+-/* Size of an RX scatter buffer.  Small enough to pack 2 into a 4K page. */
+-#define EFX_RX_USR_BUF_SIZE 1824
++/* Size of an RX scatter buffer.  Small enough to pack 2 into a 4K page,
++ * and should be a multiple of the cache line size.
++ */
++#define EFX_RX_USR_BUF_SIZE	(2048 - 256)
++
++/* If possible, we should ensure cache line alignment at start and end
++ * of every buffer.  Otherwise, we just need to ensure 4-byte
++ * alignment of the network header.
++ */
++#if NET_IP_ALIGN == 0
++#define EFX_RX_BUF_ALIGNMENT	L1_CACHE_BYTES
++#else
++#define EFX_RX_BUF_ALIGNMENT	4
++#endif
+ 
+ /* Forward declare Precision Time Protocol (PTP) support structure. */
+ struct efx_ptp_data;
+diff --git a/drivers/net/ethernet/sfc/rx.c b/drivers/net/ethernet/sfc/rx.c
+index 99f70dd..a7dfe36 100644
+--- a/drivers/net/ethernet/sfc/rx.c
++++ b/drivers/net/ethernet/sfc/rx.c
+@@ -94,7 +94,7 @@ static inline void efx_sync_rx_buffer(struct efx_nic *efx,
+ void efx_rx_config_page_split(struct efx_nic *efx)
+ {
+ 	efx->rx_page_buf_step = ALIGN(efx->rx_dma_len + NET_IP_ALIGN,
+-				      L1_CACHE_BYTES);
++				      EFX_RX_BUF_ALIGNMENT);
+ 	efx->rx_bufs_per_page = efx->rx_buffer_order ? 1 :
+ 		((PAGE_SIZE - sizeof(struct efx_rx_page_state)) /
+ 		 efx->rx_page_buf_step);
 
-John David Anglin (2):
-      parisc: use long branch in fork_like macro
-Mike Frysinger (1):
-      parisc: fix NATIVE set up in build
-
-While I _really_ appreciate the speedup that recently happened to the parisc 
-development recently I would also appreciate if we can can finally get the 
-bugfix parts of that into stable kernels so we have the non-development tree 
-buildable and working without the need to backport all those stuff by hand.
-
-Eike
---nextPart3093006.pdgbnbJYAQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEABECAAYFAlGRYOAACgkQXKSJPmm5/E7fQQCePH17LwMNl2xP7CpUp8WOgjnh
-63YAn1ESO0NhtvLZYKfKT8O7H/b+zxgl
-=x2AD
------END PGP SIGNATURE-----
-
---nextPart3093006.pdgbnbJYAQ--
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
