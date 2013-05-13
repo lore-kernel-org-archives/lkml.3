@@ -1,41 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab3EMJO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 05:14:28 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46653 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab3EMJO1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 05:14:27 -0400
-Date: Mon, 13 May 2013 11:14:20 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
-Subject: Re: [3.10-rc1] tick: NULL pointer dereference at
- tick_handle_oneshot_broadcast
-In-Reply-To: <201305130722.r4D7MCPr004492@www262.sakura.ne.jp>
-Message-ID: <alpine.LFD.2.02.1305131111420.2863@ionos>
-References: <201305130722.r4D7MCPr004492@www262.sakura.ne.jp>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1751448Ab3EMJTK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 05:19:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56043 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750912Ab3EMJTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 05:19:09 -0400
+Date: Mon, 13 May 2013 10:19:02 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Minchan Kim <minchan@kernel.org>, Lin Feng <linfeng@cn.fujitsu.com>,
+        akpm@linux-foundation.org, bcrl@kvack.org, viro@zeniv.linux.org.uk,
+        khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
+        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of
+ get_user_pages() called get_user_pages_non_movable()
+Message-ID: <20130513091902.GP11497@suse.de>
+References: <1360056113-14294-1-git-send-email-linfeng@cn.fujitsu.com>
+ <1360056113-14294-2-git-send-email-linfeng@cn.fujitsu.com>
+ <20130205120137.GG21389@suse.de>
+ <20130206004234.GD11197@blaptop>
+ <20130206095617.GN21389@suse.de>
+ <5190AE4F.4000103@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <5190AE4F.4000103@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 May 2013, Tetsuo Handa wrote:
+On Mon, May 13, 2013 at 05:11:43PM +0800, Tang Chen wrote:
+> Hi Mel,
+> 
+> On 02/06/2013 05:56 PM, Mel Gorman wrote:
+> >
+> >There is the possibility that callbacks could be introduced for
+> >migrate_unpin() and migrate_pin() that takes a list of PFN pairs
+> >(old,new). The unpin callback should release the old PFNs and barrier
+> >against any operations until the migrate_pfn() callback is called with
+> >the updated pfns to be repinned. Again it would fully depend on subsystems
+> >implementing it properly.
+> >
+> >The callback interface would be more robust but puts a lot more work on
+> >the driver side where your milage will vary.
+> >
+> 
+> I'm very interested in the "callback" way you said.
+> 
+> For memory hot-remove case, the aio pages are pined in memory and making
+> the pages cannot be offlined, furthermore, the pages cannot be removed.
+> 
+> IIUC, you mean implement migrate_unpin() and migrate_pin() callbacks in aio
+> subsystem, and call them when hot-remove code tries to offline
+> pages, right ?
+> 
+> If so, I'm wondering where should we put this callback pointers ?
+> In struct page ?
+> 
 
-> I\'m hitting below bug on bootup.
-> I don\'t know why but bisection reached commit b352bc1c
-> \"tick: Convert broadcast cpu bitmaps to cpumask_var_t\".
+No, I would expect the callbacks to be part the address space operations
+which can be found via page->mapping.
 
-Because I used alloc_cpumask_var instead of zalloc_cpumask_var :(
-
-Fix is queued and will hit linus tree soon.
-
-Thanks,
-
-	tglx
+-- 
+Mel Gorman
+SUSE Labs
