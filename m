@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab3EMRa4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 13:30:56 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:42581 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab3EMRay (ORCPT
+	id S1752982Ab3EMRbp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 13:31:45 -0400
+Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:9858
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751831Ab3EMRbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 13:30:54 -0400
-Date: Mon, 13 May 2013 19:30:50 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Joe Damato <ice799@gmail.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] x86: Reduce duplicated code in the x86_64 context switch
- path.
-Message-ID: <20130513173050.GA30118@gmail.com>
-References: <1368422091-959-1-git-send-email-ice799@gmail.com>
- <20130513163108.GA9827@roeck-us.net>
+	Mon, 13 May 2013 13:31:43 -0400
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT004.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: PS-2(zz98dI936eIzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2fh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        Xiaoyan Zhang <xiaoyan.zhang@intel.com>, Gang Wei <gang.wei@intel.com>
+Subject: Re: [PATCH v2 1/3] driver: add TXT driver in kernel
+Thread-Topic: [PATCH v2 1/3] driver: add TXT driver in kernel
+Thread-Index: AQHOT70b+pkxt2HUd02MaXTvFOnXWZkDX/UA
+Date: Mon, 13 May 2013 17:31:36 +0000
+Message-ID: <1368466296.2425.48.camel@x230>
+References: <1368465884-14779-1-git-send-email-qiaowei.ren@intel.com>
+	 <1368465884-14779-2-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1368465884-14779-2-git-send-email-qiaowei.ren@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <B165269915163B4482E947933A2776F6@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130513163108.GA9827@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4DHVoVZ002417
 
+On Tue, 2013-05-14 at 01:24 +0800, Qiaowei Ren wrote:
+> static int __init txt_sysfs_init(void)
+> +{
+> +	if (!tboot_enabled())
+> +		return -ENODEV;
 
-* Guenter Roeck <linux@roeck-us.net> wrote:
+If there's a CPU flag that indicates tboot support, you should add a
+modalias for it in order to ensure that the module gets automatically
+loaded.
 
-> On Sun, May 12, 2013 at 10:14:51PM -0700, Joe Damato wrote:
-> > Signed-off-by: Joe Damato <ice799@gmail.com>
-> > ---
-> >  arch/x86/include/asm/switch_to.h |   30 ++++++++++++++++++++++++++++++
-> >  arch/x86/kernel/process_64.c     |   29 ++---------------------------
-> >  2 files changed, 32 insertions(+), 27 deletions(-)
-> > 
-> > diff --git a/arch/x86/include/asm/switch_to.h b/arch/x86/include/asm/switch_to.h
-> > index 4ec45b3..a322cc6 100644
-> > --- a/arch/x86/include/asm/switch_to.h
-> > +++ b/arch/x86/include/asm/switch_to.h
-> > @@ -124,6 +124,36 @@ do {									\
-> >  	       __switch_canary_iparam					  \
-> >  	     : "memory", "cc" __EXTRA_CLOBBER)
-> >  
-> > +#define loadsegment_fs(fs, index)					  \
-> > +	loadsegment(fs, index)
-> > +
-> > +#define loadsegment_gs(gs, index)					  \
-> > +	load_gs_index(index)
-> > +
-> > +#define switch_segment(prev, next, index, seg, msr)			       \
-> > +	do {								       \
-> > +		/*							       \
-> > +		 * Segment register != 0 always requires a reload.  Also       \
-> > +		 * reload when it has changed.  When prev process used 64bit   \
-> > +		 * base always reload to avoid an information leak.	       \
-> > +		 */							       \
-> > +		if (unlikely(index | next->index | prev->seg)) {	       \
-> > +			loadsegment_##seg(seg, next->index);		       \
-> > +			/*						       \
-> > +			 * Check if the user used a selector != 0; if yes      \
-> > +			 *  clear 64bit base, since overloaded base is always  \
-> > +			 *  mapped to the Null selector			       \
-> > +			 */						       \
-> > +			if (index)					       \
-> > +			  prev->seg = 0;				       \
-> > +		}							       \
-> > +									       \
-> > +		/* when next process has a 64bit base use it */		       \
-> > +		if (next->seg)						       \
-> > +		  wrmsrl(msr, next->seg);				       \
-> > +		prev->index = index;					       \
-> > +	} while (0)
-> > +
-> >  #endif /* CONFIG_X86_32 */
-> >  
-> For my part I'll never understand how code written as macros is supposed to
-> improve anything. I always find it confusing and risky, as it is very easy
-> to introduce side effects. Also, while it may reduce the source code size,
-> it often results in increased object size.
-> 
-> My take: If you can not write it as inline function(s), don't bother.
-
-Indeed.
-
-Thanks,
-
-	Ingo
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
