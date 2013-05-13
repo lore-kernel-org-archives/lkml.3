@@ -1,138 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab3EMOQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 10:16:53 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:2356 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751446Ab3EMOQw (ORCPT
+	id S1754100Ab3EMORH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 10:17:07 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46445 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754043Ab3EMORE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 10:16:52 -0400
-From: Oskar Andero <oskar.andero@sonymobile.com>
-To: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-CC: Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Radovan Lekanovic <radovan.lekanovic@sonymobile.com>,
-        David Rientjes <rientjes@google.com>,
-        Oskar Andero <oskar.andero@sonymobile.com>
-Subject: [RFC PATCH 2/2] Clean-up shrinker return values
-Date: Mon, 13 May 2013 16:16:35 +0200
-Message-ID: <1368454595-5121-3-git-send-email-oskar.andero@sonymobile.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1368454595-5121-1-git-send-email-oskar.andero@sonymobile.com>
-References: <1368454595-5121-1-git-send-email-oskar.andero@sonymobile.com>
+	Mon, 13 May 2013 10:17:04 -0400
+Date: Mon, 13 May 2013 18:16:49 +0400
+From: Mark Brown <broonie@kernel.org>
+To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Cc: spi-devel-general@lists.sourceforge.net,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-rpi-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Message-ID: <20130513141649.GA16673@sirena.org.uk>
+References: <1368453886-6852-1-git-send-email-silviupopescu1990@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
+Content-Disposition: inline
+In-Reply-To: <1368453886-6852-1-git-send-email-silviupopescu1990@gmail.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.247.243.210
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] drivers: spi: convert to devm_ioremap_resource()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shrinkers return hardcoded -1 on error. Use errno.h values instead
-to add more meaning to the errors.
 
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
----
- drivers/staging/android/ashmem.c     | 2 +-
- drivers/staging/zcache/zcache-main.c | 2 +-
- fs/gfs2/glock.c                      | 2 +-
- fs/gfs2/quota.c                      | 2 +-
- fs/nfs/dir.c                         | 2 +-
- fs/ubifs/shrinker.c                  | 2 +-
- net/sunrpc/auth.c                    | 2 +-
- 7 files changed, 7 insertions(+), 7 deletions(-)
+--n8g4imXOkfNTN/H1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
-index e681bdd..1968d2f 100644
---- a/drivers/staging/android/ashmem.c
-+++ b/drivers/staging/android/ashmem.c
-@@ -359,7 +359,7 @@ static int ashmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 
- 	/* We might recurse into filesystem code, so bail out if necessary */
- 	if (sc->nr_to_scan && !(sc->gfp_mask & __GFP_FS))
--		return -1;
-+		return -EBUSY;
- 	if (!sc->nr_to_scan)
- 		return lru_count;
- 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 522cb8e..a38532c 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -1144,7 +1144,7 @@ static int shrink_zcache_memory(struct shrinker *shrink,
- 				struct shrink_control *sc)
- {
- 	static bool in_progress;
--	int ret = -1;
-+	int ret = -EBUSY;
- 	int nr = sc->nr_to_scan;
- 	int nr_evict = 0;
- 	int nr_writeback = 0;
-diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index 9435384..401b089 100644
---- a/fs/gfs2/glock.c
-+++ b/fs/gfs2/glock.c
-@@ -1459,7 +1459,7 @@ static int gfs2_shrink_glock_memory(struct shrinker *shrink,
- {
- 	if (sc->nr_to_scan) {
- 		if (!(sc->gfp_mask & __GFP_FS))
--			return -1;
-+			return -EBUSY;
- 		gfs2_scan_glock_lru(sc->nr_to_scan);
- 	}
- 
-diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
-index c7c840e..14acbb2 100644
---- a/fs/gfs2/quota.c
-+++ b/fs/gfs2/quota.c
-@@ -85,7 +85,7 @@ int gfs2_shrink_qd_memory(struct shrinker *shrink, struct shrink_control *sc)
- 		goto out;
- 
- 	if (!(sc->gfp_mask & __GFP_FS))
--		return -1;
-+		return -EBUSY;
- 
- 	spin_lock(&qd_lru_lock);
- 	while (nr_to_scan && !list_empty(&qd_lru_list)) {
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index e093e73..9fee9bc 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1968,7 +1968,7 @@ int nfs_access_cache_shrinker(struct shrinker *shrink,
- 	gfp_t gfp_mask = sc->gfp_mask;
- 
- 	if ((gfp_mask & GFP_KERNEL) != GFP_KERNEL)
--		return (nr_to_scan == 0) ? 0 : -1;
-+		return (nr_to_scan == 0) ? nr_to_scan : -EBUSY;
- 
- 	spin_lock(&nfs_access_lru_lock);
- 	list_for_each_entry_safe(nfsi, next, &nfs_access_lru_list, access_cache_inode_lru) {
-diff --git a/fs/ubifs/shrinker.c b/fs/ubifs/shrinker.c
-index 9e1d056..294e685 100644
---- a/fs/ubifs/shrinker.c
-+++ b/fs/ubifs/shrinker.c
-@@ -316,7 +316,7 @@ int ubifs_shrinker(struct shrinker *shrink, struct shrink_control *sc)
- 
- 	if (!freed && contention) {
- 		dbg_tnc("freed nothing, but contention");
--		return -1;
-+		return -EBUSY;
- 	}
- 
- out:
-diff --git a/net/sunrpc/auth.c b/net/sunrpc/auth.c
-index ed2fdd2..45faea0 100644
---- a/net/sunrpc/auth.c
-+++ b/net/sunrpc/auth.c
-@@ -461,7 +461,7 @@ rpcauth_cache_shrinker(struct shrinker *shrink, struct shrink_control *sc)
- 	gfp_t gfp_mask = sc->gfp_mask;
- 
- 	if ((gfp_mask & GFP_KERNEL) != GFP_KERNEL)
--		return (nr_to_scan == 0) ? 0 : -1;
-+		return (nr_to_scan == 0) ? nr_to_scan : -EBUSY;
- 	if (list_empty(&cred_unused))
- 		return 0;
- 	spin_lock(&rpc_credcache_lock);
--- 
-1.8.1.5
+On Mon, May 13, 2013 at 05:04:46PM +0300, Silviu-Mihai Popescu wrote:
+> Convert  use of devm_request_and_ioremap() to the newly introduced
+> devm_ioremap_resource() which provides more consistent error handling.
 
+A version of this patch has already been applied.  Please make sure to
+generate patches against the relevant development tree (or -next) to
+catch such things.
+
+--n8g4imXOkfNTN/H1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRkPXNAAoJELSic+t+oim98OQP/3eV9cT2GCnZBPD2vGKcLUkk
+zBuK81IT0kHRNyRmsyXmtbDV6Jm7D17vMD4hxZRUoy27vJGk+avuXnetF9uHnbtf
+hknd6+NGTonTNt9Rw/FjCC+M0QrQkW3DXVap/XELEsYPBN5aHgzAVwtVbvHG9VXS
+mYK/NExUYgJcFIr6gSJHE/HWYStpkJv4G+zpsoSR180m2JncXooVqoT4NArsTgAr
+rErcv4utZM7vj0UK7s6C8wST9Zbr02auRt2XkiphKrLIjQqIoyKL1re/I2BmqjgQ
+UoJDm5E/b9GAkrT02z58dWqK9T3fCUHJqUJDgRyn7rzGLHQImrmaxGKpp0OS74iU
+3EoVhktoUTR1g40qraQBGqn4oEBjfnSJZAqk99+rp8N4SBd/uBJT2DFhqdcqWuQD
+m5LtftQWAUQ3WFkrkc4YR92yuvo2ABHIBAxhfkAWClAe7fBS504WN94TUpXZ/fhq
+r5/+ycZwmeFWd5vTng5dlsurL5keUAlZph9em0xgptWLIwElidlwLNjMrRKs99Gy
+s+eXFt37wPbQiojKi1WCeeFe8P1XMWgA8qOs/XA6oZJkzbh0CilTyoSRb9HlyUz9
+N71Xla+VNRNqaQBkAd3+d8WyVolrNrjdAGkdcwI1lyFb8PhqjOusxYgNOgVYBlDc
+DSfJQzQLd/N3igPGMKqH
+=7ll1
+-----END PGP SIGNATURE-----
+
+--n8g4imXOkfNTN/H1--
