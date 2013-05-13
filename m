@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab3EMObI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 10:31:08 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:50854 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752402Ab3EMObG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 10:31:06 -0400
-Date: Mon, 13 May 2013 09:31:04 -0500
-From: Robin Holt <holt@sgi.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Robin Holt <holt@sgi.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: Full dynticks needs evtdesc set before marking cpu online.
-Message-ID: <20130513143104.GG3658@sgi.com>
-References: <20130508235736.GT3658@sgi.com>
- <alpine.LFD.2.02.1305131119180.2863@ionos>
- <20130513125514.GE3658@sgi.com>
- <alpine.LFD.2.02.1305131501210.2863@ionos>
- <20130513135948.GF3658@sgi.com>
- <alpine.LFD.2.02.1305131602090.2863@ionos>
+	id S1753339Ab3EMOb6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 10:31:58 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:37178 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373Ab3EMOb5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 10:31:57 -0400
+Date: Mon, 13 May 2013 07:25:32 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Igor Mammedov <imammedo@redhat.com>, chuck.anderson@oracle.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: udev races with 'arch_register_cpu' to write 1 to
+ /sys/devices/system/cpu/cpu1/online (which is not yet created)
+Message-ID: <20130513142532.GA15808@kroah.com>
+References: <20120430161716.GA991@phenom.dumpdata.com>
+ <1368203674-23993-1-git-send-email-imammedo@redhat.com>
+ <20130513133128.GJ6811@phenom.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1305131602090.2863@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130513133128.GJ6811@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 04:04:45PM +0200, Thomas Gleixner wrote:
-> On Mon, 13 May 2013, Robin Holt wrote:
-> > On Mon, May 13, 2013 at 03:03:55PM +0200, Thomas Gleixner wrote:
-> > > On Mon, 13 May 2013, Robin Holt wrote:
-> > > 
-> > > > On Mon, May 13, 2013 at 11:21:00AM +0200, Thomas Gleixner wrote:
-> > > > > On Wed, 8 May 2013, Robin Holt wrote:
-> > > > > 
-> > > > > > Thomas,
-> > > > > > 
-> > > > > > We are seeing failures booting medium sized machines which I think is
-> > > > > > a change in expectations that dyntick put on x86's start_secondary.
-> > > > > > 
-> > > > > > During boot of cpus, we see an occassional panic in tick_do_broadcast at
-> > > > > 
-> > > > > http://lkml.indiana.edu/hypermail/linux/kernel/1305.0/01818.html
-> > > > > 
-> > > > > Will hit Linus tree soon.
-> > > > 
-> > > > I think this is really due to a sequence in start_secondary.  The cpu
-> > > > has been marked as online, but its evtdesc has not been initialized.
-> > > > I sent a followup to this with a hack/patch.
-> > > 
-> > > No, the real issue is that I messed up the cpumask conversion in the
-> > > broadcast code, i.e. using alloc instead of zalloc, which allocated
-> > > nonzeroed memory for the cpumasks, so any random bit set will crash
-> > > the machine. Your patch is just papering over the issue.
+On Mon, May 13, 2013 at 09:31:28AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, May 10, 2013 at 06:34:34PM +0200, Igor Mammedov wrote:
+> > >On Mon, Apr 30, 2012 at 11:51:49AM -0400, Greg KH wrote:
+> > >> On Mon, Apr 30, 2012 at 11:50:18AM -0400, Greg KH wrote:
+> > >> > On Mon, Apr 30, 2012 at 11:36:23AM -0400, Konrad Rzeszutek Wilk wrote:
+> > >> > > Hey Greg,
+> > >> > > 
+> > >> > > Hoping you can help with some guidance on how to fix this.
+> > >> > > 
+> > >> > > The issue is with CPU hotplug is that when a CPU goes up
+> > >> > > it calls 'arch_register_cpu' which eventually calls
+> > >> > > register_cpu. That function does these two things:
+> > >> > > 
+> > >> > > 251         error = device_register(&cpu->dev);
+> > >> > > 252         if (!error && cpu->hotpluggable)
+> > >> > > 253                 register_cpu_control(cpu);
+> > >> > > 
+> > >> > > and the device_register creates a nice little SysFS directory:
+> > >> > > 
+> > >> > > /sys/devices/system/cpu/cpu2/ which at line 251 has the 'add' attribute
+> > >> > > but no 'online' attribute. udev then tries to echo 1 to the 'online'
+> > >> > > and it we get:
+> > >> > > udevd-work[2421]: error opening ATTR{/sys/devices/system/cpu/cpu2/online} for writing: No such file or directory
+> > >> > > 
+> > >> > > Line 253 creates said 'online' and at that time udev [or the system admin]
+> > >> > > can write 1 to 'online' and the CPU goes up.
+> > >> > > 
+> > >> > > So .. any thoughts? Is there some way to inhibit from uevent being sent
+> > >> > > until line 253 has run?
+> > >> > 
+> > >> > Yes.
+> > >> 
+> > >> Oh, I imagine you want to know _how_ to do it too, right?  (sorry, I
+> > >> couldn't resist...)
+> > >
+> > >Heh.
+> > >> 
+> > >> Make this a default attribute of the cpu device, and then it will be
+> > >> created by the driver core before the uevent is sent to userspace.
+> > >> That's what you are supposed to do in the first place, adding files "by
+> > >> hand" is wrong, for this very reason.
+> > >
+> > >OK, will prep up a patch shortly.
 > > 
-> > I believe I understand now.  What would be the downside of moving
-> > the initialization to before marking the cpu online?  It seems like a
-> > reasonable this to expect as well in spite of it not being the right
-> > fix to the other bug.
+> > Hello Konrad,
+> > 
+> > Is there a posted/accepted patch or idea was dropped?
 > 
-> Yes, we can move it, but its not a required thing that the tick device
-> is setup befor onlining.
+> Hey Igor,
+> 
+> CC-ing here Chuck here who is looking at that. My recollection (and Chuck please
+> correct me if I am wrong) is that the idea Greg outlined won't work very well.
+> The reason is that making 'online' an attribute of 'struct dev' means that:
+>  1) A lot of SysFS attributes that have no notion of online/offline (say ISA bus)
+>     will now have.
 
-I tested with your patch and it does fix my problem as well.
+Then only create that attribute for busses that ask for it to be enabled.
 
-Thank your,
-Robin
+>  2) The default action item (so function) to do something based on
+>  writting/reading from 'online' will have to be overridden by the
+>  driver using it. Which means another race - we can create an SysFS
+>  attribute but the default points to something that does nothing.
+
+I don't understand this at all, how will there be a race exactly?
+
+greg k-h
