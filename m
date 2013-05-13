@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab3EMRha (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 13:37:30 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:51794 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab3EMRh1 (ORCPT
+	id S1753251Ab3EMRkD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 13:40:03 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:50684 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab3EMRkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 13:37:27 -0400
-Message-ID: <519124D3.2040403@gmail.com>
-Date: Mon, 13 May 2013 19:37:23 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 13 May 2013 13:40:02 -0400
+Message-ID: <51912567.6090507@lwfinger.net>
+Date: Mon, 13 May 2013 12:39:51 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
-References: <1368207091-32538-1-git-send-email-soren.brinkmann@xilinx.com> <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com> <20130510212422.GY3200@sirena.org.uk> <7e18bed3-ae6b-4aa0-bf23-b6c61ba8b85b@CO9EHSMHS030.ehs.local> <20130512143344.GC3200@sirena.org.uk> <9e55c552-ce34-4663-9a57-bf2c626d7d58@TX2EHSMHS008.ehs.local> <20130513052135.GD6836@sirena.org.uk> <0bf5a185-86f7-4a93-a90f-42caefb06a1d@TX2EHSMHS009.ehs.local> <519112F9.2010102@gmail.com> <7c5e7537-6ed5-4622-a7a9-bf46820ef695@VA3EHSMHS033.ehs.local>
-In-Reply-To: <7c5e7537-6ed5-4622-a7a9-bf46820ef695@VA3EHSMHS033.ehs.local>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: V3.10-rc1 memory leak
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/13 19:24, Sören Brinkmann wrote:
-> On Mon, May 13, 2013 at 06:21:13PM +0200, Sebastian Hesselbarth wrote:
->>> Well, that driver actually exists. But that just programs a bitstream
->>> you give it to program. It does not know anything about the design it
->>> programs and cannot make any kind of decision whether the clocks should
->>> be userspace controlled or not.
->>
->> what Mark wants to point out is that you add fabric clocks to the Xilinx
->> driver instead. This way, you will have user-space controllable clocks
->> but only if you loaded the xilinx driver first.
-> What "Xilinx driver", are we talking about?
+Using v3.10-rc1-68-g2d3ec09, I am getting many instances of the following from 
+kmemleak:
 
-The device config driver you mention below.
+unreferenced object 0xffff8800b546dc30 (size 48):
+   comm "systemd-udevd", pid 2181, jiffies 4294899141 (age 274.096s)
+   hex dump (first 32 bytes):
+     00 dc 46 b5 00 88 ff ff d0 ff 5b a0 ff ff ff ff  ..F.......[.....
+     1c 3b 5b a0 ff ff ff ff 12 3a 5b a0 ff ff ff ff  .;[......:[.....
+   backtrace:
+     [<ffffffff81432e81>] kmemleak_alloc+0x21/0x50
+     [<ffffffff81143c2b>] kmem_cache_alloc+0x11b/0x270
+     [<ffffffff810e9ee0>] __trace_define_field+0x40/0xd0
+     [<ffffffff810e9fc5>] trace_define_field+0x55/0x70
+     [<ffffffffa05e6ba0>] 0xffffffffa05e6ba0
+     [<ffffffff810ea735>] event_create_dir+0x2e5/0x480
+     [<ffffffff810ea920>] __trace_add_new_event+0x50/0x80
+     [<ffffffff810eacf9>] __add_event_to_tracers+0x69/0xc0
+     [<ffffffff810eb4e1>] trace_module_notify+0x1e1/0x2f0
+     [<ffffffff8106e8f5>] notifier_call_chain+0x55/0x110
+     [<ffffffff8106eb27>] __blocking_notifier_call_chain+0x67/0xc0
+     [<ffffffff8106eb91>] blocking_notifier_call_chain+0x11/0x20
+     [<ffffffff810af792>] load_module+0x19e2/0x24b0
+     [<ffffffff810b0317>] SyS_init_module+0xb7/0xe0
+     [<ffffffff814499d2>] system_call_fastpath+0x16/0x1b
+     [<ffffffffffffffff>] 0xffffffffffffffff
 
->> IIRC the fabric clock controller provided by Zynq _is_ always there and
->> accessible from ARM CPUs. You just don't have a new generic driver
->> allowing to poke with all clocks, but a xilinx only driver allowing you
->> to set the (xilinx only) fabric clocks.
-> Right.
->
->> I've played with Zynq a while ago, did Xilinx mainline the bitfile
->> driver already? If not, why don't you give it a shot?
-> The device config driver is not in mainline, AFAIK. And I think it's in
-> rather bad shape and needs a lot of work before it is upstreamable. But
-> this is probably the right place to put this.
+These appear to be real leaks, but I am not familiar with this section of the 
+code, and they could be false indications.
 
-It is, as it will only expose clocks on Zynq and that's what Mark and
-Mike are worried about. Expose clocks to user space and you will have
-people mess with it for sure.
+This mail is sent to all authors of patches incorporated in 
+kernel/trace/trace_events.c in 2013. Kernel 3.9 did not show this problem.
 
-About the shape of it, I didn't expect that to change at all. Just
-wondering, if it still requires you to manually end it's endianess
-mess with the bitfiles. If you go at it, consider reading the magic
-hidden in the bitfile and swap it when it is required. But that will
-go OT here.
+Thanks,
 
-> On the other hand, currently this driver is only required for
-> programming the FPGA from Linux, which is not required. One of the
-> bootloaders could do this for you earlier.
-
-Well, exposing clocks to user space is not required _at all_ on all
-other platforms you can think of. So, if you have a Zynq, you can
-always load a Zynq driver even if you are not going to use it's
-bitfile programming capabilities but only to configure clocks.
-
-If you don't want to merge both drivers, have a Zynq-only clock
-fabric driver instead?
-
-Sebastian
+Larry
