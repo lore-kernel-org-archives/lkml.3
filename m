@@ -1,102 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab3EMQI0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 12:08:26 -0400
-Received: from mga03.intel.com ([143.182.124.21]:48781 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750992Ab3EMQIY convert rfc822-to-8bit (ORCPT
+	id S1754941Ab3EMQIy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 12:08:54 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:37977 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652Ab3EMQIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 12:08:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,662,1363158000"; 
-   d="scan'208";a="240836464"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Linux PM list (linux-pm@vger.kernel.org)" <linux-pm@vger.kernel.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
-Subject: RE: Kobject_uevent in cpufreq.c
-Thread-Topic: Kobject_uevent in cpufreq.c
-Thread-Index: Ac5PzAsHEbqKdSyMS+KKwxMdrUgOtP//rfKA//9h6sA=
-Date: Mon, 13 May 2013 16:08:19 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59C8D936@BGSMSX101.gar.corp.intel.com>
-References: <4D68720C2E767A4AA6A8796D42C8EB59C8D667@BGSMSX101.gar.corp.intel.com>
- <20130513115801.GA11433@kroah.com>
-In-Reply-To: <20130513115801.GA11433@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 13 May 2013 12:08:52 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2, part 1 0/9] Prepare for introducing PCI bus lock interfaces
+Date: Tue, 14 May 2013 00:08:24 +0800
+Message-Id: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
-> owner@vger.kernel.org] On Behalf Of Greg KH
-> (gregkh@linuxfoundation.org)
-> Sent: Monday, May 13, 2013 5:28 PM
-> To: R, Durgadoss
-> Cc: linux-kernel@vger.kernel.org; Linux PM list (linux-pm@vger.kernel.org);
-> Wysocki, Rafael J
-> Subject: Re: Kobject_uevent in cpufreq.c
-> 
-> On Mon, May 13, 2013 at 11:31:57AM +0000, R, Durgadoss wrote:
-> > Hi,
-> >
-> > I am observing an UEvent issue in cpufreq.c.
-> > The cpufreq_add_dev() function is called whenever a core is 'onlined'.
-> > we expect the kobject_uevent() method in cpufreq_add_dev() to
-> > send an UEvent with KOBJ_ADD as the action parameter.
-> >
-> > But this call fails because of the 'filter function' inside kobject_uevent_env
-> > inside lib/kobject_uevent.c. The ->filter points to 'dev_uevent_filter' in
-> > drivers/base/core.c, where the check for 'device_ktype' fails.
-> >
-> > Error message:
-> > kobject: 'cpufreq' (e5bbf290): kobject_uevent_env:
-> > filter function caused the event to drop!
-> >
-> > As far as I can see, we need a kset, and associated filter function
-> > inside cpufreq.c to get this working. Is this the right way to go ?
-> > Any other easy/correct ways to get it working ? Please advise.
-> 
-> What exactly are you trying to do, and want the kernel to do?  You
-> already get on/offline events for CPUs, why do you want them for cpufreq
-> devices as well?
+This is a preparation patchset for introducing PCI bus lock mechanisms
+to protect PCI subsystem from concurrent hotplug operations.
 
-I want to update the permission of a cpufreq sysfs interface (scaling_*)
-of a cpu (say cpu1) when the cpu resumes from suspend (s3).
-I am trying to do this by listening to the uevent (sent by cpufreq.c,
-when a cpu resumes) through udev.
+Patch 1:
+	Introduce pci_bus_{get|put}() to manage PCI bus reference count
+Patch 2-3:
+	pci_alloc_dev() patchset from Gu Zheng
+Patch 8:
+	Make PCI bus creating/destroying logic symmetric
+Other:
+	Minor code improvements/cleanups
 
-For example,
-chmod user:user /sys/devices/system/cpu1/cpufreq/scaling_max_freq
+Gu Zheng (2):
+  PCI: Introduce pci_alloc_dev(struct pci_bus*) to replace
+    alloc_pci_dev()
+  PCI: Convert alloc_pci_dev(void) to pci_alloc_dev(bus) instead
 
-But I am not able to receive this event in udev, because kobject_uevent()
-call fails due to the above-mentioned reason (i.e filter function)
-I am trying to see how to make the kobject_uevent() call succeed,
-so that I can change the permission as mentioned above.
+Jiang Liu (7):
+  PCI: introduce pci_bus_{get|put}() to manage PCI bus reference count
+  PCI: mark pci_scan_bus_parented() as __deprecated
+  ACPI, PCI: remove unused global list acpi_pci_roots in pci_root.c
+  ACPI, pci_root: use acpi_handle_print() and pr_xxx() to print messages
+  PCI, IA64: minor code clean up
+  PCI: make PCI host bridge/bus creating and destroying logic symmetric
+  PCI, unicore, m68k: remove redundant call of pci_bus_add_devices()
 
-The on/offline events come only when I manually do a
-echo 0 > /sys/devices/system/cpu/cpu1/online
-They don't come when the cpu resumes from suspend(s3)
+ arch/ia64/sn/kernel/io_init.c     |  11 +---
+ arch/m68k/platform/coldfire/pci.c |   2 +-
+ arch/powerpc/kernel/pci_of_scan.c |   3 +-
+ arch/sparc/kernel/pci.c           |   3 +-
+ arch/tile/kernel/pci.c            |   3 --
+ arch/unicore32/kernel/pci.c       |   5 --
+ drivers/acpi/pci_root.c           |  96 +++++++++++++----------------------
+ drivers/char/agp/alpha-agp.c      |   2 +-
+ drivers/char/agp/parisc-agp.c     |   2 +-
+ drivers/pci/bus.c                 |  15 ++++++
+ drivers/pci/iov.c                 |   8 +--
+ drivers/pci/probe.c               | 102 ++++++++++++++++++--------------------
+ drivers/pci/remove.c              |   3 +-
+ drivers/scsi/megaraid.c           |   2 +-
+ include/acpi/acpi_bus.h           |   1 -
+ include/linux/pci.h               |   9 ++--
+ 16 files changed, 119 insertions(+), 148 deletions(-)
 
-[I checked this in code. Looks like during resume, the call flow
-does not hit cpu.c, where this KOBJ_ONLINE is being sent]
+-- 
+1.8.1.2
 
-Thanks,
-Durga
-
-> 
-> thanks,
-> 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
