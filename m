@@ -1,89 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab3EMQMX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 12:12:23 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:39718 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755008Ab3EMQMU convert rfc822-to-8bit (ORCPT
+	id S1755008Ab3EMQRg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 12:17:36 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42020 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754573Ab3EMQRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 12:12:20 -0400
-Message-ID: <519110DF.9070403@arm.com>
-Date: Mon, 13 May 2013 17:12:15 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+	Mon, 13 May 2013 12:17:35 -0400
+Date: Mon, 13 May 2013 12:17:14 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/2] PM / OPP: add support to specify phandle of another
- node for OPP
-References: <1367406679-21603-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1367406679-21603-2-git-send-email-Sudeep.KarkadaNagesha@arm.com> <20130501144120.GA17385@kahuna>
-In-Reply-To: <20130501144120.GA17385@kahuna>
-X-MC-Unique: 113051317121801801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yuval Shaia <yuval.shaia@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>, Chien Yen <chien.yen@oracle.com>
+Subject: Re: [PATCH] xen: reuse the same pirq allocated when driver load
+ first time
+Message-ID: <20130513161714.GC10401@phenom.dumpdata.com>
+References: <518A0A50.1020705@oracle.com>
+ <20130510185339.GD2562@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1305131136020.4799@kaball.uk.xensource.com>
+ <20130513140749.GQ6811@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1305131540020.4799@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1305131540020.4799@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi device-tree folks,
+On Mon, May 13, 2013 at 03:50:52PM +0100, Stefano Stabellini wrote:
+> On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
+> > On Mon, May 13, 2013 at 12:06:43PM +0100, Stefano Stabellini wrote:
+> > > On Fri, 10 May 2013, Konrad Rzeszutek Wilk wrote:
+> > > > On Wed, May 08, 2013 at 04:18:24PM +0800, Zhenzhong Duan wrote:
+> > > > > When driver load and unload in a loop, pirq will exhaust finally.
+> > > > > Try to use the same pirq which was already mapped and binded at first time
+> > > > 
+> > > > So what happens if I unload and reload two drivers in random order?
+> > > > 
+> > > > > when driver loaded.
+> > > > > 
+> > > > > Read pirq from msix entry and test if data is XEN_PIRQ_MSI_DATA
+> > > > > xen_irq_from_pirq(pirq) < 0 checking is wrong as irq will be freed
+> > > > > when driver unload, it's always true in second load.
+> > > > 
+> > > > If my understanding is right the issue at hand is that the caching
+> > > > information about the pirq disappears once the driver has been
+> > > > unloaded b/c the event's irq-info is removed (as the driver is
+> > > > unloaded and free_irq is called).
+> > > > 
+> > > > Stefano,
+> > > > Is there a specific write to the MSI structure that would cause the
+> > > > hypervisor to drop the PIRQ? Or a nice hypercall to "free" an
+> > > > PIRQ in usage?
+> > > 
+> > > We already have a "free PIRQ" hypercall, it's called
+> > > PHYSDEVOP_unmap_pirq and should be called by QEMU.
+> > 
+> > Considering that we call function that allocates (PHYSDEVOP_get_free_pirq)
+> > it in the Linux kernel (and not in QEMU), perhaps that should be done in the
+> > Linux kernel as part of xen_destroy_irq()? Or would that confuse QEMU?
+> 
+> I think it would confuse QEMU. It is probably better to let the unmap
+> being handled by it.
+> 
+> 
+> > It looks like QEMU only does that hypercall (via xc_physdev_unmap_pirq)
+> > unregister_real_device which is only called during pci unplug?
+> 
+> You are right! I would think that this behaviour is erroneous unless it
+> was done on purpose to avoid allocating MSIs twice.
+> If that is the case we would need to do something similar in Linux too.
+> 
+> I think that the issue is the mismatch between QEMU's and Linux's
+> behaviours: either both should be allocating MSIs once, or they should
+> both be allocating and deallocating MSIs every time the driver is loaded
+> and unloaded.
 
-On 01/05/13 15:41, Nishanth Menon wrote:
-> On 12:11-20130501, Sudeep.KarkadaNagesha@arm.com wrote:
->> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->>
->> If more than one similar devices share the same OPPs, currently we
->> need to replicate the OPP entries in all the nodes.
-> Nice, thanks.
->>
->> Few drivers like cpufreq depend on physical cpu0 node to specify the
-> cpufreq-cpu0?
->> OPPs and only that node is referred irrespective of the logical cpu
->> accessing it. Alternatively to support cpuhotplug path, few drivers
->> parse all the cpu nodes for OPPs. Instead we can specify the phandle
->> of the node with which the current node shares the operating points.
->>
->> This patch adds support to specify the phandle in the operating points
->> of any device node, where the node specified by the phandle holds the
->> actual OPPs.
->>
->> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->> ---
->>  Documentation/devicetree/bindings/power/opp.txt |   41 +++++++++++++++++++++++
->>  drivers/base/power/opp.c                        |   30 ++++++++++++-----
->>  2 files changed, 63 insertions(+), 8 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/power/opp.txt b/Documentation/devicetree/bindings/power/opp.txt
->> index 74499e5..a659da4 100644
->> --- a/Documentation/devicetree/bindings/power/opp.txt
->> +++ b/Documentation/devicetree/bindings/power/opp.txt
->> @@ -23,3 +23,44 @@ cpu@0 {
->>              198000  850000
->>      >;
->>  };
->> +
-> Definition of operating-points is now a little different in the
-> original description - it still indicates tuple {freq,voltage}, where
-> as, this patch allows phandle to a different device's operating-points
-> to be used. - we might want to rephrase the description.
->
-> btw, to device-tree folks, I am not sure if it is OK to have different formats
-> for the same property like operating-points. At least I don't seem to
-> quickly be able to find any precedence.
->
-Any directions on this to proceed ? Is proposed option of phandle for
-OPP acceptable ?
+Right. But we also have the scenario that QEMU and Linux are going to 
+be out of sync. So we need fixes in both places - I think.
 
-Regards,
-Sudeep
+> 
+> 
+> > > Linux should disable the MSI bit in the PCI config options of the
+> > > device:
+> > > 
+> > > pci_disable_msi -> pci_msi_shutdown -> msi_set_enable(0)
+> > 
+> > Zhenzhong, does it do that? Looking at the driver it certainly seems that way.
+> > > 
+> > > That should cause QEMU to issue a xc_physdev_unmap_pirq that actually
+> > > unmaps the pirq. If it doesn't, it's a bug :)
+> > 
+> > <sigh> It doesn't do that. So two bugs:
+> >  - QEMU doing that
+> >  - Linux kernel doing the hypercall as well.
+> 
+> At first sight I also thought that the Linux kernel was issuing
+> PHYSDEVOP_unmap_pirq too but actually Linux is only doing it if
+> xen_initial_domain().
 
--- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
+That seems like an easy fix. Just do 'if (xen_initial_domain()
+|| xen_hvm_domain())'. I think the only one we cannot do it for
+is 'xen_pv_domain()' (so PCI in PV guests) as the "owner" of the PIRQ is
+actually dom0.
 
