@@ -1,77 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab3EMFWL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 01:22:11 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:57089 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab3EMFWI (ORCPT
+	id S1753507Ab3EMFWF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 01:22:05 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:42550 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab3EMFWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 01:22:08 -0400
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org, paulmck@linux.vnet.ibm.com,
-        fweisbec@gmail.com, benh@kernel.crashing.org, paulus@samba.org,
-        michael@ellerman.id.au, Li Zhong <zhong@linux.vnet.ibm.com>
-Subject: [RFC PATCH v3 4/5] powerpc: Use the new schedule_user API on userspace preemption
-Date: Mon, 13 May 2013 13:21:32 +0800
-Message-Id: <1368422493-9831-5-git-send-email-zhong@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1368422493-9831-1-git-send-email-zhong@linux.vnet.ibm.com>
-References: <1368422493-9831-1-git-send-email-zhong@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051305-1618-0000-0000-000003E0852C
+	Mon, 13 May 2013 01:22:02 -0400
+Date: Mon, 13 May 2013 09:21:35 +0400
+From: Mark Brown <broonie@kernel.org>
+To: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20130513052135.GD6836@sirena.org.uk>
+References: <1368207091-32538-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com>
+ <20130510212422.GY3200@sirena.org.uk>
+ <7e18bed3-ae6b-4aa0-bf23-b6c61ba8b85b@CO9EHSMHS030.ehs.local>
+ <20130512143344.GC3200@sirena.org.uk>
+ <9e55c552-ce34-4663-9a57-bf2c626d7d58@TX2EHSMHS008.ehs.local>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="T7mxYSe680VjQnyC"
+Content-Disposition: inline
+In-Reply-To: <9e55c552-ce34-4663-9a57-bf2c626d7d58@TX2EHSMHS008.ehs.local>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.247.243.210
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch corresponds to
-[PATCH] x86: Use the new schedule_user API on userspace preemption
-  commit 0430499ce9d78691f3985962021b16bf8f8a8048
 
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
----
- arch/powerpc/include/asm/context_tracking.h |   10 ++++++++++
- arch/powerpc/kernel/entry_64.S              |    3 ++-
- 2 files changed, 12 insertions(+), 1 deletion(-)
- create mode 100644 arch/powerpc/include/asm/context_tracking.h
+--T7mxYSe680VjQnyC
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/powerpc/include/asm/context_tracking.h b/arch/powerpc/include/asm/context_tracking.h
-new file mode 100644
-index 0000000..b6f5a33
---- /dev/null
-+++ b/arch/powerpc/include/asm/context_tracking.h
-@@ -0,0 +1,10 @@
-+#ifndef _ASM_POWERPC_CONTEXT_TRACKING_H
-+#define _ASM_POWERPC_CONTEXT_TRACKING_H
-+
-+#ifdef CONFIG_CONTEXT_TRACKING
-+#define SCHEDULE_USER bl	.schedule_user
-+#else
-+#define SCHEDULE_USER bl	.schedule
-+#endif
-+
-+#endif
-diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
-index 915fbb4..d418977 100644
---- a/arch/powerpc/kernel/entry_64.S
-+++ b/arch/powerpc/kernel/entry_64.S
-@@ -33,6 +33,7 @@
- #include <asm/irqflags.h>
- #include <asm/ftrace.h>
- #include <asm/hw_irq.h>
-+#include <asm/context_tracking.h>
- 
- /*
-  * System calls.
-@@ -634,7 +635,7 @@ _GLOBAL(ret_from_except_lite)
- 	andi.	r0,r4,_TIF_NEED_RESCHED
- 	beq	1f
- 	bl	.restore_interrupts
--	bl	.schedule
-+	SCHEDULE_USER
- 	b	.ret_from_except_lite
- 
- 1:	bl	.save_nvgprs
--- 
-1.7.9.5
+On Sun, May 12, 2013 at 12:05:04PM -0700, S=F6ren Brinkmann wrote:
+> On Sun, May 12, 2013 at 06:33:44PM +0400, Mark Brown wrote:
 
+> > No, there's no confusion here - the clocks that are being exposed to
+> > userspace are the clocks which enter the FPGA.  The driver or whatever
+> > that understands the FPGA can do what is needed to control them,
+> > including routing them on to subdevices it instantiates or exposing them
+> > to userspace.
+
+> Such a driver does not exist in general.
+> For some IP cores, Linux drivers do exist and then
+> they are supposed to directly use the CCF, IMHO, no need to expose
+> things to userspace in that case.
+> I'm trying to cover cases, in which there is no driver available/needed f=
+or
+> the FPGA design, other than some simple clock controls.
+
+You're not understanding the point here.  If you've got a
+reprogrammmable FPGA you at least need some way to get the FPGA image in
+there.  This driver is presumably responsible for instantiating whatever
+is needed to control what is on the FPGA, that could include punting the
+clocks to userspace if that's sane.
+
+--T7mxYSe680VjQnyC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRkHhcAAoJELSic+t+oim9VBoP/38f3+yCiu8wNskRghOJXpHe
+MwXh6mVSxtFtglsqtcpITmSxcYpTFEtynusGI/177dcAk8IcP4TuQQffnQFEDapf
+fhvc11iPO9AITqsw85Sl7BrzwCu/bfbXYe3oYeRSH/k4/IwYn+1lw9a7z2sdxhmV
+q9D6KpFsHGye6IiNmQkCO9J1hBJAaRAbwfSk1wT9U9+h2CtT9yNwxtUZDw58LwNH
+MxBm+TIm2ITxA2hWkbpvNzF0FhbvrduBoxghdLW5oioBL3dtwJmYnjmgbDUa7A1n
+WDEqoaNuFkAZgdZ0c9/RjoKsE5LyW3T5qo9qQxmMyl44l6CqpL9Pu3oEydUd0KVQ
+XirERtCKsd2x9gZuhtcgQrnfjYDCCNxTJ5Q9IFn4sXderby5+L6BDjyuu4ItUHiH
+unULgllU33F7UXhfJqoV8IrQgylN+NfxhQq3vsx02m5GqBtHA+cSXiIOQXOgnMsc
+yF4CCZyNshK8mkteOudmNFdGlkY+EI/xzf0JA5GQHoxGA+d2b7GG80gbKXrl44XA
+6/be4TYpBThRR9nEtdcCSCUu63+MO4nUo0Vqe44dGnwwvVtK6YjoVEyA+ifF/bec
+RqdDmx8nTgGGxBcoNk1ItV8+hnh4twpGrYqPhR0AC8zYNK9tY+UNjcyaXGuqE8vW
+/FwB/fYd1beO4eBRWY/f
+=7G09
+-----END PGP SIGNATURE-----
+
+--T7mxYSe680VjQnyC--
