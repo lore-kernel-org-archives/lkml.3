@@ -1,71 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab3EMCIj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 22:08:39 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:54233 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198Ab3EMCIi (ORCPT
+	id S1753407Ab3EMCLB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 22:11:01 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48764 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692Ab3EMCK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 22:08:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <1367803801-17111-3-git-send-email-chao.xie@marvell.com>
-References: <1367803801-17111-1-git-send-email-chao.xie@marvell.com> <1367803801-17111-3-git-send-email-chao.xie@marvell.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Mon, 13 May 2013 10:08:17 +0800
-Message-ID: <CAMPhdO-66YfMuzSbdbDoi3OjBzN9yqw7jGQ8Hk8dGRJNNLAsXA@mail.gmail.com>
-Subject: Re: [PATCH V4 2/3] pwm: pxa: use module_platform_driver()
-To: Chao Xie <chao.xie@marvell.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Chao Xie <xiechao.mail@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 12 May 2013 22:10:59 -0400
+X-AuditID: 9c930197-b7b76ae000003523-4e-51904bafcc51
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [RFC 3/4] mm: support remove_mapping in irqcontext
+Date: Mon, 13 May 2013 11:10:47 +0900
+Message-Id: <1368411048-3753-4-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1368411048-3753-1-git-send-email-minchan@kernel.org>
+References: <1368411048-3753-1-git-send-email-minchan@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 6, 2013 at 9:30 AM, Chao Xie <chao.xie@marvell.com> wrote:
-> Old pwm-pxa.c will register driver by arch_initcall. Then other
-> drivers based on the PWM driver can successully call old
-> pwm_request because arch_initcall make sure the PWM driver will
-> be registered earlier.
-> Now, pwm_request is re-written and done by common layer code. It
-> will return -EPROBE_DEFER if the PWM device is not probed.
-> The driver based on PWM driver can make use of -EPROBE_DEFER
-> to delay its probing.
-> So arch_initcall can be replaced by module_platform_driver.
->
-> Signed-off-by: Chao Xie <chao.xie@marvell.com>
+This patch makes to use remove_mapping in irq context.
+For it, this patch adds irqcontext argument in some functions
+(ex, remove_maping and __remove_mapping) but these functions
+are not hot path so i believe it's not a problem.
 
-Looks good to me,
+And it exports swap_info_get and check that we can get a
+swap_info_struct->s lock in advance in irq context.
+Because __swapcache_free must be succesful.
+Otherwise, If __swapcache_free can be failed, we should rollback
+things done by __delete_from_swap_cache and it could need memory
+allocation for radix tree node in irq context.
 
-Acked-by: Eric Miao <eric.y.miao@gmail.com>
+More concern is handling for mem_cgroup_uncharge_swapcache in
+irqcontext, which isn't aware of irqcontext at the moment and it
+should be successful like above reason.
 
-> ---
->  drivers/pwm/pwm-pxa.c |   12 +-----------
->  1 files changed, 1 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/pwm/pwm-pxa.c b/drivers/pwm/pwm-pxa.c
-> index dee6ab55..aa4bea7 100644
-> --- a/drivers/pwm/pwm-pxa.c
-> +++ b/drivers/pwm/pwm-pxa.c
-> @@ -187,16 +187,6 @@ static struct platform_driver pwm_driver = {
->         .id_table       = pwm_id_table,
->  };
->
-> -static int __init pwm_init(void)
-> -{
-> -       return platform_driver_register(&pwm_driver);
-> -}
-> -arch_initcall(pwm_init);
-> -
-> -static void __exit pwm_exit(void)
-> -{
-> -       platform_driver_unregister(&pwm_driver);
-> -}
-> -module_exit(pwm_exit);
-> +module_platform_driver(pwm_driver);
->
->  MODULE_LICENSE("GPL v2");
-> --
-> 1.7.4.1
->
+After I review that code, I think it's not a big challenge if I missed
+somethings.
+
+My rough plan is following as,
+
+1. Make mctz->lock beging aware of irq by changing spin_lock with
+   spin_lock_irqsave.
+2. Introuduce new argument "locked" in __mem_cgroup_uncharge_common
+   so that __mem_cgroup_uncharge_common can avoid lock_page_cgroup in
+   irqcontext to avoid deadlock but caller in irqcontext should be held
+   it in advance by next patch.
+3. Introduce try_lock_page_cgroup, which will be used __swapcache_free.
+4. __remove_mapping can held a page_cgroup lock in advance before calling
+   __swapcache_free
+
+I'd like to listen memcg people's opinions before diving into coding.
+
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ fs/splice.c          |  2 +-
+ include/linux/swap.h | 12 ++++++++++-
+ mm/swapfile.c        |  2 +-
+ mm/truncate.c        |  2 +-
+ mm/vmscan.c          | 56 +++++++++++++++++++++++++++++++++++++++++++---------
+ 5 files changed, 61 insertions(+), 13 deletions(-)
+
+diff --git a/fs/splice.c b/fs/splice.c
+index e6b2559..db77694 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -70,7 +70,7 @@ static int page_cache_pipe_buf_steal(struct pipe_inode_info *pipe,
+ 		 * If we succeeded in removing the mapping, set LRU flag
+ 		 * and return good.
+ 		 */
+-		if (remove_mapping(mapping, page)) {
++		if (remove_mapping(mapping, page, false)) {
+ 			buf->flags |= PIPE_BUF_FLAG_LRU;
+ 			return 0;
+ 		}
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index ca031f7..eb126d2 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -274,7 +274,8 @@ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+ 						unsigned long *nr_scanned);
+ extern unsigned long shrink_all_memory(unsigned long nr_pages);
+ extern int vm_swappiness;
+-extern int remove_mapping(struct address_space *mapping, struct page *page);
++extern int remove_mapping(struct address_space *mapping, struct page *page,
++				bool irqcontext);
+ extern unsigned long vm_total_pages;
+ 
+ #ifdef CONFIG_NUMA
+@@ -407,6 +408,9 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
+ }
+ #endif
+ 
++
++extern struct swap_info_struct *swap_info_get(swp_entry_t entry);
++
+ #else /* CONFIG_SWAP */
+ 
+ #define get_nr_swap_pages()			0L
+@@ -430,6 +434,12 @@ static inline void show_swap_cache_info(void)
+ #define free_swap_and_cache(swp)	is_migration_entry(swp)
+ #define swapcache_prepare(swp)		is_migration_entry(swp)
+ 
++
++struct swap_info_struct *swap_info_get(swp_entry_t entry)
++{
++	return NULL;
++}
++
+ static inline int add_swap_count_continuation(swp_entry_t swp, gfp_t gfp_mask)
+ {
+ 	return 0;
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 33ebdd5..8a425d4 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -505,7 +505,7 @@ swp_entry_t get_swap_page_of_type(int type)
+ 	return (swp_entry_t) {0};
+ }
+ 
+-static struct swap_info_struct *swap_info_get(swp_entry_t entry)
++struct swap_info_struct *swap_info_get(swp_entry_t entry)
+ {
+ 	struct swap_info_struct *p;
+ 	unsigned long offset, type;
+diff --git a/mm/truncate.c b/mm/truncate.c
+index c75b736..fa1dc60 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -131,7 +131,7 @@ invalidate_complete_page(struct address_space *mapping, struct page *page)
+ 	if (page_has_private(page) && !try_to_release_page(page, 0))
+ 		return 0;
+ 
+-	ret = remove_mapping(mapping, page);
++	ret = remove_mapping(mapping, page, false);
+ 
+ 	return ret;
+ }
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index fa6a853..d14c9be 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -450,12 +450,18 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
+  * Same as remove_mapping, but if the page is removed from the mapping, it
+  * gets returned with a refcount of 0.
+  */
+-static int __remove_mapping(struct address_space *mapping, struct page *page)
++static int __remove_mapping(struct address_space *mapping, struct page *page,
++				bool irqcontext)
+ {
++	unsigned long flags;
++
+ 	BUG_ON(!PageLocked(page));
+ 	BUG_ON(mapping != page_mapping(page));
+ 
+-	spin_lock_irq(&mapping->tree_lock);
++	if (irqcontext)
++		spin_lock_irqsave(&mapping->tree_lock, flags);
++	else
++		spin_lock_irq(&mapping->tree_lock);
+ 	/*
+ 	 * The non racy check for a busy page.
+ 	 *
+@@ -490,17 +496,45 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
+ 	}
+ 
+ 	if (PageSwapCache(page)) {
++		struct swap_info_struct *p;
+ 		swp_entry_t swap = { .val = page_private(page) };
++		p = swap_info_get(swap);
++		/*
++		 * If we are irq context, check that we can get a
++		 * swap_info_strcut->lock before removing the page from
++		 * swap cache. Because __swapcache_free must be successful.
++		 * If __swapcache_free can be failed, we should rollback
++		 * things done by __delete_from_swap_cache and it needs
++		 * memory allocation for radix tree node in irqcontext
++		 * That's thing we really want to avoid.
++		 * TODO : memcg mem_cgroup_uncharge_swapcache handling
++		 * in irqcontext
++		 */
++		if (irqcontext && p && !spin_trylock(&p->lock)) {
++			page_unfreeze_refs(page, 2);
++			goto cannot_free;
++		}
++
+ 		__delete_from_swap_cache(page);
+-		spin_unlock_irq(&mapping->tree_lock);
+-		swapcache_free(swap, page);
++		if (irqcontext) {
++			spin_unlock_irqrestore(&mapping->tree_lock, flags);
++			if (p)
++				__swapcache_free(p, swap, page);
++			spin_unlock(&p->lock);
++		} else {
++			spin_unlock_irq(&mapping->tree_lock);
++			swapcache_free(swap, page);
++		}
+ 	} else {
+ 		void (*freepage)(struct page *);
+ 
+ 		freepage = mapping->a_ops->freepage;
+ 
+ 		__delete_from_page_cache(page);
+-		spin_unlock_irq(&mapping->tree_lock);
++		if (irqcontext)
++			spin_unlock_irqrestore(&mapping->tree_lock, flags);
++		else
++			spin_unlock_irq(&mapping->tree_lock);
+ 		mem_cgroup_uncharge_cache_page(page);
+ 
+ 		if (freepage != NULL)
+@@ -510,7 +544,10 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
+ 	return 1;
+ 
+ cannot_free:
+-	spin_unlock_irq(&mapping->tree_lock);
++	if (irqcontext)
++		spin_unlock_irqrestore(&mapping->tree_lock, flags);
++	else
++		spin_unlock_irq(&mapping->tree_lock);
+ 	return 0;
+ }
+ 
+@@ -520,9 +557,10 @@ cannot_free:
+  * successfully detached, return 1.  Assumes the caller has a single ref on
+  * this page.
+  */
+-int remove_mapping(struct address_space *mapping, struct page *page)
++int remove_mapping(struct address_space *mapping, struct page *page,
++			bool irqcontext)
+ {
+-	if (__remove_mapping(mapping, page)) {
++	if (__remove_mapping(mapping, page, irqcontext)) {
+ 		/*
+ 		 * Unfreezing the refcount with 1 rather than 2 effectively
+ 		 * drops the pagecache ref for us without requiring another
+@@ -904,7 +942,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			}
+ 		}
+ 
+-		if (!mapping || !__remove_mapping(mapping, page))
++		if (!mapping || !__remove_mapping(mapping, page, false))
+ 			goto keep_locked;
+ 
+ 		/*
+-- 
+1.8.2.1
+
