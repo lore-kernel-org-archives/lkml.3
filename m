@@ -1,82 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357Ab3EMJIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 05:08:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:35116 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751564Ab3EMJIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 05:08:51 -0400
-X-IronPort-AV: E=Sophos;i="4.87,661,1363104000"; 
-   d="scan'208";a="7255668"
-Message-ID: <5190AE4F.4000103@cn.fujitsu.com>
-Date: Mon, 13 May 2013 17:11:43 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752149Ab3EMJO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 05:14:28 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46653 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab3EMJO1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 05:14:27 -0400
+Date: Mon, 13 May 2013 11:14:20 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
+Subject: Re: [3.10-rc1] tick: NULL pointer dereference at
+ tick_handle_oneshot_broadcast
+In-Reply-To: <201305130722.r4D7MCPr004492@www262.sakura.ne.jp>
+Message-ID: <alpine.LFD.2.02.1305131111420.2863@ionos>
+References: <201305130722.r4D7MCPr004492@www262.sakura.ne.jp>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Minchan Kim <minchan@kernel.org>, Lin Feng <linfeng@cn.fujitsu.com>,
-        akpm@linux-foundation.org, bcrl@kvack.org, viro@zeniv.linux.org.uk,
-        khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
-        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of
- get_user_pages() called get_user_pages_non_movable()
-References: <1360056113-14294-1-git-send-email-linfeng@cn.fujitsu.com> <1360056113-14294-2-git-send-email-linfeng@cn.fujitsu.com> <20130205120137.GG21389@suse.de> <20130206004234.GD11197@blaptop> <20130206095617.GN21389@suse.de>
-In-Reply-To: <20130206095617.GN21389@suse.de>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/13 17:07:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/13 17:07:47,
-	Serialize complete at 2013/05/13 17:07:47
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+On Mon, 13 May 2013, Tetsuo Handa wrote:
 
-On 02/06/2013 05:56 PM, Mel Gorman wrote:
->
-> There is the possibility that callbacks could be introduced for
-> migrate_unpin() and migrate_pin() that takes a list of PFN pairs
-> (old,new). The unpin callback should release the old PFNs and barrier
-> against any operations until the migrate_pfn() callback is called with
-> the updated pfns to be repinned. Again it would fully depend on subsystems
-> implementing it properly.
->
-> The callback interface would be more robust but puts a lot more work on
-> the driver side where your milage will vary.
->
+> I\'m hitting below bug on bootup.
+> I don\'t know why but bisection reached commit b352bc1c
+> \"tick: Convert broadcast cpu bitmaps to cpumask_var_t\".
 
-I'm very interested in the "callback" way you said.
+Because I used alloc_cpumask_var instead of zalloc_cpumask_var :(
 
-For memory hot-remove case, the aio pages are pined in memory and making
-the pages cannot be offlined, furthermore, the pages cannot be removed.
+Fix is queued and will hit linus tree soon.
 
-IIUC, you mean implement migrate_unpin() and migrate_pin() callbacks in aio
-subsystem, and call them when hot-remove code tries to offline pages, 
-right ?
+Thanks,
 
-If so, I'm wondering where should we put this callback pointers ?
-In struct page ?
-
-
-It has been a long time since this topic was discussed. But to solve this
-problem cleanly for hotplug guys and CMA guys, please give some more 
-comments.
-
-Thanks. :)
-
->
-> To guarantee CMA can migrate pages pinned by drivers I think you need
-> migrate-related callsbacks to unpin, barrier the driver until migration
-> completes and repin.
->
-> I do not know, or at least have no heard, of anyone working on such a
-> scheme.
->
+	tglx
